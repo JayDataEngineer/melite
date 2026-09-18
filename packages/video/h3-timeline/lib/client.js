@@ -623,6 +623,13 @@ window.__ModuleLoader__.load({
 		function titleCaseId(id) {
 			return id.split(/[-_\s]+/).filter((w) => w !== "").map((w) => w.slice(0, 1).toUpperCase() + w.slice(1)).join(" ");
 		}
+		/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
+		*  resolveValue's first layer; the base never invents one). */
+		function specDefaults(fields) {
+			const out = {};
+			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+			return out;
+		}
 		/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
 		*
 		* One pure projection: serialized schemastery schema -> derived
@@ -743,6 +750,35 @@ window.__ModuleLoader__.load({
 		function fieldsOf(spec) {
 			return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
 		}
+		/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
+		* client-side (stroke 34 — the card-recipe layer is dead): schema
+		* defaults <- model defaults <- SERVED STAMPS <- user. The form
+		* SHOWS exactly what a run composes; `user` rides verbatim by key
+		* presence (a PRESENCE is the override mark, never its value — the
+		* settings law). Arrays (lora bags) and nulls in model_defaults
+		* skip, matching the engine's overlay filter.
+		*
+		* THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
+		* stage row's `resolved` map — prepareCardParams' own stamped +
+		* lifted body, served by the drafts doors. It layers UNDER the user
+		* (presence still wins) and OVER model_defaults (the server's own
+		* family/variant stamps replace the client's guesses — variant
+		* resolver_defaults, family defaults, the surface filter). Absent
+		* base = the registry-less lane derive (the wall pins parity on
+		* the golden families). PURE. */
+		function resolveValue(spec, user, base) {
+			const out = specDefaults(fieldsOf(spec));
+			for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
+				if (v === null || Array.isArray(v)) continue;
+				out[k] = v;
+			}
+			if (base !== void 0) for (const [k, v] of Object.entries(base)) {
+				if (v === null || v === void 0 || Array.isArray(v)) continue;
+				out[k] = v;
+			}
+			Object.assign(out, user);
+			return out;
+		}
 		/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
 		* one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
 		* (The ONE schema grammar — a field declares its own visibility;
@@ -801,6 +837,47 @@ window.__ModuleLoader__.load({
 				return true;
 			});
 		}
+		/** The ACTIVE RECIPE (the dropdown's selection state, derived from
+		* the ONE truth -- never a persisted key): a recipe row is active
+		* when EVERY key its pick stamps (axisPickPatch, minus the durable
+		* axis keys -- the run door refuses an undeclared `recipe` param)
+		* deep-equals the user layer's held value. Stamp-for-stamp matches
+		* are naturally exclusive (a two-row bag matches only the row that
+		* stamps two rows); first-declared wins on a tie. NOTHING matches ->
+		* undefined (the dropdown shows its placeholder -- a hand-edited
+		* layer is not a recipe, and the form never lies about it). */
+		function activeRecipeId(spec, values) {
+			for (const row of rowsFor(spec, "Recipe")) {
+				const patch = axisPickPatch(spec, row);
+				let holds = true;
+				for (const [k, v] of Object.entries(patch)) {
+					if (k === axisKey("Recipe")) continue;
+					if (!deepEqualHeld(values[k], v)) {
+						holds = false;
+						break;
+					}
+				}
+				if (holds && Object.keys(patch).length > 0) return row.id;
+			}
+		}
+		/** Deep equality over JSON-shaped held values (arrays compared
+		* element-wise -- the lora bag rows; primitives by Object.is). */
+		function deepEqualHeld(a, b) {
+			if (Object.is(a, b)) return true;
+			if (Array.isArray(a) && Array.isArray(b)) {
+				if (a.length !== b.length) return false;
+				for (let i = 0; i < a.length; i++) if (!deepEqualHeld(a[i], b[i])) return false;
+				return true;
+			}
+			if (typeof a === "object" && a !== null && typeof b === "object" && b !== null) {
+				const ka = Object.keys(a);
+				const kb = Object.keys(b);
+				if (ka.length !== kb.length) return false;
+				for (const k of ka) if (!deepEqualHeld(a[k], b[k])) return false;
+				return true;
+			}
+			return false;
+		}
 		/** The durable param key an axis rides (the group's id, lowercased —
 		*  'variant', 'quant', 'recipe', 'precision'). */
 		function axisKey(group) {
@@ -833,8 +910,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$1 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:contents}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
-		const tagId$1 = "@melite/video-h3-timeline/card.module.css@a0448888";
+		const css$1 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:contents}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
+		const tagId$1 = "@melite/video-h3-timeline/card.module.css@3924fc51";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -900,6 +977,7 @@ window.__ModuleLoader__.load({
 			"specGroup": "FRpSCG_specGroup",
 			"specGroupTitle": "FRpSCG_specGroupTitle",
 			"specHint": "FRpSCG_specHint",
+			"specInfo": "FRpSCG_specInfo",
 			"specLinkBtn": "FRpSCG_specLinkBtn",
 			"specRequired": "FRpSCG_specRequired",
 			"specSelect": "FRpSCG_specSelect",
@@ -1227,64 +1305,9 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region ../../web/card-base/src/form.tsx
-		/**
-		* form.tsx — @melite/card-base: THE CONSTRUCTOR.
-		*
-		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
-		* construct the card ui should see that the card package emits an
-		* image input, then constructs the input component automatically"):
-		* the base reads the card package's EMISSION — the served form-spec
-		* (the schema envelope, declared input/output edges, mod kinds) —
-		* and constructs the surface. The resolved value derives per render
-		* (resolveValue — the engine's compose cascade mirrored); every
-		* image/file field gets THE ONE square (square.tsx) with the
-		* three source verbs; no card ever hand-rolls an input component.
-		*
-		* THE SEAM (slots.ts): each field renders through the field-atom seam
-		* keyed by its emitted wire type — the caller may pass claimed atoms
-		* (the composition consults the slot machinery and hands them in);
-		* the base's built-in atom is the default (the ui-tool built-ins
-		* pattern). A whole-form takeover replaces CardForm itself.
-		*
-		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
-		* atoms the primitives set lacks (select, slider, textarea) are
-		* layout-only module CSS over native elements, every color an
-		* inherited --dsw-alias-* token (the package's documented pattern).
-		*/
-		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
-		*  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
-		*  img-to-mesh's client, ideogram4's client) each hand-copied the
-		*  same fetch-once + abort dance. One spelling now: fetches
-		*  /v1/form-spec?model=<id> when the id is non-empty, aborts the
-		*  in-flight fetch on unmount or id change, and hands back the doc
-		*  (null until it lands) + the refusal message (null unless the door
-		*  refused — loud consumers render it, silent ones ignore it).
-		*  Consumer-specific derivations (field filters, value seeding) stay
-		*  at the call site as reactions to `spec`. */
-		function useFormSpec(modelId) {
-			const [spec, setSpec] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
-			const id = typeof modelId === "string" && modelId !== "" ? modelId : null;
-			(0, react.useEffect)(() => {
-				if (id === null) return;
-				const ctl = new AbortController();
-				setSpec(null);
-				setError(null);
-				fetchFormSpec(id, ctl.signal).then((doc) => {
-					setSpec(doc);
-				}).catch((e) => {
-					setError(e instanceof Error ? e.message : "form-spec failed");
-				});
-				return () => {
-					ctl.abort();
-				};
-			}, [id]);
-			return {
-				spec,
-				error
-			};
-		}
+		//#region ../../web/card-base/src/square-provider.tsx
+		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
 		/** The media-kind the picker fetches for a field: image fields name
 		*  image; file fields take the whole library (their accept narrows
 		*  client-side per row). */
@@ -1499,6 +1522,10 @@ window.__ModuleLoader__.load({
 				wireMenu: (0, react.createElement)(react.Fragment, null, sourceMenu, pickerModal, fileInput)
 			};
 		}
+		//#endregion
+		//#region ../../web/card-base/src/atoms.tsx
+		/** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
 		function SourceRow(props) {
 			const field = {
 				name: "__source_row__",
@@ -1679,94 +1706,36 @@ window.__ModuleLoader__.load({
 				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
 			});
 		}
-		/** THE DYNAMIC PARAMETER PANEL (2026-09-17, the operator's shared-
-		* component law): sections of the SERVED form-spec's rows at their
-		* wire names — ONE mechanism every card seats, never a per-card
-		* re-walk. The card owns POLICY through the DECLARATION (which
-		* fields exist, their visible_when leaves); the base owns MECHANISM
-		* (fetch → walker → row atoms → visibility grammar → the error
-		* law). A row the door never declared renders NOTHING (no ghost,
-		* no twin); a refused spec renders AS an error — never a thinner
-		* panel. */
-		function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: errorProp }) {
-			const owned = useFormSpec(model);
-			const spec = specProp !== void 0 ? specProp : owned.spec;
-			const error = specProp !== void 0 ? errorProp ?? null : owned.error;
-			if (error !== null) return (0, react.createElement)("div", {
-				className: card_module_css_default.specGroup,
-				role: "alert",
-				"data-testid": "spec-panel-error"
-			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, "form-spec failed — parameters unavailable"), (0, react.createElement)("div", { className: card_module_css_default.specHint }, error));
-			if (spec === null) return null;
-			const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]));
-			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, sections.map((sec) => (0, react.createElement)("div", {
-				className: card_module_css_default.specGroup,
-				key: sec.title,
-				...sec.testid !== void 0 ? { "data-testid": sec.testid } : {}
-			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
-				const f = byName.get(row.name);
-				if (f === void 0) return null;
-				if (!fieldVisible(f, values)) return null;
-				return (0, react.createElement)(SpecFieldRow, {
-					key: row.name,
-					f,
-					value: values[row.name],
-					onEdit
-				});
-			}))));
+		/** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
+		*  plus ONE SELECT PER SERVED AXIS GROUP — Variant, Quant, Recipe,
+		*  Precision, … the declaration's whole vocabulary, NEVER a hardcoded
+		*  list (the operator's lane proof caught the hardcoded Quant-only
+		*  list dropping seedvr2's and qwen's other axes). Order: the door's
+		*  variant_groups contract, else first-seen. Chain: an axis' options
+		*  are the rows composing with the axes above (the row's `owner`).
+		*  Each pick applies the row's defaults overlay through onEdit — the
+		*  values (model + every axis key + overlay keys) ride the caller's
+		*  map and pass along at Run. Renders nothing when the spec declares
+		*  no matrix. */
+		//#endregion
+		//#region ../../web/card-base/src/rows.tsx
+		/** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE INFO GLYPH (hour 21): the field's declared help prose (the
+		*  schema's extra.tooltip) rides a hover (i) beside the label — one
+		*  definition for every card; absent prose, no glyph. The text is
+		*  aria-carried (the DSH Tooltip is hover-only). */
+		function infoGlyph(f) {
+			if (f.tooltip === void 0 || f.tooltip === "") return null;
+			return (0, react.createElement)(Tip$1, {
+				tip: f.tooltip,
+				children: (0, react.createElement)("span", {
+					className: card_module_css_default.specInfo,
+					role: "note",
+					"aria-label": `info: ${f.tooltip}`
+				}, "i")
+			});
 		}
-		/** THE FAMILY RECIPE PILLS (Rule A — the recipe law): the family's
-		*  preset macros, one pill per served Recipe row that CARRIES a
-		*  declared payload. The click writes the row's FULL stamp
-		*  (axisPickPatch — the same pick verb as every axis row; mod-owned
-		*  keys included, the Rule A amendment). No recipe key persists,
-		*  nothing derives, nothing goes stale when the variant rail moves
-		*  — what it stamped is what you see. Stamp-less rows (the family
-		*  `default`) render nothing: a pill that writes nothing is a dead
-		*  control.
-		*
-		*  THE REUSE LAW: extracted so EVERY model surface seats the same
-		*  pills — CardForm under the axes, a studio beside its model route.
-		*  Never a second pill implementation. */
-		function RecipePills({ spec, onSet }) {
-			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0);
-			if (pillRows.length === 0) return null;
-			return (0, react.createElement)("div", {
-				className: card_module_css_default.specGroup,
-				"data-recipe-pills": "1"
-			}, pillRows.map((r) => (0, react.createElement)("button", {
-				key: r.id,
-				type: "button",
-				className: card_module_css_default.specLinkBtn,
-				"data-recipe-pill": r.id,
-				title: typeof r.hint === "string" && r.hint !== "" ? r.hint : void 0,
-				onClick: () => {
-					for (const [k, v] of Object.entries(axisPickPatch(spec, r))) onSet(k, v);
-				}
-			}, titleCaseId(r.label))));
-		}
-		/** THE CARD FORM (the constructor's surface half) — the emission's
-		*  fields walked off the schema envelope, grouped, visible-when
-		*  honored; the RESOLVED value derives per render (resolveValue —
-		*  the engine's compose cascade mirrored), edits are set/unset ops
-		*  over the USER layer (the settings law: presence IS the override
-		*  mark, the reset chip removes it). Each field renders through the
-		*  claimed atom for its emitted type when the caller passes one;
-		*  the base's built-in atom is the default.
-		*
-		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
-		*  img-to-mesh input component — you are not using it around — you
-		*  are hardcoding"): an emitted image/file input constructs THE ONE
-		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
-		*  square provider — no call site wires it, no call site can forget
-		*  it. The caller hands only the WIRE (picker candidates), never the
-		*  component; a caller that passes its own `square` fn overrides (the
-		*  host-claim seam), but the default is the constructor's own. */
-		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
-		*  required star, hint) around the atom — CardForm's own row, opened
-		*  to rail sections that render served fields outside a whole form
-		*  (mask's TuneSection). The claim seam stays CardForm's; this row
-		*  takes the resolved atom inputs. */
 		/** THE SEED DICE (stroke 39 — the operator's QOL law): the seed
 		*  knob carries the RANDOM sentinel -1 (GATE S: -1 mints a fresh
 		*  seed in the lane, EVERY run). The dice sits at the key line's
@@ -1848,21 +1817,198 @@ window.__ModuleLoader__.load({
 		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
 			const seedKnob = f.name === "seed";
 			const seedRandom = seedKnob && (value === -1 || value === "-1");
-			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SeedDice, {
+			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SeedDice, {
 				random: seedRandom,
 				onToggle: () => {
 					if (seedRandom) onEdit(f.name, Math.floor(Math.random() * 2147483647));
 					else onEdit(f.name, -1);
 				}
-			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
+			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SpecAtom, {
 				f,
 				value: seedRandom ? void 0 : value,
 				...seedRandom ? { placeholder: "random — new every run" } : {},
 				onEdit,
 				square,
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
-			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
+			}));
 		}
+		//#endregion
+		//#region ../../web/card-base/src/axes.tsx
+		/** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE FAMILY RECIPE DROPDOWN (Rule A -- the recipe law; the
+		* operator's order, 2026-09-18: "RECIPES AREN'T EVEN A DROPDOWN"):
+		* the family's preset macros as ONE SELECT beside the axes -- the
+		* same shape every axis rides, never a list of link-buttons. The
+		* pick writes the row's FULL stamp (axisPickPatch -- mod-owned keys
+		* included, the Rule A amendment); the SELECTION derives from the
+		* ONE truth (activeRecipeId -- the row whose stamp the user layer
+		* holds; no recipe key persists, nothing goes stale when the rail
+		* moves). Stamp-less rows (the family `default`) render nothing: a
+		* row that writes nothing is a dead option. A hand-edited layer
+		* (no stamp-for-stamp match) shows the placeholder -- the form
+		* never lies that a recipe is active.
+		*
+		* THE REUSE LAW: extracted so EVERY model surface seats the same
+		* dropdown -- CardForm under the axes, a studio beside its model
+		* route. Never a second implementation. */
+		function RecipePills({ spec, onSet, values }) {
+			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0);
+			if (pillRows.length === 0) return null;
+			const active = values !== void 0 ? activeRecipeId(spec, values) : void 0;
+			const pick = (id) => {
+				const row = pillRows.find((r) => r.id === id);
+				if (row === void 0) return;
+				for (const [k, v] of Object.entries(axisPickPatch(spec, row))) onSet(k, v);
+			};
+			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Recipe"), (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"data-recipe-select": "1",
+				"aria-label": "Recipe",
+				value: active ?? "",
+				onChange: (e) => {
+					const id = e.currentTarget.value;
+					if (id !== "") pick(id);
+				}
+			}, (0, react.createElement)("option", {
+				key: "__none__",
+				value: "",
+				disabled: active !== void 0
+			}, active === void 0 ? "-- recipe --" : "-- custom --"), pillRows.map((r) => (0, react.createElement)("option", {
+				key: r.id,
+				value: r.id,
+				title: typeof r.hint === "string" && r.hint !== "" ? r.hint : void 0
+			}, titleCaseId(r.label) + (typeof r.hint === "string" && r.hint !== "" ? ` \u2014 ${r.hint}` : "")))));
+		}
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). Each field renders through the
+		*  claimed atom for its emitted type when the caller passes one;
+		*  the base's built-in atom is the default.
+		*
+		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
+		*  img-to-mesh input component — you are not using it around — you
+		*  are hardcoding"): an emitted image/file input constructs THE ONE
+		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
+		*  square provider — no call site wires it, no call site can forget
+		*  it. The caller hands only the WIRE (picker candidates), never the
+		*  component; a caller that passes its own `square` fn overrides (the
+		*  host-claim seam), but the default is the constructor's own. */
+		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
+		*  required star, hint) around the atom — CardForm's own row, opened
+		*  to rail sections that render served fields outside a whole form
+		*  (mask's TuneSection). The claim seam stays CardForm's; this row
+		*  takes the resolved atom inputs. */
+		//#endregion
+		//#region ../../web/card-base/src/use-form-spec.ts
+		/** use-form-spec.ts — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
+		*  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
+		*  img-to-mesh's client, ideogram4's client) each hand-copied the
+		*  same fetch-once + abort dance. One spelling now: fetches
+		*  /v1/form-spec?model=<id> when the id is non-empty, aborts the
+		*  in-flight fetch on unmount or id change, and hands back the doc
+		*  (null until it lands) + the refusal message (null unless the door
+		*  refused — loud consumers render it, silent ones ignore it).
+		*  Consumer-specific derivations (field filters, value seeding) stay
+		*  at the call site as reactions to `spec`. */
+		function useFormSpec(modelId) {
+			const [spec, setSpec] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const id = typeof modelId === "string" && modelId !== "" ? modelId : null;
+			(0, react.useEffect)(() => {
+				if (id === null) return;
+				const ctl = new AbortController();
+				setSpec(null);
+				setError(null);
+				fetchFormSpec(id, ctl.signal).then((doc) => {
+					setSpec(doc);
+				}).catch((e) => {
+					setError(e instanceof Error ? e.message : "form-spec failed");
+				});
+				return () => {
+					ctl.abort();
+				};
+			}, [id]);
+			return {
+				spec,
+				error
+			};
+		}
+		//#endregion
+		//#region ../../web/card-base/src/spec-panel.tsx
+		/** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE DYNAMIC PARAMETER PANEL (2026-09-17, the operator's shared-
+		* component law): sections of the SERVED form-spec's rows at their
+		* wire names — ONE mechanism every card seats, never a per-card
+		* re-walk. The card owns POLICY through the DECLARATION (which
+		* fields exist, their visible_when leaves); the base owns MECHANISM
+		* (fetch → walker → row atoms → visibility grammar → the error
+		* law). A row the door never declared renders NOTHING (no ghost,
+		* no twin); a refused spec renders AS an error — never a thinner
+		* panel. */
+		function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: errorProp }) {
+			const owned = useFormSpec(model);
+			const spec = specProp !== void 0 ? specProp : owned.spec;
+			const error = specProp !== void 0 ? errorProp ?? null : owned.error;
+			if (error !== null) return (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				role: "alert",
+				"data-testid": "spec-panel-error"
+			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, "form-spec failed — parameters unavailable"), (0, react.createElement)("div", { className: card_module_css_default.specHint }, error));
+			if (spec === null) return null;
+			const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]));
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, sections.map((sec) => (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				key: sec.title,
+				...sec.testid !== void 0 ? { "data-testid": sec.testid } : {}
+			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
+				const f = byName.get(row.name);
+				if (f === void 0) return null;
+				if (!fieldVisible(f, values)) return null;
+				return (0, react.createElement)(SpecFieldRow, {
+					key: row.name,
+					f,
+					value: values[row.name],
+					onEdit
+				});
+			}))));
+		}
+		//#endregion
+		//#region ../../web/card-base/src/form.tsx
+		/**
+		* form.tsx — @melite/card-base: THE CONSTRUCTOR (the godfile
+		* split, hour 15: the seams live in their own files now —
+		* use-form-spec.ts, square-provider.tsx, atoms.tsx, rows.tsx,
+		* spec-panel.tsx, axes.tsx — this file is the CardForm
+		* composition + the stable re-export surface).
+		*
+		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
+		* construct the card ui should see that the card package emits an
+		* image input, then constructs the input component automatically"):
+		* the base reads the card package's EMISSION — the served form-spec
+		* (the schema envelope, declared input/output edges, mod kinds) —
+		* and constructs the surface. The resolved value derives per render
+		* (resolveValue — the engine's compose cascade mirrored); every
+		* image/file field gets THE ONE square (square.tsx) with the
+		* three source verbs; no card ever hand-rolls an input component.
+		*
+		* THE SEAM (slots.ts): each field renders through the field-atom seam
+		* keyed by its emitted wire type — the caller may pass claimed atoms
+		* (the composition consults the slot machinery and hands them in);
+		* the base's built-in atom is the default (the ui-tool built-ins
+		* pattern). A whole-form takeover replaces CardForm itself.
+		*
+		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
+		* atoms the primitives set lacks (select, slider, textarea) are
+		* layout-only module CSS over native elements, every color an
+		* inherited --dsw-alias-* token (the package's documented pattern).
+		*/
 		//#endregion
 		//#region ../../web/card-base/src/mods.tsx
 		/**
@@ -2492,6 +2638,453 @@ window.__ModuleLoader__.load({
 			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null);
 		}
 		//#endregion
+		//#region ../../web/card-base/src/use-resolved.ts
+		/**
+		* use-resolved.ts — THE STUDIO SEAM, ONE UNIVERSAL DEFAULT SYSTEM
+		* (operator, 2026-09-18: "there is no universal default system
+		* right?"). ONE resolver composes EVERY layer — schema defaults <-
+		* model_defaults <- base (the persisted/bench layer) <- user — and
+		* the surface reads THE ONE resolved map. Never a hand `??` ladder
+		* at a call site: a ladder IS a second resolver, and every extra
+		* arm is a place the truth forks.
+		*
+		* PRE-FETCH LAW: the spec arrives async, but the resolved map is
+		* STILL the layer composition — base under user, verbatim — so a
+		* synchronous render shows the document's own held values; the
+		* fetch landing fills the declared defaults under them (the same
+		* one map, richer). Nothing renders blank, nothing flickers, no
+		* call site branches on spec-null.
+		*
+		* THE EDIT LAW: `undefined` is the tri-state's inherit signal (the
+		* unset) — it rides verbatim, the caller's write owns what it
+		* means. Edits coerce at the SCHEMA BOUNDARY (coerceFieldEdit):
+		* numeric strings ride as numbers, unparseable strings ride
+		* verbatim for the run's schema parse to refuse LOUD, and keys the
+		* spec never declared (the mod bag) ride verbatim — the mod plane
+		* owns their validation.
+		*/
+		/** The resolved studio seam: spec + error from the door, values
+		* resolved through the ONE cascade, edits coerced at the schema
+		* boundary. `user` is the surface's explicit layer (a document's
+		* params — sparse by design); `base` is the persisted layer under
+		* it (the bench/stage row's params), when the surface has one. */
+		function useResolvedForm(family, user, onWrite, base) {
+			const { spec, error } = useFormSpec(family);
+			const resolved = (0, react.useMemo)(() => resolveValueLayered(spec, base, user), [
+				spec,
+				base,
+				user
+			]);
+			const fieldOf = (0, react.useCallback)((name) => spec !== null ? fieldsOf(spec).find((f) => f.name === name) : void 0, [spec]);
+			return {
+				spec,
+				error,
+				resolved,
+				edit: (0, react.useCallback)((name, v) => {
+					onWrite(name, coerceFieldEdit(fieldOf(name), v));
+				}, [fieldOf, onWrite]),
+				fieldOf
+			};
+		}
+		/** The layer composition — PURE, exported for the seam's own wall:
+		* with a spec it is exactly resolveValue (schema <- model_defaults
+		* <- base <- user); without one (the pre-fetch render, the dead
+		* door) it is still the LAYERS — base under user, verbatim — so
+		* every surface reads the same shape at every moment. */
+		function resolveValueLayered(spec, base, user) {
+			if (spec === null) {
+				const out = { ...base ?? {} };
+				return Object.assign(out, user);
+			}
+			return resolveValue(spec, user, base);
+		}
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/viser-timeline/motionTimelineState.ts
+		const MOTION_TIMELINE_TRACKS = [
+			{
+				uuid: "fullbody",
+				name: "Full-Body",
+				track_type: "keyframe",
+				color: [
+					219,
+					148,
+					86
+				],
+				height_scale: .5
+			},
+			{
+				uuid: "root2d",
+				name: "2D Root",
+				track_type: "keyframe",
+				color: [
+					150,
+					100,
+					200
+				],
+				height_scale: .5
+			},
+			{
+				uuid: "left-hand",
+				name: "Left Hand",
+				track_type: "keyframe",
+				color: [
+					100,
+					200,
+					150
+				],
+				height_scale: .5
+			},
+			{
+				uuid: "right-hand",
+				name: "Right Hand",
+				track_type: "keyframe",
+				color: [
+					200,
+					100,
+					150
+				],
+				height_scale: .5
+			},
+			{
+				uuid: "left-foot",
+				name: "Left Foot",
+				track_type: "keyframe",
+				color: [
+					219,
+					148,
+					86
+				],
+				height_scale: .5
+			},
+			{
+				uuid: "right-foot",
+				name: "Right Foot",
+				track_type: "keyframe",
+				color: [
+					150,
+					100,
+					200
+				],
+				height_scale: .5
+			}
+		];
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarLayout.ts
+		/**
+		* MotionTimelineBarLayout — shared geometry + formatting atoms for
+		* the motion timeline bar (split from MotionTimelineBar.tsx, pure move).
+		*
+		* Pure values only (no hooks, no JSX): row heights, the pinned gutter
+		* width, zoom bounds, rgb/clamp/fmtTimecode. The bar re-exports this
+		* surface, so the public import path never moves.
+		*/
+		const rgb = (c) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+		const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+		/** Zoom bounds: multiplier steps + the px-per-frame ceiling. */
+		const ZOOM_STEP = 1.6;
+		/** mm:ss:ff at the bar's axis fps — the DaVinci position readout
+		* (2026-09-01 audit F5: the bar had NO position indicator; the only
+		* readout lived under the player with a different fps divisor). */
+		const fmtTimecode = (frame, fps) => {
+			const f = Math.max(0, Math.round(frame));
+			const safeFps = Math.max(1, Math.round(fps));
+			const ff = f % safeFps;
+			const totalSec = Math.floor(f / safeFps);
+			const ss = totalSec % 60;
+			const mm = Math.floor(totalSec / 60);
+			const p = (n) => String(n).padStart(2, "0");
+			return `${p(mm)}:${p(ss)}:${p(ff)}`;
+		};
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarScale.ts
+		/**
+		* MotionTimelineBarScale — the bar's ABSOLUTE scale model (split from
+		* MotionTimelineBar.tsx, pure move): measure-once pin, zoom,
+		* playhead-anchored scroll, frame<->px. Bodies below are the bar's.
+		*/
+		/** Ruler ticks over the content (bar line 790): seconds coverage of
+		*  the frames plus the trailing lead-out room. */
+		function buildTicks(contentW, effPpf, totalFrames, fps) {
+			const viewSec = totalFrames / Math.max(1, fps);
+			const fullSec = contentW / Math.max(1, effPpf) / Math.max(1, fps);
+			const stepSec = viewSec <= 4 ? .5 : Math.max(1, Math.ceil(viewSec / 16));
+			const ticks = [];
+			for (let s = 0; s <= fullSec + 1e-6; s += stepSec) ticks.push(Math.round(s * 10) / 10);
+			return {
+				ticks,
+				stepSec
+			};
+		}
+		/** The bar's zoom/scroll state + converters (bar line 400). */
+		function useTimelineScale(opts) {
+			const { scrollRef, frameIdx, totalFrames, fps, initialSeconds } = opts;
+			const [boxW, setBoxW] = (0, react.useState)(0);
+			const [ppf, setPpf] = (0, react.useState)(null);
+			const [basePpf, setBasePpf] = (0, react.useState)(null);
+			const [dragScale, setDragScale] = (0, react.useState)(null);
+			const anchorRef = (0, react.useRef)(null);
+			const measure = () => {
+				const el = scrollRef.current;
+				if (el && el.getBoundingClientRect().width > 0) setBoxW(el.getBoundingClientRect().width);
+			};
+			(0, react.useEffect)(() => {
+				measure();
+				let ro = null;
+				if (typeof ResizeObserver !== "undefined" && scrollRef.current) {
+					ro = new ResizeObserver(() => measure());
+					ro.observe(scrollRef.current);
+				}
+				window.addEventListener("resize", measure);
+				return () => {
+					ro?.disconnect();
+					window.removeEventListener("resize", measure);
+				};
+			}, []);
+			const T1 = Math.max(0, Math.floor(totalFrames) - 1);
+			const fitPpf = boxW > 0 && T1 > 0 ? boxW / T1 : 10;
+			(0, react.useEffect)(() => {
+				if (boxW > 0 && T1 > 0 && ppf == null) {
+					let mount = Math.max(1, fitPpf);
+					if (initialSeconds != null && initialSeconds > 0 && fps > 0) mount = Math.max(1, boxW / (initialSeconds * fps));
+					setPpf(mount);
+					setBasePpf(mount);
+				}
+			}, [boxW, T1]);
+			const effPpf = dragScale ?? ppf ?? Math.max(1, fitPpf);
+			const LEAD_OUT = Math.max(240, boxW * .35);
+			const contentW = Math.max(boxW, T1 * effPpf + LEAD_OUT);
+			const frameToPx = (f) => f * effPpf;
+			const zoom = (factor) => {
+				const el = scrollRef.current;
+				if (el) anchorRef.current = {
+					frame: frameIdx,
+					off: frameToPx(frameIdx) - el.scrollLeft
+				};
+				const next = (ppf ?? Math.max(1, fitPpf)) * factor;
+				if (next <= fitPpf * 1.0001) {
+					setPpf(Math.max(1, fitPpf));
+					setBasePpf(Math.max(1, fitPpf));
+				} else setPpf(Math.min(40, next));
+			};
+			(0, react.useLayoutEffect)(() => {
+				const el = scrollRef.current;
+				const a = anchorRef.current;
+				if (el && a) el.scrollLeft = Math.max(0, a.frame * effPpf - a.off);
+				anchorRef.current = null;
+			}, [effPpf]);
+			const frameAt = (clientX) => {
+				const el = scrollRef.current;
+				if (!el) return null;
+				const r = el.getBoundingClientRect();
+				if (r.width <= 0 && boxW <= 0) return null;
+				const x = clientX - r.left + el.scrollLeft;
+				return Math.round(x / effPpf);
+			};
+			const xToFrame = (clientX) => {
+				const f = frameAt(clientX);
+				return f == null ? null : clamp(f, 0, T1);
+			};
+			const keepTailVisible = (endFrame) => {
+				const el = scrollRef.current;
+				if (!el) return;
+				const r = el.getBoundingClientRect();
+				if (r.width <= 0) return;
+				const rightPx = endFrame * effPpf;
+				if (rightPx > el.scrollLeft + r.width - 24) {
+					const max = Math.max(0, el.scrollWidth - r.width);
+					el.scrollLeft = Math.min(max, rightPx - r.width + 24);
+				}
+			};
+			return {
+				boxW,
+				ppf,
+				setPpf,
+				basePpf,
+				setBasePpf,
+				dragScale,
+				setDragScale,
+				anchorRef,
+				T1,
+				fitPpf,
+				effPpf,
+				contentW,
+				frameToPx,
+				frameAt,
+				xToFrame,
+				zoom,
+				keepTailVisible
+			};
+		}
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarDrag.ts
+		/**
+		* MotionTimelineBarDrag — the bar's one global pointer session (split
+		* from MotionTimelineBar.tsx, pure move): scrub + clip drag/resize +
+		* keyframe drag, the pose-studio pattern (window listeners + live-ref
+		* drag state). Bodies below are the bar's.
+		*/
+		/** The bar's pointer-session state + gesture entry points (bar line 369). */
+		function useTimelineDragSession(opts) {
+			const { T1, effPpf, ppf, dragScale, setPpf, setBasePpf, setDragScale, prompts, audioLayers, packed, xToFrame, keepTailVisible, onFrameChange, onScrubStart, onScrubEnd, onSelect, onKeyframeMove, onPromptMove, onPromptResize, onExtend, onAudioClipMove } = opts;
+			const [dragId, setDragId] = (0, react.useState)(null);
+			const dragRef = (0, react.useRef)(null);
+			const suppressClickRef = (0, react.useRef)(false);
+			const lastPromptRef = (0, react.useRef)(null);
+			lastPromptRef.current = prompts.length ? prompts.reduce((a, b) => b.end_frame > a.end_frame ? b : a).uuid : null;
+			const firstPromptRef = (0, react.useRef)(null);
+			firstPromptRef.current = prompts.length ? prompts.reduce((a, b) => b.start_frame < a.start_frame ? b : a).uuid : null;
+			const promptsRef = (0, react.useRef)(prompts);
+			promptsRef.current = prompts;
+			const startDrag = (e, d) => {
+				if (e.button !== 0) return;
+				e.stopPropagation();
+				e.preventDefault();
+				dragRef.current = {
+					...d,
+					t1AtStart: T1
+				};
+				setDragScale(effPpf);
+				if (d.kind !== "scrub") setDragId(d.id);
+			};
+			(0, react.useEffect)(() => {
+				const endDrag = () => {
+					const d = dragRef.current;
+					dragRef.current = null;
+					setDragId(null);
+					setDragScale(null);
+					if (d?.moved) suppressClickRef.current = true;
+					const grewDoc = d ? T1 > (d.t1AtStart ?? T1) : false;
+					if (d && grewDoc && ppf == null && dragScale != null) {
+						setPpf(dragScale);
+						setBasePpf(dragScale);
+					}
+					if (d && d.kind === "scrub") onScrubEnd?.();
+					if (d && d.kind === "kf" && !d.moved) onFrameChange(d.frame);
+					if (d && (d.kind === "prompt-move" || d.kind === "prompt-l" || d.kind === "prompt-r") && !d.moved) onSelect?.(d.id);
+					if (d && d.kind === "audio-clip" && !d.moved) suppressClickRef.current = true;
+				};
+				const onMove = (e) => {
+					const d = dragRef.current;
+					if (!d) return;
+					if (e.pointerType === "mouse" && e.buttons === 0) {
+						endDrag();
+						return;
+					}
+					if (d.kind === "scrub") {
+						if (Math.abs(e.clientX - d.startX) > 2) d.moved = true;
+						const f = xToFrame(e.clientX);
+						if (f != null) onFrameChange(f);
+						return;
+					}
+					const dxF = (e.clientX - d.startX) / effPpf;
+					if (Math.abs(e.clientX - d.startX) > 5) d.moved = true;
+					if (d.kind === "kf") onKeyframeMove(d.id, clamp(Math.round(d.frame + dxF), 0, T1));
+					else if (d.kind === "audio-clip") {
+						const others = ((audioLayers?.find((x) => x.id === d.layerId))?.clips ?? []).filter((c) => c.id !== d.id);
+						const prevEnd = others.filter((c) => c.start_frame < d.startF).reduce((m, c) => Math.max(m ?? 0, c.start_frame + c.dur_frames), null);
+						const nextStart = others.filter((c) => c.start_frame > d.startF).reduce((m, c) => Math.min(m ?? T1, c.start_frame), null);
+						let ns = clamp(Math.round(d.startF + dxF), 0, Math.max(0, T1 - d.durF));
+						if (prevEnd != null) ns = Math.max(ns, prevEnd + 1);
+						if (nextStart != null) ns = Math.min(ns, Math.max(0, nextStart - 1 - d.durF));
+						onAudioClipMove?.(d.layerId, d.id, ns);
+					} else {
+						const neighborsOf = (id) => {
+							const sorted = [...promptsRef.current].sort((a, b) => a.start_frame - b.start_frame);
+							const i = sorted.findIndex((p) => p.uuid === id);
+							if (i === -1) return {
+								prevEnd: null,
+								prevStart: null,
+								nextStart: null,
+								nextEnd: null
+							};
+							return {
+								prevEnd: i > 0 ? sorted[i - 1].end_frame : null,
+								prevStart: i > 0 ? sorted[i - 1].start_frame : null,
+								nextStart: i < sorted.length - 1 ? sorted[i + 1].start_frame : null,
+								nextEnd: i < sorted.length - 1 ? sorted[i + 1].end_frame : null
+							};
+						};
+						if (d.kind === "prompt-move") {
+							const live = promptsRef.current.find((x) => x.uuid === d.id);
+							const endF = live?.end_frame ?? d.endF;
+							const startF = live?.start_frame ?? d.startF;
+							const dur = Math.max(1, endF - startF);
+							const { prevEnd, prevStart, nextStart, nextEnd } = neighborsOf(d.id);
+							let ns = Math.max(0, Math.round(d.startF + dxF));
+							if (prevEnd != null) ns = Math.max(ns, packed ? (prevStart ?? 0) + 1 : prevEnd + 1);
+							const ne = ns + dur;
+							if (ne > T1 && d.id === lastPromptRef.current) {
+								onExtend(ne + 1);
+								onPromptMove(d.id, ns, ne);
+								keepTailVisible(ne);
+							} else {
+								const maxNs = Math.max(0, T1 - dur);
+								let c = clamp(ns, 0, maxNs);
+								if (nextStart != null) c = Math.min(c, Math.max(0, packed ? (nextEnd ?? T1) - 1 - dur : nextStart - 1 - dur));
+								onPromptMove(d.id, c, c + dur);
+							}
+						} else if (d.kind === "prompt-l") {
+							const endF = promptsRef.current.find((x) => x.uuid === d.id)?.end_frame ?? d.endF;
+							const { prevEnd, prevStart } = neighborsOf(d.id);
+							let ns = clamp(Math.round(d.startF + dxF), 0, endF - 1);
+							if (prevEnd != null) ns = Math.max(ns, packed ? (prevStart ?? 0) + 1 : prevEnd + 1);
+							onPromptResize(d.id, ns, endF);
+							onFrameChange(ns);
+						} else {
+							const startF = promptsRef.current.find((x) => x.uuid === d.id)?.start_frame ?? d.startF;
+							const { nextStart, nextEnd } = neighborsOf(d.id);
+							let ne = Math.round(d.endF + dxF);
+							if (ne > T1 && d.id === lastPromptRef.current) onExtend(ne + 1);
+							else {
+								ne = clamp(ne, startF + 1, T1);
+								if (nextStart != null) ne = Math.min(ne, Math.max(startF + 1, packed ? (nextEnd ?? T1) - 1 : nextStart - 1));
+							}
+							onPromptResize(d.id, startF, ne);
+							onFrameChange(ne);
+							if (d.id === lastPromptRef.current) keepTailVisible(ne);
+						}
+					}
+				};
+				window.addEventListener("pointermove", onMove);
+				window.addEventListener("pointerup", endDrag);
+				window.addEventListener("pointercancel", endDrag);
+				return () => {
+					window.removeEventListener("pointermove", onMove);
+					window.removeEventListener("pointerup", endDrag);
+					window.removeEventListener("pointercancel", endDrag);
+				};
+			}, [
+				T1,
+				effPpf,
+				onFrameChange,
+				onKeyframeMove,
+				onPromptMove,
+				onPromptResize,
+				onExtend
+			]);
+			const seek = (e) => {
+				if (e.button !== 0) return;
+				dragRef.current = {
+					kind: "scrub",
+					startX: e.clientX,
+					moved: false
+				};
+				onScrubStart?.();
+				const f = xToFrame(e.clientX);
+				if (f != null) onFrameChange(f);
+			};
+			return {
+				dragId,
+				dragRef,
+				suppressClickRef,
+				lastPromptRef,
+				firstPromptRef,
+				promptsRef,
+				startDrag,
+				seek
+			};
+		}
+		//#endregion
 		//#region ../../web-kit/timeline/timeline/icons.tsx
 		function base$1(name, className) {
 			return {
@@ -2656,121 +3249,6 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region ../../web-kit/timeline/timeline/viser-timeline/motionTimelineState.ts
-		const MOTION_TIMELINE_TRACKS = [
-			{
-				uuid: "fullbody",
-				name: "Full-Body",
-				track_type: "keyframe",
-				color: [
-					219,
-					148,
-					86
-				],
-				height_scale: .5
-			},
-			{
-				uuid: "root2d",
-				name: "2D Root",
-				track_type: "keyframe",
-				color: [
-					150,
-					100,
-					200
-				],
-				height_scale: .5
-			},
-			{
-				uuid: "left-hand",
-				name: "Left Hand",
-				track_type: "keyframe",
-				color: [
-					100,
-					200,
-					150
-				],
-				height_scale: .5
-			},
-			{
-				uuid: "right-hand",
-				name: "Right Hand",
-				track_type: "keyframe",
-				color: [
-					200,
-					100,
-					150
-				],
-				height_scale: .5
-			},
-			{
-				uuid: "left-foot",
-				name: "Left Foot",
-				track_type: "keyframe",
-				color: [
-					219,
-					148,
-					86
-				],
-				height_scale: .5
-			},
-			{
-				uuid: "right-foot",
-				name: "Right Foot",
-				track_type: "keyframe",
-				color: [
-					150,
-					100,
-					200
-				],
-				height_scale: .5
-			}
-		];
-		//#endregion
-		//#region ../../web-kit/timeline/timeline/viser-timeline/styles.ts
-		const PROMPT_COLORS = [
-			[
-				0,
-				233,
-				236
-			],
-			[
-				239,
-				68,
-				68
-			],
-			[
-				249,
-				115,
-				22
-			],
-			[
-				234,
-				179,
-				8
-			],
-			[
-				34,
-				197,
-				94
-			],
-			[
-				59,
-				130,
-				246
-			],
-			[
-				168,
-				85,
-				247
-			],
-			[
-				236,
-				72,
-				153
-			]
-		];
-		PROMPT_COLORS[0];
-		//#endregion
 		//#region ../../web-kit/timeline/timeline/tip.tsx
 		const toTooltipSide = (side) => side === "left" ? "right" : side;
 		function Tip({ tip, shortcut, side = "top", delayDuration = 300, className: _className, withArrow: _withArrow, children }) {
@@ -2885,6 +3363,705 @@ window.__ModuleLoader__.load({
 			"zoomRow": "E4_1PW_zoomRow"
 		};
 		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarChrome.tsx
+		/**
+		* MotionTimelineBarChrome — the bar's pinned + ruler + playhead chrome
+		* (split from MotionTimelineBar.tsx, pure move): the label gutter
+		* (zoom cluster + lane heads), the scrollable content shell with the
+		* click-away deselect, the ruler, the playhead. Lane bodies live in
+		* MotionTimelineBarLanes.
+		*/
+		/** The pinned label gutter (bar line 820): the zoom cluster + lane
+		*  heads. The Fit pin reads the live scale — the body is the bar's. */
+		function TimelineGutter(props) {
+			const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks } = props;
+			const { zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf } = scale;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: timeline_module_css_default.gutter,
+				style: { width: 112 },
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.zoomRow,
+						style: { height: 28 },
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								tip: "Zoom out (back toward fit)",
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									onClick: () => zoom(1 / ZOOM_STEP),
+									"aria-label": "Zoom out",
+									className: timeline_module_css_default.zoomBtn,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomOut, {})
+								})
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								tip: "Fit the whole motion in view",
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									onClick: () => {
+										anchorRef.current = {
+											frame: frameIdx,
+											off: frameToPx(frameIdx) - (scrollRef.current?.scrollLeft ?? 0)
+										};
+										setPpf(Math.max(1, fitPpf));
+										setBasePpf(Math.max(1, fitPpf));
+									},
+									className: timeline_module_css_default.zoomPct,
+									children: [Math.round(effPpf / (basePpf ?? fitPpf) * 100), "%"]
+								})
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								tip: "Zoom in — more pixels per frame (the bar scrolls horizontally)",
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									onClick: () => zoom(ZOOM_STEP),
+									"aria-label": "Zoom in",
+									className: timeline_module_css_default.zoomBtn,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomIn, {})
+								})
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.laneHead,
+						style: { height: promptsHeight },
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Film, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.gutterLabel,
+							children: promptsLabel
+						})]
+					}),
+					beats && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.laneHeadBeats,
+						style: { height: beatsHeight },
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ListMusic, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.gutterLabel,
+							children: beatsLabel
+						})]
+					}),
+					audioLayers?.map((L) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.audioHead,
+						style: { height: 26 },
+						title: L.stem ? `${L.stem} — one bed under every cut; each window hears its own slice in time` : "drop an audio / music track — sliced to each window in time",
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, { "aria-hidden": true }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: timeline_module_css_default.gutterLabelDim,
+								children: L.label
+							}),
+							(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								size: "sm",
+								onClick: () => onAudioDetach(L.id),
+								"aria-label": `Detach ${L.label}`,
+								className: timeline_module_css_default.detachBtn,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, { "aria-hidden": true })
+							})
+						]
+					}, L.id)),
+					tracks.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.laneRow,
+						style: { height: 24 },
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.laneDot,
+							style: { background: rgb(t.color ?? [
+								176,
+								180,
+								186
+							]) },
+							"aria-hidden": true
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.laneName,
+							children: t.name
+						})]
+					}, t.uuid))
+				]
+			}) });
+		}
+		/** The scrollable shell + click-away deselect (bar line 921). */
+		function TimelineContent(props) {
+			const { scrollRef, contentW, suppressClickRef, onSelect, children } = props;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				className: timeline_module_css_default.contentWrap,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					ref: scrollRef,
+					"data-testid": "motion-timeline-scroll",
+					className: timeline_module_css_default.scroller,
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-testid": "motion-timeline-content",
+						className: timeline_module_css_default.content,
+						style: {
+							width: contentW,
+							minWidth: "100%"
+						},
+						onClick: (e) => {
+							if (suppressClickRef.current) {
+								suppressClickRef.current = false;
+								return;
+							}
+							if (e.target.closest("[data-prompt-clip],[data-beat-clip],[data-testid=\"motion-timeline-ruler\"]")) return;
+							onSelect?.(null);
+						},
+						children
+					})
+				})
+			}) });
+		}
+		/** The ruler: scrub surface, ticks, sticky timecode (bar line 947). */
+		function TimelineRuler(props) {
+			const { ticks, stepSec, fps, frameIdx, barBg, frameToPx, frameAt, seek, onPromptAdd } = props;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+				tip: onPromptAdd ? "Click or drag to move the playhead — double-click to add a call at that frame" : "Click or drag to move the playhead",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					"data-testid": "motion-timeline-ruler",
+					className: timeline_module_css_default.ruler,
+					style: { height: 28 },
+					onPointerDown: seek,
+					onDoubleClick: (e) => {
+						if (!onPromptAdd) return;
+						const f = frameAt(e.clientX);
+						if (f != null) onPromptAdd(f);
+					},
+					children: [ticks.map((s) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.tick,
+						style: { left: frameToPx(s * fps) },
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.tickLine }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.tickLabel,
+							children: stepSec < 1 ? `${s.toFixed(1)}s` : `${s}s`
+						})]
+					}, s)), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						"data-testid": "motion-timeline-timecode",
+						className: timeline_module_css_default.timecode,
+						style: {
+							background: barBg,
+							boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)"
+						},
+						children: fmtTimecode(frameIdx, fps)
+					})]
+				})
+			}) });
+		}
+		/** The playhead, spanning every row (bar line 1517). */
+		function TimelinePlayhead(props) {
+			const { frameIdx, frameToPx, playhead } = props;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				"data-testid": "motion-timeline-playhead",
+				className: timeline_module_css_default.playhead,
+				style: {
+					left: frameToPx(frameIdx),
+					width: 2,
+					background: playhead,
+					boxShadow: `0 0 6px color-mix(in srgb, ${playhead} 40%, transparent)`,
+					transform: "translateX(-50%)"
+				},
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: timeline_module_css_default.playheadCap,
+					style: { background: playhead }
+				})
+			}) });
+		}
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/viser-timeline/styles.ts
+		const PROMPT_COLORS = [
+			[
+				0,
+				233,
+				236
+			],
+			[
+				239,
+				68,
+				68
+			],
+			[
+				249,
+				115,
+				22
+			],
+			[
+				234,
+				179,
+				8
+			],
+			[
+				34,
+				197,
+				94
+			],
+			[
+				59,
+				130,
+				246
+			],
+			[
+				168,
+				85,
+				247
+			],
+			[
+				236,
+				72,
+				153
+			]
+		];
+		PROMPT_COLORS[0];
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarLanes.tsx
+		/**
+		* MotionTimelineBarLanes — the bar's lane bodies (split from
+		* MotionTimelineBar.tsx, pure move): prompt clips, beats, audio
+		* tracks, keyframe lanes. Chrome (gutter/ruler/playhead) lives in
+		* MotionTimelineBarChrome.
+		*/
+		/** Draggable/resizable prompt clips (bar line 994). */
+		function TimelinePromptsLane(props) {
+			const { prompts, fps, promptsHeight, emptyPromptsHint, onPromptAdd, dragId, lastPromptRef, firstPromptRef, selectedId, previews, frameToPx, frameAt, startDrag, playhead, onPromptUpdate, onPromptDelete } = props;
+			const [editingId, setEditingId] = (0, react.useState)(null);
+			const [editText, setEditText] = (0, react.useState)("");
+			const commitEdit = (id) => {
+				setEditingId(null);
+				const text = editText.trim();
+				const p = prompts.find((x) => x.uuid === id);
+				if (p && text !== p.text) onPromptUpdate(id, text);
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: clsx(timeline_module_css_default.promptsLane, onPromptAdd && timeline_module_css_default.canAdd),
+				style: {
+					height: promptsHeight,
+					background: "var(--dsw-alias-bg-layer-1)"
+				},
+				onDoubleClick: (e) => {
+					if (!onPromptAdd) return;
+					if (e.target.closest("[data-prompt-clip]")) return;
+					const f = frameAt(e.clientX);
+					if (f != null) onPromptAdd(f);
+				},
+				children: [prompts.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: timeline_module_css_default.emptyCenter,
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: timeline_module_css_default.emptyHint,
+						children: emptyPromptsHint
+					})
+				}), prompts.map((p, i) => {
+					const color = rgb(PROMPT_COLORS[i % PROMPT_COLORS.length]);
+					const isEditing = editingId === p.uuid;
+					const isMoving = dragId === p.uuid;
+					const isLast = p.uuid === lastPromptRef.current;
+					const isFirst = p.uuid === firstPromptRef.current;
+					const isSelected = selectedId === p.uuid;
+					const previewUrl = previews?.[p.uuid];
+					const wPx = frameToPx(Math.max(1, p.end_frame - p.start_frame));
+					const clipTip = `${p.text || "(empty)"} — frames ${p.start_frame}–${p.end_frame} (${((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1)}s)\n\nDrag body: move · Drag edges: resize · Double-click: edit · Click: select`;
+					return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+						tip: clipTip,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							"data-prompt-clip": p.uuid,
+							className: clsx(timeline_module_css_default.promptClip, isMoving ? timeline_module_css_default.clipMoving : isSelected ? timeline_module_css_default.clipSelected : void 0),
+							style: {
+								left: frameToPx(p.start_frame),
+								width: `max(26px, ${wPx}px)`,
+								background: `linear-gradient(135deg, ${color}33, ${color}14)`,
+								borderLeft: `3px solid ${color}`,
+								transition: isMoving ? "none" : "border-color .12s"
+							},
+							onMouseEnter: (e) => {
+								const v = e.currentTarget.querySelector("video");
+								if (v) v.play().catch(() => {});
+							},
+							onMouseLeave: (e) => {
+								const v = e.currentTarget.querySelector("video");
+								if (v) v.pause();
+							},
+							onPointerDown: (e) => !isEditing && startDrag(e, {
+								kind: "prompt-move",
+								id: p.uuid,
+								startX: e.clientX,
+								startF: p.start_frame,
+								endF: p.end_frame,
+								moved: false
+							}),
+							onDoubleClick: (e) => {
+								e.stopPropagation();
+								setEditText(p.text);
+								setEditingId(p.uuid);
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									"data-prompt-edge": "l",
+									title: isFirst ? "First call — nothing before it to trim into" : void 0,
+									className: clsx(timeline_module_css_default.edgeL, isFirst && timeline_module_css_default.edgeDead),
+									onPointerDown: (e) => !isFirst && startDrag(e, {
+										kind: "prompt-l",
+										id: p.uuid,
+										startX: e.clientX,
+										startF: p.start_frame,
+										endF: p.end_frame,
+										moved: false
+									}),
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.gripPill })
+								}),
+								p.seam === "extend" && !isFirst && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									className: timeline_module_css_default.seamDot,
+									style: {
+										background: playhead,
+										boxShadow: `0 0 4px ${playhead}`
+									},
+									title: "extend — latent tail carries across this seam"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+									tip: isLast ? "PULL to extend the motion — the timeline + duration grow as you drag" : "Drag to resize this card",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+										"data-prompt-edge": "r",
+										className: clsx(timeline_module_css_default.edgeR, isLast && timeline_module_css_default.edgeWide),
+										onPointerDown: (e) => startDrag(e, {
+											kind: "prompt-r",
+											id: p.uuid,
+											startX: e.clientX,
+											startF: p.start_frame,
+											endF: p.end_frame,
+											moved: false
+										}),
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: clsx(timeline_module_css_default.gripPillR, isLast && timeline_module_css_default.gripPillBright) })
+									})
+								}),
+								isEditing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+									autoFocus: true,
+									value: editText,
+									onChange: (e) => setEditText(e.target.value),
+									onBlur: () => commitEdit(p.uuid),
+									onKeyDown: (e) => {
+										if (e.key === "Enter") commitEdit(p.uuid);
+										if (e.key === "Escape") setEditingId(null);
+									},
+									onPointerDown: (e) => e.stopPropagation(),
+									onDoubleClick: (e) => e.stopPropagation(),
+									placeholder: "Enter prompt…",
+									className: timeline_module_css_default.clipEditor
+								}) : previewUrl ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: timeline_module_css_default.previewWrap,
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
+											src: previewUrl,
+											muted: true,
+											loop: true,
+											playsInline: true,
+											preload: "metadata",
+											className: timeline_module_css_default.previewVideo
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.scrim }),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+											className: timeline_module_css_default.clipTextCol,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+												className: timeline_module_css_default.clipTitle,
+												style: { color },
+												children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+													className: timeline_module_css_default.clipEmpty,
+													children: "(empty)"
+												})
+											}), wPx > 72 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+												className: timeline_module_css_default.clipDur,
+												children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
+											})]
+										})
+									]
+								}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: timeline_module_css_default.clipTextStack,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: timeline_module_css_default.clipTitle,
+										style: { color },
+										children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: timeline_module_css_default.clipEmpty,
+											children: "(empty)"
+										})
+									}), wPx > 64 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										className: timeline_module_css_default.clipDur,
+										children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
+									})]
+								}),
+								p.override && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									title: "This call overrides run knobs (per-call)",
+									className: timeline_module_css_default.knobDot
+								}),
+								p.audio && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, {
+									"aria-hidden": true,
+									className: timeline_module_css_default.refAudioBadge
+								}),
+								(p.refImages ?? 0) > 0 && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									"data-testid": "tl-ref-badge",
+									className: timeline_module_css_default.refBadge,
+									title: `${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Image$1, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: timeline_module_css_default.refCount,
+										children: p.refImages
+									})]
+								}),
+								!isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+									tip: "Delete this prompt card",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "ghost",
+										size: "sm",
+										onPointerDown: (e) => e.stopPropagation(),
+										onClick: (e) => {
+											e.stopPropagation();
+											onPromptDelete(p.uuid);
+										},
+										"aria-label": "Delete this prompt card",
+										className: timeline_module_css_default.promptDelete,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, {})
+									})
+								})
+							]
+						})
+					}, p.uuid);
+				})]
+			}) });
+		}
+		/** Layer C prompt beats within the calls (bar line 1261). */
+		function TimelineBeatsLane(props) {
+			const { beats, beatsHeight, beatsHint, fps, selectedId, onSelect, onBeatAdd, xToFrame, frameToPx } = props;
+			if (beats == null) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-beats-row": true,
+				className: clsx(timeline_module_css_default.beatsLane, onBeatAdd && timeline_module_css_default.beatsAdd),
+				style: {
+					height: beatsHeight,
+					background: "var(--dsw-alias-bg-layer-1)"
+				},
+				onDoubleClick: (e) => {
+					if (!onBeatAdd) return;
+					const f = xToFrame(e.clientX);
+					if (f != null) onBeatAdd(f);
+				},
+				children: [beats.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: timeline_module_css_default.beatsEmpty,
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: timeline_module_css_default.hintLine,
+						children: beatsHint
+					})
+				}), beats.map((b) => {
+					const color = rgb(b.color ?? [
+						176,
+						180,
+						186
+					]);
+					const isSelected = selectedId === b.id;
+					const bW = frameToPx(Math.max(1, b.end_frame - b.start_frame));
+					return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+						tip: `${b.text || "(empty)"} — frames ${b.start_frame}–${b.end_frame} (${((b.end_frame - b.start_frame) / Math.max(1, fps)).toFixed(1)}s)\n\nClick: edit in the call card`,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-beat-clip": b.id,
+							onClick: () => onSelect?.(b.id),
+							className: clsx(timeline_module_css_default.beatClip, isSelected && timeline_module_css_default.beatSelected),
+							style: {
+								left: frameToPx(b.start_frame),
+								width: `max(14px, ${bW}px)`,
+								background: `linear-gradient(135deg, ${color}2e, ${color}12)`,
+								borderLeft: `3px solid ${color}`
+							},
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: timeline_module_css_default.beatLabel,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: timeline_module_css_default.truncate,
+									children: b.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: timeline_module_css_default.beatEmpty,
+										children: "(empty)"
+									})
+								})
+							})
+						})
+					}, b.id);
+				})]
+			}) });
+		}
+		/** Native audio tracks, same scroll + scale (bar line 1316). */
+		function TimelineAudioLanes(props) {
+			const { audioLayers, prompts, fps, frameToPx, xToFrame, startDrag, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete } = props;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: audioLayers?.map((L) => {
+				const clips = L.clips ?? [];
+				return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					"data-audio-layer": L.id,
+					"data-wired": L.stem ? "true" : "false",
+					"data-clips": clips.length ? "true" : "false",
+					className: timeline_module_css_default.audioLane,
+					style: {
+						height: 26,
+						background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)"
+					},
+					onDragOver: (e) => e.preventDefault(),
+					onDrop: (e) => {
+						e.preventDefault();
+						const t = xToFrame(e.clientX);
+						const f = t != null && Number.isFinite(t) ? t : 0;
+						const file = e.dataTransfer.files?.[0];
+						if (file) {
+							onAudioFileDrop?.(L.id, file, f);
+							return;
+						}
+						try {
+							const payload = JSON.parse(e.dataTransfer.getData("application/tech-noir-asset") || "null");
+							if (payload && typeof payload.url === "string") {
+								if (onAudioDropAt) onAudioDropAt(L.id, payload.url, f);
+								else onAudioDrop?.(L.id, payload.url);
+							}
+						} catch {}
+					},
+					children: clips.length ? clips.map((c) => {
+						const a = (c.start_frame / Math.max(1, fps)).toFixed(1);
+						const b = ((c.start_frame + c.dur_frames) / Math.max(1, fps)).toFixed(1);
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							"data-audio-clip": c.id,
+							title: `${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`,
+							className: timeline_module_css_default.audioClip,
+							style: {
+								left: frameToPx(c.start_frame),
+								width: `max(6px, ${frameToPx(Math.max(1, c.dur_frames))}px)`
+							},
+							onPointerDown: (e) => {
+								if (!onAudioClipMove) return;
+								startDrag(e, {
+									kind: "audio-clip",
+									layerId: L.id,
+									id: c.id,
+									startX: e.clientX,
+									startF: c.start_frame,
+									durF: c.dur_frames,
+									moved: false
+								});
+							},
+							children: [
+								c.gain != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									"aria-hidden": true,
+									className: timeline_module_css_default.gainFill,
+									style: { height: `${Math.max(4, Math.min(100, c.gain * 50))}%` }
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									className: timeline_module_css_default.audioClipLabel,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: timeline_module_css_default.audioName,
+										children: c.name
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										className: timeline_module_css_default.audioTime,
+										children: [a, "s"]
+									})]
+								}),
+								onAudioClipDelete && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									"data-audio-clip-delete": c.id,
+									"aria-label": `Delete ${c.name}`,
+									onClick: (e) => {
+										e.stopPropagation();
+										onAudioClipDelete(L.id, c.id);
+									},
+									className: timeline_module_css_default.audioClipDelete,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, { "aria-hidden": true })
+								})
+							]
+						}, c.id);
+					}) : L.stem ? prompts.map((p, i) => {
+						const a = (p.start_frame / Math.max(1, fps)).toFixed(1);
+						const b = (p.end_frame / Math.max(1, fps)).toFixed(1);
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-audio-slice": i,
+							title: `call #${i} · window hears bed ${a}–${b}s`,
+							className: timeline_module_css_default.audioSlice,
+							style: {
+								left: frameToPx(p.start_frame),
+								width: `max(4px, ${frameToPx(Math.max(1, p.end_frame - p.start_frame))}px)`
+							},
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								className: timeline_module_css_default.sliceLabel,
+								children: [
+									a,
+									"–",
+									b,
+									"s"
+								]
+							})
+						}, p.uuid);
+					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: timeline_module_css_default.audioDrop,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.dropHint,
+							children: "drop or upload audio — clips land where you drop them, drag to move"
+						})
+					})
+				}, L.id);
+			}) });
+		}
+		/** Keyframe lanes: pin, drag, hover-X delete (bar line 1443). */
+		function TimelineKeyframeLanes(props) {
+			const { tracks, keyframes, laneHint, dragId, frameToPx, xToFrame, startDrag, onKeyframeAdd, onKeyframeDelete } = props;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: tracks.map((track, ti) => {
+				const kfs = keyframes.filter((k) => k.track_id === track.uuid);
+				const color = rgb(track.color ?? [
+					176,
+					180,
+					186
+				]);
+				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					"data-lane": track.uuid,
+					className: timeline_module_css_default.kfLane,
+					style: { height: 24 },
+					onDoubleClick: (e) => {
+						const f = xToFrame(e.clientX);
+						if (f != null) onKeyframeAdd(track.uuid, f);
+					},
+					children: [keyframes.length === 0 && ti === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: timeline_module_css_default.laneHint,
+						children: laneHint
+					}), kfs.map((kf) => {
+						const isMoving = dragId === kf.uuid;
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: timeline_module_css_default.kfWrap,
+							style: { left: frameToPx(kf.frame) },
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									"data-kf": kf.uuid,
+									"aria-label": `${track.name} keyframe at frame ${kf.frame}`,
+									onPointerDown: (e) => startDrag(e, {
+										kind: "kf",
+										id: kf.uuid,
+										startX: e.clientX,
+										frame: kf.frame,
+										moved: false
+									}),
+									onDoubleClick: (e) => e.stopPropagation(),
+									className: timeline_module_css_default.kfBtn,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: clsx(timeline_module_css_default.kfDiamond, isMoving && timeline_module_css_default.kfMoving),
+										style: {
+											background: color,
+											borderColor: color
+										}
+									})
+								})
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									onPointerDown: (e) => e.stopPropagation(),
+									onClick: (e) => {
+										e.stopPropagation();
+										onKeyframeDelete(kf.uuid);
+									},
+									"aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`,
+									className: timeline_module_css_default.kfDelete,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, {})
+								})
+							})]
+						}, kf.uuid);
+					})]
+				}, track.uuid);
+			}) });
+		}
+		//#endregion
 		//#region ../../web-kit/timeline/timeline/MotionTimelineBar.tsx
 		/**
 		* MotionTimelineBar — the motion card's bar, pose-studio display model.
@@ -2934,283 +4111,45 @@ window.__ModuleLoader__.load({
 		* the root, theme.{barBg,playhead} for the accents) — defaults render
 		* byte-identical, so no tenant changes.
 		*/
-		const rgb = (c) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
-		const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-		/** Row heights (px): ruler, prompts, beats (Layer C), audio layers, keyframe lanes. */
-		const RULER_H = 28;
-		const PROMPTS_H = 36;
-		const BEATS_H = 26;
-		const AUDIO_H = 26;
-		const LANE_H = 24;
-		/** Label gutter width. (audit F5, 2026-09-02: 88 → 112 — the pinned
-		* header row now carries the timecode positioning indicator beside the
-		* zoom cluster, DaVinci-style; every gutter row shares the one const.) */
-		const GUTTER_W = 112;
 		/** Playhead accent — the DSH brand token. */
 		const PLAYHEAD = "var(--dsw-alias-brand-primary)";
 		/** Unified background for the timeline bar and its sticky timecode chip. */
 		const BAR_BG = "var(--dsw-alias-bg-layer-1)";
-		/** Zoom bounds: multiplier steps + the px-per-frame ceiling. */
-		const ZOOM_STEP = 1.6;
-		/** mm:ss:ff at the bar's axis fps — the DaVinci position readout
-		* (2026-09-01 audit F5: the bar had NO position indicator; the only
-		* readout lived under the player with a different fps divisor). */
-		const fmtTimecode = (frame, fps) => {
-			const f = Math.max(0, Math.round(frame));
-			const safeFps = Math.max(1, Math.round(fps));
-			const ff = f % safeFps;
-			const totalSec = Math.floor(f / safeFps);
-			const ss = totalSec % 60;
-			const mm = Math.floor(totalSec / 60);
-			const p = (n) => String(n).padStart(2, "0");
-			return `${p(mm)}:${p(ss)}:${p(ff)}`;
-		};
-		/** Pointer travel (px) before a gesture counts as a DRAG (audit F8: 2px
-		* armed "moved" from jitter — a shaky click at high zoom rippled both
-		* cuts a frame. 5px = click still selects, jitter stays a click). */
-		const DRAG_ARM_PX = 5;
-		const MAX_PPF = 40;
-		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = "Prompts", laneHint = "Double-click a lane to pin a pose constraint at the playhead", packed = false, emptyPromptsHint = "No prompt cards — the Add button carves one", promptsHeight = PROMPTS_H, beats, beatsLabel = "Beats", beatsHeight = BEATS_H, beatsHint = "double-click to add a beat — prompt segments join into the call's one prompt", onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, className, style, theme }) {
+		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = "Prompts", laneHint = "Double-click a lane to pin a pose constraint at the playhead", packed = false, emptyPromptsHint = "No prompt cards — the Add button carves one", promptsHeight = 36, beats, beatsLabel = "Beats", beatsHeight = 26, beatsHint = "double-click to add a beat — prompt segments join into the call's one prompt", onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, className, style, theme }) {
 			const barBg = theme?.barBg ?? BAR_BG;
 			const playhead = theme?.playhead ?? PLAYHEAD;
 			const scrollRef = (0, react.useRef)(null);
-			const dragRef = (0, react.useRef)(null);
-			const suppressClickRef = (0, react.useRef)(false);
-			const lastPromptRef = (0, react.useRef)(null);
-			lastPromptRef.current = prompts.length ? prompts.reduce((a, b) => b.end_frame > a.end_frame ? b : a).uuid : null;
-			const firstPromptRef = (0, react.useRef)(null);
-			firstPromptRef.current = prompts.length ? prompts.reduce((a, b) => b.start_frame < a.start_frame ? b : a).uuid : null;
-			const promptsRef = (0, react.useRef)(prompts);
-			promptsRef.current = prompts;
-			const [dragId, setDragId] = (0, react.useState)(null);
-			const [editingId, setEditingId] = (0, react.useState)(null);
-			const [editText, setEditText] = (0, react.useState)("");
-			const [boxW, setBoxW] = (0, react.useState)(0);
-			const [ppf, setPpf] = (0, react.useState)(null);
-			const [basePpf, setBasePpf] = (0, react.useState)(null);
-			const [dragScale, setDragScale] = (0, react.useState)(null);
-			const anchorRef = (0, react.useRef)(null);
-			const measure = () => {
-				const el = scrollRef.current;
-				if (el && el.getBoundingClientRect().width > 0) setBoxW(el.getBoundingClientRect().width);
-			};
-			(0, react.useEffect)(() => {
-				measure();
-				let ro = null;
-				if (typeof ResizeObserver !== "undefined" && scrollRef.current) {
-					ro = new ResizeObserver(() => measure());
-					ro.observe(scrollRef.current);
-				}
-				window.addEventListener("resize", measure);
-				return () => {
-					ro?.disconnect();
-					window.removeEventListener("resize", measure);
-				};
-			}, []);
-			const T1 = Math.max(0, Math.floor(totalFrames) - 1);
-			const fitPpf = boxW > 0 && T1 > 0 ? boxW / T1 : 10;
-			(0, react.useEffect)(() => {
-				if (boxW > 0 && T1 > 0 && ppf == null) {
-					let mount = Math.max(1, fitPpf);
-					if (initialSeconds != null && initialSeconds > 0 && fps > 0) mount = Math.max(1, boxW / (initialSeconds * fps));
-					setPpf(mount);
-					setBasePpf(mount);
-				}
-			}, [boxW, T1]);
-			const effPpf = dragScale ?? ppf ?? Math.max(1, fitPpf);
-			const LEAD_OUT = Math.max(240, boxW * .35);
-			const contentW = Math.max(boxW, T1 * effPpf + LEAD_OUT);
-			const frameToPx = (f) => f * effPpf;
-			const zoom = (factor) => {
-				const el = scrollRef.current;
-				if (el) anchorRef.current = {
-					frame: frameIdx,
-					off: frameToPx(frameIdx) - el.scrollLeft
-				};
-				const next = (ppf ?? Math.max(1, fitPpf)) * factor;
-				if (next <= fitPpf * 1.0001) {
-					setPpf(Math.max(1, fitPpf));
-					setBasePpf(Math.max(1, fitPpf));
-				} else setPpf(Math.min(MAX_PPF, next));
-			};
-			(0, react.useLayoutEffect)(() => {
-				const el = scrollRef.current;
-				const a = anchorRef.current;
-				if (el && a) el.scrollLeft = Math.max(0, a.frame * effPpf - a.off);
-				anchorRef.current = null;
-			}, [effPpf]);
-			const frameAt = (clientX) => {
-				const el = scrollRef.current;
-				if (!el) return null;
-				const r = el.getBoundingClientRect();
-				if (r.width <= 0 && boxW <= 0) return null;
-				const x = clientX - r.left + el.scrollLeft;
-				return Math.round(x / effPpf);
-			};
-			const xToFrame = (clientX) => {
-				const f = frameAt(clientX);
-				return f == null ? null : clamp(f, 0, T1);
-			};
-			const keepTailVisible = (endFrame) => {
-				const el = scrollRef.current;
-				if (!el) return;
-				const r = el.getBoundingClientRect();
-				if (r.width <= 0) return;
-				const rightPx = endFrame * effPpf;
-				if (rightPx > el.scrollLeft + r.width - 24) {
-					const max = Math.max(0, el.scrollWidth - r.width);
-					el.scrollLeft = Math.min(max, rightPx - r.width + 24);
-				}
-			};
-			const startDrag = (e, d) => {
-				if (e.button !== 0) return;
-				e.stopPropagation();
-				e.preventDefault();
-				dragRef.current = {
-					...d,
-					t1AtStart: T1
-				};
-				setDragScale(effPpf);
-				if (d.kind !== "scrub") setDragId(d.id);
-			};
-			(0, react.useEffect)(() => {
-				const endDrag = () => {
-					const d = dragRef.current;
-					dragRef.current = null;
-					setDragId(null);
-					setDragScale(null);
-					if (d?.moved) suppressClickRef.current = true;
-					const grewDoc = d ? T1 > (d.t1AtStart ?? T1) : false;
-					if (d && grewDoc && ppf == null && dragScale != null) {
-						setPpf(dragScale);
-						setBasePpf(dragScale);
-					}
-					if (d && d.kind === "scrub") onScrubEnd?.();
-					if (d && d.kind === "kf" && !d.moved) onFrameChange(d.frame);
-					if (d && (d.kind === "prompt-move" || d.kind === "prompt-l" || d.kind === "prompt-r") && !d.moved) onSelect?.(d.id);
-					if (d && d.kind === "audio-clip" && !d.moved) suppressClickRef.current = true;
-				};
-				const onMove = (e) => {
-					const d = dragRef.current;
-					if (!d) return;
-					if (e.pointerType === "mouse" && e.buttons === 0) {
-						endDrag();
-						return;
-					}
-					if (d.kind === "scrub") {
-						if (Math.abs(e.clientX - d.startX) > 2) d.moved = true;
-						const f = xToFrame(e.clientX);
-						if (f != null) onFrameChange(f);
-						return;
-					}
-					const dxF = (e.clientX - d.startX) / effPpf;
-					if (Math.abs(e.clientX - d.startX) > DRAG_ARM_PX) d.moved = true;
-					if (d.kind === "kf") onKeyframeMove(d.id, clamp(Math.round(d.frame + dxF), 0, T1));
-					else if (d.kind === "audio-clip") {
-						const others = ((audioLayers?.find((x) => x.id === d.layerId))?.clips ?? []).filter((c) => c.id !== d.id);
-						const prevEnd = others.filter((c) => c.start_frame < d.startF).reduce((m, c) => Math.max(m ?? 0, c.start_frame + c.dur_frames), null);
-						const nextStart = others.filter((c) => c.start_frame > d.startF).reduce((m, c) => Math.min(m ?? T1, c.start_frame), null);
-						let ns = clamp(Math.round(d.startF + dxF), 0, Math.max(0, T1 - d.durF));
-						if (prevEnd != null) ns = Math.max(ns, prevEnd + 1);
-						if (nextStart != null) ns = Math.min(ns, Math.max(0, nextStart - 1 - d.durF));
-						onAudioClipMove?.(d.layerId, d.id, ns);
-					} else {
-						const neighborsOf = (id) => {
-							const sorted = [...promptsRef.current].sort((a, b) => a.start_frame - b.start_frame);
-							const i = sorted.findIndex((p) => p.uuid === id);
-							if (i === -1) return {
-								prevEnd: null,
-								prevStart: null,
-								nextStart: null,
-								nextEnd: null
-							};
-							return {
-								prevEnd: i > 0 ? sorted[i - 1].end_frame : null,
-								prevStart: i > 0 ? sorted[i - 1].start_frame : null,
-								nextStart: i < sorted.length - 1 ? sorted[i + 1].start_frame : null,
-								nextEnd: i < sorted.length - 1 ? sorted[i + 1].end_frame : null
-							};
-						};
-						if (d.kind === "prompt-move") {
-							const live = promptsRef.current.find((x) => x.uuid === d.id);
-							const endF = live?.end_frame ?? d.endF;
-							const startF = live?.start_frame ?? d.startF;
-							const dur = Math.max(1, endF - startF);
-							const { prevEnd, prevStart, nextStart, nextEnd } = neighborsOf(d.id);
-							let ns = Math.max(0, Math.round(d.startF + dxF));
-							if (prevEnd != null) ns = Math.max(ns, packed ? (prevStart ?? 0) + 1 : prevEnd + 1);
-							const ne = ns + dur;
-							if (ne > T1 && d.id === lastPromptRef.current) {
-								onExtend(ne + 1);
-								onPromptMove(d.id, ns, ne);
-								keepTailVisible(ne);
-							} else {
-								const maxNs = Math.max(0, T1 - dur);
-								let c = clamp(ns, 0, maxNs);
-								if (nextStart != null) c = Math.min(c, Math.max(0, packed ? (nextEnd ?? T1) - 1 - dur : nextStart - 1 - dur));
-								onPromptMove(d.id, c, c + dur);
-							}
-						} else if (d.kind === "prompt-l") {
-							const endF = promptsRef.current.find((x) => x.uuid === d.id)?.end_frame ?? d.endF;
-							const { prevEnd, prevStart } = neighborsOf(d.id);
-							let ns = clamp(Math.round(d.startF + dxF), 0, endF - 1);
-							if (prevEnd != null) ns = Math.max(ns, packed ? (prevStart ?? 0) + 1 : prevEnd + 1);
-							onPromptResize(d.id, ns, endF);
-							onFrameChange(ns);
-						} else {
-							const startF = promptsRef.current.find((x) => x.uuid === d.id)?.start_frame ?? d.startF;
-							const { nextStart, nextEnd } = neighborsOf(d.id);
-							let ne = Math.round(d.endF + dxF);
-							if (ne > T1 && d.id === lastPromptRef.current) onExtend(ne + 1);
-							else {
-								ne = clamp(ne, startF + 1, T1);
-								if (nextStart != null) ne = Math.min(ne, Math.max(startF + 1, packed ? (nextEnd ?? T1) - 1 : nextStart - 1));
-							}
-							onPromptResize(d.id, startF, ne);
-							onFrameChange(ne);
-							if (d.id === lastPromptRef.current) keepTailVisible(ne);
-						}
-					}
-				};
-				window.addEventListener("pointermove", onMove);
-				window.addEventListener("pointerup", endDrag);
-				window.addEventListener("pointercancel", endDrag);
-				return () => {
-					window.removeEventListener("pointermove", onMove);
-					window.removeEventListener("pointerup", endDrag);
-					window.removeEventListener("pointercancel", endDrag);
-				};
-			}, [
-				T1,
-				effPpf,
+			const scale = useTimelineScale({
+				scrollRef,
+				frameIdx,
+				totalFrames,
+				fps,
+				initialSeconds
+			});
+			const drag = useTimelineDragSession({
+				T1: scale.T1,
+				effPpf: scale.effPpf,
+				ppf: scale.ppf,
+				dragScale: scale.dragScale,
+				setPpf: scale.setPpf,
+				setBasePpf: scale.setBasePpf,
+				setDragScale: scale.setDragScale,
+				prompts,
+				audioLayers,
+				packed,
+				xToFrame: scale.xToFrame,
+				keepTailVisible: scale.keepTailVisible,
 				onFrameChange,
+				onScrubStart,
+				onScrubEnd,
+				onSelect,
 				onKeyframeMove,
 				onPromptMove,
 				onPromptResize,
-				onExtend
-			]);
-			const viewSec = totalFrames / Math.max(1, fps);
-			const fullSec = contentW / Math.max(1, effPpf) / Math.max(1, fps);
-			const stepSec = viewSec <= 4 ? .5 : Math.max(1, Math.ceil(viewSec / 16));
-			const ticks = [];
-			for (let s = 0; s <= fullSec + 1e-6; s += stepSec) ticks.push(Math.round(s * 10) / 10);
-			const commitEdit = (id) => {
-				setEditingId(null);
-				const text = editText.trim();
-				const p = prompts.find((x) => x.uuid === id);
-				if (p && text !== p.text) onPromptUpdate(id, text);
-			};
-			const seek = (e) => {
-				if (e.button !== 0) return;
-				dragRef.current = {
-					kind: "scrub",
-					startX: e.clientX,
-					moved: false
-				};
-				onScrubStart?.();
-				const f = xToFrame(e.clientX);
-				if (f != null) onFrameChange(f);
-			};
+				onExtend,
+				onAudioClipMove
+			});
+			const { ticks, stepSec } = buildTicks(scale.contentW, scale.effPpf, totalFrames, fps);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				"data-testid": "motion-timeline-bar",
 				className: clsx(timeline_module_css_default.root, className),
@@ -3218,599 +4157,94 @@ window.__ModuleLoader__.load({
 					background: barBg,
 					...style
 				},
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: timeline_module_css_default.gutter,
-					style: { width: GUTTER_W },
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineGutter, {
+					scale,
+					scrollRef,
+					frameIdx,
+					promptsHeight,
+					promptsLabel,
+					beats,
+					beatsLabel,
+					beatsHeight,
+					audioLayers,
+					onAudioDetach,
+					tracks
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(TimelineContent, {
+					scrollRef,
+					contentW: scale.contentW,
+					suppressClickRef: drag.suppressClickRef,
+					onSelect,
 					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.zoomRow,
-							style: { height: RULER_H },
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-									tip: "Zoom out (back toward fit)",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										size: "sm",
-										onClick: () => zoom(1 / ZOOM_STEP),
-										"aria-label": "Zoom out",
-										className: timeline_module_css_default.zoomBtn,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomOut, {})
-									})
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-									tip: "Fit the whole motion in view",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										size: "sm",
-										onClick: () => {
-											anchorRef.current = {
-												frame: frameIdx,
-												off: frameToPx(frameIdx) - (scrollRef.current?.scrollLeft ?? 0)
-											};
-											setPpf(Math.max(1, fitPpf));
-											setBasePpf(Math.max(1, fitPpf));
-										},
-										className: timeline_module_css_default.zoomPct,
-										children: [Math.round(effPpf / (basePpf ?? fitPpf) * 100), "%"]
-									})
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-									tip: "Zoom in — more pixels per frame (the bar scrolls horizontally)",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										size: "sm",
-										onClick: () => zoom(ZOOM_STEP),
-										"aria-label": "Zoom in",
-										className: timeline_module_css_default.zoomBtn,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomIn, {})
-									})
-								})
-							]
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineRuler, {
+							ticks,
+							stepSec,
+							fps,
+							frameIdx,
+							barBg,
+							frameToPx: scale.frameToPx,
+							frameAt: scale.frameAt,
+							seek: drag.seek,
+							onPromptAdd
 						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.laneHead,
-							style: { height: promptsHeight },
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Film, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: timeline_module_css_default.gutterLabel,
-								children: promptsLabel
-							})]
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelinePromptsLane, {
+							prompts,
+							fps,
+							promptsHeight,
+							emptyPromptsHint,
+							onPromptAdd,
+							dragId: drag.dragId,
+							selectedId,
+							previews,
+							lastPromptRef: drag.lastPromptRef,
+							firstPromptRef: drag.firstPromptRef,
+							frameToPx: scale.frameToPx,
+							frameAt: scale.frameAt,
+							startDrag: drag.startDrag,
+							playhead,
+							onPromptUpdate,
+							onPromptDelete
 						}),
-						beats && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.laneHeadBeats,
-							style: { height: beatsHeight },
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ListMusic, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: timeline_module_css_default.gutterLabel,
-								children: beatsLabel
-							})]
+						beats && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineBeatsLane, {
+							beats,
+							beatsHeight,
+							beatsHint,
+							fps,
+							selectedId,
+							onSelect,
+							onBeatAdd,
+							xToFrame: scale.xToFrame,
+							frameToPx: scale.frameToPx
 						}),
-						audioLayers?.map((L) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.audioHead,
-							style: { height: AUDIO_H },
-							title: L.stem ? `${L.stem} — one bed under every cut; each window hears its own slice in time` : "drop an audio / music track — sliced to each window in time",
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, { "aria-hidden": true }),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: timeline_module_css_default.gutterLabelDim,
-									children: L.label
-								}),
-								(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									size: "sm",
-									onClick: () => onAudioDetach(L.id),
-									"aria-label": `Detach ${L.label}`,
-									className: timeline_module_css_default.detachBtn,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, { "aria-hidden": true })
-								})
-							]
-						}, L.id)),
-						tracks.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.laneRow,
-							style: { height: LANE_H },
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: timeline_module_css_default.laneDot,
-								style: { background: rgb(t.color ?? [
-									176,
-									180,
-									186
-								]) },
-								"aria-hidden": true
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: timeline_module_css_default.laneName,
-								children: t.name
-							})]
-						}, t.uuid))
-					]
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-					className: timeline_module_css_default.contentWrap,
-					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						ref: scrollRef,
-						"data-testid": "motion-timeline-scroll",
-						className: timeline_module_css_default.scroller,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							"data-testid": "motion-timeline-content",
-							className: timeline_module_css_default.content,
-							style: {
-								width: contentW,
-								minWidth: "100%"
-							},
-							onClick: (e) => {
-								if (suppressClickRef.current) {
-									suppressClickRef.current = false;
-									return;
-								}
-								if (e.target.closest("[data-prompt-clip],[data-beat-clip],[data-testid=\"motion-timeline-ruler\"]")) return;
-								onSelect?.(null);
-							},
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-									tip: onPromptAdd ? "Click or drag to move the playhead — double-click to add a call at that frame" : "Click or drag to move the playhead",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										"data-testid": "motion-timeline-ruler",
-										className: timeline_module_css_default.ruler,
-										style: { height: RULER_H },
-										onPointerDown: seek,
-										onDoubleClick: (e) => {
-											if (!onPromptAdd) return;
-											const f = frameAt(e.clientX);
-											if (f != null) onPromptAdd(f);
-										},
-										children: [ticks.map((s) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-											className: timeline_module_css_default.tick,
-											style: { left: frameToPx(s * fps) },
-											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.tickLine }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												className: timeline_module_css_default.tickLabel,
-												children: stepSec < 1 ? `${s.toFixed(1)}s` : `${s}s`
-											})]
-										}, s)), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											"data-testid": "motion-timeline-timecode",
-											className: timeline_module_css_default.timecode,
-											style: {
-												background: barBg,
-												boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)"
-											},
-											children: fmtTimecode(frameIdx, fps)
-										})]
-									})
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: clsx(timeline_module_css_default.promptsLane, onPromptAdd && timeline_module_css_default.canAdd),
-									style: {
-										height: promptsHeight,
-										background: "var(--dsw-alias-bg-layer-1)"
-									},
-									onDoubleClick: (e) => {
-										if (!onPromptAdd) return;
-										if (e.target.closest("[data-prompt-clip]")) return;
-										const f = frameAt(e.clientX);
-										if (f != null) onPromptAdd(f);
-									},
-									children: [prompts.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										className: timeline_module_css_default.emptyCenter,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: timeline_module_css_default.emptyHint,
-											children: emptyPromptsHint
-										})
-									}), prompts.map((p, i) => {
-										const color = rgb(PROMPT_COLORS[i % PROMPT_COLORS.length]);
-										const isEditing = editingId === p.uuid;
-										const isMoving = dragId === p.uuid;
-										const isLast = p.uuid === lastPromptRef.current;
-										const isFirst = p.uuid === firstPromptRef.current;
-										const isSelected = selectedId === p.uuid;
-										const previewUrl = previews?.[p.uuid];
-										const wPx = frameToPx(Math.max(1, p.end_frame - p.start_frame));
-										const clipTip = `${p.text || "(empty)"} — frames ${p.start_frame}–${p.end_frame} (${((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1)}s)\n\nDrag body: move · Drag edges: resize · Double-click: edit · Click: select`;
-										return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-											tip: clipTip,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-												"data-prompt-clip": p.uuid,
-												className: clsx(timeline_module_css_default.promptClip, isMoving ? timeline_module_css_default.clipMoving : isSelected ? timeline_module_css_default.clipSelected : void 0),
-												style: {
-													left: frameToPx(p.start_frame),
-													width: `max(26px, ${wPx}px)`,
-													background: `linear-gradient(135deg, ${color}33, ${color}14)`,
-													borderLeft: `3px solid ${color}`,
-													transition: isMoving ? "none" : "border-color .12s"
-												},
-												onMouseEnter: (e) => {
-													const v = e.currentTarget.querySelector("video");
-													if (v) v.play().catch(() => {});
-												},
-												onMouseLeave: (e) => {
-													const v = e.currentTarget.querySelector("video");
-													if (v) v.pause();
-												},
-												onPointerDown: (e) => !isEditing && startDrag(e, {
-													kind: "prompt-move",
-													id: p.uuid,
-													startX: e.clientX,
-													startF: p.start_frame,
-													endF: p.end_frame,
-													moved: false
-												}),
-												onDoubleClick: (e) => {
-													e.stopPropagation();
-													setEditText(p.text);
-													setEditingId(p.uuid);
-												},
-												children: [
-													/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-														"data-prompt-edge": "l",
-														title: isFirst ? "First call — nothing before it to trim into" : void 0,
-														className: clsx(timeline_module_css_default.edgeL, isFirst && timeline_module_css_default.edgeDead),
-														onPointerDown: (e) => !isFirst && startDrag(e, {
-															kind: "prompt-l",
-															id: p.uuid,
-															startX: e.clientX,
-															startF: p.start_frame,
-															endF: p.end_frame,
-															moved: false
-														}),
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.gripPill })
-													}),
-													p.seam === "extend" && !isFirst && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-														className: timeline_module_css_default.seamDot,
-														style: {
-															background: playhead,
-															boxShadow: `0 0 4px ${playhead}`
-														},
-														title: "extend — latent tail carries across this seam"
-													}),
-													/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-														tip: isLast ? "PULL to extend the motion — the timeline + duration grow as you drag" : "Drag to resize this card",
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-															"data-prompt-edge": "r",
-															className: clsx(timeline_module_css_default.edgeR, isLast && timeline_module_css_default.edgeWide),
-															onPointerDown: (e) => startDrag(e, {
-																kind: "prompt-r",
-																id: p.uuid,
-																startX: e.clientX,
-																startF: p.start_frame,
-																endF: p.end_frame,
-																moved: false
-															}),
-															children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: clsx(timeline_module_css_default.gripPillR, isLast && timeline_module_css_default.gripPillBright) })
-														})
-													}),
-													isEditing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-														autoFocus: true,
-														value: editText,
-														onChange: (e) => setEditText(e.target.value),
-														onBlur: () => commitEdit(p.uuid),
-														onKeyDown: (e) => {
-															if (e.key === "Enter") commitEdit(p.uuid);
-															if (e.key === "Escape") setEditingId(null);
-														},
-														onPointerDown: (e) => e.stopPropagation(),
-														onDoubleClick: (e) => e.stopPropagation(),
-														placeholder: "Enter prompt…",
-														className: timeline_module_css_default.clipEditor
-													}) : previewUrl ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-														className: timeline_module_css_default.previewWrap,
-														children: [
-															/* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
-																src: previewUrl,
-																muted: true,
-																loop: true,
-																playsInline: true,
-																preload: "metadata",
-																className: timeline_module_css_default.previewVideo
-															}),
-															/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.scrim }),
-															/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-																className: timeline_module_css_default.clipTextCol,
-																children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																	className: timeline_module_css_default.clipTitle,
-																	style: { color },
-																	children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																		className: timeline_module_css_default.clipEmpty,
-																		children: "(empty)"
-																	})
-																}), wPx > 72 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-																	className: timeline_module_css_default.clipDur,
-																	children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
-																})]
-															})
-														]
-													}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-														className: timeline_module_css_default.clipTextStack,
-														children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-															className: timeline_module_css_default.clipTitle,
-															style: { color },
-															children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: timeline_module_css_default.clipEmpty,
-																children: "(empty)"
-															})
-														}), wPx > 64 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-															className: timeline_module_css_default.clipDur,
-															children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
-														})]
-													}),
-													p.override && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-														title: "This call overrides run knobs (per-call)",
-														className: timeline_module_css_default.knobDot
-													}),
-													p.audio && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, {
-														"aria-hidden": true,
-														className: timeline_module_css_default.refAudioBadge
-													}),
-													(p.refImages ?? 0) > 0 && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-														"data-testid": "tl-ref-badge",
-														className: timeline_module_css_default.refBadge,
-														title: `${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`,
-														children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Image$1, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-															className: timeline_module_css_default.refCount,
-															children: p.refImages
-														})]
-													}),
-													!isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-														tip: "Delete this prompt card",
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-															variant: "ghost",
-															size: "sm",
-															onPointerDown: (e) => e.stopPropagation(),
-															onClick: (e) => {
-																e.stopPropagation();
-																onPromptDelete(p.uuid);
-															},
-															"aria-label": "Delete this prompt card",
-															className: timeline_module_css_default.promptDelete,
-															children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, {})
-														})
-													})
-												]
-											})
-										}, p.uuid);
-									})]
-								}),
-								beats && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									"data-beats-row": true,
-									className: clsx(timeline_module_css_default.beatsLane, onBeatAdd && timeline_module_css_default.beatsAdd),
-									style: {
-										height: beatsHeight,
-										background: "var(--dsw-alias-bg-layer-1)"
-									},
-									onDoubleClick: (e) => {
-										if (!onBeatAdd) return;
-										const f = xToFrame(e.clientX);
-										if (f != null) onBeatAdd(f);
-									},
-									children: [beats.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										className: timeline_module_css_default.beatsEmpty,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: timeline_module_css_default.hintLine,
-											children: beatsHint
-										})
-									}), beats.map((b) => {
-										const color = rgb(b.color ?? [
-											176,
-											180,
-											186
-										]);
-										const isSelected = selectedId === b.id;
-										const bW = frameToPx(Math.max(1, b.end_frame - b.start_frame));
-										return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-											tip: `${b.text || "(empty)"} — frames ${b.start_frame}–${b.end_frame} (${((b.end_frame - b.start_frame) / Math.max(1, fps)).toFixed(1)}s)\n\nClick: edit in the call card`,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-												"data-beat-clip": b.id,
-												onClick: () => onSelect?.(b.id),
-												className: clsx(timeline_module_css_default.beatClip, isSelected && timeline_module_css_default.beatSelected),
-												style: {
-													left: frameToPx(b.start_frame),
-													width: `max(14px, ${bW}px)`,
-													background: `linear-gradient(135deg, ${color}2e, ${color}12)`,
-													borderLeft: `3px solid ${color}`
-												},
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-													className: timeline_module_css_default.beatLabel,
-													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-														className: timeline_module_css_default.truncate,
-														children: b.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-															className: timeline_module_css_default.beatEmpty,
-															children: "(empty)"
-														})
-													})
-												})
-											})
-										}, b.id);
-									})]
-								}),
-								audioLayers?.map((L) => {
-									const clips = L.clips ?? [];
-									return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										"data-audio-layer": L.id,
-										"data-wired": L.stem ? "true" : "false",
-										"data-clips": clips.length ? "true" : "false",
-										className: timeline_module_css_default.audioLane,
-										style: {
-											height: AUDIO_H,
-											background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)"
-										},
-										onDragOver: (e) => e.preventDefault(),
-										onDrop: (e) => {
-											e.preventDefault();
-											const t = xToFrame(e.clientX);
-											const f = t != null && Number.isFinite(t) ? t : 0;
-											const file = e.dataTransfer.files?.[0];
-											if (file) {
-												onAudioFileDrop?.(L.id, file, f);
-												return;
-											}
-											try {
-												const payload = JSON.parse(e.dataTransfer.getData("application/tech-noir-asset") || "null");
-												if (payload && typeof payload.url === "string") {
-													if (onAudioDropAt) onAudioDropAt(L.id, payload.url, f);
-													else onAudioDrop?.(L.id, payload.url);
-												}
-											} catch {}
-										},
-										children: clips.length ? clips.map((c) => {
-											const a = (c.start_frame / Math.max(1, fps)).toFixed(1);
-											const b = ((c.start_frame + c.dur_frames) / Math.max(1, fps)).toFixed(1);
-											return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-												"data-audio-clip": c.id,
-												title: `${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`,
-												className: timeline_module_css_default.audioClip,
-												style: {
-													left: frameToPx(c.start_frame),
-													width: `max(6px, ${frameToPx(Math.max(1, c.dur_frames))}px)`
-												},
-												onPointerDown: (e) => {
-													if (!onAudioClipMove) return;
-													startDrag(e, {
-														kind: "audio-clip",
-														layerId: L.id,
-														id: c.id,
-														startX: e.clientX,
-														startF: c.start_frame,
-														durF: c.dur_frames,
-														moved: false
-													});
-												},
-												children: [
-													c.gain != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-														"aria-hidden": true,
-														className: timeline_module_css_default.gainFill,
-														style: { height: `${Math.max(4, Math.min(100, c.gain * 50))}%` }
-													}),
-													/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-														className: timeline_module_css_default.audioClipLabel,
-														children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-															className: timeline_module_css_default.audioName,
-															children: c.name
-														}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-															className: timeline_module_css_default.audioTime,
-															children: [a, "s"]
-														})]
-													}),
-													onAudioClipDelete && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-														variant: "ghost",
-														size: "sm",
-														"data-audio-clip-delete": c.id,
-														"aria-label": `Delete ${c.name}`,
-														onClick: (e) => {
-															e.stopPropagation();
-															onAudioClipDelete(L.id, c.id);
-														},
-														className: timeline_module_css_default.audioClipDelete,
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, { "aria-hidden": true })
-													})
-												]
-											}, c.id);
-										}) : L.stem ? prompts.map((p, i) => {
-											const a = (p.start_frame / Math.max(1, fps)).toFixed(1);
-											const b = (p.end_frame / Math.max(1, fps)).toFixed(1);
-											return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-												"data-audio-slice": i,
-												title: `call #${i} · window hears bed ${a}–${b}s`,
-												className: timeline_module_css_default.audioSlice,
-												style: {
-													left: frameToPx(p.start_frame),
-													width: `max(4px, ${frameToPx(Math.max(1, p.end_frame - p.start_frame))}px)`
-												},
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-													className: timeline_module_css_default.sliceLabel,
-													children: [
-														a,
-														"–",
-														b,
-														"s"
-													]
-												})
-											}, p.uuid);
-										}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-											className: timeline_module_css_default.audioDrop,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												className: timeline_module_css_default.dropHint,
-												children: "drop or upload audio — clips land where you drop them, drag to move"
-											})
-										})
-									}, L.id);
-								}),
-								tracks.map((track, ti) => {
-									const kfs = keyframes.filter((k) => k.track_id === track.uuid);
-									const color = rgb(track.color ?? [
-										176,
-										180,
-										186
-									]);
-									return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										"data-lane": track.uuid,
-										className: timeline_module_css_default.kfLane,
-										style: { height: LANE_H },
-										onDoubleClick: (e) => {
-											const f = xToFrame(e.clientX);
-											if (f != null) onKeyframeAdd(track.uuid, f);
-										},
-										children: [keyframes.length === 0 && ti === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: timeline_module_css_default.laneHint,
-											children: laneHint
-										}), kfs.map((kf) => {
-											const isMoving = dragId === kf.uuid;
-											return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-												className: timeline_module_css_default.kfWrap,
-												style: { left: frameToPx(kf.frame) },
-												children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-													tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`,
-													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-														variant: "ghost",
-														size: "sm",
-														"data-kf": kf.uuid,
-														"aria-label": `${track.name} keyframe at frame ${kf.frame}`,
-														onPointerDown: (e) => startDrag(e, {
-															kind: "kf",
-															id: kf.uuid,
-															startX: e.clientX,
-															frame: kf.frame,
-															moved: false
-														}),
-														onDoubleClick: (e) => e.stopPropagation(),
-														className: timeline_module_css_default.kfBtn,
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-															className: clsx(timeline_module_css_default.kfDiamond, isMoving && timeline_module_css_default.kfMoving),
-															style: {
-																background: color,
-																borderColor: color
-															}
-														})
-													})
-												}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-													tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
-													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-														variant: "ghost",
-														size: "sm",
-														onPointerDown: (e) => e.stopPropagation(),
-														onClick: (e) => {
-															e.stopPropagation();
-															onKeyframeDelete(kf.uuid);
-														},
-														"aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`,
-														className: timeline_module_css_default.kfDelete,
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, {})
-													})
-												})]
-											}, kf.uuid);
-										})]
-									}, track.uuid);
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-									"data-testid": "motion-timeline-playhead",
-									className: timeline_module_css_default.playhead,
-									style: {
-										left: frameToPx(frameIdx),
-										width: 2,
-										background: playhead,
-										boxShadow: `0 0 6px color-mix(in srgb, ${playhead} 40%, transparent)`,
-										transform: "translateX(-50%)"
-									},
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: timeline_module_css_default.playheadCap,
-										style: { background: playhead }
-									})
-								})
-							]
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineAudioLanes, {
+							audioLayers,
+							prompts,
+							fps,
+							frameToPx: scale.frameToPx,
+							xToFrame: scale.xToFrame,
+							startDrag: drag.startDrag,
+							onAudioDrop,
+							onAudioDropAt,
+							onAudioFileDrop,
+							onAudioClipMove,
+							onAudioClipDelete
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineKeyframeLanes, {
+							tracks,
+							keyframes,
+							laneHint,
+							dragId: drag.dragId,
+							frameToPx: scale.frameToPx,
+							xToFrame: scale.xToFrame,
+							startDrag: drag.startDrag,
+							onKeyframeAdd,
+							onKeyframeDelete
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelinePlayhead, {
+							frameIdx,
+							frameToPx: scale.frameToPx,
+							playhead
 						})
-					})
+					]
 				})]
 			});
 		}
@@ -4344,9 +4778,8 @@ window.__ModuleLoader__.load({
 		};
 		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 		function RunRecipeEngine({ stage, layerA, setLayerAKey, isRef2va }) {
-			const { spec } = useFormSpec("h3-timeline");
-			const values = layerA;
-			const onSet = setLayerAKey;
+			const { spec, resolved, edit } = useResolvedForm("h3-timeline", layerA, setLayerAKey, stage.params ?? void 0);
+			const onSet = edit;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: studio_module_css_default.group,
@@ -4378,7 +4811,8 @@ window.__ModuleLoader__.load({
 						}),
 						spec !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RecipePills, {
 							spec,
-							onSet
+							onSet,
+							values: layerA
 						}) : null,
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
 							label: "FPS",
@@ -4403,9 +4837,9 @@ window.__ModuleLoader__.load({
 							className: studio_module_css_default.recipeGeom,
 							"data-testid": "tl-recipe-geom",
 							children: [
-								String(stage.params?.width ?? layerA.width ?? FAMILY_GEOM.w),
+								String(resolved.width ?? FAMILY_GEOM.w),
 								"×",
-								String(stage.params?.height ?? layerA.height ?? FAMILY_GEOM.h),
+								String(resolved.height ?? FAMILY_GEOM.h),
 								" @ ",
 								layerA.fps,
 								" doc-fps"
@@ -4415,8 +4849,8 @@ window.__ModuleLoader__.load({
 				}),
 				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecPanel, {
 					model: "h3-timeline",
-					values,
-					onEdit: setLayerAKey,
+					values: resolved,
+					onEdit: edit,
 					sections: [{
 						title: "Clock",
 						testid: "tl-recipe-panel",
@@ -4438,7 +4872,7 @@ window.__ModuleLoader__.load({
 					className: studio_module_css_default.winSize,
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SectionLabel, {
-							tail: `window ${String(stage.params?.width ?? layerA.width ?? FAMILY_GEOM.w)}×${String(stage.params?.height ?? layerA.height ?? FAMILY_GEOM.h)} · steps ${layerA.steps ?? "auto"}`,
+							tail: `window ${String(resolved.width ?? FAMILY_GEOM.w)}×${String(resolved.height ?? FAMILY_GEOM.h)} · steps ${String(resolved.steps ?? "auto")}`,
 							children: "Engine (H3)"
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
@@ -4451,7 +4885,7 @@ window.__ModuleLoader__.load({
 								step: 32,
 								tooltip: `blank — the family default rides ${FAMILY_GEOM.w}×${FAMILY_GEOM.h}`
 							},
-							value: layerA.width,
+							value: resolved.width,
 							placeholder: String(FAMILY_GEOM.w),
 							onEdit: (_, v) => setLayerAKey("width", typeof v === "string" && v.trim() !== "" ? Number(v) : void 0)
 						}),
@@ -4469,7 +4903,7 @@ window.__ModuleLoader__.load({
 								step: 32,
 								tooltip: `blank — the family default rides ${FAMILY_GEOM.w}×${FAMILY_GEOM.h}`
 							},
-							value: layerA.height,
+							value: resolved.height,
 							placeholder: String(FAMILY_GEOM.h),
 							onEdit: (_, v) => setLayerAKey("height", typeof v === "string" && v.trim() !== "" ? Number(v) : void 0)
 						})
@@ -4496,13 +4930,13 @@ window.__ModuleLoader__.load({
 		* with ModLane (SpecPanel skips its own fetch when handed the doc)
 		* so the door is never hit twice. */
 		function RunAdvancedPanels({ layerA, setLayerAKey }) {
-			const { spec, error } = useFormSpec("h3-timeline");
+			const { spec, error, resolved, edit } = useResolvedForm("h3-timeline", layerA, setLayerAKey);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecPanel, {
 				model: "h3-timeline",
 				spec,
 				error,
-				values: layerA,
-				onEdit: setLayerAKey,
+				values: resolved,
+				onEdit: edit,
 				sections: [{
 					title: "SLA — block-sparse attention",
 					testid: "tl-sla-panel",

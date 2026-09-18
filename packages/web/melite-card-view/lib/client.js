@@ -8614,189 +8614,173 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:infer-gallery/src/client/overlay.module.css.mjs
-		const css$5 = "._2saHFG_lightbox{width:min(1200px,96vw);max-width:96vw}._2saHFG_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
-		const tagId$5 = "@melite-plugin/dsh-card-view/overlay.module.css@d29a3d30";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$5) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
-			tag.dataset.pluginCss = tagId$5;
-			tag.textContent = css$5;
-			document.head.appendChild(tag);
-		}
-		var overlay_module_css_default = {
-			"lightbox": "_2saHFG_lightbox",
-			"wand": "_2saHFG_wand"
-		};
-		//#endregion
-		//#region ../infer-gallery/src/client/ui.tokens.ts
+		//#region ../card-base/src/toastStore.ts
 		/**
-		* Design tokens — every var(--dsw-alias-…) string in the media family
-		* declared ONCE (audit F6). Numbered suffixes = same alias, different
-		* fallback (opacity variants). Pinned by the parity wall
-		* (tests/walls/ts/suites/media-sidebar.test.ts — tokens single site).
-		*/
-		const bgBase1 = "var(--dsw-alias-bg-base, #000)";
-		const labelPrimary2 = "var(--dsw-alias-label-primary, rgba(226,232,240,0.85))";
-		const stateBusinessPrimary = "var(--dsw-alias-state-business-primary, rgb(147,197,253))";
-		const textTertiary3 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.8))";
-		//#endregion
-		//#region ../infer-gallery/src/drilldown.tsx
-		/**
-		* drilldown.tsx — THE MEDIA DRILLDOWN, one component for every surface
-		* (the operator's hour-24 order: "clicking the preview component should
-		* mirror the media drilldown view 1:1"). Extracted VERBATIM from the
-		* gallery's MediaPanel Overlay — the gallery's media tiles and the
-		* cards' stage previews ride the SAME face: DSH's Modal (headless —
-		* body portal, mask, Escape, aria-modal and focus handling are the
-		* primitive's, never ours), the kind-switched full-size artifact, the
-		* caption, the esc hint.
+		* THE ONE TOAST STORE (node-safe half of the one toast system,
+		* stroke 37): module state + the dual API (hook selector for React,
+		* zustand-classic statics for module-level pushers and tests). NO
+		* atom imports — node-env suites (the catalog contract specs) import
+		* this half without dragging DSH UI primitives' .css through the
+		* door. The renderer half lives in ./toast.tsx (ToastViewport); the
+		* store is the system, the viewport is its face.
 		*
-		* The gallery's MediaItem EXTENDS MediaDrilldownItem; the cards map
-		* their stage artifact onto it (mesh kind → 'model' — the media vocab
-		* alignment, one spelling).
+		* History: founded 2026-09-12 (the ideo/motion copies collapsed
+		* here). Stroke 36: the shell mounts the viewport — chrome is
+		* shell-owned. Stroke 37: the LAST two private stores died —
+		* web-kit/catalog's (whose toasts NEVER rendered: pushed from module
+		* context with no viewport anywhere, console-only) and
+		* mask-studio's (whose drop-errors never rendered either). Their
+		* pushers migrated here verbatim via the static surface.
+		*
+		* ONE API, two faces (the zustand-classic dual shape):
+		*   - hook:      useToastStore((s) => s.addToast)   — inside React
+		*   - statics:   useToastStore.getState().addToast(type, msg)
+		*                useToastStore.getState().toasts
+		*                useToastStore.subscribe(l) / .setState(patch)
+		*                — module-level pushers (contract stores, import
+		*                hooks) and test reset.
+		*
+		* Rendering: the DSH Toast atom (presentational banner — the atom is
+		* the surface, this module is the system). ToastViewport claims
+		* rendering: the FIRST live viewport renders, every other mounted
+		* viewport renders nothing, and ownership re-broadcasts when owners
+		* unmount — so the shell, the cards console, or any future seat may
+		* mount one and the document still renders toasts exactly once.
+		*
+		* Timing law (verbatim from the kit): errors persist 15s (the
+		* operator must SEE them), success/info auto-dismiss at 5s. Errors
+		* also console.error so nothing is silent even with no viewport.
+		*
+		* The third addToast argument (action {label, onClick}) is ACCEPTED
+		* and ignored: the DSH Toast atom owns the surface and ships no
+		* action chrome — the kit store dropped it the same way. When the
+		* atom grows an action prop, store and render it here.
+		*
+		* Per-seam subpath: `@melite/card-base/toast-store`.
 		*/
-		/** 3D artifact view — hands the artifact to the sidebar as a RESOURCE
-		*  (estate-artifact address, claimed by a viewer tab type; the mesh
-		*  renders in the right panel, orbitable beside the run list).
-		*  The download link stays: when the viewer plugin is absent no tab
-		*  type claims the address and openResource is a no-op — the artifact
-		*  must still be reachable. openArtifact is OPTIONAL: a surface with
-		*  no sidebar door (the card zoom) simply hides the link. */
-		function ModelView({ item, openArtifact }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				style: {
-					display: "flex",
-					flexDirection: "column",
-					gap: 10,
-					alignItems: "center"
-				},
-				children: [openArtifact !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
-					role: "button",
-					tabIndex: 0,
-					style: {
-						color: stateBusinessPrimary,
-						fontSize: 14,
-						cursor: "pointer"
-					},
-					onClick: (e) => {
-						e.stopPropagation();
-						openArtifact(item);
-					},
-					onKeyDown: (e) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.stopPropagation();
-							openArtifact(item);
-						}
-					},
-					children: "open 3D view in sidebar"
-				}) : null, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
-					href: item.url,
-					download: item.file,
-					style: {
-						color: textTertiary3,
-						fontSize: 13,
-						cursor: "pointer"
-					},
-					onClick: (e) => {
-						e.stopPropagation();
-					},
-					children: ["download ", item.file]
-				})]
-			});
+		function emit() {
+			listeners$1.forEach((l) => l());
 		}
-		/** THE MEDIA DRILLDOWN (the gallery Overlay, verbatim — one face). */
-		function MediaDrilldown({ item, onClose, openArtifact }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose,
-				title: item.file || "media preview",
-				headless: true,
-				className: overlay_module_css_default.lightbox,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					style: {
-						position: "relative",
-						display: "flex",
-						flexDirection: "column",
-						alignItems: "center",
-						justifyContent: "center",
-						gap: 14,
-						padding: 24
-					},
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-							"aria-label": "Close preview",
-							onClick: onClose,
-							style: {
-								position: "absolute",
-								top: 8,
-								right: 8,
-								zIndex: 10,
-								background: "none",
-								border: "none",
-								cursor: "pointer",
-								fontSize: 20,
-								lineHeight: 1,
-								padding: "4px 6px",
-								borderRadius: 6
-							},
-							children: "✕"
-						}),
-						item.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
-							src: item.url,
-							controls: true,
-							autoPlay: true,
-							playsInline: true,
-							style: {
-								maxWidth: "94vw",
-								maxHeight: "78vh",
-								borderRadius: 8,
-								background: bgBase1
-							}
-						}) : item.kind === "audio" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("audio", {
-							src: item.url,
-							controls: true,
-							autoPlay: true,
-							style: { width: "min(560px, 90vw)" }
-						}) : item.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelView, {
-							item,
-							openArtifact
-						}) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-							src: item.url,
-							alt: item.file,
-							style: {
-								maxWidth: "94vw",
-								maxHeight: "78vh",
-								borderRadius: 8,
-								objectFit: "contain"
-							}
-						}) : null,
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							style: {
-								color: labelPrimary2,
-								fontSize: 13,
-								maxWidth: "80vw",
-								textAlign: "center",
-								lineHeight: 1.5
-							},
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								style: { fontWeight: 600 },
-								children: item.head
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								style: { opacity: .7 },
-								children: [item.time, item.file].filter(Boolean).join(" · ")
-							})]
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							style: {
-								color: textTertiary3,
-								fontSize: 12
-							},
-							children: "Esc or click the mask to close"
-						})
-					]
-				})
+		function subscribe(listener) {
+			listeners$1.add(listener);
+			return () => {
+				listeners$1.delete(listener);
+			};
+		}
+		function getSnapshot() {
+			return entries;
+		}
+		function addToast(type, message, _action) {
+			const id = nextId++;
+			entries = [...entries, {
+				id,
+				type,
+				message
+			}];
+			if (type === "error") console.error("[toast]", message);
+			else console.info("[toast]", message);
+			emit();
+			setTimeout(() => {
+				removeToast(id);
+			}, type === "error" ? 15e3 : 5e3);
+		}
+		function removeToast(id) {
+			if (!entries.some((t) => t.id === id)) return;
+			entries = entries.filter((t) => t.id !== id);
+			emit();
+		}
+		function getStore() {
+			return {
+				toasts: entries,
+				addToast: liveAddToast,
+				removeToast
+			};
+		}
+		function setStoreState(patch) {
+			if (patch.addToast !== void 0) liveAddToast = patch.addToast;
+			if (patch.toasts !== void 0) entries = patch.toasts;
+			emit();
+		}
+		var nextId, entries, listeners$1, liveAddToast, useToastStore;
+		var init_toastStore = __esmMin((() => {
+			nextId = 1;
+			entries = [];
+			listeners$1 = /* @__PURE__ */ new Set();
+			liveAddToast = addToast;
+			useToastStore = Object.assign(function useToastStore(selector) {
+				const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+				return selector({
+					addToast: liveAddToast,
+					removeToast,
+					toasts
+				});
+			}, {
+				getState: getStore,
+				setState: setStoreState,
+				subscribe
 			});
+		}));
+		//#endregion
+		//#region ../card-base/src/toast.tsx
+		/**
+		* ToastViewport — THE RENDERER FACE of the one toast system
+		* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
+		* atom); this file re-exports it so UI users keep the single
+		* `@melite/card-base/toast` import — and mounts the viewport.
+		*
+		* THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
+		* studio shell, the cards console — and the document still renders
+		* toasts exactly ONCE. The first live viewport owns rendering;
+		* every other mounted viewport renders nothing; ownership
+		* re-broadcasts when owners unmount. No studio wires it, no studio
+		* can forget it, no seat can duplicate it.
+		*
+		* Per-seam subpath: `@melite/card-base/toast`.
+		*/
+		init_toastStore();
+		init_toastStore();
+		const liveViewportIds = /* @__PURE__ */ new Set();
+		let viewportEpoch = 0;
+		const viewportListeners = /* @__PURE__ */ new Set();
+		function emitViewportChange() {
+			viewportEpoch++;
+			viewportListeners.forEach((l) => l());
+		}
+		function subscribeViewport(l) {
+			viewportListeners.add(l);
+			return () => {
+				viewportListeners.delete(l);
+			};
+		}
+		function getViewportEpoch() {
+			return viewportEpoch;
+		}
+		let nextViewportId = 1;
+		/** Mount anywhere the system needs a renderer — the studio shell,
+		*  the cards console, any seat. The claim law guarantees exactly one
+		*  live renderer per document: the first-mounted viewport renders,
+		*  others render nothing until the owner unmounts. Renders the live
+		*  entries through the DSH Toast atom (body-portaled banner, owner
+		*  unmounts onDone). */
+		function ToastViewport() {
+			const idRef = (0, react.useRef)(nextViewportId++);
+			(0, react.useEffect)(() => {
+				const id = idRef.current;
+				liveViewportIds.add(id);
+				emitViewportChange();
+				return () => {
+					liveViewportIds.delete(id);
+					emitViewportChange();
+				};
+			}, []);
+			(0, react.useSyncExternalStore)(subscribeViewport, getViewportEpoch, getViewportEpoch);
+			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: toasts.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {
+				text: t.message,
+				holdMs: t.type === "error" ? 15e3 : 5e3,
+				onDone: () => removeToast(t.id)
+			}, t.id)) });
 		}
 		//#endregion
 		//#region ../card-base/src/spec.ts
@@ -9024,18 +9008,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			Object.assign(out, user);
 			return out;
 		}
-		/** evalVisibleWhen's serving shape: "key=value" (a field shows when its
-		*  guard key holds the value). A field with no visible_when always
-		*  shows. Unknown guard keys: show (never hide on a typo). */
+		/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
+		* one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
+		* (The ONE schema grammar — a field declares its own visibility;
+		* the walker interprets, cards never hand-rolled predicates.) A
+		* field with no visible_when always shows. Unknown guard keys:
+		* show (never hide on a typo). Examples:
+		*   "sharpen_enabled=true"
+		*   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
 		function fieldVisible(f, values) {
 			const rule = f.visible_when;
 			if (typeof rule !== "string" || rule === "") return true;
-			const eq = rule.indexOf("=");
-			if (eq < 0) return true;
-			const key = rule.slice(0, eq);
-			const want = rule.slice(eq + 1);
-			const held = values[key];
-			return String(held ?? "") === want;
+			for (const guard of rule.split("&")) {
+				const eq = guard.indexOf("=");
+				if (eq < 0) continue;
+				const key = guard.slice(0, eq);
+				if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
+			}
+			return true;
 		}
 		/** Group the visible fields (the spec's own group key, first-appearance
 		*  order — ungrouped first under no heading). */
@@ -9101,6 +9091,47 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  (spec.families, served from the card package). */
 		function modelChoices(spec) {
 			return typeof spec.model === "string" && spec.model !== "" ? [spec.model] : [];
+		}
+		/** The ACTIVE RECIPE (the dropdown's selection state, derived from
+		* the ONE truth -- never a persisted key): a recipe row is active
+		* when EVERY key its pick stamps (axisPickPatch, minus the durable
+		* axis keys -- the run door refuses an undeclared `recipe` param)
+		* deep-equals the user layer's held value. Stamp-for-stamp matches
+		* are naturally exclusive (a two-row bag matches only the row that
+		* stamps two rows); first-declared wins on a tie. NOTHING matches ->
+		* undefined (the dropdown shows its placeholder -- a hand-edited
+		* layer is not a recipe, and the form never lies about it). */
+		function activeRecipeId(spec, values) {
+			for (const row of rowsFor(spec, "Recipe")) {
+				const patch = axisPickPatch(spec, row);
+				let holds = true;
+				for (const [k, v] of Object.entries(patch)) {
+					if (k === axisKey("Recipe")) continue;
+					if (!deepEqualHeld(values[k], v)) {
+						holds = false;
+						break;
+					}
+				}
+				if (holds && Object.keys(patch).length > 0) return row.id;
+			}
+		}
+		/** Deep equality over JSON-shaped held values (arrays compared
+		* element-wise -- the lora bag rows; primitives by Object.is). */
+		function deepEqualHeld(a, b) {
+			if (Object.is(a, b)) return true;
+			if (Array.isArray(a) && Array.isArray(b)) {
+				if (a.length !== b.length) return false;
+				for (let i = 0; i < a.length; i++) if (!deepEqualHeld(a[i], b[i])) return false;
+				return true;
+			}
+			if (typeof a === "object" && a !== null && typeof b === "object" && b !== null) {
+				const ka = Object.keys(a);
+				const kb = Object.keys(b);
+				if (ka.length !== kb.length) return false;
+				for (const k of ka) if (!deepEqualHeld(a[k], b[k])) return false;
+				return true;
+			}
+			return false;
 		}
 		/** One group's active row under the owner chain (inner recursion of
 		*  activeVariantId — Variant resolves first, chained groups after). */
@@ -9249,6 +9280,146 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return n;
 		}
 		//#endregion
+		//#region ../card-base/src/chrome.ts
+		/**
+		* Card chrome primitives — the ONE joiner + the ONE file reader
+		* (founded 2026-09-12, debt extermination: anny/ideo cx, motion/h3
+		* clsx-cn, and the four identical readAsDataURL copies collapsed
+		* here). DOM-free, no CSS, no atoms — safe for node and browser.
+		*
+		* Per-seam subpath: `@melite/card-base/chrome`.
+		*/
+		/** Plain classnames joiner (no conflicting utilities to merge —
+		*  plain join is exact). */
+		function cx(...parts) {
+			return parts.filter(Boolean).join(" ");
+		}
+		/** The merging joiner (clsx — objects/arrays/conditionals). */
+		function cn(...inputs) {
+			return clsx(...inputs);
+		}
+		//#endregion
+		//#region \0dsh-css:card-base/src/card.module.css.mjs
+		const css$5 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:contents}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
+		const tagId$5 = "@melite-plugin/dsh-card-view/card.module.css@3924fc51";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$5) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
+			tag.dataset.pluginCss = tagId$5;
+			tag.textContent = css$5;
+			document.head.appendChild(tag);
+		}
+		var card_module_css_default = {
+			"ctlRow": "FRpSCG_ctlRow",
+			"ctlRowSm": "FRpSCG_ctlRowSm",
+			"emptyHint": "FRpSCG_emptyHint",
+			"emptyOverlay": "FRpSCG_emptyOverlay",
+			"emptyPane": "FRpSCG_emptyPane",
+			"emptyTitle": "FRpSCG_emptyTitle",
+			"groupTab": "FRpSCG_groupTab",
+			"groupTabActive": "FRpSCG_groupTabActive",
+			"groupTabs": "FRpSCG_groupTabs",
+			"inputRail": "FRpSCG_inputRail",
+			"modAddSquare": "FRpSCG_modAddSquare",
+			"modField": "FRpSCG_modField",
+			"modHead": "FRpSCG_modHead",
+			"modHint": "FRpSCG_modHint",
+			"modLeaf": "FRpSCG_modLeaf",
+			"modLeafActions": "FRpSCG_modLeafActions",
+			"modLeafError": "FRpSCG_modLeafError",
+			"modLeafFields": "FRpSCG_modLeafFields",
+			"modRow": "FRpSCG_modRow",
+			"modSection": "FRpSCG_modSection",
+			"modSelect": "FRpSCG_modSelect",
+			"modTile": "FRpSCG_modTile",
+			"modTileLabel": "FRpSCG_modTileLabel",
+			"modTileRecipe": "FRpSCG_modTileRecipe",
+			"modTileStrength": "FRpSCG_modTileStrength",
+			"modTitle": "FRpSCG_modTitle",
+			"modelAxes": "FRpSCG_modelAxes",
+			"paneHeaderPreview": "FRpSCG_paneHeaderPreview",
+			"paneHeaderStrip": "FRpSCG_paneHeaderStrip",
+			"paneHint": "FRpSCG_paneHint",
+			"paneMeta": "FRpSCG_paneMeta",
+			"paneMetaNum": "FRpSCG_paneMetaNum",
+			"panePulse": "FRpSCG_panePulse",
+			"paneShell": "FRpSCG_paneShell",
+			"paneTitle": "FRpSCG_paneTitle",
+			"pickBtn": "FRpSCG_pickBtn",
+			"pickEmpty": "FRpSCG_pickEmpty",
+			"pickGlyph": "FRpSCG_pickGlyph",
+			"pickLabel": "FRpSCG_pickLabel",
+			"pickList": "FRpSCG_pickList",
+			"pickRow": "FRpSCG_pickRow",
+			"pickThumb": "FRpSCG_pickThumb",
+			"sectionLabel": "FRpSCG_sectionLabel",
+			"sectionLabelTail": "FRpSCG_sectionLabelTail",
+			"sectionLabelText": "FRpSCG_sectionLabelText",
+			"skeleton": "FRpSCG_skeleton",
+			"sourceRow": "FRpSCG_sourceRow",
+			"specDice": "FRpSCG_specDice",
+			"specDiceOn": "FRpSCG_specDiceOn",
+			"specField": "FRpSCG_specField",
+			"specFieldHead": "FRpSCG_specFieldHead",
+			"specFieldKey": "FRpSCG_specFieldKey",
+			"specForm": "FRpSCG_specForm",
+			"specGrid": "FRpSCG_specGrid",
+			"specGroup": "FRpSCG_specGroup",
+			"specGroupTitle": "FRpSCG_specGroupTitle",
+			"specHint": "FRpSCG_specHint",
+			"specInfo": "FRpSCG_specInfo",
+			"specLinkBtn": "FRpSCG_specLinkBtn",
+			"specRequired": "FRpSCG_specRequired",
+			"specSelect": "FRpSCG_specSelect",
+			"specSlider": "FRpSCG_specSlider",
+			"specSliderRow": "FRpSCG_specSliderRow",
+			"specSliderValue": "FRpSCG_specSliderValue",
+			"specSlotCell": "FRpSCG_specSlotCell",
+			"specSlotRow": "FRpSCG_specSlotRow",
+			"specTextarea": "FRpSCG_specTextarea",
+			"squareBox": "FRpSCG_squareBox",
+			"squareFileInput": "FRpSCG_squareFileInput",
+			"squareGlyph": "FRpSCG_squareGlyph",
+			"squareLabel": "FRpSCG_squareLabel",
+			"squareMetric": "FRpSCG_squareMetric",
+			"squareOff": "FRpSCG_squareOff",
+			"squareOver": "FRpSCG_squareOver",
+			"squareThumb": "FRpSCG_squareThumb",
+			"squareWrap": "FRpSCG_squareWrap",
+			"squareX": "FRpSCG_squareX",
+			"sz14": "FRpSCG_sz14",
+			"tileDragging": "FRpSCG_tileDragging",
+			"tipAnchor": "FRpSCG_tipAnchor",
+			"wireDialog": "FRpSCG_wireDialog",
+			"wireEmpty": "FRpSCG_wireEmpty",
+			"wireIdx": "FRpSCG_wireIdx",
+			"wireList": "FRpSCG_wireList",
+			"wireMeta": "FRpSCG_wireMeta",
+			"wireOption": "FRpSCG_wireOption",
+			"wireOut": "FRpSCG_wireOut",
+			"wireSelected": "FRpSCG_wireSelected",
+			"wireSub": "FRpSCG_wireSub",
+			"wireThumb": "FRpSCG_wireThumb",
+			"wireThumbFallback": "FRpSCG_wireThumbFallback",
+			"wireTitle": "FRpSCG_wireTitle",
+			"wireUnwire": "FRpSCG_wireUnwire",
+			"wiredTag": "FRpSCG_wiredTag"
+		};
+		//#endregion
+		//#region ../card-base/src/layout.tsx
+		function Tip({ tip, children }) {
+			if (tip === void 0) return children;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+				label: tip,
+				side: "top",
+				delayMs: 300,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: card_module_css_default.tipAnchor,
+					children
+				})
+			});
+		}
+		//#endregion
 		//#region ../card-base/src/icons.tsx
 		function Svg({ className, style, children, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
@@ -9281,93 +9452,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				]
 			});
 		}
-		//#endregion
-		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$4 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}";
-		const tagId$4 = "@melite-plugin/dsh-card-view/card.module.css@1831d678";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
-			tag.dataset.pluginCss = tagId$4;
-			tag.textContent = css$4;
-			document.head.appendChild(tag);
-		}
-		var card_module_css_default = {
-			"groupTab": "FRpSCG_groupTab",
-			"groupTabActive": "FRpSCG_groupTabActive",
-			"groupTabs": "FRpSCG_groupTabs",
-			"inputRail": "FRpSCG_inputRail",
-			"modAddSquare": "FRpSCG_modAddSquare",
-			"modField": "FRpSCG_modField",
-			"modHead": "FRpSCG_modHead",
-			"modHint": "FRpSCG_modHint",
-			"modLeaf": "FRpSCG_modLeaf",
-			"modLeafActions": "FRpSCG_modLeafActions",
-			"modLeafError": "FRpSCG_modLeafError",
-			"modLeafFields": "FRpSCG_modLeafFields",
-			"modRow": "FRpSCG_modRow",
-			"modSection": "FRpSCG_modSection",
-			"modSelect": "FRpSCG_modSelect",
-			"modTile": "FRpSCG_modTile",
-			"modTileLabel": "FRpSCG_modTileLabel",
-			"modTileRecipe": "FRpSCG_modTileRecipe",
-			"modTileStrength": "FRpSCG_modTileStrength",
-			"modTitle": "FRpSCG_modTitle",
-			"modelAxes": "FRpSCG_modelAxes",
-			"pickBtn": "FRpSCG_pickBtn",
-			"pickEmpty": "FRpSCG_pickEmpty",
-			"pickGlyph": "FRpSCG_pickGlyph",
-			"pickLabel": "FRpSCG_pickLabel",
-			"pickList": "FRpSCG_pickList",
-			"pickRow": "FRpSCG_pickRow",
-			"pickThumb": "FRpSCG_pickThumb",
-			"sourceRow": "FRpSCG_sourceRow",
-			"specDice": "FRpSCG_specDice",
-			"specDiceOn": "FRpSCG_specDiceOn",
-			"specField": "FRpSCG_specField",
-			"specFieldHead": "FRpSCG_specFieldHead",
-			"specFieldKey": "FRpSCG_specFieldKey",
-			"specForm": "FRpSCG_specForm",
-			"specGrid": "FRpSCG_specGrid",
-			"specGroup": "FRpSCG_specGroup",
-			"specGroupTitle": "FRpSCG_specGroupTitle",
-			"specHint": "FRpSCG_specHint",
-			"specLinkBtn": "FRpSCG_specLinkBtn",
-			"specRequired": "FRpSCG_specRequired",
-			"specSelect": "FRpSCG_specSelect",
-			"specSlider": "FRpSCG_specSlider",
-			"specSliderRow": "FRpSCG_specSliderRow",
-			"specSliderValue": "FRpSCG_specSliderValue",
-			"specSlotCell": "FRpSCG_specSlotCell",
-			"specSlotRow": "FRpSCG_specSlotRow",
-			"specTextarea": "FRpSCG_specTextarea",
-			"squareBox": "FRpSCG_squareBox",
-			"squareFileInput": "FRpSCG_squareFileInput",
-			"squareGlyph": "FRpSCG_squareGlyph",
-			"squareLabel": "FRpSCG_squareLabel",
-			"squareMetric": "FRpSCG_squareMetric",
-			"squareOff": "FRpSCG_squareOff",
-			"squareOver": "FRpSCG_squareOver",
-			"squareThumb": "FRpSCG_squareThumb",
-			"squareWrap": "FRpSCG_squareWrap",
-			"squareX": "FRpSCG_squareX",
-			"sz14": "FRpSCG_sz14",
-			"tileDragging": "FRpSCG_tileDragging",
-			"wireDialog": "FRpSCG_wireDialog",
-			"wireEmpty": "FRpSCG_wireEmpty",
-			"wireIdx": "FRpSCG_wireIdx",
-			"wireList": "FRpSCG_wireList",
-			"wireMeta": "FRpSCG_wireMeta",
-			"wireOption": "FRpSCG_wireOption",
-			"wireOut": "FRpSCG_wireOut",
-			"wireSelected": "FRpSCG_wireSelected",
-			"wireSub": "FRpSCG_wireSub",
-			"wireThumb": "FRpSCG_wireThumb",
-			"wireThumbFallback": "FRpSCG_wireThumbFallback",
-			"wireTitle": "FRpSCG_wireTitle",
-			"wireUnwire": "FRpSCG_wireUnwire",
-			"wiredTag": "FRpSCG_wiredTag"
-		};
 		//#endregion
 		//#region ../card-base/src/square.tsx
 		/**
@@ -9504,31 +9588,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}) : null);
 		}
 		//#endregion
-		//#region ../card-base/src/form.tsx
-		/**
-		* form.tsx — @melite/card-base: THE CONSTRUCTOR.
-		*
-		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
-		* construct the card ui should see that the card package emits an
-		* image input, then constructs the input component automatically"):
-		* the base reads the card package's EMISSION — the served form-spec
-		* (the schema envelope, declared input/output edges, mod kinds) —
-		* and constructs the surface. The resolved value derives per render
-		* (resolveValue — the engine's compose cascade mirrored); every
-		* image/file field gets THE ONE square (square.tsx) with the
-		* three source verbs; no card ever hand-rolls an input component.
-		*
-		* THE SEAM (slots.ts): each field renders through the field-atom seam
-		* keyed by its emitted wire type — the caller may pass claimed atoms
-		* (the composition consults the slot machinery and hands them in);
-		* the base's built-in atom is the default (the ui-tool built-ins
-		* pattern). A whole-form takeover replaces CardForm itself.
-		*
-		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
-		* atoms the primitives set lacks (select, slider, textarea) are
-		* layout-only module CSS over native elements, every color an
-		* inherited --dsw-alias-* token (the package's documented pattern).
-		*/
+		//#region ../card-base/src/square-provider.tsx
+		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
 		/** The media-kind the picker fetches for a field: image fields name
 		*  image; file fields take the whole library (their accept narrows
 		*  client-side per row). */
@@ -9724,7 +9786,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const fileInput = (0, react.createElement)("input", {
 				ref: fileRef,
 				type: "file",
-				accept: "image/png,image/jpeg,image/webp",
+				accept: wire.accept ?? "image/png,image/jpeg,image/webp",
 				"aria-hidden": true,
 				tabIndex: -1,
 				style: { display: "none" },
@@ -9743,6 +9805,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				wireMenu: (0, react.createElement)(react.Fragment, null, sourceMenu, pickerModal, fileInput)
 			};
 		}
+		//#endregion
+		//#region ../card-base/src/atoms.tsx
+		/** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
 		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
 		*  promoted from h3's studio-local TriControl (same semantics, same
 		*  option order). Serves schema-bound fields of type 'tri' AND the
@@ -9806,7 +9872,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		/** One spec atom — typed by the declaration, edited as a raw string
 		*  while typing (decimal dots survive; coercion happens once at patch). */
-		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder }) {
+		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }) {
 			if ((f.type === "image" || f.type === "file") && square !== void 0) {
 				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
 				return (0, react.createElement)(InputSquare, {
@@ -9820,8 +9886,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.specSelect,
 				value: String(value ?? ""),
 				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label
-			}, f.options.map((o) => {
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			}, ghost !== void 0 ? (0, react.createElement)("option", { value: "" }, ghost) : null, f.options.map((o) => {
 				const row = typeof o === "string" ? {
 					value: o,
 					label: o
@@ -9876,11 +9943,23 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					"aria-label": f.label
 				});
 			}
+			if (f.type === "number") return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				min: f.min,
+				max: f.max,
+				step: f.step,
+				value: String(value ?? ""),
+				placeholder: placeholder ?? f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			});
 			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value: String(value ?? ""),
 				placeholder: placeholder ?? f.placeholder ?? "",
 				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
 			});
 		}
 		/** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
@@ -9894,181 +9973,25 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  values (model + every axis key + overlay keys) ride the caller's
 		*  map and pass along at Run. Renders nothing when the spec declares
 		*  no matrix. */
-		/** THE PACK PROMPT (the no-silent-drop law's extension half,
-		*  stroke 18): the card's DECLARED extension packs that the engine
-		*  cannot see render AS THEMSELVES — marked missing, with the
-		*  install verb one click away (the manage door's install_extension;
-		*  the host owns the wire). Present and unknown packs render nothing
-		*  (nothing to act on; the spec carries their truth for anyone who
-		*  reads it). Never a silently absent pack: the run's refusal text
-		*  and this prompt name the same id. */
-		function PackPrompt({ spec, onInstallPack }) {
-			const missing = (spec.packs ?? []).filter((p) => p.present === false);
-			if (missing.length === 0 || onInstallPack === void 0) return null;
-			return (0, react.createElement)("section", {
-				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
-				"data-pack-prompt": "1"
-			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Extensions"), missing.map((p) => (0, react.createElement)(PackPromptRow, {
-				key: p.id,
-				id: p.id,
-				onInstallPack
-			})));
+		//#endregion
+		//#region ../card-base/src/rows.tsx
+		/** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE INFO GLYPH (hour 21): the field's declared help prose (the
+		*  schema's extra.tooltip) rides a hover (i) beside the label — one
+		*  definition for every card; absent prose, no glyph. The text is
+		*  aria-carried (the DSH Tooltip is hover-only). */
+		function infoGlyph(f) {
+			if (f.tooltip === void 0 || f.tooltip === "") return null;
+			return (0, react.createElement)(Tip, {
+				tip: f.tooltip,
+				children: (0, react.createElement)("span", {
+					className: card_module_css_default.specInfo,
+					role: "note",
+					"aria-label": `info: ${f.tooltip}`
+				}, "i")
+			});
 		}
-		function PackPromptRow({ id, onInstallPack }) {
-			const [st, setSt] = (0, react.useState)("idle");
-			return (0, react.createElement)("div", {
-				className: card_module_css_default.specHint,
-				"data-missing-pack": id
-			}, id + " is required by this card but not installed on the engine.", " ", (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.specLinkBtn,
-				disabled: st !== "idle",
-				onClick: () => {
-					setSt("busy");
-					onInstallPack(id).then((ok) => setSt(ok ? "queued" : "failed")).catch(() => setSt("failed"));
-				}
-			}, st === "idle" ? "Install " + id : st === "busy" ? "Requesting…" : st === "queued" ? "Install queued ✓ (restart the engine when it lands)" : "Install request failed — retry from the assets tab"));
-		}
-		function ModelAxes({ spec, value, onSet, onDownloadModel }) {
-			const groups = axisGroups(spec);
-			if (groups.length === 0) return null;
-			const models = modelChoices(spec);
-			const matrixSet = new Set(models);
-			const familyRows = (spec.families ?? []).map((f) => ({
-				...f,
-				inMatrix: matrixSet.has(f.id)
-			}));
-			const familyFace = /* @__PURE__ */ new Map();
-			for (const f of spec.families ?? []) if (f.label !== void 0 && f.label !== "") familyFace.set(f.id, f.label);
-			const contract = spec.features?.variant_groups ?? {};
-			const pick = (row) => {
-				const patch = axisPickPatch(spec, row);
-				for (const [k, v] of Object.entries(patch)) onSet(k, v);
-			};
-			const modOwned = modOwnedFields(spec);
-			const knobStamp = (r) => {
-				const stamp = {};
-				for (const [k, v] of Object.entries(axisPickPatch(spec, r))) if (!modOwned.has(k)) stamp[k] = v;
-				return stamp;
-			};
-			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(knobStamp(r)).length > 0);
-			const heldModelRaw = value["model"];
-			const heldModel = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : void 0;
-			const knownModel = (m) => models.includes(m) || (spec.families ?? []).some((f) => f.id === m);
-			const refusedModel = heldModel !== void 0 && !knownModel(heldModel) ? heldModel : void 0;
-			const shownModel = heldModel ?? (typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "");
-			const heldFam = (spec.families ?? []).find((f) => f.id === shownModel && !f.present);
-			const [dlState, setDlState] = (0, react.useState)("idle");
-			(0, react.useEffect)(() => {
-				setDlState("idle");
-			}, [shownModel]);
-			const rowsOf = (g, active) => composingRows(spec, g, active);
-			const active = {};
-			for (const g of groups) {
-				const heldRaw = value[axisKey(g)];
-				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
-				const rows = rowsOf(g, active);
-				if (heldId !== void 0 && rows.some((r) => r.id === heldId)) active[g] = heldId;
-				else if (heldId !== void 0) active[g] = heldId;
-				else active[g] = activeRowId(spec, value, g, active) ?? (rows.length > 0 ? rows[0].id : "");
-			}
-			return (0, react.createElement)("section", {
-				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
-				"data-model-axes": "1"
-			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Model"), (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Model"), (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"aria-label": "Model",
-				...refusedModel !== void 0 ? { "data-refused": "model" } : {},
-				value: shownModel,
-				onChange: (e) => {
-					const m = e.target.value;
-					const patch = modelSwitchPatch(spec, m);
-					for (const [k, v] of Object.entries(patch)) onSet(k, v);
-				}
-			}, refusedModel !== void 0 ? (0, react.createElement)("option", {
-				key: refusedModel,
-				value: refusedModel
-			}, titleCaseId(refusedModel) + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
-				key: "fam-" + f.id,
-				value: f.id
-			}, (f.label ?? titleCaseId(f.id)) + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
-				key: m,
-				value: m
-			}, familyFace.get(m) ?? titleCaseId(m)))), heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
-				className: card_module_css_default.specHint,
-				"data-download-prompt": heldFam.id
-			}, titleCaseId(heldFam.id) + " is offered by this card but not downloaded on this machine.", " ", (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.specLinkBtn,
-				disabled: dlState !== "idle",
-				onClick: () => {
-					setDlState("busy");
-					onDownloadModel(heldFam.id).then((ok) => setDlState(ok ? "queued" : "failed")).catch(() => setDlState("failed"));
-				}
-			}, dlState === "idle" ? "Download " + (heldFam.label ?? titleCaseId(heldFam.id)) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
-				const rows = rowsOf(g, active);
-				const heldRaw = value[axisKey(g)];
-				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
-				const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId) ? heldId : void 0;
-				if (rows.length === 0 && refusedId === void 0) return null;
-				const label = contract[g]?.label ?? titleCaseId(g);
-				return (0, react.createElement)("label", {
-					key: g,
-					className: card_module_css_default.specField
-				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)("select", {
-					className: card_module_css_default.specSelect,
-					"aria-label": label,
-					"data-axis": g,
-					...refusedId !== void 0 ? { "data-refused": g } : {},
-					value: active[g],
-					onChange: (e) => {
-						const id = e.target.value;
-						const row = rows.find((v) => v.id === id);
-						if (row !== void 0) pick(row);
-					}
-				}, refusedId !== void 0 ? (0, react.createElement)("option", {
-					key: refusedId,
-					value: refusedId
-				}, titleCaseId(refusedId) + " — invalid " + label.toLowerCase() + " for " + titleCaseId(heldModel ?? shownModel)) : null, rows.map((v) => (0, react.createElement)("option", {
-					key: v.id,
-					value: v.id
-				}, titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
-			}), pillRows.length > 0 ? (0, react.createElement)("div", {
-				className: card_module_css_default.specGroup,
-				"data-recipe-pills": "1"
-			}, pillRows.map((r) => (0, react.createElement)("button", {
-				key: r.id,
-				type: "button",
-				className: card_module_css_default.specLinkBtn,
-				"data-recipe-pill": r.id,
-				title: typeof r.hint === "string" && r.hint !== "" ? r.hint : void 0,
-				onClick: () => {
-					for (const [k, v] of Object.entries(knobStamp(r))) onSet(k, v);
-				}
-			}, titleCaseId(r.label)))) : null);
-		}
-		/** THE CARD FORM (the constructor's surface half) — the emission's
-		*  fields walked off the schema envelope, grouped, visible-when
-		*  honored; the RESOLVED value derives per render (resolveValue —
-		*  the engine's compose cascade mirrored), edits are set/unset ops
-		*  over the USER layer (the settings law: presence IS the override
-		*  mark, the reset chip removes it). Each field renders through the
-		*  claimed atom for its emitted type when the caller passes one;
-		*  the base's built-in atom is the default.
-		*
-		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
-		*  img-to-mesh input component — you are not using it around — you
-		*  are hardcoding"): an emitted image/file input constructs THE ONE
-		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
-		*  square provider — no call site wires it, no call site can forget
-		*  it. The caller hands only the WIRE (picker candidates), never the
-		*  component; a caller that passes its own `square` fn overrides (the
-		*  host-claim seam), but the default is the constructor's own. */
-		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
-		*  required star, hint) around the atom — CardForm's own row, opened
-		*  to rail sections that render served fields outside a whole form
-		*  (mask's TuneSection). The claim seam stays CardForm's; this row
-		*  takes the resolved atom inputs. */
 		/** THE SEED DICE (stroke 39 — the operator's QOL law): the seed
 		*  knob carries the RANDOM sentinel -1 (GATE S: -1 mints a fresh
 		*  seed in the lane, EVERY run). The dice sits at the key line's
@@ -10150,21 +10073,276 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
 			const seedKnob = f.name === "seed";
 			const seedRandom = seedKnob && (value === -1 || value === "-1");
-			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SeedDice, {
+			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SeedDice, {
 				random: seedRandom,
 				onToggle: () => {
 					if (seedRandom) onEdit(f.name, Math.floor(Math.random() * 2147483647));
 					else onEdit(f.name, -1);
 				}
-			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
+			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SpecAtom, {
 				f,
 				value: seedRandom ? void 0 : value,
 				...seedRandom ? { placeholder: "random — new every run" } : {},
 				onEdit,
 				square,
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
-			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
+			}));
 		}
+		//#endregion
+		//#region ../card-base/src/axes.tsx
+		/** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE PACK PROMPT (the no-silent-drop law's extension half,
+		*  stroke 18): the card's DECLARED extension packs that the engine
+		*  cannot see render AS THEMSELVES — marked missing, with the
+		*  install verb one click away (the manage door's install_extension;
+		*  the host owns the wire). Present and unknown packs render nothing
+		*  (nothing to act on; the spec carries their truth for anyone who
+		*  reads it). Never a silently absent pack: the run's refusal text
+		*  and this prompt name the same id. */
+		function PackPrompt({ spec, onInstallPack }) {
+			const missing = (spec.packs ?? []).filter((p) => p.present === false);
+			if (missing.length === 0 || onInstallPack === void 0) return null;
+			return (0, react.createElement)("section", {
+				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
+				"data-pack-prompt": "1"
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Extensions"), missing.map((p) => (0, react.createElement)(PackPromptRow, {
+				key: p.id,
+				id: p.id,
+				onInstallPack
+			})));
+		}
+		function PackPromptRow({ id, onInstallPack }) {
+			const [st, setSt] = (0, react.useState)("idle");
+			return (0, react.createElement)("div", {
+				className: card_module_css_default.specHint,
+				"data-missing-pack": id
+			}, id + " is required by this card but not installed on the engine.", " ", (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specLinkBtn,
+				disabled: st !== "idle",
+				onClick: () => {
+					setSt("busy");
+					onInstallPack(id).then((ok) => setSt(ok ? "queued" : "failed")).catch(() => setSt("failed"));
+				}
+			}, st === "idle" ? "Install " + id : st === "busy" ? "Requesting…" : st === "queued" ? "Install queued ✓ (restart the engine when it lands)" : "Install request failed — retry from the assets tab"));
+		}
+		function ModelAxes({ spec, value, onSet, onDownloadModel }) {
+			const groups = axisGroups(spec);
+			if (groups.length === 0) return null;
+			const models = modelChoices(spec);
+			const matrixSet = new Set(models);
+			const familyRows = (spec.families ?? []).map((f) => ({
+				...f,
+				inMatrix: matrixSet.has(f.id)
+			}));
+			const familyFace = /* @__PURE__ */ new Map();
+			for (const f of spec.families ?? []) if (f.label !== void 0 && f.label !== "") familyFace.set(f.id, f.label);
+			const contract = spec.features?.variant_groups ?? {};
+			const pick = (row) => {
+				const patch = axisPickPatch(spec, row);
+				for (const [k, v] of Object.entries(patch)) onSet(k, v);
+			};
+			const knobStamp = (r) => axisPickPatch(spec, r);
+			rowsFor(spec, "Recipe").filter((r) => Object.keys(knobStamp(r)).length > 0);
+			const heldModelRaw = value["model"];
+			const heldModel = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : void 0;
+			const knownModel = (m) => models.includes(m) || (spec.families ?? []).some((f) => f.id === m);
+			const refusedModel = heldModel !== void 0 && !knownModel(heldModel) ? heldModel : void 0;
+			const shownModel = heldModel ?? (typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "");
+			const heldFam = (spec.families ?? []).find((f) => f.id === shownModel && !f.present);
+			const [dlState, setDlState] = (0, react.useState)("idle");
+			(0, react.useEffect)(() => {
+				setDlState("idle");
+			}, [shownModel]);
+			const rowsOf = (g, active) => composingRows(spec, g, active);
+			const active = {};
+			for (const g of groups) {
+				const heldRaw = value[axisKey(g)];
+				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
+				const rows = rowsOf(g, active);
+				if (heldId !== void 0 && rows.some((r) => r.id === heldId)) active[g] = heldId;
+				else if (heldId !== void 0) active[g] = heldId;
+				else active[g] = activeRowId(spec, value, g, active) ?? (rows.length > 0 ? rows[0].id : "");
+			}
+			return (0, react.createElement)("section", {
+				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
+				"data-model-axes": "1"
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Model"), (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Model"), (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"aria-label": "Model",
+				...refusedModel !== void 0 ? { "data-refused": "model" } : {},
+				value: shownModel,
+				onChange: (e) => {
+					const m = e.target.value;
+					const patch = modelSwitchPatch(spec, m);
+					for (const [k, v] of Object.entries(patch)) onSet(k, v);
+				}
+			}, refusedModel !== void 0 ? (0, react.createElement)("option", {
+				key: refusedModel,
+				value: refusedModel
+			}, titleCaseId(refusedModel) + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
+				key: "fam-" + f.id,
+				value: f.id
+			}, (f.label ?? titleCaseId(f.id)) + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
+				key: m,
+				value: m
+			}, familyFace.get(m) ?? titleCaseId(m)))), heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.specHint,
+				"data-download-prompt": heldFam.id
+			}, titleCaseId(heldFam.id) + " is offered by this card but not downloaded on this machine.", " ", (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specLinkBtn,
+				disabled: dlState !== "idle",
+				onClick: () => {
+					setDlState("busy");
+					onDownloadModel(heldFam.id).then((ok) => setDlState(ok ? "queued" : "failed")).catch(() => setDlState("failed"));
+				}
+			}, dlState === "idle" ? "Download " + (heldFam.label ?? titleCaseId(heldFam.id)) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
+				const rows = rowsOf(g, active);
+				const heldRaw = value[axisKey(g)];
+				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
+				const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId) ? heldId : void 0;
+				if (rows.length === 0 && refusedId === void 0) return null;
+				const label = contract[g]?.label ?? titleCaseId(g);
+				return (0, react.createElement)("label", {
+					key: g,
+					className: card_module_css_default.specField
+				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)("select", {
+					className: card_module_css_default.specSelect,
+					"aria-label": label,
+					"data-axis": g,
+					...refusedId !== void 0 ? { "data-refused": g } : {},
+					value: active[g],
+					onChange: (e) => {
+						const id = e.target.value;
+						const row = rows.find((v) => v.id === id);
+						if (row !== void 0) pick(row);
+					}
+				}, refusedId !== void 0 ? (0, react.createElement)("option", {
+					key: refusedId,
+					value: refusedId
+				}, titleCaseId(refusedId) + " — invalid " + label.toLowerCase() + " for " + titleCaseId(heldModel ?? shownModel)) : null, rows.map((v) => (0, react.createElement)("option", {
+					key: v.id,
+					value: v.id
+				}, titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
+			}), (0, react.createElement)(RecipePills, {
+				spec,
+				onSet,
+				values: value
+			}));
+		}
+		/** THE FAMILY RECIPE DROPDOWN (Rule A -- the recipe law; the
+		* operator's order, 2026-09-18: "RECIPES AREN'T EVEN A DROPDOWN"):
+		* the family's preset macros as ONE SELECT beside the axes -- the
+		* same shape every axis rides, never a list of link-buttons. The
+		* pick writes the row's FULL stamp (axisPickPatch -- mod-owned keys
+		* included, the Rule A amendment); the SELECTION derives from the
+		* ONE truth (activeRecipeId -- the row whose stamp the user layer
+		* holds; no recipe key persists, nothing goes stale when the rail
+		* moves). Stamp-less rows (the family `default`) render nothing: a
+		* row that writes nothing is a dead option. A hand-edited layer
+		* (no stamp-for-stamp match) shows the placeholder -- the form
+		* never lies that a recipe is active.
+		*
+		* THE REUSE LAW: extracted so EVERY model surface seats the same
+		* dropdown -- CardForm under the axes, a studio beside its model
+		* route. Never a second implementation. */
+		function RecipePills({ spec, onSet, values }) {
+			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0);
+			if (pillRows.length === 0) return null;
+			const active = values !== void 0 ? activeRecipeId(spec, values) : void 0;
+			const pick = (id) => {
+				const row = pillRows.find((r) => r.id === id);
+				if (row === void 0) return;
+				for (const [k, v] of Object.entries(axisPickPatch(spec, row))) onSet(k, v);
+			};
+			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Recipe"), (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"data-recipe-select": "1",
+				"aria-label": "Recipe",
+				value: active ?? "",
+				onChange: (e) => {
+					const id = e.currentTarget.value;
+					if (id !== "") pick(id);
+				}
+			}, (0, react.createElement)("option", {
+				key: "__none__",
+				value: "",
+				disabled: active !== void 0
+			}, active === void 0 ? "-- recipe --" : "-- custom --"), pillRows.map((r) => (0, react.createElement)("option", {
+				key: r.id,
+				value: r.id,
+				title: typeof r.hint === "string" && r.hint !== "" ? r.hint : void 0
+			}, titleCaseId(r.label) + (typeof r.hint === "string" && r.hint !== "" ? ` \u2014 ${r.hint}` : "")))));
+		}
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). Each field renders through the
+		*  claimed atom for its emitted type when the caller passes one;
+		*  the base's built-in atom is the default.
+		*
+		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
+		*  img-to-mesh input component — you are not using it around — you
+		*  are hardcoding"): an emitted image/file input constructs THE ONE
+		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
+		*  square provider — no call site wires it, no call site can forget
+		*  it. The caller hands only the WIRE (picker candidates), never the
+		*  component; a caller that passes its own `square` fn overrides (the
+		*  host-claim seam), but the default is the constructor's own. */
+		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
+		*  required star, hint) around the atom — CardForm's own row, opened
+		*  to rail sections that render served fields outside a whole form
+		*  (mask's TuneSection). The claim seam stays CardForm's; this row
+		*  takes the resolved atom inputs. */
+		//#endregion
+		//#region ../card-base/src/use-form-spec.ts
+		/** use-form-spec.ts — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		//#endregion
+		//#region ../card-base/src/spec-panel.tsx
+		/** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		//#endregion
+		//#region ../card-base/src/form.tsx
+		/**
+		* form.tsx — @melite/card-base: THE CONSTRUCTOR (the godfile
+		* split, hour 15: the seams live in their own files now —
+		* use-form-spec.ts, square-provider.tsx, atoms.tsx, rows.tsx,
+		* spec-panel.tsx, axes.tsx — this file is the CardForm
+		* composition + the stable re-export surface).
+		*
+		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
+		* construct the card ui should see that the card package emits an
+		* image input, then constructs the input component automatically"):
+		* the base reads the card package's EMISSION — the served form-spec
+		* (the schema envelope, declared input/output edges, mod kinds) —
+		* and constructs the surface. The resolved value derives per render
+		* (resolveValue — the engine's compose cascade mirrored); every
+		* image/file field gets THE ONE square (square.tsx) with the
+		* three source verbs; no card ever hand-rolls an input component.
+		*
+		* THE SEAM (slots.ts): each field renders through the field-atom seam
+		* keyed by its emitted wire type — the caller may pass claimed atoms
+		* (the composition consults the slot machinery and hands them in);
+		* the base's built-in atom is the default (the ui-tool built-ins
+		* pattern). A whole-form takeover replaces CardForm itself.
+		*
+		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
+		* atoms the primitives set lacks (select, slider, textarea) are
+		* layout-only module CSS over native elements, every color an
+		* inherited --dsw-alias-* token (the package's documented pattern).
+		*/
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). The constructor OWNS the square
+		*  provider (no call site wires it, no call site can forget it). */
 		function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }) {
 			const fields = fieldsOf(spec);
 			const value = resolveValue(spec, user, base);
@@ -10286,12 +10464,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						const cell = (0, react.createElement)("div", {
 							key: f.name,
 							className: card_module_css_default.specField
-						}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), claim({
+						}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), claim({
 							f,
 							value: value[f.name],
 							onEdit: edit,
 							square: sq
-						}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
+						}));
 						children.push(gridCols === void 0 ? cell : (0, react.createElement)("div", {
 							key: f.name + "-cell",
 							style: cellStyle(f)
@@ -10397,6 +10575,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const [leafError, setLeafError] = (0, react.useState)(null);
 			const [draftOption, setDraftOption] = (0, react.useState)("");
 			const [draftStrength, setDraftStrength] = (0, react.useState)("");
+			const [draftSteps, setDraftSteps] = (0, react.useState)("");
 			const [draftParams, setDraftParams] = (0, react.useState)({});
 			const entriesOf = (k) => {
 				const v = values[k.param_key];
@@ -10447,6 +10626,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 				setDraftOption("");
 				setDraftStrength("");
+				setDraftSteps("");
 				setDraftParams(fieldDefaults(k));
 				setLeafError(null);
 				setLeaf({
@@ -10469,6 +10649,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				} else if (isOptionKind(k)) {
 					const strength = typeof entry["strength"] === "number" ? entry["strength"] : void 0;
 					setDraftStrength(strength !== void 0 ? String(strength) : "");
+					setDraftSteps(typeof entry["steps"] === "number" ? String(entry["steps"]) : "");
 				} else {
 					const params = {};
 					for (const f of k.fields ?? []) {
@@ -10542,9 +10723,31 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							setLeafError("Strength must be a number.");
 							return;
 						}
-						commit(k, [...entries, {
+						const stepsSeed = option?.defaults?.steps;
+						const steps = draftSteps.trim() === "" ? typeof stepsSeed === "number" ? stepsSeed : void 0 : Number(draftSteps);
+						if (steps !== void 0 && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
+							setLeafError("Steps applied must be a whole number ≥ 1.");
+							return;
+						}
+						if (steps !== void 0) {
+							const min = option?.defaults?.steps_min;
+							const max = option?.defaults?.steps_max;
+							if (typeof min === "number" && steps < min) {
+								setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`);
+								return;
+							}
+							if (typeof max === "number" && steps > max) {
+								setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`);
+								return;
+							}
+						}
+						commit(k, [...entries, steps === void 0 ? {
 							id: draftOption,
 							strength
+						} : {
+							id: draftOption,
+							strength,
+							steps
 						}]);
 					} else {
 						const entry = entries[open.index];
@@ -10557,10 +10760,36 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							setLeafError("Strength must be a number.");
 							return;
 						}
+						const steps = draftSteps.trim() === "" ? void 0 : Number(draftSteps);
+						if (steps !== void 0 && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
+							setLeafError("Steps applied must be a whole number ≥ 1.");
+							return;
+						}
+						if (steps !== void 0) {
+							const row = (k.options ?? []).find((o) => o.value === entry.id);
+							const min = row?.defaults?.steps_min;
+							const max = row?.defaults?.steps_max;
+							if (typeof min === "number" && steps < min) {
+								setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`);
+								return;
+							}
+							if (typeof max === "number" && steps > max) {
+								setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`);
+								return;
+							}
+						}
 						const next = [...entries];
-						next[open.index] = {
+						if (steps === void 0) {
+							const rest = {
+								...entry,
+								strength
+							};
+							delete rest["steps"];
+							next[open.index] = rest;
+						} else next[open.index] = {
 							...entry,
-							strength
+							strength,
+							steps
 						};
 						commit(k, next);
 					}
@@ -10687,9 +10916,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setDraftOption,
 					setDraftStrength,
 					setDraftParams,
+					setDraftSteps,
 					draftOption,
 					draftStrength,
-					draftParams
+					draftParams,
+					draftSteps
 				},
 				onError: setLeafError,
 				onSave: saveLeaf,
@@ -10766,7 +10997,26 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onChange: (e) => {
 					onDraft.setDraftStrength(e.target.value);
 				}
-			}))) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
+			})), (k.options ?? []).some((o) => typeof o.defaults?.steps === "number") ? (() => {
+				const rowOpts = k.options ?? [];
+				const activeRow = rowOpts.find((o) => o.value === onDraft.draftOption) ?? rowOpts[0];
+				const rMin = activeRow?.defaults?.steps_min;
+				const rMax = activeRow?.defaults?.steps_max;
+				const rangeText = typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? ` ${rMin}\u2013${rMax}` : typeof activeRow?.defaults?.steps === "number" ? ` (fixed at ${activeRow.defaults.steps})` : "";
+				return (0, react.createElement)("label", { className: card_module_css_default.modField }, `Steps applied${rangeText}`, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					"aria-label": "Steps applied",
+					type: "number",
+					step: "1",
+					min: typeof rMin === "number" ? String(rMin) : void 0,
+					max: typeof rMax === "number" ? String(rMax) : void 0,
+					value: onDraft.draftSteps,
+					placeholder: String(activeRow?.defaults?.steps ?? ""),
+					title: typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? `This adapter runs ${rMin}\u2013${rMax} steps — the dial bounds to the row's declared domain; the run\u2019s sampler applies it unless a call pins steps explicitly.` : "The distill’s own step count — the run’s sampler applies it unless a call pins steps explicitly.",
+					onChange: (e) => {
+						onDraft.setDraftSteps(e.target.value);
+					}
+				}));
+			})() : null) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
 				f,
 				value: onDraft.draftParams[f.name],
 				onEdit: (name, v) => {
@@ -10903,6 +11153,32 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onClick: props.onOpen
 			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null);
 		}
+		//#endregion
+		//#region ../card-base/src/use-resolved.ts
+		/**
+		* use-resolved.ts — THE STUDIO SEAM, ONE UNIVERSAL DEFAULT SYSTEM
+		* (operator, 2026-09-18: "there is no universal default system
+		* right?"). ONE resolver composes EVERY layer — schema defaults <-
+		* model_defaults <- base (the persisted/bench layer) <- user — and
+		* the surface reads THE ONE resolved map. Never a hand `??` ladder
+		* at a call site: a ladder IS a second resolver, and every extra
+		* arm is a place the truth forks.
+		*
+		* PRE-FETCH LAW: the spec arrives async, but the resolved map is
+		* STILL the layer composition — base under user, verbatim — so a
+		* synchronous render shows the document's own held values; the
+		* fetch landing fills the declared defaults under them (the same
+		* one map, richer). Nothing renders blank, nothing flickers, no
+		* call site branches on spec-null.
+		*
+		* THE EDIT LAW: `undefined` is the tri-state's inherit signal (the
+		* unset) — it rides verbatim, the caller's write owns what it
+		* means. Edits coerce at the SCHEMA BOUNDARY (coerceFieldEdit):
+		* numeric strings ride as numbers, unparseable strings ride
+		* verbatim for the run's schema parse to refuse LOUD, and keys the
+		* spec never declared (the mod bag) ride verbatim — the mod plane
+		* owns their validation.
+		*/
 		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js
 		/**
@@ -45107,1237 +45383,187 @@ void main() {
 			};
 		}
 		//#endregion
-		//#region ../card-base/src/toastStore.ts
-		/**
-		* THE ONE TOAST STORE (node-safe half of the one toast system,
-		* stroke 37): module state + the dual API (hook selector for React,
-		* zustand-classic statics for module-level pushers and tests). NO
-		* atom imports — node-env suites (the catalog contract specs) import
-		* this half without dragging DSH UI primitives' .css through the
-		* door. The renderer half lives in ./toast.tsx (ToastViewport); the
-		* store is the system, the viewport is its face.
-		*
-		* History: founded 2026-09-12 (the ideo/motion copies collapsed
-		* here). Stroke 36: the shell mounts the viewport — chrome is
-		* shell-owned. Stroke 37: the LAST two private stores died —
-		* web-kit/catalog's (whose toasts NEVER rendered: pushed from module
-		* context with no viewport anywhere, console-only) and
-		* mask-studio's (whose drop-errors never rendered either). Their
-		* pushers migrated here verbatim via the static surface.
-		*
-		* ONE API, two faces (the zustand-classic dual shape):
-		*   - hook:      useToastStore((s) => s.addToast)   — inside React
-		*   - statics:   useToastStore.getState().addToast(type, msg)
-		*                useToastStore.getState().toasts
-		*                useToastStore.subscribe(l) / .setState(patch)
-		*                — module-level pushers (contract stores, import
-		*                hooks) and test reset.
-		*
-		* Rendering: the DSH Toast atom (presentational banner — the atom is
-		* the surface, this module is the system). ToastViewport claims
-		* rendering: the FIRST live viewport renders, every other mounted
-		* viewport renders nothing, and ownership re-broadcasts when owners
-		* unmount — so the shell, the cards console, or any future seat may
-		* mount one and the document still renders toasts exactly once.
-		*
-		* Timing law (verbatim from the kit): errors persist 15s (the
-		* operator must SEE them), success/info auto-dismiss at 5s. Errors
-		* also console.error so nothing is silent even with no viewport.
-		*
-		* The third addToast argument (action {label, onClick}) is ACCEPTED
-		* and ignored: the DSH Toast atom owns the surface and ships no
-		* action chrome — the kit store dropped it the same way. When the
-		* atom grows an action prop, store and render it here.
-		*
-		* Per-seam subpath: `@melite/card-base/toast-store`.
-		*/
-		function emit() {
-			listeners$1.forEach((l) => l());
-		}
-		function subscribe(listener) {
-			listeners$1.add(listener);
-			return () => {
-				listeners$1.delete(listener);
-			};
-		}
-		function getSnapshot() {
-			return entries;
-		}
-		function addToast(type, message, _action) {
-			const id = nextId++;
-			entries = [...entries, {
-				id,
-				type,
-				message
-			}];
-			if (type === "error") console.error("[toast]", message);
-			else console.info("[toast]", message);
-			emit();
-			setTimeout(() => {
-				removeToast(id);
-			}, type === "error" ? 15e3 : 5e3);
-		}
-		function removeToast(id) {
-			if (!entries.some((t) => t.id === id)) return;
-			entries = entries.filter((t) => t.id !== id);
-			emit();
-		}
-		function getStore() {
-			return {
-				toasts: entries,
-				addToast: liveAddToast,
-				removeToast
-			};
-		}
-		function setStoreState(patch) {
-			if (patch.addToast !== void 0) liveAddToast = patch.addToast;
-			if (patch.toasts !== void 0) entries = patch.toasts;
-			emit();
-		}
-		var nextId, entries, listeners$1, liveAddToast, useToastStore;
-		var init_toastStore = __esmMin((() => {
-			nextId = 1;
-			entries = [];
-			listeners$1 = /* @__PURE__ */ new Set();
-			liveAddToast = addToast;
-			useToastStore = Object.assign(function useToastStore(selector) {
-				const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
-				return selector({
-					addToast: liveAddToast,
-					removeToast,
-					toasts
-				});
-			}, {
-				getState: getStore,
-				setState: setStoreState,
-				subscribe
-			});
-		}));
-		//#endregion
-		//#region ../card-base/src/toast.tsx
-		/**
-		* ToastViewport — THE RENDERER FACE of the one toast system
-		* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
-		* atom); this file re-exports it so UI users keep the single
-		* `@melite/card-base/toast` import — and mounts the viewport.
-		*
-		* THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
-		* studio shell, the cards console — and the document still renders
-		* toasts exactly ONCE. The first live viewport owns rendering;
-		* every other mounted viewport renders nothing; ownership
-		* re-broadcasts when owners unmount. No studio wires it, no studio
-		* can forget it, no seat can duplicate it.
-		*
-		* Per-seam subpath: `@melite/card-base/toast`.
-		*/
-		init_toastStore();
-		init_toastStore();
-		const liveViewportIds = /* @__PURE__ */ new Set();
-		let viewportEpoch = 0;
-		const viewportListeners = /* @__PURE__ */ new Set();
-		function emitViewportChange() {
-			viewportEpoch++;
-			viewportListeners.forEach((l) => l());
-		}
-		function subscribeViewport(l) {
-			viewportListeners.add(l);
-			return () => {
-				viewportListeners.delete(l);
-			};
-		}
-		function getViewportEpoch() {
-			return viewportEpoch;
-		}
-		let nextViewportId = 1;
-		/** Mount anywhere the system needs a renderer — the studio shell,
-		*  the cards console, any seat. The claim law guarantees exactly one
-		*  live renderer per document: the first-mounted viewport renders,
-		*  others render nothing until the owner unmounts. Renders the live
-		*  entries through the DSH Toast atom (body-portaled banner, owner
-		*  unmounts onDone). */
-		function ToastViewport() {
-			const idRef = (0, react.useRef)(nextViewportId++);
-			(0, react.useEffect)(() => {
-				const id = idRef.current;
-				liveViewportIds.add(id);
-				emitViewportChange();
-				return () => {
-					liveViewportIds.delete(id);
-					emitViewportChange();
-				};
-			}, []);
-			(0, react.useSyncExternalStore)(subscribeViewport, getViewportEpoch, getViewportEpoch);
-			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
-			if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: toasts.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {
-				text: t.message,
-				holdMs: t.type === "error" ? 15e3 : 5e3,
-				onDone: () => removeToast(t.id)
-			}, t.id)) });
-		}
-		//#endregion
-		//#region ../card-base/src/studioRail.tsx
-		/**
-		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
-		* (spec docs/design/card-studio-pattern.md §5 + §7.10).
-		*
-		* WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
-		* so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
-		* live in the RAIL, but their state lives INSIDE the tenant component
-		* (showSkeleton, editMode, bgImage…). Splitting the tenant into two
-		* registered components would force that state up through the shell —
-		* breaking E1 (the tenant receives exactly {stage, running, onSave}).
-		* Instead the tenant stays ONE component and PROJECTS its tools into the
-		* shell's slot; the shell stays genre-blind (it renders an empty div and
-		* knows nothing about motion).
-		*
-		* THE CONTRACT IS UNCHANGED: portaled tools write through the same
-		* onSave channel — nothing about the write path moves. Without the shell
-		* (a tenant mounted inline, e.g. the form view) the tools render in place
-		* — the exact layout the tenant had before the slot existed.
-		*
-		* Mount order (no flash): CardStudio renders the slot div and the tenant
-		* in the same commit; the div's ref lands before the tenant's effects
-		* run, so the portal binds on the first effect pass. The one render
-		* before that is inside the skeleton-masked mount anyway.
-		*/
-		/** The rail's tools-slot element, published by CardStudio. Null when the
-		*  tenant is mounted outside a studio shell (inline fallback). */
-		const StudioRailCtx = (0, react.createContext)(null);
-		/** TENANT side: renders children into the studio rail when one exists,
-		*  inline otherwise. Wrap the tenant's toolbar in this — nothing else. */
-		function StudioRail({ children }) {
-			const slot = (0, react.useContext)(StudioRailCtx);
-			const [el, setEl] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				if (slot && slot !== el) setEl(slot);
-			}, [slot]);
-			if (el) return (0, react_dom.createPortal)(children, el);
-			if (slot) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children });
-		}
-		//#endregion
-		//#region ../card-base/src/chrome.ts
-		/**
-		* Card chrome primitives — the ONE joiner + the ONE file reader
-		* (founded 2026-09-12, debt extermination: anny/ideo cx, motion/h3
-		* clsx-cn, and the four identical readAsDataURL copies collapsed
-		* here). DOM-free, no CSS, no atoms — safe for node and browser.
-		*
-		* Per-seam subpath: `@melite/card-base/chrome`.
-		*/
-		/** Plain classnames joiner (no conflicting utilities to merge —
-		*  plain join is exact). */
-		function cx(...parts) {
-			return parts.filter(Boolean).join(" ");
-		}
-		/** The merging joiner (clsx — objects/arrays/conditionals). */
-		function cn(...inputs) {
-			return clsx(...inputs);
-		}
-		//#endregion
-		//#region \0dsh-css:card-base/src/shell.module.css.mjs
-		const css$3 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
-		const tagId$3 = "@melite-plugin/dsh-card-view/shell.module.css@62658dc6";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
-			tag.dataset.pluginCss = tagId$3;
-			tag.textContent = css$3;
-			document.head.appendChild(tag);
-		}
-		var shell_module_css_default = {
-			"errorIcon": "_4etGFq_errorIcon",
-			"errorLine": "_4etGFq_errorLine",
-			"errorRow": "_4etGFq_errorRow",
-			"railHead": "_4etGFq_railHead",
-			"railSection": "_4etGFq_railSection",
-			"railTitle": "_4etGFq_railTitle",
-			"shell": "_4etGFq_shell"
-		};
-		//#endregion
-		//#region ../card-base/src/shell.tsx
-		/** The loud error line — shell-owned chrome. Same DOM the assembly
-		*  body always rendered. */
-		function StudioShellErrorLine({ errors }) {
-			if (errors.length === 0) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				role: "alert",
-				className: shell_module_css_default.errorLine,
-				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-					className: shell_module_css_default.errorRow,
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: shell_module_css_default.errorIcon }),
-						e.id,
-						": ",
-						e.message
-					]
-				}, e.id))
-			});
-		}
-		/** The studio body: params column LEFT (projected into the shell rail
-		*  slot when one exists), preview RIGHT, optional bottom bar, then the
-		*  error line. The uniform three-slot shape — timeline and form cards
-		*  are the same grain, forms simply leave the right/bottom slots empty.
-		*
-		*  THE TOAST LAW (stroke 36): the shell mounts the ONE toast viewport
-		*  — toasts are shell-owned chrome exactly like the error line (the
-		*  construction law: no studio wires it, no studio can forget it).
-		*  Before: motion hand-mounted a copy in a slot the contract never
-		*  had (type drift), anny pushed toasts with NO viewport mounted —
-		*  silently dropped — and ideogram4 hand-wired its own outside the
-		*  shell. The per-studio mount is DEAD; any toast pushed from any
-		*  seam renders here, once. */
-		function StudioShell({ params, preview, bottom, errors = [], className }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: cx(shell_module_css_default.shell, className),
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
-					preview,
-					bottom,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {})
-				]
-			});
-		}
-		//#endregion
-		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/web-kit/timeline/timeline/timeline.module.css.mjs
-		const css$2 = ".E4_1PW_root{user-select:none;display:flex}.E4_1PW_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.E4_1PW_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.E4_1PW_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.E4_1PW_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.E4_1PW_zoomBtn svg{width:14px;height:14px}.E4_1PW_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.E4_1PW_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.E4_1PW_laneHead,.E4_1PW_laneHeadBeats{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneHead>svg,.E4_1PW_laneHeadBeats>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.E4_1PW_laneHeadBeats>svg{color:var(--dsw-alias-brand-primary)}.E4_1PW_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_audioHead{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_audioHead>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary);flex:none}.E4_1PW_gutterLabelDim{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.E4_1PW_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_detachBtn svg{width:10px;height:10px}.E4_1PW_laneRow{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneRow:last-child{border-bottom:0}.E4_1PW_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.E4_1PW_laneName{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;overflow:hidden}.E4_1PW_contentWrap{flex:1;min-width:0;position:relative}.E4_1PW_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.E4_1PW_scroller::-webkit-scrollbar{height:8px}.E4_1PW_scroller::-webkit-scrollbar-track{background:0 0}.E4_1PW_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.E4_1PW_content{position:relative}.E4_1PW_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);cursor:ew-resize;touch-action:none;position:relative}.E4_1PW_tick{position:absolute;top:0;bottom:0}.E4_1PW_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.E4_1PW_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.E4_1PW_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.E4_1PW_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_canAdd{cursor:copy}.E4_1PW_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.E4_1PW_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.E4_1PW_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.E4_1PW_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.E4_1PW_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeDead{cursor:default;opacity:.35}.E4_1PW_edgeDead:hover{background:0 0}.E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_promptClip:hover .E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.E4_1PW_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.E4_1PW_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeWide{width:16px}.E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.E4_1PW_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.E4_1PW_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.E4_1PW_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.E4_1PW_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.E4_1PW_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.E4_1PW_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.E4_1PW_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.E4_1PW_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.E4_1PW_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.E4_1PW_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.E4_1PW_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.E4_1PW_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.E4_1PW_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.E4_1PW_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.E4_1PW_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.E4_1PW_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_promptClip:hover .E4_1PW_promptDelete{opacity:1}.E4_1PW_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_beatsAdd{cursor:crosshair}.E4_1PW_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.E4_1PW_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.E4_1PW_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.E4_1PW_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.E4_1PW_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_audioClip:active{cursor:grabbing}.E4_1PW_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.E4_1PW_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.E4_1PW_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.E4_1PW_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.E4_1PW_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_audioClip:hover .E4_1PW_audioClipDelete{display:flex}.E4_1PW_audioClipDelete svg{width:8px;height:8px}.E4_1PW_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.E4_1PW_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.E4_1PW_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_kfLane:last-child{border-bottom:0}.E4_1PW_laneHint{color:var(--dsw-alias-label-tertiary);pointer-events:none;align-items:center;padding-left:12px;font-size:10px;display:flex;position:absolute;inset:0}.E4_1PW_kfWrap{position:absolute;top:0;bottom:0}.E4_1PW_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.E4_1PW_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.E4_1PW_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.E4_1PW_kfMoving{transform:rotate(45deg)scale(1.25)}.E4_1PW_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.E4_1PW_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_kfWrap:hover .E4_1PW_kfDelete{opacity:1}.E4_1PW_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_playhead{z-index:40;pointer-events:none;position:absolute;top:0;bottom:0}.E4_1PW_playheadCap{border:1px solid var(--dsw-alias-border-l4);border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.E4_1PW_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.E4_1PW_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.E4_1PW_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.E4_1PW_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.E4_1PW_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.E4_1PW_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.E4_1PW_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.E4_1PW_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}";
-		const tagId$2 = "@melite-plugin/dsh-card-view/timeline.module.css@b5c69b6a";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
-			tag.dataset.pluginCss = tagId$2;
-			tag.textContent = css$2;
-			document.head.appendChild(tag);
-		}
-		var timeline_module_css_default = {
-			"audioClip": "E4_1PW_audioClip",
-			"audioClipDelete": "E4_1PW_audioClipDelete",
-			"audioClipLabel": "E4_1PW_audioClipLabel",
-			"audioDrop": "E4_1PW_audioDrop",
-			"audioHead": "E4_1PW_audioHead",
-			"audioLane": "E4_1PW_audioLane",
-			"audioName": "E4_1PW_audioName",
-			"audioSlice": "E4_1PW_audioSlice",
-			"audioTime": "E4_1PW_audioTime",
-			"beatClip": "E4_1PW_beatClip",
-			"beatEmpty": "E4_1PW_beatEmpty",
-			"beatLabel": "E4_1PW_beatLabel",
-			"beatSelected": "E4_1PW_beatSelected",
-			"beatsAdd": "E4_1PW_beatsAdd",
-			"beatsEmpty": "E4_1PW_beatsEmpty",
-			"beatsLane": "E4_1PW_beatsLane",
-			"canAdd": "E4_1PW_canAdd",
-			"clipDur": "E4_1PW_clipDur",
-			"clipEditor": "E4_1PW_clipEditor",
-			"clipEmpty": "E4_1PW_clipEmpty",
-			"clipMoving": "E4_1PW_clipMoving",
-			"clipSelected": "E4_1PW_clipSelected",
-			"clipTextCol": "E4_1PW_clipTextCol",
-			"clipTextStack": "E4_1PW_clipTextStack",
-			"clipTitle": "E4_1PW_clipTitle",
-			"content": "E4_1PW_content",
-			"contentWrap": "E4_1PW_contentWrap",
-			"detachBtn": "E4_1PW_detachBtn",
-			"dropHint": "E4_1PW_dropHint",
-			"edgeDead": "E4_1PW_edgeDead",
-			"edgeL": "E4_1PW_edgeL",
-			"edgeR": "E4_1PW_edgeR",
-			"edgeWide": "E4_1PW_edgeWide",
-			"emptyCenter": "E4_1PW_emptyCenter",
-			"emptyHint": "E4_1PW_emptyHint",
-			"gainFill": "E4_1PW_gainFill",
-			"gripPill": "E4_1PW_gripPill",
-			"gripPillBright": "E4_1PW_gripPillBright",
-			"gripPillR": "E4_1PW_gripPillR",
-			"gutter": "E4_1PW_gutter",
-			"gutterLabel": "E4_1PW_gutterLabel",
-			"gutterLabelDim": "E4_1PW_gutterLabelDim",
-			"hintLine": "E4_1PW_hintLine",
-			"kfBtn": "E4_1PW_kfBtn",
-			"kfDelete": "E4_1PW_kfDelete",
-			"kfDiamond": "E4_1PW_kfDiamond",
-			"kfLane": "E4_1PW_kfLane",
-			"kfMoving": "E4_1PW_kfMoving",
-			"kfWrap": "E4_1PW_kfWrap",
-			"knobDot": "E4_1PW_knobDot",
-			"laneDot": "E4_1PW_laneDot",
-			"laneHead": "E4_1PW_laneHead",
-			"laneHeadBeats": "E4_1PW_laneHeadBeats",
-			"laneHint": "E4_1PW_laneHint",
-			"laneName": "E4_1PW_laneName",
-			"laneRow": "E4_1PW_laneRow",
-			"miniBtn": "E4_1PW_miniBtn",
-			"miniFitBtn": "E4_1PW_miniFitBtn",
-			"playhead": "E4_1PW_playhead",
-			"playheadCap": "E4_1PW_playheadCap",
-			"previewVideo": "E4_1PW_previewVideo",
-			"previewWrap": "E4_1PW_previewWrap",
-			"promptClip": "E4_1PW_promptClip",
-			"promptDelete": "E4_1PW_promptDelete",
-			"promptsLane": "E4_1PW_promptsLane",
-			"refAudioBadge": "E4_1PW_refAudioBadge",
-			"refBadge": "E4_1PW_refBadge",
-			"refCount": "E4_1PW_refCount",
-			"root": "E4_1PW_root",
-			"ruler": "E4_1PW_ruler",
-			"scrim": "E4_1PW_scrim",
-			"scroller": "E4_1PW_scroller",
-			"scrubBar": "E4_1PW_scrubBar",
-			"scrubFill": "E4_1PW_scrubFill",
-			"scrubHead": "E4_1PW_scrubHead",
-			"scrubReadout": "E4_1PW_scrubReadout",
-			"scrubToggle": "E4_1PW_scrubToggle",
-			"scrubTrack": "E4_1PW_scrubTrack",
-			"seamDot": "E4_1PW_seamDot",
-			"sliceLabel": "E4_1PW_sliceLabel",
-			"tick": "E4_1PW_tick",
-			"tickLabel": "E4_1PW_tickLabel",
-			"tickLine": "E4_1PW_tickLine",
-			"timecode": "E4_1PW_timecode",
-			"truncate": "E4_1PW_truncate",
-			"zoomBtn": "E4_1PW_zoomBtn",
-			"zoomPct": "E4_1PW_zoomPct",
-			"zoomRow": "E4_1PW_zoomRow"
-		};
-		//#endregion
-		//#region ../../web-kit/timeline/timeline/MotionTimelineBar.tsx
-		/**
-		* MotionTimelineBar — the motion card's bar, pose-studio display model.
-		*
-		* 2026-08-14 rethink: the vendored viser Timeline (canvas-drawn, Kimodo
-		* demo parity) is replaced by the LEGACY POSE STUDIO's interaction model —
-		* DOM clips you can SEE and GRAB: prompt cards drag (body = move, edges =
-		* resize), double-click to edit inline, hover-X to delete; keyframe lanes
-		* with draggable diamonds. The user's words: "I could click and drag prompt
-		* in the motion studio, was useful."
-		*
-		* Zoom + horizontal scroll (pose-studio parity, round 2): the bar DEFAULTS
-		* to fit (every frame on screen — no hidden content), but −/%/+ zooms in;
-		* past fit the content scrolls horizontally (native thin scrollbar, wheel,
-		* trackpad, shift-wheel) while the label gutter stays pinned. Zooming is
-		* ANCHORED to the playhead — the frame under the playhead stays put, the
-		* rest grows around it.
-		*
-		* Pull-the-tail (2026-08-14, the "stuck at 5 seconds" fix): the end is not
-		* a wall. Dragging the LAST prompt card's right edge past the end EXTENDS
-		* the timeline (onExtend → the parent grows its envelope + duration_sec),
-		* with auto-scroll following the cursor — the DaVinci Resolve rule that
-		* the sequence is as long as its content. Non-last cards clamp as before.
-		*
-		* What stayed: ALL the state + persistence beneath (tlPrompts /
-		* tlKeyframes / constraintPayloads in MotionCardEditor, constraints.ts
-		* serialize/hydrate, MOTION_TIMELINE_TRACKS lane colors from the Kimodo
-		* demo). This is a view-layer swap only — every prop is one of the
-		* callbacks the viser Timeline used to receive.
-		*
-		* Video-timeline re-tenanting round 2 (2026-08-16, "the bar needs to be
-		* TALLER, show the videos, and have a beats row UNDER the calls"): the
-		* row heights grew (ruler 28 / prompts 36 — the video studio passes 64),
-		* call clips render their WINDOW PREVIEW inside the clip (first frame at
-		* rest, plays on hover — NLE strip behavior), and a Layer C BEATS row
-		* sits under the calls: prompt segments within a call, clickable (the
-		* sidebar edits them), never cut-bearers. Clicking a call OR beat clip
-		* selects it (`onSelect`) — the tenant's sidebar populates that item's
-		* inputs/options; the selected clip gets a ring (calls brand cyan, beats
-		* cyan-300). A click on the EMPTY timeline deselects (`onSelect(null)`)
-		* — the sidebar shifts back to its global mode; a real drag never
-		* deselects (the post-pointerup synthetic click is suppressed).
-		*
-		* Theme: the DSH tokens (bg --dsw-alias-bg-layer-1, playhead
-		* --dsw-alias-brand-primary), the 2026-09-13 color law. The palette is
-		* themeable per mount (the 2026-09-07 styling seam: className/style on
-		* the root, theme.{barBg,playhead} for the accents) — defaults render
-		* byte-identical, so no tenant changes.
-		*/
-		//#endregion
-		//#region ../../web-kit/timeline/timeline/FilmPlayer.tsx
-		/**
-		* FilmPlayer — ONE film, ONE native player (the timeline genre's
-		* shared video surface, moved from h3-timeline's kit 2026-09-17:
-		* the operator's generic-tools stroke — "other cards, like H3
-		* Timeline (timeline bar at the bottom, video preview, dynamic
-		* parameters on the left), share code"). The timeline-genre card
-		* now composes from shared rails: StudioShell + CardForm
-		* (@melite/card-base), MotionTimelineBar (this package), and THIS
-		* player — the imperative seam the bar's playhead drives
-		* (seekTo/current/duration/play/pause/toggle) with the
-		* time/duration/playing reports. Time reports keep both sources
-		* (the element's timeupdate clock + a 4Hz poll while playing) so a
-		* silent event path never freezes the bar.
-		*/
-		const FilmPlayer = (0, react.forwardRef)(function FilmPlayer({ src, onTime, onDuration, onPlayingChange, onEnded, muted, loop, autoPlay, poster, className, "data-testid": tid }, ref) {
-			const videoRef = (0, react.useRef)(null);
-			const pendingSeekRef = (0, react.useRef)(null);
-			const seekRafRef = (0, react.useRef)(null);
-			const seekTo = (0, react.useCallback)((sec) => {
-				pendingSeekRef.current = sec;
-				if (seekRafRef.current != null) return;
-				seekRafRef.current = requestAnimationFrame(() => {
-					seekRafRef.current = null;
-					const target = pendingSeekRef.current;
-					pendingSeekRef.current = null;
-					const el = videoRef.current;
-					if (!el) return;
-					const d = el.duration;
-					el.currentTime = Math.max(0, Number.isFinite(d) && d > 0 ? Math.min(target, d) : target);
-				});
-			}, []);
-			(0, react.useEffect)(() => () => {
-				if (seekRafRef.current != null) cancelAnimationFrame(seekRafRef.current);
-			}, []);
-			(0, react.useImperativeHandle)(ref, () => ({
-				seekTo,
-				current: () => videoRef.current.currentTime,
-				duration: () => {
-					const d = videoRef.current.duration;
-					return Number.isFinite(d) ? d : 0;
-				},
-				play: () => void videoRef.current?.play(),
-				pause: () => void videoRef.current?.pause(),
-				toggle: () => {
-					const el = videoRef.current;
-					if (el.paused) el.play();
-					else el.pause();
-				}
-			}), [seekTo]);
-			const onTimeRef = (0, react.useRef)(onTime);
-			onTimeRef.current = onTime;
-			const handleTime = (0, react.useCallback)((t) => {
-				onTimeRef.current?.(t);
-			}, []);
-			(0, react.useEffect)(() => {
-				const id = window.setInterval(() => {
-					const el = videoRef.current;
-					if (el.paused || el.ended) return;
-					const t = el.currentTime;
-					if (Number.isFinite(t) && t >= 0) onTimeRef.current?.(t);
-				}, 250);
-				return () => window.clearInterval(id);
-			}, []);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
-				ref: videoRef,
-				className,
-				"data-testid": tid,
-				src,
-				muted,
-				loop,
-				autoPlay,
-				playsInline: true,
-				preload: "metadata",
-				controls: true,
-				poster,
-				onTimeUpdate: (e) => handleTime(e.currentTarget.currentTime),
-				onPlay: () => onPlayingChange?.(true),
-				onPause: () => onPlayingChange?.(false),
-				onEnded: () => onEnded?.(),
-				onLoadedMetadata: (e) => {
-					const d = e.currentTarget.duration;
-					if (Number.isFinite(d) && d > 0) onDuration?.(d);
-				}
-			});
-		});
-		//#endregion
-		//#region ../../web-kit/timeline/timeline/TimelineScrubBar.tsx
-		/**
-		* TimelineScrubBar — the form card's OPTIONAL BOTTOM SEAM (the
-		* generic-tools stroke, 2026-09-17: "form cards can have an
-		* optional SEAM for a timeline that stretches along the bottom").
-		*
-		* A PURE scrub rail: playhead position from current/duration,
-		* click + drag to seek, an optional play/pause toggle, and a
-		* time/frame readout. The OWNER wires it to whatever player owns
-		* the preview (the shared FilmPlayer's handle — seekTo/toggle/
-		* current/duration); the bar never touches a media element itself.
-		* Studios with full NLE needs ride MotionTimelineBar instead —
-		* this is the FORM card's face, the same genre as the shell's
-		* own "bottom: timeline scrub" slot law.
-		*/
-		const clamp01 = (v) => v < 0 ? 0 : v > 1 ? 1 : v;
-		function TimelineScrubBar({ current, duration, onSeek, onTogglePlay, playing, fps, "data-testid": tid }) {
-			const trackRef = (0, react.useRef)(null);
-			const [dragging, setDragging] = (0, react.useState)(false);
-			const pct = duration > 0 ? clamp01(current / duration) : 0;
-			/** pointer X → track fraction → seconds, clamped to the film */
-			const seekAtPointer = (0, react.useCallback)((clientX) => {
-				const track = trackRef.current;
-				if (track === null || duration <= 0) return;
-				const rect = track.getBoundingClientRect();
-				if (rect.width <= 0) return;
-				onSeek(clamp01((clientX - rect.left) / rect.width) * duration);
-			}, [duration, onSeek]);
-			const onPointerDown = (0, react.useCallback)((e) => {
-				if (duration <= 0) return;
-				e.currentTarget.setPointerCapture(e.pointerId);
-				setDragging(true);
-				seekAtPointer(e.clientX);
-			}, [duration, seekAtPointer]);
-			const onPointerMove = (0, react.useCallback)((e) => {
-				if (!dragging) return;
-				seekAtPointer(e.clientX);
-			}, [dragging, seekAtPointer]);
-			const endDrag = (0, react.useCallback)((e) => {
-				if (!dragging) return;
-				e.currentTarget.releasePointerCapture(e.pointerId);
-				setDragging(false);
-			}, [dragging]);
-			const fmt = (sec) => {
-				const s = Math.max(0, sec);
-				const m = Math.floor(s / 60);
-				return m > 0 ? m + ":" + String(Math.floor(s % 60)).padStart(2, "0") : s.toFixed(1) + "s";
-			};
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: timeline_module_css_default.scrubBar,
-				"data-testid": tid ?? "timeline-scrub-bar",
-				"data-dragging": dragging ? "true" : void 0,
-				children: [
-					onTogglePlay !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-						type: "button",
-						className: timeline_module_css_default.scrubToggle,
-						"aria-label": playing ? "Pause" : "Play",
-						onClick: onTogglePlay,
-						"data-testid": "timeline-scrub-toggle",
-						children: playing ? "❚❚" : "▶"
-					}) : null,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						ref: trackRef,
-						className: timeline_module_css_default.scrubTrack,
-						"data-testid": "timeline-scrub-track",
-						role: "slider",
-						"aria-label": "Timeline scrub",
-						"aria-valuemin": 0,
-						"aria-valuemax": Math.max(0, duration),
-						"aria-valuenow": Math.max(0, current),
-						"aria-valuetext": fmt(current) + " of " + fmt(duration),
-						onPointerDown,
-						onPointerMove,
-						onPointerUp: endDrag,
-						onPointerCancel: endDrag,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: timeline_module_css_default.scrubFill,
-							style: { width: (pct * 100).toFixed(3) + "%" }
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: timeline_module_css_default.scrubHead,
-							style: { left: (pct * 100).toFixed(3) + "%" }
-						})]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: timeline_module_css_default.scrubReadout,
-						"data-testid": "timeline-scrub-readout",
-						children: [
-							fmt(current),
-							" / ",
-							fmt(duration),
-							fps !== void 0 && fps > 0 ? " · frame " + String(Math.round(current * fps)) + "/" + String(Math.round(duration * fps)) : null
-						]
-					})
-				]
-			});
-		}
-		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
-		//#endregion
-		//#region src/client/filmSeam.tsx
-		/**
-		* filmSeam.tsx — THE FORM CARD'S OPTIONAL TIMELINE SEAM (the
-		* form-seams stroke, 2026-09-17): "form cards can have an optional
-		* SEAM for a timeline that stretches along the bottom".
-		*
-		* The shell's three-slot shape puts the PREVIEW in the right slot
-		* and the TIMELINE in the bottom slot — two different slots, one
-		* logical face (the bar scrubs the player). The seam object is the
-		* bridge: the player writes (handle + clock), the bar reads. A
-		* plain observable box — no store, no context, the smallest honest
-		* straddle: createFilmSeam() once per stage view (a useRef in the
-		* owner), FilmSeamPlayer into the preview slot, FilmSeamBar into
-		* the shell's bottom slot when the card CLAIMS the seam (the
-		* served spec's preview.timeline) AND a film artifact exists.
-		*/
-		function createFilmSeam(fps = 0) {
-			const listeners = /* @__PURE__ */ new Set();
-			const seam = {
-				handle: null,
-				current: 0,
-				duration: 0,
-				playing: false,
-				fps,
-				subscribe(fn) {
-					listeners.add(fn);
-					return () => {
-						listeners.delete(fn);
-					};
-				},
-				bind(handle) {
-					seam.handle = handle;
-					for (const fn of listeners) fn();
-				},
-				report(partial) {
-					Object.assign(seam, partial);
-					for (const fn of listeners) fn();
-				}
-			};
-			return seam;
-		}
-		/** THE PREVIEW SLOT FACE — the shared player, wired to the seam */
-		function FilmSeamPlayer(props) {
-			const { seam, src } = props;
-			const onTime = (0, react.useCallback)((sec) => {
-				seam.report({ current: sec });
-			}, [seam]);
-			const onDuration = (0, react.useCallback)((sec) => {
-				seam.report({ duration: sec });
-			}, [seam]);
-			const onPlayingChange = (0, react.useCallback)((playing) => {
-				seam.report({ playing });
-			}, [seam]);
-			const ref = (handle) => {
-				seam.bind(handle);
-			};
-			return (0, react.createElement)(FilmPlayer, {
-				src,
-				onTime,
-				onDuration,
-				onPlayingChange,
-				ref,
-				"data-testid": props["data-testid"] ?? "film-seam-player"
-			});
-		}
-		/** THE BOTTOM SLOT FACE — the shared scrub bar, reading the seam */
-		function FilmSeamBar(props) {
-			const { seam } = props;
-			const [, force] = (0, react.useState)(0);
-			(0, react.useEffect)(() => seam.subscribe(() => {
-				force((n) => n + 1);
-			}), [seam]);
-			const onSeek = (0, react.useCallback)((sec) => {
-				seam.handle?.seekTo(sec);
-				seam.report({ current: sec });
-			}, [seam]);
-			const onTogglePlay = (0, react.useCallback)(() => {
-				seam.handle?.toggle();
-			}, [seam]);
-			return (0, react.createElement)(TimelineScrubBar, {
-				current: seam.current,
-				duration: seam.duration > 0 ? seam.duration : seam.handle?.duration() ?? 0,
-				onSeek,
-				onTogglePlay,
-				playing: seam.playing,
-				fps: seam.fps > 0 ? seam.fps : void 0,
-				"data-testid": props["data-testid"] ?? "film-seam-bar"
-			});
-		}
-		//#endregion
-		//#region ../../image/mask-studio/src/paintInk.ts
-		const PAINT_STROKE_INK = "rgba(255, 255, 255, 1)";
-		//#endregion
-		//#region ../../image/mask-studio/src/ui/PaintLeafModal.tsx
-		const FIT$1 = 640;
-		/** Load an image element from a URL (null while loading/failed —
-		*  the modal degrades to the blank canvas, never a crash). */
-		const loadImage$1 = (url) => new Promise((resolve) => {
-			if (url === "") {
-				resolve(null);
-				return;
-			}
-			const img = new Image();
-			img.onload = () => {
-				resolve(img);
-			};
-			img.onerror = () => {
-				resolve(null);
-			};
-			img.src = url;
-		});
-		function PaintLeafModal(props) {
-			const { referenceUrl, payloadUrl, onSave, onCancel } = props;
-			const wrapRef = (0, react.useRef)(null);
-			const viewRef = (0, react.useRef)(null);
-			const paintRef = (0, react.useRef)(null);
-			const imgRef = (0, react.useRef)(null);
-			const drawingRef = (0, react.useRef)(false);
-			const lastPtRef = (0, react.useRef)(null);
-			const [brushSize, setBrushSize] = (0, react.useState)(28);
-			const [hasStrokes, setHasStrokes] = (0, react.useState)(false);
-			const [ready, setReady] = (0, react.useState)(false);
-			const [viewSize, setViewSize] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				let alive = true;
-				(async () => {
-					const img = await loadImage$1(referenceUrl);
-					const pay = payloadUrl ? await loadImage$1(payloadUrl) : null;
-					if (!alive) return;
-					imgRef.current = img;
-					const w = img?.naturalWidth ?? pay?.naturalWidth ?? 1024;
-					const h = img?.naturalHeight ?? pay?.naturalHeight ?? 1024;
-					const scale = Math.min(FIT$1 / w, FIT$1 / h, 1);
-					setViewSize({
-						w: Math.max(1, Math.round(w * scale)),
-						h: Math.max(1, Math.round(h * scale))
-					});
-					setReady(true);
-					if (pay && paintRef.current) {
-						const c = paintRef.current;
-						c.width = w;
-						c.height = h;
-						const ctx = c.getContext("2d");
-						if (ctx) {
-							ctx.drawImage(pay, 0, 0);
-							setHasStrokes(true);
+		//#region src/client/stage-run.ts
+		/** stage-run.ts — the card stage's run doors: ONE stage through the
+		* composing {model:} door, and the bench's sequential pass (extracted
+		* from CardsTab.tsx hour 15). */
+		/** Run ONE card stage through the COMPOSING door (the run-wire
+		*  package's startCardRun — the {model:} arm). The flow_inline door
+		*  this gesture rode before cannot consume cards ("card= stages are
+		*  unported on this gateway") and its executor demanded a pre-composed
+		*  params.workflow nobody emitted — the Sep 11 bench runs' "node
+		*  carries no inline workflow". The {model:} door composes the card's
+		*  arms estate-side; `model` is the card's DEFAULT FAMILY from the
+		*  catalog (the runs door resolves neither card ids nor aliases —
+		*  defaultFamilyForCard carries the currency, session-cached).
+		*  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
+		*  slot holds — an upload's estate path or a picked upstream output's
+		*  media-route url — rides the start doc VERBATIM; the engine stages
+		*  it under its runs-root arm. No client-side edge resolution exists.
+		*  Exported for the tab seam's door-contract spec. */
+		async function runCardStage(draftId, row) {
+			if (typeof row.card !== "string" || row.card === "") return { refused: "this stage names no card — nothing to compose" };
+			const src = await freshStageRow(draftId, row.id) ?? row;
+			const params = typeof src.params === "object" && src.params !== null && !Array.isArray(src.params) ? src.params : {};
+			const card = typeof src.card === "string" && src.card !== "" ? src.card : "";
+			if (card === "") return { refused: "this stage names no card — nothing to compose" };
+			const heldModel = params["model"];
+			const model = typeof heldModel === "string" && heldModel !== "" ? heldModel : await defaultFamilyForCard(card);
+			let doc = params;
+			try {
+				const selects = fieldsOf(await fetchFormSpec(card)).filter((f) => f.type === "select" && Array.isArray(f.options));
+				if (selects.length > 0) {
+					doc = { ...params };
+					for (const f of selects) {
+						const v = doc[f.name];
+						if (typeof v === "number") {
+							if (f.options.map((o) => typeof o === "string" ? o : o.value).includes(String(v))) doc[f.name] = String(v);
 						}
 					}
-				})();
-				return () => {
-					alive = false;
-				};
-			}, [referenceUrl, payloadUrl]);
-			const redraw = (0, react.useCallback)(() => {
-				const view = viewRef.current;
-				const paint = paintRef.current;
-				const vs = viewSize;
-				if (!view || !paint || !vs) return;
-				const img = imgRef.current;
-				const w = img?.naturalWidth ?? paint.width;
-				const h = img?.naturalHeight ?? paint.height;
-				if (w === 0 || h === 0) return;
-				view.width = vs.w;
-				view.height = vs.h;
-				const ctx = view.getContext("2d");
-				if (!ctx) return;
-				ctx.clearRect(0, 0, vs.w, vs.h);
-				if (img) ctx.drawImage(img, 0, 0, vs.w, vs.h);
-				ctx.drawImage(paint, 0, 0, vs.w, vs.h);
-			}, [viewSize]);
-			(0, react.useEffect)(() => {
-				if (ready) redraw();
-			}, [ready, redraw]);
-			const toPoint = (e) => {
-				const view = viewRef.current;
-				const paint = paintRef.current;
-				const vs = viewSize;
-				if (!view || !paint || !vs) return null;
-				const rect = view.getBoundingClientRect();
-				const sx = vs.w / Math.max(1, rect.width);
-				const sy = vs.h / Math.max(1, rect.height);
-				const img = imgRef.current;
-				const w = img?.naturalWidth ?? paint.width;
-				const h = img?.naturalHeight ?? paint.height;
-				return {
-					x: (e.clientX - rect.left) * sx * (w / vs.w),
-					y: (e.clientY - rect.top) * sy * (h / vs.h)
-				};
-			};
-			const strokeTo = (a, b) => {
-				const paint = paintRef.current;
-				const img = imgRef.current;
-				const w = img?.naturalWidth ?? paint.width;
-				const h = img?.naturalHeight ?? paint.height;
-				if (paint.width !== w || paint.height !== h) {
-					const prior = paint.width > 0 ? paint.toDataURL() : "";
-					paint.width = w;
-					paint.height = h;
-					if (prior !== "") {
-						const restore = new Image();
-						restore.onload = () => {
-							paint.getContext("2d")?.drawImage(restore, 0, 0);
-						};
-						restore.src = prior;
-					}
 				}
-				const ctx = paint.getContext("2d");
-				if (!ctx) return;
-				const scale = Math.max(w, h) / 1024;
-				ctx.strokeStyle = PAINT_STROKE_INK;
-				ctx.lineWidth = brushSize * Math.max(scale, .25);
-				ctx.lineCap = "round";
-				ctx.lineJoin = "round";
-				ctx.beginPath();
-				ctx.moveTo(a.x, a.y);
-				ctx.lineTo(b.x, b.y);
-				ctx.stroke();
-				setHasStrokes(true);
-				redraw();
-			};
-			const onPointerDown = (e) => {
-				if (e.button !== 0) return;
-				const p = toPoint(e);
-				if (!p) return;
-				drawingRef.current = true;
-				lastPtRef.current = p;
-				e.target.setPointerCapture?.(e.pointerId);
-				strokeTo(p, {
-					x: p.x + .01,
-					y: p.y + .01
-				});
-			};
-			const onPointerMove = (e) => {
-				if (!drawingRef.current) return;
-				const p = toPoint(e);
-				const last = lastPtRef.current;
-				strokeTo(last, p);
-				lastPtRef.current = p;
-			};
-			const onPointerUp = () => {
-				drawingRef.current = false;
-				lastPtRef.current = null;
-			};
-			const clearPaint = () => {
-				const paint = paintRef.current;
-				const ctx = paint.getContext("2d");
-				if (ctx) ctx.clearRect(0, 0, paint.width, paint.height);
-				setHasStrokes(false);
-				redraw();
-			};
-			const save = () => {
-				onSave(paintRef.current.toDataURL("image/png"));
-			};
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				ref: wrapRef,
-				role: "dialog",
-				"aria-label": props.title ?? "Paint payload",
-				style: {
-					position: "fixed",
-					inset: 0,
-					zIndex: 1e3,
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
-					background: "color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent)"
-				},
-				onPointerDown: (e) => {
-					if (e.target === e.currentTarget) onCancel();
-				},
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					style: {
-						background: "var(--dsw-alias-bg-layer-1)",
-						color: "var(--dsw-alias-label-primary)",
-						border: "1px solid var(--dsw-alias-border-l2)",
-						borderRadius: 8,
-						padding: 16,
-						display: "flex",
-						flexDirection: "column",
-						gap: 12,
-						maxHeight: "92vh"
-					},
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							style: {
-								display: "flex",
-								alignItems: "center",
-								gap: 12
-							},
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: props.title ?? "Paint payload" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
-								style: {
-									display: "flex",
-									alignItems: "center",
-									gap: 6,
-									marginLeft: "auto"
-								},
-								children: [
-									"Brush",
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-										type: "range",
-										min: 4,
-										max: 128,
-										step: 2,
-										value: String(brushSize),
-										onChange: (e) => {
-											setBrushSize(Number(e.target.value));
-										}
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										style: {
-											width: 28,
-											textAlign: "right"
-										},
-										children: brushSize
-									})
-								]
-							})]
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
-							ref: viewRef,
-							"data-testid": "paint-leaf-view",
-							style: {
-								display: viewSize === null ? "none" : "block",
-								maxWidth: "84vw",
-								maxHeight: "70vh",
-								border: "1px solid var(--dsw-alias-border-l2)",
-								borderRadius: 4,
-								cursor: "crosshair",
-								touchAction: "none",
-								backgroundColor: "var(--dsw-alias-bg-base)",
-								background: "repeating-conic-gradient(color-mix(in srgb, var(--dsw-alias-label-secondary) 30%, transparent) 0% 25%, transparent 0% 50%) 50% / 24px 24px"
-							},
-							onPointerDown,
-							onPointerMove,
-							onPointerUp,
-							onPointerLeave: onPointerUp
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
-							ref: paintRef,
-							style: { display: "none" },
-							"data-testid": "paint-leaf-layer"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							style: {
-								display: "flex",
-								gap: 8,
-								justifyContent: "flex-end"
-							},
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: clearPaint,
-									children: "Clear"
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: onCancel,
-									children: "Cancel"
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "primary",
-									disabled: !hasStrokes,
-									onClick: save,
-									children: "Save payload"
-								})
-							]
-						})
-					]
-				})
+			} catch {}
+			return await startCardRun({
+				model,
+				params: doc,
+				draftId
 			});
 		}
+		/** THE SEQUENTIAL PASS — Run ALL, the old system's composer law
+		*  verbatim (flowExecuteSlice runAll, 2026-08-11): execute the
+		*  stages IN ORDER, one run per card (the SAME single-stage door the
+		*  drill's Run uses — a typed composer bench is never one graph
+		*  run; the flow_inline door serves the chain/graph surface, not
+		*  this one). Skip stages already done (the cache-hit skip). A
+		*  failed or refused stage STOPS the pass — fail loud, never a
+		*  doomed downstream run. The per-card observer patches each row as
+		*  it goes (running → terminal), so the tiles flip one by one and
+		*  the bench is never taken over. Exported for the door-contract
+		*  spec. */
+		async function runBenchSequential(bench, hooks = {}) {
+			const ran = [];
+			for (const stage of bench.stages) {
+				if (hooks.signal?.aborted === true) return {
+					ran,
+					stoppedAt: null,
+					refused: null
+				};
+				if (stage.runStatus === "done") continue;
+				const res = await runCardStage(bench.draftId, stage);
+				if ("refused" in res) return {
+					ran,
+					stoppedAt: stage.id,
+					refused: res.refused
+				};
+				hooks.onCardStarted?.(res.runId, {
+					draftId: bench.draftId,
+					stageId: stage.id
+				});
+				if (await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched) !== "done") return {
+					ran: [...ran, stage.id],
+					stoppedAt: stage.id,
+					refused: null
+				};
+				ran.push(stage.id);
+			}
+			return {
+				ran,
+				stoppedAt: null,
+				refused: null
+			};
+		}
 		//#endregion
-		//#region ../../image/mask-studio/src/ui/BboxLeafModal.tsx
-		const FIT = 640;
-		const loadImage = (url) => new Promise((resolve) => {
-			if (url === "") {
-				resolve(null);
+		//#region src/client/add-stage.ts
+		/**
+		* add-stage.ts — the bench's mutation verb callers (the tab's
+		* add/remove/reorder/group/ungroup paths). Every verb is ONE typed
+		* call on the mounted bench namespace (stroke 81's one-lane law —
+		* the generated client, never a hand-written envelope); the remote
+		* signature is (sessionKey, doc) — sessionKey is a TYPED first
+		* parameter, so a misaddressed bench is a type error, not a runtime
+		* refusal. The doc carries the verb's own keys and every doc rides
+		* expect_rev (the CAS law: the caller chains the bench rev it
+		* rendered, so a concurrent edit refuses instead of slicing wrong).
+		*
+		* THE REBASE LAW (2026-09-15, the operator's stuck: "bench main
+		* moved: rev is 429, caller held 35 — IT STUCK"): the bench is ONE
+		* shared doc the agent writes too, so a tab-rendered rev can be
+		* stale through no user fault. A door that refuses ONLY on CAS
+		* answers itself: re-read the rev (from the SAME session the verb
+		* addresses — the 2026-09-16 fix; the old arm hard-coded 'main' and
+		* rebased non-main verbs against the wrong bench's rev), re-apply
+		* ONCE. A second conflict or any non-CAS refusal throws loud (the
+		* named truth, never a silent drop, never a blind write) — and the
+		* view reloads on that final failure so the NEXT gesture composes
+		* against fresh truth. The stuck is structurally impossible: a
+		* moved bench costs one silent rebase, never a bricked tab.
+		*/
+		/** The bench's CURRENT rev for one session — the CAS handle for a
+		*  re-apply. Returns undefined when the read fails (the re-apply is
+		*  then skipped; the original refusal stands as the honest answer). */
+		async function benchRev(sessionKey, signal) {
+			try {
+				const rev = (await unwrapRemote(estateRemote().bench.get(sessionKey, signal), "bench/get")).rev;
+				return typeof rev === "number" ? rev : void 0;
+			} catch {
 				return;
 			}
-			const img = new Image();
-			img.onload = () => {
-				resolve(img);
-			};
-			img.onerror = () => {
-				resolve(null);
-			};
-			img.src = url;
-		});
-		function BboxLeafModal(props) {
-			const { referenceUrl, bbox, onSave, onCancel } = props;
-			const viewRef = (0, react.useRef)(null);
-			const imgRef = (0, react.useRef)(null);
-			const drawingRef = (0, react.useRef)(false);
-			const anchorRef = (0, react.useRef)(null);
-			const [rect, setRect] = (0, react.useState)(null);
-			const [ready, setReady] = (0, react.useState)(false);
-			const [viewSize, setViewSize] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				let alive = true;
-				(async () => {
-					const img = await loadImage(referenceUrl);
-					if (!alive) return;
-					imgRef.current = img;
-					const w = img?.naturalWidth ?? 1024;
-					const h = img?.naturalHeight ?? 1024;
-					const scale = Math.min(FIT / w, FIT / h, 1);
-					setViewSize({
-						w: Math.max(1, Math.round(w * scale)),
-						h: Math.max(1, Math.round(h * scale))
-					});
-					setReady(true);
-				})();
-				return () => {
-					alive = false;
-				};
-			}, [referenceUrl]);
-			const imgDims = (0, react.useCallback)(() => {
-				const img = imgRef.current;
-				return {
-					w: img?.naturalWidth ?? 1024,
-					h: img?.naturalHeight ?? 1024
-				};
-			}, []);
-			const viewToImage = (0, react.useCallback)(() => {
-				const vs = viewSize;
-				const d = imgDims();
-				return {
-					sx: d.w / vs.w,
-					sy: d.h / vs.h
-				};
-			}, [viewSize, imgDims]);
-			const seededRef = (0, react.useRef)(false);
-			(0, react.useEffect)(() => {
-				if (seededRef.current || !ready || !bbox) return;
-				seededRef.current = true;
-				const { sx, sy } = viewToImage();
-				setRect({
-					x: bbox.x / sx,
-					y: bbox.y / sy,
-					w: bbox.width / sx,
-					h: bbox.height / sy
-				});
-			}, [
-				ready,
-				bbox,
-				viewToImage
-			]);
-			const redraw = (0, react.useCallback)(() => {
-				const view = viewRef.current;
-				const vs = viewSize;
-				if (!view || !vs) return;
-				view.width = vs.w;
-				view.height = vs.h;
-				const ctx = view.getContext("2d");
-				if (!ctx) return;
-				ctx.clearRect(0, 0, vs.w, vs.h);
-				const img = imgRef.current;
-				if (img) ctx.drawImage(img, 0, 0, vs.w, vs.h);
-				if (rect !== null) {
-					ctx.strokeStyle = PAINT_STROKE_INK;
-					ctx.lineWidth = 2;
-					ctx.setLineDash([6, 4]);
-					ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-					ctx.setLineDash([]);
-				}
-			}, [viewSize, rect]);
-			(0, react.useEffect)(() => {
-				if (ready) redraw();
-			}, [ready, redraw]);
-			const toView = (e) => {
-				const view = viewRef.current;
-				if (!view || !viewSize) return null;
-				const rect = view.getBoundingClientRect();
-				return {
-					x: (e.clientX - rect.left) * (view.width / Math.max(1, rect.width)),
-					y: (e.clientY - rect.top) * (view.height / Math.max(1, rect.height))
-				};
-			};
-			const onDown = (e) => {
-				const p = toView(e);
-				if (!p) return;
-				drawingRef.current = true;
-				anchorRef.current = p;
-				setRect({
-					x: p.x,
-					y: p.y,
-					w: 0,
-					h: 0
-				});
-				e.target.setPointerCapture?.(e.pointerId);
-			};
-			const onMove = (e) => {
-				if (!drawingRef.current) return;
-				const p = toView(e);
-				const a = anchorRef.current;
-				setRect({
-					x: Math.min(a.x, p.x),
-					y: Math.min(a.y, p.y),
-					w: Math.abs(p.x - a.x),
-					h: Math.abs(p.y - a.y)
-				});
-			};
-			const onUp = () => {
-				drawingRef.current = false;
-			};
-			const save = () => {
-				const box = rect;
-				const { sx, sy } = viewToImage();
-				onSave({
-					x: Math.round(box.x * sx),
-					y: Math.round(box.y * sy),
-					width: Math.round(box.w * sx),
-					height: Math.round(box.h * sy)
-				});
-			};
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				role: "dialog",
-				"aria-modal": "true",
-				"data-bbox-leaf": "backdrop",
-				style: {
-					position: "fixed",
-					inset: 0,
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
-					background: "rgba(0,0,0,0.6)",
-					zIndex: 1e3
-				},
-				onPointerDown: (e) => {
-					if (e.target === e.currentTarget) onCancel();
-				},
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					style: {
-						background: "var(--dsh-bg, #1b1b1f)",
-						borderRadius: 8,
-						padding: 16,
-						maxWidth: "92vw",
-						maxHeight: "92vh",
-						display: "flex",
-						flexDirection: "column",
-						gap: 12
-					},
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							style: { fontWeight: 600 },
-							children: props.title ?? "Draw the selection box"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
-							ref: viewRef,
-							"data-testid": "bbox-leaf-view",
-							"data-bbox-canvas": "view",
-							style: {
-								maxWidth: "100%",
-								cursor: "crosshair",
-								touchAction: "none",
-								borderRadius: 4,
-								display: "block"
-							},
-							onPointerDown: onDown,
-							onPointerMove: onMove,
-							onPointerUp: onUp,
-							onPointerCancel: onUp
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							style: {
-								display: "flex",
-								gap: 8,
-								alignItems: "center"
-							},
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: {
-										opacity: .7,
-										fontSize: 12
-									},
-									children: rect !== null && rect.w >= 1 && rect.h >= 1 ? `box ${Math.round(rect.w)}×${Math.round(rect.h)} (view px)` : "drag on the image to draw the box"
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { style: { flex: 1 } }),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: () => {
-										setRect(null);
-										redraw();
-									},
-									children: "Clear"
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: onCancel,
-									children: "Cancel"
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "primary",
-									onClick: save,
-									disabled: rect === null || rect.w < 1 || rect.h < 1,
-									children: "Save box"
-								})
-							]
-						})
-					]
-				})
-			});
+		}
+		/** True when the throw is the door's CAS verdict (stale expect_rev).
+		*  The server's own voice: "bench <session> moved: rev is N, caller
+		*  held M" (bench.ts casCheck; the drafts store's older arm says
+		*  "bench moved: rev is…"). THE MATCHER LAW (2026-09-15): match the
+		*  REAL words — the first cut matched 'bench moved' against 'bench
+		*  MAIN moved' and matched nothing; dead matchers make dead
+		*  rebases, and dead rebases make stuck tabs. */
+		function isCasConflict(e) {
+			const msg = e instanceof Error ? e.message : String(e);
+			return msg.includes("moved: rev is") || msg.includes("cas-conflict");
+		}
+		/** One typed bench verb with the rebase dance: try the held rev; on
+		*  the door's cas-conflict re-read the rev (the SAME session) and
+		*  re-apply ONCE with it. */
+		async function withRebase(verb, doc, sessionKey, signal) {
+			const ns = estateRemote().bench;
+			const attempt = (expectRev) => unwrapRemote(ns[verb](sessionKey, {
+				...doc,
+				expect_rev: expectRev
+			}, signal), "bench/" + verb).then((row) => row);
+			const held = doc["expect_rev"];
+			try {
+				if (typeof held !== "number") throw new Error("bench/" + verb + ": no expect_rev to write against");
+				return await attempt(held);
+			} catch (e) {
+				if (!isCasConflict(e)) throw e;
+				const fresh = await benchRev(sessionKey, signal);
+				if (fresh === void 0) throw e;
+				return await attempt(fresh);
+			}
+		}
+		/** The bench add-stage verb caller (the tab's add-card path). The
+		*  doc holds card/author/engine/params/expect_rev. */
+		async function addStageWire(doc, sessionKey, signal) {
+			return await withRebase("add-stage", doc, sessionKey, signal);
+		}
+		/** The bench remove-stage verb caller (the drill's Remove path). The
+		*  doc holds stage/expect_rev; the session key addresses the doc the
+		*  bar RENDERS (stroke 80 — 'main' hardcoding deleted against the
+		*  wrong bench and refused 'stage not found'). */
+		async function removeStageWire(doc, sessionKey, signal) {
+			return await withRebase("remove-stage", doc, sessionKey, signal);
+		}
+		/** The bench reorder verb caller (the drag-reorder path). Doc:
+		*  stage/to/expect_rev — `to` is the post-splice target index. */
+		async function reorderStageWire(doc, sessionKey, signal) {
+			return await withRebase("reorder", doc, sessionKey, signal);
+		}
+		/** The bench group verb caller (the Group Cards sub-view):
+		*  stages = 2+ ids (bench order applied server-side). */
+		async function groupStagesWire(doc, sessionKey, signal) {
+			return await withRebase("group", doc, sessionKey, signal);
+		}
+		/** The bench ungroup verb caller: spill a compound's children. */
+		async function ungroupStageWire(doc, sessionKey, signal) {
+			return await withRebase("ungroup", doc, sessionKey, signal);
 		}
 		//#endregion
 		//#region ../../web-kit/formats/src/readFile.ts
@@ -54322,98 +53548,1819 @@ void main() {
 			init_uploadToEstate();
 		}));
 		//#endregion
-		//#region src/client/add-stage.ts
+		//#region src/client/zoom.tsx
 		/**
-		* add-stage.ts — the bench's mutation verb callers (the tab's
-		* add/remove/reorder/group/ungroup paths). Every verb is ONE typed
-		* call on the mounted bench namespace (stroke 81's one-lane law —
-		* the generated client, never a hand-written envelope); the remote
-		* signature is (sessionKey, doc) — sessionKey is a TYPED first
-		* parameter, so a misaddressed bench is a type error, not a runtime
-		* refusal. The doc carries the verb's own keys and every doc rides
-		* expect_rev (the CAS law: the caller chains the bench rev it
-		* rendered, so a concurrent edit refuses instead of slicing wrong).
+		* zoom.tsx — the zoom overlay, CSS-law port (2026-09-12).
 		*
-		* THE REBASE LAW (2026-09-15, the operator's stuck: "bench main
-		* moved: rev is 429, caller held 35 — IT STUCK"): the bench is ONE
-		* shared doc the agent writes too, so a tab-rendered rev can be
-		* stale through no user fault. A door that refuses ONLY on CAS
-		* answers itself: re-read the rev (from the SAME session the verb
-		* addresses — the 2026-09-16 fix; the old arm hard-coded 'main' and
-		* rebased non-main verbs against the wrong bench's rev), re-apply
-		* ONCE. A second conflict or any non-CAS refusal throws loud (the
-		* named truth, never a silent drop, never a blind write) — and the
-		* view reloads on that final failure so the NEXT gesture composes
-		* against fresh truth. The stuck is structurally impossible: a
-		* moved bench costs one silent rebase, never a bricked tab.
+		* THE CONTRACT (the old tree's interaction, framer removed — DSH law:
+		* DSH ships no framer; its own surfaces animate in CSS):
+		* • the resting tile opens a FIXED inset-0 overlay (portal to body —
+		*   the old file's own DSH placement rule; the embed frame is
+		*   auto-height, absolute would cover only part of the view).
+		* • The card enters compositor-only: a CSS scale+fade keyframe
+		*   (zoomIn — transform/opacity, zero reflow, NO modal pop).
+		* • While the settle holds the box shows a pure SKELETON; the real
+		*   detail swaps in after ZOOM_SKELETON_MS.
+		* • Close vectors: the Collapse (X) button, a backdrop click
+		*   (target === currentTarget), and Escape — all direct onClose.
+		* • The overlay is the scroll container; the inner flex centers a
+		*   card shorter than the area and scrolls one that is taller.
 		*/
-		/** The bench's CURRENT rev for one session — the CAS handle for a
-		*  re-apply. Returns undefined when the read fails (the re-apply is
-		*  then skipped; the original refusal stands as the honest answer). */
-		async function benchRev(sessionKey, signal) {
+		init_src();
+		/** How long the skeleton holds the box before the real detail swaps in. */
+		const ZOOM_SKELETON_MS = 500;
+		/** The zoomed card's bounded size — width caps at 760px, vh-bounded so
+		* the ≈square card fits without page scroll (the old tree's number). */
+		const ZOOM_DETAIL_MAX_PX = 760;
+		/** The envelope's huge class (surface.size='huge'): the studio wants
+		*  room — the card grows (the DECLARATION is estate truth). */
+		const ZOOM_HUGE_MAX_PX = 1160;
+		/** The card's width law, pure (the envelope lift's decision): the
+		*  estate's surface.size='huge' grows the card for studio room. The
+		*  viewport cap measures WIDTH (94vw, room for the pane's own edge) —
+		*  a vh cap on width was a category error that clipped the right
+		*  half of the params column on short viewports (2026-09-12). */
+		function zoomWidthFor(surfaceSize) {
+			return `min(${surfaceSize === "huge" ? ZOOM_HUGE_MAX_PX : ZOOM_DETAIL_MAX_PX}px, 94vw)`;
+		}
+		/** THE FULL-PAGE LAW (2026-09-13, the operator's hour-7: "the modal
+		*  is not taking up the full page like before"). A studio surface
+		*  ('huge') IS the old system's full-page card: width AND height take
+		*  the page (94vw/94vh — the pane keeps its edge, the shell breathes).
+		*  Ordinary cards keep the bounded ≈square law verbatim. */
+		function zoomSizeFor(surfaceSize) {
+			if (surfaceSize !== "huge") return {
+				width: zoomWidthFor(surfaceSize),
+				maxWidth: "100%"
+			};
+			return {
+				width: "min(94vw, 1720px)",
+				maxWidth: "100%",
+				height: "94vh",
+				maxHeight: "94vh"
+			};
+		}
+		/** The settle skeleton — an all-skeleton layout with no real content
+		*  (the shimmer sweep is the old tree's loading face). */
+		function ZoomSkeleton() {
+			return (0, react.createElement)("div", { className: card_module_css_default$1.zoomSkeleton }, (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skWide }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skBlock }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skRow }, (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skShort }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skShort })));
+		}
+		/** One overlay mount (keyed per stage by the caller). */
+		function ZoomMount(props) {
+			const { stage, detail, onClose, ...rest } = props;
+			const [ready, setReady] = (0, react.useState)(false);
+			const boundRef = (0, react.useRef)(null);
+			const [enhanceVerb, setEnhanceVerb] = (0, react.useState)(null);
+			const [enhancingBar, setEnhancingBar] = (0, react.useState)(false);
+			const bindEnhanceStable = (0, react.useCallback)((v) => {
+				setEnhanceVerb(() => v);
+			}, []);
+			const fireEnhance = () => {
+				if (enhanceVerb === null || enhancingBar) return;
+				setEnhancingBar(true);
+				Promise.resolve(enhanceVerb()).finally(() => {
+					setEnhancingBar(false);
+				});
+			};
+			const [llmRoutes, setLlmRoutes] = (0, react.useState)(null);
+			const [cardLlm, setCardLlmSel] = (0, react.useState)("");
+			(0, react.useEffect)(() => {
+				let alive = true;
+				setCardLlmSel(getCardLlm() ?? "");
+				fetchEnhanceRoutes().then((routes) => {
+					if (alive) setLlmRoutes(routes);
+				});
+				return () => {
+					alive = false;
+				};
+			}, []);
+			const pickLlm = (route) => {
+				setCardLlm(route);
+				setCardLlmSel(route);
+			};
+			const [surfaceSize, setSurfaceSize] = (0, react.useState)(null);
+			const onSurface = (size) => {
+				setSurfaceSize(size === "" ? null : size);
+			};
+			(0, react.useEffect)(() => {
+				const t = window.setTimeout(() => {
+					setReady(true);
+				}, ZOOM_SKELETON_MS);
+				return () => {
+					window.clearTimeout(t);
+				};
+			}, [stage.id]);
+			(0, react.useEffect)(() => {
+				const onKey = (e) => {
+					if (e.key === "Escape") onClose();
+				};
+				window.addEventListener("keydown", onKey);
+				return () => {
+					window.removeEventListener("keydown", onKey);
+				};
+			}, [onClose]);
+			const live = props.running || typeof stage.runStatus === "string" && (stage.runStatus === "running" || stage.runStatus === "queued" || stage.runStatus === "pending");
+			const rec = typeof stage.result === "object" && stage.result !== null ? stage.result : null;
+			const prog = rec !== null && typeof rec["progress"] === "object" && rec["progress"] !== null ? rec["progress"] : null;
+			const act = rec !== null && typeof rec["activity"] === "string" ? rec["activity"] : "";
+			const pct = prog !== null && prog.max > 0 ? Math.floor(100 * prog.value / prog.max) : null;
+			const failedText = typeof stage.runStatus === "string" && stage.runStatus === "failed" && typeof rec?.["error"] === "string" ? rec["error"] : null;
+			const startError = typeof props.startError === "string" && props.startError !== "" ? props.startError : null;
+			return (0, react.createElement)("div", {
+				className: card_module_css_default$1.zoomOverlay,
+				onClick: (e) => {
+					if (e.target === e.currentTarget) onClose();
+				}
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomScroll }, (0, react.createElement)("div", { className: card_module_css_default$1.zoomInner }, (0, react.createElement)("div", {
+				className: card_module_css_default$1.zoomCard,
+				style: zoomSizeFor(surfaceSize)
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default$1.zoomTitle }, "Stage " + String(stage.title ?? stage.card ?? stage.id)), enhanceVerb !== null ? [llmRoutes !== null ? (0, react.createElement)("select", {
+				className: card_module_css_default$1.drillLlm,
+				"aria-label": "Enhance model",
+				"data-testid": "drill-llm",
+				value: cardLlm,
+				onChange: (e) => {
+					pickLlm(e.target.value);
+				}
+			}, (0, react.createElement)("option", { value: "" }, "Auto"), ...llmRoutes.map((r) => (0, react.createElement)("option", {
+				value: r,
+				key: r
+			}, r))) : null, (0, react.createElement)("button", {
+				className: card_module_css_default$1.drillRunBtn,
+				type: "button",
+				"aria-label": "Agent Enhance",
+				"data-testid": "drill-enhance",
+				disabled: enhancingBar,
+				onClick: fireEnhance
+			}, (0, react.createElement)("span", null, enhancingBar ? "✦ enhancing…" : "✦ Enhance"))] : null, live ? (0, react.createElement)("button", {
+				className: card_module_css_default$1.drillRunBtn,
+				type: "button",
+				"aria-label": "Stop run",
+				"data-testid": "drill-stop",
+				onClick: () => {
+					props.onStop();
+				}
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 16 }), (0, react.createElement)("span", null, "Stop")) : (0, react.createElement)("button", {
+				className: card_module_css_default$1.drillRunBtn,
+				type: "button",
+				"aria-label": "Run stage",
+				"data-testid": "drill-run",
+				onClick: () => {
+					(boundRef.current ?? props.onRun)();
+				}
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 16 }), (0, react.createElement)("span", null, "Run")), (0, react.createElement)("button", {
+				className: card_module_css_default$1.drillRunBtn,
+				type: "button",
+				"aria-label": "Collapse card",
+				onClick: onClose
+			}, (0, react.createElement)("span", null, "✕"), (0, react.createElement)("span", null, "Close"))), live || failedText !== null || startError !== null ? (0, react.createElement)("div", {
+				className: card_module_css_default$1.zoomWebhook,
+				role: "status"
+			}, live ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.drillProgress,
+				"data-testid": "drill-progress"
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }), (0, react.createElement)("span", null, [act !== "" ? act : "running", pct !== null ? " · " + String(pct) + "%" : ""].join("")), pct !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.zoomMeter }, (0, react.createElement)("span", {
+				className: card_module_css_default$1.zoomMeterFill,
+				style: { width: pct + "%" }
+			})) : null) : (0, react.createElement)("span", {
+				className: card_module_css_default$1.runError,
+				"data-testid": "drill-run-error"
+			}, startError ?? failedText)) : null, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBody }, ready ? (0, react.createElement)(props.detail, {
+				stage,
+				bench: rest.bench,
+				running: rest.running,
+				onRun: rest.onRun,
+				onStop: rest.onStop,
+				onClose,
+				onRemoved: rest.onRemoved,
+				onPatchParams: rest.onPatchParams,
+				renderStageView: rest.renderStageView,
+				renderPreview: rest.renderPreview,
+				onSurface,
+				runId: rest.runId,
+				bindRun: (r) => {
+					boundRef.current = r;
+				},
+				bindEnhance: bindEnhanceStable
+			}) : (0, react.createElement)(ZoomSkeleton))))));
+		}
+		/** CardZoomOverlay — portal to document.body, FIXED inset-0 (the old
+		* tree's own DSH rule), keyed per stage. */
+		function CardZoomOverlay(props) {
+			const mounted = typeof document !== "undefined";
+			const tree = (0, react.createElement)(ZoomMount, {
+				key: props.stage.id,
+				...props
+			});
+			return mounted ? (0, react_dom.createPortal)(tree, document.body) : tree;
+		}
+		//#endregion
+		//#region src/client/dnd-payloads.ts
+		/** dnd-payloads.ts — the old system's drag MIME pair + parsers
+		* (extracted from CardsTab.tsx hour 15; the MIME pair is the law). */
+		/** The OLD system's drag contract, VERBATIM (2026-08-08/08-22 era,
+		*  recovered from d13560be^ packages/web-kit): capability tiles carry
+		*  a fully-resolved card; asset tiles carry {url, type}. One drop
+		*  target, two contracts, no ambiguity — the MIME pair is the law. */
+		const CAPABILITY_DRAG_MIME = "application/tech-noir-capability";
+		const ASSET_DRAG_MIME = "application/tech-noir-asset";
+		/** The tile-reorder drag's MIME (native HTML5 sortable — DSH ships no
+		*  drag library; the estate drags natively). Carries the source id. */
+		const CARD_DRAG_MIME = "application/x-melite-card";
+		/** Parse the capability MIME off a drop event. null = absent or
+		*  malformed (falls through to the asset/file path) — old law. */
+		function parseCapabilityDrop(raw) {
+			if (raw === "") return null;
 			try {
-				const rev = (await unwrapRemote(estateRemote().bench.get(sessionKey, signal), "bench/get")).rev;
-				return typeof rev === "number" ? rev : void 0;
+				const p = JSON.parse(raw);
+				if (typeof p.service === "string" && typeof p.title === "string") return p;
+				return null;
 			} catch {
+				return null;
+			}
+		}
+		function parseAssetDrop(raw) {
+			if (raw === "") return {};
+			try {
+				return JSON.parse(raw);
+			} catch {
+				return {};
+			}
+		}
+		//#endregion
+		//#region src/client/preview-kinds.ts
+		/** THE PREVIEW SEAM CONSULT (hour-9 law: "Where the VIDEO PREVIEW
+		*  and the IMAGE PREVIEW of other cards go in a SLOT with SHARED DSH
+		*  PRIMITIVES"): one consult, keyed by media kind, the card-base
+		*  shared previews as the DEFAULTS. Every card's rendered output
+		*  previews through this — image cards get the shared image preview,
+		*  video cards the shared video one; a studio's own stage view is
+		*  its specialization (the claim-over-default law). */
+		function previewKindFor(url) {
+			const u = url.toLowerCase();
+			if (/\.(mp4|webm|mov|m4v)(\?|$)/.test(u)) return "video";
+			if (/\.(png|jpe?g|webp|gif|avif)(\?|$)/.test(u)) return "image";
+			if (/\.(mp3|wav|ogg|flac|m4a|aac)(\?|$)/.test(u)) return "audio";
+			if (/\.(glb|gltf)(\?|$)/.test(u)) return "mesh";
+			return null;
+		}
+		/** THE PRIMARY-OUTPUT RESOLUTION (2026-09-13): the card's DECLARED
+		*  primary output — the served form-spec's `outputs.default` — is
+		*  the preview's kind, never a url sniff. The sniff stays ONLY as
+		*  the fallback: when no spec is in hand (a flow row without card
+		*  identity), or when the declaration names a non-previewable kind
+		*  (text/seg) whose artifacts may still carry a renderable url —
+		*  mask-studio declares 'seg' and its artifact IS a png; the sniff
+		*  keeps its gallery alive. Declared-previewable ALWAYS wins: an
+		*  audio card previews audio even before artifacts land (the empty
+		*  state names the kind), a mesh card rides the raw-three stage. */
+		const PREVIEWABLE_KINDS = /* @__PURE__ */ new Set([
+			"video",
+			"image",
+			"audio",
+			"mesh"
+		]);
+		function primaryKindFor(spec, url) {
+			const declared = spec?.outputs?.["default"];
+			if (typeof declared === "string" && PREVIEWABLE_KINDS.has(declared)) return declared;
+			return previewKindFor(url);
+		}
+		/** THE PARAMS CHIP (the output-component stroke — the operator's
+		*  law: old generations are tagged by the parameters that differ):
+		*  the comma-joined KEYS whose values differ between an archived
+		*  generation's params snapshot and the live params. undefined when
+		*  the snapshot is absent (an entry archived before the stroke) or
+		*  nothing differs — same params, same picture, no noise. */
+		function paramsDiffKeys(a, b) {
+			const ok = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+			if (!ok(a) || !ok(b)) return void 0;
+			const keys = /* @__PURE__ */ new Set([...Object.keys(a), ...Object.keys(b)]);
+			const diff = [];
+			for (const k of keys) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) diff.push(k);
+			if (diff.length === 0) return void 0;
+			return diff.slice(0, 4).join(", ") + (diff.length > 4 ? "…" : "");
+		}
+		/** The stage row's preview artifacts, harvested from the estate's
+		*  result shape (artifacts name→url map first, the flat assetUrls
+		*  list second — the harvest law the h3 adapter states). */
+		function previewArtifactsFor(row) {
+			const result = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : {};
+			const out = [];
+			const arts = typeof result["artifacts"] === "object" && result["artifacts"] !== null ? result["artifacts"] : {};
+			for (const [name, val] of Object.entries(arts)) if (typeof val === "string" && val !== "") out.push({
+				name,
+				url: val
+			});
+			if (out.length === 0 && Array.isArray(result["assetUrls"])) {
+				for (const u of result["assetUrls"]) if (typeof u === "string" && u !== "") out.push({
+					name: "output",
+					url: u
+				});
+			}
+			if (out.length === 0 && typeof result["url"] === "string" && result["url"] !== "") out.push({
+				name: "output",
+				url: result["url"]
+			});
+			return out;
+		}
+		//#endregion
+		//#region src/client/bench-row.ts
+		/** bench-row.ts — the bench stage distilled to the card row: the dot
+		* map, the row interface, the distillation, the card grouping
+		* (extracted from CardsTab.tsx hour 15). */
+		/** Bench row run-status → the installed StateDot union (FlowCards'
+		*  CardRowLine law: done|warning|ongoing|error — a stage that never
+		*  ran shows NO dot, never a fake state). */
+		const STAGE_DOT = {
+			queued: "warning",
+			pending: "warning",
+			running: "ongoing",
+			done: "done",
+			failed: "error",
+			stopped: "warning",
+			ready: null
+		};
+		/** The chrome's running truth: the row's stamped status (the observer
+		*  patches it terminal the moment the run lands). */
+		function rowRunning(row) {
+			return row.status === "running" || row.status === "queued" || row.status === "pending";
+		}
+		/** exported for the door-contract specs (the tile-face law). */
+		function benchRow(stage, bench) {
+			const isGroup = stage.card === "group";
+			const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0;
+			const title = isGroup ? "Group (" + String(children) + ")" : stage.title ?? stage.card ?? stage.id;
+			const status = typeof stage.runStatus === "string" && stage.runStatus !== "" ? stage.runStatus : "ready";
+			typeof stage.activity === "string" && stage.activity;
+			const progress = stage.progress ?? null;
+			progress !== null && progress.max > 0 && Math.floor(100 * progress.value / progress.max);
+			const params = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
+			const promptRaw = typeof params["prompt"] === "string" ? params["prompt"] : "";
+			const result = stage.result;
+			const url = typeof result === "object" && result !== null && typeof Reflect.get(result, "url") === "string" ? Reflect.get(result, "url") : "";
+			const failText = typeof result === "object" && result !== null && typeof Reflect.get(result, "error") === "string" ? Reflect.get(result, "error") : "";
+			const face = previewKindFor(url);
+			const absolute = (u) => /^(https?:\/\/|\/)/.test(u);
+			const posterFromArtifacts = (() => {
+				if (face !== "mesh") return null;
+				for (const a of previewArtifactsFor(stage)) if (previewKindFor(a.url) === "image" && absolute(a.url)) return a.url;
+				return null;
+			})();
+			return {
+				id: stage.id,
+				kind: isGroup ? "group" : String(stage.card ?? "card"),
+				title: String(title),
+				service: typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : null,
+				status,
+				dot: STAGE_DOT[status] ?? null,
+				prompt: promptRaw !== "" ? promptRaw.slice(0, 96) : null,
+				/** the failure carry — the run's own refusal text, or null. */
+				error: failText !== "" ? failText : null,
+				progress: typeof result === "object" && result !== null && typeof Reflect.get(result, "progress") === "object" && Reflect.get(result, "progress") !== null ? Reflect.get(result, "progress") : null,
+				activity: typeof result === "object" && result !== null && typeof Reflect.get(result, "activity") === "string" ? Reflect.get(result, "activity") : "",
+				thumbUrl: face === "image" && absolute(url) ? url : posterFromArtifacts,
+				face,
+				videoUrl: face === "video" && absolute(url) ? url : null,
+				upstream: (() => {
+					const inputs = typeof stage.inputs === "object" && stage.inputs !== null ? stage.inputs : null;
+					const edge = inputs !== null && typeof inputs["source"] === "object" && inputs["source"] !== null ? inputs["source"] : null;
+					const from = edge !== null && typeof edge["stage"] === "string" ? edge["stage"] : "";
+					if (from === "" || bench === void 0) return null;
+					const upstreamRow = bench.stages.find((s) => s.id === from);
+					return upstreamRow !== void 0 ? String(upstreamRow.card ?? upstreamRow.id) : null;
+				})(),
+				sourceAttached: Object.values(params).some((v) => typeof v === "string" && (v.startsWith("data/input/") || v.startsWith("/melite-media/") || v.startsWith("/v1/assets/"))),
+				stage
+			};
+		}
+		//#endregion
+		//#region src/client/sortable-tile.tsx
+		/** sortable-tile.tsx — the bench tile: the native-reorder wrapper, the
+		* chat-input chrome, the audio-bars face (extracted from CardsTab.tsx
+		* hour 15). */
+		/** THE CARD ROW — the chat plane's CardRowLine grammar VERBATIM
+		*  (f3026845, the 9-10 card system): [artifact thumb | kind Pill],
+		*  bold title, service Pill, live StateDot, clipped prompt. ONE card
+		*  system, both planes — the tab renders the SAME row the chat
+		*  renders, from the same stylesheet (the .row/.thumb/.rowTitle/
+		*  .prompt classes below are the flow block's own). */
+		/** THE CARD TILE — the operator's CardTile law (flowCardTile.tsx)
+		*  ported to the tab, DSH native: the visual card (INNER) is ONE flex
+		*  column with exactly two flow children —
+		*    1. the PREVIEW CELL — flex-1 min-h-0, aspect-square: it owns
+		*       every pixel the caption strip doesn't need. Media fills it
+		*       edge to edge (object-cover); no artifact yet → the KIND FACE
+		*       (the kind initial, the glyph chain's face without the editor
+		*       runtime). A portrait artifact can NOT drive the row height
+		*       (SQUARE LAW, 2026-08-23).
+		*    2. the CAPTION STRIP — shrink-0, natural height: the declared
+		*       summary line (title · engine) + the live status dot.
+		*  Image-anchored overlays (the status dot) live INSIDE the preview
+		*  cell so their anchors ride the artifact's corner. Click = the
+		
+/** The sortable tile wrapper — the old grid's SortableCardWrap
+		*  pattern: the li is the drag unit, transform/transition ride the
+		*  wrapper, the shared-element layoutId stays INSIDE (the morph
+		*  anchor is unbroken). */
+		function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect, onAssetAttach, dragging, dragOver, onReorderStart, onReorderOver, onReorderDrop, onRun, onStop, onRemove, activeRunId }) {
+			const dragHandlers = grouping ? {} : {
+				draggable: true,
+				onDragStart: (e) => {
+					e.dataTransfer.setData(CARD_DRAG_MIME, row.id);
+					e.dataTransfer.effectAllowed = "move";
+					onReorderStart(row.id);
+				},
+				onDragEnd: () => {
+					onReorderStart(null);
+				}
+			};
+			const wiredFrom = typeof row.stage.inputs === "object" && row.stage.inputs !== null && "source" in row.stage.inputs;
+			return (0, react.createElement)("li", {
+				className: card_module_css_default$1.tile + (entered ? " " + card_module_css_default$1.tileEnter : "") + (dragging ? " " + card_module_css_default$1.tileDragging : "") + (dragOver ? " " + card_module_css_default$1.tileDragOver : ""),
+				"data-stage-id": row.id,
+				"data-stage-status": row.status,
+				"data-grouping": grouping ? "on" : null,
+				"data-selected": grouping && selected ? "on" : null,
+				onDragOver: (e) => {
+					if (e.dataTransfer.types.includes("application/x-melite-card")) {
+						e.preventDefault();
+						e.stopPropagation();
+						e.dataTransfer.dropEffect = "move";
+						onReorderOver(row.id);
+						return;
+					}
+					if (e.dataTransfer.types.includes("application/tech-noir-asset") || e.dataTransfer.types.includes("Files")) {
+						e.preventDefault();
+						e.stopPropagation();
+						e.dataTransfer.dropEffect = "copy";
+					}
+				},
+				onDrop: (e) => {
+					if (e.dataTransfer.types.includes("application/x-melite-card")) {
+						e.preventDefault();
+						e.stopPropagation();
+						const active = e.dataTransfer.getData(CARD_DRAG_MIME);
+						if (active !== "" && active !== row.id) onReorderDrop(active, row.id);
+						return;
+					}
+					const asset = parseAssetDrop(e.dataTransfer.types.includes("application/tech-noir-asset") ? e.dataTransfer.getData(ASSET_DRAG_MIME) : "");
+					if ((asset.url ?? "") !== "") {
+						e.preventDefault();
+						e.stopPropagation();
+						const t = asset.type ?? "";
+						if (!t.startsWith("image/") && !t.startsWith("audio/")) return;
+						onAssetAttach(row.id, asset.url, t.startsWith("audio/") ? "audio" : "image");
+						return;
+					}
+					const file = e.dataTransfer.files[0];
+					if (file === void 0) return;
+					if (file.type !== "image/png" && file.type !== "image/jpeg" && file.type !== "image/webp") return;
+					e.preventDefault();
+					e.stopPropagation();
+					onAssetAttach(row.id, file, "image");
+				},
+				...dragHandlers
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.tileShared }, (0, react.createElement)("button", {
+				className: card_module_css_default$1.tileInner,
+				type: "button",
+				"data-status": row.status,
+				onClick: () => {
+					if (grouping) {
+						onToggleSelect(row.id);
+						return;
+					}
+					onOpen(row);
+				}
+			}, grouping ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.checkCircle + (selected ? " " + card_module_css_default$1.checkOn : ""),
+				"aria-hidden": "true"
+			}, selected ? "✓" : "") : null, (0, react.createElement)("span", { className: card_module_css_default$1.tilePreview }, row.face === "audio" ? AudioBarsFace({ stageId: row.id }) : row.videoUrl !== null ? (0, react.createElement)("video", {
+				className: card_module_css_default$1.tileImg,
+				src: row.videoUrl,
+				muted: true,
+				playsInline: true,
+				preload: "metadata",
+				"data-testid": "tile-face-video"
+			}) : row.thumbUrl !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default$1.tileImg,
+				src: row.thumbUrl,
+				alt: row.title,
+				loading: "lazy"
+			}) : (0, react.createElement)("span", {
+				className: card_module_css_default$1.kindFace,
+				"data-kind": row.kind
+			}, (0, react.createElement)("span", { className: card_module_css_default$1.kindInitial }, row.kind.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default$1.kindName }, titleCaseId(row.kind))), rowRunning(row) ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.tileSpin,
+				"data-testid": "tile-spin",
+				role: "status",
+				"aria-label": "running"
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }), row.progress !== null && row.progress.max > 0 ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.tilePct,
+				"data-testid": "tile-progress",
+				"aria-label": "progress percent"
+			}, Math.floor(100 * row.progress.value / row.progress.max) + "%") : null) : null, grouping ? null : (0, react.createElement)("button", {
+				className: card_module_css_default$1.tileIconBtn + " " + card_module_css_default$1.tileTrash,
+				type: "button",
+				"aria-label": "Remove stage",
+				"data-testid": "tile-remove",
+				onClick: (e) => {
+					e.stopPropagation();
+					onRemove(row);
+				}
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconTrashOutline16, { size: 14 })), grouping ? null : rowRunning(row) ? (0, react.createElement)("button", {
+				className: card_module_css_default$1.tileIconBtn + " " + card_module_css_default$1.tileRunBtn,
+				type: "button",
+				"aria-label": "Stop run",
+				"data-testid": "tile-stop",
+				disabled: activeRunId === null,
+				onClick: (e) => {
+					e.stopPropagation();
+					onStop(row);
+				}
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 14 })) : (0, react.createElement)("button", {
+				className: card_module_css_default$1.tileIconBtn + " " + card_module_css_default$1.tileRunBtn,
+				type: "button",
+				"aria-label": "Run stage",
+				"data-testid": "tile-run",
+				onClick: (e) => {
+					e.stopPropagation();
+					onRun(row);
+				}
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 14 }))), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, row.title, wiredFrom ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.wiredMark,
+				title: "source wired"
+			}, " ⛓") : null, row.sourceAttached ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.wiredMark,
+				title: "source attached"
+			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default$1.tileMeta }, row.service !== null ? titleCaseId(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "failed" ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.runError,
+				"data-testid": "tile-run-error",
+				title: row.error
+			}, row.error.length > 140 ? row.error.slice(0, 140) + "…" : row.error) : null))));
+		}
+		/** THE AUDIO-BARS FACE (2026-09-13): the old system's music tile
+		*  preview — a deterministic bar strip (heights hashed from the stage
+		*  id, stable across renders; pure CSS, zero media cost). Rides the
+		*  audio identity token per the color law. */
+		function AudioBarsFace({ stageId }) {
+			let h1 = 0;
+			for (let i = 0; i < stageId.length; i++) h1 = h1 * 31 + stageId.charCodeAt(i) | 0;
+			const heights = [];
+			for (let i = 0; i < 14; i++) heights.push(18 + Math.abs(h1 >> i % 15) % 60);
+			return (0, react.createElement)("span", {
+				className: card_module_css_default$1.audioBars,
+				"data-testid": "tile-face-audio",
+				"aria-hidden": "true"
+			}, heights.map((ht, i) => (0, react.createElement)("span", {
+				key: i,
+				className: card_module_css_default$1.audioBar,
+				style: { height: ht + "%" }
+			})));
+		}
+		//#endregion
+		//#region \0dsh-css:infer-gallery/src/client/overlay.module.css.mjs
+		const css$4 = "._2saHFG_lightbox{width:min(1200px,96vw);max-width:96vw}._2saHFG_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
+		const tagId$4 = "@melite-plugin/dsh-card-view/overlay.module.css@d29a3d30";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
+			tag.dataset.pluginCss = tagId$4;
+			tag.textContent = css$4;
+			document.head.appendChild(tag);
+		}
+		var overlay_module_css_default = {
+			"lightbox": "_2saHFG_lightbox",
+			"wand": "_2saHFG_wand"
+		};
+		//#endregion
+		//#region ../infer-gallery/src/client/ui.tokens.ts
+		/**
+		* Design tokens — every var(--dsw-alias-…) string in the media family
+		* declared ONCE (audit F6). Numbered suffixes = same alias, different
+		* fallback (opacity variants). Pinned by the parity wall
+		* (tests/walls/ts/suites/media-sidebar.test.ts — tokens single site).
+		*/
+		const bgBase1 = "var(--dsw-alias-bg-base, #000)";
+		const labelPrimary2 = "var(--dsw-alias-label-primary, rgba(226,232,240,0.85))";
+		const stateBusinessPrimary = "var(--dsw-alias-state-business-primary, rgb(147,197,253))";
+		const textTertiary3 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.8))";
+		//#endregion
+		//#region ../infer-gallery/src/drilldown.tsx
+		/**
+		* drilldown.tsx — THE MEDIA DRILLDOWN, one component for every surface
+		* (the operator's hour-24 order: "clicking the preview component should
+		* mirror the media drilldown view 1:1"). Extracted VERBATIM from the
+		* gallery's MediaPanel Overlay — the gallery's media tiles and the
+		* cards' stage previews ride the SAME face: DSH's Modal (headless —
+		* body portal, mask, Escape, aria-modal and focus handling are the
+		* primitive's, never ours), the kind-switched full-size artifact, the
+		* caption, the esc hint.
+		*
+		* The gallery's MediaItem EXTENDS MediaDrilldownItem; the cards map
+		* their stage artifact onto it (mesh kind → 'model' — the media vocab
+		* alignment, one spelling).
+		*/
+		/** 3D artifact view — hands the artifact to the sidebar as a RESOURCE
+		*  (estate-artifact address, claimed by a viewer tab type; the mesh
+		*  renders in the right panel, orbitable beside the run list).
+		*  The download link stays: when the viewer plugin is absent no tab
+		*  type claims the address and openResource is a no-op — the artifact
+		*  must still be reachable. openArtifact is OPTIONAL: a surface with
+		*  no sidebar door (the card zoom) simply hides the link. */
+		function ModelView({ item, openArtifact }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				style: {
+					display: "flex",
+					flexDirection: "column",
+					gap: 10,
+					alignItems: "center"
+				},
+				children: [openArtifact !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
+					role: "button",
+					tabIndex: 0,
+					style: {
+						color: stateBusinessPrimary,
+						fontSize: 14,
+						cursor: "pointer"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+						openArtifact(item);
+					},
+					onKeyDown: (e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.stopPropagation();
+							openArtifact(item);
+						}
+					},
+					children: "open 3D view in sidebar"
+				}) : null, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+					href: item.url,
+					download: item.file,
+					style: {
+						color: textTertiary3,
+						fontSize: 13,
+						cursor: "pointer"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+					},
+					children: ["download ", item.file]
+				})]
+			});
+		}
+		/** THE MEDIA DRILLDOWN (the gallery Overlay, verbatim — one face). */
+		function MediaDrilldown({ item, onClose, openArtifact }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose,
+				title: item.file || "media preview",
+				headless: true,
+				className: overlay_module_css_default.lightbox,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					style: {
+						position: "relative",
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "center",
+						justifyContent: "center",
+						gap: 14,
+						padding: 24
+					},
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							"aria-label": "Close preview",
+							onClick: onClose,
+							style: {
+								position: "absolute",
+								top: 8,
+								right: 8,
+								zIndex: 10,
+								background: "none",
+								border: "none",
+								cursor: "pointer",
+								fontSize: 20,
+								lineHeight: 1,
+								padding: "4px 6px",
+								borderRadius: 6
+							},
+							children: "✕"
+						}),
+						item.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
+							src: item.url,
+							controls: true,
+							autoPlay: true,
+							playsInline: true,
+							style: {
+								maxWidth: "94vw",
+								maxHeight: "78vh",
+								borderRadius: 8,
+								background: bgBase1
+							}
+						}) : item.kind === "audio" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("audio", {
+							src: item.url,
+							controls: true,
+							autoPlay: true,
+							style: { width: "min(560px, 90vw)" }
+						}) : item.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelView, {
+							item,
+							openArtifact
+						}) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+							src: item.url,
+							alt: item.file,
+							style: {
+								maxWidth: "94vw",
+								maxHeight: "78vh",
+								borderRadius: 8,
+								objectFit: "contain"
+							}
+						}) : null,
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								color: labelPrimary2,
+								fontSize: 13,
+								maxWidth: "80vw",
+								textAlign: "center",
+								lineHeight: 1.5
+							},
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								style: { fontWeight: 600 },
+								children: item.head
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								style: { opacity: .7 },
+								children: [item.time, item.file].filter(Boolean).join(" · ")
+							})]
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							style: {
+								color: textTertiary3,
+								fontSize: 12
+							},
+							children: "Esc or click the mask to close"
+						})
+					]
+				})
+			});
+		}
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarScale.ts
+		/**
+		* MotionTimelineBarScale — the bar's ABSOLUTE scale model (split from
+		* MotionTimelineBar.tsx, pure move): measure-once pin, zoom,
+		* playhead-anchored scroll, frame<->px. Bodies below are the bar's.
+		*/
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarDrag.ts
+		/**
+		* MotionTimelineBarDrag — the bar's one global pointer session (split
+		* from MotionTimelineBar.tsx, pure move): scrub + clip drag/resize +
+		* keyframe drag, the pose-studio pattern (window listeners + live-ref
+		* drag state). Bodies below are the bar's.
+		*/
+		//#endregion
+		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/web-kit/timeline/timeline/timeline.module.css.mjs
+		const css$3 = ".E4_1PW_root{user-select:none;display:flex}.E4_1PW_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.E4_1PW_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.E4_1PW_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.E4_1PW_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.E4_1PW_zoomBtn svg{width:14px;height:14px}.E4_1PW_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.E4_1PW_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.E4_1PW_laneHead,.E4_1PW_laneHeadBeats{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneHead>svg,.E4_1PW_laneHeadBeats>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.E4_1PW_laneHeadBeats>svg{color:var(--dsw-alias-brand-primary)}.E4_1PW_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_audioHead{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_audioHead>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary);flex:none}.E4_1PW_gutterLabelDim{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.E4_1PW_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_detachBtn svg{width:10px;height:10px}.E4_1PW_laneRow{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneRow:last-child{border-bottom:0}.E4_1PW_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.E4_1PW_laneName{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;overflow:hidden}.E4_1PW_contentWrap{flex:1;min-width:0;position:relative}.E4_1PW_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.E4_1PW_scroller::-webkit-scrollbar{height:8px}.E4_1PW_scroller::-webkit-scrollbar-track{background:0 0}.E4_1PW_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.E4_1PW_content{position:relative}.E4_1PW_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);cursor:ew-resize;touch-action:none;position:relative}.E4_1PW_tick{position:absolute;top:0;bottom:0}.E4_1PW_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.E4_1PW_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.E4_1PW_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.E4_1PW_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_canAdd{cursor:copy}.E4_1PW_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.E4_1PW_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.E4_1PW_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.E4_1PW_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.E4_1PW_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeDead{cursor:default;opacity:.35}.E4_1PW_edgeDead:hover{background:0 0}.E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_promptClip:hover .E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.E4_1PW_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.E4_1PW_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeWide{width:16px}.E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.E4_1PW_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.E4_1PW_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.E4_1PW_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.E4_1PW_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.E4_1PW_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.E4_1PW_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.E4_1PW_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.E4_1PW_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.E4_1PW_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.E4_1PW_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.E4_1PW_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.E4_1PW_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.E4_1PW_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.E4_1PW_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.E4_1PW_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.E4_1PW_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_promptClip:hover .E4_1PW_promptDelete{opacity:1}.E4_1PW_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_beatsAdd{cursor:crosshair}.E4_1PW_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.E4_1PW_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.E4_1PW_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.E4_1PW_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.E4_1PW_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_audioClip:active{cursor:grabbing}.E4_1PW_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.E4_1PW_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.E4_1PW_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.E4_1PW_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.E4_1PW_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_audioClip:hover .E4_1PW_audioClipDelete{display:flex}.E4_1PW_audioClipDelete svg{width:8px;height:8px}.E4_1PW_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.E4_1PW_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.E4_1PW_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_kfLane:last-child{border-bottom:0}.E4_1PW_laneHint{color:var(--dsw-alias-label-tertiary);pointer-events:none;align-items:center;padding-left:12px;font-size:10px;display:flex;position:absolute;inset:0}.E4_1PW_kfWrap{position:absolute;top:0;bottom:0}.E4_1PW_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.E4_1PW_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.E4_1PW_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.E4_1PW_kfMoving{transform:rotate(45deg)scale(1.25)}.E4_1PW_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.E4_1PW_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_kfWrap:hover .E4_1PW_kfDelete{opacity:1}.E4_1PW_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_playhead{z-index:40;pointer-events:none;position:absolute;top:0;bottom:0}.E4_1PW_playheadCap{border:1px solid var(--dsw-alias-border-l4);border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.E4_1PW_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.E4_1PW_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.E4_1PW_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.E4_1PW_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.E4_1PW_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.E4_1PW_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.E4_1PW_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.E4_1PW_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}";
+		const tagId$3 = "@melite-plugin/dsh-card-view/timeline.module.css@b5c69b6a";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
+			tag.dataset.pluginCss = tagId$3;
+			tag.textContent = css$3;
+			document.head.appendChild(tag);
+		}
+		var timeline_module_css_default = {
+			"audioClip": "E4_1PW_audioClip",
+			"audioClipDelete": "E4_1PW_audioClipDelete",
+			"audioClipLabel": "E4_1PW_audioClipLabel",
+			"audioDrop": "E4_1PW_audioDrop",
+			"audioHead": "E4_1PW_audioHead",
+			"audioLane": "E4_1PW_audioLane",
+			"audioName": "E4_1PW_audioName",
+			"audioSlice": "E4_1PW_audioSlice",
+			"audioTime": "E4_1PW_audioTime",
+			"beatClip": "E4_1PW_beatClip",
+			"beatEmpty": "E4_1PW_beatEmpty",
+			"beatLabel": "E4_1PW_beatLabel",
+			"beatSelected": "E4_1PW_beatSelected",
+			"beatsAdd": "E4_1PW_beatsAdd",
+			"beatsEmpty": "E4_1PW_beatsEmpty",
+			"beatsLane": "E4_1PW_beatsLane",
+			"canAdd": "E4_1PW_canAdd",
+			"clipDur": "E4_1PW_clipDur",
+			"clipEditor": "E4_1PW_clipEditor",
+			"clipEmpty": "E4_1PW_clipEmpty",
+			"clipMoving": "E4_1PW_clipMoving",
+			"clipSelected": "E4_1PW_clipSelected",
+			"clipTextCol": "E4_1PW_clipTextCol",
+			"clipTextStack": "E4_1PW_clipTextStack",
+			"clipTitle": "E4_1PW_clipTitle",
+			"content": "E4_1PW_content",
+			"contentWrap": "E4_1PW_contentWrap",
+			"detachBtn": "E4_1PW_detachBtn",
+			"dropHint": "E4_1PW_dropHint",
+			"edgeDead": "E4_1PW_edgeDead",
+			"edgeL": "E4_1PW_edgeL",
+			"edgeR": "E4_1PW_edgeR",
+			"edgeWide": "E4_1PW_edgeWide",
+			"emptyCenter": "E4_1PW_emptyCenter",
+			"emptyHint": "E4_1PW_emptyHint",
+			"gainFill": "E4_1PW_gainFill",
+			"gripPill": "E4_1PW_gripPill",
+			"gripPillBright": "E4_1PW_gripPillBright",
+			"gripPillR": "E4_1PW_gripPillR",
+			"gutter": "E4_1PW_gutter",
+			"gutterLabel": "E4_1PW_gutterLabel",
+			"gutterLabelDim": "E4_1PW_gutterLabelDim",
+			"hintLine": "E4_1PW_hintLine",
+			"kfBtn": "E4_1PW_kfBtn",
+			"kfDelete": "E4_1PW_kfDelete",
+			"kfDiamond": "E4_1PW_kfDiamond",
+			"kfLane": "E4_1PW_kfLane",
+			"kfMoving": "E4_1PW_kfMoving",
+			"kfWrap": "E4_1PW_kfWrap",
+			"knobDot": "E4_1PW_knobDot",
+			"laneDot": "E4_1PW_laneDot",
+			"laneHead": "E4_1PW_laneHead",
+			"laneHeadBeats": "E4_1PW_laneHeadBeats",
+			"laneHint": "E4_1PW_laneHint",
+			"laneName": "E4_1PW_laneName",
+			"laneRow": "E4_1PW_laneRow",
+			"miniBtn": "E4_1PW_miniBtn",
+			"miniFitBtn": "E4_1PW_miniFitBtn",
+			"playhead": "E4_1PW_playhead",
+			"playheadCap": "E4_1PW_playheadCap",
+			"previewVideo": "E4_1PW_previewVideo",
+			"previewWrap": "E4_1PW_previewWrap",
+			"promptClip": "E4_1PW_promptClip",
+			"promptDelete": "E4_1PW_promptDelete",
+			"promptsLane": "E4_1PW_promptsLane",
+			"refAudioBadge": "E4_1PW_refAudioBadge",
+			"refBadge": "E4_1PW_refBadge",
+			"refCount": "E4_1PW_refCount",
+			"root": "E4_1PW_root",
+			"ruler": "E4_1PW_ruler",
+			"scrim": "E4_1PW_scrim",
+			"scroller": "E4_1PW_scroller",
+			"scrubBar": "E4_1PW_scrubBar",
+			"scrubFill": "E4_1PW_scrubFill",
+			"scrubHead": "E4_1PW_scrubHead",
+			"scrubReadout": "E4_1PW_scrubReadout",
+			"scrubToggle": "E4_1PW_scrubToggle",
+			"scrubTrack": "E4_1PW_scrubTrack",
+			"seamDot": "E4_1PW_seamDot",
+			"sliceLabel": "E4_1PW_sliceLabel",
+			"tick": "E4_1PW_tick",
+			"tickLabel": "E4_1PW_tickLabel",
+			"tickLine": "E4_1PW_tickLine",
+			"timecode": "E4_1PW_timecode",
+			"truncate": "E4_1PW_truncate",
+			"zoomBtn": "E4_1PW_zoomBtn",
+			"zoomPct": "E4_1PW_zoomPct",
+			"zoomRow": "E4_1PW_zoomRow"
+		};
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBar.tsx
+		/**
+		* MotionTimelineBar — the motion card's bar, pose-studio display model.
+		*
+		* 2026-08-14 rethink: the vendored viser Timeline (canvas-drawn, Kimodo
+		* demo parity) is replaced by the LEGACY POSE STUDIO's interaction model —
+		* DOM clips you can SEE and GRAB: prompt cards drag (body = move, edges =
+		* resize), double-click to edit inline, hover-X to delete; keyframe lanes
+		* with draggable diamonds. The user's words: "I could click and drag prompt
+		* in the motion studio, was useful."
+		*
+		* Zoom + horizontal scroll (pose-studio parity, round 2): the bar DEFAULTS
+		* to fit (every frame on screen — no hidden content), but −/%/+ zooms in;
+		* past fit the content scrolls horizontally (native thin scrollbar, wheel,
+		* trackpad, shift-wheel) while the label gutter stays pinned. Zooming is
+		* ANCHORED to the playhead — the frame under the playhead stays put, the
+		* rest grows around it.
+		*
+		* Pull-the-tail (2026-08-14, the "stuck at 5 seconds" fix): the end is not
+		* a wall. Dragging the LAST prompt card's right edge past the end EXTENDS
+		* the timeline (onExtend → the parent grows its envelope + duration_sec),
+		* with auto-scroll following the cursor — the DaVinci Resolve rule that
+		* the sequence is as long as its content. Non-last cards clamp as before.
+		*
+		* What stayed: ALL the state + persistence beneath (tlPrompts /
+		* tlKeyframes / constraintPayloads in MotionCardEditor, constraints.ts
+		* serialize/hydrate, MOTION_TIMELINE_TRACKS lane colors from the Kimodo
+		* demo). This is a view-layer swap only — every prop is one of the
+		* callbacks the viser Timeline used to receive.
+		*
+		* Video-timeline re-tenanting round 2 (2026-08-16, "the bar needs to be
+		* TALLER, show the videos, and have a beats row UNDER the calls"): the
+		* row heights grew (ruler 28 / prompts 36 — the video studio passes 64),
+		* call clips render their WINDOW PREVIEW inside the clip (first frame at
+		* rest, plays on hover — NLE strip behavior), and a Layer C BEATS row
+		* sits under the calls: prompt segments within a call, clickable (the
+		* sidebar edits them), never cut-bearers. Clicking a call OR beat clip
+		* selects it (`onSelect`) — the tenant's sidebar populates that item's
+		* inputs/options; the selected clip gets a ring (calls brand cyan, beats
+		* cyan-300). A click on the EMPTY timeline deselects (`onSelect(null)`)
+		* — the sidebar shifts back to its global mode; a real drag never
+		* deselects (the post-pointerup synthetic click is suppressed).
+		*
+		* Theme: the DSH tokens (bg --dsw-alias-bg-layer-1, playhead
+		* --dsw-alias-brand-primary), the 2026-09-13 color law. The palette is
+		* themeable per mount (the 2026-09-07 styling seam: className/style on
+		* the root, theme.{barBg,playhead} for the accents) — defaults render
+		* byte-identical, so no tenant changes.
+		*/
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/FilmPlayer.tsx
+		/**
+		* FilmPlayer — ONE film, ONE native player (the timeline genre's
+		* shared video surface, moved from h3-timeline's kit 2026-09-17:
+		* the operator's generic-tools stroke — "other cards, like H3
+		* Timeline (timeline bar at the bottom, video preview, dynamic
+		* parameters on the left), share code"). The timeline-genre card
+		* now composes from shared rails: StudioShell + CardForm
+		* (@melite/card-base), MotionTimelineBar (this package), and THIS
+		* player — the imperative seam the bar's playhead drives
+		* (seekTo/current/duration/play/pause/toggle) with the
+		* time/duration/playing reports. Time reports keep both sources
+		* (the element's timeupdate clock + a 4Hz poll while playing) so a
+		* silent event path never freezes the bar.
+		*/
+		const FilmPlayer = (0, react.forwardRef)(function FilmPlayer({ src, onTime, onDuration, onPlayingChange, onEnded, muted, loop, autoPlay, poster, className, "data-testid": tid }, ref) {
+			const videoRef = (0, react.useRef)(null);
+			const pendingSeekRef = (0, react.useRef)(null);
+			const seekRafRef = (0, react.useRef)(null);
+			const seekTo = (0, react.useCallback)((sec) => {
+				pendingSeekRef.current = sec;
+				if (seekRafRef.current != null) return;
+				seekRafRef.current = requestAnimationFrame(() => {
+					seekRafRef.current = null;
+					const target = pendingSeekRef.current;
+					pendingSeekRef.current = null;
+					const el = videoRef.current;
+					if (!el) return;
+					const d = el.duration;
+					el.currentTime = Math.max(0, Number.isFinite(d) && d > 0 ? Math.min(target, d) : target);
+				});
+			}, []);
+			(0, react.useEffect)(() => () => {
+				if (seekRafRef.current != null) cancelAnimationFrame(seekRafRef.current);
+			}, []);
+			(0, react.useImperativeHandle)(ref, () => ({
+				seekTo,
+				current: () => videoRef.current.currentTime,
+				duration: () => {
+					const d = videoRef.current.duration;
+					return Number.isFinite(d) ? d : 0;
+				},
+				play: () => void videoRef.current?.play(),
+				pause: () => void videoRef.current?.pause(),
+				toggle: () => {
+					const el = videoRef.current;
+					if (el.paused) el.play();
+					else el.pause();
+				}
+			}), [seekTo]);
+			const onTimeRef = (0, react.useRef)(onTime);
+			onTimeRef.current = onTime;
+			const handleTime = (0, react.useCallback)((t) => {
+				onTimeRef.current?.(t);
+			}, []);
+			(0, react.useEffect)(() => {
+				const id = window.setInterval(() => {
+					const el = videoRef.current;
+					if (el.paused || el.ended) return;
+					const t = el.currentTime;
+					if (Number.isFinite(t) && t >= 0) onTimeRef.current?.(t);
+				}, 250);
+				return () => window.clearInterval(id);
+			}, []);
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
+				ref: videoRef,
+				className,
+				"data-testid": tid,
+				src,
+				muted,
+				loop,
+				autoPlay,
+				playsInline: true,
+				preload: "metadata",
+				controls: true,
+				poster,
+				onTimeUpdate: (e) => handleTime(e.currentTarget.currentTime),
+				onPlay: () => onPlayingChange?.(true),
+				onPause: () => onPlayingChange?.(false),
+				onEnded: () => onEnded?.(),
+				onLoadedMetadata: (e) => {
+					const d = e.currentTarget.duration;
+					if (Number.isFinite(d) && d > 0) onDuration?.(d);
+				}
+			});
+		});
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/TimelineScrubBar.tsx
+		/**
+		* TimelineScrubBar — the form card's OPTIONAL BOTTOM SEAM (the
+		* generic-tools stroke, 2026-09-17: "form cards can have an
+		* optional SEAM for a timeline that stretches along the bottom").
+		*
+		* A PURE scrub rail: playhead position from current/duration,
+		* click + drag to seek, an optional play/pause toggle, and a
+		* time/frame readout. The OWNER wires it to whatever player owns
+		* the preview (the shared FilmPlayer's handle — seekTo/toggle/
+		* current/duration); the bar never touches a media element itself.
+		* Studios with full NLE needs ride MotionTimelineBar instead —
+		* this is the FORM card's face, the same genre as the shell's
+		* own "bottom: timeline scrub" slot law.
+		*/
+		const clamp01 = (v) => v < 0 ? 0 : v > 1 ? 1 : v;
+		function TimelineScrubBar({ current, duration, onSeek, onTogglePlay, playing, fps, "data-testid": tid }) {
+			const trackRef = (0, react.useRef)(null);
+			const [dragging, setDragging] = (0, react.useState)(false);
+			const pct = duration > 0 ? clamp01(current / duration) : 0;
+			/** pointer X → track fraction → seconds, clamped to the film */
+			const seekAtPointer = (0, react.useCallback)((clientX) => {
+				const track = trackRef.current;
+				if (track === null || duration <= 0) return;
+				const rect = track.getBoundingClientRect();
+				if (rect.width <= 0) return;
+				onSeek(clamp01((clientX - rect.left) / rect.width) * duration);
+			}, [duration, onSeek]);
+			const onPointerDown = (0, react.useCallback)((e) => {
+				if (duration <= 0) return;
+				e.currentTarget.setPointerCapture(e.pointerId);
+				setDragging(true);
+				seekAtPointer(e.clientX);
+			}, [duration, seekAtPointer]);
+			const onPointerMove = (0, react.useCallback)((e) => {
+				if (!dragging) return;
+				seekAtPointer(e.clientX);
+			}, [dragging, seekAtPointer]);
+			const endDrag = (0, react.useCallback)((e) => {
+				if (!dragging) return;
+				e.currentTarget.releasePointerCapture(e.pointerId);
+				setDragging(false);
+			}, [dragging]);
+			const fmt = (sec) => {
+				const s = Math.max(0, sec);
+				const m = Math.floor(s / 60);
+				return m > 0 ? m + ":" + String(Math.floor(s % 60)).padStart(2, "0") : s.toFixed(1) + "s";
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: timeline_module_css_default.scrubBar,
+				"data-testid": tid ?? "timeline-scrub-bar",
+				"data-dragging": dragging ? "true" : void 0,
+				children: [
+					onTogglePlay !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+						type: "button",
+						className: timeline_module_css_default.scrubToggle,
+						"aria-label": playing ? "Pause" : "Play",
+						onClick: onTogglePlay,
+						"data-testid": "timeline-scrub-toggle",
+						children: playing ? "❚❚" : "▶"
+					}) : null,
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						ref: trackRef,
+						className: timeline_module_css_default.scrubTrack,
+						"data-testid": "timeline-scrub-track",
+						role: "slider",
+						"aria-label": "Timeline scrub",
+						"aria-valuemin": 0,
+						"aria-valuemax": Math.max(0, duration),
+						"aria-valuenow": Math.max(0, current),
+						"aria-valuetext": fmt(current) + " of " + fmt(duration),
+						onPointerDown,
+						onPointerMove,
+						onPointerUp: endDrag,
+						onPointerCancel: endDrag,
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							className: timeline_module_css_default.scrubFill,
+							style: { width: (pct * 100).toFixed(3) + "%" }
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							className: timeline_module_css_default.scrubHead,
+							style: { left: (pct * 100).toFixed(3) + "%" }
+						})]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						className: timeline_module_css_default.scrubReadout,
+						"data-testid": "timeline-scrub-readout",
+						children: [
+							fmt(current),
+							" / ",
+							fmt(duration),
+							fps !== void 0 && fps > 0 ? " · frame " + String(Math.round(current * fps)) + "/" + String(Math.round(duration * fps)) : null
+						]
+					})
+				]
+			});
+		}
+		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
+		//#endregion
+		//#region src/client/filmSeam.tsx
+		/**
+		* filmSeam.tsx — THE FORM CARD'S OPTIONAL TIMELINE SEAM (the
+		* form-seams stroke, 2026-09-17): "form cards can have an optional
+		* SEAM for a timeline that stretches along the bottom".
+		*
+		* The shell's three-slot shape puts the PREVIEW in the right slot
+		* and the TIMELINE in the bottom slot — two different slots, one
+		* logical face (the bar scrubs the player). The seam object is the
+		* bridge: the player writes (handle + clock), the bar reads. A
+		* plain observable box — no store, no context, the smallest honest
+		* straddle: createFilmSeam() once per stage view (a useRef in the
+		* owner), FilmSeamPlayer into the preview slot, FilmSeamBar into
+		* the shell's bottom slot when the card CLAIMS the seam (the
+		* served spec's preview.timeline) AND a film artifact exists.
+		*/
+		function createFilmSeam(fps = 0) {
+			const listeners = /* @__PURE__ */ new Set();
+			const seam = {
+				handle: null,
+				current: 0,
+				duration: 0,
+				playing: false,
+				fps,
+				subscribe(fn) {
+					listeners.add(fn);
+					return () => {
+						listeners.delete(fn);
+					};
+				},
+				bind(handle) {
+					seam.handle = handle;
+					for (const fn of listeners) fn();
+				},
+				report(partial) {
+					Object.assign(seam, partial);
+					for (const fn of listeners) fn();
+				}
+			};
+			return seam;
+		}
+		/** THE PREVIEW SLOT FACE — the shared player, wired to the seam */
+		function FilmSeamPlayer(props) {
+			const { seam, src } = props;
+			const onTime = (0, react.useCallback)((sec) => {
+				seam.report({ current: sec });
+			}, [seam]);
+			const onDuration = (0, react.useCallback)((sec) => {
+				seam.report({ duration: sec });
+			}, [seam]);
+			const onPlayingChange = (0, react.useCallback)((playing) => {
+				seam.report({ playing });
+			}, [seam]);
+			const ref = (handle) => {
+				seam.bind(handle);
+			};
+			return (0, react.createElement)(FilmPlayer, {
+				src,
+				onTime,
+				onDuration,
+				onPlayingChange,
+				ref,
+				"data-testid": props["data-testid"] ?? "film-seam-player"
+			});
+		}
+		/** THE BOTTOM SLOT FACE — the shared scrub bar, reading the seam */
+		function FilmSeamBar(props) {
+			const { seam } = props;
+			const [, force] = (0, react.useState)(0);
+			(0, react.useEffect)(() => seam.subscribe(() => {
+				force((n) => n + 1);
+			}), [seam]);
+			const onSeek = (0, react.useCallback)((sec) => {
+				seam.handle?.seekTo(sec);
+				seam.report({ current: sec });
+			}, [seam]);
+			const onTogglePlay = (0, react.useCallback)(() => {
+				seam.handle?.toggle();
+			}, [seam]);
+			return (0, react.createElement)(TimelineScrubBar, {
+				current: seam.current,
+				duration: seam.duration > 0 ? seam.duration : seam.handle?.duration() ?? 0,
+				onSeek,
+				onTogglePlay,
+				playing: seam.playing,
+				fps: seam.fps > 0 ? seam.fps : void 0,
+				"data-testid": props["data-testid"] ?? "film-seam-bar"
+			});
+		}
+		//#endregion
+		//#region ../../image/mask-studio/src/paintInk.ts
+		const PAINT_STROKE_INK = "rgba(255, 255, 255, 1)";
+		//#endregion
+		//#region ../../image/mask-studio/src/ui/PaintLeafModal.tsx
+		const FIT$1 = 640;
+		/** Load an image element from a URL (null while loading/failed —
+		*  the modal degrades to the blank canvas, never a crash). */
+		const loadImage$1 = (url) => new Promise((resolve) => {
+			if (url === "") {
+				resolve(null);
 				return;
 			}
+			const img = new Image();
+			img.onload = () => {
+				resolve(img);
+			};
+			img.onerror = () => {
+				resolve(null);
+			};
+			img.src = url;
+		});
+		function PaintLeafModal(props) {
+			const { referenceUrl, payloadUrl, onSave, onCancel } = props;
+			const wrapRef = (0, react.useRef)(null);
+			const viewRef = (0, react.useRef)(null);
+			const paintRef = (0, react.useRef)(null);
+			const imgRef = (0, react.useRef)(null);
+			const drawingRef = (0, react.useRef)(false);
+			const lastPtRef = (0, react.useRef)(null);
+			const [brushSize, setBrushSize] = (0, react.useState)(28);
+			const [hasStrokes, setHasStrokes] = (0, react.useState)(false);
+			const [ready, setReady] = (0, react.useState)(false);
+			const [viewSize, setViewSize] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				let alive = true;
+				(async () => {
+					const img = await loadImage$1(referenceUrl);
+					const pay = payloadUrl ? await loadImage$1(payloadUrl) : null;
+					if (!alive) return;
+					imgRef.current = img;
+					const w = img?.naturalWidth ?? pay?.naturalWidth ?? 1024;
+					const h = img?.naturalHeight ?? pay?.naturalHeight ?? 1024;
+					const scale = Math.min(FIT$1 / w, FIT$1 / h, 1);
+					setViewSize({
+						w: Math.max(1, Math.round(w * scale)),
+						h: Math.max(1, Math.round(h * scale))
+					});
+					setReady(true);
+					if (pay && paintRef.current) {
+						const c = paintRef.current;
+						c.width = w;
+						c.height = h;
+						const ctx = c.getContext("2d");
+						if (ctx) {
+							ctx.drawImage(pay, 0, 0);
+							setHasStrokes(true);
+						}
+					}
+				})();
+				return () => {
+					alive = false;
+				};
+			}, [referenceUrl, payloadUrl]);
+			const redraw = (0, react.useCallback)(() => {
+				const view = viewRef.current;
+				const paint = paintRef.current;
+				const vs = viewSize;
+				if (!view || !paint || !vs) return;
+				const img = imgRef.current;
+				const w = img?.naturalWidth ?? paint.width;
+				const h = img?.naturalHeight ?? paint.height;
+				if (w === 0 || h === 0) return;
+				view.width = vs.w;
+				view.height = vs.h;
+				const ctx = view.getContext("2d");
+				if (!ctx) return;
+				ctx.clearRect(0, 0, vs.w, vs.h);
+				if (img) ctx.drawImage(img, 0, 0, vs.w, vs.h);
+				ctx.drawImage(paint, 0, 0, vs.w, vs.h);
+			}, [viewSize]);
+			(0, react.useEffect)(() => {
+				if (ready) redraw();
+			}, [ready, redraw]);
+			const toPoint = (e) => {
+				const view = viewRef.current;
+				const paint = paintRef.current;
+				const vs = viewSize;
+				if (!view || !paint || !vs) return null;
+				const rect = view.getBoundingClientRect();
+				const sx = vs.w / Math.max(1, rect.width);
+				const sy = vs.h / Math.max(1, rect.height);
+				const img = imgRef.current;
+				const w = img?.naturalWidth ?? paint.width;
+				const h = img?.naturalHeight ?? paint.height;
+				return {
+					x: (e.clientX - rect.left) * sx * (w / vs.w),
+					y: (e.clientY - rect.top) * sy * (h / vs.h)
+				};
+			};
+			const strokeTo = (a, b) => {
+				const paint = paintRef.current;
+				const img = imgRef.current;
+				const w = img?.naturalWidth ?? paint.width;
+				const h = img?.naturalHeight ?? paint.height;
+				if (paint.width !== w || paint.height !== h) {
+					const prior = paint.width > 0 ? paint.toDataURL() : "";
+					paint.width = w;
+					paint.height = h;
+					if (prior !== "") {
+						const restore = new Image();
+						restore.onload = () => {
+							paint.getContext("2d")?.drawImage(restore, 0, 0);
+						};
+						restore.src = prior;
+					}
+				}
+				const ctx = paint.getContext("2d");
+				if (!ctx) return;
+				const scale = Math.max(w, h) / 1024;
+				ctx.strokeStyle = PAINT_STROKE_INK;
+				ctx.lineWidth = brushSize * Math.max(scale, .25);
+				ctx.lineCap = "round";
+				ctx.lineJoin = "round";
+				ctx.beginPath();
+				ctx.moveTo(a.x, a.y);
+				ctx.lineTo(b.x, b.y);
+				ctx.stroke();
+				setHasStrokes(true);
+				redraw();
+			};
+			const onPointerDown = (e) => {
+				if (e.button !== 0) return;
+				const p = toPoint(e);
+				if (!p) return;
+				drawingRef.current = true;
+				lastPtRef.current = p;
+				e.target.setPointerCapture?.(e.pointerId);
+				strokeTo(p, {
+					x: p.x + .01,
+					y: p.y + .01
+				});
+			};
+			const onPointerMove = (e) => {
+				if (!drawingRef.current) return;
+				const p = toPoint(e);
+				const last = lastPtRef.current;
+				strokeTo(last, p);
+				lastPtRef.current = p;
+			};
+			const onPointerUp = () => {
+				drawingRef.current = false;
+				lastPtRef.current = null;
+			};
+			const clearPaint = () => {
+				const paint = paintRef.current;
+				const ctx = paint.getContext("2d");
+				if (ctx) ctx.clearRect(0, 0, paint.width, paint.height);
+				setHasStrokes(false);
+				redraw();
+			};
+			const save = () => {
+				onSave(paintRef.current.toDataURL("image/png"));
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				ref: wrapRef,
+				role: "dialog",
+				"aria-label": props.title ?? "Paint payload",
+				style: {
+					position: "fixed",
+					inset: 0,
+					zIndex: 1e3,
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					background: "color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent)"
+				},
+				onPointerDown: (e) => {
+					if (e.target === e.currentTarget) onCancel();
+				},
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					style: {
+						background: "var(--dsw-alias-bg-layer-1)",
+						color: "var(--dsw-alias-label-primary)",
+						border: "1px solid var(--dsw-alias-border-l2)",
+						borderRadius: 8,
+						padding: 16,
+						display: "flex",
+						flexDirection: "column",
+						gap: 12,
+						maxHeight: "92vh"
+					},
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								display: "flex",
+								alignItems: "center",
+								gap: 12
+							},
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: props.title ?? "Paint payload" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+								style: {
+									display: "flex",
+									alignItems: "center",
+									gap: 6,
+									marginLeft: "auto"
+								},
+								children: [
+									"Brush",
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+										type: "range",
+										min: 4,
+										max: 128,
+										step: 2,
+										value: String(brushSize),
+										onChange: (e) => {
+											setBrushSize(Number(e.target.value));
+										}
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											width: 28,
+											textAlign: "right"
+										},
+										children: brushSize
+									})
+								]
+							})]
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
+							ref: viewRef,
+							"data-testid": "paint-leaf-view",
+							style: {
+								display: viewSize === null ? "none" : "block",
+								maxWidth: "84vw",
+								maxHeight: "70vh",
+								border: "1px solid var(--dsw-alias-border-l2)",
+								borderRadius: 4,
+								cursor: "crosshair",
+								touchAction: "none",
+								backgroundColor: "var(--dsw-alias-bg-base)",
+								background: "repeating-conic-gradient(color-mix(in srgb, var(--dsw-alias-label-secondary) 30%, transparent) 0% 25%, transparent 0% 50%) 50% / 24px 24px"
+							},
+							onPointerDown,
+							onPointerMove,
+							onPointerUp,
+							onPointerLeave: onPointerUp
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
+							ref: paintRef,
+							style: { display: "none" },
+							"data-testid": "paint-leaf-layer"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								display: "flex",
+								gap: 8,
+								justifyContent: "flex-end"
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: clearPaint,
+									children: "Clear"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: onCancel,
+									children: "Cancel"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "primary",
+									disabled: !hasStrokes,
+									onClick: save,
+									children: "Save payload"
+								})
+							]
+						})
+					]
+				})
+			});
 		}
-		/** True when the throw is the door's CAS verdict (stale expect_rev).
-		*  The server's own voice: "bench <session> moved: rev is N, caller
-		*  held M" (bench.ts casCheck; the drafts store's older arm says
-		*  "bench moved: rev is…"). THE MATCHER LAW (2026-09-15): match the
-		*  REAL words — the first cut matched 'bench moved' against 'bench
-		*  MAIN moved' and matched nothing; dead matchers make dead
-		*  rebases, and dead rebases make stuck tabs. */
-		function isCasConflict(e) {
-			const msg = e instanceof Error ? e.message : String(e);
-			return msg.includes("moved: rev is") || msg.includes("cas-conflict");
-		}
-		/** One typed bench verb with the rebase dance: try the held rev; on
-		*  the door's cas-conflict re-read the rev (the SAME session) and
-		*  re-apply ONCE with it. */
-		async function withRebase(verb, doc, sessionKey, signal) {
-			const ns = estateRemote().bench;
-			const attempt = (expectRev) => unwrapRemote(ns[verb](sessionKey, {
-				...doc,
-				expect_rev: expectRev
-			}, signal), "bench/" + verb).then((row) => row);
-			const held = doc["expect_rev"];
-			try {
-				if (typeof held !== "number") throw new Error("bench/" + verb + ": no expect_rev to write against");
-				return await attempt(held);
-			} catch (e) {
-				if (!isCasConflict(e)) throw e;
-				const fresh = await benchRev(sessionKey, signal);
-				if (fresh === void 0) throw e;
-				return await attempt(fresh);
+		//#endregion
+		//#region ../../image/mask-studio/src/ui/BboxLeafModal.tsx
+		const FIT = 640;
+		const loadImage = (url) => new Promise((resolve) => {
+			if (url === "") {
+				resolve(null);
+				return;
 			}
+			const img = new Image();
+			img.onload = () => {
+				resolve(img);
+			};
+			img.onerror = () => {
+				resolve(null);
+			};
+			img.src = url;
+		});
+		function BboxLeafModal(props) {
+			const { referenceUrl, bbox, onSave, onCancel } = props;
+			const viewRef = (0, react.useRef)(null);
+			const imgRef = (0, react.useRef)(null);
+			const drawingRef = (0, react.useRef)(false);
+			const anchorRef = (0, react.useRef)(null);
+			const [rect, setRect] = (0, react.useState)(null);
+			const [ready, setReady] = (0, react.useState)(false);
+			const [viewSize, setViewSize] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				let alive = true;
+				(async () => {
+					const img = await loadImage(referenceUrl);
+					if (!alive) return;
+					imgRef.current = img;
+					const w = img?.naturalWidth ?? 1024;
+					const h = img?.naturalHeight ?? 1024;
+					const scale = Math.min(FIT / w, FIT / h, 1);
+					setViewSize({
+						w: Math.max(1, Math.round(w * scale)),
+						h: Math.max(1, Math.round(h * scale))
+					});
+					setReady(true);
+				})();
+				return () => {
+					alive = false;
+				};
+			}, [referenceUrl]);
+			const imgDims = (0, react.useCallback)(() => {
+				const img = imgRef.current;
+				return {
+					w: img?.naturalWidth ?? 1024,
+					h: img?.naturalHeight ?? 1024
+				};
+			}, []);
+			const viewToImage = (0, react.useCallback)(() => {
+				const vs = viewSize;
+				const d = imgDims();
+				return {
+					sx: d.w / vs.w,
+					sy: d.h / vs.h
+				};
+			}, [viewSize, imgDims]);
+			const seededRef = (0, react.useRef)(false);
+			(0, react.useEffect)(() => {
+				if (seededRef.current || !ready || !bbox) return;
+				seededRef.current = true;
+				const { sx, sy } = viewToImage();
+				setRect({
+					x: bbox.x / sx,
+					y: bbox.y / sy,
+					w: bbox.width / sx,
+					h: bbox.height / sy
+				});
+			}, [
+				ready,
+				bbox,
+				viewToImage
+			]);
+			const redraw = (0, react.useCallback)(() => {
+				const view = viewRef.current;
+				const vs = viewSize;
+				if (!view || !vs) return;
+				view.width = vs.w;
+				view.height = vs.h;
+				const ctx = view.getContext("2d");
+				if (!ctx) return;
+				ctx.clearRect(0, 0, vs.w, vs.h);
+				const img = imgRef.current;
+				if (img) ctx.drawImage(img, 0, 0, vs.w, vs.h);
+				if (rect !== null) {
+					ctx.strokeStyle = PAINT_STROKE_INK;
+					ctx.lineWidth = 2;
+					ctx.setLineDash([6, 4]);
+					ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+					ctx.setLineDash([]);
+				}
+			}, [viewSize, rect]);
+			(0, react.useEffect)(() => {
+				if (ready) redraw();
+			}, [ready, redraw]);
+			const toView = (e) => {
+				const view = viewRef.current;
+				if (!view || !viewSize) return null;
+				const rect = view.getBoundingClientRect();
+				return {
+					x: (e.clientX - rect.left) * (view.width / Math.max(1, rect.width)),
+					y: (e.clientY - rect.top) * (view.height / Math.max(1, rect.height))
+				};
+			};
+			const onDown = (e) => {
+				const p = toView(e);
+				if (!p) return;
+				drawingRef.current = true;
+				anchorRef.current = p;
+				setRect({
+					x: p.x,
+					y: p.y,
+					w: 0,
+					h: 0
+				});
+				e.target.setPointerCapture?.(e.pointerId);
+			};
+			const onMove = (e) => {
+				if (!drawingRef.current) return;
+				const p = toView(e);
+				const a = anchorRef.current;
+				setRect({
+					x: Math.min(a.x, p.x),
+					y: Math.min(a.y, p.y),
+					w: Math.abs(p.x - a.x),
+					h: Math.abs(p.y - a.y)
+				});
+			};
+			const onUp = () => {
+				drawingRef.current = false;
+			};
+			const save = () => {
+				const box = rect;
+				const { sx, sy } = viewToImage();
+				onSave({
+					x: Math.round(box.x * sx),
+					y: Math.round(box.y * sy),
+					width: Math.round(box.w * sx),
+					height: Math.round(box.h * sy)
+				});
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				role: "dialog",
+				"aria-modal": "true",
+				"data-bbox-leaf": "backdrop",
+				style: {
+					position: "fixed",
+					inset: 0,
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					background: "rgba(0,0,0,0.6)",
+					zIndex: 1e3
+				},
+				onPointerDown: (e) => {
+					if (e.target === e.currentTarget) onCancel();
+				},
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					style: {
+						background: "var(--dsh-bg, #1b1b1f)",
+						borderRadius: 8,
+						padding: 16,
+						maxWidth: "92vw",
+						maxHeight: "92vh",
+						display: "flex",
+						flexDirection: "column",
+						gap: 12
+					},
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							style: { fontWeight: 600 },
+							children: props.title ?? "Draw the selection box"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
+							ref: viewRef,
+							"data-testid": "bbox-leaf-view",
+							"data-bbox-canvas": "view",
+							style: {
+								maxWidth: "100%",
+								cursor: "crosshair",
+								touchAction: "none",
+								borderRadius: 4,
+								display: "block"
+							},
+							onPointerDown: onDown,
+							onPointerMove: onMove,
+							onPointerUp: onUp,
+							onPointerCancel: onUp
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								display: "flex",
+								gap: 8,
+								alignItems: "center"
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										opacity: .7,
+										fontSize: 12
+									},
+									children: rect !== null && rect.w >= 1 && rect.h >= 1 ? `box ${Math.round(rect.w)}×${Math.round(rect.h)} (view px)` : "drag on the image to draw the box"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { style: { flex: 1 } }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: () => {
+										setRect(null);
+										redraw();
+									},
+									children: "Clear"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: onCancel,
+									children: "Cancel"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "primary",
+									onClick: save,
+									disabled: rect === null || rect.w < 1 || rect.h < 1,
+									children: "Save box"
+								})
+							]
+						})
+					]
+				})
+			});
 		}
-		/** The bench add-stage verb caller (the tab's add-card path). The
-		*  doc holds card/author/engine/params/expect_rev. */
-		async function addStageWire(doc, sessionKey, signal) {
-			return await withRebase("add-stage", doc, sessionKey, signal);
+		//#endregion
+		//#region ../card-base/src/studioRail.tsx
+		/**
+		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
+		* (spec docs/design/card-studio-pattern.md §5 + §7.10).
+		*
+		* WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
+		* so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
+		* live in the RAIL, but their state lives INSIDE the tenant component
+		* (showSkeleton, editMode, bgImage…). Splitting the tenant into two
+		* registered components would force that state up through the shell —
+		* breaking E1 (the tenant receives exactly {stage, running, onSave}).
+		* Instead the tenant stays ONE component and PROJECTS its tools into the
+		* shell's slot; the shell stays genre-blind (it renders an empty div and
+		* knows nothing about motion).
+		*
+		* THE CONTRACT IS UNCHANGED: portaled tools write through the same
+		* onSave channel — nothing about the write path moves. Without the shell
+		* (a tenant mounted inline, e.g. the form view) the tools render in place
+		* — the exact layout the tenant had before the slot existed.
+		*
+		* Mount order (no flash): CardStudio renders the slot div and the tenant
+		* in the same commit; the div's ref lands before the tenant's effects
+		* run, so the portal binds on the first effect pass. The one render
+		* before that is inside the skeleton-masked mount anyway.
+		*/
+		/** The rail's tools-slot element, published by CardStudio. Null when the
+		*  tenant is mounted outside a studio shell (inline fallback). */
+		const StudioRailCtx = (0, react.createContext)(null);
+		/** TENANT side: renders children into the studio rail when one exists,
+		*  inline otherwise. Wrap the tenant's toolbar in this — nothing else. */
+		function StudioRail({ children }) {
+			const slot = (0, react.useContext)(StudioRailCtx);
+			const [el, setEl] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				if (slot && slot !== el) setEl(slot);
+			}, [slot]);
+			if (el) return (0, react_dom.createPortal)(children, el);
+			if (slot) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children });
 		}
-		/** The bench remove-stage verb caller (the drill's Remove path). The
-		*  doc holds stage/expect_rev; the session key addresses the doc the
-		*  bar RENDERS (stroke 80 — 'main' hardcoding deleted against the
-		*  wrong bench and refused 'stage not found'). */
-		async function removeStageWire(doc, sessionKey, signal) {
-			return await withRebase("remove-stage", doc, sessionKey, signal);
+		//#endregion
+		//#region \0dsh-css:card-base/src/shell.module.css.mjs
+		const css$2 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
+		const tagId$2 = "@melite-plugin/dsh-card-view/shell.module.css@62658dc6";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
+			tag.dataset.pluginCss = tagId$2;
+			tag.textContent = css$2;
+			document.head.appendChild(tag);
 		}
-		/** The bench reorder verb caller (the drag-reorder path). Doc:
-		*  stage/to/expect_rev — `to` is the post-splice target index. */
-		async function reorderStageWire(doc, sessionKey, signal) {
-			return await withRebase("reorder", doc, sessionKey, signal);
+		var shell_module_css_default = {
+			"errorIcon": "_4etGFq_errorIcon",
+			"errorLine": "_4etGFq_errorLine",
+			"errorRow": "_4etGFq_errorRow",
+			"railHead": "_4etGFq_railHead",
+			"railSection": "_4etGFq_railSection",
+			"railTitle": "_4etGFq_railTitle",
+			"shell": "_4etGFq_shell"
+		};
+		//#endregion
+		//#region ../card-base/src/shell.tsx
+		/** The loud error line — shell-owned chrome. Same DOM the assembly
+		*  body always rendered. */
+		function StudioShellErrorLine({ errors }) {
+			if (errors.length === 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				role: "alert",
+				className: shell_module_css_default.errorLine,
+				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+					className: shell_module_css_default.errorRow,
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: shell_module_css_default.errorIcon }),
+						e.id,
+						": ",
+						e.message
+					]
+				}, e.id))
+			});
 		}
-		/** The bench group verb caller (the Group Cards sub-view):
-		*  stages = 2+ ids (bench order applied server-side). */
-		async function groupStagesWire(doc, sessionKey, signal) {
-			return await withRebase("group", doc, sessionKey, signal);
-		}
-		/** The bench ungroup verb caller: spill a compound's children. */
-		async function ungroupStageWire(doc, sessionKey, signal) {
-			return await withRebase("ungroup", doc, sessionKey, signal);
+		/** The studio body: params column LEFT (projected into the shell rail
+		*  slot when one exists), preview RIGHT, optional bottom bar, then the
+		*  error line. The uniform three-slot shape — timeline and form cards
+		*  are the same grain, forms simply leave the right/bottom slots empty.
+		*
+		*  THE TOAST LAW (stroke 36): the shell mounts the ONE toast viewport
+		*  — toasts are shell-owned chrome exactly like the error line (the
+		*  construction law: no studio wires it, no studio can forget it).
+		*  Before: motion hand-mounted a copy in a slot the contract never
+		*  had (type drift), anny pushed toasts with NO viewport mounted —
+		*  silently dropped — and ideogram4 hand-wired its own outside the
+		*  shell. The per-studio mount is DEAD; any toast pushed from any
+		*  seam renders here, once. */
+		function StudioShell({ params, preview, bottom, errors = [], className }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: cx(shell_module_css_default.shell, className),
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
+					preview,
+					bottom,
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {})
+				]
+			});
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
@@ -55168,247 +56115,9 @@ void main() {
 			}), HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		//#endregion
-		//#region src/client/zoom.tsx
-		/**
-		* zoom.tsx — the zoom overlay, CSS-law port (2026-09-12).
-		*
-		* THE CONTRACT (the old tree's interaction, framer removed — DSH law:
-		* DSH ships no framer; its own surfaces animate in CSS):
-		* • the resting tile opens a FIXED inset-0 overlay (portal to body —
-		*   the old file's own DSH placement rule; the embed frame is
-		*   auto-height, absolute would cover only part of the view).
-		* • The card enters compositor-only: a CSS scale+fade keyframe
-		*   (zoomIn — transform/opacity, zero reflow, NO modal pop).
-		* • While the settle holds the box shows a pure SKELETON; the real
-		*   detail swaps in after ZOOM_SKELETON_MS.
-		* • Close vectors: the Collapse (X) button, a backdrop click
-		*   (target === currentTarget), and Escape — all direct onClose.
-		* • The overlay is the scroll container; the inner flex centers a
-		*   card shorter than the area and scrolls one that is taller.
-		*/
-		init_src();
-		/** How long the skeleton holds the box before the real detail swaps in. */
-		const ZOOM_SKELETON_MS = 500;
-		/** The zoomed card's bounded size — width caps at 760px, vh-bounded so
-		* the ≈square card fits without page scroll (the old tree's number). */
-		const ZOOM_DETAIL_MAX_PX = 760;
-		/** The envelope's huge class (surface.size='huge'): the studio wants
-		*  room — the card grows (the DECLARATION is estate truth). */
-		const ZOOM_HUGE_MAX_PX = 1160;
-		/** The card's width law, pure (the envelope lift's decision): the
-		*  estate's surface.size='huge' grows the card for studio room. The
-		*  viewport cap measures WIDTH (94vw, room for the pane's own edge) —
-		*  a vh cap on width was a category error that clipped the right
-		*  half of the params column on short viewports (2026-09-12). */
-		function zoomWidthFor(surfaceSize) {
-			return `min(${surfaceSize === "huge" ? ZOOM_HUGE_MAX_PX : ZOOM_DETAIL_MAX_PX}px, 94vw)`;
-		}
-		/** THE FULL-PAGE LAW (2026-09-13, the operator's hour-7: "the modal
-		*  is not taking up the full page like before"). A studio surface
-		*  ('huge') IS the old system's full-page card: width AND height take
-		*  the page (94vw/94vh — the pane keeps its edge, the shell breathes).
-		*  Ordinary cards keep the bounded ≈square law verbatim. */
-		function zoomSizeFor(surfaceSize) {
-			if (surfaceSize !== "huge") return {
-				width: zoomWidthFor(surfaceSize),
-				maxWidth: "100%"
-			};
-			return {
-				width: "min(94vw, 1720px)",
-				maxWidth: "100%",
-				height: "94vh",
-				maxHeight: "94vh"
-			};
-		}
-		/** The settle skeleton — an all-skeleton layout with no real content
-		*  (the shimmer sweep is the old tree's loading face). */
-		function ZoomSkeleton() {
-			return (0, react.createElement)("div", { className: card_module_css_default$1.zoomSkeleton }, (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skWide }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skBlock }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skRow }, (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skShort }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skShort })));
-		}
-		/** One overlay mount (keyed per stage by the caller). */
-		function ZoomMount(props) {
-			const { stage, detail, onClose, ...rest } = props;
-			const [ready, setReady] = (0, react.useState)(false);
-			const boundRef = (0, react.useRef)(null);
-			const [enhanceVerb, setEnhanceVerb] = (0, react.useState)(null);
-			const [enhancingBar, setEnhancingBar] = (0, react.useState)(false);
-			const bindEnhanceStable = (0, react.useCallback)((v) => {
-				setEnhanceVerb(() => v);
-			}, []);
-			const fireEnhance = () => {
-				if (enhanceVerb === null || enhancingBar) return;
-				setEnhancingBar(true);
-				Promise.resolve(enhanceVerb()).finally(() => {
-					setEnhancingBar(false);
-				});
-			};
-			const [llmRoutes, setLlmRoutes] = (0, react.useState)(null);
-			const [cardLlm, setCardLlmSel] = (0, react.useState)("");
-			(0, react.useEffect)(() => {
-				let alive = true;
-				setCardLlmSel(getCardLlm() ?? "");
-				fetchEnhanceRoutes().then((routes) => {
-					if (alive) setLlmRoutes(routes);
-				});
-				return () => {
-					alive = false;
-				};
-			}, []);
-			const pickLlm = (route) => {
-				setCardLlm(route);
-				setCardLlmSel(route);
-			};
-			const [surfaceSize, setSurfaceSize] = (0, react.useState)(null);
-			const onSurface = (size) => {
-				setSurfaceSize(size === "" ? null : size);
-			};
-			(0, react.useEffect)(() => {
-				const t = window.setTimeout(() => {
-					setReady(true);
-				}, ZOOM_SKELETON_MS);
-				return () => {
-					window.clearTimeout(t);
-				};
-			}, [stage.id]);
-			(0, react.useEffect)(() => {
-				const onKey = (e) => {
-					if (e.key === "Escape") onClose();
-				};
-				window.addEventListener("keydown", onKey);
-				return () => {
-					window.removeEventListener("keydown", onKey);
-				};
-			}, [onClose]);
-			const live = props.running || typeof stage.runStatus === "string" && (stage.runStatus === "running" || stage.runStatus === "queued" || stage.runStatus === "pending");
-			const rec = typeof stage.result === "object" && stage.result !== null ? stage.result : null;
-			const prog = rec !== null && typeof rec["progress"] === "object" && rec["progress"] !== null ? rec["progress"] : null;
-			const act = rec !== null && typeof rec["activity"] === "string" ? rec["activity"] : "";
-			const pct = prog !== null && prog.max > 0 ? Math.floor(100 * prog.value / prog.max) : null;
-			const failedText = typeof stage.runStatus === "string" && stage.runStatus === "failed" && typeof rec?.["error"] === "string" ? rec["error"] : null;
-			const startError = typeof props.startError === "string" && props.startError !== "" ? props.startError : null;
-			return (0, react.createElement)("div", {
-				className: card_module_css_default$1.zoomOverlay,
-				onClick: (e) => {
-					if (e.target === e.currentTarget) onClose();
-				}
-			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomScroll }, (0, react.createElement)("div", { className: card_module_css_default$1.zoomInner }, (0, react.createElement)("div", {
-				className: card_module_css_default$1.zoomCard,
-				style: zoomSizeFor(surfaceSize)
-			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default$1.zoomTitle }, "Stage " + String(stage.title ?? stage.card ?? stage.id)), enhanceVerb !== null ? [llmRoutes !== null ? (0, react.createElement)("select", {
-				className: card_module_css_default$1.drillLlm,
-				"aria-label": "Enhance model",
-				"data-testid": "drill-llm",
-				value: cardLlm,
-				onChange: (e) => {
-					pickLlm(e.target.value);
-				}
-			}, (0, react.createElement)("option", { value: "" }, "Auto"), ...llmRoutes.map((r) => (0, react.createElement)("option", {
-				value: r,
-				key: r
-			}, r))) : null, (0, react.createElement)("button", {
-				className: card_module_css_default$1.drillRunBtn,
-				type: "button",
-				"aria-label": "Agent Enhance",
-				"data-testid": "drill-enhance",
-				disabled: enhancingBar,
-				onClick: fireEnhance
-			}, (0, react.createElement)("span", null, enhancingBar ? "✦ enhancing…" : "✦ Enhance"))] : null, live ? (0, react.createElement)("button", {
-				className: card_module_css_default$1.drillRunBtn,
-				type: "button",
-				"aria-label": "Stop run",
-				"data-testid": "drill-stop",
-				onClick: () => {
-					props.onStop();
-				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 16 }), (0, react.createElement)("span", null, "Stop")) : (0, react.createElement)("button", {
-				className: card_module_css_default$1.drillRunBtn,
-				type: "button",
-				"aria-label": "Run stage",
-				"data-testid": "drill-run",
-				onClick: () => {
-					(boundRef.current ?? props.onRun)();
-				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 16 }), (0, react.createElement)("span", null, "Run")), (0, react.createElement)("button", {
-				className: card_module_css_default$1.drillRunBtn,
-				type: "button",
-				"aria-label": "Collapse card",
-				onClick: onClose
-			}, (0, react.createElement)("span", null, "✕"), (0, react.createElement)("span", null, "Close"))), live || failedText !== null || startError !== null ? (0, react.createElement)("div", {
-				className: card_module_css_default$1.zoomWebhook,
-				role: "status"
-			}, live ? (0, react.createElement)("span", {
-				className: card_module_css_default$1.drillProgress,
-				"data-testid": "drill-progress"
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }), (0, react.createElement)("span", null, [act !== "" ? act : "running", pct !== null ? " · " + String(pct) + "%" : ""].join("")), pct !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.zoomMeter }, (0, react.createElement)("span", {
-				className: card_module_css_default$1.zoomMeterFill,
-				style: { width: pct + "%" }
-			})) : null) : (0, react.createElement)("span", {
-				className: card_module_css_default$1.runError,
-				"data-testid": "drill-run-error"
-			}, startError ?? failedText)) : null, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBody }, ready ? (0, react.createElement)(props.detail, {
-				stage,
-				bench: rest.bench,
-				running: rest.running,
-				onRun: rest.onRun,
-				onStop: rest.onStop,
-				onClose,
-				onRemoved: rest.onRemoved,
-				onPatchParams: rest.onPatchParams,
-				renderStageView: rest.renderStageView,
-				renderPreview: rest.renderPreview,
-				onSurface,
-				runId: rest.runId,
-				bindRun: (r) => {
-					boundRef.current = r;
-				},
-				bindEnhance: bindEnhanceStable
-			}) : (0, react.createElement)(ZoomSkeleton))))));
-		}
-		/** CardZoomOverlay — portal to document.body, FIXED inset-0 (the old
-		* tree's own DSH rule), keyed per stage. */
-		function CardZoomOverlay(props) {
-			const mounted = typeof document !== "undefined";
-			const tree = (0, react.createElement)(ZoomMount, {
-				key: props.stage.id,
-				...props
-			});
-			return mounted ? (0, react_dom.createPortal)(tree, document.body) : tree;
-		}
-		//#endregion
-		//#region src/client/CardsTab.tsx
-		/**
-		* The Cards tab body — the bench's user plane (plan §5: "the user
-		* browses visually in the tab").
-		*
-		* Bench view (`dsh-resource://cards/bench`): the stage rows GROUPED BY
-		* CARD (the categories — each card's stages under its own header with
-		* a count), each row opening a DSH Modal drilldown (id/card/engine/
-		* params — the chat tile's drilldown pattern, primitives Modal), the
-		* revision trail's head, and the Run gesture — which projects the
-		* stages onto the flow_inline wire and starts them under the bench's
-		* own draft_id, EXACTLY what melite_flow's bench verb does (one
-		* truth, two planes; the model's plane is per-call reads, never this
-		* component's frames).
-		*
-		* Run view (`dsh-resource://cards/run/<runId>`): live status + stage
-		* rows + artifacts, riding the resource provider's frames — plus the
-		* way back: "Back to bench" navigates home, and "Restore to bench"
-		* turns the card BACK INTO A FLOW (drafts/get on the run's draft_id
-		* + per-stage bench/add-stage as the user, CAS-chained).
-		*
-		* ADDRESS LAW (the `loading sidebar://cards…` hang, dead 2026-09-11):
-		* the shell's navigation address is the SHELL's (guide clicks arrive
-		* as the tab id's own address, not a cards address). An address that
-		* does not parse as a cards address serves the BENCH — the tab never
-		* sits on a resource no provider claims.
-		*
-		* The body is dispatched by the keyed `sidebar.right.pane.tab` seat
-		* under the type's id; the address arrives through the standard
-		* `useTabInfo` hook, the value through the standard `useResource`
-		* hook. Local prop typings (the package's local-spelling pattern —
-		* see index.ts) keep this package off sibling runtime imports.
-		*/
-		init_src();
+		//#region src/client/forms-edge-meta.ts
+		/** forms-edge-meta.ts — the /v1/forms edge-meta session cache
+		* (extracted from CardsTab.tsx hour 15: one seam, one file). */
 		/** The /v1/forms edge-meta cache (card id → declared input/output
 		*  kinds) — ONE fetch per browser session; the picker's kind
 		*  matching (THE EDGE LAW) reads it. A failed fetch leaves null and
@@ -55428,441 +56137,12 @@ void main() {
 			});
 			return formsEdgeMetaPromise;
 		}
-		/** Correlation id — the run-wire package's ONE definition (re-exported
-		*  by cards-resource for the tab's legacy importers). */
-		/** Run ONE card stage through the COMPOSING door (the run-wire
-		*  package's startCardRun — the {model:} arm). The flow_inline door
-		*  this gesture rode before cannot consume cards ("card= stages are
-		*  unported on this gateway") and its executor demanded a pre-composed
-		*  params.workflow nobody emitted — the Sep 11 bench runs' "node
-		*  carries no inline workflow". The {model:} door composes the card's
-		*  arms estate-side; `model` is the card's DEFAULT FAMILY from the
-		*  catalog (the runs door resolves neither card ids nor aliases —
-		*  defaultFamilyForCard carries the currency, session-cached).
-		*  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
-		*  slot holds — an upload's estate path or a picked upstream output's
-		*  media-route url — rides the start doc VERBATIM; the engine stages
-		*  it under its runs-root arm. No client-side edge resolution exists.
-		*  Exported for the tab seam's door-contract spec. */
-		async function runCardStage(draftId, row) {
-			if (typeof row.card !== "string" || row.card === "") return { refused: "this stage names no card — nothing to compose" };
-			const src = await freshStageRow(draftId, row.id) ?? row;
-			const params = typeof src.params === "object" && src.params !== null && !Array.isArray(src.params) ? src.params : {};
-			const card = typeof src.card === "string" && src.card !== "" ? src.card : "";
-			if (card === "") return { refused: "this stage names no card — nothing to compose" };
-			const heldModel = params["model"];
-			const model = typeof heldModel === "string" && heldModel !== "" ? heldModel : await defaultFamilyForCard(card);
-			let doc = params;
-			try {
-				const selects = fieldsOf(await fetchFormSpec(card)).filter((f) => f.type === "select" && Array.isArray(f.options));
-				if (selects.length > 0) {
-					doc = { ...params };
-					for (const f of selects) {
-						const v = doc[f.name];
-						if (typeof v === "number") {
-							if (f.options.map((o) => typeof o === "string" ? o : o.value).includes(String(v))) doc[f.name] = String(v);
-						}
-					}
-				}
-			} catch {}
-			return await startCardRun({
-				model,
-				params: doc,
-				draftId
-			});
-		}
-		/** THE PREVIEW SEAM CONSULT (hour-9 law: "Where the VIDEO PREVIEW
-		*  and the IMAGE PREVIEW of other cards go in a SLOT with SHARED DSH
-		*  PRIMITIVES"): one consult, keyed by media kind, the card-base
-		*  shared previews as the DEFAULTS. Every card's rendered output
-		*  previews through this — image cards get the shared image preview,
-		*  video cards the shared video one; a studio's own stage view is
-		*  its specialization (the claim-over-default law). */
-		function previewKindFor(url) {
-			const u = url.toLowerCase();
-			if (/\.(mp4|webm|mov|m4v)(\?|$)/.test(u)) return "video";
-			if (/\.(png|jpe?g|webp|gif|avif)(\?|$)/.test(u)) return "image";
-			if (/\.(mp3|wav|ogg|flac|m4a|aac)(\?|$)/.test(u)) return "audio";
-			if (/\.(glb|gltf)(\?|$)/.test(u)) return "mesh";
-			return null;
-		}
-		/** THE PRIMARY-OUTPUT RESOLUTION (2026-09-13): the card's DECLARED
-		*  primary output — the served form-spec's `outputs.default` — is
-		*  the preview's kind, never a url sniff. The sniff stays ONLY as
-		*  the fallback: when no spec is in hand (a flow row without card
-		*  identity), or when the declaration names a non-previewable kind
-		*  (text/seg) whose artifacts may still carry a renderable url —
-		*  mask-studio declares 'seg' and its artifact IS a png; the sniff
-		*  keeps its gallery alive. Declared-previewable ALWAYS wins: an
-		*  audio card previews audio even before artifacts land (the empty
-		*  state names the kind), a mesh card rides the raw-three stage. */
-		const PREVIEWABLE_KINDS = /* @__PURE__ */ new Set([
-			"video",
-			"image",
-			"audio",
-			"mesh"
-		]);
-		function primaryKindFor(spec, url) {
-			const declared = spec?.outputs?.["default"];
-			if (typeof declared === "string" && PREVIEWABLE_KINDS.has(declared)) return declared;
-			return previewKindFor(url);
-		}
-		/** THE PARAMS CHIP (the output-component stroke — the operator's
-		*  law: old generations are tagged by the parameters that differ):
-		*  the comma-joined KEYS whose values differ between an archived
-		*  generation's params snapshot and the live params. undefined when
-		*  the snapshot is absent (an entry archived before the stroke) or
-		*  nothing differs — same params, same picture, no noise. */
-		function paramsDiffKeys(a, b) {
-			const ok = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
-			if (!ok(a) || !ok(b)) return void 0;
-			const keys = /* @__PURE__ */ new Set([...Object.keys(a), ...Object.keys(b)]);
-			const diff = [];
-			for (const k of keys) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) diff.push(k);
-			if (diff.length === 0) return void 0;
-			return diff.slice(0, 4).join(", ") + (diff.length > 4 ? "…" : "");
-		}
-		/** The stage row's preview artifacts, harvested from the estate's
-		*  result shape (artifacts name→url map first, the flat assetUrls
-		*  list second — the harvest law the h3 adapter states). */
-		function previewArtifactsFor(row) {
-			const result = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : {};
-			const out = [];
-			const arts = typeof result["artifacts"] === "object" && result["artifacts"] !== null ? result["artifacts"] : {};
-			for (const [name, val] of Object.entries(arts)) if (typeof val === "string" && val !== "") out.push({
-				name,
-				url: val
-			});
-			if (out.length === 0 && Array.isArray(result["assetUrls"])) {
-				for (const u of result["assetUrls"]) if (typeof u === "string" && u !== "") out.push({
-					name: "output",
-					url: u
-				});
-			}
-			if (out.length === 0 && typeof result["url"] === "string" && result["url"] !== "") out.push({
-				name: "output",
-				url: result["url"]
-			});
-			return out;
-		}
-		/** THE SEQUENTIAL PASS — Run ALL, the old system's composer law
-		*  verbatim (flowExecuteSlice runAll, 2026-08-11): execute the
-		*  stages IN ORDER, one run per card (the SAME single-stage door the
-		*  drill's Run uses — a typed composer bench is never one graph
-		*  run; the flow_inline door serves the chain/graph surface, not
-		*  this one). Skip stages already done (the cache-hit skip). A
-		*  failed or refused stage STOPS the pass — fail loud, never a
-		*  doomed downstream run. The per-card observer patches each row as
-		*  it goes (running → terminal), so the tiles flip one by one and
-		*  the bench is never taken over. Exported for the door-contract
-		*  spec. */
-		async function runBenchSequential(bench, hooks = {}) {
-			const ran = [];
-			for (const stage of bench.stages) {
-				if (hooks.signal?.aborted === true) return {
-					ran,
-					stoppedAt: null,
-					refused: null
-				};
-				if (stage.runStatus === "done") continue;
-				const res = await runCardStage(bench.draftId, stage);
-				if ("refused" in res) return {
-					ran,
-					stoppedAt: stage.id,
-					refused: res.refused
-				};
-				hooks.onCardStarted?.(res.runId, {
-					draftId: bench.draftId,
-					stageId: stage.id
-				});
-				if (await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched) !== "done") return {
-					ran: [...ran, stage.id],
-					stoppedAt: stage.id,
-					refused: null
-				};
-				ran.push(stage.id);
-			}
-			return {
-				ran,
-				stoppedAt: null,
-				refused: null
-			};
-		}
-		/** runs/stop — the cancel door (the registry seat's flag + interrupt);
-		*  the run-wire package's verb. */
-		/** Bench row run-status → the installed StateDot union (FlowCards'
-		*  CardRowLine law: done|warning|ongoing|error — a stage that never
-		*  ran shows NO dot, never a fake state). */
-		const STAGE_DOT = {
-			queued: "warning",
-			pending: "warning",
-			running: "ongoing",
-			done: "done",
-			failed: "error",
-			stopped: "warning",
-			ready: null
-		};
-		/** THE CARD ROW — the chat plane's CardRowLine grammar VERBATIM
-		*  (f3026845, the 9-10 card system): [artifact thumb | kind Pill],
-		*  bold title, service Pill, live StateDot, clipped prompt. ONE card
-		*  system, both planes — the tab renders the SAME row the chat
-		*  renders, from the same stylesheet (the .row/.thumb/.rowTitle/
-		*  .prompt classes below are the flow block's own). */
-		/** THE CARD TILE — the operator's CardTile law (flowCardTile.tsx)
-		*  ported to the tab, DSH native: the visual card (INNER) is ONE flex
-		*  column with exactly two flow children —
-		*    1. the PREVIEW CELL — flex-1 min-h-0, aspect-square: it owns
-		*       every pixel the caption strip doesn't need. Media fills it
-		*       edge to edge (object-cover); no artifact yet → the KIND FACE
-		*       (the kind initial, the glyph chain's face without the editor
-		*       runtime). A portrait artifact can NOT drive the row height
-		*       (SQUARE LAW, 2026-08-23).
-		*    2. the CAPTION STRIP — shrink-0, natural height: the declared
-		*       summary line (title · engine) + the live status dot.
-		*  Image-anchored overlays (the status dot) live INSIDE the preview
-		*  cell so their anchors ride the artifact's corner. Click = the
-		*  drilldown (the second state, the shared CardDrill). */
-		/** The OLD system's drag contract, VERBATIM (2026-08-08/08-22 era,
-		*  recovered from d13560be^ packages/web-kit): capability tiles carry
-		*  a fully-resolved card; asset tiles carry {url, type}. One drop
-		*  target, two contracts, no ambiguity — the MIME pair is the law. */
-		const CAPABILITY_DRAG_MIME = "application/tech-noir-capability";
-		const ASSET_DRAG_MIME = "application/tech-noir-asset";
-		/** The tile-reorder drag's MIME (native HTML5 sortable — DSH ships no
-		*  drag library; the estate drags natively). Carries the source id. */
-		const CARD_DRAG_MIME = "application/x-melite-card";
-		/** Parse the capability MIME off a drop event. null = absent or
-		*  malformed (falls through to the asset/file path) — old law. */
-		function parseCapabilityDrop(raw) {
-			if (raw === "") return null;
-			try {
-				const p = JSON.parse(raw);
-				if (typeof p.service === "string" && typeof p.title === "string") return p;
-				return null;
-			} catch {
-				return null;
-			}
-		}
-		function parseAssetDrop(raw) {
-			if (raw === "") return {};
-			try {
-				return JSON.parse(raw);
-			} catch {
-				return {};
-			}
-		}
-		/** The sortable tile wrapper — the old grid's SortableCardWrap
-		*  pattern: the li is the drag unit, transform/transition ride the
-		*  wrapper, the shared-element layoutId stays INSIDE (the morph
-		*  anchor is unbroken). */
-		function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect, onAssetAttach, dragging, dragOver, onReorderStart, onReorderOver, onReorderDrop, onRun, onStop, onRemove, activeRunId }) {
-			const dragHandlers = grouping ? {} : {
-				draggable: true,
-				onDragStart: (e) => {
-					e.dataTransfer.setData(CARD_DRAG_MIME, row.id);
-					e.dataTransfer.effectAllowed = "move";
-					onReorderStart(row.id);
-				},
-				onDragEnd: () => {
-					onReorderStart(null);
-				}
-			};
-			const wiredFrom = typeof row.stage.inputs === "object" && row.stage.inputs !== null && "source" in row.stage.inputs;
-			return (0, react.createElement)("li", {
-				className: card_module_css_default$1.tile + (entered ? " " + card_module_css_default$1.tileEnter : "") + (dragging ? " " + card_module_css_default$1.tileDragging : "") + (dragOver ? " " + card_module_css_default$1.tileDragOver : ""),
-				"data-stage-id": row.id,
-				"data-stage-status": row.status,
-				"data-grouping": grouping ? "on" : null,
-				"data-selected": grouping && selected ? "on" : null,
-				onDragOver: (e) => {
-					if (e.dataTransfer.types.includes(CARD_DRAG_MIME)) {
-						e.preventDefault();
-						e.stopPropagation();
-						e.dataTransfer.dropEffect = "move";
-						onReorderOver(row.id);
-						return;
-					}
-					if (e.dataTransfer.types.includes(ASSET_DRAG_MIME) || e.dataTransfer.types.includes("Files")) {
-						e.preventDefault();
-						e.stopPropagation();
-						e.dataTransfer.dropEffect = "copy";
-					}
-				},
-				onDrop: (e) => {
-					if (e.dataTransfer.types.includes(CARD_DRAG_MIME)) {
-						e.preventDefault();
-						e.stopPropagation();
-						const active = e.dataTransfer.getData(CARD_DRAG_MIME);
-						if (active !== "" && active !== row.id) onReorderDrop(active, row.id);
-						return;
-					}
-					const asset = parseAssetDrop(e.dataTransfer.types.includes(ASSET_DRAG_MIME) ? e.dataTransfer.getData(ASSET_DRAG_MIME) : "");
-					if ((asset.url ?? "") !== "") {
-						e.preventDefault();
-						e.stopPropagation();
-						const t = asset.type ?? "";
-						if (!t.startsWith("image/") && !t.startsWith("audio/")) return;
-						onAssetAttach(row.id, asset.url, t.startsWith("audio/") ? "audio" : "image");
-						return;
-					}
-					const file = e.dataTransfer.files[0];
-					if (file === void 0) return;
-					if (file.type !== "image/png" && file.type !== "image/jpeg" && file.type !== "image/webp") return;
-					e.preventDefault();
-					e.stopPropagation();
-					onAssetAttach(row.id, file, "image");
-				},
-				...dragHandlers
-			}, (0, react.createElement)("div", { className: card_module_css_default$1.tileShared }, (0, react.createElement)("button", {
-				className: card_module_css_default$1.tileInner,
-				type: "button",
-				"data-status": row.status,
-				onClick: () => {
-					if (grouping) {
-						onToggleSelect(row.id);
-						return;
-					}
-					onOpen(row);
-				}
-			}, grouping ? (0, react.createElement)("span", {
-				className: card_module_css_default$1.checkCircle + (selected ? " " + card_module_css_default$1.checkOn : ""),
-				"aria-hidden": "true"
-			}, selected ? "✓" : "") : null, (0, react.createElement)("span", { className: card_module_css_default$1.tilePreview }, row.face === "audio" ? AudioBarsFace({ stageId: row.id }) : row.videoUrl !== null ? (0, react.createElement)("video", {
-				className: card_module_css_default$1.tileImg,
-				src: row.videoUrl,
-				muted: true,
-				playsInline: true,
-				preload: "metadata",
-				"data-testid": "tile-face-video"
-			}) : row.thumbUrl !== null ? (0, react.createElement)("img", {
-				className: card_module_css_default$1.tileImg,
-				src: row.thumbUrl,
-				alt: row.title,
-				loading: "lazy"
-			}) : (0, react.createElement)("span", {
-				className: card_module_css_default$1.kindFace,
-				"data-kind": row.kind
-			}, (0, react.createElement)("span", { className: card_module_css_default$1.kindInitial }, row.kind.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default$1.kindName }, titleCaseId(row.kind))), rowRunning(row) ? (0, react.createElement)("span", {
-				className: card_module_css_default$1.tileSpin,
-				"data-testid": "tile-spin",
-				role: "status",
-				"aria-label": "running"
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }), row.progress !== null && row.progress.max > 0 ? (0, react.createElement)("span", {
-				className: card_module_css_default$1.tilePct,
-				"data-testid": "tile-progress",
-				"aria-label": "progress percent"
-			}, Math.floor(100 * row.progress.value / row.progress.max) + "%") : null) : null, grouping ? null : (0, react.createElement)("button", {
-				className: card_module_css_default$1.tileIconBtn + " " + card_module_css_default$1.tileTrash,
-				type: "button",
-				"aria-label": "Remove stage",
-				"data-testid": "tile-remove",
-				onClick: (e) => {
-					e.stopPropagation();
-					onRemove(row);
-				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconTrashOutline16, { size: 14 })), grouping ? null : rowRunning(row) ? (0, react.createElement)("button", {
-				className: card_module_css_default$1.tileIconBtn + " " + card_module_css_default$1.tileRunBtn,
-				type: "button",
-				"aria-label": "Stop run",
-				"data-testid": "tile-stop",
-				disabled: activeRunId === null,
-				onClick: (e) => {
-					e.stopPropagation();
-					onStop(row);
-				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 14 })) : (0, react.createElement)("button", {
-				className: card_module_css_default$1.tileIconBtn + " " + card_module_css_default$1.tileRunBtn,
-				type: "button",
-				"aria-label": "Run stage",
-				"data-testid": "tile-run",
-				onClick: (e) => {
-					e.stopPropagation();
-					onRun(row);
-				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 14 }))), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, row.title, wiredFrom ? (0, react.createElement)("span", {
-				className: card_module_css_default$1.wiredMark,
-				title: "source wired"
-			}, " ⛓") : null, row.sourceAttached ? (0, react.createElement)("span", {
-				className: card_module_css_default$1.wiredMark,
-				title: "source attached"
-			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default$1.tileMeta }, row.service !== null ? titleCaseId(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "failed" ? (0, react.createElement)("span", {
-				className: card_module_css_default$1.runError,
-				"data-testid": "tile-run-error",
-				title: row.error
-			}, row.error.length > 140 ? row.error.slice(0, 140) + "…" : row.error) : null))));
-		}
-		/** The chrome's running truth: the row's stamped status (the observer
-		*  patches it terminal the moment the run lands). */
-		function rowRunning(row) {
-			return row.status === "running" || row.status === "queued" || row.status === "pending";
-		}
-		/** THE AUDIO-BARS FACE (2026-09-13): the old system's music tile
-		*  preview — a deterministic bar strip (heights hashed from the stage
-		*  id, stable across renders; pure CSS, zero media cost). Rides the
-		*  audio identity token per the color law. */
-		function AudioBarsFace({ stageId }) {
-			let h1 = 0;
-			for (let i = 0; i < stageId.length; i++) h1 = h1 * 31 + stageId.charCodeAt(i) | 0;
-			const heights = [];
-			for (let i = 0; i < 14; i++) heights.push(18 + Math.abs(h1 >> i % 15) % 60);
-			return (0, react.createElement)("span", {
-				className: card_module_css_default$1.audioBars,
-				"data-testid": "tile-face-audio",
-				"aria-hidden": "true"
-			}, heights.map((ht, i) => (0, react.createElement)("span", {
-				key: i,
-				className: card_module_css_default$1.audioBar,
-				style: { height: ht + "%" }
-			})));
-		}
-		/** exported for the door-contract specs (the tile-face law). */
-		function benchRow(stage, bench) {
-			const isGroup = stage.card === "group";
-			const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0;
-			const title = isGroup ? "Group (" + String(children) + ")" : stage.title ?? stage.card ?? stage.id;
-			const status = typeof stage.runStatus === "string" && stage.runStatus !== "" ? stage.runStatus : "ready";
-			typeof stage.activity === "string" && stage.activity;
-			const progress = stage.progress ?? null;
-			progress !== null && progress.max > 0 && Math.floor(100 * progress.value / progress.max);
-			const params = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
-			const promptRaw = typeof params["prompt"] === "string" ? params["prompt"] : "";
-			const result = stage.result;
-			const url = typeof result === "object" && result !== null && typeof Reflect.get(result, "url") === "string" ? Reflect.get(result, "url") : "";
-			const failText = typeof result === "object" && result !== null && typeof Reflect.get(result, "error") === "string" ? Reflect.get(result, "error") : "";
-			const face = previewKindFor(url);
-			const absolute = (u) => /^(https?:\/\/|\/)/.test(u);
-			const posterFromArtifacts = (() => {
-				if (face !== "mesh") return null;
-				for (const a of previewArtifactsFor(stage)) if (previewKindFor(a.url) === "image" && absolute(a.url)) return a.url;
-				return null;
-			})();
-			return {
-				id: stage.id,
-				kind: isGroup ? "group" : String(stage.card ?? "card"),
-				title: String(title),
-				service: typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : null,
-				status,
-				dot: STAGE_DOT[status] ?? null,
-				prompt: promptRaw !== "" ? promptRaw.slice(0, 96) : null,
-				/** the failure carry — the run's own refusal text, or null. */
-				error: failText !== "" ? failText : null,
-				progress: typeof result === "object" && result !== null && typeof Reflect.get(result, "progress") === "object" && Reflect.get(result, "progress") !== null ? Reflect.get(result, "progress") : null,
-				activity: typeof result === "object" && result !== null && typeof Reflect.get(result, "activity") === "string" ? Reflect.get(result, "activity") : "",
-				thumbUrl: face === "image" && absolute(url) ? url : posterFromArtifacts,
-				face,
-				videoUrl: face === "video" && absolute(url) ? url : null,
-				upstream: (() => {
-					const inputs = typeof stage.inputs === "object" && stage.inputs !== null ? stage.inputs : null;
-					const edge = inputs !== null && typeof inputs["source"] === "object" && inputs["source"] !== null ? inputs["source"] : null;
-					const from = edge !== null && typeof edge["stage"] === "string" ? edge["stage"] : "";
-					if (from === "" || bench === void 0) return null;
-					const upstreamRow = bench.stages.find((s) => s.id === from);
-					return upstreamRow !== void 0 ? String(upstreamRow.card ?? upstreamRow.id) : null;
-				})(),
-				sourceAttached: Object.values(params).some((v) => typeof v === "string" && (v.startsWith("data/input/") || v.startsWith("/melite-media/") || v.startsWith("/v1/assets/"))),
-				stage
-			};
-		}
+		//#endregion
+		//#region src/client/stage-drill.tsx
+		/** stage-drill.tsx — THE SHARED DRILLDOWN: the spec-formatted stage
+		* editor, the zoom face, the preview seam consult (extracted from
+		* CardsTab.tsx hour 15 — the biggest seam). */
+		init_src();
 		/** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
 		*  stage's card carries a DECLARED form (/v1/form-spec — typed atoms,
 		*  groups, defaults); the drill renders THAT, never a raw key/value
@@ -56266,6 +56546,10 @@ void main() {
 				runId: runId ?? null
 			}, genericDetail());
 		}
+		//#endregion
+		//#region src/client/add-card-door.tsx
+		/** add-card-door.tsx — THE PLAIN DOOR: the picker whose pick IS the
+		* add (extracted from CardsTab.tsx hour 15). */
 		/** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing
 		*  + tile → the picker (the catalog's action cards, search + genre
 		*  groups) → the card's DECLARED form (defaults seeded) → bench/add-stage
@@ -56358,6 +56642,11 @@ void main() {
 				onClick: () => pick(c)
 			}, (0, react.createElement)("span", { className: card_module_css_default$1.pickerCardLabel }, busyId === c.id ? "adding…" : c.label)))))));
 		}
+		//#endregion
+		//#region src/client/bench-view.tsx
+		/** bench-view.tsx — the bench user plane: the grouped tiles, the
+		* reorder/group gestures, the drop zones (extracted from CardsTab.tsx
+		* hour 15). */
 		function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }) {
 			const [live, setLive] = (0, react.useState)(bench);
 			(0, react.useEffect)(() => {
@@ -56440,7 +56729,7 @@ void main() {
 				});
 			}, [live, reload]);
 			const [capOver, setCapOver] = (0, react.useState)(false);
-			const dropInterested = (e) => e.dataTransfer.types.includes(CAPABILITY_DRAG_MIME) || e.dataTransfer.types.includes(ASSET_DRAG_MIME) || e.dataTransfer.types.includes("Files");
+			const dropInterested = (e) => e.dataTransfer.types.includes("application/tech-noir-capability") || e.dataTransfer.types.includes("application/tech-noir-asset") || e.dataTransfer.types.includes("Files");
 			const onGridDragOver = (0, react.useCallback)((e) => {
 				if (!dropInterested(e)) return;
 				e.preventDefault();
@@ -56454,7 +56743,7 @@ void main() {
 				if (!dropInterested(e)) return;
 				e.preventDefault();
 				setCapOver(false);
-				if (e.dataTransfer.types.includes(CAPABILITY_DRAG_MIME)) {
+				if (e.dataTransfer.types.includes("application/tech-noir-capability")) {
 					const cap = parseCapabilityDrop(e.dataTransfer.getData(CAPABILITY_DRAG_MIME));
 					if (cap === null) return;
 					addStageWire({
@@ -56468,7 +56757,7 @@ void main() {
 					});
 					return;
 				}
-				if (e.dataTransfer.types.includes(ASSET_DRAG_MIME)) {
+				if (e.dataTransfer.types.includes("application/tech-noir-asset")) {
 					const payload = parseAssetDrop(e.dataTransfer.getData(ASSET_DRAG_MIME));
 					if ((payload.url ?? "") === "") return;
 					const t = payload.type ?? "";
@@ -56707,6 +56996,10 @@ void main() {
 				}
 			}) : null);
 		}
+		//#endregion
+		//#region src/client/draft-run-views.tsx
+		/** draft-run-views.tsx — the draft authoring face and the run's live
+		* status view (extracted from CardsTab.tsx hour 15). */
 		/**
 		* THE DRAFT VIEW (the conversation card's target, 2026-09-12 — the
 		* old embed's law restored): one flow draft's stage on the authoring
@@ -56829,6 +57122,43 @@ void main() {
 				}, (0, react.createElement)("span", { className: card_module_css_default$1.tilePreview }, face, dot !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.tileDot }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot })) : null), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, s.id), (0, react.createElement)("span", { className: card_module_css_default$1.tileMeta }, s.status))));
 			})));
 		}
+		//#endregion
+		//#region src/client/cards-tab-body.tsx
+		/** cards-tab-body.tsx — CardsTab + the address law (extracted from
+		* CardsTab.tsx hour 15; the tab body's own composition — the bench,
+		* draft, and run views ride their own seam files). */
+		/**
+		* The Cards tab body — the bench's user plane (plan §5: "the user
+		* browses visually in the tab").
+		*
+		* Bench view (`dsh-resource://cards/bench`): the stage rows GROUPED BY
+		* CARD (the categories — each card's stages under its own header with
+		* a count), each row opening a DSH Modal drilldown (id/card/engine/
+		* params — the chat tile's drilldown pattern, primitives Modal), the
+		* revision trail's head, and the Run gesture — which projects the
+		* stages onto the flow_inline wire and starts them under the bench's
+		* own draft_id, EXACTLY what melite_flow's bench verb does (one
+		* truth, two planes; the model's plane is per-call reads, never this
+		* component's frames).
+		*
+		* Run view (`dsh-resource://cards/run/<runId>`): live status + stage
+		* rows + artifacts, riding the resource provider's frames — plus the
+		* way back: "Back to bench" navigates home, and "Restore to bench"
+		* turns the card BACK INTO A FLOW (drafts/get on the run's draft_id
+		* + per-stage bench/add-stage as the user, CAS-chained).
+		*
+		* ADDRESS LAW (the `loading sidebar://cards…` hang, dead 2026-09-11):
+		* the shell's navigation address is the SHELL's (guide clicks arrive
+		* as the tab id's own address, not a cards address). An address that
+		* does not parse as a cards address serves the BENCH — the tab never
+		* sits on a resource no provider claims.
+		*
+		* The body is dispatched by the keyed `sidebar.right.pane.tab` seat
+		* under the type's id; the address arrives through the standard
+		* `useTabInfo` hook, the value through the standard `useResource`
+		* hook. Local prop typings (the package's local-spelling pattern —
+		* see index.ts) keep this package off sibling runtime imports.
+		*/
 		/** ADDRESS LAW (the `loading sidebar://cards…` hang, dead 2026-09-11):
 		*  the shell's navigation address is the SHELL's (guide clicks arrive
 		*  as the tab id's own address, not a cards address). An address that

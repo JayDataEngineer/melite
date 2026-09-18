@@ -34,6 +34,7 @@ import { useFormSpec } from './use-form-spec.ts'
 import { type FieldAtomClaim, type SquareHost, type SquareWire, useSquareProvider } from './square-provider.tsx'
 import { SpecAtom } from './atoms.tsx'
 import { SpecFieldRow } from './rows.tsx'
+import { infoGlyph } from './rows.tsx'
 import { ModelAxes, PackPrompt } from './axes.tsx'
 
 // THE STABLE SURFACE: every extracted name re-exports from here so
@@ -294,9 +295,9 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
             h('span', { className: css.specFieldKey },
               f.label,
               f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
+              infoGlyph(f),
             ),
             claim({ f, value: value[f.name], onEdit: edit, square: sq }),
-            f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
           )
           children.push(gridCols === undefined ? cell : h('div', { key: f.name + '-cell', style: cellStyle(f) }, cell))
           continue

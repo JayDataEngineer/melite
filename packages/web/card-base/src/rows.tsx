@@ -5,6 +5,22 @@ import { type SpecField } from './spec.ts'
 import css from './card.module.css'
 import { type SquareHost } from './square-provider.tsx'
 import { SpecAtom } from './atoms.tsx'
+import { Tip } from './layout.tsx'
+
+/** THE INFO GLYPH (hour 21): the field's declared help prose (the
+ *  schema's extra.tooltip) rides a hover (i) beside the label — one
+ *  definition for every card; absent prose, no glyph. The text is
+ *  aria-carried (the DSH Tooltip is hover-only). */
+export function infoGlyph(f: SpecField): ReturnType<typeof h> | null {
+  if (f.tooltip === undefined || f.tooltip === '') return null
+  // children rides the props object — Tip's signature requires a
+  // single ReactElement child (the hyperscript spread overload
+  // won't carry it for a typed function component)
+  return h(Tip, {
+    tip: f.tooltip,
+    children: h('span', { className: css.specInfo, role: 'note', 'aria-label': `info: ${f.tooltip}` }, 'i'),
+  })
+}
 
 /** THE SEED DICE (stroke 39 — the operator's QOL law): the seed
  *  knob carries the RANDOM sentinel -1 (GATE S: -1 mints a fresh
@@ -65,6 +81,7 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
           h('span', { className: css.specFieldKey },
             f.label,
             f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
+            infoGlyph(f),
           ),
           h(SeedDice, {
             random: seedRandom,
@@ -84,6 +101,7 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
       : h('span', { className: css.specFieldKey },
           f.label,
           f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
+          infoGlyph(f),
         ),
     h(SpecAtom, {
       f,
@@ -93,6 +111,5 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
       ...(seedRandom ? { placeholder: 'random — new every run' } : {}),
       onEdit, square, ...(wireCandidates !== undefined ? { wireCandidates } : {}),
     }),
-    f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
   )
 }

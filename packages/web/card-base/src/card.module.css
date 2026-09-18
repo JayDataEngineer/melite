@@ -58,6 +58,32 @@
   color: var(--dsw-alias-label-secondary, #61666b);
   font-size: 11px;
 }
+/* THE INFO GLYPH (hour 21, the operator's law: "the primitives
+ * should expose an (i) icon so on hover you can see the description
+ * to the right of the parameter label"): the declaration's help
+ * prose rides a hover tooltip on a circled (i) inline with the
+ * label — NEVER a flat always-visible line under the field (the
+ * old face broke the row geometry). Space is CONFIRMED inline:
+ * a fixed 12px circle + 5px gap, cursor help, select-proof. */
+.specInfo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  margin-left: 5px;
+  border: 1px solid var(--dsw-alias-label-secondary, #61666b);
+  border-radius: 50%;
+  font-size: 9px;
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1;
+  color: var(--dsw-alias-label-secondary, #61666b);
+  cursor: help;
+  vertical-align: middle;
+  user-select: none;
+  flex: none;
+}
 /* THE SEED DICE (stroke 39): the key line becomes a header — name
    left, dice right (the operator's placement law: "top right,
    across from Seed"). The pip fill IS the state: filled = random

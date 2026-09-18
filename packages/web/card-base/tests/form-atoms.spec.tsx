@@ -230,7 +230,7 @@ test('FIELD ROW: the seed dice — random fills, fixed hollows, the toggle mints
   expect(document.querySelector('[data-seed-dice="random"]')).not.toBeNull()
 })
 
-test('FIELD ROW: the stacked face — key, required star, hint, and the passthrough seams', () => {
+test('FIELD ROW: the stacked face — key, required star, the hover (i), and the passthrough seams', () => {
   const onEdit = vi.fn()
   const square = { verbs: {} }
   render(h(SpecFieldRow, {
@@ -238,10 +238,19 @@ test('FIELD ROW: the stacked face — key, required star, hint, and the passthro
     wireCandidates: [{ id: 'a', label: 'A', url: 'https://host/a.png' }],
   }))
   expect(screen.getByText('*')).not.toBeNull()
-  expect(screen.getByText('be nice')).not.toBeNull()
+  // HOUR 21 — the operator's law: help prose rides a hover (i) beside
+  // the label (aria-carried; the DSH Tooltip paints on hover), NEVER
+  // a flat always-visible line under the field
+  const glyph = document.querySelector('[class*="specInfo"]')
+  expect(glyph).not.toBeNull()
+  expect(glyph!.getAttribute('aria-label')).toBe('info: be nice')
+  expect(glyph!.textContent).toBe('i')
+  // the glyph sits INSIDE the key line, right of the label
+  expect(document.querySelector('[class*="specFieldKey"] [class*="specInfo"]')).not.toBeNull()
   const plain = render(h(SpecFieldRow, { f: F({ tooltip: '' }), value: 'x', onEdit }))
   void plain
-  expect(screen.queryByText('be nice')).not.toBeNull()
+  // absent prose, NO glyph (space confirmed only when info exists)
+  expect(plain.container.querySelector('[class*="specInfo"]')).toBeNull()
 })
 
 test('SOURCE ROW: the image rail — thumbnail for urls, the metric for junk, silence for null', () => {

@@ -194,7 +194,8 @@ test('GRID: declared columns grid the group; prompts span; width floors at one',
   // the claims ride the grid too — wrapped in the columns
   expect(screen.getAllByTestId('claimed').length).toBe(3)
   expect(screen.getByText('*')).not.toBeNull()
-  expect(screen.getByText('first')).not.toBeNull()
+  // HOUR 21: help prose rides the hover (i) glyph's aria — not a flat line
+  expect(document.querySelector('[class*="specInfo"][aria-label="info: first"]')).not.toBeNull()
   // the gridded slot row still seats its square; the prompt still spans
   expect(screen.getByRole('button', { name: 'A5 source' })).not.toBeNull()
   expect(screen.getByLabelText('A2')).not.toBeNull()
@@ -248,7 +249,8 @@ test('CLAIMS: a claimed atom takes the face; the key chrome stays the constructo
   form({ spec: doc(), user: {}, atoms })
   expect(screen.getByTestId('claimed').textContent).toBe('claimed-prompt')
   expect(screen.getByText('*')).not.toBeNull()
-  expect(screen.getByText('be nice')).not.toBeNull()
+  // HOUR 21: help prose rides the hover (i) glyph's aria — not a flat line
+  expect(document.querySelector('[class*="specInfo"][aria-label="info: be nice"]')).not.toBeNull()
 })
 
 test('SEAMS: a host square takes the slots; the flow candidates ride both faces', () => {
