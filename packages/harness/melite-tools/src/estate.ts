@@ -264,7 +264,7 @@ async function trySeats(
   m = /^\/v1\/flows\/runs(?:\/|$|\?)/.exec(path)
   if (method === 'GET' && m !== null && path !== '/v1/flows/runs/') {
     if (seats.runs === undefined) return undefined
-    // The RAW limit string rides (py int() semantics: underscores
+    // The RAW limit string rides (int() semantics: underscores
     // parse, junk refuses LOUD — the door's text, never NaN).
     const lim = /(?:^|[?&])limit=([^&]*)/.exec(path)
     return seats.runs.list(

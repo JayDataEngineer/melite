@@ -3,14 +3,13 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import type { Client } from "@stable-canvas/comfyui-client";
 import type { EngineJson } from "./comfyui-types.ts";
-import { pyDumps400 } from "./comfyui-format.ts";
-import { httpCall } from "./comfyui-transport.ts";
 
 // ── harvest (native 459-522) ──
 
 /** The /view artifact-fetch budget (stroke 83): the run's own
- *  timeout when it EXCEEDS the 180s py-parity floor, else the
+ *  timeout when it EXCEEDS the 180s floor, else the
  *  floor. The harvest rides the run's budget — a long run may
  *  serve large artifacts without the fetch fuse firing first —
  *  while short runs keep the 180s floor (never a raw
@@ -29,7 +28,7 @@ export function viewTimeoutMs(timeoutS: EngineJson | undefined): number {
  *  fetch honors it via viewTimeoutMs. Absent = the formula's own
  *  default (normalize undefined -> 2400 -> the budget arm). */
 export async function fetchOutputs(
-  server: string,
+  client: Client,
   runDir: string,
   entry: Record<string, EngineJson>,
   timeoutS?: EngineJson,
@@ -86,36 +85,35 @@ export async function fetchOutputs(
         }
         const name: string = basename(filename);
         const dest: string = join(runDir, sub !== "" ? nodeId + "_" + name : name);
-        const { status, body } = await httpCall(
-          "GET",
-          server +
-            "/view?filename=" +
-            encodeURIComponent(filename) +
-            "&subfolder=" +
-            encodeURIComponent(sub) +
-            "&type=" +
-            encodeURIComponent(ftype),
-          null,
-          "application/json",
-          viewTimeout,
-        );
-        let blob: Buffer | null = null;
-        if (status === 200 && Buffer.isBuffer(body)) blob = body;
-        else if (status === 200 && typeof body === "string") {
-          blob = Buffer.from(body, "utf8");
-        } else if (
-          status === 200 &&
-          typeof body === "object" &&
-          body !== null
-        ) {
-          // _http json-parses when it can — a JSON artifact arrives
-          // parsed. Re-serialize (the core pretty-prints indent=2,
-          // ensure_ascii=False => raw UTF-8) instead of dropping it.
-          blob = Buffer.from(JSON.stringify(body, null, 2), "utf8");
-        }
-        if (status === 200 && blob !== null) {
+        try {
+          const resp = await client.fetchApi(
+            "/view?" +
+              new URLSearchParams({
+                filename,
+                subfolder: sub,
+                type: ftype,
+              }).toString(),
+            { signal: AbortSignal.timeout(viewTimeout) },
+          );
+          const raw: Buffer = Buffer.from(await resp.arrayBuffer());
+          // a JSON artifact (a result row) re-serializes pretty
+          // (indent 2, raw UTF-8) instead of riding minified.
+          const ct: string = resp.headers.get("content-type") ?? "";
+          let blob: Buffer = raw;
+          if (ct.includes("json")) {
+            try {
+              blob = Buffer.from(
+                JSON.stringify(JSON.parse(raw.toString("utf8")), null, 2),
+                "utf8",
+              );
+            } catch {
+              /* raw bytes ride */
+            }
+          }
           writeFileSync(dest, blob);
           arts.push(dest);
+        } catch {
+          /* one unreachable artifact never kills the harvest */
         }
       }
     }
@@ -179,7 +177,7 @@ export function mapHistoryEntry(
       : {};
   if (rec["status_str"] === "error") {
     const msgs = rec["messages"];
-    let detail: string = pyDumps400(rec);
+    let detail: string = JSON.stringify(rec).slice(0, 400);
     if (Array.isArray(msgs)) {
       for (const m of msgs as EngineJson[]) {
         if (
@@ -187,7 +185,7 @@ export function mapHistoryEntry(
           m.length > 1 &&
           m[0] === "execution_error"
         ) {
-          detail = pyDumps400(m[1] as EngineJson);
+          detail = JSON.stringify(m[1] as EngineJson).slice(0, 400);
           break;
         }
       }

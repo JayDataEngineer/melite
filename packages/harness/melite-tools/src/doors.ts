@@ -39,7 +39,7 @@ import { makeEstateRequest, type EstateMethod } from './estate.ts'
 // The /poser door's outbound seam — cordis's own HTTP primitive +
 // engine base resolution (COMFYUI_URL / the endpoint config file):
 // the same seam every other Layer-A→B call resolves through.
-import { httpCall, resolveEngineBaseUrl } from '@melite/comfyui-cordis'
+import { resolveEngineBaseUrl, sdkClient } from '@melite/comfyui-cordis'
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
 import { agentFormDoc } from '@melite/engine-agent'
 import { craftFormDoc } from '@melite/engine-craft'
@@ -128,7 +128,7 @@ interface CtxView {
 // door, exactly like form-spec and model-catalog — typed arms with
 // validated inputs, the engine called server-side through cordis
 // httpCall (the browser renders in three.js client-side; only the
-// data transits). The vendor routes (ComfyUI PromptServer, Layer
+// data transits over the SDK wire). The vendor routes (ComfyUI PromptServer, Layer
 // B): GET/POST /poser/skin/mesh, GET /poser/skin/identity-space,
 // GET /poser/presets, POST /poser/render.
 
@@ -149,9 +149,10 @@ const POSER_ARMS: readonly PoserArm[] = [
   { doorPath: '/v1/poser/render', enginePath: '/poser/render', methods: ['POST'], timeoutMs: 120_000 },
 ]
 
-/** The poser arms' engine call: httpCall to the resolved engine
- *  base, the door's JSON contract on every refusal. A JSON result
- *  serves through ok(); the render arm's PNG serves bytes raw. */
+/** The poser arms' engine call: the SDK client's fetchApi to the
+ *  resolved engine base, the door's JSON contract on every
+ *  refusal. A JSON result serves through ok(); the render arm's
+ *  PNG serves bytes raw. */
 const poserEngineCall = (
   arm: PoserArm,
   search: string,
@@ -168,15 +169,22 @@ const poserEngineCall = (
     fail(502, { error: `poser: no comfyui endpoint (${error instanceof Error ? error.message : /* v8 ignore next -- resolveEngineBaseUrl throws Errors only (2026-09-16) */ String(error)})` })
     return
   }
-  httpCall(body === null ? 'GET' : 'POST', base + arm.enginePath + search, body, contentType, arm.timeoutMs)
-    .then((r) => {
-      if (Buffer.isBuffer(r.body)) {
-        serveBytes(r.status, r.body)
+  sdkClient(base).fetchApi(arm.enginePath + search, {
+    method: body === null ? 'GET' : 'POST',
+    body: body ?? undefined,
+    headers: { 'content-type': contentType },
+    signal: AbortSignal.timeout(arm.timeoutMs),
+  })
+    .then(async (r) => {
+      const ct: string = r.headers.get('content-type') ?? ''
+      if (!ct.includes('json')) {
+        serveBytes(r.status, Buffer.from(await r.arrayBuffer()))
         return
       }
-      ok(r.body === null ? {} : r.body)
+      const text: string = await r.text()
+      ok(text === '' ? {} : (JSON.parse(text) as unknown))
     })
-    .catch((error: unknown) => fail(502, { error: `poser: engine unreachable (${error instanceof Error ? error.message : /* v8 ignore next -- httpCall rejects with Errors only (2026-09-16) */ String(error)})` }))
+    .catch((error: unknown) => fail(502, { error: `poser: engine unreachable (${error instanceof Error ? error.message : /* v8 ignore next -- the SDK rejects with Errors only (2026-09-16) */ String(error)})` }))
 }
 
 export function apply(c: CtxView, config: Config = {}): void {

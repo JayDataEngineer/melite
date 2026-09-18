@@ -8,7 +8,7 @@ import type {} from "@deepseek-ai/dsh-settings";
 import { EngineSupervisor, isTransportDownError } from "./supervisor.ts";
 import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
-import { httpCall } from "./comfyui-transport.ts";
+import { sdkClient } from "./comfyui-transport.ts";
 import { stopForRunDirInner, unloadModelsInner } from "./comfyui-control.ts";
 import { executeSingleInner } from "./comfyui-execute.ts";
 import type { ExecuteOpts, ExecuteResult } from "./comfyui-execute.ts";
@@ -181,7 +181,7 @@ export class ComfyUIHostService extends Service {
 
   /** Test seam: drop the resolved server + supervisor + all
    *  live-prompt handles (walls boot fresh processes; belt-and-
-   *  braces for in-process reuse — the RunsService parity). */
+   *  braces for in-process reuse — the RunsService behavior). */
   resetForTests(): void {
     this.resolved = null;
     this.source = (): ComfyUIHostConfig => this.ctorConfig;
@@ -228,13 +228,9 @@ export class ComfyUIHostService extends Service {
     const log = this.ctx.logger("comfyui");
     const sup: EngineSupervisor = new EngineSupervisor({
       probe: (): Promise<void> => {
-        return httpCall(
-          "GET",
-          server + "/system_stats",
-          null,
-          "application/json",
-          5000,
-        ).then((): void => undefined);
+        return sdkClient(server)
+          .getSystemStats()
+          .then((): void => undefined);
       },
       label: "comfyui",
       log: {
@@ -326,7 +322,7 @@ export class ComfyUIHostService extends Service {
   /** Interrupt + dequeue the live prompt for one run dir (the
    *  plugin face of stopForRunDirInner — the flows-stop door's
    *  path). Unknown dir = silent no-op (the flag is the authority,
-   *  as py). */
+   *  ). */
   stopForRunDir(runDir: string): Promise<void> {
     return stopForRunDirInner(runDir, this.prompts);
   }

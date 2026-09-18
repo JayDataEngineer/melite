@@ -25,7 +25,6 @@ import {
   registryModel,
   loadCardDefs,
   modelIds,
-  SLOT_VOCABULARY,
   theService,
   emitModifierKinds,
 } from '@melite/comfyui-cordis'
@@ -270,8 +269,8 @@ function optionTooltip(
   row: { category?: string; filename: string; tooltip?: string },
   shared: boolean,
 ): string {
-  // A row-served tooltip wins (the controlnet catalog's own prose —
-  // the retired options' tooltip, 1:1); otherwise the category —
+  // A row-served tooltip wins (the controlnet catalog's own prose
+  // the retired options' tooltip, 1:1); otherwise the category
   // filename face lora rows have always worn.
   const base = row.tooltip ?? (row.category ? `${row.category} — ${row.filename}` : row.filename)
   return shared ? `${base} — runtime catalog` : base
@@ -456,12 +455,12 @@ export function specBody(
   // THE EDGE EMISSION (operator order, 2026-09-12: "whenever a card
   // emits via the package system, it needs to have 'input'
   // 'required=True', or 'output', so the edges are defined"). The
-  // declaration lives on every card (flowKinds — the py card.py
+  // declaration lives on every card (flowKinds — the card
   // stage half); the emission serves it so the card-UI BASE
   // constructs input components and wires pickers from DECLARED
   // edges, never from result-URL sniffing. The required join moved
   // client-side with the envelope (fieldsOf owns the schema's
-  // required facts now — the py law verbatim: required:True emits,
+  // required facts now — the law: required:True emits,
   // False omits).
   const inputs = Object.entries(def.flowKinds.inputs).map(([name, kind]) => ({
     name,
@@ -702,7 +701,7 @@ export function catalogSection(
   // MCP card isn't visible at all"): one cards row per SEATED
   // server, the same row the forms table serves — the census is the
   // caller's LIVE fold (never static), so no seats = no rows and
-  // the tree goldens stay seat-free. form-spec resolves the row
+  // the tree stays seat-free. form-spec resolves the row
   // through the ENGINE arm (no card, no family behind it).
   for (const server of [...mcpServers].sort()) {
     cards[`mcp:${server}`] = {
@@ -724,7 +723,6 @@ export function catalogSection(
     families: live['families'],
     capabilities,
     cards,
-    input_vocabulary: SLOT_VOCABULARY,
   }
 }
 

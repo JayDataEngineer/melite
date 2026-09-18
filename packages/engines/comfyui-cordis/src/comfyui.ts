@@ -1,14 +1,11 @@
-// engine/comfyui.ts — the ComfyUI engine-IO client (TS port of the
-// py execute-lane transport: packages/engines/comfyui/compose/native.py
-// + the merged submit/poll/harvest half of
-// packages/engines/comfyui/compose/mergegraph.py).
+// engine/comfyui.ts — the ComfyUI engine-IO client.
 //
 // SCOPE (P4: the engine-IO half): queue a prompt (POST /prompt), poll
-// the run to terminal (GET /history with the py-identical 250ms
+// the run to terminal (GET /history with the 250ms
 // cadence + deadline/interrupt semantics), interrupt a live prompt
 // (POST /queue delete + POST /interrupt), harvest artifacts (GET
 // /view + the full outputs shape matrix), and map history entries to
-// run status. Two entry points mirror the two py submitters:
+// run status. Two entry points:
 //   - executeSingle — native.execute (per-stage; deadline = the
 //     stage's own timeout_s, default 2400; "the graph" refusal
 //     texts, "ComfyUI run exceeded" deadline text).
@@ -16,31 +13,29 @@
 //     deadline = max(sum(stage timeout_s), 2400); "the merged graph"
 //     / "merged run exceeded" texts; per-stage harvest into per-stage
 //     sub-dirs with prefix-stripped output keys).
-// doors/flowsRun.ts drives executeFlow (the gateway's pure-comfyui
-// path is the merged one — python/gateway.py _try_merged, 1631-1634).
+// runsRegistry drives executeFlow (the pure-comfyui
+// path is the merged one (_try_merged law).
 //
-// FAITHFUL MIRRORS (line-cited against native.py unless noted):
+// The transport laws:
 //   - endpoint: COMFYUI_URL env (non-empty wins, trailing slashes
 //     stripped) > the endpoint config (COMFYUI_ENDPOINT_CONFIG env
 //     path, else the plugin's data/comfyui_endpoint.json; the
 //     INFERENCE_TEST_SANDBOX gate with no env path resolves to {}
-//     — _config.py). Absent url = the LOUD ComfyError (native
-//     82-84). NO default, NO hardcoded host/port (QUEUE LANE LAW).
-//   - POST /prompt {prompt, prompt_id, client_id} (native 355-358);
-//     non-200 -> "POST /prompt %s: %s" (360); node_errors non-empty
-//     -> "ComfyUI validation refused the graph: %s" (361-364) /
-//     "…the merged graph…" (mergegraph 306-310).
-//   - poll: 250ms cadence (native 378); history GET timeout 30s
-//     (383-385); entry-absent + past-deadline -> interrupt +
-//     "exceeded" (387-393); status_str error -> execution_error
-//     message detail else whole-status detail, "ComfyUI run failed"
-//     (394-401); not-completed + past-deadline -> interrupt +
-//     "exceeded" (402-408); stop flag -> interrupt + "stopped
+//     — config). Absent url = the LOUD ComfyError. NO default, NO
+//     hardcoded host/port (QUEUE LANE LAW).
+//   - POST /prompt {prompt, prompt_id, client_id}; non-200
+//     refuses with status + body; non-empty node_errors refuses
+//     with the graph errors (merged graph: "…the merged graph…").
+//   - poll: 250ms cadence; history GET timeout 30s;
+//     entry-absent + past-deadline -> interrupt + "exceeded";
+//     status_str error -> execution_error message detail else
+//     whole-status detail, "ComfyUI run failed"; not-completed +
+//     past-deadline -> interrupt + "exceeded"; stop flag ->
+//     interrupt + "stopped
 //     (interrupt delivered)" (380-382). Merged texts per mergegraph
 //     333-363 (incl. the "merged run exceeded %.0fs" deadline =
 //     max(budget, 2400), 318-327).
-//   - %.0f parity: Python rounds half-to-even (2.5 -> "2"); the
-//     formatter below does the same (formatTimeout0f).
+//   - deadline texts render with String(Math.round()).
 //   - interrupt = POST /queue {delete:[prompt_id]} then POST
 //     /interrupt {} (native 525-534), best-effort swallow.
 //   - harvest = _fetch_outputs (native 459-522): the images/gifs/
@@ -70,12 +65,11 @@
 //     Mid-run progress/activity frames are therefore absent; the
 //     terminal status mapping is identical.
 //   - Transport errors surface as Error("<node:http message>")
-//     (e.g. ECONNREFUSED text) where py surfaces
+//     (e.g. ECONNREFUSED text) where surfaces
 //     URLError("<urlopen …>"). The run-failure SHAPE (failed +
 //     error) agrees; the errno prose does not — the wall asserts
 //     shape there, bytes everywhere the stub controls the text.
 //   - Python str(out) for non-200 bodies uses single-quote reprs;
-//     pyStr() below reproduces them for the JSON scalar/container
 //     shapes the stub serves.
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
@@ -97,15 +91,7 @@ export {
   resolveEngineBaseUrl,
   resolveRepoRoot,
 } from "./comfyui-config.ts";
-export { httpCall } from "./comfyui-transport.ts";
-export type { HttpResult } from "./comfyui-transport.ts";
-export {
-  formatTimeout0f,
-  pyDumps400,
-  pyReprStr,
-  pyReprStrList,
-  pyStr,
-} from "./comfyui-format.ts";
+export { liveObjectInfo, sdkClient } from "./comfyui-transport.ts";
 export {
   DATA_URL_IMAGE_EXT,
   UPLOAD_EXTS,
@@ -120,12 +106,10 @@ export {
   viewTimeoutMs,
 } from "./comfyui-outputs.ts";
 export type { HistoryVerdict } from "./comfyui-outputs.ts";
-export { drainRelevant, executeSingle, openProgressTap } from "./comfyui-execute.ts";
+export { executeSingle } from "./comfyui-execute.ts";
 export type {
-  ComfyWsEvent,
   ExecuteOpts,
   ExecuteResult,
-  TapHandle,
 } from "./comfyui-execute.ts";
 export { executeFlow, planMerge } from "./comfyui-merge.ts";
 export type { FlowResult, MergeRow, MergeStageResult } from "./comfyui-merge.ts";

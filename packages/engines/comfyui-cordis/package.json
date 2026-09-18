@@ -21,7 +21,8 @@
   },
   "scripts": {
     "compose": "node --experimental-strip-types src/cli.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "regen:vocab": "node --experimental-strip-types scripts/regen-vocab.ts"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
@@ -95,6 +96,7 @@
     "@melite/motion-motion": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",
     "@melite/video-video-gen": "workspace:*",
+    "@stable-canvas/comfyui-client": "^1.5.9",
     "lucide-react": "*",
     "react": "*"
   },

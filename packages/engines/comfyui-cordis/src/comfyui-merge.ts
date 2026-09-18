@@ -5,11 +5,11 @@ import { dirname, join } from "node:path";
 import { ACTIVE, ComfyError } from "./comfyui-types.ts";
 import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
-import { formatTimeout0f, pyReprStr, pyReprStrList } from "./comfyui-format.ts";
 import { uploadReferenced } from "./comfyui-upload.ts";
 import { fetchOutputs, normalizeTimeoutS, publishOutputChannels } from "./comfyui-outputs.ts";
-import { openProgressTap, pollToTerminal, submitPrompt } from "./comfyui-execute.ts";
-import type { ExecuteOpts, TapHandle } from "./comfyui-execute.ts";
+import { hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.ts";
+import { sdkClient } from "./comfyui-transport.ts";
+import type { ExecuteOpts } from "./comfyui-execute.ts";
 
 // ── merged submit (mergegraph.execute_flow port) ──
 
@@ -59,7 +59,7 @@ export function namespaceWires(
 
 /** $spell substitution (mergegraph._rewrite_spells): FromStage-wired
  *  names become link tuples, request initials substitute, anything
- *  left over refuses LOUD with the py-identical text. */
+ *  left over refuses LOUD with the-identical text. */
 export function rewriteSpells(
   value: EngineJson,
   links: Record<string, [string, number]>,
@@ -149,11 +149,11 @@ export function assertWiresResolve(
   }
 }
 
-/** plan_merge port (mergegraph 178-269) for the link-free shapes
+/** The merge plan for the link-free shapes
  *  the TS preview serves: namespaced copy + FromStage link
  *  resolution + the Load file-slot gate + the dangling gate.
  *  Producer inference (_producers: declared output_nodes, else the
- *  single-Save binding) mirrors py — an ambiguous graph refuses
+ *  single-Save binding) — an ambiguous graph refuses
  *  LOUD with the producer text. */
 export function planMerge(
   rows: MergeRow[],
@@ -168,7 +168,7 @@ export function planMerge(
     if (typeof wf !== "object" || wf === null || Object.keys(wf).length === 0) {
       throw new ComfyError(
         "stage " +
-          pyReprStr(sid) +
+          JSON.stringify(sid) +
           ": no workflow to merge (card stages must " +
           "bridge first; engine-only stages need params.workflow)",
       );
@@ -182,11 +182,11 @@ export function planMerge(
         if (!(String(nid) in wf)) {
           throw new ComfyError(
             "stage " +
-              pyReprStr(sid) +
+              JSON.stringify(sid) +
               ": output_nodes names node " +
-              pyReprStr(String(nid)) +
+              JSON.stringify(String(nid)) +
               " for channel " +
-              pyReprStr(channel) +
+              JSON.stringify(channel) +
               " — the workflow carries no such node",
           );
         }
@@ -208,9 +208,9 @@ export function planMerge(
       } else if (saves.length > 1 && Object.keys(row.outputs ?? {}).length > 0) {
         throw new ComfyError(
           "stage " +
-            pyReprStr(sid) +
+            JSON.stringify(sid) +
             ": ambiguous producers " +
-            pyReprStrList(saves) +
+            JSON.stringify(saves) +
             " — declare output_nodes {channel: node_id}",
         );
       }
@@ -222,9 +222,9 @@ export function planMerge(
       if (key in merged) {
         throw new ComfyError(
           "stage " +
-            pyReprStr(sid) +
+            JSON.stringify(sid) +
             ": duplicate namespaced node " +
-            pyReprStr(key) +
+            JSON.stringify(key) +
             " — stage ids and node ids collided",
         );
       }
@@ -242,11 +242,11 @@ export function planMerge(
       if (!(upstream in producers)) {
         throw new ComfyError(
           "stage " +
-            pyReprStr(sid) +
+            JSON.stringify(sid) +
             " input " +
-            pyReprStr(name) +
+            JSON.stringify(name) +
             " wires " +
-            pyReprStr(ref) +
+            JSON.stringify(ref) +
             " — the upstream stage declares no mergeable producer for it",
         );
       }
@@ -260,19 +260,19 @@ export function planMerge(
       if (ups.length === 0) {
         throw new ComfyError(
           "stage " +
-            pyReprStr(sid) +
+            JSON.stringify(sid) +
             " input " +
-            pyReprStr(name) +
+            JSON.stringify(name) +
             " wires channel " +
-            pyReprStr(channel) +
+            JSON.stringify(channel) +
             " — upstream stage " +
-            pyReprStr(upstream) +
+            JSON.stringify(upstream) +
             " produces no such channel",
         );
       }
       links[name] = [ups[0] as string, 0];
     }
-    // ROW-4 file-slot gate (mergegraph 232-258): a producer link
+    // ROW-4 file-slot gate: a producer link
     // may only land in a tensor slot — Load* file slots refuse.
     for (const key of nsKeys) {
       const node = merged[key] as Record<string, EngineJson>;
@@ -284,15 +284,15 @@ export function planMerge(
         if (typeof val === "string" && val.startsWith("$") && val.slice(1) in links) {
           throw new ComfyError(
             "stage " +
-              pyReprStr(sid) +
+              JSON.stringify(sid) +
               " node " +
-              pyReprStr(key.split("::", 2)[1]!) +
+              JSON.stringify(key.split("::", 2)[1]!) +
               " (" +
               cls +
               "): input " +
-              pyReprStr(slot) +
+              JSON.stringify(slot) +
               " carries the $spell " +
-              pyReprStr(val) +
+              JSON.stringify(val) +
               " — a producer link cannot land in a file slot. The merged path needs the arm's " +
               "tensor entry (drop the loader); the per-stage path owns the disk handoff",
           );
@@ -305,7 +305,7 @@ export function planMerge(
         node,
         links,
         initials,
-        "stage " + pyReprStr(sid) + " node " + pyReprStr(key.split("::", 2)[1]!),
+        "stage " + JSON.stringify(sid) + " node " + JSON.stringify(key.split("::", 2)[1]!),
       ) as Record<string, EngineJson>;
     }
     assertWiresResolve(merged, links);
@@ -349,16 +349,16 @@ export async function executeFlowInner(
   active: Map<string, ActivePrompt>,
 ): Promise<FlowResult> {
   const plan = planMerge(rows, { ...initials }, inputNames);
-  const staged = await uploadReferenced(server, plan.workflow, { runsRoot: dirname(String(runDir)) });
-  const { promptId, clientId } = await submitPrompt(server, staged.graph, true);
+  const client = sdkClient(server);
+  const staged = await uploadReferenced(client, plan.workflow, { runsRoot: dirname(String(runDir)) });
+  const { promptId, clientId } = await submitPrompt(client, staged.graph);
   active.set(String(runDir), { promptId, clientId, server });
-  // THE PROGRESS TAP (2026-09-13): the merged submit mints ONE
-  // client_id — every stage's row shares the same live fold (the
-  // report consumer stamps each stage; the stages share the run).
-  const tap: TapHandle | null = opts.report !== undefined
-    ? openProgressTap(server, clientId) : null;
-  // the merged deadline: the SUM of the stages' own budgets
-  // (mergegraph 318-327); per-stage floors apply.
+  // THE PROGRESS TAP: the merged submit mints ONE client — every
+  // stage's row shares the same live fold (the report consumer
+  // stamps each stage; the stages share the run).
+  const unhook = hookProgress(client, promptId, opts.report);
+  // the merged deadline: the SUM of the stages' own budgets;
+  // per-stage floors apply.
   let budget: number = 0;
   for (const r of rows) {
     budget += normalizeTimeoutS(r.params["timeout_s"]);
@@ -366,20 +366,11 @@ export async function executeFlowInner(
   const floor: number = Math.max(budget, 2400);
   const deadline: number = Date.now() + floor * 1000;
   try {
-    const entry: Record<string, EngineJson> = await pollToTerminal(
-      server,
+    const entry: Record<string, EngineJson> = await waitTerminal(
+      client,
       promptId,
       deadline,
-      // Untestable-by-construction arm (2026-09-12): the floor below
-      // is max(budget, 2400) — no test waits 40 minutes. The shared
-      // poll loop's deadline arms ride the per-stage battery; this
-      // closure only voices the merged noun.
-      /* v8 ignore next */
-      (): string =>
-        "merged run exceeded " + formatTimeout0f(floor) + "s (interrupt delivered)",
       opts.shouldStop ?? ((): boolean => false),
-      tap,
-      opts.report,
     );
     const allOutputs = entry["outputs"];
     const allRec: Record<string, EngineJson> =
@@ -394,7 +385,7 @@ export async function executeFlowInner(
         if (k.startsWith(prefix)) subOutputs[k.slice(prefix.length)] = v;
       }
       const stageDir: string = join(String(runDir), r.stageId);
-      const arts: string[] = await fetchOutputs(server, stageDir, {
+      const arts: string[] = await fetchOutputs(client, stageDir, {
         outputs: subOutputs,
       }, r.params["timeout_s"]);
       results[r.stageId] = {
@@ -404,7 +395,8 @@ export async function executeFlowInner(
     }
     return { stages: results, promptId };
   } finally {
-    tap?.close();
+    unhook?.();
+    client.close();
     active.delete(String(runDir));
   }
 }

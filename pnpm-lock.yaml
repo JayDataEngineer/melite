@@ -564,6 +564,9 @@ importers:
       '@melite/video-video-gen':
         specifier: workspace:*
         version: link:../../video/video-gen
+      '@stable-canvas/comfyui-client':
+        specifier: ^1.5.9
+        version: 1.5.9
       lucide-react:
         specifier: '*'
         version: 1.39.0(react@18.3.1)
@@ -2637,6 +2640,9 @@ importers:
         specifier: workspace:*
         version: link:../../estate/runs
     devDependencies:
+      '@melite/card-base':
+        specifier: workspace:*
+        version: link:../card-base
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
@@ -3726,6 +3732,9 @@ packages:
 
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
+
+  '@stable-canvas/comfyui-client@1.5.9':
+    resolution: {integrity: sha512-20SaRj8CfBms5ucfUHPwX5uhSuWaSjNCNSVFgTQ/cBq0A8myZiyFmP3k9IF1uisshVwOwdFEsdNLIbr3DnszUA==}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -6740,6 +6749,8 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
+  '@stable-canvas/comfyui-client@1.5.9': {}
+
   '@standard-schema/spec@1.1.0': {}
 
   '@tailwindcss/cli@4.3.3':
@@ -6873,7 +6884,7 @@ snapshots:
       lightningcss: 1.33.0
       postcss-load-config: 6.0.1(jiti@2.7.0)(postcss@8.5.26)(yaml@2.9.0)
       rolldown: 1.2.7
-      tsdown: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
+      tsdown: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@5.7.3)(unrun@0.3.1)
     optionalDependencies:
       postcss: 8.5.26
     transitivePeerDependencies:

@@ -18,11 +18,12 @@ import { createServer } from "node:http";
 import { join } from "node:path";
 import { uploadReferenced } from "../../../../packages/engines/comfyui-cordis/src/comfyui.ts";
 import { resolveLinkedInput } from "../../../../packages/engines/comfyui-cordis/src/linked.ts";
+import { sdkClient } from "../../../../packages/engines/comfyui-cordis/src/comfyui-transport.ts";
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
 
 const stub = (getStatus: number) => createServer((req, res) => {
-  if (req.method === "POST" && req.url === "/upload/image") {
+  if (req.method === "POST" && (req.url ?? "").startsWith("/upload/image")) {
     req.resume();
     req.on("end", () => {
       res.writeHead(200, { "content-type": "application/json" });
@@ -59,7 +60,7 @@ describe("uploadReferenced linked-input arm", () => {
     const s = stub(200);
     const base = await listen(s);
     try {
-      const { graph } = await uploadReferenced(base, graphFor(`${base}/v1/assets/runs/r1/out.png`) as never);
+      const { graph } = await uploadReferenced(sdkClient(base), graphFor(`${base}/v1/assets/runs/r1/out.png`) as never);
       const node = (graph["1"] as { inputs: { image: string } }).inputs;
       assert.equal(node.image, "staged.png");
     } finally {
@@ -72,7 +73,7 @@ describe("uploadReferenced linked-input arm", () => {
     const base = await listen(s);
     try {
       await assert.rejects(
-        uploadReferenced(base, graphFor(`${base}/v1/assets/runs/r1/out.png`) as never),
+        uploadReferenced(sdkClient(base), graphFor(`${base}/v1/assets/runs/r1/out.png`) as never),
         /linked input fetch failed/,
       );
     } finally {
@@ -84,7 +85,7 @@ describe("uploadReferenced linked-input arm", () => {
     const s = stub(200);
     const base = await listen(s);
     try {
-      const { graph } = await uploadReferenced(base, {
+      const { graph } = await uploadReferenced(sdkClient(base), {
         "1": { class_type: "KSampler", inputs: { seed: 42, steps: 8 } },
       } as never);
       const node = (graph["1"] as { inputs: Record<string, unknown> }).inputs;

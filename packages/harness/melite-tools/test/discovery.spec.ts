@@ -220,7 +220,7 @@ describe('live door arms', () => {
     const section = catalogSection(defs) as Record<string, unknown>
     assert.deepEqual(
       Object.keys(section).sort(),
-      ['capabilities', 'cards', 'families', 'input_vocabulary', 'models'],
+      ['capabilities', 'cards', 'families', 'models'],
     )
     assert.ok(Object.keys(section['models'] as object).length > 50)
     assert.deepEqual((await modelCatalogArm())['models'], section['models'])

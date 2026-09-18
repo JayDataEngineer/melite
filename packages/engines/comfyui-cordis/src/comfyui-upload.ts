@@ -5,10 +5,9 @@ import { randomBytes } from "node:crypto";
 import { readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
+import type { Client } from "@stable-canvas/comfyui-client";
 import { ComfyError } from "./comfyui-types.ts";
 import type { EngineJson } from "./comfyui-types.ts";
-import { pyReprStr, pyStr } from "./comfyui-format.ts";
-import { httpCall } from "./comfyui-transport.ts";
 
 // ── workflow finalization (native 231-327) ──
 
@@ -100,12 +99,12 @@ export function spliceWorkflow(
     ) {
       throw new ComfyError(
         "inject " +
-          pyReprStr(slot) +
+          JSON.stringify(slot) +
           " targets nothing in the workflow " +
           "(node " +
-          pyReprStr(nodeId) +
+          JSON.stringify(nodeId) +
           " has no input " +
-          pyReprStr(key) +
+          JSON.stringify(key) +
           ")",
       );
     }
@@ -114,9 +113,11 @@ export function spliceWorkflow(
   return graph;
 }
 
-/** POST /upload/image multipart (native._upload, 109-126). */
+/** POST /upload/image multipart over the SDK client's fetchApi
+ *  (the platform FormData owns the boundary — the hand-rolled
+ *  multipart framing is deleted). */
 export async function uploadFile(
-  server: string,
+  client: Client,
   path: string,
 ): Promise<Record<string, string>> {
   const data: Buffer = readFileSync(path);
@@ -130,41 +131,24 @@ export async function uploadFile(
   else if (lower.endsWith(".wav")) ctype = "audio/wav";
   else if (lower.endsWith(".mp3")) ctype = "audio/mpeg";
   else if (lower.endsWith(".glb")) ctype = "model/gltf-binary";
-  const boundary: string = "----melite" + randomBytes(6).toString("hex");
-  const head: Buffer = Buffer.from(
-    "--" +
-      boundary +
-      "\r\n" +
-      'content-disposition: form-data; name="image"; filename="' +
-      basename(path) +
-      '"\r\n' +
-      "content-type: " +
-      ctype +
-      "\r\n\r\n",
-    "utf8",
+  const fd: FormData = new FormData();
+  fd.append(
+    "image",
+    new Blob([new Uint8Array(data)], { type: ctype }),
+    basename(path),
   );
-  const tail: Buffer = Buffer.from("\r\n--" + boundary + "--\r\n", "utf8");
-  const parts: Buffer = Buffer.concat([head, data, tail]);
-  const { status, body } = await httpCall(
-    "POST",
-    server + "/upload/image",
-    parts,
-    "multipart/form-data; boundary=" + boundary,
-    180000,
-  );
-  const out = body as Record<string, EngineJson>;
-  if (
-    status !== 200 ||
-    typeof out !== "object" ||
-    out === null ||
-    Buffer.isBuffer(out) ||
-    !out["name"]
-  ) {
+  const resp = await client.fetchApi("/upload/image", {
+    method: "POST",
+    body: fd,
+    signal: AbortSignal.timeout(180000),
+  });
+  const out: Record<string, unknown> = await resp.json() as Record<string, unknown>;
+  if (typeof out["name"] !== "string" || out["name"] === "") {
     throw new ComfyError(
-      "upload failed (" + path + " " + status + "): " + pyStr(body).slice(0, 200),
+      "upload failed (" + path + "): " + JSON.stringify(out).slice(0, 200),
     );
   }
-  return { name: String(out["name"]) };
+  return { name: out["name"] };
 }
 
 export function isFile(path: string): boolean {
@@ -197,7 +181,7 @@ export const ASSET_ROUTE_PREFIX = "/v1/assets/runs/";
  *  under the root refuses LOUD (never a dangling URL in the graph);
  *  a runs-relative name that misses simply falls to the cwd arm. */
 export async function uploadReferenced(
-  server: string,
+  client: Client,
   wf: Record<string, EngineJson>,
   opts?: { runsRoot?: string },
 ): Promise<{ graph: Record<string, EngineJson>; uploaded: Record<string, string> }> {
@@ -238,7 +222,7 @@ export async function uploadReferenced(
           const tmp = join(tmpdir(), "melite-data-" + randomBytes(8).toString("hex") + ext);
           writeFileSync(tmp, Buffer.from(m[2], "base64"));
           try {
-            seen[p] = (await uploadFile(server, tmp)).name;
+            seen[p] = (await uploadFile(client, tmp)).name;
           } finally {
             // the bytes rode the wire — the tmp file never lingers.
             rmSync(tmp, { force: true });
@@ -263,13 +247,20 @@ export async function uploadReferenced(
         // direct (the ?? '.bin' toll is an uncoverable arm, never a
         // runtime path; 2026-09-12).
         const ext = UPLOAD_EXTS.find((e: string): boolean => lower.endsWith(e)) as string;
-        const { status, body } = await httpCall("GET", p, null, "application/json", 120000);
-        if (status !== 200 || !Buffer.isBuffer(body)) {
-          throw new ComfyError("linked input fetch failed (" + p + " " + status + ") — the upstream output is unreachable; re-run the producer card");
+        let body: Buffer;
+        try {
+          const resp = await fetch(p, { signal: AbortSignal.timeout(120000) });
+          if (!resp.ok) {
+            throw new ComfyError("linked input fetch failed (" + p + " " + resp.status + ") — the upstream output is unreachable; re-run the producer card");
+          }
+          body = Buffer.from(await resp.arrayBuffer());
+        } catch (e) {
+          if (e instanceof ComfyError) throw e;
+          throw new ComfyError("linked input fetch failed (" + p + ") — the upstream output is unreachable; re-run the producer card");
         }
         const tmp = join(tmpdir(), "melite-link-" + randomBytes(8).toString("hex") + ext);
         writeFileSync(tmp, body);
-        seen[p] = (await uploadFile(server, tmp)).name;
+        seen[p] = (await uploadFile(client, tmp)).name;
       }
       return seen[p] as string;
     }
@@ -295,7 +286,7 @@ export async function uploadReferenced(
       if (!isFile(cand)) {
         throw new ComfyError("estate asset url not found (" + p + " -> " + cand + ") — the upstream output is unreachable; re-run the producer card");
       }
-      if (!(cand in seen)) seen[cand] = (await uploadFile(server, cand)).name;
+      if (!(cand in seen)) seen[cand] = (await uploadFile(client, cand)).name;
       return seen[cand] as string;
     }
     // RUNS-RELATIVE ARM: '<run>/<rel>' (the estate's third accepted
@@ -305,13 +296,13 @@ export async function uploadReferenced(
     if (opts?.runsRoot !== undefined && !p.startsWith("/") && p.includes("/") && !p.includes("..")) {
       const cand = join(opts.runsRoot, p);
       if (isFile(cand)) {
-        if (!(cand in seen)) seen[cand] = (await uploadFile(server, cand)).name;
+        if (!(cand in seen)) seen[cand] = (await uploadFile(client, cand)).name;
         return seen[cand] as string;
       }
     }
     const cand: string = p.startsWith("/") ? p : join(process.cwd(), p);
     if (!isFile(cand)) return v;
-    if (!(cand in seen)) seen[cand] = (await uploadFile(server, cand)).name;
+    if (!(cand in seen)) seen[cand] = (await uploadFile(client, cand)).name;
     return seen[cand] as string;
   };
   const out: Record<string, EngineJson> = {};

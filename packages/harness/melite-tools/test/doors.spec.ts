@@ -1193,7 +1193,10 @@ describe('the /v1 poser arms (estate verbs, never a proxy)', () => {
     const r = await call(h.routes, '/v1', { url: 'http://localhost/v1/poser/mesh?identity_model=anny&preview_pose=apose' })
     assert.equal(r.status, 200)
     assert.deepEqual(r.body, { vertices: [[1, 2, 3]] })
-    assert.deepEqual(seen.at(-1), { method: 'GET', url: '/poser/skin/mesh?identity_model=anny&preview_pose=apose', body: '' })
+    const meshGet = seen.at(-1)!
+    assert.equal(meshGet.method, 'GET')
+    assert.equal(meshGet.body, '')
+    assert.match(meshGet.url, /^\/poser\/skin\/mesh\?identity_model=anny&preview_pose=apose(&clientId=[0-9a-f-]+)?$/)
   })
 
   test('THE MESH ARM (GET) VALIDATION: no identity_model refuses 400 (the arm owns its inputs)', async () => {
@@ -1218,7 +1221,7 @@ describe('the /v1 poser arms (estate verbs, never a proxy)', () => {
     const row = seen.at(-1)
     assert.ok(row, 'engine saw nothing')
     assert.equal(row.method, 'POST')
-    assert.equal(row.url, '/poser/skin/mesh')
+    assert.match(row.url, /^\/poser\/skin\/mesh(\?clientId=[0-9a-f-]+)?$/)
     assert.deepEqual(JSON.parse(row.body), { identity_model: 'anny', identity_coeffs: { height: 0.5 }, custom_targets: {} })
   })
 
@@ -1280,10 +1283,10 @@ describe('the /v1 poser arms (estate verbs, never a proxy)', () => {
     const h = boot({})
     const ids = await call(h.routes, '/v1', { url: 'http://localhost/v1/poser/identity-space?identity_model=anny' })
     assert.equal(ids.status, 200)
-    assert.equal(seen.at(-1)?.url, '/poser/skin/identity-space?identity_model=anny')
+    assert.match(seen.at(-1)?.url ?? '', /^\/poser\/skin\/identity-space\?identity_model=anny(&clientId=[0-9a-f-]+)?$/)
     const presets = await call(h.routes, '/v1', { url: 'http://localhost/v1/poser/presets' })
     assert.equal(presets.status, 200)
-    assert.equal(seen.at(-1)?.url, '/poser/presets')
+    assert.match(seen.at(-1)?.url ?? '', /^\/poser\/presets(\?clientId=[0-9a-f-]+)?$/)
   })
 
   test('NO ENDPOINT: unset COMFYUI_URL under the sandbox gate refuses 502 honestly (never a default host)', async () => {
