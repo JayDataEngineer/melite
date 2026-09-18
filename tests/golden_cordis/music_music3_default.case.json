@@ -1,9 +1,0 @@
-{
-  "card": "music",
-  "model": "music3",
-  "run_id": "testrun",
-  "params": {
-    "prompt": "funk, pop, soul, guitar, 105 BPM",
-    "seed": 42
-  }
-}

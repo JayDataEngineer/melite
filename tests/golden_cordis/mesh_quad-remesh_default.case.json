@@ -1,8 +1,0 @@
-{
-  "card": "quad-remesh",
-  "model": "autoremesher",
-  "run_id": "testrun",
-  "params": {
-    "input": "/mnt/runs/testrun/dense_input.glb"
-  }
-}

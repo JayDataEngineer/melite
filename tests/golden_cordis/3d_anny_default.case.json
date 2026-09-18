@@ -1,8 +1,0 @@
-{
-  "card": "anny",
-  "model": "anny",
-  "run_id": "testrun",
-  "params": {
-    "body_glb": "/mnt/melite_weights/annies/base_body.glb"
-  }
-}

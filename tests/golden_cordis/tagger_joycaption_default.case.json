@@ -1,8 +1,0 @@
-{
-  "card": "tagger",
-  "model": "joycaption",
-  "run_id": "testrun",
-  "params": {
-    "input_image": "a.png"
-  }
-}

@@ -1,9 +1,0 @@
-{
-  "card": "upscale-tools",
-  "model": "seedvr2_ema",
-  "run_id": "testrun",
-  "params": {
-    "input_image": "tests/golden_cordis/fixtures/koi.png",
-    "seed": 42
-  }
-}

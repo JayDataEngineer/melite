@@ -1,9 +1,0 @@
-{
-  "card": "image-gen",
-  "model": "z-image",
-  "run_id": "testrun",
-  "params": {
-    "prompt": "a glowing koi pond at dusk, ripples catching violet light",
-    "seed": 42
-  }
-}

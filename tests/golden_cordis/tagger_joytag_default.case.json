@@ -1,8 +1,0 @@
-{
-  "card": "tagger",
-  "model": "joytag",
-  "run_id": "testrun",
-  "params": {
-    "input_image": "a.png"
-  }
-}

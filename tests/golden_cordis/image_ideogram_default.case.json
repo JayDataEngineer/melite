@@ -1,9 +1,0 @@
-{
-  "card": "ideogram4",
-  "model": "ideogram",
-  "run_id": "testrun",
-  "params": {
-    "prompt": "a paper crane on a desk, soft window light",
-    "seed": 42
-  }
-}

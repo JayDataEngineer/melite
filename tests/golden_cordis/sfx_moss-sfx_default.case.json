@@ -1,9 +1,0 @@
-{
-  "card": "sfx",
-  "model": "moss-sfx",
-  "run_id": "testrun",
-  "params": {
-    "prompt": "sharp metallic clang with long decay",
-    "seed": 42
-  }
-}
