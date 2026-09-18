@@ -1,5 +1,0 @@
-# Bundle patch layer of this package: one Loader mount row.
-# Consumed automatically when mounted through 'dsh plugin --profile <name> add'.
-- insert:
-    - id: melite-editor-shell
-      name: '@melite-plugin/dsh-editor-shell'
