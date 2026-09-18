@@ -109,7 +109,7 @@ window.__ModuleLoader__.load({
 		*     api-gateway.md — the sanctioned caller shape for plugins outside
 		*     the DSH web kernel; the host mounts the remote in the estate
 		*     composition). The vocabulary mirrors the comfy_manage agent tool
-		*     1:1 — enforced BOTH directions by the parity wall. Progressive
+		*     1:1. Progressive
 		*     disclosure: status is the cheap index and refreshes SILENTLY
 		*     after every mutating action (never through the result pane —
 		*     that pane belongs to the user's last explicit dispatch);

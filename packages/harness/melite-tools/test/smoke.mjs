@@ -17,7 +17,7 @@
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import * as lib from '../lib/index.mjs'
+import * as lib from '../src/index.ts'
 
 const { Context } = await import('../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js')
 const { default: timerPlugin } = await import('../../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis-plugin-timer/lib/index.js')

@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": "./lib/index.mjs",
-    "./doors": "./lib/doors.mjs"
+    ".": "./src/index.ts",
+    "./doors": "./src/doors.ts"
   },
   "scripts": {
     "build": "tsdown src/index.ts src/doors.ts --format esm --dts --outDir lib",
