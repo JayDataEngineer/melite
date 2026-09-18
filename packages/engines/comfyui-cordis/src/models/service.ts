@@ -2,14 +2,14 @@
 // (operator order, 2026-09-08: "the Models are not cordis" — the
 // charge that named the PORT LAW violation this file fixes).
 //
-// THE PORT LAW (AGENTS.md, THE CORDIS STDLIB): a ported py system
+// THE PORT LAW (AGENTS.md, THE CORDIS STDLIB): a ported retired system
 // is REGISTERED THROUGH SERVICES with boot-loud validation — never
 // a module const + free functions over it. The frozen registry
 // (registry.generated.ts) is DATA (catalog rows may be frozen);
 // the SYSTEM — registration, validation, resolution, the cascade —
 // lives here, on a Service, reached through ctx.models.
 //
-// Mapping from the py (melite_models grammar @ 034e1f97):
+// Mapping from the (melite_models grammar @ 034e1f97):
 //   Model class construction (metaclass validation, loud at
 //     import)  → registerModel (loud at registration — a broken
 //     row never serves, the same refusal shapes)
@@ -47,12 +47,12 @@ import { buildCatalog } from "./catalogEmission.ts";
 
 export const MODELS_SERVICE = "models";
 
-/** One registration's validation — the py metaclass's gates,
+/** One registration's validation — the declaration gates,
  *  refusal-for-refusal (grammar @ 034e1f97).
  *
  *  SCHEMA LEG (ledger row 16, 2026-09-10): the DECL resolves through
  *  the ModelDecl schema STRICTLY first. The strict resolve strips
- *  unknown keys — the py `extra: forbid` law made honest: a stripped
+ *  unknown keys — the `extra: forbid` rule made honest: a stripped
  *  key is DRIFT and refuses loud (the plain object resolver merges
  *  unknown keys by default; the old handroll checked four fields and
  *  let everything else ride). The semantic predicates below stay:
@@ -90,9 +90,9 @@ function validateDecl(decl: ModelDecl): void {
       }
     }
   }
-  // SCHEMA LEG runs AFTER the py predicates (wall law: the py refusal
+  // SCHEMA LEG runs AFTER the predicates (wall law: the refusal
   // TEXTS are the contract — a corrupt id/genre must keep refusing
-  // with the py words, not a schemastery ValidationError). Strict
+  // with the words, not a schemastery ValidationError). Strict
   // resolve THROWS on a shape miss (it never returns the error leg),
   // so the wrap rides a catch (fixed 2026-09-12: the old tuple read
   // let the ValidationError escape unwrapped).
@@ -111,7 +111,7 @@ function validateDecl(decl: ModelDecl): void {
   const stripped = Object.keys(decl).filter((k) => !(k in strict));
   if (stripped.length > 0) {
     throw new ModelError(
-      `model row ${String(decl.id)}: unknown key(s) refused (extra: forbid — py law): ${stripped.sort().join(", ")}`,
+      `model row ${String(decl.id)}: unknown key(s) refused (extra: forbid — the law): ${stripped.sort().join(", ")}`,
     );
   }
 }
@@ -132,7 +132,7 @@ export class ModelsService extends Service {
     super(ctx, MODELS_SERVICE);
   }
 
-  /** Register one family. LOUD: duplicate ids refuse (the py
+  /** Register one family. LOUD: duplicate ids refuse (the
    *  scan's one-owner-per-id law), invalid rows refuse at the gate
    *  (the metaclass's import-time validation, at registration).
    *  REVERTIBLE (the discharge stroke): returns the disposer —
@@ -225,7 +225,7 @@ export class ModelsService extends Service {
     return [...new Set([...this.table.keys(), ...this.routes.keys()])].sort();
   }
 
-  /** The MODEL registry ids (the declaration count — one per py
+  /** The MODEL registry ids (the declaration count — one per class
    *  class; the hierarchy's registry plane, vs the served view). */
   registryIds(): string[] {
     return [...this.table.keys()].sort();
@@ -279,7 +279,7 @@ export class ModelsService extends Service {
         : variant.cells[0])
       // attach override keys ONLY when a layer declares them — a
       // spread of absent layers would mint undefined-valued own
-      // keys (deepEqual drift vs the golden's JSON round-trip)
+      // keys (no drift vs the served JSON round-trip)
       //
       // THE MUTATION SHAPE (operator order 2026-09-08: "THE MODEL
       // ISN'T BEING MUTATED, READ THE DESCRIPTION"): the atom
@@ -331,7 +331,7 @@ export class ModelsService extends Service {
   }
 
   /** The variant coordinate (first declared = the family default,
-   *  the py matrix law). */
+   *  the matrix law). */
   variantOf(decl: ModelDecl, variant: string | null): VariantRow {
     if (variant === null) return decl.variants[0];
     const hit = decl.variants.find((v) => v.id === variant);
@@ -398,7 +398,7 @@ export class ModelsService extends Service {
   }
 
   /** Matrix coordinates → { route, engine, cell } (the R1
-   *  contract). ENGINE_TRUTH is ("mode", "variant") — the py
+   *  contract). ENGINE_TRUTH is ("mode", "variant") — the
    *  compose's own declaration; the cascade never touches it. */
   resolve(id: string, variant?: string | null, quant?: string | null): {
     route: string;

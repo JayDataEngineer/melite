@@ -150,6 +150,8 @@ describe("buildCatalog (the served-row arms)", () => {
     const out = buildCatalog([decl({ id: "old", engine: "retired" })]);
     assert.deepEqual(out.models, {});
     assert.deepEqual(out.families, {});
-    assert.ok(out.capabilities && out.cards && out.input_vocabulary, "the static sections ride");
+    // no catalog-level slot vocabulary or static sections (DELETED
+    // 2026-09-18 with the frozen pin set); seats ride each model
+    // row's input_slots.
   });
 });

@@ -5,14 +5,13 @@
 // SaveImage, OR — with input_mask stated — the lanpaint arm
 // (mask prep → LanPaint_ImageEncode → LanPaint_KSamplerAdvanced →
 // LanPaint_ImageDecode → SaveImage), both under "<runId>/edit"
-// (the lane-local prefix — NOT image-gen's /gen). Creation order IS node-id order (pinned by
-// tests/golden_cordis/image_qwen-img-edit_*).
+// (the lane-local prefix — NOT image-gen's /gen). Creation order IS node-id order.
 //
-// SURFACE (34 keys — card.py core + Lanpaint/Loras/MaskMod absorption;
-// model.py defaults ride the service cascade, never the schema).
-// Purge S-decls: the py referee is deleted — the schema below IS the
+// SURFACE (34 keys — core + Lanpaint/Loras/MaskMod absorption;
+// model.defaults ride the service cascade, never the schema).
+// Purge S-decls: the referee is deleted — the schema below IS the
 // declaration (its knob set was verified 19/19 against the retired row).
-// Defaults ride-the-model (the image-gen P2 precedent): a py-ABSENT
+// Defaults ride-the-model (the image-gen P2 precedent): a ABSENT
 // default is a bare atom (no .default()), and compose reads the key
 // with `?? ''` / `?? []` normalization — never a TS-pinned ''/0/[].
 //
@@ -38,17 +37,17 @@ import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 
 export const schema = z.object({
-  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): the py
+  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): the
   // referee (frozen form_spec qwen-img-edit-2511) names exactly
-  // these as the card's own — declaration order = the py field
+  // these as the card's own — declaration order = the field
   // order. EVERY mod-owned knob (image1 — the lanpaint brick's
   // anchor slot; lanpaint_*; outpaint_*; loras; mask/input_mask/
   // mask_*) lives in mods/{lanpaint,loras,mask}.ts registering
-  // through ctx.comfyui.registerMod (the py _absorb_models
+  // through ctx.comfyui.registerMod (the _absorb_models
   // interlock). Schemastery passes unknown keys through, so
   // compose still reads p.image1/p.loras/... — validation of
   // required anchors stays in compose (the gate below), exactly
-  // the py split: the mod declares the editor surface, compose
+  // the split: the mod declares the editor surface, compose
   // owns firing.
   image2: z.string().role('path').description("Image 2").extra('extra', { order: 0, group: "input", width: 1, zone: 'inputs', wtype: 'image' }),
   image3: z.string().role('path').description("Image 3").extra('extra', { order: 1, group: "input", width: 1, zone: 'inputs', wtype: 'image' }),

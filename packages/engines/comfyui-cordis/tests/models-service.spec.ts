@@ -109,7 +109,7 @@ describe("registerFamily (the metaclass gates)", () => {
     );
     assert.throws(
       () => fresh().registerFamily(clone({ bogus: 1 })),
-      /unknown key\(s\) refused \(extra: forbid — py law\): bogus/,
+      /unknown key\(s\) refused \(extra: forbid — the law\): bogus/,
     );
   });
 

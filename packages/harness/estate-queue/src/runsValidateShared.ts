@@ -26,7 +26,7 @@ export interface CardRegistryLike {
 // estate-owned subprocess compute, every card decl-only and never
 // composable) are QUARANTINED to vendor/retired-engines/ pending
 // rebirth as vendored ComfyUI custom nodes. Probed live from
-// infra/python/plugins.py scan_engines(); the wall re-derives per run.
+// scan_engines(); re-derived per run.
 export const ENGINE_TABLE: Record<string, { plugin: string; def: string }> = {
   comfyui: { plugin: "comfyui", def: "image" },
   // Stroke 55 (the engine-generics seam): the craft loop engine +
@@ -40,7 +40,7 @@ export const ENGINE_TABLE: Record<string, { plugin: string; def: string }> = {
   agent: { plugin: "agent", def: "text" },
 };
 
-// ── closed vocabularies (infra/python/flow.py Kind / SkipWhen order) ──────
+// ── closed vocabularies (Kind / SkipWhen order) ──────
 export const KIND_VOCAB: readonly string[] = [
   "text",
   "image",
@@ -53,9 +53,9 @@ export const KIND_VOCAB: readonly string[] = [
 ];
 export const SKIP_VOCAB: readonly string[] = ["present", "absent"];
 
-// _INLINE_TOP_KEYS sorted (flow.py:dead/allowed messages).
+// _INLINE_TOP_KEYS sorted (dead/allowed messages).
 export const INLINE_TOP_SORTED: readonly string[] = ["description", "id", "stages"];
-// sorted(STAGE_KEYS) (flow.py:250-259) — the extras message lists them.
+// sorted(STAGE_KEYS) — the extras message lists them.
 export const STAGE_KEYS_SORTED: readonly string[] = [
   "card",
   "card_io",
@@ -71,19 +71,17 @@ export const STAGE_KEYS_SORTED: readonly string[] = [
   "timeout_s",
 ];
 
-// ── strict-body vocab (python/gateway.py:230-245) ───────────────────
+// ── strict-body vocab ───────────────────
 // Owned by the admission gate (src/core/params.ts — the SSOT shared
 // with the start door); the envelope lift the modelArm used to own
 // here moved to CardRegistryService.overlayCardParams (doors/
-// flowsCard.ts — the SAME lift the start door runs, so
+// the SAME lift the start door runs, so
 // validate+start compose identical params). The id REs below stay here (flow-construction semantics,
 // not envelope admission).
 
 export const FLOW_ID_RE: RegExp = /^[a-z_][a-z0-9_-]*$/;
-// Pydantic message pin (see header): the faked 2.13 shapes.
-export const PYDANTIC_URL: string = "https://errors.pydantic.dev/2.13/v/";
 
-/** needCardRegistry (flowsCard.ts, door-verbatim): the LOUD
+/** needCardRegistry (start-door-verbatim): the LOUD
  *  miswire when the card registry is absent — a card= stage
  *  refuses until the cardRegistry stroke slots the defs in. */
 export function needCardRegistry(
@@ -99,7 +97,7 @@ export function needCardRegistry(
   return cards;
 }
 
-// ── flow errors (infra/python/flow.py FlowError — the door's 400 language) ─
+// ── flow errors (FlowError — the door's 400 language) ─
 export class FlowError extends Error {
   constructor(message: string) {
     super(message);
@@ -134,7 +132,7 @@ export interface Flow {
   stages: StageRow[];
 }
 
-// ── to_graph door view (flow.py:958 — card-less subset) ─────────
+// ── to_graph door view (— card-less subset) ─────────
 export interface GraphNode {
   id: string;
   engine: string;

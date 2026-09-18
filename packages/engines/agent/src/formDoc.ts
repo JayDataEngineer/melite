@@ -4,7 +4,7 @@
 // THIS doc. ANTI-DRIFT: the schema arm serializes the SAME
 // agentParams object the executor's gate validates (params.ts) —
 // the form and the wire are one declaration, and the wall
-// (tests/params.spec.ts) pins the serialization against a golden so
+// (tests/params.spec.ts) pins the serialization so
 // a change must land consciously in both.
 import { agentParams, agentModKinds, type CensusRow } from "./params.ts";
 

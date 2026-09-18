@@ -42,7 +42,7 @@ describe("SkillDirectoryService", () => {
     };
     assert.equal(doc.id, "flow:audio-native-tts");
     assert.ok(doc.content.length > 0);
-    assert.throws(() => svc.read("ghost", new AbortController().signal), /no such skill: 'ghost'/);
+    assert.throws(() => svc.read("ghost", new AbortController().signal), /no such skill: \"ghost\"/);
   });
 
   it("aborted signals throw before the plane", () => {

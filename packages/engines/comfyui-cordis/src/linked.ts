@@ -12,7 +12,7 @@
 
 import { join, sep } from "node:path";
 
-/** The asset-URL mount served by GET /v1/assets/runs/* (flowsRun). */
+/** The asset-URL mount served by GET /v1/assets/runs/*. */
 export const ASSET_RUNS_PREFIX = "/v1/assets/runs/";
 
 /** The runs output root (assets.ts defaultAssetRoots semantics:

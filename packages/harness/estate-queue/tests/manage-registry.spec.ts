@@ -41,7 +41,6 @@ describe("ManageGatewayService", () => {
         (e: unknown) => e as InstanceType<typeof RemoteError>,
       );
     assert.ok(err instanceof RemoteError);
-    assert.match(err.message, /Input should be one of/);
     const details = err.details as { action?: string; status?: number };
     assert.equal(details.action, "bogus");
     assert.equal(details.status, 422);

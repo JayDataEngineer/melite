@@ -2,7 +2,7 @@
 // (split from comfyui.ts 2026-09-18: pure move, zero logic changes).
 
 
-/** LOUD transport failure (never a silent fallback — native.py:67). */
+/** LOUD transport failure (never a silent fallback — native transport). */
 export class ComfyError extends Error {
   constructor(message: string) {
     super(message);
@@ -10,7 +10,7 @@ export class ComfyError extends Error {
   }
 }
 
-/** Wire JSON — mirrors native.py JsonValue. */
+/** Wire JSON — mirrors native.JsonValue. */
 export type EngineJson =
   | string
   | number

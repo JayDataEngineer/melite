@@ -24,7 +24,7 @@ export interface RetryNote {
     attempt: number;
     error: string;
   };
-  /** The live row: publish(run_id, stage/…/retry). Key order as py. */
+  /** The live row: publish(run_id, stage/…/retry). Key order . */
   readonly busFrame: {
     type: string;
     stage: string;
@@ -33,7 +33,7 @@ export interface RetryNote {
   };
 }
 
-/** Continue-or-raise (1753-1780): a failed attempt re-runs while
+/** Continue-or-raise: a failed attempt re-runs while
  *  attempts remain AND no stop landed; a deliberate STOP never
  *  retries (both the exception arm 1754 and the error-dict arm
  *  1775-1778 gate on the stop flag). */
@@ -41,7 +41,7 @@ export function shouldRetry(ask: RetryAsk): boolean {
   return ask.attempt < ask.maxExtra && !ask.stopSet;
 }
 
-/** One documented retry (1906-1911): sidecar row + events bus +
+/** One documented retry: sidecar row + events bus +
  *  ledger — never a silent re-run. */
 export function noteStageRetry(
   runId: string,

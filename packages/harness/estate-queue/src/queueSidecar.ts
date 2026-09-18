@@ -25,9 +25,9 @@ export interface SidecarStage {
   readonly expected: Record<string, unknown>;
 }
 
-/** The sidecar document: KEY ORDER as py (run_id, status, error,
+/** The sidecar document: KEY ORDER as (run_id, status, error,
  *  stages, skipped_stages, artifacts, created_at, test, draft_id,
- *  pipeline, graph). error rides json.dumps(run.error)[:20000] when
+ *  pipeline, graph). error rides the JSON error capped at 20000 chars when
  *  set (a JSON-quoted string — the writer quirk, mirrored, never
  *  "fixed"), else "". */
 export function sidecarDoc(args: {
@@ -43,8 +43,8 @@ export function sidecarDoc(args: {
   pipeline: string;
   graph: GraphRow[];
   /** THE SNAPSHOT KEYS (strokes 45/45d, carried stroke 48): the exact
-   *  card + bench that ran. Absent when unstamped (inline runs) —
-   *  the pinned py-parity prefix above never shifts. */
+   *  card + bench that ran. Absent when unstamped (inline runs)
+   *  the pinned prefix above never shifts. */
   cardSnapshot?: unknown;
   benchSnapshot?: unknown;
 }): Record<string, unknown> {

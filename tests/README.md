@@ -31,9 +31,7 @@ scripts, no walls runner, no `.test.*` files remain.
         suites/                *.spec.ts under the root node project
                                (forks: the file isolation run.mjs
                                used to provide)
-      golden_cordis/           compose goldens (the graph truth, pinned)
-      golden_http/             the model-catalog tree golden (live —
-                               models-golden wall anchors to it)
+      (golden_cordis + golden_http deleted 2026-09-18 — the parity referees died)
       integration/             live integration material
       data/ fixtures/ helpers/ shared wall fixtures + helpers
 

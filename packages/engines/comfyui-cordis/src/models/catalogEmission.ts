@@ -1,12 +1,5 @@
 // models/catalogEmission.ts — THE SERVED CATALOG, all five
-// sections, golden-anchored (correction stroke A1).
-//
-// The wire shape is the tree golden's (tests/golden_http/
-// model-catalog.json, regolded 2026-09-07): models + families +
-// capabilities + cards + input_vocabulary. models/families emit
-// from the frozen registry; cards/capabilities/input_vocabulary
-// from the frozen identity ring (cardIdentity.generated.ts) —
-// the py builder's own output, byte-equal on shared ids.
+// sections (correction stroke A1).
 //
 // SERVE LAW (LAW 0): only comfyui-engine families serve. The 12
 // retired-engine rows are frozen data with engine markers — the
@@ -18,19 +11,13 @@ import {
   ModelRow,
   type ModelDecl,
 } from "./families/contract.ts";
-import {
-  CARD_IDENTITY,
-  CAPABILITIES,
-  SLOT_VOCABULARY,
-} from "./cardIdentity.generated.ts";
+import type { CardDefinition } from "../service.ts";
 
 export interface CatalogSections {
   models: Record<string, ModelRow>;
   families: Record<string, { label: string; genre: string; studio?: unknown; accepts?: readonly string[] }>;
-  capabilities: typeof CAPABILITIES;
-  cards: ReadonlyArray<(typeof CARD_IDENTITY)[number]>;
-  input_vocabulary: typeof SLOT_VOCABULARY;
 }
+
 
 /** A family serves iff its engine is comfyui (LAW 0) and it is
  *  offered (unoffered families serve no row at all — the 2026-08-11
@@ -41,10 +28,9 @@ export function isServedFamily(decl: ModelDecl): boolean {
 
 function servedRow(decl: ModelDecl): ModelRow {
   // FORM LAW (restored 2026-09-10): every served row carries a
-  // non-empty form tag. The py emission (melite_models grammar
+  // non-empty form tag. The emission (melite_models grammar
   // model_row) always set it; the TS flip dropped it silently and
-  // the regolded golden pinned the loss — the frontend catalog
-  // contract caught what the walls no longer did. Refuse LOUD here
+  // shipped 53 formless rows — the frontend catalog contract caught it. Refuse LOUD here
   // (QUEUE LANE LAW): a formless row must fail the boot/emission,
   // never the GUI.
   const form = (decl.form ?? "").trim();
@@ -104,8 +90,5 @@ export function buildCatalog(decls: readonly ModelDecl[]): CatalogSections {
   return {
     models,
     families,
-    capabilities: CAPABILITIES,
-    cards: CARD_IDENTITY,
-    input_vocabulary: SLOT_VOCABULARY,
   };
 }

@@ -21,7 +21,6 @@ import { statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { mediaVocab } from "./mediaKinds.ts";
 import { validateBakeParams } from "./bakeParams.ts";
-import { pyTypeName } from "./queue.ts";
 
 function isFile(p: string): boolean {
   try {
@@ -44,7 +43,7 @@ export interface RegistryStageEdge {
 
 export type RegistryEdge = RegistryInitialEdge | RegistryStageEdge;
 
-/** A from_flow row (Stage.from_flow — the py live reference): the
+/** A from_flow row (Stage.from_flow — the live reference): the
  *  stage is COPIED from the named flow's stage at expansion time
  *  (id overridden, inputs overridden), so the source stays the
  *  single truth — never a snapshot. */
@@ -53,7 +52,7 @@ export interface RegistryFromFlow {
   readonly stage: string;
 }
 
-/** One authoring-stage row (the Stage(...) kwargs, JSON-shaped). */
+/** One authoring-stage row (the Stage(...) fields, JSON-shaped). */
 export interface RegistryStage {
   readonly id: string;
   readonly engine: string;
@@ -68,7 +67,7 @@ export interface RegistryStage {
   readonly fromFlow: RegistryFromFlow | null;
 }
 
-/** The compile-time initial kinds (flow.py initial_validators). */
+/** The compile-time initial kinds (flow.initial_validators). */
 export type RegistryInitialKind = "photo" | "glb" | "bake_params";
 
 /** One headless-tool overlay (FlowToolOverlay: tool param -> the
@@ -1102,7 +1101,7 @@ function checkFileInitial(
   } else {
     return (
       "initial " + JSON.stringify(key) + " must be a file path string or " +
-      "{path: ...} (got " + pyTypeName(value) + ")"
+      "{path: ...} (got " + (typeof value) + ")"
     );
   }
   const raw: string = ref.trim();
@@ -1182,7 +1181,7 @@ export function registryInitialsError(
         return (
           "initial " + JSON.stringify(key) +
           " must be a params_json string or object (got " +
-          pyTypeName(value) + ")"
+          (typeof value) + ")"
         );
       }
       const err: string | null = validateBakeParams(s);

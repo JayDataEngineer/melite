@@ -294,7 +294,7 @@ describe("hSkillRead", () => {
       assert.ok((r.payload as { content: string }).content.length > 0);
       const n = hSkillRead(ROOT, state, "ghost");
       assert.equal(n.status, 404);
-      assert.deepEqual(n.payload, { error: "no such skill: 'ghost'" });
+      assert.deepEqual(n.payload, { error: "no such skill: \"ghost\"" });
       const journal = readFileSync(join(state, "output", "_ledger.jsonl"), "utf8");
       assert.ok(journal.includes('"event":"skill.read"'));
       assert.ok(journal.includes("model:m1:plain.md"));
@@ -335,7 +335,7 @@ describe("hSkillRead", () => {
       // …but the constructor's read door 404s the id
       const r = hSkillRead(ROOT, state, "model:blender:rigging");
       assert.equal(r.status, 404);
-      assert.deepEqual(r.payload, { error: "no such skill: 'model:blender:rigging'" });
+      assert.deepEqual(r.payload, { error: "no such skill: \"model:blender:rigging\"" });
     } finally {
       rmSync(state, { recursive: true, force: true });
     }

@@ -4,7 +4,6 @@
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
-import { pyReprStr, pyReprStrList } from "@melite/comfyui-cordis";
 
 // ── refusal envelope (R4.2: 114-155) ─────────────────────────────
 
@@ -28,25 +27,7 @@ export function refusal(
   return { status, payload };
 }
 
-/** Python type(body).__name__ for the got fields. */
-export function pyTypeName(v: unknown): string {
-  if (v === null) return "NoneType";
-  if (typeof v === "string") return "str";
-  if (typeof v === "boolean") return "bool";
-  if (typeof v === "number") return Number.isInteger(v) ? "int" : "float";
-  if (Array.isArray(v)) return "list";
-  if (typeof v === "object") return "dict";
-  return "unknown";
-}
 
-/** Python %r for short scalars (the test-flag text). Objects take
- *  the str() road — bodies reaching here are scalars in practice. */
-export function pyRepr(v: unknown): string {
-  if (typeof v === "string") return pyReprStr(v);
-  if (typeof v === "boolean") return v ? "true" : "false";
-  if (v === null || v === undefined) return "null";
-  return String(v);
-}
 
 /** editor_runs.draft_id_ok (<=96, [A-Za-z0-9_-]; the TS doors carry
  *  their own copy — this core re-checks nothing, it BUILDS the
@@ -62,7 +43,7 @@ export function pyRepr(v: unknown): string {
  * for barrel consumers. */
 export { draftIdOk } from "@melite/estate-drafts";
 
-// ── the submit pre-registration chain (1179-1260) ────────────────
+// ── the submit pre-registration chain ────────────────
 
 // Vocab SSOT (ledger row 27, 2026-09-10): the retired-knob /
 // carry-key / door-key sets live ONCE in ./vocab.ts;
@@ -94,7 +75,7 @@ export function strictBodyCheck(
     return refusal(
       400,
       "request body carries retired runner knob(s) " +
-        pyReprStrList(bad) +
+        JSON.stringify(bad) +
         " — the runner never reads these (silent-drop class); remove them",
       "invalid_request",
     );
@@ -106,7 +87,7 @@ export function strictBodyCheck(
     return refusal(
       400,
       "request body carries retired pipe-carry key(s) " +
-        pyReprStrList(carry) +
+        JSON.stringify(carry) +
         " — the 2026-08-10 stowaway wire: no gateway ever " +
         "stashed it (flow_doc was never emitted). The revive " +
         "rail is the draft (draft_id) + the run registry; card " +
@@ -125,7 +106,7 @@ export const SUBMIT_DOORS: readonly string[] = [
   "model",
 ];
 
-/** The whole pre-registration chain in py order: non-object body
+/** The whole pre-registration chain in order: non-object body
  *  (bad_envelope/body) -> non-bool test (bad_envelope/test) ->
  *  draft required (draft_required) -> malformed (draft_malformed)
  *  -> unknown doc (draft_unknown) -> strict knobs/carry ->
@@ -144,7 +125,7 @@ export function validateSubmitEnvelope(
       "bad_envelope",
       "body",
       "object",
-      pyTypeName(doc),
+      (typeof doc),
     );
   }
   const body = doc as Record<string, unknown>;
@@ -153,14 +134,14 @@ export function validateSubmitEnvelope(
     return refusal(
       400,
       "test flag must be a boolean (got " +
-        pyTypeName(testFlag) +
+        (typeof testFlag) +
         " " +
-        pyRepr(testFlag) +
+        JSON.stringify(testFlag) +
         ")",
       "bad_envelope",
       "test",
       "boolean",
-      pyTypeName(testFlag),
+      (typeof testFlag),
     );
   }
   const draftId: unknown = body["draft_id"];
@@ -181,7 +162,7 @@ export function validateSubmitEnvelope(
     return refusal(
       400,
       "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): " +
-        pyReprStr(draftId),
+        JSON.stringify(draftId),
       "draft_malformed",
       "draft_id",
       "[A-Za-z0-9_-]{1,96}",
@@ -192,7 +173,7 @@ export function validateSubmitEnvelope(
     return refusal(
       400,
       "unknown draft_id " +
-        pyReprStr(draftId) +
+        JSON.stringify(draftId) +
         " — no card doc at drafts/" +
         draftId +
         ".json; compose the card first: POST /v1/flows/drafts",
@@ -211,7 +192,7 @@ export function validateSubmitEnvelope(
     return refusal(
       400,
       "ambiguous request: names " +
-        pyReprStrList(doors) +
+        JSON.stringify(doors) +
         " — provide exactly one of flow, flow_inline, model",
       "invalid_request",
     );

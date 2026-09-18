@@ -5,10 +5,10 @@
 // surface — validation AND the served UI contract both derive from
 // it. This walker projects schema meta → the served params_schema
 // JSON-Schema dialect (type/format/enum/default/minimum/maximum/
-// description + x-visible-when/x-families). The py manifest's UI
+// description + x-visible-when/x-families). The manifest's UI
 // role for cards retires; these bytes replace it at the chrome door.
 //
-// MAPPING RULES (each proven against the served golden):
+// MAPPING RULES:
 //  - type: number → 'number'; number+step(1) → 'integer' (the seed
 //    contract); string/boolean/array/any → as-is except:
 //    · union of consts → 'string' + enum (declaration order)
@@ -17,7 +17,7 @@
 //    · union boolean|string → 'string' + enum ['true','false']
 //    · nullable union (…|const null) → the inner branch wins; null
 //      is the family-literal resolution path, never served
-//    · any (mod bags) → 'string' (the py mod-bag serving shape)
+//    · any (mod bags) → 'string' (the mod-bag serving shape)
 //  - minimum/maximum: meta.min/meta.max (VALIDATING floors — RANGE
 //    RULE: whoever owns the default owns the floor) OR hint-only
 //    meta.extra.min/max (ride-the-model keys; the cascade stays
@@ -102,7 +102,7 @@ export const emitKnob = (s: Schema): Record<string, unknown> => {
 
   // canonical key order: type, format, enum, default, minimum,
   // maximum, description, x-visible-when, x-families (the served
-  // golden's order — byte-stable)
+  // order — byte-stable)
   const out: Record<string, unknown> = {}
   if (type === 'number') {
     out.type = im.step === 1 ? 'integer' : 'number'

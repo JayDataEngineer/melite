@@ -16,8 +16,7 @@ import {
   closeSync,
 } from "node:fs";
 import { join } from "node:path";
-import { asciiEscape } from "./pyAscii.ts";
-// ── constants (py cites inline) ──────────────────────────────────
+// ── constants (cites inline) ──────────────────────────────────
 
 /** Lock file name under STATE_ROOT (acquire_lock 4416). */
 export const LOCK_NAME: string = "gateway.lock";
@@ -28,18 +27,18 @@ export const LOCK_NAME: string = "gateway.lock";
  *  rows past 500 leave; the sidecar stays SSOT). */
 export const MAX_SETTLED_RUNS: number = 500;
 
-/** Stage retries range (flow.py:194: retries 0..5). */
+/** Stage retries range (flow spec: retries 0..5). */
 export const RETRIES_MAX: number = 5;
 
-/** The stderr line main() prints before SystemExit(1) (4476-4480).
- *  NOTE the em-dash — byte-identical, the contention wall pins it. */
+/** The stderr line main() prints before exit(1).
+ *  NOTE the em-dash — byte-identical. */
 export function refuseStartLine(note: string): string {
   return (
     "[gateway] REFUSING TO START: " + note + " — one writer per state root"
   );
 }
 
-// ── roots (STATE_ROOT/OUT_ROOT/TEST_OUT_ROOT, gateway.py 76-85) ───
+// ── roots (STATE_ROOT/OUT_ROOT/TEST_OUT_ROOT) ───
 
 /** State root — MELITE_STATE_ROOT else <repo>/data/runs. */
 export function resolveStateRoot(repoRoot: string): string {
@@ -63,14 +62,14 @@ export function lockPathFor(stateRoot: string): string {
   return join(stateRoot, LOCK_NAME);
 }
 
-// ── single-writer lock (4405-4468) ───────────────────────────────
+// ── single-writer lock ──────────────────────────────────────────
 
 export interface LockResult {
   readonly ok: boolean;
   readonly note: string;
 }
 
-/** Signal-0 probe (py _pid_alive 4469-4479: ESRCH-dead false, EPERM
+/** Signal-0 probe (_pid_alive 4469-4479: ESRCH-dead false, EPERM
  *  still ALIVE — the whole point of the guard). */
 export function isPidAlive(pid: number): boolean {
   try {
@@ -115,7 +114,7 @@ function writePidFile(lockPath: string, pid: number): boolean {
   return true;
 }
 
-/** R2 single-writer (4405-4448): O_CREAT|O_EXCL acquire; on
+/** R2 single-writer: O_CREAT|O_EXCL acquire; on
  *  collision the holder pid decides — alive refuses loud (the
  *  caller exits before any boot side effect), dead-or-garbage
  *  steals (unlink + re-acquire, ledgered server.lock_stolen). */
@@ -186,27 +185,17 @@ export function bootGate(
   return acquireLock(stateRoot, pid);
 }
 
-// ── journal + atomic write (2241-2250, 2472-2475) ────────────────
-// asciiEscape lives in ./pyAscii.ts (ROW 29 STAGE 2 heritage: the
-// one shared address for journal/sidecar/serve writers).
+// ── journal + atomic write ────────────────
 
-/** Journal data writer, ROW 29 STAGE 1 (2026-09-10, ledger): canonical
- *  JSON separators + ensure_ascii. The py spaced separators
- *  (json.dumps ", "/": ") are gone — py is dead, no reader needs
- *  them (JSONL readers parse; operators grep whitespace-tolerant);
- *  ensure_ascii STAYS (byte-safe journal for non-UTF-8-unaware
- *  tailers). STAGE 2: PyNum instances serialize NUMERIC here via
- *  toJSON (the latent {"literal"} object-ify is gone with it). */
+/** Journal data writer: canonical JSON, UTF-8. */
 export function dumpsLedgerData(data: Record<string, unknown>): string {
-  // (data is a dict — JSON.stringify never yields undefined here.)
-  return asciiEscape(JSON.stringify(data));
+  // (data is a record — JSON.stringify never yields undefined here.)
+  return JSON.stringify(data);
 }
 
-/** Append-only activity journal (ledger 2241-2250): one JSON object
- *  per line, close-per-line (durable), mkdir-parents, NEVER throws
- *  (the journal must never take the gateway down). Line shape:
- *  {"ts":%d,"event":"%s","data":%s} — compact envelope, spaced
- *  data (json.dumps(data or {}, default=str)). */
+/** Append-only activity journal: one JSON object per line,
+ *  close-per-line (durable), mkdir-parents, NEVER throws.
+ *  Line shape: {ts, event, data} — compact envelope. */
 export function appendLedger(
   stateRoot: string,
   event: string,
@@ -228,16 +217,13 @@ export function appendLedger(
       "utf8",
     );
   } catch {
-    /* the journal must never take the gateway down */
+    /* the journal must never take the queue down */
   }
 }
 
-/** atomic_write (2472-2475): tmp + os.replace rename, indent-2.
- *  One JSON text class cannot round-trip: integral floats (py
- *  writes 100.0, JS writes 100 — same double, different spelling).
- *  The walls pin ints for byte legs; values always compare equal. */
+/** Atomic write: tmp + rename, indent-2 JSON. */
 export function atomicWriteJson(filePath: string, obj: unknown): void {
-  const text: string = asciiEscape(JSON.stringify(obj, null, 2) ?? "null");
+  const text: string = JSON.stringify(obj, null, 2) ?? "null";
   writeFileSync(filePath + ".tmp", text, "utf8");
   renameSync(filePath + ".tmp", filePath);
 }

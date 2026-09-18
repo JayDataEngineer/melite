@@ -70,7 +70,7 @@ describe("resolveCatalogArtifact (the legacy texts ARE the wire)", () => {
   it("an unknown model id throws the not-found text", () => {
     assert.throws(
       () => resolveCatalogArtifact([decl({ variants: [] })], "nope"),
-      (e: unknown) => e instanceof CatalogMiss && (e as Error).message === "model 'nope' not found in catalog",
+      (e: unknown) => e instanceof CatalogMiss && (e as Error).message === 'model "nope" not found in catalog',
     );
   });
 

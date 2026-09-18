@@ -3,7 +3,7 @@
 // flow.py compile pipeline — flowFromBody → compileFlow → the
 // workflow pin sweep → the batch envelope → cost_preview)
 // re-homed verbatim as the registry's `validate` business arm.
-// Second move: the door's bodies unchanged, py line cites riding
+// Second move: the door's bodies unchanged, line cites riding
 // along. The door's answers become RemoteError folds at the
 // REGISTRY seam (never here): flow_compile/workflow_pin refuse
 // with the door's payload voices, the 200 serves the door's row.
@@ -27,7 +27,6 @@
 // importing these names from ./runsValidate.ts.
 export { FlowError } from "./runsValidateShared.ts";
 export type { CardRegistryLike, FlowsValidateAnswer } from "./runsValidateShared.ts";
-export { pyReprJson } from "./runsValidatePyRepr.ts";
 export { strictBody } from "./runsValidateStages.ts";
 export { findDanglingRefs } from "./runsValidateArtifacts.ts";
 export { inlineArm, serveSubject } from "./runsValidateServe.ts";

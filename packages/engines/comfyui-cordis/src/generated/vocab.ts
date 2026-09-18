@@ -1,26 +1,24 @@
 /**
- * HAND-OWNED frozen vocabularies (purge S-vocab 2026-09-08 — the py
+ * HAND-OWNED frozen vocabularies (purge S-vocab 2026-09-08 — the
  * SSOT (card_kinds/slot_kinds/flow.Kind/grammar/dsl) + tools/
- * export_vocab.py are deleted). Edits by hand; the parity wall
- * (tests/walls/suites/test_vocab_parity.py) pins every union, table
- * row, and sorted order against frozen literals. Never regenerated.
- * The sibling-owned seam unions live in uiMap.generated.ts only —
- * a second spelling here refuses the wall.
+ * export_vocab.py are deleted). Edits by hand; never regenerated.
+ * The sibling-owned seam unions live in uiMap.generated.ts only
+ * no second spelling here.
  */
 
-/** Model family genre (grammar.py Genre — the 7 lanes + unordered). */
+/** Model family genre (grammar.Genre — the 7 lanes + unordered). */
 export const GenreValues = ["", "3d", "audio", "image", "motion", "other", "text", "video"] as const;
 export type Genre = (typeof GenreValues)[number];
 
-/** Flow edge-type vocabulary (python/flow.py Kind — what flows on the wire). */
+/** Flow edge-type vocabulary (python/flow.Kind — what flows on the wire). */
 export const KindValues = ["audio", "image", "lora", "mesh", "num", "seg", "text", "video"] as const;
 export type Kind = (typeof KindValues)[number];
 
-/** Input-slot file-kind vocabulary (slot_kinds.py FileKind). */
+/** Input-slot file-kind vocabulary (slot_kinds.FileKind). */
 export const FileKindValues = ["any", "audio", "glb", "image", "mask", "motion", "text", "video", "voice"] as const;
 export type FileKind = (typeof FileKindValues)[number];
 
-/** Card-kind badge tone (card_kinds.py BadgeTone). */
+/** Card-kind badge tone (card_kinds.BadgeTone). */
 export const BadgeToneValues = ["brand", "default"] as const;
 export type BadgeTone = (typeof BadgeToneValues)[number];
 
@@ -32,39 +30,39 @@ export type KindRunner = (typeof KindRunnerValues)[number];
 export const SidebarSectionValues = ["3d", "audio", "image", "image-edit", "motion", "video"] as const;
 export type SidebarSection = (typeof SidebarSectionValues)[number];
 
-/** Weight-tier vocabulary (grammar.py Quant — native = no weights matrix). */
+/** Weight-tier vocabulary (grammar.Quant — native = no weights matrix). */
 export const QuantValues = ["bf16", "f32", "fp8", "int8", "lightning4", "native"] as const;
 export type Quant = (typeof QuantValues)[number];
 
-/** CLIPLoader type vocabulary (grammar.py ClipType). */
+/** CLIPLoader type vocabulary (grammar.ClipType). */
 export const ClipTypeValues = ["krea2", "lumina2", "minimax", "qwen_image", "stable_diffusion", "wan"] as const;
 export type ClipType = (typeof ClipTypeValues)[number];
 
-/** Empty-latent constructor vocabulary (grammar.py LatentNode). */
+/** Empty-latent constructor vocabulary (grammar.LatentNode). */
 export const LatentNodeValues = ["EmptyFlux2LatentImage", "EmptyLatentImage", "EmptySD3LatentImage"] as const;
 export type LatentNode = (typeof LatentNodeValues)[number];
 
-/** Card-knob value vocabulary (grammar.py KnobKind). */
+/** Card-knob value vocabulary (grammar.KnobKind). */
 export const KnobKindValues = ["b", "n", "s"] as const;
 export type KnobKind = (typeof KnobKindValues)[number];
 
-/** Studio body-frame size notch (grammar.py StudioSize). */
+/** Studio body-frame size notch (grammar.StudioSize). */
 export const StudioSizeValues = ["huge", "normal", "wide"] as const;
 export type StudioSize = (typeof StudioSizeValues)[number];
 
-/** Studio body mount shape (grammar.py StudioLayout). */
+/** Studio body mount shape (grammar.StudioLayout). */
 export const StudioLayoutValues = ["panel", "studio"] as const;
 export type StudioLayout = (typeof StudioLayoutValues)[number];
 
-/** Studio body renderer claim (grammar.py StudioKind). */
+/** Studio body renderer claim (grammar.StudioKind). */
 export const StudioKindValues = ["assembly", "custom"] as const;
 export type StudioKind = (typeof StudioKindValues)[number];
 
-/** Canonical wire slots (slot_kinds.py VOCAB — the closed set). */
+/** Canonical wire slots (slot_kinds.VOCAB — the closed set). */
 export const SlotValues = ["end_image", "first_frame", "image1", "image2", "image3", "input_glb", "input_image", "input_mask", "lanpaint_mask", "last_frame", "prev_motion_artifact", "preview_glb", "reference_audio", "reference_image", "source_glb", "source_image", "voice_file"] as const;
 export type Slot = (typeof SlotValues)[number];
 
-/** Card-kind behavior rows (card_kinds.py TABLE — the wire kind strings). */
+/** Card-kind behavior rows (card_kinds.TABLE — the wire kind strings). */
 export const CardKindValues = ["body", "card-compose", "chain", "compound", "generation", "input", "preview", "studio-link"] as const;
 export type CardKind = (typeof CardKindValues)[number];
 
@@ -110,7 +108,7 @@ export interface CardKindDef {
   runner: KindRunner;
   icon: string | null;
 }
-/** The card-kind table (card_kinds.py TABLE — runner "" = the default rule). */
+/** The card-kind table (card_kinds.TABLE — runner "" = the default rule). */
 export const CARD_KINDS: readonly CardKindDef[] = [
   { kind: "body", runnable: false, executable: false, formSpec: false, compound: false, opensStudio: false, badgeTone: "default", runner: "", icon: "Box" },
   { kind: "card-compose", runnable: true, executable: true, formSpec: true, compound: false, opensStudio: false, badgeTone: "default", runner: "", icon: null },

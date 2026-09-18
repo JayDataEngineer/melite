@@ -121,7 +121,7 @@ export const DECL: ModelDecl = {
     {
       "id": "gold_pair",
       "label": "Gold Pair",
-      "hint": "The frozen golden stack — dareties 0.4 + turbo 0.6; runs at the higher married count (8).",
+      "hint": "The married stack — dareties 0.4 + turbo 0.6; runs at the higher married count (8).",
       "group": "Recipe",
       "wire_defaults": {
         "loras": [

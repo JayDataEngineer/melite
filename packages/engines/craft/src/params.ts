@@ -3,7 +3,7 @@
 // (the operator's pin, stroke 66's precedent): ONE schemastery
 // object is BOTH the executor's validation gate AND the served
 // form's schema — the wire and the form are one declaration, and
-// the golden wall (tests/params.spec.ts) pins the serialization so
+// (tests/params.spec.ts) pins the serialization so
 // a change lands consciously in both.
 import z from "@deepseek-ai/schemastery";
 

@@ -54,7 +54,7 @@ export class QueueService extends Service {
   constructor(ctx: Context, config: QueueConfig = {}) {
     super(ctx, "queue");
     // THE ROOT PIN (stroke 45c, the operator's catch): the cwd
-    // fallback was the py-gateway's accidental law — a lane booted
+    // fallback was the-gateway's accidental law — a lane booted
     // from any other directory silently birthed an EMPTY runs tree
     // (200-empty listings, no error: the exact silent drop this
     // estate refuses). The root must be NAMED: config.repoRoot or

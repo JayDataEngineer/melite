@@ -11,18 +11,18 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
 declare module '@melite/comfyui-cordis/service' {
   interface CardDefinition {
-    /** Per-family extension packs — the py requires_by_family mirror.
+    /** Per-family extension packs — the requires_by_family declaration.
      *  The compose door gates the active family's slice, never the
      *  flat union alone. */
     requiresByFamily?: Record<string, readonly string[]>
   }
 }
 
-// the wire param surface (py TaggerCard — the union vocab; each arm
-// wires its subset). Ride keys carry NO .default (py ABSENT: the
+// the wire param surface (TaggerCard — the union vocab; each arm
+// wires its subset). Ride keys carry NO .default (ABSENT: the
 // compose-door cascade overlays model defaults, then explicit
-// params): input_image is py-required (refused blank in compose);
-// exclude_tags/add_tag/remove_tag/extra_option are py defaultless
+// params): input_image is required (refused blank in compose);
+// exclude_tags/add_tag/remove_tag/extra_option are defaultless
 // optionals, each backfilled by the families whose arms read it
 // (wd14→exclude_tags, joytag→add_tag/remove_tag,
 // joycaption→extra_option). Bare z.string() is the image-gen prompt
@@ -41,7 +41,7 @@ const schema = z.object({
   caption_type: vocabulary(["Descriptive", "Descriptive (Casual)", "Straightforward", "Stable Diffusion Prompt", "MidJourney", "Danbooru tag list", "e621 tag list", "Rule34 tag list", "Booru-like tag list", "Art Critic", "Product Listing", "Social Media Post"]).description("Caption style").default("Descriptive").extra('extra', { order: 9, group: "tagger", width: 1, tooltip: "JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2.", wtype: 'select' }),
   caption_length: vocabulary(["any", "very short", "short", "medium-length", "long", "very long"]).description("Caption length").default("long").extra('extra', { order: 10, group: "tagger", width: 1, tooltip: "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families.", wtype: 'select' }),
   extra_option: vocabulary(["", "Include information about lighting.", "Include information about camera angle.", "Include information about whether there is a watermark or not.", "Include information about whether there are JPEG artifacts or not.", "Do NOT include anything sexual; keep it PG.", "Do NOT mention the image's resolution.", "You MUST include information about the subjective aesthetic quality of the image from low to very high.", "Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.", "Do NOT mention any text that is in the image.", "Specify the depth of field and whether the background is in focus or blurred.", "Do NOT use any ambiguous language.", "ONLY describe the most important elements of the image.", "Your response will be used by a text-to-image model, so avoid useless meta phrases."]).description("Extra instruction").extra('extra', { order: 11, group: "tagger", width: 1, tooltip: "JoyCaption: one appended instruction (the full 28-option list rides bare/API bodies). Ignored by other families.", wtype: 'select' }),
-  // NO filename_prefix (py card: "the run routes outputs by run id
+  // NO filename_prefix (card: "the run routes outputs by run id
   // (compose stamps `<run>/tags`) — a user knob here was silently
   // overwritten, a dead promise"). Old drafts naming it still parse
   // (schemastery non-strict object + the door's explicit-params
@@ -87,11 +87,11 @@ export function apply(ctx: Context): void {
       outputs: { default: 'text' },
       requiresModel: false,
     },
-    // Per-family gates (py requires_by_family verbatim — each arm's
+    // Per-family gates (requires_by_family declaration — each arm's
     // pack is checked only for its own family; a wd14 run never
     // demands the florence pack). The flat list carries the UNION
     // for flat consumers; the door gates the ACTIVE family's slice
-    // (py gateway _find_card_requires precedent).
+    // (gateway _find_card_requires precedent).
     requires: ['ComfyUI-WD14-Tagger', 'Comfyui_joytag', 'ComfyUI-Florence2', 'joycaption_comfyui'],
     requiresByFamily: {
       wd14: ['ComfyUI-WD14-Tagger'],

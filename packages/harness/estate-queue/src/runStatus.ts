@@ -1,7 +1,7 @@
 // queue/runStatus.ts — the live-run status probe slot.
 //
 // STAGE 1 (DSH bundle split, 2026-09-08): reproduce/resume (queue
-// arms) need the live-registry status owned by the flowsRun door,
+// arms) need the live-registry status owned by the runs door,
 // but queue must not import doors (dsh service direction: leaves
 // depend downward; availability flows upward). The door registers
 // its probe at import (the setBusPublisher seam pattern); queue

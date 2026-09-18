@@ -11,20 +11,20 @@ import type { EngineJson } from "./comfyui-types.ts";
 
 // ── config: the endpoint SSOT (native._server_url + _config.py) ──
 
-/** No-endpoint refusal — byte-identical to native.py:82-84. */
+/** No-endpoint refusal — byte-identical to native refusal. */
 export const NO_ENDPOINT_MESSAGE: string =
   "no ComfyUI endpoint: the endpoint config carries no 'url' " +
   "and COMFYUI_URL is unset (no defaults — QUEUE LANE LAW)";
 
 /** Repo root: MELITE_REPO_ROOT override (the wall seam — default
  *  resolution is the source-file-relative root, the same relation
- *  py REPO = Path(__file__).parent.parent holds for native.py). */
+ *  REPO = Path(__file__).parent.parent holds for native.py). */
 export function resolveRepoRoot(): string {
   const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
   if (override !== "") return override;
   const here: string = dirname(fileURLToPath(import.meta.url));
   // src→comfyui→engines→packages→repo (4 hops) — same depth as
-  // the old packages/engines/comfyui/src/ home (STAGE 1 move); the py
+  // the old packages/engines/comfyui/src/ home (STAGE 1 move); the
   // hop count (parent.parent from python/) transcribed literally
   // landed 3 hops at packages/; caught LIVE by the flip.
   return resolve(here, "..", "..", "..", "..");

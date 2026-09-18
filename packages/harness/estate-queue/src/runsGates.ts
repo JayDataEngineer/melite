@@ -6,13 +6,12 @@
 // gate refuses unknown keys
 // LOUD). The gateway plane admits request bodies through THIS module:
 // schemastery owns STRUCTURE (which keys, which types), the doors
-// keep the pinned VOICE (py-shaped refusal bytes), and the refusal
-// envelope rides the GatewayError service (serializePy +
-// normalize4xx in the door plugins) — structure moves, bytes do
+// keep the pinned VOICE (shaped refusal bytes), and the refusal
+// envelope rides the door plugins — structure moves, bytes do
 // not.
 //
 // THE SPLIT (why schemastery cannot own the voice): schemastery
-// ValidationError messages differ from the py texts the walls pin
+// ValidationError messages differ from the texts the walls pin
 // byte-exact. So every helper returns a STRUCTURE verdict (boolean
 // or a `kind`-tagged union) and the door maps it to its existing
 // refusal text VERBATIM — no ValidationError message ever reaches
@@ -20,26 +19,24 @@
 // door lookup); interpolating texts stay door if-chains.
 //
 // WHAT LIVES HERE vs WHAT STAYS:
-//   - HERE: the strict-body vocab SSOT (was duplicated in
-//     doors/flowsRun.ts + doors/flowsValidate.ts — one list now),
+//   - HERE: the strict-body vocab SSOT (was duplicated across
+//     the old doors — one list now),
 //     the strict-wire decode (route() 4335-4340 — was triplicated),
-//     the draft_id_ok shape (was triplicated; src/queue keeps its
-//     copy — outside this stroke's path scope, noted residual),
+//     the draft_id_ok shape (was triplicated; the law now lives
+//     in @melite/estate-drafts),
 //     schemastery field/composite STRUCTURE verdicts for the
 //     pure-JSON-domain doors, and the static verdict→voice DATA
 //     tables (UPLOADS_VOICE, DRAFT_PATCH_VOICE,
 //     FLOW_INLINE_TOP_VOICE, DRAFT_PATCH_FIELDS).
-//   - STAYS in the doors (byte-pinned): value-content checks, py-
+//   - STAYS in the doors (byte-pinned): value-content checks, 
 //     mirroring coercions, dynamic refusal STRINGS, every refusal
 //     STRING (a formatting mini-language would be new machinery
 //     for zero byte gain — named residual).
 //   - STAYS hand-rolled by necessity (documented, not ported):
 //     isRecord — cosmokit's isPlainObject (which schemastery's
-//     object resolver uses) returns true for CLASS INSTANCES, but
-//     the estate's PyNum literal-holder is a leaf scalar for every
-//     isinstance gate. A z.object() check would ACCEPT a PyNum
-//     where py refuses, so the prototype check stays estate-owned.
-//     runs.ts parseIntPy, the studios.ts lax-coercion family, and
+//     object resolver uses) returns true for CLASS INSTANCES, so
+//     the prototype check stays estate-owned.
+//     runs.ts parseIntOrNull, the studios lax-coercion family, and
 //     bridges.ts manageActionName's .get-crash 500 leg likewise.
 //
 // Schemas are side-effect-free: no transforms, no autofix, results
@@ -51,9 +48,9 @@
 
 import z from "@deepseek-ai/schemastery";
 
-// ── shared vocab SSOT (python/gateway.py:230-245, 248-276) ──────────
+// ── shared vocab SSOT ──────────
 // The retired-runner-knob + pipe-carry + door-key sets were
-// copy-pasted in doors/flowsRun.ts and doors/flowsValidate.ts (and
+// copy-pasted across the old doors (and
 // draft_id_ok thrice). One list now — drift fails at the import,
 // never silently at one door.
 
@@ -96,14 +93,14 @@ export const STAGE_PATCH_KEYS: readonly string[] = [
 /** editor_runs.draft_id_ok shape: 1..96 chars of [A-Za-z0-9_-]. */
 export const DRAFT_ID_RE: RegExp = /^[A-Za-z0-9_-]+$/;
 
-// ── strict-wire decode (py route() 4335-4340) ───────────────────
+// ── strict-wire decode (route() 4335-4340) ───────────────────
 // json.loads(body.decode() or "{}"); failure → 400 bad_json. The
-// request content-type is never consulted (py ignores it too).
+// request content-type is never consulted (ignores it too).
 
 /** The strict-wire outcome: decoded text, or the exact 400 shape. */
 export type StrictWire = { text: string } | { status: number; payload: Record<string, unknown> };
 
-/** Decode one strict body: "" decodes as {} (py's body.decode() or
+/** Decode one strict body: "" decodes as {} (body.decode() or
  *  "{}"). The TEXT embeds the host parser's message — walls assert
  *  status + code + prefix, never bytes. */
 export function decodeStrictBody(body: Uint8Array): StrictWire {
@@ -133,13 +130,13 @@ export function parseStrictJson(
 
 // ── the object gate schemastery cannot own ──────────────────────
 // See header: cosmokit isPlainObject accepts class instances, so a
-// bare z.object() would take a PyNum literal-holder for a dict.
-// The prototype check excludes PyNum (and every other class
-// instance); on the pure-JSON wire domain it agrees with typeof
-// exactly (JSON.parse yields only plain-prototype values).
+// bare z.object() would take a class instance for a record.
+// The prototype check excludes class instances; on the pure-JSON
+// wire domain it agrees with typeof exactly (JSON.parse yields
+// only plain-prototype values).
 
 /** Estate record check: a plain-prototype mapping, never an array,
- *  never null, never a PyNum/class instance. */
+ *  never null, never a class instance. */
 export function isRecord(v: unknown): v is Record<string, unknown> {
   if (typeof v !== "object" || v === null || Array.isArray(v)) return false;
   const proto: unknown = Object.getPrototypeOf(v);
@@ -181,13 +178,12 @@ export function isStringField(v: unknown): v is string {
   return tryLeaf(LEAF.string, v);
 }
 
-/** typeof v === "boolean" — strict: 0/1/"true" refuse (py gate). */
+/** typeof v === "boolean" — strict: 0/1/"true" refuse (gate). */
 export function isBoolField(v: unknown): v is boolean {
   return tryLeaf(LEAF.boolean, v);
 }
 
-/** typeof v === "number" — pure-JSON domain only (PyNum-domain
- *  number slots keep their literal-aware hand gates). */
+/** typeof v === "number" — pure-JSON domain only. */
 export function isNumberField(v: unknown): v is number {
   return tryLeaf(LEAF.number, v);
 }
@@ -197,7 +193,7 @@ export function isListField(v: unknown): v is unknown[] {
   return tryLeaf(LEAF.list, v);
 }
 
-/** Dict gate: the estate isRecord FIRST (PyNum exclusion), then the
+/** Dict gate: the estate isRecord FIRST (class-instance exclusion), then the
  *  schema (intent declaration — the guard carries the invariant). */
 export function isDictField(v: unknown): v is Record<string, unknown> {
   if (!isRecord(v)) return false;
@@ -219,7 +215,7 @@ function unknownKeys(v: Record<string, unknown>, allowed: readonly string[]): st
   return Object.keys(v).filter((k: string): boolean => !allowed.includes(k)).sort();
 }
 
-// ── strict-body structure (py _strict_body 248-276) ─────────────
+// ── strict-body structure (_strict_body 248-276) ─────────────
 // Returns WHICH keys offend; the door renders the pinned prose
 // (retired-knob vs pipe-carry texts). Order-agnostic here — the
 // doors' repr helpers sort, so bytes are stable.

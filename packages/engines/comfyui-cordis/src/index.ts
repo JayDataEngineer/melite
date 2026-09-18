@@ -34,9 +34,8 @@ export { assertCardIdentity, cardPackages, composeCards, composeModPlane, loadCa
 export { ASSET_RUNS_PREFIX, resolveLinkedInput, runsRoot } from "./linked.ts";
 // LIVE VOCABULARIES for serving surfaces (hand-owned, wall-pinned):
 // the card-kind table (the kinds arm), the flow edge-kind set (the
-// schema arm's kinds), and the slot vocabulary (the catalog arm's
-// input_vocabulary — the models-golden wall's SSOT, never the blob).
+// schema arm's kinds). The catalog-level slot vocabulary is DELETED
+// (2026-09-18) — seat truth rides each model row's input_slots.
 export { CARD_KINDS, KindValues } from "./generated/vocab.ts";
-export { SLOT_VOCABULARY } from "./models/cardIdentity.generated.ts";
 
 export { cardWireName } from './service.ts'

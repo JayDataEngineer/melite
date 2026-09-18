@@ -4,7 +4,6 @@
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
-import { pyReprStr } from "@melite/comfyui-cordis";
 import { refusal } from "./queueSubmit.ts";
 import type { QueueRefusal } from "./queueSubmit.ts";
 // ── stop / resume / reproduce refusals ───────────────────────────
@@ -21,13 +20,13 @@ export type LifecycleState =
 export function refuseUnknownStop(runId: string): QueueRefusal {
   return refusal(
     400,
-    "unknown run_id " + pyReprStr(runId),
+    "unknown run_id " + JSON.stringify(runId),
     "run_unknown",
     "run_id",
   );
 }
 
-/** stop, settled run (2046-2047): 200 with error ONLY (no code —
+/** stop, settled run: 200 with error ONLY (no code
  *  the dispatcher normalizes 4xx alone, and this is a 200). */
 export function refuseTerminalStop(state: string): QueueRefusal {
   return {
@@ -55,13 +54,13 @@ export function refuseLiveResume(
 export function refuseNoDurableRecord(runId: string): QueueRefusal {
   return refusal(
     400,
-    "no durable record for run " + pyReprStr(runId),
+    "no durable record for run " + JSON.stringify(runId),
     "run_unknown",
     "run_id",
   );
 }
 
-/** resume, completed run (1936-1939). */
+/** resume, completed run. */
 export function refuseCompletedResume(runId: string): QueueRefusal {
   return refusal(
     400,
@@ -73,12 +72,12 @@ export function refuseCompletedResume(runId: string): QueueRefusal {
   );
 }
 
-/** resume, neither failed nor stopped (1940-1946). */
+/** resume, neither failed nor stopped. */
 export function refuseUnresumable(runId: string, status: string): QueueRefusal {
   const got: string = status === "" ? "unknown" : status;
   return refusal(
     400,
-    "run " + runId + " is " + pyReprStr(got) + " — resume needs failed or stopped",
+    "run " + runId + " is " + JSON.stringify(got) + " — resume needs failed or stopped",
     "run_not_resumable",
     "run_id",
     "failed|stopped",
@@ -86,7 +85,7 @@ export function refuseUnresumable(runId: string, status: string): QueueRefusal {
   );
 }
 
-/** resume, draft gone or half-written (1949-1953). */
+/** resume, draft gone or half-written. */
 export function refuseUnusableRecord(runId: string): QueueRefusal {
   return refusal(
     400,
@@ -98,7 +97,7 @@ export function refuseUnusableRecord(runId: string): QueueRefusal {
   );
 }
 
-/** reproduce, live run (2002-2007). */
+/** reproduce, live run. */
 export function refuseLiveReproduce(
   runId: string,
   liveStatus: string,
@@ -117,7 +116,7 @@ export function refuseLiveReproduce(
   );
 }
 
-/** reproduce, cardless legacy row (2015-2020). */
+/** reproduce, cardless legacy row. */
 export function refuseCardlessReplay(runId: string): QueueRefusal {
   return refusal(
     400,
@@ -131,7 +130,7 @@ export function refuseCardlessReplay(runId: string): QueueRefusal {
   );
 }
 
-/** reproduce, request body missing (2024-2029). */
+/** reproduce, request body missing. */
 export function refuseMissingRequest(runId: string): QueueRefusal {
   return refusal(
     400,
@@ -141,7 +140,7 @@ export function refuseMissingRequest(runId: string): QueueRefusal {
   );
 }
 
-/** reproduce, request non-object (2030-2034). */
+/** reproduce, request non-object. */
 export function refuseNonObjectRequest(
   runId: string,
   gotType: string,

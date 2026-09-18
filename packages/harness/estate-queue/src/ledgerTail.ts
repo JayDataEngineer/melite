@@ -11,7 +11,6 @@
 // lines count as matched but never as entries; output oldest ->
 // newest within the tail; a missing journal reads empty.
 import { readFileSync } from "node:fs";
-import { parseJson } from "./pyJson.ts";
 
 /** The parsed tail answer (the seat serves the object; the door
  *  serialized it — the HTTP rim is dead). */
@@ -38,7 +37,7 @@ export function tailLedger(
   let matched = 0;
   try {
     const text: string = readFileSync(ledgerPath, "utf8");
-    // File iteration (py `for line in f`): a trailing newline is NOT
+    // File iteration (`for line in f`): a trailing newline is NOT
     // a phantom line, but a real blank line mid-file IS iterated
     // (matched, then parse-skipped below).
     const lines: string[] = text.split("\n");
@@ -57,7 +56,7 @@ export function tailLedger(
   const out: unknown[] = [];
   for (const e of entries) {
     try {
-      out.push(parseJson(e));
+      out.push(JSON.parse(e));
     } catch {
       continue;
     }

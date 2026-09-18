@@ -118,11 +118,6 @@ export function isCatalogMiss(exc: unknown): boolean {
   return exc instanceof CatalogMiss;
 }
 
-/** Python %r of a model id (single-quoted — ids are [a-z0-9_-]). */
-function pyRepr(mid: string): string {
-  return "'" + mid + "'";
-}
-
 function isRecord(v: EngineJson | unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
@@ -197,7 +192,7 @@ export function resetCatalogCache(): void {
   CACHE = null;
 }
 
-/** Strip leading/trailing slashes (py str.strip("/")). */
+/** Strip leading/trailing slashes (str.strip("/")). */
 function stripSlashes(s: string): string {
   return s.replace(/^\/+/, "").replace(/\/+$/, "");
 }
@@ -240,7 +235,7 @@ export function resolveArtifactRows(
 ): CatalogArtifactRow[] {
   const model: CatalogModel | undefined = models.find((m) => m.id === mid);
   if (model === undefined) {
-    throw new CatalogMiss("model " + pyRepr(mid) + " not found in catalog");
+    throw new CatalogMiss("model " + JSON.stringify(mid) + " not found in catalog");
   }
   if (model.provisions.length > 0) {
     const rows: CatalogArtifactRow[] = [];
@@ -252,7 +247,7 @@ export function resolveArtifactRows(
     }
     if (rows.length === 0) {
       throw new CatalogMiss(
-        "model " + pyRepr(mid) + " declares no downloadable provisions",
+        "model " + JSON.stringify(mid) + " declares no downloadable provisions",
       );
     }
     return rows;
@@ -283,7 +278,7 @@ export function resolveArtifactRows(
     const qText: string = quant !== "" ? quant : "None";
     throw new CatalogMiss(
       "model " +
-        pyRepr(mid) +
+        JSON.stringify(mid) +
         " has no artifact at (" +
         vText +
         ", " +
@@ -306,7 +301,7 @@ export function resolveArtifactRows(
   ];
 }
 
-/** The runtime models tree root (data/runtime/comfyui — the py RUNTIME). */
+/** The runtime models tree root (data/runtime/comfyui — the RUNTIME). */
 export function runtimeModelsRoot(repoRoot: string = resolveRepoRoot()): string {
   return join(repoRoot, "data", "runtime", "comfyui", "models");
 }
@@ -316,7 +311,7 @@ export function runtimeModelsRoot(repoRoot: string = resolveRepoRoot()): string 
  * manage._model_present. Runtime tree first, then the mount leg
  * (model_base_path + extra_model_folders from the endpoint machine
  * statement; stock folders map to themselves). No base configured
- * = mount leg skipped (the py SystemExit collapses to None).
+ * = mount leg skipped (the SystemExit collapses to None).
  *
  * NON-PLUGIN callers only (walls/probes/unit — no Context). Plugin
  * paths read through ModelsService.checkModelPresent (same pure core

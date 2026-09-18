@@ -15,7 +15,7 @@ import {
   firstQuery,
   listRuns,
   mediaCandidates,
-  parseIntPy,
+  parseIntOrNull,
   runArtifacts,
   runDirHasMedia,
   runRowOrNull,
@@ -23,7 +23,7 @@ import {
   sidecarNum,
   sidecarStr,
   sidecarStrFound,
-  strtolPy,
+  parseLeadingInt,
 } from "../src/runsList.ts";
 // The picker half of the depth wall (wall 8): listMedia is the media
 // package's own door — imported from source, never the built lib.
@@ -138,14 +138,14 @@ describe("runRowOrNull model rows", () => {
   });
 });
 
-describe("strtolPy + sidecarNum", () => {
+describe("parseLeadingInt + sidecarNum", () => {
   it("scans the C idiom (spaces, sign, digits; 0 when no digits lead)", () => {
-    assert.equal(strtolPy("  -12x"), -12);
-    assert.equal(strtolPy("+5"), 5);
-    assert.equal(strtolPy("42"), 42);
-    assert.equal(strtolPy("abc"), 0);
-    assert.equal(strtolPy(""), 0);
-    assert.equal(strtolPy("  +"), 0);
+    assert.equal(parseLeadingInt("  -12x"), -12);
+    assert.equal(parseLeadingInt("+5"), 5);
+    assert.equal(parseLeadingInt("42"), 42);
+    assert.equal(parseLeadingInt("abc"), 0);
+    assert.equal(parseLeadingInt(""), 0);
+    assert.equal(parseLeadingInt("  +"), 0);
     assert.equal(sidecarNum('{"created": 42}', "created", 0), 42);
     assert.equal(sidecarNum('{"created":  -7}', "created", 0), -7);
     assert.equal(sidecarNum('{"created_at": 9}', "created", 7), 7);
@@ -170,7 +170,7 @@ describe("sidecarStr", () => {
       sidecarStr(bytes('{"a":"A\\nB\\rc\\td\\"e\\\\f\\ug"}'), "a", 64),
       'A\nB\rc\td"e\\fug',
     );
-    // a trailing backslash swallows the closing quote (C parity).
+    // a trailing backslash swallows the closing quote (the scanner keeps it).
     assert.equal(sidecarStr(bytes('{"a":"ab\\"'), "a", 64), 'ab"');
   });
 
@@ -364,21 +364,21 @@ describe("runRowOrNull gates", () => {
   });
 });
 
-describe("parseIntPy + firstQuery", () => {
+describe("parseIntOrNull + firstQuery", () => {
   it("parses the py int (underscores ride, junk refuses)", () => {
-    assert.equal(parseIntPy("10"), 10);
-    assert.equal(parseIntPy(" 1_0 "), 10);
-    assert.equal(parseIntPy("+5"), 5);
-    assert.equal(parseIntPy("-3"), -3);
-    assert.equal(parseIntPy("x"), null);
-    assert.equal(parseIntPy(""), null);
-    assert.equal(parseIntPy("1__0"), null);
-    assert.equal(parseIntPy("1_"), null);
-    assert.equal(parseIntPy("0x1"), null);
-    assert.equal(parseIntPy("1.5"), null);
+    assert.equal(parseIntOrNull("10"), 10);
+    assert.equal(parseIntOrNull(" 1_0 "), 10);
+    assert.equal(parseIntOrNull("+5"), 5);
+    assert.equal(parseIntOrNull("-3"), -3);
+    assert.equal(parseIntOrNull("x"), null);
+    assert.equal(parseIntOrNull(""), null);
+    assert.equal(parseIntOrNull("1__0"), null);
+    assert.equal(parseIntOrNull("1_"), null);
+    assert.equal(parseIntOrNull("0x1"), null);
+    assert.equal(parseIntOrNull("1.5"), null);
   });
 
-  it("the first non-blank wins (urllib parity)", () => {
+  it("the first non-blank wins", () => {
     assert.equal(firstQuery({}, "limit", "d"), "d");
     assert.equal(firstQuery({ limit: ["", "5", "6"] }, "limit", "d"), "5");
     assert.equal(firstQuery({ limit: ["", ""] }, "limit", "d"), "d");

@@ -34,9 +34,10 @@ export const modelIds = (): string[] => modelsService().modelIds();
  *  exported here, consumed everywhere (the no-silent-drop law's
  *  machine half). */
 export function liveScanOrder(): string[] {
-  const live = buildCatalog(modelIds().map((id) => getModel(id)));
+  // THE ONE enumeration (variant/cell routes included — a parallel
+  // filter would silently drop them): buildCatalog's served keys.
   return Object.keys(
-    (live as unknown as Record<string, Record<string, unknown>>).models,
+    buildCatalog(modelIds().map((id) => getModel(id))).models,
   ).sort();
 }
 

@@ -62,7 +62,7 @@ export interface RunRecord {
   outputNodes: Record<string, EngineJson>[];
   /** The settle persist (R3 mirror): registration stamps these so
    *  settle can rewrite the sidecar + ledger row. createdAt is
-   *  epoch seconds (py parity). */
+   *  epoch seconds. */
   createdAt: number;
   pipeline: string;
   graphRows: GraphRow[];

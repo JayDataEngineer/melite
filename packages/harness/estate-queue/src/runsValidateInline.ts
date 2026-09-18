@@ -3,7 +3,6 @@
 import { isRecord, isStringField } from "./runsGates.ts";
 import { FlowError, KIND_VOCAB, SKIP_VOCAB } from "./runsValidateShared.ts";
 import type { Edge, StageSkip } from "./runsValidateShared.ts";
-import { pyReprJson, pyReprStr, pyReprStrList, pyStr } from "./runsValidatePyRepr.ts";
 
 // ── inline edges / kinds / branches ─────────────────────────────
 
@@ -13,17 +12,17 @@ export function edgeRef(e: Edge): string {
 
 export function inlineKind(where: string, value: unknown): string {
   // Leaf-type structure rides the admission gate (schemastery); the
-  // closed-vocab membership + FlowError prose stay here (py voice).
+  // closed-vocab membership + FlowError prose stay here (voice).
   if (!isStringField(value)) {
-    throw new FlowError(where + ": kind " + pyReprJson(value) + " is not a string");
+    throw new FlowError(where + ": kind " + JSON.stringify(value) + " is not a string");
   }
   if (!(KIND_VOCAB as readonly string[]).includes(value)) {
     throw new FlowError(
       where +
         ": " +
-        pyReprStr(value) +
+        JSON.stringify(value) +
         " is not a Kind — the closed vocabulary is " +
-        pyReprJson([...KIND_VOCAB]),
+        JSON.stringify([...KIND_VOCAB]),
     );
   }
   return value;
@@ -34,7 +33,7 @@ export function inlineEdge(where: string, value: unknown): Edge {
     throw new FlowError(
       where +
         ": edge " +
-        pyReprJson(value) +
+        JSON.stringify(value) +
         ' is not an object — use {"initial": key} ' +
         'or {"stage": id, "output": name}',
     );
@@ -43,16 +42,16 @@ export function inlineEdge(where: string, value: unknown): Edge {
   if (keys.length === 1 && keys[0] === "initial") {
     // str(value["initial"]) — mirrors FromInitial(key=str(...));
     // the empty-string min_length refusal is faked byte-exact below.
-    return { kind: "initial", key: pyStr((value as Record<string, unknown>)["initial"]) };
+    return { kind: "initial", key: String((value as Record<string, unknown>)["initial"] ?? "") };
   }
   if (keys.length === 2 && keys.includes("stage") && keys.includes("output")) {
     const rec: Record<string, unknown> = value as Record<string, unknown>;
-    return { kind: "stage", stage: pyStr(rec["stage"]), output: pyStr(rec["output"]) };
+    return { kind: "stage", stage: String(rec["stage"] ?? ""), output: String(rec["output"] ?? "") };
   }
   throw new FlowError(
     where +
       ": edge keys " +
-      pyReprStrList(keys) +
+      JSON.stringify(keys) +
       ' are not an edge shape — exactly {"initial": key} ' +
       'or {"stage": id, "output": name}',
   );
@@ -64,7 +63,7 @@ export function inlineSkip(where: string, value: unknown): StageSkip | null {
     throw new FlowError(
       where +
         ": skip_when " +
-        pyReprJson(value) +
+        JSON.stringify(value) +
         ' is not an object — use {"initial": ' +
         "key, \"when\": present|absent}",
     );
@@ -74,7 +73,7 @@ export function inlineSkip(where: string, value: unknown): StageSkip | null {
     throw new FlowError(
       where +
         ": skip_when keys " +
-        pyReprStrList(keys) +
+        JSON.stringify(keys) +
         ' are not a branch shape — exactly {"initial": key, ' +
         '"when": present|absent}',
     );
@@ -85,16 +84,16 @@ export function inlineSkip(where: string, value: unknown): StageSkip | null {
     throw new FlowError(
       where +
         ": " +
-        pyReprJson(when) +
+        JSON.stringify(when) +
         " is not a branch condition — the closed vocabulary " +
         "is " +
-        pyReprJson([...SKIP_VOCAB]),
+        JSON.stringify([...SKIP_VOCAB]),
     );
   }
   const initial: unknown = rec["initial"];
   if (!isStringField(initial) || initial === "") {
     throw new FlowError(
-      where + ": skip initial " + pyReprJson(initial) + " is not a non-empty string",
+      where + ": skip initial " + JSON.stringify(initial) + " is not a non-empty string",
     );
   }
   return { initial, when };

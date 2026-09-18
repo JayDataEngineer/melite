@@ -10,12 +10,12 @@ import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 
 const schema = z.object({
   input_image: z.string().role('path').description("Input image").extra('extra', { order: 0, group: "input", width: 1, tooltip: "The frame to restore. Absolute mount path.", required: true, wtype: 'image', }),
-  // ride-the-model keys (py ABSENT: no schema default — the
+  // ride-the-model keys (ABSENT: no schema default — the
   // compose-door cascade overlays model defaults, then explicit
   // params): resolution/max_resolution/batch_size ride the seedvr2_ema
-  // model row (1080/4096/1); seed rides py -1 (model row carries 0,
-  // explicit wins — the golden pins explicit 42). RANGE RULE
-  // (2026-09-08 Phase-2): whoever owns the default owns the floor —
+  // model row (1080/4096/1); seed rides -1 (model row carries 0,
+  // explicit wins — an explicit 42 rides the model row). RANGE RULE
+  // (2026-09-08 Phase-2): whoever owns the default owns the floor
   // ride-keys carry HINT-ONLY ranges via extra (the served editor
   // floors) so the cascade stays authoritative; only schema-defaulted
   // knobs (seed) get validating min/max.
@@ -23,7 +23,7 @@ const schema = z.object({
   max_resolution: z.number().description("Max resolution").min(512).max(4096).step(64).extra('extra', { order: 1, group: "target", columns: 2, width: 1, tooltip: "The hard ceiling — inputs already past it pass through.", wtype: 'number' }),
   batch_size: z.number().description("Batch size").min(1).max(16).step(1).extra('extra', { order: 0, group: "run", width: 1, tooltip: "Video frames ride batches; images are batch 1.", wtype: 'number' }),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 1, group: "run", width: 1 }),
-  // NO dit_model/vae_model (py card declares no such knobs — the
+  // NO dit_model/vae_model (card declares no such knobs — the
   // weights ride lane_inputs.unet/vae; old drafts naming them still
   // parse via the door's non-strict overlay but compose never reads
   // them).
@@ -65,7 +65,7 @@ export function apply(ctx: Context): void {
       requiresModel: true,
     },
     requires: ['ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-KJNodes', 'comfyui_nvidia_rtx_nodes'],
-    // ADMISSION EXTRAS + SPELLS (the py class-attr halves verbatim:
+    // ADMISSION EXTRAS + SPELLS (the class-attr halves verbatim:
     // admits minus studio writes, and the $spell-eligible file slot
     // for two-card-flow handoff).
     admits: ['filename_prefix'],

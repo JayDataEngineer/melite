@@ -42,7 +42,7 @@ export function engineFilmName(names: readonly string[]): string | null {
   return names.find((n): boolean => ENGINE_FILM_RE.test(n)) ?? null;
 }
 
-/** The window artifact shapes: the py engine's `windowN_video_M.mp4`
+/** The window artifact shapes: the engine's `windowN_video_M.mp4`
  *  AND the TS card's `h3_t4_wN_000MM_.mp4` (SaveVideo prefix
  *  `h3_t4_w${k}` + ComfyUI's counter suffix). Ordinal = window k. */
 const WINDOW_RE = /(?:window(\d+)_video_\d+|h3_t4_w(\d+)_\d+)_?\.mp4$/;
@@ -59,7 +59,7 @@ function windowOrdinal(name: string): number | null {
 
 /** Decide the plan from a stage's artifact names: a plan exists when
  *  two or more windows are present — with the engine's stitch (the
- *  py shape: the caller muxes only when the stitch lies short of the
+ *  shape: the caller muxes only when the stitch lies short of the
  *  windows' total, the duration probe) or with NO stitch at all (the
  *  merged TS film: there is no engine stitch to keep — the windows
  *  concat unconditionally so ONE film leads the stage). */

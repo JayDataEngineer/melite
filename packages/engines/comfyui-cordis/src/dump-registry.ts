@@ -3,8 +3,8 @@
 // declaration; consumers that need the census outside node read it
 // through this dumper: one node invocation, JSON on stdout, nonzero
 // on failure. No gateway, no GPU, no engine — the registry loads
-// from the card plugin files alone. Consumers: the py wall battery
-// (which used to scan card.py classes) + the py compose bridge
+// from the card plugin files alone. Consumers: the wall battery
+// (historical: the retired scan) + the compose bridge
 // (spells/skeleton for the $spell branch + stage-row extra).
 //
 // Usage:

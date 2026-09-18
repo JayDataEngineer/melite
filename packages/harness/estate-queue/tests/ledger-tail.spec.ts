@@ -40,8 +40,8 @@ describe("tailLedger", () => {
     const a = tailLedger(ledger(), "50", "flip");
     assert.equal(a.matched, 5);
     assert.deepEqual(
-      a.entries.map((e) => (e as { n: { literal: string } }).n.literal),
-      ["1", "3", "5", "7", "9"],
+      a.entries.map((e) => (e as { n: number }).n),
+      [1, 3, 5, 7, 9],
     );
   });
 
@@ -52,8 +52,8 @@ describe("tailLedger", () => {
     assert.equal(b.matched, 6);
     assert.equal(b.shown, 2);
     assert.deepEqual(
-      b.entries.map((e) => (e as { n: { literal: string } }).n.literal),
-      ["8", "10"],
+      b.entries.map((e) => (e as { n: number }).n),
+      [8, 10],
     );
   });
 

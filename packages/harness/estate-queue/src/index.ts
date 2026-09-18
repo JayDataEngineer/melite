@@ -1,14 +1,10 @@
 // index.ts — `@melite/estate-queue`: the serial run queue as a host
 // Cordis service (REBUILD-5 of the gateway kill, 2026-09-10).
 //
-// The gateway package's queue core re-homed HERE verbatim (lock,
-// journal, sidecars, refusals, resurrect, run-status probe) with
-// the three gateway-core seams cut over: asciiEscape + the submit
-// vocabulary ride this package (pyAscii.ts / vocab.ts — the SSOT
-// address moved with the owner), and the draft-id law comes from
-// `@melite/estate-drafts` (the law's one address). The door-mount
-// entries (flows-resume / flows-reproduce route mounts) are DEAD
-// with the gateway — no routes, no port, no second process.
+// The run-queue core lives HERE (lock, journal, sidecars,
+// refusals, resurrect, run-status probe). The submit vocabulary
+// rides this package (vocab.ts), and the draft-id law comes from
+// `@melite/estate-drafts` (the law's one address).
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import { QueueService } from "./service.ts";
 import type { QueueConfig } from "./service.ts";
@@ -16,10 +12,8 @@ import { RunsRuntimeService } from "./runsRegistry.ts";
 
 export { QueueService } from "./service.ts";
 export type { QueueConfig } from "./service.ts";
-export * from "./pyAscii.ts";
 export * from "./vocab.ts";
 export * from "./queue.ts";
-export * from "./refusals.ts";
 export * from "./runStatus.ts";
 // bootSweep twins (queue.ts core impl + resurrect.ts QueueRoots
 // wrapper): the explicit export wins over the stars — the wrapper

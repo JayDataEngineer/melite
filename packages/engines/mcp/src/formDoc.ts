@@ -6,7 +6,7 @@
 // stage gate validates (mcp-engine.ts: tool named, args a JSON
 // object, out contained in the run dir) — the form and the wire
 // are one declaration, and the wall (tests/form-doc.spec.ts) pins
-// the serialization against a golden so a change must land
+// the serialization so a change must land
 // consciously in both.
 import z from "@deepseek-ai/schemastery";
 

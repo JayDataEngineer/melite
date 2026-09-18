@@ -1,18 +1,18 @@
 // mods/packs.ts — THE MOD PACKS: the distinct category taxonomy
 // (operator order 2026-09-08: "we had a distinct mods category —
 // LORAS, CONTROLNETS, LAN-INPAINT, in that vein"). One file
-// registers every PACK CONTRACT — the py Mod parents (melite_cards
+// registers every PACK CONTRACT — the Mod parents (melite_cards
 // dsl.py: LorasMod, ControlNetMod, LanPaintMod, MaskMod, the
 // qvoice pack): the CATEGORY's field schema, inherited by every
 // boarding family. A flavor (the family's own mods/<pack>.ts under
 // the family's packaged mods (packages/models/<id>/mods/ — the packagedFlavors table in cardDefs.ts)) boards
 // the pack and carries ONLY data — rows, the runtime door, or a
-// bare boarding. Fields live HERE and nowhere else (py
-// subclassing: the flavor inherits, never re-declares).
+// bare boarding. Fields live HERE and nowhere else
+// (subclassing: the flavor inherits, never re-declares).
 //
 // SEAM NOTE (image1): the lanpaint contract's image1 (REQUIRED,
-// input zone) is the qwen flavor's whole-declaration override in
-// py, inlined here because exactly one family boards lanpaint —
+// input zone) is the qwen flavor's whole-declaration override,
+// inlined here because exactly one family boards lanpaint
 // byte-identical output. A second lanpaint family with a different
 // image1 story re-opens the flavor-fields seam (recorded in
 // docs/design/mods-as-mutations-2026-09-08.md).
@@ -24,7 +24,7 @@ import z from '@deepseek-ai/schemastery'
 
 export const inject = ['comfyui']
 
-// ── LORAS (the py LorasMod): the LoRA stack. Entry steps (operator
+// ── LORAS (the LorasMod): the LoRA stack. Entry steps (operator
 // correction, 2026-09-18): a DISTILL adapter is married to its step
 // count — one lora for four steps, another for eight — so the entry
 // carries `steps applied` alongside strength (the row's catalog
@@ -43,10 +43,10 @@ const LorasFields = z.object({
     .extra('extra', { wtype: 'loras', group: 'loras_controlnet', zone: 'mods', default: null, order: 0 }),
 })
 
-// ── CONTROLNET (the py ControlNetMod + the z-image flavor's
+// ── CONTROLNET (the ControlNetMod + the z-image flavor's
 // controlnets/mod.yaml, 1:1): the ControlNet stack. ONE entry per
-// conditioning map: the catalog TYPE (the family's served rows —
-// the union file for z-image), the map itself (caller-supplied —
+// conditioning map: the catalog TYPE (the family's served rows
+// the union file for z-image), the map itself (caller-supplied
 // no preprocessor executes in this plane), the pipeline artifact
 // name when a brick feeds it (artifact wins over image_b64 at run
 // time, the retired precedence), strength, the full-schedule step
@@ -88,7 +88,7 @@ const ControlNetFields = z.object({
     }),
 })
 
-// ── IP-ADAPTER (the py IpAdapterMod, the ray ip_adapters/mod.yaml,
+// ── IP-ADAPTER (the IpAdapterMod, the ray ip_adapters/mod.yaml,
 // 1:1 field set): the reference-image stack. ONE entry per
 // reference: the image itself, the MODE (the family's served rows
 // — style/composition/face/generic on z-image), and the weight.
@@ -116,7 +116,7 @@ const IPAdapterFields = z.object({
     .extra('extra', { wtype: 'ip_adapters', group: 'ip_adapter', zone: 'mods', default: null, order: 3 }),
 })
 
-// ── LAN-INPAINT (the py LanPaintMod + the qwen flavor's image1
+// ── LAN-INPAINT (the LanPaintMod + the qwen flavor's image1
 // override, inlined — see the seam note above) ──
 const LanpaintFields = z.object({
   image1: z.string().role('path').description('Image 1')
@@ -147,7 +147,7 @@ const LanpaintFields = z.object({
     .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 8, width: 1, step: 1 }),
 })
 
-// ── MASK (the py MaskMod): the region-modality contract ──
+// ── MASK (the MaskMod): the region-modality contract ──
 const MaskFields = z.object({
   mask: z.any().description('Region Mask')
     .extra('extra', {
@@ -177,7 +177,7 @@ const MaskFields = z.object({
     .extra('extra', { wtype: 'boolean', group: 'mask', zone: 'mods', order: 6, width: 1, tooltip: 'Work OUTSIDE the painted region instead.' }),
 })
 
-// ── QVOICE (the py qvoice pack): the voice-lock card's exported
+// ── QVOICE (the qvoice pack): the voice-lock card's exported
 // speaker embeddings — .qvoice file + PCA steering ──
 const QvoiceFields = z.object({
   qvoice: z.string().role('path').description('Voice (.qvoice)')

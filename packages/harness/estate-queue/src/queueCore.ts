@@ -89,7 +89,7 @@ export class QueueCore {
     return i < 0 ? 0 : i;
   }
 
-  /** The queue snapshot (_h_queue 2893-2900): key order as py. */
+  /** The queue snapshot (_h_queue 2893-2900): key order . */
   snapshot(): {
     queued: number;
     running: number;

@@ -10,7 +10,7 @@ import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 const schema = z.object({
   // the staged source filename (the arm stages uploads/artifacts into
   // the ComfyUI input dir before this doc renders)
-  // py card.py declares ONLY source — media_type/crop/scale ride the
+  // the declaration carries ONLY source — media_type/crop/scale ride the
   // door's explicit-params overlay (non-strict object) so old drafts
   // keep parsing, but they are never declared knobs.
   source: z.string().role('path').description("Source file").extra('extra', { order: 0, group: "input", tooltip: "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).", required: true, wtype: 'file', }),
@@ -37,8 +37,8 @@ export function apply(ctx: Context): void {
     id: 'input-prep',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'input_prep',
-    // stock-only card (card.py requires = ()): LoadImage/ImageCrop/
-    // ImageScale/SaveImage + LoadAudio/SaveAudio are ComfyUI core —
+    // stock-only card (requires = ()): LoadImage/ImageCrop/
+    // ImageScale/SaveImage + LoadAudio/SaveAudio are ComfyUI core
     // no requires to declare.
     boarded: ['input'],
     tags: ['image', 'input', 'prepare'],
@@ -54,7 +54,7 @@ export function apply(ctx: Context): void {
       outputs: { default: 'text' },
       requiresModel: false,
     },
-    // ADMISSION EXTRAS (the py class-attr half verbatim: the
+    // ADMISSION EXTRAS (the class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file).
     admits: ['crop', 'media_type', 'scale'],

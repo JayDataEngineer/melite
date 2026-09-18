@@ -1,6 +1,6 @@
 // cardDefs.ts — the in-process card-def loader for serving surfaces.
 //
-// The compose door (flowsCard.ts in the gateway) boots a fresh
+// The compose door boots a fresh
 // Context + full card auto-load per compose call — correct for
 // compose (fresh graph state), wasteful for /v1/tools which only
 // needs the registered DEFINITIONS (schema carrier + boarded) to
@@ -58,8 +58,8 @@ export const cardPackages: string[] = [
     // RETIRED 2026-09-17 (operator order, the form-seams stroke):
     // ideogram4 — the card AND its model family are GONE (the
     // family's tenant binding WAS this card; nothing else consumed
-    // it). The frozen identity ring (cardIdentity.generated.ts)
-    // keeps its historical row by that file's own law.
+    // it). No historical row survives it — the frozen identity ring
+    // is DELETED (2026-09-18): identity is native on the defs.
     '@melite/image-input-prep',
   // RETIRED 2026-09-16 (operator order, stroke 87): 3d-skin + 3d-fit —
   // DCC surgery masquerading as cards. Verified at source: skin's
@@ -68,15 +68,15 @@ export const cardPackages: string[] = [
   // SetFloat at runtime) and fit is a hand-rolled numpy rigging
   // kernel (bone matrices, quaternions) — Blender work in the wrong
   // layer. Both surfaces moved to the MCP door as SKILLS, not cards:
-  // packages/engines/mcp/models/3d/blender/agents/skills/ (skin
+  // packages/engines/mcp/models/3d/blender/agents/spawn/ (skin
   // unwrap + rigging), served by the skills plane as
   // model:blender:<skill>. The vendored poser node packs stay
-  // (Layer C) — the py-era flows that compose them via raw
+  // (Layer C) — the retired flows that compose them via raw
   // workflows (skin-apply, fit-seat, character) still resolve.
     // RETIRED 2026-09-16 (CONTRACT D — parity reached, stroke 75):
     // mask-studio's card row. The FORM card (mask-form) owns the
     // mask surface — its bag covers every wire knob the studio
-    // declared (detect/subject/parts/paint + the parity scalars).
+    // declared (detect/subject/parts/paint + the scalar knobs).
     // The studio PACKAGE survives demoted: ui/ (PaintCanvas2D + the
     // studio internals) is the paint leaf-face carrier (its own
     // stroke); the runs-plane mask_studio mappings stay (historical
@@ -145,7 +145,7 @@ export const composeCards = async (ctx: Context): Promise<void> => {
  *  The dir-walk over src/models/families/<genre>/<id>/mods that used
  *  to live here was DEAD CODE (ledger row 24, 2026-09-10). */
 export const composeModPlane = async (ctx: Context): Promise<void> => {
-  // THE MOD PACKS (the distinct category taxonomy — the py Mod
+  // THE MOD PACKS (the distinct category taxonomy — the Mod
   // parents): the pack contracts (loras, controlnet, lanpaint,
   // mask, qvoice) live in the compose kit now (P46 — the web
   // promoted to @melite/card-kit; named import, no dir walk);
@@ -181,7 +181,7 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
 /** THE IDENTITY RUNG (native since 2026-09-10): every card
  *  declares its identity inline (label/description/genre — the
  *  frozen ring is retired from this path; it survives only as the
- *  models-golden wall's anchor for the registry emission). A card
+ *  DELETED with the ring, 2026-09-18). A card
  *  with no identity refuses LOUD here (the m1 wall: no card
  *  without it) — never a silent fallback, never generated prose. */
 export const assertCardIdentity = (id: string, def: CardDefinition): void => {
@@ -210,7 +210,7 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   // THE IDENTITY RUNG (native since 2026-09-10): every card
   //  declares its identity inline (label/description/genre — the
   //  frozen ring is retired from this path; it survives only as the
-  //  models-golden wall's anchor for the registry emission). A card
+  //  DELETED with the ring, 2026-09-18). A card
   //  with no identity refuses LOUD here (the m1 wall: no card
   //  without it) — never a silent fallback, never generated prose.
   bootedService = service

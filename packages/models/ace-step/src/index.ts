@@ -1,7 +1,7 @@
 // families/audio/ace-step — the ace-step MODEL declaration (ONE
 // model — the correction stroke 2026-09-08, operator order:
 // "ACE-STEP ACE-BASE ACE-STEP-BASE-BF16. THEY ARE ONE MODEL").
-// The py truth: all four flat rows declared the SAME class
+// The truth: all four flat rows declared the SAME class
 // AceStep — one model exploded by the flattener. The hierarchy is
 // the CASCADE the paper prescribes (§3.2.3 interception: base ←
 // variant ← cell, monoid-merged), not sibling re-writes:

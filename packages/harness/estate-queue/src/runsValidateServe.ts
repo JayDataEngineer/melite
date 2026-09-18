@@ -13,11 +13,10 @@ import type {
   StageSkip,
 } from "./runsValidateShared.ts";
 import { edgeRef } from "./runsValidateInline.ts";
-import { pyReprJson, pyReprStr } from "./runsValidatePyRepr.ts";
 import { flowFromBody, kindsOk, wiresResolve } from "./runsValidateStages.ts";
 import { batchRows, sweepWorkflows } from "./runsValidateSweeps.ts";
 
-// ── branch prune (flow.py:659 pruned_for — verbatim) ────────────
+// ── branch prune (pruned_for — verbatim) ────────────
 export function prunedFor(flow: Flow, body: Record<string, unknown>, cards?: CardRegistryLike | null): { flow: Flow; pruned: string[] } {
   if (!flow.stages.some((st) => st.skipWhen !== null)) return { flow, pruned: [] };
   const pruned: Map<string, StageSkip> = new Map();
@@ -36,9 +35,9 @@ export function prunedFor(flow: Flow, body: Record<string, unknown>, cards?: Car
   if (kept.length === 0) {
     throw new FlowError(
       "flow " +
-        pyReprStr(flow.id) +
+        JSON.stringify(flow.id) +
         ": the branch pruned every stage (fired: " +
-        pyReprJson([...pruned.keys()].sort()) +
+        JSON.stringify([...pruned.keys()].sort()) +
         ") — a run with no stages never registers",
     );
   }
@@ -58,16 +57,16 @@ export function prunedFor(flow: Flow, body: Record<string, unknown>, cards?: Car
       if (cond.when !== "present") {
         throw new FlowError(
           "flow " +
-            pyReprStr(flow.id) +
+            JSON.stringify(flow.id) +
             " stage " +
-            pyReprStr(st.id) +
+            JSON.stringify(st.id) +
             " input " +
-            pyReprStr(inp.name) +
+            JSON.stringify(inp.name) +
             " wires FromStage(" +
-            pyReprStr(edgeRef(inp.edge as { kind: "stage"; stage: string; output: string })) +
+            JSON.stringify(edgeRef(inp.edge as { kind: "stage"; stage: string; output: string })) +
             ") to pruned stage " +
             " (branch " +
-            pyReprStr(cond.initial) +
+            JSON.stringify(cond.initial) +
             " fired) — no request key to merge (absent-trigger prunes " +
             "carry nothing)",
         );
@@ -129,7 +128,7 @@ export function dollarTokens(params: unknown): string[] {
   return out;
 }
 
-// compile (flow.py:732): prune, then to_graph, then the unresolved
+// compile: prune, then to_graph, then the unresolved
 // $channel gate (flow_graph.py:169 — per-node pool, ALL bad joined).
 export function compileFlow(
   flow: Flow,
@@ -150,7 +149,7 @@ export function compileFlow(
       if (!pool.has(token)) {
         bad.push(
           "stage " +
-            pyReprStr(node.id) +
+            JSON.stringify(node.id) +
             " references $" +
             token +
             " (available: " +
@@ -172,10 +171,10 @@ export function compileFlow(
 // injected service. The absent-facts degrade survives at the
 // modelArm call site, which catches the service's strict read.)
 
-// ── {model} arm (gateway.py:595 resolve_card_model, ported subset) ─
+// ── {model} arm (resolve_card_model, ported subset) ─
 export function costPreview(engineTypes: string[]): Record<string, unknown> {
   // A fresh Gateway: depth 0, eta null, medians unknown
-  // (gateway.py:1872 cost_preview — no engine stats).
+  // (cost_preview — no engine stats).
   return {
     queue_depth: 0,
     eta_queue_s: null,

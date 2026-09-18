@@ -28,9 +28,9 @@ export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id] as const
 
 export const schema = z.object({
   // CARD-OWNED SURFACE (the 1:1 port, 2026-09-08): declaration
-  // order = the py field order (frozen form_spec krea-2 referee).
+  // order = the field order (frozen form_spec krea-2 referee).
   // loras is NOT here — the krea-2 LoRA knob rides the MOD
-  // absorption (mods/loras.ts; the py interlock). compose still
+  // absorption (mods/loras.ts; the interlock). compose still
   // consumes p.loras (kit.ts stackLoras) — the user bag, however
   // it was filled (a family Recipe macro may have stamped it).
   prompt: z.string().description('Prompt').extra('extra', { order: 0, group: 'prompt', columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea' }),

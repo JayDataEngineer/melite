@@ -3,9 +3,8 @@
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
-import { pyReprStr } from "./runsValidatePyRepr.ts";
 
-// ── artifact-ref sweep (infra/python/artifact_refs.py + gateway.py:617) ───
+// ── artifact-ref sweep ───
 export const ASSET_RUNS_PREFIX: string = "/v1/assets/runs/";
 
 export function stateRoots(): { outRoot: string; testOutRoot: string } {
@@ -19,13 +18,13 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
   const raw: string = String(ref).trim();
   /* v8 ignore next -- refLocations yields non-empty prefixed strings only (2026-09-12) */
   if (raw === "") throw new Error("empty artifact ref (nothing to resolve)");
-  if (raw.includes("..")) throw new Error("artifact ref refuses traversal: " + pyReprStr(raw));
+  if (raw.includes("..")) throw new Error("artifact ref refuses traversal: " + JSON.stringify(raw));
   let cand: string;
   if (raw.startsWith(ASSET_RUNS_PREFIX)) {
     const rel: string = raw.slice(ASSET_RUNS_PREFIX.length);
     if (rel === "" || rel.endsWith("/") || !rel.includes("/")) {
       throw new Error(
-        "malformed artifact URL (want /v1/assets/runs/<run_id>/<file>): " + pyReprStr(raw),
+        "malformed artifact URL (want /v1/assets/runs/<run_id>/<file>): " + JSON.stringify(raw),
       );
     }
     cand = join(outRoot, rel);
@@ -39,7 +38,7 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
   } else {
     throw new Error(
       "artifact ref is a bare " +
-        pyReprStr(raw) +
+        JSON.stringify(raw) +
         " — not an absolute path, an artifact URL " +
         "(/v1/assets/runs/<run>/<file>), or a runs-relative " +
         "<run>/<file> (a bare filename lives in the ComfyUI input " +
@@ -57,7 +56,7 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
      prefix refs and the traversal check fires first, so no escape
      reaches here (2026-09-12) */
   if (relToRoot === ".." || relToRoot.startsWith(".." + sep)) {
-    throw new Error("artifact ref escapes the output root: " + pyReprStr(raw));
+    throw new Error("artifact ref escapes the output root: " + JSON.stringify(raw));
   }
   let isFile: boolean = false;
   try {
@@ -71,7 +70,7 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
       : /* v8 ignore next -- refs always carry the prefix through refLocations (2026-09-12) */ "?";
     throw new Error(
       "artifact not found on disk: " +
-        pyReprStr(raw) +
+        JSON.stringify(raw) +
         " (looked up " +
         absCand +
         ") — the upstream run may have been pruned, or the ref was " +

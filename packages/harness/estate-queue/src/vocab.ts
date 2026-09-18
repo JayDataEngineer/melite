@@ -13,8 +13,8 @@ export const RETIRED_RUNNER_KNOBS: readonly string[] = [
   "from_index",
 ];
 
-/** 2026-08-10 pipe-carry stowaways py _strict_body refuses (gateway.py:242). */
+/** 2026-08-10 pipe-carry stowaways _strict_body refuses. */
 export const RETIRED_CARRY_KEYS: readonly string[] = ["pipe", "stage_id"];
 
-/** The door vocabulary py _strict_body allows past the `_` gate (gateway.py:346). */
+/** The door vocabulary _strict_body allows past the `_` gate. */
 export const DOOR_KEYS: readonly string[] = ["yaml", "flow", "flow_inline", "model"];

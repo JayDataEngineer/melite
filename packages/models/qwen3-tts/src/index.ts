@@ -1,6 +1,6 @@
 // families/audio/qwen3-tts — the qwen3-tts MODEL declaration (ONE
 // model — the correction stroke 2026-09-08, extended same day).
-// The py truth: qwen3-tts and qwen3-tts-base declared the SAME class
+// The truth: qwen3-tts and qwen3-tts-base declared the SAME class
 // Qwen3Tts — one model, the base checkpoint is a VARIANT (an
 // intercept over the model's base lane), not a sibling row. The
 // VoiceDesign 1.7B checkpoint rides the SAME qwen3_tts lane (same

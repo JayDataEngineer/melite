@@ -25,7 +25,7 @@ import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import type { CardRegistryService } from "./cardsRegistry.ts";
 import { getRegistryFlow, registryFlowNames } from "./flowsData.ts";
 
-// ── the pures (doors/disclose.ts:48-130, verbatim) ───────────────
+// ── the pures (verbatim) ──────────────────────────────────────
 
 /** One card summary (the routing layer — no bodies). */
 export interface CardSummary {
@@ -128,7 +128,7 @@ export class DiscloseDirectoryService extends Service {
     super(ctx, "disclose");
   }
 
-  /** GET /v1/discover (the door's arm, doors/disclose.ts): unknown
+  /** GET /v1/discover: unknown
    *  lookup refuses with the door's own voice; the body carries the
    *  requested planes only. */
   discover(

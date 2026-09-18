@@ -1,12 +1,12 @@
 // models/contract.ts — THE MODEL REGISTRY CONTRACT, ported from the
 // python `melite_models` grammar (git 034e1f97, `python/melite_models/
-// grammar.py` @ 1375 lines — the pydantic twin of the cards DSL).
+// grammar (the family declaration law; the cards DSL twin).
 //
 // RESURRECTION (2026-09-08, operator order): the NO-ESTATE-PYTHON cuts
 // deleted the model.py authoring plane with no TS successor; this file
 // + registry.generated.ts + models.ts are that successor. Source of
 // truth: the 47 unit files + grammar at 034e1f97, imported and dumped
-// by the metaclasses themselves (every pydantic row validated at
+// by the declarations themselves (every row validated at
 // construction — the dump carries the contract's own verdicts, not a
 // hand transcription).
 //
@@ -59,8 +59,8 @@ export interface LoraRow {
   category: string;
   default_strength: number;
   /** STEPS APPLIED (2026-09-18): the sampler step count the distill
-   * adapter is married to. `steps` is the DEFAULT count (the golden's
-   * own married count — dareties v4 = 4, Turbo = 8); `steps_min`/
+   * adapter is married to. `steps` is the DEFAULT count (the married
+   * count — dareties v4 = 4, Turbo = 8); `steps_min`/
    * `steps_max` declare the adapter's VALID RANGE when it is not a
    * fixed point (Turbo 4-to-8-step: min 4, max 8). A bare `steps`
    * implies the fixed point min = max = steps. Carried VERBATIM
@@ -218,7 +218,7 @@ export const ProvisionRow: z<ProvisionRow> = z.object({
 
 /** ModelDecl, the SCHEMA (ledger row 16, 2026-09-10): the interface
  *  above had NO runtime twin — validateDecl hand-rolled four field
- *  checks while the py law's `extra: forbid` went entirely
+ *  checks while the law's `extra: forbid` went entirely
  *  unenforced (schemastery's default object resolver MERGES unknown
  *  keys — vendor source, adversarially verified). registerFamily
  *  now resolves every DECL through this schema STRICTLY; the strict
@@ -263,7 +263,7 @@ export const ModelDecl = z.object({
   has_rubric: z.boolean(),
 });
 
-/** The family declaration — the model.py unit's data shape.
+/** The family declaration — the model.unit's data shape.
  *
  *  CONFORMANCE (operator order 2026-09-08 — the z-image verdict):
  *  absent ≡ empty, enforced by the readers (?? [] / ?? "" /
@@ -281,13 +281,13 @@ export interface ModelDecl {
   /** Present-only-when-true: an unoffered model registers but
    *  serves no surface. The DEFAULT is offered — no key. */
   unoffered?: boolean;
-  /** The FORM TAG this family's models route through (the py wire
+  /** The FORM TAG this family's models route through (the wire
    *  vocabulary: form_generate, form_video_director, …). REQUIRED
    *  for served families — a model without a form cannot resolve
    *  its form-spec and degrades every dropdown at once (the
    *  2026-08-11 catalog contract; restored 2026-09-10 after the
    *  TS-flip emission dropped it and shipped 53 formless rows past
-   *  a regolded golden — only the frontend validator caught it). */
+   *  a served diff — only the frontend validator caught it). */
   form?: string;
   defaults?: Record<string, unknown>;
   source?: { type?: string; repo_id?: string; filename?: string | null; note?: string } | null;
@@ -326,7 +326,7 @@ export interface ModelRow {
   genre: string;
   label: string;
   description: string;
-  /** The form tag (py wire vocabulary) — REQUIRED non-empty on
+  /** The form tag (wire vocabulary) — REQUIRED non-empty on
    *  every SERVED row (the 2026-08-11 contract; see ModelDecl.form). */
   form: string;
   source: SourceRow;

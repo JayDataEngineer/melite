@@ -307,7 +307,7 @@ describe("start flow arm", () => {
       s.svc.start({ draft_id: "d1", test: false, flow: "ghost" }, sig()),
     );
     assert.equal(unknown.code, "runs/invalid-request");
-    assert.match(unknown.message, /no flow at flows\/ghost\/flow\.py/);
+    assert.match(unknown.message, /no flow named ghost in the registry/);
     const bad = await remote(() =>
       s.svc.start(
         { draft_id: "d1", test: false, flow: "character", starter_image: "/nonexistent.png" },
@@ -392,9 +392,9 @@ describe("start model arm", () => {
     const err = await remote(() =>
       s.svc.start({ draft_id: "d1", test: false, flow: 5 }, sig()),
     );
-    assert.match(err.message, /no flow at flows\/\/flow\.py/);
+    assert.match(err.message, /no flow named  in the registry/);
     const verr = await remote(() => s.svc.validate({ flow: 5 }, sig()));
-    assert.match(verr.message, /no flow at flows\/\/flow\.py/);
+    assert.match(verr.message, /no flow named  in the registry/);
   });
 
   it("phase-2 compose failures refuse; success registers the card door and settles", async () => {
