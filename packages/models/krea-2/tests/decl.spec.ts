@@ -23,7 +23,10 @@ describe("the krea-2 model plugin (the whole model, one package)", () => {
 
   it("carries its variants — turbo, raw, realism — with routes and resolver defaults", () => {
     const ids = DECL.variants.map((v) => v.id);
-    assert.deepEqual(ids, ["turbo", "raw", "realism", "default"]);
+    // (Rule A, 2026-09-18) the Recipe axis carries the functional
+    // lora presets after the stamp-less default — turbo_distill +
+    // realism_lora (the realism VARIANT stays a route; distinct ids)
+    assert.deepEqual(ids, ["turbo", "raw", "realism", "default", "turbo_distill", "realism_lora"]);
     const raw = DECL.variants.find((v) => v.id === "raw")!;
     const rd = raw.resolver_defaults ?? {};
     assert.equal(raw.route, "krea-2-raw");

@@ -127,6 +127,32 @@ export const DECL: ModelDecl = {
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
       "cells": [],
+    },
+    // RULE A — THE RECIPE LAW (2026-09-18): the family's FUNCTIONAL
+    // lora presets ride here — patch-only rows stamping the bag at
+    // the flavor's own declared strength (mods/loras.ts). Style rows
+    // stay individual Modifiers-menu picks (an option is not a
+    // preset); step marriages stay in the turbo ROUTE's
+    // resolver_defaults — never duplicated on two axes.
+    {
+      "id": "turbo_distill",
+      "label": "Turbo Distill",
+      "hint": "The rank-64 turbo adapter at 1.0 — pairs with the Turbo route's own 8-step cascade.",
+      "group": "Recipe",
+      "wire_defaults": {
+        "loras": [{ "id": "krea2_turbo_lora_rank_64_bf16", "strength": 1.0 }],
+      },
+      "cells": [],
+    },
+    {
+      "id": "realism_lora",
+      "label": "Realism",
+      "hint": "The photorealism adapter at its declared 0.7.",
+      "group": "Recipe",
+      "wire_defaults": {
+        "loras": [{ "id": "krea2_realism_lora", "strength": 0.7 }],
+      },
+      "cells": [],
     }
   ],
   "variant_groups": [

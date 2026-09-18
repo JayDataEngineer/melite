@@ -2546,6 +2546,36 @@
         "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
+      },
+      {
+        "id": "turbo_distill",
+        "label": "Turbo Distill",
+        "hint": "The rank-64 turbo adapter at 1.0 — pairs with the Turbo route's own 8-step cascade.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "krea2_turbo_lora_rank_64_bf16",
+              "strength": 1
+            }
+          ]
+        },
+        "cells": []
+      },
+      {
+        "id": "realism_lora",
+        "label": "Realism",
+        "hint": "The photorealism adapter at its declared 0.7.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "krea2_realism_lora",
+              "strength": 0.7
+            }
+          ]
+        },
+        "cells": []
       }
     ],
     "variant_groups": [
@@ -2704,6 +2734,36 @@
         "label": "Default",
         "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
+        "cells": []
+      },
+      {
+        "id": "turbo_distill",
+        "label": "Turbo Distill",
+        "hint": "The rank-64 turbo adapter at 1.0 — pairs with the Turbo route's own 8-step cascade.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "krea2_turbo_lora_rank_64_bf16",
+              "strength": 1
+            }
+          ]
+        },
+        "cells": []
+      },
+      {
+        "id": "realism_lora",
+        "label": "Realism",
+        "hint": "The photorealism adapter at its declared 0.7.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "krea2_realism_lora",
+              "strength": 0.7
+            }
+          ]
+        },
         "cells": []
       }
     ],
@@ -9753,6 +9813,36 @@
         "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
+      },
+      {
+        "id": "realism",
+        "label": "Realism",
+        "hint": "The photorealism adapter at its declared 0.7.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "zimage_realism",
+              "strength": 0.7
+            }
+          ]
+        },
+        "cells": []
+      },
+      {
+        "id": "dejpeg",
+        "label": "DeJPEG",
+        "hint": "Restoration at its declared 1.0 — for recompressed source images.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "zimage_dejpeg",
+              "strength": 1
+            }
+          ]
+        },
+        "cells": []
       }
     ],
     "variant_groups": [
@@ -9848,6 +9938,36 @@
         "label": "Default",
         "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
+        "cells": []
+      },
+      {
+        "id": "realism",
+        "label": "Realism",
+        "hint": "The photorealism adapter at its declared 0.7.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "zimage_realism",
+              "strength": 0.7
+            }
+          ]
+        },
+        "cells": []
+      },
+      {
+        "id": "dejpeg",
+        "label": "DeJPEG",
+        "hint": "Restoration at its declared 1.0 — for recompressed source images.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "zimage_dejpeg",
+              "strength": 1
+            }
+          ]
+        },
         "cells": []
       }
     ],
@@ -9945,6 +10065,36 @@
         "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
+      },
+      {
+        "id": "realism",
+        "label": "Realism",
+        "hint": "The photorealism adapter at its declared 0.7.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "zimage_realism",
+              "strength": 0.7
+            }
+          ]
+        },
+        "cells": []
+      },
+      {
+        "id": "dejpeg",
+        "label": "DeJPEG",
+        "hint": "Restoration at its declared 1.0 — for recompressed source images.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "zimage_dejpeg",
+              "strength": 1
+            }
+          ]
+        },
+        "cells": []
       }
     ],
     "variant_groups": [
@@ -10040,6 +10190,36 @@
         "label": "Default",
         "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
+        "cells": []
+      },
+      {
+        "id": "realism",
+        "label": "Realism",
+        "hint": "The photorealism adapter at its declared 0.7.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "zimage_realism",
+              "strength": 0.7
+            }
+          ]
+        },
+        "cells": []
+      },
+      {
+        "id": "dejpeg",
+        "label": "DeJPEG",
+        "hint": "Restoration at its declared 1.0 — for recompressed source images.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "zimage_dejpeg",
+              "strength": 1
+            }
+          ]
+        },
         "cells": []
       }
     ],

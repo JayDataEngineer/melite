@@ -68,6 +68,29 @@ export const DECL: ModelDecl = {
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
       "cells": [],
+    },
+    // RULE A — THE RECIPE LAW (2026-09-18): the FUNCTIONAL presets
+    // (photorealism, restoration) stamp the bag at the flavor's own
+    // declared strength; style rows stay Modifiers-menu picks.
+    {
+      "id": "realism",
+      "label": "Realism",
+      "hint": "The photorealism adapter at its declared 0.7.",
+      "group": "Recipe",
+      "wire_defaults": {
+        "loras": [{ "id": "zimage_realism", "strength": 0.7 }],
+      },
+      "cells": [],
+    },
+    {
+      "id": "dejpeg",
+      "label": "DeJPEG",
+      "hint": "Restoration at its declared 1.0 — for recompressed source images.",
+      "group": "Recipe",
+      "wire_defaults": {
+        "loras": [{ "id": "zimage_dejpeg", "strength": 1.0 }],
+      },
+      "cells": [],
     }
   ],
   "variant_groups": [
