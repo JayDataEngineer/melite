@@ -4,7 +4,7 @@
 // model.id inside compose — the dispatch stays HERE (bespoke), the
 // arms ride src/kit.ts.
 //
-// NUMBERING LAW (pinned by tests/golden_cordis/mesh_*): the python
+// NUMBERING LAW : the renderers
 // renderers ride comfy-script, whose api_format() assigns
 // `<Class>.<index>` ids in POST-ORDER DFS from the output node —
 // NOT python creation order. The one visible flip: the SHAPE guided
@@ -17,11 +17,11 @@
 //
 // AUTOFILL LAW: python strips only the empty autofills it overrides
 // (LoadImage.upload, KSampler.control_after_generate). Other
-// comfy-script pin autofills SURVIVE in the goldens and are emitted
+// comfy-script pin autofills SURVIVE into the served graph and are emitted
 // here as literals: RemeshMesh band/fix_poles/project_back,
 // ImageCropToMask background/grow_mask, MoGeInference
 // apply_mask/batch_size/force_projection/fov_x_degrees. Everything
-// else is exactly the inputs the python renderers pass — no more.
+// else is exactly the inputs the engine consumes — no more.
 //
 // REQUIRES SHAPE: per-family requires (trellis2-native→
 // comfyui-core-trellis2, pixal3d→comfyui-core-trellis2+ComfyUI-MoGe,
@@ -40,7 +40,7 @@ import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab
 
 declare module '@melite/comfyui-cordis/service' {
   interface CardDefinition {
-    /** Per-family extension packs — the py requires_by_family mirror.
+    /** Per-family extension packs — the requires_by_family declaration.
      *  The compose door gates the active family's slice, never the
      *  flat union alone. */
     requiresByFamily?: Record<string, readonly string[]>
@@ -49,8 +49,8 @@ declare module '@melite/comfyui-cordis/service' {
 
 const schema = z.object({
   // Ride keys (no .default — the compose-door cascade overlays model
-  // defaults, then explicit params): input_image is py-required; the
-  // rig GLBs are py ABSENT/defaultless (transfer_rig's model row
+  // defaults, then explicit params): input_image is required; the
+  // rig GLBs are ABSENT/defaultless (transfer_rig's model row
   // carries no defaults either) and refused per-arm in compose, so a
   // lift call never names them and a rig call names both. Bare
   // z.string() is the image-gen prompt precedent (optional at parse,
@@ -91,7 +91,7 @@ const schema = z.object({
   rescale_shape: z.number().description("Shape rescale").min(0.1).max(1).step(0.05).default(0.5).extra('extra', { order: 10, group: "lab", width: 1, tooltip: "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 — one node). 0.5 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
   override_struct: z.number().description("Structure override %").min(0).max(1).step(0.001).default(0.667).extra('extra', { order: 11, group: "lab", width: 1, tooltip: "Structure-arm CFGOverride start percent. 0.667 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
   override_shape: z.number().description("Shape override %").min(0).max(1).step(0.001).default(0.769).extra('extra', { order: 12, group: "lab", width: 1, tooltip: "Shape-arm CFGOverride start percent. 0.769 is the official calibration.", families: ['pixal3d', 'pixal3d-1536', 'pixal3d-1536-bf16', 'pixal3d-1536-int8', 'pixal3d-512', 'pixal3d-512-bf16', 'pixal3d-512-int8', 'pixal3d-bf16', 'pixal3d-int8', 'trellis2-native'] }),
-  // NO filename_prefix (py card: "the run routes outputs by run id
+  // NO filename_prefix (card: "the run routes outputs by run id
   // (compose stamps the prefix internally). The schema still admits
   // the key — old drafts keep working" — admission is schemastery's
   // non-strict object + the door's explicit-params overlay; it is
@@ -135,7 +135,7 @@ export function apply(ctx: Context): void {
       outputs: { default: 'mesh' },
       requiresModel: false,
     },
-    // Per-family truth (py requires_by_family verbatim — the door
+    // Per-family truth (requires_by_family declaration — the door
     // gates the ACTIVE family's slice; the flat list carries the
     // UNION for flat consumers, see file header).
     requires: ['comfyui-core-trellis2', 'ComfyUI-MoGe', 'melite-autorig-nodes'],

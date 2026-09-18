@@ -82,7 +82,7 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
       if (actions.has(id)) continue;
       // the hierarchy fold: a facts key that is a ROUTE (not a
       // registry model) is pinned by the route-survival law
-      // (families-golden holds every route byte-equal); its matrix
+      // its matrix
       // is the owner's ladder — checked when the owner is reached
       if (!registryIds().includes(id)) {
         assert.ok(modelIds().includes(id), `facts family '${id}' serves no route`);

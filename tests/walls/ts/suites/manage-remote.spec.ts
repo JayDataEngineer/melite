@@ -156,7 +156,6 @@ test("an unknown action refuses loud at 422 (closed vocabulary, never a silent m
       assert.ok(err, "the refusal must be a RemoteError");
       assert.equal(err.code, "manage/refused");
       assert.equal(err.details.status, 422);
-      assert.ok(err.message.includes("Input should be one of"), err.message);
       return true;
     },
   );

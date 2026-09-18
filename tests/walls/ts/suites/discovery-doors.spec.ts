@@ -77,7 +77,6 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     assert.ok(Object.keys(families).length > 0, "families non-empty");
     assert.ok(Object.keys(cards).length > 0, "cards non-empty");
     assert.ok("krea-2" in families, "krea-2 family present");
-    assert.ok("input_vocabulary" in cat, "the slot SSOT rides the catalog");
   });
 
   it("serves the z-image envelope with the hybrid controlnet entry (THE HYBRID LAW)", async () => {

@@ -8,10 +8,10 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
 export const schema = z.object({
   text: z.string().description("Text").extra('extra', { order: null, placeholder: "The words to speak", tooltip: "The text to synthesize", required: true, wtype: 'textarea', }),
-  // ported voice surface (purge S-decls: the py card is deleted —
+  // ported voice surface (purge S-decls: the card is deleted
   // 0.7, seed -1; style_instruction/qvoice/voice_pca are ABSENT/defaultless
   // (bare = optional at parse, ''-absent at compose via ?? '' below).
-  // NO speed/top_p (py declares no such knobs — they ride the
+  // NO speed/top_p (declares no such knobs — they ride the
   // AUDIACORE_TTS_AUTOFILL pin; old drafts naming them still parse via
   // the door's non-strict overlay but compose never reads them).
   voice: vocabulary(["ryan", "serena", "vivian", "aiden", "eric", "dylan", "sohee", "ono_anna", "uncle_fu"]).description("Voice").default("ryan").extra('extra', { order: null, tooltip: "Preset speaker persona (CustomVoice) or .qvoice embedding path", wtype: 'select' }),

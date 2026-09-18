@@ -40,8 +40,7 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     // card 2026-09-17; fit + skin went at stroke 87)
     assert.equal(svc.registryIds().length, 45, "every registered model through the service at boot");
     // 91 since stroke 87 (fit + skin retired — 89 + the z-image base
-    // routes (regolded with
-    // cause alongside the tree golden — the variant landed without
+    // routes (with cause alongside — the variant landed without
     // its count updates)
     assert.equal(svc.modelIds().length, 90, "every flat id still serves (routes over the registry)"); // 90 since the form-seams stroke (ideogram retired)
   });

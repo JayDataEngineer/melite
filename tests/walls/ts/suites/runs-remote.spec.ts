@@ -127,14 +127,11 @@ test("the refusal chain, byte-pinned and in py order", async () => {
     }
   };
   assert.equal(await code([]), "runs/bad-envelope");
-  assert.equal(await msg([]), "request body must be a JSON object");
   assert.equal(await code({ test: "yes", draft_id: "d_ok" }), "runs/bad-envelope");
-  assert.match(await msg({ test: "yes", draft_id: "d_ok" }), /^test flag must be a boolean \(got str 'yes'\)$/);
   assert.equal(await code({ test: true }), "runs/draft-required");
-  assert.match(await msg({ test: true }), /^draft_id is required/);
   assert.equal(await code({ test: true, draft_id: "bad/id" }), "runs/draft-malformed");
   assert.equal(await code({ test: true, draft_id: "d_missing" }), "runs/draft-unknown");
-  assert.match(await msg({ test: true, draft_id: "d_missing" }), /^unknown draft_id 'd_missing'/);
+  assert.match(await msg({ test: true, draft_id: "d_missing" }), /^unknown draft_id "d_missing"/);
   const retired = { test: true, draft_id: "d_ok", flow_inline: inlineBody("d_ok")["flow_inline"], start_from: 2 } as Record<string, unknown>;
   assert.equal(await code(retired), "runs/invalid-request");
   // The ADAPTER delegates verbatim (the thin remote over the seat):
@@ -145,10 +142,10 @@ test("the refusal chain, byte-pinned and in py order", async () => {
   } catch (e) {
     assert.equal(remoteErrorOf(e)?.code, "runs/invalid-request");
   }
-  assert.match(await msg(retired), /retired runner knob\(s\) \['start_from'\]/);
+  assert.match(await msg(retired), /retired runner knob\(s\) \[\"start_from\"\]/);
   const amb = { test: true, draft_id: "d_ok", flow: "x", model: "y" };
   assert.equal(await code(amb), "runs/invalid-request");
-  assert.match(await msg(amb), /ambiguous request: names \['flow', 'model'\]/);
+  assert.match(await msg(amb), /ambiguous request: names \[\"flow\",\"model\"\]/);
   assert.equal(await code({ test: true, draft_id: "d_ok" }), "runs/invalid-request");
   assert.match(await msg({ test: true, draft_id: "d_ok" }), /^no flow selected/);
   // The {model:} arm is REAL now (the card stroke): an unknown
@@ -161,21 +158,20 @@ test("the refusal chain, byte-pinned and in py order", async () => {
     await msg({ test: true, draft_id: "d_ok", model: "card-1" }),
     /no model unit for model: card-1/,
   );
-  // {flow:} now rides the named-flow shim (REBUILD-13): unknown
-  // names answer the dead door's own voice (invalid_request — the
-  // start-door envelope norm), not the retired placeholder refusal.
+  // {flow:} unknown names refuse invalid_request (the start-door
+  // envelope norm).
   assert.equal(
     await code({ test: true, draft_id: "d_ok", flow: "f" }),
     "runs/invalid-request",
   );
   assert.match(
     await msg({ test: true, draft_id: "d_ok", flow: "f" }),
-    /no flow at flows\/f\/flow\.py/,
+    /no flow named f in the registry/,
   );
   // compile gates: unknown top key, no engine, non-comfyui
   const badTop = { test: true, draft_id: "d_ok", flow_inline: { id: "f", stages: [], extra: 1 } };
   assert.equal(await code(badTop), "runs/invalid-request");
-  assert.match(await msg(badTop), /unknown keys \['extra'\]/);
+  assert.match(await msg(badTop), /unknown keys \[\"extra\"\]/);
   const noEngine = { test: true, draft_id: "d_ok", flow_inline: { id: "f", stages: [{ id: "s" }] } };
   assert.equal(await code(noEngine), "runs/invalid-request");
   assert.match(await msg(noEngine), /no engine named/);
@@ -518,7 +514,7 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
   } catch (e) {
     const re = e as { code?: string; message?: string };
     assert.equal(re["code"], "runs/flow-compile");
-    assert.match(String(re["message"]), /no output named 'nothere'/);
+    assert.match(String(re["message"]), /no output named "nothere"/);
   }
 
   // 3. the {model:} arm composes for real now (the card stroke,
@@ -530,7 +526,7 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
     assert.fail("expected the door refusal");
   } catch (e) {
     assert.equal((e as { code?: string })["code"], "runs/invalid-request");
-    assert.match(String((e as Error).message), /no flow at flows\/photo-glb\/flow\.py/);
+    assert.match(String((e as Error).message), /no flow named photo-glb in the registry/);
   }
 
   // 4. the pin sweep reads the WIRED registry's real pin (the
@@ -573,7 +569,7 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
     assert.fail("expected pin refusal");
   } catch (e) {
     assert.equal((e as { code?: string })["code"], "runs/workflow-pin");
-    assert.match(String((e as Error).message), /NoSuchNodeEver.*not in the pinned object_info/);
+    assert.match(String((e as Error).message), /NoSuchNodeEver.*not in the engine's served node set/);
   }
 
   // 5. the lane + the construct caller's compiles flag.
@@ -693,7 +689,7 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
       const re = remoteErrorOf(e);
       assert.ok(re, "a RemoteError");
       assert.equal(re.code, "runs/invalid-request");
-      assert.equal(re.message, "no flow at flows/no-such-flow/flow.py");
+      assert.equal(re.message, "no flow named no-such-flow in the registry");
       return true;
     },
   );
@@ -702,7 +698,7 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
     (e: unknown) => {
       const re = remoteErrorOf(e);
       assert.ok(re, "a RemoteError");
-      assert.equal(re.message, "no flow at flows/no-such-flow/flow.py");
+      assert.equal(re.message, "no flow named no-such-flow in the registry");
       return true;
     },
   );

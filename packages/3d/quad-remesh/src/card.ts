@@ -11,8 +11,8 @@
 // smooth_normal is NOT a node input — the pack hardcodes
 // `--smooth-normal 0.0` on the binary argv (nodes.py), so a non-zero
 // card value could never take effect and refuses HERE, by name.
-// filename_prefix is compose-stamped per run (`<runId>/remeshed` —
-// the family constant shape, never a knob: the py card's own voice
+// filename_prefix is compose-stamped per run (`<runId>/remeshed`
+// the family constant shape, never a knob: the card's own voice
 // was "the run routes outputs by run id (compose stamps the prefix
 // internally)"), NOT the node's "autoremesher/remeshed" default.
 //
@@ -32,13 +32,13 @@ import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 
 const schema = z.object({
   // Ride keys (no .default — the compose-door cascade overlays model
-  // defaults, then explicit params): input is py-required (bare
+  // defaults, then explicit params): input is required (bare
   // z.string() is the image-gen prompt precedent — optional at
   // parse, refused loud at compose). The six numeric defaults are
-  // the py card Slider defaults verbatim (drift wall leg (d)).
+  // the card Slider defaults verbatim (drift wall leg (d)).
   // RANGE RULE (2026-09-08 Phase-2): the header above says the
-  // retired pydantic floors were deliberately NOT ported (the node's
-  // own loud laws own enforcement) — so the served editor floors
+  // floors validate in the node itself (its own loud laws own
+  // enforcement) — so the served editor floors
   // ride HINT-ONLY extra ranges, never validating min/max; the
   // schema-owned defaults keep no floors either (smooth_normal
   // already refuses non-zero by name at compose).
