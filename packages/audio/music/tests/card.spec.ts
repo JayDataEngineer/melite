@@ -40,6 +40,21 @@ describe("the music compose gate", () => {
     );
   });
 
+  it("THE SCHEMA GATE: an out-of-envelope duration refuses loud (declared 5–360), never composes", () => {
+    assert.throws(
+      () => def.compose({ prompt: "funk, pop", duration: 900 }, music3, new GraphBuilder(), "r_oob"),
+      /duration|900|between|range/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: an unstated duration arrives as the declared default 30 (the walk fills it)", () => {
+    const g = new GraphBuilder();
+    def.compose({ prompt: "funk, pop" }, music3, g, "r_def");
+    const latent = JSON.stringify(g);
+    assert.ok(latent.includes('"seconds":30') || latent.includes('"seconds": 30'),
+      "the fresh doc composes the schema-declared default 30, not undefined");
+  });
+
   it("the happy lane encodes the caption and saves mp3", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ prompt: "funk, pop, soul, guitar, 105 BPM", lyrics: "[verse]..." }), music3, g, "run_2");

@@ -32,6 +32,22 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "one_shot",
+      "label": "One Shot",
+      "hint": "Duration 0.5s — the card schema's own floor (a single hit).",
+      "group": "Recipe",
+      "wire_defaults": { "duration": 0.5 },
+      "cells": [],
+    },
+    {
+      "id": "ambience_bed",
+      "label": "Ambience Bed",
+      "hint": "Duration 300s — the card schema's own ceiling (a long bed).",
+      "group": "Recipe",
+      "wire_defaults": { "duration": 300 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

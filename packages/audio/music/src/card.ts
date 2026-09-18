@@ -50,10 +50,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // (comfy_extras.nodes_minimax_music); no requires to declare.
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
-      if (!p.prompt) {
+      // THE SCHEMA GATE (the h3 admission precedent — the card's
+      // own declaration validates the last hop into the engine):
+      // schemastery walk enforces declared types + bounds (a
+      // duration=900 draft refuses LOUD here, never composes),
+      // fills defaults, admits legacy keys inert. The composer's
+      // reads below are reads of the GATED doc.
+      const doc = schema(p) as Record<string, unknown>
+      if (!doc.prompt) {
         throw new Error("required param 'prompt' missing or empty on the music card (the music caption — what the song IS)")
       }
-      musicT1(p, model, g, runId)
+      musicT1(doc, model, g, runId)
     },
   }))
 }

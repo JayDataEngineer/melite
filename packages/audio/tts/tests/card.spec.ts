@@ -47,6 +47,20 @@ describe("the tts compose gate", () => {
     );
   });
 
+  it("THE SCHEMA GATE: an out-of-envelope temperature refuses loud (declared 0.05–2), never composes", () => {
+    assert.throws(
+      () => def.compose({ text: "hello", temperature: 5 }, ttsModel, new GraphBuilder(), "r_oob"),
+      /temperature|5|between|range/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: temperature 0 refuses loud — the engine's positive-sampling minimum is the floor (GPU receipt, hour 15)", () => {
+    assert.throws(
+      () => def.compose({ text: "hello", temperature: 0 }, ttsModel, new GraphBuilder(), "r_zero"),
+      /temperature|0|between|range|smaller/i,
+    );
+  });
+
   it("the happy lane speaks with the model's default voice", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ text: "the words to speak" }), ttsModel, g, "run_4");

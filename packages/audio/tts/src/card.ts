@@ -16,7 +16,11 @@ export const schema = z.object({
   // the door's non-strict overlay but compose never reads them).
   voice: vocabulary(["ryan", "serena", "vivian", "aiden", "eric", "dylan", "sohee", "ono_anna", "uncle_fu"]).description("Voice").default("ryan").extra('extra', { order: null, tooltip: "Preset speaker persona (CustomVoice) or .qvoice embedding path", wtype: 'select' }),
   style_instruction: z.string().description("Style Instruction").extra('extra', { order: null, tooltip: "Emotion and delivery control (e.g. 'speak with warm confidence')", wtype: 'textarea' }),
-  temperature: z.number().description("Temperature").min(0).max(2).step(0.05).default(0.7).extra('extra', { order: null }),
+  // the 0.05 floor is the ENGINE's truth (GPU receipt, hour 15: the
+  // native node refuses temperature 0 — "must be positive when
+  // sampling"); the schema declares the smallest positive tick of
+  // its own step. The declaration follows the engine, never vice.
+  temperature: z.number().description("Temperature").min(0.05).max(2).step(0.05).default(0.7).extra('extra', { order: null }),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: null }),
 })
 
@@ -65,10 +69,15 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
-      if (!(p.text as string)?.trim()) {
+      // THE SCHEMA GATE (the h3 admission precedent): the card's
+      // own schemastery walk validates types + bounds (temperature
+      // is 0–2 — anything else refuses LOUD, never composes), fills
+      // defaults; the composer reads the GATED doc.
+      const doc = schema(p) as Record<string, unknown>
+      if (!(doc.text as string)?.trim()) {
         throw new Error("required param 'text' missing or empty on the tts card (the words to speak)")
       }
-      ttsT1(p, model, g, runId)
+      ttsT1(doc, model, g, runId)
     },
   }))
 }

@@ -45,10 +45,15 @@ export function apply(ctx: Context): void {
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
-      if (!(p.prompt as string)?.trim()) {
+      // THE SCHEMA GATE (the h3 admission precedent): the card's
+      // own schemastery walk validates types + bounds (duration is
+      // 0.5–300 — anything else refuses LOUD, never composes),
+      // fills defaults; the composer reads the GATED doc.
+      const doc = schema(p) as Record<string, unknown>
+      if (!(doc.prompt as string)?.trim()) {
         throw new Error("required param 'prompt' missing or empty on the sfx card (describe the SOUND, not the scene)")
       }
-      sfxT1(p, model, g, runId)
+      sfxT1(doc, model, g, runId)
     },
   }))
 }

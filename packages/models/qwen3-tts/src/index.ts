@@ -85,6 +85,22 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "steady_read",
+      "label": "Steady Read",
+      "hint": "Temperature 0.05 — the card schema's floor (the engine's positive-sampling minimum: the native node refuses 0).",
+      "group": "Recipe",
+      "wire_defaults": { "temperature": 0.05 },
+      "cells": [],
+    },
+    {
+      "id": "expressive_read",
+      "label": "Expressive Read",
+      "hint": "Temperature 2 — the card schema's own ceiling (maximum variation).",
+      "group": "Recipe",
+      "wire_defaults": { "temperature": 2 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

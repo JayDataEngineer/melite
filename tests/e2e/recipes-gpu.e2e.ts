@@ -263,4 +263,79 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
       await w.ctx.fiber.dispose()
     }
   }, 480_000)
+
+  // ── the audio receipt (hour 15, the audio recipe rows landing:
+  //    bound-anchored stamps proven on silicon — the schema's own
+  //    floors/ceilings, values 1:1 with the cards' declared keys) ──
+
+  it('music3 short_sting: the pill payload composes duration 5 (the schema floor) and RUNS', async () => {
+    const w = await bootWorld('recipes-music3-')
+    try {
+      const s = await runCard(w, {
+        model: 'music3',
+        prompt: 'funk, pop, soul, guitar, 105 BPM',
+        // THE PILL PAYLOAD VERBATIM (short_sting): duration 5 — the
+        // card schema's own declared floor (min 5)
+        duration: 5,
+      }, 'music3 short_sting')
+      const latent = nodesWith(s, /EmptyMiniMaxMusic3LatentAudio/)
+      assert.ok(latent.length >= 1, 'the RUN workflow carries the music latent node')
+      const seconds = (latent[0]![1] as { inputs: Record<string, unknown> }).inputs['seconds']
+      assert.equal(seconds, 5, 'the latent seconds is the recipe-stamped 5')
+      const enc = nodesWith(s, /MiniMaxMusic3TextEncode/)
+      assert.equal((enc[0]![1] as { inputs: Record<string, unknown> }).inputs['max_duration'], 5,
+        'the text-encode max_duration is the recipe-stamped 5')
+      const bytes = firstBytes(s)
+      assert.ok(bytes.length > 1024, 'the music artifact is real bytes (' + bytes.length + ')')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 480_000)
+
+  it('moss-sfx one_shot: the pill payload composes duration 0.5 (the schema floor) and RUNS', async () => {
+    const w = await bootWorld('recipes-mosssfx-')
+    try {
+      const s = await runCard(w, {
+        model: 'moss-sfx',
+        prompt: 'sharp metallic clang with long decay',
+        // THE PILL PAYLOAD VERBATIM (one_shot): duration 0.5 — the
+        // card schema's own declared floor (min 0.5)
+        duration: 0.5,
+      }, 'moss-sfx one_shot')
+      const synth = nodesWith(s, /AudiocoreTTS/)
+      assert.ok(synth.length >= 1, 'the RUN workflow carries the audiocore synth node')
+      const inputs = (synth[0]![1] as { inputs: Record<string, unknown> }).inputs
+      assert.equal(inputs['duration_seconds'], 0.5, 'the synth duration is the recipe-stamped 0.5')
+      const bytes = firstBytes(s)
+      assert.ok(bytes.length > 1024, 'the sfx artifact is real bytes (' + bytes.length + ')')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 300_000)
+
+  it('qwen3-tts steady_read: the pill payload composes temperature 0.05 (the engine-true floor) and RUNS', async () => {
+    const w = await bootWorld('recipes-qwen3tts-')
+    try {
+      const s = await runCard(w, {
+        model: 'qwen3-tts',
+        text: 'The steadiest read lands at the floor of the dial.',
+        // THE PILL PAYLOAD VERBATIM (steady_read): temperature 0.05 —
+        // the engine's positive-sampling minimum (the native node
+        // refuses 0; the GPU receipt exposed the lying bound, the
+        // schema + row now declare the engine's truth)
+        temperature: 0.05,
+      }, 'qwen3-tts steady_read')
+      const synth = nodesWith(s, /AudiocoreTTS/)
+      assert.ok(synth.length >= 1, 'the RUN workflow carries the audiocore synth node')
+      const inputs = (synth[0]![1] as { inputs: Record<string, unknown> }).inputs
+      assert.equal(inputs['temperature'], 0.05, 'the synth temperature is the recipe-stamped 0.05')
+      const bytes = firstBytes(s)
+      assert.ok(bytes.length > 512, 'the tts artifact is real bytes (' + bytes.length + ')')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 300_000)
 })

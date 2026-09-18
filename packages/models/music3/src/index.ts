@@ -41,6 +41,22 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "short_sting",
+      "label": "Short Sting",
+      "hint": "Duration 5s — the card schema's own floor (a sting or loop).",
+      "group": "Recipe",
+      "wire_defaults": { "duration": 5 },
+      "cells": [],
+    },
+    {
+      "id": "full_length",
+      "label": "Full Length",
+      "hint": "Duration 360s — the card schema's own ceiling (full-song length).",
+      "group": "Recipe",
+      "wire_defaults": { "duration": 360 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

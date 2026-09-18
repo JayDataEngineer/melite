@@ -39,6 +39,13 @@ describe("the sfx compose gate", () => {
     );
   });
 
+  it("THE SCHEMA GATE: an out-of-envelope duration refuses loud (declared 0.5–300), never composes", () => {
+    assert.throws(
+      () => def.compose({ prompt: "clang", duration: 9999 }, moss, new GraphBuilder(), "r_oob"),
+      /duration|9999|between|range/i,
+    );
+  });
+
   it("the happy lane synthesizes the effect", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ prompt: "sword unsheathe, metallic ring" }), moss, g, "run_6");
