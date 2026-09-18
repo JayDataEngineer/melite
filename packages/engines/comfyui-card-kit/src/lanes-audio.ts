@@ -64,14 +64,14 @@ export function ttsT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBui
     voice: (p.voice as string) || laneStr(model.defaults.voice),
     // schema-required keys render ''-absent at compose (image-gen
     // precedent) — bare strings normalize here so an absent row still
-    // wires "" (the golden pins "").
+    // wires "" (served "").
     instruct: (p.style_instruction ?? '') as string,
     temperature: p.temperature,
     seed,
     voice_file: fireKnob(model, 'qvoice', 'qvoice', p.qvoice),
     voice_pca_strengths: fireKnob(model, 'qvoice', 'voice_pca_strengths', p.voice_pca_strengths),
-    // NO top_p/speed (py: not knobs — the AUTOFILL spread above owns
-    // 0.9/1.0; the golden pins them from the pin, never from params).
+    // NO top_p/speed (not knobs — the AUTOFILL spread above owns
+    // 0.9/1.0; they ride from the pin, never from params).
   })
   saveAudio(g, synth.out(), `${runId}/tts`)
 }

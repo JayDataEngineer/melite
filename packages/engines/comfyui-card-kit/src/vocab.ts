@@ -1,24 +1,22 @@
 // models/vocab.ts — THE ENGINE VOCABULARIES AS CLOSED TYPES
-// (PYTHON SHAPE LAW rung 3, ported 2026-09-08 — the paper discharge:
-// "a closed set is a TYPE, not a str a wall validates").
+// ("a closed set is a TYPE, not a string a wall validates").
 //
-// The py served sampler/scheduler options off the live engine pin
-// (object_info KSampler) with an ALPHABETIC serve order — the golden
-// referee (tests/walls/ts/fixtures/form-spec-referee.json) pins both
-// the SET and that order. This module declares the closed set as a z.union of consts:
+// The served sampler/scheduler options with an ALPHABETIC serve
+// order. This module declares the closed set as a z.union of consts:
 // ONE row gives the dropdown (meta.list = options, served in
-// DECLARED order — sorted, the referee's order) AND the membership
-// refusal (an off-set value fails the union at schema parse — the
-// compose door's bad-params refusal, never a silent engine 400).
+// DECLARED order — sorted) AND the membership refusal (an off-set
+// value fails the union at schema parse — the compose door's
+// bad-params refusal, never a silent engine 400).
 //
-// The membership source is the ENGINE PIN (data/object_info.json —
-// the ComfyUI snapshot this estate compiles against). The wall
-// (tests/walls/ts/suites/engine-vocab.test.ts) asserts set-equality
-// with the pin: the pin drifts (engine upgrade adds a sampler), the
-// wall fails, THIS FILE is edited by hand. Never a runtime read of
-// the pin into the schema (the py $samplers late-resolution hole —
-// options that "resolve at serve time" resolved nowhere — is the
-// defect class this port removes).
+// The membership source is the LIVE ENGINE, refreshed through the
+// regen door (packages/engines/comfyui-cordis/scripts/regen-vocab.ts
+// — SDK client off the endpoint config). The arrays are GENERATED:
+// no hand edits, no frozen snapshot, no set-equality wall. Refresh
+// is that door; drift is a loud git diff at regen time, never a
+// silent fallback at run time. Never a runtime read into the schema
+// (the $samplers late-resolution hole — options that "resolve at
+// serve time" resolved nowhere — is the defect class this design
+// removes).
 //
 // Consumers: cards' schemas (sampler/scheduler knobs), the
 // cross-validation domains (fieldDomains reads union meta.list),
@@ -27,8 +25,7 @@
 import z from "@deepseek-ai/schemastery";
 
 /** The t2i/t2v sampler vocabulary — 45 members, SORTED serve order
- *  (the frozen referee's order; set-equal with the engine pin's
- *  KSampler.sampler_name). */
+ *  (generated: scripts/regen-vocab.ts off the live engine). */
 export const SAMPLER_OPTIONS: readonly string[] = [
   "cfgpp_ud10_ab",
   "ddim",
@@ -78,7 +75,7 @@ export const SAMPLER_OPTIONS: readonly string[] = [
 ];
 
 /** The scheduler vocabulary — 9 members, SORTED serve order
- *  (set-equal with the engine pin's KSampler.scheduler). */
+ *  (generated: scripts/regen-vocab.ts off the live engine). */
 export const SCHEDULER_OPTIONS: readonly string[] = [
   "beta",
   "ddim_uniform",

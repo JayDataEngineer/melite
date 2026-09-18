@@ -9,11 +9,11 @@ import { mintSeed } from './graph-helpers.ts'
 export const VIDEO_NEGATIVE_FALLBACK = 'low quality, blurry, jitter, distorted limbs, watermark'
 
 /** The wan Lightning 4-step LoRA — the WanVaceT1Doc default mirror
- *  (lane facts carry no lora row; the python Doc IS its home —
+ *  (lane facts carry no lora row; the Doc IS its home
  *  moved verbatim from the video-gen card). */
 export const VACE_LIGHTNING_LORA = 'wan-vace/Wan22_A14B_T2V_HIGH_Lightning_4steps_lora_250928_rank128_fp16.safetensors'
 
-/** The family's required path params (the compose.py _ARMS mirror —
+/** The family's required path params (the _ARMS mirror
  *  moved verbatim from the video-gen card). */
 export const VIDEO_REQUIRED_PATHS: Record<string, readonly string[]> = {
   'wan-vace': ['reference_image'],
@@ -71,7 +71,7 @@ export function wanVace(p: Record<string, unknown>, negative: string, model: Mod
     pingpong: false,
     save_output: true,
   })
-  // python's _pin_vace_merge (ModelMergeWAN2_1 dotted-input rewrite)
+  // _pin_vace_merge (ModelMergeWAN2_1 dotted-input rewrite)
   // is a no-op on this graph — the merged checkpoint made the merge
   // node dead; nothing to port.
 }
@@ -166,7 +166,7 @@ export const H3_T4_STRIP: StripTable = {
     'offload_device', 'prepend_frames', 'temporal_overlap'],
 }
 
-/** The t4-family strip pass (python: `if not is_t4r`). The i2v
+/** The t4-family strip pass (`if not is_t4r`). The i2v
  *  dead-branch node exists ONLY on t4r — the serialized graph's
  *  family marker — so the strip stays stateless per compose. */
 export function finalizeH3(graph: PromptGraph): PromptGraph {

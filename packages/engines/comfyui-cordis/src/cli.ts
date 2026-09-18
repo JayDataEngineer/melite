@@ -6,6 +6,8 @@ import { Context } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
 import { composeCards, composeModPlane } from './cardDefs.ts'
 import { loadFacts } from '@melite/comfyui-card-kit/facts'
+import { liveObjectInfo } from './comfyui-transport.ts'
+import { resolveEngineBaseUrl } from './comfyui-config.ts'
 
 function die(msg: string): never {
   process.stderr.write(`compose-door: ${msg}\n`)
@@ -18,7 +20,6 @@ interface Args {
   facts?: string
   params?: string
   runId?: string
-  objectInfo?: string
 }
 
 function parseArgs(argv: string[]): Args {
@@ -34,7 +35,7 @@ function parseArgs(argv: string[]): Args {
 
 async function main(): Promise<void> {
   const [cmd, ...rest] = process.argv.slice(2)
-  if (cmd !== 'compose') die(`unknown command '${cmd ?? '(none)'}' — usage: compose --card <id> --model <id> --facts <file> [--params <json>] [--run-id <id>] [--object-info <file>]`)
+  if (cmd !== 'compose') die(`unknown command '${cmd ?? '(none)'}' — usage: compose --card <id> --model <id> --facts <file> [--params <json>] [--run-id <id>]`)
   const args = parseArgs(rest)
   if (!args.card) die('--card is required')
   if (!args.facts) die('--facts is required (card-owned slices: packages/engines/comfyui/data/model-facts.json; rows derive from the registry)')
@@ -74,16 +75,12 @@ async function main(): Promise<void> {
     if (probe?.requiresModel !== false) die('--model is required')
   }
 
-  // The pin snapshot: arms the EXTENSION-LAW gate AND supplies the
-  // comfy-script autofill defaults. Default = the repo pin beside
-  // the engine (cordis/src → ../../data/object_info.json); override
-  // with --object-info for a different engine.
-  const oiPath = args.objectInfo
-    ?? new URL('../../data/object_info.json', import.meta.url).pathname
-  const oi = JSON.parse((await import('node:fs')).readFileSync(oiPath, 'utf8')) as Record<string, unknown>
-  ctx.comfyui.setObjectInfo(oi)
+  // The live node set: arms the EXTENSION-LAW gate AND supplies
+  // the comfy-script autofill defaults. Fetched from the engine
+  // (endpoint config — QUEUE LANE LAW: no default host, no pin).
+  ctx.comfyui.setObjectInfo(await liveObjectInfo(resolveEngineBaseUrl()))
 
-  // ── THE NESTED STANZA UNWRAP (wall-pinned lift: py
+  // ── THE NESTED STANZA UNWRAP (lift:
   // card_compose_body rides the editor wire's own `params` key
   // THROUGH as params.params — test_card_compose_body_lifts_envelope
   // pins the lift; the compose plane unwraps). A `params` dict key

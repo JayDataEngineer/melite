@@ -15,18 +15,17 @@
 //   per-card param wiring from the contract.
 //
 // A card file is then: contract-derived decl (id/skeleton/boarded/
-// requires/schema — the decl-parity mirror wall is RETIRED (import
+// requires/schema (import
 // stroke 2026-09-08: one contract, TS owns the knob vocabulary on
-// Schemastery direct); decls are pinned by the compose goldens +
-// the cli admission gate instead, so decls NEVER move here) + admission
+// Schemastery direct); decls are pinned by the cli admission gate,
+// so decls NEVER move here) + admission
 // guards (the card's loud voice) + one recipe call. h3-timeline and
 // img-to-mesh keep their bespoke multi-family bodies in-card and ride
 // the kit for arms/strips/shared chains.
 //
-// BYTE-PARITY LAW: every recipe below is moved verbatim from its card
+// RECIPE LAW: every recipe below mirrors its card
 // (creation order IS node-id order; input key insertion order IS the
-// serialized order). tests/golden_cordis/*.json pins every byte —
-// touch a recipe and the cordis compose wall goes red.
+// serialized order) — touch a recipe and the compose wall goes red.
 
 // The package face re-exports the render-kit quartet (the reference's
 // subtree-top-index mechanism: consumers name the package, never a

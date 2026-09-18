@@ -16,7 +16,6 @@ import { spawnSync } from "node:child_process";
 
 const CLI = "packages/engines/comfyui-cordis/src/cli.ts";
 const FACTS = "packages/engines/comfyui-cordis/data/model-facts.json";
-const OI = "packages/engines/comfyui-cordis/data/object_info.json";
 
 const run = (args: string[]): { status: number | null; out: string; err: string } => {
   const r = spawnSync("node", ["--experimental-strip-types", "--no-warnings", CLI, ...args], {
@@ -27,7 +26,7 @@ const run = (args: string[]): { status: number | null; out: string; err: string 
   return { status: r.status, out: r.stdout as string, err: r.stderr as string };
 };
 
-const base = ["compose", "--facts", FACTS, "--object-info", OI];
+const base = ["compose", "--facts", FACTS];
 
 describe("the compose door (process boundary)", () => {
   it("no command refuses with the usage voice (one clean stderr line)", () => {

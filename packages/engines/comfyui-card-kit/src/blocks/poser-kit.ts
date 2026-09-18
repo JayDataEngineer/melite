@@ -21,7 +21,7 @@ export interface TurnaroundKnobs {
 
 /** The turnaround tail: RayRenderGLBViews + one SaveImage per view
  *  under the `<prefix>_<view>` convention (creation order IS the
- *  node-id order; the goldens pin it byte-stable). */
+ *  node-id order). */
 export function renderGLBViews(g: GraphBuilder, glbPath: OutputHandle, k: TurnaroundKnobs, prefix: string): void {
   const views = g.node('RayRenderGLBViews', {
     glb_path: glbPath,

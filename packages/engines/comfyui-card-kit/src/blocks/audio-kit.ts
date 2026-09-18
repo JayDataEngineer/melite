@@ -1,12 +1,12 @@
 // Tier 2 — the audio render-kit blocks (the compose/co_script audio
 // lane port). The Audiocore lanes (tts / sfx / voice-lock) leave the
 // vendored pack's unspecified optional inputs to comfy-script's
-// AUTOFILL — the python renderers run no strip pass there, so the
-// graphs PIN those default rows verbatim (tests/golden_cordis/ holds
-// them byte-stable). These tables are the lane-local pin calibration
-// (the python _AUTOFILL_STRIP mirror class): SSOT is the object_info
-// pin at packages/engines/comfyui/data/object_info.json — a pin
-// refresh that moves a default is a regold, never a quiet edit here.
+// AUTOFILL — no strip pass runs there, so the
+// graphs carry those default rows verbatim. These tables are the
+// lane-local calibration (they mirror the autofill-strip behavior):
+// SSOT is the live engine node set (object_info via the SDK client)
+// a pin refresh that moves a default must update every consumer,
+// never a quiet edit here.
 import { GraphBuilder, OutputHandle } from '../graph.ts'
 import type { ModelFacts, LaneInputsFacts } from '../facts.ts'
 
@@ -59,12 +59,11 @@ export function laneStr(v: unknown, fallback = ''): string {
 
 /** The audiocore weight load: LoadAudiocoreModel from lane rows +
  *  the model's variant default. The extras JSON spacing ({"variant":
- *  "x"} — python json.dumps spacing) is pinned by the voicelock
- *  golden; an empty variant bakes extras "". */
+ *  "x"} — with colon spacing; an empty variant bakes extras "". */
 export function loadAudiocore(g: GraphBuilder, model: ModelFacts): OutputHandle {
   const li: LaneInputsFacts = model.lane_inputs
   const variant = laneStr(model.defaults.variant)
-  const extras = variant ? `{"variant": ${JSON.stringify(variant)}}` : ''
+  const extras = variant ? JSON.stringify({ variant }) : ''
   return g.node('LoadAudiocoreModel', {
     family: laneStr(li.family),
     model_path: laneStr(li.model_path),

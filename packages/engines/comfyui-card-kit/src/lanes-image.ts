@@ -8,11 +8,11 @@ import { mintSeed } from './graph-helpers.ts'
 // ── archetype I: the image-diffuse family ───────────────────────────
 // Loader chain → lora stack → text pair → controlnet stack → latent
 // → KSampler → decode → save. Pin defaults ride AUTOFILL; each
-// lane's strip table is the python renderer's own calibration,
+// lane's strip table is the engine's calibration,
 // moved here verbatim.
 
-/** Pin autofills the image_t2i python lane strips post-walk for
- *  parity (moved verbatim from the image-gen card). */
+/** Pin autofills the image_t2i lane strips post-walk for
+ *  (moved verbatim from the image-gen card). */
 export const IMAGE_GEN_STRIP: StripTable = {
   CLIPLoader: ['device'],
   KSampler: ['control_after_generate'],
@@ -69,8 +69,8 @@ export function imageT2I(p: Record<string, unknown>, model: ModelFacts, g: Graph
   return decodeSave(g, sampled.out(), vae, `${runId}/gen`).out()
 }
 
-/** Pin autofills the image_edit python lane strips post-walk for
- *  parity (moved verbatim from the image-edit card). */
+/** Pin autofills the image_edit lane strips post-walk for
+ *  (moved verbatim from the image-edit card). */
 export const IMAGE_EDIT_STRIP: StripTable = {
   CLIPLoader: ['device'],
   LoadImage: [],
@@ -81,7 +81,7 @@ export function finalizeImageEdit(graph: PromptGraph): PromptGraph {
   return stripAutofill(graph, IMAGE_EDIT_STRIP)
 }
 
-/** The firing gate (the retired python MOD FIRING LAW, ported 1:1 —
+/** The firing gate (the MOD FIRING LAW, ported 1:1
  *  moved verbatim from the image-edit card): lane-promise values ride
  *  inert; anything that would change the graph refuses field-named
  *  INSTEAD of silently plain-editing. */
@@ -101,7 +101,7 @@ export function refuseImageEditFiring(p: Record<string, unknown>): void {
   // a stated region switches to the lanpaint sampler; forcing it
   // with no region stated refuses (nothing to regenerate). The
   // retired knobs (beta/friction — upstream fixed them 1/15) refuse
-  // off-default LOUD: the fields stay declared for form-spec parity
+  // off-default LOUD: the fields stay declared for form-spec
   // but wire to no input, and this plane never drops a stated knob
   // quietly.
   const bagN = Array.isArray(p.mask) ? (p.mask as unknown[]).length : 0
@@ -138,7 +138,7 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   const image = g.node('LoadImage', { image: p.image1, upload: 'image' }).out(0)
   // optional reference slots (the stock node's native image2/image3):
   // stated slots load ahead of the encodes (creation order IS node-id
-  // order); blank slots contribute no input at all (golden-stable).
+  // order); blank slots contribute no input at all (stable).
   const slot2 = ((p.image2 ?? '') as string).trim()
   const slot3 = ((p.image3 ?? '') as string).trim()
   const ref2 = slot2 ? g.node('LoadImage', { image: slot2, upload: 'image' }).out(0) : null
@@ -154,13 +154,13 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
     ...(ref3 ? { image3: ref3 } : {}),
   })
   // FIXED 1.0 (template-pinned lane graph — not a knob, not the
-  // wire, never li.sampling_shift; see the python doc's 2026-09-06
+  // wire, never li.sampling_shift; see the doc's 2026-09-06
   // audit note on ImageEditDoc).
   const shifted = g.node('ModelSamplingAuraFlow', { model: unet, shift: 1.0 }).out()
   // ── THE LANPAINT ARM (revived 2026-09-15, operator order "bring
   // them back") ──
   // input_mask stated (+ image1) switches the builder to the
-  // lanpaint sampler — the py LanPaintMod SLOT LAW. Upstream's node
+  // lanpaint sampler — the LanPaintMod SLOT LAW. Upstream's node
   // API moved since the pack was written (scraed/LanPaint, engine
   // commit 32cf848): step_size/lambda/beta/friction retired as live
   // inputs — LanPaint_KSamplerAdvanced keeps NumSteps + Lambda +
@@ -176,20 +176,20 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   //     0.2; 0.2 is reachable, floor 0.1)
   //   Beta/Friction <- 1 / 15 explicit (their example-canonical
   //     fixed values; the pack knobs stay declared for form-spec
-  //     parity and refuse off-default LOUD — never a silent drop)
+  //     and refuse off-default LOUD — never a silent drop)
   //   PromptMode: negative -> "Image First", positive ->
   //     "Prompt First" (their README: image context vs prompt
   //     emphasis at the cost of image quality)
   //   Inpainting_mode: the image literal. add_noise enable,
   //     noise_seed = the minted seed, start 0 / end 10000,
   //     leftover-noise disable (their example wiring).
-  // Mask prep in-graph (the py host-side chain, node form):
+  // Mask prep in-graph (the host-side chain, node form):
   // LoadImageMask alpha -> GrowMask -> FeatherMask -> InvertMask.
   // No core node re-binarizes — non-zero mask_threshold still
   // refuses. Polarity: LanPaint 1 = regenerate; mask-studio white
   // region = regenerate. Consistent.
   // The bag merges UNDER flat params (explicit flat keys win; the
-  // py flattened bag -> flat the same way). One region per run.
+  // flattened bag -> flat the same way). One region per run.
   const bag = Array.isArray(p.mask) ? (p.mask as Array<Record<string, unknown>>) : []
   const merged: Record<string, unknown> = { ...p }
   const bagObj = bag.length === 1 && typeof bag[0] === 'object' && bag[0] !== null ? bag[0] : null

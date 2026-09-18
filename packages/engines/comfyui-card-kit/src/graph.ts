@@ -78,12 +78,12 @@ export function deriveDefaults(objectInfo: Record<string, any>): Record<string, 
 
 export class GraphBuilder {
   /** Per-class instance counters — the /prompt key scheme is
-   *  `<ClassName>.<index>` (pinned by tests/golden_cordis/). */
+   *  `<ClassName>.<index>`. */
   private readonly counters = new Map<string, number>()
   private readonly nodes: Record<string, { class_type: string; inputs: NodeInputs }> = {}
   /** The active id prefix (empty at top level; scoped() sets it). */
   private prefix = ''
-  /** THE FILM SCOPE (2026-09-17, the mergegraph port): N windows of
+  /** THE FILM SCOPE (2026-09-17, the merged-graph builder): N windows of
    *  one film ride ONE prompt, each under a `window${k}_` namespace,
    *  so seam edges between windows are REAL wires (the executor
    *  orders windows off the graph, never a filesystem convention).

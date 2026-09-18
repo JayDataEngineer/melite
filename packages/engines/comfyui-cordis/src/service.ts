@@ -68,8 +68,8 @@ export interface DeclaredModifierKind {
 
 export interface CardDefinition {
   id: string
-  /** Stage-row id the compose emits (retired compose.py skeleton=
-   *  verbatim, SSOT'd from the py decls; TS owns the truth post-flip
+  /** Stage-row id the compose emits (retired compose.skeleton=
+   *  verbatim, SSOT'd from the decls; TS owns the truth post-flip
    *  — required on every card, never a fallback). */
   skeleton: string
   /** Boarded model ids (the board gate; unboarded models refuse). */
@@ -84,18 +84,18 @@ export interface CardDefinition {
    *  card precedent): skip the {model:} demand everywhere (cardGate,
    *  compose, CLI). Default true — every existing card needs one. */
   requiresModel?: boolean
-  /** Admission extras (the py class-attr `admits` half): params the
+  /** Admission extras (the class-attr `admits` half): params the
    *  compose door admits BEYOND the schema knobs (route stamps,
    *  renderer vocab, studio writes flattened at port time). Most
    *  cards carry none — the schema IS the surface. */
   admits?: readonly string[]
-  /** $spell-eligible params (the py `spell_params` half): file slots
+  /** $spell-eligible params (the `spell_params` half): file slots
    *  whose "$name" values pool for two-card-flow handoff instead of
    *  composing. Empty/absent = no spell pooling. */
   spells?: readonly string[]
   /** Extension packs the card's renderers ride (EXTENSION LAW). */
   requires?: readonly string[]
-  /** Per-family extension packs — the py requires_by_family mirror.
+  /** Per-family extension packs — the requires_by_family declaration.
    *  (2026-09-08: declared on the base interface — the compose door
    *  below already read it; tagger.ts / img-to-mesh.ts module
    *  augmentations merge the identical shape. Type-level only.) */
@@ -144,14 +144,11 @@ export interface CardDefinition {
   compose(params: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void
   /** Post-serialize pass — the lane's autofill-strip calibration
    *  (stripAutofill / stripEmptyAutofill). Cards whose python
-   *  renderer strips must port the table here; parity pins it. */
+   *  renderer strips must port the table here. */
   finalize?(graph: PromptGraph): PromptGraph
-  /** THE IDENTITY RUNG (card DSL phase 2, 2026-09-08 — NATIVE
-   *  since 2026-09-10): the py card.py identity (label/description/
-   *  genre/icon/ability) died with the authoring plane, and the
-   *  frozen ring (engine-comfyui models/cardIdentity.generated.ts)
-   *  thinned out as cards absorbed theirs: EVERY card declares its
-   *  identity inline now (loadCardDefs refuses a card without one).
+  /** THE IDENTITY RUNG — NATIVE (since 2026-09-10; the frozen ring
+   *  DELETED 2026-09-18): EVERY card declares its identity inline
+   *  (loadCardDefs refuses a card without one).
    *  icon is the capability-tile glyph; principles are the agent
    *  guidance lines the catalog cards arm serves (empty/absent =
    *  none — most cards carry none). */
@@ -168,7 +165,7 @@ export interface CardDefinition {
    *  HERE (same row shape as the family DECL provisions). Family
    *  weights stay on the DECL; card tools carry their own. */
   provisions?: ProvisionRow[]
-  /** THE UNIVERSAL-SIDEBAR TRIO (the py card.py sidebar_order /
+  /** THE UNIVERSAL-SIDEBAR TRIO (sidebar_order /
    *  sidebar / sidebar_hidden half, 2026-09-10): the /v1/forms arm
    *  derives its order/plugin/sidebar_key/hidden row from the CARD,
    *  never a frozen export — one card, one row, REQUIRED (a card
@@ -182,7 +179,7 @@ export interface CardDefinition {
     order: number
     hidden?: boolean
   }
-  /** THE STUDIO SURFACE (the py card.py size/layout half): the
+  /** THE STUDIO SURFACE (the size/layout half): the
    *  form-spec envelope's size/layout derive here — huge cards
    *  render the wide body frame, studio cards the studio frame.
    *  Absent = the plain panel (size null, layout null). */
@@ -190,7 +187,7 @@ export interface CardDefinition {
     size?: 'huge'
     layout?: 'studio'
   }
-  /** THE FLOW-STAGE I/O (the py card.py stage half): the /v1/schema
+  /** THE FLOW-STAGE I/O (the stage half): the /v1/schema
    *  snapshot's per-card row derives here — the flow kinds the
    *  card consumes/produces plus whether a flow stage running this
    *  card routes a model (REQUIRED, even when false — the sfx
@@ -211,7 +208,7 @@ declare module '@deepseek-ai/cordis' {
 
 // ── THE MOD/VERB SYSTEM (melite_cards dsl.py port, 2026-09-08) ──
 //
-// The py interlock: Model classes declared mods (fields + catalog
+// The interlock: Model classes declared mods (fields + catalog
 // rows joining the OWNING CARD's surface, scoped to the declaring
 // families); SubActionMods mounted as verbs (engine rows, never on
 // the card surface). Ported under the PORT LAW: registration
@@ -229,7 +226,7 @@ export type ModFields = {
   dict?: Record<string, Record<string, unknown>>
 }
 
-/** A lora catalog row (grammar.py LoraRow — no link, no row).
+/** A lora catalog row (grammar.LoraRow — no link, no row).
  *  The shape is the shared catalog-row shape for row-bearing packs
  *  (loras today, controlnet: its rows carry the served tooltip and
  *  the upstream-map preprocessor note — catalog facts, never
@@ -267,16 +264,16 @@ export interface LoraRowDecl {
 // ── THE MOD MUTATION SYSTEM (corrected 2026-09-08, operator
 // order): mods are a DISTINCT CATEGORY — packs (loras, controlnets,
 // lan-inpaint, mask, qvoice in that vein). The PACK is the category
-// contract (its field schema, the py Mod parent — engine-owned,
+// contract (its field schema, the Mod parent — engine-owned,
 // melite_cards role); the FLAVOR is a family's boarding of the pack
-// (the py Model.mods tuple entry + the family's mods/<pack>.py
+// (the Model.mods tuple entry + the family's mods/<pack>.py
 // subclass — FAMILY-owned data: rows, runtime door, or a bare
 // boarding). Fields live ONLY on the pack; a flavor never re-declares
-// them (inheritance — py subclassing). Scope comes from the
+// them (inheritance — subclassing). Scope comes from the
 // DECLARATION SITE: the flavor's families, cross-gated boot-loud
 // against the model's own DECL.mods (the paper's satisfaction law).
 
-/** A pack contract — the CATEGORY (the py Mod parent: LorasMod,
+/** A pack contract — the CATEGORY (the Mod parent: LorasMod,
  *  ControlNetMod, LanPaintMod, MaskMod, the qvoice pack). Fields
  *  are the pack's knob block, inherited by every boarding family. */
 export interface PackContract {
@@ -284,7 +281,7 @@ export interface PackContract {
   readonly fields: ModFields
 }
 
-/** A flavor registration — ONE family's boarding of a pack (the py
+/** A flavor registration — ONE family's boarding of a pack (the
  *  Model.mods tuple entry): bare (fields-only boarding), row-bearing
  *  (the family's catalog rows), or the runtime-catalog door. The
  *  file lives in the family's own mods/ dir — the scope below IS
@@ -293,13 +290,13 @@ export interface FlavorRegistration {
   readonly pack: string
   readonly families: readonly string[]
   readonly rows?: readonly LoraRowDecl[]
-  /** The RUNTIME CATALOG door (estate qwen loras.py): no own rows —
+  /** The RUNTIME CATALOG door (estate qwen loras catalog): no own rows
    *  the union of every family's declared rows serves; family rows
    *  always win over the union. */
   readonly runtimeCatalog?: boolean
 }
 
-/** A verb engine row (dsl.py VerbEngine — exactly one arm). */
+/** A verb engine row (dsl.VerbEngine — exactly one arm). */
 export interface VerbEngineRow {
   readonly id: string
   readonly flow?: string
@@ -327,7 +324,7 @@ export interface AbsorbedMod {
   readonly families: readonly string[]
 }
 
-/** The py's field gates (dsl.py _validate_field), on the
+/** The field gates (dsl._validate_field), on the
  *  Schemastery meta — loud at registration, never a silent drop. */
 function validateFields(where: string, fields: ModFields): void {
   const dict = fields.dict
@@ -355,7 +352,7 @@ function validateFields(where: string, fields: ModFields): void {
   }
 }
 
-/** The verb plane law (dsl.py _validate_verbs): every engine row
+/** The verb plane law (dsl._validate_verbs): every engine row
  *  carries EXACTLY one arm. */
 function validateVerb(v: VerbRegistration): void {
   if (!v.id || !v.label) throw new ComposeRefusal('bad-verb', `verb needs id + label`)
@@ -474,8 +471,8 @@ export class ComfyUIService extends Service {
   private facts: FactsFile | null = null
   /** Live object_info node names — set before compose to arm the gate. */
   private objectInfoNodes: Set<string> | null = null
-  /** Pin defaults map (class → input → default), derived from the
-   *  same snapshot — comfy-script autofill parity. */
+  /** Autofill defaults map (class → input → default), derived
+   *  from the live node-definitions doc — comfy-script behavior. */
   private pinDefaults: Record<string, Record<string, JsonValue>> = {}
 
   constructor(ctx: Context) {
@@ -505,11 +502,11 @@ export class ComfyUIService extends Service {
   //  interlock — fields absorb onto the OWNING CARD's surface
   //  scoped to the declaring families; verbs mount by id) ──
 
-  /** Register one PACK CONTRACT — the category (the py Mod parent).
-   *  LOUD: field gates at registration (the py metaclass's
+  /** Register one PACK CONTRACT — the category (the Mod parent).
+   *  LOUD: field gates at registration (the metaclass's
    *  import-time validation); ONE SHAPE per pack name (a second
-   *  contract for the same pack with different fields is drift —
-   *  py: one declaration per name means one shape per name). */
+   *  contract for the same pack with different fields is drift
+   *  one declaration per name means one shape per name). */
   registerPack(contract: PackContract): (() => void) {
     validateFields(`pack ${contract.pack}`, contract.fields)
     const prior = this.packs.get(contract.pack)
@@ -528,7 +525,7 @@ export class ComfyUIService extends Service {
     return () => { this.packs.delete(contract.pack) }
   }
 
-  /** Register one FLAVOR — a family's boarding of a pack (the py
+  /** Register one FLAVOR — a family's boarding of a pack (the
    *  Model.mods tuple entry; the family's own mods/<pack>.ts file).
    *  Fields are INHERITED from the pack contract — a flavor never
    *  carries fields. LOUD: the pack must exist (a flavor for an
@@ -577,7 +574,7 @@ export class ComfyUIService extends Service {
 
   /** Register one verb. LOUD: the plane law (exactly one engine
    *  arm per engine row) and one registration per verb id (two
-   *  classes mounting one id is the py's loud refusal). */
+   *  classes mounting one id is the's loud refusal). */
   registerVerb(verb: VerbRegistration): (() => void) {
     // duplicate id is the LOUDER signal — it fires before the
     // contract gates (a re-mount of a live verb id is an owner
@@ -590,7 +587,7 @@ export class ComfyUIService extends Service {
     return () => { this.verbs.delete(verb.id) }
   }
 
-  /** THE ABSORPTION (dsl.py _absorb_models, read-side): for every
+  /** THE ABSORPTION (dsl._absorb_models, read-side): for every
    *  PACK, the fields (the category contract — inherited by every
    *  boarding) join the card surface scoped to the families whose
    *  FLAVORS intersect the card's boarded set — THE MODEL-LEVEL
@@ -842,7 +839,7 @@ export class ComfyUIService extends Service {
         resolveControlNetEntry(e, cat.rows, cardId, modelId))
     }
 
-    // EXTENSION LAW gate: family slice wins when present (py
+    // EXTENSION LAW gate: family slice wins when present (the
     // requires_by_family precedent); flat union otherwise.
     const packs = def.requiresByFamily?.[modelId] ?? def.requires
     if (packs?.length && this.objectInfoNodes) {

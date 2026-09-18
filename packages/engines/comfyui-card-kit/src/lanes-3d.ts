@@ -11,7 +11,7 @@ import {
 // Body → assemble (CompositeCharacter / FitProp / SkinApply) → the
 // shared 8-view turnaround tail (blocks/poser-kit renderGLBViews).
 // The strip tables stay EMPTY so the pin's autofills ride
-// (comfy-script parity via the GraphBuilder pin defaults).
+// (comfy-script behavior via the GraphBuilder pin defaults).
 
 /** (DESCOPE 2026-09-05 — moved verbatim from the anny card.) The
  *  table stays EMPTY, so the pin's hair/outfit "" autofills ride. */
@@ -115,7 +115,7 @@ export function motionLane(p: Record<string, unknown>, model: ModelFacts, g: Gra
  *  stays on the card). */
 export function quadRemeshLane(p: Record<string, unknown>, g: GraphBuilder, runId: string): void {
   const input = String(p.input || '')
-  // Family constant, never a knob (golden-pinned).
+  // Family constant, never a knob (stable).
   const prefix = `${runId}/remeshed`
   g.node('AutoRemesher', {
     glb_path: input,
@@ -136,7 +136,7 @@ export function quadRemeshLane(p: Record<string, unknown>, g: GraphBuilder, runI
 // + per-family requires + arm dispatch (the multi-family story stays
 // where the families board).
 
-/** Closed vocabularies (the python card voice — moved verbatim from
+/** Closed vocabularies (moved verbatim from
  *  the img-to-mesh card). */
 const MESH_RESOLUTIONS = ['512', '1024', '1536']
 const MESH_BG_MODES = ['auto', 'on', 'off']
@@ -184,7 +184,7 @@ function loadLiftHeads(
   texVae: OutputHandle
 } {
   const unet = g.node('UNETLoader', { unet_name: li.unet, weight_dtype: 'default' }).out()
-  // shape arm (0.769 / 0.5) — numbered FIRST by the golden
+  // shape arm (0.769 / 0.5) — numbered FIRST (served order)
   const overrideShape = g.node('CFGOverride', {
     model: unet, cfg: 1.0,
     start_percent: p.override_shape as number, end_percent: 1.0,
@@ -192,7 +192,7 @@ function loadLiftHeads(
   const rescaleShape = g.node('RescaleCFG', {
     model: overrideShape, multiplier: p.rescale_shape as number,
   }).out()
-  // struct arm (0.667 / 0.7) — numbered SECOND by the golden
+  // struct arm (0.667 / 0.7) — numbered SECOND (served order)
   const overrideStruct = g.node('CFGOverride', {
     model: unet, cfg: 1.0,
     start_percent: p.override_struct as number, end_percent: 1.0,
@@ -223,7 +223,7 @@ function cutBackground(
 }
 
 /** The shared structure→shape→upsample→texture→bake→glb chain
- *  (python _shared_lift_chain verbatim — the model delta lives
+ *  (_shared_lift_chain verbatim — the model delta lives
  *  ENTIRELY in the conditioning pair passed in). */
 function sharedLiftChain(
   g: GraphBuilder,
@@ -287,7 +287,7 @@ function sharedLiftChain(
     'sign_mode.drop_enclosed_components': false,
     smooth_iters: 20,
     drop_small_components: 0.01, precluster_max_verts: 20000000,
-    // pin autofills python leaves in place (core defaults)
+    // pin autofills leaves in place (core defaults)
     band: 1.0, fix_poles: false, project_back: 0.0,
   }).out()
 
@@ -369,8 +369,8 @@ export function trellisArm(
   const clip = g.node('CLIPVisionLoader', { clip_name: li.clip_vision }).out()
   const pos = g.node('Trellis2Conditioning', { clip_vision_model: clip, image: condImage }).out(0)
   const neg = g.node('ConditioningZeroOut', { conditioning: pos }).out()
-  // Family constant, never a knob (py: compose stamps the prefix
-  // internally; golden-pinned).
+  // Family constant, never a knob (compose stamps the prefix
+  // internally; stable).
   sharedLiftChain(g, p, heads, pos, neg, 'trellis2_native')
 }
 
@@ -396,7 +396,7 @@ export function pixalArm(
   const cropped = g.node('ImageCropToMask', {
     images: cropSrc, masks: cropMask,
     pad_factor: 1.1, width: 1024, height: 1024,
-    // pin autofills python leaves in place (core defaults)
+    // pin autofills leaves in place (core defaults)
     background: '#000000', grow_mask: 0,
   }).out()
   let cameraAngleX: OutputHandle | number
@@ -408,7 +408,7 @@ export function pixalArm(
     }).out()
     const mogeGeom = g.node('MoGeInference', {
       moge_model: mogeModel, image: cropped, resolution_level: 9,
-      // pin autofills python leaves in place (core defaults)
+      // pin autofills leaves in place (core defaults)
       apply_mask: true, batch_size: 4, force_projection: true,
       fov_x_degrees: 0.0,
     }).out()
@@ -422,8 +422,8 @@ export function pixalArm(
     clip_vision_model: clip, image: cropped, camera_angle_x: cameraAngleX,
   }).out(0)
   const neg = g.node('ConditioningZeroOut', { conditioning: pos }).out()
-  // Family constant, never a knob (py: compose stamps the prefix
-  // internally; golden-pinned).
+  // Family constant, never a knob (compose stamps the prefix
+  // internally; stable).
   sharedLiftChain(g, p, heads, pos, neg, 'pixal3d')
 }
 
@@ -438,7 +438,7 @@ export function transferRigArm(g: GraphBuilder, p: Record<string, unknown>): voi
   g.node('SaveRiggedModel', { rigged_path: outPath })
 }
 
-/** The lift arms' shared admission gates (the python card voice —
+/** The lift arms' shared admission gates (—
  *  closed sets refuse HERE, never in the schema). */
 export function admitMeshLift(p: Record<string, unknown>, model: ModelFacts): void {
   const modelId = model.id

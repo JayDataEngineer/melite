@@ -1,37 +1,35 @@
 // cardsRegistry.ts — the card registry as a HOST Cordis service
 // (REBUILD-9, gateway kill): the dead flowsCard.ts second-move
 // verbatim (the registry, the resolve/prepare/overlay pipeline, the
-// in-process compose — py line cites riding along). The runs
+// in-process compose — line cites riding along). The runs
 // plane's {model:} arms (start phase-1/phase-2 + validate) ride
 // this service; the estate row mounts it before the runs registry.
 //
 // PATHS: facts + object_info ride the ENGINE package's data dir
 // (the Decl x Facts unification — same as the door). The service
 // name stays "cardRegistry" (ctx.cardRegistry).
-// doors/flowsCard.ts — the {model:} card composer arm (TS-native card
-// lane, 2026-09-08).
+// the {model:} card composer arm (TS-native card lane, 2026-09-08).
 //
-// WHAT THIS PORTS (line-cited against python/gateway.py + the cordis
-// plane): the card-run derivation resolve_card_model (598-682) +
-// submit's phase-2 arm (1273-1305) + the rim wrap (infra/python/plugins.py
-// card_hooks.compose 525-600), with the survey's verdict
+// WHAT THIS SERVES (the cordis
+// plane): the card-run derivation resolve_card_model +
+// submit's phase-2 arm + the rim wrap (card_hooks.compose), with
+// the survey's verdict
 // (docs/design/card-lane-port-survey-2026-09-08.md §0 + §5): import
 // @melite/comfyui IN-PROCESS — no template SSOT, no subprocess, no
 // class-tree port. The graph truth already lives in TS
-// (packages/engines/comfyui/src — 19 cards, golden-pinned);
+// (the card packages — stable);
 // this arm only changes the CALL PATH (subprocess shell -> import).
 //
-// THE CHAIN (py order, mirrored step-for-step):
-//   1. envelope/draft/strict/exclusivity — OWNED by flowsRun.ts
-//      (handleFlowsStart, already ported); this arm starts past it.
-//   2. model-id legality (validate-door voice, flowsValidate.ts
-//      modelArm) + existence (resolve_model's voice: "no model
-//      unit ...", infra/python/plugins.py:394) + the non-cordis arm
-//      refusal (python schema arm — unported half, code-identical).
-//   3. artifact-ref sweep (py 610-630, infra/python/artifact_refs.py
-//      find_dangling_refs semantics — every /v1/assets/... URL must
+// THE CHAIN (order, mirrored step-for-step):
+//   1. envelope/draft/strict/exclusivity — OWNED by the start
+//      door (handleFlowsStart, already ported); this arm starts past it.
+//   2. model-id legality (validate-door voice) + existence
+//      (resolve_model's voice: "no model unit ...") + the
+//      non-cordis arm refusal.
+//   3. artifact-ref sweep (find_dangling_refs semantics — every
+//      /v1/assets/... URL must
 //      exist on served mounts BEFORE compose).
-//   4. route-lens stamp overlay (py _route_stamp_overlay 705-751):
+//   4. route-lens stamp overlay (_route_stamp_overlay 705-751):
 //      family defaults + the SELECTED variant's resolver_defaults,
 //      absent-keys-only, filtered to the card field surface
 //      (schema keys + admits). Facts carry every input
@@ -49,13 +47,13 @@
 //   7. $spell phase-1 rule (compose/__init__.py spell block): a
 //      phaseless call (run_id "") whose spell params carry $ values
 //      composes NO graph.
-//   8. admission-contract gate (cli.ts:102-116 verbatim voice).
+//   8. admission-contract gate (the cli door's verbatim voice).
 //   9. in-process compose: ONE Context + ComfyUIService +
-//      auto-loaded cards (the cli.ts:59-63 loop), setFacts +
-//      setObjectInfo (snapshot: packages/engines/comfyui/data/
-//      object_info.json — R3: absent refuses CLOSED, never proceeds
+//      auto-loaded cards (the cli loop), setFacts +
+//      setObjectInfo (live /object_info doc via the SDK client —
+//      R3: an unreachable engine refuses CLOSED, never composes
 //      unauthenticated), ctx.comfyui.compose(card, family, params,
-//      runId) — the same call cli.ts:118 makes. ComposeRefusal.code
+//      runId) — the same call the cli door makes. ComposeRefusal.code
 //      maps to the refusal detail.
 //  10. stage-row wrap (the rim, plugins.py:566-588): {id: skeleton
 //      (the card definition, fallback: the posted mid), engine comfyui,
@@ -65,14 +63,14 @@
 //      interrupt, timeout all reused untouched).
 //
 // REFUSAL VOICES: every card-lane failure carries
-// `card_compose phase <N>: <detail>` (the py phase framing; the
+// `card_compose phase <N>: <detail>` (the phase framing; the
 // subprocess-era `rc=%d (%s.%s)` mimicry retired 2026-09-09 with
 // the execFileSync itself), where <detail> is the CLI-line shape
 // (`<code>: <msg>` for ComposeRefusal; `compose-door: ...` for the
 // admission die). The
 // (comfyui.comfyui) prefix rides the ENGINE_TABLE derivation
 // (plugin dir name + engine type, as scan_engines reports them —
-// the flowsValidate.ts header pins the same table). Pre-compose
+// the validate door pins the same table). Pre-compose
 // request failures (illegal id, no unit, dangling ref) keep their
 // existing validate-door voices (code invalid_request) so
 // start+validate agree field-for-field.
@@ -95,14 +93,14 @@ import type { Context } from "@deepseek-ai/cordis";
 import { EngineContext } from "@melite/comfyui-cordis";
 import { bootModels, buildCatalog, checkModelPresent, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, liveScanOrder, loadCardDefs, loadEndpointConfig, loadFacts, modelIds, registryIds, registryModel, theService } from "@melite/comfyui-cordis";
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { DOOR_KEYS } from "./runsGates.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
 import { getRegistryFlow } from "./flowsData.ts";
-import { pyReprStr, resolveRepoRoot } from "@melite/comfyui-cordis";
-/** The card-envelope keys (gateway.py:360 CARD_ENVELOPE_KEYS =
+import { liveObjectInfo, resolveEngineBaseUrl, resolveRepoRoot } from "@melite/comfyui-cordis";
+/** The card-envelope keys (CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
 export const CARD_ENVELOPE_KEYS: readonly string[] = [
   ...DOOR_KEYS,
@@ -111,9 +109,9 @@ export const CARD_ENVELOPE_KEYS: readonly string[] = [
   "service",
 ];
 
-/** The card-lane refusal: status + the py _refusal envelope shape
+/** The card-lane refusal: status + the _refusal envelope shape
  *  (error, code, then loc/expected/got) — the door maps it through
- *  the local refusal() + serializePy path (byte parity). */
+ *  the local refusal path. */
 /** The family's DECL face ("MOSS-SFX v2") — registryModel in a
  * guard (it THROWS on unknown ids); the id is the fallback.
  * Exported for the wall (both arms pin: the face serves, the
@@ -149,7 +147,7 @@ export class CardArmError extends Error {
   }
 }
 
-/** Phase-N compose failure (py _compose_refusal 191-210 over the rim
+/** Phase-N compose failure (_compose_refusal 191-210 over the rim
  *  546-551, the subprocess framing retired 2026-09-09): `card_compose phase <N>
  *  (comfyui.comfyui): <detail>`. */
 function phaseRefusal(phase: string, detail: string): CardArmError {
@@ -207,10 +205,6 @@ function factsPath(): string {
   return join(
     resolveRepoRoot(), "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
   );
-}
-
-function objectInfoPath(): string {
-  return join(resolveRepoRoot(), "packages", "engines", "comfyui-cordis", "data", "object_info.json");
 }
 
 // ── the decl projection (pure: defs + facts in, rows out) ─────────
@@ -277,7 +271,7 @@ function deriveDecls(
  // mtime-keyed object_info pin snapshot, the catalog mids set, and
  // every registry-derived operation (resolve/prepare/overlay/
  // phase-1/phase-2). The pure helpers below (select/stamp/lift/
- // sweep/pyStrMid) stay module functions — they take explicit args
+ // sweep) stay module functions — they take explicit args
  // and hold no state. Every door with registry reads injects
  // 'cardRegistry' and uses ctx.cardRegistry; request-path helpers
  // take an explicit service param (no module handle, no ACTIVE
@@ -387,9 +381,11 @@ export class CardRegistryService extends Service {
   private reads: FactsReads | null = null;
   /** The decl projection (lazy — derived from defs + facts). */
   private decls: Record<string, CardDeclRow> | null = null;
-  /** The pin snapshot (mtime-keyed). */
-  private oi: { mtimeMs: number; doc: Record<string, unknown> } | null = null;
-  private oiPath: string | null = null;
+  /** The engine's live node-definitions doc (/object_info via the
+   *  SDK client, cached per process on the engine side; primed by
+   *  primeObjectInfo before any compose). null = not yet primed or
+   *  the engine is unreachable. */
+  private oi: Record<string, unknown> | null = null;
   /** The catalog existence set (lazy — strict load, throws LOUD). */
   private mids: Set<string> | null = null;
 
@@ -416,11 +412,12 @@ export class CardRegistryService extends Service {
     this.facts = null;
     // ARM THE SINGLETON for the presence reads (stroke 18): the
     // compose path builds a FRESH service per run (armed with the
-    // snapshot below), but the serving surfaces (the spec's packs
+    // live doc below), but the serving surfaces (the spec's packs
     // block, the load bundle's pack hints) read theService() —
     // without this arm every pack marks unknown (null) on a healthy
-    // lane. Same snapshot + same facts file the compose gate reads:
+    // lane. Same live doc + same facts file the compose gate reads:
     // one truth, two seats, one spelling of the check.
+    await this.primeObjectInfo();
     try {
       const svc = theService();
       svc.setObjectInfo(this.objectInfo());
@@ -433,14 +430,13 @@ export class CardRegistryService extends Service {
   }
 
   /** Test seam: drop all registry state (walls boot fresh processes;
-   *  belt-and-braces for in-process reuse — the RunsService parity). */
+   *  belt-and-braces for in-process reuse — the RunsService behavior). */
   resetForTests(): void {
     this.defs = null;
     this.facts = null;
     this.reads = null;
     this.decls = null;
     this.oi = null;
-    this.oiPath = null;
     this.mids = null;
   }
 
@@ -498,29 +494,23 @@ export class CardRegistryService extends Service {
     return this.decls;
   }
 
-  /** The pin snapshot (R3 — mtime-keyed: a re-pin must never serve a
-   *  stale autofill map). null = absent on disk. */
+  /** The primed live doc (sync face for the sweeps/spec fakes).
+   *  null = never primed, or the engine was unreachable at prime. */
   objectInfo(): Record<string, unknown> | null {
-    const path: string = objectInfoPath();
-    let mtimeMs = 0;
+    return this.oi;
+  }
+
+  /** Prime the live node-definitions doc off the engine (/object_info
+   *  via the SDK, cached per process). Never throws: false = the
+   *  engine is unreachable and the doc stays null (the compose gate
+   *  refuses CLOSED on that; the serving surfaces degrade). */
+  async primeObjectInfo(): Promise<boolean> {
     try {
-      mtimeMs = statSync(path).mtimeMs;
+      this.oi = await liveObjectInfo(resolveEngineBaseUrl());
+      return true;
     } catch {
       this.oi = null;
-      this.oiPath = path;
-      return null;
-    }
-    if (this.oi !== null && this.oiPath === path && this.oi.mtimeMs === mtimeMs) {
-      return this.oi.doc;
-    }
-    try {
-      const doc: unknown = JSON.parse(readFileSync(path, "utf8"));
-      if (typeof doc !== "object" || doc === null || Array.isArray(doc)) return null;
-      this.oi = { mtimeMs, doc: doc as Record<string, unknown> };
-      this.oiPath = path;
-      return this.oi.doc;
-    } catch {
-      return null;
+      return false;
     }
   }
 
@@ -589,14 +579,14 @@ export class CardRegistryService extends Service {
       const [location, ref, why] = dangling;
       throw new CardArmError(
         400,
-        "dangling artifact ref at " + pyReprStr(location) + ": " + ref + " (" + why + ")",
+        "dangling artifact ref at " + JSON.stringify(location) + ": " + ref + " (" + why + ")",
         "invalid_request",
       );
     }
     if (!FLOW_ID_RE.test(mid)) {
       throw new CardArmError(
         400,
-        "model id " + pyReprStr(mid) + " is not a legal identifier",
+        "model id " + JSON.stringify(mid) + " is not a legal identifier",
         "invalid_request",
       );
     }
@@ -618,7 +608,7 @@ export class CardRegistryService extends Service {
     if (famRow === undefined) {
       throw new CardArmError(
         400,
-        "card_compose phase " + phase + ": model " + pyReprStr(mid) +
+        "card_compose phase " + phase + ": model " + JSON.stringify(mid) +
           " composes outside the cordis plane (python schema arm — unported half in this stroke)",
         "card_compose",
       );
@@ -629,8 +619,8 @@ export class CardRegistryService extends Service {
     if (decl === undefined) {
       throw new CardArmError(
         400,
-        "card_compose phase " + phase + ": unknown card " + pyReprStr(famRow.card) +
-          " (no registered card definition for the card model " + pyReprStr(mid) + " names)",
+        "card_compose phase " + phase + ": unknown card " + JSON.stringify(famRow.card) +
+          " (no registered card definition for the card model " + JSON.stringify(mid) + " names)",
         "card_compose",
       );
     }
@@ -655,8 +645,7 @@ export class CardRegistryService extends Service {
    *  row; the form renders it UNDER the user layer — ONE resolver,
    *  served to the visual, never a second client-side truth. Null
    *  when the row names no resolvable unit (registry-less lanes and
-   *  model-less rows fall back to the client derive; the wall pins
-   *  parity on the golden families). */
+   *  model-less rows fall back to the client derive). */
   /** The card's boarded families WITH PRESENCE (the no-silent-drop
    *  law, hour 26 stroke 17: a boarded family the machine has not
    *  downloaded is SERVED, marked absent — never silently dropped
@@ -781,7 +770,7 @@ export class CardRegistryService extends Service {
     if (famRow === undefined) {
       throw new CardArmError(
         400,
-        "card_compose phase 1: model " + pyReprStr(mid) +
+        "card_compose phase 1: model " + JSON.stringify(mid) +
           " composes outside the cordis plane (python schema arm — unported half in this stroke)",
         "card_compose",
       );
@@ -791,8 +780,8 @@ export class CardRegistryService extends Service {
     if (decl === undefined) {
       throw new CardArmError(
         400,
-        "card_compose phase 1: unknown card " + pyReprStr(famRow.card) +
-          " (no registered card definition for the card model " + pyReprStr(mid) + " names)",
+        "card_compose phase 1: unknown card " + JSON.stringify(famRow.card) +
+          " (no registered card definition for the card model " + JSON.stringify(mid) + " names)",
         "card_compose",
       );
     }
@@ -810,15 +799,21 @@ export class CardRegistryService extends Service {
     runId: string,
     phase: string,
   ): Promise<Record<string, unknown>> {
+    // R3 (live): the engine's own node set arms the gate — an
+    // unreachable engine refuses CLOSED, never composes blind.
+    if (!(await this.primeObjectInfo())) {
+      throw phaseRefusal(
+        phase,
+        "comfyui engine unreachable for live object_info (" +
+          resolveEngineBaseUrl() +
+          ") — refusing closed (EXTENSION LAW: never compose unauthenticated)",
+      );
+    }
     const oi: Record<string, unknown> | null = this.objectInfo();
-    /* v8 ignore next -- R3: the snapshot ships in-repo (never absent
-       in practice): the closed refusal never fires (2026-09-12) */
     if (oi === null) {
       throw phaseRefusal(
         phase,
-        "comfyui object_info snapshot absent (" +
-          objectInfoPath() +
-          ") — refusing closed (EXTENSION LAW: never compose unauthenticated)",
+        "comfyui live object_info primed empty — refusing closed (EXTENSION LAW: never compose unauthenticated)",
       );
     }
     const ctx = new EngineContext();
@@ -863,7 +858,7 @@ export class CardRegistryService extends Service {
     {
     const knobs: Set<string> = new Set(decl.schemaNames);
     const admits: readonly string[] = decl.admits;
-    // THE ABSORBED MOD SURFACE (the py interlock, 2026-09-08):
+    // THE ABSORBED MOD SURFACE (the interlock, 2026-09-08):
     // admission is the declared surface — and the mod fields a
     // family ABSORBS are part of that surface (registerMod through
     // the service; scope = declaring ∩ boarded, filtered to THIS
@@ -966,7 +961,7 @@ export class CardRegistryService extends Service {
   }
 
   /** Phase 2 (the real run id): composes the SAME overlaid body phase
-   *  1 validated (py submit 1294-1301 — idempotent, absent-keys-only;
+   *  1 validated (submit 1294-1301 — idempotent, absent-keys-only;
    *  the editor's seeded stamps pass through byte-identical).
    *  A $spell body composes VERBATIM here (run context — the $spell
    *  wires into the Load* file slot; the merged path refuses a
@@ -1084,8 +1079,8 @@ export function selectCardVariant(
     if (variant === undefined) {
       throw new CardArmError(
         400,
-        "card_compose phase " + phase + ": unknown variant " + pyReprStr(rawVariant) +
-          " for model " + pyReprStr(mid) + " (known: " + knownVariantIds(famRow).join(", ") + ")",
+        "card_compose phase " + phase + ": unknown variant " + JSON.stringify(rawVariant) +
+          " for model " + JSON.stringify(mid) + " (known: " + knownVariantIds(famRow).join(", ") + ")",
         "card_compose",
       );
     }
@@ -1106,9 +1101,9 @@ export function selectCardVariant(
       const known: string = cells.map((c) => c.quant).join(", ");
       throw new CardArmError(
         400,
-        "card_compose phase " + phase + ": unknown quant " + pyReprStr(rawQuant) +
-          " for model " + pyReprStr(mid) + " variant " +
-          pyReprStr(variant !== undefined ? variant.id : "") +
+        "card_compose phase " + phase + ": unknown quant " + JSON.stringify(rawQuant) +
+          " for model " + JSON.stringify(mid) + " variant " +
+          JSON.stringify(variant !== undefined ? variant.id : "") +
           (known !== "" ? " (known: " + known + ")" : " (the variant declares no cells)"),
         "card_compose",
       );
@@ -1124,7 +1119,7 @@ export function selectCardVariant(
   };
 }
 
-/** The route-lens stamp overlay (py _route_stamp_overlay 705-751):
+/** The route-lens stamp overlay (_route_stamp_overlay 705-751):
  *  family defaults + the selected variant's resolver_defaults,
  *  injected ONLY for absent keys, filtered to the owning card's
  *  field surface (schema keys + admits, exact or trailing-*
@@ -1171,8 +1166,8 @@ export function liftCardParams(body: Record<string, unknown>): Record<string, un
   return params;
 }
 
-// ── artifact-ref sweep (infra/python/artifact_refs.py find_dangling_refs
-// semantics — the flowsValidate.ts mirror, same roots) ─────────────
+// ── artifact-ref sweep (find_dangling_refs
+// semantics — the validate-door mirror, same roots) ─────────────
 
 const ASSET_RUNS_PREFIX: string = "/v1/assets/runs/";
 
@@ -1187,13 +1182,13 @@ function resolveArtifactFile(ref: string, outRoot: string): string {
   /* v8 ignore next -- the empty fence never fires (refLocations
      yields prefix-strings only): kept as the rim's contract (2026-09-12) */
   if (raw === "") throw new Error("empty artifact ref (nothing to resolve)");
-  if (raw.includes("..")) throw new Error("artifact ref refuses traversal: " + pyReprStr(raw));
+  if (raw.includes("..")) throw new Error("artifact ref refuses traversal: " + JSON.stringify(raw));
   let cand: string;
   if (raw.startsWith(ASSET_RUNS_PREFIX)) {
     const rel: string = raw.slice(ASSET_RUNS_PREFIX.length);
     if (rel === "" || rel.endsWith("/") || !rel.includes("/")) {
       throw new Error(
-        "malformed artifact URL (want /v1/assets/runs/<run_id>/<file>): " + pyReprStr(raw),
+        "malformed artifact URL (want /v1/assets/runs/<run_id>/<file>): " + JSON.stringify(raw),
       );
     }
     cand = join(outRoot, rel);
@@ -1201,7 +1196,7 @@ function resolveArtifactFile(ref: string, outRoot: string): string {
        the shape arm never fires through the one caller (2026-09-12) */
   } else {
     throw new Error(
-      "artifact ref is not an artifact URL (/v1/assets/runs/<run>/<file>): " + pyReprStr(raw),
+      "artifact ref is not an artifact URL (/v1/assets/runs/<run>/<file>): " + JSON.stringify(raw),
     );
     /* v8 ignore stop */
   }
@@ -1211,7 +1206,7 @@ function resolveArtifactFile(ref: string, outRoot: string): string {
   /* v8 ignore next -- the traversal fence above pre-empts every ".."
      (a lexical escape needs one): the check never fires (2026-09-12) */
   if (relToRoot === ".." || relToRoot.startsWith(".." + sep)) {
-    throw new Error("artifact ref escapes the output root: " + pyReprStr(raw));
+    throw new Error("artifact ref escapes the output root: " + JSON.stringify(raw));
   }
   let isFile = false;
   try {
@@ -1226,7 +1221,7 @@ function resolveArtifactFile(ref: string, outRoot: string): string {
       : /* v8 ignore next -- refLocations yields artifact-URL strings
            only: the fallback never fires (2026-09-12) */ "?";
     throw new Error(
-      "artifact not found on disk: " + pyReprStr(raw) + " (looked up " + absCand + ") — the " +
+      "artifact not found on disk: " + JSON.stringify(raw) + " (looked up " + absCand + ") — the " +
         "upstream run may have been pruned, or the ref was never an output of run " + run,
     );
   }
@@ -1294,18 +1289,6 @@ export interface PreparedCard {
   readonly params: Record<string, unknown>;
 }
 
-/** Python str() for the mid coercion (resolve_request's
- *  `mid = str(body["model"])` — None -> "None", True -> "True";
- *  the flowsValidate.ts pyStr mirror). */
-export function pyStrMid(v: unknown): string {
-  if (typeof v === "string") return v;
-  if (v === true) return "True";
-  if (v === false) return "False";
-  if (v === null || v === undefined) return "None";
-  if (typeof v === "number") return String(v);
-  // (booleans ride the true/false arms above — no boolean reaches here.)
-  return JSON.stringify(v) ?? String(v);
-}
 
 // ── validate-door entry (the SAME overlay, phase-1 voice) ─────────
 // (Lives on the service now — overlayCardParams is

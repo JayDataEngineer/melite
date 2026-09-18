@@ -39,8 +39,8 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
 
   // the pin's declared default for SAM3_Detect.bboxes (socketless,
   // forceInput): comfy-script autofills it whenever the caller passes
-  // no bboxes, and the python renderer does not strip it — the golden
-  // pins it on every bboxes-less SAM3_Detect.
+  // no bboxes, and it is not stripped — the served shape
+  // carries it on every bboxes-less SAM3_Detect.
   const DEFAULT_BBOXES: BboxDict = { x: 0, y: 0, width: 512, height: 512 }
 
   const detect = (conditioning?: OutputHandle, bboxes?: OutputHandle | BboxDict): OutputHandle => {
@@ -90,10 +90,10 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     primaryMask = detect(clipCond(primaryPrompt))
     save(primaryMask, 'mask_combined')
   } else if (p.primary_is_paint as boolean) {
-    // NOTE: python's primary `painted` and the exports' `paint_masked`
+    // NOTE: the engine primary `painted` and the exports' `paint_masked`
     // are DISTINCT locals — a paint primary plus a paint export renders
     // TWO LoadImageMask nodes (byte-identical inputs, two nodes). The
-    // probe against the python renderer pins this.
+    // probe pins this.
     const painted = g.node('LoadImageMask', { image: ((p.paint_mask ?? '') as string), channel: 'alpha' }).out(0)
     primaryMask = painted
     save(painted, 'mask_combined')
@@ -134,7 +134,7 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     }
     return { x: quad[0]!, y: quad[1]!, width: quad[2]!, height: quad[3]! }
   }
-  const n = Math.min(exports.length, kinds.length)   // python zip(): the shorter arm wins
+  const n = Math.min(exports.length, kinds.length)   // zip: the shorter arm wins
   for (let i = 0; i < n; i++) {
     const trip = exports[i]
     const name = trip[0]
@@ -217,7 +217,7 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
 
 /** The seedvr2_t1 block — the submittable upscale arm (moved verbatim
  *  from the upscale-tools card; the input_image admission stays on
- *  the card). The python lane does NOT strip pin autofills — no
+ *  the card). That lane does NOT strip pin autofills — no
  *  finalize pass. */
 export function upscaleLane(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
   const seed = mintSeed(p)
@@ -282,12 +282,12 @@ export function inputPrepLane(p: Record<string, unknown>, g: GraphBuilder, runId
 
 // ── archetype IV: the tagger family ─────────────────────────────────
 // Four arms, one card: each arm's node creation order mirrors its
-// python renderer exactly. The lane is weightless — every wire value
+// construction. The lane is weightless — every wire value
 // comes from params. The closed caption vocabs live here because the
 // card schemas reference them (leaf keys/defaults stay
 // card-declared, wall-verified).
 
-/** Pin autofills the python lane strips post-walk for parity (moved
+/** Pin autofills the lane strips post-walk (moved
  *  verbatim from the tagger card). */
 export const TAGGER_STRIP: StripTable = {
   LoadImage: ['upload'],
@@ -299,7 +299,7 @@ export function finalizeTagger(graph: PromptGraph): PromptGraph {
   return stripAutofill(graph, TAGGER_STRIP)
 }
 
-// ── the closed caption vocabs (py card.py Select options verbatim —
+// ── the closed caption vocabs (—
 // moved from the tagger card so all four arms share one spelling) ──
 export const TAGGER_CAPTION_TASKS = [
   'caption', 'caption_to_phrase_grounding', 'dense_region_caption',
@@ -431,7 +431,7 @@ function joycaptionArm(p: Record<string, unknown>, g: GraphBuilder, img: string,
   taggerSaveText(g, caption.out(1), prefix)
 }
 
-// family → arm (compose.py's _ARMS board dict — the model id IS the
+// family → arm (the _ARMS board dict — the model id IS the
 // family; dispatch is data, never a switch statement per lane).
 export const TAGGER_ARMS: Record<string, (p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string) => void> = {
   wd14: wd14Arm,

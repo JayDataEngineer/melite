@@ -33,8 +33,7 @@ export function decodeSave(g: GraphBuilder, sampled: OutputHandle, vae: OutputHa
 /** The lora chain (empty picks → the bare unet, byte-stable).
  *  Every link returns an OUTPUT HANDLE — a NodeRef left in the
  *  chain serializes as {"id": ...} and the wall goes red (caught
- *  live by image_qwen-img-edit_loras, the first golden to pin a
- *  non-empty chain; empty-pick lanes never reached the bug). */
+ *  live: empty-pick lanes never reached the bug). */
 export function stackLoras(g: GraphBuilder, unet: OutputHandle, picks: Array<{ name: string; strength: number }>): OutputHandle {
   let cur = unet
   for (const p of picks) {
