@@ -67,6 +67,8 @@ import type { CardStage } from "@melite/contracts"
 import { defineShellDeclaration, StudioShell } from "@melite/card-base/shell"
 import { ChevronDown, TriangleAlert } from "@melite/card-base/icons"
 import { cn } from "@melite/card-base/chrome"
+import { fieldsOf, useFormSpec, type SpecField } from "@melite/card-base"
+import { useMemo } from "react"
 import s from "./studio.module.css"
 import { StudioPreview } from "./StudioPreview"
 import { StudioStripPane } from "./StudioStripPane"
@@ -105,6 +107,19 @@ export function VideoTimelineStudio({
   // section, called here in the original sequence).
   const doc = useDocState(stage)
   const { calls, keyframes, layerA } = doc
+  // THE OVERRIDE LAYER'S SCHEMA TRUTH (hour 22): the knob fold rides
+  // the SERVED envelope's walk — the same schemastery serialization
+  // every other face consumes (SpecField: type/options/default/bounds)
+  // — fetched ONCE here at the tenant. The build-time knob-spec
+  // projection is DEAD: it silently dropped `default` and the fold
+  // showed "inherit" while the admission gate composed 12.
+  const { spec: knobSpec } = useFormSpec("h3-timeline")
+  const knobFields = useMemo(() => {
+    if (knobSpec === null || knobSpec === undefined) return {}
+    const out: Record<string, SpecField> = {}
+    for (const f of fieldsOf(knobSpec)) out[f.name] = f
+    return out
+  }, [knobSpec])
   const view = useViewSelection(calls, layerA)
   const { selected, fps, totalFrames } = view
   const film = useFilmSync({ fps, totalFrames, keyframes, calls, setFrameIdx: view.setFrameIdx })
@@ -192,7 +207,7 @@ export function VideoTimelineStudio({
             handleKeyframeDelete={kf.handleKeyframeDelete}
             setKeyframeSource={kf.setKeyframeSource}
             deps={{
-              selected, fps, layerA,
+              selected, fps, layerA, knobFields,
               callCardRefs: view.callCardRefs,
               artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
               isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,
@@ -244,7 +259,7 @@ export function VideoTimelineStudio({
             handleKeyframeDelete={kf.handleKeyframeDelete}
             setKeyframeSource={kf.setKeyframeSource}
             deps={{
-              selected, fps, layerA,
+              selected, fps, layerA, knobFields,
               callCardRefs: view.callCardRefs,
               artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
               isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,

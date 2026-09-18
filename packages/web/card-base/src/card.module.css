@@ -443,7 +443,13 @@
 /* ── THE ESTATE'S LAYOUT GRAMMAR (2026-09-18, promoted VERBATIM from
    h3's studio.module.css — rows, section headings, empty states, pane
    chrome. One definition; every card composes them). ──────────────── */
-.tipAnchor { display: contents; }
+/* THE ANCHOR MUST BE A REAL BOX (hour 21 fix): the DSH Tooltip
+ * measures its anchor child (ref → getBoundingClientRect) to place
+ * the bubble. `display: contents` generates NO box — the rect
+ * collapses to (0,0) and the bubble pinned to the top of the
+ * screen (the operator's catch). inline-flex hugs the wrapped
+ * control; the bubble seats beside the cursor's anchor. */
+.tipAnchor { display: inline-flex; }
 
 .ctlRow, .ctlRowSm {
   display: flex;

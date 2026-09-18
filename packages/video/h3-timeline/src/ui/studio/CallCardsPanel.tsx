@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
-import { SpecAtom, Tip } from "@melite/card-base"
+import { SpecAtom, Tip, type SpecField } from "@melite/card-base"
 import { cn } from "@melite/card-base/chrome"
 import { ChevronLeft } from "@melite/card-base/icons"
 import s from "./studio.module.css"
@@ -22,6 +22,13 @@ export interface CallCardDeps {
    *  (the 2026-09-15 "inherit" wall: an unset knob shows the value
    *  it inherits from the run, never the bare word "inherit"). */
   layerA?: LayerA
+  /** THE OVERRIDE LAYER'S SCHEMA TRUTH (hour 22): the served
+   *  envelope's SpecField walk keyed by wire name — the knob fold
+   *  rides the generic OverlayKnob on it. No per-card projection
+   *  (the old knob-spec.gen silently dropped `default` and the face
+   *  said "inherit" while the admission gate composed 12). Owned by
+   *  the tenant, fetched once. */
+  knobFields: Record<string, SpecField>
   callCardRefs: { current: (HTMLDivElement | null)[] }
   artifactIndex: { byName: Map<string, string>; byUrl: Map<string, string> }
   linkGroups: LinkArtifact[]

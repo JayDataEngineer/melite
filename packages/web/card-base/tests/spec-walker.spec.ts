@@ -3,7 +3,7 @@
 // served schemastery envelope walks to derived SpecFields through
 // ONE meta path; the declaration IS the UI contract — the walk
 // reads, never invents.
-import { expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 
 import {
   coerceFieldEdit,
@@ -17,6 +17,9 @@ import {
   optionKeyOf,
   scalarKeyOf,
   schemaEnvelope,
+  composeUnset,
+  unsetFaceLabel,
+  unsetFaceTip,
   specDefaults,
   titleCaseId,
   type FormSpecDoc,
@@ -386,4 +389,47 @@ test('THE HYBRID PROJECTION: a non-object bag inner is no bag (never projected a
 
 test('THE PACK-LEVEL PROJECTION: a rootless envelope projects empty (never a throw)', () => {
   expect(kindScalarFieldsOfEnvelope({ uid: 9, refs: {} }, 'loras')).toEqual([])
+})
+
+/** THE UNSET-FACE LAW (hour 22 — the operator's catch: "steps is
+ * blank; the UI doesn't even reflect the call that will be sent"):
+ * what an unset field composes, ONE law for every face — the
+ * explicit inherited stamp, else the schema's own default (the
+ * admission gate fills it), else nothing. No face hand-rolls this
+ * chain again. */
+describe('THE UNSET-FACE LAW: composeUnset / unsetFaceLabel / unsetFaceTip', () => {
+  test('a run-level stamp wins (it sits over the schema floor)', () => {
+    const f = composeUnset(28, 12)
+    expect(f).toEqual({ composed: '28', from: 'stamp' })
+    expect(unsetFaceLabel(f)).toBe('← 28')
+    expect(unsetFaceTip(f)).toBe('unset — inherits 28 from the run')
+  })
+
+  test('no stamp: the schema default composes — the face shows what the gate sends', () => {
+    const f = composeUnset(undefined, 12)
+    expect(f).toEqual({ composed: '12', from: 'schema' })
+    expect(unsetFaceLabel(f)).toBe('12')
+    expect(unsetFaceTip(f)).toBe('unset — the engine composes 12 (the schema\'s default)')
+  })
+
+  test('neither: inherit is honest ONLY when no schema truth exists', () => {
+    for (const absent of [undefined, null]) {
+      const f = composeUnset(absent, absent)
+      expect(f).toEqual({ composed: undefined, from: 'none' })
+      expect(unsetFaceLabel(f)).toBe('inherit')
+      expect(unsetFaceTip(f)).toBe('unset — the engine default applies')
+    }
+  })
+
+  test('null/empty-string stamps read as unset (the walk-shadow law); booleans stringify', () => {
+    expect(composeUnset(null, 12).from).toBe('schema')
+    expect(composeUnset('', 12).from).toBe('schema')
+    expect(composeUnset(false, true)).toEqual({ composed: 'false', from: 'stamp' })
+  })
+
+  test('the tip adapts vocabulary (boolean on/off) without changing the law', () => {
+    const f = composeUnset(undefined, false)
+    expect(unsetFaceTip(f, (v) => (v === 'true' ? 'on' : v === 'false' ? 'off' : v)))
+      .toBe('unset — the engine composes off (the schema\'s default)')
+  })
 })

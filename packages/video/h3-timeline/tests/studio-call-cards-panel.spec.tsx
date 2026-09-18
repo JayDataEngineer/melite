@@ -10,6 +10,13 @@ import assert from "node:assert/strict"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { CallCardsPanel } from "../src/ui/studio/CallCardsPanel.tsx"
 import type { DocCall, DocKeyframe } from "../src/ui/studio/docModel.ts"
+import { fieldsOfEnvelope, type SpecField } from "@melite/card-base"
+import { carrier } from "../src/card.ts"
+
+// THE SERVED WALK (hour 22): the fold's schema truth, keyed by wire name.
+const REAL_ENV = (carrier as unknown as { toJSON(): unknown }).toJSON()
+const REAL_KNOB_FIELDS: Record<string, SpecField> = {}
+for (const f of fieldsOfEnvelope(REAL_ENV as never, "h3-timeline")) REAL_KNOB_FIELDS[f.name] = f
 
 const CALLS: DocCall[] = [
   { text: "opening", start_frame: 0, end_frame: 48, knobs: { denoise: 0.7 } },
@@ -34,7 +41,7 @@ function panel(over?: Record<string, unknown>) {
     handleKeyframeDelete: (id: string) => { seen.deleted.push(id) },
     setKeyframeSource: (i: number, s: string) => { seen.sources.push([i, s]) },
     deps: {
-      selected: null, fps: 24, callCardRefs: { current: [] },
+      selected: null, fps: 24, knobFields: REAL_KNOB_FIELDS, callCardRefs: { current: [] },
       artifactIndex: { byName: new Map(), byUrl: new Map() }, linkGroups: [],
       isRef2va: false, refArtifacts: [],
       handlePromptDelete: () => {}, handlePromptUpdate: () => {},

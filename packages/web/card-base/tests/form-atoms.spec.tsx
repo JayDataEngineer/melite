@@ -15,6 +15,7 @@ import {
   SpecSliderAtom,
   TriStateAtom,
 } from '../src/form.tsx'
+import { OverlayKnob } from '../src/rows.tsx'
 
 afterEach(cleanup)
 
@@ -316,4 +317,73 @@ test('SPEC ATOM: a select with no held value passes empty (the platform seats th
 test('FIELD ROW: the seed dice carries the required star (a mandatory mint is marked)', () => {
   render(h(SpecFieldRow, { f: F({ name: 'seed', label: 'Seed', type: 'number', required: true }), value: 7, onEdit: () => {} }))
   expect(screen.getByText('*')).not.toBeNull()
+})
+
+/** THE OVERRIDE PARAMETER LAYER (hour 22): OverlayKnob — ONE generic
+ * primitive for layered faces (overlay over base over schema floor).
+ * The receipts: unset shows EXACTLY what composes (base stamp, else
+ * the schema's own default the admission gate fills, else — only
+ * then — 'inherit'); REPLACE writes serialize absent (undefined);
+ * the schema's bounds/options ride verbatim. */
+describe('OverlayKnob: the override parameter layer, one generic face', () => {
+  it('unset with a schema default shows THE COMPOSED DEFAULT — never a bare inherit', () => {
+    const edits: unknown[][] = []
+    const r = render(h(OverlayKnob, {
+      name: 'steps', field: { name: 'steps', label: 'Steps', type: 'integer', default: 12, min: 4, max: 30, step: 1 },
+      value: undefined, onEdit: (v) => { edits.push([v]) },
+    }))
+    const inp = r.container.querySelector('input[type="number"]') as HTMLInputElement
+    expect(inp.placeholder).toBe('12')
+    expect(inp.title).toContain('composes 12')
+    expect(inp.min).toBe('4')
+    expect(inp.max).toBe('30')
+    fireEvent.input(inp, { target: { value: '20' } })
+    expect(edits).toEqual([[20]])
+    // rerender to the held value first: React's controlled-input
+    // tracker dedupes '' against its last render value (a stub-parent
+    // artifact — in a live form the state update re-renders anyway)
+    r.rerender(h(OverlayKnob, {
+      name: 'steps', field: { name: 'steps', label: 'Steps', type: 'integer', default: 12, min: 4, max: 30, step: 1 },
+      value: 20, onEdit: (v) => { edits.push([v]) },
+    }))
+    fireEvent.input(inp, { target: { value: '' } })
+    expect(edits).toEqual([[20], [undefined]])
+  })
+
+  it('a base stamp wins the face (← 28) and the tooltip names the run', () => {
+    const r = render(h(OverlayKnob, {
+      name: 'steps', field: { name: 'steps', label: 'Steps', type: 'number', default: 12 },
+      value: undefined, base: 28, onEdit: () => {},
+    }))
+    const inp = r.container.querySelector('input[type="number"]') as HTMLInputElement
+    expect(inp.placeholder).toBe('28')
+    expect(inp.title).toContain('inherits 28')
+  })
+
+  it('enum knobs: the ghost option carries the composed enum default', () => {
+    const r = render(h(OverlayKnob, {
+      name: 'sampler', field: { name: 'sampler', label: 'Sampler', type: 'select', default: 'euler', options: ['euler', 'heun'] },
+      value: undefined, onEdit: () => {},
+    }))
+    const sel = r.container.querySelector('select') as HTMLSelectElement
+    expect(sel.value).toBe('')
+    expect(sel.options[0]!.text).toBe('euler')
+    expect(sel.title).toContain('composes euler')
+  })
+
+  it('boolean knobs: on/off vocabulary rides the composed default', () => {
+    const r = render(h(OverlayKnob, {
+      name: 'sharpen', field: { name: 'sharpen', label: 'Sharpen', type: 'boolean', default: false },
+      value: undefined, onEdit: () => {},
+    }))
+    const sel = r.container.querySelector('select') as HTMLSelectElement
+    expect(sel.options[0]!.text).toBe('off')
+    expect(sel.title).toContain('composes off')
+  })
+
+  it('no schema field, no base: the honest inherit (never invented facts)', () => {
+    const r = render(h(OverlayKnob, { name: 'mystery', value: undefined, onEdit: () => {} }))
+    const inp = r.container.querySelector('input') as HTMLInputElement
+    expect(inp.placeholder).toBe('inherit')
+  })
 })

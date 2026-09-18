@@ -12,6 +12,14 @@ import { useState } from "react"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
+import { fieldsOfEnvelope, type SpecField } from "@melite/card-base"
+import { carrier } from "../src/card.ts"
+
+// THE SERVED WALK (hour 22): the fold's schema truth — the carrier's
+// own serialization, the same bytes the lane serves.
+const REAL_ENV = (carrier as unknown as { toJSON(): unknown }).toJSON()
+const REAL_KNOB_FIELDS: Record<string, SpecField> = {}
+for (const f of fieldsOfEnvelope(REAL_ENV as never, "h3-timeline")) REAL_KNOB_FIELDS[f.name] = f
 
 const BY_NAME = new Map([["still-a", "https://u/a.png"]])
 const BY_URL = new Map([...BY_NAME].map(([n, u]) => [u, n] as [string, string]))
@@ -30,6 +38,10 @@ function deps(over?: Record<string, unknown>) {
     selected: null as { callIdx: number } | null,
     fps: 24,
     layerA: undefined,
+    // THE OVERRIDE LAYER'S TRUTH (hour 22): the real served walk —
+    // schemastery's own serialization, never a hand stub (the fold
+    // rides the generic OverlayKnob on these fields).
+    knobFields: REAL_KNOB_FIELDS,
     callCardRefs: { current: [] as (HTMLDivElement | null)[] },
     artifactIndex: { byName: BY_NAME, byUrl: BY_URL },
     linkGroups: [],

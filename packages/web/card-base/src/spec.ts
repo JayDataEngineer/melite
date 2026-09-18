@@ -386,6 +386,48 @@ export function specDefaults(fields: SpecField[]): SpecValues {
   return out
 }
 
+/** ── THE UNSET-FACE LAW (hour 22 — the operator's catch: "steps is
+ *  blank… the UI doesn't even reflect the call that will be sent") ──
+ *
+ * An unset field serializes ABSENT from the wire doc and the
+ * ADMISSION GATE fills the SCHEMA'S OWN DEFAULT at compose. Every
+ * face must therefore show EXACTLY what composes for an unset field:
+ * the explicit inherited stamp first (a run-level override sitting
+ * over the floor), else the schema's declared default, else nothing
+ * — a bare "inherit" is honest ONLY when no schema truth exists.
+ * ONE law in the generic surface; no face hand-rolls this chain
+ * again (the h3 knob fold's private copy silently dropped the
+ * default and showed "inherit" while the engine sent 12). PURE. */
+export type UnsetFace = { composed: string | undefined; from: 'stamp' | 'schema' | 'none' }
+
+export function composeUnset(inherited: unknown, schemaDefault: unknown): UnsetFace {
+  if (inherited !== undefined && inherited !== null && inherited !== '') {
+    return { composed: String(inherited), from: 'stamp' }
+  }
+  if (schemaDefault !== undefined && schemaDefault !== null) {
+    return { composed: String(schemaDefault), from: 'schema' }
+  }
+  return { composed: undefined, from: 'none' }
+}
+
+/** The unset face's LABEL: a run stamp names its source ('← 28'); the
+ *  schema default rides plain (it is not inheriting anything — it IS
+ *  the engine's compose floor); 'inherit' only when nothing
+ *  composes. */
+export function unsetFaceLabel(face: UnsetFace): string {
+  if (face.composed === undefined) return 'inherit'
+  return face.from === 'stamp' ? `← ${face.composed}` : face.composed
+}
+
+/** The unset face's PROSE (the tooltip): names in words what unset
+ *  composes. `render` adapts the vocabulary (e.g. boolean on/off). */
+export function unsetFaceTip(face: UnsetFace, render?: (v: string) => string): string {
+  const v = (render ?? ((x) => x))(face.composed ?? '')
+  if (face.from === 'stamp') return `unset — inherits ${v} from the run`
+  if (face.from === 'schema') return `unset — the engine composes ${v} (the schema's default)`
+  return 'unset — the engine default applies'
+}
+
 /** ── THE ENVELOPE WALKER ─────────────────────────────────────────
  *
  * One pure projection: serialized schemastery schema -> derived

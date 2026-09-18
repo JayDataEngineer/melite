@@ -5,6 +5,8 @@
  * variants, the pane chrome, and the tooltip anchor's passthrough.
  */
 import { createElement as h } from 'react'
+import { readFileSync, existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { render, screen, cleanup } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
 import { ControlRow, SectionLabel, EmptyState, PaneHeader, PaneShell, Skeleton, Tip } from '../src/layout.tsx'
@@ -56,6 +58,22 @@ test('Tip: absent tip passes the child through unchanged; present wraps the anch
   const bare = render(h(Tip, { tip: undefined }, h('button', { type: 'button' }, 'Go'))).container
   expect(bare.querySelector('button')!.textContent).toBe('Go')
   expect(bare.querySelector('span')).toBeNull()
+})
+
+test('Tip anchor: a REAL box, never display:contents — the bubble seats by the mouse', () => {
+  // The DSH Tooltip measures its anchor child (getBoundingClientRect)
+  // to place the bubble. A display:contents anchor generates NO box —
+  // rect (0,0) pinned every tooltip to the top of the screen (the
+  // operator's catch, hour 21). Pin the class at the source.
+  // cwd is the vitest invocation root (repo or package) — probe both
+  const candidates = ['src/card.module.css', 'packages/web/card-base/src/card.module.css']
+    .map((c) => join(process.cwd(), c))
+  const cssPath = candidates.find((c) => existsSync(c))!
+  const cardCss = readFileSync(cssPath, 'utf8')
+  const m = cardCss.match(/\.tipAnchor\s*\{([^}]*)\}/)
+  expect(m).not.toBeNull()
+  expect(m![1], 'the anchor must be a real box').toContain('inline-flex')
+  expect(m![1], 'display:contents collapses the measured rect — forbidden').not.toContain('display: contents')
 })
 
 test('Skeleton: the pane grammar\u2019s loading face carries the slot hook and merges classes', () => {

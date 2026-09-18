@@ -1,11 +1,11 @@
 /** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react'
-import { type SpecField } from './spec.ts'
+import { composeUnset, unsetFaceLabel, unsetFaceTip, type SpecField } from './spec.ts'
 import css from './card.module.css'
 import { type SquareHost } from './square-provider.tsx'
 import { SpecAtom } from './atoms.tsx'
-import { Tip } from './layout.tsx'
+import { ControlRow, Tip } from './layout.tsx'
 
 /** THE INFO GLYPH (hour 21): the field's declared help prose (the
  *  schema's extra.tooltip) rides a hover (i) beside the label — one
@@ -112,4 +112,113 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
       onEdit, square, ...(wireCandidates !== undefined ? { wireCandidates } : {}),
     }),
   )
+}
+
+/** ── THE OVERRIDE PARAMETER LAYER (hour 22 — the operator's law) ──
+ *
+ * OverlayKnob: ONE generic primitive for every LAYERED parameter
+ * face — a sparse overlay over a base over the schema floor (h3's
+ * call knobs over run stamps; any card's stages over a flow, its
+ * variants over a base). It renders ONE field's control with THE
+ * UNSET-FACE LAW (composeUnset, the generic surface): an unset
+ * value shows EXACTLY what composes — the base layer's explicit
+ * stamp, else the schema's own declared default (the admission gate
+ * fills it), else 'inherit' (honest only when no schema truth
+ * exists). REPLACE semantics at the write: unset edits serialize
+ * ABSENT (undefined, never a sentinel).
+ *
+ * The field rides the SERVED envelope's walk (SpecField — the same
+ * schemastery serialization every other face consumes): type, label,
+ * options, default, min/max/step, tooltip — all the schema's truth,
+ * never a per-card projection. Cards own only WHAT layers exist and
+ * which keys ride them; this row owns the semantics, once. */
+export function OverlayKnob({
+  name, field, value, base, ariaLabel, onEdit,
+}: {
+  /** the wire key (the overlay's own spelling) */
+  name: string
+  /** the envelope's SpecField under the same key (absent = the honest
+   *  fallback face: a labeled free-text row, 'inherit' when nothing
+   *  composes — never a crash, never invented facts) */
+  field?: SpecField
+  /** the overlay's explicit value (undefined = unset — REPLACE) */
+  value: unknown
+  /** the base layer's explicit value under the same key (undefined =
+   *  no stamp) */
+  base?: unknown
+  /** the control's aria association (defaults to the row label) */
+  ariaLabel?: string
+  /** receives the TYPED value or undefined (the unset mark) */
+  onEdit(v: number | string | boolean | undefined): void
+}): ReturnType<typeof h> {
+  const label = field?.label ?? name
+  const face = composeUnset(base, field?.default)
+  const tip = unsetFaceTip(face, field?.type === 'boolean'
+    ? (v) => (v === 'true' ? 'on' : v === 'false' ? 'off' : v)
+    : undefined)
+  const aria = ariaLabel ?? label
+  const boolLabel = (v: string): string => (v === 'true' ? 'on' : v === 'false' ? 'off' : v)
+
+  // BOOLEAN FACE — on/off selects with the ghost carrying the
+  // composed truth in the on/off vocabulary.
+  if (field?.type === 'boolean') {
+    const f: SpecField = {
+      name, label: aria, type: 'select',
+      options: [{ value: 'true', label: 'on' }, { value: 'false', label: 'off' }],
+      tooltip: tip,
+    }
+    return h(ControlRow, { label, density: 'sm', children: h(SpecAtom, {
+        f,
+        ghost: face.composed === undefined ? 'inherit' : boolLabel(unsetFaceLabel(face)),
+        value: value === true ? 'true' : value === false ? 'false' : undefined,
+        onEdit: (_, v) => onEdit(v === undefined || v === '' ? undefined : v === 'true'),
+      }) })
+  }
+
+  // ENUM FACE — options ARE the schema's (declaration order); the
+  // ghost names what unset composes.
+  if (Array.isArray(field?.options) && field.options.length > 0) {
+    const f: SpecField = { name, label: aria, type: 'select', options: field.options, tooltip: tip }
+    return h(ControlRow, { label, density: 'sm', children: h(SpecAtom, {
+        f,
+        ghost: unsetFaceLabel(face),
+        value: typeof value === 'string' ? value : typeof value === 'number' ? String(value) : undefined,
+        onEdit: (_, v) => onEdit(v === '' ? undefined : (v as string)),
+      }) })
+  }
+
+  // NUMBER FACE — the declaration's own min/max/step ride the atom;
+  // the placeholder IS the composed truth (12 means the engine sends
+  // 12), never a bare 'inherit' when a default composes.
+  if (field?.type === 'number' || field?.type === 'integer') {
+    const f: SpecField = {
+      name, label: aria, type: 'number',
+      step: field.step ?? (field.type === 'integer' ? 1 : 0.1),
+      ...(field.min !== undefined ? { min: field.min } : {}),
+      ...(field.max !== undefined ? { max: field.max } : {}),
+      tooltip: tip,
+    }
+    return h(ControlRow, { label, density: 'sm', children: h(SpecAtom, {
+        f,
+        value: typeof value === 'number' ? value : undefined,
+        placeholder: face.composed === undefined ? 'inherit' : face.composed,
+        onEdit: (_, v) => {
+          if (typeof v !== 'string' || v.trim() === '') { onEdit(undefined); return }
+          const n = Number(v)
+          onEdit(Number.isFinite(n) ? n : undefined)
+        },
+      }) })
+  }
+
+  // STRING FACE — free-text knobs; '' trims to the unset mark.
+  const f: SpecField = { name, label: aria, type: 'text', tooltip: tip }
+  return h(ControlRow, { label, density: 'sm', children: h(SpecAtom, {
+      f,
+      value: typeof value === 'string' ? value : undefined,
+      placeholder: face.composed === undefined ? 'inherit' : face.composed,
+      onEdit: (_, v) => {
+        const t = typeof v === 'string' ? v.trim() : ''
+        onEdit(t === '' ? undefined : t)
+      },
+    }) })
 }

@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { SectionLabel, SpecAtom, Tip } from "@melite/card-base"
+import { OverlayKnob, SectionLabel, SpecAtom, Tip } from "@melite/card-base"
 import { cn } from "@melite/card-base/chrome"
 import { ChevronDown, X } from "@melite/card-base/icons"
 import s from "./studio.module.css"
@@ -13,7 +13,6 @@ import type { DocCall } from "./docModel"
 import type { GuideKind } from "./docModel"
 import { readAsDataURL } from "@melite/card-base/chrome"
 import { SourceRow } from "@melite/card-base/form"
-import { BeatKnobControl } from "./BeatKnobControl"
 import { FirstFrameSlot, SeamControls } from "./CallFrameSubcard"
 import { CallCardPrompt } from "./CallCardPrompt"
 import { REF_UPLOAD_SPEC, refGenreOf, splitRefList } from "./refUtils"
@@ -144,7 +143,7 @@ export function CallCard({
   deps: CallCardDeps
 }) {
   const {
-    selected, fps, layerA, callCardRefs, artifactIndex, linkGroups,
+    selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups,
     isRef2va, refArtifacts,
     handlePromptDelete, handlePromptUpdate,
     enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo,
@@ -419,10 +418,13 @@ export function CallCard({
     </div>
 
     {/* Call knobs — the Layer B REPLACE fold: per-call
-        overrides of the run's global values. Every control's
-        empty state is "inherit" (absent → the window inherits
-        Layer A; the backend's CALL_KNOB_KEYS vocabulary —
-        audio_mode is recipe-level and never appears here). */}
+        overrides of the run's global values. THE OVERRIDE LAYER
+        (hour 22): the generic OverlayKnob over the SERVED envelope's
+        SpecField walk — an unset knob shows EXACTLY what composes
+        (the run's stamp, else the schema's own default the admission
+        gate fills; 'inherit' only when no schema truth exists). The
+        backend's CALL_KNOB_KEYS vocabulary — audio_mode is
+        recipe-level and never appears here. */}
     <details className={s.knobFold}>
       <summary className={s.knobSummary}>
         <ChevronDown className={cn(s.sz10, s.chev)} aria-hidden />
@@ -435,13 +437,14 @@ export function CallCard({
       </summary>
       <div className={s.knobGrid}>
         {KNOB_ORDER.map((knob) => (
-          <BeatKnobControl
+          <OverlayKnob
             key={knob}
-            callIndex={i}
-            knob={knob}
+            name={knob}
+            field={knobFields[knob]}
             value={c.knobs?.[knob]}
-            layerA={layerA}
-            onChange={(key, v) => setCallKnob(i, key, v)}
+            base={(layerA as unknown as Record<string, unknown> | undefined)?.[knob]}
+            ariaLabel={`Call ${i} knob: ${knob}`}
+            onEdit={(v) => setCallKnob(i, knob, v)}
           />
         ))}
       </div>
