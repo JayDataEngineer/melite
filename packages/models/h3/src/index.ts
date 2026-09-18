@@ -91,6 +91,38 @@ export const DECL: ModelDecl = {
       "cells": []
     },
     {
+      "id": "draft_02mp",
+      "label": "Draft 02MP",
+      "hint": "Draft geometry — 768×448: inside the card schema's own bounds (width 448–1344, height 448–768) and the card's draft identity (Draft at 768x448x56f). Mirrors the h3-timeline carrier row.",
+      "group": "Recipe",
+      "wire_defaults": { "width": 768, "height": 448 },
+      "cells": [],
+    },
+    {
+      "id": "final_hd",
+      "label": "Final HD",
+      "hint": "Final geometry — 1344×768: the card schema's own defaults and this family's own defaults. Mirrors the h3-timeline carrier row.",
+      "group": "Recipe",
+      "wire_defaults": { "width": 1344, "height": 768 },
+      "cells": [],
+    },
+    {
+      "id": "fast_10step",
+      "label": "Fast 10-Step",
+      "hint": "The 10-step fast pass from this family's own turbo variants (FL2VA Turbo / Timeline Turbo) — inside the card schema's steps bounds (4–30). Stamps steps only; the Turbo adapter itself has no flavor catalog row, so no bag rides.",
+      "group": "Recipe",
+      "wire_defaults": { "steps": 10 },
+      "cells": [],
+    },
+    {
+      "id": "standard_30step",
+      "label": "Standard 30-Step",
+      "hint": "The 30-step standard pass — this family's own default and the card's own standard (12 for draft; 30 standard), inside the card schema's steps bounds (4–30).",
+      "group": "Recipe",
+      "wire_defaults": { "steps": 30 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

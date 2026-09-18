@@ -129,6 +129,22 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "fast_mesh",
+      "label": "Fast Mesh",
+      "hint": "Remesh 128 + 10k faces — the card schema's own floors (lightest preview mesh).",
+      "group": "Recipe",
+      "wire_defaults": { "remesh_resolution": 128, "decimate_faces": 10000 },
+      "cells": [],
+    },
+    {
+      "id": "hero_mesh",
+      "label": "Hero Mesh",
+      "hint": "Remesh 2048 + 2M faces — the card schema's own ceilings (densest hero mesh).",
+      "group": "Recipe",
+      "wire_defaults": { "remesh_resolution": 2048, "decimate_faces": 2000000 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

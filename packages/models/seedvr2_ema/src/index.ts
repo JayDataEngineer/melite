@@ -52,6 +52,30 @@ export const DECL: ModelDecl = {
       "cells": []
     },
     {
+      "id": "preview_256",
+      "label": "Preview 256",
+      "hint": "Resolution 256 — the card schema's own floor (256–2160): a fast preview upscale.",
+      "group": "Recipe",
+      "wire_defaults": { "resolution": 256 },
+      "cells": [],
+    },
+    {
+      "id": "fhd_1080",
+      "label": "FHD 1080",
+      "hint": "Resolution 1080 — this family's own default and the card's FHD rail (1080 = FHD rail), inside the card schema's bounds (256–2160).",
+      "group": "Recipe",
+      "wire_defaults": { "resolution": 1080 },
+      "cells": [],
+    },
+    {
+      "id": "uhd_2160",
+      "label": "UHD 2160",
+      "hint": "Resolution 2160 — the card schema's own ceiling (256–2160): maximum-detail upscale.",
+      "group": "Recipe",
+      "wire_defaults": { "resolution": 2160 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

@@ -35,13 +35,6 @@ export const DECL: ModelDecl = {
           "vram_peak_gb": 6,
         }
       ]
-    },
-    {
-      "id": "default",
-      "label": "Default",
-      "hint": "The family default — no extra stamps; a fresh card lands here.",
-      "group": "Recipe",
-      "cells": [],
     }
   ],
   "variant_groups": [
@@ -52,12 +45,6 @@ export const DECL: ModelDecl = {
     {
       "id": "Quant",
       "label": "Quant",
-    },
-    {
-      "id": "Recipe",
-      "label": "Recipe",
-      "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-      "default": "default"
     }
   ],
 };

@@ -123,6 +123,22 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "strong_identity",
+      "label": "Strong Identity",
+      "hint": "Double-reference ON — the card schema's own identity knob (encode the input twice for stronger identity preservation); this family's own default is false. Steps/CFG stay on the Variant routes (Lightning 4-step / Standard 20-step cfg 2.5) — never duplicated here.",
+      "group": "Recipe",
+      "wire_defaults": { "double_reference": true },
+      "cells": [],
+    },
+    {
+      "id": "upstream_solvers",
+      "label": "Upstream Solvers",
+      "hint": "Sampler euler + scheduler simple — this family's own DECL defaults, both members of the card's sampler/scheduler vocabularies.",
+      "group": "Recipe",
+      "wire_defaults": { "sampler": "euler", "scheduler": "simple" },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

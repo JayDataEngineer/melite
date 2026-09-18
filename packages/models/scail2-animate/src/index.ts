@@ -45,6 +45,30 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "standard_pass",
+      "label": "Standard Pass",
+      "hint": "Steps 12 + CFG 5 — this family's own DECL defaults, inside the card schema's own bounds (steps 1–50, CFG 1–12).",
+      "group": "Recipe",
+      "wire_defaults": { "steps": 12, "cfg": 5 },
+      "cells": [],
+    },
+    {
+      "id": "loose_follow",
+      "label": "Loose Follow",
+      "hint": "Pose strength 0 — the card schema's own floor (0–2): the character barely follows the driving motion.",
+      "group": "Recipe",
+      "wire_defaults": { "pose_strength": 0 },
+      "cells": [],
+    },
+    {
+      "id": "tight_follow",
+      "label": "Tight Follow",
+      "hint": "Pose strength 2 — the card schema's own ceiling (0–2): SCAIL-2 follows the driving motion as tightly as the card allows.",
+      "group": "Recipe",
+      "wire_defaults": { "pose_strength": 2 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

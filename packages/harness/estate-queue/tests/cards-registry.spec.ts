@@ -221,7 +221,7 @@ describe("prepareCardParams", () => {
     const s = primed();
     assert.throws(
       () => s.prepareCardParams({ variant: "turbo", quant: "int8" }, "anima", "1"),
-      /unknown variant 'turbo' for model 'anima' \(known: standard, default\)/,
+      /unknown variant 'turbo' for model 'anima' \(known: standard, draft, detailed, default\)/,
     );
     const prep = s.prepareCardParams(
       {

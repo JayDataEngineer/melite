@@ -1,5 +1,21 @@
 # families-golden.json regold causes
 
+## 2026-09-18 — the recipe-exemption retirement (all 17 families)
+
+The recipe-rows wall's EXEMPT census empties to zero: ten families
+author truthful stamping Recipe rows (anima steps 8/30; kimodo
+diffusion_steps 10/200; pixal3d + trellis2-native remesh 128/2048
++ faces 10k/2M; h3 + h3-keyframe geometry 768×448/1344×768 + steps
+10/30 mirroring the h3-timeline carrier rows; qwen-img-edit-2511
+double_reference + euler/simple solvers; scail2-animate steps/cfg +
+pose_strength; seedvr2_ema resolution 256/1080/2160; wan-vace steps
+6/25/30), seven utility families are honestly scoped (Recipe group
+deleted: input, autoremesher, florence2, joycaption, joytag, wd14,
+transfer_rig). Regold touches 39 rows (17 carriers + 22 derived
+routes), every one differing ONLY in variants/variant_groups
+(verified programmatically; zero stray ids). Walls green after
+(recipe-rows 5/5 with zero exemptions, families-golden 4/4).
+
 ## 2026-09-17 — the h3-timeline Layer A/B truth pass (studio writes at the wire names)
 
 The studio rework's DECL leg: `studio.writes` carried the py-era

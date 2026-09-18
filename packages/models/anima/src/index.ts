@@ -43,6 +43,22 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "draft",
+      "label": "Draft",
+      "hint": "Steps 8 — the card schema's own default (fast draft iterations).",
+      "group": "Recipe",
+      "wire_defaults": { "steps": 8 },
+      "cells": [],
+    },
+    {
+      "id": "detailed",
+      "label": "Detailed",
+      "hint": "Steps 30 — the family DECL's own default (full-quality render; inside the card's 1–100 range).",
+      "group": "Recipe",
+      "wire_defaults": { "steps": 30 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

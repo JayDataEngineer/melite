@@ -66,6 +66,30 @@ export const DECL: ModelDecl = {
       "cells": []
     },
     {
+      "id": "fast_6step",
+      "label": "Fast 6-Step",
+      "hint": "Steps 6 — this family's own Custom Fast variant fact (6-step + lightx2v distill LoRA), inside the card schema's steps bounds (1–50). Stamps steps only; the distill adapter has no flavor catalog row, so no bag rides.",
+      "group": "Recipe",
+      "wire_defaults": { "steps": 6 },
+      "cells": [],
+    },
+    {
+      "id": "standard_25step",
+      "label": "Standard 25-Step",
+      "hint": "Steps 25 — this family's own Base variant fact (25-step HIGH fp8 checkpoint), inside the card schema's steps bounds (1–50).",
+      "group": "Recipe",
+      "wire_defaults": { "steps": 25 },
+      "cells": [],
+    },
+    {
+      "id": "quality_30step",
+      "label": "Quality 30-Step",
+      "hint": "Steps 30 — this family's own Custom Quality variant fact (30-step HIGH expert), inside the card schema's steps bounds (1–50).",
+      "group": "Recipe",
+      "wire_defaults": { "steps": 30 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

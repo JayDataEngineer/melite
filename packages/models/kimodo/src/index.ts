@@ -56,6 +56,22 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "draft",
+      "label": "Draft",
+      "hint": "Diffusion steps 10 — the card schema's own floor (fastest draft; more steps = smoother arcs).",
+      "group": "Recipe",
+      "wire_defaults": { "diffusion_steps": 10 },
+      "cells": [],
+    },
+    {
+      "id": "polished",
+      "label": "Polished",
+      "hint": "Diffusion steps 200 — the card schema's own ceiling (smoothest arcs).",
+      "group": "Recipe",
+      "wire_defaults": { "diffusion_steps": 200 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

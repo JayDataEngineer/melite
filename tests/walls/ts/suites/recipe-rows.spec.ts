@@ -19,10 +19,10 @@
 //   within the vocabulary, for enum selects). The card schema IS
 //   the master; family recipes are its clients.
 //
-// The remaining zero-stamp card-carrying families are NAMED in the
-// EXEMPT set below (each with cause) — the wall's exempt list is
-// the debt census, it only ever SHRINKS, and a family leaves it by
-// authoring truthful rows (the audio trio left it this stroke).
+// The 2026-09-18 retirement left ZERO exemptions: ten families
+// author truthful rows, seven were honestly scoped (Recipe group
+// deleted). The RESOLVED map below pins each family's resolution —
+// the census only ever grows rows, never exemptions.
 //
 // Run: npx vitest run tests/walls/ts/suites/recipe-rows.spec.ts
 import { describe, it } from "vitest";
@@ -30,33 +30,35 @@ import assert from "node:assert/strict";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { modelIds, getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
-/** The named debt census (zero-stamp card-carrying families, cause
- *  each). A family leaves by authoring wire_defaults rows — never
- *  by deleting its Recipe group while its card still generates. */
-const EXEMPT: ReadonlySet<string> = new Set([
-  // ── utility cards (no generation knobs to preset — the exempt
-  //    cause is structural; removal means deleting the Recipe
-  //    group from the DECL, a separate honest-scoping stroke)
-  "input",            // ← input-prep: passthrough ingest
-  "autoremesher",     // ← quad-remesh: retopo tool
-  "florence2",        // ← tagger: captioning
-  "joycaption",       // ← tagger
-  "joytag",           // ← tagger
-  "wd14",             // ← tagger
-  "transfer_rig",     // ← img-to-mesh: rig transfer
-  // ── generation families awaiting lane-truth values (turbo step
-  //    counts, LoRA bags, geometry) — authored next strokes
-  "anima",            // ← image-gen
-  "h3",               // ← h3-timeline (the route families share the
-  "h3-keyframe",      //    card; recipes belong on the carrier id
-  "kimodo",           // ← motion
-  "pixal3d",          // ← img-to-mesh
-  "qwen-img-edit-2511", // ← image-edit
-  "scail2-animate",   // ← video-gen
-  "seedvr2_ema",      // ← upscale-tools
-  "trellis2-native",  // ← img-to-mesh
-  "wan-vace",         // ← video-gen
-]);
+/** The retired debt census (2026-09-18: all 17 exemptions
+ *  resolved — ten families author truthful rows, seven were
+ *  honestly scoped by deleting their un-servable Recipe group).
+ *  This map is the regression pin: a family leaves "stamps" only
+ *  by keeping ≥1 stamping row, and "scoped" families must never
+ *  re-declare the Recipe group without rows. */
+const RESOLVED: Readonly<Record<string, "stamps" | "scoped">> = {
+  // ── honestly scoped (no generation knobs to preset — the Recipe
+  //    group is deleted from the DECL, so no dropdown is promised)
+  "input": "scoped",         // ← input-prep: passthrough ingest
+  "autoremesher": "scoped",  // ← quad-remesh: retopo tool
+  "florence2": "scoped",     // ← tagger: captioning
+  "joycaption": "scoped",    // ← tagger
+  "joytag": "scoped",        // ← tagger
+  "wd14": "scoped",          // ← tagger
+  "transfer_rig": "scoped",  // ← img-to-mesh: rig transfer
+  // ── truthful rows authored (each stamp inside the card's own
+  //    bounds — LAW B/C holds them now, not an exemption)
+  "anima": "stamps",            // ← image-gen
+  "h3": "stamps",               // ← h3-timeline card (sibling rows)
+  "h3-keyframe": "stamps",      // ← h3-timeline card (sibling rows)
+  "kimodo": "stamps",           // ← motion
+  "pixal3d": "stamps",          // ← img-to-mesh
+  "qwen-img-edit-2511": "stamps", // ← image-edit
+  "scail2-animate": "stamps",   // ← video-gen
+  "seedvr2_ema": "stamps",      // ← upscale-tools
+  "trellis2-native": "stamps",  // ← img-to-mesh
+  "wan-vace": "stamps",         // ← video-gen
+};
 
 /** The card schema's declared scalars, from the LIVE envelope the
  *  door serves (min/max/default walk the schemastery toJSON tree —
@@ -117,7 +119,7 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     assert.ok(theService() !== null);
   });
 
-  it("LAW A: every card-carrying family declaring the Recipe group stamps at least one row (or is a named exemption)", async (): Promise<void> => {
+  it("LAW A: every card-carrying family declaring the Recipe group stamps at least one row (zero exemptions)", async (): Promise<void> => {
     await loadCardDefs();
     const carried = cardCarriedFamilies();
     let checked = 0;
@@ -130,14 +132,25 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
       checked += 1;
       const stamping = (f.variants ?? []).filter((v: Record<string, unknown>) =>
         v["group"] === "Recipe" && Object.keys((v["wire_defaults"] ?? {}) as Record<string, unknown>).length > 0);
-      if (stamping.length === 0) {
-        assert.ok(EXEMPT.has(id), `${id}: declares the Recipe group, its card (${caller}) renders the dropdown, and NO row stamps — author truthful rows or name the exemption`);
-      }
+      assert.ok(stamping.length > 0,
+        `${id}: declares the Recipe group, its card (${caller}) renders the dropdown, and NO row stamps — author truthful rows (the 2026-09-18 retirement left zero exemptions)`);
     }
-    assert.ok(checked > 20, `the law reached the table (checked ${checked})`);
-    // the audio trio left the exempt set this stroke — the law holds them now
-    for (const id of ["music3", "moss-sfx", "qwen3-tts"]) {
-      assert.ok(!EXEMPT.has(id), `${id} must not be exempt — its rows landed`);
+    assert.ok(checked > 15, `the law reached the table (checked ${checked})`);
+  });
+
+  it("DEBT RETIRED: the 17-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
+    await loadCardDefs();
+    assert.equal(Object.keys(RESOLVED).length, 17, "the census pins all 17 resolutions");
+    for (const [id, how] of Object.entries(RESOLVED)) {
+      const f = getModel(id);
+      const groups = (f.variant_groups ?? []).map((g: unknown) => typeof g === "string" ? g : (g as { id?: string }).id);
+      const stamping = (f.variants ?? []).filter((v: Record<string, unknown>) =>
+        v["group"] === "Recipe" && Object.keys((v["wire_defaults"] ?? {}) as Record<string, unknown>).length > 0);
+      if (how === "scoped") {
+        assert.ok(!groups.includes("Recipe"), `${id} re-declared the Recipe group — author truthful rows instead of re-promising`);
+      } else {
+        assert.ok(stamping.length > 0, `${id} lost its stamps — restore the truthful rows`);
+      }
     }
   });
 

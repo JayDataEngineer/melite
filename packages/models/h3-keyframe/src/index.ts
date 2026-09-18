@@ -37,6 +37,38 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "draft_02mp",
+      "label": "Draft 02MP",
+      "hint": "Draft geometry — 768×448: this family's own defaults and inside the card schema's own bounds (width 448–1344, height 448–768); the card's draft identity (Draft at 768x448x56f). The keyframe lane drafts here, anchored on its first-frame image.",
+      "group": "Recipe",
+      "wire_defaults": { "width": 768, "height": 448 },
+      "cells": [],
+    },
+    {
+      "id": "final_hd",
+      "label": "Final HD",
+      "hint": "Final geometry — 1344×768: the card schema's own defaults. The keyframe lane finishes here.",
+      "group": "Recipe",
+      "wire_defaults": { "width": 1344, "height": 768 },
+      "cells": [],
+    },
+    {
+      "id": "short_56f",
+      "label": "Short 56f",
+      "hint": "56 frames — this family's own length default and the card schema's own default, on the card's 17k+5 grid (22+17×2), inside its length bounds (22–362). A ~2.3s keyframe beat.",
+      "group": "Recipe",
+      "wire_defaults": { "length": 56 },
+      "cells": [],
+    },
+    {
+      "id": "long_124f",
+      "label": "Long 124f",
+      "hint": "124 frames — the card's produce identity (produce at 1344x768x124f), on the card's 17k+5 grid (22+17×6), inside its length bounds (22–362). A ~5.2s keyframe hold.",
+      "group": "Recipe",
+      "wire_defaults": { "length": 124 },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
