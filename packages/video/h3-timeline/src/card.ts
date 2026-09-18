@@ -127,7 +127,16 @@ const paramSchema = z.object({
   steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', { order: null, tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)", wtype: 'number' }),
   sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
   sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, visible_when: "sharpen_enabled=true", tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
-  interpolate_enabled: z.boolean().description("FILM Interpolation").default("false" as unknown as boolean).extra('extra', { order: null, tooltip: "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time." }),
+  // interpolate_enabled: HONEST DEFAULT (hour 20): the py card's
+  // `bool = False` — `default(false)`, not the "false"-as-boolean
+  // cast-lie. An absent key now fills the boolean NATIVELY (no
+  // caller prefill — the old string default is what used to throw).
+  // The wire-string tolerance (the bench add-door rides the served
+  // literal "false"/"true" as an explicit key) is a DOC-level law —
+  // coerceWireBoolean below — because schemastery field transforms
+  // classify as type 'json' in the served taxonomy (the
+  // knob-freshness wall pins the honest 'boolean').
+  interpolate_enabled: z.boolean().description("FILM Interpolation").default(false).extra('extra', { order: null, wtype: 'boolean', tooltip: "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time." }),
   // ── THE ENGINE TRUTH ROWS (2026-09-17, the Layer A/B law stroke):
   // every key the compose READS rides the declared surface at its
   // exact wire name — the studio's historical spellings
@@ -195,27 +204,25 @@ const paramSchema = z.object({
  *  declared knobs — old drafts keep working because the schema admits
  *  them and the compose door overlays explicit params last (the
  *  img-to-mesh filename_prefix precedent). */
+// THE WIRE LAW (hour 20 — ONE definition, every door): a fresh stage
+// from the bench add-door rides the served wire literal ("false"/"true")
+// as an EXPLICIT key; coerce it to the runtime boolean before the
+// boolean walk refuses it. Absent keys need nothing — default(false)
+// fills natively. (A schemastery field transform would classify the
+// served knob as type 'json' — the honest 'boolean' taxonomy wins,
+// so the law lives here, shared by schema() and the compose gate.)
+const coerceWireBoolean = (raw: Record<string, unknown>): Record<string, unknown> => {
+  if (typeof raw.interpolate_enabled === 'string') {
+    return { ...raw, interpolate_enabled: raw.interpolate_enabled === 'true' }
+  }
+  return raw
+}
+
 export function schema(v: unknown): Record<string, unknown> {
   const raw = (v ?? {}) as Record<string, unknown>
-  // interpolate_enabled: the SERVED wire default is the py-parity
-  // literal "false" (a string — byte-frozen in the goldens, the
-  // form-spec referee, and the catalog); the RUNTIME default is the
-  // boolean (the py card's `bool = False`). Pre-fill the key so the
-  // Schemastery walk never materializes the string default as a
-  // value — a doc omitting the key used to throw at the gate, so
-  // every caller had to supply it explicitly. The normalizer owns
-  // it now, as it owns variant derivation. The same normalizer owns
-  // the SEEDED string: a fresh stage from the bench add-door rides
-  // the served wire literal ("false"/"true") as an EXPLICIT key —
-  // coerce it to the runtime boolean before the boolean walk
-  // refuses it (the lane run's `expected boolean but got false`).
-  const walkInput: Record<string, unknown> = { ...raw }
-  if (typeof walkInput.interpolate_enabled === 'string') {
-    walkInput.interpolate_enabled = walkInput.interpolate_enabled === 'true'
-  } else if (!('interpolate_enabled' in walkInput)) {
-    walkInput.interpolate_enabled = false
-  }
-  const out: Record<string, unknown> = paramSchema(walkInput)
+  // length null SURVIVES this walk on purpose (the walk-shadow fix:
+  // multi-call docs keep null — per-window spans compute at compose).
+  const out: Record<string, unknown> = paramSchema(coerceWireBoolean(raw))
   let variant = typeof raw.variant === 'string' ? raw.variant : undefined
   // variant DERIVATION (retired timeline/laws.py, b324c480^ —
   // opener_family/chain_family): the studio calls shape carries no
@@ -995,18 +1002,18 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // types + bounds (width 448–1344, steps 4–30 — anything else
       // refuses LOUD, never composes), fills defaults (seed 42),
       // admits renderer/mod keys inert (calls, loras, noise_seed ride
-      // verbatim). The interpolate prefill + the length-null drop
-      // mirror schema()'s own wire laws (the served "false" string
-      // coerces; a null length is the absent-on-wire sentinel — the
-      // chain budget 56 fills, and film windows compute per-window
-      // spans anyway). The composer's reads below are reads of the
+      // verbatim). THE WIRE LAWS LIVE IN THE FIELDS (hour 20): the
+      // interpolate_enabled transform coerces the py-parity string
+      // default + wire literals, the length transform drops the null
+      // absent-on-wire sentinel — no gate-side prefill, the trio's
+      // one-line pattern. The composer's reads below are reads of the
       // GATED doc.
-      const gateInput: Record<string, unknown> = { ...(p as Record<string, unknown>) }
-      if (typeof gateInput.interpolate_enabled === 'string') {
-        gateInput.interpolate_enabled = gateInput.interpolate_enabled === 'true'
-      } else if (!('interpolate_enabled' in gateInput)) {
-        gateInput.interpolate_enabled = false
-      }
+      // The wire law is SHARED (coerceWireBoolean — the same
+      // definition schema() uses, hour 20); the null-length drop is
+      // gate-context only and runs BEFORE the walk (the walk keeps
+      // null for multi-call docs — here the run-level default 56
+      // fills instead).
+      const gateInput = coerceWireBoolean(p as Record<string, unknown>)
       if (gateInput.length === null) delete gateInput.length
       p = paramSchema(gateInput) as unknown as Record<string, unknown>
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
