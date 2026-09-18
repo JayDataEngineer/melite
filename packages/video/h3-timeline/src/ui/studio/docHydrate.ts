@@ -8,7 +8,7 @@
  * through LEGACY_LAYERA_KEY / LEGACY_KNOB_KEY (a legacy lora knob
  * pair maps into the mod bag when its filename matches the family
  * catalog, else drops — it was never read). Serialization writes
- * ONLY keys the compose reads: preset/fps are document-local and
+ * ONLY keys the compose reads: fps is document-local and
  * never ride the wire.
  */
 import type { DocAudioClip, LayerA } from "./docModel"
@@ -57,7 +57,6 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
   const optStr = (k: string): string | undefined =>
     typeof raw?.[k] === "string" && (raw[k] as string).trim() !== "" ? (raw[k] as string) : undefined
   return {
-    preset: optStr("preset") ?? "draft_02mp",
     fps: num("fps", 24),
     seed: num("seed", 42),
     shift_video: optNum("shift_video"),
@@ -135,7 +134,7 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
  * engine default must never be pinned by a control never touched).
  * THE CONTRACT (pinned by the studio-contract wall test): every key
  * here ∈ the h3-timeline card's declared surface and READ by
- * compose. preset/fps are document-local and never serialize. */
+ * compose. fps is document-local and never serializes. */
 export function serializeLayerA(a: LayerA): Record<string, unknown> {
   const out: Record<string, unknown> = {
     seed: a.seed,

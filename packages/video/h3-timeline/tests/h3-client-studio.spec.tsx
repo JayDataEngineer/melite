@@ -122,7 +122,7 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
     // the write channel's vocabulary: the doc clock + the WIRE knobs
     // (the py-era audio_mode/continuity fictions died with the rework)
     expect(Object.keys(patch).every((k) =>
-      ['calls', 'keyframes', 'preset', 'fps', 'seed', 'audio_clips', 'audio_stem', 'length', 'prompt', 'image', 'width', 'height', 'steps', 'denoise', 'sampler_name', 'sched_name', 'shift_video', 'shift_audio', 'loras'].includes(k)
+      ['calls', 'keyframes', 'fps', 'seed', 'audio_clips', 'audio_stem', 'length', 'prompt', 'image', 'width', 'height', 'steps', 'denoise', 'sampler_name', 'sched_name', 'shift_video', 'shift_audio', 'loras'].includes(k)
       || k.startsWith('sla_') || k.startsWith('sharpen_') || k.startsWith('interp_') || k.startsWith('sr_'))).toBe(true)
     const calls = patch['calls'] as Array<{ text?: string }>
     expect(calls[0]!.text).toBe('rain streaks the glass')

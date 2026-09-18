@@ -258,7 +258,7 @@ export function stemToClip(
 
 /** Layer A — THE DEFAULTS RAIL (the operator's law, 2026-09-17):
  * Layer A never makes a model call; it holds the DEFAULTS every Layer
- * B call inherits plus the document's own clock (fps, preset
+ * B call inherits plus the document's own clock (fps
  * geometry) and the NLE audio bed. Every optional field is a card
  * wire key at its exact name — absent = the family default rides.
  * The py-era decorative vocabulary (audio_mode, continuity,
@@ -268,9 +268,6 @@ export function stemToClip(
  * compose — refs are per-call, loras ride the mod bag, engine
  * internals are not knobs. */
 export interface LayerA {
-  /** Document-local geometry preset (draft/final) — UI shorthand for
-   * the width/height defaults; NEVER serialized (width/height are). */
-  preset: string
   /** Document clock — doc-frame ↔ seconds math only; the film
    * renders at the card's pinned 24. Not serialized. */
   fps: number
@@ -308,9 +305,12 @@ export interface LayerA {
   /** R2V COMBO "match"|"max" — NOT a number (numbers fail node validation). */
   ref_image_size?: string
   /** The loras MOD BAG (the operator's law: loras are MODS, never
-   * card knobs) — [{id, strength}] rows resolved against the family's
-   * flavor catalog at compose; the default every call inherits. */
-  loras?: Array<{ id: string, strength?: number }>
+   * card knobs) — [{id, strength, steps?}] rows resolved against the
+   * family's flavor catalog at compose; the default every call
+   * inherits. `steps` is the distill's married count (LORA STEPS
+   * APPLIED, 2026-09-18) — the same row shape the Modifiers menu
+   * writes and the family's recipe pills stamp (Rule A). */
+  loras?: Array<{ id: string, strength?: number, steps?: number }>
   variant?: string
   /** The MODEL ROUTE key (Layer A selector): "h3-timeline" (FL2VA) vs
    * "h3-timeline-ref" (Ref2VA). Serialized as params.model — which WINS

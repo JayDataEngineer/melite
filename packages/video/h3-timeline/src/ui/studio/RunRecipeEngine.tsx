@@ -7,28 +7,24 @@
  * form-spec → SpecFieldRow → wire names) — one mechanism every card
  * seats, never an h3 re-walk.
  *
- * THE RECIPE STAYS EDITABLE (operator correction, 2026-09-18): the
- * Model route (FL2VA ↔ Ref2VA), the Preset (the plaguekind default
- * geometries: draft_02mp / final_hd), and the doc FPS are REAL
- * document controls — a static readout starved the operator of the
- * plaguekind defaults. Route/Preset/FPS are document-local clock
- * facts (route = the card's model id; preset/fps never serialize to
- * the card params), so they render as studio chrome beside the
- * panel — never as spec rows.
+ * RULE A — THE RECIPE LAW (operator, 2026-09-18): the family's
+ * recipes render as PILLS NEXT TO THE MODEL ROUTE — the same
+ * RecipePills every CardForm seats, stamped from the served spec
+ * (the family's own DECL rows: the distill presets carry the LORA
+ * BAG, the geometry rows carry the window keys — 1:1 with the
+ * card's declared params). The card's hand preset select
+ * (draft_02mp/final_hd + PRESET_GEOM) is DEAD: a card never
+ * hand-authors presets, the family owns them. Route/FPS stay
+ * document-local clock facts rendered as studio chrome.
  */
-import { SpecPanel } from "@melite/card-base"
-import { ControlRow, SectionLabel, SpecAtom } from "@melite/card-base"
+import { ControlRow, RecipePills, SectionLabel, SpecAtom, SpecPanel, useFormSpec } from "@melite/card-base"
 import s from "./studio.module.css"
 import type { LayerA, SetLayerAKey } from "./docModel"
 import type { CardStage } from "@melite/contracts"
 
-/** The preset geometry (identity.principles, stated once): draft
- * rides 768×448 @ 56f, final rides 1344×768 @ 124f. The engine
- * fold shows these RESOLVED. */
-const PRESET_GEOM: Record<string, { w: number; h: number; f: number }> = {
-  draft_02mp: { w: 768, h: 448, f: 56 },
-  final_hd: { w: 1344, h: 768, f: 124 },
-}
+/** The family's geometry floor (the card schema's own defaults —
+ * 1344×768; draft recipes stamp 768×448 over it). */
+const FAMILY_GEOM = { w: 1344, h: 768 } as const
 
 /** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 export function RunRecipeEngine({
@@ -39,11 +35,14 @@ export function RunRecipeEngine({
   setLayerAKey: SetLayerAKey
   isRef2va: boolean
 }) {
-  const geom = PRESET_GEOM[layerA.preset] ?? PRESET_GEOM.draft_02mp!
-  // THE WIRE VALUES: plain Layer A keys (preset/fps/seed + wire-name
+  // THE SERVED SPEC — the family's Recipe rows ride it (Rule A):
+  // the pills stamp through the same pick verb every axis rides.
+  const { spec } = useFormSpec("h3-timeline")
+  // THE WIRE VALUES: plain Layer A keys (fps/seed + wire-name
   // optionals + loras bag). SpecPanel reads them at the card's wire
   // names; edits flow back through setLayerAKey.
   const values = layerA as unknown as Record<string, unknown>
+  const onSet = setLayerAKey as unknown as (n: string, v: unknown) => void
   return (
     <>
       <div className={s.group} data-testid="tl-recipe-chrome">
@@ -64,14 +63,10 @@ export function RunRecipeEngine({
             onEdit={(_, v) => setLayerAKey("model", v as string)}
           />
         </ControlRow>
-        <ControlRow label="Preset">
-          <SpecAtom
-            f={{ name: "preset", label: "Preset", type: "select", options: ["draft_02mp", "final_hd"] }}
-            value={layerA.preset}
-            // Dead-arm cut (kept): no ghost — v is always a preset.
-            onEdit={(_, v) => setLayerAKey("preset", v as string)}
-          />
-        </ControlRow>
+        {/* RULE A: the family's recipe pills, NEXT TO THE MODEL —
+         * distill presets (lora bag) + geometry rows, stamped 1:1
+         * onto the declared keys. The card never hand-authors these. */}
+        {spec !== null ? <RecipePills spec={spec} onSet={onSet} /> : null}
         <ControlRow label="FPS">
           <SpecAtom
             f={{ name: "fps", label: "FPS", type: "number", min: 1, max: 60, step: 1 }}
@@ -84,7 +79,7 @@ export function RunRecipeEngine({
           />
         </ControlRow>
         <div className={s.recipeGeom} data-testid="tl-recipe-geom">
-          {layerA.preset} · {String(stage.params?.width ?? geom.w)}×{String(stage.params?.height ?? geom.h)} @ {geom.f}f · {layerA.fps} doc-fps
+          {String(stage.params?.width ?? layerA.width ?? FAMILY_GEOM.w)}×{String(stage.params?.height ?? layerA.height ?? FAMILY_GEOM.h)} @ {layerA.fps} doc-fps
         </div>
       </div>
       <SpecPanel
@@ -114,22 +109,22 @@ export function RunRecipeEngine({
        * (resolved geometry + steps) rides the studio Label's tail. */}
       <div className={s.winSize}>
         <SectionLabel
-          tail={`window ${String(stage.params?.width ?? geom.w)}×${String(stage.params?.height ?? geom.h)} · steps ${layerA.steps ?? "auto"}`}
+          tail={`window ${String(stage.params?.width ?? layerA.width ?? FAMILY_GEOM.w)}×${String(stage.params?.height ?? layerA.height ?? FAMILY_GEOM.h)} · steps ${layerA.steps ?? "auto"}`}
         >
           Engine (H3)
         </SectionLabel>
         <SpecAtom
-          f={{ name: "width", label: "Window width (run)", type: "number", min: 256, max: 1920, step: 32, tooltip: `blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}` }}
+          f={{ name: "width", label: "Window width (run)", type: "number", min: 256, max: 1920, step: 32, tooltip: `blank — the family default rides ${FAMILY_GEOM.w}×${FAMILY_GEOM.h}` }}
           value={layerA.width}
-          placeholder={String(geom.w)}
+          placeholder={String(FAMILY_GEOM.w)}
           onEdit={(_, v) => setLayerAKey("width",
             typeof v === "string" && v.trim() !== "" ? Number(v) : undefined)}
         />
         <span className={s.times}>×</span>
         <SpecAtom
-          f={{ name: "height", label: "Window height (run)", type: "number", min: 256, max: 1920, step: 32, tooltip: `blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}` }}
+          f={{ name: "height", label: "Window height (run)", type: "number", min: 256, max: 1920, step: 32, tooltip: `blank — the family default rides ${FAMILY_GEOM.w}×${FAMILY_GEOM.h}` }}
           value={layerA.height}
-          placeholder={String(geom.h)}
+          placeholder={String(FAMILY_GEOM.h)}
           onEdit={(_, v) => setLayerAKey("height",
             typeof v === "string" && v.trim() !== "" ? Number(v) : undefined)}
         />

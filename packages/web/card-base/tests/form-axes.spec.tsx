@@ -232,10 +232,11 @@ test('AXES: an axis with no composing rows renders nothing (never an empty selec
   expect(screen.getByLabelText('Variant')).not.toBeNull()
 })
 
-test('PILLS: a knob-carrying recipe stamps on click; a mod-only stamp renders no pill', () => {
-  // THE STROKE-38 GATE: loras is mod-owned (the modifiers contract),
-  // so the loras-only recipe's stamp is empty — the Modifiers menu
-  // is that payload's one surface, never a pill beside the axes.
+test('PILLS: a knob-carrying recipe stamps on click; a mod-owned stamp rides too (Rule A)', () => {
+  // RULE A (2026-09-18, the recipe law — amends the stroke-38 gate):
+  // loras is mod-owned (the modifiers contract) and the loras-only
+  // recipe STILL renders its pill — the bag IS the preset. The
+  // Modifiers menu stays the bag's editor; the recipe is its preset.
   const spec = {
     ...doc(),
     features: {
@@ -249,8 +250,9 @@ test('PILLS: a knob-carrying recipe stamps on click; a mod-only stamp renders no
   expect(pill.title).toBe('the macro')
   fireEvent.click(pill)
   expect(onSet).toHaveBeenCalledWith('steps', 50)
-  expect(screen.queryByText('Mods')).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Mods' })).toBeNull()
+  // the mod-owned row renders AND stamps its bag (never hidden)
+  const mods = screen.getByRole('button', { name: 'Mods' })
+  expect(mods.getAttribute('data-recipe-pill')).toBe('recipe-mods')
 })
 
 test('PILLS: no knob payload anywhere — no pills block (never a dead control)', () => {

@@ -1798,7 +1798,6 @@
       "writes": [
         "calls",
         "keyframes",
-        "preset",
         "fps",
         "seed",
         "width",
@@ -1864,6 +1863,81 @@
         "label": "Default",
         "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
+        "cells": []
+      },
+      {
+        "id": "turbo_lightx2v",
+        "label": "Turbo LightX2V",
+        "hint": "The 4-to-8-step distill at 0.6 — the bag row carries its married 8-step count.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "h3_lightx2v_turbo",
+              "strength": 0.6,
+              "steps": 8
+            }
+          ]
+        },
+        "cells": []
+      },
+      {
+        "id": "dareties_lightx2v",
+        "label": "Dareties LightX2V",
+        "hint": "The v4 distill at 0.4 — married to 4 steps.",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "h3_lightx2v_dareties",
+              "strength": 0.4,
+              "steps": 4
+            }
+          ]
+        },
+        "cells": []
+      },
+      {
+        "id": "gold_pair",
+        "label": "Gold Pair",
+        "hint": "The frozen golden stack — dareties 0.4 + turbo 0.6; runs at the higher married count (8).",
+        "group": "Recipe",
+        "wire_defaults": {
+          "loras": [
+            {
+              "id": "h3_lightx2v_dareties",
+              "strength": 0.4,
+              "steps": 4
+            },
+            {
+              "id": "h3_lightx2v_turbo",
+              "strength": 0.6,
+              "steps": 8
+            }
+          ]
+        },
+        "cells": []
+      },
+      {
+        "id": "draft_02mp",
+        "label": "Draft 02MP",
+        "hint": "Draft geometry — 768×448 (the preset select's own shorthand, migrated to the family).",
+        "group": "Recipe",
+        "wire_defaults": {
+          "width": 768,
+          "height": 448
+        },
+        "cells": []
+      },
+      {
+        "id": "final_hd",
+        "label": "Final HD",
+        "hint": "Final geometry — 1344×768 (the schema's own defaults).",
+        "group": "Recipe",
+        "wire_defaults": {
+          "width": 1344,
+          "height": 768
+        },
         "cells": []
       }
     ],

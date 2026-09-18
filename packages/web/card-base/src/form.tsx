@@ -23,6 +23,7 @@
  * inherited --dsw-alias-* token (the package's documented pattern).
  */
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import type { ReactElement } from 'react'
 import { Menu, Input, Modal, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { InputSquare, isImageUrl, readAsDataUrl, type InputSquareVerbs } from './square.tsx'
 import { ModifiersSection } from './mods.tsx'
@@ -802,23 +803,18 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
     const patch = axisPickPatch(spec, row)
     for (const [k, v] of Object.entries(patch)) onSet(k, v)
   }
-  // STROKE 38 — THE OPERATOR'S LAW: "LORA IS NEVER STANDALONE. IT
-  // IS ALWAYS A SUBSET OF THE MOD SYSTEM." A recipe pill's stamp
-  // drops every mod-owned key (the bag storages and the mod fields
-  // — modOwnedFields, the SubcardGrid law's own gate): the pill
-  // never writes them, and a row whose stamp is ENTIRELY mod-owned
-  // renders NO pill at all — the Modifiers menu is that payload's
-  // one surface (it already serves every flavor row — label,
-  // tooltip, default strength; a pill beside the axes was a second,
-  // lesser door to the same entries).
-  const modOwned = modOwnedFields(spec)
-  const knobStamp = (r: VariantRow): SpecValues => {
-    const stamp: SpecValues = {}
-    for (const [k, v] of Object.entries(axisPickPatch(spec, r))) {
-      if (!modOwned.has(k)) stamp[k] = v
-    }
-    return stamp
-  }
+  // RULE A — THE RECIPE LAW (operator, 2026-09-18: "All Cards must
+  // have Recipies… This *includes* LORAs being setup this way"):
+  // a recipe pill stamps its FULL declared payload — mod-owned keys
+  // INCLUDED. The lora bag IS the preset; a row whose payload is
+  // entirely the bag stamps exactly that. (This AMENDS stroke 38's
+  // drop rule, whose letter made lora-only recipes render no pill
+  // at all — the exact gap the operator named. The Modifiers menu
+  // stays the bag's EDITOR; the recipe is its PRESET. Stroke 38's
+  // own law survives where it was actually pointed: the LORA is
+  // still never standalone — it rides the mod system's bag, its
+  // rows resolved by the mod plane, never a bespoke card field.)
+  const knobStamp = (r: VariantRow): SpecValues => axisPickPatch(spec, r)
   const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(knobStamp(r)).length > 0)
   // ── THE NO-FALLBACK LAW (operator, hour 26: "NO. MORE.
   //    FALLBACKS.") ───────────────────────────────────────────────
@@ -966,29 +962,40 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
           rows.map((v) => h('option', { key: v.id, value: v.id },
             titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
     }),
-    // THE FAMILY RECIPE PILLS (stroke 34 — recipes are macros now,
-    // never a mode): a served Recipe row that CARRIES a knob payload
-    // renders as a stamp pill under the axes. The click writes the
-    // row's knobStamp (above — the stroke-38 law) onto declared knob
-    // keys (axisPickPatch — the same pick verb as every axis row). No
-    // recipe key persists, nothing derives, nothing goes stale when
-    // the variant rail moves — what it stamped is what you see.
-    // Stamp-less rows (the family `default`) render nothing: a pill
-    // that writes nothing is a dead control.
-    pillRows.length > 0
-      ? h('div', { className: css.specGroup, 'data-recipe-pills': '1' },
-          pillRows.map((r) => h('button', {
-              key: r.id,
-              type: 'button',
-              className: css.specLinkBtn,
-              'data-recipe-pill': r.id,
-              title: typeof r.hint === 'string' && r.hint !== '' ? r.hint : undefined,
-              onClick: () => {
-                for (const [k, v] of Object.entries(knobStamp(r))) onSet(k, v)
-              },
-            }, titleCaseId(r.label))))
-      : null,
+    h(RecipePills, { spec, onSet }),
   )
+}
+
+/** THE FAMILY RECIPE PILLS (Rule A — the recipe law): the family's
+ *  preset macros, one pill per served Recipe row that CARRIES a
+ *  declared payload. The click writes the row's FULL stamp
+ *  (axisPickPatch — the same pick verb as every axis row; mod-owned
+ *  keys included, the Rule A amendment). No recipe key persists,
+ *  nothing derives, nothing goes stale when the variant rail moves
+ *  — what it stamped is what you see. Stamp-less rows (the family
+ *  `default`) render nothing: a pill that writes nothing is a dead
+ *  control.
+ *
+ *  THE REUSE LAW: extracted so EVERY model surface seats the same
+ *  pills — CardForm under the axes, a studio beside its model route.
+ *  Never a second pill implementation. */
+export function RecipePills({ spec, onSet }: {
+  spec: FormSpecDoc
+  onSet: (name: string, value: unknown) => void
+}): ReactElement | null {
+  const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0)
+  if (pillRows.length === 0) return null
+  return h('div', { className: css.specGroup, 'data-recipe-pills': '1' },
+    pillRows.map((r) => h('button', {
+      key: r.id,
+      type: 'button',
+      className: css.specLinkBtn,
+      'data-recipe-pill': r.id,
+      title: typeof r.hint === 'string' && r.hint !== '' ? r.hint : undefined,
+      onClick: () => {
+        for (const [k, v] of Object.entries(axisPickPatch(spec, r))) onSet(k, v)
+      },
+    }, titleCaseId(r.label))))
 }
 
 /** THE CARD FORM (the constructor's surface half) — the emission's

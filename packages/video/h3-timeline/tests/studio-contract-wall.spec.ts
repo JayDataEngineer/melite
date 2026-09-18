@@ -85,8 +85,11 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     }
   })
 
-  it("the doc-local clock never serializes (preset/fps are document facts)", () => {
-    const out = serializeLayerA(hydrateLayerA({ preset: "final_hd", fps: 30, seed: 1 }))
+  it("the doc-local clock never serializes (fps is a document fact; the DEAD preset key never resurrects)", () => {
+    // (Rule A, 2026-09-18) `preset` died with the hand select — a
+    // stale document still carrying one hydrates to nothing and
+    // never serializes it back.
+    const out = serializeLayerA(hydrateLayerA({ preset: "final_hd", fps: 30, seed: 1 } as never))
     expect("preset" in out).toBe(false)
     expect("fps" in out).toBe(false)
   })

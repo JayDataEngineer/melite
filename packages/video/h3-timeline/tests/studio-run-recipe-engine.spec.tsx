@@ -1,11 +1,11 @@
 /**
  * RunRecipeEngine — Recipe + Engine folds (BEHAVIORAL).
  *
- * THE RECIPE STAYS EDITABLE (operator correction, 2026-09-18): the
- * Model route (FL2VA ↔ Ref2VA), the Preset (the plaguekind default
- * geometries: draft_02mp / final_hd), and the doc FPS are REAL
- * document controls — a static readout starved the operator of the
- * plaguekind defaults. The sampling knobs ride the served form-spec
+ * RULE A — THE RECIPE LAW (operator, 2026-09-18): the family's
+ * recipes render as PILLS next to the Model route, stamped from the
+ * served spec's Recipe rows — the lora bag payloads INCLUDED (the
+ * card's hand preset select is DEAD; the family owns presets). The
+ * doc FPS stays a document control. The sampling knobs ride the served form-spec
  * via SpecPanel at their WIRE names
  * (sampler_name/sched_name/steps/denoise/shift_*); Seed rides the
  * panel too. Window width/height are real injects (studio
@@ -44,7 +44,18 @@ function envelope(): unknown {
       denoise: num("Denoise (run)", 0.7, { min: 0, max: 1, step: 0.05 }),
       seed: { type: "number", meta: { description: "Seed", default: -1, step: 1 } },
     }),
-    variants: [],
+    // RULE A: the family's Recipe rows as the spec door serves them
+    // (discovery.ts variantRow — resolver+wire defaults merged into
+    // the row's `defaults` payload).
+    variants: [
+      { id: "default", label: "Default", group: "Recipe", defaults: {}, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+      { id: "turbo_lightx2v", label: "Turbo LightX2V", group: "Recipe",
+        defaults: { loras: [{ id: "h3_lightx2v_turbo", strength: 0.6, steps: 8 }] },
+        route: "", hint: "the married count rides the bag row", engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+      { id: "draft_02mp", label: "Draft 02MP", group: "Recipe",
+        defaults: { width: 768, height: 448 },
+        route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+    ],
   }
 }
 
@@ -58,7 +69,7 @@ function engine(layerA: Record<string, unknown>, over?: Record<string, unknown>)
   const els = render(
     <RunRecipeEngine
       stage={{ params: { width: 800, height: 600 } } as never}
-      layerA={{ preset: "draft_02mp", fps: 24, ...layerA } as unknown as LayerA}
+      layerA={{ fps: 24, ...layerA } as unknown as LayerA}
       setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
       isRef2va={false}
       {...over}
@@ -83,7 +94,7 @@ describe("recipe (clock + route) — the document's identity", () => {
     render(
       <RunRecipeEngine
         stage={{ params: { width: 800, height: 600 } } as never}
-        layerA={{ preset: "draft_02mp", fps: 24 } as unknown as LayerA}
+        layerA={{ fps: 24 } as unknown as LayerA}
         setLayerAKey={() => {}}
         isRef2va={true}
       />,
@@ -94,20 +105,37 @@ describe("recipe (clock + route) — the document's identity", () => {
     cleanup()
   })
 
-  it("preset + FPS are editable document controls (the plaguekind defaults)", async () => {
+  it("RULE A: the family's recipe pills stamp next to the model — the lora bag INCLUDED", async () => {
     serve()
-    const { keys } = engine({ preset: "final_hd", fps: 30 })
+    const { keys } = engine({ fps: 30 })
     await screen.findByText("Clock")
-    assert.ok(document.body.textContent!.includes("final_hd · 800×600 @ 124f · 30 doc-fps"))
-    fireEvent.change(screen.getByLabelText("Preset"), { target: { value: "draft_02mp" } })
+    // the pills render (stamp-carrying rows only; the stamp-less
+    // `default` renders nothing)
+    const turbo = screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-pill="turbo_lightx2v"]')
+    assert.ok(turbo !== null, "the turbo pill renders")
+    assert.ok(screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-pill="draft_02mp"]') !== null)
+    assert.ok(screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-pill="default"]') === null)
+    // the click writes the FULL payload — the lora bag rides the
+    // stamp (the Rule A amendment of stroke 38's drop)
+    fireEvent.click(turbo as HTMLElement)
+    assert.deepEqual(keys, [["loras", [{ id: "h3_lightx2v_turbo", strength: 0.6, steps: 8 }]]])
+    cleanup()
+  })
+
+  it("the geometry pill stamps width/height; FPS stays an editable document control", async () => {
+    serve()
+    const { keys } = engine({ fps: 30 })
+    await screen.findByText("Clock")
+    assert.ok(document.body.textContent!.includes("800×600 @ 30 doc-fps"))
+    fireEvent.click(screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-pill="draft_02mp"]') as HTMLElement)
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "24" } })
-    assert.deepEqual(keys, [["preset", "draft_02mp"], ["fps", 24]])
+    assert.deepEqual(keys, [["width", 768], ["height", 448], ["fps", 24]])
     cleanup()
   })
 
   it("a non-positive FPS never writes (the >0 guard)", async () => {
     serve()
-    const { keys } = engine({ preset: "final_hd", fps: 30 })
+    const { keys } = engine({ fps: 30 })
     await screen.findByText("Clock")
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "0" } })
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "" } })
@@ -164,12 +192,12 @@ describe("engine header (resolved, never placeholders)", () => {
     cleanup()
   })
 
-  it("no stage params = preset geometry; no steps = auto; unknown preset falls back to draft", () => {
+  it("no stage params = the family floor (1344×768); stamped width/height win; no steps = auto", () => {
     serve()
     const h1 = render(
       <RunRecipeEngine
         stage={{} as never}
-        layerA={{ preset: "final_hd", fps: 24 } as unknown as LayerA}
+        layerA={{ fps: 24 } as unknown as LayerA}
         setLayerAKey={() => {}}
         isRef2va={false}
       />,
@@ -180,7 +208,7 @@ describe("engine header (resolved, never placeholders)", () => {
     render(
       <RunRecipeEngine
         stage={{} as never}
-        layerA={{ preset: "nope", fps: 24 } as unknown as LayerA}
+        layerA={{ width: 768, height: 448, fps: 24 } as unknown as LayerA}
         setLayerAKey={() => {}}
         isRef2va={false}
       />,

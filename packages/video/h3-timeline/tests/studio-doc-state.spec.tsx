@@ -21,17 +21,18 @@ describe("hydration", () => {
     const { result } = renderHook(() => useDocState(stage(undefined)))
     assert.equal(result.current.calls.length, 1)
     assert.equal(result.current.calls[0]!.text, "A single shot — describe the action, camera, and mood.")
-    assert.equal(result.current.layerA.preset, "draft_02mp")
+    // (Rule A) preset is dead — geometry rides the family pills
+    assert.equal(result.current.layerA.width, undefined)
     assert.deepEqual(result.current.keyframes, [])
     // the sticky sentinel: no persisted calls = persist on mount
     assert.equal(result.current.lastCallsRef.current, "")
   })
 
   it("persisted calls hydrate and arm the mount no-op guard", () => {
-    const params = { calls: [{ text: "rain", start_frame: 0, end_frame: 48 }], preset: "final_hd" }
+    const params = { calls: [{ text: "rain", start_frame: 0, end_frame: 48 }], width: 1344, height: 768 }
     const { result } = renderHook(() => useDocState(stage(params)))
     assert.equal(result.current.calls[0]!.text, "rain")
-    assert.equal(result.current.layerA.preset, "final_hd")
+    assert.equal(result.current.layerA.width, 1344)
     assert.ok(result.current.lastCallsRef.current.length > 0)
     assert.ok(result.current.lastKeyframesRef.current.length > 0)
     assert.ok(result.current.lastLayerARef.current.length > 0)

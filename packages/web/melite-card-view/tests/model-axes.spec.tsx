@@ -390,7 +390,13 @@ const PILLS: FormSpecDoc = {
   ],
 }
 
-test('STROKE 38 DEATH: a stamp that is ENTIRELY mod-owned renders NO pill — the Modifiers menu is its one surface', async () => {
+test('RULE A: a stamp that is ENTIRELY mod-owned STILL renders its pill — the lora bag IS the preset (the menu stays its editor)', async () => {
+  // (2026-09-18, the recipe law — AMENDS the stroke-38 drop: the
+  // operator ruled "This *includes* LORAs being setup this way, which
+  // you haven't done." A lora-only recipe renders its pill and
+  // stamps the bag; the Modifiers menu stays the bag's editor.
+  // Stroke 38's letter — the LORA rides the mod system's bag, never
+  // a bespoke card field — survives intact.)
   const state = { user: seedUser(PILLS, {}) as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   const { container } = render(createElement(SpecForm, {
@@ -399,11 +405,14 @@ test('STROKE 38 DEATH: a stamp that is ENTIRELY mod-owned renders NO pill — th
     onSet,
   }))
   const pills = container.querySelectorAll('[data-recipe-pill]')
-  expect(pills.length).toBe(2) // quick + cine — realism is the mod menu's row, default writes nothing
-  expect(container.querySelector('[data-recipe-pill="realism"]')).toBeNull() // NEVER standalone
+  expect(pills.length).toBe(3) // realism + quick + cine — only the stamp-less default renders nothing
+  const realism = container.querySelector('[data-recipe-pill="realism"]') as HTMLElement
+  expect(realism).not.toBeNull()
+  fireEvent.click(realism)
+  await waitFor(() => { expect(state.user['loras']).toEqual([{ id: 'krea2_realism_lora' }]) })
 })
 
-test('STROKE 38 KNOB STAMP: the pill click writes ONLY the knob payload — the lora never rides, no recipe key, ever', async () => {
+test('KNOB STAMP: the pill click writes its full payload — no recipe key, ever', async () => {
   const state = { user: seedUser(PILLS, {}) as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   const { container } = render(createElement(SpecForm, {
@@ -420,7 +429,7 @@ test('STROKE 38 KNOB STAMP: the pill click writes ONLY the knob payload — the 
   expect(state.user['recipe']).toBeUndefined() // the dead layer's key never rides
 })
 
-test('STROKE 38 MIXED: a row carrying knobs AND mod entries stamps the knobs only — the mod entries stay the menu\'s alone', async () => {
+test('RULE A MIXED: a row carrying knobs AND the lora bag stamps BOTH — the full payload is the preset', async () => {
   const state = { user: seedUser(PILLS, {}) as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   const { container } = render(createElement(SpecForm, {
@@ -429,10 +438,12 @@ test('STROKE 38 MIXED: a row carrying knobs AND mod entries stamps the knobs onl
     onSet,
   }))
   const pill = container.querySelector('[data-recipe-pill="cine"]') as HTMLElement
-  expect(pill).not.toBeNull() // the knob half keeps the pill alive
+  expect(pill).not.toBeNull()
   fireEvent.click(pill)
-  await waitFor(() => { expect(state.user['steps']).toBe(12) })
-  expect(state.user['loras']).toBeUndefined() // the mod half never rides — pick it in the menu
+  await waitFor(() => {
+    expect(state.user['steps']).toBe(12)
+    expect(state.user['loras']).toEqual([{ id: 'krea2_darkbrush' }])
+  })
 })
 
 // ── the recipe-yield law (operator 2026-09-14: "IMG GEN UI CARD HAS
@@ -782,7 +793,7 @@ test('THE FILTER, END TO END: a cleared cross-spec pick seeds the NEW family\'s 
 
 // ── STROKE 20: RECIPE'S SEAT (the operator's placement law:
 //    "recipe is supposed to be under the model section") ────────
-test('STROKE 38 SEAT: the surviving knob pills render UNDER THE MODEL SECTION — the lora row has no pill anywhere', async () => {
+test('SEAT: the pills render UNDER THE MODEL SECTION — the lora row\'s pill included (Rule A)', async () => {
   // IMGGEN (stroke-38 shape): no card recipe field; the family
   // serves realism (lora-only — the mod menu's row, stroke 38),
   // default (stamp-less), and a knob row to carry the seat law.
@@ -798,22 +809,23 @@ test('STROKE 38 SEAT: the surviving knob pills render UNDER THE MODEL SECTION �
     spec: SEAT, user: { model: 'krea-2' },
     onSet: (n: string, v: unknown) => { sets.push([n, v]) },
   }))
-  // STROKE 38 FIRST: the lora-only row NEVER renders a pill — the
-  // operator's law ("LORA IS NEVER STANDALONE. IT IS ALWAYS A
-  // SUBSET OF THE MOD SYSTEM.")
-  expect(container.querySelector('[data-recipe-pill="realism"]')).toBeNull()
+  // RULE A: the lora-only row RENDERS its pill — the bag IS the
+  // preset (the stroke-38 drop amended 2026-09-18; the lora still
+  // rides the mod system's bag, never a bespoke card field)
+  expect(container.querySelector('[data-recipe-pill="realism"]')).not.toBeNull()
   const pills = container.querySelectorAll('[data-recipe-pill]')
-  expect(pills.length).toBe(1) // the knob row carries the seat
+  expect(pills.length).toBe(2) // realism + quick carry the seat
   // THE SEAT: inside the model axes section (under Model, Variant,
   // Quant — never a sampling-group row at the bottom)
   expect(pills[0]?.closest('[data-model-axes]')).not.toBeNull()
   // NO select exists — the dead layer's key has no writer
   expect(screen.queryByLabelText('Recipe')).toBeNull()
-  // the stamp rides declared KNOB keys only — the lora bag NEVER
-  // rides a pill (pick it in the Modifiers menu)
-  fireEvent.click(pills[0] as HTMLElement)
+  // RULE A: the quick pill stamps its knob; the realism pill stamps
+  // its bag — each row's FULL payload is its preset
+  fireEvent.click(container.querySelector('[data-recipe-pill="quick"]') as HTMLElement)
   await waitFor(() => { expect(sets).toContainEqual(['steps', 6]) })
-  expect(sets.some(([n]) => n === 'loras')).toBe(false)
+  fireEvent.click(container.querySelector('[data-recipe-pill="realism"]') as HTMLElement)
+  await waitFor(() => { expect(sets).toContainEqual(['loras', [{ id: 'krea2_realism_lora' }]]) })
 })
 
 

@@ -16,7 +16,9 @@ import { hydrateLayerA, serializeLayerA } from "../src/ui/studio/docHydrate.ts"
 describe("hydrateLayerA (params → Layer A)", () => {
   it("an empty doc hydrates the engine defaults", () => {
     const a = hydrateLayerA(undefined)
-    assert.equal(a.preset, "draft_02mp")
+    // (Rule A, 2026-09-18) `preset` is DEAD — the geometry recipes
+    // ride the family's Recipe pills now; width/height are the keys.
+    assert.equal(a.width, undefined)
     assert.equal(a.fps, 24)
     assert.equal(a.seed, 42)
     assert.equal(a.sla_protect_audio, true)
@@ -42,10 +44,8 @@ describe("hydrateLayerA (params → Layer A)", () => {
     assert.equal(str.seed, 42)
   })
 
-  it("preset stays document-local; wire-name sampler rows hydrate", () => {
-    assert.equal(hydrateLayerA({ preset: "final_hd" }).preset, "final_hd")
-    assert.equal(hydrateLayerA({ preset: "" }).preset, "draft_02mp")
-    assert.equal(hydrateLayerA({ preset: 42 }).preset, "draft_02mp")
+  it("wire-name sampler rows hydrate (preset is dead — Rule A rides the family pills)", () => {
+    assert.equal(hydrateLayerA({ width: 768, height: 448 }).width, 768)
     assert.equal(hydrateLayerA({ sampler_name: "euler", sched_name: "karras" }).sampler_name, "euler")
     assert.equal(hydrateLayerA({ sampler_name: "", sched_name: 7 }).sched_name, undefined)
   })

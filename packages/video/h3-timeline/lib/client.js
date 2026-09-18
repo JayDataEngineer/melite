@@ -762,6 +762,75 @@ window.__ModuleLoader__.load({
 			}
 			return true;
 		}
+		/** The axis groups in declaration order: features.variant_groups'
+		*  key order when the door serves it, else the rows' distinct groups
+		*  in first-seen order. Empty group names never ride. The Recipe
+		*  group never rides (the recipe-axis yield above). */
+		function axisGroups(spec) {
+			const rows = spec.variants ?? [];
+			const groups = [];
+			const declared = variantGroupsContract(spec);
+			if (declared.length > 0) {
+				for (const g of declared) if (g !== "" && !groups.includes(g)) groups.push(g);
+			}
+			for (const v of rows) if (v.group !== "" && !groups.includes(v.group)) groups.push(v.group);
+			return groups.filter((g) => g !== "Recipe");
+		}
+		/** The variant_groups contract's keys, in served order (the door
+		*  serves it under features when the family declares axis groups). */
+		function variantGroupsContract(spec) {
+			const vg = spec.features?.["variant_groups"];
+			if (vg === null || typeof vg !== "object" || Array.isArray(vg)) return [];
+			return Object.keys(vg);
+		}
+		/** One axis' rows (served order). */
+		function rowsFor(spec, group) {
+			return (spec.variants ?? []).filter((v) => v.group === group);
+		}
+		/** THE CHAIN (one direction: an axis filters the axes BELOW it): a
+		*  row composes with the current selection when its `owner` is empty
+		*  (composes with everything — patch-only rows) or names the ACTIVE
+		*  row of another axis. */
+		function composingRows(spec, group, active) {
+			return rowsFor(spec, group).filter((v) => {
+				if (v.owner === void 0 || v.owner === "") return true;
+				for (const g of axisGroups(spec)) {
+					if (g === group) continue;
+					if (rowsFor(spec, g).find((x) => x.id === v.owner) !== void 0) return active[g] === v.owner;
+				}
+				return true;
+			});
+		}
+		/** The durable param key an axis rides (the group's id, lowercased —
+		*  'variant', 'quant', 'recipe', 'precision'). */
+		function axisKey(group) {
+			return group.toLowerCase();
+		}
+		/** A pick's full value patch — the old onPick law: the row's
+		*  `defaults` overlay rides (model re-point + every resolver default),
+		*  plus the durable axis keys themselves so a reopened stage restores
+		*  its selects. Picking a row also re-seeds the axes BELOW it (their
+		*  first composing row). */
+		function axisPickPatch(spec, row) {
+			const patch = {};
+			for (const [k, v] of Object.entries(row.defaults)) {
+				if (k === "model") continue;
+				patch[k] = v;
+			}
+			const groups = axisGroups(spec);
+			const at = groups.indexOf(row.group);
+			const active = {};
+			for (const g of groups) if (g === row.group) active[g] = row.id;
+			else if (typeof row.defaults["model"] === "string") active[g] = void 0;
+			if (groups.includes(row.group)) patch[axisKey(row.group)] = row.id;
+			if (at < 0) return patch;
+			for (const g of groups.slice(at + 1)) {
+				const composing = composingRows(spec, g, active);
+				if (composing.length > 0) patch[axisKey(g)] = composing[0].id;
+				else patch[axisKey(g)] = "";
+			}
+			return patch;
+		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
 		const css$1 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:contents}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
@@ -1645,6 +1714,36 @@ window.__ModuleLoader__.load({
 					onEdit
 				});
 			}))));
+		}
+		/** THE FAMILY RECIPE PILLS (Rule A — the recipe law): the family's
+		*  preset macros, one pill per served Recipe row that CARRIES a
+		*  declared payload. The click writes the row's FULL stamp
+		*  (axisPickPatch — the same pick verb as every axis row; mod-owned
+		*  keys included, the Rule A amendment). No recipe key persists,
+		*  nothing derives, nothing goes stale when the variant rail moves
+		*  — what it stamped is what you see. Stamp-less rows (the family
+		*  `default`) render nothing: a pill that writes nothing is a dead
+		*  control.
+		*
+		*  THE REUSE LAW: extracted so EVERY model surface seats the same
+		*  pills — CardForm under the axes, a studio beside its model route.
+		*  Never a second pill implementation. */
+		function RecipePills({ spec, onSet }) {
+			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0);
+			if (pillRows.length === 0) return null;
+			return (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				"data-recipe-pills": "1"
+			}, pillRows.map((r) => (0, react.createElement)("button", {
+				key: r.id,
+				type: "button",
+				className: card_module_css_default.specLinkBtn,
+				"data-recipe-pill": r.id,
+				title: typeof r.hint === "string" && r.hint !== "" ? r.hint : void 0,
+				onClick: () => {
+					for (const [k, v] of Object.entries(axisPickPatch(spec, r))) onSet(k, v);
+				}
+			}, titleCaseId(r.label))));
 		}
 		/** THE CARD FORM (the constructor's surface half) — the emission's
 		*  fields walked off the schema envelope, grouped, visible-when
@@ -4227,34 +4326,27 @@ window.__ModuleLoader__.load({
 		* form-spec → SpecFieldRow → wire names) — one mechanism every card
 		* seats, never an h3 re-walk.
 		*
-		* THE RECIPE STAYS EDITABLE (operator correction, 2026-09-18): the
-		* Model route (FL2VA ↔ Ref2VA), the Preset (the plaguekind default
-		* geometries: draft_02mp / final_hd), and the doc FPS are REAL
-		* document controls — a static readout starved the operator of the
-		* plaguekind defaults. Route/Preset/FPS are document-local clock
-		* facts (route = the card's model id; preset/fps never serialize to
-		* the card params), so they render as studio chrome beside the
-		* panel — never as spec rows.
+		* RULE A — THE RECIPE LAW (operator, 2026-09-18): the family's
+		* recipes render as PILLS NEXT TO THE MODEL ROUTE — the same
+		* RecipePills every CardForm seats, stamped from the served spec
+		* (the family's own DECL rows: the distill presets carry the LORA
+		* BAG, the geometry rows carry the window keys — 1:1 with the
+		* card's declared params). The card's hand preset select
+		* (draft_02mp/final_hd + PRESET_GEOM) is DEAD: a card never
+		* hand-authors presets, the family owns them. Route/FPS stay
+		* document-local clock facts rendered as studio chrome.
 		*/
-		/** The preset geometry (identity.principles, stated once): draft
-		* rides 768×448 @ 56f, final rides 1344×768 @ 124f. The engine
-		* fold shows these RESOLVED. */
-		const PRESET_GEOM = {
-			draft_02mp: {
-				w: 768,
-				h: 448,
-				f: 56
-			},
-			final_hd: {
-				w: 1344,
-				h: 768,
-				f: 124
-			}
+		/** The family's geometry floor (the card schema's own defaults —
+		* 1344×768; draft recipes stamp 768×448 over it). */
+		const FAMILY_GEOM = {
+			w: 1344,
+			h: 768
 		};
 		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 		function RunRecipeEngine({ stage, layerA, setLayerAKey, isRef2va }) {
-			const geom = PRESET_GEOM[layerA.preset] ?? PRESET_GEOM.draft_02mp;
+			const { spec } = useFormSpec("h3-timeline");
 			const values = layerA;
+			const onSet = setLayerAKey;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: studio_module_css_default.group,
@@ -4284,19 +4376,10 @@ window.__ModuleLoader__.load({
 								onEdit: (_, v) => setLayerAKey("model", v)
 							})
 						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Preset",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
-								f: {
-									name: "preset",
-									label: "Preset",
-									type: "select",
-									options: ["draft_02mp", "final_hd"]
-								},
-								value: layerA.preset,
-								onEdit: (_, v) => setLayerAKey("preset", v)
-							})
-						}),
+						spec !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RecipePills, {
+							spec,
+							onSet
+						}) : null,
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
 							label: "FPS",
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
@@ -4320,14 +4403,10 @@ window.__ModuleLoader__.load({
 							className: studio_module_css_default.recipeGeom,
 							"data-testid": "tl-recipe-geom",
 							children: [
-								layerA.preset,
-								" · ",
-								String(stage.params?.width ?? geom.w),
+								String(stage.params?.width ?? layerA.width ?? FAMILY_GEOM.w),
 								"×",
-								String(stage.params?.height ?? geom.h),
+								String(stage.params?.height ?? layerA.height ?? FAMILY_GEOM.h),
 								" @ ",
-								geom.f,
-								"f · ",
 								layerA.fps,
 								" doc-fps"
 							]
@@ -4359,7 +4438,7 @@ window.__ModuleLoader__.load({
 					className: studio_module_css_default.winSize,
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SectionLabel, {
-							tail: `window ${String(stage.params?.width ?? geom.w)}×${String(stage.params?.height ?? geom.h)} · steps ${layerA.steps ?? "auto"}`,
+							tail: `window ${String(stage.params?.width ?? layerA.width ?? FAMILY_GEOM.w)}×${String(stage.params?.height ?? layerA.height ?? FAMILY_GEOM.h)} · steps ${layerA.steps ?? "auto"}`,
 							children: "Engine (H3)"
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
@@ -4370,10 +4449,10 @@ window.__ModuleLoader__.load({
 								min: 256,
 								max: 1920,
 								step: 32,
-								tooltip: `blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}`
+								tooltip: `blank — the family default rides ${FAMILY_GEOM.w}×${FAMILY_GEOM.h}`
 							},
 							value: layerA.width,
-							placeholder: String(geom.w),
+							placeholder: String(FAMILY_GEOM.w),
 							onEdit: (_, v) => setLayerAKey("width", typeof v === "string" && v.trim() !== "" ? Number(v) : void 0)
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -4388,10 +4467,10 @@ window.__ModuleLoader__.load({
 								min: 256,
 								max: 1920,
 								step: 32,
-								tooltip: `blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}`
+								tooltip: `blank — the family default rides ${FAMILY_GEOM.w}×${FAMILY_GEOM.h}`
 							},
 							value: layerA.height,
-							placeholder: String(geom.h),
+							placeholder: String(FAMILY_GEOM.h),
 							onEdit: (_, v) => setLayerAKey("height", typeof v === "string" && v.trim() !== "" ? Number(v) : void 0)
 						})
 					]
@@ -5840,7 +5919,6 @@ window.__ModuleLoader__.load({
 			};
 			const optStr = (k) => typeof raw?.[k] === "string" && raw[k].trim() !== "" ? raw[k] : void 0;
 			return {
-				preset: optStr("preset") ?? "draft_02mp",
 				fps: num("fps", 24),
 				seed: num("seed", 42),
 				shift_video: optNum("shift_video"),
@@ -5893,7 +5971,7 @@ window.__ModuleLoader__.load({
 		* engine default must never be pinned by a control never touched).
 		* THE CONTRACT (pinned by the studio-contract wall test): every key
 		* here ∈ the h3-timeline card's declared surface and READ by
-		* compose. preset/fps are document-local and never serialize. */
+		* compose. fps is document-local and never serializes. */
 		function serializeLayerA(a) {
 			const out = {
 				seed: a.seed,
