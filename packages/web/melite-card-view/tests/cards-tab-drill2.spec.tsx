@@ -570,7 +570,11 @@ describe("the preview owner — kinds, status, snapshots, and the strip opt-out"
     );
     doors.specPreview = true;
     await openFirstTile();
-    await waitFor(() => { expect(owners.length).toBeGreaterThan(0); });
-    expect(owners[owners.length - 1]).toMatchObject({ historyStrip: false });
+    // wait for the OWNER that carries the declaration (the first flush
+    // rides the bare stage; historyStrip lands with the resolved decl —
+    // asserting after a length-only wait raced that second flush)
+    await waitFor(() => {
+      expect(owners[owners.length - 1]).toMatchObject({ historyStrip: false });
+    });
   });
 });

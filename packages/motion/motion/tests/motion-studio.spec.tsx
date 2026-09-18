@@ -620,6 +620,67 @@ describe('timeline (prompts + keyframes)', () => {
     }, { timeout: 90000 })
   })
 
+  // THE RESCALE GUARD (hour 15 flake root-cause): the envelope settle
+  // (npz T landing after the default duration's T) re-fired the seed
+  // effect's rescale branch and REWROTE authored frames — round(1 * 4/150)
+  // snapped a dragged card back to frame 0 after the drag committed. The
+  // effect's own doc comment promises "only re-seed when the user hasn't
+  // authored anything"; this pins that law against a LATE settle.
+  test('a late envelope settle never erases an authored drag (the rescale guard)', { timeout: 40000 }, async () => {
+    stubLoads() // the standard door stubs (drafts, requestIdleCallback, …)
+    let releaseNpz!: () => void
+    const npzGate = new Promise<void>((res) => { releaseNpz = res })
+    vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
+      const u = typeof input === 'string' ? input : (input as Request).url ?? String(input)
+      if (u.includes('/v1/form-spec')) {
+        return new Response(JSON.stringify({
+          form: 'motion',
+          schema: schemaEnvelope({
+            duration_sec: { type: 'number', meta: { description: 'Duration (s)', default: 5, min: 1, max: 30, step: 0.5 } },
+            seed: { type: 'number', meta: { description: 'Seed', default: 42, step: 1 } },
+          }),
+          variants: [], inputs: [], features: { modifiers: [], variant_groups: {} },
+        }), { headers: { 'content-type': 'application/json' } })
+      }
+      if (u.includes(SKIN_URL)) return skinResponse()
+      if (u.includes(MOTION_URL)) {
+        await npzGate
+        return motionResponse(4, 30)
+      }
+      if (u.endsWith('.npz')) return motionResponse(4, 30)
+      return new Response('{}', { headers: { 'content-type': 'application/json' } })
+    })
+    const stage = mkStage()
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    mounted.push(root)
+    const render = (res: unknown) =>
+      root.render(h(MotionCardEditor, { stage: mkStage(res as Record<string, unknown> | undefined), onSave: vi.fn() } as never))
+    render({ result: { artifacts: { motion_npz: MOTION_URL } } })
+    // the doc sits at the DEFAULT duration (150 frames); the card spans it
+    await vi.waitFor(() => {
+      if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
+    }, { timeout: 10000 })
+    const clip = document.body.querySelector('[data-prompt-clip]') as HTMLElement
+    fireEvent.pointerDown(clip, { clientX: 10, button: 0 })
+    fireEvent.pointerMove(window, { clientX: 20 })
+    fireEvent.pointerUp(window, { clientX: 20 })
+    await vi.waitFor(() => {
+      if (clip.style.left === '0px' || clip.style.left === '') throw new Error('drag did not land')
+    }, { timeout: 10000 })
+    // THE LATE SETTLE: the npz's T=4 arrives AFTER authoring
+    releaseNpz()
+    await vi.waitFor(() => {
+      if (!document.body.textContent!.includes('30 fps · 4f')) throw new Error('npz not settled yet')
+    }, { timeout: 10000 })
+    await new Promise((r) => setTimeout(r, 150))
+    const after = document.body.querySelector('[data-prompt-clip]') as HTMLElement
+    // GUARDED: the authored start (frame 1) survives — px > 0 at any fit.
+    // UNGUARDED (the bug): rescale snaps start back to round(1*4/150) = 0.
+    expect(after.style.left).not.toBe('0px')
+  })
+
   test('pulling the last edge past the end extends the timeline', async () => {
     const { onSave } = await mountedWithRun()
     await vi.waitFor(() => {

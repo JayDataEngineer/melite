@@ -496,6 +496,7 @@ export function MotionCardEditor({
   }, [captureSnapshot])
 
   const restoreSnapshot = useCallback((snap: AuthoringSnapshot) => {
+    promptsAuthoredRef.current = true
     setTlPrompts(snap.tlPrompts)
     setTlKeyframes(snap.tlKeyframes)
     setConstraintPayloads(snap.constraintPayloads)
@@ -1259,6 +1260,13 @@ export function MotionCardEditor({
  // the motion NPZ persists — a jarring motion/prompt mismatch.
  const lastSeededT = useRef<number>(-1)
  const didHydratePrompts = useRef(false)
+ // THE AUTHORING GUARD (hour 15 flake fix): once the user has authored
+ // the prompts row (any gesture or edit verb), a later envelope settle
+ // (the async npz's real T landing after the default duration's T) must
+ // NOT rewrite their frames — the rescale below maps round(1 * 4/150)
+ // back to 0, silently erasing a committed drag. Same law the hydrate
+ // branch above already documents: authored state is never re-seeded.
+ const promptsAuthoredRef = useRef(false)
  useEffect(() => {
  // First mount: try to hydrate from persisted params.
  if (!didHydratePrompts.current) {
@@ -1287,6 +1295,7 @@ export function MotionCardEditor({
  // rescale existing prompts to the new range, don't wipe them.
  if (targetT === lastSeededT.current) return
  lastSeededT.current = targetT
+ if (promptsAuthoredRef.current) return // authored frames survive settles
  setTlPrompts((prev) => {
  if (prev.length === 0) {
  return [{ uuid: "motion-prompt", text: "", start_frame: 0, end_frame: Math.max(0, targetT - 1), color: null }]
@@ -1419,6 +1428,7 @@ export function MotionCardEditor({
  })
  }, [])
   const onPromptUpdate = useCallback((id: string, text: string) => {
+  promptsAuthoredRef.current = true
   pushUndo()
   setTlPrompts((prev) => prev.map((p) => (p.uuid === id ? { ...p, text } : p)))
   }, [])
@@ -1427,10 +1437,12 @@ export function MotionCardEditor({
   setTlPrompts((prev) => prev.map((p) => (p.uuid === id ? { ...p, start_frame: startFrame, end_frame: endFrame } : p)))
   }, [])
   const onPromptMove = useCallback((id: string, startFrame: number, endFrame: number) => {
+  promptsAuthoredRef.current = true
   maybePushDragUndo(`pm:${id}`)
   setTlPrompts((prev) => prev.map((p) => (p.uuid === id ? { ...p, start_frame: startFrame, end_frame: endFrame } : p)))
   }, [])
   const onPromptDelete = useCallback((id: string) => {
+  promptsAuthoredRef.current = true
   pushUndo()
   setTlPrompts((prev) => prev.filter((p) => p.uuid !== id))
   }, [])
@@ -1439,6 +1451,7 @@ export function MotionCardEditor({
  // tail to click into). carveNewPromptCard splits the last prompt at its
  // midpoint so the new card is contiguous + immediately editable.
   const addPromptCard = useCallback(() => {
+  promptsAuthoredRef.current = true
   pushUndo()
   setTlPrompts((prev) => carveNewPromptCard(prev, targetT))
   }, [targetT])
