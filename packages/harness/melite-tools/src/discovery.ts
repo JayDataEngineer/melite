@@ -322,12 +322,19 @@ function specModifiers(
       // STEPS APPLIED rides the defaults when the row claims one
       // (2026-09-18): a distill adapter is married to its step
       // count — boarding it stamps {strength, steps} onto the entry.
+      // RANGE FACTS (the 4-to-8 correction): steps_min/steps_max
+      // ride alongside when the adapter's domain is not a fixed
+      // point (Turbo 4-to-8) — the leaf's dial bounds itself to
+      // them; the married default stays `steps`.
       defaults:
         r.default_strength === undefined && r.default_weight === undefined && r.steps === undefined
+          && r.steps_min === undefined && r.steps_max === undefined
           ? {}
           : Object.fromEntries(Object.entries({
               [meta.scalar_key ?? 'strength']: r.default_strength ?? r.default_weight,
               steps: r.steps,
+              steps_min: r.steps_min,
+              steps_max: r.steps_max,
             }).filter(([, v]) => v !== undefined)),
       // THE RESOLVED FACTS (the hybrid leaf stamps these onto new
       // entries so the run record carries the retired wire shape —

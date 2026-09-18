@@ -45,7 +45,7 @@ const LORA_DISTILL = {
   kind: 'lora', label: 'LoRA', param_key: 'loras', cardinality: 'multi',
   options: [
     { value: 'dareties', label: 'LightX2V dareties v4', defaults: { strength: 0.4, steps: 4 } },
-    { value: 'turbo', label: 'LightX2V Turbo 4-8 step', defaults: { strength: 0.6, steps: 8 } },
+    { value: 'turbo', label: 'LightX2V Turbo 4-8 step', defaults: { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8 } },
   ],
 } as unknown as ModifierKind
 
@@ -213,6 +213,38 @@ test('STEPS EDIT: the dial rewrites the claim; a blank input DROPS it (never a l
   fireEvent.change(drop.getByLabelText('Steps applied'), { target: { value: '' } })
   fireEvent.click(drop.getByRole('button', { name: 'Save' }))
   expect(drop.onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6 }])
+})
+
+test('STEPS RANGE (the 4-to-8 correction): the dial states and bounds to the row domain; outside refuses LOUD', () => {
+  const { onEdit } = openLeaf({ kinds: [LORA_DISTILL], values: {} })
+  openCreate('LoRA')
+  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'turbo' } })
+  // the label STATES the range — a 4-to-8 adapter never reads as a naked number
+  expect(screen.getByText('Steps applied 4–8')).not.toBeNull()
+  const dial = screen.getByLabelText('Steps applied') as HTMLInputElement
+  expect(dial.min).toBe('4')
+  expect(dial.max).toBe('8')
+  // below the floor refuses LOUD
+  fireEvent.change(dial, { target: { value: '3' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(screen.getByText('Steps applied must be \u2265 4 on this adapter.')).not.toBeNull()
+  expect(onEdit).not.toHaveBeenCalled()
+  // above the ceiling refuses LOUD
+  fireEvent.change(dial, { target: { value: '9' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(screen.getByText('Steps applied must be \u2264 8 on this adapter.')).not.toBeNull()
+  expect(onEdit).not.toHaveBeenCalled()
+  // inside commits
+  fireEvent.change(dial, { target: { value: '6' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6, steps: 6 }])
+  cleanup()
+  // a FIXED-point row (dareties 4) states the fix, not a range
+  const fixed = openLeaf({ kinds: [LORA_DISTILL], values: {} })
+  openCreate('LoRA')
+  fireEvent.change(fixed.getByLabelText('LoRA'), { target: { value: 'dareties' } })
+  expect(fixed.getByText('Steps applied (fixed at 4)')).not.toBeNull()
+  expect((fixed.getByLabelText('Steps applied') as HTMLInputElement).min).toBe('')
 })
 
 test('OPTION CREATE: refusing LOUD — no row, no save; a non-number dial, no save', () => {

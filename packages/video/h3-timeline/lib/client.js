@@ -1916,6 +1916,18 @@ window.__ModuleLoader__.load({
 							setLeafError("Steps applied must be a whole number ≥ 1.");
 							return;
 						}
+						if (steps !== void 0) {
+							const min = option?.defaults?.steps_min;
+							const max = option?.defaults?.steps_max;
+							if (typeof min === "number" && steps < min) {
+								setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`);
+								return;
+							}
+							if (typeof max === "number" && steps > max) {
+								setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`);
+								return;
+							}
+						}
 						commit(k, [...entries, steps === void 0 ? {
 							id: draftOption,
 							strength
@@ -1939,6 +1951,19 @@ window.__ModuleLoader__.load({
 						if (steps !== void 0 && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
 							setLeafError("Steps applied must be a whole number ≥ 1.");
 							return;
+						}
+						if (steps !== void 0) {
+							const row = (k.options ?? []).find((o) => o.value === entry.id);
+							const min = row?.defaults?.steps_min;
+							const max = row?.defaults?.steps_max;
+							if (typeof min === "number" && steps < min) {
+								setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`);
+								return;
+							}
+							if (typeof max === "number" && steps > max) {
+								setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`);
+								return;
+							}
 						}
 						const next = [...entries];
 						if (steps === void 0) {
@@ -2159,17 +2184,26 @@ window.__ModuleLoader__.load({
 				onChange: (e) => {
 					onDraft.setDraftStrength(e.target.value);
 				}
-			})), (k.options ?? []).some((o) => typeof o.defaults?.steps === "number") ? (0, react.createElement)("label", { className: card_module_css_default.modField }, "Steps applied", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				"aria-label": "Steps applied",
-				type: "number",
-				step: "1",
-				value: onDraft.draftSteps,
-				placeholder: String(((k.options ?? []).find((o) => o.value === onDraft.draftOption) ?? (k.options ?? [])[0])?.defaults?.steps ?? ""),
-				title: "The distill’s own step count — the run’s sampler applies it unless a call pins steps explicitly.",
-				onChange: (e) => {
-					onDraft.setDraftSteps(e.target.value);
-				}
-			})) : null) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
+			})), (k.options ?? []).some((o) => typeof o.defaults?.steps === "number") ? (() => {
+				const rowOpts = k.options ?? [];
+				const activeRow = rowOpts.find((o) => o.value === onDraft.draftOption) ?? rowOpts[0];
+				const rMin = activeRow?.defaults?.steps_min;
+				const rMax = activeRow?.defaults?.steps_max;
+				const rangeText = typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? ` ${rMin}\u2013${rMax}` : typeof activeRow?.defaults?.steps === "number" ? ` (fixed at ${activeRow.defaults.steps})` : "";
+				return (0, react.createElement)("label", { className: card_module_css_default.modField }, `Steps applied${rangeText}`, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					"aria-label": "Steps applied",
+					type: "number",
+					step: "1",
+					min: typeof rMin === "number" ? String(rMin) : void 0,
+					max: typeof rMax === "number" ? String(rMax) : void 0,
+					value: onDraft.draftSteps,
+					placeholder: String(activeRow?.defaults?.steps ?? ""),
+					title: typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? `This adapter runs ${rMin}\u2013${rMax} steps — the dial bounds to the row's declared domain; the run\u2019s sampler applies it unless a call pins steps explicitly.` : "The distill’s own step count — the run’s sampler applies it unless a call pins steps explicitly.",
+					onChange: (e) => {
+						onDraft.setDraftSteps(e.target.value);
+					}
+				}));
+			})() : null) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
 				f,
 				value: onDraft.draftParams[f.name],
 				onEdit: (name, v) => {

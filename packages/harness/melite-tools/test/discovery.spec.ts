@@ -547,8 +547,8 @@ describe('live door arms', () => {
     const dareties = opts.find((o) => o['value'] === 'h3_lightx2v_dareties')
     const turbo = opts.find((o) => o['value'] === 'h3_lightx2v_turbo')
     assert.ok(dareties !== undefined && turbo !== undefined, 'both distill rows serve')
-    assert.deepEqual(dareties!['defaults'], { strength: 0.4, steps: 4 }, 'dareties v4: a four-step distill')
-    assert.deepEqual(turbo!['defaults'], { strength: 0.6, steps: 8 }, 'turbo 4-8: its applied count rides')
+    assert.deepEqual(dareties!['defaults'], { strength: 0.4, steps: 4 }, 'dareties v4: a four-step distill (fixed point)')
+    assert.deepEqual(turbo!['defaults'], { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8 }, 'turbo 4-8: the married default rides WITH its declared range')
   })
 
   test("formSpecArm serves the AGENT ENGINE doc from the declared contract (stroke 66 — the census rides LIVE)", async () => {

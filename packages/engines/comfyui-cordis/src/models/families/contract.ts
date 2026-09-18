@@ -59,11 +59,16 @@ export interface LoraRow {
   category: string;
   default_strength: number;
   /** STEPS APPLIED (2026-09-18): the sampler step count the distill
-   * adapter is married to (dareties v4 = 4, Turbo 4-8 = 8). Optional
-   * — rows without a count serve strength only. Carried VERBATIM
+   * adapter is married to. `steps` is the DEFAULT count (the golden's
+   * own married count — dareties v4 = 4, Turbo = 8); `steps_min`/
+   * `steps_max` declare the adapter's VALID RANGE when it is not a
+   * fixed point (Turbo 4-to-8-step: min 4, max 8). A bare `steps`
+   * implies the fixed point min = max = steps. Carried VERBATIM
    * through the contract into the served option defaults (the
-   * discovery seed); it is a SAMPLER fact, never a loader fact. */
+   * discovery seed); a SAMPLER fact, never a loader fact. */
   steps?: number;
+  steps_min?: number;
+  steps_max?: number;
   user_provided: boolean;
 }
 
@@ -74,6 +79,8 @@ export const LoraRow: z<LoraRow> = z.object({
   category: z.string().default(""),
   default_strength: z.number().min(0).max(2).default(1.0),
   steps: z.number().min(1).max(100).step(1),
+  steps_min: z.number().min(1).max(100).step(1),
+  steps_max: z.number().min(1).max(100).step(1),
   user_provided: z.boolean().default(false),
 });
 

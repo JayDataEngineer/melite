@@ -249,6 +249,15 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         if (steps !== undefined && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
           setLeafError('Steps applied must be a whole number \u2265 1.'); return
         }
+        // RANGE (the 4-to-8 correction): the chosen row's declared
+        // domain bounds the claim — a count outside it refuses LOUD
+        // (the call knob stays free; this is the row's own dial).
+        if (steps !== undefined) {
+          const min = option?.defaults?.steps_min
+          const max = option?.defaults?.steps_max
+          if (typeof min === 'number' && steps < min) { setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`); return }
+          if (typeof max === 'number' && steps > max) { setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`); return }
+        }
         commit(k, [...entries, steps === undefined ? { id: draftOption, strength } : { id: draftOption, strength, steps }])
       } else {
         const entry = entries[open.index]
@@ -260,6 +269,15 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         const steps = draftSteps.trim() === '' ? undefined : Number(draftSteps)
         if (steps !== undefined && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
           setLeafError('Steps applied must be a whole number \u2265 1.'); return
+        }
+        // RANGE (the 4-to-8 correction): the ENTRY's row bounds the
+        // claim — outside refuses LOUD, never a silent clamp.
+        if (steps !== undefined) {
+          const row = (k.options ?? []).find((o) => o.value === entry.id)
+          const min = row?.defaults?.steps_min
+          const max = row?.defaults?.steps_max
+          if (typeof min === 'number' && steps < min) { setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`); return }
+          if (typeof max === 'number' && steps > max) { setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`); return }
         }
         const next = [...entries]
         if (steps === undefined) {
@@ -559,21 +577,38 @@ function ModLeaf(props: {
           // steps, another for eight; blank rides the row default,
           // the compose honors it when the caller pins nothing. The
           // SERVED defaults drive the render (never the kind name).
+          // RANGE (the 4-to-8 correction): the SELECTED row's
+          // declared domain bounds the dial and states itself in
+          // the label — a 4-to-8 adapter reads "Steps applied 4–8",
+          // never a naked number lying about a range.
           (k.options ?? []).some((o) => typeof o.defaults?.steps === 'number')
-            ? h('label', { className: css.modField },
-                'Steps applied',
+            ? (() => {
+                const rowOpts = (k.options ?? [])
+                const activeRow = rowOpts.find((o) => o.value === onDraft.draftOption) ?? rowOpts[0]
+                const rMin = activeRow?.defaults?.steps_min
+                const rMax = activeRow?.defaults?.steps_max
+                const rangeText = typeof rMin === 'number' && typeof rMax === 'number' && rMin !== rMax
+                  ? ` ${rMin}\u2013${rMax}`
+                  : typeof activeRow?.defaults?.steps === 'number'
+                    ? ` (fixed at ${activeRow.defaults.steps})`
+                    : ''
+                return h('label', { className: css.modField },
+                `Steps applied${rangeText}`,
                 h(Input, {
                   'aria-label': 'Steps applied',
                   type: 'number',
                   step: '1',
+                  min: typeof rMin === 'number' ? String(rMin) : undefined,
+                  max: typeof rMax === 'number' ? String(rMax) : undefined,
                   value: onDraft.draftSteps,
-                  placeholder: String(
-                    ((k.options ?? []).find((o) => o.value === onDraft.draftOption) ?? (k.options ?? [])[0])?.defaults?.steps ?? '',
-                  ),
-                  title: 'The distill\u2019s own step count — the run\u2019s sampler applies it unless a call pins steps explicitly.',
+                  placeholder: String(activeRow?.defaults?.steps ?? ''),
+                  title: typeof rMin === 'number' && typeof rMax === 'number' && rMin !== rMax
+                    ? `This adapter runs ${rMin}\u2013${rMax} steps — the dial bounds to the row's declared domain; the run\u2019s sampler applies it unless a call pins steps explicitly.`
+                    : 'The distill\u2019s own step count — the run\u2019s sampler applies it unless a call pins steps explicitly.',
                   onChange: (e: { target: { value: string } }) => { onDraft.setDraftSteps(e.target.value) },
                 }),
               )
+              })()
             : null,
         )
       : h('div', { className: css.modLeafFields },

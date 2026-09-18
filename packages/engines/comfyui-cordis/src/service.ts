@@ -251,8 +251,14 @@ export interface LoraRowDecl {
   /** Steps applied (2026-09-18): a DISTILL adapter's married step
    *  count — one lora for four steps, another for eight. Served into
    *  the option defaults so boarding stamps it onto the entry; the
-   *  compose honors it when the caller pins no steps of their own. */
+   *  compose honors it when the caller pins no steps of their own.
+   *  RANGE FACTS (the 4-to-8 correction): `steps_min`/`steps_max`
+   *  declare the adapter's valid domain when it is not a fixed
+   *  point (Turbo 4-to-8: min 4, max 8; the married default stays
+   *  `steps`). A bare `steps` implies the fixed point. */
   readonly steps?: number
+  readonly steps_min?: number
+  readonly steps_max?: number
   readonly tooltip?: string
   readonly preprocessor?: string
 }
