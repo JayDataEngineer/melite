@@ -1,19 +1,22 @@
 /**
- * CallFrameSubcard — one frame-conditioning subcard (BEHAVIORAL).
+ * CallFrameSubcard — the BUNDLE SPLIT pieces (BEHAVIORAL,
+ * 2026-09-18): FirstFrameSlot (the anchor square in the image
+ * bus — one grammar with the ref chips) and SeamControls (the
+ * call's join — cut/extend + prev continuation).
  *
  * PINS (ONE grammar via SourceRow, the studio's own file law):
  * From-flow picks write URL→NAME (unmatched URLs refuse visibly),
  * data: URLs ride verbatim, clear empties, uploads gate type+size
- * with visible errors, and the first-frame seam (cut/extend +
- * prev-video toggle + carry seconds) writes its own doors.
+ * with visible errors, and the seam (cut/extend + prev toggle +
+ * carry seconds) writes its own doors.
  */
 import { describe, expect, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/estate-remote"
-import { CallFrameSubcard } from "../src/ui/studio/CallFrameSubcard.tsx"
+import { FirstFrameSlot, SeamControls } from "../src/ui/studio/CallFrameSubcard.tsx"
 
-/** THE MEDIA BIND (the one-lane law): the subcard's From-media rows
+/** THE MEDIA BIND (the one-lane law): the slot's From-media rows
  *  ride the mounted media namespace — a local fake serving one
  *  foreign row (the vocabulary-refusal wall below). Unused
  *  namespaces throw (never silently serve). */
@@ -42,14 +45,13 @@ const LINKS = [
   { name: "up-data", url: "data:image/png;base64,AAA", title: "up" },
 ]
 
-function sub(over?: Record<string, unknown>) {
+function slot(over?: Record<string, unknown>) {
   const changed: string[] = []
   const p = {
-    label: "First frame",
     testId: "tl-frame-first",
     callIndex: 0,
     value: undefined as string | undefined,
-    onChange: (s: string) => { changed.push(s) },
+    onChange: (src: string) => { changed.push(src) },
     nameToUrl: NAME_TO_URL,
     urlToName: URL_TO_NAME,
     links: LINKS,
@@ -59,8 +61,8 @@ function sub(over?: Record<string, unknown>) {
 }
 
 /** Square → menu → From flow → candidate row (the modal closes). */
-async function flowPick(label: string, rowName: string) {
-  fireEvent.click(screen.getByLabelText("source"))
+async function flowPick(_label: string, rowName: string) {
+  fireEvent.click(screen.getByLabelText("first frame · slot 1 source"))
   fireEvent.click(await screen.findByText("From flow"))
   const modal = await screen.findByText("The other stages’ latest outputs (image)")
   const list = modal.closest("div")!.parentElement!
@@ -68,33 +70,33 @@ async function flowPick(label: string, rowName: string) {
   fireEvent.click(btn)
 }
 
-describe("the source row (URL→NAME honesty)", () => {
+describe("the anchor slot (URL→NAME honesty)", () => {
   it("a flow pick writes the NAME (the drop-honesty law)", async () => {
-    const { p, changed } = sub({ value: "still-b" })
-    render(<CallFrameSubcard {...p} />)
+    const { p, changed } = slot({ value: "still-b" })
+    render(<FirstFrameSlot {...p} />)
     await flowPick("First frame", "still-a")
     assert.deepEqual(changed, ["still-a"])
   })
 
   it("a data: pick rides verbatim (uploads are first-class)", async () => {
-    const { p, changed } = sub()
-    render(<CallFrameSubcard {...p} />)
+    const { p, changed } = slot()
+    render(<FirstFrameSlot {...p} />)
     await flowPick("First frame", "up-data")
     assert.deepEqual(changed, ["data:image/png;base64,AAA"])
   })
 
   it("— clear — empties the source", async () => {
-    const { p, changed } = sub({ value: "still-a" })
-    render(<CallFrameSubcard {...p} />)
-    fireEvent.click(screen.getByLabelText("source"))
+    const { p, changed } = slot({ value: "still-a" })
+    render(<FirstFrameSlot {...p} />)
+    fireEvent.click(screen.getByLabelText("first frame · slot 1 source"))
     fireEvent.click(await screen.findByText("— clear —"))
     assert.deepEqual(changed, [""])
   })
 
   it("no links = no flow candidates (never a crash)", async () => {
-    const { p, changed } = sub({ value: undefined, links: undefined })
-    render(<CallFrameSubcard {...p} />)
-    fireEvent.click(screen.getByLabelText("source"))
+    const { p, changed } = slot({ value: undefined, links: undefined })
+    render(<FirstFrameSlot {...p} />)
+    fireEvent.click(screen.getByLabelText("first frame · slot 1 source"))
     fireEvent.click(await screen.findByText("From flow"))
     assert.ok(await screen.findByText("nothing to pick yet"))
     assert.deepEqual(changed, [])
@@ -103,9 +105,9 @@ describe("the source row (URL→NAME honesty)", () => {
   it("a foreign URL refuses VISIBLY (never a silent unresolved pass)", async () => {
     bindForeignMedia()
     try {
-      const { p, changed } = sub()
-      render(<CallFrameSubcard {...p} />)
-      fireEvent.click(screen.getByLabelText("source"))
+      const { p, changed } = slot()
+      render(<FirstFrameSlot {...p} />)
+      fireEvent.click(screen.getByLabelText("first frame · slot 1 source"))
       fireEvent.click(await screen.findByText("From media"))
       const row = await screen.findByText("x")
       fireEvent.click(row.closest("button")!)
@@ -122,8 +124,8 @@ describe("the source row (URL→NAME honesty)", () => {
 
   it("value faces render (blank / data: / known / unknown names)", () => {
     for (const v of [undefined, "  ", "data:image/png;base64,AAA", "still-a", "ghost-name"]) {
-      const { p } = sub({ value: v })
-      const h = render(<CallFrameSubcard {...p} />)
+      const { p } = slot({ value: v })
+      const h = render(<FirstFrameSlot {...p} />)
       assert.ok(screen.getByTestId("tl-frame-first"))
       h.unmount()
     }
@@ -140,8 +142,8 @@ describe("takeFile (the studio's own file law)", () => {
   }
 
   it("an image file rides inline; error clears", async () => {
-    const { p, changed } = sub()
-    render(<CallFrameSubcard {...p} />)
+    const { p, changed } = slot()
+    render(<FirstFrameSlot {...p} />)
     fireEvent.change(fileInput(), { target: { files: [new File(["bytes"], "up.png", { type: "image/png" })] } })
     await waitFor(() => { assert.equal(changed.length, 1) })
     assert.ok(changed[0]!.startsWith("data:image/png;base64,"))
@@ -149,8 +151,8 @@ describe("takeFile (the studio's own file law)", () => {
   })
 
   it("non-images refuse with the type named (empty type = unknown)", async () => {
-    const { p, changed } = sub()
-    render(<CallFrameSubcard {...p} />)
+    const { p, changed } = slot()
+    render(<FirstFrameSlot {...p} />)
     fireEvent.change(fileInput(), { target: { files: [new File(["x"], "v.mp4", { type: "video/mp4" })] } })
     assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("video/mp4"))
     fireEvent.change(fileInput(), { target: { files: [new File(["x"], "blob")] } })
@@ -159,8 +161,8 @@ describe("takeFile (the studio's own file law)", () => {
   })
 
   it("oversize images refuse; unreadable files refuse (never a throw)", async () => {
-    const { p, changed } = sub()
-    render(<CallFrameSubcard {...p} />)
+    const { p, changed } = slot()
+    render(<FirstFrameSlot {...p} />)
     fireEvent.change(fileInput(), {
       target: { files: [new File([new ArrayBuffer(21 * 1024 * 1024)], "big.png", { type: "image/png" })] },
     })
@@ -188,7 +190,8 @@ describe("the seam (first-frame continuation)", () => {
     const prevs: (number | null)[] = []
     const trans: string[] = []
     const p = {
-      ...sub().p,
+      callIndex: 0,
+      testId: "tl-frame-first",
       prevSec: undefined as number | undefined,
       onPrevSec: (n: number | null) => { prevs.push(n) },
       transition: "cut" as "cut" | "extend",
@@ -199,18 +202,19 @@ describe("the seam (first-frame continuation)", () => {
   }
 
   it("absent without both doors; cut mode arms the opener", () => {
-    const bare = sub()
-    const h1 = render(<CallFrameSubcard {...bare.p} />)
+    const bare = seam({ onPrevSec: undefined, onTransition: undefined })
+    const h1 = render(<SeamControls {...bare.p} />)
     assert.equal(screen.queryByLabelText("Call 0 continue from previous"), null)
+    assert.equal(screen.queryByLabelText("Call 0 seam mode"), null)
     h1.unmount()
     const half = seam({ onTransition: undefined })
-    const h2 = render(<CallFrameSubcard {...half.p} />)
+    const h2 = render(<SeamControls {...half.p} />)
     // prev label without the seam row (no mode select)
     assert.ok(screen.getByLabelText("Call 0 continue from previous"))
     assert.equal(screen.queryByLabelText("Call 0 seam mode"), null)
     h2.unmount()
     const { p } = seam()
-    render(<CallFrameSubcard {...p} />)
+    render(<SeamControls {...p} />)
     const mode = screen.getByLabelText("Call 0 seam mode") as HTMLSelectElement
     assert.equal(mode.value, "cut")
     assert.ok(screen.getByText("open from the last"))
@@ -219,24 +223,24 @@ describe("the seam (first-frame continuation)", () => {
 
   it("absent transition DISPLAYS extend — what the compose actually does (the wire-up law, 2026-09-17)", () => {
     const { p } = seam({ transition: undefined })
-    render(<CallFrameSubcard {...p} />)
+    render(<SeamControls {...p} />)
     const mode = screen.getByLabelText("Call 0 seam mode") as HTMLSelectElement
     assert.equal(mode.value, "extend")
   });
 
   it("the toggle writes 2 (cut) / 3 (extend) / null (off)", () => {
     const cut = seam()
-    const h1 = render(<CallFrameSubcard {...cut.p} />)
+    const h1 = render(<SeamControls {...cut.p} />)
     fireEvent.click(screen.getByLabelText("Call 0 continue from previous"))
     assert.deepEqual(cut.prevs, [2])
     h1.unmount()
     const ext = seam({ transition: "extend" })
-    const h2 = render(<CallFrameSubcard {...ext.p} />)
+    const h2 = render(<SeamControls {...ext.p} />)
     fireEvent.click(screen.getByLabelText("Call 0 continue from previous"))
     assert.deepEqual(ext.prevs, [3])
     h2.unmount()
     const on = seam({ prevSec: 2 })
-    const h3 = render(<CallFrameSubcard {...on.p} />)
+    const h3 = render(<SeamControls {...on.p} />)
     fireEvent.click(screen.getByLabelText("Call 0 continue from previous"))
     assert.deepEqual(on.prevs, [null])
     h3.unmount()
@@ -244,7 +248,7 @@ describe("the seam (first-frame continuation)", () => {
 
   it("the mode select switches; carry seconds edit (valid only)", () => {
     const { p, prevs, trans } = seam({ transition: "extend", prevSec: 3 })
-    render(<CallFrameSubcard {...p} />)
+    render(<SeamControls {...p} />)
     const mode = screen.getByLabelText("Call 0 seam mode") as HTMLSelectElement
     assert.equal(mode.value, "extend")
     fireEvent.change(mode, { target: { value: "cut" } })
@@ -263,7 +267,7 @@ describe("the seam (first-frame continuation)", () => {
 
   it("cut carry seconds + disabled note faces", () => {
     const { p, prevs } = seam({ prevSec: 2, prevDisabled: true, prevNote: "no prev yet" })
-    render(<CallFrameSubcard {...p} />)
+    render(<SeamControls {...p} />)
     const num = screen.getByLabelText("Call 0 previous video tail seconds") as HTMLInputElement
     fireEvent.change(num, { target: { value: "4" } })
     assert.deepEqual(prevs, [4])

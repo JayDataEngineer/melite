@@ -10,13 +10,116 @@ import { ChevronDown, X } from "@melite/card-base/icons"
 import s from "./studio.module.css"
 import { GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel"
 import type { DocCall } from "./docModel"
-import { splitRefList } from "./refUtils"
 import type { GuideKind } from "./docModel"
+import { readAsDataURL } from "@melite/card-base/chrome"
+import { SourceRow } from "@melite/card-base/form"
 import { BeatKnobControl } from "./BeatKnobControl"
-import { CallFrameSubcard } from "./CallFrameSubcard"
-import { RefPickerRow } from "./RefPickerRow"
+import { FirstFrameSlot, SeamControls } from "./CallFrameSubcard"
 import { CallCardPrompt } from "./CallCardPrompt"
+import { REF_UPLOAD_SPEC, refGenreOf, splitRefList } from "./refUtils"
 import type { CallCardDeps } from "./CallCardsPanel"
+
+/** THE SEAM-CARRY TRUTH (mirror of the card's own law): a chained
+ *  window's delivered frames are its span MINUS the carry its seam
+ *  consumes — extend defaults 39 (snapped to the 5/22/39/56 latent
+ *  steps), cut+prev_sec carries prev_sec×24 snapped. First windows
+ *  and hard cuts deliver their whole span. */
+const CARRY_LEGAL = [5, 22, 39, 56]
+const snapCarry = (frames: number): number => {
+  let best = CARRY_LEGAL[0] as number
+  for (const v of CARRY_LEGAL) {
+    if (Math.abs(v - frames) < Math.abs(best - frames)) best = v
+  }
+  return best
+}
+export const deliveredFrames = (c: DocCall, i: number): number => {
+  const span = c.end_frame - c.start_frame
+  if (i === 0 || c.transition === "cut") {
+    const secs = c.first_frame_prev_sec
+    const carry = secs != null ? snapCarry(secs * 24) : 0
+    return Math.max(0, span - carry)
+  }
+  const secs = c.first_frame_prev_sec
+  return Math.max(0, span - (secs != null ? snapCarry(secs * 24) : 39))
+}
+
+/** ONE ref bucket — the estate's SourceRow per chip (the operator's
+ *  2026-09-13 law: SourceRow owns EVERY input slot): pick from the
+ *  available artifacts, upload inline (data: URL chip), remove via
+ *  clear. The wire form is the comma string (the card's wireList
+ *  law — trimmed entries, empties absent). */
+function RefsBucket({
+  label, kind, cap, value, artifacts, onChange,
+}: {
+  label: string
+  kind: "image" | "video" | "audio"
+  /** Bundle cap (3 videos, 3 audios — the image lane owns the 9-slot
+   * image bus: slot 1 anchor + slots 2-9 refs). */
+  cap: number
+  value: string | undefined
+  artifacts: Array<{ name: string; url: string }>
+  onChange: (next: string) => void
+}) {
+  const chips = splitRefList(value)
+  const over = chips.length > cap
+  const candidates = artifacts
+    .filter((a) => refGenreOf(a.name, a.url) === kind && !chips.includes(a.name))
+    .map((a) => ({ id: a.name, label: a.name, url: a.url }))
+  const setChips = (next: string[]): void => onChange(next.length ? next.join(", ") : "")
+  const up = REF_UPLOAD_SPEC[kind]
+  // THE PICK TRANSLATION (the slot grammar): a From-flow pick hands
+  // the candidate's URL — the refs wire carries artifact NAMES (the
+  // estate re-resolves names each run). A data: URL or bare name
+  // rides verbatim.
+  const chipOf = (v: string): string => {
+    const byUrl = candidates.find((c) => c.url === v)
+    return byUrl !== undefined ? byUrl.id : v
+  }
+  return (
+    <div className={s.refRow} data-testid="tl-call-ref-bucket">
+      <div className={s.refHead}>
+        <span className={s.refLabel}>{label}</span>
+        <span className={cn(s.refCount, over ? s.refCountOver : s.refCountOk)}>
+          {chips.length}/{cap}{over ? " over cap" : ""}
+        </span>
+      </div>
+      <div className={s.chips}>
+        {chips.map((chip, ci) => (
+          <SourceRow
+            key={`${chip}-${ci}`}
+            label={chip.startsWith("data:") ? `upload ${ci + 1}` : chip}
+            kind={kind === "image" ? "image" : "file"}
+            value={chip.startsWith("data:") ? null : chip}
+            onEdit={(v) => {
+              if (v === "") setChips(chips.filter((_, x) => x !== ci))
+              else setChips(chips.map((x, idx) => (idx === ci ? chipOf(v) : x)))
+            }}
+            candidates={candidates}
+            onFile={async (f) => {
+              try {
+                const data = await readAsDataURL(f)
+                setChips(chips.map((x, idx) => (idx === ci ? data : x)))
+              } catch { /* unreadable — the pickers never throw */ }
+            }}
+          />
+        ))}
+        <SourceRow
+          label={`+ ${label.toLowerCase()}`}
+          kind={kind === "image" ? "image" : "file"}
+          value={null}
+          onEdit={(v) => { if (v !== "") setChips([...chips, chipOf(v)]) }}
+          candidates={candidates}
+          onFile={async (f) => {
+            if (f.size > up.maxMb * 1024 * 1024) return
+            try {
+              setChips([...chips, await readAsDataURL(f)])
+            } catch { /* unreadable — the pickers never throw */ }
+          }}
+        />
+      </div>
+    </div>
+  )
+}
 
 /** One focused model-call card (monolith lines 3418–3466 + 3641–3844;
  *  the prompt block lives in CallCardPrompt). */
@@ -56,8 +159,11 @@ export function CallCard({
         <span className={s.cardId}>
           #{i} · Model call {i + 1}
         </span>
-        <span className={s.cardSpan} title={`frames ${c.start_frame}–${c.end_frame} (end exclusive)`}>
-          frames {c.start_frame}–{c.end_frame} · {((c.end_frame - c.start_frame) / fps).toFixed(1)}s
+        <span
+          className={s.cardSpan}
+          title={`frames ${c.start_frame}–${c.end_frame} (end exclusive) — delivered ${deliveredFrames(c, i)}f after the seam's carry`}
+        >
+          frames {c.start_frame}–{c.end_frame} · span {((c.end_frame - c.start_frame) / fps).toFixed(1)}s → delivered {(deliveredFrames(c, i) / fps).toFixed(1)}s
         </span>
         {activeKnobs > 0 && (
           <span className={s.knobTag}>
@@ -118,66 +224,144 @@ export function CallCard({
       <span className={s.spanNote}>end exclusive · edit ripples the cut into the neighbor</span>
     </div>
 
-    {/* ── The frame conditioner — the SUBCARD (the
-        qwen-img-edit-2511 input pattern, upgraded 2026-08-24
-        to FULL image inputs — upload / OS drop / tray drop /
-        LINK TO PREVIOUS OUTPUT, the same affordances every
-        other image slot has): FIRST frame (the opening still
-        — `image`, which a seam turns into the window's
-        first_frame — plus the prev-video continuation
-        option). The LAST frame subcard was CUT 2026-09-15:
-        the PlagueKind gen lane (ReferenceToVideo) owns no
-        last-frame input, so the control wrote wire nothing
-        reads. */}
-    <div className={s.framesRow}>
-      <CallFrameSubcard
-        label="First frame"
-        testId="tl-first-frame"
-        callIndex={i}
-        value={c.image}
-        onChange={(source) => setCallGuide(i, "image", source)}
-        nameToUrl={artifactIndex.byName}
-        urlToName={artifactIndex.byUrl}
-        links={linkGroups}
-        prevSec={c.first_frame_prev_sec}
-        onPrevSec={(sec) => setCallPrevSec(i, sec)}
-        transition={c.transition}
-        onTransition={(t) => setCallTransition(i, t)}
-        prevDisabled={i === 0}
-        prevNote={i === 0
-          ? "the first call has no previous video to continue from"
-          : undefined}
-      />
+    {/* ── THE REFERENCE BUNDLE — ONE bus, the model's own topology
+        (operator correction, 2026-09-18: "you put first frame in a
+        different category than reference image — they are complete
+        alien concepts in the UI"). At the model level there is ONE
+        image bus: slot 1 = the first frame (the anchor — it starts
+        the window and sizes it), slots 2-9 = reference images, then
+        3 video lanes and 3 audio lanes. The UI mirrors the bundle
+        or it lies — the anchor renders in the SAME lane grammar as
+        the ref chips, never in an alien box. The seam controls ride
+        under the bus (the seam is the call's join, not a slot). */}
+    <div className={s.callRefs} data-testid="tl-call-refs">
+      <div className={s.callRefsHead}>
+        <span className={s.callRefsTitle}>
+          Reference bundle (this call)
+        </span>
+        <span className={s.callRefsNote}>
+          the model's input bus · slot 1 anchors the start &amp; sizes the window · slots 2–9 + the video/audio lanes condition identity
+        </span>
+      </div>
+      <div className={s.callRefsBody}>
+        {/* THE IMAGE LANE — the 9-slot bus: anchor first, then the
+            ref chips, then the add-row. One grammar, one family. */}
+        {(() => {
+          const chips = splitRefList(c.refs?.images)
+          const anchor = (c.image ?? "").trim() !== "" ? 1 : 0
+          const total = anchor + chips.length
+          const over = total > 9
+          const candidates = refArtifacts
+            .filter((a) => refGenreOf(a.name, a.url) === "image" && !chips.includes(a.name))
+            .map((a) => ({ id: a.name, label: a.name, url: a.url }))
+          const setChips = (next: string[]): void =>
+            setCallRefs(i, "images", next.length ? next.join(", ") : "")
+          const up = REF_UPLOAD_SPEC.image
+          // THE PICK TRANSLATION (the slot grammar): a From-flow pick
+          // hands the candidate's URL — the refs wire carries artifact
+          // NAMES (the estate re-resolves names each run). A data: URL
+          // or bare name rides verbatim.
+          const chipOf = (v: string): string => {
+            const byUrl = candidates.find((cand) => cand.url === v)
+            return byUrl !== undefined ? byUrl.id : v
+          }
+          return (
+            <div className={s.refRow} data-testid="tl-call-ref-bucket">
+              <div className={s.refHead}>
+                <span className={s.refLabel}>Images — slot 1 anchors · slots 2–9 reference</span>
+                <span
+                  className={cn(s.refCount, over ? s.refCountOver : s.refCountOk)}
+                  title={over
+                    ? `${total} image slots claimed — the bus holds 9 (1 anchor + 8 refs); the compose slices the overflow`
+                    : `${total} of 9 image slots on the bus`}
+                  data-testid="tl-call-ref-images"
+                >
+                  {total}/9{over ? " over bus" : ""}
+                </span>
+              </div>
+              <div className={s.chips}>
+                <FirstFrameSlot
+                  testId="tl-first-frame"
+                  callIndex={i}
+                  value={c.image}
+                  onChange={(source) => setCallGuide(i, "image", source)}
+                  nameToUrl={artifactIndex.byName}
+                  urlToName={artifactIndex.byUrl}
+                  links={linkGroups}
+                />
+                {chips.map((chip, ci) => (
+                  <SourceRow
+                    key={`${chip}-${ci}`}
+                    label={chip.startsWith("data:") ? `upload ${ci + 1}` : chip}
+                    kind="image"
+                    value={chip.startsWith("data:") ? null : chip}
+                    onEdit={(v) => {
+                      if (v === "") setChips(chips.filter((_, x) => x !== ci))
+                      else setChips(chips.map((x, idx) => (idx === ci ? chipOf(v) : x)))
+                    }}
+                    candidates={candidates}
+                    onFile={async (f) => {
+                      try {
+                        const data = await readAsDataURL(f)
+                        setChips(chips.map((x, idx) => (idx === ci ? data : x)))
+                      } catch { /* unreadable — the pickers never throw */ }
+                    }}
+                  />
+                ))}
+                <SourceRow
+                  label="+ ref image"
+                  kind="image"
+                  value={null}
+                  onEdit={(v) => { if (v !== "") setChips([...chips, chipOf(v)]) }}
+                  candidates={candidates}
+                  onFile={async (f) => {
+                    if (f.size > up.maxMb * 1024 * 1024) return
+                    try {
+                      setChips([...chips, await readAsDataURL(f)])
+                    } catch { /* unreadable — the pickers never throw */ }
+                  }}
+                />
+              </div>
+            </div>
+          )
+        })()}
+        {/* THE SEAM — the call's join (cut vs extend + the prev
+            continuation). Seam concepts ride under the bus, never
+            inside a slot. */}
+        <SeamControls
+          callIndex={i}
+          testId="tl-first-frame"
+          prevSec={c.first_frame_prev_sec}
+          onPrevSec={(sec) => setCallPrevSec(i, sec)}
+          transition={c.transition}
+          onTransition={(t) => setCallTransition(i, t)}
+          prevDisabled={i === 0}
+          prevNote={i === 0
+            ? "the first call has no previous video to continue from"
+            : undefined}
+        />
+        <RefsBucket
+          label="Ref videos"
+          kind="video"
+          cap={3}
+          value={c.refs?.videos}
+          artifacts={refArtifacts}
+          onChange={(v) => setCallRefs(i, "videos", v)}
+        />
+        <RefsBucket
+          label="Ref audios"
+          kind="audio"
+          cap={3}
+          value={c.refs?.audios}
+          artifacts={refArtifacts}
+          onChange={(v) => setCallRefs(i, "audios", v)}
+        />
+      </div>
     </div>
-
-    {/* Per-call reference images: NO freetext input here
-        (2026-09-02) — the artifact-system picker in the
-        Identity-refs subpanel below owns this field
-        (pick from available artifacts or upload inline);
-        this raw-text input writing the same key was the
-        half of the freetext bug the picker surgery
-        missed. The cap badge stays — it reads the same
-        chips the picker writes. */}
-    {(() => {
-        const extraCount = splitRefList(c.refs?.images).length
-        const guidePresent = !!(c.image ?? "").trim() ? 1 : 0
-        const total = extraCount + guidePresent
-        if (total === 0) return null
-        return (
-          <div className={s.refBadgeRow} data-testid="tl-call-ref-images">
-            <span
-              className={cn(s.refBadge, total > 10 ? s.refBadgeOver : s.refBadgeOk)}
-              title={total > 10 ? `${total} refs total — exceeds the 10-image cap` : `${total} ref image${total === 1 ? "" : "s"} (guide + extras) — managed in Identity refs below`}
-            >
-              refs {total}/10
-            </span>
-          </div>
-        )
-      })()}
 
     {/* The guides — the call's own clip/audio sources
         (anchored at the cut, in-point semantics). The IMAGE
-        input moved into the First-frame subcard above —
+        input rides the bundle's anchor slot above —
         `image` IS the first-frame source. */}
     <div className={s.guidesRow}>
       {(["clip", "audio"] as GuideKind[]).map((kind) => {
@@ -211,49 +395,6 @@ export function CallCard({
         )
       })}
     </div>
-
-    {/* Per-call identity refs (Ref2VA route only): each
-        model call conditions on ITS OWN references —
-        REPLACE the run-level refs for this call's
-        windows; empty = inherit the run defaults. */}
-    {isRef2va && (
-      <div className={s.callRefs} data-testid="tl-call-refs">
-        <div className={s.callRefsHead}>
-          <span className={s.callRefsTitle}>
-            Identity refs (this call)
-          </span>
-          <span className={s.callRefsNote}>
-            replaces run refs · empty = inherit
-          </span>
-        </div>
-        <div className={s.callRefsBody}>
-          {([
-            ["images", "Ref images", "image", 10] as const,
-          ]).map(([key, label, genre, cap]) => (
-            <RefPickerRow
-              key={key}
-              label={label}
-              ariaLabel={`call ${i} ${label}`}
-              testId="tl-call-ref-picker"
-              value={c.refs?.[key]}
-              onChange={(v) => setCallRefs(i, key, v ?? "")}
-              genre={genre}
-              cap={cap}
-              artifacts={refArtifacts}
-            />
-          ))}
-          {/* (2026-09-02 truth-in-UI) per-call refs.videos/
-            audios were OFFERED here but the compiler never
-            stages or wires them — dead controls writing
-            values nothing reads. Videos/audios/video_audios
-            ride at RUN level (the bundle bus is global);
-            per-call is the image bus (t4r ref_image slots). */}
-          <p className={s.callRefsFoot}>
-            per-call refs are the image bus — ref videos / audios ride at run level
-          </p>
-        </div>
-      </div>
-    )}
 
     {/* Call knobs — the Layer B REPLACE fold: per-call
         overrides of the run's global values. Every control's

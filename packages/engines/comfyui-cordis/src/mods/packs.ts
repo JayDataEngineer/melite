@@ -24,9 +24,21 @@ import z from '@deepseek-ai/schemastery'
 
 export const inject = ['comfyui']
 
-// ── LORAS (the py LorasMod): the LoRA stack ──
+// ── LORAS (the py LorasMod): the LoRA stack. Entry steps (operator
+// correction, 2026-09-18): a DISTILL adapter is married to its step
+// count — one lora for four steps, another for eight — so the entry
+// carries `steps applied` alongside strength (the row's catalog
+// default seeds it; the sampler honors it when the caller pins
+// nothing). The stack wire itself ({on, lora, str, v/a/t}) is
+// unchanged — steps is a SAMPLER fact, not a loader fact. ──
 const LorasFields = z.object({
-  loras: z.array(z.object({ name: z.string(), strength: z.number() }))
+  loras: z.array(z.object({
+    name: z.string(),
+    strength: z.number(),
+    steps: z.number().min(1).max(100).step(1)
+      .description('Steps applied')
+      .extra('extra', { wtype: 'number', group: 'loras_controlnet', zone: 'mods', order: 1, width: 1, step: 1 }),
+  }))
     .description('LoRAs')
     .extra('extra', { wtype: 'loras', group: 'loras_controlnet', zone: 'mods', default: null, order: 0 }),
 })
@@ -112,17 +124,17 @@ const LanpaintFields = z.object({
   lanpaint_enabled: z.boolean().default(false).description('Force LanPaint')
     .extra('extra', { wtype: 'boolean', group: 'lanpaint', visible_when: 'image1 != null', order: 1 }),
   lanpaint_num_steps: z.number().min(1).max(100).default(20).description('Num Steps')
-    .extra('extra', { wtype: 'number', group: 'lanpaint', visible_when: 'lanpaint_enabled == true', order: 2, width: 1, step: 1 }),
+    .extra('extra', { wtype: 'number', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 2, width: 1, step: 1 }),
   lanpaint_step_size: z.number().min(0.1).max(2).default(1.0).description('Step Size')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled == true', order: 3, width: 1, step: 0.1 }),
+    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 3, width: 1, step: 0.1 }),
   lanpaint_lambda: z.number().min(0).max(2).default(0.5).description('Lambda')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled == true', order: 4, width: 1, step: 0.05 }),
+    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 4, width: 1, step: 0.05 }),
   lanpaint_beta: z.number().min(0).max(2).default(0.5).description('Beta')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled == true', order: 5, width: 1, step: 0.05 }),
+    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 5, width: 1, step: 0.05 }),
   lanpaint_friction: z.number().min(0).max(2).default(0.5).description('Friction')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled == true', order: 6, width: 1, step: 0.05 }),
+    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 6, width: 1, step: 0.05 }),
   lanpaint_prompt_mode: z.union([z.const('negative'), z.const('positive')]).default('negative').description('Prompt Mode')
-    .extra('extra', { wtype: 'select', group: 'lanpaint', visible_when: 'lanpaint_enabled == true', order: 7, width: 1, options: ['negative', 'positive'] }),
+    .extra('extra', { wtype: 'select', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 7, width: 1, options: ['negative', 'positive'] }),
   outpaint_top: z.number().min(0).max(512).default(0).description('Expand Top')
     .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 8, width: 1, step: 8 }),
   outpaint_right: z.number().min(0).max(512).default(0).description('Expand Right')

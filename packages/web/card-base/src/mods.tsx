@@ -103,6 +103,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
   const [leafError, setLeafError] = useState<string | null>(null)
   const [draftOption, setDraftOption] = useState('')
   const [draftStrength, setDraftStrength] = useState('')
+  // STEPS APPLIED draft (2026-09-18): option kinds whose rows claim a
+  // distill step count (the served defaults carry `steps`) render a
+  // steps row in the leaf — '' rides the row default.
+  const [draftSteps, setDraftSteps] = useState('')
   // FIELD-kind leaf draft: the entry's params object (create starts
   // from the kind fields' defaults).
   const [draftParams, setDraftParams] = useState<SpecValues>({})
@@ -160,6 +164,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     }
     setDraftOption('')
     setDraftStrength('')
+    setDraftSteps('')
     setDraftParams(fieldDefaults(k))
     setLeafError(null)
     setLeaf({ mode: 'create', kind: k, index: -1 })
@@ -183,6 +188,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     } else if (isOptionKind(k)) {
       const strength = typeof entry['strength'] === 'number' ? entry['strength'] as number : undefined
       setDraftStrength(strength !== undefined ? String(strength) : '')
+      setDraftSteps(typeof entry['steps'] === 'number' ? String(entry['steps'] as number) : '')
     } else {
       const params: SpecValues = {}
       for (const f of k.fields ?? []) {
@@ -233,14 +239,37 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         const seed = option !== null && option.defaults?.strength !== undefined ? option.defaults.strength : 1.0
         const strength = draftStrength.trim() === '' ? seed : Number(draftStrength)
         if (!Number.isFinite(strength)) { setLeafError('Strength must be a number.'); return }
-        commit(k, [...entries, { id: draftOption, strength }])
+        // steps applied: the row's served default seeds a blank input
+        // (the distill's married count); a stated count must be a
+        // whole number — never a silent fractional step run.
+        const stepsSeed = option?.defaults?.steps
+        const steps = draftSteps.trim() === ''
+          ? (typeof stepsSeed === 'number' ? stepsSeed : undefined)
+          : Number(draftSteps)
+        if (steps !== undefined && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
+          setLeafError('Steps applied must be a whole number \u2265 1.'); return
+        }
+        commit(k, [...entries, steps === undefined ? { id: draftOption, strength } : { id: draftOption, strength, steps }])
       } else {
         const entry = entries[open.index]
         if (entry === undefined) { setLeaf(null); return }
         const strength = Number(draftStrength)
         if (!Number.isFinite(strength)) { setLeafError('Strength must be a number.'); return }
+        // steps applied (edit): a blank input DROPS the claim (back
+        // to the ambient steps row); a stated count replaces it.
+        const steps = draftSteps.trim() === '' ? undefined : Number(draftSteps)
+        if (steps !== undefined && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
+          setLeafError('Steps applied must be a whole number \u2265 1.'); return
+        }
         const next = [...entries]
-        next[open.index] = { ...entry, strength }
+        if (steps === undefined) {
+          // blank drops the claim (delete, never a lingering spread)
+          const rest: Record<string, unknown> = { ...entry, strength }
+          delete rest['steps']
+          next[open.index] = rest
+        } else {
+          next[open.index] = { ...entry, strength, steps }
+        }
         commit(k, next)
       }
     } else {
@@ -401,7 +430,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       title: (leaf.mode === 'create' ? 'Add ' : 'Edit ') + leaf.kind.label,
       closeLabel: 'Close',
     },
-      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, draftOption, draftStrength, draftParams }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) }),
+      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) }),
     ) : null,
   )
 }
@@ -417,9 +446,11 @@ function ModLeaf(props: {
     setDraftOption: (v: string) => void
     setDraftStrength: (v: string) => void
     setDraftParams: (v: SpecValues) => void
+    setDraftSteps: (v: string) => void
     draftOption: string
     draftStrength: string
     draftParams: SpecValues
+    draftSteps: string
   }
   onError: (e: string | null) => void
   onSave: () => void
@@ -522,6 +553,28 @@ function ModLeaf(props: {
               onChange: (e: { target: { value: string } }) => { onDraft.setDraftStrength(e.target.value) },
             }),
           ),
+          // STEPS APPLIED (2026-09-18, the operator's plaguekind
+          // law): option kinds whose served rows carry a distill
+          // step count render the row here — one lora for four
+          // steps, another for eight; blank rides the row default,
+          // the compose honors it when the caller pins nothing. The
+          // SERVED defaults drive the render (never the kind name).
+          (k.options ?? []).some((o) => typeof o.defaults?.steps === 'number')
+            ? h('label', { className: css.modField },
+                'Steps applied',
+                h(Input, {
+                  'aria-label': 'Steps applied',
+                  type: 'number',
+                  step: '1',
+                  value: onDraft.draftSteps,
+                  placeholder: String(
+                    ((k.options ?? []).find((o) => o.value === onDraft.draftOption) ?? (k.options ?? [])[0])?.defaults?.steps ?? '',
+                  ),
+                  title: 'The distill\u2019s own step count — the run\u2019s sampler applies it unless a call pins steps explicitly.',
+                  onChange: (e: { target: { value: string } }) => { onDraft.setDraftSteps(e.target.value) },
+                }),
+              )
+            : null,
         )
       : h('div', { className: css.modLeafFields },
           leafFields.map((f) => h('div', { key: f.name },

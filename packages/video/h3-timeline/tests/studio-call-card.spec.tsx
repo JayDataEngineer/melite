@@ -93,7 +93,7 @@ describe("focus + header", () => {
     assert.equal(document.querySelector('[data-call-card="0"]')!.getAttribute("data-knobs"), "1")
     one.unmount()
     const two = render(
-      <CallCard c={{ ...BASE, knobs: { denoise: 0.7, sampler: "euler" } }} i={0} deps={deps().d} />,
+      <CallCard c={{ ...BASE, knobs: { denoise: 0.7, sampler_name: "euler" } }} i={0} deps={deps().d} />,
     )
     assert.ok(screen.getByText("2 knobs"))
     two.unmount()
@@ -115,7 +115,7 @@ describe("span + guides", () => {
     const { d, calls } = deps()
     render(<CallCard c={{ ...BASE, image: "still-a" }} i={1} deps={d} />)
     // the subcard's square (its own label hides — the wire square reads "source")
-    fireEvent.click(screen.getByLabelText("source"))
+    fireEvent.click(screen.getByLabelText("first frame · slot 1 source"))
     fireEvent.click(await screen.findByText("— clear —"))
     fireEvent.change(screen.getByLabelText("Call 1 seam mode"), { target: { value: "extend" } })
     assert.deepEqual(calls.guides, [[1, "image", ""]])
@@ -135,41 +135,51 @@ describe("span + guides", () => {
   })
 })
 
-describe("the ref badge (guide + extras)", () => {
-  it("zero refs = no badge", () => {
-    render(<CallCard c={BASE} i={0} deps={deps().d} />)
-    assert.equal(screen.queryByTestId("tl-call-ref-images"), null)
-  })
+describe("the image-bus count (the 9-slot bundle lane)", () => {
+  it("counts the anchor + ref chips against the 9-slot bus", () => {
+    const h0 = render(<CallCard c={BASE} i={0} deps={deps().d} />)
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("0/9"))
+    h0.unmount()
 
-  it("one ref reads singular; two read plural", () => {
     const h1 = render(<CallCard c={{ ...BASE, refs: { images: "still-a" } }} i={0} deps={deps().d} />)
-    const b1 = screen.getByTestId("tl-call-ref-images")
-    assert.ok(b1.textContent!.includes("refs 1/10"))
-    assert.ok(b1.querySelector("span")!.title.includes("1 ref image (guide + extras)"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/9"))
     h1.unmount()
+
     const h2 = render(
       <CallCard c={{ ...BASE, image: "still-a", refs: { images: "still-a" } }} i={0} deps={deps().d} />,
     )
-    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("refs 2/10"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("2/9"))
     h2.unmount()
   })
 
-  it("over the 10-image cap wears the over face", () => {
-    const names = Array.from({ length: 11 }, (_, k) => `r${k}`).join(", ")
-    render(<CallCard c={{ ...BASE, refs: { images: names } }} i={0} deps={deps().d} />)
+  it("over the 9-slot bus wears the over face (the compose slices the overflow)", () => {
+    const names = Array.from({ length: 9 }, (_, k) => `r${k}`).join(", ")
+    const h = render(<CallCard c={{ ...BASE, image: "still-a", refs: { images: names } }} i={0} deps={deps().d} />)
     const b = screen.getByTestId("tl-call-ref-images")
-    assert.ok(b.textContent!.includes("refs 11/10"))
-    assert.ok(b.innerHTML.includes("refBadgeOver"))
+    assert.ok(b.textContent!.includes("10/9"))
+    assert.ok(b.className.includes("refCountOver"))
+    h.unmount()
+  })
+
+  it("the anchor square rides the SAME lane as the ref chips (no alien categories)", () => {
+    render(<CallCard c={{ ...BASE, image: "still-a", refs: { images: "still-b" } }} i={0} deps={deps().d} />)
+    // the bus panel exists, and the anchor slot lives INSIDE the lane's chips row
+    assert.notEqual(screen.queryByTestId("tl-call-refs"), null)
+    const lane = screen.getByTestId("tl-call-ref-images").closest('[data-testid="tl-call-ref-bucket"]')!
+    const chipsRow = lane.querySelector('[class*="chips"]')!
+    assert.ok(chipsRow.querySelector('[data-testid="tl-first-frame"]'), "the anchor renders in the chips row")
+    assert.ok(chipsRow.textContent!.includes("still-b"), "the ref chips render beside it")
+    assert.ok(chipsRow.textContent!.includes("+ ref image"), "the add-row rides the same lane")
   })
 })
 
 describe("identity refs + knob fold", () => {
-  it("non-Ref2VA calls own no identity block", () => {
+  it("the refs group rides EVERY family (refs imply t4r — the bundle mounts per call)", () => {
     render(<CallCard c={BASE} i={0} deps={deps().d} />)
-    assert.equal(screen.queryByTestId("tl-call-refs"), null)
+    assert.notEqual(screen.queryByTestId("tl-call-refs"), null)
   })
 
-  it("Ref2VA: pick writes, last removal inherits (empty string)", () => {
+  it("a From-flow pick writes the artifact NAME (the URL translates)", () => {
     const { d, calls } = deps({ isRef2va: true })
     function Live() {
       const [c, setC] = useState<DocCall>(BASE)
@@ -187,10 +197,12 @@ describe("identity refs + knob fold", () => {
       )
     }
     render(<Live />)
-    fireEvent.change(screen.getByLabelText("Add call 0 Ref images"), { target: { value: "ra" } })
+    // the add slot's SourceRow: square → the three-entry menu → From flow → the row
+    fireEvent.click(screen.getByRole("button", { name: "+ ref image source" }))
+    fireEvent.click(screen.getByRole("menuitem", { name: "From flow" }))
+    fireEvent.click(screen.getByTestId("source-pick-row"))
+    // the pick hands the URL; the wire carries the NAME
     assert.deepEqual(calls.refs, [[0, "images", "ra"]])
-    fireEvent.click(screen.getByLabelText("Remove Ref images ra"))
-    assert.deepEqual(calls.refs, [[0, "images", "ra"], [0, "images", ""]])
   })
 
   it("the knob fold replaces per call (first call owns no prev)", () => {

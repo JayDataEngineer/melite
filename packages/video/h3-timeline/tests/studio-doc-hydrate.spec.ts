@@ -1,10 +1,13 @@
 /**
  * docHydrate — params ⇄ Layer A (BEHAVIORAL).
  *
- * PINS: defaults for empty docs, every hydration arm (numbers,
- * enums, legacy h3_sage_attention, dense-steps regex, stem→clip
- * conversion, clip filtering), and the serialize law (undefined =
- * absent = the engine decides).
+ * PINS (the Layer A/B law stroke, 2026-09-17): the wire-name
+ * vocabulary (steps / sampler_name / sched_name / sla_* /
+ * interp_* / sr_switch), legacy py-era migration at hydration,
+ * defaults for empty docs, every hydration arm (numbers, enums,
+ * dense-steps regex, stem→clip conversion, clip filtering), and
+ * the serialize law (only card-read keys ride; preset/fps are
+ * document-local and never serialize).
  */
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
@@ -16,18 +19,15 @@ describe("hydrateLayerA (params → Layer A)", () => {
     assert.equal(a.preset, "draft_02mp")
     assert.equal(a.fps, 24)
     assert.equal(a.seed, 42)
-    assert.equal(a.audio_mode, "none")
-    assert.equal(a.continuity, true)
-    assert.equal(a.h3_fp16_accumulation, false)
-    assert.equal(a.h3_torch_compile, false)
-    assert.equal(a.h3_sla_protect_audio, true)
-    assert.equal(a.h3_sla_stabilize_motion, true)
-    assert.equal(a.h3_sla_disable_fp16_accum, false)
+    assert.equal(a.sla_protect_audio, true)
+    assert.equal(a.sla_stabilize_motion, true)
+    assert.equal(a.sla_disable_fp16_accum, false)
     assert.equal(a.sharpen_enabled, false)
     assert.equal(a.interpolate_enabled, false)
-    assert.equal(a.rtx_vsr_enabled, false)
+    assert.equal(a.sr_switch, false)
     assert.equal(a.audio_clips, undefined)
     assert.equal(a.audio_stem, undefined)
+    assert.equal(a.loras, undefined)
   })
 
   it("numbers hydrate verbatim; junk falls back (never NaN, never ≤0 for clock keys)", () => {
@@ -42,29 +42,22 @@ describe("hydrateLayerA (params → Layer A)", () => {
     assert.equal(str.seed, 42)
   })
 
-  it("audio_mode admits only the three door modes", () => {
-    assert.equal(hydrateLayerA({ audio_mode: "native" }).audio_mode, "native")
-    assert.equal(hydrateLayerA({ audio_mode: "lipSync" }).audio_mode, "lipSync")
-    assert.equal(hydrateLayerA({ audio_mode: "mp3" }).audio_mode, "none")
-  })
-
-  it("preset/continuity/sampler/scheduler", () => {
+  it("preset stays document-local; wire-name sampler rows hydrate", () => {
     assert.equal(hydrateLayerA({ preset: "final_hd" }).preset, "final_hd")
     assert.equal(hydrateLayerA({ preset: "" }).preset, "draft_02mp")
     assert.equal(hydrateLayerA({ preset: 42 }).preset, "draft_02mp")
-    assert.equal(hydrateLayerA({ continuity: false }).continuity, false)
-    assert.equal(hydrateLayerA({ sampler: "euler", scheduler: "karras" }).sampler, "euler")
-    assert.equal(hydrateLayerA({ sampler: "", scheduler: 7 }).scheduler, undefined)
+    assert.equal(hydrateLayerA({ sampler_name: "euler", sched_name: "karras" }).sampler_name, "euler")
+    assert.equal(hydrateLayerA({ sampler_name: "", sched_name: 7 }).sched_name, undefined)
   })
 
   it("the knob-audit reals hydrate (denoise/width/height/shifts/steps)", () => {
     const a = hydrateLayerA({
-      shift_video: "12", shift_audio: 3, sampling_steps: 20,
+      shift_video: "12", shift_audio: 3, steps: 20,
       denoise: 0.8, width: 768, height: 448,
     })
     assert.equal(a.shift_video, 12)
     assert.equal(a.shift_audio, 3)
-    assert.equal(a.sampling_steps, 20)
+    assert.equal(a.steps, 20)
     assert.equal(a.denoise, 0.8)
     assert.equal(a.width, 768)
     assert.equal(a.height, 448)
@@ -73,94 +66,101 @@ describe("hydrateLayerA (params → Layer A)", () => {
     assert.equal(b.denoise, undefined)
   })
 
-  it("attention: the four backends, legacy sage flag, else engine default", () => {
-    for (const v of ["kitchen", "sol", "sage", "sla"] as const) {
-      assert.equal(hydrateLayerA({ h3_attention: v }).h3_attention, v)
-    }
-    assert.equal(hydrateLayerA({ h3_sage_attention: true }).h3_attention, "sage")
-    assert.equal(hydrateLayerA({ h3_attention: "sage-x" }).h3_attention, undefined)
-    assert.equal(hydrateLayerA({}).h3_attention, undefined)
-  })
-
-  it("build flags are explicit-true only", () => {
-    const a = hydrateLayerA({ h3_fp16_accumulation: true, h3_torch_compile: 1 })
-    assert.equal(a.h3_fp16_accumulation, true)
-    assert.equal(a.h3_torch_compile, false)
-  })
-
-  it("cfg/context/sparsity numbers + the 32-wide block vocabulary", () => {
+  it("LEGACY py-era spellings migrate at hydration", () => {
     const a = hydrateLayerA({
-      cfg: 4, h3_context_steps: 2, h3_audio_context_steps: 40,
-      h3_sla_sparsity: 0.9, h3_sla_block_size: "32",
-      h3_sla_min_seq_len: 64, h3_sla_dense_last_steps: 4,
+      sampling_steps: 20, sampler: "euler", scheduler: "karras",
+      h3_sla_sparsity: 0.9, h3_sla_block_size: "64",
+      interpolate_model: "rife47.pth", interpolate_multiplier: 4,
+      rtx_vsr_enabled: true, h3_ref_image_size: "max",
     })
-    assert.equal(a.cfg, 4)
-    assert.equal(a.h3_sla_block_size, "32")
-    assert.equal(hydrateLayerA({ h3_sla_block_size: "16" }).h3_sla_block_size, undefined)
+    assert.equal(a.steps, 20)
+    assert.equal(a.sampler_name, "euler")
+    assert.equal(a.sched_name, "karras")
+    assert.equal(a.sla_sparsity, 0.9)
+    assert.equal(a.sla_block_size, "64")
+    assert.equal(a.interp_model, "rife47.pth")
+    assert.equal(a.interp_multiplier, 4)
+    assert.equal(a.sr_switch, true)
+    assert.equal(a.ref_image_size, "max")
+  })
+
+  it("a legacy lora knob pair migrates into the mod bag when the filename serves", () => {
+    const a = hydrateLayerA({
+      lora_name: "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
+      lora_strength: 0.6,
+    })
+    assert.deepEqual(a.loras, [{ id: "h3_lightx2v_turbo", strength: 0.6 }])
+    // an unknown filename drops (it was decorative — compose never read it)
+    const b = hydrateLayerA({ lora_name: "h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors", lora_strength: 0.8 })
+    assert.equal(b.loras, undefined)
+  })
+
+  it("the loras mod bag hydrates (id rows, junk filters)", () => {
+    const a = hydrateLayerA({ loras: [{ id: "h3_lightx2v_turbo", strength: 0.5 }, { strength: 1 }, null] })
+    assert.deepEqual(a.loras, [{ id: "h3_lightx2v_turbo", strength: 0.5 }])
+    assert.equal(hydrateLayerA({ loras: "x" }).loras, undefined)
+  })
+
+  it("SLA numbers + the block-size vocabulary (wire names)", () => {
+    const a = hydrateLayerA({
+      sla_sparsity: 0.9, sla_block_size: "32",
+      sla_min_seq_len: 64, sla_dense_last_steps: 4,
+    })
+    assert.equal(a.sla_sparsity, 0.9)
+    assert.equal(a.sla_block_size, "32")
+    assert.equal(hydrateLayerA({ sla_block_size: "16" }).sla_block_size, undefined)
     // pin-equals-default booleans: absent/false → the node default rides
-    assert.equal(hydrateLayerA({}).h3_sla_protect_audio, true)
-    assert.equal(hydrateLayerA({ h3_sla_protect_audio: false }).h3_sla_protect_audio, false)
-    assert.equal(hydrateLayerA({ h3_sla_stabilize_motion: false }).h3_sla_stabilize_motion, false)
+    assert.equal(hydrateLayerA({}).sla_protect_audio, true)
+    assert.equal(hydrateLayerA({ sla_protect_audio: false }).sla_protect_audio, false)
+    assert.equal(hydrateLayerA({ sla_stabilize_motion: false }).sla_stabilize_motion, false)
   })
 
   it("SLA enums admit only members; dense-steps only interval lists", () => {
     const a = hydrateLayerA({
-      h3_sla_reference_protection: "Heavy Enforcement",
-      h3_sla_dense_backend: "auto",
-      h3_sla_dense_steps: " 1-3, 5 ",
+      sla_reference_protection: "Heavy Enforcement",
+      sla_dense_backend: "auto",
+      sla_dense_steps: " 1-3, 5 ",
     })
-    assert.equal(a.h3_sla_reference_protection, "Heavy Enforcement")
-    assert.equal(a.h3_sla_dense_backend, "auto")
-    assert.equal(a.h3_sla_dense_steps, "1-3, 5")
-    assert.equal(hydrateLayerA({ h3_sla_reference_protection: "max" }).h3_sla_reference_protection, undefined)
-    assert.equal(hydrateLayerA({ h3_sla_dense_backend: "x" }).h3_sla_dense_backend, undefined)
-    assert.equal(hydrateLayerA({ h3_sla_dense_steps: "soon" }).h3_sla_dense_steps, undefined)
-    assert.equal(hydrateLayerA({ h3_sla_dense_steps: 42 }).h3_sla_dense_steps, undefined)
-    assert.equal(hydrateLayerA({}).h3_sla_dense_steps, undefined)
+    assert.equal(a.sla_reference_protection, "Heavy Enforcement")
+    assert.equal(a.sla_dense_backend, "auto")
+    assert.equal(a.sla_dense_steps, "1-3, 5")
+    assert.equal(hydrateLayerA({ sla_reference_protection: "max" }).sla_reference_protection, undefined)
+    assert.equal(hydrateLayerA({ sla_dense_backend: "x" }).sla_dense_backend, undefined)
+    assert.equal(hydrateLayerA({ sla_dense_steps: "soon" }).sla_dense_steps, undefined)
+    assert.equal(hydrateLayerA({ sla_dense_steps: 42 }).sla_dense_steps, undefined)
+    assert.equal(hydrateLayerA({}).sla_dense_steps, undefined)
   })
 
-  it("sharpen + interpolate vocabulary", () => {
+  it("sharpen + interpolate vocabulary (wire names)", () => {
     const a = hydrateLayerA({
       sharpen_enabled: true, sharpen_method: "adaptive_usm",
       sharpen_strength: 0.5, sharpen_radius: 2, sharpen_threshold: 0.1,
       sharpen_iterations: 3, interpolate_enabled: true,
-      interpolate_model: "rife47.pth", interpolate_multiplier: 4,
+      interp_model: "rife47.pth", interp_multiplier: 4,
     })
     assert.equal(a.sharpen_method, "adaptive_usm")
-    assert.equal(a.interpolate_model, "rife47.pth")
-    assert.equal(a.interpolate_multiplier, 4)
+    assert.equal(a.interp_model, "rife47.pth")
+    assert.equal(a.interp_multiplier, 4)
     assert.equal(hydrateLayerA({ sharpen_method: "blur" }).sharpen_method, undefined)
-    assert.equal(hydrateLayerA({ interpolate_model: "x" }).interpolate_model, undefined)
+    assert.equal(hydrateLayerA({ interp_model: "x" }).interp_model, undefined)
     assert.equal(hydrateLayerA({}).sharpen_strength, undefined)
-    assert.equal(hydrateLayerA({}).interpolate_multiplier, undefined)
+    assert.equal(hydrateLayerA({}).interp_multiplier, undefined)
   })
 
-  it("variant/model/refs/size/trim/lora/rtx/crf", () => {
+  it("variant/model/ref-size/sr rows", () => {
     const a = hydrateLayerA({
       variant: "v1", model: "h3-timeline-ref",
-      h3_ref_images: "a, b", h3_ref_videos: " ", h3_ref_audios: "s",
-      h3_ref_video_audios: "vs", h3_ref_image_size: "max",
-      h3_ref_audio_trim_start: 1, h3_ref_audio_trim_duration: 5,
-      lora_name: " h3/x.safetensors ", lora_strength: 0.8,
-      rtx_vsr_enabled: true, rtx_vsr_multiplier: 4, rtx_vsr_quality: "ULTRA", crf: 19,
+      ref_image_size: "max", sr_switch: true, sr_resolution: 1440,
     })
     assert.equal(a.variant, "v1")
     assert.equal(a.model, "h3-timeline-ref")
-    assert.equal(a.h3_ref_images, "a, b")
-    assert.equal(a.h3_ref_videos, undefined)
-    assert.equal(hydrateLayerA({ h3_ref_videos: "clip-v", h3_ref_audios: "s", h3_ref_video_audios: "vs" }).h3_ref_videos, "clip-v")
-    assert.equal(a.h3_ref_image_size, "max")
-    assert.equal(a.lora_name, " h3/x.safetensors ")
-    assert.equal(a.rtx_vsr_multiplier, 4)
-    assert.equal(hydrateLayerA({ h3_ref_image_size: "huge" }).h3_ref_image_size, undefined)
-    assert.equal(hydrateLayerA({ h3_ref_image_size: 42 }).h3_ref_image_size, undefined)
+    assert.equal(a.ref_image_size, "max")
+    assert.equal(a.sr_switch, true)
+    assert.equal(a.sr_resolution, 1440)
+    assert.equal(hydrateLayerA({ ref_image_size: "huge" }).ref_image_size, undefined)
+    assert.equal(hydrateLayerA({ ref_image_size: 42 }).ref_image_size, undefined)
     assert.equal(hydrateLayerA({ variant: 7 }).variant, undefined)
     assert.equal(hydrateLayerA({ model: 7 }).model, undefined)
-    assert.equal(hydrateLayerA({ lora_name: "  " }).lora_name, undefined)
-    assert.equal(hydrateLayerA({ rtx_vsr_quality: 9 }).rtx_vsr_quality, undefined)
-    assert.equal(hydrateLayerA({}).lora_strength, undefined)
-    assert.equal(hydrateLayerA({}).rtx_vsr_multiplier, undefined)
-    assert.equal(hydrateLayerA({}).crf, undefined)
   })
 
   it("audio_stem round-trips raw; blank stems vanish", () => {
@@ -199,58 +199,67 @@ describe("hydrateLayerA (params → Layer A)", () => {
 })
 
 describe("serializeLayerA (Layer A → persisted shape)", () => {
-  it("always-on keys ride; untouched optionals stay absent", () => {
+  it("always-on keys ride; document-local keys NEVER ride; dead vocabulary never rides", () => {
     const out = serializeLayerA(hydrateLayerA(undefined))
-    assert.equal(out["preset"], "draft_02mp")
-    assert.equal(out["fps"], 24)
-    assert.equal(out["h3_fp16_accumulation"], false)
-    assert.equal(out["h3_sla_protect_audio"], true)
-    assert.ok(!("sampler" in out))
+    assert.equal(out["seed"], 42)
+    assert.equal(out["sla_protect_audio"], true)
+    // preset/fps are document-local — never serialized
+    assert.ok(!("preset" in out))
+    assert.ok(!("fps" in out))
+    // the py-era dead vocabulary never rides
+    for (const dead of ["audio_mode", "continuity", "h3_attention", "h3_fp16_accumulation",
+                        "h3_torch_compile", "cfg", "h3_context_steps", "h3_audio_context_steps",
+                        "sampler", "scheduler", "sampling_steps", "lora_name", "lora_strength",
+                        "crf", "rtx_vsr_enabled", "rtx_vsr_multiplier", "rtx_vsr_quality",
+                        "h3_ref_images", "h3_ref_videos", "h3_ref_audios"]) {
+      assert.ok(!(dead in out), `${dead} must never serialize`)
+    }
+    assert.ok(!("sampler_name" in out))
     assert.ok(!("denoise" in out))
     assert.ok(!("audio_clips" in out))
-    assert.ok(!("lora_name" in out))
-    assert.ok(!("rtx_vsr_enabled" in out))
+    assert.ok(!("loras" in out))
   })
 
-  it("set optionals ride (the full loop vocabulary)", () => {
+  it("set optionals ride at their wire names (the full loop vocabulary)", () => {
     const out = serializeLayerA(hydrateLayerA({
-      shift_video: 12, shift_audio: 3, sampler: "euler", scheduler: "simple",
-      sampling_steps: 20, denoise: 0.8, width: 768, height: 448,
-      h3_attention: "sla", audio_stem: "theme",
-      h3_sla_sparsity: 0.9, h3_sla_block_size: "64",
-      h3_sla_min_seq_len: 64, h3_sla_dense_last_steps: 4,
-      h3_sla_reference_protection: "Light", h3_sla_dense_backend: "pytorch",
-      h3_sla_dense_steps: "1-3", sharpen_method: "rcas", sharpen_strength: 0.5,
-      interpolate_model: "rife47.pth", interpolate_multiplier: 2,
-      h3_ref_images: "a", h3_ref_image_size: "match", model: "h3-timeline-ref",
+      shift_video: 12, shift_audio: 3, sampler_name: "euler", sched_name: "simple",
+      steps: 20, denoise: 0.8, width: 768, height: 448,
+      audio_stem: "theme",
+      sla_sparsity: 0.9, sla_block_size: "64",
+      sla_min_seq_len: 64, sla_dense_last_steps: 4,
+      sla_reference_protection: "Light", sla_dense_backend: "pytorch",
+      sla_dense_steps: "1-3", sharpen_method: "rcas", sharpen_strength: 0.5,
+      interp_model: "rife47.pth", interp_multiplier: 2,
+      ref_image_size: "match", model: "h3-timeline-ref",
     }))
-    for (const k of ["shift_video", "sampler", "sampling_steps", "denoise", "width",
-      "h3_attention", "audio_stem", "h3_sla_block_size", "sharpen_method",
-      "interpolate_model", "h3_ref_images", "h3_ref_image_size", "model"]) {
+    for (const k of ["shift_video", "sampler_name", "sched_name", "steps", "denoise", "width", "height",
+      "audio_stem", "sla_block_size", "sharpen_method",
+      "interp_model", "ref_image_size", "model"]) {
       assert.ok(k in out, `${k} rides when set`)
     }
   })
 
-  it("clips ride only when present; the LoRA pair rides trimmed + strength-optional", () => {
+  it("clips ride only when present; the loras bag rides only when non-empty", () => {
     const good = { id: "c1", name: "n", src: "theme", start_frame: 0, dur_frames: 96 }
     const withClips = serializeLayerA({ ...hydrateLayerA(undefined), audio_clips: [good] })
     assert.deepEqual(withClips["audio_clips"], [good])
     const emptyClips = serializeLayerA({ ...hydrateLayerA(undefined), audio_clips: [] })
     assert.ok(!("audio_clips" in emptyClips))
-    const lora = serializeLayerA({ ...hydrateLayerA(undefined), lora_name: "  h3/x  ", lora_strength: 0.8 })
-    assert.equal(lora["lora_name"], "h3/x")
-    assert.equal(lora["lora_strength"], 0.8)
-    const loraBare = serializeLayerA({ ...hydrateLayerA(undefined), lora_name: "h3/x", lora_strength: undefined })
-    assert.equal(loraBare["lora_name"], "h3/x")
-    assert.ok(!("lora_strength" in loraBare))
-    const loraBlank = serializeLayerA({ ...hydrateLayerA(undefined), lora_name: "   " })
-    assert.ok(!("lora_name" in loraBlank))
+    const bag = serializeLayerA({ ...hydrateLayerA(undefined), loras: [{ id: "h3_lightx2v_turbo", strength: 0.6 }] })
+    assert.deepEqual(bag["loras"], [{ id: "h3_lightx2v_turbo", strength: 0.6 }])
+    const bagEmpty = serializeLayerA({ ...hydrateLayerA(undefined), loras: [] })
+    assert.ok(!("loras" in bagEmpty))
   })
 
-  it("RTX rides only when ON", () => {
-    const on = serializeLayerA({ ...hydrateLayerA(undefined), rtx_vsr_enabled: true })
-    assert.equal(on["rtx_vsr_enabled"], true)
+  it("Super-Res rides only when ON (switch + target together)", () => {
+    const on = serializeLayerA({ ...hydrateLayerA(undefined), sr_switch: true, sr_resolution: 1440 })
+    assert.equal(on["sr_switch"], true)
+    assert.equal(on["sr_resolution"], 1440)
     const off = serializeLayerA(hydrateLayerA(undefined))
-    assert.ok(!("rtx_vsr_enabled" in off))
+    assert.ok(!("sr_switch" in off))
+    assert.ok(!("sr_resolution" in off))
+    // switch off but resolution set: nothing rides (resolution without the switch is dead)
+    const stray = serializeLayerA({ ...hydrateLayerA(undefined), sr_resolution: 1440 })
+    assert.ok(!("sr_resolution" in stray))
   })
 })

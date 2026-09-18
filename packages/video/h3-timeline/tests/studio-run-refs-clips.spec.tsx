@@ -1,10 +1,14 @@
 /**
- * RunRefsClips — run-level identity refs + audio-clips upload (BEHAVIORAL).
+ * RunRefsClips — the audio-clips upload door (BEHAVIORAL).
  *
- * PINS: identity refs ride Ref2VA only (one picker per bus);
- * ref size honors the match/max R2V combo; trims write; the clips
- * note counts (none/one/many); the upload door takes files and
- * resets so the same file re-picks.
+ * THE LAYER A/B LAW REWORK (2026-09-17): the run-level identity
+ * refs panel is GONE (refs are per-call, in CallCard's SourceRow
+ * group); what remains is the Layer A NLE audio-clips bed.
+ *
+ * PINS: the refs panel never renders; the clips note counts
+ * (none/one/many); the upload door takes files and resets so the
+ * same file re-picks; a dialog cancel takes nothing; an attached
+ * ref opens the dialog on click.
  */
 import { describe, it } from "vitest"
 import assert from "node:assert/strict"
@@ -13,66 +17,25 @@ import { fireEvent, render, screen } from "@testing-library/react"
 import { RunRefsClips } from "../src/ui/studio/RunRefsClips.tsx"
 import type { LayerA } from "../src/ui/studio/docModel.ts"
 
-const ARTS = [
-  { name: "ri.png", url: "https://u/ri.png" },
-  { name: "rv.mp4", url: "https://u/rv.mp4" },
-  { name: "ra.mp3", url: "https://u/ra.mp3" },
-]
-
-function clips(layerA: Record<string, unknown>, over?: Record<string, unknown>) {
-  const keys: [string, unknown][] = []
+function clips(layerA: Record<string, unknown>) {
   const taken: [string, number][] = []
   const els = render(
     <RunRefsClips
       layerA={layerA as unknown as LayerA}
-      setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
-      isRef2va
-      refArtifacts={ARTS}
       takeAudioFile={(f, at) => { taken.push([f.name, at]) }}
       audioUploadRef={{ current: null }}
-      {...over}
     />,
   )
-  return { keys, taken, els }
+  return { taken, els }
 }
 
-describe("identity refs (Ref2VA only)", () => {
-  it("FL2VA owns no identity block", () => {
-    clips({}, { isRef2va: false })
+describe("the run-level refs panel is dead (refs are per-call)", () => {
+  it("no refs panel renders on any route — the clips row only", () => {
+    const h = clips({})
     assert.equal(screen.queryByTestId("tl-refs-panel"), null)
-  })
-
-  it("one picker per bus — picks write their own key", () => {
-    const { keys } = clips({})
-    assert.ok(screen.getByTestId("tl-refs-panel"))
-    fireEvent.change(screen.getByLabelText("Add ref images (run)"), { target: { value: "ri.png" } })
-    fireEvent.change(screen.getByLabelText("Add ref videos (run)"), { target: { value: "rv.mp4" } })
-    fireEvent.change(screen.getByLabelText("Add ref audios (run)"), { target: { value: "ra.mp3" } })
-    fireEvent.change(screen.getByLabelText("Add ref video audios (run)"), { target: { value: "ra.mp3" } })
-    assert.deepEqual(keys, [
-      ["h3_ref_images", "ri.png"],
-      ["h3_ref_videos", "rv.mp4"],
-      ["h3_ref_audios", "ra.mp3"],
-      ["h3_ref_video_audios", "ra.mp3"],
-    ])
-  })
-
-  it("ref size honors the match/max combo (a clear inherits match)", () => {
-    const { keys } = clips({ h3_ref_image_size: "max" })
-    fireEvent.change(screen.getByLabelText("Ref image size (run)"), { target: { value: "match" } })
-    fireEvent.change(screen.getByLabelText("Ref image size (run)"), { target: { value: "" } })
-    assert.deepEqual(keys, [["h3_ref_image_size", "match"], ["h3_ref_image_size", undefined]])
-  })
-
-  it("a non-string size reads unset; trims write", () => {
-    const { keys } = clips({ h3_ref_image_size: 3 })
-    assert.equal((screen.getByLabelText("Ref image size (run)") as HTMLSelectElement).value, "")
-    fireEvent.change(screen.getByLabelText("Ref audio trim start (run)"), { target: { value: "1.5" } })
-    fireEvent.change(screen.getByLabelText("Ref audio trim duration (run)"), { target: { value: "2" } })
-    assert.deepEqual(keys, [
-      ["h3_ref_audio_trim_start", 1.5],
-      ["h3_ref_audio_trim_duration", 2],
-    ])
+    assert.equal(screen.queryByLabelText("ref images (run)"), null)
+    assert.ok(screen.getByTestId("tl-audio-upload"))
+    h.els.unmount()
   })
 })
 
@@ -92,9 +55,7 @@ describe("the clips upload door", () => {
     const { taken } = clips({})
     const btn = screen.getByTestId("tl-audio-upload")
     fireEvent.click(btn) // unattached ref — never a throw
-    // the clips door is the LAST audio/* input (the ref-audio rows own theirs)
-    const all = document.body.querySelectorAll('input[type="file"][accept="audio/*"]')
-    const input = all[all.length - 1]! as HTMLInputElement
+    const input = document.body.querySelector('input[type="file"][accept="audio/*"]')! as HTMLInputElement
     assert.equal(input.hasAttribute("multiple"), true)
     const a = new File(["a"], "a.mp3", { type: "audio/mpeg" })
     const b = new File(["b"], "b.wav", { type: "audio/wav" })
@@ -108,7 +69,7 @@ describe("the clips upload door", () => {
   })
 
   it("a dialog cancel (files null per the DOM type) takes nothing", () => {
-    const h = clips({}, { isRef2va: false })
+    const h = clips({})
     const input = document.body.querySelector('input[type="file"][accept="audio/*"]')! as HTMLInputElement
     // the DOM type allows files === null (never-picked) — the door pins it
     Object.defineProperty(input, "files", { value: null, configurable: true })
@@ -123,9 +84,6 @@ describe("the clips upload door", () => {
       return (
         <RunRefsClips
           layerA={{} as unknown as LayerA}
-          setLayerAKey={() => {}}
-          isRef2va={false}
-          refArtifacts={[]}
           takeAudioFile={() => {}}
           audioUploadRef={ref}
         />

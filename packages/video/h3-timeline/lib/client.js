@@ -133,18 +133,6 @@ window.__ModuleLoader__.load({
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 18-6-6 6-6" })
 			});
 		}
-		function Upload({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17 8-5-5-5 5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v12" })
-				]
-			});
-		}
 		function AlertTriangle({ className, style, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
 				className,
@@ -467,8 +455,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/video/h3-timeline/src/ui/studio/studio.module.css.mjs
-		const css$2 = ".lTRlka_hiddenInput{display:none}.lTRlka_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)}.lTRlka_alignR{text-align:right}.lTRlka_alignC{text-align:center}.lTRlka_tabular{font-variant-numeric:tabular-nums}.lTRlka_nowrap{white-space:nowrap}.lTRlka_tipAnchor{display:contents}.lTRlka_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.lTRlka_sz8{width:8px;height:8px}.lTRlka_sz10{width:10px;height:10px}.lTRlka_sz12{width:12px;height:12px}.lTRlka_sz20{width:20px;height:20px}.lTRlka_chev{flex:none;transition:transform .15s}details[open]>summary .lTRlka_chev{transform:rotate(180deg)}.lTRlka_w12{width:3rem}.lTRlka_w14{width:3.5rem}.lTRlka_w16{width:4rem}.lTRlka_w24{width:6rem}.lTRlka_w28{width:7rem}.lTRlka_w32{width:8rem}.lTRlka_w36{width:9rem}.lTRlka_w40{width:10rem}.lTRlka_w45{width:4.5rem}.lTRlka_wFull{width:100%}.lTRlka_ctlRow,.lTRlka_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.lTRlka_ctlRow select,.lTRlka_ctlRowSm select{font-size:10px}.lTRlka_ctlGap3{gap:12px}.lTRlka_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.lTRlka_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.lTRlka_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_ctlInput,.lTRlka_ctlSelect{border:.5px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;border-radius:6px;outline:none;padding:2px 6px;font-size:10px}.lTRlka_ctlSelect,.lTRlka_selMenuBox{color-scheme:light}.lTRlka_ctlSelect option,.lTRlka_selMenuBox option{color:canvastext;background:canvas}.lTRlka_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.lTRlka_ctlInput:focus,.lTRlka_ctlSelect:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_ctlSelect{font-family:inherit}.lTRlka_ctlInputSm{padding:2px 4px;font-size:10px}.lTRlka_sliderWrap{align-items:center;gap:8px;display:flex}.lTRlka_slider{accent-color:var(--dsw-alias-brand-primary)}.lTRlka_sliderReadout{text-align:right;width:2.5rem;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);font-size:10px}.lTRlka_selMenu{min-width:0;display:inline-flex}.lTRlka_selMenuBox{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px}.lTRlka_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_selMenuBox:disabled{opacity:.5}.lTRlka_emptyPane,.lTRlka_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.lTRlka_emptyPane{width:100%;height:100%;padding:24px 0}.lTRlka_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.lTRlka_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.lTRlka_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.lTRlka_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.lTRlka_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.lTRlka_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.lTRlka_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.lTRlka_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}.lTRlka_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}.lTRlka_shell>:first-child{grid-area:1/1}.lTRlka_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}.lTRlka_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}.lTRlka_shellErrors{flex-direction:column;gap:4px;margin-top:8px;display:flex}.lTRlka_shellError{border:1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);overflow-wrap:break-word;white-space:pre-wrap;color:var(--dsw-alias-state-error-primary);border-radius:6px;margin:0;padding:6px 8px;font-size:9px;line-height:1.5}.lTRlka_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.lTRlka_railCol{flex-direction:column;gap:8px;height:100%;min-height:0;padding:10px 12px;display:flex;overflow-y:auto}.lTRlka_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;padding-bottom:10px}.lTRlka_docLines{color:var(--dsw-alias-label-secondary);flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.lTRlka_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.lTRlka_warnIcon{flex:none;margin-top:2px}.lTRlka_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.lTRlka_runSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);cursor:pointer;user-select:none;align-items:center;gap:6px;padding:6px 0;font-size:10px;font-weight:600;list-style:none;display:flex}.lTRlka_runSummary::-webkit-details-marker{display:none}.lTRlka_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.lTRlka_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.lTRlka_panel{flex:none}.lTRlka_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.lTRlka_rowsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.lTRlka_rowsHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.lTRlka_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.lTRlka_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.lTRlka_focusTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);flex:none;font-size:10px;font-weight:600}.lTRlka_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.lTRlka_compactList{flex-direction:column;gap:4px;display:flex}.lTRlka_focusList{flex-direction:column;gap:8px;display:flex}.lTRlka_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.lTRlka_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.lTRlka_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.lTRlka_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.lTRlka_excerptFull{color:var(--dsw-alias-label-primary)}.lTRlka_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.lTRlka_knobBadge{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:0 4px;font-size:8px;font-weight:600}.lTRlka_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.lTRlka_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.lTRlka_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.lTRlka_kfTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:600}.lTRlka_kfHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_kfList{flex-direction:column;gap:4px;display:flex}.lTRlka_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.lTRlka_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.lTRlka_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.lTRlka_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.lTRlka_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.lTRlka_textIn{flex:1;min-width:0;display:inline-flex}.lTRlka_textIn>input,.lTRlka_srcIn>input,.lTRlka_prevNum>input,.lTRlka_kfIn>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.lTRlka_textIn>input:focus,.lTRlka_srcIn>input:focus,.lTRlka_prevNum>input:focus,.lTRlka_kfIn>input:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_textInEmpty>input,.lTRlka_guideInEmpty>input{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.lTRlka_textInEmpty>input::placeholder,.lTRlka_guideInEmpty>input::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.lTRlka_textInEmpty>input:focus,.lTRlka_guideInEmpty>input:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.lTRlka_kfIn{flex:1;min-width:0;display:inline-flex}.lTRlka_kfIn>input::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.lTRlka_callCard{padding:6px 2px;transition:color .15s}.lTRlka_callCardSel .lTRlka_cardId,.lTRlka_callCardSel .lTRlka_cardSpan{color:var(--dsw-alias-label-primary)}.lTRlka_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.lTRlka_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.lTRlka_cardSpan{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.lTRlka_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.lTRlka_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.lTRlka_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.lTRlka_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.lTRlka_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_spanDash,.lTRlka_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_framesRow{align-items:stretch;gap:8px;display:flex}.lTRlka_refBadgeRow{align-items:center;gap:6px;display:flex}.lTRlka_refBadge{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;border-radius:6px;flex:none;padding:1px 4px;font-size:9px}.lTRlka_refBadgeOk{color:var(--dsw-alias-brand-primary)}.lTRlka_refBadgeOver{color:var(--dsw-alias-state-warn-primary)}.lTRlka_guidesRow{align-items:center;gap:8px;display:flex}.lTRlka_guideWrap{flex:none;position:relative}.lTRlka_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.lTRlka_guideRaw{width:7rem;color:var(--dsw-alias-label-primary);background:0 0;border:1px solid #0000;border-radius:6px;outline:none;flex:none;padding:2px 6px 2px 16px;font-family:inherit;font-size:10px}.lTRlka_guideRaw::placeholder{color:var(--dsw-alias-label-tertiary)}.lTRlka_guideRaw:hover{border-color:var(--dsw-alias-border-l2)}.lTRlka_guideRaw:focus{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-hover)}.lTRlka_guideInEmpty,.lTRlka_guideInEmpty::placeholder{color:var(--dsw-alias-label-tertiary)}.lTRlka_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.lTRlka_callRefsHead{justify-content:space-between;align-items:baseline;display:flex}.lTRlka_callRefsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.lTRlka_callRefsNote{color:var(--dsw-alias-label-tertiary);font-size:8px}.lTRlka_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.lTRlka_callRefsFoot{color:var(--dsw-alias-label-tertiary);font-size:8px}.lTRlka_knobFold{margin-top:4px}.lTRlka_knobSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);cursor:pointer;user-select:none;align-items:center;gap:4px;font-size:9px;font-weight:600;list-style:none;display:flex}.lTRlka_knobSummary::-webkit-details-marker{display:none}.lTRlka_knobSummary:hover{color:var(--dsw-alias-label-secondary)}.lTRlka_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.lTRlka_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.lTRlka_beatsWrap{flex-direction:column;gap:4px;display:flex}.lTRlka_iconMini{width:16px;height:16px;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:9px;transition:background-color .15s,color .15s;display:flex}.lTRlka_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.lTRlka_iconMini:disabled{opacity:.3}.lTRlka_iconMiniMut{color:var(--dsw-alias-label-tertiary)}.lTRlka_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.lTRlka_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.lTRlka_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.lTRlka_textHead{justify-content:space-between;align-items:center;display:flex}.lTRlka_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_enhanceRow{align-items:center;gap:4px;display:flex}.lTRlka_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.lTRlka_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.lTRlka_enhanceBtn:disabled{opacity:.3}.lTRlka_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.lTRlka_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.lTRlka_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.lTRlka_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.lTRlka_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.lTRlka_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.lTRlka_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.lTRlka_sub{flex-direction:column;flex:1;gap:4px;min-width:0;display:flex}.lTRlka_subHead{align-items:baseline;gap:6px;display:flex}.lTRlka_subTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.lTRlka_subHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:9px;overflow:hidden}.lTRlka_subRow{align-items:center;gap:6px;display:flex}.lTRlka_linkBtn{background:var(--dsw-alias-bg-layer-1);width:16px;height:16px;color:var(--dsw-alias-brand-primary);cursor:pointer;border:none;border-radius:6px;justify-content:center;align-items:center;padding:0;display:flex}.lTRlka_linkBtn:hover{opacity:.8}.lTRlka_srcIn{flex:1;min-width:0;display:inline-flex}.lTRlka_srcIn>input{font-size:10px}.lTRlka_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.lTRlka_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.lTRlka_linkPanel{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);box-shadow:0 1px 2px color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);border-radius:6px;padding:4px}.lTRlka_linkHead{justify-content:space-between;align-items:center;padding:0 4px 2px;display:flex}.lTRlka_linkTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:8px;font-weight:600}.lTRlka_linkClose{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;padding:0;display:inline-flex}.lTRlka_linkClose:hover{color:var(--dsw-alias-label-primary)}.lTRlka_linkList{max-height:9rem;overflow-y:auto}.lTRlka_linkRow{text-align:left;cursor:pointer;background:0 0;border:none;border-radius:6px;align-items:center;gap:6px;width:100%;padding:2px 4px;transition:background-color .15s;display:flex}.lTRlka_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.lTRlka_linkThumb{border:1px solid var(--dsw-alias-border-l2);object-fit:cover;border-radius:6px;flex:none;width:24px;height:24px}.lTRlka_linkNameWrap{flex:1;min-width:0}.lTRlka_linkName{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);font-size:9px;display:block;overflow:hidden}.lTRlka_linkSub{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:8px;display:block;overflow:hidden}.lTRlka_linkEmpty{color:var(--dsw-alias-label-tertiary);padding:4px;font-size:8px;line-height:1.5;display:block}.lTRlka_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.lTRlka_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.lTRlka_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.lTRlka_prevLabelOn{color:var(--dsw-alias-label-secondary)}.lTRlka_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.lTRlka_prevNum{flex:none;width:3rem;display:inline-flex}.lTRlka_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.lTRlka_prevNum9>input{font-size:9px}.lTRlka_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_prevCarryNote{width:100%;color:color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, var(--dsw-alias-label-tertiary));font-size:8px}.lTRlka_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.lTRlka_refRow{flex-direction:column;gap:2px;display:flex}.lTRlka_refHead{justify-content:space-between;align-items:baseline;display:flex}.lTRlka_refLabel{color:var(--dsw-alias-label-secondary);font-size:9px}.lTRlka_refCount{font-variant-numeric:tabular-nums;font-size:8px}.lTRlka_refCountOk{color:var(--dsw-alias-label-tertiary)}.lTRlka_refCountOver{color:var(--dsw-alias-state-warn-primary)}.lTRlka_chips{flex-wrap:wrap;gap:4px;display:flex}.lTRlka_chip{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);max-width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;align-items:center;gap:4px;padding:1px 4px;font-size:9px;display:inline-flex}.lTRlka_chipX{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:2px;padding:1px;display:inline-flex}.lTRlka_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.lTRlka_pickRow{align-items:center;gap:4px;display:flex}.lTRlka_pickSel{flex:1;min-width:0}.lTRlka_pickSelBoxOk{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);min-width:0;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;flex:1;padding:2px 4px;font-size:9px}.lTRlka_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_pickSelBoxEmpty{border:1px solid var(--dsw-alias-border-l1);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);min-width:0;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-tertiary);border-radius:6px;outline:none;flex:1;padding:2px 4px;font-size:9px}.lTRlka_uploadBtn{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;align-items:center;gap:4px;padding:2px 6px;font-size:9px;transition:border-color .15s,color .15s;display:inline-flex}.lTRlka_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.lTRlka_group{flex-direction:column;gap:6px;display:flex}.lTRlka_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.lTRlka_winSize{align-items:center;gap:4px;display:flex}.lTRlka_times{color:var(--dsw-alias-label-tertiary)}.lTRlka_clipsRow{align-items:center;gap:8px;display:flex}.lTRlka_clipsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:10px;font-weight:600}.lTRlka_uploadAudio{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));cursor:pointer;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:500;transition:border-color .15s,background-color .15s}.lTRlka_uploadAudio:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent)}.lTRlka_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.lTRlka_refsHead{justify-content:space-between;align-items:baseline;display:flex}.lTRlka_refsNote{color:var(--dsw-alias-label-tertiary);font-size:8px}.lTRlka_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.lTRlka_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.lTRlka_histTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.lTRlka_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.lTRlka_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.lTRlka_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.lTRlka_finalCut{border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.lTRlka_player{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;min-height:0}.lTRlka_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.lTRlka_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.lTRlka_cutTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:9px;font-weight:500}.lTRlka_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.lTRlka_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.lTRlka_cutOpen:hover{text-decoration:underline}.lTRlka_winTile{border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.lTRlka_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.lTRlka_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.lTRlka_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.lTRlka_emptyIcon{color:var(--dsw-alias-label-tertiary)}.lTRlka_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}";
-		const tagId$2 = "@melite/video-h3-timeline/studio.module.css@2a1af316";
+		const css$2 = ".lTRlka_hiddenInput{display:none}.lTRlka_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)}.lTRlka_alignR{text-align:right}.lTRlka_alignC{text-align:center}.lTRlka_tabular{font-variant-numeric:tabular-nums}.lTRlka_nowrap{white-space:nowrap}.lTRlka_tipAnchor{display:contents}.lTRlka_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.lTRlka_sz8{width:8px;height:8px}.lTRlka_sz10{width:10px;height:10px}.lTRlka_sz12{width:12px;height:12px}.lTRlka_sz20{width:20px;height:20px}.lTRlka_chev{flex:none;transition:transform .15s}details[open]>summary .lTRlka_chev{transform:rotate(180deg)}.lTRlka_w12{width:3rem}.lTRlka_w14{width:3.5rem}.lTRlka_w16{width:4rem}.lTRlka_w24{width:6rem}.lTRlka_w28{width:7rem}.lTRlka_w32{width:8rem}.lTRlka_w36{width:9rem}.lTRlka_w40{width:10rem}.lTRlka_w45{width:4.5rem}.lTRlka_wFull{width:100%}.lTRlka_ctlRow,.lTRlka_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.lTRlka_ctlRow select,.lTRlka_ctlRowSm select{font-size:10px}.lTRlka_ctlGap3{gap:12px}.lTRlka_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.lTRlka_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.lTRlka_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_ctlInput,.lTRlka_ctlSelect{border:.5px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;border-radius:6px;outline:none;padding:2px 6px;font-size:10px}.lTRlka_ctlSelect,.lTRlka_selMenuBox{color-scheme:light}.lTRlka_ctlSelect option,.lTRlka_selMenuBox option{color:canvastext;background:canvas}.lTRlka_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.lTRlka_ctlInput:focus,.lTRlka_ctlSelect:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_ctlSelect{font-family:inherit}.lTRlka_ctlInputSm{padding:2px 4px;font-size:10px}.lTRlka_sliderWrap{align-items:center;gap:8px;display:flex}.lTRlka_slider{accent-color:var(--dsw-alias-brand-primary)}.lTRlka_sliderReadout{text-align:right;width:2.5rem;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);font-size:10px}.lTRlka_selMenu{min-width:0;display:inline-flex}.lTRlka_selMenuBox{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px}.lTRlka_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_selMenuBox:disabled{opacity:.5}.lTRlka_emptyPane,.lTRlka_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.lTRlka_emptyPane{width:100%;height:100%;padding:24px 0}.lTRlka_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.lTRlka_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.lTRlka_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.lTRlka_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.lTRlka_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.lTRlka_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.lTRlka_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.lTRlka_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}.lTRlka_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}.lTRlka_shell>:first-child{grid-area:1/1}.lTRlka_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}.lTRlka_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}.lTRlka_shellErrors{flex-direction:column;gap:4px;margin-top:8px;display:flex}.lTRlka_shellError{border:1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);overflow-wrap:break-word;white-space:pre-wrap;color:var(--dsw-alias-state-error-primary);border-radius:6px;margin:0;padding:6px 8px;font-size:9px;line-height:1.5}.lTRlka_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.lTRlka_railCol{flex-direction:column;gap:8px;height:100%;min-height:0;padding:10px 12px;display:flex;overflow-y:auto}.lTRlka_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;padding-bottom:10px}.lTRlka_docLines{color:var(--dsw-alias-label-secondary);flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.lTRlka_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.lTRlka_warnIcon{flex:none;margin-top:2px}.lTRlka_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.lTRlka_runSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);cursor:pointer;user-select:none;align-items:center;gap:6px;padding:6px 0;font-size:10px;font-weight:600;list-style:none;display:flex}.lTRlka_runSummary::-webkit-details-marker{display:none}.lTRlka_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.lTRlka_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.lTRlka_panel{flex:none}.lTRlka_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.lTRlka_rowsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.lTRlka_rowsHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.lTRlka_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.lTRlka_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.lTRlka_focusTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);flex:none;font-size:10px;font-weight:600}.lTRlka_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.lTRlka_compactList{flex-direction:column;gap:4px;display:flex}.lTRlka_focusList{flex-direction:column;gap:8px;display:flex}.lTRlka_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.lTRlka_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.lTRlka_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.lTRlka_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.lTRlka_excerptFull{color:var(--dsw-alias-label-primary)}.lTRlka_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.lTRlka_knobBadge{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:0 4px;font-size:8px;font-weight:600}.lTRlka_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.lTRlka_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.lTRlka_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.lTRlka_kfTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:600}.lTRlka_kfHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_kfList{flex-direction:column;gap:4px;display:flex}.lTRlka_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.lTRlka_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.lTRlka_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.lTRlka_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.lTRlka_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.lTRlka_textIn{flex:1;min-width:0;display:inline-flex}.lTRlka_textIn>input,.lTRlka_srcIn>input,.lTRlka_prevNum>input,.lTRlka_kfIn>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.lTRlka_textIn>input:focus,.lTRlka_srcIn>input:focus,.lTRlka_prevNum>input:focus,.lTRlka_kfIn>input:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_textInEmpty>input,.lTRlka_guideInEmpty>input{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.lTRlka_textInEmpty>input::placeholder,.lTRlka_guideInEmpty>input::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.lTRlka_textInEmpty>input:focus,.lTRlka_guideInEmpty>input:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.lTRlka_kfIn{flex:1;min-width:0;display:inline-flex}.lTRlka_kfIn>input::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.lTRlka_callCard{padding:6px 2px;transition:color .15s}.lTRlka_callCardSel .lTRlka_cardId,.lTRlka_callCardSel .lTRlka_cardSpan{color:var(--dsw-alias-label-primary)}.lTRlka_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.lTRlka_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.lTRlka_cardSpan{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.lTRlka_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.lTRlka_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.lTRlka_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.lTRlka_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.lTRlka_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_spanDash,.lTRlka_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_framesRow{align-items:stretch;gap:8px;display:flex}.lTRlka_refBadgeRow{align-items:center;gap:6px;display:flex}.lTRlka_refBadge{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;border-radius:6px;flex:none;padding:1px 4px;font-size:9px}.lTRlka_refBadgeOk{color:var(--dsw-alias-brand-primary)}.lTRlka_refBadgeOver{color:var(--dsw-alias-state-warn-primary)}.lTRlka_guidesRow{align-items:center;gap:8px;display:flex}.lTRlka_guideWrap{flex:none;position:relative}.lTRlka_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.lTRlka_guideRaw{width:7rem;color:var(--dsw-alias-label-primary);background:0 0;border:1px solid #0000;border-radius:6px;outline:none;flex:none;padding:2px 6px 2px 16px;font-family:inherit;font-size:10px}.lTRlka_guideRaw::placeholder{color:var(--dsw-alias-label-tertiary)}.lTRlka_guideRaw:hover{border-color:var(--dsw-alias-border-l2)}.lTRlka_guideRaw:focus{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-hover)}.lTRlka_guideInEmpty,.lTRlka_guideInEmpty::placeholder{color:var(--dsw-alias-label-tertiary)}.lTRlka_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.lTRlka_callRefsHead{justify-content:space-between;align-items:baseline;display:flex}.lTRlka_callRefsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.lTRlka_callRefsNote{color:var(--dsw-alias-label-tertiary);font-size:8px}.lTRlka_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.lTRlka_callRefsFoot{color:var(--dsw-alias-label-tertiary);font-size:8px}.lTRlka_knobFold{margin-top:4px}.lTRlka_knobSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);cursor:pointer;user-select:none;align-items:center;gap:4px;font-size:9px;font-weight:600;list-style:none;display:flex}.lTRlka_knobSummary::-webkit-details-marker{display:none}.lTRlka_knobSummary:hover{color:var(--dsw-alias-label-secondary)}.lTRlka_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.lTRlka_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.lTRlka_beatsWrap{flex-direction:column;gap:4px;display:flex}.lTRlka_iconMini{width:16px;height:16px;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:9px;transition:background-color .15s,color .15s;display:flex}.lTRlka_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.lTRlka_iconMini:disabled{opacity:.3}.lTRlka_iconMiniMut{color:var(--dsw-alias-label-tertiary)}.lTRlka_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.lTRlka_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.lTRlka_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.lTRlka_textHead{justify-content:space-between;align-items:center;display:flex}.lTRlka_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.lTRlka_enhanceRow{align-items:center;gap:4px;display:flex}.lTRlka_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.lTRlka_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.lTRlka_enhanceBtn:disabled{opacity:.3}.lTRlka_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.lTRlka_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.lTRlka_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.lTRlka_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.lTRlka_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.lTRlka_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.lTRlka_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.lTRlka_sub{flex-direction:column;flex:1;gap:4px;min-width:0;display:flex}.lTRlka_subHead{align-items:baseline;gap:6px;display:flex}.lTRlka_subTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.lTRlka_subHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:9px;overflow:hidden}.lTRlka_subRow{align-items:center;gap:6px;display:flex}.lTRlka_linkBtn{background:var(--dsw-alias-bg-layer-1);width:16px;height:16px;color:var(--dsw-alias-brand-primary);cursor:pointer;border:none;border-radius:6px;justify-content:center;align-items:center;padding:0;display:flex}.lTRlka_linkBtn:hover{opacity:.8}.lTRlka_srcIn{flex:1;min-width:0;display:inline-flex}.lTRlka_srcIn>input{font-size:10px}.lTRlka_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.lTRlka_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.lTRlka_linkPanel{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);box-shadow:0 1px 2px color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);border-radius:6px;padding:4px}.lTRlka_linkHead{justify-content:space-between;align-items:center;padding:0 4px 2px;display:flex}.lTRlka_linkTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:8px;font-weight:600}.lTRlka_linkClose{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;padding:0;display:inline-flex}.lTRlka_linkClose:hover{color:var(--dsw-alias-label-primary)}.lTRlka_linkList{max-height:9rem;overflow-y:auto}.lTRlka_linkRow{text-align:left;cursor:pointer;background:0 0;border:none;border-radius:6px;align-items:center;gap:6px;width:100%;padding:2px 4px;transition:background-color .15s;display:flex}.lTRlka_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.lTRlka_linkThumb{border:1px solid var(--dsw-alias-border-l2);object-fit:cover;border-radius:6px;flex:none;width:24px;height:24px}.lTRlka_linkNameWrap{flex:1;min-width:0}.lTRlka_linkName{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);font-size:9px;display:block;overflow:hidden}.lTRlka_linkSub{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:8px;display:block;overflow:hidden}.lTRlka_linkEmpty{color:var(--dsw-alias-label-tertiary);padding:4px;font-size:8px;line-height:1.5;display:block}.lTRlka_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.lTRlka_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.lTRlka_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.lTRlka_prevLabelOn{color:var(--dsw-alias-label-secondary)}.lTRlka_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.lTRlka_prevNum{flex:none;width:3rem;display:inline-flex}.lTRlka_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.lTRlka_prevNum9>input{font-size:9px}.lTRlka_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_prevCarryNote{width:100%;color:color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, var(--dsw-alias-label-tertiary));font-size:8px}.lTRlka_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.lTRlka_refRow{flex-direction:column;gap:2px;display:flex}.lTRlka_refHead{justify-content:space-between;align-items:baseline;display:flex}.lTRlka_refLabel{color:var(--dsw-alias-label-secondary);font-size:9px}.lTRlka_refCount{font-variant-numeric:tabular-nums;font-size:8px}.lTRlka_refCountOk{color:var(--dsw-alias-label-tertiary)}.lTRlka_refCountOver{color:var(--dsw-alias-state-warn-primary)}.lTRlka_chips{flex-wrap:wrap;gap:4px;display:flex}.lTRlka_busAnchor{flex-direction:column;gap:2px;min-width:0;display:flex}.lTRlka_chip{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);max-width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;align-items:center;gap:4px;padding:1px 4px;font-size:9px;display:inline-flex}.lTRlka_chipX{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:2px;padding:1px;display:inline-flex}.lTRlka_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.lTRlka_pickRow{align-items:center;gap:4px;display:flex}.lTRlka_pickSel{flex:1;min-width:0}.lTRlka_pickSelBoxOk{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);min-width:0;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;flex:1;padding:2px 4px;font-size:9px}.lTRlka_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.lTRlka_pickSelBoxEmpty{border:1px solid var(--dsw-alias-border-l1);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);min-width:0;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-tertiary);border-radius:6px;outline:none;flex:1;padding:2px 4px;font-size:9px}.lTRlka_uploadBtn{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;align-items:center;gap:4px;padding:2px 6px;font-size:9px;transition:border-color .15s,color .15s;display:inline-flex}.lTRlka_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.lTRlka_group{flex-direction:column;gap:6px;display:flex}.lTRlka_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.lTRlka_winSize{align-items:center;gap:4px;display:flex}.lTRlka_times{color:var(--dsw-alias-label-tertiary)}.lTRlka_clipsRow{align-items:center;gap:8px;display:flex}.lTRlka_clipsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:10px;font-weight:600}.lTRlka_uploadAudio{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));cursor:pointer;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:500;transition:border-color .15s,background-color .15s}.lTRlka_uploadAudio:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent)}.lTRlka_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.lTRlka_refsHead{justify-content:space-between;align-items:baseline;display:flex}.lTRlka_refsNote{color:var(--dsw-alias-label-tertiary);font-size:8px}.lTRlka_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.lTRlka_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.lTRlka_histTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.lTRlka_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.lTRlka_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.lTRlka_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.lTRlka_finalCut{border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.lTRlka_player{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;min-height:0}.lTRlka_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.lTRlka_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.lTRlka_cutTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:9px;font-weight:500}.lTRlka_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.lTRlka_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.lTRlka_cutOpen:hover{text-decoration:underline}.lTRlka_winTile{border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.lTRlka_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.lTRlka_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.lTRlka_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.lTRlka_emptyIcon{color:var(--dsw-alias-label-tertiary)}.lTRlka_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}";
+		const tagId$2 = "@melite/video-h3-timeline/studio.module.css@f72cc7dc";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -484,6 +472,7 @@ window.__ModuleLoader__.load({
 			"beatErr": "lTRlka_beatErr",
 			"beatFlag": "lTRlka_beatFlag",
 			"beatsWrap": "lTRlka_beatsWrap",
+			"busAnchor": "lTRlka_busAnchor",
 			"callCard": "lTRlka_callCard",
 			"callCardSel": "lTRlka_callCardSel",
 			"callDur": "lTRlka_callDur",
@@ -682,6 +671,26 @@ window.__ModuleLoader__.load({
 		};
 		//#endregion
 		//#region ../../web/card-base/src/spec.ts
+		/** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
+		*  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
+		function isOptionKind(k) {
+			return (k.options ?? []).length > 0;
+		}
+		/** THE HYBRID TEST (the served entry mode — never the kind name):
+		*  catalog rows AND bag-element entry fields. */
+		function isHybridKind(k) {
+			return k.entry === "hybrid";
+		}
+		/** The catalog-bound field (the hybrid type / the option id) —
+		*  'id' when the door serves no key (the lora backstop). */
+		function optionKeyOf(k) {
+			return typeof k.option_key === "string" && k.option_key !== "" ? k.option_key : "id";
+		}
+		/** The scalar dial of a bag element (the pack's own name —
+		*  'strength' backstop when the door serves none). */
+		function scalarKeyOf(k) {
+			return typeof k.scalar_key === "string" && k.scalar_key !== "" ? k.scalar_key : "strength";
+		}
 		/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
 		*  (krea-2, z-image, euler, comfyui…) render titled — never raw.
 		*  FACES ONLY: option values, param keys, and wire bodies keep the
@@ -793,11 +802,42 @@ window.__ModuleLoader__.load({
 			}
 			return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
 		}
+		/** THE EDIT COERCION (the one specPatch duty that survives, moved
+		* to the edit boundary): atoms emit raw strings while typing; a
+		* numeric field's edit rides the user layer as a NUMBER. An
+		* unparseable/empty numeric string rides VERBATIM (the run's schema
+		* parse refuses loud, naming the field — never a silent 0). `v ===
+		* undefined` stays undefined (the tri-state's inherit — the caller's
+		* unset signal). PURE. */
+		function coerceFieldEdit(f, v) {
+			if (v === void 0) return void 0;
+			if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+			return v;
+		}
 		/** The card's own derived fields (the schema envelope walked,
 		* families-scoped to the served family). Memoize at the caller for
 		* hot loops — the walk is pure. */
 		function fieldsOf(spec) {
 			return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
+		}
+		/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
+		* one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
+		* (The ONE schema grammar — a field declares its own visibility;
+		* the walker interprets, cards never hand-rolled predicates.) A
+		* field with no visible_when always shows. Unknown guard keys:
+		* show (never hide on a typo). Examples:
+		*   "sharpen_enabled=true"
+		*   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
+		function fieldVisible(f, values) {
+			const rule = f.visible_when;
+			if (typeof rule !== "string" || rule === "") return true;
+			for (const guard of rule.split("&")) {
+				const eq = guard.indexOf("=");
+				if (eq < 0) continue;
+				const key = guard.slice(0, eq);
+				if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
+			}
+			return true;
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
@@ -1518,6 +1558,42 @@ window.__ModuleLoader__.load({
 				"aria-label": f.label
 			});
 		}
+		/** THE DYNAMIC PARAMETER PANEL (2026-09-17, the operator's shared-
+		* component law): sections of the SERVED form-spec's rows at their
+		* wire names — ONE mechanism every card seats, never a per-card
+		* re-walk. The card owns POLICY through the DECLARATION (which
+		* fields exist, their visible_when leaves); the base owns MECHANISM
+		* (fetch → walker → row atoms → visibility grammar → the error
+		* law). A row the door never declared renders NOTHING (no ghost,
+		* no twin); a refused spec renders AS an error — never a thinner
+		* panel. */
+		function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: errorProp }) {
+			const owned = useFormSpec(model);
+			const spec = specProp !== void 0 ? specProp : owned.spec;
+			const error = specProp !== void 0 ? errorProp ?? null : owned.error;
+			if (error !== null) return (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				role: "alert",
+				"data-testid": "spec-panel-error"
+			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, "form-spec failed — parameters unavailable"), (0, react.createElement)("div", { className: card_module_css_default.specHint }, error));
+			if (spec === null) return null;
+			const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]));
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, sections.map((sec) => (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				key: sec.title,
+				...sec.testid !== void 0 ? { "data-testid": sec.testid } : {}
+			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
+				const f = byName.get(row.name);
+				if (f === void 0) return null;
+				if (!fieldVisible(f, values)) return null;
+				return (0, react.createElement)(SpecFieldRow, {
+					key: row.name,
+					f,
+					value: values[row.name],
+					onEdit
+				});
+			}))));
+		}
 		/** THE CARD FORM (the constructor's surface half) — the emission's
 		*  fields walked off the schema envelope, grouped, visible-when
 		*  honored; the RESOLVED value derives per render (resolveValue —
@@ -1677,6 +1753,559 @@ window.__ModuleLoader__.load({
 		*        renders kind.fields through the same constructor atoms —
 		*        the fields NEVER render flat on the card form.
 		*/
+		function ModifiersSection(props) {
+			const { kinds, values, onEdit, onPatch } = props;
+			const [dragTile, setDragTile] = (0, react.useState)(null);
+			const [overTile, setOverTile] = (0, react.useState)(null);
+			const [pickAt, setPickAt] = (0, react.useState)(null);
+			const [leaf, setLeaf] = (0, react.useState)(null);
+			const [leafError, setLeafError] = (0, react.useState)(null);
+			const [draftOption, setDraftOption] = (0, react.useState)("");
+			const [draftStrength, setDraftStrength] = (0, react.useState)("");
+			const [draftSteps, setDraftSteps] = (0, react.useState)("");
+			const [draftParams, setDraftParams] = (0, react.useState)({});
+			const entriesOf = (k) => {
+				const v = values[k.param_key];
+				return Array.isArray(v) ? v.filter((e) => typeof e === "object" && e !== null) : [];
+			};
+			const optionOf = (k, value) => (k.options ?? []).find((o) => o.value === value) ?? null;
+			/** THE HYBRID ENTRY FIELDS (the bag element minus its two bound
+			*  rows — the option_key select and the scalar dial own those). */
+			const hybridFields = (k, hidden) => {
+				const key = optionKeyOf(k);
+				const scalar = scalarKeyOf(k);
+				return (k.fields ?? []).filter((f) => f.name !== key && f.name !== scalar && !(hidden?.has(f.name) ?? false));
+			};
+			/** The scalar seed (the row's own default wins; the contract
+			*  field default is the backstop — 0.7, the retired leaf). */
+			const strengthSeedOf = (k, option) => {
+				const scalar = scalarKeyOf(k);
+				const rowDefault = option?.defaults?.[scalar];
+				if (typeof rowDefault === "number") return rowDefault;
+				const field = (k.fields ?? []).find((f) => f.name === scalar);
+				return typeof field?.default === "number" ? field.default : .7;
+			};
+			const commitScalar = (f, name, v) => {
+				const coerced = coerceFieldEdit(f, v);
+				onEdit(name, coerced);
+				onPatch?.({ [name]: coerced });
+			};
+			const commit = (k, next) => {
+				onEdit(k.param_key, next);
+				onPatch?.({ [k.param_key]: next });
+			};
+			const addable = kinds.filter((k) => k.cardinality !== "scalar");
+			if (kinds.length === 0) return null;
+			const seated = props.railSeated;
+			const fieldDefaults = (k) => {
+				const out = {};
+				for (const f of k.fields ?? []) {
+					if (seated?.has(f.name) ?? false) continue;
+					if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+				}
+				return out;
+			};
+			const openCreate = (k) => {
+				const entries = entriesOf(k);
+				if (k.max_stack !== void 0 && entries.length >= k.max_stack) {
+					setLeafError(k.label + " stack limit reached (" + String(k.max_stack) + ") — remove one to add another.");
+					return;
+				}
+				setDraftOption("");
+				setDraftStrength("");
+				setDraftSteps("");
+				setDraftParams(fieldDefaults(k));
+				setLeafError(null);
+				setLeaf({
+					mode: "create",
+					kind: k,
+					index: -1
+				});
+			};
+			const openEdit = (k, index) => {
+				const entry = entriesOf(k)[index];
+				if (isHybridKind(k)) {
+					const key = optionKeyOf(k);
+					setDraftOption(typeof entry[key] === "string" ? entry[key] : "");
+					const scalar = scalarKeyOf(k);
+					const strength = typeof entry[scalar] === "number" ? entry[scalar] : void 0;
+					setDraftStrength(strength !== void 0 ? String(strength) : "");
+					const params = {};
+					for (const f of hybridFields(k, seated)) if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
+					setDraftParams(params);
+				} else if (isOptionKind(k)) {
+					const strength = typeof entry["strength"] === "number" ? entry["strength"] : void 0;
+					setDraftStrength(strength !== void 0 ? String(strength) : "");
+					setDraftSteps(typeof entry["steps"] === "number" ? String(entry["steps"]) : "");
+				} else {
+					const params = {};
+					for (const f of k.fields ?? []) {
+						if (seated?.has(f.name) ?? false) continue;
+						if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
+					}
+					setDraftParams(params);
+				}
+				setLeafError(null);
+				setLeaf({
+					mode: "edit",
+					kind: k,
+					index
+				});
+			};
+			const saveLeaf = () => {
+				const open = leaf;
+				const k = open.kind;
+				const entries = entriesOf(k);
+				if (isHybridKind(k)) {
+					const key = optionKeyOf(k);
+					if (draftOption === "") {
+						setLeafError("Pick one from the served rows.");
+						return;
+					}
+					const option = optionOf(k, draftOption);
+					if (option === null) {
+						setLeafError("‘" + draftOption + "’ is not a served " + k.label + " row — pick from the catalog, never hand-spell.");
+						return;
+					}
+					const seed = strengthSeedOf(k, option);
+					const strength = draftStrength.trim() === "" ? seed : Number(draftStrength);
+					if (!Number.isFinite(strength)) {
+						setLeafError("Strength must be a number.");
+						return;
+					}
+					const scalar = { [scalarKeyOf(k)]: strength };
+					const stamped = { [key]: draftOption };
+					if (typeof option.model === "string") stamped["model"] = option.model;
+					if (typeof option.preprocessor === "string") stamped["preprocessor"] = option.preprocessor;
+					if (open.mode === "create") commit(k, [...entries, {
+						...stamped,
+						...draftParams,
+						...scalar
+					}]);
+					else {
+						const entry = entries[open.index];
+						if (entry === void 0) {
+							setLeaf(null);
+							return;
+						}
+						const next = [...entries];
+						next[open.index] = {
+							...entry,
+							...stamped,
+							...draftParams,
+							...scalar
+						};
+						commit(k, next);
+					}
+				} else if (isOptionKind(k)) {
+					if (open.mode === "create") {
+						if (draftOption === "") {
+							setLeafError("Pick one from the served rows.");
+							return;
+						}
+						const option = optionOf(k, draftOption);
+						const seed = option !== null && option.defaults?.strength !== void 0 ? option.defaults.strength : 1;
+						const strength = draftStrength.trim() === "" ? seed : Number(draftStrength);
+						if (!Number.isFinite(strength)) {
+							setLeafError("Strength must be a number.");
+							return;
+						}
+						const stepsSeed = option?.defaults?.steps;
+						const steps = draftSteps.trim() === "" ? typeof stepsSeed === "number" ? stepsSeed : void 0 : Number(draftSteps);
+						if (steps !== void 0 && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
+							setLeafError("Steps applied must be a whole number ≥ 1.");
+							return;
+						}
+						commit(k, [...entries, steps === void 0 ? {
+							id: draftOption,
+							strength
+						} : {
+							id: draftOption,
+							strength,
+							steps
+						}]);
+					} else {
+						const entry = entries[open.index];
+						if (entry === void 0) {
+							setLeaf(null);
+							return;
+						}
+						const strength = Number(draftStrength);
+						if (!Number.isFinite(strength)) {
+							setLeafError("Strength must be a number.");
+							return;
+						}
+						const steps = draftSteps.trim() === "" ? void 0 : Number(draftSteps);
+						if (steps !== void 0 && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
+							setLeafError("Steps applied must be a whole number ≥ 1.");
+							return;
+						}
+						const next = [...entries];
+						if (steps === void 0) {
+							const rest = {
+								...entry,
+								strength
+							};
+							delete rest["steps"];
+							next[open.index] = rest;
+						} else next[open.index] = {
+							...entry,
+							strength,
+							steps
+						};
+						commit(k, next);
+					}
+				} else if (open.mode === "create") commit(k, [...entries, { ...draftParams }]);
+				else {
+					const entry = entries[open.index];
+					if (entry === void 0) {
+						setLeaf(null);
+						return;
+					}
+					const next = [...entries];
+					next[open.index] = {
+						...entry,
+						...draftParams
+					};
+					commit(k, next);
+				}
+				setLeaf(null);
+			};
+			const deleteLeaf = () => {
+				commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index));
+				setLeaf(null);
+			};
+			const onTileDrop = (k, active, over) => {
+				const entries = entriesOf(k);
+				const from = entries.findIndex((_, i) => k.param_key + "-" + i === active);
+				const to = entries.findIndex((_, i) => k.param_key + "-" + i === over);
+				if (from < 0 || to < 0) return;
+				const next = [...entries];
+				const [moved] = next.splice(from, 1);
+				next.splice(to, 0, moved);
+				commit(k, next);
+			};
+			const isOrdered = (k) => k.category !== "standalone";
+			const anyOrdered = kinds.some(isOrdered);
+			return (0, react.createElement)("section", {
+				className: card_module_css_default.modSection,
+				"data-subcard-grid": "on"
+			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
+				key: k.param_key + ":kind",
+				className: card_module_css_default.modLeafFields
+			}, k.kindFields.map((f) => (0, react.createElement)("label", {
+				key: f.name,
+				className: card_module_css_default.modField
+			}, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
+				f,
+				value: values[f.name] ?? f.default,
+				onEdit: (name, v) => {
+					commitScalar(f, name, v);
+				}
+			}))))), (0, react.createElement)("div", {
+				className: card_module_css_default.modRow,
+				"data-subcard-row": "flow"
+			}, kinds.map((k) => {
+				const entries = entriesOf(k);
+				if (entries.length === 0) return null;
+				const ordered = isOrdered(k);
+				return [...entries.map((entry, i) => {
+					const id = typeof entry[optionKeyOf(k)] === "string" ? entry[optionKeyOf(k)] : "";
+					const option = optionOf(k, id);
+					const scalar = scalarKeyOf(k);
+					const strength = typeof entry[scalar] === "number" ? entry[scalar] : option !== null && option.defaults !== void 0 && typeof option.defaults[scalar] === "number" ? option.defaults[scalar] : void 0;
+					return (0, react.createElement)(ModTile, {
+						key: k.param_key + "-" + i,
+						tileId: k.param_key + "-" + i,
+						label: option !== null ? option.label : id !== "" ? titleCaseId(id) : isOptionKind(k) ? k.label + " " + String(i + 1) : k.label,
+						...strength !== void 0 ? { strength } : {},
+						onOpen: () => {
+							openEdit(k, i);
+						},
+						dragging: dragTile === k.param_key + "-" + i,
+						dragOver: overTile === k.param_key + "-" + i && dragTile !== null && dragTile !== overTile,
+						...ordered ? {
+							onReorderStart: (id) => {
+								setDragTile(id);
+								if (id === null) setOverTile(null);
+							},
+							onReorderOver: setOverTile,
+							onReorderDrop: (active, over) => {
+								setDragTile(null);
+								setOverTile(null);
+								onTileDrop(k, active, over);
+							}
+						} : {}
+					});
+				})];
+			}), addable.length > 0 ? (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.modAddSquare,
+				"data-subcard-add": "mod",
+				"aria-label": "Add modifier",
+				title: "Add a modifier",
+				onClick: (e) => {
+					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
+				}
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+				open: true,
+				anchor: null,
+				getAnchorRect: () => pickAt.rect,
+				items: addable.map((k) => ({
+					id: k.kind,
+					label: k.label
+				})),
+				onSelect: (id) => {
+					setPickAt(null);
+					openCreate(addable.find((x) => x.kind === id));
+				},
+				onClose: () => {
+					setPickAt(null);
+				},
+				portal: true
+			}) : null, leaf !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose: () => {
+					setLeaf(null);
+				},
+				title: (leaf.mode === "create" ? "Add " : "Edit ") + leaf.kind.label,
+				closeLabel: "Close"
+			}, (0, react.createElement)(ModLeaf, {
+				leaf,
+				values,
+				hideFields: seated,
+				onDraft: {
+					setDraftOption,
+					setDraftStrength,
+					setDraftParams,
+					setDraftSteps,
+					draftOption,
+					draftStrength,
+					draftParams,
+					draftSteps
+				},
+				onError: setLeafError,
+				onSave: saveLeaf,
+				onDelete: deleteLeaf,
+				leafError,
+				paintFace: props.paintFace,
+				bboxFace: props.bboxFace,
+				paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : "",
+				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
+			})) : null);
+		}
+		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
+		*  square provider (the construction law: an image input constructs
+		*  the square automatically, even inside a mod leaf). */
+		function ModLeaf(props) {
+			const { leaf, onDraft, onSave, onDelete, leafError } = props;
+			const k = leaf.kind;
+			const hidden = props.hideFields;
+			const leafFields = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false));
+			const own = useSquareProvider((name, v) => {
+				onDraft.setDraftParams({
+					...onDraft.draftParams,
+					[name]: v
+				});
+			}, {
+				candidates: [],
+				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
+			});
+			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isHybridKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
+				className: card_module_css_default.modSelect,
+				value: onDraft.draftOption,
+				onChange: (e) => {
+					onDraft.setDraftOption(e.target.value);
+				}
+			}, (0, react.createElement)("option", { value: "" }, "— pick —"), (k.options ?? []).map((o) => (0, react.createElement)("option", {
+				key: o.value,
+				value: o.value,
+				title: o.tooltip ?? o.label
+			}, o.label)), onDraft.draftOption !== "" && (k.options ?? []).every((o) => o.value !== onDraft.draftOption) ? (0, react.createElement)("option", { value: onDraft.draftOption }, titleCaseId(onDraft.draftOption) + " (unregistered)") : null)), (0, react.createElement)("label", { className: card_module_css_default.modField }, (k.fields ?? []).find((f) => f.name === scalarKeyOf(k))?.label ?? "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				step: "0.05",
+				value: onDraft.draftStrength,
+				placeholder: "the row default",
+				onChange: (e) => {
+					onDraft.setDraftStrength(e.target.value);
+				}
+			})), (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== scalarKeyOf(k) && !(hidden?.has(f.name) ?? false)).map((f) => (0, react.createElement)("label", {
+				key: f.name,
+				className: card_module_css_default.modField
+			}, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), (0, react.createElement)(SpecAtom, {
+				f,
+				value: onDraft.draftParams[f.name] ?? f.default,
+				onEdit: (name, v) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						[name]: v
+					});
+				},
+				square: own.square(f)
+			}))), own.wireMenu) : isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
+				className: card_module_css_default.modSelect,
+				value: onDraft.draftOption,
+				onChange: (e) => {
+					onDraft.setDraftOption(e.target.value);
+				}
+			}, (0, react.createElement)("option", { value: "" }, "— pick —"), k.options.map((o) => (0, react.createElement)("option", {
+				key: o.value,
+				value: o.value
+			}, o.label)))) : null, (0, react.createElement)("label", { className: card_module_css_default.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				step: "0.05",
+				value: onDraft.draftStrength,
+				placeholder: "the row default",
+				onChange: (e) => {
+					onDraft.setDraftStrength(e.target.value);
+				}
+			})), (k.options ?? []).some((o) => typeof o.defaults?.steps === "number") ? (0, react.createElement)("label", { className: card_module_css_default.modField }, "Steps applied", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				"aria-label": "Steps applied",
+				type: "number",
+				step: "1",
+				value: onDraft.draftSteps,
+				placeholder: String(((k.options ?? []).find((o) => o.value === onDraft.draftOption) ?? (k.options ?? [])[0])?.defaults?.steps ?? ""),
+				title: "The distill’s own step count — the run’s sampler applies it unless a call pins steps explicitly.",
+				onChange: (e) => {
+					onDraft.setDraftSteps(e.target.value);
+				}
+			})) : null) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
+				f,
+				value: onDraft.draftParams[f.name],
+				onEdit: (name, v) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						[name]: v
+					});
+				},
+				square: own.square(f)
+			})), props.paintFace !== void 0 && k.leaf_face === "paint-canvas" && (f.type === "image" || f.wtype === "image") ? (0, react.createElement)(PaintVerb, {
+				Face: props.paintFace,
+				referenceUrl: props.paintReferenceValue,
+				payloadUrl: typeof onDraft.draftParams[f.name] === "string" ? onDraft.draftParams[f.name] : "",
+				onSaved: (dataUrl) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						[f.name]: dataUrl
+					});
+				}
+			}) : null)), props.bboxFace !== void 0 && k.leaf_face === "bbox-canvas" ? (0, react.createElement)(BboxVerb, {
+				Face: props.bboxFace,
+				referenceUrl: props.paintReferenceValue,
+				draft: onDraft.draftParams,
+				onSaved: (bbox) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						bbox_x: Math.round(bbox.x),
+						bbox_y: Math.round(bbox.y),
+						bbox_w: Math.round(bbox.width),
+						bbox_h: Math.round(bbox.height)
+					});
+				}
+			}) : null, own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				onClick: onSave
+			}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: onDelete
+			}, "Remove") : null));
+		}
+		/** THE PAINT VERB — the brush button + modal mount (the face
+		*  component arrives from the host; this is the wiring only). */
+		function PaintVerb(props) {
+			const [open, setOpen] = (0, react.useState)(false);
+			return (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: () => {
+					setOpen(true);
+				}
+			}, "Paint"), open ? (0, react.createElement)(props.Face, {
+				referenceUrl: props.referenceUrl,
+				payloadUrl: props.payloadUrl,
+				onSave: (dataUrl) => {
+					props.onSaved(dataUrl);
+					setOpen(false);
+				},
+				onCancel: () => {
+					setOpen(false);
+				}
+			}) : null);
+		}
+		/** THE BBOX VERB (stroke 78) — the selection button + modal mount:
+		*  reads the entry's current rectangle (all four present and finite
+		*  = set; anything else = null, a fresh draw), writes the four
+		*  bbox_* inputs on save. Same delivery law as the paint verb. */
+		function BboxVerb(props) {
+			const [open, setOpen] = (0, react.useState)(false);
+			const quad = [
+				props.draft["bbox_x"],
+				props.draft["bbox_y"],
+				props.draft["bbox_w"],
+				props.draft["bbox_h"]
+			];
+			const set = quad.length === 4 && quad.every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0) ? {
+				x: quad[0],
+				y: quad[1],
+				width: quad[2],
+				height: quad[3]
+			} : null;
+			return (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: () => {
+					setOpen(true);
+				}
+			}, set === null ? "Draw box" : "Redraw box"), open ? (0, react.createElement)(props.Face, {
+				referenceUrl: props.referenceUrl,
+				bbox: set,
+				onSave: (bbox) => {
+					props.onSaved(bbox);
+					setOpen(false);
+				},
+				onCancel: () => {
+					setOpen(false);
+				}
+			}) : null);
+		}
+		/** One mod tile (the original, verbatim: useSortable + click to
+		*  edit + strength to 2 decimals). */
+		/** The reorder drag's MIME (native HTML5 sortable). */
+		const MOD_DRAG_MIME = "application/x-melite-mod";
+		function ModTile(props) {
+			const ordered = props.onReorderStart !== void 0;
+			return (0, react.createElement)("li", {
+				className: card_module_css_default.modTile + (props.dragging ? " " + card_module_css_default.tileDragging : "") + (props.dragOver ? " " + card_module_css_default.modTileOver : ""),
+				draggable: ordered,
+				"data-mod-tile": props.tileId,
+				title: ordered ? "Drag to reorder · click to edit" : "Click to edit (standalone — own output)",
+				onDragStart: (e) => {
+					if (!ordered) return;
+					e.dataTransfer.setData(MOD_DRAG_MIME, props.tileId);
+					e.dataTransfer.effectAllowed = "move";
+					props.onReorderStart(props.tileId);
+				},
+				onDragEnd: () => {
+					if (ordered) props.onReorderStart(null);
+				},
+				onDragOver: (e) => {
+					if (!ordered) return;
+					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
+						e.preventDefault();
+						e.dataTransfer.dropEffect = "move";
+						props.onReorderOver(props.tileId);
+					}
+				},
+				onDrop: (e) => {
+					if (!ordered) return;
+					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
+						e.preventDefault();
+						e.stopPropagation();
+						const active = e.dataTransfer.getData(MOD_DRAG_MIME);
+						if (active !== "" && active !== props.tileId) props.onReorderDrop(active, props.tileId);
+					}
+				},
+				onClick: props.onOpen
+			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null);
+		}
 		//#endregion
 		//#region ../../web-kit/timeline/timeline/icons.tsx
 		function base$1(name, className) {
@@ -3195,33 +3824,6 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		function CheckControl({ ariaLabel, checked, onChange, disabled }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
-				label: ariaLabel,
-				disabled,
-				checked: checked === true,
-				onChange
-			});
-		}
-		function SliderControl({ ariaLabel, value, onChange, min, max, step, format, width = "w-24", disabled }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-				className: studio_module_css_default.sliderWrap,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-					type: "range",
-					"aria-label": ariaLabel,
-					disabled,
-					min,
-					max,
-					step,
-					value,
-					onChange: (e) => onChange(Number(e.target.value)),
-					className: cn(widthClass(width), studio_module_css_default.slider)
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: studio_module_css_default.sliderReadout,
-					children: format ? format(value) : value
-				})]
-			});
-		}
 		function SelectMenu({ value, options, onChange, className, buttonClassName, popoverClassName: _popoverClassName, disabled, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 				className: cn(studio_module_css_default.selMenu, className),
@@ -3442,23 +4044,22 @@ window.__ModuleLoader__.load({
 		* can never author a card the run door refuses. Legacy docs carrying
 		* them hydrate-drop with a warning. */
 		const CALL_KNOB_KEYS = /* @__PURE__ */ new Set([
-			"sampling_steps",
 			"steps",
 			"denoise",
-			"sampler",
-			"scheduler",
+			"sampler_name",
+			"sched_name",
 			"shift_video",
 			"shift_audio",
-			"h3_sla_sparsity",
-			"h3_sla_block_size",
-			"h3_sla_min_seq_len",
-			"h3_sla_dense_last_steps",
-			"h3_sla_protect_audio",
-			"h3_sla_stabilize_motion",
-			"h3_sla_reference_protection",
-			"h3_sla_dense_backend",
-			"h3_sla_dense_steps",
-			"h3_sla_disable_fp16_accum",
+			"sla_sparsity",
+			"sla_block_size",
+			"sla_min_seq_len",
+			"sla_dense_last_steps",
+			"sla_protect_audio",
+			"sla_stabilize_motion",
+			"sla_reference_protection",
+			"sla_dense_backend",
+			"sla_dense_steps",
+			"sla_disable_fp16_accum",
 			"sharpen_enabled",
 			"sharpen_method",
 			"sharpen_strength",
@@ -3466,26 +4067,27 @@ window.__ModuleLoader__.load({
 			"sharpen_threshold",
 			"sharpen_iterations",
 			"interpolate_enabled",
-			"interpolate_model",
-			"interpolate_multiplier"
+			"interp_model",
+			"interp_multiplier",
+			"length"
 		]);
 		const KNOB_ORDER = [
-			"sampling_steps",
+			"steps",
 			"denoise",
-			"sampler",
-			"scheduler",
+			"sampler_name",
+			"sched_name",
 			"shift_video",
 			"shift_audio",
-			"h3_sla_sparsity",
-			"h3_sla_block_size",
-			"h3_sla_min_seq_len",
-			"h3_sla_dense_last_steps",
-			"h3_sla_protect_audio",
-			"h3_sla_stabilize_motion",
-			"h3_sla_reference_protection",
-			"h3_sla_dense_backend",
-			"h3_sla_dense_steps",
-			"h3_sla_disable_fp16_accum",
+			"sla_sparsity",
+			"sla_block_size",
+			"sla_min_seq_len",
+			"sla_dense_last_steps",
+			"sla_protect_audio",
+			"sla_stabilize_motion",
+			"sla_reference_protection",
+			"sla_dense_backend",
+			"sla_dense_steps",
+			"sla_disable_fp16_accum",
 			"sharpen_enabled",
 			"sharpen_method",
 			"sharpen_strength",
@@ -3493,28 +4095,29 @@ window.__ModuleLoader__.load({
 			"sharpen_threshold",
 			"sharpen_iterations",
 			"interpolate_enabled",
-			"interpolate_model",
-			"interpolate_multiplier"
+			"interp_model",
+			"interp_multiplier",
+			"length"
 		];
-		const SAMPLER_OPTIONS = [
-			"euler",
-			"euler_cfg_pp",
-			"euler_ancestral",
-			"dpmpp_2m",
-			"dpmpp_2m_sde",
-			"heun"
-		];
-		const SCHEDULER_OPTIONS = [
-			"simple",
-			"beta",
-			"linear_quadratic",
-			"normal",
-			"sgm_uniform",
-			"karras",
-			"exponential",
-			"kl_optimal",
-			"ddim_uniform"
-		];
+		/** The py-era knob spellings → the card's wire names. Hydration
+		* migrates; serialization only ever writes the wire names. */
+		const LEGACY_KNOB_KEY = {
+			sampling_steps: "steps",
+			sampler: "sampler_name",
+			scheduler: "sched_name",
+			h3_sla_sparsity: "sla_sparsity",
+			h3_sla_block_size: "sla_block_size",
+			h3_sla_min_seq_len: "sla_min_seq_len",
+			h3_sla_dense_last_steps: "sla_dense_last_steps",
+			h3_sla_protect_audio: "sla_protect_audio",
+			h3_sla_stabilize_motion: "sla_stabilize_motion",
+			h3_sla_reference_protection: "sla_reference_protection",
+			h3_sla_dense_backend: "sla_dense_backend",
+			h3_sla_dense_steps: "sla_dense_steps",
+			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
+			interpolate_model: "interp_model",
+			interpolate_multiplier: "interp_multiplier"
+		};
 		/**
 		* Convert a legacy audio_stem artifact name into a positioned clip at
 		* frame 0. The caller owns the async duration probe (Audio metadata)
@@ -3533,23 +4136,30 @@ window.__ModuleLoader__.load({
 				gain: 1
 			};
 		}
-		const AUDIO_MODES = [
-			"none",
-			"native",
-			"lipSync"
-		];
-		/** Speed LoRA choices — the mod.yaml SSOT for the h3 lane's speed
-		*  adapters (packages/comfyui/models/video/h3/mods/loras/mod.yaml).
-		*  The `value` is the ComfyUI LoRA filename (what LoraLoader.0.lora_name
-		*  receives); the `label` is the human-readable name from mod.yaml.
-		*  Empty = no speed LoRA (the lane default). */
-		const SPEED_LORA_OPTIONS = [{
-			value: "h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
-			label: "H3 Turbo 8-step (LightX2V v1.0)"
-		}, {
-			value: "h3/minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16.safetensors",
-			label: "H3 Turbo 4-step 768p (LightX2V v1.1)"
-		}];
+		/** The py-era Layer A spellings → the card's wire names (hydration
+		* migrates; serialization writes only the wire names). The lora knob
+		* pair maps through the mod bag: a legacy lora_name resolves to a
+		* catalog id when the filename matches, else drops with a warning
+		* (it was decorative anyway — compose never read it). */
+		const LEGACY_LAYERA_KEY = {
+			sampling_steps: "steps",
+			sampler: "sampler_name",
+			scheduler: "sched_name",
+			h3_sla_sparsity: "sla_sparsity",
+			h3_sla_block_size: "sla_block_size",
+			h3_sla_min_seq_len: "sla_min_seq_len",
+			h3_sla_dense_last_steps: "sla_dense_last_steps",
+			h3_sla_protect_audio: "sla_protect_audio",
+			h3_sla_stabilize_motion: "sla_stabilize_motion",
+			h3_sla_reference_protection: "sla_reference_protection",
+			h3_sla_dense_backend: "sla_dense_backend",
+			h3_sla_dense_steps: "sla_dense_steps",
+			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
+			interpolate_model: "interp_model",
+			interpolate_multiplier: "interp_multiplier",
+			rtx_vsr_enabled: "sr_switch",
+			h3_ref_image_size: "ref_image_size"
+		};
 		/** H3 prompt style (Layer B ✨): rewrite ONE model call's prompt into
 		* the cinematic MiniMax-H3 dialect. One call = ONE continuous shot
 		* (cuts are CALL boundaries — never describe a cut inside a call);
@@ -3709,11 +4319,27 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/ui/studio/RunRecipeEngine.tsx
+		/**
+		* h3-timeline studio split (2026-09-06) — PURE MOVE from
+		* ui/studio/component.tsx.
+		*
+		* THE LAYER A/B LAW REWORK (2026-09-17): the Engine knob rows ride
+		* the SHARED SpecPanel (the estate's parameter system: the served
+		* form-spec → SpecFieldRow → wire names) — one mechanism every card
+		* seats, never an h3 re-walk.
+		*
+		* THE RECIPE STAYS EDITABLE (operator correction, 2026-09-18): the
+		* Model route (FL2VA ↔ Ref2VA), the Preset (the plaguekind default
+		* geometries: draft_02mp / final_hd), and the doc FPS are REAL
+		* document controls — a static readout starved the operator of the
+		* plaguekind defaults. Route/Preset/FPS are document-local clock
+		* facts (route = the card's model id; preset/fps never serialize to
+		* the card params), so they render as studio chrome beside the
+		* panel — never as spec rows.
+		*/
 		/** The preset geometry (identity.principles, stated once): draft
 		* rides 768×448 @ 56f, final rides 1344×768 @ 124f. The engine
-		* fold shows these RESOLVED — the operator's 2026-09-15 catch: the
-		* rail read "preset×preset · steps preset", three lazy placeholders
-		* where three numbers belong. */
+		* fold shows these RESOLVED. */
 		const PRESET_GEOM = {
 			draft_02mp: {
 				w: 768,
@@ -3726,824 +4352,241 @@ window.__ModuleLoader__.load({
 				f: 124
 			}
 		};
-		/** Layer A rail: Recipe + Engine folds (monolith lines 2687–2904). */
+		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 		function RunRecipeEngine({ stage, layerA, setLayerAKey, isRef2va }) {
 			const geom = PRESET_GEOM[layerA.preset] ?? PRESET_GEOM.draft_02mp;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: studio_module_css_default.group,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: studio_module_css_default.groupTitle,
-						children: "Recipe"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Model route",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-							ariaLabel: "Model route",
-							testId: "tl-route-select",
-							value: isRef2va ? "h3-timeline-ref" : "h3-timeline",
-							onChange: (v) => setLayerAKey("model", v),
-							title: isRef2va ? "Ref2VA — identity refs (per-call override windows)" : "FL2VA — first/last-frame conditioning",
-							options: [{
-								value: "h3-timeline",
-								label: "FL2VA · first/last"
-							}, {
-								value: "h3-timeline-ref",
-								label: "Ref2VA · identity refs"
-							}],
-							emptyLabel: false,
-							width: "w-40"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Preset",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-							ariaLabel: "Preset",
-							value: layerA.preset,
-							onChange: (v) => setLayerAKey("preset", v),
-							options: ["draft_02mp", "final_hd"],
-							emptyLabel: false,
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "FPS",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-							ariaLabel: "FPS",
-							value: layerA.fps,
-							onChange: (v) => {
-								if (v !== void 0 && v > 0) setLayerAKey("fps", v);
-							},
-							min: 1,
-							max: 60,
-							step: 1,
-							placeholder: "",
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Audio",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-							ariaLabel: "Audio mode",
-							value: layerA.audio_mode,
-							onChange: (v) => setLayerAKey("audio_mode", v),
-							options: AUDIO_MODES,
-							emptyLabel: false,
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Seam continuity",
-						className: studio_module_css_default.ctlGap3,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CheckControl, {
-							ariaLabel: "Seam continuity",
-							checked: layerA.continuity,
-							onChange: (v) => setLayerAKey("continuity", v)
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Seed",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-							ariaLabel: "Seed",
-							value: layerA.seed,
-							onChange: (v) => {
-								if (v !== void 0) setLayerAKey("seed", v);
-							},
-							min: 0,
-							step: 1,
-							placeholder: "",
-							width: "w-32"
-						})
-					})
-				]
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: studio_module_css_default.group,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SectionLabel, {
-						tail: `window ${String(stage.params?.width ?? geom.w)}×${String(stage.params?.height ?? geom.h)} · steps ${layerA.sampling_steps ?? "auto"}`,
-						children: "Engine (H3)"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Video sigma shift",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SliderControl, {
-							ariaLabel: "Video sigma shift",
-							value: layerA.shift_video ?? 12,
-							onChange: (v) => setLayerAKey("shift_video", v),
-							min: .01,
-							max: 100,
-							step: .01
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Audio sigma shift",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SliderControl, {
-							ariaLabel: "Audio sigma shift",
-							value: layerA.shift_audio ?? 3,
-							onChange: (v) => setLayerAKey("shift_audio", v),
-							min: .01,
-							max: 100,
-							step: .01
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Sampler",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-							ariaLabel: "Sampler (run)",
-							value: layerA.sampler,
-							onChange: (v) => setLayerAKey("sampler", v),
-							options: SAMPLER_OPTIONS,
-							emptyLabel: "engine default (euler)",
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Scheduler",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-							ariaLabel: "Scheduler (run)",
-							value: layerA.scheduler,
-							onChange: (v) => setLayerAKey("scheduler", v),
-							options: SCHEDULER_OPTIONS,
-							emptyLabel: "engine default (simple)",
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Sampling steps",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-							ariaLabel: "Sampling steps (run)",
-							value: layerA.sampling_steps,
-							onChange: (v) => setLayerAKey("sampling_steps", v),
-							min: 1,
-							max: 100,
-							step: 1,
-							placeholder: "auto",
-							title: "unset — the engine's own step count applies",
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Denoise",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-							ariaLabel: "Denoise (run)",
-							value: layerA.denoise,
-							onChange: (v) => setLayerAKey("denoise", v),
-							min: 0,
-							max: 1,
-							step: .05,
-							placeholder: "1.0",
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Window size",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							className: studio_module_css_default.winSize,
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-									ariaLabel: "Window width (run)",
-									value: layerA.width,
-									onChange: (v) => setLayerAKey("width", v),
-									min: 256,
-									max: 1920,
-									step: 32,
-									placeholder: String(geom.w),
-									title: `blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}`,
-									width: "w-[4.5rem]"
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: studio_module_css_default.times,
-									children: "×"
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-									ariaLabel: "Window height (run)",
-									value: layerA.height,
-									onChange: (v) => setLayerAKey("height", v),
-									min: 256,
-									max: 1920,
-									step: 32,
-									placeholder: String(geom.h),
-									title: `blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}`,
-									width: "w-[4.5rem]"
-								})
-							]
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Attention",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-							ariaLabel: "Attention (run)",
-							value: layerA.h3_attention,
-							onChange: (v) => setLayerAKey("h3_attention", v),
-							options: [
-								{
-									value: "kitchen",
-									label: "comfyui-kitchen"
-								},
-								{
-									value: "sol",
-									label: "SOL"
-								},
-								{
-									value: "sage",
-									label: "SAGE"
-								},
-								{
-									value: "sla",
-									label: "SLA (block-sparse)"
-								}
-							],
-							emptyLabel: "engine default",
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "FP16 accumulation",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CheckControl, {
-							ariaLabel: "FP16 accumulation (run)",
-							checked: layerA.h3_fp16_accumulation,
-							onChange: (v) => setLayerAKey("h3_fp16_accumulation", v)
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Torch compile",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CheckControl, {
-							ariaLabel: "Torch compile (run)",
-							checked: layerA.h3_torch_compile,
-							onChange: (v) => setLayerAKey("h3_torch_compile", v)
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "CFG",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-							ariaLabel: "CFG (run)",
-							value: layerA.cfg,
-							onChange: (v) => setLayerAKey("cfg", v),
-							min: 1,
-							max: 10,
-							step: .5,
-							placeholder: "4.0",
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Motion context frames",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-							ariaLabel: "Motion context frames (run)",
-							value: layerA.h3_context_steps,
-							onChange: (v) => setLayerAKey("h3_context_steps", v),
-							min: 0,
-							max: 8,
-							step: 1,
-							placeholder: "engine default",
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Audio context steps",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-							ariaLabel: "Audio context steps (run)",
-							value: layerA.h3_audio_context_steps,
-							onChange: (v) => setLayerAKey("h3_audio_context_steps", v),
-							min: 0,
-							max: 200,
-							step: 10,
-							placeholder: "engine default",
-							width: "w-32"
-						})
-					})
-				]
-			})] });
-		}
-		//#endregion
-		//#region src/ui/studio/RunAdvancedPanels.tsx
-		/**
-		* h3-timeline studio split (2026-09-06) — PURE MOVE from
-		* ui/studio/component.tsx. No behavior change: headers/footers are new,
-		* every logic line is verbatim from the monolith (source range noted).
-		*/
-		/** The spec's name → LayerA's key (the h3_ prefix is the studio's
-		* document spelling of the card's renderer vocabulary). */
-		function layerKey(name) {
-			return name.startsWith("sla_") ? "h3_" + name : name;
-		}
-		/** Layer A rail: SLA lab + Speed LoRA + Post-processing (lines 2905–3188).
-		*
-		* Hour 16, item 3: the compose-read knobs (the SLA family + the
-		* sharpen leaves) RIDE THE SERVED SPEC now — /v1/form-spec?model=
-		* h3-timeline declares them; SpecFieldRow renders each with the
-		* declaration's shape (slider/select/number ranges). The section
-		* layout and the conditional leaves stay studio logic (visible_when
-		* is single-equality — "method ≠ rcas" is not expressible). The
-		* Speed LoRA + RTX + CRF rows are document-local vocabulary (not
-		* card params; the compose never reads them) and stay hand-rolled. */
-		function RunAdvancedPanels({ layerA, setLayerAKey }) {
-			const { spec, error } = useFormSpec("h3-timeline");
-			const byName = new Map((spec === null ? [] : fieldsOf(spec)).map((f) => [f.name, f]));
-			const row = (name) => {
-				const f = byName.get(name);
-				if (f === void 0) return null;
-				const key = layerKey(name);
-				return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecFieldRow, {
-					f,
-					value: layerA[key],
-					onEdit: (k, v) => {
-						setLayerAKey(layerKey(k), v);
-					}
-				});
-			};
+			const values = layerA;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-				error !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: studio_module_css_default.group,
-					"data-testid": "tl-spec-error",
-					role: "alert",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: studio_module_css_default.groupTitle,
-						children: "form-spec failed — advanced knobs unavailable"
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: error })]
-				}),
-				"    ",
-				(layerA.h3_attention ?? "kitchen") === "sla" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: studio_module_css_default.group,
-					"data-testid": "tl-sla-panel",
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: studio_module_css_default.groupTitle,
-							children: "SLA — block-sparse attention"
-						}),
-						row("sla_sparsity"),
-						row("sla_block_size"),
-						row("sla_min_seq_len"),
-						row("sla_dense_last_steps"),
-						row("sla_dense_steps"),
-						row("sla_dense_backend"),
-						row("sla_reference_protection"),
-						row("sla_protect_audio"),
-						row("sla_stabilize_motion"),
-						row("sla_disable_fp16_accum")
-					]
-				}),
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: studio_module_css_default.group,
-					"data-testid": "tl-lora-panel",
+					"data-testid": "tl-recipe-chrome",
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							className: studio_module_css_default.groupTitle,
-							children: "Speed LoRA"
+							children: "Recipe"
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Name",
+							label: "Model route",
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-								ariaLabel: "Speed LoRA name (run)",
-								value: layerA.lora_name,
-								onChange: (v) => setLayerAKey("lora_name", v),
-								options: SPEED_LORA_OPTIONS,
-								emptyLabel: "none",
+								ariaLabel: "Model route",
+								testId: "tl-route-select",
+								value: isRef2va ? "h3-timeline-ref" : "h3-timeline",
+								onChange: (v) => setLayerAKey("model", v),
+								title: isRef2va ? "Ref2VA — identity refs (per-call override windows)" : "FL2VA — first/last-frame conditioning",
+								options: [{
+									value: "h3-timeline",
+									label: "FL2VA · first/last"
+								}, {
+									value: "h3-timeline-ref",
+									label: "Ref2VA · identity refs"
+								}],
+								emptyLabel: false,
 								width: "w-40"
 							})
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Strength",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-								ariaLabel: "Speed LoRA strength (run)",
-								value: layerA.lora_strength,
-								onChange: (v) => setLayerAKey("lora_strength", v),
-								min: 0,
-								max: 1.5,
-								step: .05,
-								placeholder: "0.8",
+							label: "Preset",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
+								ariaLabel: "Preset",
+								testId: "tl-preset-select",
+								value: layerA.preset,
+								onChange: (v) => setLayerAKey("preset", v),
+								options: ["draft_02mp", "final_hd"],
+								emptyLabel: false,
 								width: "w-32"
 							})
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
+							label: "FPS",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
+								ariaLabel: "FPS",
+								value: layerA.fps,
+								onChange: (v) => {
+									if (v !== void 0 && v > 0) setLayerAKey("fps", v);
+								},
+								min: 1,
+								max: 60,
+								step: 1,
+								placeholder: "",
+								width: "w-32"
+							})
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: studio_module_css_default.recipeGeom,
+							"data-testid": "tl-recipe-geom",
+							children: [
+								layerA.preset,
+								" · ",
+								String(stage.params?.width ?? geom.w),
+								"×",
+								String(stage.params?.height ?? geom.h),
+								" @ ",
+								geom.f,
+								"f · ",
+								layerA.fps,
+								" doc-fps"
+							]
 						})
 					]
 				}),
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecPanel, {
+					model: "h3-timeline",
+					values,
+					onEdit: setLayerAKey,
+					sections: [{
+						title: "Clock",
+						testid: "tl-recipe-panel",
+						rows: [{ name: "seed" }]
+					}, {
+						title: "Engine (H3)",
+						testid: "tl-engine-panel",
+						rows: [
+							{ name: "shift_video" },
+							{ name: "shift_audio" },
+							{ name: "sampler_name" },
+							{ name: "sched_name" },
+							{ name: "steps" },
+							{ name: "denoise" }
+						]
+					}]
+				}),
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: studio_module_css_default.group,
-					"data-testid": "tl-post-panel",
+					className: studio_module_css_default.winSize,
 					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: studio_module_css_default.groupTitle,
-							children: "Post-processing"
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SectionLabel, {
+							tail: `window ${String(stage.params?.width ?? geom.w)}×${String(stage.params?.height ?? geom.h)} · steps ${layerA.steps ?? "auto"}`,
+							children: "Engine (H3)"
 						}),
-						row("sharpen_enabled"),
-						layerA.sharpen_enabled && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-							row("sharpen_method"),
-							row("sharpen_strength"),
-							(layerA.sharpen_method ?? "rcas") !== "rcas" && row("sharpen_radius"),
-							layerA.sharpen_method === "adaptive_usm" && row("sharpen_threshold"),
-							layerA.sharpen_method === "deconvolution" && row("sharpen_iterations")
-						] }),
-						row("interpolate_enabled"),
-						layerA.interpolate_enabled && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Model",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-								ariaLabel: "Interpolation model (run)",
-								value: layerA.interpolate_model ?? "film_net_fp16.safetensors",
-								onChange: (v) => setLayerAKey("interpolate_model", v === "rife47.pth" ? v : "film_net_fp16.safetensors"),
-								options: [{
-									value: "film_net_fp16.safetensors",
-									label: "FILM"
-								}, {
-									value: "rife47.pth",
-									label: "RIFE 4.7"
-								}],
-								emptyLabel: false,
-								width: "w-32"
-							})
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Multiplier",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-								ariaLabel: "Interpolation multiplier (run)",
-								value: String(layerA.interpolate_multiplier ?? 2),
-								onChange: (v) => setLayerAKey("interpolate_multiplier", Number(v)),
-								options: [{
-									value: "2",
-									label: "2x"
-								}, {
-									value: "4",
-									label: "4x"
-								}],
-								emptyLabel: false,
-								width: "w-32"
-							})
-						})] }),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "RTX Super-Res",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CheckControl, {
-								ariaLabel: "RTX Super-Resolution (run)",
-								checked: layerA.rtx_vsr_enabled === true,
-								onChange: (v) => setLayerAKey("rtx_vsr_enabled", v)
-							})
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
+							ariaLabel: "Window width (run)",
+							value: layerA.width,
+							onChange: (v) => setLayerAKey("width", v),
+							min: 256,
+							max: 1920,
+							step: 32,
+							placeholder: String(geom.w),
+							title: `blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}`,
+							width: "w-[4.5rem]"
 						}),
-						layerA.rtx_vsr_enabled === true && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Scale",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-								ariaLabel: "RTX Super-Res scale (run)",
-								value: String(layerA.rtx_vsr_multiplier ?? 2),
-								onChange: (v) => setLayerAKey("rtx_vsr_multiplier", Number(v)),
-								options: [
-									{
-										value: "2",
-										label: "2x"
-									},
-									{
-										value: "3",
-										label: "3x"
-									},
-									{
-										value: "4",
-										label: "4x"
-									}
-								],
-								emptyLabel: false,
-								width: "w-32"
-							})
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Quality",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-								ariaLabel: "RTX Super-Res quality (run)",
-								value: layerA.rtx_vsr_quality ?? "ULTRA",
-								onChange: (v) => setLayerAKey("rtx_vsr_quality", v),
-								options: [
-									"ULTRA",
-									"HIGH",
-									"MEDIUM",
-									"LOW"
-								],
-								emptyLabel: false,
-								width: "w-32"
-							})
-						})] }),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Output CRF",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-								ariaLabel: "Output CRF (run)",
-								value: layerA.crf,
-								onChange: (v) => setLayerAKey("crf", v === void 0 ? void 0 : Math.round(v)),
-								min: 8,
-								max: 34,
-								step: 1,
-								placeholder: "19",
-								width: "w-32"
-							})
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: studio_module_css_default.times,
+							children: "×"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
+							ariaLabel: "Window height (run)",
+							value: layerA.height,
+							onChange: (v) => setLayerAKey("height", v),
+							min: 256,
+							max: 1920,
+							step: 32,
+							placeholder: String(geom.h),
+							title: `blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}`,
+							width: "w-[4.5rem]"
 						})
 					]
 				})
 			] });
 		}
 		//#endregion
-		//#region src/ui/studio/refUtils.ts
-		/** Genre of an artifact by name AND url — the ref buckets are
-		* GENRE-TYPED (images → ref_image_*, videos → ref_video_*, audios →
-		* ref_audio_*, video_audios → ref_video_audio_*): a picker that offers
-		* "a.png" inside Ref videos is the freetext bug wearing a costume.
-		* (2026-09-02 audit) extension-only was blind to THIS estate's own
-		* artifact names — video_w1_main carries no extension and classed
-		* "other", so the run's own films never appeared in ANY picker. Estate
-		* name patterns + the URL's extension (served URLs carry real ones). */
-		function refGenreOf(name, url) {
-			const n = name.toLowerCase();
-			if (/^video_w\d+_/.test(n)) {
-				if (n.endsWith("_last_frame") || n.includes("_prev")) return "image";
-				return "video";
-			}
-			const e = `${n} ${url ? url.toLowerCase().split("?")[0] : ""}`.split(".").pop().split(/[^a-z0-9]/)[0];
-			if ([
-				"png",
-				"jpg",
-				"jpeg",
-				"webp",
-				"gif",
-				"bmp",
-				"avif"
-			].includes(e)) return "image";
-			if ([
-				"mp4",
-				"webm",
-				"mov",
-				"mkv",
-				"avi",
-				"m4v"
-			].includes(e)) return "video";
-			if ([
-				"mp3",
-				"wav",
-				"flac",
-				"ogg",
-				"m4a",
-				"aac",
-				"opus"
-			].includes(e)) return "audio";
-			return "other";
-		}
-		/** Split a serialized ref list WITHOUT shredding data: URLs — the
-		* wire format is a comma list, but an inline upload carries its OWN
-		* comma (data:<mime>;base64,<payload>). Same state machine as the
-		* backend's cc_split_ref_list: inside a data: token, the first comma
-		* is the mime separator, later commas end the token. */
-		function splitRefList(v) {
-			if (!v) return [];
-			const out = [];
-			let i = 0;
-			while (i < v.length) {
-				while (i < v.length && (v[i] === "," || v[i] === " " || v[i] === "	")) i++;
-				if (i >= v.length) break;
-				const start = i;
-				const isData = v.startsWith("data:", i);
-				let mimeComma = false;
-				while (i < v.length) {
-					if (v[i] === ",") {
-						if (isData && !mimeComma) {
-							mimeComma = true;
-							i++;
-							continue;
-						}
-						break;
-					}
-					i++;
-				}
-				let end = i;
-				while (end > start && (v[end - 1] === " " || v[end - 1] === "	")) end--;
-				out.push(v.slice(start, end));
-			}
-			return out;
-		}
-		const REF_UPLOAD_SPEC = {
-			image: {
-				accept: "image/*",
-				maxMb: 20,
-				note: "≤20 MB"
-			},
-			video: {
-				accept: "video/*",
-				maxMb: 24,
-				note: "≤24 MB"
-			},
-			audio: {
-				accept: "audio/*",
-				maxMb: 16,
-				note: "≤16 MB"
-			}
-		};
-		/** Chip hover note: a known upstream artifact names its card, an
-		* unknown name is flagged (it would pass through unresolved). */
-		function artifactThumbNote(name) {
-			return `artifact: ${name}`;
-		}
-		//#endregion
-		//#region src/ui/studio/RefPickerRow.tsx
+		//#region src/ui/studio/RunAdvancedPanels.tsx
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
-		* ui/studio/component.tsx. No behavior change: headers/footers are new,
-		* every logic line is verbatim from the monolith (source range noted).
+		* ui/studio/component.tsx.
+		*
+		* THE LAYER A/B LAW REWORK (2026-09-17): the advanced knob rows ride
+		* the SHARED SpecPanel (the estate's parameter system) at their WIRE
+		* names (no h3_ spelling, no attention gate — the sla_* keys ride
+		* unconditionally); the lora surface is the MOD PLANE
+		* (ModifiersSection over the spec's features.modifiers). The hand-
+		* rolled vocabulary (Speed LoRA knob pair, RTX VSR multiplier/
+		* quality, Output CRF) is GONE: no node ever read them.
 		*/
-		/** One ref bucket row — the ARTIFACT SYSTEM, not freetext (operator
-		* 2026-09-02: "REF IS FREETEXT? WE HAVE A SYSTEM TO HANDLE [REDACTED 2026-11-05] LIKE
-		* THIS"). Sources, in estate order:
-		*   • PICK — a genre-filtered select over the AVAILABLE artifacts:
-		*     upstream cards PLUS the run's own outputs (window films, seams,
-		*     the final cut — in a standalone timeline card those are the only
-		*     sources; "no artifacts upstream" with a filmstrip full of clips
-		*     on screen was the 2026-09-02 lazy-audit bug). A picked chip
-		*     carries the artifact NAME, a live ctx reference the backend
-		*     re-resolves each run.
-		*   • UPLOAD — EVERY bucket (2026-09-02: "ONLY SOME HAVE UPLOAD
-		*     BUTTON"): file → data: URL chip; the backend's ref staging
-		*     base64-decodes data: sources into the input dir (same law as
-		*     audio clips). Per-genre accept + cap.
-		*   • REMOVE — the × on a chip.
-		* The serialized shape is unchanged (comma string → arrays on save). */
-		function RefPickerRow({ label, ariaLabel, testId, value, onChange, genre, cap, artifacts }) {
-			const chips = splitRefList(value);
-			const candidates = artifacts.filter((a) => refGenreOf(a.name, a.url) === genre && !chips.includes(a.name));
-			const over = chips.length > cap;
-			const setChips = (next) => onChange(next.length ? next.join(", ") : void 0);
-			const up = REF_UPLOAD_SPEC[genre];
+		/** Layer A rail: SLA lab (unconditional) + Loras (mod plane) +
+		* Post-processing leaves. The served doc is fetched ONCE and shared
+		* with ModLane (SpecPanel skips its own fetch when handed the doc)
+		* so the door is never hit twice. */
+		function RunAdvancedPanels({ layerA, setLayerAKey }) {
+			const { spec, error } = useFormSpec("h3-timeline");
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecPanel, {
+				model: "h3-timeline",
+				spec,
+				error,
+				values: layerA,
+				onEdit: setLayerAKey,
+				sections: [{
+					title: "SLA — block-sparse attention",
+					testid: "tl-sla-panel",
+					rows: [
+						{ name: "sla_sparsity" },
+						{ name: "sla_block_size" },
+						{ name: "sla_min_seq_len" },
+						{ name: "sla_dense_last_steps" },
+						{ name: "sla_dense_steps" },
+						{ name: "sla_dense_backend" },
+						{ name: "sla_reference_protection" },
+						{ name: "sla_protect_audio" },
+						{ name: "sla_stabilize_motion" },
+						{ name: "sla_disable_fp16_accum" }
+					]
+				}, {
+					title: "Post-processing",
+					testid: "tl-post-panel",
+					rows: [
+						{ name: "sharpen_enabled" },
+						{ name: "sharpen_method" },
+						{ name: "sharpen_strength" },
+						{ name: "sharpen_radius" },
+						{ name: "sharpen_threshold" },
+						{ name: "sharpen_iterations" },
+						{ name: "interpolate_enabled" },
+						{ name: "interp_model" },
+						{ name: "interp_multiplier" },
+						{ name: "sr_switch" },
+						{ name: "sr_resolution" }
+					]
+				}]
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModLane, {
+				spec,
+				layerA,
+				setLayerAKey
+			})] });
+		}
+		/** The mod lane (loras). Ridden only when the door serves
+		* features.modifiers — otherwise the estate renders nothing
+		* (ModifiersSection's no-kinds arm). Reads the SAME doc the panel
+		* above fetched, so the door is hit once. */
+		function ModLane({ spec, layerA, setLayerAKey }) {
+			const kinds = spec?.features?.modifiers ?? [];
+			if (kinds.length === 0) return null;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: studio_module_css_default.refRow,
-				"data-testid": testId,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: studio_module_css_default.refHead,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: studio_module_css_default.refLabel,
-							children: label
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							className: cn(studio_module_css_default.refCount, over ? studio_module_css_default.refCountOver : studio_module_css_default.refCountOk),
-							children: [
-								chips.length,
-								"/",
-								cap,
-								over ? " over cap" : ""
-							]
-						})]
-					}),
-					chips.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: studio_module_css_default.chips,
-						children: chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							title: chip.startsWith("data:") ? "uploaded (inline)" : artifactThumbNote(chip),
-							className: studio_module_css_default.chip,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: studio_module_css_default.truncate,
-								children: chip.startsWith("data:") ? `upload (${Math.round(chip.length / 1365)}kB)` : chip
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								type: "button",
-								"aria-label": `Remove ${label} ${chip.startsWith("data:") ? "upload" : chip}`,
-								onClick: () => setChips(chips.filter((_, x) => x !== ci)),
-								className: studio_module_css_default.chipX,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X$1, {
-									className: studio_module_css_default.sz10,
-									"aria-hidden": true
-								})
-							})]
-						}, `${chip}-${ci}`))
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: studio_module_css_default.pickRow,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectMenu, {
-							"aria-label": `Add ${ariaLabel}`,
-							value: "",
-							disabled: candidates.length === 0,
-							options: [{
-								value: "",
-								label: candidates.length === 0 ? chips.length >= cap ? "at cap" : `no ${genre} artifacts yet` : `+ pick ${genre} artifact…`
-							}, ...candidates.map((a) => ({
-								value: a.name,
-								label: a.name
-							}))],
-							onChange: (n) => {
-								if (n) setChips([...chips, n]);
-							},
-							className: studio_module_css_default.pickSel,
-							buttonClassName: candidates.length ? studio_module_css_default.pickSelBoxOk : studio_module_css_default.pickSelBoxEmpty
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
-							className: studio_module_css_default.uploadBtn,
-							title: `Upload a ${genre} (${up.note}, rides inline as a data: URL)`,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Upload, {
-								className: studio_module_css_default.sz10,
-								"aria-hidden": true
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-								type: "file",
-								accept: up.accept,
-								className: studio_module_css_default.hiddenInput,
-								"aria-label": `Upload ${ariaLabel}`,
-								onChange: async (e) => {
-									const f = e.target.files?.[0];
-									e.target.value = "";
-									if (!f) return;
-									if (f.size > up.maxMb * 1024 * 1024) return;
-									try {
-										setChips([...chips, await readAsDataURL$1(f)]);
-									} catch {}
-								}
-							})]
-						})]
-					})
-				]
+				className: studio_module_css_default.group,
+				"data-testid": "tl-mods-panel",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: studio_module_css_default.groupTitle,
+					children: "Loras — speed adapters"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModifiersSection, {
+					kinds,
+					values: { loras: layerA.loras ?? [] },
+					onEdit: (k, v) => setLayerAKey(k, v)
+				})]
 			});
 		}
 		//#endregion
 		//#region src/ui/studio/RunRefsClips.tsx
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
-		* ui/studio/component.tsx. No behavior change: headers/footers are new,
-		* every logic line is verbatim from the monolith (source range noted).
+		* ui/studio/component.tsx.
+		*
+		* THE LAYER A/B LAW REWORK (2026-09-17): the RUN-LEVEL identity
+		* refs panel is GONE — refs are PER-CALL (a call's SourceRow group
+		* in CallCard); nothing at run level ever staged them. What remains
+		* is the legitimate Layer A NLE concept: the positioned AUDIO CLIPS
+		* bed (the Music row), which mixes over the final cut at the stitch
+		* and never conditions a window.
 		*/
-		/** Layer A rail: run-level identity refs + audio-clips upload (3189–3315). */
-		function RunRefsClips({ layerA, setLayerAKey, isRef2va, refArtifacts, takeAudioFile, audioUploadRef }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [isRef2va && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: studio_module_css_default.group,
-				"data-testid": "tl-refs-panel",
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: studio_module_css_default.refsHead,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: studio_module_css_default.groupTitle,
-							children: "Identity refs (ref2va)"
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: studio_module_css_default.refsNote,
-							children: "ride EVERY window · identity across seams"
-						})]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefPickerRow, {
-						label: "Ref images",
-						ariaLabel: "ref images (run)",
-						testId: "tl-ref-images-run",
-						value: layerA.h3_ref_images,
-						onChange: (v) => setLayerAKey("h3_ref_images", v),
-						genre: "image",
-						cap: 10,
-						artifacts: refArtifacts
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefPickerRow, {
-						label: "Ref videos",
-						ariaLabel: "ref videos (run)",
-						testId: "tl-ref-videos-run",
-						value: layerA.h3_ref_videos,
-						onChange: (v) => setLayerAKey("h3_ref_videos", v),
-						genre: "video",
-						cap: 3,
-						artifacts: refArtifacts
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefPickerRow, {
-						label: "Ref audios",
-						ariaLabel: "ref audios (run)",
-						testId: "tl-ref-audios-run",
-						value: layerA.h3_ref_audios,
-						onChange: (v) => setLayerAKey("h3_ref_audios", v),
-						genre: "audio",
-						cap: 3,
-						artifacts: refArtifacts
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefPickerRow, {
-						label: "Ref video audios",
-						ariaLabel: "ref video audios (run)",
-						testId: "tl-ref-video-audios-run",
-						value: layerA.h3_ref_video_audios,
-						onChange: (v) => setLayerAKey("h3_ref_video_audios", v),
-						genre: "audio",
-						cap: 3,
-						artifacts: refArtifacts
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Ref size",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-							ariaLabel: "Ref image size (run)",
-							width: "w-40",
-							mono: true,
-							value: typeof layerA.h3_ref_image_size === "string" ? layerA.h3_ref_image_size : void 0,
-							onChange: (v) => {
-								setLayerAKey("h3_ref_image_size", v);
-							},
-							options: ["match", "max"],
-							emptyLabel: "match (V7 default)"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Audio trim start (s)",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-							ariaLabel: "Ref audio trim start (run)",
-							value: layerA.h3_ref_audio_trim_start,
-							onChange: (v) => setLayerAKey("h3_ref_audio_trim_start", v),
-							min: 0,
-							step: .5,
-							placeholder: "0",
-							width: "w-32"
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "Audio trim length (s)",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-							ariaLabel: "Ref audio trim duration (run)",
-							value: layerA.h3_ref_audio_trim_duration,
-							onChange: (v) => setLayerAKey("h3_ref_audio_trim_duration", v),
-							min: .5,
-							step: .5,
-							placeholder: "full",
-							width: "w-32"
-						})
-					})
-				]
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+		/** Layer A rail: the audio-clips upload door (3189–3315, refs cut). */
+		function RunRefsClips({ layerA, takeAudioFile, audioUploadRef }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.clipsRow,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -4573,12 +4616,12 @@ window.__ModuleLoader__.load({
 						}
 					})
 				]
-			})] });
+			}) });
 		}
 		//#endregion
 		//#region src/ui/studio/knob-spec.gen.ts
 		const KNOB_SPEC = {
-			"sampling_steps": {
+			"steps": {
 				"type": "number",
 				"label": "Steps"
 			},
@@ -4586,7 +4629,7 @@ window.__ModuleLoader__.load({
 				"type": "number",
 				"label": "Denoise"
 			},
-			"sampler": {
+			"sampler_name": {
 				"type": "string",
 				"label": "Sampler",
 				"enum": [
@@ -4598,7 +4641,7 @@ window.__ModuleLoader__.load({
 					"heun"
 				]
 			},
-			"scheduler": {
+			"sched_name": {
 				"type": "string",
 				"label": "Scheduler",
 				"enum": [
@@ -4621,11 +4664,11 @@ window.__ModuleLoader__.load({
 				"type": "number",
 				"label": "Audio Shift"
 			},
-			"h3_sla_sparsity": {
+			"sla_sparsity": {
 				"type": "number",
 				"label": "SLA sparsity"
 			},
-			"h3_sla_block_size": {
+			"sla_block_size": {
 				"type": "string",
 				"label": "SLA block size",
 				"enum": [
@@ -4634,23 +4677,23 @@ window.__ModuleLoader__.load({
 					"128"
 				]
 			},
-			"h3_sla_min_seq_len": {
+			"sla_min_seq_len": {
 				"type": "number",
 				"label": "SLA min seq length"
 			},
-			"h3_sla_dense_last_steps": {
+			"sla_dense_last_steps": {
 				"type": "integer",
 				"label": "SLA dense last steps"
 			},
-			"h3_sla_protect_audio": {
+			"sla_protect_audio": {
 				"type": "boolean",
 				"label": "SLA protect audio"
 			},
-			"h3_sla_stabilize_motion": {
+			"sla_stabilize_motion": {
 				"type": "boolean",
 				"label": "SLA stabilize motion"
 			},
-			"h3_sla_reference_protection": {
+			"sla_reference_protection": {
 				"type": "string",
 				"label": "SLA ref protection",
 				"enum": [
@@ -4659,7 +4702,7 @@ window.__ModuleLoader__.load({
 					"Heavy Enforcement"
 				]
 			},
-			"h3_sla_dense_backend": {
+			"sla_dense_backend": {
 				"type": "string",
 				"label": "SLA dense backend",
 				"enum": [
@@ -4668,11 +4711,11 @@ window.__ModuleLoader__.load({
 					"auto"
 				]
 			},
-			"h3_sla_dense_steps": {
+			"sla_dense_steps": {
 				"type": "string",
 				"label": "SLA dense steps (explicit)"
 			},
-			"h3_sla_disable_fp16_accum": {
+			"sla_disable_fp16_accum": {
 				"type": "boolean",
 				"label": "SLA full-precision accum"
 			},
@@ -4710,14 +4753,18 @@ window.__ModuleLoader__.load({
 				"type": "boolean",
 				"label": "FILM Interpolation"
 			},
-			"interpolate_model": {
+			"interp_model": {
 				"type": "string",
 				"label": "Interp model",
-				"enum": ["film_net_fp32.pt"]
+				"enum": ["film_net_fp16.safetensors", "rife47.pth"]
 			},
-			"interpolate_multiplier": {
+			"interp_multiplier": {
 				"type": "integer",
 				"label": "Interp multiplier"
+			},
+			"length": {
+				"type": "number",
+				"label": "Frames"
 			}
 		};
 		//#endregion
@@ -4863,30 +4910,34 @@ window.__ModuleLoader__.load({
 		//#region src/ui/studio/CallFrameSubcard.tsx
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
-		* ui/studio/component.tsx. No behavior change: headers/footers are new,
-		* every logic line is verbatim from the monolith (source range noted).
-		*/
-		/** One frame-conditioning subcard — a FULL image input, at parity with
-		* every other image slot (2026-08-24 upgrade: "first frame / last frame
-		* are weak versions compared to other image input nodes — I can't link
-		* back to previous outputs"). The affordances:
+		* ui/studio/component.tsx.
 		*
-		*   THE SOURCE ROW (2026-09-13, the operator's law: ONE generic input
-		*   component, no exceptions — even the studio): the bespoke SlotSquare
-		*   + typed source line + inline link panel are DEAD. This subcard
-		*   rides @melite/card-base's SourceRow — the same plus square, the
-		*   same three-entry menu (From flow / From media / From file):
-		*     • From flow lists the upstream cards' IMAGE artifacts (links);
-		*       the write maps URL→NAME (the drop-honesty law: an unmatched
-		*       URL writes NOTHING — it would pass through unresolved).
-		*     • From file keeps the studio's OWN file law (image-only, 20 MB
-		*       cap, readAsDataURL → data: URL; _resolveSource decodes data:
-		*       first-class) through the wire's onFile override.
-		*     • From media lists the runs library through the same door; the
-		*       URL→NAME honesty applies (foreign URLs refuse visibly).
-		*   • the FIRST frame's exception — the prev-video continuation toggle
-		*     ("use the last X seconds of the previous video", rule 3b). */
-		function CallFrameSubcard({ label, testId, callIndex, value, onChange, nameToUrl, urlToName, links, prevSec, onPrevSec, transition, onTransition, prevDisabled, prevNote }) {
+		* THE BUNDLE SPLIT (operator correction, 2026-09-18): the first
+		* frame and the reference images are NOT alien categories — they
+		* are slots on ONE image bus (first frame = slot 1, the anchor;
+		* refs = slots 2-9). This file now exports the two PIECES the
+		* unified Reference bundle panel seats:
+		*   • FirstFrameSlot — the anchor's image square (the estate's
+		*     SourceRow grammar, at parity with every other image input:
+		*     From flow / From media / From file), writing `image`.
+		*   • SeamControls — the call's seam law (how this call joins the
+		*     previous one: cut re-feeds the previous VIDEO tail; extend
+		*     chains the previous LATENT). Seam concepts, not bundle
+		*     concepts — they ride under the bus, never inside a slot.
+		*/
+		/** The anchor slot — ONE image square in the bus grammar
+		* (2026-08-24 affordance law: "first frame / last frame are weak
+		* versions compared to other image input nodes — I can't link back
+		* to previous outputs"):
+		*   • From flow lists the upstream cards' IMAGE artifacts (links);
+		*     the write maps URL→NAME (the drop-honesty law: an unmatched
+		*     URL writes NOTHING — it would pass through unresolved).
+		*   • From file keeps the studio's OWN file law (image-only, 20 MB
+		*     cap, readAsDataURL → data: URL; _resolveSource decodes data:
+		*     first-class) through the wire's onFile override.
+		*   • From media lists the runs library through the same door; the
+		*     URL→NAME honesty applies (foreign URLs refuse visibly). */
+		function FirstFrameSlot({ testId, callIndex, value, onChange, nameToUrl, urlToName, links }) {
 			const [fileError, setFileError] = (0, react.useState)(null);
 			const v = value?.trim() ?? "";
 			/** File upload / OS drop → data: URL into the source. Image-only with
@@ -4909,149 +4960,142 @@ window.__ModuleLoader__.load({
 					setFileError("could not read that file");
 				}
 			};
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				"data-testid": testId,
-				className: studio_module_css_default.sub,
+				className: studio_module_css_default.busAnchor,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SourceRow, {
+					label: "first frame · slot 1",
+					kind: "image",
+					value: v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v,
+					candidates: (links ?? []).map((a) => ({
+						id: a.name,
+						label: a.name,
+						url: a.url
+					})),
+					loadMedia: fetchMediaLibrary,
+					onFile: (f) => {
+						takeFile(f);
+					},
+					onEdit: (src) => {
+						if (src === "") {
+							onChange("");
+							return;
+						}
+						if (src.startsWith("data:")) {
+							onChange(src);
+							return;
+						}
+						const name = urlToName.get(src);
+						if (name !== void 0) {
+							onChange(name);
+							setFileError(null);
+							return;
+						}
+						setFileError("that source is not in this timeline’s vocabulary");
+					}
+				}), fileError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					"data-testid": `${testId}-file-error`,
+					className: studio_module_css_default.fileErr,
+					children: fileError
+				})]
+			});
+		}
+		/** The call's seam law — cut vs extend, and the prev-video/latent
+		* continuation (rule 3b). Renders under the image bus (the seam is
+		* the CALL'S join, not a bundle slot). */
+		function SeamControls({ callIndex, prevSec, onPrevSec, transition, onTransition, prevDisabled, prevNote, testId }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [onTransition !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: studio_module_css_default.seamRow,
+				title: "How this call joins the previous one: cut re-feeds the previous VIDEO tail as an opener clip; extend chains the previous LATENT — seamless motion, texture and audio phase carry across the seam",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: studio_module_css_default.seamLabel,
+					children: "seam"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectMenu, {
+					value: transition === "cut" ? "cut" : "extend",
+					"aria-label": "Call " + callIndex + " seam mode",
+					options: [{
+						value: "cut",
+						label: "cut — prev video opener"
+					}, {
+						value: "extend",
+						label: "extend — latent chain"
+					}],
+					onChange: (v) => onTransition?.(v === "extend" ? "extend" : "cut"),
+					className: studio_module_css_default.wFull,
+					buttonClassName: studio_module_css_default.mono
+				})]
+			}), onPrevSec !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+				className: cn(studio_module_css_default.prevLabel, prevDisabled ? studio_module_css_default.prevLabelOff : studio_module_css_default.prevLabelOn),
+				title: prevNote,
 				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: studio_module_css_default.subHead,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: studio_module_css_default.subTitle,
-							children: label
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						"data-testid": testId + "-prev-toggle",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+							label: "Call " + callIndex + " continue from previous",
+							disabled: prevDisabled,
+							checked: prevSec != null,
+							onChange: (v) => onPrevSec?.(v ? transition === "extend" ? 3 : 2 : null)
 						})
 					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SourceRow, {
-						label,
-						hideLabel: true,
-						kind: "image",
-						value: v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v,
-						candidates: (links ?? []).map((a) => ({
-							id: a.name,
-							label: a.name,
-							url: a.url
-						})),
-						loadMedia: fetchMediaLibrary,
-						onFile: (f) => {
-							takeFile(f);
-						},
-						onEdit: (src) => {
-							if (src === "") {
-								onChange("");
-								return;
-							}
-							if (src.startsWith("data:")) {
-								onChange(src);
-								return;
-							}
-							const name = urlToName.get(src);
-							if (name !== void 0) {
-								onChange(name);
-								setFileError(null);
-								return;
-							}
-							setFileError("that source is not in this timeline’s vocabulary");
-						}
-					}),
-					fileError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						"data-testid": `${testId}-file-error`,
-						className: studio_module_css_default.fileErr,
-						children: fileError
-					}),
-					onPrevSec && onTransition && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: studio_module_css_default.seamRow,
-						title: "How this call joins the previous one: cut re-feeds the previous VIDEO tail as an opener clip; extend chains the previous LATENT — seamless motion, texture and audio phase carry across the seam",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: studio_module_css_default.seamLabel,
-							children: "seam"
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectMenu, {
-							value: transition === "cut" ? "cut" : "extend",
-							"aria-label": "Call " + callIndex + " seam mode",
-							options: [{
-								value: "cut",
-								label: "cut — prev video opener"
-							}, {
-								value: "extend",
-								label: "extend — latent chain"
-							}],
-							onChange: (v) => onTransition(v === "extend" ? "extend" : "cut"),
-							className: studio_module_css_default.wFull,
-							buttonClassName: studio_module_css_default.mono
-						})]
-					}),
-					onPrevSec && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
-						className: cn(studio_module_css_default.prevLabel, prevDisabled ? studio_module_css_default.prevLabelOff : studio_module_css_default.prevLabelOn),
-						title: prevNote,
-						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								"data-testid": testId + "-prev-toggle",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
-									label: "Call " + callIndex + " continue from previous",
-									disabled: prevDisabled,
-									checked: prevSec != null,
-									onChange: (v) => onPrevSec(v ? transition === "extend" ? 3 : 2 : null)
-								})
-							}),
-							transition === "extend" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: studio_module_css_default.nowrap,
-									children: "chain the last"
-								}),
-								prevSec != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-									type: "number",
-									min: .5,
-									step: .5,
-									value: prevSec,
-									"aria-label": "Call " + callIndex + " latent carry seconds",
-									"data-testid": testId + "-prev-sec",
-									onChange: (e) => {
-										const n = Number(e.target.value);
-										if (Number.isFinite(n) && n > 0) onPrevSec(n);
-									},
-									className: studio_module_css_default.prevNum
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: studio_module_css_default.nowrap,
-									children: "s of the previous latent"
-								}),
-								prevSec != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: studio_module_css_default.prevCarryNote,
-									children: "seamless carry — the motion-context node splices the previous window's latent tail; carried slots hold bit-exact while the rest denoises (windows stitch into one continuous clip)"
-								})
-							] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: studio_module_css_default.nowrap,
-									children: "open from the last"
-								}),
-								prevSec != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-									type: "number",
-									min: .5,
-									step: .5,
-									value: prevSec,
-									"aria-label": "Call " + callIndex + " previous video tail seconds",
-									"data-testid": testId + "-prev-sec",
-									onChange: (e) => {
-										const n = Number(e.target.value);
-										if (Number.isFinite(n) && n > 0) onPrevSec(n);
-									},
-									className: cn(studio_module_css_default.prevNum, studio_module_css_default.prevNum9)
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: studio_module_css_default.nowrap,
-									children: "s of the previous video"
-								}),
-								prevSec != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: studio_module_css_default.prevNote,
-									children: "the tail carries the opening motion — the plan snaps it to the guide-clip packing rule"
-								})
-							] }),
-							prevDisabled && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: studio_module_css_default.prevNote,
-								children: prevNote
-							})
-						]
+					transition === "extend" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: studio_module_css_default.nowrap,
+							children: "chain the last"
+						}),
+						prevSec != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+							type: "number",
+							min: .5,
+							step: .5,
+							value: prevSec,
+							"aria-label": "Call " + callIndex + " latent carry seconds",
+							"data-testid": testId + "-prev-sec",
+							onChange: (e) => {
+								const n = Number(e.target.value);
+								if (Number.isFinite(n) && n > 0) onPrevSec?.(n);
+							},
+							className: studio_module_css_default.prevNum
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: studio_module_css_default.nowrap,
+							children: "s of the previous latent"
+						}),
+						prevSec != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: studio_module_css_default.prevNote,
+							children: "seamless carry — the motion-context node splices the previous window's latent tail; carried slots hold bit-exact while the rest denoises (windows stitch into one continuous clip)"
+						})
+					] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: studio_module_css_default.nowrap,
+							children: "open from the last"
+						}),
+						prevSec != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+							type: "number",
+							min: .5,
+							step: .5,
+							value: prevSec,
+							"aria-label": "Call " + callIndex + " previous video tail seconds",
+							"data-testid": testId + "-prev-sec",
+							onChange: (e) => {
+								const n = Number(e.target.value);
+								if (Number.isFinite(n) && n > 0) onPrevSec?.(n);
+							},
+							className: cn(studio_module_css_default.prevNum, studio_module_css_default.prevNum9)
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: studio_module_css_default.nowrap,
+							children: "s of the previous video"
+						}),
+						prevSec != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: studio_module_css_default.prevNote,
+							children: "the tail carries the opening motion — the plan snaps it to the guide-clip packing rule"
+						})
+					] }),
+					prevDisabled && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: studio_module_css_default.prevNote,
+						children: prevNote
 					})
 				]
-			});
+			})] });
 		}
 		//#endregion
 		//#region src/ui/studio/CallCardPrompt.tsx
@@ -5109,12 +5153,203 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
+		//#region src/ui/studio/refUtils.ts
+		/** Genre of an artifact by name AND url — the ref buckets are
+		* GENRE-TYPED (images → ref_image_*, videos → ref_video_*, audios →
+		* ref_audio_*, video_audios → ref_video_audio_*): a picker that offers
+		* "a.png" inside Ref videos is the freetext bug wearing a costume.
+		* (2026-09-02 audit) extension-only was blind to THIS estate's own
+		* artifact names — video_w1_main carries no extension and classed
+		* "other", so the run's own films never appeared in ANY picker. Estate
+		* name patterns + the URL's extension (served URLs carry real ones). */
+		function refGenreOf(name, url) {
+			const n = name.toLowerCase();
+			if (/^video_w\d+_/.test(n)) {
+				if (n.endsWith("_last_frame") || n.includes("_prev")) return "image";
+				return "video";
+			}
+			const e = `${n} ${url ? url.toLowerCase().split("?")[0] : ""}`.split(".").pop().split(/[^a-z0-9]/)[0];
+			if ([
+				"png",
+				"jpg",
+				"jpeg",
+				"webp",
+				"gif",
+				"bmp",
+				"avif"
+			].includes(e)) return "image";
+			if ([
+				"mp4",
+				"webm",
+				"mov",
+				"mkv",
+				"avi",
+				"m4v"
+			].includes(e)) return "video";
+			if ([
+				"mp3",
+				"wav",
+				"flac",
+				"ogg",
+				"m4a",
+				"aac",
+				"opus"
+			].includes(e)) return "audio";
+			return "other";
+		}
+		/** Split a serialized ref list WITHOUT shredding data: URLs — the
+		* wire format is a comma list, but an inline upload carries its OWN
+		* comma (data:<mime>;base64,<payload>). Same state machine as the
+		* backend's cc_split_ref_list: inside a data: token, the first comma
+		* is the mime separator, later commas end the token. */
+		function splitRefList(v) {
+			if (!v) return [];
+			const out = [];
+			let i = 0;
+			while (i < v.length) {
+				while (i < v.length && (v[i] === "," || v[i] === " " || v[i] === "	")) i++;
+				if (i >= v.length) break;
+				const start = i;
+				const isData = v.startsWith("data:", i);
+				let mimeComma = false;
+				while (i < v.length) {
+					if (v[i] === ",") {
+						if (isData && !mimeComma) {
+							mimeComma = true;
+							i++;
+							continue;
+						}
+						break;
+					}
+					i++;
+				}
+				let end = i;
+				while (end > start && (v[end - 1] === " " || v[end - 1] === "	")) end--;
+				out.push(v.slice(start, end));
+			}
+			return out;
+		}
+		const REF_UPLOAD_SPEC = {
+			image: {
+				accept: "image/*",
+				maxMb: 20,
+				note: "≤20 MB"
+			},
+			video: {
+				accept: "video/*",
+				maxMb: 24,
+				note: "≤24 MB"
+			},
+			audio: {
+				accept: "audio/*",
+				maxMb: 16,
+				note: "≤16 MB"
+			}
+		};
+		//#endregion
 		//#region src/ui/studio/CallCard.tsx
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
 		* every logic line is verbatim from the monolith (source range noted).
 		*/
+		/** THE SEAM-CARRY TRUTH (mirror of the card's own law): a chained
+		*  window's delivered frames are its span MINUS the carry its seam
+		*  consumes — extend defaults 39 (snapped to the 5/22/39/56 latent
+		*  steps), cut+prev_sec carries prev_sec×24 snapped. First windows
+		*  and hard cuts deliver their whole span. */
+		const CARRY_LEGAL = [
+			5,
+			22,
+			39,
+			56
+		];
+		const snapCarry = (frames) => {
+			let best = CARRY_LEGAL[0];
+			for (const v of CARRY_LEGAL) if (Math.abs(v - frames) < Math.abs(best - frames)) best = v;
+			return best;
+		};
+		const deliveredFrames = (c, i) => {
+			const span = c.end_frame - c.start_frame;
+			if (i === 0 || c.transition === "cut") {
+				const secs = c.first_frame_prev_sec;
+				const carry = secs != null ? snapCarry(secs * 24) : 0;
+				return Math.max(0, span - carry);
+			}
+			const secs = c.first_frame_prev_sec;
+			return Math.max(0, span - (secs != null ? snapCarry(secs * 24) : 39));
+		};
+		/** ONE ref bucket — the estate's SourceRow per chip (the operator's
+		*  2026-09-13 law: SourceRow owns EVERY input slot): pick from the
+		*  available artifacts, upload inline (data: URL chip), remove via
+		*  clear. The wire form is the comma string (the card's wireList
+		*  law — trimmed entries, empties absent). */
+		function RefsBucket({ label, kind, cap, value, artifacts, onChange }) {
+			const chips = splitRefList(value);
+			const over = chips.length > cap;
+			const candidates = artifacts.filter((a) => refGenreOf(a.name, a.url) === kind && !chips.includes(a.name)).map((a) => ({
+				id: a.name,
+				label: a.name,
+				url: a.url
+			}));
+			const setChips = (next) => onChange(next.length ? next.join(", ") : "");
+			const up = REF_UPLOAD_SPEC[kind];
+			const chipOf = (v) => {
+				const byUrl = candidates.find((c) => c.url === v);
+				return byUrl !== void 0 ? byUrl.id : v;
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: studio_module_css_default.refRow,
+				"data-testid": "tl-call-ref-bucket",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: studio_module_css_default.refHead,
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: studio_module_css_default.refLabel,
+						children: label
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						className: cn(studio_module_css_default.refCount, over ? studio_module_css_default.refCountOver : studio_module_css_default.refCountOk),
+						children: [
+							chips.length,
+							"/",
+							cap,
+							over ? " over cap" : ""
+						]
+					})]
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: studio_module_css_default.chips,
+					children: [chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SourceRow, {
+						label: chip.startsWith("data:") ? `upload ${ci + 1}` : chip,
+						kind: kind === "image" ? "image" : "file",
+						value: chip.startsWith("data:") ? null : chip,
+						onEdit: (v) => {
+							if (v === "") setChips(chips.filter((_, x) => x !== ci));
+							else setChips(chips.map((x, idx) => idx === ci ? chipOf(v) : x));
+						},
+						candidates,
+						onFile: async (f) => {
+							try {
+								const data = await readAsDataURL$1(f);
+								setChips(chips.map((x, idx) => idx === ci ? data : x));
+							} catch {}
+						}
+					}, `${chip}-${ci}`)), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SourceRow, {
+						label: `+ ${label.toLowerCase()}`,
+						kind: kind === "image" ? "image" : "file",
+						value: null,
+						onEdit: (v) => {
+							if (v !== "") setChips([...chips, chipOf(v)]);
+						},
+						candidates,
+						onFile: async (f) => {
+							if (f.size > up.maxMb * 1024 * 1024) return;
+							try {
+								setChips([...chips, await readAsDataURL$1(f)]);
+							} catch {}
+						}
+					})]
+				})]
+			});
+		}
 		/** One focused model-call card (monolith lines 3418–3466 + 3641–3844;
 		*  the prompt block lives in CallCardPrompt). */
 		function CallCard({ c, i, deps }) {
@@ -5146,14 +5381,16 @@ window.__ModuleLoader__.load({
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 								className: studio_module_css_default.cardSpan,
-								title: `frames ${c.start_frame}–${c.end_frame} (end exclusive)`,
+								title: `frames ${c.start_frame}–${c.end_frame} (end exclusive) — delivered ${deliveredFrames(c, i)}f after the seam's carry`,
 								children: [
 									"frames ",
 									c.start_frame,
 									"–",
 									c.end_frame,
-									" · ",
+									" · span ",
 									((c.end_frame - c.start_frame) / fps).toFixed(1),
+									"s → delivered ",
+									(deliveredFrames(c, i) / fps).toFixed(1),
 									"s"
 								]
 							}),
@@ -5231,42 +5468,130 @@ window.__ModuleLoader__.load({
 							})
 						]
 					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: studio_module_css_default.framesRow,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CallFrameSubcard, {
-							label: "First frame",
-							testId: "tl-first-frame",
-							callIndex: i,
-							value: c.image,
-							onChange: (source) => setCallGuide(i, "image", source),
-							nameToUrl: artifactIndex.byName,
-							urlToName: artifactIndex.byUrl,
-							links: linkGroups,
-							prevSec: c.first_frame_prev_sec,
-							onPrevSec: (sec) => setCallPrevSec(i, sec),
-							transition: c.transition,
-							onTransition: (t) => setCallTransition(i, t),
-							prevDisabled: i === 0,
-							prevNote: i === 0 ? "the first call has no previous video to continue from" : void 0
-						})
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: studio_module_css_default.callRefs,
+						"data-testid": "tl-call-refs",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: studio_module_css_default.callRefsHead,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: studio_module_css_default.callRefsTitle,
+								children: "Reference bundle (this call)"
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: studio_module_css_default.callRefsNote,
+								children: "the model's input bus · slot 1 anchors the start & sizes the window · slots 2–9 + the video/audio lanes condition identity"
+							})]
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: studio_module_css_default.callRefsBody,
+							children: [
+								(() => {
+									const chips = splitRefList(c.refs?.images);
+									const total = ((c.image ?? "").trim() !== "" ? 1 : 0) + chips.length;
+									const over = total > 9;
+									const candidates = refArtifacts.filter((a) => refGenreOf(a.name, a.url) === "image" && !chips.includes(a.name)).map((a) => ({
+										id: a.name,
+										label: a.name,
+										url: a.url
+									}));
+									const setChips = (next) => setCallRefs(i, "images", next.length ? next.join(", ") : "");
+									const up = REF_UPLOAD_SPEC.image;
+									const chipOf = (v) => {
+										const byUrl = candidates.find((cand) => cand.url === v);
+										return byUrl !== void 0 ? byUrl.id : v;
+									};
+									return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+										className: studio_module_css_default.refRow,
+										"data-testid": "tl-call-ref-bucket",
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+											className: studio_module_css_default.refHead,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+												className: studio_module_css_default.refLabel,
+												children: "Images — slot 1 anchors · slots 2–9 reference"
+											}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+												className: cn(studio_module_css_default.refCount, over ? studio_module_css_default.refCountOver : studio_module_css_default.refCountOk),
+												title: over ? `${total} image slots claimed — the bus holds 9 (1 anchor + 8 refs); the compose slices the overflow` : `${total} of 9 image slots on the bus`,
+												"data-testid": "tl-call-ref-images",
+												children: [
+													total,
+													"/9",
+													over ? " over bus" : ""
+												]
+											})]
+										}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+											className: studio_module_css_default.chips,
+											children: [
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)(FirstFrameSlot, {
+													testId: "tl-first-frame",
+													callIndex: i,
+													value: c.image,
+													onChange: (source) => setCallGuide(i, "image", source),
+													nameToUrl: artifactIndex.byName,
+													urlToName: artifactIndex.byUrl,
+													links: linkGroups
+												}),
+												chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SourceRow, {
+													label: chip.startsWith("data:") ? `upload ${ci + 1}` : chip,
+													kind: "image",
+													value: chip.startsWith("data:") ? null : chip,
+													onEdit: (v) => {
+														if (v === "") setChips(chips.filter((_, x) => x !== ci));
+														else setChips(chips.map((x, idx) => idx === ci ? chipOf(v) : x));
+													},
+													candidates,
+													onFile: async (f) => {
+														try {
+															const data = await readAsDataURL$1(f);
+															setChips(chips.map((x, idx) => idx === ci ? data : x));
+														} catch {}
+													}
+												}, `${chip}-${ci}`)),
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SourceRow, {
+													label: "+ ref image",
+													kind: "image",
+													value: null,
+													onEdit: (v) => {
+														if (v !== "") setChips([...chips, chipOf(v)]);
+													},
+													candidates,
+													onFile: async (f) => {
+														if (f.size > up.maxMb * 1024 * 1024) return;
+														try {
+															setChips([...chips, await readAsDataURL$1(f)]);
+														} catch {}
+													}
+												})
+											]
+										})]
+									});
+								})(),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SeamControls, {
+									callIndex: i,
+									testId: "tl-first-frame",
+									prevSec: c.first_frame_prev_sec,
+									onPrevSec: (sec) => setCallPrevSec(i, sec),
+									transition: c.transition,
+									onTransition: (t) => setCallTransition(i, t),
+									prevDisabled: i === 0,
+									prevNote: i === 0 ? "the first call has no previous video to continue from" : void 0
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefsBucket, {
+									label: "Ref videos",
+									kind: "video",
+									cap: 3,
+									value: c.refs?.videos,
+									artifacts: refArtifacts,
+									onChange: (v) => setCallRefs(i, "videos", v)
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefsBucket, {
+									label: "Ref audios",
+									kind: "audio",
+									cap: 3,
+									value: c.refs?.audios,
+									artifacts: refArtifacts,
+									onChange: (v) => setCallRefs(i, "audios", v)
+								})
+							]
+						})]
 					}),
-					(() => {
-						const total = splitRefList(c.refs?.images).length + (!!(c.image ?? "").trim() ? 1 : 0);
-						if (total === 0) return null;
-						return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: studio_module_css_default.refBadgeRow,
-							"data-testid": "tl-call-ref-images",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: cn(studio_module_css_default.refBadge, total > 10 ? studio_module_css_default.refBadgeOver : studio_module_css_default.refBadgeOk),
-								title: total > 10 ? `${total} refs total — exceeds the 10-image cap` : `${total} ref image${total === 1 ? "" : "s"} (guide + extras) — managed in Identity refs below`,
-								children: [
-									"refs ",
-									total,
-									"/10"
-								]
-							})
-						});
-					})(),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: studio_module_css_default.guidesRow,
 						children: ["clip", "audio"].map((kind) => {
@@ -5293,40 +5618,6 @@ window.__ModuleLoader__.load({
 								})]
 							}, kind);
 						})
-					}),
-					isRef2va && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: studio_module_css_default.callRefs,
-						"data-testid": "tl-call-refs",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: studio_module_css_default.callRefsHead,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: studio_module_css_default.callRefsTitle,
-								children: "Identity refs (this call)"
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: studio_module_css_default.callRefsNote,
-								children: "replaces run refs · empty = inherit"
-							})]
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: studio_module_css_default.callRefsBody,
-							children: [[[
-								"images",
-								"Ref images",
-								"image",
-								10
-							]].map(([key, label, genre, cap]) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefPickerRow, {
-								label,
-								ariaLabel: `call ${i} ${label}`,
-								testId: "tl-call-ref-picker",
-								value: c.refs?.[key],
-								onChange: (v) => setCallRefs(i, key, v ?? ""),
-								genre,
-								cap,
-								artifacts: refArtifacts
-							}, key)), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-								className: studio_module_css_default.callRefsFoot,
-								children: "per-call refs are the image bus — ref videos / audios ride at run level"
-							})]
-						})]
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
 						className: studio_module_css_default.knobFold,
@@ -5454,7 +5745,8 @@ window.__ModuleLoader__.load({
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 										className: studio_module_css_default.callDur,
-										children: [((c.end_frame - c.start_frame) / fps).toFixed(1), "s"]
+										title: `span ${((c.end_frame - c.start_frame) / fps).toFixed(1)}s — delivered after the seam's carry`,
+										children: [(deliveredFrames(c, i) / fps).toFixed(1), "s"]
 									})
 								]
 							}, i);
@@ -5542,126 +5834,145 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/ui/studio/docHydrate.ts
-		function hydrateLayerA(raw) {
+		/** The family's loras flavor catalog (id by filename) — the mod bag
+		* resolves legacy lora knob picks; rows without a catalog match were
+		* decorative (compose never read the knob pair) and drop. */
+		const LORA_FILENAME_TO_ID = {
+			"h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors": "h3_lightx2v_dareties",
+			"h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors": "h3_lightx2v_turbo"
+		};
+		function migrateLayerARaw(raw) {
+			if (raw === void 0) return raw;
+			const out = {};
+			for (const [k, v] of Object.entries(raw)) {
+				const mapped = LEGACY_LAYERA_KEY[k] ?? k;
+				out[mapped] = v;
+			}
+			const legacyName = typeof raw.lora_name === "string" ? raw.lora_name.trim() : "";
+			if (legacyName !== "" && LORA_FILENAME_TO_ID[legacyName] !== void 0) {
+				const bag = Array.isArray(out.loras) ? out.loras : [];
+				bag.push({
+					id: LORA_FILENAME_TO_ID[legacyName],
+					strength: typeof raw.lora_strength === "number" ? raw.lora_strength : 1
+				});
+				out.loras = bag;
+			}
+			return out;
+		}
+		function hydrateLayerA(rawDoc) {
+			const raw = migrateLayerARaw(rawDoc);
 			const num = (k, d) => {
 				const v = raw?.[k];
 				const n = typeof v === "number" ? v : Number(v);
 				return Number.isFinite(n) && n > 0 ? n : d;
 			};
-			const audio_mode = AUDIO_MODES.includes(raw?.audio_mode) ? raw.audio_mode : "none";
+			const optNum = (k) => {
+				const v = raw?.[k];
+				if (v == null || v === "") return void 0;
+				const n = Number(v);
+				return Number.isFinite(n) ? n : void 0;
+			};
+			const optStr = (k) => typeof raw?.[k] === "string" && raw[k].trim() !== "" ? raw[k] : void 0;
 			return {
-				preset: typeof raw?.preset === "string" && raw.preset ? raw.preset : "draft_02mp",
+				preset: optStr("preset") ?? "draft_02mp",
 				fps: num("fps", 24),
 				seed: num("seed", 42),
-				audio_mode,
-				continuity: raw?.continuity !== false,
-				shift_video: raw?.shift_video != null ? Number(raw.shift_video) : void 0,
-				shift_audio: raw?.shift_audio != null ? Number(raw.shift_audio) : void 0,
-				sampler: typeof raw?.sampler === "string" && raw.sampler ? raw.sampler : void 0,
-				scheduler: typeof raw?.scheduler === "string" && raw.scheduler ? raw.scheduler : void 0,
-				sampling_steps: raw?.sampling_steps != null ? Number(raw.sampling_steps) : void 0,
-				denoise: raw?.denoise != null ? Number(raw.denoise) : void 0,
-				width: raw?.width != null ? Number(raw.width) : void 0,
-				height: raw?.height != null ? Number(raw.height) : void 0,
-				h3_attention: raw?.h3_attention === "kitchen" || raw?.h3_attention === "sol" || raw?.h3_attention === "sage" || raw?.h3_attention === "sla" ? raw.h3_attention : raw?.h3_sage_attention === true ? "sage" : void 0,
-				h3_fp16_accumulation: raw?.h3_fp16_accumulation === true,
-				h3_torch_compile: raw?.h3_torch_compile === true,
-				cfg: raw?.cfg != null ? Number(raw.cfg) : void 0,
-				h3_context_steps: raw?.h3_context_steps != null ? Number(raw.h3_context_steps) : void 0,
-				h3_audio_context_steps: raw?.h3_audio_context_steps != null ? Number(raw.h3_audio_context_steps) : void 0,
-				h3_sla_sparsity: raw?.h3_sla_sparsity != null ? Number(raw.h3_sla_sparsity) : void 0,
-				h3_sla_block_size: raw?.h3_sla_block_size === "32" || raw?.h3_sla_block_size === "64" || raw?.h3_sla_block_size === "128" ? raw.h3_sla_block_size : void 0,
-				h3_sla_min_seq_len: raw?.h3_sla_min_seq_len != null ? Number(raw.h3_sla_min_seq_len) : void 0,
-				h3_sla_dense_last_steps: raw?.h3_sla_dense_last_steps != null ? Number(raw.h3_sla_dense_last_steps) : void 0,
-				h3_sla_protect_audio: raw?.h3_sla_protect_audio !== false,
-				h3_sla_stabilize_motion: raw?.h3_sla_stabilize_motion !== false,
-				h3_sla_reference_protection: raw?.h3_sla_reference_protection === "Off" || raw?.h3_sla_reference_protection === "Light" || raw?.h3_sla_reference_protection === "Heavy Enforcement" ? raw.h3_sla_reference_protection : void 0,
-				h3_sla_dense_backend: raw?.h3_sla_dense_backend === "comfy_kitchen" || raw?.h3_sla_dense_backend === "pytorch" || raw?.h3_sla_dense_backend === "auto" ? raw.h3_sla_dense_backend : void 0,
-				h3_sla_dense_steps: typeof raw?.h3_sla_dense_steps === "string" && /^\s*[0-9]+(-[0-9]+)?(\s*,\s*[0-9]+(-[0-9]+)?)*\s*$/.test(raw.h3_sla_dense_steps) ? raw.h3_sla_dense_steps.trim() : void 0,
-				h3_sla_disable_fp16_accum: raw?.h3_sla_disable_fp16_accum === true,
+				shift_video: optNum("shift_video"),
+				shift_audio: optNum("shift_audio"),
+				steps: optNum("steps"),
+				denoise: optNum("denoise"),
+				width: optNum("width"),
+				height: optNum("height"),
+				sampler_name: optStr("sampler_name"),
+				sched_name: optStr("sched_name"),
+				sla_sparsity: optNum("sla_sparsity"),
+				sla_block_size: raw?.sla_block_size === "32" || raw?.sla_block_size === "64" || raw?.sla_block_size === "128" ? raw.sla_block_size : void 0,
+				sla_min_seq_len: optNum("sla_min_seq_len"),
+				sla_dense_last_steps: optNum("sla_dense_last_steps"),
+				sla_protect_audio: raw?.sla_protect_audio !== false,
+				sla_stabilize_motion: raw?.sla_stabilize_motion !== false,
+				sla_reference_protection: raw?.sla_reference_protection === "Off" || raw?.sla_reference_protection === "Light" || raw?.sla_reference_protection === "Heavy Enforcement" ? raw.sla_reference_protection : void 0,
+				sla_dense_backend: raw?.sla_dense_backend === "comfy_kitchen" || raw?.sla_dense_backend === "pytorch" || raw?.sla_dense_backend === "auto" ? raw.sla_dense_backend : void 0,
+				sla_dense_steps: typeof raw?.sla_dense_steps === "string" && /^\s*[0-9]+(-[0-9]+)?(\s*,\s*[0-9]+(-[0-9]+)?)*\s*$/.test(raw.sla_dense_steps) ? raw.sla_dense_steps.trim() : void 0,
+				sla_disable_fp16_accum: raw?.sla_disable_fp16_accum === true,
 				sharpen_enabled: raw?.sharpen_enabled === true,
 				sharpen_method: raw?.sharpen_method === "rcas" || raw?.sharpen_method === "adaptive_usm" || raw?.sharpen_method === "high_pass" || raw?.sharpen_method === "deconvolution" ? raw.sharpen_method : void 0,
-				sharpen_strength: raw?.sharpen_strength != null ? Number(raw.sharpen_strength) : void 0,
-				sharpen_radius: raw?.sharpen_radius != null ? Number(raw.sharpen_radius) : void 0,
-				sharpen_threshold: raw?.sharpen_threshold != null ? Number(raw.sharpen_threshold) : void 0,
-				sharpen_iterations: raw?.sharpen_iterations != null ? Number(raw.sharpen_iterations) : void 0,
+				sharpen_strength: optNum("sharpen_strength"),
+				sharpen_radius: optNum("sharpen_radius"),
+				sharpen_threshold: optNum("sharpen_threshold"),
+				sharpen_iterations: optNum("sharpen_iterations"),
 				interpolate_enabled: raw?.interpolate_enabled === true,
-				interpolate_model: raw?.interpolate_model === "film_net_fp16.safetensors" || raw?.interpolate_model === "rife47.pth" ? raw.interpolate_model : void 0,
-				interpolate_multiplier: raw?.interpolate_multiplier != null ? Number(raw.interpolate_multiplier) : void 0,
-				variant: typeof raw?.variant === "string" ? raw.variant : void 0,
-				model: typeof raw?.model === "string" ? raw.model : void 0,
-				h3_ref_images: typeof raw?.h3_ref_images === "string" && raw.h3_ref_images.trim() ? raw.h3_ref_images : void 0,
-				h3_ref_videos: typeof raw?.h3_ref_videos === "string" && raw.h3_ref_videos.trim() ? raw.h3_ref_videos : void 0,
-				h3_ref_audios: typeof raw?.h3_ref_audios === "string" && raw.h3_ref_audios.trim() ? raw.h3_ref_audios : void 0,
-				h3_ref_video_audios: typeof raw?.h3_ref_video_audios === "string" && raw.h3_ref_video_audios.trim() ? raw.h3_ref_video_audios : void 0,
-				h3_ref_image_size: typeof raw?.h3_ref_image_size === "string" && (raw.h3_ref_image_size === "match" || raw.h3_ref_image_size === "max") ? raw.h3_ref_image_size : void 0,
-				h3_ref_audio_trim_start: raw?.h3_ref_audio_trim_start != null ? Number(raw.h3_ref_audio_trim_start) : void 0,
-				h3_ref_audio_trim_duration: raw?.h3_ref_audio_trim_duration != null ? Number(raw.h3_ref_audio_trim_duration) : void 0,
-				lora_name: typeof raw?.lora_name === "string" && raw.lora_name.trim() ? raw.lora_name : void 0,
-				lora_strength: raw?.lora_strength != null ? Number(raw.lora_strength) : void 0,
-				rtx_vsr_enabled: raw?.rtx_vsr_enabled === true,
-				rtx_vsr_multiplier: raw?.rtx_vsr_multiplier != null ? Number(raw.rtx_vsr_multiplier) : void 0,
-				rtx_vsr_quality: typeof raw?.rtx_vsr_quality === "string" ? raw.rtx_vsr_quality : void 0,
-				crf: raw?.crf != null ? Number(raw.crf) : void 0,
-				audio_stem: typeof raw?.audio_stem === "string" && raw.audio_stem.trim() ? raw.audio_stem : void 0,
+				interp_model: raw?.interp_model === "film_net_fp16.safetensors" || raw?.interp_model === "rife47.pth" ? raw.interp_model : void 0,
+				interp_multiplier: optNum("interp_multiplier"),
+				sr_switch: raw?.sr_switch === true,
+				sr_resolution: optNum("sr_resolution"),
+				ref_image_size: raw?.ref_image_size === "match" || raw?.ref_image_size === "max" ? raw.ref_image_size : void 0,
+				loras: Array.isArray(raw?.loras) ? raw.loras.filter((r) => !!r && typeof r.id === "string").map((r) => ({
+					id: r.id,
+					strength: typeof r.strength === "number" ? r.strength : void 0
+				})) : void 0,
+				variant: optStr("variant"),
+				model: optStr("model"),
+				audio_stem: optStr("audio_stem"),
 				audio_clips: (() => {
 					const parsed = Array.isArray(raw?.audio_clips) ? raw.audio_clips.filter((c) => !!c && typeof c === "object" && typeof c.id === "string" && typeof c.name === "string" && typeof c.src === "string" && c.src.trim() !== "" && Number.isFinite(c.start_frame) && Number.isFinite(c.dur_frames) && c.dur_frames > 0) : void 0;
-					const stem = typeof raw?.audio_stem === "string" && raw.audio_stem.trim() ? raw.audio_stem.trim() : void 0;
-					if (stem && (!parsed || parsed.length === 0)) return [stemToClip(stem, num("fps", 24))];
+					const stem = optStr("audio_stem");
+					if (stem !== void 0 && (!parsed || parsed.length === 0)) return [stemToClip(stem, num("fps", 24))];
 					return parsed?.length ? parsed : void 0;
 				})()
 			};
 		}
-		/** Layer A → the persisted doc shape: only non-undefined keys ride
-		* (undefined = absent = the family/preset decides — the engine default
-		* must never be pinned by a control that was never touched). */
+		/** Layer A → the persisted doc shape: ONLY card wire keys, ONLY
+		* non-undefined (undefined = absent = the family default rides — the
+		* engine default must never be pinned by a control never touched).
+		* THE CONTRACT (pinned by the studio-contract wall test): every key
+		* here ∈ the h3-timeline card's declared surface and READ by
+		* compose. preset/fps are document-local and never serialize. */
 		function serializeLayerA(a) {
 			const out = {
-				preset: a.preset,
-				fps: a.fps,
 				seed: a.seed,
-				audio_mode: a.audio_mode,
-				continuity: a.continuity,
-				h3_fp16_accumulation: a.h3_fp16_accumulation,
-				h3_torch_compile: a.h3_torch_compile,
-				h3_sla_protect_audio: a.h3_sla_protect_audio,
-				h3_sla_stabilize_motion: a.h3_sla_stabilize_motion,
-				h3_sla_disable_fp16_accum: a.h3_sla_disable_fp16_accum,
-				sharpen_enabled: a.sharpen_enabled,
-				interpolate_enabled: a.interpolate_enabled
+				sla_protect_audio: a.sla_protect_audio,
+				sla_stabilize_motion: a.sla_stabilize_motion,
+				sla_disable_fp16_accum: a.sla_disable_fp16_accum,
+				sharpen_enabled: a.sharpen_enabled === true,
+				interpolate_enabled: a.interpolate_enabled === true
 			};
 			for (const k of [
 				"shift_video",
 				"shift_audio",
-				"sampler",
-				"scheduler",
-				"sampling_steps",
+				"steps",
 				"denoise",
 				"width",
 				"height",
-				"h3_attention",
-				"audio_stem",
-				"h3_sla_sparsity",
-				"h3_sla_block_size",
-				"h3_sla_min_seq_len",
-				"h3_sla_dense_last_steps",
-				"h3_sla_reference_protection",
-				"h3_sla_dense_backend",
-				"h3_sla_dense_steps",
+				"sampler_name",
+				"sched_name",
+				"sla_sparsity",
+				"sla_block_size",
+				"sla_min_seq_len",
+				"sla_dense_last_steps",
+				"sla_reference_protection",
+				"sla_dense_backend",
+				"sla_dense_steps",
 				"sharpen_method",
 				"sharpen_strength",
-				"interpolate_model",
-				"interpolate_multiplier",
-				"h3_ref_images",
-				"h3_ref_image_size",
-				"model"
-			]) if (a[k] !== void 0) out[k] = a[k];
-			if (a.audio_clips?.length) out.audio_clips = a.audio_clips;
-			if (a.lora_name?.trim()) {
-				out.lora_name = a.lora_name.trim();
-				if (a.lora_strength != null) out.lora_strength = a.lora_strength;
+				"sharpen_radius",
+				"sharpen_threshold",
+				"sharpen_iterations",
+				"interp_model",
+				"interp_multiplier",
+				"ref_image_size",
+				"model",
+				"audio_stem"
+			]) {
+				const v = a[k];
+				if (v !== void 0 && v !== "") out[k] = v;
 			}
-			if (a.rtx_vsr_enabled === true) out.rtx_vsr_enabled = true;
+			if (a.loras !== void 0 && a.loras.length > 0) out.loras = a.loras;
+			if (a.sr_switch === true) {
+				out.sr_switch = true;
+				if (a.sr_resolution != null) out.sr_resolution = a.sr_resolution;
+			}
+			if (a.audio_clips?.length) out.audio_clips = a.audio_clips;
 			return out;
 		}
 		//#endregion
@@ -5722,64 +6033,42 @@ window.__ModuleLoader__.load({
 						if (typeof v === "string" && v.trim()) return v.trim();
 					};
 					const refs = {};
-					const im = join(rr.images), vi = join(rr.videos);
-					const au = join(rr.audios), va = join(rr.video_audios);
+					const im = join(rr.images), vi = join(rr.videos), au = join(rr.audios);
 					if (im) refs.images = im;
 					if (vi) refs.videos = vi;
 					if (au) refs.audios = au;
-					if (va) refs.video_audios = va;
 					if (Object.keys(refs).length) call.refs = refs;
 				}
 				if (r.knobs !== null && typeof r.knobs === "object") {
 					const knobs = {};
-					for (const [k, v] of Object.entries(r.knobs)) {
+					for (const [rawK, v] of Object.entries(r.knobs)) {
+						const k = LEGACY_KNOB_KEY[rawK] ?? rawK;
 						if (!CALL_KNOB_KEYS.has(k)) {
-							console.warn(`VideoTimelineStudio: dropping unknown call knob "${k}" (backend CALL_KNOB_KEYS vocabulary)`);
+							console.warn(`VideoTimelineStudio: dropping unknown call knob "${rawK}" (the card's knob vocabulary)`);
 							continue;
 						}
 						if (v === null || v === void 0 || v === "") continue;
-						if (k === "steps") {
+						const target = knobs;
+						if (k === "length" || k === "steps" || k === "denoise" || k === "shift_video" || k === "shift_audio" || k === "sla_sparsity" || k === "sla_min_seq_len" || k === "sla_dense_last_steps" || k === "sharpen_strength" || k === "sharpen_radius" || k === "sharpen_threshold" || k === "sharpen_iterations" || k === "interp_multiplier") {
 							const n = Number(v);
-							if (Number.isFinite(n)) knobs.sampling_steps = n;
-						} else if (k === "sampling_steps" || k === "denoise" || k === "shift_video" || k === "shift_audio" || k === "h3_sla_sparsity" || k === "h3_sla_min_seq_len" || k === "h3_sla_dense_last_steps" || k === "sharpen_strength" || k === "sharpen_radius" || k === "sharpen_threshold" || k === "sharpen_iterations" || k === "interpolate_multiplier") {
-							const n = Number(v);
-							if (Number.isFinite(n)) {
-								if (k === "sampling_steps") knobs.sampling_steps = n;
-								else if (k === "denoise") knobs.denoise = n;
-								else if (k === "shift_video") knobs.shift_video = n;
-								else if (k === "shift_audio") knobs.shift_audio = n;
-								else if (k === "h3_sla_sparsity") knobs.h3_sla_sparsity = n;
-								else if (k === "h3_sla_min_seq_len") knobs.h3_sla_min_seq_len = n;
-								else if (k === "h3_sla_dense_last_steps") knobs.h3_sla_dense_last_steps = n;
-								else if (k === "sharpen_strength") knobs.sharpen_strength = n;
-								else if (k === "sharpen_radius") knobs.sharpen_radius = n;
-								else if (k === "sharpen_threshold") knobs.sharpen_threshold = n;
-								else if (k === "sharpen_iterations") knobs.sharpen_iterations = n;
-								else knobs.interpolate_multiplier = n;
-							}
-						} else if (k === "sampler" || k === "scheduler") {
-							if (typeof v === "string" && v.trim()) knobs[k] = v;
-						} else if (k === "h3_sla_block_size") {
-							if (v === "64" || v === "128") knobs.h3_sla_block_size = v;
-						} else if (k === "h3_sla_reference_protection") {
-							if (v === "Off" || v === "Light" || v === "Heavy Enforcement") knobs.h3_sla_reference_protection = v;
-						} else if (k === "h3_sla_dense_backend") {
-							if (v === "comfy_kitchen" || v === "pytorch" || v === "auto") knobs.h3_sla_dense_backend = v;
-						} else if (k === "h3_sla_dense_steps") {
-							if (typeof v === "string" && /^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$/.test(v.trim())) knobs.h3_sla_dense_steps = v.trim();
+							if (Number.isFinite(n)) target[k] = n;
+						} else if (k === "sampler_name" || k === "sched_name") {
+							if (typeof v === "string" && v.trim()) target[k] = v;
+						} else if (k === "sla_block_size") {
+							if (v === "32" || v === "64" || v === "128") target.sla_block_size = v;
+						} else if (k === "sla_reference_protection") {
+							if (v === "Off" || v === "Light" || v === "Heavy Enforcement") target.sla_reference_protection = v;
+						} else if (k === "sla_dense_backend") {
+							if (v === "comfy_kitchen" || v === "pytorch" || v === "auto") target.sla_dense_backend = v;
+						} else if (k === "sla_dense_steps") {
+							if (typeof v === "string" && /^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$/.test(v.trim())) target.sla_dense_steps = v.trim();
 						} else if (k === "sharpen_method") {
-							if (v === "rcas" || v === "adaptive_usm" || v === "high_pass" || v === "deconvolution") knobs.sharpen_method = v;
-						} else if (k === "interpolate_model") {
-							if (v === "film_net_fp16.safetensors" || v === "rife47.pth") knobs.interpolate_model = v;
+							if (v === "rcas" || v === "adaptive_usm" || v === "high_pass" || v === "deconvolution") target.sharpen_method = v;
+						} else if (k === "interp_model") {
+							if (v === "film_net_fp16.safetensors" || v === "rife47.pth") target.interp_model = v;
 						} else {
 							const b = typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : void 0;
-							if (b !== void 0) {
-								if (k === "h3_sla_protect_audio") knobs.h3_sla_protect_audio = b;
-								else if (k === "h3_sla_stabilize_motion") knobs.h3_sla_stabilize_motion = b;
-								else if (k === "h3_sla_disable_fp16_accum") knobs.h3_sla_disable_fp16_accum = b;
-								else if (k === "sharpen_enabled") knobs.sharpen_enabled = b;
-								else knobs.interpolate_enabled = b;
-							}
+							if (b !== void 0) target[k] = b;
 						}
 					}
 					if (Object.keys(knobs).length) call.knobs = knobs;
@@ -5867,9 +6156,12 @@ window.__ModuleLoader__.load({
 						return chips.length ? chips.join(", ") : void 0;
 					};
 					const images = join(c.refs.images);
-					if (images) out.refs = {
-						...out.refs ?? {},
-						images
+					const videos = join(c.refs.videos);
+					const audios = join(c.refs.audios);
+					if (images || videos || audios) out.refs = {
+						...images ? { images } : {},
+						...videos ? { videos } : {},
+						...audios ? { audios } : {}
 					};
 				}
 				if (hasKnobs(c)) out.knobs = { ...c.knobs };
@@ -12196,9 +12488,6 @@ window.__ModuleLoader__.load({
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunRefsClips, {
 										layerA,
-										setLayerAKey: fx.setLayerAKey,
-										isRef2va: doc.isRef2va,
-										refArtifacts: audio.refArtifacts,
 										takeAudioFile: audio.takeAudioFile,
 										audioUploadRef: audio.audioUploadRef
 									})

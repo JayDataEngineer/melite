@@ -4,8 +4,8 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
-import type { BeatKnobs, CallRefs, DocCall, DocKeyframe } from "./docModel"
-import { CALL_KNOB_KEYS, GUIDE_KINDS, KIND_OF_TRACK, STARTER_CALLS } from "./docModel"
+import type { BeatKnobs, DocCall, DocKeyframe } from "./docModel"
+import { CALL_KNOB_KEYS, GUIDE_KINDS, KIND_OF_TRACK, LEGACY_KNOB_KEY, STARTER_CALLS } from "./docModel"
 import { splitRefList } from "./refUtils"
 
 export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall[] {
@@ -109,93 +109,58 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
         if (typeof v === "string" && v.trim()) return v.trim()
         return undefined
       }
-      const refs: CallRefs = {}
-      const im = join(rr.images), vi = join(rr.videos)
-      const au = join(rr.audios), va = join(rr.video_audios)
+      const refs: NonNullable<DocCall["refs"]> = {}
+      const im = join(rr.images), vi = join(rr.videos), au = join(rr.audios)
       if (im) refs.images = im
       if (vi) refs.videos = vi
       if (au) refs.audios = au
-      if (va) refs.video_audios = va
       if (Object.keys(refs).length) call.refs = refs
     }
     // Per-call knobs: vocabulary-gated hydration — a foreign key is
-    // dropped with a warning, NEVER re-sent (the backend refuses unknown
-    // keys; the UI must not author them either).
+    // dropped with a warning, NEVER re-sent (the card's compose
+    // reads only its declared knobs; the UI must not author others).
+    // Legacy py-era spellings migrate through LEGACY_KNOB_KEY first
+    // (2026-09-17: the wire names are the only vocabulary now).
     if (r.knobs !== null && typeof r.knobs === "object") {
       const knobs: BeatKnobs = {}
-      for (const [k, v] of Object.entries(r.knobs as Record<string, unknown>)) {
+      for (const [rawK, v] of Object.entries(r.knobs as Record<string, unknown>)) {
+        const k = LEGACY_KNOB_KEY[rawK] ?? rawK
         if (!CALL_KNOB_KEYS.has(k)) {
-          console.warn(`VideoTimelineStudio: dropping unknown call knob "${k}" (backend CALL_KNOB_KEYS vocabulary)`)
+          console.warn(`VideoTimelineStudio: dropping unknown call knob "${rawK}" (the card's knob vocabulary)`)
           continue
         }
         if (v === null || v === undefined || v === "") continue
-        if (k === "steps") { // the canonical pair - one knob
+        const target = knobs as unknown as Record<string, unknown>
+        if (k === "length" || k === "steps" || k === "denoise"
+            || k === "shift_video" || k === "shift_audio"
+            || k === "sla_sparsity" || k === "sla_min_seq_len"
+            || k === "sla_dense_last_steps" || k === "sharpen_strength"
+            || k === "sharpen_radius" || k === "sharpen_threshold"
+            || k === "sharpen_iterations" || k === "interp_multiplier") {
           const n = Number(v)
-          if (Number.isFinite(n)) knobs.sampling_steps = n
-        } else if (k === "sampling_steps" || k === "denoise"
-                   || k === "shift_video" || k === "shift_audio"
-                   || k === "h3_sla_sparsity" || k === "h3_sla_min_seq_len"
-                   || k === "h3_sla_dense_last_steps" || k === "sharpen_strength"
-                   || k === "sharpen_radius" || k === "sharpen_threshold"
-                   || k === "sharpen_iterations" || k === "interpolate_multiplier") {
-          // the NUMBER-valued keys - per-literal writes so TS checks
-          // each against the exact property type. (cfg /
-          // h3_context_steps / h3_audio_context_steps are NOT here:
-          // absent from CALL_KNOB_KEYS, the gate above drops them —
-          // comparing would be dead.)
-          const n = Number(v)
-          if (Number.isFinite(n)) {
-            if (k === "sampling_steps") knobs.sampling_steps = n
-            else if (k === "denoise") knobs.denoise = n
-            else if (k === "shift_video") knobs.shift_video = n
-            else if (k === "shift_audio") knobs.shift_audio = n
-            else if (k === "h3_sla_sparsity") knobs.h3_sla_sparsity = n
-            else if (k === "h3_sla_min_seq_len") knobs.h3_sla_min_seq_len = n
-            else if (k === "h3_sla_dense_last_steps") knobs.h3_sla_dense_last_steps = n
-            else if (k === "sharpen_strength") knobs.sharpen_strength = n
-            else if (k === "sharpen_radius") knobs.sharpen_radius = n
-            else if (k === "sharpen_threshold") knobs.sharpen_threshold = n
-            else if (k === "sharpen_iterations") knobs.sharpen_iterations = n
-            // Terminal else (exhaustion: the outer gate lists exactly
-            // these twelve number keys and every earlier arm missed —
-            // k IS interpolate_multiplier; the comparison would be dead).
-            else knobs.interpolate_multiplier = n
-          }
-        } else if (k === "sampler" || k === "scheduler") {
-          if (typeof v === "string" && v.trim()) knobs[k] = v
-        } else if (k === "h3_sla_block_size") {
-          if (v === "64" || v === "128") knobs.h3_sla_block_size = v
-        } else if (k === "h3_sla_reference_protection") {
-          if (v === "Off" || v === "Light" || v === "Heavy Enforcement") knobs.h3_sla_reference_protection = v
-        } else if (k === "h3_sla_dense_backend") {
-          if (v === "comfy_kitchen" || v === "pytorch" || v === "auto") knobs.h3_sla_dense_backend = v
-        } else if (k === "h3_sla_dense_steps") {
+          if (Number.isFinite(n)) target[k] = n
+        } else if (k === "sampler_name" || k === "sched_name") {
+          if (typeof v === "string" && v.trim()) target[k] = v
+        } else if (k === "sla_block_size") {
+          if (v === "32" || v === "64" || v === "128") target.sla_block_size = v
+        } else if (k === "sla_reference_protection") {
+          if (v === "Off" || v === "Light" || v === "Heavy Enforcement") target.sla_reference_protection = v
+        } else if (k === "sla_dense_backend") {
+          if (v === "comfy_kitchen" || v === "pytorch" || v === "auto") target.sla_dense_backend = v
+        } else if (k === "sla_dense_steps") {
           if (typeof v === "string" && /^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$/.test(v.trim())) {
-            knobs.h3_sla_dense_steps = v.trim()
+            target.sla_dense_steps = v.trim()
           }
         } else if (k === "sharpen_method") {
           if (v === "rcas" || v === "adaptive_usm" || v === "high_pass" || v === "deconvolution") {
-            knobs.sharpen_method = v
+            target.sharpen_method = v
           }
-        } else if (k === "interpolate_model") {
-          if (v === "film_net_fp16.safetensors" || v === "rife47.pth") knobs.interpolate_model = v
+        } else if (k === "interp_model") {
+          if (v === "film_net_fp16.safetensors" || v === "rife47.pth") target.interp_model = v
         } else {
-          // Terminal else (exhaustion: CALL_KNOB_KEYS minus every arm
-          // above is exactly the five boolean keys; the disjunction
-          // would be dead — the inner dispatch still narrows per key).
-          // the boolean-valued keys + stringified forms.
-          // (h3_fp16_accumulation / h3_torch_compile are NOT here:
-          // Layer-A-only, absent from CALL_KNOB_KEYS — dead.)
+          // the boolean-valued keys + stringified forms
           const b = typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : undefined
-          if (b !== undefined) {
-            if (k === "h3_sla_protect_audio") knobs.h3_sla_protect_audio = b
-            else if (k === "h3_sla_stabilize_motion") knobs.h3_sla_stabilize_motion = b
-            else if (k === "h3_sla_disable_fp16_accum") knobs.h3_sla_disable_fp16_accum = b
-            else if (k === "sharpen_enabled") knobs.sharpen_enabled = b
-            // Terminal else (exhaustion: four earlier arms missed — k
-            // IS interpolate_enabled).
-            else knobs.interpolate_enabled = b
-          }
+          if (b !== undefined) target[k] = b
         }
       }
       if (Object.keys(knobs).length) call.knobs = knobs
@@ -297,10 +262,10 @@ export function serializeCalls(calls: DocCall[]): DocCall[] {
     // opener). last_frame is never written — cut 2026-09-15.
     if (c.first_frame_prev_sec != null) out.first_frame_prev_sec = c.first_frame_prev_sec
     if (c.transition === "extend" || c.transition === "cut") out.transition = c.transition
-    // Per-call refs: the wire form is the COMMA STRING — same as the
-    // run-level h3_ref_images (the backend stagers read IsString; the
-    // 2026-09-02 audit found this serializer writing ARRAYS the
-    // compiler silently dropped, and the strict gate now refuses).
+    // Per-call refs: the wire form is the COMMA STRING (the card's
+    // wireList law — trimmed entries, empties absent). All three
+    // buckets ride: images, videos, audios (video_audios died with
+    // the run-level refs panel — the bundle never mounted it).
     // Data:-aware split (an inline upload carries its own comma).
     if (c.refs) {
       const join = (s?: string): string | undefined => {
@@ -308,8 +273,14 @@ export function serializeCalls(calls: DocCall[]): DocCall[] {
         return chips.length ? chips.join(", ") : undefined
       }
       const images = join(c.refs.images)
-      if (images) {
-        out.refs = { ...(out.refs ?? {}), images } as CallRefs
+      const videos = join(c.refs.videos)
+      const audios = join(c.refs.audios)
+      if (images || videos || audios) {
+        out.refs = {
+          ...(images ? { images } : {}),
+          ...(videos ? { videos } : {}),
+          ...(audios ? { audios } : {}),
+        }
       }
     }
     if (hasKnobs(c)) out.knobs = { ...c.knobs }

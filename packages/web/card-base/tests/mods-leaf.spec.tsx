@@ -41,6 +41,14 @@ const LORA = {
   ],
 } as unknown as ModifierKind
 
+const LORA_DISTILL = {
+  kind: 'lora', label: 'LoRA', param_key: 'loras', cardinality: 'multi',
+  options: [
+    { value: 'dareties', label: 'LightX2V dareties v4', defaults: { strength: 0.4, steps: 4 } },
+    { value: 'turbo', label: 'LightX2V Turbo 4-8 step', defaults: { strength: 0.6, steps: 8 } },
+  ],
+} as unknown as ModifierKind
+
 const CONTROL = {
   kind: 'controlnet', label: 'ControlNet', param_key: 'controlnets', cardinality: 'multi',
   entry: 'hybrid', option_key: 'type', scalar_key: 'strength',
@@ -151,6 +159,60 @@ test('OPTION CREATE: a row without defaults seeds 1.0; a typed dial wins over th
   fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'plain' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'plain', strength: 1.0 }])
+})
+
+// ── STEPS APPLIED (2026-09-18, the operator's plaguekind law): a
+// distill row's married step count rides the entry; the SERVED
+// defaults drive the row's presence (never the kind name). ──
+test('STEPS CREATE: a distill row seeds {strength, steps}; a non-distill kind renders no steps row', () => {
+  const { onEdit } = openLeaf({ kinds: [LORA_DISTILL], values: {} })
+  openCreate('LoRA')
+  expect(screen.queryByLabelText('Steps applied')).not.toBeNull()
+  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'dareties' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'dareties', strength: 0.4, steps: 4 }])
+  cleanup()
+  const plain = openLeaf({ kinds: [LORA], values: {} })
+  openCreate('LoRA')
+  expect(plain.queryByLabelText('Steps applied')).toBeNull()
+})
+
+test('STEPS CREATE: a typed count wins over the row seed; a fractional count refuses LOUD', () => {
+  const { onEdit } = openLeaf({ kinds: [LORA_DISTILL], values: {} })
+  openCreate('LoRA')
+  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'turbo' } })
+  fireEvent.change(screen.getByLabelText('Steps applied'), { target: { value: '6' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6, steps: 6 }])
+  cleanup()
+  const again = openLeaf({ kinds: [LORA_DISTILL], values: {} })
+  openCreate('LoRA')
+  fireEvent.change(again.getByLabelText('LoRA'), { target: { value: 'turbo' } })
+  fireEvent.change(again.getByLabelText('Steps applied'), { target: { value: '2.5' } })
+  fireEvent.click(again.getByRole('button', { name: 'Add' }))
+  expect(again.getByText('Steps applied must be a whole number \u2265 1.')).not.toBeNull()
+  expect(again.onEdit).not.toHaveBeenCalled()
+})
+
+test('STEPS EDIT: the dial rewrites the claim; a blank input DROPS it (never a lingering spread)', () => {
+  const { onEdit } = openLeaf({
+    kinds: [LORA_DISTILL],
+    values: { loras: [{ id: 'turbo', strength: 0.6, steps: 8 }] },
+  })
+  openEditTile('loras-0')
+  expect((screen.getByLabelText('Steps applied') as HTMLInputElement).value).toBe('8')
+  fireEvent.change(screen.getByLabelText('Steps applied'), { target: { value: '5' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6, steps: 5 }])
+  cleanup()
+  const drop = openLeaf({
+    kinds: [LORA_DISTILL],
+    values: { loras: [{ id: 'turbo', strength: 0.6, steps: 8 }] },
+  })
+  openEditTile('loras-0')
+  fireEvent.change(drop.getByLabelText('Steps applied'), { target: { value: '' } })
+  fireEvent.click(drop.getByRole('button', { name: 'Save' }))
+  expect(drop.onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6 }])
 })
 
 test('OPTION CREATE: refusing LOUD — no row, no save; a non-number dial, no save', () => {

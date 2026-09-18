@@ -319,10 +319,16 @@ function specModifiers(
       value: r.id,
       label: r.label ?? r.id,
       tooltip: optionTooltip(r, cat.shared),
+      // STEPS APPLIED rides the defaults when the row claims one
+      // (2026-09-18): a distill adapter is married to its step
+      // count — boarding it stamps {strength, steps} onto the entry.
       defaults:
-        r.default_strength === undefined && r.default_weight === undefined
+        r.default_strength === undefined && r.default_weight === undefined && r.steps === undefined
           ? {}
-          : { [meta.scalar_key ?? 'strength']: r.default_strength ?? r.default_weight },
+          : Object.fromEntries(Object.entries({
+              [meta.scalar_key ?? 'strength']: r.default_strength ?? r.default_weight,
+              steps: r.steps,
+            }).filter(([, v]) => v !== undefined)),
       // THE RESOLVED FACTS (the hybrid leaf stamps these onto new
       // entries so the run record carries the retired wire shape —
       // model + upstream-map note; the lane re-validates them

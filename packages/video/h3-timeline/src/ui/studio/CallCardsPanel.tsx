@@ -9,8 +9,8 @@ import { cn } from "@melite/card-base/chrome"
 import { ChevronLeft } from "@melite/card-base/icons"
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel"
-import type { DocCall, DocKeyframe, LayerA } from "./docModel"
-import { CallCard } from "./CallCard"
+import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel"
+import { CallCard, deliveredFrames } from "./CallCard"
 import type { LinkArtifact } from "./refUtils"
 import type { TimelineSelection } from "./useViewSelection"
 
@@ -38,7 +38,7 @@ export interface CallCardDeps {
   setCallGuide: (i: number, kind: "image" | "clip" | "audio", source: string) => void
   setCallPrevSec: (i: number, sec: number | null) => void
   setCallTransition: (i: number, t: "extend" | "cut") => void
-  setCallRefs: (i: number, key: "images" | "videos" | "audios" | "video_audios", value: string) => void
+  setCallRefs: (i: number, key: keyof CallRefs, value: string) => void
   setCallKnob: (i: number, key: string, value: number | string | boolean | undefined) => void
 }
 
@@ -139,8 +139,8 @@ export function CallCardsPanel({
                   {activeKnobs}
                 </span>
               )}
-              <span className={s.callDur}>
-                {((c.end_frame - c.start_frame) / fps).toFixed(1)}s
+              <span className={s.callDur} title={`span ${((c.end_frame - c.start_frame) / fps).toFixed(1)}s — delivered after the seam's carry`}>
+                {(deliveredFrames(c, i) / fps).toFixed(1)}s
               </span>
             </Button>
           )

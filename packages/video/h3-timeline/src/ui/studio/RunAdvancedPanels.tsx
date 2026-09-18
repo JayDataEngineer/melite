@@ -1,206 +1,111 @@
 /**
  * h3-timeline studio split (2026-09-06) — PURE MOVE from
- * ui/studio/component.tsx. No behavior change: headers/footers are new,
- * every logic line is verbatim from the monolith (source range noted).
- */
-import { CheckControl, ControlRow, NumberControl, SelectControl } from "./kit"
-import s from "./studio.module.css"
-import { SPEED_LORA_OPTIONS } from "./docModel"
-import type { LayerA, SetLayerAKey } from "./docModel"
-import { useEffect, useState } from "react"
-import type { ReactElement } from "react"
-import { SpecFieldRow, fieldsOf, useFormSpec, type SpecField } from "@melite/card-base"
-
-/** The spec's name → LayerA's key (the h3_ prefix is the studio's
- * document spelling of the card's renderer vocabulary). */
-function layerKey(name: string): string {
-  return name.startsWith("sla_") ? "h3_" + name : name
-}
-
-/** Layer A rail: SLA lab + Speed LoRA + Post-processing (lines 2905–3188).
+ * ui/studio/component.tsx.
  *
- * Hour 16, item 3: the compose-read knobs (the SLA family + the
- * sharpen leaves) RIDE THE SERVED SPEC now — /v1/form-spec?model=
- * h3-timeline declares them; SpecFieldRow renders each with the
- * declaration's shape (slider/select/number ranges). The section
- * layout and the conditional leaves stay studio logic (visible_when
- * is single-equality — "method ≠ rcas" is not expressible). The
- * Speed LoRA + RTX + CRF rows are document-local vocabulary (not
- * card params; the compose never reads them) and stay hand-rolled. */
+ * THE LAYER A/B LAW REWORK (2026-09-17): the advanced knob rows ride
+ * the SHARED SpecPanel (the estate's parameter system) at their WIRE
+ * names (no h3_ spelling, no attention gate — the sla_* keys ride
+ * unconditionally); the lora surface is the MOD PLANE
+ * (ModifiersSection over the spec's features.modifiers). The hand-
+ * rolled vocabulary (Speed LoRA knob pair, RTX VSR multiplier/
+ * quality, Output CRF) is GONE: no node ever read them.
+ */
+import { SpecPanel, ModifiersSection, useFormSpec } from "@melite/card-base"
+import s from "./studio.module.css"
+import type { LayerA, SetLayerAKey } from "./docModel"
+
+/** Layer A rail: SLA lab (unconditional) + Loras (mod plane) +
+ * Post-processing leaves. The served doc is fetched ONCE and shared
+ * with ModLane (SpecPanel skips its own fetch when handed the doc)
+ * so the door is never hit twice. */
 export function RunAdvancedPanels({
   layerA, setLayerAKey,
 }: {
   layerA: LayerA
   setLayerAKey: SetLayerAKey
 }) {
-  // the served spec rides the shared hook — THE MASTER FORM'S WALKER
-  // (fieldsOf, the envelope grammar; the old `spec.fields` read was
-  // the flat grammar deleted in stroke 16, so every row() silently
-  // returned null — the SLA lab and sharpen leaves rendered NOTHING
-  // while the hand-rolled rows kept the rail looking alive. Stroke
-  // 35: no fallback, no silent drops; a spec that fails to serve is
-  // an ERROR the hook surfaces, not a cue to render fewer knobs).
+  // THE SERVED SPEC — fetched once, owned here; the estate's SpecPanel
+  // and ModLane both read it.
   const { spec, error } = useFormSpec("h3-timeline")
-  const byName = new Map((spec === null ? [] : fieldsOf(spec)).map((f: SpecField) => [f.name, f]))
-  const row = (name: string): ReactElement | null => {
-    const f = byName.get(name)
-    if (f === undefined) return null
-    const key = layerKey(name)
-    const values = layerA as unknown as Record<string, unknown>
-    return (
-      <SpecFieldRow
-        f={f}
-        value={values[key]}
-        onEdit={(k, v) => {
-          (setLayerAKey as unknown as (kk: string, vv: unknown) => void)(layerKey(k), v)
-        }}
-      />
-    )
-  }
+  const values = layerA as unknown as Record<string, unknown>
+  const onEdit = setLayerAKey as unknown as (n: string, v: unknown) => void
   return (
     <>
-    {error !== null && (
-      <div className={s.group} data-testid="tl-spec-error" role="alert">
-        <div className={s.groupTitle}>form-spec failed — advanced knobs unavailable</div>
-        <div>{error}</div>
-      </div>
-    )}    {/* SLA lab — only when Attention = SLA (block-sparse). */}
-    {(layerA.h3_attention ?? "kitchen") === "sla" && (
-    <div className={s.group} data-testid="tl-sla-panel">
-      <div className={s.groupTitle}>
-        SLA — block-sparse attention
-      </div>
-      {row("sla_sparsity")}
-      {row("sla_block_size")}
-      {row("sla_min_seq_len")}
-      {row("sla_dense_last_steps")}
-      {row("sla_dense_steps")}
-      {row("sla_dense_backend")}
-      {row("sla_reference_protection")}
-      {row("sla_protect_audio")}
-      {row("sla_stabilize_motion")}
-      {row("sla_disable_fp16_accum")}
-    </div>
-    )}
-    {/* Speed adapter (plaguekind parity: the lightx2v LoRA at
-        0.8 riding the model). Serializes as the family's loras
-        vocabulary [{name, strength?}]; empty = none. */}
-    <div className={s.group} data-testid="tl-lora-panel">
-      <div className={s.groupTitle}>
-        Speed LoRA
-      </div>
-      <ControlRow label="Name">
-        <SelectControl
-          ariaLabel="Speed LoRA name (run)"
-          value={layerA.lora_name}
-          onChange={(v) => setLayerAKey("lora_name", v)}
-          options={SPEED_LORA_OPTIONS}
-          emptyLabel="none"
-          width="w-40"
-        />
-      </ControlRow>
-      <ControlRow label="Strength">
-        <NumberControl
-          ariaLabel="Speed LoRA strength (run)"
-          value={layerA.lora_strength}
-          onChange={(v) => setLayerAKey("lora_strength", v)}
-          min={0} max={1.5} step={0.05}
-          placeholder="0.8"
-          width="w-32"
-        />
-      </ControlRow>
-    </div>
-    {/* Post-processing — sharpen + interpolation, post-decode. */}
-    <div className={s.group} data-testid="tl-post-panel">
-      <div className={s.groupTitle}>
-        Post-processing
-      </div>
-      {row("sharpen_enabled")}
-      {layerA.sharpen_enabled && (<>
-      {row("sharpen_method")}
-      {row("sharpen_strength")}
-      {(layerA.sharpen_method ?? "rcas") !== "rcas" && row("sharpen_radius")}
-      {layerA.sharpen_method === "adaptive_usm" && row("sharpen_threshold")}
-      {layerA.sharpen_method === "deconvolution" && row("sharpen_iterations")}
-      </>)}
-      {row("interpolate_enabled")}
-      {layerA.interpolate_enabled && (<>
-      <ControlRow label="Model">
-        <SelectControl
-          ariaLabel="Interpolation model (run)"
-          value={layerA.interpolate_model ?? "film_net_fp16.safetensors"}
-          onChange={(v) => setLayerAKey("interpolate_model",
-            v === "rife47.pth" ? v : "film_net_fp16.safetensors")}
-          options={[
-            { value: "film_net_fp16.safetensors", label: "FILM" },
-            { value: "rife47.pth", label: "RIFE 4.7" },
-          ]}
-          emptyLabel={false}
-          width="w-32"
-        />
-      </ControlRow>
-      <ControlRow label="Multiplier">
-        <SelectControl
-          ariaLabel="Interpolation multiplier (run)"
-          value={String(layerA.interpolate_multiplier ?? 2)}
-          onChange={(v) => setLayerAKey("interpolate_multiplier", Number(v))}
-          options={[
-            { value: "2", label: "2x" },
-            { value: "4", label: "4x" },
-          ]}
-          emptyLabel={false}
-          width="w-32"
-        />
-      </ControlRow>
-      </>)}
-      {/* RTX Video Super-Resolution (plaguekind parity): 2-4x
-          hardware upscale, LAST in the post chain. Guarded at
-          run time — missing node skips with a warning. */}
-      <ControlRow label="RTX Super-Res">
-        <CheckControl
-          ariaLabel="RTX Super-Resolution (run)"
-          checked={layerA.rtx_vsr_enabled === true}
-          onChange={(v) => setLayerAKey("rtx_vsr_enabled", v)}
-        />
-      </ControlRow>
-      {layerA.rtx_vsr_enabled === true && (<>
-      <ControlRow label="Scale">
-        <SelectControl
-          ariaLabel="RTX Super-Res scale (run)"
-          value={String(layerA.rtx_vsr_multiplier ?? 2)}
-          onChange={(v) => setLayerAKey("rtx_vsr_multiplier", Number(v))}
-          options={[
-            { value: "2", label: "2x" },
-            { value: "3", label: "3x" },
-            { value: "4", label: "4x" },
-          ]}
-          emptyLabel={false}
-          width="w-32"
-        />
-      </ControlRow>
-      <ControlRow label="Quality">
-        <SelectControl
-          ariaLabel="RTX Super-Res quality (run)"
-          value={layerA.rtx_vsr_quality ?? "ULTRA"}
-          onChange={(v) => setLayerAKey("rtx_vsr_quality", v)}
-          options={["ULTRA", "HIGH", "MEDIUM", "LOW"]}
-          emptyLabel={false}
-          width="w-32"
-        />
-      </ControlRow>
-      </>)}
-      {/* Output CRF (plaguekind saves at 8; lower = better). */}
-      <ControlRow label="Output CRF">
-        <NumberControl
-          ariaLabel="Output CRF (run)"
-          value={layerA.crf}
-          onChange={(v) => setLayerAKey("crf", v === undefined ? undefined : Math.round(v))}
-          min={8} max={34} step={1}
-          placeholder="19"
-          width="w-32"
-        />
-      </ControlRow>
-    </div>
+      <SpecPanel
+        model="h3-timeline"
+        spec={spec}
+        error={error}
+        values={values}
+        onEdit={onEdit}
+        sections={[
+          {
+            // SLA rides EVERY layer A — compose reads the sla_* keys
+            // unconditionally (the old attention dropdown gate was
+            // fiction). sla_min_seq_len is undeclared on the card →
+            // SpecPanel renders no ghost row.
+            title: "SLA — block-sparse attention",
+            testid: "tl-sla-panel",
+            rows: [
+              { name: "sla_sparsity" }, { name: "sla_block_size" },
+              { name: "sla_min_seq_len" },
+              { name: "sla_dense_last_steps" }, { name: "sla_dense_steps" },
+              { name: "sla_dense_backend" }, { name: "sla_reference_protection" },
+              { name: "sla_protect_audio" }, { name: "sla_stabilize_motion" },
+              { name: "sla_disable_fp16_accum" },
+            ],
+          },
+          {
+            title: "Post-processing",
+            testid: "tl-post-panel",
+            // PLAIN WIRE NAMES — the leaves' visibility rides the
+            // DECLARATION's own visible_when grammar ("key=value"
+            // guards, &-ANDed, |-SET values); the card schema owns
+            // the leaf law, this file owns only the seat order.
+            rows: [
+              { name: "sharpen_enabled" },
+              { name: "sharpen_method" },
+              { name: "sharpen_strength" },
+              { name: "sharpen_radius" },
+              { name: "sharpen_threshold" },
+              { name: "sharpen_iterations" },
+              { name: "interpolate_enabled" },
+              { name: "interp_model" },
+              { name: "interp_multiplier" },
+              { name: "sr_switch" },
+              { name: "sr_resolution" },
+            ],
+          },
+        ]}
+      />
+      {/* The loras MOD BAG — the estate's ModifiersSection over the
+       * served mod plane (features.modifiers); options = the family's
+       * flavor catalog; entries {id, strength} serialize as
+       * params.loras. The hand-rolled Speed LoRA knob pair died: it
+       * never matched the card's read and never fired. */}
+      <ModLane spec={spec} layerA={layerA} setLayerAKey={setLayerAKey} />
     </>
+  )
+}
+
+/** The mod lane (loras). Ridden only when the door serves
+ * features.modifiers — otherwise the estate renders nothing
+ * (ModifiersSection's no-kinds arm). Reads the SAME doc the panel
+ * above fetched, so the door is hit once. */
+function ModLane({ spec, layerA, setLayerAKey }: {
+  spec: ReturnType<typeof useFormSpec>["spec"]
+  layerA: LayerA
+  setLayerAKey: SetLayerAKey
+}) {
+  const kinds = spec?.features?.modifiers ?? []
+  if (kinds.length === 0) return null
+  return (
+    <div className={s.group} data-testid="tl-mods-panel">
+      <div className={s.groupTitle}>Loras — speed adapters</div>
+      <ModifiersSection
+        kinds={kinds}
+        values={{ loras: layerA.loras ?? [] } as unknown as Record<string, unknown>}
+        onEdit={(k, v) => setLayerAKey(k as keyof LayerA, v as LayerA[keyof LayerA])}
+      />
+    </div>
   )
 }

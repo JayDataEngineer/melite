@@ -62,28 +62,28 @@ describe("the enum face (the schema's options, in order)", () => {
   it("options ride declaration order; numbers stringify; ghosts show", () => {
     const seen: unknown[][] = []
     render(
-      <BeatKnobControl callIndex={0} knob="sampler" value="euler" layerA={ghosted({ sampler: "euler" })} onChange={(k, v) => { seen.push([k, v]) }} />,
+      <BeatKnobControl callIndex={0} knob="sampler_name" value="euler" layerA={ghosted({ sampler_name: "euler" })} onChange={(k, v) => { seen.push([k, v]) }} />,
     )
-    const sel = screen.getByLabelText("Call 0 knob: sampler") as HTMLSelectElement
+    const sel = screen.getByLabelText("Call 0 knob: sampler_name") as HTMLSelectElement
     assert.equal(sel.value, "euler")
     const texts = [...sel.options].map((o) => o.text)
     assert.ok(texts.indexOf("euler") < texts.indexOf("heun"), "declaration order kept")
     assert.equal(sel.options[0]!.text, "← euler")
     fireEvent.change(sel, { target: { value: "dpmpp_2m" } })
-    assert.deepEqual(seen, [["sampler", "dpmpp_2m"]])
+    assert.deepEqual(seen, [["sampler_name", "dpmpp_2m"]])
   })
 
   it("a numeric value stringifies into the select; unset selects inherit", () => {
     const r1 = render(
-      <BeatKnobControl callIndex={0} knob="h3_sla_block_size" value={64} onChange={() => {}} />,
+      <BeatKnobControl callIndex={0} knob="sla_block_size" value={64} onChange={() => {}} />,
     )
-    const sel = screen.getByLabelText("Call 0 knob: h3_sla_block_size") as HTMLSelectElement
+    const sel = screen.getByLabelText("Call 0 knob: sla_block_size") as HTMLSelectElement
     assert.equal(sel.value, "64")
     r1.unmount()
     render(
-      <BeatKnobControl callIndex={0} knob="h3_sla_block_size" value={undefined} onChange={() => {}} />,
+      <BeatKnobControl callIndex={0} knob="sla_block_size" value={undefined} onChange={() => {}} />,
     )
-    const sel2 = screen.getByLabelText("Call 0 knob: h3_sla_block_size") as HTMLSelectElement
+    const sel2 = screen.getByLabelText("Call 0 knob: sla_block_size") as HTMLSelectElement
     assert.equal(sel2.value, "")
   })
 })
@@ -103,9 +103,9 @@ describe("the number face (card gate owns the floors)", () => {
     assert.deepEqual(seen, [["denoise", 0.9]])
     r1.unmount()
     render(
-      <BeatKnobControl callIndex={2} knob="h3_sla_dense_last_steps" value={undefined} onChange={() => {}} />,
+      <BeatKnobControl callIndex={2} knob="sla_dense_last_steps" value={undefined} onChange={() => {}} />,
     )
-    const int = screen.getByLabelText("Call 2 knob: h3_sla_dense_last_steps") as HTMLInputElement
+    const int = screen.getByLabelText("Call 2 knob: sla_dense_last_steps") as HTMLInputElement
     assert.equal(int.step, "1")
     assert.equal(int.value, "")
     assert.equal(int.placeholder, "inherit")
@@ -116,13 +116,13 @@ describe("the string face + unknown knobs", () => {
   it("free text rides; unset rides undefined", () => {
     const seen: unknown[][] = []
     render(
-      <BeatKnobControl callIndex={0} knob="h3_sla_dense_steps" value="1-3" layerA={ghosted({ h3_sla_dense_steps: "2-4" })} onChange={(k, v) => { seen.push([k, v]) }} />,
+      <BeatKnobControl callIndex={0} knob="sla_dense_steps" value="1-3" layerA={ghosted({ sla_dense_steps: "2-4" })} onChange={(k, v) => { seen.push([k, v]) }} />,
     )
-    const inp = screen.getByLabelText("Call 0 knob: h3_sla_dense_steps") as HTMLInputElement
+    const inp = screen.getByLabelText("Call 0 knob: sla_dense_steps") as HTMLInputElement
     assert.equal(inp.value, "1-3")
     assert.equal(inp.placeholder, "2-4")
     fireEvent.change(inp, { target: { value: "  " } })
-    assert.deepEqual(seen, [["h3_sla_dense_steps", undefined]])
+    assert.deepEqual(seen, [["sla_dense_steps", undefined]])
   })
 
   it("a carrier-absent knob renders a labeled string face (never a crash)", () => {

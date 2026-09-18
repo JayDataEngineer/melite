@@ -124,10 +124,31 @@ const paramSchema = z.object({
   // default) is on-grid; the omitted-key path normalizes to null in
   // schema() so the body computes the family's frame budget.
   length: z.number().description("Frames").min(22).max(362).step(17).default(56).extra('extra', { order: null, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
-  steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', { order: null, tooltip: "12 for draft; 30 standard; 10 with the turbo LoRA", wtype: 'number' }),
+  steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', { order: null, tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)", wtype: 'number' }),
   sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
-  sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
+  sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, visible_when: "sharpen_enabled=true", tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
   interpolate_enabled: z.boolean().description("FILM Interpolation").default("false" as unknown as boolean).extra('extra', { order: null, tooltip: "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time." }),
+  // ── THE ENGINE TRUTH ROWS (2026-09-17, the Layer A/B law stroke):
+  // every key the compose READS rides the declared surface at its
+  // exact wire name — the studio's historical spellings
+  // (sampling_steps / sampler / scheduler / interpolate_model /
+  // interpolate_multiplier / rtx_vsr_enabled) never matched these,
+  // were never read, and die with the studio rework.
+  denoise: z.number().description("Denoise").min(0).max(1).step(0.05).default(1.0).extra('extra', { order: null, wtype: 'number', tooltip: "How much of the latent the sampler rewrites. 1.0 = full denoise (fresh windows); lower inherits structure." }),
+  sampler_name: z.string().description("Sampler").default("euler").extra('extra', { order: null, options: ["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun"], wtype: 'select', tooltip: "The KSampler solver (turbo adapters pair with euler/euler_cfg_pp)." }),
+  sched_name: z.string().description("Scheduler").default("simple").extra('extra', { order: null, options: ["simple", "beta", "linear_quadratic", "normal", "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform"], wtype: 'select', tooltip: "The sigma schedule shape." }),
+  interp_model: z.string().description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, visible_when: "interpolate_enabled=true", options: ["film_net_fp16.safetensors", "rife47.pth"], wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
+  interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." }),
+  sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', { order: null, tooltip: "Upscale the final film through SeedVR2 before saving." }),
+  sr_resolution: z.number().description("Super-Res target").min(720).max(2160).step(360).default(1080).extra('extra', { order: null, visible_when: "sr_switch=true", wtype: 'number', tooltip: "The SeedVR2 output height in px." }),
+  sr_model: z.string().description("Super-Res model").default("seedvr2_ema_3b_fp8_e4m3fn.safetensors").extra('extra', { order: null, wtype: 'select', options: ["seedvr2_ema_3b_fp8_e4m3fn.safetensors"] }),
+  // the R2V COMBO size mode — "match"|"max" ONLY (a number fails
+  // ComfyUI validation on the combo)
+  ref_image_size: z.string().description("Ref size").default("match").extra('extra', { order: null, options: ["match", "max"], wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor, or take the max edge." }),
+  // the 1:1 upstream escape hatch: a raw LTX_lora_loader stack JSON
+  // string (the mod bag `loras` is the sanctioned surface; this rides
+  // for hand-authored parity cases)
+  lora_stack: z.string().description("Lora stack (raw)"),
   // nullable inner: min/max validate only the number branch — null
   // (the family-literal resolution path) passes untouched.
   shift_video: nullable(z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' })),
@@ -149,11 +170,13 @@ const paramSchema = z.object({
   sla_disable_fp16_accum: z.boolean().description("SLA full-precision accum").default(true).extra('extra', { order: null, group: "sla" }),
   // ── the sharpen leaves (compose: only EXPLICITLY-set leaves patch
   // ImageSharpenKJ's grouped dict — bare emission defaults do NOT
-  // change a run that never sets them).
-  sharpen_method: z.string().description("Sharpen Method").extra('extra', { order: null, options: ["rcas", "adaptive_usm", "high_pass", "deconvolution"], wtype: 'select' }),
-  sharpen_radius: z.number().description("Sharpen Radius").min(0.5).max(5).step(0.5).extra('extra', { order: null, wtype: 'number', tooltip: "adaptive_usm / high_pass / deconvolution only." }),
-  sharpen_threshold: z.number().description("Sharpen Noise Gate").min(0).max(1).step(0.05).extra('extra', { order: null, wtype: 'number', tooltip: "adaptive_usm only." }),
-  sharpen_iterations: z.number().description("Sharpen Iterations").min(1).max(100).step(1).extra('extra', { order: null, wtype: 'number', tooltip: "deconvolution only." }),
+  // change a run that never sets them). VISIBILITY rides the
+  // declaration's own visible_when grammar (&-ANDed guards, |-SET
+  // values) — no hand-rolled predicates anywhere.
+  sharpen_method: z.string().description("Sharpen Method").extra('extra', { order: null, visible_when: "sharpen_enabled=true", options: ["rcas", "adaptive_usm", "high_pass", "deconvolution"], wtype: 'select' }),
+  sharpen_radius: z.number().description("Sharpen Radius").min(0.5).max(5).step(0.5).extra('extra', { order: null, visible_when: "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass|deconvolution", wtype: 'number', tooltip: "adaptive_usm / high_pass / deconvolution only." }),
+  sharpen_threshold: z.number().description("Sharpen Noise Gate").min(0).max(1).step(0.05).extra('extra', { order: null, visible_when: "sharpen_enabled=true&sharpen_method=adaptive_usm", wtype: 'number', tooltip: "adaptive_usm only." }),
+  sharpen_iterations: z.number().description("Sharpen Iterations").min(1).max(100).step(1).extra('extra', { order: null, visible_when: "sharpen_enabled=true&sharpen_method=deconvolution", wtype: 'number', tooltip: "deconvolution only." }),
   // NOTE: the calls[] SHOTS surface is deliberately NOT a carrier
   // knob — the carrier feeds the studio's frozen form-spec (the
   // studio owns its own shots editor, ui/studio/docModel) and the
@@ -381,6 +404,18 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // promised. The estate reorders artifacts so the film leads; it
   // never concats.
   let film: { images: OutputHandle, audio: OutputHandle } | undefined
+  // LORA STEPS APPLIED (operator correction, 2026-09-18): a distill
+  // adapter is married to its step count — one lora for four steps,
+  // another for eight — so the resolved bag rows carry `steps` and
+  // the windows honor it. LAYERING: a call's own knobs > the lora
+  // entry's steps > this steps row (the row is the no-distill
+  // default; a stacked pair runs at the HIGHER count — 8 steps on a
+  // 4-step distill is fine, 4 on an 8-step is undercooked).
+  const loraRows = Array.isArray(p.loras) ? (p.loras as Array<Record<string, unknown>>) : []
+  const loraStepsList = loraRows
+    .map((r) => r.steps)
+    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+  const loraStepsApplied = loraStepsList.length > 0 ? Math.max(...loraStepsList) : null
   calls.forEach((call, i) => {
     const k = i + 1
     const guide = str(call.image ?? call.ref_image ?? call.image_name)
@@ -399,6 +434,8 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
 
     const stanza: Record<string, unknown> = { ...p, ...knobs, prompt: text, k, ctx_save_clip_index: k }
     stanza.variant = (guide !== '' || hasRefs) ? 't4r' : chainLike ? 't4_chain' : 't4_open'
+    // the distill's steps apply unless this call's knobs pinned steps
+    if (knobs.steps === undefined && loraStepsApplied !== null) stanza.steps = loraStepsApplied
     if (hasRefs) stanza.refs = call.refs
     if (guide !== '') stanza.image = guide
     else delete stanza.image
@@ -582,7 +619,13 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // the reference resizer (bundle → r2v refs) before the geometry
     // resizer (i2v) — creation mirrors the walk.
     const refBag = (p.refs ?? {}) as Record<string, unknown>
-    const refImages = wireList(refBag.images).slice(0, 9)
+    // THE 9-SLOT IMAGE BUS (the bundle's own topology — the compose
+    // and the UI agree or they lie): inputs 1-9 are IMAGE slots
+    // (the anchor first, then EIGHT refs); input_10 begins the
+    // video lanes. A 9th ref would land ON input_10 — the first
+    // video's image stream — and be silently clobbered; the slice
+    // holds the bus.
+    const refImages = wireList(refBag.images).slice(0, 8)
     const refVideos = wireList(refBag.videos).slice(0, 3)
     const refAudios = wireList(refBag.audios).slice(0, 3)
     const bundleInputs: Record<string, OutputHandle> = {}
@@ -979,6 +1022,14 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       if (film) {
         renderH3Film(p, g)
       } else {
+        // LORA STEPS APPLIED (2026-09-18): the single-window shape
+        // honors the distill bag's steps the same way (no knob layer
+        // here — the entry's steps IS the user's word).
+        if (Array.isArray(p.loras)) {
+          const rows = p.loras as Array<Record<string, unknown>>
+          const applied = rows.map((r) => r.steps).filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+          if (applied.length > 0) p.steps = Math.max(...applied)
+        }
         renderH3Window(p, g)
       }
     },

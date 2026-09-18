@@ -1,5 +1,21 @@
 # families-golden.json regold causes
 
+## 2026-09-17 — the h3-timeline Layer A/B truth pass (studio writes at the wire names)
+
+The studio rework's DECL leg: `studio.writes` carried the py-era
+dead vocabulary (audio_mode, continuity, sampler, scheduler,
+sampling_steps, h3_attention, h3_sage_attention, h3_fp16_accumulation,
+h3_torch_compile, lora_name, lora_strength, seam_carry) — none of it
+compose-read, all of it fiction. The list is now the card's true
+read surface: the engine rows (denoise, sampler_name, sched_name,
+shift_video, shift_audio), the full sla_* family, the sharpen
+leaves (method/radius/threshold/iterations joined the switch),
+interp_model/sr_model/sr_resolution, audio_clips, length, steps,
+and loras (the mod bag — a studio write, never a card knob).
+Regold verified: diff is the writes array alone (27 → 39 keys).
+Walls green after (families-golden, models-against-cards,
+models-flows — 17/17).
+
 ## 2026-09-15 — the h3-timeline DECL gains the MMH3 latent-upscaler provision (late regold)
 
 The provision row (`minimax_h3_latent_upscaler_3d_bf16`, diffusion_models,

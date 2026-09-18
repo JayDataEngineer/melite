@@ -1,23 +1,64 @@
 /**
  * RunRecipeEngine — Recipe + Engine folds (BEHAVIORAL).
  *
- * PINS (the run's clock + sampling base): the route follows the
- * Ref2VA door; the header shows RESOLVED geometry (never lazy
- * placeholders); every knob writes its LayerA key; guards hold
- * (non-positive FPS never writes, a clear never writes).
+ * THE RECIPE STAYS EDITABLE (operator correction, 2026-09-18): the
+ * Model route (FL2VA ↔ Ref2VA), the Preset (the plaguekind default
+ * geometries: draft_02mp / final_hd), and the doc FPS are REAL
+ * document controls — a static readout starved the operator of the
+ * plaguekind defaults. The sampling knobs ride the served form-spec
+ * via SpecPanel at their WIRE names
+ * (sampler_name/sched_name/steps/denoise/shift_*); Seed rides the
+ * panel too. Window width/height are real injects (studio
+ * NumberControls — blank inherits preset geometry). The py-era
+ * fictions (Audio mode, Seam continuity, Attention, FP16/Torch/CFG/
+ * context frames, legacy sampler/scheduling_steps spellings) are
+ * pinned ABSENT.
  */
-import { describe, it } from "vitest"
+import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
+import { schemaEnvelope } from "@melite/card-base"
 import type { LayerA } from "../src/ui/studio/docModel.ts"
+
+function envelope(): unknown {
+  const num = (description: string, dflt: number, meta2: Record<string, unknown> = {}) => ({
+    type: "number", meta: { description, default: dflt, ...meta2 },
+  })
+  const sel = (description: string, consts: string[], dflt: string) => ({
+    consts, meta: { description, default: dflt, extra: { wtype: "select" } },
+  })
+  return {
+    form: "h3-timeline",
+    schema: schemaEnvelope({
+      // sliders write their raw string edits (the atom's law:
+      // "edited as a raw string, coercion once at patch") — the
+      // ranges must cover the asserted values or the range clamps
+      // (the atom's default max is 10). step stays OFF 1: a step of
+      // 1 re-types the field as a seed row.
+      shift_video: num("Video sigma shift", 0, { min: 0, max: 20 }),
+      shift_audio: num("Audio sigma shift", 0, { min: 0, max: 10 }),
+      sampler_name: sel("Sampler (run)", ["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun"], "euler"),
+      sched_name: sel("Scheduler (run)", ["default", "karras", "simple_cfg", "vp", "exponential"], "default"),
+      steps: num("Sampling steps (run)", 20, { min: 4, max: 40 }),
+      denoise: num("Denoise (run)", 0.7, { min: 0, max: 1, step: 0.05 }),
+      seed: { type: "number", meta: { description: "Seed", default: -1, step: 1 } },
+    }),
+    variants: [],
+  }
+}
+
+function serve(): void {
+  vi.stubGlobal("fetch", () =>
+    Promise.resolve(new Response(JSON.stringify(envelope()), { headers: { "content-type": "application/json" } })))
+}
 
 function engine(layerA: Record<string, unknown>, over?: Record<string, unknown>) {
   const keys: [string, unknown][] = []
   const els = render(
     <RunRecipeEngine
       stage={{ params: { width: 800, height: 600 } } as never}
-      layerA={{ preset: "draft_02mp", ...layerA } as unknown as LayerA}
+      layerA={{ preset: "draft_02mp", fps: 24, ...layerA } as unknown as LayerA}
       setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
       isRef2va={false}
       {...over}
@@ -26,113 +67,150 @@ function engine(layerA: Record<string, unknown>, over?: Record<string, unknown>)
   return { keys, els }
 }
 
-describe("recipe (clock + route)", () => {
-  it("the route follows the Ref2VA door and writes", () => {
-    const f = engine({})
-    assert.equal((screen.getByLabelText("Model route") as HTMLSelectElement).value, "h3-timeline")
-    fireEvent.change(screen.getByLabelText("Model route"), { target: { value: "h3-timeline-ref" } })
-    assert.deepEqual(f.keys, [["model", "h3-timeline-ref"]])
-    f.els.unmount()
-    engine({}, { isRef2va: true })
-    assert.equal((screen.getByLabelText("Model route") as HTMLSelectElement).value, "h3-timeline-ref")
+describe("recipe (clock + route) — the document's identity", () => {
+  it("the route select switches the card's model id (FL2VA ↔ Ref2VA)", async () => {
+    serve()
+    const { keys } = engine({})
+    const sel = await screen.findByLabelText("Model route")
+    assert.equal((sel as HTMLSelectElement).value, "h3-timeline")
+    fireEvent.change(sel, { target: { value: "h3-timeline-ref" } })
+    assert.deepEqual(keys, [["model", "h3-timeline-ref"]])
+    cleanup()
   })
 
-  it("preset + FPS + audio + continuity + seed write (guards hold)", () => {
-    const { keys } = engine({ fps: 24, audio_mode: "none", seed: 5 })
-    fireEvent.change(screen.getByLabelText("Preset"), { target: { value: "final_hd" } })
-    fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "30" } })
+  it("the Ref2VA route renders its own face", () => {
+    serve()
+    render(
+      <RunRecipeEngine
+        stage={{ params: { width: 800, height: 600 } } as never}
+        layerA={{ preset: "draft_02mp", fps: 24 } as unknown as LayerA}
+        setLayerAKey={() => {}}
+        isRef2va={true}
+      />,
+    )
+    const sel = screen.getByLabelText("Model route") as HTMLSelectElement
+    assert.equal(sel.value, "h3-timeline-ref")
+    assert.ok(document.body.textContent!.includes("Ref2VA · identity refs"))
+    cleanup()
+  })
+
+  it("preset + FPS are editable document controls (the plaguekind defaults)", async () => {
+    serve()
+    const { keys } = engine({ preset: "final_hd", fps: 30 })
+    await screen.findByText("Clock")
+    assert.ok(document.body.textContent!.includes("final_hd · 800×600 @ 124f · 30 doc-fps"))
+    fireEvent.change(screen.getByLabelText("Preset"), { target: { value: "draft_02mp" } })
+    fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "24" } })
+    assert.deepEqual(keys, [["preset", "draft_02mp"], ["fps", 24]])
+    cleanup()
+  })
+
+  it("a non-positive FPS never writes (the >0 guard)", async () => {
+    serve()
+    const { keys } = engine({ preset: "final_hd", fps: 30 })
+    await screen.findByText("Clock")
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "0" } })
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "" } })
-    fireEvent.change(screen.getByLabelText("Audio mode"), { target: { value: "lipSync" } })
-    fireEvent.click(screen.getByLabelText("Seam continuity"))
-    fireEvent.change(screen.getByLabelText("Seed"), { target: { value: "7" } })
-    fireEvent.change(screen.getByLabelText("Seed"), { target: { value: "" } })
+    assert.deepEqual(keys, [])
+    cleanup()
+  })
+})
+
+describe("engine (served spec — wire names)", () => {
+  it("shifts + sampler + scheduler + steps + denoise write at the wire spelling", async () => {
+    serve()
+    // sliders need a finite base value to render (the refused face
+    // drops the input) — seed them; the preset is draft_02mp so the
+    // tail reads the injected default, not a write.
+    const { keys } = engine({ shift_video: 0, shift_audio: 0, steps: 20, denoise: 1 })
+    await screen.findByText("Video sigma shift")
+    // the spec rows are served sliders (input type=range), scoped to
+    // their labelled row — the estate's row chrome owns the label.
+    // (CSS-module hashes the row class, so scope by the label's
+    // parent element, never a literal class query.)
+    const sliderOf = (label: string): HTMLElement =>
+      within(screen.getByText(label).parentElement!).getByRole("slider") as HTMLElement
+    fireEvent.change(sliderOf("Video sigma shift"), { target: { value: "16" } })
+    fireEvent.change(sliderOf("Audio sigma shift"), { target: { value: "4" } })
+    fireEvent.change(screen.getByLabelText("Sampler (run)"), { target: { value: "heun" } })
+    fireEvent.change(screen.getByLabelText("Scheduler (run)"), { target: { value: "karras" } })
+    fireEvent.change(sliderOf("Sampling steps (run)"), { target: { value: "25" } })
+    fireEvent.change(sliderOf("Denoise (run)"), { target: { value: "0.8" } })
     assert.deepEqual(keys, [
-      ["preset", "final_hd"],
-      ["fps", 30],
-      ["audio_mode", "lipSync"],
-      ["continuity", true],
-      ["seed", 7],
+      ["shift_video", "16"], ["shift_audio", "4"],
+      ["sampler_name", "heun"], ["sched_name", "karras"],
+      ["steps", "25"], ["denoise", "0.8"],
     ])
+    cleanup()
+  })
+
+  it("seed rides the served spec at its wire name", async () => {
+    serve()
+    const { keys } = engine({ seed: -1 })
+    const el = await screen.findByLabelText("Seed")
+    fireEvent.change(el, { target: { value: "7" } })
+    // the raw-string edit law (coercion once at patch)
+    assert.deepEqual(keys, [["seed", "7"]])
+    cleanup()
   })
 })
 
 describe("engine header (resolved, never placeholders)", () => {
   it("stage params win; otherwise the preset geometry rides", () => {
-    engine({ sampling_steps: 20 })
+    serve()
+    engine({ steps: 20 })
     assert.ok(screen.getByText("Engine (H3)"))
-    const tail = document.body.textContent!
-    assert.ok(tail.includes("window 800×600 · steps 20"))
+    assert.ok(document.body.textContent!.includes("window 800×600 · steps 20"))
+    cleanup()
   })
 
   it("no stage params = preset geometry; no steps = auto; unknown preset falls back to draft", () => {
-    const keys: [string, unknown][] = []
+    serve()
     const h1 = render(
       <RunRecipeEngine
         stage={{} as never}
-        layerA={{ preset: "final_hd" } as unknown as LayerA}
-        setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
+        layerA={{ preset: "final_hd", fps: 24 } as unknown as LayerA}
+        setLayerAKey={() => {}}
         isRef2va={false}
       />,
     )
     assert.ok(document.body.textContent!.includes("window 1344×768 · steps auto"))
     h1.unmount()
+    serve()
     render(
       <RunRecipeEngine
         stage={{} as never}
-        layerA={{ preset: "nope" } as unknown as LayerA}
+        layerA={{ preset: "nope", fps: 24 } as unknown as LayerA}
         setLayerAKey={() => {}}
         isRef2va={false}
       />,
     )
     assert.ok(document.body.textContent!.includes("window 768×448 · steps auto"))
+    cleanup()
+  })
+
+  it("window width/height are real injects (blank inherits preset geometry)", () => {
+    serve()
+    const { keys } = engine({})
+    fireEvent.change(screen.getByLabelText("Window width (run)"), { target: { value: "1024" } })
+    fireEvent.change(screen.getByLabelText("Window height (run)"), { target: { value: "512" } })
+    assert.deepEqual(keys, [["width", 1024], ["height", 512]])
+    cleanup()
   })
 })
 
-describe("engine knobs (forwarded verbatim)", () => {
-  it("shifts + sampler + scheduler + steps + denoise write", () => {
-    const { keys } = engine({ denoise: 1 })
-    fireEvent.change(screen.getByLabelText("Video sigma shift"), { target: { value: "16" } })
-    fireEvent.change(screen.getByLabelText("Audio sigma shift"), { target: { value: "4" } })
-    fireEvent.change(screen.getByLabelText("Sampler (run)"), { target: { value: "heun" } })
-    fireEvent.change(screen.getByLabelText("Sampler (run)"), { target: { value: "" } })
-    fireEvent.change(screen.getByLabelText("Scheduler (run)"), { target: { value: "karras" } })
-    fireEvent.change(screen.getByLabelText("Sampling steps (run)"), { target: { value: "25" } })
-    fireEvent.change(screen.getByLabelText("Denoise (run)"), { target: { value: "0.8" } })
-    fireEvent.change(screen.getByLabelText("Denoise (run)"), { target: { value: "" } })
-    assert.deepEqual(keys, [
-      ["shift_video", 16],
-      ["shift_audio", 4],
-      ["sampler", "heun"],
-      ["sampler", undefined],
-      ["scheduler", "karras"],
-      ["sampling_steps", 25],
-      ["denoise", 0.8],
-      ["denoise", undefined],
-    ])
-  })
-
-  it("window + attention + flags + contexts write", () => {
-    const { keys } = engine({ shift_video: 12, shift_audio: 3 })
-    fireEvent.change(screen.getByLabelText("Window width (run)"), { target: { value: "1024" } })
-    fireEvent.change(screen.getByLabelText("Window height (run)"), { target: { value: "512" } })
-    fireEvent.change(screen.getByLabelText("Attention (run)"), { target: { value: "sla" } })
-    fireEvent.change(screen.getByLabelText("Attention (run)"), { target: { value: "" } })
-    fireEvent.click(screen.getByLabelText("FP16 accumulation (run)"))
-    fireEvent.click(screen.getByLabelText("Torch compile (run)"))
-    fireEvent.change(screen.getByLabelText("CFG (run)"), { target: { value: "5" } })
-    fireEvent.change(screen.getByLabelText("Motion context frames (run)"), { target: { value: "4" } })
-    fireEvent.change(screen.getByLabelText("Audio context steps (run)"), { target: { value: "60" } })
-    assert.deepEqual(keys, [
-      ["width", 1024],
-      ["height", 512],
-      ["h3_attention", "sla"],
-      ["h3_attention", undefined],
-      ["h3_fp16_accumulation", true],
-      ["h3_torch_compile", true],
-      ["cfg", 5],
-      ["h3_context_steps", 4],
-      ["h3_audio_context_steps", 60],
-    ])
+describe("the dead recipe fictions stay dead (pinned absent)", () => {
+  it("no audio/continuity/attention/fps16/cfg/context knobs", async () => {
+    serve()
+    engine({})
+    await screen.findByText("Engine (H3)")
+    for (const dead of [
+      "Audio mode", "Seam continuity", "Attention (run)",
+      "FP16 accumulation (run)", "Torch compile (run)", "CFG (run)",
+      "Motion context frames (run)", "Audio context steps (run)",
+    ]) {
+      assert.equal(screen.queryByLabelText(dead), null, dead)
+    }
+    cleanup()
   })
 })

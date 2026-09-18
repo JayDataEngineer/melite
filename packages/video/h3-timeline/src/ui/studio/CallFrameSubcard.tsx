@@ -1,7 +1,19 @@
 /**
  * h3-timeline studio split (2026-09-06) — PURE MOVE from
- * ui/studio/component.tsx. No behavior change: headers/footers are new,
- * every logic line is verbatim from the monolith (source range noted).
+ * ui/studio/component.tsx.
+ *
+ * THE BUNDLE SPLIT (operator correction, 2026-09-18): the first
+ * frame and the reference images are NOT alien categories — they
+ * are slots on ONE image bus (first frame = slot 1, the anchor;
+ * refs = slots 2-9). This file now exports the two PIECES the
+ * unified Reference bundle panel seats:
+ *   • FirstFrameSlot — the anchor's image square (the estate's
+ *     SourceRow grammar, at parity with every other image input:
+ *     From flow / From media / From file), writing `image`.
+ *   • SeamControls — the call's seam law (how this call joins the
+ *     previous one: cut re-feeds the previous VIDEO tail; extend
+ *     chains the previous LATENT). Seam concepts, not bundle
+ *     concepts — they ride under the bus, never inside a slot.
  */
 import { useState } from "react"
 import { Input, Switch } from "@deepseek-ai/dsh-client-ui-primitives"
@@ -12,28 +24,19 @@ import { fetchMediaLibrary } from "@melite/card-base/media-library"
 import s from "./studio.module.css"
 import type { LinkArtifact } from "./refUtils"
 
-/** One frame-conditioning subcard — a FULL image input, at parity with
- * every other image slot (2026-08-24 upgrade: "first frame / last frame
- * are weak versions compared to other image input nodes — I can't link
- * back to previous outputs"). The affordances:
- *
- *   THE SOURCE ROW (2026-09-13, the operator's law: ONE generic input
- *   component, no exceptions — even the studio): the bespoke SlotSquare
- *   + typed source line + inline link panel are DEAD. This subcard
- *   rides @melite/card-base's SourceRow — the same plus square, the
- *   same three-entry menu (From flow / From media / From file):
- *     • From flow lists the upstream cards' IMAGE artifacts (links);
- *       the write maps URL→NAME (the drop-honesty law: an unmatched
- *       URL writes NOTHING — it would pass through unresolved).
- *     • From file keeps the studio's OWN file law (image-only, 20 MB
- *       cap, readAsDataURL → data: URL; _resolveSource decodes data:
- *       first-class) through the wire's onFile override.
- *     • From media lists the runs library through the same door; the
- *       URL→NAME honesty applies (foreign URLs refuse visibly).
- *   • the FIRST frame's exception — the prev-video continuation toggle
- *     ("use the last X seconds of the previous video", rule 3b). */
-export function CallFrameSubcard({
-  label,
+/** The anchor slot — ONE image square in the bus grammar
+ * (2026-08-24 affordance law: "first frame / last frame are weak
+ * versions compared to other image input nodes — I can't link back
+ * to previous outputs"):
+ *   • From flow lists the upstream cards' IMAGE artifacts (links);
+ *     the write maps URL→NAME (the drop-honesty law: an unmatched
+ *     URL writes NOTHING — it would pass through unresolved).
+ *   • From file keeps the studio's OWN file law (image-only, 20 MB
+ *     cap, readAsDataURL → data: URL; _resolveSource decodes data:
+ *     first-class) through the wire's onFile override.
+ *   • From media lists the runs library through the same door; the
+ *     URL→NAME honesty applies (foreign URLs refuse visibly). */
+export function FirstFrameSlot({
   testId,
   callIndex,
   value,
@@ -41,14 +44,7 @@ export function CallFrameSubcard({
   nameToUrl,
   urlToName,
   links,
-  prevSec,
-  onPrevSec,
-  transition,
-  onTransition,
-  prevDisabled,
-  prevNote,
 }: {
-  label: string
   testId: string
   callIndex: number
   value: string | undefined
@@ -57,14 +53,6 @@ export function CallFrameSubcard({
   urlToName: Map<string, string>
   /** Upstream IMAGE artifacts — the link-to-previous-output rows. */
   links?: LinkArtifact[]
-  /** Present only on the FIRST-frame subcard — the prev-video opener. */
-  prevSec?: number
-  onPrevSec?: (sec: number | null) => void
-  /** Seam mode: 'cut' = prev VIDEO tail opener; 'extend' = LATENT chain. */
-  transition?: "extend" | "cut"
-  onTransition?: (t: "extend" | "cut") => void
-  prevDisabled?: boolean
-  prevNote?: string
 }) {
   const [fileError, setFileError] = useState<string | null>(null)
   const v = value?.trim() ?? ""
@@ -89,18 +77,14 @@ export function CallFrameSubcard({
     }
   }
   return (
-    <div data-testid={testId} className={s.sub}>
-      <div className={s.subHead}>
-        <span className={s.subTitle}>
-          {label}
-        </span>
-      </div>
+    <span data-testid={testId} className={s.busAnchor}>
       {/* THE SOURCE ROW — one grammar with every input in the system
           (the operator's law); the studio's vocabulary adapters ride
-          the props, not a second face. */}
+          the props, not a second face. The label states the slot's
+          role in the bus (the anchor is a REFERENCE slot with extra
+          semantics, never an alien category). */}
       <SourceRow
-        label={label}
-        hideLabel
+        label="first frame · slot 1"
         kind="image"
         value={v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v}
         candidates={(links ?? []).map((a) => ({ id: a.name, label: a.name, url: a.url }))}
@@ -122,7 +106,35 @@ export function CallFrameSubcard({
           {fileError}
         </span>
       )}
-      {onPrevSec && onTransition && (
+    </span>
+  )
+}
+
+/** The call's seam law — cut vs extend, and the prev-video/latent
+ * continuation (rule 3b). Renders under the image bus (the seam is
+ * the CALL'S join, not a bundle slot). */
+export function SeamControls({
+  callIndex,
+  prevSec,
+  onPrevSec,
+  transition,
+  onTransition,
+  prevDisabled,
+  prevNote,
+  testId,
+}: {
+  callIndex: number
+  prevSec?: number
+  onPrevSec?: (sec: number | null) => void
+  transition?: "extend" | "cut"
+  onTransition?: (t: "extend" | "cut") => void
+  prevDisabled?: boolean
+  prevNote?: string
+  testId: string
+}) {
+  return (
+    <>
+      {onTransition !== undefined && (
         <div
           className={s.seamRow}
           title="How this call joins the previous one: cut re-feeds the previous VIDEO tail as an opener clip; extend chains the previous LATENT — seamless motion, texture and audio phase carry across the seam"
@@ -135,77 +147,77 @@ export function CallFrameSubcard({
               { value: "cut", label: "cut — prev video opener" },
               { value: "extend", label: "extend — latent chain" },
             ]}
-            onChange={(v) => onTransition(v === "extend" ? "extend" : "cut")}
+            onChange={(v) => onTransition?.(v === "extend" ? "extend" : "cut")}
             className={s.wFull}
             buttonClassName={s.mono}
           />
         </div>
       )}
-      {onPrevSec && (
-        <label
-          className={cn(s.prevLabel, prevDisabled ? s.prevLabelOff : s.prevLabelOn)}
-          title={prevNote}
-        >
-          <span data-testid={testId + "-prev-toggle"}>
-            <Switch
-              label={"Call " + callIndex + " continue from previous"}
-              disabled={prevDisabled}
-              checked={prevSec != null}
-              onChange={(v) => onPrevSec(v ? (transition === "extend" ? 3 : 2) : null)}
-            />
-          </span>
-          {transition === "extend" ? (
-            <>
-              <span className={s.nowrap}>chain the last</span>
-              {prevSec != null && (
-                <Input
-                  type="number" min={0.5} step={0.5}
-                  value={prevSec}
-                  aria-label={"Call " + callIndex + " latent carry seconds"}
-                  data-testid={testId + "-prev-sec"}
-                  onChange={(e) => {
-                    const n = Number(e.target.value)
-                    if (Number.isFinite(n) && n > 0) onPrevSec(n)
-                  }}
-                  className={s.prevNum}
-                />
-              )}
-              <span className={s.nowrap}>s of the previous latent</span>
-              {prevSec != null && (
-                <span className={s.prevCarryNote}>
-                  seamless carry — the motion-context node splices the previous window's latent tail; carried slots hold bit-exact while the rest denoises (windows stitch into one continuous clip)
-                </span>
-              )}
-            </>
-          ) : (
-            <>
-              <span className={s.nowrap}>open from the last</span>
-              {prevSec != null && (
-                <Input
-                  type="number" min={0.5} step={0.5}
-                  value={prevSec}
-                  aria-label={"Call " + callIndex + " previous video tail seconds"}
-                  data-testid={testId + "-prev-sec"}
-                  onChange={(e) => {
-                    const n = Number(e.target.value)
-                    if (Number.isFinite(n) && n > 0) onPrevSec(n)
-                  }}
-                  className={cn(s.prevNum, s.prevNum9)}
-                />
-              )}
-              <span className={s.nowrap}>s of the previous video</span>
-              {prevSec != null && (
-                <span className={s.prevNote}>
-                  the tail carries the opening motion — the plan snaps it to the guide-clip packing rule
-                </span>
-              )}
-            </>
-          )}
-          {prevDisabled && (
-            <span className={s.prevNote}>{prevNote}</span>
-          )}
-        </label>
+      {onPrevSec !== undefined && (
+      <label
+        className={cn(s.prevLabel, prevDisabled ? s.prevLabelOff : s.prevLabelOn)}
+        title={prevNote}
+      >
+        <span data-testid={testId + "-prev-toggle"}>
+          <Switch
+            label={"Call " + callIndex + " continue from previous"}
+            disabled={prevDisabled}
+            checked={prevSec != null}
+            onChange={(v) => onPrevSec?.(v ? (transition === "extend" ? 3 : 2) : null)}
+          />
+        </span>
+        {transition === "extend" ? (
+          <>
+            <span className={s.nowrap}>chain the last</span>
+            {prevSec != null && (
+              <Input
+                type="number" min={0.5} step={0.5}
+                value={prevSec}
+                aria-label={"Call " + callIndex + " latent carry seconds"}
+                data-testid={testId + "-prev-sec"}
+                onChange={(e) => {
+                  const n = Number(e.target.value)
+                  if (Number.isFinite(n) && n > 0) onPrevSec?.(n)
+                }}
+                className={s.prevNum}
+              />
+            )}
+            <span className={s.nowrap}>s of the previous latent</span>
+            {prevSec != null && (
+              <span className={s.prevNote}>
+                seamless carry — the motion-context node splices the previous window's latent tail; carried slots hold bit-exact while the rest denoises (windows stitch into one continuous clip)
+              </span>
+            )}
+          </>
+        ) : (
+          <>
+            <span className={s.nowrap}>open from the last</span>
+            {prevSec != null && (
+              <Input
+                type="number" min={0.5} step={0.5}
+                value={prevSec}
+                aria-label={"Call " + callIndex + " previous video tail seconds"}
+                data-testid={testId + "-prev-sec"}
+                onChange={(e) => {
+                  const n = Number(e.target.value)
+                  if (Number.isFinite(n) && n > 0) onPrevSec?.(n)
+                }}
+                className={cn(s.prevNum, s.prevNum9)}
+              />
+            )}
+            <span className={s.nowrap}>s of the previous video</span>
+            {prevSec != null && (
+              <span className={s.prevNote}>
+                the tail carries the opening motion — the plan snaps it to the guide-clip packing rule
+              </span>
+            )}
+          </>
+        )}
+        {prevDisabled && (
+          <span className={s.prevNote}>{prevNote}</span>
+        )}
+      </label>
       )}
-    </div>
+    </>
   )
 }

@@ -567,6 +567,39 @@ describe("compose (the model path)", () => {
     assert.equal(seen[2]!["loras"], "not-a-list", "non-list loras pass through");
   });
 
+  // ── STEPS APPLIED (2026-09-18, the operator's plaguekind law):
+  // a distill row's married step count resolves onto the entry; the
+  // caller's own stated count wins over the row's; unstated stays
+  // unstated (a non-distill lora has no count to claim). ──
+  it("lora steps resolve (row seeds, caller wins, name rows pass verbatim)", async () => {
+    const seen: Record<string, unknown>[] = [];
+    const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });
+    svc.registerPack({ pack: "loras", fields: fields({}) });
+    svc.registerFlavor({
+      pack: "loras",
+      families: ["fam1"],
+      rows: [
+        { id: "dareties", filename: "dareties.safetensors", source_url: "https://h/d", steps: 4 },
+        { id: "turbo", filename: "turbo.safetensors", source_url: "https://h/t", steps: 8 },
+      ],
+    });
+    // the row's count seeds an unstated entry
+    svc.compose("card1", "fam1", { loras: [{ id: "turbo", strength: 0.6 }] }, "s1");
+    assert.deepEqual(seen[0]!["loras"], [{ name: "turbo.safetensors", strength: 0.6, steps: 8 }]);
+    // the caller's stated count wins over the row's
+    svc.compose("card1", "fam1", { loras: [{ id: "turbo", strength: 0.6, steps: 5 }] }, "s2");
+    assert.deepEqual(seen[1]!["loras"], [{ name: "turbo.safetensors", strength: 0.6, steps: 5 }]);
+    // a name-row carries its stated count verbatim; a steps-less
+    // name-row stays steps-less
+    svc.compose("card1", "fam1", { loras: [{ name: "raw.safetensors", strength: 0.4, steps: 6 }] }, "s3");
+    assert.deepEqual(seen[2]!["loras"], [{ name: "raw.safetensors", strength: 0.4, steps: 6 }]);
+    svc.compose("card1", "fam1", { loras: [{ name: "raw.safetensors", strength: 0.4 }] }, "s4");
+    assert.deepEqual(seen[3]!["loras"], [{ name: "raw.safetensors", strength: 0.4 }]);
+    // a non-number steps claim is ignored (never a NaN on the wire)
+    svc.compose("card1", "fam1", { loras: [{ id: "dareties", steps: "four" as unknown }] }, "s5");
+    assert.deepEqual(seen[4]!["loras"], [{ name: "dareties.safetensors", strength: 1.0, steps: 4 }]);
+  });
+
   it("hand-authored weight rows honor the weight (strength-first, never silent full)", async () => {
     const seen: Record<string, unknown>[] = [];
     const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });

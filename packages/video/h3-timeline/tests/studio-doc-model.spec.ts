@@ -10,16 +10,13 @@
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
 import {
-  AUDIO_MODES,
   CALL_KNOB_KEYS,
   GUIDE_KINDS,
   H3_ENHANCE_SYSTEM,
   KIND_OF_TRACK,
   KNOB_LABELS,
+  LEGACY_KNOB_KEY,
   KNOB_ORDER,
-  SAMPLER_OPTIONS,
-  SCHEDULER_OPTIONS,
-  SPEED_LORA_OPTIONS,
   STARTER_CALLS,
   VIDEO_TIMELINE_TRACKS,
   stemToClip,
@@ -69,29 +66,35 @@ describe("the vocabulary invariants (what the serializers assume)", () => {
   it("KNOB_ORDER keys all carry labels", () => {
     assert.ok(KNOB_ORDER.length > 0)
     for (const k of KNOB_ORDER) assert.ok(KNOB_LABELS[k], `${k} is labeled`)
-    // the canonical pair rides once (never two fighting siblings)
-    assert.equal(KNOB_ORDER.filter((k) => k === "sampling_steps").length, 1)
+    // the wire-name steps rides ONCE (never the py-era sampling_steps twin)
+    assert.equal(KNOB_ORDER.filter((k) => k === "steps").length, 1)
+    assert.ok(!KNOB_ORDER.includes("sampling_steps" as never))
   })
 
-  it("CALL_KNOB_KEYS admits the per-call vocabulary (steps rides as sampling_steps)", () => {
-    assert.ok(CALL_KNOB_KEYS.has("sampling_steps"))
+  it("CALL_KNOB_KEYS admits the card's wire-name vocabulary", () => {
     assert.ok(CALL_KNOB_KEYS.has("steps"))
     assert.ok(CALL_KNOB_KEYS.has("denoise"))
-    assert.ok(CALL_KNOB_KEYS.has("interpolate_model"))
-    // recipe-level / retired keys are NOT per-call vocabulary
+    assert.ok(CALL_KNOB_KEYS.has("sampler_name"))
+    assert.ok(CALL_KNOB_KEYS.has("sched_name"))
+    assert.ok(CALL_KNOB_KEYS.has("interp_model"))
+    assert.ok(CALL_KNOB_KEYS.has("interp_multiplier"))
+    assert.ok(CALL_KNOB_KEYS.has("length"))
+    // recipe-level / retired / py-era keys are NOT per-call vocabulary
     assert.ok(!CALL_KNOB_KEYS.has("h3_attention"))
     assert.ok(!CALL_KNOB_KEYS.has("h3_fp16_accumulation"))
+    assert.ok(!CALL_KNOB_KEYS.has("sampling_steps"))
+    assert.ok(!CALL_KNOB_KEYS.has("sampler"))
+    assert.ok(!CALL_KNOB_KEYS.has("scheduler"))
+    assert.ok(!CALL_KNOB_KEYS.has("interpolate_model"))
   })
 
-  it("the engine option lists are non-empty", () => {
-    assert.ok(SAMPLER_OPTIONS.includes("euler"))
-    assert.ok(SCHEDULER_OPTIONS.includes("simple"))
-    assert.ok(SPEED_LORA_OPTIONS.length >= 1)
-    assert.ok(SPEED_LORA_OPTIONS.every((o) => o.value && o.label))
-  })
-
-  it("audio modes are the three the run door reads", () => {
-    assert.deepEqual([...AUDIO_MODES], ["none", "native", "lipSync"])
+  it("LEGACY_KNOB_KEY migrates every py-era spelling to a wire name", () => {
+    for (const wire of Object.values(LEGACY_KNOB_KEY)) {
+      assert.ok(CALL_KNOB_KEYS.has(wire) || wire === "steps", `${wire} must be live vocabulary`)
+    }
+    assert.equal(LEGACY_KNOB_KEY.sampling_steps, "steps")
+    assert.equal(LEGACY_KNOB_KEY.h3_sla_sparsity, "sla_sparsity")
+    assert.equal(LEGACY_KNOB_KEY.interpolate_multiplier, "interp_multiplier")
   })
 
   it("the enhance system pins ONE-shot H3 JSON output", () => {

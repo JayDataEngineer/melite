@@ -119,8 +119,11 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
       expect(p.onPatch).toHaveBeenCalled()
     })
     const patch = (p.onPatch as ReturnType<typeof vi.fn>).mock.calls.at(-1)![0] as Record<string, unknown>
+    // the write channel's vocabulary: the doc clock + the WIRE knobs
+    // (the py-era audio_mode/continuity fictions died with the rework)
     expect(Object.keys(patch).every((k) =>
-      ['calls', 'keyframes', 'preset', 'fps', 'seed', 'audio_mode', 'continuity', 'audio_clips', 'audio_stem', 'length', 'prompt', 'image', 'width', 'height', 'steps'].includes(k))).toBe(true)
+      ['calls', 'keyframes', 'preset', 'fps', 'seed', 'audio_clips', 'audio_stem', 'length', 'prompt', 'image', 'width', 'height', 'steps', 'denoise', 'sampler_name', 'sched_name', 'shift_video', 'shift_audio', 'loras'].includes(k)
+      || k.startsWith('sla_') || k.startsWith('sharpen_') || k.startsWith('interp_') || k.startsWith('sr_'))).toBe(true)
     const calls = patch['calls'] as Array<{ text?: string }>
     expect(calls[0]!.text).toBe('rain streaks the glass')
   })
@@ -204,17 +207,17 @@ describe('RunAdvancedPanels (stroke 35 — the master-form inheritance)', () => 
     expect(screen.queryByText('SLA sparsity')).toBeNull()
   })
 
-  it('the document-local rows stay hand-rolled (document vocabulary, never card knobs)', async () => {
+  it('the hand-rolled document rows are GONE (served spec only — the py-era (run) vocabulary never returns)', async () => {
     stubSpecServe(envelopeSpec())
     render(h(RunAdvancedPanels, {
-      layerA: { sharpen_enabled: false, interpolate_enabled: true, crf: 19 } as unknown as LayerA,
+      layerA: { sharpen_enabled: false, interpolate_enabled: true, sr_switch: true, crf: 19 } as unknown as LayerA,
       setLayerAKey: () => {},
     }))
     await screen.findByText('Post-processing')
-    // interpolation model/multiplier + CRF are the DOCUMENT's own
-    // (interp_*/codec vocabulary at compose) — hand-rolled is the law
-    expect(screen.getByLabelText('Interpolation model (run)')).toBeTruthy()
-    expect(screen.getByLabelText('Interpolation multiplier (run)')).toBeTruthy()
-    expect(screen.getByLabelText('Output CRF (run)')).toBeTruthy()
+    // the envelope declares no interp/sr leaves → no ghosts; the
+    // declaration (visible_when), not the panel, owns every leaf law
+    expect(screen.queryByLabelText('Interpolation model (run)')).toBeNull()
+    expect(screen.queryByLabelText('Interpolation multiplier (run)')).toBeNull()
+    expect(screen.queryByLabelText('Output CRF (run)')).toBeNull()
   })
 })

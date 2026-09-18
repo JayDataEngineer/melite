@@ -52,49 +52,46 @@ export interface DocCall {
   refs?: CallRefs
 }
 
-/** The per-call refs bag — comma-separated STRINGS on BOTH sides now:
- * the UI form and the wire form match (the backend stagers read
- * IsString; the 2026-09-02 audit caught this serializer writing
- * arrays the compiler silently dropped). Legacy array-form documents
- * hydrate fine (the reader joins arrays). */
+/** The per-call refs bag — comma-separated STRINGS on BOTH sides:
+ * the UI form and the wire form match (the card's wireList law —
+ * trimmed entries, empties absent). Legacy array-form documents
+ * hydrate fine (the reader joins arrays). The video_audios bucket
+ * died 2026-09-17: the bundle never mounted it. */
 export interface CallRefs {
   images?: string
   videos?: string
   audios?: string
-  video_audios?: string
 }
 
-/** The per-call knob vocabulary the studio exposes. sampling_steps IS
- * the canonical steps (the backend canonicalizes the pair — one knob,
- * never two fighting siblings). Values are the RAW override values;
- * `undefined` = inherit (absent from the serialized beat). */
+/** The per-call knob vocabulary the studio exposes — the card's wire
+ * names (steps, sampler_name, sla_*, interp_*). Values are the RAW
+ * override values; `undefined` = inherit (absent from the serialized
+ * call). */
 export interface BeatKnobs {
-  sampling_steps?: number
+  /** per-call window length pin (frames) — the span rider law:
+   * when set, the window's length is THIS, not the span-derived
+   * snap (card compose honors knobs.length). */
+  length?: number
+  steps?: number
   /** (knob-audit law 2026-09-02) per-call denoise override — real
    * inject (Scheduler.0.denoise); the parser branch existed in
    * KNOB_ORDER but not in hydration, so a loaded doc silently DROPPED
    * it. Both directions now live. */
   denoise?: number
-  sampler?: string
-  scheduler?: string
+  sampler_name?: string
+  sched_name?: string
   shift_video?: number
   shift_audio?: number
-  h3_attention?: "kitchen" | "sol" | "sage" | "sla"
-  h3_fp16_accumulation?: boolean
-  h3_torch_compile?: boolean
-  cfg?: number
-  h3_context_steps?: number
-  h3_audio_context_steps?: number
-  h3_sla_sparsity?: number
-  h3_sla_block_size?: "32" | "64" | "128"
-  h3_sla_min_seq_len?: number
-  h3_sla_dense_last_steps?: number
-  h3_sla_protect_audio?: boolean
-  h3_sla_stabilize_motion?: boolean
-  h3_sla_reference_protection?: "Off" | "Light" | "Heavy Enforcement"
-  h3_sla_dense_backend?: "comfy_kitchen" | "pytorch" | "auto"
-  h3_sla_dense_steps?: string
-  h3_sla_disable_fp16_accum?: boolean
+  sla_sparsity?: number
+  sla_block_size?: "32" | "64" | "128"
+  sla_min_seq_len?: number
+  sla_dense_last_steps?: number
+  sla_protect_audio?: boolean
+  sla_stabilize_motion?: boolean
+  sla_reference_protection?: "Off" | "Light" | "Heavy Enforcement"
+  sla_dense_backend?: "comfy_kitchen" | "pytorch" | "auto"
+  sla_dense_steps?: string
+  sla_disable_fp16_accum?: boolean
   sharpen_enabled?: boolean
   sharpen_method?: "rcas" | "adaptive_usm" | "high_pass" | "deconvolution"
   sharpen_strength?: number
@@ -102,8 +99,8 @@ export interface BeatKnobs {
   sharpen_threshold?: number
   sharpen_iterations?: number
   interpolate_enabled?: boolean
-  interpolate_model?: "film_net_fp16.safetensors" | "rife47.pth"
-  interpolate_multiplier?: number
+  interp_model?: "film_net_fp16.safetensors" | "rife47.pth"
+  interp_multiplier?: number
 }
 
 /** The backend's CALL_KNOB_KEYS vocabulary — hydration accepts only
@@ -124,50 +121,59 @@ export interface BeatKnobs {
  * (ref2va images only). (2026-09-02 knob audit) sharpen radius /
  * threshold / iterations RE-ADMITTED — they are real ImageSharpenKJ
  * grouped-widget sub-inputs and now carry card_knobs entries. */
+/* THE CALL-KNOB VOCABULARY (the Layer A/B law stroke, 2026-09-17):
+ * the stanza keys the CARD's compose actually reads — the wire names,
+ * no studio dialect. The py-era spellings (sampling_steps / sampler /
+ * scheduler / h3_sla_* / interpolate_model / interpolate_multiplier)
+ * never matched the card's reads and were silently ignored by
+ * compose; they migrate at hydration (LEGACY_KNOB_KEY) and never
+ * serialize again. */
 export const CALL_KNOB_KEYS = new Set([
-  "sampling_steps", "steps", "denoise", "sampler", "scheduler",
+  "steps", "denoise", "sampler_name", "sched_name",
   "shift_video", "shift_audio",
-  "h3_sla_sparsity", "h3_sla_block_size",
-  "h3_sla_min_seq_len", "h3_sla_dense_last_steps",
-  "h3_sla_protect_audio", "h3_sla_stabilize_motion",
-  "h3_sla_reference_protection", "h3_sla_dense_backend",
-  "h3_sla_dense_steps", "h3_sla_disable_fp16_accum",
+  "sla_sparsity", "sla_block_size",
+  "sla_min_seq_len", "sla_dense_last_steps",
+  "sla_protect_audio", "sla_stabilize_motion",
+  "sla_reference_protection", "sla_dense_backend",
+  "sla_dense_steps", "sla_disable_fp16_accum",
   "sharpen_enabled", "sharpen_method", "sharpen_strength",
   "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
-  "interpolate_enabled", "interpolate_model", "interpolate_multiplier",
+  "interpolate_enabled", "interp_model", "interp_multiplier",
+  "length",
 ])
 
 export const KNOB_ORDER = [
-  "sampling_steps", "denoise", "sampler", "scheduler",
+  "steps", "denoise", "sampler_name", "sched_name",
   "shift_video", "shift_audio",
-  "h3_sla_sparsity", "h3_sla_block_size",
-  "h3_sla_min_seq_len", "h3_sla_dense_last_steps",
-  "h3_sla_protect_audio", "h3_sla_stabilize_motion",
-  "h3_sla_reference_protection", "h3_sla_dense_backend",
-  "h3_sla_dense_steps", "h3_sla_disable_fp16_accum",
+  "sla_sparsity", "sla_block_size",
+  "sla_min_seq_len", "sla_dense_last_steps",
+  "sla_protect_audio", "sla_stabilize_motion",
+  "sla_reference_protection", "sla_dense_backend",
+  "sla_dense_steps", "sla_disable_fp16_accum",
   "sharpen_enabled", "sharpen_method", "sharpen_strength",
   "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
-  "interpolate_enabled", "interpolate_model", "interpolate_multiplier",
+  "interpolate_enabled", "interp_model", "interp_multiplier",
+  "length",
 ] as const
 export type KnobKey = (typeof KNOB_ORDER)[number]
 
 export const KNOB_LABELS: Record<KnobKey, string> = {
-  sampling_steps: "Sampling steps",
+  steps: "Steps",
   denoise: "Denoise",
-  sampler: "Sampler",
-  scheduler: "Scheduler",
+  sampler_name: "Sampler",
+  sched_name: "Scheduler",
   shift_video: "Video shift",
   shift_audio: "Audio shift",
-  h3_sla_sparsity: "SLA sparsity",
-  h3_sla_block_size: "SLA block size",
-  h3_sla_min_seq_len: "SLA min seq len",
-  h3_sla_dense_last_steps: "SLA dense last steps",
-  h3_sla_protect_audio: "SLA protect audio",
-  h3_sla_stabilize_motion: "SLA stabilize motion",
-  h3_sla_reference_protection: "SLA ref protection",
-  h3_sla_dense_backend: "SLA dense backend",
-  h3_sla_dense_steps: "SLA dense steps",
-  h3_sla_disable_fp16_accum: "SLA full-prec accum",
+  sla_sparsity: "SLA sparsity",
+  sla_block_size: "SLA block size",
+  sla_min_seq_len: "SLA min seq len",
+  sla_dense_last_steps: "SLA dense last steps",
+  sla_protect_audio: "SLA protect audio",
+  sla_stabilize_motion: "SLA stabilize motion",
+  sla_reference_protection: "SLA ref protection",
+  sla_dense_backend: "SLA dense backend",
+  sla_dense_steps: "SLA dense steps",
+  sla_disable_fp16_accum: "SLA full-prec accum",
   sharpen_enabled: "Sharpen",
   sharpen_method: "Sharpen method",
   sharpen_strength: "Sharpen strength",
@@ -175,8 +181,29 @@ export const KNOB_LABELS: Record<KnobKey, string> = {
   sharpen_threshold: "Sharpen noise gate",
   sharpen_iterations: "Sharpen iterations",
   interpolate_enabled: "Interpolate",
-  interpolate_model: "Interp model",
-  interpolate_multiplier: "Interp multiplier",
+  interp_model: "Interp model",
+  interp_multiplier: "Interp multiplier",
+  length: "Window length (frames)",
+}
+
+/** The py-era knob spellings → the card's wire names. Hydration
+ * migrates; serialization only ever writes the wire names. */
+export const LEGACY_KNOB_KEY: Record<string, string> = {
+  sampling_steps: "steps",
+  sampler: "sampler_name",
+  scheduler: "sched_name",
+  h3_sla_sparsity: "sla_sparsity",
+  h3_sla_block_size: "sla_block_size",
+  h3_sla_min_seq_len: "sla_min_seq_len",
+  h3_sla_dense_last_steps: "sla_dense_last_steps",
+  h3_sla_protect_audio: "sla_protect_audio",
+  h3_sla_stabilize_motion: "sla_stabilize_motion",
+  h3_sla_reference_protection: "sla_reference_protection",
+  h3_sla_dense_backend: "sla_dense_backend",
+  h3_sla_dense_steps: "sla_dense_steps",
+  h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
+  interpolate_model: "interp_model",
+  interpolate_multiplier: "interp_multiplier",
 }
 
 // The same option lists as the card form's engine fold (the builder
@@ -229,93 +256,100 @@ export function stemToClip(
   }
 }
 
-/** Layer A — the run-level document keys (REPLACE/ACCUMULATE/MIX, §10.1).
- * Optional fields are the "empty = engine/preset decides" ones: absent
- * on serialize → the family/preset supplies them. */
+/** Layer A — THE DEFAULTS RAIL (the operator's law, 2026-09-17):
+ * Layer A never makes a model call; it holds the DEFAULTS every Layer
+ * B call inherits plus the document's own clock (fps, preset
+ * geometry) and the NLE audio bed. Every optional field is a card
+ * wire key at its exact name — absent = the family default rides.
+ * The py-era decorative vocabulary (audio_mode, continuity,
+ * h3_attention, h3_fp16_accumulation, h3_torch_compile, cfg,
+ * h3_context_steps, h3_audio_context_steps, crf, lora_name, the
+ * h3_ref_* run-level refs) is GONE: none of it was ever read by
+ * compose — refs are per-call, loras ride the mod bag, engine
+ * internals are not knobs. */
 export interface LayerA {
+  /** Document-local geometry preset (draft/final) — UI shorthand for
+   * the width/height defaults; NEVER serialized (width/height are). */
   preset: string
+  /** Document clock — doc-frame ↔ seconds math only; the film
+   * renders at the card's pinned 24. Not serialized. */
   fps: number
   seed: number
-  audio_mode: "none" | "native" | "lipSync"
-  continuity: boolean
   shift_video?: number
   shift_audio?: number
-  sampler?: string
-  scheduler?: string
-  sampling_steps?: number
-  /* (knob-audit law 2026-09-02) real card_knobs injects the studio
-   * now offers at Layer A too — see hydrateLayerA. */
+  steps?: number
   denoise?: number
+  sampler_name?: string
+  sched_name?: string
   width?: number
   height?: number
-  h3_attention?: "kitchen" | "sol" | "sage" | "sla"
-  h3_fp16_accumulation: boolean
-  h3_torch_compile: boolean
-  cfg?: number
-  h3_context_steps?: number
-  h3_audio_context_steps?: number
-  h3_sla_sparsity?: number
-  h3_sla_block_size?: "32" | "64" | "128"
-  h3_sla_min_seq_len?: number
-  h3_sla_dense_last_steps?: number
-  h3_sla_protect_audio: boolean
-  h3_sla_stabilize_motion: boolean
-  h3_sla_reference_protection?: "Off" | "Light" | "Heavy Enforcement"
-  h3_sla_dense_backend?: "comfy_kitchen" | "pytorch" | "auto"
-  h3_sla_dense_steps?: string
-  h3_sla_disable_fp16_accum: boolean
-  sharpen_enabled: boolean
+  sla_sparsity?: number
+  sla_block_size?: "32" | "64" | "128"
+  sla_min_seq_len?: number
+  sla_dense_last_steps?: number
+  /** pin-equals-default booleans: serialize always when overridden */
+  sla_protect_audio?: boolean
+  sla_stabilize_motion?: boolean
+  sla_reference_protection?: "Off" | "Light" | "Heavy Enforcement"
+  sla_dense_backend?: "comfy_kitchen" | "pytorch" | "auto"
+  sla_dense_steps?: string
+  sla_disable_fp16_accum?: boolean
+  sharpen_enabled?: boolean
   sharpen_method?: "rcas" | "adaptive_usm" | "high_pass" | "deconvolution"
   sharpen_strength?: number
   sharpen_radius?: number
   sharpen_threshold?: number
   sharpen_iterations?: number
-  interpolate_enabled: boolean
-  interpolate_model?: "film_net_fp16.safetensors" | "rife47.pth"
-  interpolate_multiplier?: number
+  interpolate_enabled?: boolean
+  interp_model?: "film_net_fp16.safetensors" | "rife47.pth"
+  interp_multiplier?: number
+  sr_switch?: boolean
+  sr_resolution?: number
+  /** R2V COMBO "match"|"max" — NOT a number (numbers fail node validation). */
+  ref_image_size?: string
+  /** The loras MOD BAG (the operator's law: loras are MODS, never
+   * card knobs) — [{id, strength}] rows resolved against the family's
+   * flavor catalog at compose; the default every call inherits. */
+  loras?: Array<{ id: string, strength?: number }>
   variant?: string
   /** The MODEL ROUTE key (Layer A selector): "h3-timeline" (FL2VA) vs
    * "h3-timeline-ref" (Ref2VA). Serialized as params.model — which WINS
    * at the run door (compose resolves params.model before the service
    * default), so the card's selector is authoritative for the run. */
   model?: string
-  h3_ref_images?: string
-  h3_ref_videos?: string
-  h3_ref_audios?: string
-  h3_ref_video_audios?: string
-  /** R2V COMBO "match"|"max" — NOT a number (numbers fail node validation). */
-  h3_ref_image_size?: string
-  h3_ref_audio_trim_start?: number
-  h3_ref_audio_trim_duration?: number
   audio_stem?: string
   /** (Layer A NLE law, 2026-08-31) Positioned AUDIO CLIPS — the Music
    * row as a DaVinci track: each clip starts at its own doc frame and
-   * runs its own length (across calls, under half a call, wherever).
-   * src = an upstream artifact NAME or an uploaded data: URL. These MIX
-   * OVER the final cut at their positions (the stitch honors them) —
-   * distinct from audio_stem, which also CONDITIONS every window. */
+   * runs its own length. src = an upstream artifact NAME or an
+   * uploaded data: URL. These MIX OVER the final cut at their
+   * positions (the stitch honors them). */
   audio_clips?: DocAudioClip[]
-  /** Speed adapter (plaguekind parity): [{name, strength}] rides the
-   * plan doc; the graph applies it via the shared applyLoras helper. */
-  lora_name?: string
-  lora_strength?: number
-  rtx_vsr_enabled?: boolean
-  rtx_vsr_multiplier?: number
-  rtx_vsr_quality?: string
-  crf?: number
 }
 
-export const AUDIO_MODES = ["none", "native", "lipSync"] as const
-
-/** Speed LoRA choices — the mod.yaml SSOT for the h3 lane's speed
- *  adapters (packages/comfyui/models/video/h3/mods/loras/mod.yaml).
- *  The `value` is the ComfyUI LoRA filename (what LoraLoader.0.lora_name
- *  receives); the `label` is the human-readable name from mod.yaml.
- *  Empty = no speed LoRA (the lane default). */
-export const SPEED_LORA_OPTIONS = [
-  { value: "h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors", label: "H3 Turbo 8-step (LightX2V v1.0)" },
-  { value: "h3/minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16.safetensors", label: "H3 Turbo 4-step 768p (LightX2V v1.1)" },
-] as const
+/** The py-era Layer A spellings → the card's wire names (hydration
+ * migrates; serialization writes only the wire names). The lora knob
+ * pair maps through the mod bag: a legacy lora_name resolves to a
+ * catalog id when the filename matches, else drops with a warning
+ * (it was decorative anyway — compose never read it). */
+export const LEGACY_LAYERA_KEY: Record<string, string> = {
+  sampling_steps: "steps",
+  sampler: "sampler_name",
+  scheduler: "sched_name",
+  h3_sla_sparsity: "sla_sparsity",
+  h3_sla_block_size: "sla_block_size",
+  h3_sla_min_seq_len: "sla_min_seq_len",
+  h3_sla_dense_last_steps: "sla_dense_last_steps",
+  h3_sla_protect_audio: "sla_protect_audio",
+  h3_sla_stabilize_motion: "sla_stabilize_motion",
+  h3_sla_reference_protection: "sla_reference_protection",
+  h3_sla_dense_backend: "sla_dense_backend",
+  h3_sla_dense_steps: "sla_dense_steps",
+  h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
+  interpolate_model: "interp_model",
+  interpolate_multiplier: "interp_multiplier",
+  rtx_vsr_enabled: "sr_switch",
+  h3_ref_image_size: "ref_image_size",
+}
 
 /** H3 prompt style (Layer B ✨): rewrite ONE model call's prompt into
  * the cinematic MiniMax-H3 dialect. One call = ONE continuous shot

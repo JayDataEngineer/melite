@@ -525,6 +525,49 @@ describe("the loras mod bag + the per-call reference bundle (2026-09-17)", () =>
     ])
   })
 
+  it("STEPS APPLIED (2026-09-18): a bag entry's steps beats the steps row; a call knob beats the lora; a stacked pair runs the higher count", () => {
+    const schedSteps = (params: Record<string, unknown>): unknown[] => {
+      const g = new GraphBuilder(PIN_DEFAULTS)
+      def.compose(params, model, g, "run-lora-steps")
+      const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string, inputs: Record<string, unknown> }>
+      return Object.values(graph).filter((n) => n.class_type === "BasicScheduler").map((n) => n.inputs.steps)
+    }
+    const doc = (calls: unknown[]): Record<string, unknown> =>
+      schema({ prompt: "p", calls }) as Record<string, unknown>
+    const plain = doc([
+      { text: "t", start_frame: 0, end_frame: 90 },
+      { text: "t2", start_frame: 90, end_frame: 180 },
+    ])
+    // one entry: its steps applies to EVERY window (the row default 12 loses)
+    assert.deepEqual(schedSteps({ ...plain, loras: [{ name: "h3/alpha.safetensors", strength: 0.4, steps: 4 }] }), [4, 4])
+    // a stacked pair (4 + 8): the higher count (8 steps on a 4-step
+    // distill is fine; 4 on an 8-step is undercooked)
+    assert.deepEqual(schedSteps({ ...plain, loras: [
+      { name: "h3/alpha.safetensors", strength: 0.4, steps: 4 },
+      { name: "h3/beta.safetensors", strength: 0.6, steps: 8 },
+    ] }), [8, 8])
+    // a call's own knob beats the lora (window 2 pins 30; window 1
+    // still honors the entry)
+    const knobby = doc([
+      { text: "t", start_frame: 0, end_frame: 90 },
+      { text: "t2", start_frame: 90, end_frame: 180, knobs: { steps: 30 } },
+    ])
+    assert.deepEqual(schedSteps({ ...knobby, loras: [
+      { name: "h3/alpha.safetensors", strength: 0.4, steps: 4 },
+    ] }), [4, 30])
+    // no steps on the entries: the steps row rides (schema default 12)
+    assert.deepEqual(schedSteps({ ...plain, loras: [{ name: "h3/alpha.safetensors", strength: 0.4 }] }), [12, 12])
+  })
+
+  it("STEPS APPLIED (single-window arm): the film-less shape honors the bag steps the same way", () => {
+    const out = schema({ prompt: "p", image: "anchor.png" }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose({ ...out, loras: [{ name: "h3/turbo.safetensors", strength: 0.6, steps: 8 }] }, model, g, "run-one")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string, inputs: Record<string, unknown> }>
+    const sched = Object.values(graph).find((n) => n.class_type === "BasicScheduler")!
+    assert.equal(sched.inputs.steps, 8)
+  })
+
   it("a refs-carrying call is t4r and wires the bundle: anchor input_1, ref images 2-9, video components 10/11, audio 16", () => {
     const out = schema({ prompt: "p", calls: [
       { text: "t", start_frame: 0, end_frame: 90 },
@@ -554,6 +597,34 @@ describe("the loras mod bag + the per-call reference bundle (2026-09-17)", () =>
     assert.equal(ids.filter((id) => /^window2_LoadImage\./.test(id)).length, 3)
     assert.equal(ids.filter((id) => /^window2_LoadVideo\./.test(id)).length, 1)
     assert.equal(ids.filter((id) => /^window2_LoadAudio\./.test(id)).length, 1)
+  })
+
+  it("the image bus holds NINE slots: a 9-ref call slices to 8 — input_10 stays the video lane's (2026-09-18 off-by-one fix)", () => {
+    const nine = Array.from({ length: 9 }, (_, k) => `r${k}.png`).join(", ")
+    const out = schema({ prompt: "p", calls: [
+      { text: "t", start_frame: 0, end_frame: 90 },
+      { text: "t2", start_frame: 90, end_frame: 180, image: "anchor.png",
+        refs: { images: nine, videos: ["clip.mp4"] } },
+    ] }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-nine")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string, inputs: Record<string, unknown> }>
+    const ids = Object.keys(graph)
+    const bundleId = ids.find((id) => /^window2_PlagueKindBundleIn\./.test(id))!
+    const inputs = graph[bundleId]!.inputs
+    // the anchor + EIGHT refs ride input_1..input_9 — the 9-slot image bus
+    for (let k = 1; k <= 9; k++) {
+      assert.ok(inputs[`input_${k}`], `input_${k} rides the image bus`)
+    }
+    // the 9th ref is SLICED — input_10 belongs to the video's image
+    // stream alone (before the fix the 9th ref landed here and was
+    // silently clobbered by the video lane)
+    assert.equal(
+      (inputs.input_10 as unknown[])[0],
+      ids.find((id) => /^window2_GetVideoComponents\./.test(id)),
+      "input_10 is the video's image stream, never a sliced ref",
+    )
+    assert.equal(ids.filter((id) => /^window2_LoadImage\./.test(id)).length, 9, "anchor + 8 refs load (the 9th ref is sliced)")
   })
 
   it("refs WITHOUT a guide still derive t4r (the bundle IS the r2v input)", () => {

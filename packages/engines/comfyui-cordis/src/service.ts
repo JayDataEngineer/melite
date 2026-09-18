@@ -248,6 +248,11 @@ export interface LoraRowDecl {
    *  (ip_adapter's retired wire) — discovery stamps it into the
    *  option defaults under the pack's scalar_key. */
   readonly default_weight?: number
+  /** Steps applied (2026-09-18): a DISTILL adapter's married step
+   *  count — one lora for four steps, another for eight. Served into
+   *  the option defaults so boarding stamps it onto the entry; the
+   *  compose honors it when the caller pins no steps of their own. */
+  readonly steps?: number
   readonly tooltip?: string
   readonly preprocessor?: string
 }
@@ -782,13 +787,22 @@ export class ComfyUIService extends Service {
         // declared weight at silent full strength.
         const strength = typeof e?.strength === 'number' ? (e.strength as number)
           : typeof e?.weight === 'number' ? (e.weight as number) : 1.0
-        if (typeof e?.name === 'string' && (e.name as string) !== '') return { name: e.name as string, strength }
+        // steps applied (2026-09-18): a distill adapter's step count
+        // rides the entry when stated — the row's catalog default
+        // seeds it, the sampler honors it when the caller pins
+        // nothing. Unstated stays unstated (a non-distill lora has
+        // no count to claim).
+        const steps = typeof e?.steps === 'number' && Number.isFinite(e.steps) ? e.steps : undefined
+        if (typeof e?.name === 'string' && (e.name as string) !== '') {
+          return steps === undefined ? { name: e.name as string, strength } : { name: e.name as string, strength, steps }
+        }
         const id = typeof e?.id === 'string' ? (e.id as string) : ''
         const row = cat.rows.find((r) => r.id === id)
         if (row === undefined) {
           throw new ComposeRefusal('unknown-lora', `card '${cardId}' names lora id '${id}' with no '${modelId}' flavor row (registered: ${cat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`)
         }
-        return { name: row.filename, strength }
+        const resolved = row.steps === undefined ? steps : (steps ?? row.steps)
+        return resolved === undefined ? { name: row.filename, strength } : { name: row.filename, strength, steps: resolved }
       })
     }
 

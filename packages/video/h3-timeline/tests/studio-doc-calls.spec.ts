@@ -148,29 +148,29 @@ describe("hydrateCalls (params → document)", () => {
     assert.ok(!("transition" in hydrateCalls({ calls: [{ ...CALL, transition: "wipe" }] })[0]!))
   })
 
-  it("per-call refs: arrays join, strings trim, empties vanish", () => {
+  it("per-call refs: arrays join, strings trim, empties vanish; video_audios is dead", () => {
     const [c] = hydrateCalls({
-      calls: [{ ...CALL, refs: { images: ["a", " b ", ""], videos: "x, y", audios: "", video_audios: [""] } }],
+      calls: [{ ...CALL, refs: { images: ["a", " b ", ""], videos: "x, y", audios: "" } }],
     })
     assert.deepEqual(c!.refs, { images: "a, b", videos: "x, y" })
-    // audios + video_audios ride the same join law
+    // audios rides the same join law; the legacy video_audios bucket drops
     const [c2] = hydrateCalls({
       calls: [{ ...CALL, refs: { audios: " s1 ", video_audios: ["v1", " v2 "] } }],
     })
-    assert.deepEqual(c2!.refs, { audios: "s1", video_audios: "v1, v2" })
+    assert.deepEqual(c2!.refs, { audios: "s1" })
     assert.ok(!("refs" in hydrateCalls({ calls: [{ ...CALL, refs: { images: [] } }] })[0]!))
     assert.ok(!("refs" in hydrateCalls({ calls: [{ ...CALL, refs: ["a"] }] })[0]!))
     assert.ok(!("refs" in hydrateCalls({ calls: [{ ...CALL, refs: null }] })[0]!))
     assert.ok(!("refs" in hydrateCalls({ calls: [{ ...CALL }] })[0]!))
   })
 
-  it("foreign knob keys drop with a warning (never re-sent)", () => {
+  it("foreign knob keys drop with a warning (never re-sent); py-era spellings MIGRATE silently", () => {
     const warns: unknown[][] = []
     const orig = console.warn
     console.warn = (...a: unknown[]) => { warns.push(a) }
     try {
       const [c] = hydrateCalls({ calls: [{ ...CALL, knobs: { sampling_steps: 20, h3_attention: "sla", nope: 1 } }] })
-      assert.deepEqual(c!.knobs, { sampling_steps: 20 })
+      assert.deepEqual(c!.knobs, { steps: 20 })
       assert.ok(warns.some((w) => String(w[0]).includes("nope")))
       assert.ok(warns.some((w) => String(w[0]).includes("h3_attention")))
     } finally {
@@ -180,16 +180,21 @@ describe("hydrateCalls (params → document)", () => {
 
   it("null/blank knob values skip (absent = inherit)", () => {
     const [c] = hydrateCalls({
-      calls: [{ ...CALL, knobs: { sampling_steps: null, denoise: undefined, sampler: "" } }],
+      calls: [{ ...CALL, knobs: { steps: null, denoise: undefined, sampler_name: "" } }],
     })
     assert.ok(!("knobs" in c!))
   })
 
-  it("the canonical steps pair lands on sampling_steps", () => {
+  it("steps lands at its wire name", () => {
     const [a] = hydrateCalls({ calls: [{ ...CALL, knobs: { steps: "30" } }] })
-    assert.deepEqual(a!.knobs, { sampling_steps: 30 })
+    assert.deepEqual(a!.knobs, { steps: 30 })
     const [b] = hydrateCalls({ calls: [{ ...CALL, knobs: { steps: "junk" } }] })
     assert.ok(!("knobs" in b!))
+  })
+
+  it("length (the per-call window pin) hydrates", () => {
+    const [a] = hydrateCalls({ calls: [{ ...CALL, knobs: { length: "77" } }] })
+    assert.deepEqual(a!.knobs, { length: 77 })
   })
 
   it("every number knob hydrates finite values and drops junk", () => {
@@ -197,23 +202,23 @@ describe("hydrateCalls (params → document)", () => {
       calls: [{
         ...CALL,
         knobs: {
-          sampling_steps: 20, denoise: 0.8, shift_video: "12", shift_audio: 3,
-          h3_sla_sparsity: 0.9, h3_sla_min_seq_len: 64, h3_sla_dense_last_steps: 4,
+          steps: 20, denoise: 0.8, shift_video: "12", shift_audio: 3,
+          sla_sparsity: 0.9, sla_min_seq_len: 64, sla_dense_last_steps: 4,
           sharpen_strength: 0.5, sharpen_radius: 2, sharpen_threshold: 0.1,
-          sharpen_iterations: 3, interpolate_multiplier: 2,
+          sharpen_iterations: 3, interp_multiplier: 2,
         },
       }],
     })
-    assert.equal((c!.knobs as Record<string, number>).sampling_steps, 20)
+    assert.equal((c!.knobs as Record<string, number>).steps, 20)
     assert.equal((c!.knobs as Record<string, number>).denoise, 0.8)
-    assert.equal((c!.knobs as Record<string, number>).interpolate_multiplier, 2)
-    const [d] = hydrateCalls({ calls: [{ ...CALL, knobs: { sampling_steps: "junk", cfg: NaN } }] })
+    assert.equal((c!.knobs as Record<string, number>).interp_multiplier, 2)
+    const [d] = hydrateCalls({ calls: [{ ...CALL, knobs: { steps: "junk", cfg: NaN } }] })
     assert.ok(!("knobs" in d!))
   })
 
   it("string knobs hydrate trimmed values only", () => {
-    const [c] = hydrateCalls({ calls: [{ ...CALL, knobs: { sampler: "euler", scheduler: "  " } }] })
-    assert.deepEqual(c!.knobs, { sampler: "euler" })
+    const [c] = hydrateCalls({ calls: [{ ...CALL, knobs: { sampler_name: "euler", sched_name: "  " } }] })
+    assert.deepEqual(c!.knobs, { sampler_name: "euler" })
   })
 
   it("enum knobs hydrate only legal members", () => {
@@ -221,24 +226,26 @@ describe("hydrateCalls (params → document)", () => {
       calls: [{
         ...CALL,
         knobs: {
-          h3_sla_block_size: "64", h3_sla_reference_protection: "Heavy Enforcement",
-          h3_sla_dense_backend: "pytorch", sharpen_method: "rcas", interpolate_model: "rife47.pth",
+          sla_block_size: "64", sla_reference_protection: "Heavy Enforcement",
+          sla_dense_backend: "pytorch", sharpen_method: "rcas", interp_model: "rife47.pth",
         },
       }],
     })
-    assert.equal(c!.knobs!.h3_sla_block_size, "64")
+    assert.equal(c!.knobs!.sla_block_size, "64")
     const [d] = hydrateCalls({
-      calls: [{ ...CALL, knobs: { h3_sla_block_size: "32", h3_sla_reference_protection: "max", h3_sla_dense_backend: "x", sharpen_method: "x", interpolate_model: "x" } }],
+      calls: [{ ...CALL, knobs: { sla_reference_protection: "max", sla_dense_backend: "x", sharpen_method: "x", interp_model: "x" } }],
     })
-    // "32" IS in CALL_KNOB_KEYS' vocabulary but the per-call hydrate
-    // admits only 64/128 (the 32 default rides Layer A)
-    assert.ok(!("knobs" in d!) || d!.knobs!.h3_sla_block_size === undefined)
+    assert.ok(!("knobs" in d!))
+    // "32" is a legal wire value — the per-call hydrate admits the
+    // full enum (the knob override law; Layer A owns only defaults)
+    const [e] = hydrateCalls({ calls: [{ ...CALL, knobs: { sla_block_size: "32" } }] })
+    assert.equal(e!.knobs!.sla_block_size, "32")
   })
 
   it("dense-steps hydrate only interval-list strings", () => {
-    const [c] = hydrateCalls({ calls: [{ ...CALL, knobs: { h3_sla_dense_steps: " 1-3,5 " } }] })
-    assert.equal(c!.knobs!.h3_sla_dense_steps, "1-3,5")
-    const [d] = hydrateCalls({ calls: [{ ...CALL, knobs: { h3_sla_dense_steps: "soon" } }] })
+    const [c] = hydrateCalls({ calls: [{ ...CALL, knobs: { sla_dense_steps: " 1-3,5 " } }] })
+    assert.equal(c!.knobs!.sla_dense_steps, "1-3,5")
+    const [d] = hydrateCalls({ calls: [{ ...CALL, knobs: { sla_dense_steps: "soon" } }] })
     assert.ok(!("knobs" in d!))
   })
 
@@ -247,25 +254,25 @@ describe("hydrateCalls (params → document)", () => {
       calls: [{
         ...CALL,
         knobs: {
-          h3_sla_protect_audio: "false", h3_sla_stabilize_motion: false,
-          h3_sla_disable_fp16_accum: "yes", sharpen_enabled: 1, interpolate_enabled: true,
+          sla_protect_audio: "false", sla_stabilize_motion: false,
+          sla_disable_fp16_accum: "yes", sharpen_enabled: 1, interpolate_enabled: true,
         },
       }],
     })
-    assert.equal(c!.knobs!.h3_sla_protect_audio, false)
-    assert.equal(c!.knobs!.h3_sla_stabilize_motion, false)
+    assert.equal(c!.knobs!.sla_protect_audio, false)
+    assert.equal(c!.knobs!.sla_stabilize_motion, false)
     assert.equal(c!.knobs!.interpolate_enabled, true)
-    assert.ok(!("h3_sla_disable_fp16_accum" in c!.knobs!))
+    assert.ok(!("sla_disable_fp16_accum" in c!.knobs!))
     assert.ok(!("sharpen_enabled" in c!.knobs!))
   })
 
   it("boolean true-forms hydrate (true + \"true\")", () => {
     const [c] = hydrateCalls({
-      calls: [{ ...CALL, knobs: { h3_sla_protect_audio: true, sharpen_enabled: "true", h3_sla_disable_fp16_accum: true } }],
+      calls: [{ ...CALL, knobs: { sla_protect_audio: true, sharpen_enabled: "true", sla_disable_fp16_accum: true } }],
     })
-    assert.equal(c!.knobs!.h3_sla_protect_audio, true)
+    assert.equal(c!.knobs!.sla_protect_audio, true)
     assert.equal(c!.knobs!.sharpen_enabled, true)
-    assert.equal(c!.knobs!.h3_sla_disable_fp16_accum, true)
+    assert.equal(c!.knobs!.sla_disable_fp16_accum, true)
   })
 
   it("calls sort by start (the compiler's vocabulary) without re-tiling", () => {
@@ -372,12 +379,12 @@ describe("serializeCalls (document → persisted shape)", () => {
     assert.ok(!("first_frame_prev_sec" in b!))
   })
 
-  it("per-call refs serialize as the COMMA STRING (never arrays)", () => {
-    const [c] = serializeCalls([{ ...CALL, refs: { images: "a, b" } }])
-    assert.deepEqual(c!.refs, { images: "a, b" })
-    // videos/audios/video_audios do NOT ride per-call (the image bus only)
-    const [d] = serializeCalls([{ ...CALL, refs: { videos: "v" } }])
-    assert.ok(!("refs" in d!))
+  it("per-call refs serialize as the COMMA STRING — all three buckets", () => {
+    const [c] = serializeCalls([{ ...CALL, refs: { images: "a, b", videos: "v1, v2", audios: "s1" } }])
+    assert.deepEqual(c!.refs, { images: "a, b", videos: "v1, v2", audios: "s1" })
+    // blank buckets vanish (never "" noise)
+    const [d] = serializeCalls([{ ...CALL, refs: { videos: "v", images: "  " } }])
+    assert.deepEqual(d!.refs, { videos: "v" })
     const [e] = serializeCalls([{ ...CALL, refs: { images: "  " } }])
     assert.ok(!("refs" in e!))
     const [f] = serializeCalls([{ ...CALL }])

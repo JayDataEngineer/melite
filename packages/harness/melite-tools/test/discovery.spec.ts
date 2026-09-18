@@ -534,6 +534,23 @@ describe('live door arms', () => {
     assert.equal(gen['preview'], undefined, 'absent claim = strip ON (the default, no key served)')
   })
 
+  // ── STEPS APPLIED (2026-09-18, the operator's plaguekind law): a
+  // distill row's married step count serves in the option defaults —
+  // boarding stamps {strength, steps} onto the entry. ──
+  test('the h3 loras options serve their distill step counts (strength + steps in the defaults)', async () => {
+    const spec = (await formSpecSweep('h3-timeline')) as Record<string, unknown>
+    assert.ok(spec !== null)
+    const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const lora = modifiers.find((m) => m['kind'] === 'lora')
+    assert.ok(lora !== undefined, 'the loras pack serves on h3-timeline')
+    const opts = lora!['options'] as Array<Record<string, unknown>>
+    const dareties = opts.find((o) => o['value'] === 'h3_lightx2v_dareties')
+    const turbo = opts.find((o) => o['value'] === 'h3_lightx2v_turbo')
+    assert.ok(dareties !== undefined && turbo !== undefined, 'both distill rows serve')
+    assert.deepEqual(dareties!['defaults'], { strength: 0.4, steps: 4 }, 'dareties v4: a four-step distill')
+    assert.deepEqual(turbo!['defaults'], { strength: 0.6, steps: 8 }, 'turbo 4-8: its applied count rides')
+  })
+
   test("formSpecArm serves the AGENT ENGINE doc from the declared contract (stroke 66 — the census rides LIVE)", async () => {
     const docs = new Map([['agent', () => agentFormDoc({
       mcps: [{ value: 'blender', label: 'blender' }],

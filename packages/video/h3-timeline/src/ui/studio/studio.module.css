@@ -699,6 +699,10 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .refCount { font-size: 8px; font-variant-numeric: tabular-nums; }
 .refCountOk { color: var(--dsw-alias-label-tertiary); }.refCountOver { color: var(--dsw-alias-state-warn-primary); }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+/* THE ANCHOR SLOT (bundle split 2026-09-18): the first frame renders
+ * IN the chips row — one grammar with the ref chips (never an alien
+ * box). Column so the file-error line rides under the square. */
+.busAnchor { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .chip {
   display: inline-flex;
   max-width: 100%;

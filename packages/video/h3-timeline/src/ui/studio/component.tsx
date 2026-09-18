@@ -226,9 +226,6 @@ export function VideoTimelineStudio({
           <RunAdvancedPanels layerA={layerA} setLayerAKey={fx.setLayerAKey} />
           <RunRefsClips
             layerA={layerA}
-            setLayerAKey={fx.setLayerAKey}
-            isRef2va={doc.isRef2va}
-            refArtifacts={audio.refArtifacts}
             takeAudioFile={audio.takeAudioFile}
             audioUploadRef={audio.audioUploadRef}
           />

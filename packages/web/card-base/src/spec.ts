@@ -117,6 +117,9 @@ export interface SpecField {
   required?: boolean
   placeholder?: string
   tooltip?: string
+  /** The DECL's OWN VISIBILITY GRAMMAR ("key=value" guards, `&`-ANDed,
+   *  one guard's value may be a `|`-SET — fieldVisible interprets; the
+   *  declaration owns the leaf law, cards never hand-roll predicates). */
   visible_when?: string
   /** The DECL's LAYOUT VOCABULARY (stroke 22, the operator's law:
    *  the card package owns the form's geometry — "smaller things
@@ -605,18 +608,25 @@ export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecVal
   return out
 }
 
-/** evalVisibleWhen's serving shape: "key=value" (a field shows when its
- *  guard key holds the value). A field with no visible_when always
- *  shows. Unknown guard keys: show (never hide on a typo). */
+/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
+ * one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
+ * (The ONE schema grammar — a field declares its own visibility;
+ * the walker interprets, cards never hand-rolled predicates.) A
+ * field with no visible_when always shows. Unknown guard keys:
+ * show (never hide on a typo). Examples:
+ *   "sharpen_enabled=true"
+ *   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
 export function fieldVisible(f: SpecField, values: SpecValues): boolean {
   const rule = f.visible_when
   if (typeof rule !== 'string' || rule === '') return true
-  const eq = rule.indexOf('=')
-  if (eq < 0) return true
-  const key = rule.slice(0, eq)
-  const want = rule.slice(eq + 1)
-  const held = values[key]
-  return String(held ?? '') === want
+  for (const guard of rule.split('&')) {
+    const eq = guard.indexOf('=')
+    if (eq < 0) continue
+    const key = guard.slice(0, eq)
+    const wants = guard.slice(eq + 1).split('|')
+    if (!wants.includes(String(values[key] ?? ''))) return false
+  }
+  return true
 }
 
 /** Group the visible fields (the spec's own group key, first-appearance
