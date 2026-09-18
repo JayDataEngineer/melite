@@ -404,11 +404,11 @@ test('RULE A: a stamp that is ENTIRELY mod-owned STILL renders its pill — the 
     user: state.user,
     onSet,
   }))
-  const pills = container.querySelectorAll('[data-recipe-pill]')
-  expect(pills.length).toBe(3) // realism + quick + cine — only the stamp-less default renders nothing
-  const realism = container.querySelector('[data-recipe-pill="realism"]') as HTMLElement
-  expect(realism).not.toBeNull()
-  fireEvent.click(realism)
+  // THE DROPDOWN (operator, 2026-09-18): one select, never links
+  const select = container.querySelector('[data-recipe-select]') as HTMLElement
+  const ids = Array.from(select.querySelectorAll('option')).map((o) => o.getAttribute('value'))
+  expect(ids).toEqual(['', 'realism', 'quick', 'cine']) // placeholder + stamps; default renders nothing
+  fireEvent.change(select, { target: { value: 'realism' } })
   await waitFor(() => { expect(state.user['loras']).toEqual([{ id: 'krea2_realism_lora' }]) })
 })
 
@@ -420,7 +420,7 @@ test('KNOB STAMP: the pill click writes its full payload — no recipe key, ever
     user: state.user,
     onSet,
   }))
-  fireEvent.click(container.querySelector('[data-recipe-pill="quick"]') as HTMLElement)
+  fireEvent.change(container.querySelector('[data-recipe-select]') as HTMLElement, { target: { value: 'quick' } })
   await waitFor(() => {
     expect(state.user['steps']).toBe(6)
     expect(state.user['cfg']).toBe(1.2)
@@ -437,9 +437,9 @@ test('RULE A MIXED: a row carrying knobs AND the lora bag stamps BOTH — the fu
     user: state.user,
     onSet,
   }))
-  const pill = container.querySelector('[data-recipe-pill="cine"]') as HTMLElement
-  expect(pill).not.toBeNull()
-  fireEvent.click(pill)
+  const select = container.querySelector('[data-recipe-select]') as HTMLElement
+  expect(select).not.toBeNull()
+  fireEvent.change(select, { target: { value: 'cine' } })
   await waitFor(() => {
     expect(state.user['steps']).toBe(12)
     expect(state.user['loras']).toEqual([{ id: 'krea2_darkbrush' }])
@@ -498,8 +498,11 @@ test('stroke 34: the drill renders NO recipe select — the dead layer has no se
     user: state.user,
     onSet,
   }))
-  expect(screen.queryByLabelText('Recipe')).toBeNull()
+  // 2026-09-18: the FAMILY axis renders as the dropdown select —
+  // the dead CARD layer (`recipe` param knob) still has no seat
+  expect(screen.getByLabelText('Recipe')).not.toBeNull()
   expect(container.querySelector('[data-recipe-seat]')).toBeNull()
+  expect(state.user['recipe']).toBeUndefined() // the poison stays dropped
 })
 
 test('seedUser drops every held recipe key (stroke 34 — no card declares the field)', async () => {
@@ -809,23 +812,25 @@ test('SEAT: the pills render UNDER THE MODEL SECTION — the lora row\'s pill in
     spec: SEAT, user: { model: 'krea-2' },
     onSet: (n: string, v: unknown) => { sets.push([n, v]) },
   }))
-  // RULE A: the lora-only row RENDERS its pill — the bag IS the
+  // RULE A: the lora-only row RENDERS its option — the bag IS the
   // preset (the stroke-38 drop amended 2026-09-18; the lora still
   // rides the mod system's bag, never a bespoke card field)
-  expect(container.querySelector('[data-recipe-pill="realism"]')).not.toBeNull()
-  const pills = container.querySelectorAll('[data-recipe-pill]')
-  expect(pills.length).toBe(2) // realism + quick carry the seat
+  const select = container.querySelector('[data-recipe-select]') as HTMLElement
+  const ids = Array.from(select.querySelectorAll('option')).map((o) => o.getAttribute('value'))
+  expect(ids).toEqual(['', 'realism', 'quick']) // realism + quick carry the seat
   // THE SEAT: inside the model axes section (under Model, Variant,
   // Quant — never a sampling-group row at the bottom)
-  expect(pills[0]?.closest('[data-model-axes]')).not.toBeNull()
-  // NO select exists — the dead layer's key has no writer
-  expect(screen.queryByLabelText('Recipe')).toBeNull()
-  // RULE A: the quick pill stamps its knob; the realism pill stamps
+  expect(select.closest('[data-model-axes]')).not.toBeNull()
+  // THE FAMILY DROPDOWN exists; the dead CARD layer still has no
+  // writer — no `recipe` param ever stamps (the probe's compose
+  // door refuses it; the selection DERIVES from the stamped payload)
+  // RULE A: the quick row stamps its knob; the realism row stamps
   // its bag — each row's FULL payload is its preset
-  fireEvent.click(container.querySelector('[data-recipe-pill="quick"]') as HTMLElement)
+  fireEvent.change(select, { target: { value: 'quick' } })
   await waitFor(() => { expect(sets).toContainEqual(['steps', 6]) })
-  fireEvent.click(container.querySelector('[data-recipe-pill="realism"]') as HTMLElement)
+  fireEvent.change(select, { target: { value: 'realism' } })
   await waitFor(() => { expect(sets).toContainEqual(['loras', [{ id: 'krea2_realism_lora' }]]) })
+  expect(sets.filter(([n]) => n === 'recipe')).toEqual([]) // the dead key never rides
 })
 
 

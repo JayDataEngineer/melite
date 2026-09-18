@@ -10,7 +10,7 @@
  * rolled vocabulary (Speed LoRA knob pair, RTX VSR multiplier/
  * quality, Output CRF) is GONE: no node ever read them.
  */
-import { SpecPanel, ModifiersSection, useFormSpec } from "@melite/card-base"
+import { SpecPanel, ModifiersSection, useResolvedForm, type FormSpecDoc } from "@melite/card-base"
 import s from "./studio.module.css"
 import type { LayerA, SetLayerAKey } from "./docModel"
 
@@ -24,19 +24,23 @@ export function RunAdvancedPanels({
   layerA: LayerA
   setLayerAKey: SetLayerAKey
 }) {
-  // THE SERVED SPEC — fetched once, owned here; the estate's SpecPanel
-  // and ModLane both read it.
-  const { spec, error } = useFormSpec("h3-timeline")
-  const values = layerA as unknown as Record<string, unknown>
-  const onEdit = setLayerAKey as unknown as (n: string, v: unknown) => void
+  // THE STUDIO SEAM (one shared hook — the operator's schema law,
+  // 2026-09-18): resolved values (defaults FILL the sparse Layer A —
+  // the SLA/post rows render their declared defaults, never blanks)
+  // + the schema-boundary edit verb. The raw pass is DEAD.
+  const { spec, error, resolved, edit } = useResolvedForm(
+    "h3-timeline",
+    layerA as unknown as Record<string, unknown>,
+    setLayerAKey as unknown as (n: string, v: unknown) => void,
+  )
   return (
     <>
       <SpecPanel
         model="h3-timeline"
         spec={spec}
         error={error}
-        values={values}
-        onEdit={onEdit}
+        values={resolved}
+        onEdit={edit}
         sections={[
           {
             // SLA rides EVERY layer A — compose reads the sla_* keys
@@ -92,7 +96,7 @@ export function RunAdvancedPanels({
  * (ModifiersSection's no-kinds arm). Reads the SAME doc the panel
  * above fetched, so the door is hit once. */
 function ModLane({ spec, layerA, setLayerAKey }: {
-  spec: ReturnType<typeof useFormSpec>["spec"]
+  spec: FormSpecDoc | null
   layerA: LayerA
   setLayerAKey: SetLayerAKey
 }) {

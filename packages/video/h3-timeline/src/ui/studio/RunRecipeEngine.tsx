@@ -17,7 +17,7 @@
  * hand-authors presets, the family owns them. Route/FPS stay
  * document-local clock facts rendered as studio chrome.
  */
-import { ControlRow, RecipePills, SectionLabel, SpecAtom, SpecPanel, useFormSpec } from "@melite/card-base"
+import { ControlRow, RecipePills, SectionLabel, SpecAtom, SpecPanel, useResolvedForm } from "@melite/card-base"
 import s from "./studio.module.css"
 import type { LayerA, SetLayerAKey } from "./docModel"
 import type { CardStage } from "@melite/contracts"
@@ -35,14 +35,22 @@ export function RunRecipeEngine({
   setLayerAKey: SetLayerAKey
   isRef2va: boolean
 }) {
-  // THE SERVED SPEC — the family's Recipe rows ride it (Rule A):
-  // the pills stamp through the same pick verb every axis rides.
-  const { spec } = useFormSpec("h3-timeline")
-  // THE WIRE VALUES: plain Layer A keys (fps/seed + wire-name
-  // optionals + loras bag). SpecPanel reads them at the card's wire
-  // names; edits flow back through setLayerAKey.
-  const values = layerA as unknown as Record<string, unknown>
-  const onSet = setLayerAKey as unknown as (n: string, v: unknown) => void
+  // THE STUDIO SEAM (one shared hook — the operator's schema law,
+  // 2026-09-18): the served spec, the RESOLVED values (schema
+  // defaults <- model defaults <- Layer A — a sparse document
+  // renders its declared defaults, NEVER blanks), and the edit verb
+  // that coerces at the schema boundary. The raw `values = layerA`
+  // pass is DEAD: it rendered every optional row (shift_video,
+  // shift_audio, steps...) blank on a fresh document.
+  const { spec, resolved, edit } = useResolvedForm(
+    "h3-timeline",
+    layerA as unknown as Record<string, unknown>,
+    setLayerAKey as unknown as (n: string, v: unknown) => void,
+    // THE BASE LAYER (the bench row's own params — stage geometry
+    // wins over the document's, the persisted truth under the edit)
+    (stage.params ?? undefined) as Record<string, unknown> | undefined,
+  )
+  const onSet = edit
   return (
     <>
       <div className={s.group} data-testid="tl-recipe-chrome">
@@ -66,7 +74,7 @@ export function RunRecipeEngine({
         {/* RULE A: the family's recipe pills, NEXT TO THE MODEL —
          * distill presets (lora bag) + geometry rows, stamped 1:1
          * onto the declared keys. The card never hand-authors these. */}
-        {spec !== null ? <RecipePills spec={spec} onSet={onSet} /> : null}
+        {spec !== null ? <RecipePills spec={spec} onSet={onSet} values={layerA as unknown as Record<string, unknown>} /> : null}
         <ControlRow label="FPS">
           <SpecAtom
             f={{ name: "fps", label: "FPS", type: "number", min: 1, max: 60, step: 1 }}
@@ -79,13 +87,13 @@ export function RunRecipeEngine({
           />
         </ControlRow>
         <div className={s.recipeGeom} data-testid="tl-recipe-geom">
-          {String(stage.params?.width ?? layerA.width ?? FAMILY_GEOM.w)}×{String(stage.params?.height ?? layerA.height ?? FAMILY_GEOM.h)} @ {layerA.fps} doc-fps
+          {String(resolved.width ?? FAMILY_GEOM.w)}×{String(resolved.height ?? FAMILY_GEOM.h)} @ {layerA.fps} doc-fps
         </div>
       </div>
       <SpecPanel
         model="h3-timeline"
-        values={values}
-        onEdit={setLayerAKey as unknown as (n: string, v: unknown) => void}
+        values={resolved}
+        onEdit={edit}
         sections={[
           {
             title: "Clock",
@@ -109,13 +117,13 @@ export function RunRecipeEngine({
        * (resolved geometry + steps) rides the studio Label's tail. */}
       <div className={s.winSize}>
         <SectionLabel
-          tail={`window ${String(stage.params?.width ?? layerA.width ?? FAMILY_GEOM.w)}×${String(stage.params?.height ?? layerA.height ?? FAMILY_GEOM.h)} · steps ${layerA.steps ?? "auto"}`}
+          tail={`window ${String(resolved.width ?? FAMILY_GEOM.w)}×${String(resolved.height ?? FAMILY_GEOM.h)} · steps ${String(resolved.steps ?? "auto")}`}
         >
           Engine (H3)
         </SectionLabel>
         <SpecAtom
           f={{ name: "width", label: "Window width (run)", type: "number", min: 256, max: 1920, step: 32, tooltip: `blank — the family default rides ${FAMILY_GEOM.w}×${FAMILY_GEOM.h}` }}
-          value={layerA.width}
+          value={resolved.width as number | undefined}
           placeholder={String(FAMILY_GEOM.w)}
           onEdit={(_, v) => setLayerAKey("width",
             typeof v === "string" && v.trim() !== "" ? Number(v) : undefined)}
@@ -123,7 +131,7 @@ export function RunRecipeEngine({
         <span className={s.times}>×</span>
         <SpecAtom
           f={{ name: "height", label: "Window height (run)", type: "number", min: 256, max: 1920, step: 32, tooltip: `blank — the family default rides ${FAMILY_GEOM.w}×${FAMILY_GEOM.h}` }}
-          value={layerA.height}
+          value={resolved.height as number | undefined}
           placeholder={String(FAMILY_GEOM.h)}
           onEdit={(_, v) => setLayerAKey("height",
             typeof v === "string" && v.trim() !== "" ? Number(v) : undefined)}

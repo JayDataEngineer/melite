@@ -49,7 +49,7 @@ import { PoseViewer3D, type CameraFraming } from "@melite-plugin/motion/ui/viewe
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import type { JointMoveEvent } from "@melite-plugin/motion/ui/viewer3d"
 import { useToastStore } from "@melite/card-base/toast"
-import { SpecPanel, resolveValue, useFormSpec } from "@melite/card-base"
+import { SpecPanel, useResolvedForm } from "@melite/card-base"
 import type { CardStage } from "@melite/contracts"
 import { stageSlots } from "@melite/catalog"
 import { formOf } from "@melite/catalog"
@@ -142,19 +142,20 @@ export function MotionCardEditor({
  // The timeline stays the DOCUMENT seam — its prompt cards, length,
  // and constraint keyframes write the SAME declared keys (one
  // vocabulary, the override seam; never a second param system).
- const { spec: kimodoSpec, error: kimodoError } = useFormSpec("kimodo")
- const userParams = typeof stage.params === 'object' && stage.params !== null
-   ? stage.params as Record<string, unknown> : {}
- // the initial-value law: ABSENT alone seeds (the spec's own
- // defaults) — resolveValue is the estate's pure resolver
- // (defaults → model_defaults → user). The timeline's writes sit in
- // the user layer and win, so both surfaces read ONE truth.
- const paramValues = useMemo(
-   () => kimodoSpec !== null ? resolveValue(kimodoSpec, userParams) : userParams,
-   [kimodoSpec, userParams])
- const onParamEdit = useCallback((name: string, value: unknown): void => {
-   onSave({ [name]: value })
- }, [onSave])
+  const userParams = typeof stage.params === 'object' && stage.params !== null
+    ? stage.params as Record<string, unknown> : {}
+  // THE STUDIO SEAM (one shared hook - the operator's universal
+  // default system, 2026-09-18): resolved values (defaults ->
+  // model_defaults -> user, pre-fetch included) + the schema-boundary
+  // edit verb. The timeline's writes sit in the user layer and win,
+  // so both surfaces read ONE truth - never a second spelling.
+  const {
+    spec: kimodoSpec, error: kimodoError, resolved: paramValues, edit: onParamEdit,
+  } = useResolvedForm(
+    "kimodo",
+    userParams,
+    (name: string, value: unknown) => { onSave({ [name]: value }) },
+  )
 
  // ── Asset resolution: the motion NPZ from the run result ────────────────
  // Guards: artifacts/assetUrls can carry non-string entries from revived

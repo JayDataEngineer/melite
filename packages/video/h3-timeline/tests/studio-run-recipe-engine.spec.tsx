@@ -111,13 +111,17 @@ describe("recipe (clock + route) — the document's identity", () => {
     await screen.findByText("Clock")
     // the pills render (stamp-carrying rows only; the stamp-less
     // `default` renders nothing)
-    const turbo = screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-pill="turbo_lightx2v"]')
+    // THE DROPDOWN (2026-09-18): one select, never link-buttons
+    const recipeSelect = () =>
+      screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-select]') as HTMLElement
+    const turbo = recipeSelect()
     assert.ok(turbo !== null, "the turbo pill renders")
-    assert.ok(screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-pill="draft_02mp"]') !== null)
-    assert.ok(screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-pill="default"]') === null)
+    const optionIds = Array.from(recipeSelect().querySelectorAll("option")).map((o) => o.getAttribute("value"))
+    assert.ok(optionIds.includes("draft_02mp"))
+    assert.ok(!optionIds.includes("default")) // stamp-less row: a dead option renders never
     // the click writes the FULL payload — the lora bag rides the
     // stamp (the Rule A amendment of stroke 38's drop)
-    fireEvent.click(turbo as HTMLElement)
+    fireEvent.change(turbo as HTMLElement, { target: { value: "turbo_lightx2v" } })
     assert.deepEqual(keys, [["loras", [{ id: "h3_lightx2v_turbo", strength: 0.6, steps: 8 }]]])
     cleanup()
   })
@@ -127,7 +131,7 @@ describe("recipe (clock + route) — the document's identity", () => {
     const { keys } = engine({ fps: 30 })
     await screen.findByText("Clock")
     assert.ok(document.body.textContent!.includes("800×600 @ 30 doc-fps"))
-    fireEvent.click(screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-pill="draft_02mp"]') as HTMLElement)
+    fireEvent.change(screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-select]') as HTMLElement, { target: { value: "draft_02mp" } })
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "24" } })
     assert.deepEqual(keys, [["width", 768], ["height", 448], ["fps", 24]])
     cleanup()
@@ -164,10 +168,13 @@ describe("engine (served spec — wire names)", () => {
     fireEvent.change(screen.getByLabelText("Scheduler (run)"), { target: { value: "karras" } })
     fireEvent.change(sliderOf("Sampling steps (run)"), { target: { value: "25" } })
     fireEvent.change(sliderOf("Denoise (run)"), { target: { value: "0.8" } })
+    // THE STUDIO SEAM (2026-09-18): edits coerce at the SCHEMA
+    // boundary now (useResolvedForm's edit verb — numeric strings
+    // ride as numbers; the raw-string pass is dead)
     assert.deepEqual(keys, [
-      ["shift_video", "16"], ["shift_audio", "4"],
+      ["shift_video", 16], ["shift_audio", 4],
       ["sampler_name", "heun"], ["sched_name", "karras"],
-      ["steps", "25"], ["denoise", "0.8"],
+      ["steps", 25], ["denoise", 0.8],
     ])
     cleanup()
   })
@@ -177,8 +184,9 @@ describe("engine (served spec — wire names)", () => {
     const { keys } = engine({ seed: -1 })
     const el = await screen.findByLabelText("Seed")
     fireEvent.change(el, { target: { value: "7" } })
-    // the raw-string edit law (coercion once at patch)
-    assert.deepEqual(keys, [["seed", "7"]])
+    // the schema-boundary edit law (the studio seam coerces; the
+    // run's schema parse stays the loud backstop for garbage)
+    assert.deepEqual(keys, [["seed", 7]])
     cleanup()
   })
 })

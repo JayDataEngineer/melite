@@ -1713,7 +1713,9 @@ describe('RULE B: the generic parameter form rides the rail', () => {
       if (!wrote) throw new Error('seed write never landed')
     }, { timeout: 10000 })
     const call = onSave.mock.calls.find((c) => c[0] && typeof c[0] === 'object' && 'seed' in (c[0] as Record<string, unknown>))!
-    // raw while typing, coerced at the schema door (the estate's law)
-    expect((call[0] as Record<string, unknown>).seed).toBe('777')
+    // THE STUDIO SEAM (2026-09-18): edits coerce at the SCHEMA
+    // boundary (useResolvedForm's edit verb — the same law CardForm
+    // rides; a numeric string rides as a number, one spelling)
+    expect((call[0] as Record<string, unknown>).seed).toBe(777)
   })
 })

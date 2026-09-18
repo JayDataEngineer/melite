@@ -245,20 +245,46 @@ test('PILLS: a knob-carrying recipe stamps on click; a mod-owned stamp rides too
     },
   } as unknown as FormSpecDoc
   const { onSet } = axes({ spec })
-  const pill = screen.getByRole('button', { name: 'X' })
-  expect(pill.getAttribute('data-recipe-pill')).toBe('recipe-x')
-  expect(pill.title).toBe('the macro')
-  fireEvent.click(pill)
+  // THE DROPDOWN (operator, 2026-09-18: "RECIPES AREN'T EVEN A
+  // DROPDOWN"): one select beside the axes, never link-buttons.
+  const select = screen.getByRole('combobox', { name: 'Recipe' })
+  expect(select.getAttribute('data-recipe-select')).toBe('1')
+  const ids = Array.from(select.querySelectorAll('option')).map((o) => o.getAttribute('value'))
+  expect(ids).toContain('recipe-x')
+  expect(ids).toContain('recipe-mods') // the mod-owned row rides (never hidden)
+  expect((select.querySelector('option[value="recipe-x"]') as HTMLOptionElement).textContent).toContain('the macro')
+  fireEvent.change(select, { target: { value: 'recipe-x' } })
   expect(onSet).toHaveBeenCalledWith('steps', 50)
-  // the mod-owned row renders AND stamps its bag (never hidden)
-  const mods = screen.getByRole('button', { name: 'Mods' })
-  expect(mods.getAttribute('data-recipe-pill')).toBe('recipe-mods')
 })
 
-test('PILLS: no knob payload anywhere — no pills block (never a dead control)', () => {
+test('DROPDOWN: the selection DERIVES from the one truth — stamped grounds, hand-edited shows custom', () => {
+  // The dropdown's value is NEVER a persisted key (the run door
+  // refuses `recipe`): it derives from the held stamp. Picking a
+  // row re-renders the select GROUNDED on that row; moving a
+  // stamped knob by hand breaks the match — the placeholder
+  // switches to 'custom' and the form never lies 'recipe active'.
+  const spec = {
+    ...doc(),
+    features: { variant_groups: { Variant: { label: 'Variant' }, Quant: { label: 'Quant' } } },
+  } as unknown as FormSpecDoc
+  const state = { user: {} as SpecValues }
+  const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  const { rerender } = render(h(ModelAxes, { spec, value: state.user, onSet }))
+  const select = () => screen.getByRole('combobox', { name: 'Recipe' }) as HTMLSelectElement
+  expect(select().value).toBe('') // nothing held: placeholder
+  fireEvent.change(select(), { target: { value: 'recipe-x' } })
+  expect(state.user['steps']).toBe(50) // the stamp rode
+  rerender(h(ModelAxes, { spec, value: state.user, onSet }))
+  expect(select().value).toBe('recipe-x') // grounded on the held stamp
+  state.user['steps'] = 49 // a hand edit breaks the match
+  rerender(h(ModelAxes, { spec, value: state.user, onSet }))
+  expect(select().value).toBe('') // custom — never lies
+})
+
+test('PILLS: no knob payload anywhere — no dropdown (never a dead control)', () => {
   const spec = { ...doc(), variants: [V('q-fp8', 'Quant', { label: 'FP8' })] } as unknown as FormSpecDoc
   const { container } = axes({ spec })
-  expect(container.querySelector('[data-recipe-pills]')).toBeNull()
+  expect(container.querySelector('[data-recipe-select]')).toBeNull()
 })
 
 function SpecHarness({ id }: { id: string | null | undefined }): ReturnType<typeof h> {

@@ -23,14 +23,14 @@
  * inherited --dsw-alias-* token (the package's documented pattern).
  */
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
-import type { ReactElement } from 'react'
+import type { ChangeEvent as ReactChangeEvent, ReactElement } from 'react'
 import { Menu, Input, Modal, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { InputSquare, isImageUrl, readAsDataUrl, type InputSquareVerbs } from './square.tsx'
 import { ModifiersSection } from './mods.tsx'
 import type { BboxFaceComponent, PaintFaceComponent } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
-  activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composingRows, fieldsOf,
+  activeRecipeId, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composingRows, fieldsOf,
   fieldsOfEnvelope, entryFieldsOfEnvelope, fieldVisible, kindScalarFieldsOfEnvelope, groupFields, modelChoices, modOwnedFields, modelSwitchPatch, resolveValue, rowsFor, titleCaseId, variantRows,
   quantRowsFor,
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
@@ -962,40 +962,61 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
           rows.map((v) => h('option', { key: v.id, value: v.id },
             titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
     }),
-    h(RecipePills, { spec, onSet }),
+    h(RecipePills, { spec, onSet, values: value }),
   )
 }
 
-/** THE FAMILY RECIPE PILLS (Rule A — the recipe law): the family's
- *  preset macros, one pill per served Recipe row that CARRIES a
- *  declared payload. The click writes the row's FULL stamp
- *  (axisPickPatch — the same pick verb as every axis row; mod-owned
- *  keys included, the Rule A amendment). No recipe key persists,
- *  nothing derives, nothing goes stale when the variant rail moves
- *  — what it stamped is what you see. Stamp-less rows (the family
- *  `default`) render nothing: a pill that writes nothing is a dead
- *  control.
+/** THE FAMILY RECIPE DROPDOWN (Rule A -- the recipe law; the
+ * operator's order, 2026-09-18: "RECIPES AREN'T EVEN A DROPDOWN"):
+ * the family's preset macros as ONE SELECT beside the axes -- the
+ * same shape every axis rides, never a list of link-buttons. The
+ * pick writes the row's FULL stamp (axisPickPatch -- mod-owned keys
+ * included, the Rule A amendment); the SELECTION derives from the
+ * ONE truth (activeRecipeId -- the row whose stamp the user layer
+ * holds; no recipe key persists, nothing goes stale when the rail
+ * moves). Stamp-less rows (the family `default`) render nothing: a
+ * row that writes nothing is a dead option. A hand-edited layer
+ * (no stamp-for-stamp match) shows the placeholder -- the form
+ * never lies that a recipe is active.
  *
- *  THE REUSE LAW: extracted so EVERY model surface seats the same
- *  pills — CardForm under the axes, a studio beside its model route.
- *  Never a second pill implementation. */
-export function RecipePills({ spec, onSet }: {
+ * THE REUSE LAW: extracted so EVERY model surface seats the same
+ * dropdown -- CardForm under the axes, a studio beside its model
+ * route. Never a second implementation. */
+export function RecipePills({ spec, onSet, values }: {
   spec: FormSpecDoc
   onSet: (name: string, value: unknown) => void
+  /** the USER layer (the selection derives from it -- the one
+   * truth; absent = always the placeholder). */
+  values?: SpecValues
 }): ReactElement | null {
   const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0)
   if (pillRows.length === 0) return null
-  return h('div', { className: css.specGroup, 'data-recipe-pills': '1' },
-    pillRows.map((r) => h('button', {
-      key: r.id,
-      type: 'button',
-      className: css.specLinkBtn,
-      'data-recipe-pill': r.id,
-      title: typeof r.hint === 'string' && r.hint !== '' ? r.hint : undefined,
-      onClick: () => {
-        for (const [k, v] of Object.entries(axisPickPatch(spec, r))) onSet(k, v)
+  const active = values !== undefined ? activeRecipeId(spec, values) : undefined
+  const pick = (id: string): void => {
+    const row = pillRows.find((r) => r.id === id)
+    if (row === undefined) return
+    for (const [k, v] of Object.entries(axisPickPatch(spec, row))) onSet(k, v)
+  }
+  return h('label', { className: css.specField },
+    h('span', { className: css.specFieldKey }, 'Recipe'),
+    h('select', {
+      className: css.specSelect,
+      'data-recipe-select': '1',
+      'aria-label': 'Recipe',
+      value: active ?? '',
+      onChange: (e: ReactChangeEvent<HTMLInputElement>) => {
+        const id = e.currentTarget.value
+        if (id !== '') pick(id)
       },
-    }, titleCaseId(r.label))))
+    },
+      h('option', { key: '__none__', value: '', disabled: active !== undefined },
+        active === undefined ? '-- recipe --' : '-- custom --'),
+      pillRows.map((r) => h('option', {
+        key: r.id,
+        value: r.id,
+        title: typeof r.hint === 'string' && r.hint !== '' ? r.hint : undefined,
+      }, titleCaseId(r.label) + (typeof r.hint === 'string' && r.hint !== '' ? ` \u2014 ${r.hint}` : '')))),
+  )
 }
 
 /** THE CARD FORM (the constructor's surface half) — the emission's
