@@ -1,8 +1,8 @@
 // Tier 3 — the video-gen card (the wan_vace_t1 + scail2_t1 renderer
 // ports). One card, one arm per boarded family (the img-gen shape:
 // each video family has a different node topology, one interface);
-// node order mirrors the python renderers exactly (creation order IS
-// the node-id order; the parity wall pins it).
+// node order mirrors the renderers exactly (creation order IS
+// the node-id order; the order is stable).
 //
 // Lane data is FACTS, never card constants: unet / text_encoder /
 // clip_type / vae ride model.lane_inputs rows; the per-family knobs
@@ -15,8 +15,7 @@
 // No finalize pass: python strips nothing on either arm, and the
 // pin's autofills (VHS_LoadVideoPath.format, WanSCAILToVideo's
 // pose_end/previous_frame_count/replacement_mode/video_frame_offset)
-// are byte-stable with comfy-script's api_format — verified by the
-// golden ritual, pinned by the wall.
+// are byte-stable with comfy-script's api_format.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'

@@ -33,7 +33,7 @@
  *
  * Units: meters (glTF native — same as the npz skin; RaySomaxBake bakes
  * NPZ motion onto these GLBs 1:1, which proves the unit + bind-pose
- * parity). Multi-mesh characters (composite_character's body + outfit +
+ * match). Multi-mesh characters (composite_character's body + outfit +
  * hair layers share ONE rig) merge: vertices/faces concatenate, indices
  * offset — one SomaSkin, one deform pass.
  */

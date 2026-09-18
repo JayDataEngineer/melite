@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  *
  * THE LAYER A/B LAW REWORK (2026-09-17): hydration + serialization
- * speak the CARD's wire names only. Legacy py-era spellings migrate
+ * speak the CARD's wire names only. Legacy retired spellings migrate
  * through LEGACY_LAYERA_KEY / LEGACY_KNOB_KEY (a legacy lora knob
  * pair maps into the mod bag when its filename matches the family
  * catalog, else drops — it was never read). Serialization writes

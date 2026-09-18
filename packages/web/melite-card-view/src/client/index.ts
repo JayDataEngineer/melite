@@ -335,7 +335,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
   }
 }
 
-// EXPORT DISCIPLINE (client contract, packages/client/AGENTS.md): the
+// EXPORT DISCIPLINE: the
 // /client entry exports only what cordis loading needs — apply +
 // inject below. Components, helpers, and constants stay internal;
 // same-package tests import relatively (../src/client/...), which is

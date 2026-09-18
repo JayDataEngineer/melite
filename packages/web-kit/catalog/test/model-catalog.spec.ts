@@ -132,7 +132,6 @@ const RICH = {
     },
   },
   // A vocabulary payload exercises the load-time slot fold on every prime.
-  input_vocabulary: { slots: ["voice_file"] },
 } as unknown as Catalog;
 
 const NOFAM = { families: {}, models: { a1: { family: "fA" }, c1: {} } } as unknown as Catalog;
@@ -146,10 +145,6 @@ const VA = {
 };
 const VB = {
   ...VA,
-  input_vocabulary: {
-    slots: ["sv"], aliases: {}, form_aliases: {}, form_slots: {},
-    model_slots: {}, slot_kinds: {}, undeclared_slots: [],
-  },
 };
 const VC = {
   families: { v9: { label: "V9" } },
@@ -561,9 +556,8 @@ describe("primes, listeners, and the cached no-arg battery", () => {
       primeCatalog({
         families: {},
         models: { r1: { input_slots: ["s"] }, r2: {}, r3: null },
-        input_vocabulary: { slots: ["s"] },
       } as unknown as Catalog);
-      primeCatalog({ families: {}, input_vocabulary: { slots: ["s"] } } as unknown as Catalog);
+      primeCatalog({ families: {} } as unknown as Catalog);
       // No vocabulary → the feed skips.
       primeCatalog({ families: {}, models: {} } as unknown as Catalog);
       primeCatalog(RICH);

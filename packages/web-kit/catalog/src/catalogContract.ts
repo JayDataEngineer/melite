@@ -13,7 +13,7 @@
 // Wire shape (backend/core/catalog/editor_catalog.py — get_catalog):
 //   { "families": { "<id>": {...} }, "models": { "<route_key>": {...} },
 //     "capabilities"?: { "<cap_id>": {...} },
-//     "engine_order"?, "quant_order"?, "input_vocabulary"? }
+//     "engine_order"?, "quant_order"? }
 // families/models/capabilities are RECORDS keyed by id — never arrays.
 
 export interface CatalogViolation {
@@ -160,7 +160,7 @@ export function validateCatalogContract(catalog: unknown): CatalogContractResult
    // the offering gate + ModelRow.form required — the ltx-2-3 incident,
    // 2026-09-05, shipped form='' rows past every backend gate and only
    // this validator caught them; the gate now refuses at class creation,
-   // pydantic refuses the row, the catalog wall pins both) — a model
+   // the serve validator refuses the row) — a model
    // without a form cannot resolve its form-spec and degrades every
    // surface at once.
    const missing: string[] = []
@@ -214,9 +214,8 @@ export function validateCatalogContract(catalog: unknown): CatalogContractResult
  }
 
  // ── Optional auxiliaries pass through unvalidated ─────────────────────
- // engine_order / quant_order / input_vocabulary: the frontend consumes
- // them defensively (input_vocabulary feeds lib/inputSlots) — extra
- // catalog evolution must never fail the load.
+ // engine_order / quant_order: consumed defensively — extra catalog
+ // evolution must never fail the load.
 
  return { valid: violations.length === 0, violations }
 }

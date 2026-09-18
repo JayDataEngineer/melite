@@ -43,7 +43,7 @@ function toCardStage(props: StageViewOwnerProps): CardStage {
   const artifacts: Record<string, string> = {}
   // THE HARVEST SHAPE (the observer's carry, 2026-09-12): the name→url
   // map is the primary source; the flat assetUrls list is the
-  // ray-parity second (the motion_npz key rides the map; the .npz
+  // second (the motion_npz key rides the map; the .npz
   // suffix scan rides the list).
   const arts = typeof result['artifacts'] === 'object' && result['artifacts'] !== null
     ? result['artifacts'] as Record<string, unknown> : {}

@@ -92,7 +92,7 @@ export function useDerivedView(args: {
     // windows were built ONLY from the named artifact map — a snapshot
     // whose artifacts were stripped (older bundle eras, degraded stores)
     // rendered ONE final-cut tile and the windows vanished even though
-    // assetUrls (the ray-parity FLAT list, stitch first) carried every
+    // assetUrls (the FLAT list, stitch first) carried every
     // clip. Union: every flat-list entry beyond [0] that the artifact
     // map didn't already provide joins as a window tile. Clip loss can
     // no longer hide behind a missing artifact name.

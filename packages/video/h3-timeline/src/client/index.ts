@@ -53,7 +53,7 @@ function toCardStage(props: StageViewOwnerProps): CardStage {
   // THE HARVEST SHAPE (what the estate's watchRun patch actually writes
   // — pinned by the real draft rows: stitch + windows + flat list):
   // result.artifacts is the name→url map (video, video_w\d+_main...);
-  // result.assetUrls is the ray-parity FLAT list, stitch first.
+  // result.assetUrls is the FLAT list, stitch first.
   for (const [name, val] of Object.entries(arts)) {
     if (typeof val === 'string' && val !== '') artifacts[name] = val
   }

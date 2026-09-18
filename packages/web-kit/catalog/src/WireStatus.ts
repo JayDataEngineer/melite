@@ -9,11 +9,10 @@
 // dual-boot boundary). A standalone page cannot import it as ESM. The
 // wire frame protocol itself is small, documented (api-gateway.md),
 // and pinned from BOTH sides in this repo: the server half by the
-// runs-remote wall (tests/walls/ts/suites/runs-remote.test.ts — the
-// adapter whose parameter name IS the wire field), the client half
-// by packages/web/editor/src/__tests__/wire-status.test.ts. This is
-// the ledger's clause-(b) shape (DSH principle, handrolled seam,
-// drift double-pinned). The hosted boot can later swap in the
+// runs-remote wall (tests/walls/ts/suites/runs-remote.spec.ts — the
+// adapter whose parameter name IS the wire field). The editor-side
+// client half died with the editor package, so the wall pins it solo.
+// This is the ledger's clause-(b) shape (DSH principle, handrolled seam). The hosted boot can later swap in the
 // kernel's own caller at this seam without touching consumers.
 //
 // FALLBACK LAW: the transport is an ADDITION, never a hard dep. A

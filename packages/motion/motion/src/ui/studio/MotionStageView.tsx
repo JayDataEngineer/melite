@@ -81,7 +81,7 @@ export function MotionStageView({
 }: MotionStageViewProps) {
   return (
  <div className={s.centerRow}>
- {/* ── Live stage — ALWAYS the viewer (pose-studio parity) ──────────
+ {/* ── Live stage — ALWAYS the viewer (pose-studio behavior) ──────────
  No run yet → no deformed vertices → SkinnedHumanoid renders the
  bind pose: the neutral somax mannequin, orbit/zoom/azimuth live.
  Loading/error overlays sit ON TOP of the mannequin, never replace

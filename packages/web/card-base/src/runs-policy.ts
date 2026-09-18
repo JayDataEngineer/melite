@@ -118,7 +118,7 @@ export async function probeRunGone(
 
 /** The draft's newest run (runs/list adoption — the reload-proof
  *  bridge: the estate is the SSOT, never the client's memory).
- *  NOTE the list's C-parity ordering: media-bearing runs first, then
+ *  NOTE the list's ordering: media-bearing runs first, then
  *  newest-first — scan the wide tail, newest by created_at. */
 export async function fetchLatestRunForDraft(
   draftId: string,

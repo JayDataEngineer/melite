@@ -2,7 +2,7 @@
 //
 // 2026-08-11 directive: "make declarative contracts in the Zustand and
 // pydantic so it's impossible to fail this". The backend half is
-// backend/core/flows/contracts.py RunStatus/RunStage, validated AT THE
+// the estate-queue status door, validated AT THE
 // WIRE (GET /v1/flows/status/{run_id} 500s with a `violations` array on
 // a contract violation). This validator mirrors it at the poll:
 //
@@ -17,9 +17,9 @@
 //     the poll. (flow_doc is NOT auxiliary: no gateway ever emitted
 //     it — the pipe-carry fiction, retired 2026-09-05.)
 //
-// The runner's run-level status vocabulary (runner.py): pending / running /
+// The runner's run-level status vocabulary: pending / running /
 // completed / failed / stopped / interrupted / unknown — exactly the
-// backend Literal (contracts.py RunStatusValue). "done"/"error" are STAGE
+// "done"/"error" are STAGE values (see below). "done"/"error" are STAGE
 // values; if the run level ever sent them, the contract flags it instead
 // of silently coercing.
 

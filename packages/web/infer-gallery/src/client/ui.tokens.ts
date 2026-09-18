@@ -1,8 +1,8 @@
 /**
  * Design tokens — every var(--dsw-alias-…) string in the media family
  * declared ONCE (audit F6). Numbered suffixes = same alias, different
- * fallback (opacity variants). Pinned by the parity wall
- * (tests/walls/ts/suites/media-sidebar.test.ts — tokens single site).
+ * fallback (opacity variants). Pinned by
+ * tests/walls/ts/suites/media-sidebar.spec.ts (tokens single site).
  */
 export const bgBase1 = 'var(--dsw-alias-bg-base, #000)'
 export const bgBase2 = 'var(--dsw-alias-bg-base, #0b0e14)'

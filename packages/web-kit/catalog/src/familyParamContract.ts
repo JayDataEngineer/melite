@@ -135,7 +135,7 @@ export function isFamilySchemaCachePopulated(): boolean {
  * flow draft still carries loras_selected as transport, but NOTHING
  * reads it — a silent-drop fossil; the flow lane owns that
  * vocabulary, this generate-surface gate must not bless it).
- * compile.py (_PARAM_TRANSLATIONS / _KNOWN_NON_SIG_PARAMS, the old
+ * (the old
  * provenance) is DEAD — no successor translates legacy spellings;
  * the "catalog_defaults_violations keeps drift out" claim was
  * fiction too (no such gate exists). This comment is the provenance

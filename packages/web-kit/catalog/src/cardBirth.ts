@@ -6,8 +6,8 @@
  *
  * The start door (POST /v1/flows/start) refuses ANY body without a
  * valid, doc-backed draft_id — 4xx BEFORE any run registers
- * (python/gateway.py submit(); wall:
- * tests/walls/suites/test_py_gateway.py::TestStartDoorRequiresDraft).
+ * (submit(); wall:
+ * the wall pins it).
  * Every run is born from an action card; a cardless row cannot be
  * born, so the media sidebar's "run has no action card (no draft_id
  * in its run row)" click error is unreachable for new runs.

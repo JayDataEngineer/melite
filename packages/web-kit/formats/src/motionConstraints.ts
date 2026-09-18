@@ -14,7 +14,7 @@
 //      EndEffectorConstraintSet / Root2DConstraintSet and feeds raw()'s
 //      constraint_lst.
 //
-// This is what makes the bar DRIVE generation — parity with the Kimodo
+// This is what makes the bar DRIVE generation — matching the Kimodo
 // demo's session.constraints → compute_model_constraints_lst (demo/ui.py:994
 // → generation.py:24-111). The demo builds constraint objects in-process;
 // we serialize → transport → deserialize because the editor is remote from
@@ -297,7 +297,7 @@ export function hydrateConstraints(raw: unknown): {
  *  WHY THIS EXISTS: viser's built-in click-to-append path (Timeline.tsx)
  *  only fires when the click lands at or past the last prompt's end_frame.
  *  After MotionCardEditor seeds one prompt spanning ``[0, T-1]`` (the whole
- *  bar, edge-to-edge — the demo parity), there is NO frame ≥ last.end_frame
+ *  bar, edge-to-edge — the demo behavior), there is NO frame ≥ last.end_frame
  *  reachable inside the bar, so appending is impossible and the user "can
  *  only put in dots" (keyframe dots, on the constraint lanes). This helper
  *  is the explicit, always-reachable "add a card" affordance.

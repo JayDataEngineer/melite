@@ -41,7 +41,7 @@ export function useTimelineAuthoring({
   effectiveNpz, toast, pushUndo, maybePushDragUndo, promptsAuthoredRef, targetT,
   setFrameIdx, setPlaying, setConstraintPayloads, setTlKeyframes, setTlPrompts,
 }: TimelineAuthoringArgs) {
-  // Scrubbing the bar seeks the viewer + pauses (parity with the range slider).
+  // Scrubbing the bar seeks the viewer + pauses (matching the range slider).
   const handleTimelineFrameChange = useCallback((f: number) => {
     setFrameIdx(f)
     setPlaying(false)
@@ -52,7 +52,7 @@ export function useTimelineAuthoring({
   // at that frame (SOMA-77, meters) into constraintPayloads[uuid], then add
   // the lane diamond. This is the functional core: the dot IS a pose constraint,
   // not a null shell. onKeyframeMove updates the frame the constraint applies
-  // at (the pose travels with it — parity with the demo's drag). Delete
+  // at (the pose travels with it — matching the demo's drag). Delete
   // evicts both the dot and the payload.
   const onKeyframeAdd = useCallback((trackId: string, frame: number): string => {
     const uuid = makeTimelineId()

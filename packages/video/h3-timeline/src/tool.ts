@@ -6,7 +6,7 @@ import { GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
 // provides a tools service. The timeline tool lives where the
 // timeline is defined: the calls[] shot laws are the CARD GATE's
 // (card.ts schema() — every composer's gate), this face only ships
-// the doc (one stage, calls as the array; the py-era JSON-string
+// the doc (one stage, calls as the array; the retired JSON-string
 // unwrap still fires estate-side for old senders — the array rides
 // composeDraftDoc verbatim).
 //

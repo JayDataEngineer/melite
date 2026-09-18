@@ -335,7 +335,6 @@ describe("catalog-seeded model validation", () => {
       capabilities: null,
       engine_order: null,
       quant_order: null,
-      input_vocabulary: null,
     } as never);
     await cleanReset();
     const mk = (id: string, model: unknown): string =>

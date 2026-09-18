@@ -166,7 +166,7 @@ export function listRowMediaUrl(
 /** The catalog's cards section (GET /v1/model-catalog — the
  *  discovery door, same-origin, bearer-free from the page): card id
  *  → its boarded families, first = the DEFAULT family (form-spec's
- *  card-id alias law parity: boarded[0]). The runs door resolves
+ *  card-id alias law: boarded[0]). The runs door resolves
  *  NEITHER card ids nor aliases — callers hand the start verb the
  *  family from HERE. Cached per session (the catalog is static per
  *  boot; one door round trip, every consumer shares it). */

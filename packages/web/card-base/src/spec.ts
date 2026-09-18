@@ -26,7 +26,7 @@
  * via the package system, it needs to have 'input' 'required=True',
  * or 'output', so the edges are defined"): every card's emission
  * carries `inputs` — one row per declared input edge, the required
- * fact joined per the py law (dsl.py Field.emit: `required: True
+ * fact joined per the law (dsl.py Field.emit: `required: True
  * emits, False omits`) — and `outputs`, the declared output edges.
  * The base constructs input components and picker candidates from
  * THESE, never from result-URL sniffing.
@@ -137,7 +137,7 @@ export interface SpecField {
 /** One DECLARED input edge: `name` is the schema param the edge feeds
  *  (the flowKinds key), `kind` the lane kind it carries (image/text/
  *  ...), and `required` present ONLY when the edge must exist before
- *  a run (True emits, False omits — the py law). */
+ *  a run (True emits, False omits — the law). */
 export interface InputEdge {
   name: string
   kind: string
@@ -432,7 +432,7 @@ export function unsetFaceTip(face: UnsetFace, render?: (v: string) => string): s
  *
  * One pure projection: serialized schemastery schema -> derived
  * SpecFields. Every presentation fact lives in the nodes' meta (the
- * declaration IS the UI contract — the py Field.emit law); this
+ * declaration IS the UI contract — the Field.emit law); this
  * walk reads, never invents. THE ORDER: dict insertion order with
  * the declared `order` hint as tie-break (a stable sort — equal
  * keys keep insertion order).
@@ -452,7 +452,7 @@ export function unsetFaceTip(face: UnsetFace, render?: (v: string) => string): s
  * string -> text; boolean -> boolean; array -> loras.
  *
  * Option labels: a union's const members carry their own
- * meta.description (the py emitter's label law) — the declared
+ * meta.description (the emitter's label law) — the declared
  * extra.options override when present. */
 export function fieldsOfEnvelope(
   env: SchemaEnvelope | null | undefined,
@@ -632,8 +632,7 @@ export function fieldsOf(spec: FormSpecDoc): SpecField[] {
  * (presence still wins) and OVER model_defaults (the server's own
  * family/variant stamps replace the client's guesses — variant
  * resolver_defaults, family defaults, the surface filter). Absent
- * base = the registry-less lane derive (the wall pins parity on
- * the golden families). PURE. */
+ * base = the registry-less lane derive. PURE. */
 export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecValues): SpecValues {
   const out: SpecValues = specDefaults(fieldsOf(spec))
   for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {

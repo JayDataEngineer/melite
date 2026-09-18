@@ -1,6 +1,6 @@
 /**
  * ComfyManagerPanel component tests (jsdom) — the stroke-2 behavior
- * the parity wall cannot see (it scans vocabulary, not rendering):
+ * rendering behavior (beyond vocabulary):
  *
  *   chip        — the active-runs chip names runs (the double-count
  *                 bug stays dead)

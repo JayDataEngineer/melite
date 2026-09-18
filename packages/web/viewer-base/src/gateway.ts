@@ -1,6 +1,6 @@
 // gateway.ts — the gateway wiring viewer claims share.
 //
-// REAL DOORS ONLY (routes.ts + doors/flowsRun.ts + doors/assets.ts):
+// REAL DOORS ONLY (the estate-queue doors):
 //   GET /v1/flows/runs/{run_id} → {run_id, status, stages,
 //        skipped_stages, artifacts: string[], error, queue_position}
 //   GET /v1/assets/runs/{run}/{rel} → bytes (Range-capable)

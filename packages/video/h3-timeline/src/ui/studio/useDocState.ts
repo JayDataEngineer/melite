@@ -24,7 +24,7 @@ export function useDocState(stage: CardStage) {
   // back to STARTER_CALLS — and the guard used to initialize to the
   // HYDRATED serialization, so the mount-time persist no-opped and
   // the stage stayed calls-less until the first manual edit. A Run
-  // on such a stage met the py-parity gate verbatim ("no calls to
+  // on such a stage met the gate verbatim ("no calls to
   // compose"). The sentinel: when the PERSISTED params carried no
   // calls (and no legacy beats), the ref inits to the empty string —
   // never equal to a hydrated candidate — so the first persist

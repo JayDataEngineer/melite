@@ -139,7 +139,7 @@ export interface BackendDraft {
   flow?: InlineFlowBody
 }
 
-/** One typed edge row of an inline flow (python/flow.py flow_from_body
+/** One typed edge row of an inline flow (python/flow.flow_from_body
  * contract): an initial-pool key, or an upstream stage output. */
 export type InlineFlowEdge = { initial: string } | { stage: string; output: string }
 
@@ -236,8 +236,8 @@ export interface FlowStage {
  /** Per-slot output NAME: inputOutputs[i] names which output to consume
  * from inputs[i]. null/absent = the primary (assetUrls[0]). Set when a
  * multi-output upstream (input_prep → media + mask) feeds a slot that
- * needs a non-primary output (mask → lanpaint_mask). Parallel to
- * ``inputs`` by index; padInputs pads this too. */
+ * needs a non-primary output. Parallel to ``inputs`` by index; the
+ * slot UI maintains length parity. */
  inputOutputs?: (string | null)[]
  /** Result after execution. null = not yet run. */
  result: StageResult | null

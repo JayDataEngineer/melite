@@ -17,7 +17,7 @@ import type * as React from "react"
 import * as THREE from "three"
 import type { CardStage } from "@melite/contracts"
 import {
-  collectStageUrls, ensureDraftId, formOf, pollFlowRun, stageSlots,
+  collectStageUrls, ensureDraftId, formOf, getCachedCatalog, pollFlowRun,
 } from "@melite/catalog"
 import {
   deformFrame, loadGlbSkin, loadMotionNpz, loadSomaSkin, NotSomaxGlbError,
@@ -82,12 +82,17 @@ export function useMotionMedia({
   }, [onSave, setBodyGlbState, setBodyNotice])
 
   // The wire state, resolved client-side (the mask-studio read): inputs[i]
-  // ↔ the i-th slot of stageSlots(params). preview_glb must be IN the
+  // ↔ the i-th seat of the stage's model row. preview_glb must be IN the
   // card's declared+present slots for the wire to exist at all — old cards
   // (params without the key) get manual-attach only until a save seeds it.
+  // The stage's OWN model row is the seat truth (its schema-derived
+  // input_slots on the wire) — no client-side global vocabulary; no
+  // catalog = no wire (honest no-truth).
   const bodySlotIdx = useMemo(
-    () => stageSlots(stage.params, formOf(stage.service), stage.service)
-      .indexOf(MOTION_PREVIEW_GLB_PARAM),
+    () => (stage.params[MOTION_PREVIEW_GLB_PARAM] !== undefined
+      ? (getCachedCatalog()?.models?.[stage.service]?.input_slots ?? [])
+        .indexOf(MOTION_PREVIEW_GLB_PARAM)
+      : -1),
     [stage.params, stage.service],
   )
   const bodyWiredId = bodySlotIdx >= 0 ? stage.inputs[bodySlotIdx] : ""
@@ -123,7 +128,7 @@ export function useMotionMedia({
 
   // The skin — the character GLB when a body is set, else the neutral somax
   // mannequin (session-cached in somaSkin.ts; the stage renders the
-  // bind-pose figure even before any run exists — pose-studio parity, no
+  // bind-pose figure even before any run exists — pose-studio behavior, no
   // "run first to see the card"). A body swap RE-SKINS: skin flips → the
   // motion precompute below (keyed on skin) re-runs on the new body.
   // Failure semantics: neutral-skin failure is a HARD error (nothing can
@@ -276,7 +281,7 @@ export function useMotionMedia({
     return () => { cancelled = true }
   }, [npzUrl, skin, setNpz, setAllVertsM, setError, setLoading, setFrameIdx, setPlaying, setEditMode, setKeptEdit, setEditedDeformedB64, setSkin])
 
-  // Space toggles playback (motion studio parity) — the strip buttons stay
+  // Space toggles playback (motion studio behavior) — the strip buttons stay
   // clickable; the key handler ignores form inputs.
   useEffect(() => {
     if (!npz) return

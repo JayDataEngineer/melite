@@ -72,7 +72,7 @@ export function useTimelineEnvelope({
   // can split/resize/append more cards in the timeline.
   // NOTE: constraints (tlKeyframes + constraintPayloads) are NOT cleared on
   // a new motion — they're the authoring surface that survives re-runs and
-  // drives the NEXT generation (parity with the demo's session.constraints,
+  // drives the NEXT generation (matching the demo's session.constraints,
   // which persist across Generate clicks). The backend drops frames outside
   // the new motion's range (generation.py:52), so stale frames are safe.
   // The frame count the timeline + seed operate on: the real run's T once a

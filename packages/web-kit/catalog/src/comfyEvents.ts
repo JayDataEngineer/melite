@@ -5,8 +5,7 @@
  * surfaces graph execution events — `execution_start`, `progress`, `executing`,
  * `executed`, `execution_success`, `execution_error` — as a typed stream. The
  * UniCanvas backend already exposes progress via polled `/progress/<id>`; this
- * client is the parity scaffolding for real-time streaming once the gateway
- * proxies the websocket. It auto-reconnects with backoff and degrades to a
+ * client scaffolds real-time streaming. It auto-reconnects with backoff and degrades to a
  * no-op when WebSockets are unavailable (SSR/tests).
  *
  * 2026-09-02 status: the ENGINE side of that law landed — the comfyui

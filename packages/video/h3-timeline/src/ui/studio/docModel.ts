@@ -37,8 +37,7 @@ export interface DocCall {
   clip?: string
   audio?: string
   first_frame_prev_sec?: number
-  /** Seam mode into this call: 'extend' (ABSENT = extend — the
-   * py-era chain default the frozen goldens pin; the previous
+  /** Seam mode into this call: 'extend' (ABSENT = extend — the previous
    * window's SAMPLER latent chains in, prev-sec = seconds of carry)
    * or 'cut' (a fresh window; with prev-sec the previous VIDEO tail
    * — decoded picture + sound — opens this window via the
@@ -123,7 +122,7 @@ export interface BeatKnobs {
  * grouped-widget sub-inputs and now carry card_knobs entries. */
 /* THE CALL-KNOB VOCABULARY (the Layer A/B law stroke, 2026-09-17):
  * the stanza keys the CARD's compose actually reads — the wire names,
- * no studio dialect. The py-era spellings (sampling_steps / sampler /
+ * no studio dialect. The retired spellings (sampling_steps / sampler /
  * scheduler / h3_sla_* / interpolate_model / interpolate_multiplier)
  * never matched the card's reads and were silently ignored by
  * compose; they migrate at hydration (LEGACY_KNOB_KEY) and never
@@ -186,7 +185,7 @@ export const KNOB_LABELS: Record<KnobKey, string> = {
   length: "Window length (frames)",
 }
 
-/** The py-era knob spellings → the card's wire names. Hydration
+/** The retired knob spellings → the card's wire names. Hydration
  * migrates; serialization only ever writes the wire names. */
 export const LEGACY_KNOB_KEY: Record<string, string> = {
   sampling_steps: "steps",
@@ -261,7 +260,7 @@ export function stemToClip(
  * B call inherits plus the document's own clock (fps
  * geometry) and the NLE audio bed. Every optional field is a card
  * wire key at its exact name — absent = the family default rides.
- * The py-era decorative vocabulary (audio_mode, continuity,
+ * The retired decorative vocabulary (audio_mode, continuity,
  * h3_attention, h3_fp16_accumulation, h3_torch_compile, cfg,
  * h3_context_steps, h3_audio_context_steps, crf, lora_name, the
  * h3_ref_* run-level refs) is GONE: none of it was ever read by
@@ -326,7 +325,7 @@ export interface LayerA {
   audio_clips?: DocAudioClip[]
 }
 
-/** The py-era Layer A spellings → the card's wire names (hydration
+/** The retired Layer A spellings → the card's wire names (hydration
  * migrates; serialization writes only the wire names). The lora knob
  * pair maps through the mod bag: a legacy lora_name resolves to a
  * catalog id when the filename matches, else drops with a warning
@@ -378,7 +377,7 @@ export interface DocKeyframe {
 }
 
 /** The fresh-card document: ONE window 0→90 — the t4_open draft
- * budget (py parity). The canvas IS the film: the readout shows
+ * budget . The canvas IS the film: the readout shows
  * 3.8 s and 3.8 s renders. A user authoring a longer window gets it
  * ungated (the operator's order 2026-09-17) — the span-vs-engine
  * receipts live in the ledger, not in any gate. Used only when

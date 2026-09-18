@@ -119,7 +119,7 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
     // Per-call knobs: vocabulary-gated hydration — a foreign key is
     // dropped with a warning, NEVER re-sent (the card's compose
     // reads only its declared knobs; the UI must not author others).
-    // Legacy py-era spellings migrate through LEGACY_KNOB_KEY first
+    // Legacy retired spellings migrate through LEGACY_KNOB_KEY first
     // (2026-09-17: the wire names are the only vocabulary now).
     if (r.knobs !== null && typeof r.knobs === "object") {
       const knobs: BeatKnobs = {}

@@ -1,7 +1,7 @@
 // flowProtocol — the ONE generation protocol (Phase C + ONE surface).
 //
 // POST /v1/flows/start compiles {model, params} → a 1-step flow
-// document (catalog form → family mapping, core/flows/compile.py) and
+// document (catalog form → family mapping) and
 // returns {run_id}. The run executes on the server; we poll
 // GET /v1/flows/status/{run_id} until terminal, then collect artifact
 // URLs from stage.url + stage.gallery[].url.
@@ -302,7 +302,7 @@ export type CompiledGenerationResult =
  *   - started: run completed — urls are the artifact URLs
  *
  * D3 (2026-08-06): every catalog form compiles to a family
- * (compile.py _FORM_CONFIGS), so the "uncompilable" 400 fallback to
+ * (_FORM_CONFIGS), so the "uncompilable" 400 fallback to
  * POST /v1/run (base64) is dead — an uncompilable form now throws here.
  *
  * Throws on any other failure (HTTP error, malformed response, run error).

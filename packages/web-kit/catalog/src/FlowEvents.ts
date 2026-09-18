@@ -16,8 +16,8 @@
  * still completes via the poll.
  *
  * Distinct from comfyEvents.ts (the DIRECT ComfyUI ws client,
- * parity scaffolding for engine-local attachments): this is the
- * gateway-owned transport, same-origin with the REST API, no
+ * scaffolding for engine-local attachments): this is the
+ * estate-owned transport, same-origin with the REST API, no
  * engine knowledge crosses this wire.
  */
 

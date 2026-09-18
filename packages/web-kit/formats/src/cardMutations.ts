@@ -3,7 +3,7 @@
 // DECLARATIVE way. One table, one gate — no per-kind imperative store code.
 // Each row declares the field a mutation kind writes + its validation
 // + coercion; extending the gate = adding a union member + a table row (same
-// discipline as _FORM_CONFIGS in backend/core/flows/compile.py, and the
+// discipline as _FORM_CONFIGS, and the
 // backend's pydantic models this table mirrors).
 //
 // The enforcement is two-layer, mirroring the catalog schema's pattern:

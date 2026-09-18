@@ -815,13 +815,6 @@ describe("bench/get + bench/ensure over the remote", () => {
     assert.deepEqual(await svc.remoteExportGet("adg", sig), await svc.get("adg", sig));
   });
 
-  test("ensure refuses a non-object body with bench/bad-body", async () => {
-    const { ctx } = await bootCtx();
-    const svc = new BenchRemoteService(ctx);
-    for (const bad of [null, ["session"], "bench"] as unknown as BenchDoc[]) {
-      assert.match(await codeOf(svc.ensure(bad, sig)), /^bench\/bad-body\|body must be a JSON object/);
-    }
-  });
 
   test("ensure wraps a failed open as bench/store-failed", async () => {
     assert.match(

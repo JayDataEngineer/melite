@@ -99,7 +99,7 @@ export class RunsRemoteService extends TypertRemoteService {
   }
 
   /** Endpoint `runs/list` — the restore-port envelope (registry
-   *  seat; the raw limit string keeps py int() semantics). */
+   *  seat; the raw limit string keeps int() semantics). */
   @Remote("list")
   async remoteExportList(
     rawLimit: string,

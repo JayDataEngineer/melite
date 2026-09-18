@@ -8,7 +8,7 @@
  * refs = slots 2-9). This file now exports the two PIECES the
  * unified Reference bundle panel seats:
  *   • FirstFrameSlot — the anchor's image square (the estate's
- *     SourceRow grammar, at parity with every other image input:
+ *     SourceRow grammar, matching every other image input:
  *     From flow / From media / From file), writing `image`.
  *   • SeamControls — the call's seam law (how this call joins the
  *     previous one: cut re-feeds the previous VIDEO tail; extend

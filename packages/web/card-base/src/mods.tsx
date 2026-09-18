@@ -311,7 +311,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     setLeaf(null)
   }
   // apply order = array order: the drop rewrites the bag; the
-  // composed graph follows (the old rule-2 parity). Same splice verb,
+  // composed graph follows (the old rule-2). Same splice verb,
   // native drag ids (the dnd-kit purge).
   const onTileDrop = (k: ModifierKind, active: string, over: string): void => {
     // (the over===active guard was deleted: the sole caller is the

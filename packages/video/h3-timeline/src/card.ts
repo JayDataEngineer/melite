@@ -3,18 +3,17 @@
 // CARD SURFACE vs RENDERER VOCABULARY (2026-09-07): the schema below
 // mirrors ONLY the retired python card's own fields (H3TimelineCard:
 // prompt, image, seed, width, height, length, steps, sharpen_enabled,
-// sharpen_strength, interpolate_enabled, shift_video, shift_audio —
-// 12 keys; card.py deleted purge S-decls 2026-09-08). The window families (t4r /
+// sharpen_strength, interpolate_enabled, shift_video, shift_audio
+// 12 keys; the S-decl purge deleted 2026-09-08). The window families (t4r /
 // t4_open / t4_chain), the motion-context chaining rail, and the SLA /
 // SR / interp leaves are the RENDERER vocabulary the compose body
 // still reads: those keys ride the compose door's explicit-params
 // overlay (service.ts params cascade: schema defaults, then model
 // defaults, then raw params — the img-to-mesh precedent), so every
-// read below normalizes with its old default and the frozen goldens
-// (tests/golden_cordis/video_h3-*.json, causes in the beside .d dirs)
-// stay byte-identical.
+// read below normalizes with its old default and the served shape
+// stays byte-identical.
 //
-// Node creation order mirrors the python renderer's SERIALIZED id
+// Node creation order follows the SERIALIZED id
 // order exactly — comfy-script assigns `<Class>.<index>` ids
 // depth-first post-order from the output list (saved, then
 // ctx_saved), so the per-class creation sequence below is pinned by
@@ -23,7 +22,7 @@
 // resizer BEFORE the geometry resizer).
 //
 // Autofill law: the GraphBuilder auto-fills pin defaults for omitted
-// inputs exactly like comfy-script does; the python renderer strips
+// inputs exactly like comfy-script does; the compose strips
 // the t4-family leaks post-hoc (_T4_AUTOFILL_STRIP) — the strip rides
 // src/kit.ts finalizeH3 (t4r, like the python's `if not is_t4r`,
 // strips nothing; the i2v dead-branch node marks the t4r family in
@@ -40,9 +39,9 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 // (H3_T4_STRIP; the t4r branch carries all of these explicitly, so it
 // never strips).
 
-// ── weight / template constants (py-justified — EXTENSION LAW) ─────────────
+// ── weight / template constants (justified — EXTENSION LAW) ─────────────
 // Every loader filename below is a declared Provision row in
-// packages/engines/comfyui/models/video/h3-timeline/model.py:
+// packages/models/h3-timeline/src/index.ts:
 // UNET_GOLD ← diffusion_models/minimax_h3_hybrid_fl2va_ref2va_b30-49-int8;
 // CLIP_GOLD ← text_encoders/qwen3vl_32b_minimax_h3_int8_convrot;
 // VAE_VIDEO_GOLD ← vae/minimax_h3_video_vae_int8_convrot;
@@ -62,20 +61,18 @@ const LORA_STACK_GOLD =
   '{"on":true,"lora":"h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors","str":0.6,"v":1,"a":1,"t":1}]'
 // His 17k+5 grid, in-graph (ComfyMathExpression): snap latent steps to 2 mod 5
 // (the card's own principles row: "Length snaps to the 17k+5 frame grid
-// at 24fps" — card.py principles).
+// at 24fps" — the principles).
 const MATH_STEPS_GOLD = 'max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17'
 // the never-selected i2v branch's dead-branch prompt (template gold;
-// provenance: the frozen golden captures, see
-// tests/golden_cordis/video_h3-timeline_t4r.json.d/causes.md).
+// provenance: the frozen served captures).
 const I2V_GOLD_PROMPT = 'In a high action fun scene The character from the picture is facing the camera and sprinting towards the camera which tracks their movement, in a hitech futuristic city, dodging passing vehicles and other obstacles.\nHigh action, quick movements, cinematic. It is raining and night time, with glowing led lights.\nCars are crashing into eachother, bombs are dropping, but the character remains untouched by the chaos as they sprint.\nthey jump over a car as it slams into another car, and a bomb nearly hits the character.\nany car crashes or bomb impacts cause massive realistic destruction.\n\n[sound]\na futuristic electro cyber song plays in the background, and the background noise of crashes and explosions.\n'
 // ImageSharpenKJ's grouped-widget defaults (the rcas block the python
 // builds when no sharpen leaf is injected; the card exposes only the
-// strength leaf — card.py sharpen_strength).
+// strength leaf — sharpen_strength).
 const SHARPEN_DEFAULTS = { method: 'rcas', strength: 0.3, radius: 1.0, threshold: 0.05, iterations: 10 }
 
-// the window families this renderer builds (the golden captures'
-// three shapes: t4r opener / t4_open window / t4_chain window — see
-// the beside .d causes files).
+// the window families this renderer builds (three shapes:
+// t4r opener / t4_open window / t4_chain window).
 const FAMILIES = ['t4r', 't4_open', 't4_chain'] as const
 type Family = (typeof FAMILIES)[number]
 
@@ -93,18 +90,18 @@ const CHAIN_ONLY_KEYS = [
 ] as const
 
 // ── the params schema — H3TimelineCard mirrored 1:1 ─────────────────────────
-// card.py field order and defaults. Bare (defaultless) keys are the
-// py-ABSENT / py-required surface (prompt required=True; image
+// the declared field order and defaults. Bare (defaultless) keys are the
+// ABSENT / required surface (prompt required=True; image
 // default=None): the image-gen precedent — optional at parse, refused
 // loud at compose where the lane needs them, and every read below
-// normalizes with ?? so the goldens stay byte-identical.
-// PARITY LEDGER (2026-09-07, resolved zero-regold): the four rows
-// below AGREE with py card.py (width 1344, height 768,
-// sharpen_enabled false, shift_video 8.0) and the frozen goldens pin
-// the same values, so no re-cut. shift_video's declared .default(8.0)
-// mirrors py for the parity referee; at runtime schema() normalizes an
+// normalizes with ?? so the served shape stays byte-identical.
+// DECLARED CONSTANTS (2026-09-07): the four rows
+// below are the declared constants (width 1344, height 768,
+// sharpen_enabled false, shift_video 8.0) and the served shape
+// carries the same values. shift_video's declared .default(8.0)
+// (historical shape); at runtime schema() normalizes an
 // omitted key back to null so the body resolves the family's literal
-// (t4 INT 8 / t4r 8.0 — JSON-structural parity the goldens pin).
+// (t4 INT 8 / t4r 8.0 — the served structural values).
 const nullable = <T extends object>(inner: T): unknown => z.union([inner, z.const(null)])
 
 const paramSchema = z.object({
@@ -121,14 +118,14 @@ const paramSchema = z.object({
   // the compose door's `expected number multiple of 5` on a user-set
   // Frames). min(22).step(17) admits exactly (L-5) % 17 === 0 — the
   // served stepper now walks the true grid 22/39/56/.../362 and the
-  // frozen goldens' explicit 90 passes the walk. 56 (the declared
+  // explicit 90 passes the walk. 56 (the declared
   // default) is on-grid; the omitted-key path normalizes to null in
   // schema() so the body computes the family's frame budget.
   length: z.number().description("Frames").min(22).max(362).step(17).default(56).extra('extra', { order: null, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
   steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', { order: null, tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)", wtype: 'number' }),
   sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
   sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, visible_when: "sharpen_enabled=true", tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
-  // interpolate_enabled: HONEST DEFAULT (hour 20): the py card's
+  // interpolate_enabled: HONEST DEFAULT (hour 20): the card's
   // `bool = False` — `default(false)`, not the "false"-as-boolean
   // cast-lie. An absent key now fills the boolean NATIVELY (no
   // caller prefill — the old string default is what used to throw).
@@ -145,27 +142,26 @@ const paramSchema = z.object({
   // interpolate_multiplier / rtx_vsr_enabled) never matched these,
   // were never read, and die with the studio rework.
   denoise: z.number().description("Denoise").min(0).max(1).step(0.05).default(1.0).extra('extra', { order: null, wtype: 'number', tooltip: "How much of the latent the sampler rewrites. 1.0 = full denoise (fresh windows); lower inherits structure." }),
-  // CLOSED TYPES (hour 22, the parity wall's second catch): these were
+  // CLOSED TYPES (hour 22 incident): these were
   // z.string() with a DECORATIVE extra options list — the gate accepted
   // any string (no membership refusal), the face showed the hand-stamped
   // six, the engine accepts the pin's 45: three truths for one key. The
   // union of consts is the ONE truth now — the face reads the members,
   // the gate refuses off-set values at the compose door (the kit's own
   // law: sampler/scheduler knobs ride vocabulary()), and the declared
-  // default stays reachable (the wall proves fill === walk).
+  // default stays reachable (fill === walk by construction).
   sampler_name: vocabulary(["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun"]).description("Sampler").default("euler").extra('extra', { order: null, wtype: 'select', tooltip: "The KSampler solver (turbo adapters pair with euler/euler_cfg_pp)." }),
   sched_name: vocabulary(["simple", "beta", "linear_quadratic", "normal", "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform"]).description("Scheduler").default("simple").extra('extra', { order: null, wtype: 'select', tooltip: "The sigma schedule shape." }),
   interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
   interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." }),
   sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', { order: null, tooltip: "Upscale the final film through SeedVR2 before saving." }),
   sr_resolution: z.number().description("Super-Res target").min(720).max(2160).step(360).default(1080).extra('extra', { order: null, visible_when: "sr_switch=true", wtype: 'number', tooltip: "The SeedVR2 output height in px." }),
-  // OPEN FILE SURFACE (the parity triage, hour 22): the SeedVR2 weights
+  // OPEN FILE SURFACE (hour 22 triage): the SeedVR2 weights
   // span OTHER families' provisions (seedvr2_ema provisions the fp16
   // 3B; variants keep landing) — the card cannot close what it does not
   // own. Open string, text face, and the default is the one file the
   // estate actually provisions (the old default pointed at a file that
-  // existed NOWHERE in the estate — a ghost; sr_switch never fires it
-  // in the goldens, so no re-gold).
+  // existed NOWHERE in the estate — a ghost; sr_switch never fires it).
   sr_model: z.string().description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', { order: null, wtype: 'text', tooltip: "SeedVR2 weights file (models/upscale_models/)." }),
   // the R2V COMBO size mode — the literals OR a concrete WxH dimension
   // ("704x1280" rides in real runs; a number or a typo refuses LOUD at
@@ -174,20 +170,20 @@ const paramSchema = z.object({
   ref_image_size: z.union([z.const("match"), z.const("max"), z.string().pattern(/^\d+x\d+$/).description("WxH")]).description("Ref size").default("match").extra('extra', { order: null, wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor, take the max edge, or an explicit WxH." }),
   // the 1:1 upstream escape hatch: a raw LTX_lora_loader stack JSON
   // string (the mod bag `loras` is the sanctioned surface; this rides
-  // for hand-authored parity cases)
+  // for hand-authored edge cases)
   lora_stack: z.string().description("Lora stack (raw)"),
   // nullable inner: min/max validate only the number branch — null
   // (the family-literal resolution path) passes untouched.
-  // PARITY LAW (hour 22, the parity wall's first catch): the declared
+  // DECLARED-DEFAULT LAW (hour 22 incident): the declared
   // default must be reachable by the gate AND visible to the walk.
   // With the default buried in the union's inner arm only, carrier({})
   // left the key absent — the face showed 8 (the walk reads the inner
   // arm) while the body's hand-rolled family literal (isT4r ? 8.0 : 8)
-  // actually owned the call: parity by convention, a dormant silent
+  // actually owned the call: convention only, a dormant silent
   // drop (t5 ships 10 → face says 8, call sends 10). The default rides
   // BOTH sites of this one expression now — the OUTER union (the gate's
-  // fill) and the inner arm (the walk's read) — and the parity wall
-  // proves the two spellings equal per key, forever. The body literal
+  // fill) and the inner arm (the walk's read) — and the two
+  // spellings stay equal per key. The body literal
   // stays as the explicit-null backstop only.
   shift_video: z.union([z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' }), z.const(null)]).default(8),
   shift_audio: z.number().description("Audio Shift").min(1).max(10).step(0.5).default(3).extra('extra', { order: null, tooltip: "Timestep shift for audio attention. Lower = more detailed sound.", wtype: 'number' }),
@@ -220,7 +216,7 @@ const paramSchema = z.object({
   // studio owns its own shots editor, ui/studio/docModel) and the
   // served manifests. The AGENT plane declares calls in the tool
   // face (src/tool.ts); the SHOT LAWS are the card gate's (schema()
-  // below — the py model_validator port), so every composer —
+  // below — the model_validator port), so every composer
   // agent tool, studio, any future caller — meets the same gate.
 })
 
@@ -262,14 +258,14 @@ export function schema(v: unknown): Record<string, unknown> {
   // so the bench tile's Run composed no shots and the door refused
   // "no calls to compose" before the studio ever persisted its doc).
   // ABSENT calls compose the card's own fresh-card document: ONE
-  // window 0→90 — the t4_open fresh-card draft budget (py parity;
+  // window 0→90 — the t4_open fresh-card draft budget (
   // display = render, 3.8s). A user authoring a LONGER single window
   // gets it ungated — the operator's order 2026-09-17 ("don't add
   // gates; if a user wants a long window, they should get a long
   // window"); the span-vs-engine receipts live in the ledger as
   // knowledge, never enforcement. An
   // EXPLICIT empty array keeps the retired compose refusal verbatim
-  // (compose/card.py:100 "%s: no calls to compose"): a caller naming
+  // ("%s: no calls to compose"): a caller naming
   // zero shots is garbage; a caller naming none is a fresh card.
   if (variant === undefined) {
     let calls: unknown[] = []
@@ -282,8 +278,8 @@ export function schema(v: unknown): Record<string, unknown> {
     if (calls.length === 0) {
       throw new Error('h3-timeline: no calls to compose')
     }
-    // THE SHOT LAWS (py schema.py _wire_value_laws port — the ranges
-    // are the card gate's, never a silent re-default: the py era
+    // THE SHOT LAWS (schema.py _wire_value_laws port — the ranges
+    // are the card gate's, never a silent re-default: the retired era
     // quietly re-defaulted an out-of-range seam and rendered a
     // reversed span as 56 frames; both banned there, banned here).
     // CARRY_MIN/CARRY_MAX: timeline/laws.py lane physics.
@@ -323,13 +319,13 @@ export function schema(v: unknown): Record<string, unknown> {
     throw new Error(`unknown window family '${variant}' (known: ${[...FAMILIES].sort().join(', ')})`)
   }
   const explicit = new Set(Object.keys(raw))
-  // shift_video's declared .default(8.0) mirrors py card.py for the
-  // parity referee; an omitted key normalizes back to null here so the
+  // shift_video's declared .default(8.0) is the declared default;
+  // an omitted key normalizes back to null here so the
   // body resolves the family's literal (t4 INT 8 / t4r 8.0) and the
   // frozen graphs stay byte-identical.
   if (!explicit.has('shift_video')) out.shift_video = null
   // length: the SAME law (the walk-shadow fix, 2026-09-13) — the
-  // declared .default(56) mirrors py card.py for the parity referee,
+  // declared .default(56) is the declared default,
   // but the body computes the family's frame budget where the python
   // computes it (t4_open 90 / else 56 — "None = absent on wire").
   // Without this normalization the schemastery walk materializes 56 on
@@ -401,18 +397,17 @@ export const identity = {
 // it render exactly the frozen graphs. Card-knob reads use the schema
 // value directly (always defined post-schema) except the two bare
 // keys (prompt/image), which normalize absent.
-/** THE MERGED FILM (the mergegraph port, 2026-09-17): the py
+/** THE MERGED FILM (the merged-graph builder, 2026-09-17): the
  *  execute-lane transport composed each window separately and merged
  *  the graphs post-serialization (namespacing + rewiring the seam
  *  links); the TS flip lost that half — a multi-call doc composed ONE
  *  window and the seams never rode. This is the port: ONE prompt, N
  *  windows under `window${k}_` scopes (GraphBuilder.scoped), REAL seam
  *  edges between scopes (the executor orders windows off the graph),
- *  per-window stanzas in the py vocabulary (k, ctx_save_clip_index,
+ *  per-window stanzas in the vocabulary (k, ctx_save_clip_index,
  *  the per-call knobs REPLACE, the span rider per window). The seam
  *  itself is the studio's document law (docModel): transition
- *  'extend' (absent = extend, the py-era chain default the frozen
- *  goldens pin) chains the previous LATENT; 'cut' is a fresh window,
+ *  'extend' (absent = extend) chains the previous LATENT; 'cut' is a fresh window,
  *  and 'cut' + first_frame_prev_sec opens from the previous VIDEO
  *  tail (the node's context_frames arm). prev_sec scales the carry:
  *  picture snapped to the node's legal context lengths (5/22/39/56
@@ -553,11 +548,11 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   const isT4r = family === 't4r'
   const isChain = family === 't4_chain'
   const prompt = (p.prompt ?? '') as string
-  // py card knob first (card.py image), renderer alias second.
+  // card knob first (image), renderer alias second.
   const guideImage = (p.image ?? p.image_name ?? '') as string
 
-  // ── the golden model chain (family-conditional defaults computed
-  // exactly where the python computes them; None = absent on wire) ──
+  // ── the model chain (family-conditional defaults;
+  // absent = absent on wire) ──
   const stabilize = p.sla_stabilize_motion ?? (isT4r ? false : true)
   const unet = g.node('UNETLoader', { unet_name: UNET_GOLD, weight_dtype: 'default' }).out()
   const sla = g.node('H3SLAAttention', {
@@ -583,7 +578,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   // `loras` — [{id, strength}] rows the service resolves to
   // {name, strength} filenames against the family's flavor catalog.
   // Those rows build the upstream stack verbatim ({on, lora, str,
-  // v:1, a:1, t:1} — the golden rows' own shape); the raw
+  // v:1, a:1, t:1}); the raw
   // `lora_stack` JSON string stays the 1:1 escape hatch; absent
   // both, the frozen gold pair rides.
   const loraStack = Array.isArray(p.loras) && (p.loras as unknown[]).length > 0
@@ -598,9 +593,9 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       })))
     : (p.lora_stack ?? LORA_STACK_GOLD)
   // t4r templates carry shift_video 8.0; the t4 family carries the INT
-  // 8 — JSON-structural parity needs the family's literal. An omitted
+  // 8 — the served shape needs the family's literal. An omitted
   // key arrives null here (schema() normalizes the declared 8.0 back;
-  // the declaration mirrors py card.py) and resolves per-family.
+  // the declaration) and resolves per-family.
   const shiftVideo = p.shift_video ?? (isT4r ? 8.0 : 8)
 
   const clip = g.node('CLIPLoader', {
@@ -645,11 +640,11 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
 
     // THE ANCHOR + THE REFERENCE BUNDLE (the operator's distinction,
     // 2026-09-17): `image` is the call's FIRST FRAME anchor (input_1,
-    // the frozen golden shape); `refs` is the call's REFERENCE bundle
+    // the frozen served shape); `refs` is the call's REFERENCE bundle
     // — the upstream "Extra References" subgraph's own vocabulary
     // (LoadImage → the ref resizer; LoadVideo → GetVideoComponents →
     // the image+audio component pair; LoadAudio). Bundle layout (the
-    // golden slot map): inputs 1-9 images (anchor first), 10/12/14
+    // slot map): inputs 1-9 images (anchor first), 10/12/14
     // video image streams, 11/13/15 video audio streams, 16-18
     // audios. RESIZER ORDER IS PINNED: the serialized walk reaches
     // the reference resizer (bundle → r2v refs) before the geometry
@@ -728,7 +723,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       r2vInputs[`ref_audios.ref_audio_${i}`] = bout.out(15 + i)
     }
     const r2v = g.node('MiniMaxH3ReferenceToVideo', r2vInputs)
-    // the never-selected opener branch (R2VBool true) — the golden
+    // the never-selected opener branch (R2VBool true) — the
     // dead-branch text and the geometry slots ride it verbatim
     const i2v = g.node('MiniMaxH3ImageToVideo', {
       prompt: I2V_GOLD_PROMPT, width: geoW, height: geoH,
@@ -766,11 +761,11 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // clamped [22,362] — the same set the length param's own
     // min/step admits; the first 168-span probe died inside
     // SamplerCustomAdvanced off-grid, live receipt 2026-09-17). The
-    // py-era 90/56 budgets remain the fallback ONLY for docs that
+    // retired 90/56 budgets remain the fallback ONLY for docs that
     // (the length source of truth is UPSTREAM of this renderer: the
     // schema's span rider serializes single-call spans as EXPLICIT
     // length, and the merged film computes per-window lengths — this
-    // arm only falls back to the py family budgets)
+    // arm only falls back to the family budgets)
     const length = p.length ?? (family === 't4_open' ? 90 : 56)
     const r2v = g.node('MiniMaxH3ReferenceToVideo', {
       prompt, width: p.width as number,
@@ -784,7 +779,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   }
 
   // ── sampler stack ──────────────────────────────────────────────────
-  // py card knob first (card.py seed), renderer alias second.
+  // card knob first (seed), renderer alias second.
   const noise = g.node('RandomNoise', { noise_seed: (p.noise_seed ?? p.seed ?? 42) as number }).out()
   const samplerSel = g.node('KSamplerSelect', { sampler_name: (p.sampler_name ?? 'euler') as string }).out()
   let sampler: OutputHandle
@@ -811,8 +806,8 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     //   decode and re-encode that cost a little quality at every
     //   link of a chain" (the node's own tooltip). In the merged
     //   film this is a live in-prompt wire; in a standalone
-    //   single-window stanza it is the py cross-prompt convention
-    //   (SaveLatent→LoadLatent by path, the frozen golden shape).
+    //   single-window stanza it is the cross-prompt convention
+    //   (SaveLatent→LoadLatent by path, the frozen served shape).
     //   CUT+PREV_SEC — context_frames/context_audio wired to the
     //   previous window's RAW decode: the video-tail opener (decoded
     //   picture + sound, the node's context_frames arm).
@@ -832,7 +827,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     } else if (prev !== undefined) {
       mcInputs.context_latent = prev.latOut
     } else {
-      // the standalone stanza (frozen golden shape): the py
+      // the standalone stanza (frozen served shape): the
       // cross-prompt convention — Save/Load by filesystem path,
       // the same-prompt seam as a pre-namespaced foreign link.
       const path = (p.ctx_load_latent_path ?? '') as string
@@ -882,8 +877,8 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     delivered = { images: vdec, audio: vadec }
   } else {
     // sharpen leaves: only the EXPLICITLY-set ones patch the grouped
-    // dict (absent leaves keep ImageSharpenKJ's own defaults). The py
-    // card knob (sharpen_strength, card.py) rides the leaf loop like
+    // dict (absent leaves keep ImageSharpenKJ's own defaults). The old
+    // card knob (sharpen_strength) rides the leaf loop like
     // the renderer alias does.
     const method: Record<string, string | number> = { ...SHARPEN_DEFAULTS }
     const sharpenLeaves: ReadonlyArray<readonly [string, string]> = [
@@ -895,7 +890,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       const val = p[src]
       if (val !== null && val !== undefined) method[dst] = val as string | number
     }
-    // ── V9 tail order (regolded 2026-09-15, the operator's cause) ──
+    // ── V9 tail order (re-cut 2026-09-15, the operator's cause) ──
     // upstream moved sharpen LAST: interp → VSR → sharpen → CreateVideo
     // (V7/ours sharpened FIRST — before the upscaler could soften the
     // detail away). Sharpen rcas 0.3 after upscale "looks natural"
@@ -906,7 +901,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     const interp = g.node('FrameInterpolate', {
       interp_model: film, images: vdec, multiplier: (p.interp_multiplier ?? 2) as number,
     }).out()
-    // py card knob first (card.py interpolate_enabled), alias second.
+    // card knob first (interpolate_enabled), alias second.
     const interpSw = g.node('ComfySwitchNode', {
       switch: (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean, on_true: interp, on_false: vdec,
     }).out()
@@ -931,12 +926,12 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     const sharpSw = g.node('ComfySwitchNode', {
       switch: (p.sharpen_enabled ?? p.sharpen_switch ?? false) as boolean, on_true: sharpened, on_false: srSw,
     }).out()
-    // fps compensation (V9 parity, 2026-09-15): upstream wires
+    // fps compensation (V9, 2026-09-15): upstream wires
     // CreateVideo.fps = base × interp multiplier (his Enhancements:
     // PrimitiveFloat 24 → ComfyMathExpression "a * 2" → fps). Without
     // it every interp-on window plays at HALF speed — the frames
     // double, the fps doesn't. Byte-stable at defaults (interp off →
-    // the literal 24 the frozen goldens pin).
+    // the served literal 24).
     const interpOn = (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean
     const interpMult = (p.interp_multiplier ?? 2) as number
     const created = g.node('CreateVideo', {
@@ -979,8 +974,8 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     id: 'h3-timeline',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'h3-film',
-    // BOARDING (resolved zero-regold 2026-09-07): the card boards
-    // all three families, so this triple boards green with the frozen golden
+    // BOARDING (resolved 2026-09-07): the card boards
+    // all three families.
     // video_h3_open-cascade composing model 'h3' through this card.
     boarded: [...BOARDED],
     tags: ['video', 'timeline', 'edit'],
@@ -998,7 +993,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       outputs: { default: 'video' },
       requiresModel: false,
     },
-    // ADMISSION EXTRAS (the py class-attr half verbatim: the
+    // ADMISSION EXTRAS (the class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file —
     // trailing-* ride verbatim, the gate matches them as prefixes).
@@ -1032,7 +1027,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // refuses LOUD, never composes), fills defaults (seed 42),
       // admits renderer/mod keys inert (calls, loras, noise_seed ride
       // verbatim). THE WIRE LAWS LIVE IN THE FIELDS (hour 20): the
-      // interpolate_enabled transform coerces the py-parity string
+      // interpolate_enabled transform coerces the legacy string
       // default + wire literals, the length transform drops the null
       // absent-on-wire sentinel — no gate-side prefill, the trio's
       // one-line pattern. The composer's reads below are reads of the
@@ -1074,9 +1069,9 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         }
       }
       // THE FILM DISPATCH: a multi-call chain doc with no per-window
-      // stanza markers (k absent — the py stanza vocabulary) composes
+      // stanza markers (k absent — the stanza vocabulary) composes
       // the MERGED film; everything else is the frozen single-window
-      // shape (the goldens replay byte-identical).
+      // shape (served byte-identical).
       const docCalls = Array.isArray(p.calls) ? p.calls : null
       const film = docCalls !== null && (docCalls as unknown[]).length > 1
         && p.k === undefined && (p.variant === undefined || p.variant === 't4_chain')

@@ -13,7 +13,7 @@
 // (media/comfyui/core/controlnets.py) chains ControlNetApply in
 // `for cn_spec in controlnets` order; apply_loras (core/loras.py) chains
 // LoraLoader nodes in `for spec in loras` order. Drag-reorder rewrites the
-// array; the composed ComfyUI graph follows (rule-2 parity). Families, GPU,
+// array; the composed ComfyUI graph follows (rule-2). Families, GPU,
 // and the wire NEVER change.
 import type { LoRAEntry } from "./loraTypes"
 

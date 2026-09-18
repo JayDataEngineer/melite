@@ -45,8 +45,8 @@ export interface SomaSkin {
    *  equivalent of upstream Kimodo's `skeleton.neutral_joints`
    *  (vendor/kimodo/.../skeleton/base.py:72). Extracted from the
    *  translation column of each joint's forward bind transform so the
-   *  motion card can render + pose + export BEFORE any GPU inference —
-   *  parity with the Kimodo demo (app.py:460 "initialize to character
+   *  motion card can render + pose + export BEFORE any GPU inference
+   *  matching the Kimodo demo (app.py:460 "initialize to character
    *  default (rest) pose"). Without this the card treated the rest pose
    *  as "nothing" and gated every feature on a generated motion NPZ. */
   restJoints: Float32Array

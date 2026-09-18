@@ -17,7 +17,6 @@
 
 import { apiJson } from "./api"
 import type { CardGenre } from "@melite/contracts"
-import { setInputVocabulary } from "./inputSlots"
 import {
  CatalogContractError,
  validateCatalogContract,
@@ -26,11 +25,9 @@ import { useCatalogContractStore } from "./catalogContractStore"
 
 // ── Wire types — GENERATED from /openapi.json (2026-08-11 directive) ─────
 //
-// Every wire shape below is a re-export of components["schemas"] — the
-// backend pydantic models are the single source of truth, /openapi.json is
-// BUILT from them (core/flows/openapi.py), and `api:sync` regenerates
-// src/api/schema.d.ts from the live gateway. NO hand-written wire mirrors:
-// a backend drift lands here on the next api:sync and fails tsc. The two
+// Every wire shape below is a re-export of components["schemas"] — a
+// frozen openapi-typescript snapshot (the gateway that built it is retired;
+// no live sync remains). NO hand-written wire mirrors. The two
 // LOCAL types at the bottom (CardGenre, ModelDefaults) are VIEW
 // refinements, not wire mirrors — the wire declares genre as a plain
 // string and defaults as an opaque record.
@@ -159,7 +156,6 @@ function _ingest(data: unknown): Catalog {
  if (!valid) throw new CatalogContractError(violations)
  useCatalogContractStore.getState().reportOk()
  const catalog = data as Catalog
- _feedInputVocabulary(catalog)
  _cache = catalog
  _cacheTime = Date.now()
  _loaded = true
@@ -218,37 +214,6 @@ export async function loadCatalog(opts?: { force?: boolean }): Promise<Catalog> 
  return _inflight
 }
 
-/** Fold the catalog's per-model schema-derived input_slots into the
- * model_slots vocabulary. The backend computes each model's slots from
- * its OWN families-filtered builder schema (editor_catalog
- * _model_input_slots — the model's schema is the vocabulary, NEVER the
- * form's: qwen3-tts-base → [voice_file, reference_audio], moss-tts → []
- * with no clone capability). This fold is the delivery path — input_slots
- * lives on the model entries, the vocabulary store keys by route. */
-function _foldModelSlots(
- models?: Record<string, { input_slots?: string[] | null }>,
-): Record<string, string[]> {
- const out: Record<string, string[]> = {}
- if (!models) return out
- for (const [route, m] of Object.entries(models)) {
- if (Array.isArray(m?.input_slots)) out[route] = m.input_slots
- }
- return out
-}
-
-/** Feed the catalog's declared input vocabulary into lib/inputSlots —
- * the backend (compile.input_vocabulary) is the SSOT, the frontend
- * module is a consumer. Runs on every successful load, including the
- * background TTL refresh (so YAML vocabulary edits propagate). */
-function _feedInputVocabulary(data: Catalog): void {
- if (data?.input_vocabulary) {
- setInputVocabulary({
- ...data.input_vocabulary,
- model_slots: _foldModelSlots(data.models),
- })
- }
-}
-
 /** Fire-and-forget background load with auto-retry. If the first attempt
  * fails (gateway reloading, network blip), schedules a retry after 3s.
  * Keeps trying until the catalog loads, then notifies subscribers.
@@ -287,7 +252,6 @@ export function getCachedCatalog(): Catalog | null {
  * loadCatalog/ensureCatalog which fetch from the endpoint). Lets tests inject
  * a fake catalog without going to the network. */
 export function primeCatalog(data: Catalog): void {
- _feedInputVocabulary(data)
  _cache = data
  _loaded = true
  _notify()
@@ -337,7 +301,7 @@ function parentModelForRoute(routeKey: string, cat: Catalog): string | undefined
  return undefined
 }
 
-export function familyOf(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): string | undefined {
+export function familyOf(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string | undefined {
  if (!cat?.models) return undefined
  const own = cat.models[routeKey]?.family
  if (own) return own
@@ -365,7 +329,7 @@ export type StudioBinding = components["schemas"]["StudioBindingWire"]
 
 export function studioOf(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): StudioBinding | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
@@ -375,13 +339,14 @@ export function studioOf(
 /**
  * The catalog-declared FORM for a route key (the model's ``form`` — the
  * same id _FORM_CONFIGS keys by on the backend). Resolves variants to
- * their parent model like familyOf. This is the key the fold uses to pick
- * the per-form alias table (inputSlots.formAliasesFor): form_edit folds
- * input_artifact → image1, form_upscale → input_image (2026-08-09).
+ * their parent model like familyOf. The tag routes the model's
+ * editor surface (the FORM LAW: a model without a form cannot route
+ * or render). The 2026-09-18 retirement: the retired per-form alias
+ * tables are gone — forms no longer reshape slot keys.
  */
 export function formOf(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string | undefined {
  if (!cat?.models) return undefined
  const own = cat.models[routeKey]?.form
@@ -392,7 +357,7 @@ export function formOf(
  return parent ? cat.models[parent].form : undefined
 }
 
-export function familyLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): string {
+export function familyLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string {
  const fam = familyOf(routeKey, cat)
  if (!fam) return routeKey
  return cat.families?.[fam]?.label ?? routeKey
@@ -408,7 +373,7 @@ export function familyLabel(routeKey: string, cat: Catalog = _cache ?? { familie
  */
 export function familyGenre(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): CardGenre | undefined {
  const fam = familyOf(routeKey, cat)
  // Wire genre is a plain string — narrow onto the view union (never cast).
@@ -417,7 +382,7 @@ export function familyGenre(
 
 /**
  * The source-media types a family declares it ingests (FamilyEntry.accepts,
- * a closed pydantic Literal on the backend). Returns the declared list, or
+ * a closed literal on the backend). Returns the declared list, or
  * [] when the family declares none / is unknown → the canvas drop handler
  * treats [] as "not a drop target" (no card spawned, no hard-fail on the
  * MIME itself — there simply is no input family to receive the drop). The
@@ -425,7 +390,7 @@ export function familyGenre(
  */
 export function familyAccepts(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): SourceMediaType[] {
  const fam = familyOf(routeKey, cat)
  return cat.families?.[fam ?? routeKey]?.accepts ?? []
@@ -444,7 +409,7 @@ export function familyAccepts(
  */
 export function familyTransformMatrix(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): Record<string, SourceMediaType[]> {
  const fam = familyOf(routeKey, cat)
  const transforms = cat.families?.[fam ?? routeKey]?.transforms
@@ -461,7 +426,7 @@ export function familyTransformMatrix(
  */
 /**
  * The compact card's declared size line (FamilyEntry.card_summary, a
- * pydantic-validated block on the backend). Returns {width_param, height_param}
+ * validated block on the backend). Returns {width_param, height_param}
  * for generation families (rendered "WxH") OR {size_param, size_suffix} for
  * the Enhance / upscale families (rendered as a single value), or null when
  * the family declares no size line / is unknown. The CardTile reads whichever
@@ -470,7 +435,7 @@ export function familyTransformMatrix(
  */
 export function familyCardSummary(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): CardSummaryEntry | null {
  const fam = familyOf(routeKey, cat)
  return cat.families?.[fam ?? routeKey]?.card_summary ?? null
@@ -478,7 +443,7 @@ export function familyCardSummary(
 
 export function familyConditioning(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string[] | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
@@ -488,13 +453,13 @@ export function familyConditioning(
 /**
  * The family's declared optional outputs (Option A — the optional-outputs
  * vocabulary). Empty/undefined when the family declares none (legacy
- * single-output parity). Consumers render one editor per entry, keyed by
+ * single-output compat). Consumers render one editor per entry, keyed by
  * ``genre`` — the input card no longer declares any (mask removed
  * 2026-08-14), so this is the vocabulary for OTHER families that do.
  */
 export function familyOptionalOutputs(
  familyId: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): OptionalOutputEntry[] {
  return cat.families?.[familyId]?.optional_outputs ?? []
 }
@@ -505,12 +470,12 @@ export function familyOptionalOutputs(
  * CANVAS_DEFAULT_MODEL; returns undefined before the catalog loads (the
  * caller keeps its own pre-catalog bootstrap value).
  */
-export function canvasDefaultModel(cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): string | undefined {
+export function canvasDefaultModel(cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string | undefined {
  return Object.entries(cat.models).find(([, m]) => m.canvas_default)?.[0]
 }
 
 /** Display name for a model within its family variant picker (Turbo / Base / Raw / …). */
-export function variantLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): string {
+export function variantLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string {
  const m = cat.models?.[routeKey]
  return m?.variant_label ?? m?.label ?? routeKey
 }
@@ -533,7 +498,7 @@ export interface FamilyOption {
  */
 export function familiesForForm(
  formTag: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): FamilyOption[] {
  const visible = dropdownModels(formTag, cat)
  const seen = new Set<string>()
@@ -561,7 +526,7 @@ export function familiesForForm(
  */
 export function familyPrimaryRoute(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string {
  const fam = familyOf(routeKey, cat)
  if (!fam) return routeKey
@@ -589,7 +554,7 @@ export function familyPrimaryRoute(
  return members.find((k) => k === fam) ?? members[0]
 }
 
-export function modelLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): string {
+export function modelLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string {
  const m = cat.models[routeKey]
  if (!m) return routeKey
  // Prefer the model's own label, then family label, then key.
@@ -599,13 +564,13 @@ export function modelLabel(routeKey: string, cat: Catalog = _cache ?? { families
 /** Description for a model route, or undefined. Callers provide their own
  * fallback string — this returns `undefined` so `??` works. Reads the
  * `description:` declared on the model's family in the catalog YAML. */
-export function modelDescription(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): string | undefined {
+export function modelDescription(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
  return cat.families?.[fam]?.description ?? undefined
 }
 
-export function promptGuide(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): PromptGuide | undefined {
+export function promptGuide(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): PromptGuide | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
  return cat.families[fam]?.prompt_guide ?? undefined
@@ -613,7 +578,7 @@ export function promptGuide(routeKey: string, cat: Catalog = _cache ?? { familie
 
 export function dropdownModels(
  formTag?: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string[] {
  const out: string[] = []
  for (const [key, spec] of Object.entries(cat.models)) {
@@ -631,7 +596,7 @@ export function dropdownModels(
 
 export function variantSiblings(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string[] {
  const fam = familyOf(routeKey, cat)
  if (!fam) return routeKey ? [routeKey] : []
@@ -644,7 +609,7 @@ export function variantSiblings(
  * Models hidden from the dropdown because they're reachable only via a
  * variant toggle (e.g. z-image-q5 — picked by clicking the Q5 button).
  */
-export function hiddenFromDropdown(cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): Set<string> {
+export function hiddenFromDropdown(cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): Set<string> {
  return new Set(
  Object.entries(cat.models)
  .filter(([, m]) => m.hide_from_dropdown)
@@ -659,7 +624,7 @@ export function hiddenFromDropdown(cat: Catalog = _cache ?? { families: {}, mode
  */
 export function variantsForRoute(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): VariantEntry[] {
  const own = cat.models[routeKey]?.variants
  if (own) return own
@@ -687,7 +652,7 @@ export function variantsForRoute(
  */
 export function presetsForRoute(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): Record<string, PresetEntry> | undefined {
  // MODELS PRESENCE (2026-09-12): see routeCoordinates — models is always
  // present here. Direct access, no `?.` on models.
@@ -703,7 +668,7 @@ export function presetsForRoute(
  */
 export function activeVariantForRoute(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): VariantEntry | undefined {
  // Direct hit in this model's own variants. A route can be BOTH a
  // variant row's route AND its PRIMARY quant cell's route (krea-2-raw:
@@ -744,7 +709,7 @@ export function activeVariantForRoute(
  */
 export function routeCoordinates(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): { variant: string | undefined; quant: string | undefined } {
  // MODELS PRESENCE (2026-09-12): every Catalog reaching here carries
  // models — the default parameter literal declares it, _ingest only runs
@@ -820,7 +785,7 @@ function matrixCell(
 export function composeVariantRoute(
  currentRoute: string,
  clicked: { group?: string; quant?: string; route?: string },
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string {
  const fam = familyOf(currentRoute, cat)
  const clickedRoute = clicked.route
@@ -851,7 +816,7 @@ export function composeVariantRoute(
 export function axisCellExists(
  currentRoute: string,
  clicked: { group?: string; quant?: string; route?: string },
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): boolean {
  if (!clicked.route) return true
  const fam = familyOf(currentRoute, cat)
@@ -868,7 +833,7 @@ export function axisCellExists(
  */
 export function familyHasVariantAxis(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
+ cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): boolean {
  const fam = familyOf(routeKey, cat)
  const groups = fam ? (cat.families?.[fam]?.variant_groups as Record<string, unknown> | undefined) : undefined

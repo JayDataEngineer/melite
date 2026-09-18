@@ -4,7 +4,6 @@
 export * from "./api"
 export * from "./catalogContract"
 export * from "./catalogContractStore"
-export * from "./inputSlots"
 export * from "./modelCatalog"
 export * from "./FlowProtocol"
 export * from "./FlowEvents"

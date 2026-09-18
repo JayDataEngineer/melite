@@ -69,7 +69,7 @@ export function MotionTimelineSection({
  Play/pause/time live HERE now (was its own row above). The Add
  button is the discoverable "add a card" affordance: the viser bar's
  click-to-append path needs empty space after the last prompt; our
- seed fills [0, T-1] edge-to-edge (demo parity), so that path is
+ seed fills [0, T-1] edge-to-edge (matching the demo), so that path is
  unreachable. It carves a new empty card out of the last prompt's tail
  (see carveNewPromptCard). Each card is one motion segment; ≥2 cards
  trigger the model's multi-prompt composition (kimodo_model.py

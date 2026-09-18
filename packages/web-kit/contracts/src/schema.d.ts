@@ -1266,7 +1266,7 @@ export interface components {
          *     card's mask feature) — masked editing lives with the dedicated
          *     mask_studio family, whose inpaint slots consume
          *     ``input_mask``/``lanpaint_mask`` (a different, upload-key vocabulary in
-         *     compile.py), never a gated source param here.
+         *     never a gated source param here.
          *
          *     ONE declaration (the family's ``transforms:`` block) feeds TWO consumers:
          *     the backend builder's ``_validate_params_for_media`` RAISES on a stale
@@ -1805,39 +1805,6 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * InputVocabulary
-         * @description compile.input_vocabulary — the ONE input vocabulary for the
-         *     frontend. Declared here (was an opaque dict) because the frontend
-         *     DEPENDS on this shape (slots / aliases / form_aliases / form_slots —
-         *     all always emitted); an opaque record would hand the generated types
-         *     a lie. The 2026-08-11 honesty ratchet: any backend-computed block the
-         *     frontend reads gets a declared schema.
-         */
-        InputVocabulary: {
-            /** Slots */
-            slots: string[];
-            /** Aliases */
-            aliases: {
-                [key: string]: string;
-            };
-            /** Form Aliases */
-            form_aliases: {
-                [key: string]: {
-                    [key: string]: string;
-                };
-            };
-            /** Form Slots */
-            form_slots: {
-                [key: string]: string[];
-            };
-            /** Slot Kinds */
-            slot_kinds?: {
-                [key: string]: string;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        /**
          * ModelEntryWire
          * @description The catalog's ModelEntry + the three backend-computed wire keys
          *     (input slot / full slot list / prompt-in-form) + typed variants.
@@ -1961,7 +1928,6 @@ export interface components {
             quant_order?: {
                 [key: string]: number;
             } | null;
-            input_vocabulary?: components["schemas"]["InputVocabulary"] | null;
         } & {
             [key: string]: unknown;
         };

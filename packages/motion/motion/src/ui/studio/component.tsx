@@ -175,7 +175,7 @@ export function MotionCardEditor({
   // the timeline verbs, and the envelope seed (see useTimelineEnvelope).
   const promptsAuthoredRef = useRef(false)
 
-  // ── Rest pose (upstream Kimodo parity) ──────────────────────────────────
+  // ── Rest pose (upstream behavior) ──────────────────────────────────
   // The skin's neutral joints + rotations — the TS equivalent of
   // vendor/kimodo `skeleton.neutral_joints`. When no run exists, this is the
   // "motion" (T=1) every pose consumer operates on, so refine/export work
@@ -227,7 +227,7 @@ export function MotionCardEditor({
 
   // The current frame's joints (77×3 meters) — the edit-mode starting point
   // and the export's displayed joints. Falls back to the rest pose when no
-  // run exists so refine/export work pre-inference (Kimodo demo parity).
+  // run exists so refine/export work pre-inference (the Kimodo demo behavior).
   const currentJointsM = useMemo(() => {
     const src = effectiveNpz
     if (!src) return null
