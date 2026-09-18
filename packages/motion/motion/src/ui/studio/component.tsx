@@ -49,6 +49,7 @@ import { PoseViewer3D, type CameraFraming } from "@melite-plugin/motion/ui/viewe
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import type { JointMoveEvent } from "@melite-plugin/motion/ui/viewer3d"
 import { useToastStore } from "@melite/card-base/toast"
+import { SpecPanel, resolveValue, useFormSpec } from "@melite/card-base"
 import type { CardStage } from "@melite/contracts"
 import { stageSlots } from "@melite/catalog"
 import { formOf } from "@melite/catalog"
@@ -132,6 +133,28 @@ export function MotionCardEditor({
  stage, onSave, upstreams = [], onWireSlot,
 }: MotionCardEditorProps) {
  const toast = useToastStore((s) => s.addToast)
+ // RULE B — THE FORM LAW (operator, 2026-09-18: "All Cards must be
+ // Forms, with seams for overrides"): the card's schema-declared
+ // params render through the SHARED SpecPanel — the generic
+ // schemastery-protected surface on the DSH primitives. This studio
+ // claimed cards.stage.view and (with it) replaced the standard
+ // form, which left seed/steps/samples/cfg with NO surface at all.
+ // The timeline stays the DOCUMENT seam — its prompt cards, length,
+ // and constraint keyframes write the SAME declared keys (one
+ // vocabulary, the override seam; never a second param system).
+ const { spec: kimodoSpec, error: kimodoError } = useFormSpec("kimodo")
+ const userParams = typeof stage.params === 'object' && stage.params !== null
+   ? stage.params as Record<string, unknown> : {}
+ // the initial-value law: ABSENT alone seeds (the spec's own
+ // defaults) — resolveValue is the estate's pure resolver
+ // (defaults → model_defaults → user). The timeline's writes sit in
+ // the user layer and win, so both surfaces read ONE truth.
+ const paramValues = useMemo(
+   () => kimodoSpec !== null ? resolveValue(kimodoSpec, userParams) : userParams,
+   [kimodoSpec, userParams])
+ const onParamEdit = useCallback((name: string, value: unknown): void => {
+   onSave({ [name]: value })
+ }, [onSave])
 
  // ── Asset resolution: the motion NPZ from the run result ────────────────
  // Guards: artifacts/assetUrls can carry non-string entries from revived
@@ -1523,6 +1546,37 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  )}
 
  {/* OUTPUT */}
+ {/* RULE B: the generic form — the schema's own params (generation,
+     guidance, clock) through the shared SpecPanel. The timeline's
+     document seam writes the same keys; this is the override
+     surface the form law requires (never a hand-rolled row). */}
+ <SpecPanel
+   model="kimodo"
+   spec={kimodoSpec}
+   error={kimodoError}
+   values={paramValues}
+   onEdit={onParamEdit}
+   sections={[
+     {
+       title: "Generation",
+       testid: "mo-gen-panel",
+       rows: [
+         { name: "duration_sec" }, { name: "diffusion_steps" },
+         { name: "num_samples" }, { name: "num_transition_frames" },
+       ],
+     },
+     {
+       title: "Guidance",
+       testid: "mo-guide-panel",
+       rows: [{ name: "cfg_weight_a" }, { name: "cfg_weight_b" }],
+     },
+     {
+       title: "Clock",
+       testid: "mo-clock-panel",
+       rows: [{ name: "seed" }],
+     },
+   ]}
+ />
  <span className={s.railGroupLabelMt}>Output</span>
  <Tip
  tip={!effectiveNpz

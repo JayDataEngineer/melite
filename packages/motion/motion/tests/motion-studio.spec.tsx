@@ -22,6 +22,7 @@ import type { CardStage } from '@melite/contracts'
 
 import { MotionCardEditor } from '../src/ui/studio/component.tsx'
 import { useToastStore } from '@melite/card-base/toast'
+import { schemaEnvelope } from '@melite/card-base'
 import { waitForText } from './harness.tsx'
 import { SKIN_URL, MOTION_URL, skinResponse, motionResponse } from './fixtures.ts'
 
@@ -80,6 +81,26 @@ function stubLoads(opts: {
   let statusCalls = 0
   vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
     const u = typeof input === 'string' ? input : (input as Request).url ?? String(input)
+    // RULE B: the kimodo form-spec door — the rail's SpecPanel fetches
+    // the card family's served schema (the minimal envelope: the
+    // generation/guidance/clock rows the panel seats).
+    if (u.includes('/v1/form-spec')) {
+      return new Response(JSON.stringify({
+        form: 'motion',
+        schema: schemaEnvelope({
+          duration_sec: { type: 'number', meta: { description: 'Duration (s)', default: 5, min: 1, max: 30, step: 0.5 } },
+          diffusion_steps: { type: 'number', meta: { description: 'Diffusion steps', default: 25, min: 10, max: 200, step: 1 } },
+          num_samples: { type: 'number', meta: { description: 'Samples', default: 1, min: 1, max: 4, step: 1 } },
+          num_transition_frames: { type: 'number', meta: { description: 'Transition frames', default: 10, min: 0, max: 60, step: 1 } },
+          cfg_weight_a: { type: 'number', meta: { description: 'CFG weight A', default: 2.5, min: 0, max: 15, step: 0.5 } },
+          cfg_weight_b: { type: 'number', meta: { description: 'CFG weight B', default: 5, min: 0, max: 15, step: 0.5 } },
+          seed: { type: 'number', meta: { description: 'Seed', default: 42, step: 1 } },
+        }),
+        variants: [],
+        inputs: [],
+        features: { modifiers: [], variant_groups: {} },
+      }), { headers: { 'content-type': 'application/json' } })
+    }
     if (u.includes(SKIN_URL)) {
       if (opts.skinStatus) return new Response('bad', { status: opts.skinStatus })
       return skinResponse()
@@ -1450,10 +1471,14 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     mountEditor({ result: { artifacts: { motion_npz: MOTION_URL } } })
     await waitForText('30 fps · 4f')
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
+    // RULE B: the rail's SpecPanel now owns range inputs too (the
+    // generic form's sliders) — the DIALOG's scrub slider is the one
+    // inside the scrub row, never "first range in body".
+    const scrubSel = '[class*="scrubRow"] input[type="range"]'
     await vi.waitFor(() => {
-      if (!document.body.querySelector('input[type="range"]')) throw new Error('no slider yet')
+      if (!document.body.querySelector(scrubSel)) throw new Error('no slider yet')
     }, { timeout: 10000 })
-    const range = document.body.querySelector('input[type="range"]') as HTMLInputElement
+    const range = document.body.querySelector(scrubSel) as HTMLInputElement
     fireEvent.change(range, { target: { value: '2' } })
     await vi.waitFor(() => {
       if (!document.body.textContent?.includes('00:00:02')) throw new Error('no seek yet')
@@ -1649,5 +1674,46 @@ describe('run state (motion on stage)', () => {
     stubLoads({ motionStatus: 500 })
     mountEditor({ result: { artifacts: { motion_npz: MOTION_URL } } })
     await waitForText('Failed to fetch motion asset: 500')
+  })
+})
+
+// RULE B — THE FORM LAW (operator, 2026-09-18): all cards are forms.
+// The studio claimed cards.stage.view and replaced the standard
+// SpecForm, which left the schema's generation/guidance/clock params
+// with NO surface. The rail now seats the SHARED SpecPanel over the
+// served kimodo spec; the timeline stays the document seam writing
+// the SAME declared keys.
+describe('RULE B: the generic parameter form rides the rail', () => {
+  test("the schema's params render through the shared SpecPanel — the served spec's rows at their wire names", async () => {
+    stubLoads()
+    mountEditor()
+    // the panel's sections land with their chrome + rows
+    await vi.waitFor(() => {
+      if (!document.body.querySelector('[data-testid="mo-gen-panel"]')) throw new Error('no gen panel')
+    }, { timeout: 10000 })
+    expect(document.body.querySelector('[data-testid="mo-guide-panel"]')).toBeTruthy()
+    expect(document.body.querySelector('[data-testid="mo-clock-panel"]')).toBeTruthy()
+    // the rows are the SERVED spec's, at the wire names (labels are
+    // the schema's own descriptions — never hand-rolled rows)
+    expect(document.body.querySelector('[aria-label="Diffusion steps"]')).toBeTruthy()
+    expect(document.body.querySelector('[aria-label="CFG weight A"]')).toBeTruthy()
+    expect(document.body.querySelector('[aria-label="Seed"]')).toBeTruthy()
+  })
+
+  test('an edit writes the declared key through onSave — the override seam (one vocabulary with the timeline)', async () => {
+    stubLoads()
+    const { onSave } = mountEditor()
+    await vi.waitFor(() => {
+      if (!document.body.querySelector('[data-testid="mo-clock-panel"]')) throw new Error('no clock panel')
+    }, { timeout: 10000 })
+    const seed = document.body.querySelector('[aria-label="Seed"]') as HTMLInputElement
+    fireEvent.change(seed, { target: { value: '777' } })
+    await vi.waitFor(() => {
+      const wrote = onSave.mock.calls.some((c) => c[0] && typeof c[0] === 'object' && 'seed' in (c[0] as Record<string, unknown>))
+      if (!wrote) throw new Error('seed write never landed')
+    }, { timeout: 10000 })
+    const call = onSave.mock.calls.find((c) => c[0] && typeof c[0] === 'object' && 'seed' in (c[0] as Record<string, unknown>))!
+    // raw while typing, coerced at the schema door (the estate's law)
+    expect((call[0] as Record<string, unknown>).seed).toBe('777')
   })
 })

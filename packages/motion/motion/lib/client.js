@@ -45645,6 +45645,180 @@ void main() {
 			init_cardMutations();
 		}));
 		//#endregion
+		//#region ../../web/card-base/src/spec.ts
+		/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
+		*  (krea-2, z-image, euler, comfyui…) render titled — never raw.
+		*  FACES ONLY: option values, param keys, and wire bodies keep the
+		*  verbatim id (the 1:1 law — the eye gets prose, the door gets the
+		*  id). First letter of each separator-bound word upper, the rest
+		*  untouched (INT8 stays INT8); idempotent on titled prose. */
+		function titleCaseId(id) {
+			return id.split(/[-_\s]+/).filter((w) => w !== "").map((w) => w.slice(0, 1).toUpperCase() + w.slice(1)).join(" ");
+		}
+		/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
+		*  resolveValue's first layer; the base never invents one). */
+		function specDefaults(fields) {
+			const out = {};
+			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+			return out;
+		}
+		/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
+		*
+		* One pure projection: serialized schemastery schema -> derived
+		* SpecFields. Every presentation fact lives in the nodes' meta (the
+		* declaration IS the UI contract — the py Field.emit law); this
+		* walk reads, never invents. THE ORDER: dict insertion order with
+		* the declared `order` hint as tie-break (a stable sort — equal
+		* keys keep insertion order).
+		*
+		* Families scoping: a node whose extra.families names families the
+		* spec does NOT serve skips (the absorption is family-scoped —
+		* the card serves only the boarded plane).
+		*
+		* Nullable pairs: a union of [X, const(null)] wires as X — the
+		* OUTER meta wins (schemastery's nullable() shape, probed live on
+		* image-gen 2026-09-14).
+		*
+		* Presentation types (the audit's client-side derivation — a view
+		* choice over typed meta, never a server row): extra.wtype wins
+		* (declared presentation); union-of-consts -> select; number ->
+		* step 1 -> seed, any other step -> slider, no step -> slider;
+		* string -> text; boolean -> boolean; array -> loras.
+		*
+		* Option labels: a union's const members carry their own
+		* meta.description (the py emitter's label law) — the declared
+		* extra.options override when present. */
+		function fieldsOfEnvelope(env, family) {
+			if (env == null) return [];
+			const root = env.refs[env.uid];
+			return projectDict(env, root?.dict ?? {}, family);
+		}
+		/** The dict projector (the walker's body — one meta path for the
+		*  root, the hybrid element, and the pack-level rows). */
+		function projectDict(env, dict, family) {
+			const out = [];
+			for (const [name, id] of Object.entries(dict)) {
+				let node = env.refs[id];
+				if (node === void 0) continue;
+				if (node.type === "union" && Array.isArray(node.list) && node.list.length === 2) {
+					const a = env.refs[node.list[0]];
+					const b = env.refs[node.list[1]];
+					const nullConst = (r) => r?.type === "const" && r.value === null;
+					if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
+				}
+				const meta = node.meta ?? {};
+				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
+				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
+				if (families !== null && family !== void 0 && !families.includes(family)) continue;
+				let options;
+				if (node.type === "union" && Array.isArray(node.list)) {
+					const opts = [];
+					for (const mid of node.list) {
+						const m = env.refs[mid];
+						if (m?.type !== "const") continue;
+						const v = m.value;
+						if (v === null || v === void 0) continue;
+						const label = typeof m.meta?.["description"] === "string" ? m.meta["description"] : String(v);
+						if (label === String(v)) opts.push(String(v));
+						else opts.push({
+							value: String(v),
+							label
+						});
+					}
+					if (opts.length > 0) options = opts;
+				}
+				if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
+					value: String(o["value"]),
+					label: String(o["label"])
+				} : String(o));
+				const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
+				let type;
+				if (hint !== "") type = hint;
+				else if (options !== void 0 && node.type === "union") type = "select";
+				else if (node.type === "number") type = String(meta["step"] ?? "") === "1" ? "seed" : "slider";
+				else if (node.type === "string") type = "text";
+				else if (node.type === "boolean") type = "boolean";
+				else if (node.type === "array") type = "loras";
+				else type = node.type ?? "string";
+				const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
+				const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
+				out.push({
+					name,
+					label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
+					order: typeof extra["order"] === "number" ? extra["order"] : void 0,
+					type,
+					default: meta["default"] === void 0 ? void 0 : meta["default"],
+					min: num("min"),
+					max: num("max"),
+					step: type === "seed" ? void 0 : num("step"),
+					options,
+					group: str("group") ?? "",
+					zone: str("zone"),
+					required: extra["required"] === true || meta["required"] === true,
+					placeholder: str("placeholder"),
+					tooltip: str("tooltip"),
+					visible_when: str("visible_when"),
+					columns: typeof extra["columns"] === "number" ? extra["columns"] : void 0,
+					width: typeof extra["width"] === "number" ? extra["width"] : void 0
+				});
+			}
+			return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
+		}
+		/** The card's own derived fields (the schema envelope walked,
+		* families-scoped to the served family). Memoize at the caller for
+		* hot loops — the walk is pure. */
+		function fieldsOf(spec) {
+			return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
+		}
+		/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
+		* client-side (stroke 34 — the card-recipe layer is dead): schema
+		* defaults <- model defaults <- SERVED STAMPS <- user. The form
+		* SHOWS exactly what a run composes; `user` rides verbatim by key
+		* presence (a PRESENCE is the override mark, never its value — the
+		* settings law). Arrays (lora bags) and nulls in model_defaults
+		* skip, matching the engine's overlay filter.
+		*
+		* THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
+		* stage row's `resolved` map — prepareCardParams' own stamped +
+		* lifted body, served by the drafts doors. It layers UNDER the user
+		* (presence still wins) and OVER model_defaults (the server's own
+		* family/variant stamps replace the client's guesses — variant
+		* resolver_defaults, family defaults, the surface filter). Absent
+		* base = the registry-less lane derive (the wall pins parity on
+		* the golden families). PURE. */
+		function resolveValue(spec, user, base) {
+			const out = specDefaults(fieldsOf(spec));
+			for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
+				if (v === null || Array.isArray(v)) continue;
+				out[k] = v;
+			}
+			if (base !== void 0) for (const [k, v] of Object.entries(base)) {
+				if (v === null || v === void 0 || Array.isArray(v)) continue;
+				out[k] = v;
+			}
+			Object.assign(out, user);
+			return out;
+		}
+		/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
+		* one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
+		* (The ONE schema grammar — a field declares its own visibility;
+		* the walker interprets, cards never hand-rolled predicates.) A
+		* field with no visible_when always shows. Unknown guard keys:
+		* show (never hide on a typo). Examples:
+		*   "sharpen_enabled=true"
+		*   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
+		function fieldVisible(f, values) {
+			const rule = f.visible_when;
+			if (typeof rule !== "string" || rule === "") return true;
+			for (const guard of rule.split("&")) {
+				const eq = guard.indexOf("=");
+				if (eq < 0) continue;
+				const key = guard.slice(0, eq);
+				if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
+			}
+			return true;
+		}
+		//#endregion
 		//#region ../../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
 		function r(e) {
 			var t, f, n = "";
@@ -45693,7 +45867,7 @@ void main() {
 		*  motion's kit each redeclared it; card-base, the card-view's
 		*  CardsTab and input-square already consumed it. One definition
 		*  estate-wide (the drag is a shared contract, not a studio rule). */
-		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
+		const ASSET_DRAG_MIME$2 = "application/tech-noir-asset";
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
 		const css$7 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:contents}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
@@ -45903,11 +46077,94 @@ void main() {
 		* automatically. One input component; no card hand-rolls its own
 		* file field ever again.
 		*/
+		/** The media-bar drag contract (the tab's drop surface serves the
+		* same MIME — ONE spelling, imported from the base's law). */
+		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
 		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
 		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
 		*  artifact URLs. Every slot-shaped value renders the same way. */
 		function isImageUrl(value) {
 			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+		}
+		/** Parse the asset MIME off a drop event. null = absent or malformed. */
+		function assetPayload(e) {
+			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
+			if (raw === "") return null;
+			try {
+				const p = JSON.parse(raw);
+				return typeof p["url"] === "string" ? p["url"] : null;
+			} catch {
+				return null;
+			}
+		}
+		function InputSquare(props) {
+			const { label, value, metric, disabled } = props;
+			const fileRef = (0, react.useRef)(null);
+			const boxRef = (0, react.useRef)(null);
+			const [over, setOver] = (0, react.useState)(false);
+			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
+			const empty = thumb === null;
+			const pick = () => {
+				if (disabled) return;
+				if (props.onPick !== void 0) props.onPick(boxRef.current);
+				else if (empty && props.onFile !== void 0) fileRef.current?.click();
+			};
+			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
+				ref: boxRef,
+				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
+				role: "button",
+				tabIndex: 0,
+				"aria-label": (label || "source") + (label ? " source" : ""),
+				onClick: pick,
+				onKeyDown: (e) => {
+					if (e.key === "Enter") pick();
+				},
+				onDragOver: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(true);
+				},
+				onDragLeave: () => {
+					setOver(false);
+				},
+				onDrop: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(false);
+					const asset = assetPayload(e);
+					if (asset !== null && props.onAsset !== void 0) {
+						props.onAsset(asset);
+						return;
+					}
+					const f = e.dataTransfer.files[0];
+					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
+				}
+			}, thumb !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default.squareThumb,
+				src: thumb,
+				alt: label
+			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
+				className: card_module_css_default.squareX,
+				type: "button",
+				title: "Detach",
+				"aria-label": "Detach " + (label || "source"),
+				onClick: (e) => {
+					e.stopPropagation();
+					props.onClear();
+				}
+			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+				ref: fileRef,
+				type: "file",
+				accept: "image/png,image/jpeg,image/webp",
+				className: card_module_css_default.squareFileInput,
+				"aria-hidden": true,
+				tabIndex: -1,
+				onChange: (e) => {
+					const f = e.target.files?.[0];
+					if (f !== void 0 && f !== null) props.onFile?.(f);
+					fileRef.current.value = "";
+				}
+			}) : null);
 		}
 		//#endregion
 		//#region ../../web/card-base/src/wirePicker.tsx
@@ -45998,6 +46255,28 @@ void main() {
 			});
 		}
 		//#endregion
+		//#region ../../web/card-base/src/wire.ts
+		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
+		*  own error text when present). */
+		async function v1Get(path, signal) {
+			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
+			const body = await res.json().catch(() => null);
+			if (!res.ok) {
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
+			}
+			return body;
+		}
+		/** /v1/form-spec?model=<family> — the card family's emission (the
+		*  serialized schema envelope + model defaults + the declared edges
+		*  + the mod kinds and their envelopes). */
+		async function fetchFormSpec(model, signal) {
+			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
+			const env = doc["schema"];
+			if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
+			return doc;
+		}
+		//#endregion
 		//#region ../../web/card-base/src/form.tsx
 		/**
 		* form.tsx — @melite/card-base: THE CONSTRUCTOR.
@@ -46023,6 +46302,346 @@ void main() {
 		* layout-only module CSS over native elements, every color an
 		* inherited --dsw-alias-* token (the package's documented pattern).
 		*/
+		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
+		*  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
+		*  img-to-mesh's client, ideogram4's client) each hand-copied the
+		*  same fetch-once + abort dance. One spelling now: fetches
+		*  /v1/form-spec?model=<id> when the id is non-empty, aborts the
+		*  in-flight fetch on unmount or id change, and hands back the doc
+		*  (null until it lands) + the refusal message (null unless the door
+		*  refused — loud consumers render it, silent ones ignore it).
+		*  Consumer-specific derivations (field filters, value seeding) stay
+		*  at the call site as reactions to `spec`. */
+		function useFormSpec(modelId) {
+			const [spec, setSpec] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const id = typeof modelId === "string" && modelId !== "" ? modelId : null;
+			(0, react.useEffect)(() => {
+				if (id === null) return;
+				const ctl = new AbortController();
+				setSpec(null);
+				setError(null);
+				fetchFormSpec(id, ctl.signal).then((doc) => {
+					setSpec(doc);
+				}).catch((e) => {
+					setError(e instanceof Error ? e.message : "form-spec failed");
+				});
+				return () => {
+					ctl.abort();
+				};
+			}, [id]);
+			return {
+				spec,
+				error
+			};
+		}
+		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
+		*  promoted from h3's studio-local TriControl (same semantics, same
+		*  option order). Serves schema-bound fields of type 'tri' AND the
+		*  standalone rail rows that hand-rolled the select before. */
+		function TriStateAtom({ label, value, onEdit, name, disabled }) {
+			return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"aria-label": label,
+				disabled: disabled === true,
+				value: value === void 0 ? "" : String(value),
+				onChange: (e) => {
+					const v = e.target.value;
+					onEdit(name, v === "" ? void 0 : v === "true");
+				}
+			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
+		}
+		/** The slider's local display during a drag (the settle law's
+		*  carrier): local owns the bubble while dragging; an external move
+		*  of the backing value (agent write, revive, another card opened)
+		*  reclaims the display. */
+		function useLocalSliderValue(value) {
+			const num = typeof value === "number" ? value : Number(value);
+			const [local, setLocal] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				setLocal(null);
+			}, [num]);
+			return {
+				value: local !== null ? local : Number.isFinite(num) ? num : null,
+				set: setLocal
+			};
+		}
+		/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
+		*  mask-studio's draft absorber, 2026-08-10): a drag fires input
+		*  60×/sec; if every step wrote to the card, updateStageParams →
+		*  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
+		*  the editor. The atom shows the drag locally and persists ONCE on
+		*  settle (the change event = release / keyboard step). External
+		*  writes (agent, revive) re-sync the display when the backing
+		*  value actually moves. */
+		function SpecSliderAtom({ f, value, onEdit }) {
+			const shown = useLocalSliderValue(value);
+			if (shown.value === null) return (0, react.createElement)("span", {
+				className: card_module_css_default.specSliderRow,
+				"data-refused": f.name
+			}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value) + " — REFUSED: not a number"));
+			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
+				className: card_module_css_default.specSlider,
+				type: "range",
+				min: f.min ?? 0,
+				max: f.max ?? 10,
+				step: f.step ?? .1,
+				value: shown.value,
+				onInput: (e) => {
+					shown.set(Number(e.target.value));
+				},
+				onChange: (e) => {
+					onEdit(f.name, e.target.value);
+				},
+				"aria-label": f.label
+			}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value)));
+		}
+		/** One spec atom — typed by the declaration, edited as a raw string
+		*  while typing (decimal dots survive; coercion happens once at patch). */
+		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }) {
+			if ((f.type === "image" || f.type === "file") && square !== void 0) {
+				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
+				return (0, react.createElement)(InputSquare, {
+					label: f.label !== "" ? f.label : f.name,
+					value: shown !== null && isImageUrl(shown) ? shown : null,
+					metric: typeof value === "string" && value !== "" && !isImageUrl(value) ? value : void 0,
+					...square.verbs
+				});
+			}
+			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				value: String(value ?? ""),
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			}, ghost !== void 0 ? (0, react.createElement)("option", { value: "" }, ghost) : null, f.options.map((o) => {
+				const row = typeof o === "string" ? {
+					value: o,
+					label: o
+				} : o;
+				return (0, react.createElement)("option", {
+					key: row.value,
+					value: row.value
+				}, titleCaseId(row.label));
+			}));
+			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
+				f,
+				value,
+				onEdit
+			});
+			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
+				label: f.label !== "" ? f.label : f.name,
+				value: value === void 0 || value === null ? void 0 : value === true || value === "true",
+				onEdit,
+				name: f.name
+			});
+			if (f.type === "switch" || f.type === "boolean") {
+				if (value !== void 0 && value !== null && typeof value !== "boolean" && value !== "true" && value !== "false") return (0, react.createElement)("span", {
+					className: card_module_css_default.specField,
+					"data-refused": f.name
+				}, f.label + ": " + String(value) + " — REFUSED: not a boolean");
+				const on = value === true || value === "true";
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+					label: f.label,
+					checked: on,
+					onChange: (next) => {
+						onEdit(f.name, next);
+					}
+				});
+			}
+			if (f.type === "textarea") {
+				const fit = (el) => {
+					if (el === null) return;
+					el.style.height = "auto";
+					el.style.height = Math.max(el.scrollHeight, 44) + "px";
+				};
+				return (0, react.createElement)("textarea", {
+					className: card_module_css_default.specTextarea,
+					rows: 2,
+					value: String(value ?? ""),
+					placeholder: f.placeholder ?? "",
+					ref: fit,
+					onChange: (e) => {
+						const el = e.target;
+						fit(el);
+						onEdit(f.name, el.value);
+					},
+					"aria-label": f.label
+				});
+			}
+			if (f.type === "number") return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				min: f.min,
+				max: f.max,
+				step: f.step,
+				value: String(value ?? ""),
+				placeholder: placeholder ?? f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			});
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				value: String(value ?? ""),
+				placeholder: placeholder ?? f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			});
+		}
+		/** THE DYNAMIC PARAMETER PANEL (2026-09-17, the operator's shared-
+		* component law): sections of the SERVED form-spec's rows at their
+		* wire names — ONE mechanism every card seats, never a per-card
+		* re-walk. The card owns POLICY through the DECLARATION (which
+		* fields exist, their visible_when leaves); the base owns MECHANISM
+		* (fetch → walker → row atoms → visibility grammar → the error
+		* law). A row the door never declared renders NOTHING (no ghost,
+		* no twin); a refused spec renders AS an error — never a thinner
+		* panel. */
+		function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: errorProp }) {
+			const owned = useFormSpec(model);
+			const spec = specProp !== void 0 ? specProp : owned.spec;
+			const error = specProp !== void 0 ? errorProp ?? null : owned.error;
+			if (error !== null) return (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				role: "alert",
+				"data-testid": "spec-panel-error"
+			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, "form-spec failed — parameters unavailable"), (0, react.createElement)("div", { className: card_module_css_default.specHint }, error));
+			if (spec === null) return null;
+			const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]));
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, sections.map((sec) => (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				key: sec.title,
+				...sec.testid !== void 0 ? { "data-testid": sec.testid } : {}
+			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
+				const f = byName.get(row.name);
+				if (f === void 0) return null;
+				if (!fieldVisible(f, values)) return null;
+				return (0, react.createElement)(SpecFieldRow, {
+					key: row.name,
+					f,
+					value: values[row.name],
+					onEdit
+				});
+			}))));
+		}
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). Each field renders through the
+		*  claimed atom for its emitted type when the caller passes one;
+		*  the base's built-in atom is the default.
+		*
+		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
+		*  img-to-mesh input component — you are not using it around — you
+		*  are hardcoding"): an emitted image/file input constructs THE ONE
+		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
+		*  square provider — no call site wires it, no call site can forget
+		*  it. The caller hands only the WIRE (picker candidates), never the
+		*  component; a caller that passes its own `square` fn overrides (the
+		*  host-claim seam), but the default is the constructor's own. */
+		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
+		*  required star, hint) around the atom — CardForm's own row, opened
+		*  to rail sections that render served fields outside a whole form
+		*  (mask's TuneSection). The claim seam stays CardForm's; this row
+		*  takes the resolved atom inputs. */
+		/** THE SEED DICE (stroke 39 — the operator's QOL law): the seed
+		*  knob carries the RANDOM sentinel -1 (GATE S: -1 mints a fresh
+		*  seed in the lane, EVERY run). The dice sits at the key line's
+		*  right end, across from the field's name: FILLED pips = random
+		*  (a new seed every run), HOLLOW pips = fixed (this exact seed
+		*  re-runs). The state DERIVES from the resolved value alone — no
+		*  hidden mode to drift; the click writes the value: fixed → -1
+		*  (random), random → a minted concrete int (the kit's own mint
+		*  law, Math.floor(random * 2147483647)). Typing a number while
+		*  random fixes it — the dice unfills by derivation, one source
+		*  of truth. The input never paints the sentinel: random shows
+		*  the placeholder, never "-1". */
+		function SeedDice({ random, onToggle }) {
+			return (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specDice + (random ? " " + card_module_css_default.specDiceOn : ""),
+				"data-seed-dice": random ? "random" : "fixed",
+				"aria-pressed": random,
+				"aria-label": "seed dice",
+				title: random ? "Random — a new seed every run. Click to fix one." : "Fixed seed — this exact seed re-runs. Click for a new one every run.",
+				onClick: onToggle
+			}, (0, react.createElement)("svg", {
+				width: 14,
+				height: 14,
+				viewBox: "0 0 16 16",
+				fill: "none",
+				xmlns: "http://www.w3.org/2000/svg",
+				"aria-hidden": "true"
+			}, (0, react.createElement)("rect", {
+				x: 1.4,
+				y: 1.4,
+				width: 13.2,
+				height: 13.2,
+				rx: 3.2,
+				stroke: "currentColor",
+				strokeWidth: 1.3
+			}), (0, react.createElement)("circle", {
+				cx: 5,
+				cy: 5,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 11,
+				cy: 5,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 8,
+				cy: 8,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 5,
+				cy: 11,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 11,
+				cy: 11,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			})));
+		}
+		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
+			const seedKnob = f.name === "seed";
+			const seedRandom = seedKnob && (value === -1 || value === "-1");
+			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SeedDice, {
+				random: seedRandom,
+				onToggle: () => {
+					if (seedRandom) onEdit(f.name, Math.floor(Math.random() * 2147483647));
+					else onEdit(f.name, -1);
+				}
+			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
+				f,
+				value: seedRandom ? void 0 : value,
+				...seedRandom ? { placeholder: "random — new every run" } : {},
+				onEdit,
+				square,
+				...wireCandidates !== void 0 ? { wireCandidates } : {}
+			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
+		}
 		//#endregion
 		//#region ../../web/card-base/src/mods.tsx
 		/**
@@ -49616,7 +50235,7 @@ void main() {
 				e.preventDefault();
 				setDragOver(false);
 				if (disabled) return;
-				const asset = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
+				const asset = e.dataTransfer.getData(ASSET_DRAG_MIME$2);
 				if (asset) try {
 					const payload = JSON.parse(asset);
 					if (payload.url && onDropAsset) {
@@ -52313,6 +52932,12 @@ void main() {
 		const FLOOR_LIFT_Y = .02;
 		function MotionCardEditor({ stage, onSave, upstreams = [], onWireSlot }) {
 			const toast = useToastStore((s) => s.addToast);
+			const { spec: kimodoSpec, error: kimodoError } = useFormSpec("kimodo");
+			const userParams = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
+			const paramValues = (0, react.useMemo)(() => kimodoSpec !== null ? resolveValue(kimodoSpec, userParams) : userParams, [kimodoSpec, userParams]);
+			const onParamEdit = (0, react.useCallback)((name, value) => {
+				onSave({ [name]: value });
+			}, [onSave]);
 			const npzUrl = (0, react.useMemo)(() => {
 				const arts = stage.result?.artifacts;
 				if (arts) {
@@ -52631,7 +53256,7 @@ void main() {
 			const handleStageDrop = (0, react.useCallback)((e) => {
 				e.preventDefault();
 				setBgDragOver(false);
-				const asset = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
+				const asset = e.dataTransfer.getData(ASSET_DRAG_MIME$2);
 				if (asset) try {
 					const payload = JSON.parse(asset);
 					if (payload.url) {
@@ -53371,6 +53996,35 @@ void main() {
 								className: component_module_css_default.railBtnDanger,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCcw, { className: component_module_css_default.i14 }), "Reset pose"]
 							})
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecPanel, {
+							model: "kimodo",
+							spec: kimodoSpec,
+							error: kimodoError,
+							values: paramValues,
+							onEdit: onParamEdit,
+							sections: [
+								{
+									title: "Generation",
+									testid: "mo-gen-panel",
+									rows: [
+										{ name: "duration_sec" },
+										{ name: "diffusion_steps" },
+										{ name: "num_samples" },
+										{ name: "num_transition_frames" }
+									]
+								},
+								{
+									title: "Guidance",
+									testid: "mo-guide-panel",
+									rows: [{ name: "cfg_weight_a" }, { name: "cfg_weight_b" }]
+								},
+								{
+									title: "Clock",
+									testid: "mo-clock-panel",
+									rows: [{ name: "seed" }]
+								}
+							]
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.railGroupLabelMt,
