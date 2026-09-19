@@ -18,6 +18,8 @@ import { Readable } from "node:stream";
 import { endpointConfigPath, loadEndpointConfig, runtimeModelsRoot } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import { ManagerApiError, managerBase, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
+import { probeEndpoint, activeRuns, managerSecurity } from "./manageProbe.ts";
+import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, downloadIntoModelsTree, systemctl, guardLifecycle, COMFY_UNIT } from "./manageOps.ts";
 
 // ── SSOT vocabulary ─────────────────────────────────────────────────
 // Closed vocabulary — a typo is a 422, not a silent miss.
@@ -81,7 +83,7 @@ export interface ManageCtx {
   timeout: (callback: () => void, delay: number) => () => void;
 }
 
-interface Req {
+export interface Req {
   action: ManageAction;
   nodes: string[];
   url: string;
@@ -104,7 +106,7 @@ interface Req {
 type Handler = (req: Req, ctx: ManageCtx) => Promise<[number, ManageEnvelope]>;
 
 // ── errors (the dispatch maps classes to codes, as before) ─────────
-class Refused extends Error {
+export class Refused extends Error {
   public data?: unknown;
   constructor(code: number, message: string, data?: unknown) {
     super(message);
@@ -113,11 +115,11 @@ class Refused extends Error {
   }
   public code: number;
 }
-const badRequest = (m: string): Refused => new Refused(422, m);
+export const badRequest = (m: string): Refused => new Refused(422, m);
 const notFound = (m: string): Refused => new Refused(404, m);
 const unavailable = (m: string): Refused => new Refused(503, m);
 
-function parseReq(doc: unknown): Req {
+export function parseReq(doc: unknown): Req {
   if (doc === null || typeof doc !== "object" || Array.isArray(doc)) {
     throw badRequest("Input should be a valid dictionary");
   }
@@ -163,235 +165,6 @@ function need(req: Req, ...fields: string[]): void {
   if (missing.length > 0) throw badRequest(req.action + " requires: " + missing.join(", "));
 }
 
-// ── runs / security / probe (TS-native) ────────────────────────────
-const STATUS_RE = /"status"\s*:\s*"([a-z]+)"/;
-
-/** Sidecar scan: run dirs whose _flow.json reads running|queued.
- *  Anchored at the REPO data tree (inherited behavior — the scan
- *  follows the estate, not the state root). Conservative: a stale
- *  "running" sidecar refuses the restart (safe). */
-function activeRuns(repoRoot: string): string[] {
-  const dir = join(repoRoot, "data", "runs", "output");
-  let names: string[];
-  try {
-    names = readdirSync(dir);
-  } catch {
-    return [];
-  }
-  const out: string[] = [];
-  for (const name of names) {
-    if (!name.startsWith("run-")) continue;
-    let buf: string;
-    try {
-      buf = readFileSync(join(dir, name, "_flow.json"), "utf-8").slice(0, 8191);
-    } catch {
-      continue;
-    }
-    const m = STATUS_RE.exec(buf);
-    if (m && (m[1] === "running" || m[1] === "queued")) out.push(name);
-  }
-  return out.sort();
-}
-
-/** The manager's live security view (READ ONLY — the manager reads
- *  config.ini once at ComfyUI startup, so a call-time write would be
- *  a lie until restart; provision owns the pin). v3.38 layout:
- *  user/__manager/config.ini (system-user-api ComfyUI), legacy
- *  user/default/ComfyUI-Manager/config.ini otherwise. */
-function managerSecurity(repoRoot: string): string {
-  const runtime = join(repoRoot, "data", "runtime", "comfyui");
-  const cands = [
-    join(runtime, "user", "__manager", "config.ini"),
-    join(runtime, "user", "default", "ComfyUI-Manager", "config.ini"),
-  ];
-  for (const ini of cands) {
-    let text: string;
-    try {
-      text = readFileSync(ini, "utf-8");
-    } catch {
-      continue;
-    }
-    const level = /^\s*security_level\s*=\s*(\S+)/m.exec(text);
-    const gitUrl = /^\s*allow_git_url_install\s*=\s*true/m.test(text);
-    return "security_level=" + (level ? level[1] : "normal (default)") + (gitUrl ? " +git_url" : "") + " [" + ini + "]";
-  }
-  return "unpinned (no manager config on disk — provision sync)";
-}
-
-interface EndpointView {
-  reachable: boolean;
-  url?: string;
-  reason?: string;
-  comfyui_version?: unknown;
-  devices?: Array<{ name: string; vram_total: unknown; vram_free: unknown }>;
-}
-
-/** The endpoint config's OWN server, probed live (/system_stats).
- *  The 5s abort rides the timer service seat (ManageCtx.timeout —
- *  the cordis-plugin-timer seam): the returned disposer is both the
- *  early clear and the disposal guarantee, no bare setTimeout
- *  (deep-audit finding #7, 2026-09-10). */
-async function probeEndpoint(mctx: ManageCtx): Promise<EndpointView> {
-  const cfg = mctx.endpoint();
-  const url = typeof cfg["url"] === "string" ? (cfg["url"] as string).replace(/\/+$/, "") : "";
-  if (url === "") return { reachable: false, reason: "no url in endpoint config" };
-  const ctrl = new AbortController();
-  const t = mctx.timeout((): void => ctrl.abort(), 5000);
-  try {
-    const r = await fetch(url + "/system_stats", { signal: ctrl.signal });
-    const stats = (await r.json()) as Record<string, unknown>;
-    const sysinfo = (stats["system"] ?? {}) as Record<string, unknown>;
-    const devices = ((stats["devices"] ?? []) as Array<Record<string, unknown>>).slice(0, 4).map((d) => ({
-      name: typeof d["name"] === "string" ? (d["name"] as string) : "?",
-      vram_total: d["vram_total"],
-      vram_free: d["vram_free"],
-    }));
-    return { reachable: true, url, comfyui_version: sysinfo["comfyui_version"], devices };
-  } catch (e) {
-    return { reachable: false, url, reason: String(e).slice(0, 120) };
-  } finally {
-    t();
-  }
-}
-
-// ── the manager rail (vendor HTTP — see manager-api.ts) ────────────
-function base(ctx: ManageCtx): string {
-  return managerBase(ctx);
-}
-
-/** Map a manager refusal to the estate envelope (the vendor's own
- *  security texts ride verbatim — this door never reinterprets a
- *  security answer). */
-function mapManagerRefused(e: ManagerApiError, action: string): Refused {
-  if (e.status === 503) return new Refused(503, e.text, undefined);
-  if (e.status === 403) {
-    return new Refused(
-      403,
-      "manager refused " + action + " (security_level or the loopback listen flag): " + e.text.slice(0, 200),
-    );
-  }
-  if (e.status === 404) return new Refused(404, "manager has no such target: " + e.text.slice(0, 200));
-  return new Refused(502, "manager api error " + e.status + ": " + e.text.slice(0, 200));
-}
-
-/** Map a rail failure to its refusal: the rail throws ManagerApiError
- *  by contract (refusals verbatim, transports as the 503 template),
- *  so the fallthrough only guards the type, never a live error. */
-function mapRail(e: unknown, action: string): Refused {
-  if (e instanceof ManagerApiError) return mapManagerRefused(e, action);
-  /* v8 ignore next -- the rail's ManagerApiError-only contract
-     (2026-09-12) */
-  throw e;
-}
-
-function railMs(req: Req): number {
-  return Math.min(Math.max(req.timeout_seconds, 1), 850) * 1000;
-}
-
-/** Poll the vendor's task queue until drained (install arms: the
- *  vendor returns 202-semantics — queue accepted — and processes
- *  asynchronously; the poll bounds the AI door's wait). */
-async function awaitQueueDrained(ctx: ManageCtx, req: Req): Promise<Record<string, unknown>> {
-  const deadline = Date.now() + railMs(req);
-  for (;;) {
-    const st = (await managerGet(base(ctx), "/manager/queue/status", {
-      ctx, timeoutMs: 10_000,
-    })) as Record<string, unknown>;
-    const processing = st["is_processing"] === true;
-    const pending = Number(st["in_progress_count"] ?? 0) + Number(st["total_count"] ?? 0) - Number(st["done_count"] ?? 0);
-    if (!processing && pending <= 0) return st;
-    if (Date.now() >= deadline) return st;
-    await new Promise<void>((res) => {
-      const t = ctx.timeout((): void => res(), 1000);
-      void t;
-    });
-  }
-}
-
-/** BYO guard: estate-orchestration legs (systemd, workspace reads)
- *  never touch a user-owned ComfyUI. */
-function estateOnly(req: Req, cfg: Record<string, unknown>): void {
-  if (cfg["provision"] === "managed") return;
-  throw new Refused(
-    409,
-    "byo endpoint: " + req.action + " orchestrates the estate engine — the estate never touches a user-owned ComfyUI",
-  );
-}
-
-// ── estate model downloads (TS-native — no vendor on this path) ────
-/** Download one model file into the runtime models tree. Direct
- *  URLs are ESTATE truth (the catalog carries them); the vendor's
- *  model plane is whitelist-only for registered models — a
- *  mismatched dependency was the old comfy-mcp's job, not ours. */
-async function downloadIntoModelsTree(
-  ctx: ManageCtx,
-  row: { url: string; relative_path: string; filename: string },
-  timeoutMs: number,
-): Promise<string> {
-  /* v8 ignore next -- need(url) pre-empts upstream (both callers
-     gate it): the recheck never fires (2026-09-12) */
-  if (row.url === "") throw badRequest("download requires: url");
-  const folder = row.relative_path.startsWith("models/")
-    ? row.relative_path.slice("models/".length)
-    : row.relative_path;
-  if (folder.includes("..") || folder.startsWith("/")) {
-    throw badRequest("relative_path must stay under the models root: " + row.relative_path);
-  }
-  // (split never yields [] — pop is always a string here)
-  const name = row.filename !== "" ? row.filename : (row.url.split("/").pop() as string);
-  if (name === "" || name.includes("/") || name.includes("..")) {
-    throw badRequest("filename must be a bare name under the models root");
-  }
-  const dir = join(runtimeModelsRoot(ctx.repoRoot), folder);
-  mkdirSync(dir, { recursive: true });
-  const dest = join(dir, name);
-  const ctrl = new AbortController();
-  const t = ctx.timeout((): void => ctrl.abort(), timeoutMs);
-  try {
-    const r = await fetch(row.url, { signal: ctrl.signal });
-    if (!(r.status >= 200 && r.status < 300)) {
-      throw new Refused(502, "download refused: HTTP " + r.status + " for " + row.url);
-    }
-    if (r.body === null) throw new Refused(502, "download returned no body: " + row.url);
-    await pipeline(Readable.fromWeb(r.body as never), createWriteStream(dest));
-    return dest;
-  } catch (e) {
-    if (e instanceof Refused) throw e;
-    throw new Refused(502, "download failed: " + (e instanceof Error ? e.message : String(e)).slice(0, 200));
-  } finally {
-    t();
-  }
-}
-
-// ── systemd orchestration (estate deployment — TS-native) ──────────
-const COMFY_UNIT = process.env["MELITE_COMFYUI_UNIT"] ?? "melite-comfyui.service";
-
-function systemctl(req: Req, verb: "start" | "stop"): [number, ManageEnvelope] {
-  const out = spawnSync("systemctl", ["--user", verb, COMFY_UNIT], {
-    timeout: 30 * 1000,
-    encoding: "utf8",
-  });
-  if (out.error !== undefined || out.status !== 0) {
-    // (stderr is "" (not nullish) on a clean spawn, so the last
-    // fallback only guards the type — spawn failures always carry
-    // one of the first two)
-    const why = String(out.stderr ?? out.error?.message).trim().slice(0, 200);
-    return [500, { action: req.action, ok: false, detail: "systemctl " + verb + " " + COMFY_UNIT + " failed: " + why }];
-  }
-  return [200, { action: req.action, ok: true, detail: verb + " issued for " + COMFY_UNIT }];
-}
-
-function guardLifecycle(req: Req, ctx: ManageCtx): void {
-  if (req.force) return;
-  const active = activeRuns(ctx.repoRoot);
-  if (active.length > 0) {
-    throw new Refused(
-      409,
-      "refused: " + active.length + " active run(s) (" + active.slice(0, 4).join(", ") +
-        ") — stop them first (the stop door) or pass force=true",
-    );
-  }
-}
 
 function ok(action: string, detail: string, data?: unknown): [number, ManageEnvelope] {
   return [200, { action, ok: true, detail, data }];
