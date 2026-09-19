@@ -547,7 +547,7 @@ describe('live door arms', () => {
     const dareties = opts.find((o) => o['value'] === 'h3_lightx2v_dareties')
     const turbo = opts.find((o) => o['value'] === 'h3_lightx2v_turbo')
     assert.ok(dareties !== undefined && turbo !== undefined, 'both distill rows serve')
-    assert.deepEqual(dareties!['defaults'], { strength: 0.4, steps: 4 }, 'dareties v4: a four-step distill (fixed point)')
+    assert.deepEqual(dareties!['defaults'], { strength: 0.8, steps: 4 }, 'dareties v4: a four-step distill (fixed point); strength 0.8 per the operator 2026-09-21 (silveroxides\u2019 documented solo range 0.6\u20130.8)')
     assert.deepEqual(turbo!['defaults'], { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8 }, 'turbo 4-8: the married default rides WITH its declared range')
     // ── THE CATALOG EXPANSION (2026-09-20, operator: "add multiple
     // loras and let the user choose"): the official lightx2v turbos
