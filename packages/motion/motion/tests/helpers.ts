@@ -13,6 +13,7 @@ import { MotionCardEditor } from '../src/ui/studio/component.tsx'
 import { useToastStore } from '@melite/card-base/toast'
 import { schemaEnvelope } from '@melite/card-base'
 import { SKIN_URL, MOTION_URL, skinResponse, motionResponse } from './fixtures.ts'
+import { primeCatalog } from '@melite/catalog'
 
 export const mounted: Root[] = []
 
@@ -67,6 +68,11 @@ export function stubLoads(opts: {
   flow?: 'completed' | 'completed-noglb' | 'failed' | 'slow' | number;
 } = {}): void {
   let statusCalls = 0
+  // The wire affordance is catalog-derived (useMotionMedia: no
+  // catalog = no wire, honest no-truth) — seed the service row the
+  // studio spec's stages sit on, with the preview-glb input slot.
+  primeCatalog({ models: { kimodo_motion: { input_slots: ['preview_glb'] } } } as Parameters<typeof primeCatalog>[0])
+
   vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
     const u = typeof input === 'string' ? input : (input as Request).url ?? String(input)
     // RULE B: the kimodo form-spec door — the rail's SpecPanel fetches
