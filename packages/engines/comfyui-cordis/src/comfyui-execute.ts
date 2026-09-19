@@ -54,19 +54,22 @@ function stopProbe(shouldStop: () => boolean): {
   readonly promise: Promise<never>;
   readonly dispose: () => void;
 } {
-  let tick: NodeJS.Timeout | null = null;
+  // (the Promise executor runs synchronously — the tick is always
+  //  set before dispose can run; the null guard was a dead arm,
+  //  deleted 2026-09-19 under the fallback ban.)
+  let tick!: NodeJS.Timeout;
   const promise: Promise<never> = new Promise<never>((_, rejectP) => {
     tick = setInterval((): void => {
       if (shouldStop()) {
         rejectP(new ComfyError("stopped (interrupt delivered)"));
       }
     }, 250);
-    (tick as NodeJS.Timeout).unref();
+    tick.unref();
   });
   return {
     promise,
     dispose: (): void => {
-      if (tick !== null) clearInterval(tick);
+      clearInterval(tick);
     },
   };
 }
