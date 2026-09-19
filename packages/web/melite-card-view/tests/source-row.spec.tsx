@@ -83,26 +83,34 @@ test('THE INPUT RAIL: the declared signature renders ONE rail in signature order
   const rail = container.querySelector('[data-input-rail]') as HTMLElement
   expect(rail).toBeTruthy()
   const squares = Array.from(rail.querySelectorAll('[role="button"][aria-label*="source"]'))
-  expect(squares.length).toBe(3) // input_slots: image1/2/3 — nothing else
+  // input_slots image1/2/3 + the declared stack (1 entry cell + the add-cell)
+  expect(squares.length).toBe(5)
   // SIGNATURE order: the anchor (Image 1) rides FIRST
   const labels = squares.map((s) => (s as HTMLElement).getAttribute('aria-label'))
   expect(labels.indexOf('Image 1 source')).toBe(0)
-  // DECLARATION-ONLY: reference_images renders NOWHERE — not the rail,
-  // not the groups, not even its label text (the old unclaimed-slot law)
-  expect(container.textContent).not.toContain('Reference Images')
-  expect(container.querySelector('[data-image-list]')).toBeNull()
+  // THE PROGRESSIVE STACK (the operator's law, 2026-09-20 — the old
+  // unclaimed-slot law is REPLACED): the declared image_list seats
+  // on the rail as its own progressive row — one cell per entry
+  // plus the add-cell
+  const stack = rail.querySelector('[data-input-stack="reference_images"]') as HTMLElement
+  expect(stack).toBeTruthy()
+  expect(stack.getAttribute('data-stack-count')).toBe('1')
+  expect(stack.querySelector('[data-stack-add="reference_images"]')).toBeTruthy()
+  expect(stack.textContent).toContain('Reference Images')
 })
 
-test('without a signature the group grammar still holds (backward face)', () => {
+test('without a signature the singles stay grouped — but the declared stack still claims the rail (a stack always has a face)', () => {
   const { container } = render(createElement(Host, {
     spec: { ...railSpec, inputs: undefined },
     user: {},
     onSet: vi.fn(),
   }))
-  expect(container.querySelector('[data-input-rail]')).toBeNull()
+  const rail = container.querySelector('[data-input-rail]') as HTMLElement
+  expect(rail).toBeTruthy()
+  expect(rail.querySelector('[data-input-stack="reference_images"]')).toBeTruthy()
+  // no signature singles on the rail — the groups still seat them
+  expect(rail.querySelector('[aria-label="Image 1 source"]')).toBeNull()
   expect(container.querySelectorAll('[class*="specSlotRow"]').length).toBeGreaterThan(0)
-  // and the unclaimed list stays invisible there too — 1:1, no seam leak
-  expect(container.textContent).not.toContain('Reference Images')
 })
 
 // ── STROKE 32: THE MOD-OWNED SLOT LAW (the operator's missing-seat

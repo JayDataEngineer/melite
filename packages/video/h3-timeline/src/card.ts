@@ -105,6 +105,32 @@ const CHAIN_ONLY_KEYS = [
 const paramSchema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: null, placeholder: "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out", tooltip: "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.", required: true }),
   image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', { order: null, tooltip: "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline." }),
+  // THE INPUT SURFACE (the H3 architecture truth — two DIFFERENT
+  // mechanics, the FL2VA latent anchors vs the Ref2VA conditioning
+  // bus): first_frame/last_frame are PIXEL anchors (bundle inputs
+  // 1-2, VAE-written into the latent ends — the i2v branch reads
+  // them verbatim); references ride the REMAINING image bus (inputs
+  // 3-9 → <Picture 3..9>) plus the video/audio lanes (<Video 1-3>,
+  // <Audio 1-3>) as AdaLN/cross-attention conditioning. Typed
+  // arrays, door-enforced: a non-string entry or an over-cap stack
+  // refuses LOUD at the gate (the probe-proven law —
+  // `expected array length <= 8`), never rides silent. The legacy
+  // `refs` stanza bag keeps its compose-side wireList readers; the
+  // declared fields are the primary surface.
+  last_frame: z.string().role('path').description("Last frame (end anchor)").extra('extra', { order: null, tooltip: "FL2VA end anchor — bundle input 2. Locks the final frame's pixels; H3 generates the motion between the two anchors." }),
+  ref_images: z.array(z.string().role('path')).description("Reference images").max(8).extra('extra', { order: null, wtype: 'image_list', max_stack: 8, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." }),
+  ref_videos: z.array(z.string().role('path')).description("Reference videos").max(3).extra('extra', { order: null, wtype: 'image_list', media: 'video', max_stack: 3, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." }),
+  ref_audios: z.array(z.string().role('path')).description("Reference audios").max(3).extra('extra', { order: null, wtype: 'image_list', media: 'audio', max_stack: 3, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." }),
+  // THE AUDIO BED (the convenience layer): ONE track spread across
+  // the film's windows — each window's generation carries its own
+  // CUT of the bed (start = bed_start + the window's timeline
+  // offset, duration = the window's length at 24fps) injected as
+  // the behind-the-scenes <Audio 1> conditioning; user ref_audios
+  // shift to <Audio 2-3>. ComfyUI does the cuts (the Layer C
+  // MeliteAudioSlice node — sample-grain slicing + silence pad to
+  // the legal AV duration).
+  bed_audio: z.string().role('path').description("Audio bed (film-wide)").extra('extra', { order: null, wtype: 'file', tooltip: "One track across all windows — each generation carries its own slice as hidden <Audio 1> conditioning. ComfyUI cuts it." }),
+  bed_start: z.number().description("Bed start (s)").min(0).step(0.01).default(0).extra('extra', { order: null, wtype: 'number', tooltip: "Where in the bed track the film's window 1 begins." }),
   seed: z.number().description("Seed").step(1).default(42).extra('extra', { order: null, tooltip: "Same seed across re-rolls = same world texture" }),
   width: z.number().description("Width").min(448).max(1344).step(64).default(1344).extra('extra', { order: null, wtype: 'number' }),
   height: z.number().description("Height").min(448).max(768).step(64).default(768).extra('extra', { order: null, wtype: 'number' }),
@@ -337,6 +363,13 @@ export function schema(v: unknown): Record<string, unknown> {
       const cc = c as Record<string, unknown>
       return Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name)
     })
+      // THE DECLARED INPUT SURFACE (the input rail's law): card-level
+      // refs / an end anchor / the audio bed imply the r2v lane by the
+      // same law as a per-call guide — the window re-checks, but the
+      // derivation owns it first
+      || wireList(raw.ref_images).length + wireList(raw.ref_videos).length + wireList(raw.ref_audios).length > 0
+      || (typeof raw.last_frame === 'string' && raw.last_frame.trim() !== '')
+      || (typeof raw.bed_audio === 'string' && raw.bed_audio.trim() !== '')
     variant = calls.length > 1 ? 't4_chain' : hasGuide ? 't4r' : 't4_open'
     out.variant = variant
   }
@@ -469,6 +502,10 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
   let prev: WindowHandles | undefined
+  // BED ELAPSED (the audio-bed cut law's accumulator): where in the
+  // bed track the NEXT window's slice begins — advanced by each
+  // stanza's own duration as it renders.
+  let bedElapsed = 0
   // THE FILM RAIL (the operator's call, 2026-09-17: the film is media
   // composition — the ENGINE'S job, never a harness-side ffmpeg): each
   // window's DELIVERED streams butt through MiniMaxH3FilmConcat nodes
@@ -498,9 +535,13 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     const knobs = (call.knobs ?? {}) as Record<string, unknown>
     // refs are a LAYER B (per-call) property — the reference bundle
     // rides the stanza; a refs-carrying call is t4r EVEN without a
-    // guide still (the bundle IS the r2v input).
+    // guide still (the bundle IS the r2v input). The DECLARED input
+    // surface (ref_images/ref_videos/ref_audios — Layer A, the
+    // card's own params) implies t4r by the same law.
     const rb = (call.refs ?? {}) as Record<string, unknown>
-    const hasRefs = wireList(rb.images).length + wireList(rb.videos).length + wireList(rb.audios).length > 0
+    const declaredRefCount = wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length
+      + (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '' ? 1 : 0)
+    const hasRefs = declaredRefCount + wireList(rb.images).length + wireList(rb.videos).length + wireList(rb.audios).length > 0
     const chainLike = i > 0 && (transition === 'extend' || secs !== null)
     const sf = num(call.start_frame)
     const ef = num(call.end_frame)
@@ -523,6 +564,24 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     }
     if (chainLike) stanza.__seam = transition === 'cut' ? 'cut-frames' : 'extend'
     if (prev !== undefined) stanza.__prev = prev
+    // THE AUDIO BED CUT LAW (the convenience layer): the film's
+    // windows carry their OWN slice of the bed — window 1 starts at
+    // bed_start, window k starts where window k-1's slice ended
+    // (each stanza's own fps_seconds is its duration; uniform
+    // windows are the film's default posture). Stamped BEFORE the
+    // bed is stripped from the stanza by per-call knob overrides —
+    // a call's knobs may kill the bed for that window alone.
+    if (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '') {
+      // bed_start is a declared knob with a walk-filled default (the
+      // door fills 0 before compose) — the cast reads the walked
+      // value, never a pre-walk fence
+      stanza.bed_window_start = (p.bed_start as number) + bedElapsed
+    }
+    // advance the bed clock by THIS stanza's own duration (knobs may
+    // pin a per-window fps_seconds; the bed follows it) — num()
+    // refuses junk to null, the film default (10.0, the t4r branch's
+    // own duration literal) carries the absent arm
+    bedElapsed += num(stanza.fps_seconds ?? p.fps_seconds) ?? 10.0
 
     assertOverlayGated(stanza, `h3-timeline window ${k} knobs`)
     const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w))
@@ -579,9 +638,13 @@ const wireList = (v: unknown): string[] =>
 function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHandles {
   // REFS IMPLY THE R2V LANE (the bundle IS the r2v input): a
   // refs-carrying window is t4r even without a guide still — the
-  // same law the film renderer applies per call.
+  // same law the film renderer applies per call. The DECLARED input
+  // surface (ref_images/ref_videos/ref_audios — the typed fields)
+  // implies t4r by the same law.
   const rb0 = (p.refs ?? {}) as Record<string, unknown>
-  const hasRefs = wireList(rb0.images).length + wireList(rb0.videos).length + wireList(rb0.audios).length > 0
+  const declaredCount = wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length
+    + (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '' ? 1 : 0)
+  const hasRefs = declaredCount + wireList(rb0.images).length + wireList(rb0.videos).length + wireList(rb0.audios).length > 0
   if (hasRefs && p.variant !== 't4r') p = { ...p, variant: 't4r' }
   const family = p.variant as Family
   if (!(FAMILIES as readonly string[]).includes(family)) {
@@ -695,15 +758,31 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // the reference resizer (bundle → r2v refs) before the geometry
     // resizer (i2v) — creation mirrors the walk.
     const refBag = (p.refs ?? {}) as Record<string, unknown>
+    // THE DECLARED-SURFACE MERGE (the input rail's law): the typed
+    // fields (ref_images/ref_videos/ref_audios — Layer A, stamped
+    // onto every stanza) are PRIMARY; the legacy stanza bag's
+    // entries append, deduped. One wire form, one reader.
+    const declaredImages = wireList(p.ref_images)
+    const declaredVideos = wireList(p.ref_videos)
+    const declaredAudios = wireList(p.ref_audios)
+    const mergeRefs = (declared: string[], legacy: string[]): string[] =>
+      [...declared, ...legacy.filter((s) => !declared.includes(s))]
     // THE 9-SLOT IMAGE BUS (the bundle's own topology — the compose
-    // and the UI agree or they lie): inputs 1-9 are IMAGE slots
-    // (the anchor first, then EIGHT refs); input_10 begins the
-    // video lanes. A 9th ref would land ON input_10 — the first
-    // video's image stream — and be silently clobbered; the slice
-    // holds the bus.
-    const refImages = wireList(refBag.images).slice(0, 8)
-    const refVideos = wireList(refBag.videos).slice(0, 3)
-    const refAudios = wireList(refBag.audios).slice(0, 3)
+    // and the UI agree or they lie): inputs 1-9 are IMAGE slots —
+    // the anchor at 1, the FL2VA pair's END anchor at 2 when
+    // last_frame is set, references at 3..9 (7 with an end anchor,
+    // 8 riding input_2..9 without one); input_10 begins the video
+    // lanes. A 9th ref would land ON input_10 — the first video's
+    // image stream — and be silently clobbered; the law refuses
+    // LOUD instead.
+    const lastFrame = (p.last_frame ?? '') as string
+    const refImagesAll = mergeRefs(declaredImages, wireList(refBag.images))
+    if (lastFrame !== '' && refImagesAll.length > 7) {
+      throw new Error(`[h3-timeline] the image bus is full: a last frame (input 2) + ${String(refImagesAll.length)} references exceeds the 9-slot bus — keep references ≤ 7 with an end anchor (≤ 8 without)`)
+    }
+    const refImages = refImagesAll.slice(0, 8)
+    const refVideos = mergeRefs(declaredVideos, wireList(refBag.videos)).slice(0, 3)
+    const refAudios = mergeRefs(declaredAudios, wireList(refBag.audios)).slice(0, 3)
     const bundleInputs: Record<string, OutputHandle> = {}
     let anchorRaw: OutputHandle | undefined
     if (guideImage !== '') {
@@ -716,10 +795,22 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
         crop: 'center', divisible_by: 32.0, maintain_aspect: false,
       }).out()
     }
+    // THE FL2VA END ANCHOR: input_2 is the pair's second seat — the
+    // i2v branch reads out(0)/out(1) as first/last frame verbatim.
+    // Without an end anchor, refs ride from input_2 (legacy shelf).
+    const resizeRef = (src: string): OutputHandle => g.node('UnifiedResizeImageMask', {
+      image: g.node('LoadImage', { image: src }).out(), scale_mode: 'Shorter Side',
+      aspect_ratio: 'Auto (Input Image)', long_side_target: 1024.0,
+      short_side_target: 2048.0, width: 1024.0, height: 1024.0,
+      multiplier: 1.0, megapixels: 1.0, upscale_method: 'lanczos',
+      crop: 'center', divisible_by: 32.0, maintain_aspect: false,
+    }).out()
+    if (lastFrame !== '') bundleInputs.input_2 = resizeRef(lastFrame)
+    const firstFreeSlot = lastFrame !== '' ? 3 : 2
     refImages.forEach((src, i) => {
       const img = g.node('LoadImage', { image: src }).out()
       if (anchorRaw === undefined && i === 0) anchorRaw = img
-      bundleInputs[`input_${i + 2}`] = g.node('UnifiedResizeImageMask', {
+      bundleInputs[`input_${firstFreeSlot + i}`] = g.node('UnifiedResizeImageMask', {
         image: img, scale_mode: 'Shorter Side',
         aspect_ratio: 'Auto (Input Image)', long_side_target: 1024.0,
         short_side_target: 2048.0, width: 1024.0, height: 1024.0,
@@ -771,6 +862,29 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       r2vInputs[`ref_videos.ref_video_${i}`] = bout.out(9 + 2 * i)
       r2vInputs[`ref_video_audios.ref_video_audio_${i}`] = bout.out(10 + 2 * i)
       r2vInputs[`ref_audios.ref_audio_${i}`] = bout.out(15 + i)
+    }
+    // THE AUDIO BED (the convenience layer): ONE track spread across
+    // the film — THIS window carries its own CUT (start = the film
+    // loop's bed_window_start stamp, duration = the window's own
+    // fps_seconds) injected as the hidden <Audio 1> conditioning;
+    // the user's ref audios shift behind it (Audio 2-3). The cut is
+    // ComfyUI's (the Layer C MeliteAudioSlice node — sample-grain
+    // slicing, silence-pad to the legal duration).
+    const bedAudio = (p.bed_audio ?? '') as string
+    if (bedAudio.trim() !== '') {
+      const slice = g.node('MeliteAudioSlice', {
+        audio: bedAudio,
+        // bed_window_start is stamped by the film loop for every
+        // bed-carrying stanza (the stamp ⟺ this block) — the cast
+        // reads it, never a fence
+        start_seconds: p.bed_window_start as number,
+        duration_seconds: (p.fps_seconds ?? 10.0) as number,
+      }).out(0)
+      r2vInputs['ref_audios.ref_audio_0'] = slice
+      // the user's audios shift behind the bed (Audio 2-3); the
+      // third user audio yields its lane to the cut (1 bed + 2 user
+      // = the 3-lane budget — the bus law, never a silent fourth)
+      for (let i = 0; i < 2; i++) r2vInputs[`ref_audios.ref_audio_${i + 1}`] = bout.out(15 + i)
     }
     const r2v = g.node('MiniMaxH3ReferenceToVideo', r2vInputs)
     // the never-selected opener branch (R2VBool true) — the
@@ -1062,7 +1176,10 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     preview: { historyStrip: false },
     surface: { size: 'huge', layout: 'studio' },
     flowKinds: {
-      inputs: { image: 'image' },
+      // THE RAIL (the operator's law, 2026-09-20): first frame +
+      // last frame + audio bed — one shared rail; the kinds are the
+      // SLOT kinds (the rail seats image/file slots, never names)
+      inputs: { image: 'image', last_frame: 'image', bed_audio: 'file' },
       outputs: { default: 'video' },
       requiresModel: false,
     },
@@ -1130,12 +1247,23 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         }
       }
       assertOverlayGated(p, 'h3-timeline single-call lift')
+      // THE BED'S SINGLE-WINDOW STAMP (the film loop stamps every
+      // window; a one-call doc never rides the loop — window 1
+      // starts at the bed origin here, by the same law)
+      if (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '' && p.bed_window_start === undefined) {
+        p.bed_window_start = p.bed_start as number
+      }
       const guideImage = (p.image ?? p.image_name ?? '') as string
       if (p.variant === 't4r' && !guideImage) {
         // (refs-implied t4r windows carry no anchor — the bundle IS
-        // the r2v input; the guard admits them via the refs law)
+        // the r2v input; the guard admits them via the refs law — the
+        // legacy stanza bag AND the declared input surface (the rail's
+        // fields) count; the bed rides the audio lane guideless too)
         const rbRef = (p.refs ?? {}) as Record<string, unknown>
-        const refsCarry = wireList(rbRef.images).length + wireList(rbRef.videos).length + wireList(rbRef.audios).length > 0
+        const refsCarry = wireList(rbRef.images).length + wireList(rbRef.videos).length + wireList(rbRef.audios).length
+          + wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length > 0
+          || (typeof p.last_frame === 'string' && p.last_frame.trim() !== '')
+          || (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '')
         if (!refsCarry) {
           throw new Error(
             'h3_window(t4r): image-anchored window without a staged guide image — ' +

@@ -32,7 +32,7 @@ import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, ent
 import css from './card.module.css'
 import { useFormSpec } from './use-form-spec.ts'
 import { type FieldAtomClaim, type SquareHost, type SquareWire, useSquareProvider } from './square-provider.tsx'
-import { SpecAtom } from './atoms.tsx'
+import { SpecAtom, SourceRow } from './atoms.tsx'
 import { SpecFieldRow } from './rows.tsx'
 import { infoGlyph } from './rows.tsx'
 import { ModelAxes, PackPrompt } from './axes.tsx'
@@ -191,6 +191,16 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     .map((inp) => (typeof inp?.name === 'string' ? railOf(inp as { name: string }) : undefined))
     .filter((f): f is SpecField => f !== undefined)
   const railNames = new Set(railFields.map((f) => f.name))
+  // THE PROGRESSIVE STACKS (the operator's law, 2026-09-20: "a
+  // generic 'input row for input squares'… adding one causes it to
+  // add another available slot one at a time", sharing the mods
+  // UI's own row mechanic): declared image_list fields claim rail
+  // seats — one square per entry (array order IS apply order) plus
+  // the add-cell until the declared cap. This REPLACES the old
+  // unclaimed-slot law (image_list rendered NOWHERE with a
+  // signature present): a declared stack always has a face.
+  // Mod-owned stacks stay off (the leaf owns them — one face).
+  const stackFields = flatFields.filter((f) => f.type === 'image_list' && !modFieldByName.has(f.name))
   const visible = (f: SpecField): boolean =>
     f.type !== 'image_list' && !railNames.has(f.name)
   const groupFieldsAll = flatFields.filter(visible)
@@ -213,27 +223,83 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   // unless the host claimed the square seam itself.
   const own = useSquareProvider(edit, wire ?? { candidates: [] })
   const squareFor = square ?? own.square
+  // THE STACK ROW (one per declared image_list field): cells bind
+  // entries[i] through SourceRow — the SAME square-with-verbs seam
+  // the singles use; a pick commits the append, a clear SPLICES the
+  // entry (never a phantom '' in the bag). The add-cell is the
+  // EMPTY square — its verbs ARE the add drill; it vanishes at the
+  // declared cap (the mods' max_stack law, the rail's face).
+  const stackRow = (f: SpecField): ReturnType<typeof h> => {
+    const v = value[f.name]
+    const entries = Array.isArray(v)
+      ? v.filter((x): x is string => typeof x === 'string' && x !== '')
+      : []
+    const cap = typeof f.max_stack === 'number' && f.max_stack > 0 ? f.max_stack : 8
+    const kind = f.media === 'video' || f.media === 'audio' ? 'file' : 'image'
+    const accept = f.media === 'video' ? 'video/*' : f.media === 'audio' ? 'audio/*' : undefined
+    const cellLabel = (i: number): string =>
+      `${f.label} ${String(i + 1)}${f.media !== undefined && f.media !== '' ? ' (' + f.media + ')' : ''}`
+    return h('div', { className: css.specSlotRow, 'data-input-stack': f.name, 'data-stack-count': String(entries.length) },
+      h('span', { className: css.specFieldKey, 'data-stack-label': f.name }, f.label),
+      entries.map((entry, i) =>
+        h('div', {
+          key: f.name + ':' + String(i),
+          className: css.specSlotCell,
+          title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
+        },
+          h(SourceRow, {
+            label: cellLabel(i), kind, value: entry,
+            ...(accept !== undefined ? { accept } : {}),
+            onEdit: (next: string): void => {
+              const arr = [...entries]
+              if (next === '') arr.splice(i, 1)
+              else arr[i] = next
+              edit(f.name, arr)
+            },
+            ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
+          }),
+        )),
+      entries.length < cap
+        ? h('div', { className: css.specSlotCell, 'data-stack-add': f.name, title: f.tooltip },
+            h(SourceRow, {
+              label: `Add ${f.label}`, kind, value: null,
+              ...(accept !== undefined ? { accept } : {}),
+              onEdit: (next: string): void => {
+                // the add drill commits ONLY real picks — an empty
+                // verb (clear on the empty cell) adds nothing
+                /* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
+                if (next !== '') edit(f.name, [...entries, next])
+              },
+              ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
+            }),
+          )
+        : null,
+    )
+  }
   return h('div', { className: css.specForm },
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
     h(PackPrompt, { spec, onInstallPack }),
     h(ModelAxes, { spec, value, onSet: edit, onDownloadModel }),
-    railFields.length > 0
+    railFields.length > 0 || stackFields.length > 0
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
-          h('div', { className: css.specSlotRow },
-            railFields.map((f) => {
-              // NO image_list ARM (the rail-gate proof): railOf returns
-              // a field ONLY for type image|file, so railFields can
-              // never carry an image_list row.
-              return h('div', {
-                key: f.name,
-                className: css.specSlotCell,
-                title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
-              },
-                h(SpecAtom, { f, value: value[f.name], onEdit: edit, square: squareFor(f), ...(wire?.candidates !== undefined ? { wireCandidates: wire.candidates } : {}) }),
+          railFields.length > 0
+            ? h('div', { className: css.specSlotRow },
+                railFields.map((f) => {
+                  // NO image_list ARM (the rail-gate proof): railOf returns
+                  // a field ONLY for type image|file, so railFields can
+                  // never carry an image_list row.
+                  return h('div', {
+                    key: f.name,
+                    className: css.specSlotCell,
+                    title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
+                  },
+                    h(SpecAtom, { f, value: value[f.name], onEdit: edit, square: squareFor(f), ...(wire?.candidates !== undefined ? { wireCandidates: wire.candidates } : {}) }),
+                  )
+                }),
               )
-            }),
-          ),
+            : null,
+          stackFields.map((f) => h('div', { key: 'stack-' + f.name, className: css.inputRail }, stackRow(f))),
         )
       : null,
     submenu && activeGroup !== undefined

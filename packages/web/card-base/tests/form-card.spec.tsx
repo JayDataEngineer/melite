@@ -73,10 +73,15 @@ test('RAIL: a mod-owned slot seats from the kind fallback (the anchor is a slot,
   expect(rail?.textContent).toContain('Brick')
 })
 
-test('RAIL: text edges and nameless rows never seat (never a text square)', () => {
+test('RAIL: text edges never become squares — the rail seats only slot-shaped rows (signature singles + declared stacks)', () => {
   const spec = doc({ inputs: [{ name: 'prompt', kind: 'text' }, { nope: 1 }, { name: 'missing', kind: 'image' }] })
   form({ spec })
-  expect(document.querySelector('[data-input-rail]')).toBeNull()
+  const rail = document.querySelector('[data-input-rail]')
+  // the fixture's declared stack seats (the progressive-stack law) —
+  // but the text edge never becomes a square
+  if (rail === null) throw new Error('the declared stack seats: rail renders')
+  expect(rail.querySelector('[aria-label*="Prompt"]')).toBeNull()
+  expect(rail.querySelector('[data-input-stack="shots"]')).not.toBeNull()
   expect(screen.getByLabelText('Prompt')).not.toBeNull()
 })
 
@@ -207,11 +212,15 @@ test('GRID: declared columns grid the group; prompts span; width floors at one',
   expect(container.querySelector('[style*="grid-template-columns"]')).toBeNull()
 })
 
-test('GRID: no signature, no rail — the groups still seat every field', () => {
+test('GRID: no signature — singles stay grouped, but a declared stack still claims the rail (a stack always has a face)', () => {
   const spec = doc({ inputs: undefined })
   form({ spec, user: {} })
-  expect(document.querySelector('[data-input-rail]')).toBeNull()
-  expect(screen.getByLabelText('Prompt')).not.toBeNull()
+  const rail = document.querySelector('[data-input-rail]')
+  if (rail === null) throw new Error('the declared stack seats without a signature')
+  expect(rail.querySelector('[data-input-stack="shots"]')).not.toBeNull()
+  // the single's square lives in the groups now, never the rail
+  expect(rail.querySelector('[aria-label="Image source"]')).toBeNull()
+  expect(document.querySelector('[data-form-group-panel] [aria-label="Image source"]')).not.toBeNull()
 })
 
 test('RAIL: a shared slot name seats the first kind (first-seen wins, never a double face)', () => {

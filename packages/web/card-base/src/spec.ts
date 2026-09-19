@@ -132,6 +132,15 @@ export interface SpecField {
   /** The declared layout verb (card-declared kind fields carry it
    *  verbatim — 'image' = the square; the paint verb rides it). */
   wtype?: string
+  /** THE STACK CAP (the progressive input rail — the operator's law,
+   * 2026-09-20: "a generic input row for input squares… adding one
+   * causes it to add another available slot one at a time", the mods'
+   * own max_stack grammar reused): an image_list field renders one
+   * square per entry plus the add-cell until this cap. */
+  max_stack?: number
+  /** THE STACK'S MEDIA HINT ('video' | 'audio'; images default): the
+   * cell's picker kind + accept posture — typed stacks, one rail. */
+  media?: string
 }
 
 /** One DECLARED input edge: `name` is the schema param the edge feeds
@@ -588,6 +597,8 @@ function projectDict(
       visible_when: str('visible_when'),
       columns: typeof extra['columns'] === 'number' ? extra['columns'] as number : undefined,
       width: typeof extra['width'] === 'number' ? extra['width'] as number : undefined,
+      max_stack: typeof extra['max_stack'] === 'number' ? extra['max_stack'] as number : undefined,
+      media: str('media'),
     })
   }
   // declared order first, dict insertion order as tie-break (stable)
