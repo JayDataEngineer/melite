@@ -8,7 +8,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import {
-  assertCardIdentity, loadCardDefs, pluginPackage,
+  assertCardIdentity, loadCardDefs, pluginPackage, refreshCardDefs,
   provisionsByFamily, theService,
 } from "../src/cardDefs.ts";
 import { ComfyUIService } from "../src/service.ts";
@@ -111,5 +111,69 @@ describe("loadCardDefs (the registry boot)", () => {
     // a card with NO provisions adds no row
     const bare = await provisionsByFamily(new Map([["bare-card", {}]]) as never);
     assert.equal(bare["bare-card"], undefined);
+  }, 240000);
+});
+
+describe("refreshCardDefs (the #39 hot re-projection)", () => {
+  it("re-projects the served table from the LIVE singleton (a card registered after boot serves; its retraction un-serves)", async () => {
+    await loadCardDefs();
+    const svc = theService();
+    // a drop-in-shaped registration: a child fiber, the singleton
+    // by import — the hot door's exact shape
+    const ctx = new Context();
+    await ctx.plugin({
+      name: "wall-hot-card",
+      apply(c2: Context): void {
+        c2.effect(() => {
+          const off = svc.registerCard({
+            id: "wall-hot-card",
+            skeleton: "generate",
+            boarded: [],
+            tags: ["image"],
+            identity: { label: "Wall Hot Card", description: "the refresh wall", genre: "image" },
+            sidebar: { key: "image", order: 999, hidden: true },
+            compose(): void { throw new Error("never composed") },
+          } as never);
+          return () => { off() };
+        });
+      },
+    });
+    // the boot cache predates the registration — the card is IN the
+    // singleton but NOT in the served defs (the snapshot law)
+    assert.ok(svc.cardIds().includes("wall-hot-card"), "registered on the singleton");
+    assert.ok(!(await loadCardDefs()).has("wall-hot-card"), "the cache is a snapshot");
+    // THE RE-PROJECTION: one call rebuilds the served table live
+    const fresh = refreshCardDefs();
+    assert.ok(fresh.has("wall-hot-card"), "refreshed table serves the hot card");
+    assert.equal(await loadCardDefs(), fresh, "the cache now rides the refreshed projection");
+    // retraction: dispose the fiber → the reverter runs → the next
+    // refresh un-serves (the drop-in's disposer calls this)
+    await ctx.fiber.dispose();
+    assert.ok(!svc.cardIds().includes("wall-hot-card"), "reverted on the singleton");
+    const after = refreshCardDefs();
+    assert.ok(!after.has("wall-hot-card"), "un-served after the retraction");
+  }, 240000);
+
+  it("keeps the identity wall: a drifted hot card refuses at the re-projection (the m1 wall rides the refresh)", async () => {
+    await loadCardDefs();
+    const svc = theService();
+    // registerCard's gate is shape-level; the IDENTITY wall (m1)
+    // runs in the projection — a drifted def may land on the
+    // singleton, but the served table REFUSES to re-project it
+    const off = svc.registerCard({
+      id: "wall-drifted-card",
+      skeleton: "generate",
+      boarded: [],
+      tags: ["image"],
+      compose(): void { throw new Error("never composed") },
+    } as never);
+    try {
+      assert.ok(svc.cardIds().includes("wall-drifted-card"), "the singleton carries it");
+      assert.throws(() => refreshCardDefs(), /wall-drifted-card/, "the projection refuses loud");
+    } finally {
+      off();
+    }
+    assert.ok(!svc.cardIds().includes("wall-drifted-card"), "reverted");
+    assert.ok(refreshCardDefs().has("image-gen"), "the projection is clean again");
   }, 240000);
 });

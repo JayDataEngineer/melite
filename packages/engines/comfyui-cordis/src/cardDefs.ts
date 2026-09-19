@@ -222,6 +222,25 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   return cache
 }
 
+/** Refresh the served defs map from the LIVE singleton (#39, the
+ *  hotload prototype): loadCardDefs' cache is a boot snapshot, so a
+ *  card registered after boot (the hot root's drop-ins) never
+ *  serves until the projection re-derives. This re-runs the SAME
+ *  build line against theService() — the identity wall rides, the
+ *  per-request doors (form-spec, forms, catalog) pick it up on
+ *  their next read. Cold boots are untouched: the first
+ *  loadCardDefs() call is exactly what it was; only a process that
+ *  ALREADY booted can refresh. */
+export const refreshCardDefs = (): Map<string, CardDefinition> => {
+  const service = theService()
+  cache = new Map(service.cardIds().map((id) => {
+    const def = service.getCardDef(id)!
+    assertCardIdentity(id, def)
+    return [id, def]
+  }))
+  return cache
+}
+
 /** Every family's declaration provision rows (DECL provisions for
  *  every model id, then card-owned provisions), keyed by family —
  *  the download + serve surface (provision.ts downloads them; the

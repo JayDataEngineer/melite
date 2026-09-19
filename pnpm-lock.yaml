@@ -2604,6 +2604,12 @@ importers:
       '@deepseek-ai/dsh-mcp-client':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-attachment@0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)))(@deepseek-ai/dsh-llm@0.1.5-rc.2(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-scope@0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)))(@deepseek-ai/dsh-subprocess@0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-http-proxy@0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)))(@deepseek-ai/dsh-timeout@0.1.5-rc.2(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-tools@0.1.5-rc.2(245091fa945c02dfd80faac4cc80f4df))
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis

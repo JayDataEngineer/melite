@@ -406,11 +406,28 @@ export class ComfyUIService extends Service {
    *  suffix, family rows do not). ONE spelling of the runtime
    *  catalog law — modRows rides this. */
   modCatalog(pack: string, family: string): { rows: readonly LoraRowDecl[]; shared: boolean } {
-    const own = this.flavors.find(
+    const matching = this.flavors.filter(
       (m) => m.pack === pack && m.families.includes(family),
     )
-    if (own === undefined) return { rows: [], shared: false }
-    if ((own.rows ?? []).length > 0 || own.runtimeCatalog !== true) return { rows: own.rows ?? [], shared: false }
+    if (matching.length === 0) return { rows: [], shared: false }
+    // THE FLAVOR MERGE (#39, the hotload seam): several flavors may
+    // board the same (pack, family) — the family's own table plus
+    // hot-root rows — and they MERGE (id-keyed, registration order,
+    // first wins). Before, find() took the first match and a later
+    // flavor was invisible; one flavor serves exactly as before.
+    const merged: LoraRowDecl[] = []
+    const seen = new Set<string>()
+    let runtime = false
+    for (const m of matching) {
+      if (m.runtimeCatalog === true) runtime = true
+      for (const row of m.rows ?? []) {
+        if (!seen.has(row.id)) {
+          seen.add(row.id)
+          merged.push(row)
+        }
+      }
+    }
+    if (merged.length > 0 || runtime !== true) return { rows: merged, shared: false }
     const union = new Map<string, LoraRowDecl>()
     for (const m of this.flavors) {
       if (m.pack !== pack) continue

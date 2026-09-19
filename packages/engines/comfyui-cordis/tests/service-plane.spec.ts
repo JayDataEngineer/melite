@@ -284,6 +284,30 @@ describe("modCatalog (the runtime catalog law)", () => {
     assert.equal(out.shared, true);
     assert.deepEqual(out.rows.map((r) => r.id), ["a", "b"], "union dedupes by id, mask rows never ride");
   });
+
+  it("THE FLAVOR MERGE (#39, the hot seam): several flavors on one (pack, family) merge rows — id-keyed, first wins, never shadowed", async () => {
+    const svc = await boot();
+    svc.registerPack({ pack: "loras", fields: fields({}) });
+    svc.registerFlavor({ pack: "loras", families: ["fam1"], rows: [row("a"), row("b")] });
+    // the hot root's later flavor rides WITH the family's own table
+    svc.registerFlavor({ pack: "loras", families: ["fam1"], rows: [row("c"), row("a")] });
+    const out = svc.modCatalog("loras", "fam1");
+    assert.equal(out.shared, false);
+    assert.deepEqual(
+      out.rows.map((r) => r.id),
+      ["a", "b", "c"],
+      "hot rows append; the duplicate id keeps the family's own row",
+    );
+  });
+
+  it("THE FLAVOR MERGE: a rowless runtime flavor next to rows still serves the rows (no union fallback)", async () => {
+    const svc = await boot();
+    svc.registerPack({ pack: "loras", fields: fields({}) });
+    svc.registerFlavor({ pack: "loras", families: ["fam1"], rows: [row("a")] });
+    svc.registerFlavor({ pack: "loras", families: ["fam1"], runtimeCatalog: true });
+    const out = svc.modCatalog("loras", "fam1");
+    assert.deepEqual(out.rows.map((r) => r.id), ["a"], "rows present, no union");
+  });
 });
 
 describe("cardVerbs (the family-scoped mount)", () => {

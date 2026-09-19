@@ -14,18 +14,20 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-mcp-client": "0.1.5-rc.2",
+    "@deepseek-ai/schemastery": "*",
+    "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
+    "@melite/engine-agent": "workspace:*",
+    "@melite/engine-contract": "workspace:*",
+    "@melite/engine-craft": "workspace:*",
+    "@melite/engine-mcp": "workspace:*",
     "@melite/estate-drafts": "workspace:*",
-    "@melite/estate-queue": "workspace:*",
     "@melite/estate-manage": "workspace:*",
-    "@melite/estate-runs": "workspace:*",
     "@melite/estate-media": "workspace:*",
     "@melite/estate-models": "workspace:*",
-    "@melite/engine-contract": "workspace:*",
-    "@deepseek-ai/dsh-mcp-client": "0.1.5-rc.2",
-    "@melite/engine-mcp": "workspace:*",
-    "@melite/engine-craft": "workspace:*",
-    "@melite/engine-agent": "workspace:*"
+    "@melite/estate-queue": "workspace:*",
+    "@melite/estate-runs": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
