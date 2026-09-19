@@ -73,3 +73,6 @@
 [submodule "vendor/comfyui_extensions/comfyui-minimax-h3-timeline-director"]
 	path = vendor/comfyui_extensions/comfyui-minimax-h3-timeline-director
 	url = https://github.com/Songssx/ComfyUI-MiniMaxH3-TimelineDirector.git
+[submodule "vendor/comfyui_extensions/ComfyUI-MiniMax-H3-MotionCache-FastVAE"]
+	path = vendor/comfyui_extensions/ComfyUI-MiniMax-H3-MotionCache-FastVAE
+	url = https://github.com/Mozer/ComfyUI-MiniMax-H3-MotionCache-FastVAE.git
