@@ -232,10 +232,6 @@ const paramSchema = z.object({
   // the gate now, not as a ComfyUI 400). The select face serves the
   // two literals; WxH stays reachable by patch, exactly as before.
   ref_image_size: z.union([z.const("match"), z.const("max"), z.string().pattern(/^\d+x\d+$/).description("WxH")]).description("Ref size").default("match").extra('extra', { order: null, wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor, take the max edge, or an explicit WxH." }),
-  // the 1:1 upstream escape hatch: a raw LTX_lora_loader stack JSON
-  // string (the mod bag `loras` is the sanctioned surface; this rides
-  // for hand-authored edge cases)
-  lora_stack: z.string().description("Lora stack (raw)"),
   // NO SILENT RESOLUTION LAW (2026-09-20, the operator's order):
   // one truth, one owner. shift_video is a NUMBER, default 8, served
   // and walked identically. The old z.const(null) arm — the
@@ -729,13 +725,14 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     chunks: 2, seq_threshold: 4096,
   }).out()
   // THE LORAS MOD PLANE (the operator's law: "MOD SYSTEM IS CORE.
-  // NEVER HARDCODED"): the studio/agent surface writes the mod bag
-  // `loras` — [{id, strength}] rows the service resolves to
-  // {name, strength} filenames against the family's flavor catalog.
-  // Those rows build the upstream stack verbatim ({on, lora, str,
-  // v:1, a:1, t:1}); the raw
-  // `lora_stack` JSON string stays the 1:1 escape hatch; absent
-  // both, the frozen gold solo rides (turbo 0.6 — plaguekind 1:1).
+  // NEVER HARDCODED"; 2026-09-21: "LORAS ARE ONLY MODS" — the raw
+  // `lora_stack` string field is DEAD): the studio/agent surface
+  // writes the mod bag `loras` — [{id, strength}] rows the service
+  // resolves to {name, strength} filenames against the family's
+  // flavor catalog. Those rows build the upstream stack verbatim
+  // ({on, lora, str, v:1, a:1, t:1}); an empty bag rides the frozen
+  // gold solo (turbo 0.6 — plaguekind 1:1, the mod plane's own
+  // default). ONE surface, one owner.
   const loraStack = Array.isArray(p.loras) && (p.loras as unknown[]).length > 0
     ? JSON.stringify((p.loras as Array<Record<string, unknown>>).map((r) => ({
         // the service resolves every row against the family catalog
@@ -746,7 +743,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
         str: r.strength as number,
         v: 1, a: 1, t: 1,
       })))
-    : (p.lora_stack ?? LORA_STACK_GOLD)
+    : LORA_STACK_GOLD
   // t4r templates carry shift_video 8.0; the t4 family carries the INT
   // NO SILENT RESOLUTION LAW: the walked shift_video IS the value
   // (declared default 8; the family literals retired with the
