@@ -198,6 +198,15 @@ const paramSchema = z.object({
   refine_lora: z.string().description("Refine lora").default("").extra('extra', { order: null, wtype: 'text', tooltip: "Catalog id of a refiner lora (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row." }),
   refine_strength: z.number().description("Refine strength").min(0).max(2).step(0.05).extra('extra', { order: null, wtype: 'number', tooltip: "Override the refiner row's strength. Rides only when refine_lora is set." }),
   refine_steps: z.number().description("Refine steps").min(1).max(10).step(1).extra('extra', { order: null, wtype: 'number', tooltip: "Override the refiner row's step count (taomate: 3). Rides only when refine_lora is set." }),
+  // ── THE ATTENTION BACKEND (roadmap item 3; the h3_attention
+  // "sage/sol" folklore was FICTION — no such knob, and the engine
+  // enumerates only 'pytorch attention' on ModelAttentionBackend;
+  // sage/sol are NOT served). This knob owns the ONE input the
+  // non-SLA arm actually pins: 'comfy kitchen attention' is the
+  // estate-proven literal (plaguekind's template value, silicon
+  // receipts on the t4 arm); 'pytorch attention' is the engine's
+  // own enumeration. Values the engine refuses are NOT offered.
+  attention_backend: vocabulary(["comfy kitchen attention", "pytorch attention"]).description("Attention backend").default("comfy kitchen attention").extra('extra', { order: null, wtype: 'select', tooltip: "The non-SLA arm's ModelAttentionBackend. ck-kitchen is the estate-proven default; pytorch is the engine's enumerated literal. (SLA sparse attention stays the primary speed arm — its switch is on by default.)" }),
   interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
   interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." }),
   sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', { order: null, tooltip: "Upscale the final film through SeedVR2 before saving." }),
@@ -934,7 +943,8 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       model: chunked, mode: 'minimax', stack_data: loraStack,
     }).out()
     const mab = g.node('ModelAttentionBackend', {
-      model: loraModel, attention: 'comfy kitchen attention',
+      model: loraModel,
+      attention: (p.attention_backend as string | undefined) ?? 'comfy kitchen attention',
     }).out()
     const picked = g.node('ComfySwitchNode', {
       switch: p.sla_switch ?? true, on_true: sla, on_false: mab,

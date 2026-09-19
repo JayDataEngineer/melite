@@ -130,17 +130,17 @@ export const DECL: ModelDecl = {
     {
       "id": "draft_02mp",
       "label": "Draft 02MP",
-      "hint": "Draft geometry — 768×448 (the preset select's own shorthand, migrated to the family).",
+      "hint": "TIER 1 — the promotion stroke: draft geometry 768×448 at 8 steps (a turbo row's marriage still overrides steps). The user's lora bag rides UNTOUCHED — tiers never stamp loras.",
       "group": "Recipe",
-      "wire_defaults": { "width": 768, "height": 448 },
+      "wire_defaults": { "width": 768, "height": 448, "steps": 8 },
       "cells": [],
     },
     {
       "id": "final_hd",
       "label": "Final HD",
-      "hint": "Final geometry — 1344×768 (the schema's own defaults).",
+      "hint": "TIER 2 — the promotion stroke: finish geometry 1344×768 at 30 steps. Same calls, lora bag untouched; windows whose cache key changed simply re-render.",
       "group": "Recipe",
-      "wire_defaults": { "width": 1344, "height": 768 },
+      "wire_defaults": { "width": 1344, "height": 768, "steps": 30 },
       "cells": [],
     }
   ],

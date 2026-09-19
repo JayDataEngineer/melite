@@ -112,9 +112,12 @@ The main iteration loop is MANY SMALL FAST GENS, never one long gen:
 - Windows stay 4–6 s (Rule 2); draft at `width: 768, height: 448`
   (the draft recipe pill's geometry) with `steps: 8` when a turbo
   row rides the doc (the marriage below), `steps: 10` bare.
-- Speed backend ONCE at doc level: `h3_attention: "sage"`
-  (alternatives `"sol"`, `"kitchen"` — ONE at a time; omit on the
-  final pass).
+- Speed backend: SLA sparse attention is the primary arm (ON by
+  default — `sla_sparsity: 0.9`, ≈1.75× with no quality loss). The
+  non-SLA arm's solver is `attention_backend: "comfy kitchen
+  attention"` (estate-proven; `"pytorch attention"` is the engine's
+  enumerated alternative). There is NO sage/sol knob — that was
+  folklore, never a served value.
 - Turbo LoRAs ride the doc-level `loras` list (applied to every
   window, part of every window's cache key) — USER PICKS from the
   family's catalog, and EVERY row carries its own marriage
@@ -129,17 +132,17 @@ The main iteration loop is MANY SMALL FAST GENS, never one long gen:
   id with no file on disk is a TODO like any source — provision
   once via `comfy_manage` `provision_model` for `h3`, then re-plan.
 - The FINAL pass drops the shortcuts: `width: 1344, height: 768`
-  (the `final_hd` recipe pill), `steps: 30`, no `h3_attention`, no
-  `loras`. Same calls otherwise — windows whose cache key changed
-  simply re-render.
+  (the `final_hd` recipe pill), `steps: 30`, no `loras`. Same calls
+  otherwise — windows whose cache key changed simply re-render.
 
 ## Gotchas
 
 - A call needs `text` (or `beats` — prompt segments WITHIN the call,
   joined with time markers; never both).
-- `knobs` on a call override the doc for that call's window only
-  (steps, sampler_name, sched_name, shift_video, shift_audio,
-  h3_attention, h3_fp16_accumulation, h3_torch_compile).
+- `knobs` on a call override the doc for that call's window only —
+  the wire vocabulary: steps, denoise, sampler_name, sched_name,
+  shift_video, shift_audio, the sla_* family, the sharpen_*
+  family, the interp_* family, length.
 - Draft geometry (768×448) for iteration; 1344×768 for output —
   the family's recipe pills stamp both.
 - Sources are the attachment filenames the user gave you — spell them

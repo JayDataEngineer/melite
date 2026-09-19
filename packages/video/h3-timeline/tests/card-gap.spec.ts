@@ -355,6 +355,30 @@ describe("the single-window doors", () => {
     assert.ok(stacks.every(([, n]) => !String((n.inputs as Record<string, unknown>).stack_data).includes("taomate")), "no refiner row anywhere");
   });
 
+  // ── THE ATTENTION BACKEND KNOB (roadmap item 3): the non-SLA
+  // arm's ModelAttentionBackend follows the declared knob — the
+  // estate-proven kitchen literal by default, the engine's
+  // enumerated pytorch literal when pinned. (The sage/sol folklore
+  // never existed — no knob, no served value; this is the ONE
+  // owner of that input now.) ──
+  it("attention_backend owns the non-SLA arm's ModelAttentionBackend input", () => {
+    const g1 = new GraphBuilder();
+    def.compose(
+      def.schema({ variant: "t4_open", calls: [SHOT()], sla_switch: false }),
+      model, g1, "run_att_default",
+    );
+    const mab1 = scoped(graphOf(g1), "", "ModelAttentionBackend");
+    assert.equal(mab1.length, 1, "the non-SLA arm mounts the backend node");
+    assert.equal(mab1[0]![1].inputs.attention, "comfy kitchen attention", "the default is the estate-proven literal");
+    const g2 = new GraphBuilder();
+    def.compose(
+      def.schema({ variant: "t4_open", calls: [SHOT()], sla_switch: false, attention_backend: "pytorch attention" }),
+      model, g2, "run_att_pinned",
+    );
+    const mab2 = scoped(graphOf(g2), "", "ModelAttentionBackend");
+    assert.equal(mab2[0]![1].inputs.attention, "pytorch attention", "a pinned value rides verbatim");
+  });
+
   it("interpolate_enabled doubles the playout fps (the V9 compensation)", () => {
     const g = new GraphBuilder();
     def.compose(
