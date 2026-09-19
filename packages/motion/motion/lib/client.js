@@ -45,9 +45,622 @@ window.__ModuleLoader__.load({
 		//#endregion
 		let react = require("react");
 		react = __toESM(react, 1);
-		let react_jsx_runtime = require("react/jsx-runtime");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
+		//#region ../../web/card-base/src/toastStore.ts
+		/**
+		* THE ONE TOAST STORE (node-safe half of the one toast system,
+		* stroke 37): module state + the dual API (hook selector for React,
+		* zustand-classic statics for module-level pushers and tests). NO
+		* atom imports — node-env suites (the catalog contract specs) import
+		* this half without dragging DSH UI primitives' .css through the
+		* door. The renderer half lives in ./toast.tsx (ToastViewport); the
+		* store is the system, the viewport is its face.
+		*
+		* History: founded 2026-09-12 (the ideo/motion copies collapsed
+		* here). Stroke 36: the shell mounts the viewport — chrome is
+		* shell-owned. Stroke 37: the LAST two private stores died —
+		* web-kit/catalog's (whose toasts NEVER rendered: pushed from module
+		* context with no viewport anywhere, console-only) and
+		* mask-studio's (whose drop-errors never rendered either). Their
+		* pushers migrated here verbatim via the static surface.
+		*
+		* ONE API, two faces (the zustand-classic dual shape):
+		*   - hook:      useToastStore((s) => s.addToast)   — inside React
+		*   - statics:   useToastStore.getState().addToast(type, msg)
+		*                useToastStore.getState().toasts
+		*                useToastStore.subscribe(l) / .setState(patch)
+		*                — module-level pushers (contract stores, import
+		*                hooks) and test reset.
+		*
+		* Rendering: the DSH Toast atom (presentational banner — the atom is
+		* the surface, this module is the system). ToastViewport claims
+		* rendering: the FIRST live viewport renders, every other mounted
+		* viewport renders nothing, and ownership re-broadcasts when owners
+		* unmount — so the shell, the cards console, or any future seat may
+		* mount one and the document still renders toasts exactly once.
+		*
+		* Timing law (verbatim from the kit): errors persist 15s (the
+		* operator must SEE them), success/info auto-dismiss at 5s. Errors
+		* also console.error so nothing is silent even with no viewport.
+		*
+		* The third addToast argument (action {label, onClick}) is ACCEPTED
+		* and ignored: the DSH Toast atom owns the surface and ships no
+		* action chrome — the kit store dropped it the same way. When the
+		* atom grows an action prop, store and render it here.
+		*
+		* Per-seam subpath: `@melite/card-base/toast-store`.
+		*/
+		function emit() {
+			listeners$1.forEach((l) => l());
+		}
+		function subscribe(listener) {
+			listeners$1.add(listener);
+			return () => {
+				listeners$1.delete(listener);
+			};
+		}
+		function getSnapshot() {
+			return entries;
+		}
+		function addToast(type, message, _action) {
+			const id = nextId++;
+			entries = [...entries, {
+				id,
+				type,
+				message
+			}];
+			if (type === "error") console.error("[toast]", message);
+			else console.info("[toast]", message);
+			emit();
+			setTimeout(() => {
+				removeToast(id);
+			}, type === "error" ? 15e3 : 5e3);
+		}
+		function removeToast(id) {
+			if (!entries.some((t) => t.id === id)) return;
+			entries = entries.filter((t) => t.id !== id);
+			emit();
+		}
+		function getStore() {
+			return {
+				toasts: entries,
+				addToast: liveAddToast,
+				removeToast
+			};
+		}
+		function setStoreState(patch) {
+			if (patch.addToast !== void 0) liveAddToast = patch.addToast;
+			if (patch.toasts !== void 0) entries = patch.toasts;
+			emit();
+		}
+		var nextId, entries, listeners$1, liveAddToast, useToastStore;
+		var init_toastStore = __esmMin((() => {
+			nextId = 1;
+			entries = [];
+			listeners$1 = /* @__PURE__ */ new Set();
+			liveAddToast = addToast;
+			useToastStore = Object.assign(function useToastStore(selector) {
+				const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+				return selector({
+					addToast: liveAddToast,
+					removeToast,
+					toasts
+				});
+			}, {
+				getState: getStore,
+				setState: setStoreState,
+				subscribe
+			});
+		}));
+		//#endregion
+		//#region ../../web/card-base/src/toast.tsx
+		/**
+		* ToastViewport — THE RENDERER FACE of the one toast system
+		* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
+		* atom); this file re-exports it so UI users keep the single
+		* `@melite/card-base/toast` import — and mounts the viewport.
+		*
+		* THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
+		* studio shell, the cards console — and the document still renders
+		* toasts exactly ONCE. The first live viewport owns rendering;
+		* every other mounted viewport renders nothing; ownership
+		* re-broadcasts when owners unmount. No studio wires it, no studio
+		* can forget it, no seat can duplicate it.
+		*
+		* Per-seam subpath: `@melite/card-base/toast`.
+		*/
+		init_toastStore();
+		init_toastStore();
+		const liveViewportIds = /* @__PURE__ */ new Set();
+		let viewportEpoch = 0;
+		const viewportListeners = /* @__PURE__ */ new Set();
+		function emitViewportChange() {
+			viewportEpoch++;
+			viewportListeners.forEach((l) => l());
+		}
+		function subscribeViewport(l) {
+			viewportListeners.add(l);
+			return () => {
+				viewportListeners.delete(l);
+			};
+		}
+		function getViewportEpoch() {
+			return viewportEpoch;
+		}
+		let nextViewportId = 1;
+		/** Mount anywhere the system needs a renderer — the studio shell,
+		*  the cards console, any seat. The claim law guarantees exactly one
+		*  live renderer per document: the first-mounted viewport renders,
+		*  others render nothing until the owner unmounts. Renders the live
+		*  entries through the DSH Toast atom (body-portaled banner, owner
+		*  unmounts onDone). */
+		function ToastViewport() {
+			const idRef = (0, react.useRef)(nextViewportId++);
+			(0, react.useEffect)(() => {
+				const id = idRef.current;
+				liveViewportIds.add(id);
+				emitViewportChange();
+				return () => {
+					liveViewportIds.delete(id);
+					emitViewportChange();
+				};
+			}, []);
+			(0, react.useSyncExternalStore)(subscribeViewport, getViewportEpoch, getViewportEpoch);
+			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: toasts.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {
+				text: t.message,
+				holdMs: t.type === "error" ? 15e3 : 5e3,
+				onDone: () => removeToast(t.id)
+			}, t.id)) });
+		}
+		//#endregion
+		//#region ../../web/card-base/src/spec.ts
+		/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
+		*  (krea-2, z-image, euler, comfyui…) render titled — never raw.
+		*  FACES ONLY: option values, param keys, and wire bodies keep the
+		*  verbatim id (the 1:1 law — the eye gets prose, the door gets the
+		*  id). First letter of each separator-bound word upper, the rest
+		*  untouched (INT8 stays INT8); idempotent on titled prose. */
+		function titleCaseId(id) {
+			return id.split(/[-_\s]+/).filter((w) => w !== "").map((w) => w.slice(0, 1).toUpperCase() + w.slice(1)).join(" ");
+		}
+		/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
+		*  resolveValue's first layer; the base never invents one). */
+		function specDefaults(fields) {
+			const out = {};
+			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+			return out;
+		}
+		/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
+		*
+		* One pure projection: serialized schemastery schema -> derived
+		* SpecFields. Every presentation fact lives in the nodes' meta (the
+		* declaration IS the UI contract — the Field.emit law); this
+		* walk reads, never invents. THE ORDER: dict insertion order with
+		* the declared `order` hint as tie-break (a stable sort — equal
+		* keys keep insertion order).
+		*
+		* Families scoping: a node whose extra.families names families the
+		* spec does NOT serve skips (the absorption is family-scoped —
+		* the card serves only the boarded plane).
+		*
+		* Nullable pairs: a union of [X, const(null)] wires as X — the
+		* OUTER meta wins (schemastery's nullable() shape, probed live on
+		* image-gen 2026-09-14).
+		*
+		* Presentation types (the audit's client-side derivation — a view
+		* choice over typed meta, never a server row): extra.wtype wins
+		* (declared presentation); union-of-consts -> select; number ->
+		* step 1 -> seed, any other step -> slider, no step -> slider;
+		* string -> text; boolean -> boolean; array -> loras.
+		*
+		* Option labels: a union's const members carry their own
+		* meta.description (the emitter's label law) — the declared
+		* extra.options override when present. */
+		function fieldsOfEnvelope(env, family) {
+			if (env == null) return [];
+			const root = env.refs[env.uid];
+			return projectDict(env, root?.dict ?? {}, family);
+		}
+		/** The dict projector (the walker's body — one meta path for the
+		*  root, the hybrid element, and the pack-level rows). */
+		function projectDict(env, dict, family) {
+			const out = [];
+			for (const [name, id] of Object.entries(dict)) {
+				let node = env.refs[id];
+				if (node === void 0) continue;
+				if (node.type === "union" && Array.isArray(node.list) && node.list.length === 2) {
+					const a = env.refs[node.list[0]];
+					const b = env.refs[node.list[1]];
+					const nullConst = (r) => r?.type === "const" && r.value === null;
+					if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
+				}
+				const meta = node.meta ?? {};
+				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
+				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
+				if (families !== null && family !== void 0 && !families.includes(family)) continue;
+				let options;
+				if (node.type === "union" && Array.isArray(node.list)) {
+					const opts = [];
+					for (const mid of node.list) {
+						const m = env.refs[mid];
+						if (m?.type !== "const") continue;
+						const v = m.value;
+						if (v === null || v === void 0) continue;
+						const label = typeof m.meta?.["description"] === "string" ? m.meta["description"] : String(v);
+						if (label === String(v)) opts.push(String(v));
+						else opts.push({
+							value: String(v),
+							label
+						});
+					}
+					if (opts.length > 0) options = opts;
+				}
+				if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
+					value: String(o["value"]),
+					label: String(o["label"])
+				} : String(o));
+				const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
+				let type;
+				if (hint !== "") type = hint;
+				else if (options !== void 0 && node.type === "union") type = "select";
+				else if (node.type === "number") type = String(meta["step"] ?? "") === "1" ? "seed" : "slider";
+				else if (node.type === "string") type = "text";
+				else if (node.type === "boolean") type = "boolean";
+				else if (node.type === "array") type = "loras";
+				else type = node.type ?? "string";
+				const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
+				const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
+				out.push({
+					name,
+					label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
+					order: typeof extra["order"] === "number" ? extra["order"] : void 0,
+					type,
+					default: meta["default"] === void 0 ? void 0 : meta["default"],
+					min: num("min"),
+					max: num("max"),
+					step: type === "seed" ? void 0 : num("step"),
+					options,
+					group: str("group") ?? "",
+					zone: str("zone"),
+					required: extra["required"] === true || meta["required"] === true,
+					placeholder: str("placeholder"),
+					tooltip: str("tooltip"),
+					visible_when: str("visible_when"),
+					columns: typeof extra["columns"] === "number" ? extra["columns"] : void 0,
+					width: typeof extra["width"] === "number" ? extra["width"] : void 0,
+					max_stack: typeof extra["max_stack"] === "number" ? extra["max_stack"] : void 0,
+					media: str("media")
+				});
+			}
+			return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
+		}
+		/** THE EDIT COERCION (the one specPatch duty that survives, moved
+		* to the edit boundary): atoms emit raw strings while typing; a
+		* numeric field's edit rides the user layer as a NUMBER. An
+		* unparseable/empty numeric string rides VERBATIM (display
+		* continuity through clear-and-retype — the bench drill's law; a
+		* blank that reaches the run's schema parse refuses loud, naming
+		* the field — never a silent 0). `v === undefined` stays undefined
+		* (the tri-state's inherit — the caller's unset signal). The
+		* STUDIOS' blank-inherits law lives one door up, at their own edit
+		* verb (useResolvedForm) — each face owns its blank semantics.
+		* PURE. */
+		function coerceFieldEdit(f, v) {
+			if (v === void 0) return void 0;
+			if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+			return v;
+		}
+		/** The card's own derived fields (the schema envelope walked,
+		* families-scoped to the served family). Memoize at the caller for
+		* hot loops — the walk is pure. */
+		function fieldsOf(spec) {
+			return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
+		}
+		/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
+		* client-side (stroke 34 — the card-recipe layer is dead): schema
+		* defaults <- model defaults <- SERVED STAMPS <- user. The form
+		* SHOWS exactly what a run composes; `user` rides verbatim by key
+		* presence (a PRESENCE is the override mark, never its value — the
+		* settings law). Arrays (lora bags) and nulls in model_defaults
+		* skip, matching the engine's overlay filter.
+		*
+		* THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
+		* stage row's `resolved` map — prepareCardParams' own stamped +
+		* lifted body, served by the drafts doors. It layers UNDER the user
+		* (presence still wins) and OVER model_defaults (the server's own
+		* family/variant stamps replace the client's guesses — variant
+		* resolver_defaults, family defaults, the surface filter). Absent
+		* base = the registry-less lane derive. PURE. */
+		function resolveValue(spec, user, base) {
+			const out = specDefaults(fieldsOf(spec));
+			for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
+				if (v === null || Array.isArray(v)) continue;
+				out[k] = v;
+			}
+			if (base !== void 0) for (const [k, v] of Object.entries(base)) {
+				if (v === null || v === void 0 || Array.isArray(v)) continue;
+				out[k] = v;
+			}
+			for (const [k, v] of Object.entries(user)) {
+				if (v === null || v === void 0) continue;
+				out[k] = v;
+			}
+			for (const kind of spec.features?.modifiers ?? []) {
+				if (kind.marries === void 0) continue;
+				const bag = out[kind.param_key];
+				if (!Array.isArray(bag) || bag.length === 0) continue;
+				const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]));
+				for (const knob of Object.keys(kind.marries)) {
+					const counts = [];
+					for (const row of bag) {
+						const stated = row?.[knob];
+						if (typeof stated === "number" && Number.isFinite(stated)) {
+							counts.push(stated);
+							continue;
+						}
+						const id = typeof row?.["id"] === "string" ? row["id"] : void 0;
+						const fromCatalog = id === void 0 ? void 0 : (catalog.get(id)?.defaults)?.[knob];
+						if (typeof fromCatalog === "number" && Number.isFinite(fromCatalog)) counts.push(fromCatalog);
+					}
+					if (counts.length > 0) out[knob] = Math.max(...counts);
+				}
+			}
+			return out;
+		}
+		/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
+		* one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
+		* (The ONE schema grammar — a field declares its own visibility;
+		* the walker interprets, cards never hand-rolled predicates.) A
+		* field with no visible_when always shows. Unknown guard keys:
+		* show (never hide on a typo). Examples:
+		*   "sharpen_enabled=true"
+		*   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
+		function fieldVisible(f, values) {
+			const rule = f.visible_when;
+			if (typeof rule !== "string" || rule === "") return true;
+			for (const guard of rule.split("&")) {
+				const eq = guard.indexOf("=");
+				if (eq < 0) continue;
+				const key = guard.slice(0, eq);
+				if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
+			}
+			return true;
+		}
+		//#endregion
+		//#region ../../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
+		function r(e) {
+			var t, f, n = "";
+			if ("string" == typeof e || "number" == typeof e) n += e;
+			else if ("object" == typeof e) if (Array.isArray(e)) {
+				var o = e.length;
+				for (t = 0; t < o; t++) e[t] && (f = r(e[t])) && (n && (n += " "), n += f);
+			} else for (f in e) e[f] && (n && (n += " "), n += f);
+			return n;
+		}
+		function clsx() {
+			for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
+			return n;
+		}
+		//#endregion
+		//#region ../../web/card-base/src/chrome.ts
+		/**
+		* Card chrome primitives — the ONE joiner + the ONE file reader
+		* (founded 2026-09-12, debt extermination: anny/ideo cx, motion/h3
+		* clsx-cn, and the four identical readAsDataURL copies collapsed
+		* here). DOM-free, no CSS, no atoms — safe for node and browser.
+		*
+		* Per-seam subpath: `@melite/card-base/chrome`.
+		*/
+		/** Plain classnames joiner (no conflicting utilities to merge —
+		*  plain join is exact). */
+		function cx(...parts) {
+			return parts.filter(Boolean).join(" ");
+		}
+		/** The merging joiner (clsx — objects/arrays/conditionals). */
+		function cn(...inputs) {
+			return clsx(...inputs);
+		}
+		/** Blob → data URL (FileReader promise). */
+		function readAsDataURL$1(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
+				reader.readAsDataURL(file);
+			});
+		}
+		/** THE ESTATE'S DRAG CONTRACT (2026-09-18, exterminated): the MIME
+		*  under which an upstream asset rides a drop payload — a JSON blob
+		*  {url, name, …} carried by the source's dataTransfer. h3's kit and
+		*  motion's kit each redeclared it; card-base, the card-view's
+		*  CardsTab and input-square already consumed it. One definition
+		*  estate-wide (the drag is a shared contract, not a studio rule). */
+		const ASSET_DRAG_MIME$2 = "application/tech-noir-asset";
+		//#endregion
+		//#region \0dsh-css:card-base/src/card.module.css.mjs
+		const css$9 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
+		const tagId$9 = "@melite/motion-motion/card.module.css@563d0537";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$9) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/motion-motion";
+			tag.dataset.pluginCss = tagId$9;
+			tag.textContent = css$9;
+			document.head.appendChild(tag);
+		}
+		var card_module_css_default = {
+			"ctlRow": "FRpSCG_ctlRow",
+			"ctlRowSm": "FRpSCG_ctlRowSm",
+			"emptyHint": "FRpSCG_emptyHint",
+			"emptyOverlay": "FRpSCG_emptyOverlay",
+			"emptyPane": "FRpSCG_emptyPane",
+			"emptyTitle": "FRpSCG_emptyTitle",
+			"groupTab": "FRpSCG_groupTab",
+			"groupTabActive": "FRpSCG_groupTabActive",
+			"groupTabs": "FRpSCG_groupTabs",
+			"inputRail": "FRpSCG_inputRail",
+			"modAddSquare": "FRpSCG_modAddSquare",
+			"modField": "FRpSCG_modField",
+			"modHead": "FRpSCG_modHead",
+			"modHint": "FRpSCG_modHint",
+			"modLeaf": "FRpSCG_modLeaf",
+			"modLeafActions": "FRpSCG_modLeafActions",
+			"modLeafError": "FRpSCG_modLeafError",
+			"modLeafFields": "FRpSCG_modLeafFields",
+			"modRow": "FRpSCG_modRow",
+			"modSection": "FRpSCG_modSection",
+			"modSelect": "FRpSCG_modSelect",
+			"modTile": "FRpSCG_modTile",
+			"modTileLabel": "FRpSCG_modTileLabel",
+			"modTileRecipe": "FRpSCG_modTileRecipe",
+			"modTileSteps": "FRpSCG_modTileSteps",
+			"modTileStrength": "FRpSCG_modTileStrength",
+			"modTitle": "FRpSCG_modTitle",
+			"modelAxes": "FRpSCG_modelAxes",
+			"paneHeaderPreview": "FRpSCG_paneHeaderPreview",
+			"paneHeaderStrip": "FRpSCG_paneHeaderStrip",
+			"paneHint": "FRpSCG_paneHint",
+			"paneMeta": "FRpSCG_paneMeta",
+			"paneMetaNum": "FRpSCG_paneMetaNum",
+			"panePulse": "FRpSCG_panePulse",
+			"paneShell": "FRpSCG_paneShell",
+			"paneTitle": "FRpSCG_paneTitle",
+			"pickBtn": "FRpSCG_pickBtn",
+			"pickEmpty": "FRpSCG_pickEmpty",
+			"pickGlyph": "FRpSCG_pickGlyph",
+			"pickLabel": "FRpSCG_pickLabel",
+			"pickList": "FRpSCG_pickList",
+			"pickRow": "FRpSCG_pickRow",
+			"pickThumb": "FRpSCG_pickThumb",
+			"sectionLabel": "FRpSCG_sectionLabel",
+			"sectionLabelTail": "FRpSCG_sectionLabelTail",
+			"sectionLabelText": "FRpSCG_sectionLabelText",
+			"skeleton": "FRpSCG_skeleton",
+			"sourceRow": "FRpSCG_sourceRow",
+			"specDice": "FRpSCG_specDice",
+			"specDiceOn": "FRpSCG_specDiceOn",
+			"specField": "FRpSCG_specField",
+			"specFieldHead": "FRpSCG_specFieldHead",
+			"specFieldKey": "FRpSCG_specFieldKey",
+			"specForm": "FRpSCG_specForm",
+			"specGrid": "FRpSCG_specGrid",
+			"specGroup": "FRpSCG_specGroup",
+			"specGroupTitle": "FRpSCG_specGroupTitle",
+			"specHint": "FRpSCG_specHint",
+			"specInfo": "FRpSCG_specInfo",
+			"specLinkBtn": "FRpSCG_specLinkBtn",
+			"specRequired": "FRpSCG_specRequired",
+			"specSelect": "FRpSCG_specSelect",
+			"specSlider": "FRpSCG_specSlider",
+			"specSliderRow": "FRpSCG_specSliderRow",
+			"specSliderValue": "FRpSCG_specSliderValue",
+			"specSlotCell": "FRpSCG_specSlotCell",
+			"specSlotRow": "FRpSCG_specSlotRow",
+			"specStack": "FRpSCG_specStack",
+			"specTextarea": "FRpSCG_specTextarea",
+			"squareBox": "FRpSCG_squareBox",
+			"squareFileInput": "FRpSCG_squareFileInput",
+			"squareGlyph": "FRpSCG_squareGlyph",
+			"squareLabel": "FRpSCG_squareLabel",
+			"squareMetric": "FRpSCG_squareMetric",
+			"squareOff": "FRpSCG_squareOff",
+			"squareOver": "FRpSCG_squareOver",
+			"squareThumb": "FRpSCG_squareThumb",
+			"squareWrap": "FRpSCG_squareWrap",
+			"squareX": "FRpSCG_squareX",
+			"sz14": "FRpSCG_sz14",
+			"tileDragging": "FRpSCG_tileDragging",
+			"tipAnchor": "FRpSCG_tipAnchor",
+			"wireDialog": "FRpSCG_wireDialog",
+			"wireEmpty": "FRpSCG_wireEmpty",
+			"wireIdx": "FRpSCG_wireIdx",
+			"wireList": "FRpSCG_wireList",
+			"wireMeta": "FRpSCG_wireMeta",
+			"wireOption": "FRpSCG_wireOption",
+			"wireOut": "FRpSCG_wireOut",
+			"wireSelected": "FRpSCG_wireSelected",
+			"wireSub": "FRpSCG_wireSub",
+			"wireThumb": "FRpSCG_wireThumb",
+			"wireThumbFallback": "FRpSCG_wireThumbFallback",
+			"wireTitle": "FRpSCG_wireTitle",
+			"wireUnwire": "FRpSCG_wireUnwire",
+			"wiredTag": "FRpSCG_wiredTag"
+		};
+		//#endregion
+		//#region ../../web/card-base/src/layout.tsx
+		function Tip$1({ tip, children }) {
+			if (tip === void 0) return children;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+				label: tip,
+				side: "top",
+				delayMs: 300,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: card_module_css_default.tipAnchor,
+					children
+				})
+			});
+		}
+		/** Skeleton — the quiet loading block (promoted 2026-09-18 from
+		*  motion's kit, where it was the estate's only copy): a bare div
+		*  with the estate pulse. EmptyState is the pane's empty face;
+		*  Skeleton is its loading face. */
+		function Skeleton$1({ className, ...props }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				"data-slot": "skeleton",
+				className: cn(card_module_css_default.skeleton, className),
+				...props
+			});
+		}
+		function PaneHeader({ title, meta, hint, lead, variant = "strip", className }) {
+			if (variant === "preview") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-slot": "pane-header",
+				"data-variant": "preview",
+				className: cn(card_module_css_default.paneHeaderPreview, className),
+				children: [
+					lead,
+					title != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.paneTitle,
+						children: title
+					}) : null,
+					meta != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.paneMeta,
+						children: meta
+					}) : null,
+					hint
+				]
+			});
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-slot": "pane-header",
+				"data-variant": "strip",
+				className: cn(card_module_css_default.paneHeaderStrip, className),
+				children: [
+					lead,
+					title != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.paneTitle,
+						children: title
+					}) : null,
+					meta != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.paneMetaNum,
+						children: meta
+					}) : null,
+					hint != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.paneHint,
+						children: hint
+					}) : null
+				]
+			});
+		}
+		function PaneShell({ children, className }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				"data-slot": "pane-shell",
+				className: cn(card_module_css_default.paneShell, className),
+				children
+			});
+		}
+		//#endregion
 		//#region ../../web/card-base/src/icons.tsx
 		function Svg$1({ className, style, children, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
@@ -465,6 +1078,769 @@ window.__ModuleLoader__.load({
 				...rest,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 4l14 8-14 8V4z" })
 			});
+		}
+		//#endregion
+		//#region ../../web/card-base/src/square.tsx
+		/**
+		* square.tsx — InputSquare, THE ONE square for any slot-shaped value
+		* — the base's default input component. Ported from the old system's
+		* SlotSquare law (packages/web-kit/ui/SlotSquare.tsx, 2026-08-08:
+		* "the look for it will be reused for the sub-card system") onto the
+		* DSH substrate: ui-primitives glyphs, module CSS under the
+		* web-styling chrome laws, no lucide/cn/tip.
+		*
+		* THE PLUS LAW (2026-09-13, the operator): the empty square
+		* carries the PLUS — "add a source" — and the click opens the
+		* three-entry source menu (From flow / From media / From file) in
+		* the provider; a bare square without a picker still files.
+		* THE OLD LAW, KEPT — a square thumbnail with label + badge
+		* + the THREE source verbs (operator, 2026-09-12: "we rendered a
+		* square and gave the option to do 1 of 3 things"):
+		*   a) from previous card  → onClick (the host opens the wire picker;
+		*                            badge = the upstream card's title)
+		*   b) from file upload    → onPickFile/onDropFile (hidden input +
+		*                            OS drop — the ONE read path readAsDataURL)
+		*   c) from media bar      → onDropAsset (the ASSET_DRAG_MIME contract
+		*                            the drop surface already serves)
+		* plus the X (detach). The consumer owns the doors — this shell only
+		* voices them (ui-attachment's own law: presentation registers, the
+		* service seams stay with their owners).
+		*
+		* THE CONSTRUCTION LAW (2026-09-12, the card-base founding): a card
+		* package EMITS an image input → the base constructs THIS square
+		* automatically. One input component; no card hand-rolls its own
+		* file field ever again.
+		*/
+		/** The media-bar drag contract (the tab's drop surface serves the
+		* same MIME — ONE spelling, imported from the base's law). */
+		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
+		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
+		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
+		*  artifact URLs. Every slot-shaped value renders the same way. */
+		function isImageUrl(value) {
+			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+		}
+		/** Parse the asset MIME off a drop event. null = absent or malformed. */
+		function assetPayload(e) {
+			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
+			if (raw === "") return null;
+			try {
+				const p = JSON.parse(raw);
+				return typeof p["url"] === "string" ? p["url"] : null;
+			} catch {
+				return null;
+			}
+		}
+		function InputSquare(props) {
+			const { label, value, metric, disabled } = props;
+			const seat = props.ariaLabel ?? label;
+			const fileRef = (0, react.useRef)(null);
+			const boxRef = (0, react.useRef)(null);
+			const [over, setOver] = (0, react.useState)(false);
+			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
+			const empty = thumb === null;
+			const pick = () => {
+				if (disabled) return;
+				if (props.onPick !== void 0) props.onPick(boxRef.current);
+				else if (empty && props.onFile !== void 0) fileRef.current?.click();
+			};
+			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
+				ref: boxRef,
+				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
+				role: "button",
+				tabIndex: 0,
+				"aria-label": (seat || "source") + (seat !== "" ? " source" : ""),
+				onClick: pick,
+				onKeyDown: (e) => {
+					if (e.key === "Enter") pick();
+				},
+				onDragOver: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(true);
+				},
+				onDragLeave: () => {
+					setOver(false);
+				},
+				onDrop: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(false);
+					const asset = assetPayload(e);
+					if (asset !== null && props.onAsset !== void 0) {
+						props.onAsset(asset);
+						return;
+					}
+					const f = e.dataTransfer.files[0];
+					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
+				}
+			}, thumb !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default.squareThumb,
+				src: thumb,
+				alt: label
+			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
+				className: card_module_css_default.squareX,
+				type: "button",
+				title: "Detach",
+				"aria-label": "Detach " + (seat || "source"),
+				onClick: (e) => {
+					e.stopPropagation();
+					props.onClear();
+				}
+			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+				ref: fileRef,
+				type: "file",
+				accept: "image/png,image/jpeg,image/webp",
+				className: card_module_css_default.squareFileInput,
+				"aria-hidden": true,
+				tabIndex: -1,
+				onChange: (e) => {
+					const f = e.target.files?.[0];
+					if (f !== void 0 && f !== null) props.onFile?.(f);
+					fileRef.current.value = "";
+				}
+			}) : null);
+		}
+		//#endregion
+		//#region ../../web/card-base/src/wirePicker.tsx
+		/** The wire picker — prior stages by ARRAY INDEX, including ones that
+		* haven't run yet ("not run yet" — wire BEFORE the upstream runs).
+		*
+		* Named outputs: when an upstream stage produced >1 named artifact
+		* (input_prep → media + mask), it expands into ONE ROW PER output so the
+		* user can wire mask → lanpaint_mask specifically. Upstreams with 0–1
+		* named artifacts render as a single row (legacy — primary via
+		* assetUrls[0]). The output name rides onPick → setSlotInput →
+		* inputOutputs → collectUpstreamResults. */
+		function WirePickerModal({ slot, priorStages, currentId, currentOutput, onPick, onUnwire, onClose }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose,
+				title: `Wire ${slot} from an earlier card`,
+				closeLabel: "Close wire picker",
+				className: card_module_css_default.wireDialog,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					"data-wire-modal": true,
+					children: [currentId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+						type: "button",
+						onClick: onUnwire,
+						"data-wire-unwire": true,
+						className: card_module_css_default.wireUnwire,
+						children: "Unwire — this slot will ask for a file or wire again"
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("ul", {
+						className: card_module_css_default.wireList,
+						children: [priorStages.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
+							className: card_module_css_default.wireEmpty,
+							children: "No earlier cards yet — add a card before this one to wire from it."
+						}), priorStages.map((u, i) => {
+							const named = u.result?.artifacts ?? {};
+							const namedEntries = Object.entries(named);
+							const multi = namedEntries.length > 1;
+							return (multi ? namedEntries.map(([name, url]) => ({
+								outputName: name,
+								thumb: url,
+								label: name
+							})) : [{
+								outputName: null,
+								thumb: u.result?.assetUrls[0],
+								label: "primary"
+							}]).map((row, ri) => {
+								const selected = u.id === currentId && (currentOutput ?? null) === (row.outputName ?? null);
+								return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+									type: "button",
+									onClick: () => onPick(u.id, row.outputName),
+									"data-wire-option": row.outputName ?? "primary",
+									className: clsx(card_module_css_default.wireOption, selected && card_module_css_default.wireSelected),
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: card_module_css_default.wireIdx,
+											children: String(i + 1).padStart(2, "0")
+										}),
+										row.thumb && isImageUrl(row.thumb) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+											src: row.thumb,
+											alt: "",
+											className: card_module_css_default.wireThumb
+										}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+											className: card_module_css_default.wireThumbFallback,
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Link2, { className: card_module_css_default.sz14 })
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+											className: card_module_css_default.wireMeta,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+												className: card_module_css_default.wireTitle,
+												children: [u.title, multi && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+													className: card_module_css_default.wireOut,
+													children: ["· ", row.label]
+												})]
+											}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+												className: card_module_css_default.wireSub,
+												children: u.result ? row.thumb ?? "no artifacts" : "not run yet"
+											})]
+										}),
+										selected && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: card_module_css_default.wiredTag,
+											children: "wired"
+										})
+									]
+								}) }, u.id + (ri > 0 ? `:${row.outputName}` : ""));
+							});
+						})]
+					})]
+				})
+			});
+		}
+		//#endregion
+		//#region ../../web/card-base/src/wire.ts
+		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
+		*  own error text when present). */
+		async function v1Get(path, signal) {
+			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
+			const body = await res.json().catch(() => null);
+			if (!res.ok) {
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
+			}
+			return body;
+		}
+		/** /v1/form-spec?model=<family> — the card family's emission (the
+		*  serialized schema envelope + model defaults + the declared edges
+		*  + the mod kinds and their envelopes). */
+		async function fetchFormSpec(model, signal) {
+			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
+			const env = doc["schema"];
+			if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
+			return doc;
+		}
+		//#endregion
+		//#region ../../web/card-base/src/square-provider.tsx
+		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		//#endregion
+		//#region ../../web/card-base/src/atoms.tsx
+		/** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
+		*  promoted from h3's studio-local TriControl (same semantics, same
+		*  option order). Serves schema-bound fields of type 'tri' AND the
+		*  standalone rail rows that hand-rolled the select before. */
+		function TriStateAtom({ label, value, onEdit, name, disabled }) {
+			return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"aria-label": label,
+				disabled: disabled === true,
+				value: value === void 0 ? "" : String(value),
+				onChange: (e) => {
+					const v = e.target.value;
+					onEdit(name, v === "" ? void 0 : v === "true");
+				}
+			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
+		}
+		/** The slider's local display during a drag (the settle law's
+		*  carrier): local owns the bubble while dragging; an external move
+		*  of the backing value (agent write, revive, another card opened)
+		*  reclaims the display. */
+		function useLocalSliderValue(value) {
+			const num = typeof value === "number" ? value : Number(value);
+			const [local, setLocal] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				setLocal(null);
+			}, [num]);
+			return {
+				value: local !== null ? local : Number.isFinite(num) ? num : null,
+				set: setLocal
+			};
+		}
+		/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
+		*  mask-studio's draft absorber, 2026-08-10): a drag fires input
+		*  60×/sec; if every step wrote to the card, updateStageParams →
+		*  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
+		*  the editor. The atom shows the drag locally and persists ONCE on
+		*  settle (the change event = release / keyboard step). External
+		*  writes (agent, revive) re-sync the display when the backing
+		*  value actually moves. */
+		function SpecSliderAtom({ f, value, onEdit }) {
+			const shown = useLocalSliderValue(value);
+			if (shown.value === null) return (0, react.createElement)("span", {
+				className: card_module_css_default.specSliderRow,
+				"data-refused": f.name
+			}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value) + " — REFUSED: not a number"));
+			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
+				className: card_module_css_default.specSlider,
+				type: "range",
+				min: f.min ?? 0,
+				max: f.max ?? 10,
+				step: f.step ?? .1,
+				value: shown.value,
+				onInput: (e) => {
+					shown.set(Number(e.target.value));
+				},
+				onChange: (e) => {
+					onEdit(f.name, e.target.value);
+				},
+				"aria-label": f.label
+			}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value)));
+		}
+		/** One spec atom — typed by the declaration, edited as a raw string
+		*  while typing (decimal dots survive; coercion happens once at patch). */
+		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }) {
+			if ((f.type === "image" || f.type === "file") && square !== void 0) {
+				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
+				return (0, react.createElement)(InputSquare, {
+					label: f.label !== "" ? f.label : f.name,
+					value: shown !== null && isImageUrl(shown) ? shown : null,
+					metric: typeof value === "string" && value !== "" && !isImageUrl(value) ? value : void 0,
+					...square.verbs
+				});
+			}
+			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				value: String(value ?? ""),
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			}, ghost !== void 0 ? (0, react.createElement)("option", { value: "" }, ghost) : null, f.options.map((o) => {
+				const row = typeof o === "string" ? {
+					value: o,
+					label: o
+				} : o;
+				return (0, react.createElement)("option", {
+					key: row.value,
+					value: row.value
+				}, titleCaseId(row.label));
+			}));
+			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
+				f,
+				value,
+				onEdit
+			});
+			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
+				label: f.label !== "" ? f.label : f.name,
+				value: value === void 0 || value === null ? void 0 : value === true || value === "true",
+				onEdit,
+				name: f.name
+			});
+			if (f.type === "switch" || f.type === "boolean") {
+				if (value !== void 0 && value !== null && typeof value !== "boolean" && value !== "true" && value !== "false") return (0, react.createElement)("span", {
+					className: card_module_css_default.specField,
+					"data-refused": f.name
+				}, f.label + ": " + String(value) + " — REFUSED: not a boolean");
+				const on = value === true || value === "true";
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+					label: f.label,
+					checked: on,
+					onChange: (next) => {
+						onEdit(f.name, next);
+					}
+				});
+			}
+			if (f.type === "textarea") {
+				const fit = (el) => {
+					if (el === null) return;
+					el.style.height = "auto";
+					el.style.height = Math.max(el.scrollHeight, 44) + "px";
+				};
+				return (0, react.createElement)("textarea", {
+					className: card_module_css_default.specTextarea,
+					rows: 2,
+					value: String(value ?? ""),
+					placeholder: f.placeholder ?? "",
+					ref: fit,
+					onChange: (e) => {
+						const el = e.target;
+						fit(el);
+						onEdit(f.name, el.value);
+					},
+					"aria-label": f.label
+				});
+			}
+			if (f.type === "number") return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				min: f.min,
+				max: f.max,
+				step: f.step,
+				value: String(value ?? ""),
+				placeholder: placeholder ?? f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			});
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				value: String(value ?? ""),
+				placeholder: placeholder ?? f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			});
+		}
+		/** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
+		*  plus ONE SELECT PER SERVED AXIS GROUP — Variant, Quant, Recipe,
+		*  Precision, … the declaration's whole vocabulary, NEVER a hardcoded
+		*  list (the operator's lane proof caught the hardcoded Quant-only
+		*  list dropping seedvr2's and qwen's other axes). Order: the door's
+		*  variant_groups contract, else first-seen. Chain: an axis' options
+		*  are the rows composing with the axes above (the row's `owner`).
+		*  Each pick applies the row's defaults overlay through onEdit — the
+		*  values (model + every axis key + overlay keys) ride the caller's
+		*  map and pass along at Run. Renders nothing when the spec declares
+		*  no matrix. */
+		//#endregion
+		//#region ../../web/card-base/src/rows.tsx
+		/** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE INFO GLYPH (hour 21): the field's declared help prose (the
+		*  schema's extra.tooltip) rides a hover (i) beside the label — one
+		*  definition for every card; absent prose, no glyph. The text is
+		*  aria-carried (the DSH Tooltip is hover-only). */
+		function infoGlyph(f) {
+			if (f.tooltip === void 0 || f.tooltip === "") return null;
+			return (0, react.createElement)(Tip$1, {
+				tip: f.tooltip,
+				children: (0, react.createElement)("span", {
+					className: card_module_css_default.specInfo,
+					role: "note",
+					"aria-label": `info: ${f.tooltip}`
+				}, "i")
+			});
+		}
+		/** THE SEED DICE (stroke 39 — the operator's QOL law): the seed
+		*  knob carries the RANDOM sentinel -1 (GATE S: -1 mints a fresh
+		*  seed in the lane, EVERY run). The dice sits at the key line's
+		*  right end, across from the field's name: FILLED pips = random
+		*  (a new seed every run), HOLLOW pips = fixed (this exact seed
+		*  re-runs). The state DERIVES from the resolved value alone — no
+		*  hidden mode to drift; the click writes the value: fixed → -1
+		*  (random), random → a minted concrete int (the kit's own mint
+		*  law, Math.floor(random * 2147483647)). Typing a number while
+		*  random fixes it — the dice unfills by derivation, one source
+		*  of truth. The input never paints the sentinel: random shows
+		*  the placeholder, never "-1". */
+		function SeedDice({ random, onToggle }) {
+			return (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specDice + (random ? " " + card_module_css_default.specDiceOn : ""),
+				"data-seed-dice": random ? "random" : "fixed",
+				"aria-pressed": random,
+				"aria-label": "seed dice",
+				title: random ? "Random — a new seed every run. Click to fix one." : "Fixed seed — this exact seed re-runs. Click for a new one every run.",
+				onClick: onToggle
+			}, (0, react.createElement)("svg", {
+				width: 14,
+				height: 14,
+				viewBox: "0 0 16 16",
+				fill: "none",
+				xmlns: "http://www.w3.org/2000/svg",
+				"aria-hidden": "true"
+			}, (0, react.createElement)("rect", {
+				x: 1.4,
+				y: 1.4,
+				width: 13.2,
+				height: 13.2,
+				rx: 3.2,
+				stroke: "currentColor",
+				strokeWidth: 1.3
+			}), (0, react.createElement)("circle", {
+				cx: 5,
+				cy: 5,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 11,
+				cy: 5,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 8,
+				cy: 8,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 5,
+				cy: 11,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 11,
+				cy: 11,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			})));
+		}
+		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
+			const seedKnob = f.name === "seed";
+			const seedRandom = seedKnob && (value === -1 || value === "-1");
+			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SeedDice, {
+				random: seedRandom,
+				onToggle: () => {
+					if (seedRandom) onEdit(f.name, Math.floor(Math.random() * 2147483647));
+					else onEdit(f.name, -1);
+				}
+			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SpecAtom, {
+				f,
+				value: seedRandom ? void 0 : value,
+				...seedRandom ? { placeholder: "random — new every run" } : {},
+				onEdit,
+				square,
+				...wireCandidates !== void 0 ? { wireCandidates } : {}
+			}));
+		}
+		//#endregion
+		//#region ../../web/card-base/src/axes.tsx
+		/** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). Each field renders through the
+		*  claimed atom for its emitted type when the caller passes one;
+		*  the base's built-in atom is the default.
+		*
+		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
+		*  img-to-mesh input component — you are not using it around — you
+		*  are hardcoding"): an emitted image/file input constructs THE ONE
+		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
+		*  square provider — no call site wires it, no call site can forget
+		*  it. The caller hands only the WIRE (picker candidates), never the
+		*  component; a caller that passes its own `square` fn overrides (the
+		*  host-claim seam), but the default is the constructor's own. */
+		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
+		*  required star, hint) around the atom — CardForm's own row, opened
+		*  to rail sections that render served fields outside a whole form
+		*  (mask's TuneSection). The claim seam stays CardForm's; this row
+		*  takes the resolved atom inputs. */
+		//#endregion
+		//#region ../../web/card-base/src/use-form-spec.ts
+		/** use-form-spec.ts — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
+		*  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
+		*  img-to-mesh's client, ideogram4's client) each hand-copied the
+		*  same fetch-once + abort dance. One spelling now: fetches
+		*  /v1/form-spec?model=<id> when the id is non-empty, aborts the
+		*  in-flight fetch on unmount or id change, and hands back the doc
+		*  (null until it lands) + the refusal message (null unless the door
+		*  refused — loud consumers render it, silent ones ignore it).
+		*  Consumer-specific derivations (field filters, value seeding) stay
+		*  at the call site as reactions to `spec`. */
+		function useFormSpec(modelId) {
+			const [spec, setSpec] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const id = typeof modelId === "string" && modelId !== "" ? modelId : null;
+			(0, react.useEffect)(() => {
+				if (id === null) return;
+				const ctl = new AbortController();
+				setSpec(null);
+				setError(null);
+				fetchFormSpec(id, ctl.signal).then((doc) => {
+					setSpec(doc);
+				}).catch((e) => {
+					setError(e instanceof Error ? e.message : "form-spec failed");
+				});
+				return () => {
+					ctl.abort();
+				};
+			}, [id]);
+			return {
+				spec,
+				error
+			};
+		}
+		//#endregion
+		//#region ../../web/card-base/src/spec-panel.tsx
+		/** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE DYNAMIC PARAMETER PANEL (2026-09-17, the operator's shared-
+		* component law): sections of the SERVED form-spec's rows at their
+		* wire names — ONE mechanism every card seats, never a per-card
+		* re-walk. The card owns POLICY through the DECLARATION (which
+		* fields exist, their visible_when leaves); the base owns MECHANISM
+		* (fetch → walker → row atoms → visibility grammar → the error
+		* law). A row the door never declared renders NOTHING (no ghost,
+		* no twin); a refused spec renders AS an error — never a thinner
+		* panel. */
+		function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: errorProp }) {
+			const owned = useFormSpec(model);
+			const spec = specProp !== void 0 ? specProp : owned.spec;
+			const error = specProp !== void 0 ? errorProp ?? null : owned.error;
+			if (error !== null) return (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				role: "alert",
+				"data-testid": "spec-panel-error"
+			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, "form-spec failed — parameters unavailable"), (0, react.createElement)("div", { className: card_module_css_default.specHint }, error));
+			if (spec === null) return null;
+			const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]));
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, sections.map((sec) => (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				key: sec.title,
+				...sec.testid !== void 0 ? { "data-testid": sec.testid } : {}
+			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
+				const f = byName.get(row.name);
+				if (f === void 0) return null;
+				if (!fieldVisible(f, values)) return null;
+				return (0, react.createElement)(SpecFieldRow, {
+					key: row.name,
+					f,
+					value: values[row.name],
+					onEdit
+				});
+			}))));
+		}
+		//#endregion
+		//#region ../../web/card-base/src/form.tsx
+		/**
+		* form.tsx — @melite/card-base: THE CONSTRUCTOR (the godfile
+		* split, hour 15: the seams live in their own files now —
+		* use-form-spec.ts, square-provider.tsx, atoms.tsx, rows.tsx,
+		* spec-panel.tsx, axes.tsx — this file is the CardForm
+		* composition + the stable re-export surface).
+		*
+		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
+		* construct the card ui should see that the card package emits an
+		* image input, then constructs the input component automatically"):
+		* the base reads the card package's EMISSION — the served form-spec
+		* (the schema envelope, declared input/output edges, mod kinds) —
+		* and constructs the surface. The resolved value derives per render
+		* (resolveValue — the engine's compose cascade mirrored); every
+		* image/file field gets THE ONE square (square.tsx) with the
+		* three source verbs; no card ever hand-rolls an input component.
+		*
+		* THE SEAM (slots.ts): each field renders through the field-atom seam
+		* keyed by its emitted wire type — the caller may pass claimed atoms
+		* (the composition consults the slot machinery and hands them in);
+		* the base's built-in atom is the default (the ui-tool built-ins
+		* pattern). A whole-form takeover replaces CardForm itself.
+		*
+		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
+		* atoms the primitives set lacks (select, slider, textarea) are
+		* layout-only module CSS over native elements, every color an
+		* inherited --dsw-alias-* token (the package's documented pattern).
+		*/
+		//#endregion
+		//#region ../../web/card-base/src/mods.tsx
+		/**
+		* mods.tsx — THE MOD SYSTEM, CORE (the old SubcardGrid, ported 1:1 —
+		* and moved into the base package 2026-09-12 after the operator's
+		* law: "MOD SYSTEM IS CORE. NEVER HARDCODED. The LORAS should not be
+		* on cards, the MOD SYSTEM SHOULD").
+		*
+		* The laws this section enforces:
+		*  - mods NEVER ride the card's param form. The estate serves the
+		*    OPEN kind vocabulary (features.modifiers); the constructor
+		*    (CardForm) renders THIS section itself and excludes every
+		*    mod-owned name from the flat groups — no surface wires it, no
+		*    surface can forget it (the construction law, same as the
+		*    square).
+		*  - THE WIRE IS THE STORAGE: params[param_key] holds the bag; the
+		*    same bag runs and the agent reads/writes it.
+		*  - commits persist immediately (the old onSaveParams law — never
+		*    deferred to Run): onEdit rides the caller's values map AND
+		*    onPatch (when present) persists to the domain on the spot.
+		*  - apply order = array order; the drag rewrites the bag.
+		*  - THREE kind shapes, all first-class (the leaf switches on the
+		*    SERVED entry mode, never the kind name):
+		*      OPTION kinds (lora): served catalog rows + strength; the
+		*        entry is { id, strength } — the row's own defaults seed the
+		*        strength.
+		*      HYBRID kinds (controlnet): served catalog rows AND entry
+		*        fields; the entry is the bag element keyed by its option_key
+		*        (type) — the leaf stamps the row's resolved facts (model +
+		*        preprocessor) onto new entries so the run record carries the
+		*        retired wire shape; the lane re-validates them, never trusts
+		*        them. Pack-level scalars (the strength floor) render as the
+		*        section's own rows above the tiles.
+		*      OPTION kinds (lora): served catalog rows + strength; the
+		*        entry is { id, strength } — the row's own defaults seed the
+		*        strength.
+		*      FIELD kinds (mask): the kind's own spec fields (image squares,
+		*        selects, sliders); the entry IS the params object. The leaf
+		*        renders kind.fields through the same constructor atoms —
+		*        the fields NEVER render flat on the card form.
+		*/
+		//#endregion
+		//#region ../../web/card-base/src/use-resolved.ts
+		/**
+		* use-resolved.ts — THE STUDIO SEAM, ONE UNIVERSAL DEFAULT SYSTEM
+		* (operator, 2026-09-18: "there is no universal default system
+		* right?"). ONE resolver composes EVERY layer — schema defaults <-
+		* model_defaults <- base (the persisted/bench layer) <- user — and
+		* the surface reads THE ONE resolved map. Never a hand `??` ladder
+		* at a call site: a ladder IS a second resolver, and every extra
+		* arm is a place the truth forks.
+		*
+		* PRE-FETCH LAW: the spec arrives async, but the resolved map is
+		* STILL the layer composition — base under user, verbatim — so a
+		* synchronous render shows the document's own held values; the
+		* fetch landing fills the declared defaults under them (the same
+		* one map, richer). Nothing renders blank, nothing flickers, no
+		* call site branches on spec-null.
+		*
+		* THE EDIT LAW: `undefined` is the tri-state's inherit signal (the
+		* unset) — it rides verbatim, the caller's write owns what it
+		* means. Edits coerce at the SCHEMA BOUNDARY (coerceFieldEdit):
+		* numeric strings ride as numbers, unparseable strings ride
+		* verbatim for the run's schema parse to refuse LOUD, and keys the
+		* spec never declared (the mod bag) ride verbatim — the mod plane
+		* owns their validation.
+		*/
+		/** The resolved studio seam: spec + error from the door, values
+		* resolved through the ONE cascade, edits coerced at the schema
+		* boundary. `user` is the surface's explicit layer (a document's
+		* params — sparse by design); `base` is the persisted layer under
+		* it (the bench/stage row's params), when the surface has one. */
+		function useResolvedForm(family, user, onWrite, base) {
+			const { spec, error } = useFormSpec(family);
+			const resolved = (0, react.useMemo)(() => resolveValueLayered(spec, base, user), [
+				spec,
+				base,
+				user
+			]);
+			const fieldOf = (0, react.useCallback)((name) => spec !== null ? fieldsOf(spec).find((f) => f.name === name) : void 0, [spec]);
+			return {
+				spec,
+				error,
+				resolved,
+				edit: (0, react.useCallback)((name, v) => {
+					const f = fieldOf(name);
+					if (v === "" && f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider")) {
+						onWrite(name, void 0);
+						return;
+					}
+					onWrite(name, coerceFieldEdit(f, v));
+				}, [fieldOf, onWrite]),
+				fieldOf
+			};
+		}
+		/** The layer composition — PURE, exported for the seam's own wall:
+		* with a spec it is exactly resolveValue (schema <- model_defaults
+		* <- base <- user); without one (the pre-fetch render, the dead
+		* door) it is still the LAYERS — base under user, verbatim — so
+		* every surface reads the same shape at every moment. */
+		function resolveValueLayered(spec, base, user) {
+			if (spec === null) {
+				const out = { ...base ?? {} };
+				for (const [k, v] of Object.entries(user)) {
+					if (v === null || v === void 0) continue;
+					out[k] = v;
+				}
+				return out;
+			}
+			return resolveValue(spec, user, base);
 		}
 		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js
@@ -1537,7 +2913,7 @@ window.__ModuleLoader__.load({
 			}
 			throw new Error(`Unknown texture type ${type}.`);
 		}
-		var MOUSE, TOUCH, AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, UnsignedInt101111Type, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, R11_EAC_Format, SIGNED_R11_EAC_Format, RG11_EAC_Format, SIGNED_RG11_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$3, _setConsoleFunction, ReversedDepthFuncs, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers, _object3DId, _v1$6, _q1, _m1$1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _moveEvent, WebXRController, _colorKeywords, _hslA, _hslB, Color, _color, Scene, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1$3, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, SpriteMaterial, _geometry, _intersectPoint, _worldScale, _mvPosition, _alignedPosition, _rotatedPosition, _viewWorldMatrix, _vA$1, _vB$1, _vC$1, _uvA, _uvB, _uvC, Sprite, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton$1, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray$4, _sphere, _position$3, Points, CubeTexture, CanvasTexture, DepthTexture, CubeDepthTexture, ExternalTexture, BoxGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, OctahedronGeometry, PlaneGeometry, RingGeometry, SphereGeometry, TorusGeometry, ShadowMaterial, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, RawShaderMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, MeshDistanceMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, _position$2, _quaternion$2, _scale$2, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, _errorMap, ImageBitmapLoader, fov, aspect, CubeCamera, ArrayCamera, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, Clock, Spherical, GridHelper, Controls;
+		var MOUSE, TOUCH, AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, UnsignedInt101111Type, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, R11_EAC_Format, SIGNED_R11_EAC_Format, RG11_EAC_Format, SIGNED_RG11_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$3, _setConsoleFunction, ReversedDepthFuncs, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers, _object3DId, _v1$6, _q1, _m1$1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _moveEvent, WebXRController, _colorKeywords, _hslA, _hslB, Color, _color, Scene, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1$3, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, SpriteMaterial, _geometry, _intersectPoint, _worldScale, _mvPosition, _alignedPosition, _rotatedPosition, _viewWorldMatrix, _vA$1, _vB$1, _vC$1, _uvA, _uvB, _uvC, Sprite, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray$4, _sphere, _position$3, Points, CubeTexture, CanvasTexture, DepthTexture, CubeDepthTexture, ExternalTexture, BoxGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, OctahedronGeometry, PlaneGeometry, RingGeometry, SphereGeometry, TorusGeometry, ShadowMaterial, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, RawShaderMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, MeshDistanceMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, _position$2, _quaternion$2, _scale$2, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, _errorMap, ImageBitmapLoader, fov, aspect, CubeCamera, ArrayCamera, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, Clock, Spherical, GridHelper, Controls;
 		var init_three_core = __esmMin((() => {
 			MOUSE = {
 				LEFT: 0,
@@ -15434,7 +16810,7 @@ window.__ModuleLoader__.load({
 			};
 			_offsetMatrix = /*@__PURE__*/ new Matrix4();
 			_identityMatrix$1 = /*@__PURE__*/ new Matrix4();
-			Skeleton$1 = class Skeleton$1 {
+			Skeleton = class Skeleton {
 				/**
 				* Constructs a new skeleton.
 				*
@@ -15550,7 +16926,7 @@ window.__ModuleLoader__.load({
 				* @return {Skeleton} A clone of this instance.
 				*/
 				clone() {
-					return new Skeleton$1(this.bones, this.boneInverses);
+					return new Skeleton(this.bones, this.boneInverses);
 				}
 				/**
 				* Computes a data texture for passing bone data to the vertex shader.
@@ -34442,1800 +35818,1308 @@ void main() {
 			};
 		}));
 		//#endregion
-		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/engines/comfyui/action_cards/ui-icons.module.css.mjs
+		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/OrbitControls.js
 		init_three_module();
-		const css$9 = "@keyframes mK8r1a_uiIconSpin{to{transform:rotate(360deg)}}.mK8r1a_spin{animation:1s linear infinite mK8r1a_uiIconSpin}";
-		const tagId$9 = "@melite/motion-motion/ui-icons.module.css@ce70639a";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$9) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$9;
-			tag.textContent = css$9;
-			document.head.appendChild(tag);
-		}
-		var ui_icons_module_css_default = {
-			"spin": "mK8r1a_spin",
-			"uiIconSpin": "mK8r1a_uiIconSpin"
-		};
-		//#endregion
-		//#region ../../engines/comfyui/action_cards/ui-icons.tsx
-		function Svg({ className, children }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-				viewBox: "0 0 24 24",
-				fill: "none",
-				stroke: "currentColor",
-				strokeWidth: 2,
-				strokeLinecap: "round",
-				strokeLinejoin: "round",
-				"aria-hidden": "true",
-				className,
-				children
-			});
-		}
-		function Loader2({ className }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className: className ? `${ui_icons_module_css_default.spin} ${className}` : ui_icons_module_css_default.spin,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" })
-			});
-		}
-		//#endregion
-		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/engines/comfyui/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css.mjs
-		const css$8 = ".Xnnowa_loadingBox{background:var(--dsw-alias-bg-base);flex-direction:column;justify-content:center;align-items:center;gap:12px;display:flex}.Xnnowa_loadingIcon{width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent)}.Xnnowa_loadingLabel{color:color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);font-size:12px}.Xnnowa_errorBox{background:var(--dsw-alias-bg-base);color:color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);justify-content:center;align-items:center;font-size:12px;display:flex}";
-		const tagId$8 = "@melite/motion-motion/PoseViewer3D.module.css@3cd59d93";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$8) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$8;
-			tag.textContent = css$8;
-			document.head.appendChild(tag);
-		}
-		var PoseViewer3D_module_css_default = {
-			"errorBox": "Xnnowa_errorBox",
-			"loadingBox": "Xnnowa_loadingBox",
-			"loadingIcon": "Xnnowa_loadingIcon",
-			"loadingLabel": "Xnnowa_loadingLabel"
-		};
-		//#endregion
-		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/TransformControls.js
-		const _raycaster = new Raycaster();
-		const _tempVector = new Vector3();
-		const _tempVector2 = new Vector3();
-		const _tempQuaternion = new Quaternion();
-		const _unit = {
-			X: new Vector3(1, 0, 0),
-			Y: new Vector3(0, 1, 0),
-			Z: new Vector3(0, 0, 1)
-		};
 		/**
-		* Fires if any type of change (object or property change) is performed. Property changes
-		* are separate events you can add event listeners to. The event type is "propertyname-changed".
+		* Fires when the camera has been transformed by the controls.
 		*
-		* @event TransformControls#change
+		* @event OrbitControls#change
 		* @type {Object}
 		*/
 		const _changeEvent$1 = { type: "change" };
 		/**
-		* Fires if a pointer (mouse/touch) becomes active.
+		* Fires when an interaction was initiated.
 		*
-		* @event TransformControls#mouseDown
+		* @event OrbitControls#start
 		* @type {Object}
 		*/
-		const _mouseDownEvent = {
-			type: "mouseDown",
-			mode: null
+		const _startEvent = { type: "start" };
+		/**
+		* Fires when an interaction has finished.
+		*
+		* @event OrbitControls#end
+		* @type {Object}
+		*/
+		const _endEvent = { type: "end" };
+		const _ray = new Ray();
+		const _plane = new Plane();
+		const _TILT_LIMIT = Math.cos(70 * MathUtils.DEG2RAD);
+		const _v = new Vector3();
+		const _twoPI = 2 * Math.PI;
+		const _STATE = {
+			NONE: -1,
+			ROTATE: 0,
+			DOLLY: 1,
+			PAN: 2,
+			TOUCH_ROTATE: 3,
+			TOUCH_PAN: 4,
+			TOUCH_DOLLY_PAN: 5,
+			TOUCH_DOLLY_ROTATE: 6
 		};
+		const _EPS = 1e-6;
 		/**
-		* Fires if a pointer (mouse/touch) is no longer active.
+		* Orbit controls allow the camera to orbit around a target.
 		*
-		* @event TransformControls#mouseUp
-		* @type {Object}
-		*/
-		const _mouseUpEvent = {
-			type: "mouseUp",
-			mode: null
-		};
-		/**
-		* Fires if the controlled 3D object is changed.
+		* OrbitControls performs orbiting, dollying (zooming), and panning. Unlike {@link TrackballControls},
+		* it maintains the "up" direction `object.up` (+Y by default).
 		*
-		* @event TransformControls#objectChange
-		* @type {Object}
-		*/
-		const _objectChangeEvent = { type: "objectChange" };
-		/**
-		* This class can be used to transform objects in 3D space by adapting a similar interaction model
-		* of DCC tools like Blender. Unlike other controls, it is not intended to transform the scene's camera.
+		* - Orbit: Left mouse / touch: one-finger move.
+		* - Zoom: Middle mouse, or mousewheel / touch: two-finger spread or squish.
+		* - Pan: Right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move.
 		*
-		* `TransformControls` expects that its attached 3D object is part of the scene graph.
+		* ```js
+		* const controls = new OrbitControls( camera, renderer.domElement );
+		*
+		* // controls.update() must be called after any manual changes to the camera's transform
+		* camera.position.set( 0, 20, 100 );
+		* controls.update();
+		*
+		* function animate() {
+		*
+		* 	// required if controls.enableDamping or controls.autoRotate are set to true
+		* 	controls.update();
+		*
+		* 	renderer.render( scene, camera );
+		*
+		* }
+		* ```
 		*
 		* @augments Controls
-		* @three_import import { TransformControls } from 'three/addons/controls/TransformControls.js';
+		* @three_import import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 		*/
-		var TransformControls = class extends Controls {
+		var OrbitControls = class extends Controls {
 			/**
 			* Constructs a new controls instance.
 			*
-			* @param {Camera} camera - The camera of the rendered scene.
+			* @param {Object3D} object - The object that is managed by the controls.
 			* @param {?HTMLElement} domElement - The HTML element used for event listeners.
 			*/
-			constructor(camera, domElement = null) {
-				super(void 0, domElement);
-				const root = new TransformControlsRoot(this);
-				this._root = root;
-				const gizmo = new TransformControlsGizmo();
-				this._gizmo = gizmo;
-				root.add(gizmo);
-				const plane = new TransformControlsPlane();
-				this._plane = plane;
-				root.add(plane);
-				const scope = this;
-				function defineProperty(propName, defaultValue) {
-					let propValue = defaultValue;
-					Object.defineProperty(scope, propName, {
-						get: function() {
-							return propValue !== void 0 ? propValue : defaultValue;
-						},
-						set: function(value) {
-							if (propValue !== value) {
-								propValue = value;
-								plane[propName] = value;
-								gizmo[propName] = value;
-								scope.dispatchEvent({
-									type: propName + "-changed",
-									value
-								});
-								scope.dispatchEvent(_changeEvent$1);
-							}
-						}
-					});
-					scope[propName] = defaultValue;
-					plane[propName] = defaultValue;
-					gizmo[propName] = defaultValue;
-				}
+			constructor(object, domElement = null) {
+				super(object, domElement);
+				this.state = _STATE.NONE;
 				/**
-				* The camera of the rendered scene.
+				* The focus point of the controls, the `object` orbits around this.
+				* It can be updated manually at any point to change the focus of the controls.
 				*
-				* @name TransformControls#camera
-				* @type {Camera}
+				* @type {Vector3}
 				*/
-				defineProperty("camera", camera);
-				defineProperty("object", void 0);
-				defineProperty("enabled", true);
+				this.target = new Vector3();
 				/**
-				* The current transformation axis.
+				* The focus point of the `minTargetRadius` and `maxTargetRadius` limits.
+				* It can be updated manually at any point to change the center of interest
+				* for the `target`.
 				*
-				* @name TransformControls#axis
-				* @type {string}
+				* @type {Vector3}
 				*/
-				defineProperty("axis", null);
+				this.cursor = new Vector3();
 				/**
-				* The current transformation axis.
+				* How far you can dolly in (perspective camera only).
 				*
-				* @name TransformControls#mode
-				* @type {('translate'|'rotate'|'scale')}
-				* @default 'translate'
+				* @type {number}
+				* @default 0
 				*/
-				defineProperty("mode", "translate");
+				this.minDistance = 0;
 				/**
-				* By default, 3D objects are continuously translated. If you set this property to a numeric
-				* value (world units), you can define in which steps the 3D object should be translated.
+				* How far you can dolly out (perspective camera only).
 				*
-				* @name TransformControls#translationSnap
-				* @type {?number}
-				* @default null
+				* @type {number}
+				* @default Infinity
 				*/
-				defineProperty("translationSnap", null);
+				this.maxDistance = Infinity;
 				/**
-				* By default, 3D objects are continuously rotated. If you set this property to a numeric
-				* value (radians), you can define in which steps the 3D object should be rotated.
+				* How far you can zoom in (orthographic camera only).
 				*
-				* @name TransformControls#rotationSnap
-				* @type {?number}
-				* @default null
+				* @type {number}
+				* @default 0
 				*/
-				defineProperty("rotationSnap", null);
+				this.minZoom = 0;
 				/**
-				* By default, 3D objects are continuously scaled. If you set this property to a numeric
-				* value, you can define in which steps the 3D object should be scaled.
+				* How far you can zoom out (orthographic camera only).
 				*
-				* @name TransformControls#scaleSnap
-				* @type {?number}
-				* @default null
+				* @type {number}
+				* @default Infinity
 				*/
-				defineProperty("scaleSnap", null);
+				this.maxZoom = Infinity;
 				/**
-				* Defines in which coordinate space transformations should be performed.
+				* How close you can get the target to the 3D `cursor`.
 				*
-				* @name TransformControls#space
-				* @type {('world'|'local')}
-				* @default 'world'
+				* @type {number}
+				* @default 0
 				*/
-				defineProperty("space", "world");
+				this.minTargetRadius = 0;
 				/**
-				* The size of the helper UI (axes/planes).
+				* How far you can move the target from the 3D `cursor`.
 				*
-				* @name TransformControls#size
+				* @type {number}
+				* @default Infinity
+				*/
+				this.maxTargetRadius = Infinity;
+				/**
+				* How far you can orbit vertically, lower limit. Range is `[0, Math.PI]` radians.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minPolarAngle = 0;
+				/**
+				* How far you can orbit vertically, upper limit. Range is `[0, Math.PI]` radians.
+				*
+				* @type {number}
+				* @default Math.PI
+				*/
+				this.maxPolarAngle = Math.PI;
+				/**
+				* How far you can orbit horizontally, lower limit. If set, the interval `[ min, max ]`
+				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
+				*
+				* @type {number}
+				* @default -Infinity
+				*/
+				this.minAzimuthAngle = -Infinity;
+				/**
+				* How far you can orbit horizontally, upper limit. If set, the interval `[ min, max ]`
+				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
+				*
+				* @type {number}
+				* @default -Infinity
+				*/
+				this.maxAzimuthAngle = Infinity;
+				/**
+				* Set to `true` to enable damping (inertia), which can be used to give a sense of weight
+				* to the controls. Note that if this is enabled, you must call `update()` in your animation
+				* loop.
+				*
+				* @type {boolean}
+				* @default false
+				*/
+				this.enableDamping = false;
+				/**
+				* The damping inertia used if `enableDamping` is set to `true`.
+				*
+				* Note that for this to work, you must call `update()` in your animation loop.
+				*
+				* @type {number}
+				* @default 0.05
+				*/
+				this.dampingFactor = .05;
+				/**
+				* Enable or disable zooming (dollying) of the camera.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enableZoom = true;
+				/**
+				* Speed of zooming / dollying.
+				*
 				* @type {number}
 				* @default 1
 				*/
-				defineProperty("size", 1);
+				this.zoomSpeed = 1;
 				/**
-				* Whether dragging is currently performed or not.
+				* Enable or disable horizontal and vertical rotation of the camera.
 				*
-				* @name TransformControls#dragging
+				* Note that it is possible to disable a single axis by setting the min and max of the
+				* `minPolarAngle` or `minAzimuthAngle` to the same value, which will cause the vertical
+				* or horizontal rotation to be fixed at that value.
+				*
 				* @type {boolean}
-				* @readonly
+				* @default true
+				*/
+				this.enableRotate = true;
+				/**
+				* Speed of rotation.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.rotateSpeed = 1;
+				/**
+				* How fast to rotate the camera when the keyboard is used.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.keyRotateSpeed = 1;
+				/**
+				* Enable or disable camera panning.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enablePan = true;
+				/**
+				* Speed of panning.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.panSpeed = 1;
+				/**
+				* Defines how the camera's position is translated when panning. If `true`, the camera pans
+				* in screen space. Otherwise, the camera pans in the plane orthogonal to the camera's up
+				* direction.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.screenSpacePanning = true;
+				/**
+				* How fast to pan the camera when the keyboard is used in
+				* pixels per keypress.
+				*
+				* @type {number}
+				* @default 7
+				*/
+				this.keyPanSpeed = 7;
+				/**
+				* Setting this property to `true` allows to zoom to the cursor's position.
+				*
+				* @type {boolean}
 				* @default false
 				*/
-				defineProperty("dragging", false);
+				this.zoomToCursor = false;
 				/**
-				* Whether the x-axis helper should be visible or not.
+				* Set to true to automatically rotate around the target
 				*
-				* @name TransformControls#showX
+				* Note that if this is enabled, you must call `update()` in your animation loop.
+				* If you want the auto-rotate speed to be independent of the frame rate (the refresh
+				* rate of the display), you must pass the time `deltaTime`, in seconds, to `update()`.
+				*
 				* @type {boolean}
-				* @default true
+				* @default false
 				*/
-				defineProperty("showX", true);
+				this.autoRotate = false;
 				/**
-				* Whether the y-axis helper should be visible or not.
+				* How fast to rotate around the target if `autoRotate` is `true`. The default  equates to 30 seconds
+				* per orbit at 60fps.
 				*
-				* @name TransformControls#showY
-				* @type {boolean}
-				* @default true
-				*/
-				defineProperty("showY", true);
-				/**
-				* Whether the z-axis helper should be visible or not.
+				* Note that if `autoRotate` is enabled, you must call `update()` in your animation loop.
 				*
-				* @name TransformControls#showZ
-				* @type {boolean}
-				* @default true
-				*/
-				defineProperty("showZ", true);
-				/**
-				* Whether the xy-plane helper should be visible or not.
-				*
-				* @name TransformControls#showXY
-				* @type {boolean}
-				* @default true
-				*/
-				defineProperty("showXY", true);
-				/**
-				* Whether the yz-plane helper should be visible or not.
-				*
-				* @name TransformControls#showYZ
-				* @type {boolean}
-				* @default true
-				*/
-				defineProperty("showYZ", true);
-				/**
-				* Whether the xz-axis helper should be visible or not.
-				*
-				* @name TransformControls#showXZ
-				* @type {boolean}
-				* @default true
-				*/
-				defineProperty("showXZ", true);
-				/**
-				* The minimum allowed X position during translation.
-				*
-				* @name TransformControls#minX
 				* @type {number}
-				* @default -Infinity
+				* @default 2
 				*/
-				defineProperty("minX", -Infinity);
+				this.autoRotateSpeed = 2;
 				/**
-				* The maximum allowed X position during translation.
+				* This object contains references to the keycodes for controlling camera panning.
 				*
-				* @name TransformControls#maxX
-				* @type {number}
-				* @default Infinity
+				* ```js
+				* controls.keys = {
+				* 	LEFT: 'ArrowLeft', //left arrow
+				* 	UP: 'ArrowUp', // up arrow
+				* 	RIGHT: 'ArrowRight', // right arrow
+				* 	BOTTOM: 'ArrowDown' // down arrow
+				* }
+				* ```
+				* @type {Object}
 				*/
-				defineProperty("maxX", Infinity);
+				this.keys = {
+					LEFT: "ArrowLeft",
+					UP: "ArrowUp",
+					RIGHT: "ArrowRight",
+					BOTTOM: "ArrowDown"
+				};
 				/**
-				* The minimum allowed y position during translation.
+				* This object contains references to the mouse actions used by the controls.
 				*
-				* @name TransformControls#minY
-				* @type {number}
-				* @default -Infinity
+				* ```js
+				* controls.mouseButtons = {
+				* 	LEFT: THREE.MOUSE.ROTATE,
+				* 	MIDDLE: THREE.MOUSE.DOLLY,
+				* 	RIGHT: THREE.MOUSE.PAN
+				* }
+				* ```
+				* @type {Object}
 				*/
-				defineProperty("minY", -Infinity);
+				this.mouseButtons = {
+					LEFT: MOUSE.ROTATE,
+					MIDDLE: MOUSE.DOLLY,
+					RIGHT: MOUSE.PAN
+				};
 				/**
-				* The maximum allowed Y position during translation.
+				* This object contains references to the touch actions used by the controls.
 				*
-				* @name TransformControls#maxY
-				* @type {number}
-				* @default Infinity
+				* ```js
+				* controls.mouseButtons = {
+				* 	ONE: THREE.TOUCH.ROTATE,
+				* 	TWO: THREE.TOUCH.DOLLY_PAN
+				* }
+				* ```
+				* @type {Object}
 				*/
-				defineProperty("maxY", Infinity);
+				this.touches = {
+					ONE: TOUCH.ROTATE,
+					TWO: TOUCH.DOLLY_PAN
+				};
 				/**
-				* The minimum allowed z position during translation.
+				* Used internally by `saveState()` and `reset()`.
 				*
-				* @name TransformControls#minZ
-				* @type {number}
-				* @default -Infinity
+				* @type {Vector3}
 				*/
-				defineProperty("minZ", -Infinity);
+				this.target0 = this.target.clone();
 				/**
-				* The maximum allowed Z position during translation.
+				* Used internally by `saveState()` and `reset()`.
 				*
-				* @name TransformControls#maxZ
-				* @type {number}
-				* @default Infinity
+				* @type {Vector3}
 				*/
-				defineProperty("maxZ", Infinity);
-				const worldPosition = new Vector3();
-				const worldPositionStart = new Vector3();
-				const worldQuaternion = new Quaternion();
-				const worldQuaternionStart = new Quaternion();
-				const cameraPosition = new Vector3();
-				const cameraQuaternion = new Quaternion();
-				const pointStart = new Vector3();
-				const pointEnd = new Vector3();
-				const rotationAxis = new Vector3();
-				const rotationAngle = 0;
-				const eye = new Vector3();
-				defineProperty("worldPosition", worldPosition);
-				defineProperty("worldPositionStart", worldPositionStart);
-				defineProperty("worldQuaternion", worldQuaternion);
-				defineProperty("worldQuaternionStart", worldQuaternionStart);
-				defineProperty("cameraPosition", cameraPosition);
-				defineProperty("cameraQuaternion", cameraQuaternion);
-				defineProperty("pointStart", pointStart);
-				defineProperty("pointEnd", pointEnd);
-				defineProperty("rotationAxis", rotationAxis);
-				defineProperty("rotationAngle", rotationAngle);
-				defineProperty("eye", eye);
-				this._offset = new Vector3();
-				this._startNorm = new Vector3();
-				this._endNorm = new Vector3();
-				this._cameraScale = new Vector3();
-				this._parentPosition = new Vector3();
-				this._parentQuaternion = new Quaternion();
-				this._parentQuaternionInv = new Quaternion();
-				this._parentScale = new Vector3();
-				this._worldScaleStart = new Vector3();
-				this._worldQuaternionInv = new Quaternion();
-				this._worldScale = new Vector3();
-				this._positionStart = new Vector3();
-				this._quaternionStart = new Quaternion();
-				this._scaleStart = new Vector3();
-				this._getPointer = getPointer.bind(this);
-				this._onPointerDown = onPointerDown$1.bind(this);
-				this._onPointerHover = onPointerHover.bind(this);
+				this.position0 = this.object.position.clone();
+				/**
+				* Used internally by `saveState()` and `reset()`.
+				*
+				* @type {number}
+				*/
+				this.zoom0 = this.object.zoom;
+				this._cursorStyle = "auto";
+				this._domElementKeyEvents = null;
+				this._lastPosition = new Vector3();
+				this._lastQuaternion = new Quaternion();
+				this._lastTargetPosition = new Vector3();
+				this._quat = new Quaternion().setFromUnitVectors(object.up, new Vector3(0, 1, 0));
+				this._quatInverse = this._quat.clone().invert();
+				this._spherical = new Spherical();
+				this._sphericalDelta = new Spherical();
+				this._scale = 1;
+				this._panOffset = new Vector3();
+				this._rotateStart = new Vector2();
+				this._rotateEnd = new Vector2();
+				this._rotateDelta = new Vector2();
+				this._panStart = new Vector2();
+				this._panEnd = new Vector2();
+				this._panDelta = new Vector2();
+				this._dollyStart = new Vector2();
+				this._dollyEnd = new Vector2();
+				this._dollyDelta = new Vector2();
+				this._dollyDirection = new Vector3();
+				this._mouse = new Vector2();
+				this._performCursorZoom = false;
+				this._pointers = [];
+				this._pointerPositions = {};
+				this._controlActive = false;
 				this._onPointerMove = onPointerMove$1.bind(this);
+				this._onPointerDown = onPointerDown$1.bind(this);
 				this._onPointerUp = onPointerUp$1.bind(this);
-				if (domElement !== null) this.connect(domElement);
+				this._onContextMenu = onContextMenu.bind(this);
+				this._onMouseWheel = onMouseWheel.bind(this);
+				this._onKeyDown = onKeyDown.bind(this);
+				this._onTouchStart = onTouchStart.bind(this);
+				this._onTouchMove = onTouchMove.bind(this);
+				this._onMouseDown = onMouseDown.bind(this);
+				this._onMouseMove = onMouseMove.bind(this);
+				this._interceptControlDown = interceptControlDown.bind(this);
+				this._interceptControlUp = interceptControlUp.bind(this);
+				if (this.domElement !== null) this.connect(this.domElement);
+				this.update();
+			}
+			/**
+			* Defines the visual representation of the cursor.
+			*
+			* @type {('auto'|'grab')}
+			* @default 'auto'
+			*/
+			set cursorStyle(type) {
+				this._cursorStyle = type;
+				if (type === "grab") this.domElement.style.cursor = "grab";
+				else this.domElement.style.cursor = "auto";
+			}
+			get cursorStyle() {
+				return this._cursorStyle;
 			}
 			connect(element) {
 				super.connect(element);
 				this.domElement.addEventListener("pointerdown", this._onPointerDown);
-				this.domElement.addEventListener("pointermove", this._onPointerHover);
-				this.domElement.addEventListener("pointerup", this._onPointerUp);
+				this.domElement.addEventListener("pointercancel", this._onPointerUp);
+				this.domElement.addEventListener("contextmenu", this._onContextMenu);
+				this.domElement.addEventListener("wheel", this._onMouseWheel, { passive: false });
+				this.domElement.getRootNode().addEventListener("keydown", this._interceptControlDown, {
+					passive: true,
+					capture: true
+				});
 				this.domElement.style.touchAction = "none";
 			}
 			disconnect() {
 				this.domElement.removeEventListener("pointerdown", this._onPointerDown);
-				this.domElement.removeEventListener("pointermove", this._onPointerHover);
-				this.domElement.removeEventListener("pointermove", this._onPointerMove);
-				this.domElement.removeEventListener("pointerup", this._onPointerUp);
+				this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
+				this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
+				this.domElement.removeEventListener("pointercancel", this._onPointerUp);
+				this.domElement.removeEventListener("wheel", this._onMouseWheel);
+				this.domElement.removeEventListener("contextmenu", this._onContextMenu);
+				this.stopListenToKeyEvents();
+				this.domElement.getRootNode().removeEventListener("keydown", this._interceptControlDown, { capture: true });
 				this.domElement.style.touchAction = "";
-			}
-			/**
-			* Returns the visual representation of the controls. Add the helper to your scene to
-			* visually transform the attached  3D object.
-			*
-			* @return {TransformControlsRoot} The helper.
-			*/
-			getHelper() {
-				return this._root;
-			}
-			pointerHover(pointer) {
-				if (this.object === void 0 || this.dragging === true) return;
-				if (pointer !== null) _raycaster.setFromCamera(pointer, this.camera);
-				const intersect = intersectObjectWithRay(this._gizmo.picker[this.mode], _raycaster);
-				if (intersect) this.axis = intersect.object.name;
-				else this.axis = null;
-			}
-			pointerDown(pointer) {
-				if (this.object === void 0 || this.dragging === true || pointer != null && pointer.button !== 0) return;
-				if (this.axis !== null) {
-					if (pointer !== null) _raycaster.setFromCamera(pointer, this.camera);
-					const planeIntersect = intersectObjectWithRay(this._plane, _raycaster, true);
-					if (planeIntersect) {
-						this.object.updateMatrixWorld();
-						this.object.parent.updateMatrixWorld();
-						this._positionStart.copy(this.object.position);
-						this._quaternionStart.copy(this.object.quaternion);
-						this._scaleStart.copy(this.object.scale);
-						this.object.matrixWorld.decompose(this.worldPositionStart, this.worldQuaternionStart, this._worldScaleStart);
-						this.pointStart.copy(planeIntersect.point).sub(this.worldPositionStart);
-					}
-					this.dragging = true;
-					_mouseDownEvent.mode = this.mode;
-					this.dispatchEvent(_mouseDownEvent);
-				}
-			}
-			pointerMove(pointer) {
-				const axis = this.axis;
-				const mode = this.mode;
-				const object = this.object;
-				let space = this.space;
-				if (mode === "scale") space = "local";
-				else if (axis === "E" || axis === "XYZE" || axis === "XYZ") space = "world";
-				if (object === void 0 || axis === null || this.dragging === false || pointer !== null && pointer.button !== -1) return;
-				if (pointer !== null) _raycaster.setFromCamera(pointer, this.camera);
-				const planeIntersect = intersectObjectWithRay(this._plane, _raycaster, true);
-				if (!planeIntersect) return;
-				this.pointEnd.copy(planeIntersect.point).sub(this.worldPositionStart);
-				if (mode === "translate") {
-					this._offset.copy(this.pointEnd).sub(this.pointStart);
-					if (space === "local" && axis !== "XYZ") this._offset.applyQuaternion(this._worldQuaternionInv);
-					if (axis.indexOf("X") === -1) this._offset.x = 0;
-					if (axis.indexOf("Y") === -1) this._offset.y = 0;
-					if (axis.indexOf("Z") === -1) this._offset.z = 0;
-					if (space === "local" && axis !== "XYZ") this._offset.applyQuaternion(this._quaternionStart).divide(this._parentScale);
-					else this._offset.applyQuaternion(this._parentQuaternionInv).divide(this._parentScale);
-					object.position.copy(this._offset).add(this._positionStart);
-					if (this.translationSnap) {
-						if (space === "local") {
-							object.position.applyQuaternion(_tempQuaternion.copy(this._quaternionStart).invert());
-							if (axis.search("X") !== -1) object.position.x = Math.round(object.position.x / this.translationSnap) * this.translationSnap;
-							if (axis.search("Y") !== -1) object.position.y = Math.round(object.position.y / this.translationSnap) * this.translationSnap;
-							if (axis.search("Z") !== -1) object.position.z = Math.round(object.position.z / this.translationSnap) * this.translationSnap;
-							object.position.applyQuaternion(this._quaternionStart);
-						}
-						if (space === "world") {
-							if (object.parent) object.position.add(_tempVector.setFromMatrixPosition(object.parent.matrixWorld));
-							if (axis.search("X") !== -1) object.position.x = Math.round(object.position.x / this.translationSnap) * this.translationSnap;
-							if (axis.search("Y") !== -1) object.position.y = Math.round(object.position.y / this.translationSnap) * this.translationSnap;
-							if (axis.search("Z") !== -1) object.position.z = Math.round(object.position.z / this.translationSnap) * this.translationSnap;
-							if (object.parent) object.position.sub(_tempVector.setFromMatrixPosition(object.parent.matrixWorld));
-						}
-					}
-					object.position.x = Math.max(this.minX, Math.min(this.maxX, object.position.x));
-					object.position.y = Math.max(this.minY, Math.min(this.maxY, object.position.y));
-					object.position.z = Math.max(this.minZ, Math.min(this.maxZ, object.position.z));
-				} else if (mode === "scale") {
-					if (axis.search("XYZ") !== -1) {
-						let d = this.pointEnd.length() / this.pointStart.length();
-						if (this.pointEnd.dot(this.pointStart) < 0) d *= -1;
-						_tempVector2.set(d, d, d);
-					} else {
-						_tempVector.copy(this.pointStart);
-						_tempVector2.copy(this.pointEnd);
-						_tempVector.applyQuaternion(this._worldQuaternionInv);
-						_tempVector2.applyQuaternion(this._worldQuaternionInv);
-						_tempVector2.divide(_tempVector);
-						if (axis.search("X") === -1) _tempVector2.x = 1;
-						if (axis.search("Y") === -1) _tempVector2.y = 1;
-						if (axis.search("Z") === -1) _tempVector2.z = 1;
-					}
-					object.scale.copy(this._scaleStart).multiply(_tempVector2);
-					if (this.scaleSnap) {
-						if (axis.search("X") !== -1) object.scale.x = Math.round(object.scale.x / this.scaleSnap) * this.scaleSnap || this.scaleSnap;
-						if (axis.search("Y") !== -1) object.scale.y = Math.round(object.scale.y / this.scaleSnap) * this.scaleSnap || this.scaleSnap;
-						if (axis.search("Z") !== -1) object.scale.z = Math.round(object.scale.z / this.scaleSnap) * this.scaleSnap || this.scaleSnap;
-					}
-				} else if (mode === "rotate") {
-					this._offset.copy(this.pointEnd).sub(this.pointStart);
-					const ROTATION_SPEED = 20 / this.worldPosition.distanceTo(_tempVector.setFromMatrixPosition(this.camera.matrixWorld));
-					let _inPlaneRotation = false;
-					if (axis === "XYZE") {
-						this.rotationAxis.copy(this._offset).cross(this.eye).normalize();
-						this.rotationAngle = this._offset.dot(_tempVector.copy(this.rotationAxis).cross(this.eye)) * ROTATION_SPEED;
-					} else if (axis === "X" || axis === "Y" || axis === "Z") {
-						this.rotationAxis.copy(_unit[axis]);
-						_tempVector.copy(_unit[axis]);
-						if (space === "local") _tempVector.applyQuaternion(this.worldQuaternion);
-						_tempVector.cross(this.eye);
-						if (_tempVector.length() === 0) _inPlaneRotation = true;
-						else this.rotationAngle = this._offset.dot(_tempVector.normalize()) * ROTATION_SPEED;
-					}
-					if (axis === "E" || _inPlaneRotation) {
-						this.rotationAxis.copy(this.eye);
-						this.rotationAngle = this.pointEnd.angleTo(this.pointStart);
-						this._startNorm.copy(this.pointStart).normalize();
-						this._endNorm.copy(this.pointEnd).normalize();
-						this.rotationAngle *= this._endNorm.cross(this._startNorm).dot(this.eye) < 0 ? 1 : -1;
-					}
-					if (this.rotationSnap) this.rotationAngle = Math.round(this.rotationAngle / this.rotationSnap) * this.rotationSnap;
-					if (space === "local" && axis !== "E" && axis !== "XYZE") {
-						object.quaternion.copy(this._quaternionStart);
-						object.quaternion.multiply(_tempQuaternion.setFromAxisAngle(this.rotationAxis, this.rotationAngle)).normalize();
-					} else {
-						this.rotationAxis.applyQuaternion(this._parentQuaternionInv);
-						object.quaternion.copy(_tempQuaternion.setFromAxisAngle(this.rotationAxis, this.rotationAngle));
-						object.quaternion.multiply(this._quaternionStart).normalize();
-					}
-				}
-				this.dispatchEvent(_changeEvent$1);
-				this.dispatchEvent(_objectChangeEvent);
-			}
-			pointerUp(pointer) {
-				if (pointer !== null && pointer.button !== 0) return;
-				if (this.dragging && this.axis !== null) {
-					_mouseUpEvent.mode = this.mode;
-					this.dispatchEvent(_mouseUpEvent);
-				}
-				this.dragging = false;
-				this.axis = null;
 			}
 			dispose() {
 				this.disconnect();
-				this._root.dispose();
 			}
 			/**
-			* Sets the 3D object that should be transformed and ensures the controls UI is visible.
+			* Get the current vertical rotation, in radians.
 			*
-			* @param {Object3D} object -  The 3D object that should be transformed.
-			* @return {TransformControls} A reference to this controls.
+			* @return {number} The current vertical rotation, in radians.
 			*/
-			attach(object) {
-				this.object = object;
-				this._root.visible = true;
-				return this;
+			getPolarAngle() {
+				return this._spherical.phi;
 			}
 			/**
-			* Removes the current 3D object from the controls and makes the helper UI invisible.
+			* Get the current horizontal rotation, in radians.
 			*
-			* @return {TransformControls} A reference to this controls.
+			* @return {number} The current horizontal rotation, in radians.
 			*/
-			detach() {
-				this.object = void 0;
-				this.axis = null;
-				this._root.visible = false;
-				return this;
+			getAzimuthalAngle() {
+				return this._spherical.theta;
 			}
 			/**
-			* Resets the object's position, rotation and scale to when the current transform began.
+			* Returns the distance from the camera to the target.
+			*
+			* @return {number} The distance from the camera to the target.
+			*/
+			getDistance() {
+				return this.object.position.distanceTo(this.target);
+			}
+			/**
+			* Adds key event listeners to the given DOM element.
+			* `window` is a recommended argument for using this method.
+			*
+			* @param {HTMLElement} domElement - The DOM element
+			*/
+			listenToKeyEvents(domElement) {
+				domElement.addEventListener("keydown", this._onKeyDown);
+				this._domElementKeyEvents = domElement;
+			}
+			/**
+			* Removes the key event listener previously defined with `listenToKeyEvents()`.
+			*/
+			stopListenToKeyEvents() {
+				if (this._domElementKeyEvents !== null) {
+					this._domElementKeyEvents.removeEventListener("keydown", this._onKeyDown);
+					this._domElementKeyEvents = null;
+				}
+			}
+			/**
+			* Save the current state of the controls. This can later be recovered with `reset()`.
+			*/
+			saveState() {
+				this.target0.copy(this.target);
+				this.position0.copy(this.object.position);
+				this.zoom0 = this.object.zoom;
+			}
+			/**
+			* Reset the controls to their state from either the last time the `saveState()`
+			* was called, or the initial state.
 			*/
 			reset() {
-				if (!this.enabled) return;
-				if (this.dragging) {
-					this.object.position.copy(this._positionStart);
-					this.object.quaternion.copy(this._quaternionStart);
-					this.object.scale.copy(this._scaleStart);
+				this.target.copy(this.target0);
+				this.object.position.copy(this.position0);
+				this.object.zoom = this.zoom0;
+				this.object.updateProjectionMatrix();
+				this.dispatchEvent(_changeEvent$1);
+				this.update();
+				this.state = _STATE.NONE;
+			}
+			/**
+			* Programmatically pan the camera.
+			*
+			* @param {number} deltaX - The horizontal pan amount in pixels.
+			* @param {number} deltaY - The vertical pan amount in pixels.
+			*/
+			pan(deltaX, deltaY) {
+				this._pan(deltaX, deltaY);
+				this.update();
+			}
+			/**
+			* Programmatically dolly in (zoom in for perspective camera).
+			*
+			* @param {number} dollyScale - The dolly scale factor.
+			*/
+			dollyIn(dollyScale) {
+				this._dollyIn(dollyScale);
+				this.update();
+			}
+			/**
+			* Programmatically dolly out (zoom out for perspective camera).
+			*
+			* @param {number} dollyScale - The dolly scale factor.
+			*/
+			dollyOut(dollyScale) {
+				this._dollyOut(dollyScale);
+				this.update();
+			}
+			/**
+			* Programmatically rotate the camera left (around the vertical axis).
+			*
+			* @param {number} angle - The rotation angle in radians.
+			*/
+			rotateLeft(angle) {
+				this._rotateLeft(angle);
+				this.update();
+			}
+			/**
+			* Programmatically rotate the camera up (around the horizontal axis).
+			*
+			* @param {number} angle - The rotation angle in radians.
+			*/
+			rotateUp(angle) {
+				this._rotateUp(angle);
+				this.update();
+			}
+			update(deltaTime = null) {
+				const position = this.object.position;
+				_v.copy(position).sub(this.target);
+				_v.applyQuaternion(this._quat);
+				this._spherical.setFromVector3(_v);
+				if (this.autoRotate && this.state === _STATE.NONE) this._rotateLeft(this._getAutoRotationAngle(deltaTime));
+				if (this.enableDamping) {
+					this._spherical.theta += this._sphericalDelta.theta * this.dampingFactor;
+					this._spherical.phi += this._sphericalDelta.phi * this.dampingFactor;
+				} else {
+					this._spherical.theta += this._sphericalDelta.theta;
+					this._spherical.phi += this._sphericalDelta.phi;
+				}
+				let min = this.minAzimuthAngle;
+				let max = this.maxAzimuthAngle;
+				if (isFinite(min) && isFinite(max)) {
+					if (min < -Math.PI) min += _twoPI;
+					else if (min > Math.PI) min -= _twoPI;
+					if (max < -Math.PI) max += _twoPI;
+					else if (max > Math.PI) max -= _twoPI;
+					if (min <= max) this._spherical.theta = Math.max(min, Math.min(max, this._spherical.theta));
+					else this._spherical.theta = this._spherical.theta > (min + max) / 2 ? Math.max(min, this._spherical.theta) : Math.min(max, this._spherical.theta);
+				}
+				this._spherical.phi = Math.max(this.minPolarAngle, Math.min(this.maxPolarAngle, this._spherical.phi));
+				this._spherical.makeSafe();
+				if (this.enableDamping === true) this.target.addScaledVector(this._panOffset, this.dampingFactor);
+				else this.target.add(this._panOffset);
+				this.target.sub(this.cursor);
+				this.target.clampLength(this.minTargetRadius, this.maxTargetRadius);
+				this.target.add(this.cursor);
+				let zoomChanged = false;
+				if (this.zoomToCursor && this._performCursorZoom || this.object.isOrthographicCamera) this._spherical.radius = this._clampDistance(this._spherical.radius);
+				else {
+					const prevRadius = this._spherical.radius;
+					this._spherical.radius = this._clampDistance(this._spherical.radius * this._scale);
+					zoomChanged = prevRadius != this._spherical.radius;
+				}
+				_v.setFromSpherical(this._spherical);
+				_v.applyQuaternion(this._quatInverse);
+				position.copy(this.target).add(_v);
+				this.object.lookAt(this.target);
+				if (this.enableDamping === true) {
+					this._sphericalDelta.theta *= 1 - this.dampingFactor;
+					this._sphericalDelta.phi *= 1 - this.dampingFactor;
+					this._panOffset.multiplyScalar(1 - this.dampingFactor);
+				} else {
+					this._sphericalDelta.set(0, 0, 0);
+					this._panOffset.set(0, 0, 0);
+				}
+				if (this.zoomToCursor && this._performCursorZoom) {
+					let newRadius = null;
+					if (this.object.isPerspectiveCamera) {
+						const prevRadius = _v.length();
+						newRadius = this._clampDistance(prevRadius * this._scale);
+						const radiusDelta = prevRadius - newRadius;
+						this.object.position.addScaledVector(this._dollyDirection, radiusDelta);
+						this.object.updateMatrixWorld();
+						zoomChanged = !!radiusDelta;
+					} else if (this.object.isOrthographicCamera) {
+						const mouseBefore = new Vector3(this._mouse.x, this._mouse.y, 0);
+						mouseBefore.unproject(this.object);
+						const prevZoom = this.object.zoom;
+						this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
+						this.object.updateProjectionMatrix();
+						zoomChanged = prevZoom !== this.object.zoom;
+						const mouseAfter = new Vector3(this._mouse.x, this._mouse.y, 0);
+						mouseAfter.unproject(this.object);
+						this.object.position.sub(mouseAfter).add(mouseBefore);
+						this.object.updateMatrixWorld();
+						newRadius = _v.length();
+					} else {
+						console.warn("WARNING: OrbitControls.js encountered an unknown camera type - zoom to cursor disabled.");
+						this.zoomToCursor = false;
+					}
+					if (newRadius !== null) {
+						if (this.screenSpacePanning) this.target.set(0, 0, -1).transformDirection(this.object.matrix).multiplyScalar(newRadius).add(this.object.position);
+						else {
+							_ray.origin.copy(this.object.position);
+							_ray.direction.set(0, 0, -1).transformDirection(this.object.matrix);
+							if (Math.abs(this.object.up.dot(_ray.direction)) < _TILT_LIMIT) this.object.lookAt(this.target);
+							else {
+								_plane.setFromNormalAndCoplanarPoint(this.object.up, this.target);
+								_ray.intersectPlane(_plane, this.target);
+							}
+						}
+					}
+				} else if (this.object.isOrthographicCamera) {
+					const prevZoom = this.object.zoom;
+					this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
+					if (prevZoom !== this.object.zoom) {
+						this.object.updateProjectionMatrix();
+						zoomChanged = true;
+					}
+				}
+				this._scale = 1;
+				this._performCursorZoom = false;
+				if (zoomChanged || this._lastPosition.distanceToSquared(this.object.position) > _EPS || 8 * (1 - this._lastQuaternion.dot(this.object.quaternion)) > _EPS || this._lastTargetPosition.distanceToSquared(this.target) > _EPS) {
 					this.dispatchEvent(_changeEvent$1);
-					this.dispatchEvent(_objectChangeEvent);
-					this.pointStart.copy(this.pointEnd);
+					this._lastPosition.copy(this.object.position);
+					this._lastQuaternion.copy(this.object.quaternion);
+					this._lastTargetPosition.copy(this.target);
+					return true;
+				}
+				return false;
+			}
+			_getAutoRotationAngle(deltaTime) {
+				if (deltaTime !== null) return _twoPI / 60 * this.autoRotateSpeed * deltaTime;
+				else return _twoPI / 60 / 60 * this.autoRotateSpeed;
+			}
+			_getZoomScale(delta) {
+				const normalizedDelta = Math.abs(delta * .01);
+				return Math.pow(.95, this.zoomSpeed * normalizedDelta);
+			}
+			_rotateLeft(angle) {
+				this._sphericalDelta.theta -= angle;
+			}
+			_rotateUp(angle) {
+				this._sphericalDelta.phi -= angle;
+			}
+			_panLeft(distance, objectMatrix) {
+				_v.setFromMatrixColumn(objectMatrix, 0);
+				_v.multiplyScalar(-distance);
+				this._panOffset.add(_v);
+			}
+			_panUp(distance, objectMatrix) {
+				if (this.screenSpacePanning === true) _v.setFromMatrixColumn(objectMatrix, 1);
+				else {
+					_v.setFromMatrixColumn(objectMatrix, 0);
+					_v.crossVectors(this.object.up, _v);
+				}
+				_v.multiplyScalar(distance);
+				this._panOffset.add(_v);
+			}
+			_pan(deltaX, deltaY) {
+				const element = this.domElement;
+				if (this.object.isPerspectiveCamera) {
+					const position = this.object.position;
+					_v.copy(position).sub(this.target);
+					let targetDistance = _v.length();
+					targetDistance *= Math.tan(this.object.fov / 2 * Math.PI / 180);
+					this._panLeft(2 * deltaX * targetDistance / element.clientHeight, this.object.matrix);
+					this._panUp(2 * deltaY * targetDistance / element.clientHeight, this.object.matrix);
+				} else if (this.object.isOrthographicCamera) {
+					this._panLeft(deltaX * (this.object.right - this.object.left) / this.object.zoom / element.clientWidth, this.object.matrix);
+					this._panUp(deltaY * (this.object.top - this.object.bottom) / this.object.zoom / element.clientHeight, this.object.matrix);
+				} else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.");
+					this.enablePan = false;
 				}
 			}
-			/**
-			* Returns the raycaster that is used for user interaction. This object is shared between all
-			* instances of `TransformControls`.
-			*
-			* @returns {Raycaster} The internal raycaster.
-			*/
-			getRaycaster() {
-				return _raycaster;
+			_dollyOut(dollyScale) {
+				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale /= dollyScale;
+				else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
+					this.enableZoom = false;
+				}
 			}
-			/**
-			* Returns the transformation mode.
-			*
-			* @returns {'translate'|'rotate'|'scale'} The transformation mode.
-			*/
-			getMode() {
-				return this.mode;
+			_dollyIn(dollyScale) {
+				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale *= dollyScale;
+				else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
+					this.enableZoom = false;
+				}
 			}
-			/**
-			* Sets the given transformation mode.
-			*
-			* @param {'translate'|'rotate'|'scale'} mode - The transformation mode to set.
-			*/
-			setMode(mode) {
-				this.mode = mode;
+			_updateZoomParameters(x, y) {
+				if (!this.zoomToCursor) return;
+				this._performCursorZoom = true;
+				const rect = this.domElement.getBoundingClientRect();
+				const dx = x - rect.left;
+				const dy = y - rect.top;
+				const w = rect.width;
+				const h = rect.height;
+				this._mouse.x = dx / w * 2 - 1;
+				this._mouse.y = -(dy / h) * 2 + 1;
+				this._dollyDirection.set(this._mouse.x, this._mouse.y, 1).unproject(this.object).sub(this.object.position).normalize();
 			}
-			/**
-			* Sets the translation snap.
-			*
-			* @param {?number} translationSnap - The translation snap to set.
-			*/
-			setTranslationSnap(translationSnap) {
-				this.translationSnap = translationSnap;
+			_clampDistance(dist) {
+				return Math.max(this.minDistance, Math.min(this.maxDistance, dist));
 			}
-			/**
-			* Sets the rotation snap.
-			*
-			* @param {?number} rotationSnap - The rotation snap to set.
-			*/
-			setRotationSnap(rotationSnap) {
-				this.rotationSnap = rotationSnap;
+			_handleMouseDownRotate(event) {
+				this._rotateStart.set(event.clientX, event.clientY);
 			}
-			/**
-			* Sets the scale snap.
-			*
-			* @param {?number} scaleSnap - The scale snap to set.
-			*/
-			setScaleSnap(scaleSnap) {
-				this.scaleSnap = scaleSnap;
+			_handleMouseDownDolly(event) {
+				this._updateZoomParameters(event.clientX, event.clientX);
+				this._dollyStart.set(event.clientX, event.clientY);
 			}
-			/**
-			* Sets the size of the helper UI.
-			*
-			* @param {number} size - The size to set.
-			*/
-			setSize(size) {
-				this.size = size;
+			_handleMouseDownPan(event) {
+				this._panStart.set(event.clientX, event.clientY);
 			}
-			/**
-			* Sets the coordinate space in which transformations are applied.
-			*
-			* @param {'world'|'local'} space - The space to set.
-			*/
-			setSpace(space) {
-				this.space = space;
+			_handleMouseMoveRotate(event) {
+				this._rotateEnd.set(event.clientX, event.clientY);
+				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
+				const element = this.domElement;
+				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
+				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
+				this._rotateStart.copy(this._rotateEnd);
+				this.update();
 			}
-			/**
-			* Sets the colors of the control's gizmo.
-			*
-			* @param {number|Color|string} xAxis - The x-axis color.
-			* @param {number|Color|string} yAxis - The y-axis color.
-			* @param {number|Color|string} zAxis - The z-axis color.
-			* @param {number|Color|string} active - The color for active elements.
-			*/
-			setColors(xAxis, yAxis, zAxis, active) {
-				const materialLib = this._gizmo.materialLib;
-				materialLib.xAxis.color.set(xAxis);
-				materialLib.yAxis.color.set(yAxis);
-				materialLib.zAxis.color.set(zAxis);
-				materialLib.active.color.set(active);
-				materialLib.xAxisTransparent.color.set(xAxis);
-				materialLib.yAxisTransparent.color.set(yAxis);
-				materialLib.zAxisTransparent.color.set(zAxis);
-				materialLib.activeTransparent.color.set(active);
-				if (materialLib.xAxis._color) materialLib.xAxis._color.set(xAxis);
-				if (materialLib.yAxis._color) materialLib.yAxis._color.set(yAxis);
-				if (materialLib.zAxis._color) materialLib.zAxis._color.set(zAxis);
-				if (materialLib.active._color) materialLib.active._color.set(active);
-				if (materialLib.xAxisTransparent._color) materialLib.xAxisTransparent._color.set(xAxis);
-				if (materialLib.yAxisTransparent._color) materialLib.yAxisTransparent._color.set(yAxis);
-				if (materialLib.zAxisTransparent._color) materialLib.zAxisTransparent._color.set(zAxis);
-				if (materialLib.activeTransparent._color) materialLib.activeTransparent._color.set(active);
+			_handleMouseMoveDolly(event) {
+				this._dollyEnd.set(event.clientX, event.clientY);
+				this._dollyDelta.subVectors(this._dollyEnd, this._dollyStart);
+				if (this._dollyDelta.y > 0) this._dollyOut(this._getZoomScale(this._dollyDelta.y));
+				else if (this._dollyDelta.y < 0) this._dollyIn(this._getZoomScale(this._dollyDelta.y));
+				this._dollyStart.copy(this._dollyEnd);
+				this.update();
+			}
+			_handleMouseMovePan(event) {
+				this._panEnd.set(event.clientX, event.clientY);
+				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
+				this._pan(this._panDelta.x, this._panDelta.y);
+				this._panStart.copy(this._panEnd);
+				this.update();
+			}
+			_handleMouseWheel(event) {
+				this._updateZoomParameters(event.clientX, event.clientY);
+				if (event.deltaY < 0) this._dollyIn(this._getZoomScale(event.deltaY));
+				else if (event.deltaY > 0) this._dollyOut(this._getZoomScale(event.deltaY));
+				this.update();
+			}
+			_handleKeyDown(event) {
+				let needsUpdate = false;
+				switch (event.code) {
+					case this.keys.UP:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateUp(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(0, this.keyPanSpeed);
+						needsUpdate = true;
+						break;
+					case this.keys.BOTTOM:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateUp(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(0, -this.keyPanSpeed);
+						needsUpdate = true;
+						break;
+					case this.keys.LEFT:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateLeft(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(this.keyPanSpeed, 0);
+						needsUpdate = true;
+						break;
+					case this.keys.RIGHT:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateLeft(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(-this.keyPanSpeed, 0);
+						needsUpdate = true;
+				}
+				if (needsUpdate) {
+					event.preventDefault();
+					this.update();
+				}
+			}
+			_handleTouchStartRotate(event) {
+				if (this._pointers.length === 1) this._rotateStart.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._rotateStart.set(x, y);
+				}
+			}
+			_handleTouchStartPan(event) {
+				if (this._pointers.length === 1) this._panStart.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._panStart.set(x, y);
+				}
+			}
+			_handleTouchStartDolly(event) {
+				const position = this._getSecondPointerPosition(event);
+				const dx = event.pageX - position.x;
+				const dy = event.pageY - position.y;
+				const distance = Math.sqrt(dx * dx + dy * dy);
+				this._dollyStart.set(0, distance);
+			}
+			_handleTouchStartDollyPan(event) {
+				if (this.enableZoom) this._handleTouchStartDolly(event);
+				if (this.enablePan) this._handleTouchStartPan(event);
+			}
+			_handleTouchStartDollyRotate(event) {
+				if (this.enableZoom) this._handleTouchStartDolly(event);
+				if (this.enableRotate) this._handleTouchStartRotate(event);
+			}
+			_handleTouchMoveRotate(event) {
+				if (this._pointers.length == 1) this._rotateEnd.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._rotateEnd.set(x, y);
+				}
+				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
+				const element = this.domElement;
+				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
+				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
+				this._rotateStart.copy(this._rotateEnd);
+			}
+			_handleTouchMovePan(event) {
+				if (this._pointers.length === 1) this._panEnd.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._panEnd.set(x, y);
+				}
+				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
+				this._pan(this._panDelta.x, this._panDelta.y);
+				this._panStart.copy(this._panEnd);
+			}
+			_handleTouchMoveDolly(event) {
+				const position = this._getSecondPointerPosition(event);
+				const dx = event.pageX - position.x;
+				const dy = event.pageY - position.y;
+				const distance = Math.sqrt(dx * dx + dy * dy);
+				this._dollyEnd.set(0, distance);
+				this._dollyDelta.set(0, Math.pow(this._dollyEnd.y / this._dollyStart.y, this.zoomSpeed));
+				this._dollyOut(this._dollyDelta.y);
+				this._dollyStart.copy(this._dollyEnd);
+				const centerX = (event.pageX + position.x) * .5;
+				const centerY = (event.pageY + position.y) * .5;
+				this._updateZoomParameters(centerX, centerY);
+			}
+			_handleTouchMoveDollyPan(event) {
+				if (this.enableZoom) this._handleTouchMoveDolly(event);
+				if (this.enablePan) this._handleTouchMovePan(event);
+			}
+			_handleTouchMoveDollyRotate(event) {
+				if (this.enableZoom) this._handleTouchMoveDolly(event);
+				if (this.enableRotate) this._handleTouchMoveRotate(event);
+			}
+			_addPointer(event) {
+				this._pointers.push(event.pointerId);
+			}
+			_removePointer(event) {
+				delete this._pointerPositions[event.pointerId];
+				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) {
+					this._pointers.splice(i, 1);
+					return;
+				}
+			}
+			_isTrackingPointer(event) {
+				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) return true;
+				return false;
+			}
+			_trackPointer(event) {
+				let position = this._pointerPositions[event.pointerId];
+				if (position === void 0) {
+					position = new Vector2();
+					this._pointerPositions[event.pointerId] = position;
+				}
+				position.set(event.pageX, event.pageY);
+			}
+			_getSecondPointerPosition(event) {
+				const pointerId = event.pointerId === this._pointers[0] ? this._pointers[1] : this._pointers[0];
+				return this._pointerPositions[pointerId];
+			}
+			_customWheelEvent(event) {
+				const mode = event.deltaMode;
+				const newEvent = {
+					clientX: event.clientX,
+					clientY: event.clientY,
+					deltaY: event.deltaY
+				};
+				switch (mode) {
+					case 1:
+						newEvent.deltaY *= 16;
+						break;
+					case 2: newEvent.deltaY *= 100;
+				}
+				if (event.ctrlKey && !this._controlActive) newEvent.deltaY *= 10;
+				return newEvent;
 			}
 		};
-		function getPointer(event) {
-			if (this.domElement.ownerDocument.pointerLockElement) return {
-				x: 0,
-				y: 0,
-				button: event.button
-			};
-			else {
-				const rect = this.domElement.getBoundingClientRect();
-				return {
-					x: (event.clientX - rect.left) / rect.width * 2 - 1,
-					y: -(event.clientY - rect.top) / rect.height * 2 + 1,
-					button: event.button
-				};
-			}
-		}
-		function onPointerHover(event) {
-			if (!this.enabled) return;
-			switch (event.pointerType) {
-				case "mouse":
-				case "pen": this.pointerHover(this._getPointer(event));
-			}
-		}
 		function onPointerDown$1(event) {
-			if (!this.enabled) return;
-			if (!document.pointerLockElement) this.domElement.setPointerCapture(event.pointerId);
-			this.domElement.addEventListener("pointermove", this._onPointerMove);
-			this.pointerHover(this._getPointer(event));
-			this.pointerDown(this._getPointer(event));
+			if (this.enabled === false) return;
+			if (this._pointers.length === 0) {
+				this.domElement.setPointerCapture(event.pointerId);
+				this.domElement.ownerDocument.addEventListener("pointermove", this._onPointerMove);
+				this.domElement.ownerDocument.addEventListener("pointerup", this._onPointerUp);
+			}
+			if (this._isTrackingPointer(event)) return;
+			this._addPointer(event);
+			if (event.pointerType === "touch") this._onTouchStart(event);
+			else this._onMouseDown(event);
+			if (this._cursorStyle === "grab") this.domElement.style.cursor = "grabbing";
 		}
 		function onPointerMove$1(event) {
-			if (!this.enabled) return;
-			this.pointerMove(this._getPointer(event));
+			if (this.enabled === false) return;
+			if (event.pointerType === "touch") this._onTouchMove(event);
+			else this._onMouseMove(event);
 		}
 		function onPointerUp$1(event) {
-			if (!this.enabled) return;
-			this.domElement.releasePointerCapture(event.pointerId);
-			this.domElement.removeEventListener("pointermove", this._onPointerMove);
-			this.pointerUp(this._getPointer(event));
+			this._removePointer(event);
+			switch (this._pointers.length) {
+				case 0:
+					this.domElement.releasePointerCapture(event.pointerId);
+					this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
+					this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
+					this.dispatchEvent(_endEvent);
+					this.state = _STATE.NONE;
+					if (this._cursorStyle === "grab") this.domElement.style.cursor = "grab";
+					break;
+				case 1:
+					const pointerId = this._pointers[0];
+					const position = this._pointerPositions[pointerId];
+					this._onTouchStart({
+						pointerId,
+						pageX: position.x,
+						pageY: position.y
+					});
+			}
 		}
-		function intersectObjectWithRay(object, raycaster, includeInvisible) {
-			const allIntersections = raycaster.intersectObject(object, true);
-			for (let i = 0; i < allIntersections.length; i++) if (allIntersections[i].object.visible || includeInvisible) return allIntersections[i];
+		function onMouseDown(event) {
+			let mouseAction;
+			switch (event.button) {
+				case 0:
+					mouseAction = this.mouseButtons.LEFT;
+					break;
+				case 1:
+					mouseAction = this.mouseButtons.MIDDLE;
+					break;
+				case 2:
+					mouseAction = this.mouseButtons.RIGHT;
+					break;
+				default: mouseAction = -1;
+			}
+			switch (mouseAction) {
+				case MOUSE.DOLLY:
+					if (this.enableZoom === false) return;
+					this._handleMouseDownDolly(event);
+					this.state = _STATE.DOLLY;
+					break;
+				case MOUSE.ROTATE:
+					if (event.ctrlKey || event.metaKey || event.shiftKey) {
+						if (this.enablePan === false) return;
+						this._handleMouseDownPan(event);
+						this.state = _STATE.PAN;
+					} else {
+						if (this.enableRotate === false) return;
+						this._handleMouseDownRotate(event);
+						this.state = _STATE.ROTATE;
+					}
+					break;
+				case MOUSE.PAN:
+					if (event.ctrlKey || event.metaKey || event.shiftKey) {
+						if (this.enableRotate === false) return;
+						this._handleMouseDownRotate(event);
+						this.state = _STATE.ROTATE;
+					} else {
+						if (this.enablePan === false) return;
+						this._handleMouseDownPan(event);
+						this.state = _STATE.PAN;
+					}
+					break;
+				default: this.state = _STATE.NONE;
+			}
+			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
+		}
+		function onMouseMove(event) {
+			switch (this.state) {
+				case _STATE.ROTATE:
+					if (this.enableRotate === false) return;
+					this._handleMouseMoveRotate(event);
+					break;
+				case _STATE.DOLLY:
+					if (this.enableZoom === false) return;
+					this._handleMouseMoveDolly(event);
+					break;
+				case _STATE.PAN:
+					if (this.enablePan === false) return;
+					this._handleMouseMovePan(event);
+			}
+		}
+		function onMouseWheel(event) {
+			if (this.enabled === false || this.enableZoom === false || this.state !== _STATE.NONE) return;
+			event.preventDefault();
+			this.dispatchEvent(_startEvent);
+			this._handleMouseWheel(this._customWheelEvent(event));
+			this.dispatchEvent(_endEvent);
+		}
+		function onKeyDown(event) {
+			if (this.enabled === false) return;
+			this._handleKeyDown(event);
+		}
+		function onTouchStart(event) {
+			this._trackPointer(event);
+			switch (this._pointers.length) {
+				case 1:
+					switch (this.touches.ONE) {
+						case TOUCH.ROTATE:
+							if (this.enableRotate === false) return;
+							this._handleTouchStartRotate(event);
+							this.state = _STATE.TOUCH_ROTATE;
+							break;
+						case TOUCH.PAN:
+							if (this.enablePan === false) return;
+							this._handleTouchStartPan(event);
+							this.state = _STATE.TOUCH_PAN;
+							break;
+						default: this.state = _STATE.NONE;
+					}
+					break;
+				case 2:
+					switch (this.touches.TWO) {
+						case TOUCH.DOLLY_PAN:
+							if (this.enableZoom === false && this.enablePan === false) return;
+							this._handleTouchStartDollyPan(event);
+							this.state = _STATE.TOUCH_DOLLY_PAN;
+							break;
+						case TOUCH.DOLLY_ROTATE:
+							if (this.enableZoom === false && this.enableRotate === false) return;
+							this._handleTouchStartDollyRotate(event);
+							this.state = _STATE.TOUCH_DOLLY_ROTATE;
+							break;
+						default: this.state = _STATE.NONE;
+					}
+					break;
+				default: this.state = _STATE.NONE;
+			}
+			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
+		}
+		function onTouchMove(event) {
+			this._trackPointer(event);
+			switch (this.state) {
+				case _STATE.TOUCH_ROTATE:
+					if (this.enableRotate === false) return;
+					this._handleTouchMoveRotate(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_PAN:
+					if (this.enablePan === false) return;
+					this._handleTouchMovePan(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_DOLLY_PAN:
+					if (this.enableZoom === false && this.enablePan === false) return;
+					this._handleTouchMoveDollyPan(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_DOLLY_ROTATE:
+					if (this.enableZoom === false && this.enableRotate === false) return;
+					this._handleTouchMoveDollyRotate(event);
+					this.update();
+					break;
+				default: this.state = _STATE.NONE;
+			}
+		}
+		function onContextMenu(event) {
+			if (this.enabled === false) return;
+			event.preventDefault();
+		}
+		function interceptControlDown(event) {
+			if (event.key === "Control") {
+				this._controlActive = true;
+				this.domElement.getRootNode().addEventListener("keyup", this._interceptControlUp, {
+					passive: true,
+					capture: true
+				});
+			}
+		}
+		function interceptControlUp(event) {
+			if (event.key === "Control") {
+				this._controlActive = false;
+				this.domElement.getRootNode().removeEventListener("keyup", this._interceptControlUp, {
+					passive: true,
+					capture: true
+				});
+			}
+		}
+		//#endregion
+		//#region ../../web/card-base/src/stage3d.ts
+		init_three_module();
+		/** The r3f pointer-events analogue lives on userData.pick (see header). */
+		function findPickCarrier(o) {
+			let cur = o;
+			while (cur !== null) {
+				if (cur.userData !== void 0 && cur.userData.pick !== void 0) return cur;
+				cur = cur.parent;
+			}
+			return null;
+		}
+		/** Skip hits on a TransformControls gizmo subtree (invisible pick planes
+		*  would swallow every click while a gizmo is attached). */
+		function isGizmoHit(o) {
+			let cur = o;
+			while (cur !== null) {
+				if (cur.gizmo !== void 0) return true;
+				cur = cur.parent;
+			}
 			return false;
 		}
-		const _tempEuler = new Euler();
-		const _alignVector = new Vector3(0, 1, 0);
-		const _zeroVector = new Vector3(0, 0, 0);
-		const _lookAtMatrix = new Matrix4();
-		const _tempQuaternion2 = new Quaternion();
-		const _identityQuaternion = new Quaternion();
-		const _dirVector = new Vector3();
-		const _tempMatrix = new Matrix4();
-		const _unitX = new Vector3(1, 0, 0);
-		const _unitY = new Vector3(0, 1, 0);
-		const _unitZ = new Vector3(0, 0, 1);
-		const _v1 = new Vector3();
-		const _v2 = new Vector3();
-		const _v3 = new Vector3();
-		var TransformControlsRoot = class extends Object3D {
-			constructor(controls) {
-				super();
-				this.isTransformControlsRoot = true;
-				this.controls = controls;
-				this.visible = false;
-			}
-			updateMatrixWorld(force) {
-				const controls = this.controls;
-				if (controls.object !== void 0) {
-					controls.object.updateMatrixWorld();
-					if (controls.object.parent === null) console.error("TransformControls: The attached 3D object must be a part of the scene graph.");
-					else controls.object.parent.matrixWorld.decompose(controls._parentPosition, controls._parentQuaternion, controls._parentScale);
-					controls.object.matrixWorld.decompose(controls.worldPosition, controls.worldQuaternion, controls._worldScale);
-					controls._parentQuaternionInv.copy(controls._parentQuaternion).invert();
-					controls._worldQuaternionInv.copy(controls.worldQuaternion).invert();
-				}
-				controls.camera.updateMatrixWorld();
-				controls.camera.matrixWorld.decompose(controls.cameraPosition, controls.cameraQuaternion, controls._cameraScale);
-				if (controls.camera.isOrthographicCamera) controls.camera.getWorldDirection(controls.eye).negate();
-				else controls.eye.copy(controls.cameraPosition).sub(controls.worldPosition).normalize();
-				super.updateMatrixWorld(force);
-			}
-			dispose() {
-				this.traverse(function(child) {
-					if (child.geometry) child.geometry.dispose();
-					if (child.material) child.material.dispose();
+		function mountStage3D(canvas, opts = {}) {
+			let renderer;
+			try {
+				renderer = new WebGLRenderer({
+					canvas,
+					antialias: true,
+					alpha: opts.alpha !== false,
+					preserveDrawingBuffer: opts.preserveDrawingBuffer === true
 				});
+			} catch (e) {
+				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
+				return null;
 			}
-		};
-		var TransformControlsGizmo = class extends Object3D {
-			constructor() {
-				super();
-				this.isTransformControlsGizmo = true;
-				this.type = "TransformControlsGizmo";
-				const gizmoMaterial = new MeshBasicMaterial({
-					depthTest: false,
-					depthWrite: false,
-					fog: false,
-					toneMapped: false,
-					transparent: true
-				});
-				const gizmoLineMaterial = new LineBasicMaterial({
-					depthTest: false,
-					depthWrite: false,
-					fog: false,
-					toneMapped: false,
-					transparent: true
-				});
-				const matInvisible = gizmoMaterial.clone();
-				matInvisible.opacity = .15;
-				const matHelper = gizmoLineMaterial.clone();
-				matHelper.opacity = .5;
-				const matRed = gizmoMaterial.clone();
-				matRed.color.setHex(16711680);
-				const matGreen = gizmoMaterial.clone();
-				matGreen.color.setHex(65280);
-				const matBlue = gizmoMaterial.clone();
-				matBlue.color.setHex(255);
-				const matRedTransparent = gizmoMaterial.clone();
-				matRedTransparent.color.setHex(16711680);
-				matRedTransparent.opacity = .5;
-				const matGreenTransparent = gizmoMaterial.clone();
-				matGreenTransparent.color.setHex(65280);
-				matGreenTransparent.opacity = .5;
-				const matBlueTransparent = gizmoMaterial.clone();
-				matBlueTransparent.color.setHex(255);
-				matBlueTransparent.opacity = .5;
-				const matWhiteTransparent = gizmoMaterial.clone();
-				matWhiteTransparent.opacity = .25;
-				const matYellowTransparent = gizmoMaterial.clone();
-				matYellowTransparent.color.setHex(16776960);
-				matYellowTransparent.opacity = .25;
-				const matYellow = gizmoMaterial.clone();
-				matYellow.color.setHex(16776960);
-				const matGray = gizmoMaterial.clone();
-				matGray.color.setHex(7895160);
-				this.materialLib = {
-					xAxis: matRed,
-					yAxis: matGreen,
-					zAxis: matBlue,
-					active: matYellow,
-					xAxisTransparent: matRedTransparent,
-					yAxisTransparent: matGreenTransparent,
-					zAxisTransparent: matBlueTransparent,
-					activeTransparent: matYellowTransparent
+			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = 1;
+			renderer.toneMapping = opts.toneMapping ?? 4;
+			const scene = new Scene();
+			scene.background = null;
+			const camera = new PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
+			camera.position.set(...opts.camera ?? [
+				2.2,
+				1.6,
+				2.6
+			]);
+			camera.lookAt(0, .8, 0);
+			const controls = new OrbitControls(camera, canvas);
+			controls.target.set(...opts.target ?? [
+				0,
+				.8,
+				0
+			]);
+			controls.enableDamping = true;
+			controls.dampingFactor = .1;
+			if (opts.minDistance !== void 0) controls.minDistance = opts.minDistance;
+			if (opts.maxDistance !== void 0) controls.maxDistance = opts.maxDistance;
+			if (opts.maxPolarAngle !== void 0) controls.maxPolarAngle = opts.maxPolarAngle;
+			controls.update();
+			const ticks = [];
+			const addTick = (fn) => {
+				ticks.push(fn);
+				return () => {
+					const i = ticks.indexOf(fn);
+					if (i >= 0) ticks.splice(i, 1);
 				};
-				const arrowGeometry = new CylinderGeometry(0, .04, .1, 12);
-				arrowGeometry.translate(0, .05, 0);
-				const scaleHandleGeometry = new BoxGeometry(.08, .08, .08);
-				scaleHandleGeometry.translate(0, .04, 0);
-				const lineGeometry = new BufferGeometry();
-				lineGeometry.setAttribute("position", new Float32BufferAttribute([
-					0,
-					0,
-					0,
-					1,
-					0,
-					0
-				], 3));
-				const lineGeometry2 = new CylinderGeometry(.0075, .0075, .5, 3);
-				lineGeometry2.translate(0, .25, 0);
-				function CircleGeometry(radius, arc) {
-					const geometry = new TorusGeometry(radius, .0075, 3, 64, arc * Math.PI * 2);
-					geometry.rotateY(Math.PI / 2);
-					geometry.rotateX(Math.PI / 2);
-					return geometry;
+			};
+			const raycaster = new Raycaster();
+			const pointer = new Vector2();
+			let hovered = null;
+			let downAt = 0;
+			const threshold = opts.clickVsDragMs ?? 350;
+			const pickAt = (ev) => {
+				const r = canvas.getBoundingClientRect();
+				if (r.width === 0 || r.height === 0) return null;
+				pointer.x = (ev.clientX - r.left) / r.width * 2 - 1;
+				pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+				raycaster.setFromCamera(pointer, camera);
+				const hits = raycaster.intersectObjects(scene.children, true);
+				for (const hit of hits) {
+					if (isGizmoHit(hit.object)) continue;
+					const carrier = findPickCarrier(hit.object);
+					if (carrier !== null) return {
+						carrier,
+						point: hit.point
+					};
 				}
-				function TranslateHelperGeometry() {
-					const geometry = new BufferGeometry();
-					geometry.setAttribute("position", new Float32BufferAttribute([
-						0,
-						0,
-						0,
-						1,
-						1,
-						1
-					], 3));
-					return geometry;
+				return null;
+			};
+			const onPointerDown = (e) => {
+				downAt = e.timeStamp;
+			};
+			const onPointerMove = (e) => {
+				const found = pickAt(e);
+				const carrier = found?.carrier ?? null;
+				if (carrier !== hovered) {
+					(hovered?.userData.pick)?.out?.(e);
+					document.body.style.cursor = "auto";
+					hovered = carrier;
+					if (carrier !== null && found !== null) carrier.userData.pick.over?.(found.point, e);
 				}
-				const gizmoTranslate = {
-					X: [
-						[
-							new Mesh(arrowGeometry, matRed),
-							[
-								.5,
-								0,
-								0
-							],
-							[
-								0,
-								0,
-								-Math.PI / 2
-							]
-						],
-						[
-							new Mesh(arrowGeometry, matRed),
-							[
-								-.5,
-								0,
-								0
-							],
-							[
-								0,
-								0,
-								Math.PI / 2
-							]
-						],
-						[
-							new Mesh(lineGeometry2, matRed),
-							[
-								0,
-								0,
-								0
-							],
-							[
-								0,
-								0,
-								-Math.PI / 2
-							]
-						]
-					],
-					Y: [
-						[new Mesh(arrowGeometry, matGreen), [
-							0,
-							.5,
-							0
-						]],
-						[
-							new Mesh(arrowGeometry, matGreen),
-							[
-								0,
-								-.5,
-								0
-							],
-							[
-								Math.PI,
-								0,
-								0
-							]
-						],
-						[new Mesh(lineGeometry2, matGreen)]
-					],
-					Z: [
-						[
-							new Mesh(arrowGeometry, matBlue),
-							[
-								0,
-								0,
-								.5
-							],
-							[
-								Math.PI / 2,
-								0,
-								0
-							]
-						],
-						[
-							new Mesh(arrowGeometry, matBlue),
-							[
-								0,
-								0,
-								-.5
-							],
-							[
-								-Math.PI / 2,
-								0,
-								0
-							]
-						],
-						[
-							new Mesh(lineGeometry2, matBlue),
-							null,
-							[
-								Math.PI / 2,
-								0,
-								0
-							]
-						]
-					],
-					XYZ: [[new Mesh(new OctahedronGeometry(.1, 0), matWhiteTransparent), [
-						0,
-						0,
-						0
-					]]],
-					XY: [[new Mesh(new BoxGeometry(.15, .15, .01), matBlueTransparent), [
-						.15,
-						.15,
-						0
-					]]],
-					YZ: [[
-						new Mesh(new BoxGeometry(.15, .15, .01), matRedTransparent),
-						[
-							0,
-							.15,
-							.15
-						],
-						[
-							0,
-							Math.PI / 2,
-							0
-						]
-					]],
-					XZ: [[
-						new Mesh(new BoxGeometry(.15, .15, .01), matGreenTransparent),
-						[
-							.15,
-							0,
-							.15
-						],
-						[
-							-Math.PI / 2,
-							0,
-							0
-						]
-					]]
-				};
-				const pickerTranslate = {
-					X: [[
-						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
-						[
-							.3,
-							0,
-							0
-						],
-						[
-							0,
-							0,
-							-Math.PI / 2
-						]
-					], [
-						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
-						[
-							-.3,
-							0,
-							0
-						],
-						[
-							0,
-							0,
-							Math.PI / 2
-						]
-					]],
-					Y: [[new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible), [
-						0,
-						.3,
-						0
-					]], [
-						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
-						[
-							0,
-							-.3,
-							0
-						],
-						[
-							0,
-							0,
-							Math.PI
-						]
-					]],
-					Z: [[
-						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
-						[
-							0,
-							0,
-							.3
-						],
-						[
-							Math.PI / 2,
-							0,
-							0
-						]
-					], [
-						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
-						[
-							0,
-							0,
-							-.3
-						],
-						[
-							-Math.PI / 2,
-							0,
-							0
-						]
-					]],
-					XYZ: [[new Mesh(new OctahedronGeometry(.2, 0), matInvisible)]],
-					XY: [[new Mesh(new BoxGeometry(.2, .2, .01), matInvisible), [
-						.15,
-						.15,
-						0
-					]]],
-					YZ: [[
-						new Mesh(new BoxGeometry(.2, .2, .01), matInvisible),
-						[
-							0,
-							.15,
-							.15
-						],
-						[
-							0,
-							Math.PI / 2,
-							0
-						]
-					]],
-					XZ: [[
-						new Mesh(new BoxGeometry(.2, .2, .01), matInvisible),
-						[
-							.15,
-							0,
-							.15
-						],
-						[
-							-Math.PI / 2,
-							0,
-							0
-						]
-					]]
-				};
-				const helperTranslate = {
-					START: [[
-						new Mesh(new OctahedronGeometry(.01, 2), matHelper),
-						null,
-						null,
-						null,
-						"helper"
-					]],
-					END: [[
-						new Mesh(new OctahedronGeometry(.01, 2), matHelper),
-						null,
-						null,
-						null,
-						"helper"
-					]],
-					DELTA: [[
-						new Line(TranslateHelperGeometry(), matHelper),
-						null,
-						null,
-						null,
-						"helper"
-					]],
-					X: [[
-						new Line(lineGeometry, matHelper),
-						[
-							-1e3,
-							0,
-							0
-						],
-						null,
-						[
-							1e6,
-							1,
-							1
-						],
-						"helper"
-					]],
-					Y: [[
-						new Line(lineGeometry, matHelper),
-						[
-							0,
-							-1e3,
-							0
-						],
-						[
-							0,
-							0,
-							Math.PI / 2
-						],
-						[
-							1e6,
-							1,
-							1
-						],
-						"helper"
-					]],
-					Z: [[
-						new Line(lineGeometry, matHelper),
-						[
-							0,
-							0,
-							-1e3
-						],
-						[
-							0,
-							-Math.PI / 2,
-							0
-						],
-						[
-							1e6,
-							1,
-							1
-						],
-						"helper"
-					]]
-				};
-				const gizmoRotate = {
-					XYZE: [[
-						new Mesh(CircleGeometry(.5, 1), matGray),
-						null,
-						[
-							0,
-							Math.PI / 2,
-							0
-						]
-					]],
-					X: [[new Mesh(CircleGeometry(.5, .5), matRed)]],
-					Y: [[
-						new Mesh(CircleGeometry(.5, .5), matGreen),
-						null,
-						[
-							0,
-							0,
-							-Math.PI / 2
-						]
-					]],
-					Z: [[
-						new Mesh(CircleGeometry(.5, .5), matBlue),
-						null,
-						[
-							0,
-							Math.PI / 2,
-							0
-						]
-					]],
-					E: [[
-						new Mesh(CircleGeometry(.75, 1), matYellowTransparent),
-						null,
-						[
-							0,
-							Math.PI / 2,
-							0
-						]
-					]]
-				};
-				const helperRotate = { AXIS: [[
-					new Line(lineGeometry, matHelper),
-					[
-						-1e3,
-						0,
-						0
-					],
-					null,
-					[
-						1e6,
-						1,
-						1
-					],
-					"helper"
-				]] };
-				const pickerRotate = {
-					XYZE: [[new Mesh(new SphereGeometry(.25, 10, 8), matInvisible)]],
-					X: [[
-						new Mesh(new TorusGeometry(.5, .1, 4, 24), matInvisible),
-						[
-							0,
-							0,
-							0
-						],
-						[
-							0,
-							-Math.PI / 2,
-							-Math.PI / 2
-						]
-					]],
-					Y: [[
-						new Mesh(new TorusGeometry(.5, .1, 4, 24), matInvisible),
-						[
-							0,
-							0,
-							0
-						],
-						[
-							Math.PI / 2,
-							0,
-							0
-						]
-					]],
-					Z: [[
-						new Mesh(new TorusGeometry(.5, .1, 4, 24), matInvisible),
-						[
-							0,
-							0,
-							0
-						],
-						[
-							0,
-							0,
-							-Math.PI / 2
-						]
-					]],
-					E: [[new Mesh(new TorusGeometry(.75, .1, 2, 24), matInvisible)]]
-				};
-				const gizmoScale = {
-					X: [
-						[
-							new Mesh(scaleHandleGeometry, matRed),
-							[
-								.5,
-								0,
-								0
-							],
-							[
-								0,
-								0,
-								-Math.PI / 2
-							]
-						],
-						[
-							new Mesh(lineGeometry2, matRed),
-							[
-								0,
-								0,
-								0
-							],
-							[
-								0,
-								0,
-								-Math.PI / 2
-							]
-						],
-						[
-							new Mesh(scaleHandleGeometry, matRed),
-							[
-								-.5,
-								0,
-								0
-							],
-							[
-								0,
-								0,
-								Math.PI / 2
-							]
-						]
-					],
-					Y: [
-						[new Mesh(scaleHandleGeometry, matGreen), [
-							0,
-							.5,
-							0
-						]],
-						[new Mesh(lineGeometry2, matGreen)],
-						[
-							new Mesh(scaleHandleGeometry, matGreen),
-							[
-								0,
-								-.5,
-								0
-							],
-							[
-								0,
-								0,
-								Math.PI
-							]
-						]
-					],
-					Z: [
-						[
-							new Mesh(scaleHandleGeometry, matBlue),
-							[
-								0,
-								0,
-								.5
-							],
-							[
-								Math.PI / 2,
-								0,
-								0
-							]
-						],
-						[
-							new Mesh(lineGeometry2, matBlue),
-							[
-								0,
-								0,
-								0
-							],
-							[
-								Math.PI / 2,
-								0,
-								0
-							]
-						],
-						[
-							new Mesh(scaleHandleGeometry, matBlue),
-							[
-								0,
-								0,
-								-.5
-							],
-							[
-								-Math.PI / 2,
-								0,
-								0
-							]
-						]
-					],
-					XY: [[new Mesh(new BoxGeometry(.15, .15, .01), matBlueTransparent), [
-						.15,
-						.15,
-						0
-					]]],
-					YZ: [[
-						new Mesh(new BoxGeometry(.15, .15, .01), matRedTransparent),
-						[
-							0,
-							.15,
-							.15
-						],
-						[
-							0,
-							Math.PI / 2,
-							0
-						]
-					]],
-					XZ: [[
-						new Mesh(new BoxGeometry(.15, .15, .01), matGreenTransparent),
-						[
-							.15,
-							0,
-							.15
-						],
-						[
-							-Math.PI / 2,
-							0,
-							0
-						]
-					]],
-					XYZ: [[new Mesh(new BoxGeometry(.1, .1, .1), matWhiteTransparent)]]
-				};
-				const pickerScale = {
-					X: [[
-						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
-						[
-							.3,
-							0,
-							0
-						],
-						[
-							0,
-							0,
-							-Math.PI / 2
-						]
-					], [
-						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
-						[
-							-.3,
-							0,
-							0
-						],
-						[
-							0,
-							0,
-							Math.PI / 2
-						]
-					]],
-					Y: [[new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible), [
-						0,
-						.3,
-						0
-					]], [
-						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
-						[
-							0,
-							-.3,
-							0
-						],
-						[
-							0,
-							0,
-							Math.PI
-						]
-					]],
-					Z: [[
-						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
-						[
-							0,
-							0,
-							.3
-						],
-						[
-							Math.PI / 2,
-							0,
-							0
-						]
-					], [
-						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
-						[
-							0,
-							0,
-							-.3
-						],
-						[
-							-Math.PI / 2,
-							0,
-							0
-						]
-					]],
-					XY: [[new Mesh(new BoxGeometry(.2, .2, .01), matInvisible), [
-						.15,
-						.15,
-						0
-					]]],
-					YZ: [[
-						new Mesh(new BoxGeometry(.2, .2, .01), matInvisible),
-						[
-							0,
-							.15,
-							.15
-						],
-						[
-							0,
-							Math.PI / 2,
-							0
-						]
-					]],
-					XZ: [[
-						new Mesh(new BoxGeometry(.2, .2, .01), matInvisible),
-						[
-							.15,
-							0,
-							.15
-						],
-						[
-							-Math.PI / 2,
-							0,
-							0
-						]
-					]],
-					XYZ: [[new Mesh(new BoxGeometry(.2, .2, .2), matInvisible), [
-						0,
-						0,
-						0
-					]]]
-				};
-				const helperScale = {
-					X: [[
-						new Line(lineGeometry, matHelper),
-						[
-							-1e3,
-							0,
-							0
-						],
-						null,
-						[
-							1e6,
-							1,
-							1
-						],
-						"helper"
-					]],
-					Y: [[
-						new Line(lineGeometry, matHelper),
-						[
-							0,
-							-1e3,
-							0
-						],
-						[
-							0,
-							0,
-							Math.PI / 2
-						],
-						[
-							1e6,
-							1,
-							1
-						],
-						"helper"
-					]],
-					Z: [[
-						new Line(lineGeometry, matHelper),
-						[
-							0,
-							0,
-							-1e3
-						],
-						[
-							0,
-							-Math.PI / 2,
-							0
-						],
-						[
-							1e6,
-							1,
-							1
-						],
-						"helper"
-					]]
-				};
-				function setupGizmo(gizmoMap) {
-					const gizmo = new Object3D();
-					for (const name in gizmoMap) for (let i = gizmoMap[name].length; i--;) {
-						const object = gizmoMap[name][i][0].clone();
-						const position = gizmoMap[name][i][1];
-						const rotation = gizmoMap[name][i][2];
-						const scale = gizmoMap[name][i][3];
-						const tag = gizmoMap[name][i][4];
-						object.name = name;
-						object.tag = tag;
-						if (position) object.position.set(position[0], position[1], position[2]);
-						if (rotation) object.rotation.set(rotation[0], rotation[1], rotation[2]);
-						if (scale) object.scale.set(scale[0], scale[1], scale[2]);
-						object.updateMatrix();
-						const tempGeometry = object.geometry.clone();
-						tempGeometry.applyMatrix4(object.matrix);
-						object.geometry = tempGeometry;
-						object.renderOrder = Infinity;
-						object.position.set(0, 0, 0);
-						object.rotation.set(0, 0, 0);
-						object.scale.set(1, 1, 1);
-						gizmo.add(object);
-					}
-					return gizmo;
+			};
+			const onPointerLeave = (e) => {
+				if (hovered !== null) {
+					hovered.userData.pick.out?.(e);
+					document.body.style.cursor = "auto";
+					hovered = null;
 				}
-				this.gizmo = {};
-				this.picker = {};
-				this.helper = {};
-				this.add(this.gizmo["translate"] = setupGizmo(gizmoTranslate));
-				this.add(this.gizmo["rotate"] = setupGizmo(gizmoRotate));
-				this.add(this.gizmo["scale"] = setupGizmo(gizmoScale));
-				this.add(this.picker["translate"] = setupGizmo(pickerTranslate));
-				this.add(this.picker["rotate"] = setupGizmo(pickerRotate));
-				this.add(this.picker["scale"] = setupGizmo(pickerScale));
-				this.add(this.helper["translate"] = setupGizmo(helperTranslate));
-				this.add(this.helper["rotate"] = setupGizmo(helperRotate));
-				this.add(this.helper["scale"] = setupGizmo(helperScale));
-				this.picker["translate"].visible = false;
-				this.picker["rotate"].visible = false;
-				this.picker["scale"].visible = false;
+			};
+			const onClick = (e) => {
+				if (e.timeStamp - downAt > threshold) return;
+				const found = pickAt(e);
+				if (found !== null) found.carrier.userData.pick.click?.(found.point, e);
+				else opts.onEmptyClick?.();
+			};
+			canvas.addEventListener("pointerdown", onPointerDown);
+			canvas.addEventListener("pointermove", onPointerMove);
+			canvas.addEventListener("pointerleave", onPointerLeave);
+			canvas.addEventListener("click", onClick);
+			let raf = 0;
+			const clock = new Clock();
+			const frame = () => {
+				raf = requestAnimationFrame(frame);
+				const delta = clock.getDelta();
+				for (const t of ticks) t(delta);
+				controls.update();
+				renderer.render(scene, camera);
+			};
+			frame();
+			const resize = () => {
+				const w = canvas.clientWidth, h = canvas.clientHeight;
+				if (w === 0 || h === 0) return;
+				renderer.setSize(w, h, false);
+				camera.aspect = w / h;
+				camera.updateProjectionMatrix();
+			};
+			resize();
+			const ro = new ResizeObserver(resize);
+			ro.observe(canvas);
+			return {
+				canvas,
+				renderer,
+				scene,
+				camera,
+				controls,
+				addTick,
+				resize,
+				dispose: () => {
+					cancelAnimationFrame(raf);
+					ro.disconnect();
+					canvas.removeEventListener("pointerdown", onPointerDown);
+					canvas.removeEventListener("pointermove", onPointerMove);
+					canvas.removeEventListener("pointerleave", onPointerLeave);
+					canvas.removeEventListener("click", onClick);
+					controls.dispose();
+					renderer.dispose();
+				}
+			};
+		}
+		/** A billboard TEXT label — the drei <Billboard><Text/></Text> analogue:
+		*  canvas-drawn glyphs on a THREE.Sprite (sprites always face the camera,
+		*  which IS the billboard). worldHeight is the label's height in scene
+		*  units (drei Text's fontSize is world units too). */
+		function makeLabelSprite(text, color, worldHeight) {
+			const px = 96;
+			const c = document.createElement("canvas");
+			const ctx = c.getContext("2d");
+			if (ctx !== null) {
+				ctx.font = `600 ${px}px system-ui, sans-serif`;
+				const w = Math.ceil(ctx.measureText(text).width) + 32;
+				c.width = w;
+				c.height = 128;
+				ctx.font = `600 ${px}px system-ui, sans-serif`;
+				ctx.textAlign = "center";
+				ctx.textBaseline = "middle";
+				ctx.fillStyle = color;
+				ctx.fillText(text, w / 2, 64);
 			}
-			updateMatrixWorld(force) {
-				const quaternion = (this.mode === "scale" ? "local" : this.space) === "local" ? this.worldQuaternion : _identityQuaternion;
-				this.gizmo["translate"].visible = this.mode === "translate";
-				this.gizmo["rotate"].visible = this.mode === "rotate";
-				this.gizmo["scale"].visible = this.mode === "scale";
-				this.helper["translate"].visible = this.mode === "translate";
-				this.helper["rotate"].visible = this.mode === "rotate";
-				this.helper["scale"].visible = this.mode === "scale";
-				let handles = [];
-				handles = handles.concat(this.picker[this.mode].children);
-				handles = handles.concat(this.gizmo[this.mode].children);
-				handles = handles.concat(this.helper[this.mode].children);
-				for (let i = 0; i < handles.length; i++) {
-					const handle = handles[i];
-					handle.visible = true;
-					handle.rotation.set(0, 0, 0);
-					handle.position.copy(this.worldPosition);
-					let factor;
-					if (this.camera.isOrthographicCamera) factor = (this.camera.top - this.camera.bottom) / this.camera.zoom;
-					else factor = this.worldPosition.distanceTo(this.cameraPosition) * Math.min(1.9 * Math.tan(Math.PI * this.camera.fov / 360) / this.camera.zoom, 7);
-					handle.scale.set(1, 1, 1).multiplyScalar(factor * this.size / 4);
-					if (handle.tag === "helper") {
-						handle.visible = false;
-						if (handle.name === "AXIS") {
-							handle.visible = !!this.axis;
-							if (this.axis === "X") {
-								_tempQuaternion.setFromEuler(_tempEuler.set(0, 0, 0));
-								handle.quaternion.copy(quaternion).multiply(_tempQuaternion);
-								if (Math.abs(_alignVector.copy(_unitX).applyQuaternion(quaternion).dot(this.eye)) > .9) handle.visible = false;
-							}
-							if (this.axis === "Y") {
-								_tempQuaternion.setFromEuler(_tempEuler.set(0, 0, Math.PI / 2));
-								handle.quaternion.copy(quaternion).multiply(_tempQuaternion);
-								if (Math.abs(_alignVector.copy(_unitY).applyQuaternion(quaternion).dot(this.eye)) > .9) handle.visible = false;
-							}
-							if (this.axis === "Z") {
-								_tempQuaternion.setFromEuler(_tempEuler.set(0, Math.PI / 2, 0));
-								handle.quaternion.copy(quaternion).multiply(_tempQuaternion);
-								if (Math.abs(_alignVector.copy(_unitZ).applyQuaternion(quaternion).dot(this.eye)) > .9) handle.visible = false;
-							}
-							if (this.axis === "XYZE") {
-								_tempQuaternion.setFromEuler(_tempEuler.set(0, Math.PI / 2, 0));
-								_alignVector.copy(this.rotationAxis);
-								handle.quaternion.setFromRotationMatrix(_lookAtMatrix.lookAt(_zeroVector, _alignVector, _unitY));
-								handle.quaternion.multiply(_tempQuaternion);
-								handle.visible = this.dragging;
-							}
-							if (this.axis === "E") handle.visible = false;
-						} else if (handle.name === "START") {
-							handle.position.copy(this.worldPositionStart);
-							handle.visible = this.dragging;
-						} else if (handle.name === "END") {
-							handle.position.copy(this.worldPosition);
-							handle.visible = this.dragging;
-						} else if (handle.name === "DELTA") {
-							handle.position.copy(this.worldPositionStart);
-							handle.quaternion.copy(this.worldQuaternionStart);
-							_tempVector.set(1e-10, 1e-10, 1e-10).add(this.worldPositionStart).sub(this.worldPosition).multiplyScalar(-1);
-							_tempVector.applyQuaternion(this.worldQuaternionStart.clone().invert());
-							handle.scale.copy(_tempVector);
-							handle.visible = this.dragging;
-						} else {
-							handle.quaternion.copy(quaternion);
-							if (this.dragging) handle.position.copy(this.worldPositionStart);
-							else handle.position.copy(this.worldPosition);
-							if (this.axis) handle.visible = this.axis.search(handle.name) !== -1;
-						}
-						continue;
-					}
-					handle.quaternion.copy(quaternion);
-					if (this.mode === "translate" || this.mode === "scale") {
-						const AXIS_HIDE_THRESHOLD = .99;
-						const PLANE_HIDE_THRESHOLD = .2;
-						if (handle.name === "X") {
-							if (Math.abs(_alignVector.copy(_unitX).applyQuaternion(quaternion).dot(this.eye)) > AXIS_HIDE_THRESHOLD) {
-								handle.scale.set(1e-10, 1e-10, 1e-10);
-								handle.visible = false;
-							}
-						}
-						if (handle.name === "Y") {
-							if (Math.abs(_alignVector.copy(_unitY).applyQuaternion(quaternion).dot(this.eye)) > AXIS_HIDE_THRESHOLD) {
-								handle.scale.set(1e-10, 1e-10, 1e-10);
-								handle.visible = false;
-							}
-						}
-						if (handle.name === "Z") {
-							if (Math.abs(_alignVector.copy(_unitZ).applyQuaternion(quaternion).dot(this.eye)) > AXIS_HIDE_THRESHOLD) {
-								handle.scale.set(1e-10, 1e-10, 1e-10);
-								handle.visible = false;
-							}
-						}
-						if (handle.name === "XY") {
-							if (Math.abs(_alignVector.copy(_unitZ).applyQuaternion(quaternion).dot(this.eye)) < PLANE_HIDE_THRESHOLD) {
-								handle.scale.set(1e-10, 1e-10, 1e-10);
-								handle.visible = false;
-							}
-						}
-						if (handle.name === "YZ") {
-							if (Math.abs(_alignVector.copy(_unitX).applyQuaternion(quaternion).dot(this.eye)) < PLANE_HIDE_THRESHOLD) {
-								handle.scale.set(1e-10, 1e-10, 1e-10);
-								handle.visible = false;
-							}
-						}
-						if (handle.name === "XZ") {
-							if (Math.abs(_alignVector.copy(_unitY).applyQuaternion(quaternion).dot(this.eye)) < PLANE_HIDE_THRESHOLD) {
-								handle.scale.set(1e-10, 1e-10, 1e-10);
-								handle.visible = false;
-							}
-						}
-					} else if (this.mode === "rotate") {
-						_tempQuaternion2.copy(quaternion);
-						_alignVector.copy(this.eye).applyQuaternion(_tempQuaternion.copy(quaternion).invert());
-						if (handle.name.search("E") !== -1) handle.quaternion.setFromRotationMatrix(_lookAtMatrix.lookAt(this.eye, _zeroVector, _unitY));
-						if (handle.name === "X") {
-							_tempQuaternion.setFromAxisAngle(_unitX, Math.atan2(-_alignVector.y, _alignVector.z));
-							_tempQuaternion.multiplyQuaternions(_tempQuaternion2, _tempQuaternion);
-							handle.quaternion.copy(_tempQuaternion);
-						}
-						if (handle.name === "Y") {
-							_tempQuaternion.setFromAxisAngle(_unitY, Math.atan2(_alignVector.x, _alignVector.z));
-							_tempQuaternion.multiplyQuaternions(_tempQuaternion2, _tempQuaternion);
-							handle.quaternion.copy(_tempQuaternion);
-						}
-						if (handle.name === "Z") {
-							_tempQuaternion.setFromAxisAngle(_unitZ, Math.atan2(_alignVector.y, _alignVector.x));
-							_tempQuaternion.multiplyQuaternions(_tempQuaternion2, _tempQuaternion);
-							handle.quaternion.copy(_tempQuaternion);
-						}
-					}
-					handle.visible = handle.visible && (handle.name.indexOf("X") === -1 || this.showX);
-					handle.visible = handle.visible && (handle.name.indexOf("Y") === -1 || this.showY);
-					handle.visible = handle.visible && (handle.name.indexOf("Z") === -1 || this.showZ);
-					handle.visible = handle.visible && (handle.name.indexOf("E") === -1 || this.showX && this.showY && this.showZ);
-					handle.visible = handle.visible && (handle.name.indexOf("XY") === -1 || this.showXY);
-					handle.visible = handle.visible && (handle.name.indexOf("YZ") === -1 || this.showYZ);
-					handle.visible = handle.visible && (handle.name.indexOf("XZ") === -1 || this.showXZ);
-					handle.material._color = handle.material._color || handle.material.color.clone();
-					handle.material._opacity = handle.material._opacity || handle.material.opacity;
-					handle.material.color.copy(handle.material._color);
-					handle.material.opacity = handle.material._opacity;
-					if (this.enabled && this.axis) {
-						if (handle.name === this.axis) {
-							handle.material.color.copy(this.materialLib.active.color);
-							handle.material.opacity = 1;
-						} else if (this.axis.split("").some(function(a) {
-							return handle.name === a;
-						})) {
-							handle.material.color.copy(this.materialLib.active.color);
-							handle.material.opacity = 1;
-						}
-					}
-				}
-				super.updateMatrixWorld(force);
-			}
-		};
-		var TransformControlsPlane = class extends Mesh {
-			constructor() {
-				super(new PlaneGeometry(1e5, 1e5, 2, 2), new MeshBasicMaterial({
-					visible: false,
-					wireframe: true,
-					side: 2,
-					transparent: true,
-					opacity: .1,
-					toneMapped: false
-				}));
-				this.isTransformControlsPlane = true;
-				this.type = "TransformControlsPlane";
-			}
-			updateMatrixWorld(force) {
-				let space = this.space;
-				this.position.copy(this.worldPosition);
-				if (this.mode === "scale") space = "local";
-				_v1.copy(_unitX).applyQuaternion(space === "local" ? this.worldQuaternion : _identityQuaternion);
-				_v2.copy(_unitY).applyQuaternion(space === "local" ? this.worldQuaternion : _identityQuaternion);
-				_v3.copy(_unitZ).applyQuaternion(space === "local" ? this.worldQuaternion : _identityQuaternion);
-				_alignVector.copy(_v2);
-				switch (this.mode) {
-					case "translate":
-					case "scale":
-						switch (this.axis) {
-							case "X":
-								_alignVector.copy(this.eye).cross(_v1);
-								_dirVector.copy(_v1).cross(_alignVector);
-								break;
-							case "Y":
-								_alignVector.copy(this.eye).cross(_v2);
-								_dirVector.copy(_v2).cross(_alignVector);
-								break;
-							case "Z":
-								_alignVector.copy(this.eye).cross(_v3);
-								_dirVector.copy(_v3).cross(_alignVector);
-								break;
-							case "XY":
-								_dirVector.copy(_v3);
-								break;
-							case "YZ":
-								_dirVector.copy(_v1);
-								break;
-							case "XZ":
-								_alignVector.copy(_v3);
-								_dirVector.copy(_v2);
-								break;
-							case "XYZ":
-							case "E": _dirVector.set(0, 0, 0);
-						}
-						break;
-					default: _dirVector.set(0, 0, 0);
-				}
-				if (_dirVector.length() === 0) this.quaternion.copy(this.cameraQuaternion);
-				else {
-					_tempMatrix.lookAt(_tempVector.set(0, 0, 0), _dirVector, _alignVector);
-					this.quaternion.setFromRotationMatrix(_tempMatrix);
-				}
-				super.updateMatrixWorld(force);
-			}
-		};
+			const tex = new CanvasTexture(c);
+			tex.minFilter = LinearFilter;
+			const mat = new SpriteMaterial({
+				map: tex,
+				transparent: true
+			});
+			const sprite = new Sprite(mat);
+			const aspect = c.width / c.height;
+			sprite.scale.set(worldHeight * aspect, worldHeight, 1);
+			return sprite;
+		}
 		//#endregion
 		//#region ../../web-kit/formats/src/npz.ts
 		function readU16(d, o) {
@@ -36354,7 +37238,7 @@ void main() {
 		* file read.
 		*/
 		/** Read a File / Blob and resolve its data: URL. */
-		function readAsDataURL$1(file) {
+		function readAsDataURL(file) {
 			return new Promise((resolve, reject) => {
 				const reader = new FileReader();
 				reader.onload = () => resolve(reader.result);
@@ -36378,15 +37262,15 @@ void main() {
 		}
 		/** Subscribe to backend liveness changes. Returns an unsubscribe fn. */
 		function onBackendState(cb) {
-			listeners$1.add(cb);
+			listeners.add(cb);
 			return () => {
-				listeners$1.delete(cb);
+				listeners.delete(cb);
 			};
 		}
 		function setState(next) {
 			if (next === state) return;
 			state = next;
-			for (const cb of listeners$1) try {
+			for (const cb of listeners) try {
 				cb(next);
 			} catch {}
 		}
@@ -36498,12 +37382,12 @@ void main() {
 			if (!res.ok) throw new Error(`Canvas artifact fetch failed: HTTP ${res.status} for ${url.slice(0, 200)}`);
 			const blob = await res.blob();
 			try {
-				return await readAsDataURL$1(blob);
+				return await readAsDataURL(blob);
 			} catch {
 				throw new Error(`Failed to read ${url.slice(0, 200)} as data URL`);
 			}
 		}
-		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners$1, inflight;
+		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners, inflight;
 		var init_api = __esmMin((() => {
 			init_readFile();
 			MAX_RETRIES = 4;
@@ -36519,7 +37403,7 @@ void main() {
 			]);
 			state = "online";
 			consecutiveFail = 0;
-			listeners$1 = /* @__PURE__ */ new Set();
+			listeners = /* @__PURE__ */ new Set();
 			inflight = /* @__PURE__ */ new Map();
 		}));
 		//#endregion
@@ -36636,335 +37520,6 @@ void main() {
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
 		//#endregion
-		//#region ../../web/card-base/src/toastStore.ts
-		/**
-		* THE ONE TOAST STORE (node-safe half of the one toast system,
-		* stroke 37): module state + the dual API (hook selector for React,
-		* zustand-classic statics for module-level pushers and tests). NO
-		* atom imports — node-env suites (the catalog contract specs) import
-		* this half without dragging DSH UI primitives' .css through the
-		* door. The renderer half lives in ./toast.tsx (ToastViewport); the
-		* store is the system, the viewport is its face.
-		*
-		* History: founded 2026-09-12 (the ideo/motion copies collapsed
-		* here). Stroke 36: the shell mounts the viewport — chrome is
-		* shell-owned. Stroke 37: the LAST two private stores died —
-		* web-kit/catalog's (whose toasts NEVER rendered: pushed from module
-		* context with no viewport anywhere, console-only) and
-		* mask-studio's (whose drop-errors never rendered either). Their
-		* pushers migrated here verbatim via the static surface.
-		*
-		* ONE API, two faces (the zustand-classic dual shape):
-		*   - hook:      useToastStore((s) => s.addToast)   — inside React
-		*   - statics:   useToastStore.getState().addToast(type, msg)
-		*                useToastStore.getState().toasts
-		*                useToastStore.subscribe(l) / .setState(patch)
-		*                — module-level pushers (contract stores, import
-		*                hooks) and test reset.
-		*
-		* Rendering: the DSH Toast atom (presentational banner — the atom is
-		* the surface, this module is the system). ToastViewport claims
-		* rendering: the FIRST live viewport renders, every other mounted
-		* viewport renders nothing, and ownership re-broadcasts when owners
-		* unmount — so the shell, the cards console, or any future seat may
-		* mount one and the document still renders toasts exactly once.
-		*
-		* Timing law (verbatim from the kit): errors persist 15s (the
-		* operator must SEE them), success/info auto-dismiss at 5s. Errors
-		* also console.error so nothing is silent even with no viewport.
-		*
-		* The third addToast argument (action {label, onClick}) is ACCEPTED
-		* and ignored: the DSH Toast atom owns the surface and ships no
-		* action chrome — the kit store dropped it the same way. When the
-		* atom grows an action prop, store and render it here.
-		*
-		* Per-seam subpath: `@melite/card-base/toast-store`.
-		*/
-		function emit() {
-			listeners.forEach((l) => l());
-		}
-		function subscribe(listener) {
-			listeners.add(listener);
-			return () => {
-				listeners.delete(listener);
-			};
-		}
-		function getSnapshot() {
-			return entries;
-		}
-		function addToast(type, message, _action) {
-			const id = nextId++;
-			entries = [...entries, {
-				id,
-				type,
-				message
-			}];
-			if (type === "error") console.error("[toast]", message);
-			else console.info("[toast]", message);
-			emit();
-			setTimeout(() => {
-				removeToast(id);
-			}, type === "error" ? 15e3 : 5e3);
-		}
-		function removeToast(id) {
-			if (!entries.some((t) => t.id === id)) return;
-			entries = entries.filter((t) => t.id !== id);
-			emit();
-		}
-		function getStore() {
-			return {
-				toasts: entries,
-				addToast: liveAddToast,
-				removeToast
-			};
-		}
-		function setStoreState(patch) {
-			if (patch.addToast !== void 0) liveAddToast = patch.addToast;
-			if (patch.toasts !== void 0) entries = patch.toasts;
-			emit();
-		}
-		var nextId, entries, listeners, liveAddToast, useToastStore;
-		var init_toastStore = __esmMin((() => {
-			nextId = 1;
-			entries = [];
-			listeners = /* @__PURE__ */ new Set();
-			liveAddToast = addToast;
-			useToastStore = Object.assign(function useToastStore(selector) {
-				const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
-				return selector({
-					addToast: liveAddToast,
-					removeToast,
-					toasts
-				});
-			}, {
-				getState: getStore,
-				setState: setStoreState,
-				subscribe
-			});
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/inputSlots.ts
-		/** Is this key a canonical wire slot no form/model declares? (protected
-		*  from the closed-vocabulary purge — the value is live wiring, not a
-		*  stale form value.) */
-		function isUndeclaredWireSlot(key) {
-			return _undeclaredWireSlots.includes(key);
-		}
-		/** Feed the vocabulary from the catalog (modelCatalog.ts calls this on
-		* every successful load). Replaces — not merges — the boot default: the
-		* catalog's declaration is the truth. Test-only callers pass a fixture. */
-		function setInputVocabulary(v) {
-			if (Array.isArray(v.slots) && v.slots.length > 0) _slots = v.slots;
-			if (Array.isArray(v.undeclared_slots)) _undeclaredWireSlots = v.undeclared_slots;
-			if (v.aliases && typeof v.aliases === "object") _aliases = { ...v.aliases };
-			if (v.form_aliases && typeof v.form_aliases === "object") _formAliases = Object.fromEntries(Object.entries(v.form_aliases).filter(([, m]) => m && typeof m === "object"));
-			if (v.form_slots && typeof v.form_slots === "object") _formSlots = Object.fromEntries(Object.entries(v.form_slots).filter(([, s]) => Array.isArray(s)));
-			if (v.model_slots && typeof v.model_slots === "object") _modelSlots = Object.fromEntries(Object.entries(v.model_slots).filter(([, s]) => Array.isArray(s)));
-			if (v.slot_kinds && typeof v.slot_kinds === "object") _slotKinds = { ...v.slot_kinds };
-		}
-		/** The per-form alias table for a form (form_aliases[form] ?? global). */
-		function formAliasesFor(form) {
-			if (form && _formAliases[form]) return _formAliases[form];
-			return _aliases;
-		}
-		/** The form's DECLARED slot list (form_slots[form]). undefined = UNKNOWN
-		* form (global-slot fallback — be permissive). [] = the form declares a
-		* CLOSED zero-slot vocabulary (text-only: form_generate, form_llm_text)
-		* — stageSlots renders zero squares + normalizeSlotParams PURGES every
-		* global-slot key. The empty-array-as-truthy semantics is the gate. */
-		function formSlotsFor(form) {
-			if (form && form in _formSlots) return _formSlots[form];
-		}
-		/** The MODEL's declared slot list (model_slots[service] — the catalog
-		* route key). undefined = UNKNOWN model (fall back to the form, then the
-		* global vocabulary — be permissive for non-catalog services). [] = the
-		* model's schema declares a CLOSED zero-slot vocabulary (moss-tts — no
-		* clone capability): stageSlots renders zero squares + normalizeSlotParams
-		* PURGES every slot key. THE model's schema-derived vocabulary WINS over
-		* the form's (2026-08-14 — a form-level list leaks slots onto models of
-		* the form whose schema doesn't serve them). */
-		function modelSlotsFor(service) {
-			if (service && service in _modelSlots) return _modelSlots[service];
-		}
-		/** THE per-model slot list for a service: modelSlotsFor(service) ??
-		* formSlotsFor(form) ?? undefined. Used by the card's declared-vocabulary
-		* purge — the model's schema is the vocabulary, the form is the fallback
-		* for non-catalog services, and unknown services stay permissive. */
-		function cardSlotsFor(service, form) {
-			return modelSlotsFor(service) ?? formSlotsFor(form);
-		}
-		/** The current canonical slot list, in declared order. */
-		function inputSlots() {
-			return _slots;
-		}
-		/** True if the params carry at least one input slot. */
-		function hasInputSlots(params) {
-			return _slots.some((k) => k in params);
-		}
-		/** The first input slot declared in the params, in vocabulary order.
-		* CardTile's drop target uses this to decide which slot a dropped asset
-		* fills (most cards have exactly one). null = the card carries no slot
-		* (drop rejected). */
-		function firstInputSlot(params) {
-			return _slots.find((k) => k in params) ?? null;
-		}
-		/** THE slot-list source: the slot keys a stage's params declare, in
-		* vocabulary order. Store (setSlotInput + collectUpstreamResults),
-		* SlotGrid, and the CardTile strip all derive the per-slot array from
-		* here — slot index i ↔ stageSlots(params)[i].
-		*
-		* **Form-aware** (2026-08-10): when the card's ``form`` is known and the
-		* form DECLARES its slots (form_slots[form]), the filter list is the
-		* form's slots, NOT the global _slots union. A revived pre-IMAGE1 edit
-		* card whose params still carry ``input_image`` (loaded before the catalog
-		* arrived → normalizeSlotParams couldn't purge it) would otherwise render
-		* a phantom 4th square. The form's declared slots are the CLOSED
-		* vocabulary — a stale global-slot key outside them is invisible here
-		* even if it lingers in params. Callers without a form fall back to the
-		* global _slots filter (unchanged).
-		*
-		* **Model-aware** (2026-08-14): when the card's ``service`` (catalog
-		* model route) declares its slots (model_slots[service]), THE MODEL'S
-		* list is the filter — never the form's. qwen3-tts-base → [voice_file,
-		* reference_audio]; moss-tts → [] (zero squares — no clone capability).
-		* A form-level list would leak voice_file onto moss-tts (the user catch).
-		* Unknown services fall back to the form, then the global filter. */
-		function stageSlots(params, form, service) {
-			const declared = cardSlotsFor(service, form);
-			if (declared) return declared.filter((k) => k in params);
-			return _slots.filter((k) => k in params);
-		}
-		/** Re-normalize an inputs array to the fixed per-slot invariant:
-		* length === slots.length, missing entries padded with "". Never
-		* truncates — agent-written/loaded docs keep their length as written
-		* (reads are index-safe: slots[i] undefined → skipped). */
-		function padInputs(inputs, slots) {
-			const padded = [...inputs];
-			while (padded.length < slots.length) padded.push("");
-			return padded;
-		}
-		/** Fold family input-param names onto the slot vocabulary (idempotent).
-		*
-		* Agent-written descriptors and revived run params can carry the FAMILY's
-		* param names (input_artifact / image_artifact / glb_artifact — the
-		* form_edit/form_upscale compile names) instead of the slot keys; the
-		* backend resolves ONLY the slot keys (compile._resolve_input_value), so
-		* an unnormalized card would render no square AND silently lose its input
-		* on re-run. Every card materializer (addStage, the hydrates, and the
-		* BACKEND build_flow — drafts.py folds before persisting, 2026-08-13)
-		* runs this so the card speaks one vocabulary.
-		*
-		* Precedence: an explicit slot-key value wins over an alias; a real alias
-		* value wins over a null slot placeholder (the picker's null-seed).
-		*
-		* ``form`` — when the card's form is known, the fold uses the form's
-		* DECLARED alias table (form_aliases[form] ?? aliases): form_edit folds
-		* input_artifact → image1 (NOT the global input_image — the 2026-08-09
-		* IMAGE1 contract), while form_upscale keeps input_artifact → input_image.
-		* The form's declared slot list (form_slots[form]) additionally PURGES
-		* stale global-slot keys the form never declared — input_image can never
-		* survive on an edit card (2026-08-10 purge policy).
-		*
-		* **Model-aware** (2026-08-14): when ``service`` is a catalog model whose
-		* schema-derived list (model_slots[service]) exists, THE MODEL'S list is
-		* the purge gate — never the form's. On moss-tts ([]) every slot key is
-		* purged (voice_file can never survive a model swap onto it); on
-		* qwen3-tts-base ([voice_file, reference_audio]) both squares' keys are
-		* protected. Unknown services fall back to the form's gate.
-		*/
-		function normalizeSlotParams(params, form, service) {
-			const aliases = formAliasesFor(form);
-			const out = {};
-			for (const [k, v] of Object.entries(params)) {
-				const alias = aliases[k];
-				if (alias === void 0 || alias === k) out[k] = v;
-			}
-			const declared = cardSlotsFor(service, form);
-			for (const k of _slots) {
-				if (!(k in params)) continue;
-				if (declared && !declared.includes(k) && !isUndeclaredWireSlot(k)) {
-					delete out[k];
-					continue;
-				}
-				out[k] = params[k];
-			}
-			for (const [alias, slot] of Object.entries(aliases)) {
-				if (alias === slot) continue;
-				if (!(alias in params)) continue;
-				const cur = out[slot];
-				if (cur === void 0 || cur === null) out[slot] = params[alias];
-			}
-			return out;
-		}
-		/** Per-slot FileKind (from the catalog's input_vocabulary.slot_kinds).
-		* Unknown slot → "any" (permissive — the guard never blocks on a missing
-		* declaration, only on a DECLARED mismatch). */
-		function slotKind(slotKey) {
-			const k = _slotKinds[slotKey];
-			if (k && typeof k === "string") return k;
-			return "any";
-		}
-		function genreToKind(genre) {
-			if (!genre) return "any";
-			return GENRE_TO_KIND[genre] ?? "any";
-		}
-		/** May a producer of ``producer`` kind feed a consumer of ``consumer``
-		* kind? Mirrors slot_kinds.kinds_compatible:
-		*   • "any" on either side → compatible (permissive for unknowns).
-		*   • Same kind → compatible.
-		*   • image ↔ mask → compatible (a mask is an image).
-		*   • Everything else → incompatible. */
-		function kindsCompatible(producer, consumer) {
-			if (producer === "any" || consumer === "any") return true;
-			if (producer === consumer) return true;
-			if (producer === "image" && consumer === "mask" || producer === "mask" && consumer === "image") return true;
-			return false;
-		}
-		/** The slot-type guard: may an upstream stage whose family has ``genre``
-		* feed ``slotKey``? This is the function setSlotInput calls. Returns
-		* ``true`` when the wire is type-safe (or when either side is unknown —
-		* permissive) and ``false`` when a DECLARED mismatch is detected. */
-		function canWireSlot(genre, slotKey) {
-			return kindsCompatible(genreToKind(genre), slotKind(slotKey));
-		}
-		var _slots, _aliases, _formAliases, _formSlots, _modelSlots, _slotKinds, _undeclaredWireSlots, GENRE_TO_KIND;
-		var init_inputSlots = __esmMin((() => {
-			_slots = [
-				"input_image",
-				"image1",
-				"image2",
-				"image3",
-				"reference_image",
-				"end_image",
-				"first_frame",
-				"last_frame",
-				"lanpaint_mask",
-				"input_mask",
-				"source_image",
-				"source_glb",
-				"input_glb",
-				"prev_motion_artifact",
-				"preview_glb",
-				"reference_audio",
-				"voice_file"
-			];
-			_aliases = {};
-			_formAliases = {};
-			_formSlots = {};
-			_modelSlots = {};
-			_slotKinds = {};
-			_undeclaredWireSlots = ["lanpaint_mask"];
-			GENRE_TO_KIND = {
-				image: "image",
-				video: "video",
-				audio: "audio",
-				"3d": "glb",
-				motion: "motion",
-				other: "any",
-				text: "text"
-			};
-		}));
-		//#endregion
 		//#region ../../web-kit/catalog/src/modelCatalog.ts
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
@@ -37054,7 +37609,6 @@ void main() {
 			if (!valid) throw new CatalogContractError(violations);
 			useCatalogContractStore.getState().reportOk();
 			const catalog = data;
-			_feedInputVocabulary(catalog);
 			_cache$2 = catalog;
 			_cacheTime = Date.now();
 			_loaded = true;
@@ -37090,29 +37644,6 @@ void main() {
 			});
 			return _inflight$2;
 		}
-		/** Fold the catalog's per-model schema-derived input_slots into the
-		* model_slots vocabulary. The backend computes each model's slots from
-		* its OWN families-filtered builder schema (editor_catalog
-		* _model_input_slots — the model's schema is the vocabulary, NEVER the
-		* form's: qwen3-tts-base → [voice_file, reference_audio], moss-tts → []
-		* with no clone capability). This fold is the delivery path — input_slots
-		* lives on the model entries, the vocabulary store keys by route. */
-		function _foldModelSlots(models) {
-			const out = {};
-			if (!models) return out;
-			for (const [route, m] of Object.entries(models)) if (Array.isArray(m?.input_slots)) out[route] = m.input_slots;
-			return out;
-		}
-		/** Feed the catalog's declared input vocabulary into lib/inputSlots —
-		* the backend (compile.input_vocabulary) is the SSOT, the frontend
-		* module is a consumer. Runs on every successful load, including the
-		* background TTL refresh (so YAML vocabulary edits propagate). */
-		function _feedInputVocabulary(data) {
-			if (data?.input_vocabulary) setInputVocabulary({
-				...data.input_vocabulary,
-				model_slots: _foldModelSlots(data.models)
-			});
-		}
 		/** Fire-and-forget background load with auto-retry. If the first attempt
 		* fails (gateway reloading, network blip), schedules a retry after 3s.
 		* Keeps trying until the catalog loads, then notifies subscribers.
@@ -37145,7 +37676,6 @@ void main() {
 		* loadCatalog/ensureCatalog which fetch from the endpoint). Lets tests inject
 		* a fake catalog without going to the network. */
 		function primeCatalog(data) {
-			_feedInputVocabulary(data);
 			_cache$2 = data;
 			_loaded = true;
 			_notify();
@@ -37163,8 +37693,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			if (!cat?.models) return void 0;
 			const own = cat.models[routeKey]?.family;
@@ -37177,8 +37706,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return void 0;
@@ -37187,17 +37715,17 @@ void main() {
 		/**
 		* The catalog-declared FORM for a route key (the model's ``form`` — the
 		* same id _FORM_CONFIGS keys by on the backend). Resolves variants to
-		* their parent model like familyOf. This is the key the fold uses to pick
-		* the per-form alias table (inputSlots.formAliasesFor): form_edit folds
-		* input_artifact → image1, form_upscale → input_image (2026-08-09).
+		* their parent model like familyOf. The tag routes the model's
+		* editor surface (the FORM LAW: a model without a form cannot route
+		* or render). The 2026-09-18 retirement: the retired per-form alias
+		* tables are gone — forms no longer reshape slot keys.
 		*/
 		function formOf(routeKey, cat = _cache$2 ?? {
 			families: {},
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			if (!cat?.models) return void 0;
 			const own = cat.models[routeKey]?.form;
@@ -37210,8 +37738,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return routeKey;
@@ -37230,15 +37757,14 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			return narrowGenre((fam ? cat.families?.[fam]?.genre : void 0) ?? cat.families?.[routeKey]?.genre);
 		}
 		/**
 		* The source-media types a family declares it ingests (FamilyEntry.accepts,
-		* a closed pydantic Literal on the backend). Returns the declared list, or
+		* a closed literal on the backend). Returns the declared list, or
 		* [] when the family declares none / is unknown → the canvas drop handler
 		* treats [] as "not a drop target" (no card spawned, no hard-fail on the
 		* MIME itself — there simply is no input family to receive the drop). The
@@ -37249,8 +37775,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			return cat.families?.[fam ?? routeKey]?.accepts ?? [];
@@ -37271,8 +37796,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			const transforms = cat.families?.[fam ?? routeKey]?.transforms;
@@ -37288,7 +37812,7 @@ void main() {
 		*/
 		/**
 		* The compact card's declared size line (FamilyEntry.card_summary, a
-		* pydantic-validated block on the backend). Returns {width_param, height_param}
+		* validated block on the backend). Returns {width_param, height_param}
 		* for generation families (rendered "WxH") OR {size_param, size_suffix} for
 		* the Enhance / upscale families (rendered as a single value), or null when
 		* the family declares no size line / is unknown. The CardTile reads whichever
@@ -37300,8 +37824,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			return cat.families?.[fam ?? routeKey]?.card_summary ?? null;
@@ -37311,8 +37834,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return void 0;
@@ -37321,7 +37843,7 @@ void main() {
 		/**
 		* The family's declared optional outputs (Option A — the optional-outputs
 		* vocabulary). Empty/undefined when the family declares none (legacy
-		* single-output parity). Consumers render one editor per entry, keyed by
+		* single-output compat). Consumers render one editor per entry, keyed by
 		* ``genre`` — the input card no longer declares any (mask removed
 		* 2026-08-14), so this is the vocabulary for OTHER families that do.
 		*/
@@ -37330,8 +37852,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			return cat.families?.[familyId]?.optional_outputs ?? [];
 		}
@@ -37346,8 +37867,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			return Object.entries(cat.models).find(([, m]) => m.canvas_default)?.[0];
 		}
@@ -37357,8 +37877,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const m = cat.models?.[routeKey];
 			return m?.variant_label ?? m?.label ?? routeKey;
@@ -37376,8 +37895,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const visible = dropdownModels(formTag, cat);
 			const seen = /* @__PURE__ */ new Set();
@@ -37408,8 +37926,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return routeKey;
@@ -37423,8 +37940,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const m = cat.models[routeKey];
 			if (!m) return routeKey;
@@ -37438,8 +37954,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return void 0;
@@ -37450,8 +37965,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return void 0;
@@ -37462,8 +37976,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const out = [];
 			for (const [key, spec] of Object.entries(cat.models)) {
@@ -37480,8 +37993,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return routeKey ? [routeKey] : [];
@@ -37496,8 +38008,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			return new Set(Object.entries(cat.models).filter(([, m]) => m.hide_from_dropdown).map(([k]) => k));
 		}
@@ -37511,8 +38022,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const own = cat.models[routeKey]?.variants;
 			if (own) return own;
@@ -37537,8 +38047,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const own = cat.models[routeKey]?.presets;
 			return own && typeof own === "object" && Object.keys(own).length > 0 ? own : void 0;
@@ -37552,8 +38061,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const ownList = variantsForRoute(routeKey, cat);
 			const own = ownList.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? ownList.find((v) => v.route === routeKey);
@@ -37583,8 +38091,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const m = cat.models[routeKey];
 			return {
@@ -37640,8 +38147,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(currentRoute, cat);
 			const clickedRoute = clicked.route;
@@ -37673,8 +38179,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			if (!clicked.route) return true;
 			const fam = familyOf(currentRoute, cat);
@@ -37693,8 +38198,7 @@ void main() {
 			models: {},
 			capabilities: null,
 			engine_order: null,
-			quant_order: null,
-			input_vocabulary: null
+			quant_order: null
 		}) {
 			const fam = familyOf(routeKey, cat);
 			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
@@ -37703,7 +38207,6 @@ void main() {
 		var CARD_GENRES, _cache$2, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$3;
 		var init_modelCatalog = __esmMin((() => {
 			init_api();
-			init_inputSlots();
 			init_catalogContract();
 			init_catalogContractStore();
 			CARD_GENRES = [
@@ -40959,7 +41462,7 @@ void main() {
 		//#endregion
 		//#region ../../web-kit/catalog/src/uploadToEstate.ts
 		function readUploadFile(file) {
-			return readAsDataURL$1(file).catch(() => {
+			return readAsDataURL(file).catch(() => {
 				throw new Error(`The browser could not read "${file.name}" at its source (the drag handed over a file the browser can't open — this happens when the file was moved/deleted, or the drag came from a recent-files list or another app). Drag it from its actual folder, or CLICK the square and browse — the picker path reads through the OS dialog and works.`);
 			});
 		}
@@ -41042,11 +41545,9 @@ void main() {
 			assertNoParamDrops: () => assertNoParamDrops,
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
 			axisCellExists: () => axisCellExists,
-			canWireSlot: () => canWireSlot,
 			cancelJob: () => cancelJob,
 			canvasDefaultModel: () => canvasDefaultModel,
 			cardLlmArg: () => cardLlmArg,
-			cardSlotsFor: () => cardSlotsFor,
 			clearPoseCache: () => clearPoseCache,
 			coerceParamsToSchema: () => coerceParamsToSchema,
 			collectNamedArtifacts: () => collectNamedArtifacts,
@@ -41089,27 +41590,21 @@ void main() {
 			familyTransformMatrix: () => familyTransformMatrix,
 			fetchBindJoints: () => fetchBindJoints,
 			fetchEnhanceRoutes: () => fetchEnhanceRoutes,
-			firstInputSlot: () => firstInputSlot,
-			formAliasesFor: () => formAliasesFor,
 			formForSidebarKey: () => formForSidebarKey,
 			formOf: () => formOf,
 			formSidebarItems: () => formSidebarItems,
-			formSlotsFor: () => formSlotsFor,
 			formatBytes: () => formatBytes,
 			formatLastRun: () => formatLastRun,
 			generatePose: () => generatePose,
-			genreToKind: () => genreToKind,
 			getBackendState: () => getBackendState,
 			getCachedCatalog: () => getCachedCatalog,
 			getCachedForms: () => getCachedForms,
 			getCardLlm: () => getCardLlm,
 			getFamilySchema: () => getFamilySchema,
 			getPeaksForWidth: () => getPeaksForWidth,
-			hasInputSlots: () => hasInputSlots,
 			hasViolationsSignature: () => hasViolationsSignature,
 			hiddenFromDropdown: () => hiddenFromDropdown,
 			initTagSync: () => initTagSync,
-			inputSlots: () => inputSlots,
 			isAudioForm: () => isAudioForm,
 			isCatalogLoaded: () => isCatalogLoaded,
 			isEditForm: () => isEditForm,
@@ -41119,10 +41614,8 @@ void main() {
 			isMusicForm: () => isMusicForm,
 			isTagColor: () => isTagColor,
 			isTtsForm: () => isTtsForm,
-			isUndeclaredWireSlot: () => isUndeclaredWireSlot,
 			isVoiceForm: () => isVoiceForm,
 			isVoiceStudioForm: () => isVoiceStudioForm,
-			kindsCompatible: () => kindsCompatible,
 			listConstraints: () => listConstraints,
 			listExamples: () => listExamples,
 			listModels: () => listModels,
@@ -41137,12 +41630,9 @@ void main() {
 			loadScene: () => loadScene,
 			modelDescription: () => modelDescription,
 			modelLabel: () => modelLabel,
-			modelSlotsFor: () => modelSlotsFor,
 			narrowGenre: () => narrowGenre,
-			normalizeSlotParams: () => normalizeSlotParams,
 			onBackendState: () => onBackendState,
 			onCatalogReady: () => onCatalogReady,
-			padInputs: () => padInputs,
 			parsePickerAria: () => parsePickerAria,
 			pickFrame: () => pickFrame,
 			pollFlowRun: () => pollFlowRun,
@@ -41162,11 +41652,8 @@ void main() {
 			saveScene: () => saveScene,
 			selectLOD: () => selectLOD,
 			setCardLlm: () => setCardLlm,
-			setInputVocabulary: () => setInputVocabulary,
 			setRequiredEmptyResolver: () => setRequiredEmptyResolver,
 			sliceFrameAsB64: () => sliceFrameAsB64,
-			slotKind: () => slotKind,
-			stageSlots: () => stageSlots,
 			streamFlowEvents: () => streamFlowEvents,
 			studioOf: () => studioOf,
 			submitTextToPose: () => submitTextToPose,
@@ -41190,7 +41677,6 @@ void main() {
 			init_api();
 			init_catalogContract();
 			init_catalogContractStore();
-			init_inputSlots();
 			init_modelCatalog();
 			init_FlowProtocol();
 			init_FlowEvents();
@@ -44056,7 +44542,7 @@ void main() {
 								boneInverses.push(mat);
 							} else console.warn("THREE.GLTFLoader: Joint \"%s\" could not be found.", skinDef.joints[i]);
 						}
-						return new Skeleton$1(bones, boneInverses);
+						return new Skeleton(bones, boneInverses);
 					});
 				}
 				/**
@@ -45048,7 +45534,7 @@ void main() {
 		*  WHY THIS EXISTS: viser's built-in click-to-append path (Timeline.tsx)
 		*  only fires when the click lands at or past the last prompt's end_frame.
 		*  After MotionCardEditor seeds one prompt spanning ``[0, T-1]`` (the whole
-		*  bar, edge-to-edge — the demo parity), there is NO frame ≥ last.end_frame
+		*  bar, edge-to-edge — the demo behavior), there is NO frame ≥ last.end_frame
 		*  reachable inside the bar, so appending is impossible and the user "can
 		*  only put in dots" (keyframe dots, on the constraint lanes). This helper
 		*  is the explicit, always-reachable "add a card" affordance.
@@ -45645,233 +46131,120 @@ void main() {
 			init_cardMutations();
 		}));
 		//#endregion
-		//#region ../../web/card-base/src/spec.ts
-		/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
-		*  (krea-2, z-image, euler, comfyui…) render titled — never raw.
-		*  FACES ONLY: option values, param keys, and wire bodies keep the
-		*  verbatim id (the 1:1 law — the eye gets prose, the door gets the
-		*  id). First letter of each separator-bound word upper, the rest
-		*  untouched (INT8 stays INT8); idempotent on titled prose. */
-		function titleCaseId(id) {
-			return id.split(/[-_\s]+/).filter((w) => w !== "").map((w) => w.slice(0, 1).toUpperCase() + w.slice(1)).join(" ");
-		}
-		/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
-		*  resolveValue's first layer; the base never invents one). */
-		function specDefaults(fields) {
-			const out = {};
-			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
-			return out;
-		}
-		/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
-		*
-		* One pure projection: serialized schemastery schema -> derived
-		* SpecFields. Every presentation fact lives in the nodes' meta (the
-		* declaration IS the UI contract — the py Field.emit law); this
-		* walk reads, never invents. THE ORDER: dict insertion order with
-		* the declared `order` hint as tie-break (a stable sort — equal
-		* keys keep insertion order).
-		*
-		* Families scoping: a node whose extra.families names families the
-		* spec does NOT serve skips (the absorption is family-scoped —
-		* the card serves only the boarded plane).
-		*
-		* Nullable pairs: a union of [X, const(null)] wires as X — the
-		* OUTER meta wins (schemastery's nullable() shape, probed live on
-		* image-gen 2026-09-14).
-		*
-		* Presentation types (the audit's client-side derivation — a view
-		* choice over typed meta, never a server row): extra.wtype wins
-		* (declared presentation); union-of-consts -> select; number ->
-		* step 1 -> seed, any other step -> slider, no step -> slider;
-		* string -> text; boolean -> boolean; array -> loras.
-		*
-		* Option labels: a union's const members carry their own
-		* meta.description (the py emitter's label law) — the declared
-		* extra.options override when present. */
-		function fieldsOfEnvelope(env, family) {
-			if (env == null) return [];
-			const root = env.refs[env.uid];
-			return projectDict(env, root?.dict ?? {}, family);
-		}
-		/** The dict projector (the walker's body — one meta path for the
-		*  root, the hybrid element, and the pack-level rows). */
-		function projectDict(env, dict, family) {
-			const out = [];
-			for (const [name, id] of Object.entries(dict)) {
-				let node = env.refs[id];
-				if (node === void 0) continue;
-				if (node.type === "union" && Array.isArray(node.list) && node.list.length === 2) {
-					const a = env.refs[node.list[0]];
-					const b = env.refs[node.list[1]];
-					const nullConst = (r) => r?.type === "const" && r.value === null;
-					if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
-				}
-				const meta = node.meta ?? {};
-				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
-				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
-				if (families !== null && family !== void 0 && !families.includes(family)) continue;
-				let options;
-				if (node.type === "union" && Array.isArray(node.list)) {
-					const opts = [];
-					for (const mid of node.list) {
-						const m = env.refs[mid];
-						if (m?.type !== "const") continue;
-						const v = m.value;
-						if (v === null || v === void 0) continue;
-						const label = typeof m.meta?.["description"] === "string" ? m.meta["description"] : String(v);
-						if (label === String(v)) opts.push(String(v));
-						else opts.push({
-							value: String(v),
-							label
-						});
-					}
-					if (opts.length > 0) options = opts;
-				}
-				if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
-					value: String(o["value"]),
-					label: String(o["label"])
-				} : String(o));
-				const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
-				let type;
-				if (hint !== "") type = hint;
-				else if (options !== void 0 && node.type === "union") type = "select";
-				else if (node.type === "number") type = String(meta["step"] ?? "") === "1" ? "seed" : "slider";
-				else if (node.type === "string") type = "text";
-				else if (node.type === "boolean") type = "boolean";
-				else if (node.type === "array") type = "loras";
-				else type = node.type ?? "string";
-				const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
-				const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
-				out.push({
-					name,
-					label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
-					order: typeof extra["order"] === "number" ? extra["order"] : void 0,
-					type,
-					default: meta["default"] === void 0 ? void 0 : meta["default"],
-					min: num("min"),
-					max: num("max"),
-					step: type === "seed" ? void 0 : num("step"),
-					options,
-					group: str("group") ?? "",
-					zone: str("zone"),
-					required: extra["required"] === true || meta["required"] === true,
-					placeholder: str("placeholder"),
-					tooltip: str("tooltip"),
-					visible_when: str("visible_when"),
-					columns: typeof extra["columns"] === "number" ? extra["columns"] : void 0,
-					width: typeof extra["width"] === "number" ? extra["width"] : void 0
-				});
-			}
-			return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
-		}
-		/** The card's own derived fields (the schema envelope walked,
-		* families-scoped to the served family). Memoize at the caller for
-		* hot loops — the walk is pure. */
-		function fieldsOf(spec) {
-			return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
-		}
-		/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
-		* client-side (stroke 34 — the card-recipe layer is dead): schema
-		* defaults <- model defaults <- SERVED STAMPS <- user. The form
-		* SHOWS exactly what a run composes; `user` rides verbatim by key
-		* presence (a PRESENCE is the override mark, never its value — the
-		* settings law). Arrays (lora bags) and nulls in model_defaults
-		* skip, matching the engine's overlay filter.
-		*
-		* THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
-		* stage row's `resolved` map — prepareCardParams' own stamped +
-		* lifted body, served by the drafts doors. It layers UNDER the user
-		* (presence still wins) and OVER model_defaults (the server's own
-		* family/variant stamps replace the client's guesses — variant
-		* resolver_defaults, family defaults, the surface filter). Absent
-		* base = the registry-less lane derive (the wall pins parity on
-		* the golden families). PURE. */
-		function resolveValue(spec, user, base) {
-			const out = specDefaults(fieldsOf(spec));
-			for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
-				if (v === null || Array.isArray(v)) continue;
-				out[k] = v;
-			}
-			if (base !== void 0) for (const [k, v] of Object.entries(base)) {
-				if (v === null || v === void 0 || Array.isArray(v)) continue;
-				out[k] = v;
-			}
-			Object.assign(out, user);
-			return out;
-		}
-		/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
-		* one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
-		* (The ONE schema grammar — a field declares its own visibility;
-		* the walker interprets, cards never hand-rolled predicates.) A
-		* field with no visible_when always shows. Unknown guard keys:
-		* show (never hide on a typo). Examples:
-		*   "sharpen_enabled=true"
-		*   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
-		function fieldVisible(f, values) {
-			const rule = f.visible_when;
-			if (typeof rule !== "string" || rule === "") return true;
-			for (const guard of rule.split("&")) {
-				const eq = guard.indexOf("=");
-				if (eq < 0) continue;
-				const key = guard.slice(0, eq);
-				if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
-			}
-			return true;
-		}
-		//#endregion
-		//#region ../../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
-		function r(e) {
-			var t, f, n = "";
-			if ("string" == typeof e || "number" == typeof e) n += e;
-			else if ("object" == typeof e) if (Array.isArray(e)) {
-				var o = e.length;
-				for (t = 0; t < o; t++) e[t] && (f = r(e[t])) && (n && (n += " "), n += f);
-			} else for (f in e) e[f] && (n && (n += " "), n += f);
-			return n;
-		}
-		function clsx() {
-			for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
-			return n;
-		}
-		//#endregion
-		//#region ../../web/card-base/src/chrome.ts
+		//#region ../../web/card-base/src/studioRail.tsx
 		/**
-		* Card chrome primitives — the ONE joiner + the ONE file reader
-		* (founded 2026-09-12, debt extermination: anny/ideo cx, motion/h3
-		* clsx-cn, and the four identical readAsDataURL copies collapsed
-		* here). DOM-free, no CSS, no atoms — safe for node and browser.
+		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
+		* (spec docs/design/card-studio-pattern.md §5 + §7.10).
 		*
-		* Per-seam subpath: `@melite/card-base/chrome`.
+		* WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
+		* so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
+		* live in the RAIL, but their state lives INSIDE the tenant component
+		* (showSkeleton, editMode, bgImage…). Splitting the tenant into two
+		* registered components would force that state up through the shell —
+		* breaking E1 (the tenant receives exactly {stage, running, onSave}).
+		* Instead the tenant stays ONE component and PROJECTS its tools into the
+		* shell's slot; the shell stays genre-blind (it renders an empty div and
+		* knows nothing about motion).
+		*
+		* THE CONTRACT IS UNCHANGED: portaled tools write through the same
+		* onSave channel — nothing about the write path moves. Without the shell
+		* (a tenant mounted inline, e.g. the form view) the tools render in place
+		* — the exact layout the tenant had before the slot existed.
+		*
+		* Mount order (no flash): CardStudio renders the slot div and the tenant
+		* in the same commit; the div's ref lands before the tenant's effects
+		* run, so the portal binds on the first effect pass. The one render
+		* before that is inside the skeleton-masked mount anyway.
 		*/
-		/** Plain classnames joiner (no conflicting utilities to merge —
-		*  plain join is exact). */
-		function cx(...parts) {
-			return parts.filter(Boolean).join(" ");
+		/** The rail's tools-slot element, published by CardStudio. Null when the
+		*  tenant is mounted outside a studio shell (inline fallback). */
+		const StudioRailCtx = (0, react.createContext)(null);
+		/** TENANT side: renders children into the studio rail when one exists,
+		*  inline otherwise. Wrap the tenant's toolbar in this — nothing else. */
+		function StudioRail({ children }) {
+			const slot = (0, react.useContext)(StudioRailCtx);
+			const [el, setEl] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				if (slot && slot !== el) setEl(slot);
+			}, [slot]);
+			if (el) return (0, react_dom.createPortal)(children, el);
+			if (slot) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children });
 		}
-		/** The merging joiner (clsx — objects/arrays/conditionals). */
-		function cn(...inputs) {
-			return clsx(...inputs);
+		//#endregion
+		//#region \0dsh-css:card-base/src/shell.module.css.mjs
+		const css$8 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
+		const tagId$8 = "@melite/motion-motion/shell.module.css@62658dc6";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$8) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/motion-motion";
+			tag.dataset.pluginCss = tagId$8;
+			tag.textContent = css$8;
+			document.head.appendChild(tag);
 		}
-		/** Blob → data URL (FileReader promise). */
-		function readAsDataURL(file) {
-			return new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => resolve(reader.result);
-				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
-				reader.readAsDataURL(file);
+		var shell_module_css_default = {
+			"errorIcon": "_4etGFq_errorIcon",
+			"errorLine": "_4etGFq_errorLine",
+			"errorRow": "_4etGFq_errorRow",
+			"railHead": "_4etGFq_railHead",
+			"railSection": "_4etGFq_railSection",
+			"railTitle": "_4etGFq_railTitle",
+			"shell": "_4etGFq_shell"
+		};
+		//#endregion
+		//#region ../../web/card-base/src/shell.tsx
+		/** The loud error line — shell-owned chrome. Same DOM the assembly
+		*  body always rendered. */
+		function StudioShellErrorLine({ errors }) {
+			if (errors.length === 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				role: "alert",
+				className: shell_module_css_default.errorLine,
+				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+					className: shell_module_css_default.errorRow,
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: shell_module_css_default.errorIcon }),
+						e.id,
+						": ",
+						e.message
+					]
+				}, e.id))
 			});
 		}
-		/** THE ESTATE'S DRAG CONTRACT (2026-09-18, exterminated): the MIME
-		*  under which an upstream asset rides a drop payload — a JSON blob
-		*  {url, name, …} carried by the source's dataTransfer. h3's kit and
-		*  motion's kit each redeclared it; card-base, the card-view's
-		*  CardsTab and input-square already consumed it. One definition
-		*  estate-wide (the drag is a shared contract, not a studio rule). */
-		const ASSET_DRAG_MIME$2 = "application/tech-noir-asset";
+		/** The studio body: params column LEFT (projected into the shell rail
+		*  slot when one exists), preview RIGHT, optional bottom bar, then the
+		*  error line. The uniform three-slot shape — timeline and form cards
+		*  are the same grain, forms simply leave the right/bottom slots empty.
+		*
+		*  THE TOAST LAW (stroke 36): the shell mounts the ONE toast viewport
+		*  — toasts are shell-owned chrome exactly like the error line (the
+		*  construction law: no studio wires it, no studio can forget it).
+		*  Before: motion hand-mounted a copy in a slot the contract never
+		*  had (type drift), anny pushed toasts with NO viewport mounted —
+		*  silently dropped — and ideogram4 hand-wired its own outside the
+		*  shell. The per-studio mount is DEAD; any toast pushed from any
+		*  seam renders here, once. */
+		function StudioShell({ params, preview, bottom, errors = [], className }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: cx(shell_module_css_default.shell, className),
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
+					preview,
+					bottom,
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {})
+				]
+			});
+		}
+		/** The construction door: one obvious way to build a declaration,
+		*  typed at the call site. Runtime-frozen. */
+		function defineShellDeclaration(declaration) {
+			return Object.freeze(declaration);
+		}
 		//#endregion
-		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$7 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:contents}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
-		const tagId$7 = "@melite/motion-motion/card.module.css@a0448888";
+		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/motion/motion/src/ui/studio/component.module.css.mjs
+		const css$7 = "@keyframes U-ygCG_motionSpin{to{transform:rotate(360deg)}}.U-ygCG_shellPad{gap:8px;padding:12px 16px}.U-ygCG_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.U-ygCG_railGroupLabel{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 40%, transparent);grid-column:span 2;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_contents{display:contents}.U-ygCG_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);color:var(--dsw-alias-label-secondary,#5b6470)}.U-ygCG_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.U-ygCG_stampBtn:disabled{opacity:.5}.U-ygCG_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_reposeBtn:disabled{opacity:.5}.U-ygCG_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_hiddenInput{display:none}.U-ygCG_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.U-ygCG_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.U-ygCG_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.U-ygCG_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.U-ygCG_wireBtn:hover,.U-ygCG_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent)}.U-ygCG_centerRow{flex:1;gap:8px;min-height:0;display:flex}.U-ygCG_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.U-ygCG_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.U-ygCG_ovBg{z-index:0}.U-ygCG_ovCam{z-index:30}.U-ygCG_ovDrop{pointer-events:none;z-index:20}.U-ygCG_ovRect{pointer-events:none;z-index:40}.U-ygCG_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.U-ygCG_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.U-ygCG_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.U-ygCG_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_skelAvatar{border-radius:999px;width:96px;height:96px}.U-ygCG_skelAvatarSm{border-radius:999px;width:80px;height:80px}.U-ygCG_skelLine{width:112px;height:12px}.U-ygCG_stageVeil{width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);background:#0e0e1a99;flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.U-ygCG_veilText{font-size:12px}.U-ygCG_camPill{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);backdrop-filter:blur(4px);border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_camBtn{width:28px;height:28px;color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 80%, transparent);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.U-ygCG_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_frameBtnIdle{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 55%, transparent)}.U-ygCG_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.U-ygCG_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.U-ygCG_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.U-ygCG_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.U-ygCG_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.U-ygCG_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.U-ygCG_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.U-ygCG_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.U-ygCG_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary,#0f1115);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_playBtn:hover{background:#fff3}.U-ygCG_playBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_playIcon{width:14px;height:14px;margin-left:2px}.U-ygCG_timeWrap{flex-shrink:0;font-size:11px}.U-ygCG_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 80%, transparent);font-family:ui-monospace,monospace}.U-ygCG_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);align-items:center;gap:4px;display:flex}.U-ygCG_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.U-ygCG_fpsChip{display:block}}.U-ygCG_hintWrap{align-items:center;gap:8px;display:flex}.U-ygCG_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.U-ygCG_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.U-ygCG_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.U-ygCG_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.U-ygCG_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 80%, transparent)}.U-ygCG_i12{width:12px;height:12px}.U-ygCG_i14{width:14px;height:14px}.U-ygCG_spinIcon{width:14px;height:14px;animation:1s linear infinite U-ygCG_motionSpin}";
+		const tagId$7 = "@melite/motion-motion/component.module.css@c15e8a96";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$7) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
@@ -45879,4151 +46252,79 @@ void main() {
 			tag.textContent = css$7;
 			document.head.appendChild(tag);
 		}
-		var card_module_css_default = {
-			"ctlRow": "FRpSCG_ctlRow",
-			"ctlRowSm": "FRpSCG_ctlRowSm",
-			"emptyHint": "FRpSCG_emptyHint",
-			"emptyOverlay": "FRpSCG_emptyOverlay",
-			"emptyPane": "FRpSCG_emptyPane",
-			"emptyTitle": "FRpSCG_emptyTitle",
-			"groupTab": "FRpSCG_groupTab",
-			"groupTabActive": "FRpSCG_groupTabActive",
-			"groupTabs": "FRpSCG_groupTabs",
-			"inputRail": "FRpSCG_inputRail",
-			"modAddSquare": "FRpSCG_modAddSquare",
-			"modField": "FRpSCG_modField",
-			"modHead": "FRpSCG_modHead",
-			"modHint": "FRpSCG_modHint",
-			"modLeaf": "FRpSCG_modLeaf",
-			"modLeafActions": "FRpSCG_modLeafActions",
-			"modLeafError": "FRpSCG_modLeafError",
-			"modLeafFields": "FRpSCG_modLeafFields",
-			"modRow": "FRpSCG_modRow",
-			"modSection": "FRpSCG_modSection",
-			"modSelect": "FRpSCG_modSelect",
-			"modTile": "FRpSCG_modTile",
-			"modTileLabel": "FRpSCG_modTileLabel",
-			"modTileRecipe": "FRpSCG_modTileRecipe",
-			"modTileStrength": "FRpSCG_modTileStrength",
-			"modTitle": "FRpSCG_modTitle",
-			"modelAxes": "FRpSCG_modelAxes",
-			"paneHeaderPreview": "FRpSCG_paneHeaderPreview",
-			"paneHeaderStrip": "FRpSCG_paneHeaderStrip",
-			"paneHint": "FRpSCG_paneHint",
-			"paneMeta": "FRpSCG_paneMeta",
-			"paneMetaNum": "FRpSCG_paneMetaNum",
-			"panePulse": "FRpSCG_panePulse",
-			"paneShell": "FRpSCG_paneShell",
-			"paneTitle": "FRpSCG_paneTitle",
-			"pickBtn": "FRpSCG_pickBtn",
-			"pickEmpty": "FRpSCG_pickEmpty",
-			"pickGlyph": "FRpSCG_pickGlyph",
-			"pickLabel": "FRpSCG_pickLabel",
-			"pickList": "FRpSCG_pickList",
-			"pickRow": "FRpSCG_pickRow",
-			"pickThumb": "FRpSCG_pickThumb",
-			"sectionLabel": "FRpSCG_sectionLabel",
-			"sectionLabelTail": "FRpSCG_sectionLabelTail",
-			"sectionLabelText": "FRpSCG_sectionLabelText",
-			"skeleton": "FRpSCG_skeleton",
-			"sourceRow": "FRpSCG_sourceRow",
-			"specDice": "FRpSCG_specDice",
-			"specDiceOn": "FRpSCG_specDiceOn",
-			"specField": "FRpSCG_specField",
-			"specFieldHead": "FRpSCG_specFieldHead",
-			"specFieldKey": "FRpSCG_specFieldKey",
-			"specForm": "FRpSCG_specForm",
-			"specGrid": "FRpSCG_specGrid",
-			"specGroup": "FRpSCG_specGroup",
-			"specGroupTitle": "FRpSCG_specGroupTitle",
-			"specHint": "FRpSCG_specHint",
-			"specLinkBtn": "FRpSCG_specLinkBtn",
-			"specRequired": "FRpSCG_specRequired",
-			"specSelect": "FRpSCG_specSelect",
-			"specSlider": "FRpSCG_specSlider",
-			"specSliderRow": "FRpSCG_specSliderRow",
-			"specSliderValue": "FRpSCG_specSliderValue",
-			"specSlotCell": "FRpSCG_specSlotCell",
-			"specSlotRow": "FRpSCG_specSlotRow",
-			"specTextarea": "FRpSCG_specTextarea",
-			"squareBox": "FRpSCG_squareBox",
-			"squareFileInput": "FRpSCG_squareFileInput",
-			"squareGlyph": "FRpSCG_squareGlyph",
-			"squareLabel": "FRpSCG_squareLabel",
-			"squareMetric": "FRpSCG_squareMetric",
-			"squareOff": "FRpSCG_squareOff",
-			"squareOver": "FRpSCG_squareOver",
-			"squareThumb": "FRpSCG_squareThumb",
-			"squareWrap": "FRpSCG_squareWrap",
-			"squareX": "FRpSCG_squareX",
-			"sz14": "FRpSCG_sz14",
-			"tileDragging": "FRpSCG_tileDragging",
-			"tipAnchor": "FRpSCG_tipAnchor",
-			"wireDialog": "FRpSCG_wireDialog",
-			"wireEmpty": "FRpSCG_wireEmpty",
-			"wireIdx": "FRpSCG_wireIdx",
-			"wireList": "FRpSCG_wireList",
-			"wireMeta": "FRpSCG_wireMeta",
-			"wireOption": "FRpSCG_wireOption",
-			"wireOut": "FRpSCG_wireOut",
-			"wireSelected": "FRpSCG_wireSelected",
-			"wireSub": "FRpSCG_wireSub",
-			"wireThumb": "FRpSCG_wireThumb",
-			"wireThumbFallback": "FRpSCG_wireThumbFallback",
-			"wireTitle": "FRpSCG_wireTitle",
-			"wireUnwire": "FRpSCG_wireUnwire",
-			"wiredTag": "FRpSCG_wiredTag"
+		var component_module_css_default = {
+			"addCardBtn": "U-ygCG_addCardBtn",
+			"bgBtnIdle": "U-ygCG_bgBtnIdle",
+			"bgImg": "U-ygCG_bgImg",
+			"bodyEmptyIcon": "U-ygCG_bodyEmptyIcon",
+			"bodyNotice": "U-ygCG_bodyNotice",
+			"bodySquareWrap": "U-ygCG_bodySquareWrap",
+			"camBtn": "U-ygCG_camBtn",
+			"camDivider": "U-ygCG_camDivider",
+			"camPill": "U-ygCG_camPill",
+			"centerRow": "U-ygCG_centerRow",
+			"contents": "U-ygCG_contents",
+			"cornerHandle": "U-ygCG_cornerHandle",
+			"cornerNE": "U-ygCG_cornerNE",
+			"cornerNW": "U-ygCG_cornerNW",
+			"cornerSE": "U-ygCG_cornerSE",
+			"cornerSW": "U-ygCG_cornerSW",
+			"crossH": "U-ygCG_crossH",
+			"crossV": "U-ygCG_crossV",
+			"dropVeil": "U-ygCG_dropVeil",
+			"dropVeilLabel": "U-ygCG_dropVeilLabel",
+			"editHintBar": "U-ygCG_editHintBar",
+			"editHintIcon": "U-ygCG_editHintIcon",
+			"editHintStrong": "U-ygCG_editHintStrong",
+			"exportRect": "U-ygCG_exportRect",
+			"fpsChip": "U-ygCG_fpsChip",
+			"frameBtn": "U-ygCG_frameBtn",
+			"frameBtnActive": "U-ygCG_frameBtnActive",
+			"frameBtnIdle": "U-ygCG_frameBtnIdle",
+			"hiddenInput": "U-ygCG_hiddenInput",
+			"hintTitle": "U-ygCG_hintTitle",
+			"hintWrap": "U-ygCG_hintWrap",
+			"i12": "U-ygCG_i12",
+			"i14": "U-ygCG_i14",
+			"motionSpin": "U-ygCG_motionSpin",
+			"noMotion": "U-ygCG_noMotion",
+			"ovBg": "U-ygCG_ovBg",
+			"ovCam": "U-ygCG_ovCam",
+			"ovDrop": "U-ygCG_ovDrop",
+			"ovRect": "U-ygCG_ovRect",
+			"playBtn": "U-ygCG_playBtn",
+			"playIcon": "U-ygCG_playIcon",
+			"railBtn": "U-ygCG_railBtn",
+			"railBtnActive": "U-ygCG_railBtnActive",
+			"railBtnDanger": "U-ygCG_railBtnDanger",
+			"railBtnEditActive": "U-ygCG_railBtnEditActive",
+			"railBtnIdle": "U-ygCG_railBtnIdle",
+			"railGrid": "U-ygCG_railGrid",
+			"railGroupLabel": "U-ygCG_railGroupLabel",
+			"railGroupLabelMt": "U-ygCG_railGroupLabelMt",
+			"rectHint": "U-ygCG_rectHint",
+			"reposeBtn": "U-ygCG_reposeBtn",
+			"shellPad": "U-ygCG_shellPad",
+			"skelAvatar": "U-ygCG_skelAvatar",
+			"skelAvatarSm": "U-ygCG_skelAvatarSm",
+			"skelLine": "U-ygCG_skelLine",
+			"spinIcon": "U-ygCG_spinIcon",
+			"stageFrame": "U-ygCG_stageFrame",
+			"stageFrameDrag": "U-ygCG_stageFrameDrag",
+			"stageLoading": "U-ygCG_stageLoading",
+			"stageVeil": "U-ygCG_stageVeil",
+			"stampBtn": "U-ygCG_stampBtn",
+			"timeText": "U-ygCG_timeText",
+			"timeWrap": "U-ygCG_timeWrap",
+			"timelineEmpty": "U-ygCG_timelineEmpty",
+			"timelineShell": "U-ygCG_timelineShell",
+			"transportHead": "U-ygCG_transportHead",
+			"veilText": "U-ygCG_veilText",
+			"warnIcon": "U-ygCG_warnIcon",
+			"wireBtn": "U-ygCG_wireBtn",
+			"wireBtnOff": "U-ygCG_wireBtnOff",
+			"wireBtnOn": "U-ygCG_wireBtnOn"
 		};
-		//#endregion
-		//#region ../../web/card-base/src/layout.tsx
-		function Tip$1({ tip, children }) {
-			if (tip === void 0) return children;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-				label: tip,
-				side: "top",
-				delayMs: 300,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: card_module_css_default.tipAnchor,
-					children
-				})
-			});
-		}
-		/** Skeleton — the quiet loading block (promoted 2026-09-18 from
-		*  motion's kit, where it was the estate's only copy): a bare div
-		*  with the estate pulse. EmptyState is the pane's empty face;
-		*  Skeleton is its loading face. */
-		function Skeleton({ className, ...props }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				"data-slot": "skeleton",
-				className: cn(card_module_css_default.skeleton, className),
-				...props
-			});
-		}
-		function PaneHeader({ title, meta, hint, lead, variant = "strip", className }) {
-			if (variant === "preview") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				"data-slot": "pane-header",
-				"data-variant": "preview",
-				className: cn(card_module_css_default.paneHeaderPreview, className),
-				children: [
-					lead,
-					title != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.paneTitle,
-						children: title
-					}) : null,
-					meta != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.paneMeta,
-						children: meta
-					}) : null,
-					hint
-				]
-			});
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				"data-slot": "pane-header",
-				"data-variant": "strip",
-				className: cn(card_module_css_default.paneHeaderStrip, className),
-				children: [
-					lead,
-					title != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.paneTitle,
-						children: title
-					}) : null,
-					meta != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.paneMetaNum,
-						children: meta
-					}) : null,
-					hint != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.paneHint,
-						children: hint
-					}) : null
-				]
-			});
-		}
-		function PaneShell({ children, className }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				"data-slot": "pane-shell",
-				className: cn(card_module_css_default.paneShell, className),
-				children
-			});
-		}
-		//#endregion
-		//#region ../../web/card-base/src/square.tsx
-		/**
-		* square.tsx — InputSquare, THE ONE square for any slot-shaped value
-		* — the base's default input component. Ported from the old system's
-		* SlotSquare law (packages/web-kit/ui/SlotSquare.tsx, 2026-08-08:
-		* "the look for it will be reused for the sub-card system") onto the
-		* DSH substrate: ui-primitives glyphs, module CSS under the
-		* web-styling chrome laws, no lucide/cn/tip.
-		*
-		* THE PLUS LAW (2026-09-13, the operator): the empty square
-		* carries the PLUS — "add a source" — and the click opens the
-		* three-entry source menu (From flow / From media / From file) in
-		* the provider; a bare square without a picker still files.
-		* THE OLD LAW, KEPT — a square thumbnail with label + badge
-		* + the THREE source verbs (operator, 2026-09-12: "we rendered a
-		* square and gave the option to do 1 of 3 things"):
-		*   a) from previous card  → onClick (the host opens the wire picker;
-		*                            badge = the upstream card's title)
-		*   b) from file upload    → onPickFile/onDropFile (hidden input +
-		*                            OS drop — the ONE read path readAsDataURL)
-		*   c) from media bar      → onDropAsset (the ASSET_DRAG_MIME contract
-		*                            the drop surface already serves)
-		* plus the X (detach). The consumer owns the doors — this shell only
-		* voices them (ui-attachment's own law: presentation registers, the
-		* service seams stay with their owners).
-		*
-		* THE CONSTRUCTION LAW (2026-09-12, the card-base founding): a card
-		* package EMITS an image input → the base constructs THIS square
-		* automatically. One input component; no card hand-rolls its own
-		* file field ever again.
-		*/
-		/** The media-bar drag contract (the tab's drop surface serves the
-		* same MIME — ONE spelling, imported from the base's law). */
-		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
-		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
-		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
-		*  artifact URLs. Every slot-shaped value renders the same way. */
-		function isImageUrl(value) {
-			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
-		}
-		/** Parse the asset MIME off a drop event. null = absent or malformed. */
-		function assetPayload(e) {
-			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
-			if (raw === "") return null;
-			try {
-				const p = JSON.parse(raw);
-				return typeof p["url"] === "string" ? p["url"] : null;
-			} catch {
-				return null;
-			}
-		}
-		function InputSquare(props) {
-			const { label, value, metric, disabled } = props;
-			const fileRef = (0, react.useRef)(null);
-			const boxRef = (0, react.useRef)(null);
-			const [over, setOver] = (0, react.useState)(false);
-			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
-			const empty = thumb === null;
-			const pick = () => {
-				if (disabled) return;
-				if (props.onPick !== void 0) props.onPick(boxRef.current);
-				else if (empty && props.onFile !== void 0) fileRef.current?.click();
-			};
-			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
-				ref: boxRef,
-				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
-				role: "button",
-				tabIndex: 0,
-				"aria-label": (label || "source") + (label ? " source" : ""),
-				onClick: pick,
-				onKeyDown: (e) => {
-					if (e.key === "Enter") pick();
-				},
-				onDragOver: (e) => {
-					if (disabled) return;
-					e.preventDefault();
-					setOver(true);
-				},
-				onDragLeave: () => {
-					setOver(false);
-				},
-				onDrop: (e) => {
-					if (disabled) return;
-					e.preventDefault();
-					setOver(false);
-					const asset = assetPayload(e);
-					if (asset !== null && props.onAsset !== void 0) {
-						props.onAsset(asset);
-						return;
-					}
-					const f = e.dataTransfer.files[0];
-					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
-				}
-			}, thumb !== null ? (0, react.createElement)("img", {
-				className: card_module_css_default.squareThumb,
-				src: thumb,
-				alt: label
-			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
-				className: card_module_css_default.squareX,
-				type: "button",
-				title: "Detach",
-				"aria-label": "Detach " + (label || "source"),
-				onClick: (e) => {
-					e.stopPropagation();
-					props.onClear();
-				}
-			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
-				ref: fileRef,
-				type: "file",
-				accept: "image/png,image/jpeg,image/webp",
-				className: card_module_css_default.squareFileInput,
-				"aria-hidden": true,
-				tabIndex: -1,
-				onChange: (e) => {
-					const f = e.target.files?.[0];
-					if (f !== void 0 && f !== null) props.onFile?.(f);
-					fileRef.current.value = "";
-				}
-			}) : null);
-		}
-		//#endregion
-		//#region ../../web/card-base/src/wirePicker.tsx
-		/** The wire picker — prior stages by ARRAY INDEX, including ones that
-		* haven't run yet ("not run yet" — wire BEFORE the upstream runs).
-		*
-		* Named outputs: when an upstream stage produced >1 named artifact
-		* (input_prep → media + mask), it expands into ONE ROW PER output so the
-		* user can wire mask → lanpaint_mask specifically. Upstreams with 0–1
-		* named artifacts render as a single row (legacy — primary via
-		* assetUrls[0]). The output name rides onPick → setSlotInput →
-		* inputOutputs → collectUpstreamResults. */
-		function WirePickerModal({ slot, priorStages, currentId, currentOutput, onPick, onUnwire, onClose }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose,
-				title: `Wire ${slot} from an earlier card`,
-				closeLabel: "Close wire picker",
-				className: card_module_css_default.wireDialog,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					"data-wire-modal": true,
-					children: [currentId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-						type: "button",
-						onClick: onUnwire,
-						"data-wire-unwire": true,
-						className: card_module_css_default.wireUnwire,
-						children: "Unwire — this slot will ask for a file or wire again"
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("ul", {
-						className: card_module_css_default.wireList,
-						children: [priorStages.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
-							className: card_module_css_default.wireEmpty,
-							children: "No earlier cards yet — add a card before this one to wire from it."
-						}), priorStages.map((u, i) => {
-							const named = u.result?.artifacts ?? {};
-							const namedEntries = Object.entries(named);
-							const multi = namedEntries.length > 1;
-							return (multi ? namedEntries.map(([name, url]) => ({
-								outputName: name,
-								thumb: url,
-								label: name
-							})) : [{
-								outputName: null,
-								thumb: u.result?.assetUrls[0],
-								label: "primary"
-							}]).map((row, ri) => {
-								const selected = u.id === currentId && (currentOutput ?? null) === (row.outputName ?? null);
-								return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-									type: "button",
-									onClick: () => onPick(u.id, row.outputName),
-									"data-wire-option": row.outputName ?? "primary",
-									className: clsx(card_module_css_default.wireOption, selected && card_module_css_default.wireSelected),
-									children: [
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: card_module_css_default.wireIdx,
-											children: String(i + 1).padStart(2, "0")
-										}),
-										row.thumb && isImageUrl(row.thumb) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-											src: row.thumb,
-											alt: "",
-											className: card_module_css_default.wireThumb
-										}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-											className: card_module_css_default.wireThumbFallback,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Link2, { className: card_module_css_default.sz14 })
-										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-											className: card_module_css_default.wireMeta,
-											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-												className: card_module_css_default.wireTitle,
-												children: [u.title, multi && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-													className: card_module_css_default.wireOut,
-													children: ["· ", row.label]
-												})]
-											}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-												className: card_module_css_default.wireSub,
-												children: u.result ? row.thumb ?? "no artifacts" : "not run yet"
-											})]
-										}),
-										selected && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: card_module_css_default.wiredTag,
-											children: "wired"
-										})
-									]
-								}) }, u.id + (ri > 0 ? `:${row.outputName}` : ""));
-							});
-						})]
-					})]
-				})
-			});
-		}
-		//#endregion
-		//#region ../../web/card-base/src/wire.ts
-		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
-		*  own error text when present). */
-		async function v1Get(path, signal) {
-			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
-			const body = await res.json().catch(() => null);
-			if (!res.ok) {
-				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
-				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
-			}
-			return body;
-		}
-		/** /v1/form-spec?model=<family> — the card family's emission (the
-		*  serialized schema envelope + model defaults + the declared edges
-		*  + the mod kinds and their envelopes). */
-		async function fetchFormSpec(model, signal) {
-			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
-			const env = doc["schema"];
-			if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
-			return doc;
-		}
-		//#endregion
-		//#region ../../web/card-base/src/form.tsx
-		/**
-		* form.tsx — @melite/card-base: THE CONSTRUCTOR.
-		*
-		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
-		* construct the card ui should see that the card package emits an
-		* image input, then constructs the input component automatically"):
-		* the base reads the card package's EMISSION — the served form-spec
-		* (the schema envelope, declared input/output edges, mod kinds) —
-		* and constructs the surface. The resolved value derives per render
-		* (resolveValue — the engine's compose cascade mirrored); every
-		* image/file field gets THE ONE square (square.tsx) with the
-		* three source verbs; no card ever hand-rolls an input component.
-		*
-		* THE SEAM (slots.ts): each field renders through the field-atom seam
-		* keyed by its emitted wire type — the caller may pass claimed atoms
-		* (the composition consults the slot machinery and hands them in);
-		* the base's built-in atom is the default (the ui-tool built-ins
-		* pattern). A whole-form takeover replaces CardForm itself.
-		*
-		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
-		* atoms the primitives set lacks (select, slider, textarea) are
-		* layout-only module CSS over native elements, every color an
-		* inherited --dsw-alias-* token (the package's documented pattern).
-		*/
-		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
-		*  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
-		*  img-to-mesh's client, ideogram4's client) each hand-copied the
-		*  same fetch-once + abort dance. One spelling now: fetches
-		*  /v1/form-spec?model=<id> when the id is non-empty, aborts the
-		*  in-flight fetch on unmount or id change, and hands back the doc
-		*  (null until it lands) + the refusal message (null unless the door
-		*  refused — loud consumers render it, silent ones ignore it).
-		*  Consumer-specific derivations (field filters, value seeding) stay
-		*  at the call site as reactions to `spec`. */
-		function useFormSpec(modelId) {
-			const [spec, setSpec] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
-			const id = typeof modelId === "string" && modelId !== "" ? modelId : null;
-			(0, react.useEffect)(() => {
-				if (id === null) return;
-				const ctl = new AbortController();
-				setSpec(null);
-				setError(null);
-				fetchFormSpec(id, ctl.signal).then((doc) => {
-					setSpec(doc);
-				}).catch((e) => {
-					setError(e instanceof Error ? e.message : "form-spec failed");
-				});
-				return () => {
-					ctl.abort();
-				};
-			}, [id]);
-			return {
-				spec,
-				error
-			};
-		}
-		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
-		*  promoted from h3's studio-local TriControl (same semantics, same
-		*  option order). Serves schema-bound fields of type 'tri' AND the
-		*  standalone rail rows that hand-rolled the select before. */
-		function TriStateAtom({ label, value, onEdit, name, disabled }) {
-			return (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"aria-label": label,
-				disabled: disabled === true,
-				value: value === void 0 ? "" : String(value),
-				onChange: (e) => {
-					const v = e.target.value;
-					onEdit(name, v === "" ? void 0 : v === "true");
-				}
-			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
-		}
-		/** The slider's local display during a drag (the settle law's
-		*  carrier): local owns the bubble while dragging; an external move
-		*  of the backing value (agent write, revive, another card opened)
-		*  reclaims the display. */
-		function useLocalSliderValue(value) {
-			const num = typeof value === "number" ? value : Number(value);
-			const [local, setLocal] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				setLocal(null);
-			}, [num]);
-			return {
-				value: local !== null ? local : Number.isFinite(num) ? num : null,
-				set: setLocal
-			};
-		}
-		/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
-		*  mask-studio's draft absorber, 2026-08-10): a drag fires input
-		*  60×/sec; if every step wrote to the card, updateStageParams →
-		*  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
-		*  the editor. The atom shows the drag locally and persists ONCE on
-		*  settle (the change event = release / keyboard step). External
-		*  writes (agent, revive) re-sync the display when the backing
-		*  value actually moves. */
-		function SpecSliderAtom({ f, value, onEdit }) {
-			const shown = useLocalSliderValue(value);
-			if (shown.value === null) return (0, react.createElement)("span", {
-				className: card_module_css_default.specSliderRow,
-				"data-refused": f.name
-			}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value) + " — REFUSED: not a number"));
-			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
-				className: card_module_css_default.specSlider,
-				type: "range",
-				min: f.min ?? 0,
-				max: f.max ?? 10,
-				step: f.step ?? .1,
-				value: shown.value,
-				onInput: (e) => {
-					shown.set(Number(e.target.value));
-				},
-				onChange: (e) => {
-					onEdit(f.name, e.target.value);
-				},
-				"aria-label": f.label
-			}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value)));
-		}
-		/** One spec atom — typed by the declaration, edited as a raw string
-		*  while typing (decimal dots survive; coercion happens once at patch). */
-		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }) {
-			if ((f.type === "image" || f.type === "file") && square !== void 0) {
-				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
-				return (0, react.createElement)(InputSquare, {
-					label: f.label !== "" ? f.label : f.name,
-					value: shown !== null && isImageUrl(shown) ? shown : null,
-					metric: typeof value === "string" && value !== "" && !isImageUrl(value) ? value : void 0,
-					...square.verbs
-				});
-			}
-			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				value: String(value ?? ""),
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			}, ghost !== void 0 ? (0, react.createElement)("option", { value: "" }, ghost) : null, f.options.map((o) => {
-				const row = typeof o === "string" ? {
-					value: o,
-					label: o
-				} : o;
-				return (0, react.createElement)("option", {
-					key: row.value,
-					value: row.value
-				}, titleCaseId(row.label));
-			}));
-			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
-				f,
-				value,
-				onEdit
-			});
-			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
-				label: f.label !== "" ? f.label : f.name,
-				value: value === void 0 || value === null ? void 0 : value === true || value === "true",
-				onEdit,
-				name: f.name
-			});
-			if (f.type === "switch" || f.type === "boolean") {
-				if (value !== void 0 && value !== null && typeof value !== "boolean" && value !== "true" && value !== "false") return (0, react.createElement)("span", {
-					className: card_module_css_default.specField,
-					"data-refused": f.name
-				}, f.label + ": " + String(value) + " — REFUSED: not a boolean");
-				const on = value === true || value === "true";
-				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
-					label: f.label,
-					checked: on,
-					onChange: (next) => {
-						onEdit(f.name, next);
-					}
-				});
-			}
-			if (f.type === "textarea") {
-				const fit = (el) => {
-					if (el === null) return;
-					el.style.height = "auto";
-					el.style.height = Math.max(el.scrollHeight, 44) + "px";
-				};
-				return (0, react.createElement)("textarea", {
-					className: card_module_css_default.specTextarea,
-					rows: 2,
-					value: String(value ?? ""),
-					placeholder: f.placeholder ?? "",
-					ref: fit,
-					onChange: (e) => {
-						const el = e.target;
-						fit(el);
-						onEdit(f.name, el.value);
-					},
-					"aria-label": f.label
-				});
-			}
-			if (f.type === "number") return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				min: f.min,
-				max: f.max,
-				step: f.step,
-				value: String(value ?? ""),
-				placeholder: placeholder ?? f.placeholder ?? "",
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			});
-			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				value: String(value ?? ""),
-				placeholder: placeholder ?? f.placeholder ?? "",
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			});
-		}
-		/** THE DYNAMIC PARAMETER PANEL (2026-09-17, the operator's shared-
-		* component law): sections of the SERVED form-spec's rows at their
-		* wire names — ONE mechanism every card seats, never a per-card
-		* re-walk. The card owns POLICY through the DECLARATION (which
-		* fields exist, their visible_when leaves); the base owns MECHANISM
-		* (fetch → walker → row atoms → visibility grammar → the error
-		* law). A row the door never declared renders NOTHING (no ghost,
-		* no twin); a refused spec renders AS an error — never a thinner
-		* panel. */
-		function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: errorProp }) {
-			const owned = useFormSpec(model);
-			const spec = specProp !== void 0 ? specProp : owned.spec;
-			const error = specProp !== void 0 ? errorProp ?? null : owned.error;
-			if (error !== null) return (0, react.createElement)("div", {
-				className: card_module_css_default.specGroup,
-				role: "alert",
-				"data-testid": "spec-panel-error"
-			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, "form-spec failed — parameters unavailable"), (0, react.createElement)("div", { className: card_module_css_default.specHint }, error));
-			if (spec === null) return null;
-			const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]));
-			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, sections.map((sec) => (0, react.createElement)("div", {
-				className: card_module_css_default.specGroup,
-				key: sec.title,
-				...sec.testid !== void 0 ? { "data-testid": sec.testid } : {}
-			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
-				const f = byName.get(row.name);
-				if (f === void 0) return null;
-				if (!fieldVisible(f, values)) return null;
-				return (0, react.createElement)(SpecFieldRow, {
-					key: row.name,
-					f,
-					value: values[row.name],
-					onEdit
-				});
-			}))));
-		}
-		/** THE CARD FORM (the constructor's surface half) — the emission's
-		*  fields walked off the schema envelope, grouped, visible-when
-		*  honored; the RESOLVED value derives per render (resolveValue —
-		*  the engine's compose cascade mirrored), edits are set/unset ops
-		*  over the USER layer (the settings law: presence IS the override
-		*  mark, the reset chip removes it). Each field renders through the
-		*  claimed atom for its emitted type when the caller passes one;
-		*  the base's built-in atom is the default.
-		*
-		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
-		*  img-to-mesh input component — you are not using it around — you
-		*  are hardcoding"): an emitted image/file input constructs THE ONE
-		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
-		*  square provider — no call site wires it, no call site can forget
-		*  it. The caller hands only the WIRE (picker candidates), never the
-		*  component; a caller that passes its own `square` fn overrides (the
-		*  host-claim seam), but the default is the constructor's own. */
-		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
-		*  required star, hint) around the atom — CardForm's own row, opened
-		*  to rail sections that render served fields outside a whole form
-		*  (mask's TuneSection). The claim seam stays CardForm's; this row
-		*  takes the resolved atom inputs. */
-		/** THE SEED DICE (stroke 39 — the operator's QOL law): the seed
-		*  knob carries the RANDOM sentinel -1 (GATE S: -1 mints a fresh
-		*  seed in the lane, EVERY run). The dice sits at the key line's
-		*  right end, across from the field's name: FILLED pips = random
-		*  (a new seed every run), HOLLOW pips = fixed (this exact seed
-		*  re-runs). The state DERIVES from the resolved value alone — no
-		*  hidden mode to drift; the click writes the value: fixed → -1
-		*  (random), random → a minted concrete int (the kit's own mint
-		*  law, Math.floor(random * 2147483647)). Typing a number while
-		*  random fixes it — the dice unfills by derivation, one source
-		*  of truth. The input never paints the sentinel: random shows
-		*  the placeholder, never "-1". */
-		function SeedDice({ random, onToggle }) {
-			return (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.specDice + (random ? " " + card_module_css_default.specDiceOn : ""),
-				"data-seed-dice": random ? "random" : "fixed",
-				"aria-pressed": random,
-				"aria-label": "seed dice",
-				title: random ? "Random — a new seed every run. Click to fix one." : "Fixed seed — this exact seed re-runs. Click for a new one every run.",
-				onClick: onToggle
-			}, (0, react.createElement)("svg", {
-				width: 14,
-				height: 14,
-				viewBox: "0 0 16 16",
-				fill: "none",
-				xmlns: "http://www.w3.org/2000/svg",
-				"aria-hidden": "true"
-			}, (0, react.createElement)("rect", {
-				x: 1.4,
-				y: 1.4,
-				width: 13.2,
-				height: 13.2,
-				rx: 3.2,
-				stroke: "currentColor",
-				strokeWidth: 1.3
-			}), (0, react.createElement)("circle", {
-				cx: 5,
-				cy: 5,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 11,
-				cy: 5,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 8,
-				cy: 8,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 5,
-				cy: 11,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 11,
-				cy: 11,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			})));
-		}
-		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
-			const seedKnob = f.name === "seed";
-			const seedRandom = seedKnob && (value === -1 || value === "-1");
-			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SeedDice, {
-				random: seedRandom,
-				onToggle: () => {
-					if (seedRandom) onEdit(f.name, Math.floor(Math.random() * 2147483647));
-					else onEdit(f.name, -1);
-				}
-			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
-				f,
-				value: seedRandom ? void 0 : value,
-				...seedRandom ? { placeholder: "random — new every run" } : {},
-				onEdit,
-				square,
-				...wireCandidates !== void 0 ? { wireCandidates } : {}
-			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
-		}
-		//#endregion
-		//#region ../../web/card-base/src/mods.tsx
-		/**
-		* mods.tsx — THE MOD SYSTEM, CORE (the old SubcardGrid, ported 1:1 —
-		* and moved into the base package 2026-09-12 after the operator's
-		* law: "MOD SYSTEM IS CORE. NEVER HARDCODED. The LORAS should not be
-		* on cards, the MOD SYSTEM SHOULD").
-		*
-		* The laws this section enforces:
-		*  - mods NEVER ride the card's param form. The estate serves the
-		*    OPEN kind vocabulary (features.modifiers); the constructor
-		*    (CardForm) renders THIS section itself and excludes every
-		*    mod-owned name from the flat groups — no surface wires it, no
-		*    surface can forget it (the construction law, same as the
-		*    square).
-		*  - THE WIRE IS THE STORAGE: params[param_key] holds the bag; the
-		*    same bag runs and the agent reads/writes it.
-		*  - commits persist immediately (the old onSaveParams law — never
-		*    deferred to Run): onEdit rides the caller's values map AND
-		*    onPatch (when present) persists to the domain on the spot.
-		*  - apply order = array order; the drag rewrites the bag.
-		*  - THREE kind shapes, all first-class (the leaf switches on the
-		*    SERVED entry mode, never the kind name):
-		*      OPTION kinds (lora): served catalog rows + strength; the
-		*        entry is { id, strength } — the row's own defaults seed the
-		*        strength.
-		*      HYBRID kinds (controlnet): served catalog rows AND entry
-		*        fields; the entry is the bag element keyed by its option_key
-		*        (type) — the leaf stamps the row's resolved facts (model +
-		*        preprocessor) onto new entries so the run record carries the
-		*        retired wire shape; the lane re-validates them, never trusts
-		*        them. Pack-level scalars (the strength floor) render as the
-		*        section's own rows above the tiles.
-		*      OPTION kinds (lora): served catalog rows + strength; the
-		*        entry is { id, strength } — the row's own defaults seed the
-		*        strength.
-		*      FIELD kinds (mask): the kind's own spec fields (image squares,
-		*        selects, sliders); the entry IS the params object. The leaf
-		*        renders kind.fields through the same constructor atoms —
-		*        the fields NEVER render flat on the card form.
-		*/
-		//#endregion
-		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/OrbitControls.js
-		init_three_module();
-		/**
-		* Fires when the camera has been transformed by the controls.
-		*
-		* @event OrbitControls#change
-		* @type {Object}
-		*/
-		const _changeEvent = { type: "change" };
-		/**
-		* Fires when an interaction was initiated.
-		*
-		* @event OrbitControls#start
-		* @type {Object}
-		*/
-		const _startEvent = { type: "start" };
-		/**
-		* Fires when an interaction has finished.
-		*
-		* @event OrbitControls#end
-		* @type {Object}
-		*/
-		const _endEvent = { type: "end" };
-		const _ray = new Ray();
-		const _plane = new Plane();
-		const _TILT_LIMIT = Math.cos(70 * MathUtils.DEG2RAD);
-		const _v = new Vector3();
-		const _twoPI = 2 * Math.PI;
-		const _STATE = {
-			NONE: -1,
-			ROTATE: 0,
-			DOLLY: 1,
-			PAN: 2,
-			TOUCH_ROTATE: 3,
-			TOUCH_PAN: 4,
-			TOUCH_DOLLY_PAN: 5,
-			TOUCH_DOLLY_ROTATE: 6
-		};
-		const _EPS = 1e-6;
-		/**
-		* Orbit controls allow the camera to orbit around a target.
-		*
-		* OrbitControls performs orbiting, dollying (zooming), and panning. Unlike {@link TrackballControls},
-		* it maintains the "up" direction `object.up` (+Y by default).
-		*
-		* - Orbit: Left mouse / touch: one-finger move.
-		* - Zoom: Middle mouse, or mousewheel / touch: two-finger spread or squish.
-		* - Pan: Right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move.
-		*
-		* ```js
-		* const controls = new OrbitControls( camera, renderer.domElement );
-		*
-		* // controls.update() must be called after any manual changes to the camera's transform
-		* camera.position.set( 0, 20, 100 );
-		* controls.update();
-		*
-		* function animate() {
-		*
-		* 	// required if controls.enableDamping or controls.autoRotate are set to true
-		* 	controls.update();
-		*
-		* 	renderer.render( scene, camera );
-		*
-		* }
-		* ```
-		*
-		* @augments Controls
-		* @three_import import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-		*/
-		var OrbitControls = class extends Controls {
-			/**
-			* Constructs a new controls instance.
-			*
-			* @param {Object3D} object - The object that is managed by the controls.
-			* @param {?HTMLElement} domElement - The HTML element used for event listeners.
-			*/
-			constructor(object, domElement = null) {
-				super(object, domElement);
-				this.state = _STATE.NONE;
-				/**
-				* The focus point of the controls, the `object` orbits around this.
-				* It can be updated manually at any point to change the focus of the controls.
-				*
-				* @type {Vector3}
-				*/
-				this.target = new Vector3();
-				/**
-				* The focus point of the `minTargetRadius` and `maxTargetRadius` limits.
-				* It can be updated manually at any point to change the center of interest
-				* for the `target`.
-				*
-				* @type {Vector3}
-				*/
-				this.cursor = new Vector3();
-				/**
-				* How far you can dolly in (perspective camera only).
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minDistance = 0;
-				/**
-				* How far you can dolly out (perspective camera only).
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxDistance = Infinity;
-				/**
-				* How far you can zoom in (orthographic camera only).
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minZoom = 0;
-				/**
-				* How far you can zoom out (orthographic camera only).
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxZoom = Infinity;
-				/**
-				* How close you can get the target to the 3D `cursor`.
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minTargetRadius = 0;
-				/**
-				* How far you can move the target from the 3D `cursor`.
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxTargetRadius = Infinity;
-				/**
-				* How far you can orbit vertically, lower limit. Range is `[0, Math.PI]` radians.
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minPolarAngle = 0;
-				/**
-				* How far you can orbit vertically, upper limit. Range is `[0, Math.PI]` radians.
-				*
-				* @type {number}
-				* @default Math.PI
-				*/
-				this.maxPolarAngle = Math.PI;
-				/**
-				* How far you can orbit horizontally, lower limit. If set, the interval `[ min, max ]`
-				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
-				*
-				* @type {number}
-				* @default -Infinity
-				*/
-				this.minAzimuthAngle = -Infinity;
-				/**
-				* How far you can orbit horizontally, upper limit. If set, the interval `[ min, max ]`
-				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
-				*
-				* @type {number}
-				* @default -Infinity
-				*/
-				this.maxAzimuthAngle = Infinity;
-				/**
-				* Set to `true` to enable damping (inertia), which can be used to give a sense of weight
-				* to the controls. Note that if this is enabled, you must call `update()` in your animation
-				* loop.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.enableDamping = false;
-				/**
-				* The damping inertia used if `enableDamping` is set to `true`.
-				*
-				* Note that for this to work, you must call `update()` in your animation loop.
-				*
-				* @type {number}
-				* @default 0.05
-				*/
-				this.dampingFactor = .05;
-				/**
-				* Enable or disable zooming (dollying) of the camera.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enableZoom = true;
-				/**
-				* Speed of zooming / dollying.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.zoomSpeed = 1;
-				/**
-				* Enable or disable horizontal and vertical rotation of the camera.
-				*
-				* Note that it is possible to disable a single axis by setting the min and max of the
-				* `minPolarAngle` or `minAzimuthAngle` to the same value, which will cause the vertical
-				* or horizontal rotation to be fixed at that value.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enableRotate = true;
-				/**
-				* Speed of rotation.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.rotateSpeed = 1;
-				/**
-				* How fast to rotate the camera when the keyboard is used.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.keyRotateSpeed = 1;
-				/**
-				* Enable or disable camera panning.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enablePan = true;
-				/**
-				* Speed of panning.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.panSpeed = 1;
-				/**
-				* Defines how the camera's position is translated when panning. If `true`, the camera pans
-				* in screen space. Otherwise, the camera pans in the plane orthogonal to the camera's up
-				* direction.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.screenSpacePanning = true;
-				/**
-				* How fast to pan the camera when the keyboard is used in
-				* pixels per keypress.
-				*
-				* @type {number}
-				* @default 7
-				*/
-				this.keyPanSpeed = 7;
-				/**
-				* Setting this property to `true` allows to zoom to the cursor's position.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.zoomToCursor = false;
-				/**
-				* Set to true to automatically rotate around the target
-				*
-				* Note that if this is enabled, you must call `update()` in your animation loop.
-				* If you want the auto-rotate speed to be independent of the frame rate (the refresh
-				* rate of the display), you must pass the time `deltaTime`, in seconds, to `update()`.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.autoRotate = false;
-				/**
-				* How fast to rotate around the target if `autoRotate` is `true`. The default  equates to 30 seconds
-				* per orbit at 60fps.
-				*
-				* Note that if `autoRotate` is enabled, you must call `update()` in your animation loop.
-				*
-				* @type {number}
-				* @default 2
-				*/
-				this.autoRotateSpeed = 2;
-				/**
-				* This object contains references to the keycodes for controlling camera panning.
-				*
-				* ```js
-				* controls.keys = {
-				* 	LEFT: 'ArrowLeft', //left arrow
-				* 	UP: 'ArrowUp', // up arrow
-				* 	RIGHT: 'ArrowRight', // right arrow
-				* 	BOTTOM: 'ArrowDown' // down arrow
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.keys = {
-					LEFT: "ArrowLeft",
-					UP: "ArrowUp",
-					RIGHT: "ArrowRight",
-					BOTTOM: "ArrowDown"
-				};
-				/**
-				* This object contains references to the mouse actions used by the controls.
-				*
-				* ```js
-				* controls.mouseButtons = {
-				* 	LEFT: THREE.MOUSE.ROTATE,
-				* 	MIDDLE: THREE.MOUSE.DOLLY,
-				* 	RIGHT: THREE.MOUSE.PAN
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.mouseButtons = {
-					LEFT: MOUSE.ROTATE,
-					MIDDLE: MOUSE.DOLLY,
-					RIGHT: MOUSE.PAN
-				};
-				/**
-				* This object contains references to the touch actions used by the controls.
-				*
-				* ```js
-				* controls.mouseButtons = {
-				* 	ONE: THREE.TOUCH.ROTATE,
-				* 	TWO: THREE.TOUCH.DOLLY_PAN
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.touches = {
-					ONE: TOUCH.ROTATE,
-					TWO: TOUCH.DOLLY_PAN
-				};
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {Vector3}
-				*/
-				this.target0 = this.target.clone();
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {Vector3}
-				*/
-				this.position0 = this.object.position.clone();
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {number}
-				*/
-				this.zoom0 = this.object.zoom;
-				this._cursorStyle = "auto";
-				this._domElementKeyEvents = null;
-				this._lastPosition = new Vector3();
-				this._lastQuaternion = new Quaternion();
-				this._lastTargetPosition = new Vector3();
-				this._quat = new Quaternion().setFromUnitVectors(object.up, new Vector3(0, 1, 0));
-				this._quatInverse = this._quat.clone().invert();
-				this._spherical = new Spherical();
-				this._sphericalDelta = new Spherical();
-				this._scale = 1;
-				this._panOffset = new Vector3();
-				this._rotateStart = new Vector2();
-				this._rotateEnd = new Vector2();
-				this._rotateDelta = new Vector2();
-				this._panStart = new Vector2();
-				this._panEnd = new Vector2();
-				this._panDelta = new Vector2();
-				this._dollyStart = new Vector2();
-				this._dollyEnd = new Vector2();
-				this._dollyDelta = new Vector2();
-				this._dollyDirection = new Vector3();
-				this._mouse = new Vector2();
-				this._performCursorZoom = false;
-				this._pointers = [];
-				this._pointerPositions = {};
-				this._controlActive = false;
-				this._onPointerMove = onPointerMove.bind(this);
-				this._onPointerDown = onPointerDown.bind(this);
-				this._onPointerUp = onPointerUp.bind(this);
-				this._onContextMenu = onContextMenu.bind(this);
-				this._onMouseWheel = onMouseWheel.bind(this);
-				this._onKeyDown = onKeyDown.bind(this);
-				this._onTouchStart = onTouchStart.bind(this);
-				this._onTouchMove = onTouchMove.bind(this);
-				this._onMouseDown = onMouseDown.bind(this);
-				this._onMouseMove = onMouseMove.bind(this);
-				this._interceptControlDown = interceptControlDown.bind(this);
-				this._interceptControlUp = interceptControlUp.bind(this);
-				if (this.domElement !== null) this.connect(this.domElement);
-				this.update();
-			}
-			/**
-			* Defines the visual representation of the cursor.
-			*
-			* @type {('auto'|'grab')}
-			* @default 'auto'
-			*/
-			set cursorStyle(type) {
-				this._cursorStyle = type;
-				if (type === "grab") this.domElement.style.cursor = "grab";
-				else this.domElement.style.cursor = "auto";
-			}
-			get cursorStyle() {
-				return this._cursorStyle;
-			}
-			connect(element) {
-				super.connect(element);
-				this.domElement.addEventListener("pointerdown", this._onPointerDown);
-				this.domElement.addEventListener("pointercancel", this._onPointerUp);
-				this.domElement.addEventListener("contextmenu", this._onContextMenu);
-				this.domElement.addEventListener("wheel", this._onMouseWheel, { passive: false });
-				this.domElement.getRootNode().addEventListener("keydown", this._interceptControlDown, {
-					passive: true,
-					capture: true
-				});
-				this.domElement.style.touchAction = "none";
-			}
-			disconnect() {
-				this.domElement.removeEventListener("pointerdown", this._onPointerDown);
-				this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
-				this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
-				this.domElement.removeEventListener("pointercancel", this._onPointerUp);
-				this.domElement.removeEventListener("wheel", this._onMouseWheel);
-				this.domElement.removeEventListener("contextmenu", this._onContextMenu);
-				this.stopListenToKeyEvents();
-				this.domElement.getRootNode().removeEventListener("keydown", this._interceptControlDown, { capture: true });
-				this.domElement.style.touchAction = "";
-			}
-			dispose() {
-				this.disconnect();
-			}
-			/**
-			* Get the current vertical rotation, in radians.
-			*
-			* @return {number} The current vertical rotation, in radians.
-			*/
-			getPolarAngle() {
-				return this._spherical.phi;
-			}
-			/**
-			* Get the current horizontal rotation, in radians.
-			*
-			* @return {number} The current horizontal rotation, in radians.
-			*/
-			getAzimuthalAngle() {
-				return this._spherical.theta;
-			}
-			/**
-			* Returns the distance from the camera to the target.
-			*
-			* @return {number} The distance from the camera to the target.
-			*/
-			getDistance() {
-				return this.object.position.distanceTo(this.target);
-			}
-			/**
-			* Adds key event listeners to the given DOM element.
-			* `window` is a recommended argument for using this method.
-			*
-			* @param {HTMLElement} domElement - The DOM element
-			*/
-			listenToKeyEvents(domElement) {
-				domElement.addEventListener("keydown", this._onKeyDown);
-				this._domElementKeyEvents = domElement;
-			}
-			/**
-			* Removes the key event listener previously defined with `listenToKeyEvents()`.
-			*/
-			stopListenToKeyEvents() {
-				if (this._domElementKeyEvents !== null) {
-					this._domElementKeyEvents.removeEventListener("keydown", this._onKeyDown);
-					this._domElementKeyEvents = null;
-				}
-			}
-			/**
-			* Save the current state of the controls. This can later be recovered with `reset()`.
-			*/
-			saveState() {
-				this.target0.copy(this.target);
-				this.position0.copy(this.object.position);
-				this.zoom0 = this.object.zoom;
-			}
-			/**
-			* Reset the controls to their state from either the last time the `saveState()`
-			* was called, or the initial state.
-			*/
-			reset() {
-				this.target.copy(this.target0);
-				this.object.position.copy(this.position0);
-				this.object.zoom = this.zoom0;
-				this.object.updateProjectionMatrix();
-				this.dispatchEvent(_changeEvent);
-				this.update();
-				this.state = _STATE.NONE;
-			}
-			/**
-			* Programmatically pan the camera.
-			*
-			* @param {number} deltaX - The horizontal pan amount in pixels.
-			* @param {number} deltaY - The vertical pan amount in pixels.
-			*/
-			pan(deltaX, deltaY) {
-				this._pan(deltaX, deltaY);
-				this.update();
-			}
-			/**
-			* Programmatically dolly in (zoom in for perspective camera).
-			*
-			* @param {number} dollyScale - The dolly scale factor.
-			*/
-			dollyIn(dollyScale) {
-				this._dollyIn(dollyScale);
-				this.update();
-			}
-			/**
-			* Programmatically dolly out (zoom out for perspective camera).
-			*
-			* @param {number} dollyScale - The dolly scale factor.
-			*/
-			dollyOut(dollyScale) {
-				this._dollyOut(dollyScale);
-				this.update();
-			}
-			/**
-			* Programmatically rotate the camera left (around the vertical axis).
-			*
-			* @param {number} angle - The rotation angle in radians.
-			*/
-			rotateLeft(angle) {
-				this._rotateLeft(angle);
-				this.update();
-			}
-			/**
-			* Programmatically rotate the camera up (around the horizontal axis).
-			*
-			* @param {number} angle - The rotation angle in radians.
-			*/
-			rotateUp(angle) {
-				this._rotateUp(angle);
-				this.update();
-			}
-			update(deltaTime = null) {
-				const position = this.object.position;
-				_v.copy(position).sub(this.target);
-				_v.applyQuaternion(this._quat);
-				this._spherical.setFromVector3(_v);
-				if (this.autoRotate && this.state === _STATE.NONE) this._rotateLeft(this._getAutoRotationAngle(deltaTime));
-				if (this.enableDamping) {
-					this._spherical.theta += this._sphericalDelta.theta * this.dampingFactor;
-					this._spherical.phi += this._sphericalDelta.phi * this.dampingFactor;
-				} else {
-					this._spherical.theta += this._sphericalDelta.theta;
-					this._spherical.phi += this._sphericalDelta.phi;
-				}
-				let min = this.minAzimuthAngle;
-				let max = this.maxAzimuthAngle;
-				if (isFinite(min) && isFinite(max)) {
-					if (min < -Math.PI) min += _twoPI;
-					else if (min > Math.PI) min -= _twoPI;
-					if (max < -Math.PI) max += _twoPI;
-					else if (max > Math.PI) max -= _twoPI;
-					if (min <= max) this._spherical.theta = Math.max(min, Math.min(max, this._spherical.theta));
-					else this._spherical.theta = this._spherical.theta > (min + max) / 2 ? Math.max(min, this._spherical.theta) : Math.min(max, this._spherical.theta);
-				}
-				this._spherical.phi = Math.max(this.minPolarAngle, Math.min(this.maxPolarAngle, this._spherical.phi));
-				this._spherical.makeSafe();
-				if (this.enableDamping === true) this.target.addScaledVector(this._panOffset, this.dampingFactor);
-				else this.target.add(this._panOffset);
-				this.target.sub(this.cursor);
-				this.target.clampLength(this.minTargetRadius, this.maxTargetRadius);
-				this.target.add(this.cursor);
-				let zoomChanged = false;
-				if (this.zoomToCursor && this._performCursorZoom || this.object.isOrthographicCamera) this._spherical.radius = this._clampDistance(this._spherical.radius);
-				else {
-					const prevRadius = this._spherical.radius;
-					this._spherical.radius = this._clampDistance(this._spherical.radius * this._scale);
-					zoomChanged = prevRadius != this._spherical.radius;
-				}
-				_v.setFromSpherical(this._spherical);
-				_v.applyQuaternion(this._quatInverse);
-				position.copy(this.target).add(_v);
-				this.object.lookAt(this.target);
-				if (this.enableDamping === true) {
-					this._sphericalDelta.theta *= 1 - this.dampingFactor;
-					this._sphericalDelta.phi *= 1 - this.dampingFactor;
-					this._panOffset.multiplyScalar(1 - this.dampingFactor);
-				} else {
-					this._sphericalDelta.set(0, 0, 0);
-					this._panOffset.set(0, 0, 0);
-				}
-				if (this.zoomToCursor && this._performCursorZoom) {
-					let newRadius = null;
-					if (this.object.isPerspectiveCamera) {
-						const prevRadius = _v.length();
-						newRadius = this._clampDistance(prevRadius * this._scale);
-						const radiusDelta = prevRadius - newRadius;
-						this.object.position.addScaledVector(this._dollyDirection, radiusDelta);
-						this.object.updateMatrixWorld();
-						zoomChanged = !!radiusDelta;
-					} else if (this.object.isOrthographicCamera) {
-						const mouseBefore = new Vector3(this._mouse.x, this._mouse.y, 0);
-						mouseBefore.unproject(this.object);
-						const prevZoom = this.object.zoom;
-						this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
-						this.object.updateProjectionMatrix();
-						zoomChanged = prevZoom !== this.object.zoom;
-						const mouseAfter = new Vector3(this._mouse.x, this._mouse.y, 0);
-						mouseAfter.unproject(this.object);
-						this.object.position.sub(mouseAfter).add(mouseBefore);
-						this.object.updateMatrixWorld();
-						newRadius = _v.length();
-					} else {
-						console.warn("WARNING: OrbitControls.js encountered an unknown camera type - zoom to cursor disabled.");
-						this.zoomToCursor = false;
-					}
-					if (newRadius !== null) {
-						if (this.screenSpacePanning) this.target.set(0, 0, -1).transformDirection(this.object.matrix).multiplyScalar(newRadius).add(this.object.position);
-						else {
-							_ray.origin.copy(this.object.position);
-							_ray.direction.set(0, 0, -1).transformDirection(this.object.matrix);
-							if (Math.abs(this.object.up.dot(_ray.direction)) < _TILT_LIMIT) this.object.lookAt(this.target);
-							else {
-								_plane.setFromNormalAndCoplanarPoint(this.object.up, this.target);
-								_ray.intersectPlane(_plane, this.target);
-							}
-						}
-					}
-				} else if (this.object.isOrthographicCamera) {
-					const prevZoom = this.object.zoom;
-					this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
-					if (prevZoom !== this.object.zoom) {
-						this.object.updateProjectionMatrix();
-						zoomChanged = true;
-					}
-				}
-				this._scale = 1;
-				this._performCursorZoom = false;
-				if (zoomChanged || this._lastPosition.distanceToSquared(this.object.position) > _EPS || 8 * (1 - this._lastQuaternion.dot(this.object.quaternion)) > _EPS || this._lastTargetPosition.distanceToSquared(this.target) > _EPS) {
-					this.dispatchEvent(_changeEvent);
-					this._lastPosition.copy(this.object.position);
-					this._lastQuaternion.copy(this.object.quaternion);
-					this._lastTargetPosition.copy(this.target);
-					return true;
-				}
-				return false;
-			}
-			_getAutoRotationAngle(deltaTime) {
-				if (deltaTime !== null) return _twoPI / 60 * this.autoRotateSpeed * deltaTime;
-				else return _twoPI / 60 / 60 * this.autoRotateSpeed;
-			}
-			_getZoomScale(delta) {
-				const normalizedDelta = Math.abs(delta * .01);
-				return Math.pow(.95, this.zoomSpeed * normalizedDelta);
-			}
-			_rotateLeft(angle) {
-				this._sphericalDelta.theta -= angle;
-			}
-			_rotateUp(angle) {
-				this._sphericalDelta.phi -= angle;
-			}
-			_panLeft(distance, objectMatrix) {
-				_v.setFromMatrixColumn(objectMatrix, 0);
-				_v.multiplyScalar(-distance);
-				this._panOffset.add(_v);
-			}
-			_panUp(distance, objectMatrix) {
-				if (this.screenSpacePanning === true) _v.setFromMatrixColumn(objectMatrix, 1);
-				else {
-					_v.setFromMatrixColumn(objectMatrix, 0);
-					_v.crossVectors(this.object.up, _v);
-				}
-				_v.multiplyScalar(distance);
-				this._panOffset.add(_v);
-			}
-			_pan(deltaX, deltaY) {
-				const element = this.domElement;
-				if (this.object.isPerspectiveCamera) {
-					const position = this.object.position;
-					_v.copy(position).sub(this.target);
-					let targetDistance = _v.length();
-					targetDistance *= Math.tan(this.object.fov / 2 * Math.PI / 180);
-					this._panLeft(2 * deltaX * targetDistance / element.clientHeight, this.object.matrix);
-					this._panUp(2 * deltaY * targetDistance / element.clientHeight, this.object.matrix);
-				} else if (this.object.isOrthographicCamera) {
-					this._panLeft(deltaX * (this.object.right - this.object.left) / this.object.zoom / element.clientWidth, this.object.matrix);
-					this._panUp(deltaY * (this.object.top - this.object.bottom) / this.object.zoom / element.clientHeight, this.object.matrix);
-				} else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.");
-					this.enablePan = false;
-				}
-			}
-			_dollyOut(dollyScale) {
-				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale /= dollyScale;
-				else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
-					this.enableZoom = false;
-				}
-			}
-			_dollyIn(dollyScale) {
-				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale *= dollyScale;
-				else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
-					this.enableZoom = false;
-				}
-			}
-			_updateZoomParameters(x, y) {
-				if (!this.zoomToCursor) return;
-				this._performCursorZoom = true;
-				const rect = this.domElement.getBoundingClientRect();
-				const dx = x - rect.left;
-				const dy = y - rect.top;
-				const w = rect.width;
-				const h = rect.height;
-				this._mouse.x = dx / w * 2 - 1;
-				this._mouse.y = -(dy / h) * 2 + 1;
-				this._dollyDirection.set(this._mouse.x, this._mouse.y, 1).unproject(this.object).sub(this.object.position).normalize();
-			}
-			_clampDistance(dist) {
-				return Math.max(this.minDistance, Math.min(this.maxDistance, dist));
-			}
-			_handleMouseDownRotate(event) {
-				this._rotateStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseDownDolly(event) {
-				this._updateZoomParameters(event.clientX, event.clientX);
-				this._dollyStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseDownPan(event) {
-				this._panStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseMoveRotate(event) {
-				this._rotateEnd.set(event.clientX, event.clientY);
-				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
-				const element = this.domElement;
-				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
-				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
-				this._rotateStart.copy(this._rotateEnd);
-				this.update();
-			}
-			_handleMouseMoveDolly(event) {
-				this._dollyEnd.set(event.clientX, event.clientY);
-				this._dollyDelta.subVectors(this._dollyEnd, this._dollyStart);
-				if (this._dollyDelta.y > 0) this._dollyOut(this._getZoomScale(this._dollyDelta.y));
-				else if (this._dollyDelta.y < 0) this._dollyIn(this._getZoomScale(this._dollyDelta.y));
-				this._dollyStart.copy(this._dollyEnd);
-				this.update();
-			}
-			_handleMouseMovePan(event) {
-				this._panEnd.set(event.clientX, event.clientY);
-				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
-				this._pan(this._panDelta.x, this._panDelta.y);
-				this._panStart.copy(this._panEnd);
-				this.update();
-			}
-			_handleMouseWheel(event) {
-				this._updateZoomParameters(event.clientX, event.clientY);
-				if (event.deltaY < 0) this._dollyIn(this._getZoomScale(event.deltaY));
-				else if (event.deltaY > 0) this._dollyOut(this._getZoomScale(event.deltaY));
-				this.update();
-			}
-			_handleKeyDown(event) {
-				let needsUpdate = false;
-				switch (event.code) {
-					case this.keys.UP:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateUp(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(0, this.keyPanSpeed);
-						needsUpdate = true;
-						break;
-					case this.keys.BOTTOM:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateUp(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(0, -this.keyPanSpeed);
-						needsUpdate = true;
-						break;
-					case this.keys.LEFT:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateLeft(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(this.keyPanSpeed, 0);
-						needsUpdate = true;
-						break;
-					case this.keys.RIGHT:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateLeft(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(-this.keyPanSpeed, 0);
-						needsUpdate = true;
-				}
-				if (needsUpdate) {
-					event.preventDefault();
-					this.update();
-				}
-			}
-			_handleTouchStartRotate(event) {
-				if (this._pointers.length === 1) this._rotateStart.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._rotateStart.set(x, y);
-				}
-			}
-			_handleTouchStartPan(event) {
-				if (this._pointers.length === 1) this._panStart.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._panStart.set(x, y);
-				}
-			}
-			_handleTouchStartDolly(event) {
-				const position = this._getSecondPointerPosition(event);
-				const dx = event.pageX - position.x;
-				const dy = event.pageY - position.y;
-				const distance = Math.sqrt(dx * dx + dy * dy);
-				this._dollyStart.set(0, distance);
-			}
-			_handleTouchStartDollyPan(event) {
-				if (this.enableZoom) this._handleTouchStartDolly(event);
-				if (this.enablePan) this._handleTouchStartPan(event);
-			}
-			_handleTouchStartDollyRotate(event) {
-				if (this.enableZoom) this._handleTouchStartDolly(event);
-				if (this.enableRotate) this._handleTouchStartRotate(event);
-			}
-			_handleTouchMoveRotate(event) {
-				if (this._pointers.length == 1) this._rotateEnd.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._rotateEnd.set(x, y);
-				}
-				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
-				const element = this.domElement;
-				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
-				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
-				this._rotateStart.copy(this._rotateEnd);
-			}
-			_handleTouchMovePan(event) {
-				if (this._pointers.length === 1) this._panEnd.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._panEnd.set(x, y);
-				}
-				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
-				this._pan(this._panDelta.x, this._panDelta.y);
-				this._panStart.copy(this._panEnd);
-			}
-			_handleTouchMoveDolly(event) {
-				const position = this._getSecondPointerPosition(event);
-				const dx = event.pageX - position.x;
-				const dy = event.pageY - position.y;
-				const distance = Math.sqrt(dx * dx + dy * dy);
-				this._dollyEnd.set(0, distance);
-				this._dollyDelta.set(0, Math.pow(this._dollyEnd.y / this._dollyStart.y, this.zoomSpeed));
-				this._dollyOut(this._dollyDelta.y);
-				this._dollyStart.copy(this._dollyEnd);
-				const centerX = (event.pageX + position.x) * .5;
-				const centerY = (event.pageY + position.y) * .5;
-				this._updateZoomParameters(centerX, centerY);
-			}
-			_handleTouchMoveDollyPan(event) {
-				if (this.enableZoom) this._handleTouchMoveDolly(event);
-				if (this.enablePan) this._handleTouchMovePan(event);
-			}
-			_handleTouchMoveDollyRotate(event) {
-				if (this.enableZoom) this._handleTouchMoveDolly(event);
-				if (this.enableRotate) this._handleTouchMoveRotate(event);
-			}
-			_addPointer(event) {
-				this._pointers.push(event.pointerId);
-			}
-			_removePointer(event) {
-				delete this._pointerPositions[event.pointerId];
-				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) {
-					this._pointers.splice(i, 1);
-					return;
-				}
-			}
-			_isTrackingPointer(event) {
-				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) return true;
-				return false;
-			}
-			_trackPointer(event) {
-				let position = this._pointerPositions[event.pointerId];
-				if (position === void 0) {
-					position = new Vector2();
-					this._pointerPositions[event.pointerId] = position;
-				}
-				position.set(event.pageX, event.pageY);
-			}
-			_getSecondPointerPosition(event) {
-				const pointerId = event.pointerId === this._pointers[0] ? this._pointers[1] : this._pointers[0];
-				return this._pointerPositions[pointerId];
-			}
-			_customWheelEvent(event) {
-				const mode = event.deltaMode;
-				const newEvent = {
-					clientX: event.clientX,
-					clientY: event.clientY,
-					deltaY: event.deltaY
-				};
-				switch (mode) {
-					case 1:
-						newEvent.deltaY *= 16;
-						break;
-					case 2: newEvent.deltaY *= 100;
-				}
-				if (event.ctrlKey && !this._controlActive) newEvent.deltaY *= 10;
-				return newEvent;
-			}
-		};
-		function onPointerDown(event) {
-			if (this.enabled === false) return;
-			if (this._pointers.length === 0) {
-				this.domElement.setPointerCapture(event.pointerId);
-				this.domElement.ownerDocument.addEventListener("pointermove", this._onPointerMove);
-				this.domElement.ownerDocument.addEventListener("pointerup", this._onPointerUp);
-			}
-			if (this._isTrackingPointer(event)) return;
-			this._addPointer(event);
-			if (event.pointerType === "touch") this._onTouchStart(event);
-			else this._onMouseDown(event);
-			if (this._cursorStyle === "grab") this.domElement.style.cursor = "grabbing";
-		}
-		function onPointerMove(event) {
-			if (this.enabled === false) return;
-			if (event.pointerType === "touch") this._onTouchMove(event);
-			else this._onMouseMove(event);
-		}
-		function onPointerUp(event) {
-			this._removePointer(event);
-			switch (this._pointers.length) {
-				case 0:
-					this.domElement.releasePointerCapture(event.pointerId);
-					this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
-					this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
-					this.dispatchEvent(_endEvent);
-					this.state = _STATE.NONE;
-					if (this._cursorStyle === "grab") this.domElement.style.cursor = "grab";
-					break;
-				case 1:
-					const pointerId = this._pointers[0];
-					const position = this._pointerPositions[pointerId];
-					this._onTouchStart({
-						pointerId,
-						pageX: position.x,
-						pageY: position.y
-					});
-			}
-		}
-		function onMouseDown(event) {
-			let mouseAction;
-			switch (event.button) {
-				case 0:
-					mouseAction = this.mouseButtons.LEFT;
-					break;
-				case 1:
-					mouseAction = this.mouseButtons.MIDDLE;
-					break;
-				case 2:
-					mouseAction = this.mouseButtons.RIGHT;
-					break;
-				default: mouseAction = -1;
-			}
-			switch (mouseAction) {
-				case MOUSE.DOLLY:
-					if (this.enableZoom === false) return;
-					this._handleMouseDownDolly(event);
-					this.state = _STATE.DOLLY;
-					break;
-				case MOUSE.ROTATE:
-					if (event.ctrlKey || event.metaKey || event.shiftKey) {
-						if (this.enablePan === false) return;
-						this._handleMouseDownPan(event);
-						this.state = _STATE.PAN;
-					} else {
-						if (this.enableRotate === false) return;
-						this._handleMouseDownRotate(event);
-						this.state = _STATE.ROTATE;
-					}
-					break;
-				case MOUSE.PAN:
-					if (event.ctrlKey || event.metaKey || event.shiftKey) {
-						if (this.enableRotate === false) return;
-						this._handleMouseDownRotate(event);
-						this.state = _STATE.ROTATE;
-					} else {
-						if (this.enablePan === false) return;
-						this._handleMouseDownPan(event);
-						this.state = _STATE.PAN;
-					}
-					break;
-				default: this.state = _STATE.NONE;
-			}
-			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
-		}
-		function onMouseMove(event) {
-			switch (this.state) {
-				case _STATE.ROTATE:
-					if (this.enableRotate === false) return;
-					this._handleMouseMoveRotate(event);
-					break;
-				case _STATE.DOLLY:
-					if (this.enableZoom === false) return;
-					this._handleMouseMoveDolly(event);
-					break;
-				case _STATE.PAN:
-					if (this.enablePan === false) return;
-					this._handleMouseMovePan(event);
-			}
-		}
-		function onMouseWheel(event) {
-			if (this.enabled === false || this.enableZoom === false || this.state !== _STATE.NONE) return;
-			event.preventDefault();
-			this.dispatchEvent(_startEvent);
-			this._handleMouseWheel(this._customWheelEvent(event));
-			this.dispatchEvent(_endEvent);
-		}
-		function onKeyDown(event) {
-			if (this.enabled === false) return;
-			this._handleKeyDown(event);
-		}
-		function onTouchStart(event) {
-			this._trackPointer(event);
-			switch (this._pointers.length) {
-				case 1:
-					switch (this.touches.ONE) {
-						case TOUCH.ROTATE:
-							if (this.enableRotate === false) return;
-							this._handleTouchStartRotate(event);
-							this.state = _STATE.TOUCH_ROTATE;
-							break;
-						case TOUCH.PAN:
-							if (this.enablePan === false) return;
-							this._handleTouchStartPan(event);
-							this.state = _STATE.TOUCH_PAN;
-							break;
-						default: this.state = _STATE.NONE;
-					}
-					break;
-				case 2:
-					switch (this.touches.TWO) {
-						case TOUCH.DOLLY_PAN:
-							if (this.enableZoom === false && this.enablePan === false) return;
-							this._handleTouchStartDollyPan(event);
-							this.state = _STATE.TOUCH_DOLLY_PAN;
-							break;
-						case TOUCH.DOLLY_ROTATE:
-							if (this.enableZoom === false && this.enableRotate === false) return;
-							this._handleTouchStartDollyRotate(event);
-							this.state = _STATE.TOUCH_DOLLY_ROTATE;
-							break;
-						default: this.state = _STATE.NONE;
-					}
-					break;
-				default: this.state = _STATE.NONE;
-			}
-			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
-		}
-		function onTouchMove(event) {
-			this._trackPointer(event);
-			switch (this.state) {
-				case _STATE.TOUCH_ROTATE:
-					if (this.enableRotate === false) return;
-					this._handleTouchMoveRotate(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_PAN:
-					if (this.enablePan === false) return;
-					this._handleTouchMovePan(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_DOLLY_PAN:
-					if (this.enableZoom === false && this.enablePan === false) return;
-					this._handleTouchMoveDollyPan(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_DOLLY_ROTATE:
-					if (this.enableZoom === false && this.enableRotate === false) return;
-					this._handleTouchMoveDollyRotate(event);
-					this.update();
-					break;
-				default: this.state = _STATE.NONE;
-			}
-		}
-		function onContextMenu(event) {
-			if (this.enabled === false) return;
-			event.preventDefault();
-		}
-		function interceptControlDown(event) {
-			if (event.key === "Control") {
-				this._controlActive = true;
-				this.domElement.getRootNode().addEventListener("keyup", this._interceptControlUp, {
-					passive: true,
-					capture: true
-				});
-			}
-		}
-		function interceptControlUp(event) {
-			if (event.key === "Control") {
-				this._controlActive = false;
-				this.domElement.getRootNode().removeEventListener("keyup", this._interceptControlUp, {
-					passive: true,
-					capture: true
-				});
-			}
-		}
-		//#endregion
-		//#region ../../web/card-base/src/stage3d.ts
-		init_three_module();
-		/** The r3f pointer-events analogue lives on userData.pick (see header). */
-		function findPickCarrier(o) {
-			let cur = o;
-			while (cur !== null) {
-				if (cur.userData !== void 0 && cur.userData.pick !== void 0) return cur;
-				cur = cur.parent;
-			}
-			return null;
-		}
-		/** Skip hits on a TransformControls gizmo subtree (invisible pick planes
-		*  would swallow every click while a gizmo is attached). */
-		function isGizmoHit(o) {
-			let cur = o;
-			while (cur !== null) {
-				if (cur.gizmo !== void 0) return true;
-				cur = cur.parent;
-			}
-			return false;
-		}
-		function mountStage3D(canvas, opts = {}) {
-			let renderer;
-			try {
-				renderer = new WebGLRenderer({
-					canvas,
-					antialias: true,
-					alpha: opts.alpha !== false,
-					preserveDrawingBuffer: opts.preserveDrawingBuffer === true
-				});
-			} catch (e) {
-				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
-				return null;
-			}
-			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-			renderer.shadowMap.enabled = true;
-			renderer.shadowMap.type = 1;
-			renderer.toneMapping = opts.toneMapping ?? 4;
-			const scene = new Scene();
-			scene.background = null;
-			const camera = new PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
-			camera.position.set(...opts.camera ?? [
-				2.2,
-				1.6,
-				2.6
-			]);
-			camera.lookAt(0, .8, 0);
-			const controls = new OrbitControls(camera, canvas);
-			controls.target.set(...opts.target ?? [
-				0,
-				.8,
-				0
-			]);
-			controls.enableDamping = true;
-			controls.dampingFactor = .1;
-			if (opts.minDistance !== void 0) controls.minDistance = opts.minDistance;
-			if (opts.maxDistance !== void 0) controls.maxDistance = opts.maxDistance;
-			if (opts.maxPolarAngle !== void 0) controls.maxPolarAngle = opts.maxPolarAngle;
-			controls.update();
-			const ticks = [];
-			const addTick = (fn) => {
-				ticks.push(fn);
-				return () => {
-					const i = ticks.indexOf(fn);
-					if (i >= 0) ticks.splice(i, 1);
-				};
-			};
-			const raycaster = new Raycaster();
-			const pointer = new Vector2();
-			let hovered = null;
-			let downAt = 0;
-			const threshold = opts.clickVsDragMs ?? 350;
-			const pickAt = (ev) => {
-				const r = canvas.getBoundingClientRect();
-				if (r.width === 0 || r.height === 0) return null;
-				pointer.x = (ev.clientX - r.left) / r.width * 2 - 1;
-				pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
-				raycaster.setFromCamera(pointer, camera);
-				const hits = raycaster.intersectObjects(scene.children, true);
-				for (const hit of hits) {
-					if (isGizmoHit(hit.object)) continue;
-					const carrier = findPickCarrier(hit.object);
-					if (carrier !== null) return {
-						carrier,
-						point: hit.point
-					};
-				}
-				return null;
-			};
-			const onPointerDown = (e) => {
-				downAt = e.timeStamp;
-			};
-			const onPointerMove = (e) => {
-				const found = pickAt(e);
-				const carrier = found?.carrier ?? null;
-				if (carrier !== hovered) {
-					(hovered?.userData.pick)?.out?.(e);
-					document.body.style.cursor = "auto";
-					hovered = carrier;
-					if (carrier !== null && found !== null) carrier.userData.pick.over?.(found.point, e);
-				}
-			};
-			const onPointerLeave = (e) => {
-				if (hovered !== null) {
-					hovered.userData.pick.out?.(e);
-					document.body.style.cursor = "auto";
-					hovered = null;
-				}
-			};
-			const onClick = (e) => {
-				if (e.timeStamp - downAt > threshold) return;
-				const found = pickAt(e);
-				if (found !== null) found.carrier.userData.pick.click?.(found.point, e);
-				else opts.onEmptyClick?.();
-			};
-			canvas.addEventListener("pointerdown", onPointerDown);
-			canvas.addEventListener("pointermove", onPointerMove);
-			canvas.addEventListener("pointerleave", onPointerLeave);
-			canvas.addEventListener("click", onClick);
-			let raf = 0;
-			const clock = new Clock();
-			const frame = () => {
-				raf = requestAnimationFrame(frame);
-				const delta = clock.getDelta();
-				for (const t of ticks) t(delta);
-				controls.update();
-				renderer.render(scene, camera);
-			};
-			frame();
-			const resize = () => {
-				const w = canvas.clientWidth, h = canvas.clientHeight;
-				if (w === 0 || h === 0) return;
-				renderer.setSize(w, h, false);
-				camera.aspect = w / h;
-				camera.updateProjectionMatrix();
-			};
-			resize();
-			const ro = new ResizeObserver(resize);
-			ro.observe(canvas);
-			return {
-				canvas,
-				renderer,
-				scene,
-				camera,
-				controls,
-				addTick,
-				resize,
-				dispose: () => {
-					cancelAnimationFrame(raf);
-					ro.disconnect();
-					canvas.removeEventListener("pointerdown", onPointerDown);
-					canvas.removeEventListener("pointermove", onPointerMove);
-					canvas.removeEventListener("pointerleave", onPointerLeave);
-					canvas.removeEventListener("click", onClick);
-					controls.dispose();
-					renderer.dispose();
-				}
-			};
-		}
-		/** A billboard TEXT label — the drei <Billboard><Text/></Text> analogue:
-		*  canvas-drawn glyphs on a THREE.Sprite (sprites always face the camera,
-		*  which IS the billboard). worldHeight is the label's height in scene
-		*  units (drei Text's fontSize is world units too). */
-		function makeLabelSprite(text, color, worldHeight) {
-			const px = 96;
-			const c = document.createElement("canvas");
-			const ctx = c.getContext("2d");
-			if (ctx !== null) {
-				ctx.font = `600 ${px}px system-ui, sans-serif`;
-				const w = Math.ceil(ctx.measureText(text).width) + 32;
-				c.width = w;
-				c.height = 128;
-				ctx.font = `600 ${px}px system-ui, sans-serif`;
-				ctx.textAlign = "center";
-				ctx.textBaseline = "middle";
-				ctx.fillStyle = color;
-				ctx.fillText(text, w / 2, 64);
-			}
-			const tex = new CanvasTexture(c);
-			tex.minFilter = LinearFilter;
-			const mat = new SpriteMaterial({
-				map: tex,
-				transparent: true
-			});
-			const sprite = new Sprite(mat);
-			const aspect = c.width / c.height;
-			sprite.scale.set(worldHeight * aspect, worldHeight, 1);
-			return sprite;
-		}
-		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStage.ts
-		init_three_module();
-		init_src();
-		init_src$1();
-		/** Centimeters → meters. SOMA-X/ANNY joints arrive in cm; the Three.js scene
-		*  is authored in meters. Applied at every display boundary. The drag handler
-		*  converts gizmo.position back to cm so IK/FK math stays in the native cm
-		*  space (matching jointsFlat and the backend deformSomaJoints API). */
-		const CM_TO_M = .01;
-		const FLOOR_LIFT_Y$1 = .02;
-		/** child index → parent index. Root (0) has no parent (maps to -1). */
-		const SOMA77_PARENT = (() => {
-			const parent = new Array(77).fill(-1);
-			for (const [p, c] of SOMA77_BONE_CONNECTIONS) parent[c] = p;
-			return parent;
-		})();
-		/** Return the joint chain from `jointIdx` up to (and including) `chainRoot`,
-		*  ordered root-first. Used by multi-joint selection and IK. */
-		function getJointChain(jointIdx, chainRoot = 0) {
-			const chain = [];
-			let cur = jointIdx;
-			let guard = 0;
-			while (cur >= 0 && cur < 77 && guard++ < 77) {
-				chain.unshift(cur);
-				if (cur === chainRoot) break;
-				cur = SOMA77_PARENT[cur];
-			}
-			return chain;
-		}
-		const SOMA77_CHILDREN = (() => {
-			const children = Array.from({ length: 77 }, () => []);
-			for (let i = 0; i < 77; i++) {
-				const p = SOMA77_PARENT[i];
-				if (p >= 0) children[p].push(i);
-			}
-			return children;
-		})();
-		/** Return ALL descendant joint indices of `jointIdx`. Used by FK propagation. */
-		function getDescendants(jointIdx) {
-			const result = [];
-			const stack = [...SOMA77_CHILDREN[jointIdx]];
-			while (stack.length > 0) {
-				const cur = stack.pop();
-				result.push(cur);
-				stack.push(...SOMA77_CHILDREN[cur]);
-			}
-			return result;
-		}
-		function solveCCD(jointsFlat, chain, target, iterations = 8, tolerance = .005) {
-			if (chain.length < 2) return jointsFlat;
-			const out = new Float32Array(jointsFlat);
-			const ee = chain[chain.length - 1];
-			const eePos = new Vector3(out[ee * 3], out[ee * 3 + 1], out[ee * 3 + 2]);
-			if (eePos.distanceTo(target) < tolerance) return out;
-			const chainDescendants = chain.map((j) => getDescendants(j));
-			const tmpJoint = new Vector3();
-			const tmpEE = new Vector3();
-			const curDir = new Vector3();
-			const tgtDir = new Vector3();
-			const quat = new Quaternion();
-			const axis = new Vector3();
-			const cp = new Vector3();
-			for (let iter = 0; iter < iterations; iter++) {
-				for (let i = chain.length - 2; i >= 0; i--) {
-					const j = chain[i];
-					tmpJoint.set(out[j * 3], out[j * 3 + 1], out[j * 3 + 2]);
-					tmpEE.set(out[ee * 3], out[ee * 3 + 1], out[ee * 3 + 2]);
-					curDir.subVectors(tmpEE, tmpJoint).normalize();
-					tgtDir.subVectors(target, tmpJoint).normalize();
-					const dot = MathUtils.clamp(curDir.dot(tgtDir), -1, 1);
-					const angle = Math.acos(dot);
-					axis.crossVectors(curDir, tgtDir);
-					if (axis.lengthSq() < 1e-8 || angle < 1e-5) continue;
-					axis.normalize();
-					quat.setFromAxisAngle(axis, angle);
-					for (const c of chainDescendants[i]) {
-						cp.set(out[c * 3], out[c * 3 + 1], out[c * 3 + 2]);
-						cp.sub(tmpJoint).applyQuaternion(quat).add(tmpJoint);
-						out[c * 3] = cp.x;
-						out[c * 3 + 1] = cp.y;
-						out[c * 3 + 2] = cp.z;
-					}
-				}
-				eePos.set(out[ee * 3], out[ee * 3 + 1], out[ee * 3 + 2]);
-				if (eePos.distanceTo(target) < tolerance) break;
-			}
-			return out;
-		}
-		const JOINT_RADIUS = {};
-		for (let i = 0; i < 77; i++) JOINT_RADIUS[i] = .02;
-		for (const j of [
-			0,
-			3,
-			6,
-			11,
-			12,
-			13,
-			14,
-			39,
-			40,
-			41,
-			42,
-			67,
-			68,
-			69,
-			72,
-			73,
-			74
-		]) JOINT_RADIUS[j] = .028;
-		for (const j of [
-			18,
-			23,
-			28,
-			33,
-			38,
-			46,
-			51,
-			56,
-			61,
-			66,
-			71,
-			76
-		]) JOINT_RADIUS[j] = .012;
-		function cameraPosFor(view) {
-			switch (view) {
-				case "side": return [
-					3.2,
-					1.2,
-					.01
-				];
-				case "three-quarter": return [
-					2.4,
-					1.4,
-					2.4
-				];
-				case "front": return [
-					0,
-					1.2,
-					3.4
-				];
-				default:
-					if (view.startsWith("az-")) return azimuthCameraPos(view);
-					return [
-						2.74,
-						1.88,
-						5.68
-					];
-			}
-		}
-		const FRAMING = {
-			full: {
-				dist: 2.6,
-				camY: 1.15,
-				targetY: .92
-			},
-			upper: {
-				dist: 1.25,
-				camY: 1.5,
-				targetY: 1.3
-			}
-		};
-		const LEGACY_TARGET_Y = {
-			full: .9,
-			upper: 1.32
-		};
-		const LEGACY_DIST_SCALE = {
-			full: 1,
-			upper: .5
-		};
-		function framedCameraPos(view, framing) {
-			const base = cameraPosFor(view);
-			if (view.startsWith("az-")) {
-				const angle = Math.atan2(base[0], base[2]);
-				const f = FRAMING[framing];
-				return [[
-					Math.sin(angle) * f.dist,
-					f.camY,
-					Math.cos(angle) * f.dist
-				], f.targetY];
-			}
-			const ty = LEGACY_TARGET_Y[framing];
-			const s = LEGACY_DIST_SCALE[framing];
-			const dir = [
-				base[0],
-				base[1] - .9,
-				base[2]
-			];
-			return [[
-				dir[0] * s,
-				ty + dir[1] * s,
-				dir[2] * s
-			], ty];
-		}
-		/** Compute the Y-offset that places the mesh's lowest point at FLOOR_LIFT_Y. */
-		function computeMeshLiftY(meshData) {
-			let minY = Infinity;
-			const verts = meshData.vertices;
-			for (let i = 0; i < verts.length; i++) if (verts[i][1] < minY) minY = verts[i][1];
-			return isFinite(minY) ? FLOOR_LIFT_Y$1 - minY * CM_TO_M : FLOOR_LIFT_Y$1;
-		}
-		function buildGeometry(meshData) {
-			const geo = new BufferGeometry();
-			const verts = meshData.vertices;
-			const arr = new Float32Array(verts.length * 3);
-			for (let i = 0; i < verts.length; i++) {
-				arr[i * 3] = verts[i][0] * CM_TO_M;
-				arr[i * 3 + 1] = verts[i][1] * CM_TO_M;
-				arr[i * 3 + 2] = verts[i][2] * CM_TO_M;
-			}
-			geo.setAttribute("position", new BufferAttribute(arr, 3));
-			const idx = meshData.faces.flat(2);
-			geo.setIndex(idx);
-			geo.computeVertexNormals();
-			geo.computeBoundingSphere();
-			return geo;
-		}
-		const _meshCache = /* @__PURE__ */ new Map();
-		async function fetchBindMesh(identityModel = "anny", identityCoeffs, localChanges, customTargets) {
-			const key = identityModel || "anny";
-			const coeffsSig = identityCoeffs && identityCoeffs.length > 0 ? identityCoeffs.map((v) => v.toFixed(1)).join(",") : null;
-			const lcEntries = localChanges && Object.keys(localChanges).length > 0 ? Object.entries(localChanges).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : null;
-			const ctEntries = customTargets && Object.keys(customTargets).length > 0 ? Object.entries(customTargets).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : null;
-			const cacheKey = [
-				key,
-				coeffsSig,
-				lcEntries,
-				ctEntries
-			].filter(Boolean).join("|");
-			const cached = _meshCache.get(cacheKey);
-			if (cached) return cached;
-			let data;
-			if (coeffsSig || lcEntries || ctEntries) {
-				const res = await apiFetch("/v1/poser/mesh", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						identity_model: key,
-						...coeffsSig ? { identity_coeffs: identityCoeffs } : {},
-						...lcEntries ? { local_changes: localChanges } : {},
-						...ctEntries ? { custom_targets: customTargets } : {}
-					})
-				});
-				if (!res.ok) throw new Error(`Failed to fetch shaped mesh (${key}): ${res.status}`);
-				data = await res.json();
-			} else {
-				const res = await apiFetch(`/v1/poser/mesh?identity_model=${encodeURIComponent(key)}`);
-				if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`);
-				data = await res.json();
-			}
-			_meshCache.set(cacheKey, data);
-			return data;
-		}
-		function mountPoseStage(canvas, opts) {
-			const stage = mountStage3D(canvas, {
-				fov: opts.fov,
-				near: .05,
-				far: 100,
-				camera: opts.camera,
-				target: [
-					0,
-					.9,
-					0
-				],
-				minDistance: .8,
-				maxDistance: 12,
-				maxPolarAngle: Math.PI / 1.85,
-				alpha: false,
-				preserveDrawingBuffer: true,
-				onContextFailure: opts.onFail,
-				onEmptyClick: () => {
-					if (refManip.root !== null) {
-						refManip.onSelectJoint(null);
-						refManip.onSelectChain?.(null);
-					} else if (manip.active) {
-						manip.onSelectJoint(null);
-						manip.onSelectChain?.(null);
-					}
-				}
-			});
-			if (stage === null) return null;
-			opts.onCanvasReady?.(canvas);
-			const scene = stage.scene;
-			const dark = opts.darkMode;
-			stage.renderer.setClearColor(new Color(dark ? "#0e0e1a" : "#e4e4f0"));
-			const ambient = new AmbientLight(16777215, .45);
-			scene.add(ambient);
-			const key = new DirectionalLight(16777215, 1);
-			key.position.set(5, 8, 5);
-			key.castShadow = true;
-			key.shadow.mapSize.set(2048, 2048);
-			key.shadow.camera.left = -3;
-			key.shadow.camera.right = 3;
-			key.shadow.camera.top = 3;
-			key.shadow.camera.bottom = -3;
-			key.shadow.camera.near = .5;
-			key.shadow.camera.far = 20;
-			key.shadow.bias = -5e-4;
-			scene.add(key);
-			const fill = new DirectionalLight(16777215, .25);
-			fill.position.set(-4, 3, -2);
-			scene.add(fill);
-			const hemi = new HemisphereLight(13489908, 1710638, .35);
-			scene.add(hemi);
-			const groundMat = new ShadowMaterial({ opacity: .55 });
-			const ground = new Mesh(new PlaneGeometry(12, 12), groundMat);
-			ground.rotation.x = -Math.PI / 2;
-			ground.position.y = .001;
-			ground.receiveShadow = true;
-			scene.add(ground);
-			const grid = new GridHelper(12, 48, 5921418, 3816026);
-			const gridMat = grid.material;
-			gridMat.transparent = true;
-			gridMat.opacity = .9;
-			scene.add(grid);
-			const liftGroup = new Group();
-			scene.add(liftGroup);
-			const skin = {
-				mesh: null,
-				geo: null,
-				mat: null,
-				scratch: /* @__PURE__ */ new Float32Array(0),
-				lastUploadedIdx: -2,
-				meshData: null,
-				deformedFlat: null,
-				numVerts: 0,
-				lastAnimate: false,
-				setMesh(p) {
-					this.numVerts = p.numVerts;
-					if (this.meshData !== p.meshData) {
-						this.meshData = p.meshData;
-						this.geo?.dispose();
-						this.geo = buildGeometry(p.meshData);
-						this.scratch = new Float32Array(p.numVerts * 3);
-						if (this.mesh === null) {
-							this.mat = new MeshStandardMaterial({
-								color: new Color(p.color),
-								roughness: .55,
-								metalness: .05,
-								flatShading: false,
-								side: 2
-							});
-							this.mesh = new Mesh(this.geo, this.mat);
-							this.mesh.castShadow = true;
-							this.mesh.receiveShadow = true;
-							liftGroup.add(this.mesh);
-						} else this.mesh.geometry = this.geo;
-						this.lastUploadedIdx = -2;
-					}
-					const opacity = p.editMode ? Math.min(p.opacity, .85) : p.opacity;
-					if (this.mat !== null) {
-						this.mat.color.set(p.color);
-						this.mat.opacity = opacity;
-						this.mat.transparent = opacity < 1;
-						this.mat.wireframe = p.wireframe;
-					}
-				},
-				setData(deformedFlat) {
-					if (this.deformedFlat !== deformedFlat) {
-						this.deformedFlat = deformedFlat;
-						this.lastUploadedIdx = -2;
-					}
-				},
-				uploadFrame(idx, showBindPose, animate) {
-					const geo = this.geo;
-					if (geo === null || this.meshData === null) return;
-					const pos = geo.attributes.position;
-					const arr = pos.array;
-					const meshVertCount = this.meshData.vertices.length;
-					if (!(!showBindPose && !!this.deformedFlat && meshVertCount === this.numVerts)) {
-						const scale = meshVertCount === 18056 ? CM_TO_M : 1;
-						const verts = this.meshData.vertices;
-						for (let i = 0; i < verts.length; i++) {
-							arr[i * 3] = verts[i][0] * scale;
-							arr[i * 3 + 1] = verts[i][1] * scale;
-							arr[i * 3 + 2] = verts[i][2] * scale;
-						}
-						this.lastUploadedIdx = -1;
-						pos.needsUpdate = true;
-						geo.computeVertexNormals();
-						geo.computeBoundingSphere();
-						return;
-					}
-					const stride = this.numVerts * 3;
-					const frameCount = this.deformedFlat.length / stride;
-					const clamped = Math.max(0, Math.min(idx, frameCount - 1));
-					const base = clamped * stride;
-					const src = this.deformedFlat.subarray(base, base + stride);
-					for (let i = 0; i < stride; i++) this.scratch[i] = src[i] * CM_TO_M;
-					arr.set(this.scratch, 0);
-					pos.needsUpdate = true;
-					if (!animate) {
-						geo.computeVertexNormals();
-						geo.computeBoundingSphere();
-					}
-					this.lastUploadedIdx = clamped;
-				}
-			};
-			const frameIdxRef = { current: 0 };
-			const anim = {
-				time: 0,
-				uiAccum: 0,
-				lastSyncedIdx: -1,
-				animate: false,
-				enabled: false,
-				frameCount: 1,
-				fps: 30,
-				speed: 1,
-				setFrameIdx: (_f) => {},
-				reset() {
-					this.time = 0;
-					this.uiAccum = 0;
-				},
-				tick(delta) {
-					if (!this.animate || !this.enabled || this.frameCount < 2) return;
-					this.time += delta * this.speed;
-					const frameDelta = Math.floor(this.time * this.fps);
-					if (frameDelta > 0) {
-						this.time -= frameDelta / this.fps;
-						const newIdx = (frameIdxRef.current + frameDelta) % this.frameCount;
-						if (newIdx !== frameIdxRef.current) frameIdxRef.current = newIdx;
-					}
-					this.uiAccum += delta;
-					if (this.uiAccum >= .1) {
-						this.uiAccum = 0;
-						const cur = frameIdxRef.current;
-						if (cur !== this.lastSyncedIdx) {
-							this.lastSyncedIdx = cur;
-							this.setFrameIdx(cur);
-						}
-					}
-				}
-			};
-			stage.addTick((delta) => anim.tick(delta));
-			stage.addTick(() => {
-				if (skin.geo === null || skin.mesh === null) return;
-				const target = frameIdxRef.current;
-				if (target !== skin.lastUploadedIdx) skin.uploadFrame(target, showBindPose0, anim0);
-			});
-			let showBindPose0 = true;
-			let anim0 = false;
-			const skeleton = {
-				spheres: null,
-				lines: null,
-				boneGeo: null,
-				dummy: new Object3D(),
-				ensure() {
-					if (this.spheres !== null) return;
-					const sphereGeo = new SphereGeometry(.018, 8, 8);
-					const sphereMat = new MeshBasicMaterial({ color: 16764006 });
-					this.spheres = new InstancedMesh(sphereGeo, sphereMat, 77);
-					const positions = new Float32Array(SOMA77_BONE_CONNECTIONS.length * 6);
-					this.boneGeo = new BufferGeometry();
-					this.boneGeo.setAttribute("position", new BufferAttribute(positions, 3));
-					const boneMat = new LineBasicMaterial({
-						color: 16746564,
-						transparent: true,
-						opacity: .7
-					});
-					this.lines = new LineSegments(this.boneGeo, boneMat);
-					liftGroup.add(this.spheres);
-					liftGroup.add(this.lines);
-				},
-				update(jointsFlat, frameIdx) {
-					if (jointsFlat === null) {
-						if (this.spheres !== null) this.spheres.visible = false;
-						if (this.lines !== null) this.lines.visible = false;
-						return;
-					}
-					this.ensure();
-					this.spheres.visible = true;
-					this.lines.visible = true;
-					const stride = 231;
-					const frameCount = jointsFlat.length / stride;
-					const base = Math.max(0, Math.min(frameIdx, frameCount - 1)) * stride;
-					for (let j = 0; j < 77; j++) {
-						this.dummy.position.set(jointsFlat[base + j * 3] * CM_TO_M, jointsFlat[base + j * 3 + 1] * CM_TO_M, jointsFlat[base + j * 3 + 2] * CM_TO_M);
-						this.dummy.scale.setScalar(1);
-						this.dummy.updateMatrix();
-						this.spheres.setMatrixAt(j, this.dummy.matrix);
-					}
-					this.spheres.instanceMatrix.needsUpdate = true;
-					const pos = this.boneGeo.attributes.position;
-					const arr = pos.array;
-					for (let b = 0; b < SOMA77_BONE_CONNECTIONS.length; b++) {
-						const [pp, cc] = SOMA77_BONE_CONNECTIONS[b];
-						arr[b * 6 + 0] = jointsFlat[base + pp * 3] * CM_TO_M;
-						arr[b * 6 + 1] = jointsFlat[base + pp * 3 + 1] * CM_TO_M;
-						arr[b * 6 + 2] = jointsFlat[base + pp * 3 + 2] * CM_TO_M;
-						arr[b * 6 + 3] = jointsFlat[base + cc * 3] * CM_TO_M;
-						arr[b * 6 + 4] = jointsFlat[base + cc * 3 + 1] * CM_TO_M;
-						arr[b * 6 + 5] = jointsFlat[base + cc * 3 + 2] * CM_TO_M;
-					}
-					pos.needsUpdate = true;
-					this.boneGeo.computeBoundingSphere();
-				}
-			};
-			const manip = {
-				root: null,
-				jointMeshes: [],
-				jointMats: [],
-				boneGeo: null,
-				pivot: new Group(),
-				tc: null,
-				hovered: -1,
-				dragging: false,
-				prevRot: new Euler(0, 0, 0),
-				active: false,
-				jointsFlat: null,
-				selectedJoint: null,
-				selectedChain: null,
-				onSelectJoint: (_i, _a) => {},
-				onSelectChain: void 0,
-				onJointMove: (_e) => {},
-				gizmoMode: "rotate",
-				kinematicMode: "fk",
-				get isIKActive() {
-					return this.kinematicMode === "ik" && this.selectedJoint !== null && this.selectedJoint !== 0;
-				},
-				get effectiveMode() {
-					return this.isIKActive ? "translate" : this.gizmoMode;
-				},
-				ensure(root) {
-					if (this.root !== null) return;
-					this.root = new Group();
-					root.add(this.root);
-					const positions = new Float32Array(SOMA77_BONE_CONNECTIONS.length * 6);
-					this.boneGeo = new BufferGeometry();
-					this.boneGeo.setAttribute("position", new BufferAttribute(positions, 3));
-					const boneMat = new LineBasicMaterial({
-						color: 16746564,
-						transparent: true,
-						opacity: .5
-					});
-					this.root.add(new LineSegments(this.boneGeo, boneMat));
-					for (let j = 0; j < 77; j++) {
-						const mat = new MeshBasicMaterial({ color: 16764006 });
-						const mesh = new Mesh(new SphereGeometry(JOINT_RADIUS[j] || .02, 12, 12), mat);
-						mesh.userData.pick = {
-							click: (_point, ev) => {
-								this.handleJointClick(j, ev);
-							},
-							over: () => {
-								this.hovered = j;
-								document.body.style.cursor = "pointer";
-								this.paint();
-							},
-							out: () => {
-								if (this.hovered === j) this.hovered = -1;
-								document.body.style.cursor = "auto";
-								this.paint();
-							}
-						};
-						this.jointMeshes[j] = mesh;
-						this.jointMats[j] = mat;
-						this.root.add(mesh);
-					}
-					root.add(this.pivot);
-				},
-				handleJointClick(j, ev) {
-					const additive = ev.shiftKey;
-					this.onSelectJoint(j, additive);
-					if (this.onSelectChain !== void 0) this.onSelectChain(additive ? getJointChain(j, 0) : null);
-				},
-				paint() {
-					for (let j = 0; j < 77; j++) {
-						const inChain = this.selectedChain?.includes(j) ?? false;
-						this.jointMats[j].color.set(this.selectedJoint === j ? "#00ff88" : inChain ? "#ff66ff" : this.hovered === j ? "#ffdd00" : "#ffcc66");
-					}
-				},
-				updateJoints() {
-					const jf = this.jointsFlat;
-					if (jf === null) return;
-					for (let j = 0; j < 77; j++) this.jointMeshes[j].position.set(jf[j * 3] * CM_TO_M, jf[j * 3 + 1] * CM_TO_M, jf[j * 3 + 2] * CM_TO_M);
-					const pos = this.boneGeo.attributes.position;
-					const arr = pos.array;
-					for (let b = 0; b < SOMA77_BONE_CONNECTIONS.length; b++) {
-						const [pp, cc] = SOMA77_BONE_CONNECTIONS[b];
-						arr[b * 6 + 0] = jf[pp * 3] * CM_TO_M;
-						arr[b * 6 + 1] = jf[pp * 3 + 1] * CM_TO_M;
-						arr[b * 6 + 2] = jf[pp * 3 + 2] * CM_TO_M;
-						arr[b * 6 + 3] = jf[cc * 3] * CM_TO_M;
-						arr[b * 6 + 4] = jf[cc * 3 + 1] * CM_TO_M;
-						arr[b * 6 + 5] = jf[cc * 3 + 2] * CM_TO_M;
-					}
-					pos.needsUpdate = true;
-					this.boneGeo.computeBoundingSphere();
-					this.paint();
-				},
-				positionGizmo() {
-					if (this.dragging) return;
-					const jf = this.jointsFlat;
-					if (this.selectedJoint === null || jf === null) return;
-					const j = this.selectedJoint;
-					this.pivot.position.set(jf[j * 3] * CM_TO_M, jf[j * 3 + 1] * CM_TO_M, jf[j * 3 + 2] * CM_TO_M);
-					this.pivot.rotation.set(0, 0, 0);
-					this.prevRot.set(0, 0, 0);
-				},
-				handleGizmoDrag() {
-					const jf = this.jointsFlat;
-					if (this.selectedJoint === null || jf === null) return;
-					const selectedJoint = this.selectedJoint;
-					if (this.isIKActive) {
-						const target = this.pivot.position.clone().multiplyScalar(1 / CM_TO_M);
-						const chainParent = SOMA77_PARENT[selectedJoint];
-						if (chainParent < 0) return;
-						const newJoints = solveCCD(jf, [chainParent, selectedJoint], target);
-						this.onJointMove({
-							idx: selectedJoint,
-							position: target,
-							fullJoints: newJoints
-						});
-					} else if (this.effectiveMode === "rotate") {
-						const curRot = this.pivot.rotation;
-						const prev = this.prevRot;
-						const dx = curRot.x - prev.x;
-						const dy = curRot.y - prev.y;
-						const dz = curRot.z - prev.z;
-						if (Math.abs(dx) < 1e-7 && Math.abs(dy) < 1e-7 && Math.abs(dz) < 1e-7) return;
-						const px = jf[selectedJoint * 3];
-						const py = jf[selectedJoint * 3 + 1];
-						const pz = jf[selectedJoint * 3 + 2];
-						const quat = new Quaternion().setFromEuler(new Euler(dx, dy, dz, "XYZ"));
-						const newJoints = new Float32Array(jf);
-						const descendants = getDescendants(selectedJoint);
-						const tmp = new Vector3();
-						for (const j of descendants) {
-							tmp.set(newJoints[j * 3] - px, newJoints[j * 3 + 1] - py, newJoints[j * 3 + 2] - pz);
-							tmp.applyQuaternion(quat);
-							newJoints[j * 3] = tmp.x + px;
-							newJoints[j * 3 + 1] = tmp.y + py;
-							newJoints[j * 3 + 2] = tmp.z + pz;
-						}
-						this.prevRot.copy(curRot);
-						this.onJointMove({
-							idx: selectedJoint,
-							position: new Vector3(px, py, pz),
-							fullJoints: newJoints
-						});
-					} else {
-						const target = this.pivot.position.clone().multiplyScalar(1 / CM_TO_M);
-						this.onJointMove({
-							idx: selectedJoint,
-							position: target
-						});
-					}
-				},
-				syncGizmo() {
-					const want = this.active && this.selectedJoint !== null && this.jointsFlat !== null;
-					if (want && this.tc === null) {
-						this.tc = new TransformControls(stage.camera, stage.canvas);
-						this.tc.setSize(.8);
-						this.tc.addEventListener("dragging-changed", (ev) => {
-							const on = ev.value;
-							stage.controls.enabled = !on;
-							this.dragging = on;
-						});
-						this.tc.addEventListener("mouseDown", () => {
-							this.dragging = true;
-							this.prevRot.set(0, 0, 0);
-						});
-						this.tc.addEventListener("objectChange", () => this.handleGizmoDrag());
-						this.tc.addEventListener("mouseUp", () => {
-							this.dragging = false;
-							this.handleGizmoDrag();
-						});
-						scene.add(this.tc);
-					}
-					if (this.tc === null) return;
-					if (want) {
-						this.tc.attach(this.pivot);
-						this.tc.setMode(this.effectiveMode);
-						this.tc.enabled = true;
-					} else {
-						this.tc.detach();
-						this.tc.enabled = false;
-					}
-				}
-			};
-			const refManip = {
-				root: null,
-				jointMeshes: [],
-				jointMats: [],
-				boneGeo: null,
-				pivot: new Group(),
-				tc: null,
-				hovered: -1,
-				dragging: false,
-				prevRot: new Euler(0, 0, 0),
-				jointsFlat: null,
-				selectedJoint: null,
-				selectedChain: null,
-				onSelectJoint: (_i, _a) => {},
-				onSelectChain: void 0,
-				onJointMove: (_e) => {},
-				gizmoMode: "rotate",
-				kinematicMode: "fk",
-				ensure(root) {
-					if (this.root !== null) {
-						if (this.root.parent !== root) root.add(this.root);
-						return;
-					}
-					this.root = new Group();
-					root.add(this.root);
-					const positions = new Float32Array(SOMA77_BONE_CONNECTIONS.length * 6);
-					this.boneGeo = new BufferGeometry();
-					this.boneGeo.setAttribute("position", new BufferAttribute(positions, 3));
-					const boneMat = new LineBasicMaterial({
-						color: 16746564,
-						transparent: true,
-						opacity: .5
-					});
-					this.root.add(new LineSegments(this.boneGeo, boneMat));
-					for (let j = 0; j < 77; j++) {
-						const mat = new MeshBasicMaterial({ color: 16764006 });
-						const mesh = new Mesh(new SphereGeometry(JOINT_RADIUS[j] || .02, 12, 12), mat);
-						mesh.userData.pick = {
-							click: (_point, ev) => {
-								const additive = ev.shiftKey;
-								this.onSelectJoint(j, additive);
-								if (this.onSelectChain !== void 0) this.onSelectChain(additive ? getJointChain(j, 0) : null);
-							},
-							over: () => {
-								this.hovered = j;
-								document.body.style.cursor = "pointer";
-								this.paint();
-							},
-							out: () => {
-								if (this.hovered === j) this.hovered = -1;
-								document.body.style.cursor = "auto";
-								this.paint();
-							}
-						};
-						this.jointMeshes[j] = mesh;
-						this.jointMats[j] = mat;
-						this.root.add(mesh);
-					}
-					root.add(this.pivot);
-				},
-				paint() {
-					for (let j = 0; j < 77; j++) {
-						const inChain = this.selectedChain?.includes(j) ?? false;
-						this.jointMats[j].color.set(this.selectedJoint === j ? "#00ff88" : inChain ? "#ff66ff" : this.hovered === j ? "#ffdd00" : "#ffcc66");
-					}
-				},
-				updateJoints() {
-					const jf = this.jointsFlat;
-					if (jf === null || this.root === null) return;
-					for (let j = 0; j < 77; j++) this.jointMeshes[j].position.set(jf[j * 3] * CM_TO_M, jf[j * 3 + 1] * CM_TO_M, jf[j * 3 + 2] * CM_TO_M);
-					const pos = this.boneGeo.attributes.position;
-					const arr = pos.array;
-					for (let b = 0; b < SOMA77_BONE_CONNECTIONS.length; b++) {
-						const [pp, cc] = SOMA77_BONE_CONNECTIONS[b];
-						arr[b * 6 + 0] = jf[pp * 3] * CM_TO_M;
-						arr[b * 6 + 1] = jf[pp * 3 + 1] * CM_TO_M;
-						arr[b * 6 + 2] = jf[pp * 3 + 2] * CM_TO_M;
-						arr[b * 6 + 3] = jf[cc * 3] * CM_TO_M;
-						arr[b * 6 + 4] = jf[cc * 3 + 1] * CM_TO_M;
-						arr[b * 6 + 5] = jf[cc * 3 + 2] * CM_TO_M;
-					}
-					pos.needsUpdate = true;
-					this.boneGeo.computeBoundingSphere();
-					this.paint();
-				},
-				get isIKActive() {
-					return this.kinematicMode === "ik" && this.selectedJoint !== null && this.selectedJoint !== 0;
-				},
-				get effectiveMode() {
-					return this.isIKActive ? "translate" : this.gizmoMode;
-				},
-				positionGizmo() {
-					if (this.dragging) return;
-					const jf = this.jointsFlat;
-					if (this.selectedJoint === null || jf === null) return;
-					const j = this.selectedJoint;
-					this.pivot.position.set(jf[j * 3] * CM_TO_M, jf[j * 3 + 1] * CM_TO_M, jf[j * 3 + 2] * CM_TO_M);
-					this.pivot.rotation.set(0, 0, 0);
-					this.prevRot.set(0, 0, 0);
-				},
-				handleGizmoDrag() {
-					const jf = this.jointsFlat;
-					if (this.selectedJoint === null || jf === null) return;
-					const selectedJoint = this.selectedJoint;
-					if (this.isIKActive) {
-						const target = this.pivot.position.clone().multiplyScalar(1 / CM_TO_M);
-						const chainParent = SOMA77_PARENT[selectedJoint];
-						if (chainParent < 0) return;
-						const newJoints = solveCCD(jf, [chainParent, selectedJoint], target);
-						this.onJointMove({
-							idx: selectedJoint,
-							position: target,
-							fullJoints: newJoints
-						});
-					} else if (this.effectiveMode === "rotate") {
-						const curRot = this.pivot.rotation;
-						const prev = this.prevRot;
-						const dx = curRot.x - prev.x;
-						const dy = curRot.y - prev.y;
-						const dz = curRot.z - prev.z;
-						if (Math.abs(dx) < 1e-7 && Math.abs(dy) < 1e-7 && Math.abs(dz) < 1e-7) return;
-						const px = jf[selectedJoint * 3];
-						const py = jf[selectedJoint * 3 + 1];
-						const pz = jf[selectedJoint * 3 + 2];
-						const quat = new Quaternion().setFromEuler(new Euler(dx, dy, dz, "XYZ"));
-						const newJoints = new Float32Array(jf);
-						const descendants = getDescendants(selectedJoint);
-						const tmp = new Vector3();
-						for (const j of descendants) {
-							tmp.set(newJoints[j * 3] - px, newJoints[j * 3 + 1] - py, newJoints[j * 3 + 2] - pz);
-							tmp.applyQuaternion(quat);
-							newJoints[j * 3] = tmp.x + px;
-							newJoints[j * 3 + 1] = tmp.y + py;
-							newJoints[j * 3 + 2] = tmp.z + pz;
-						}
-						this.prevRot.copy(curRot);
-						this.onJointMove({
-							idx: selectedJoint,
-							position: new Vector3(px, py, pz),
-							fullJoints: newJoints
-						});
-					} else {
-						const target = this.pivot.position.clone().multiplyScalar(1 / CM_TO_M);
-						this.onJointMove({
-							idx: selectedJoint,
-							position: target
-						});
-					}
-				},
-				syncGizmo() {
-					const want = this.root !== null && this.selectedJoint !== null && this.jointsFlat !== null;
-					if (want && this.tc === null) {
-						this.tc = new TransformControls(stage.camera, stage.canvas);
-						this.tc.setSize(.8);
-						this.tc.addEventListener("dragging-changed", (ev) => {
-							const on = ev.value;
-							stage.controls.enabled = !on;
-							this.dragging = on;
-						});
-						this.tc.addEventListener("mouseDown", () => {
-							this.dragging = true;
-							this.prevRot.set(0, 0, 0);
-						});
-						this.tc.addEventListener("objectChange", () => this.handleGizmoDrag());
-						this.tc.addEventListener("mouseUp", () => {
-							this.dragging = false;
-							this.handleGizmoDrag();
-						});
-						scene.add(this.tc);
-					}
-					if (this.tc === null) return;
-					if (want) {
-						this.tc.attach(this.pivot);
-						this.tc.setMode(this.effectiveMode);
-						this.tc.enabled = true;
-					} else {
-						this.tc.detach();
-						this.tc.enabled = false;
-					}
-				},
-				show(root) {
-					if (root === null) {
-						if (this.root !== null) this.root.visible = false;
-						this.pivot.visible = false;
-					} else {
-						this.ensure(root);
-						this.root.visible = true;
-						this.pivot.visible = true;
-					}
-				}
-			};
-			const orbs = {
-				root: new Group(),
-				entries: [],
-				onChange: void 0,
-				onSelectOrb: void 0,
-				orbs: [],
-				selectedOrb: null,
-				constructorDone: false,
-				update(list, selectedOrb) {
-					this.orbs = list;
-					this.selectedOrb = selectedOrb;
-					for (const e of this.entries) {
-						e.group.removeFromParent();
-						e.sphereMat.dispose();
-						e.light.dispose();
-						if (e.tc !== null) {
-							e.tc.dispose();
-							e.tc.removeFromParent();
-						}
-					}
-					this.entries = [];
-					for (const orb of list) {
-						const group = new Group();
-						group.position.set(orb.position[0], orb.position[1], orb.position[2]);
-						const sphereMat = new MeshBasicMaterial({
-							color: new Color(orb.color),
-							transparent: true,
-							opacity: selectedOrb === orb.id ? 1 : .8
-						});
-						const sphere = new Mesh(new SphereGeometry(.04, 12, 12), sphereMat);
-						sphere.userData.pick = {
-							click: () => {
-								this.onSelectOrb?.(orb.id);
-							},
-							over: () => {
-								document.body.style.cursor = "pointer";
-							},
-							out: () => {
-								document.body.style.cursor = "auto";
-							}
-						};
-						group.add(sphere);
-						const haloMat = new MeshBasicMaterial({
-							color: new Color(orb.color),
-							transparent: true,
-							opacity: .15
-						});
-						group.add(new Mesh(new SphereGeometry(.08, 12, 12), haloMat));
-						const light = new PointLight(new Color(orb.color), orb.intensity, orb.distance);
-						light.castShadow = orb.castShadow;
-						group.add(light);
-						this.root.add(group);
-						this.entries.push({
-							id: orb.id,
-							group,
-							sphereMat,
-							light,
-							tc: null
-						});
-					}
-					const selIdx = list.findIndex((o) => o.id === selectedOrb);
-					if (selIdx >= 0) {
-						const e = this.entries[selIdx];
-						e.tc = new TransformControls(stage.camera, stage.canvas);
-						e.tc.setSize(.6);
-						e.tc.setMode("translate");
-						e.tc.addEventListener("dragging-changed", (ev) => {
-							stage.controls.enabled = !ev.value;
-						});
-						const push = () => {
-							this.handleOrbDrag(e.id);
-						};
-						e.tc.addEventListener("objectChange", push);
-						e.tc.addEventListener("mouseUp", push);
-						e.tc.attach(e.group);
-						scene.add(e.tc);
-					}
-				},
-				handleOrbDrag(id) {
-					const i = this.orbs.findIndex((o) => o.id === id);
-					const e = this.entries.find((en) => en.id === id);
-					if (i < 0 || e === void 0 || this.onChange === void 0) return;
-					const updated = [...this.orbs];
-					updated[i] = {
-						...updated[i],
-						position: [
-							e.group.position.x,
-							e.group.position.y,
-							e.group.position.z
-						]
-					};
-					this.onChange(updated);
-				}
-			};
-			scene.add(orbs.root);
-			const ghost = {
-				lines: null,
-				geo: null,
-				update(joints) {
-					if (joints === null) {
-						if (this.lines !== null) this.lines.visible = false;
-						return;
-					}
-					if (this.lines === null) {
-						const positions = new Float32Array(SOMA77_BONE_CONNECTIONS.length * 6);
-						this.geo = new BufferGeometry();
-						this.geo.setAttribute("position", new BufferAttribute(positions, 3));
-						const mat = new LineBasicMaterial({
-							color: 65535,
-							transparent: true,
-							opacity: .3
-						});
-						this.lines = new LineSegments(this.geo, mat);
-						liftGroup.add(this.lines);
-					}
-					this.lines.visible = true;
-					const pos = this.geo.attributes.position;
-					const arr = pos.array;
-					for (let b = 0; b < SOMA77_BONE_CONNECTIONS.length; b++) {
-						const [pp, cc] = SOMA77_BONE_CONNECTIONS[b];
-						arr[b * 6 + 0] = joints[pp * 3] * CM_TO_M;
-						arr[b * 6 + 1] = joints[pp * 3 + 1] * CM_TO_M;
-						arr[b * 6 + 2] = joints[pp * 3 + 2] * CM_TO_M;
-						arr[b * 6 + 3] = joints[cc * 3] * CM_TO_M;
-						arr[b * 6 + 4] = joints[cc * 3 + 1] * CM_TO_M;
-						arr[b * 6 + 5] = joints[cc * 3 + 2] * CM_TO_M;
-					}
-					pos.needsUpdate = true;
-					this.geo.computeBoundingSphere();
-				}
-			};
-			const contacts = {
-				meshes: [],
-				mats: [],
-				ensure() {
-					if (this.meshes.length > 0) return;
-					for (let i = 0; i < 4; i++) {
-						const mat = new MeshBasicMaterial({
-							color: 16777215,
-							transparent: true,
-							side: 2
-						});
-						const mesh = new Mesh(new RingGeometry(.028, .04, 16), mat);
-						mesh.rotation.x = -Math.PI / 2;
-						liftGroup.add(mesh);
-						this.meshes.push(mesh);
-						this.mats.push(mat);
-					}
-				},
-				update(footContacts, frameIdx, jointsFlat) {
-					const show = !!footContacts && footContacts.length > 0 && !!jointsFlat;
-					this.ensure();
-					const colors = [
-						3900150,
-						15485081,
-						11032055,
-						15680580
-					];
-					for (const m of this.meshes) m.visible = show;
-					if (!show) return;
-					const fi = Math.max(0, Math.min(frameIdx, footContacts.length - 1));
-					const fc = footContacts[fi];
-					if (!fc || fc.length < 4) {
-						for (const m of this.meshes) m.visible = false;
-						return;
-					}
-					const stride = 231;
-					const frameCount = jointsFlat.length / stride;
-					const base = Math.max(0, Math.min(fi, frameCount - 1)) * stride;
-					const footPos = [69, 74].map((j) => [
-						jointsFlat[base + j * 3] * CM_TO_M,
-						jointsFlat[base + j * 3 + 1] * CM_TO_M,
-						jointsFlat[base + j * 3 + 2] * CM_TO_M
-					]);
-					const src = [
-						footPos[0],
-						footPos[1],
-						footPos[0],
-						footPos[1]
-					];
-					for (let i = 0; i < 4; i++) {
-						const contact = fc[i];
-						const dz = i < 2 ? -.04 : .04;
-						const radius = .04 + contact * .04;
-						this.meshes[i].position.set(src[i][0], .005, src[i][2] + dz);
-						this.meshes[i].scale.setScalar(radius / .04);
-						this.mats[i].color.setHex(colors[i]);
-						this.mats[i].opacity = .2 + contact * .8;
-					}
-				}
-			};
-			const arrow = {
-				group: null,
-				update(jointsFlat) {
-					const rebuild = () => {
-						if (this.group !== null) {
-							this.group.removeFromParent();
-							this.group = null;
-						}
-						if (jointsFlat === null || jointsFlat.length < 6) return;
-						const stride = 231;
-						if (Math.floor(jointsFlat.length / stride) < 2) return;
-						const r0 = [jointsFlat[0] * CM_TO_M, jointsFlat[2] * CM_TO_M];
-						const r1 = [jointsFlat[stride] * CM_TO_M, jointsFlat[233] * CM_TO_M];
-						const dx = r1[0] - r0[0];
-						const dz = r1[1] - r0[1];
-						const len = Math.hypot(dx, dz);
-						if (len < .01) return;
-						const angle = Math.atan2(dx, dz);
-						const arrowLen = Math.min(.8, len * 2 + .2);
-						const g = new Group();
-						g.position.set(r0[0], .01, r0[1]);
-						g.rotation.y = angle;
-						const shaftMat = new MeshBasicMaterial({
-							color: 16498468,
-							transparent: true,
-							opacity: .85
-						});
-						const shaft = new Mesh(new CylinderGeometry(.012, .012, arrowLen, 8), shaftMat);
-						shaft.position.set(0, 0, arrowLen / 2);
-						shaft.rotation.x = Math.PI / 2;
-						g.add(shaft);
-						const headMat = new MeshBasicMaterial({
-							color: 16498468,
-							transparent: true,
-							opacity: .95
-						});
-						const head = new Mesh(new ConeGeometry(.04, .1, 12), headMat);
-						head.position.set(0, 0, arrowLen);
-						head.rotation.x = Math.PI / 2;
-						g.add(head);
-						liftGroup.add(g);
-						this.group = g;
-					};
-					rebuild();
-				},
-				setVisible(v) {
-					if (this.group !== null) this.group.visible = v;
-				}
-			};
-			let arrowJointsRef = null;
-			const alts = {
-				root: new Group(),
-				samples: [],
-				faces: [],
-				onCommit: (_i) => {},
-				update(samples, meshData, onCommit) {
-					this.onCommit = onCommit;
-					this.root.clear();
-					this.samples = samples;
-					if (meshData === null || samples.length === 0) return;
-					for (let i = 0; i < samples.length; i++) {
-						const s = samples[i];
-						const g = new BufferGeometry();
-						const arr = new Float32Array(s.verts);
-						g.setAttribute("position", new BufferAttribute(arr, 3));
-						g.setIndex(meshData.faces.flat(2));
-						g.computeVertexNormals();
-						const mat = new MeshStandardMaterial({
-							color: 11053224,
-							transparent: true,
-							opacity: .45,
-							roughness: .7
-						});
-						const mesh = new Mesh(g, mat);
-						mesh.userData.pick = {
-							click: () => {
-								this.onCommit(s.idx);
-							},
-							over: () => {
-								document.body.style.cursor = "pointer";
-							},
-							out: () => {
-								document.body.style.cursor = "auto";
-							}
-						};
-						const holder = new Group();
-						holder.position.set(1.2 + i * .6, 0, -.3);
-						holder.add(mesh);
-						const hintMat = new MeshBasicMaterial({
-							color: 10010103,
-							transparent: true,
-							opacity: .6
-						});
-						const hint = new Mesh(new SphereGeometry(.05, 8, 8), hintMat);
-						hint.position.set(0, 1.6, 0);
-						holder.add(hint);
-						this.root.add(holder);
-					}
-				}
-			};
-			liftGroup.add(alts.root);
-			const constraints = {
-				root: new Group(),
-				eeTC: null,
-				eeGroups: [],
-				eeMats: [],
-				eeIds: [],
-				points: [],
-				editMode: false,
-				selectedEEId: null,
-				showLabels: true,
-				onSelectEE: void 0,
-				onChangeEEPoint: void 0,
-				eeColor: {
-					LeftHand: "#f59e0b",
-					RightHand: "#ef4444",
-					LeftFoot: "#10b981",
-					RightFoot: "#3b82f6"
-				},
-				update(root2dPoints, endEffectorPoints, showLabels, editMode, selectedEEId) {
-					this.points = endEffectorPoints;
-					this.showLabels = showLabels;
-					this.editMode = editMode;
-					this.selectedEEId = selectedEEId;
-					this.root.clear();
-					this.eeGroups = [];
-					this.eeMats = [];
-					this.eeIds = [];
-					for (const p of root2dPoints) {
-						const g = new Group();
-						g.position.set(p.x, .005, p.z);
-						const mat = new MeshBasicMaterial({
-							color: 16096779,
-							transparent: true,
-							opacity: .85,
-							side: 2
-						});
-						const ring = new Mesh(new RingGeometry(.025, .04, 24), mat);
-						ring.rotation.x = -Math.PI / 2;
-						g.add(ring);
-						if (showLabels) {
-							const label = makeLabelSprite(`F${p.frame}`, "#fcd34d", .035);
-							label.position.set(0, .08, 0);
-							g.add(label);
-						}
-						this.root.add(g);
-					}
-					for (const p of endEffectorPoints) {
-						const color = this.eeColor[p.joint_name] ?? "#ffffff";
-						const isSelected = editMode && selectedEEId === p.id;
-						const g = new Group();
-						g.position.set(p.position[0], p.position[1], p.position[2]);
-						const mat = new MeshBasicMaterial({
-							color: new Color(isSelected ? "#ffffff" : color),
-							transparent: true,
-							opacity: isSelected ? 1 : .9
-						});
-						const sphere = new Mesh(new SphereGeometry(isSelected ? .034 : .028, 16, 16), mat);
-						sphere.userData.pick = {
-							click: () => {
-								if (editMode) this.onSelectEE?.(p.id);
-							},
-							over: () => {
-								if (editMode) document.body.style.cursor = "move";
-							},
-							out: () => {
-								document.body.style.cursor = "auto";
-							}
-						};
-						g.add(sphere);
-						if (isSelected) {
-							const haloMat = new MeshBasicMaterial({
-								color: new Color(color),
-								transparent: true,
-								opacity: .18
-							});
-							g.add(new Mesh(new SphereGeometry(.05, 16, 16), haloMat));
-						}
-						if (showLabels) {
-							const label = makeLabelSprite(`${p.joint_name[0] ?? "E"}·F${p.frame}`, isSelected ? "#ffffff" : color, .03);
-							label.position.set(0, .08, 0);
-							g.add(label);
-						}
-						this.root.add(g);
-						this.eeGroups.push(g);
-						this.eeMats.push(mat);
-						this.eeIds.push(p.id);
-						if (isSelected && this.onChangeEEPoint !== void 0) {
-							if (this.eeTC === null) {
-								this.eeTC = new TransformControls(stage.camera, stage.canvas);
-								this.eeTC.setSize(.7);
-								this.eeTC.setMode("translate");
-								this.eeTC.addEventListener("dragging-changed", (ev) => {
-									stage.controls.enabled = !ev.value;
-								});
-								this.eeTC.addEventListener("objectChange", () => {
-									if (this.selectedEEId !== null) this.handleEEDrag(this.selectedEEId);
-								});
-								this.eeTC.addEventListener("mouseUp", () => {
-									if (this.selectedEEId !== null) this.handleEEDrag(this.selectedEEId);
-								});
-								scene.add(this.eeTC);
-							}
-							this.eeTC.attach(g);
-							this.eeTC.enabled = true;
-						}
-					}
-					if (this.eeTC !== null && !(editMode && selectedEEId !== null && endEffectorPoints.some((pt) => pt.id === selectedEEId))) {
-						this.eeTC.detach();
-						this.eeTC.enabled = false;
-					}
-				},
-				handleEEDrag(id) {
-					if (this.onChangeEEPoint === void 0) return;
-					const i = this.eeIds.indexOf(id);
-					if (i < 0) return;
-					const g = this.eeGroups[i];
-					this.onChangeEEPoint(id, [
-						g.position.x,
-						g.position.y,
-						g.position.z
-					]);
-				}
-			};
-			liftGroup.add(constraints.root);
-			const eePlane = {
-				mesh: null,
-				setVisible(v) {
-					if (this.mesh !== null) this.mesh.visible = v;
-				},
-				update(placingEE, eePlaceJointIdx, editableJoints, jointsFlat, frameIdx, onPlaceEE) {
-					if (placingEE && this.mesh === null) {
-						const mat = new MeshBasicMaterial({
-							transparent: true,
-							opacity: 0,
-							side: 2,
-							depthWrite: false
-						});
-						this.mesh = new Mesh(new PlaneGeometry(100, 100), mat);
-						this.mesh.rotation.x = -Math.PI / 2;
-						liftGroup.add(this.mesh);
-					}
-					if (this.mesh === null) return;
-					this.mesh.visible = placingEE;
-					if (!placingEE) return;
-					const ji = eePlaceJointIdx ?? 0;
-					const y = editableJoints ? editableJoints[ji * 3 + 1] * CM_TO_M : jointsFlat ? jointsFlat[(frameIdx * 77 + ji) * 3 + 1] * CM_TO_M : 1;
-					this.mesh.position.set(0, y, 0);
-					this.mesh.userData.pick = { click: (point) => {
-						onPlaceEE([
-							point.x,
-							y,
-							point.z
-						]);
-					} };
-				}
-			};
-			const reference = {
-				root: null,
-				mesh: null,
-				geo: null,
-				mat: null,
-				skeleton: null,
-				scratch: /* @__PURE__ */ new Float32Array(0),
-				lastUploaded: -2,
-				bundle: null,
-				lastSig: "",
-				update(p) {
-					const b = p.reference;
-					const sig = b === null ? "" : [
-						b.spec.deformedVerticesB64.length,
-						b.spec.editedDeformedVerticesB64?.length ?? 0,
-						b.spec.offset.join(","),
-						b.meshData?.vertices.length ?? 0,
-						b.flat?.length ?? 0,
-						b.editedFlat?.length ?? 0,
-						b.spec.jointFrames?.length ?? 0
-					].join("|");
-					if (sig !== this.lastSig) {
-						this.lastSig = sig;
-						this.disposeMesh();
-						if (b === null) {
-							this.root?.removeFromParent();
-							this.root = null;
-							this.skeleton?.spheres.removeFromParent();
-							this.skeleton?.lines.removeFromParent();
-							this.skeleton = null;
-							return;
-						}
-						this.bundle = b;
-						this.root = new Group();
-						const jointFramesFlat = b.spec.jointFrames && b.spec.jointFrames.length >= 3 ? new Float32Array(b.spec.jointFrames) : null;
-						const hasEdited = !!b.spec.editedDeformedVerticesB64 && !!b.editedFlat && b.editedFlat.length >= 3;
-						const activeFlat = hasEdited ? b.editedFlat : b.flat;
-						if (!!jointFramesFlat && (!activeFlat || activeFlat.length < 3)) {
-							this.root.position.set(b.spec.offset[0], 0, b.spec.offset[1]);
-							const sphereGeo = new SphereGeometry(.018, 8, 8);
-							const sphereMat = new MeshBasicMaterial({ color: 16498468 });
-							const spheres = new InstancedMesh(sphereGeo, sphereMat, 77);
-							const positions = new Float32Array(SOMA77_BONE_CONNECTIONS.length * 6);
-							const boneGeo = new BufferGeometry();
-							boneGeo.setAttribute("position", new BufferAttribute(positions, 3));
-							const boneMat = new LineBasicMaterial({
-								color: 16096779,
-								transparent: true,
-								opacity: .7
-							});
-							const lines = new LineSegments(boneGeo, boneMat);
-							this.root.add(spheres);
-							this.root.add(lines);
-							this.skeleton = {
-								spheres,
-								lines,
-								boneGeo,
-								dummy: new Object3D()
-							};
-							this.root.__skelFlat = jointFramesFlat;
-						} else {
-							if (b.meshData === null || activeFlat === null || activeFlat.length < 3) {
-								liftGroup.add(this.root);
-								return;
-							}
-							const refLiftDelta = computeMeshLiftY(b.meshData) - computeMeshLiftY(p.meshData);
-							this.root.position.set(b.spec.offset[0], refLiftDelta, b.spec.offset[1]);
-							this.geo = buildGeometry(b.meshData);
-							const refFrameCount = hasEdited ? 1 : b.spec.frameCount ?? 1;
-							const numVerts = Math.floor(activeFlat.length / 3 / Math.max(1, refFrameCount));
-							this.scratch = new Float32Array(numVerts * 3);
-							this.mat = new MeshStandardMaterial({
-								color: new Color(b.spec.color ?? "#9ca3af"),
-								roughness: .55,
-								metalness: .05,
-								flatShading: false,
-								side: 2,
-								transparent: (b.spec.opacity ?? .42) < 1,
-								opacity: b.spec.opacity ?? .42
-							});
-							this.mesh = new Mesh(this.geo, this.mat);
-							this.mesh.castShadow = true;
-							this.mesh.receiveShadow = true;
-							this.root.add(this.mesh);
-							this.root.__refFlat = activeFlat;
-							this.root.__refFrames = refFrameCount;
-						}
-						liftGroup.add(this.root);
-						this.lastUploaded = -2;
-					} else if (b !== null && this.root !== null && this.mesh === null && this.skeleton === null) {
-						this.lastSig = "";
-						this.update(p);
-						return;
-					}
-					if (this.root === null) return;
-					if (this.skeleton !== null) {
-						const flat = this.root.__skelFlat;
-						const fc = Math.max(1, Math.floor(flat.length / 231));
-						const base = (fc > 1 ? Math.max(0, Math.min(p.refPlaybackFrameIdx ?? p.frameIdx, fc - 1)) : 0) * 77 * 3;
-						const d = this.skeleton.dummy;
-						for (let j = 0; j < 77; j++) {
-							d.position.set(flat[base + j * 3] * CM_TO_M, flat[base + j * 3 + 1] * CM_TO_M, flat[base + j * 3 + 2] * CM_TO_M);
-							d.scale.setScalar(1);
-							d.updateMatrix();
-							this.skeleton.spheres.setMatrixAt(j, d.matrix);
-						}
-						this.skeleton.spheres.instanceMatrix.needsUpdate = true;
-						const pos = this.skeleton.boneGeo.attributes.position;
-						const arr = pos.array;
-						for (let bb = 0; bb < SOMA77_BONE_CONNECTIONS.length; bb++) {
-							const [pp, cc] = SOMA77_BONE_CONNECTIONS[bb];
-							arr[bb * 6 + 0] = flat[base + pp * 3] * CM_TO_M;
-							arr[bb * 6 + 1] = flat[base + pp * 3 + 1] * CM_TO_M;
-							arr[bb * 6 + 2] = flat[base + pp * 3 + 2] * CM_TO_M;
-							arr[bb * 6 + 3] = flat[base + cc * 3] * CM_TO_M;
-							arr[bb * 6 + 4] = flat[base + cc * 3 + 1] * CM_TO_M;
-							arr[bb * 6 + 5] = flat[base + cc * 3 + 2] * CM_TO_M;
-						}
-						pos.needsUpdate = true;
-						this.skeleton.boneGeo.computeBoundingSphere();
-					} else if (this.mesh !== null && this.geo !== null) {
-						const flat = this.root.__refFlat;
-						const refFrames = this.root.__refFrames ?? 1;
-						if (flat !== void 0) {
-							const stride = this.scratch.length / 3 * 3;
-							const refIdx = refFrames > 1 ? Math.max(0, Math.min(p.refPlaybackFrameIdx ?? p.frameIdx, refFrames - 1)) : 0;
-							if (refIdx !== this.lastUploaded) {
-								const pos = this.geo.attributes.position;
-								const arr = pos.array;
-								const src = flat.subarray(refIdx * stride, refIdx * stride + stride);
-								for (let i = 0; i < stride; i++) this.scratch[i] = src[i] * CM_TO_M;
-								arr.set(this.scratch, 0);
-								pos.needsUpdate = true;
-								if (!(refFrames > 1 && p.animate)) {
-									this.geo.computeVertexNormals();
-									this.geo.computeBoundingSphere();
-								}
-								this.lastUploaded = refIdx;
-							}
-						}
-					}
-					if (b !== null && p.editRefMode && p.refEditableJoints) {
-						refManip.show(this.root);
-						refManip.jointsFlat = p.refEditableJoints;
-						refManip.selectedJoint = p.selectedJoint ?? null;
-						refManip.selectedChain = p.selectedChain ?? null;
-						refManip.onSelectJoint = p.onSelectJoint;
-						refManip.onSelectChain = p.onSelectChain;
-						refManip.onJointMove = p.onRefJointMove ?? (() => {});
-						refManip.gizmoMode = p.gizmoMode;
-						refManip.kinematicMode = p.kinematicMode ?? "fk";
-						refManip.updateJoints();
-						refManip.positionGizmo();
-					} else refManip.show(null);
-					refManip.syncGizmo();
-				},
-				disposeMesh() {
-					this.mesh?.removeFromParent();
-					this.geo?.dispose();
-					this.mat?.dispose();
-					this.mesh = null;
-					this.geo = null;
-					this.mat = null;
-				}
-			};
-			let lastCameraView = "";
-			let lastFraming = "";
-			let lastLiftY = NaN;
-			let lastOrbSel = null;
-			let orbsSig = "";
-			let lastEEsSig = "";
-			let lastR2dSig = "";
-			let lastAltSig = "";
-			let darkCur = opts.darkMode;
-			function update(p) {
-				frameIdxRef.current = p.frameIdx;
-				anim.animate = p.animate;
-				anim.enabled = !p.showBindPose && !p.editMode;
-				anim.frameCount = p.frameCount;
-				anim.fps = p.fps;
-				anim.speed = p.playbackSpeed;
-				anim.setFrameIdx = p.setFrameIdx;
-				if (p.animate && (!skinLastAnimate || anim.frameCount !== animLastFrameCount)) anim.reset();
-				animLastFrameCount = p.frameCount;
-				showBindPose0 = p.showBindPose;
-				anim0 = p.animate;
-				skin.setMesh(p);
-				skin.setData(p.deformedFlat);
-				if (skin.lastUploadedIdx === -2 || p.showBindPose !== showBindPosePrev || p.animate === false && skinLastAnimate === true) skin.uploadFrame(frameIdxRef.current, p.showBindPose, p.animate);
-				skinLastAnimate = p.animate;
-				showBindPosePrev = p.showBindPose;
-				const liftY = computeMeshLiftY(p.meshData);
-				let inPlaceX = 0, inPlaceZ = 0;
-				if (p.inPlace && !p.showBindPose && p.soma77JointsFlat) {
-					const stride = 231;
-					const frameCount = Math.floor(p.soma77JointsFlat.length / stride);
-					if (frameCount >= 1) {
-						const r0x = p.soma77JointsFlat[0];
-						const r0z = p.soma77JointsFlat[2];
-						const base = Math.max(0, Math.min(p.frameIdx, frameCount - 1)) * stride;
-						inPlaceX = (r0x - p.soma77JointsFlat[base]) * CM_TO_M;
-						inPlaceZ = (r0z - p.soma77JointsFlat[base + 2]) * CM_TO_M;
-					}
-				}
-				if (liftY !== lastLiftY || liftGroup.position.x !== inPlaceX || liftGroup.position.z !== inPlaceZ) {
-					liftGroup.position.set(inPlaceX, liftY, inPlaceZ);
-					lastLiftY = liftY;
-				}
-				const hasOrbs = p.lightingOrbs.length > 0;
-				ambient.intensity = hasOrbs ? .06 : p.editMode ? .25 : .45;
-				key.intensity = hasOrbs ? 0 : 1;
-				key.castShadow = !hasOrbs;
-				fill.intensity = hasOrbs ? 0 : .25;
-				hemi.intensity = hasOrbs ? .08 : .35;
-				groundMat.opacity = hasOrbs ? 0 : .55;
-				const orbsSigNew = p.lightingOrbs.map((o) => `${o.id}:${o.position.join(",")}:${o.color}:${o.intensity}:${o.distance}:${o.castShadow}`).join(";");
-				if (orbsSigNew !== orbsSig || p.selectedOrb !== lastOrbSel) {
-					orbsSig = orbsSigNew;
-					lastOrbSel = p.selectedOrb;
-					orbs.onChange = p.onLightingOrbsChange;
-					orbs.onSelectOrb = p.onSelectOrb;
-					orbs.update(p.lightingOrbs, p.selectedOrb);
-				}
-				skeleton.update(p.showSkeleton && !p.editMode ? p.editableJoints ?? p.soma77JointsFlat : null, p.frameIdx);
-				if (p.editMode && !p.editRefMode && !!p.editableJoints) {
-					manip.ensure(liftGroup);
-					manip.active = true;
-					manip.jointsFlat = p.editableJoints;
-					manip.selectedJoint = p.selectedJoint;
-					manip.selectedChain = p.selectedChain ?? null;
-					manip.onSelectJoint = p.onSelectJoint;
-					manip.onSelectChain = p.onSelectChain;
-					manip.onJointMove = p.onJointMove;
-					manip.gizmoMode = p.gizmoMode;
-					manip.kinematicMode = p.kinematicMode ?? "fk";
-					manip.root.visible = true;
-					manip.updateJoints();
-					manip.positionGizmo();
-				} else {
-					manip.active = false;
-					if (manip.root !== null) manip.root.visible = false;
-				}
-				manip.syncGizmo();
-				ghost.update(p.ghostJoints);
-				contacts.update(p.footContacts, p.frameIdx, p.soma77JointsFlat);
-				if (p.soma77JointsFlat !== arrowJointsRef) {
-					arrowJointsRef = p.soma77JointsFlat;
-					arrow.update(p.soma77JointsFlat);
-				}
-				arrow.setVisible(p.showStartingDirection && !p.editMode);
-				const altSig = p.altSamples.map((s) => s.idx).join(",") + "#" + p.meshData.vertices.length;
-				if (altSig !== lastAltSig) {
-					lastAltSig = altSig;
-					alts.update(p.altSamples, p.meshData, p.onCommitSample);
-				} else if (p.altSamples.length > 0) alts.onCommit = p.onCommitSample;
-				const eesSig = p.endEffectorPoints.map((e) => `${e.id}:${e.position.join(",")}:${e.frame}`).join(";");
-				const r2dSig = p.root2dPoints.map((r) => `${r.frame}:${r.x},${r.z}`).join(";");
-				if (eesSig !== lastEEsSig || r2dSig !== lastR2dSig || constraints.editMode !== p.editMode || constraints.selectedEEId !== (p.selectedEEId ?? null) || constraints.showLabels !== p.showConstraintLabels) {
-					lastEEsSig = eesSig;
-					lastR2dSig = r2dSig;
-					constraints.onSelectEE = p.onSelectEE;
-					constraints.onChangeEEPoint = p.onChangeEEPoint;
-					constraints.update(p.root2dPoints, p.endEffectorPoints, p.showConstraintLabels, p.editMode, p.selectedEEId ?? null);
-				}
-				eePlane.update(p.placingEE, p.eePlaceJointIdx, p.editableJoints, p.soma77JointsFlat, p.frameIdx, p.onPlaceEE);
-				reference.update(p);
-				if (p.cameraView !== lastCameraView || p.framing !== lastFraming) {
-					lastCameraView = p.cameraView;
-					lastFraming = p.framing;
-					applyCamera(p.cameraView, p.framing);
-				}
-			}
-			let skinLastAnimate = false;
-			let showBindPosePrev = true;
-			let animLastFrameCount = 1;
-			const framedCameraPosFor = (view, framing) => framedCameraPos(view, framing);
-			const applyCamera = (view, framing) => {
-				const [pos, ty] = framedCameraPosFor(view, framing);
-				stage.camera.position.set(pos[0], pos[1], pos[2]);
-				stage.controls.target.set(0, ty, 0);
-				stage.controls.update();
-				stage.camera.lookAt(0, ty, 0);
-			};
-			return {
-				threeCtx: {
-					gl: stage.renderer,
-					scene,
-					camera: stage.camera
-				},
-				update,
-				applyCamera,
-				setDarkMode(dark) {
-					if (dark !== darkCur) {
-						darkCur = dark;
-						stage.renderer.setClearColor(new Color(dark ? "#0e0e1a" : "#e4e4f0"));
-					}
-				},
-				dispose() {
-					manip.tc?.dispose();
-					refManip.tc?.dispose();
-					constraints.eeTC?.dispose();
-					for (const e of orbs.entries) e.tc?.dispose();
-					skin.geo?.dispose();
-					skin.mat?.dispose();
-					reference.disposeMesh();
-					if (reference.skeleton !== null) {
-						reference.skeleton.spheres.geometry.dispose();
-						reference.skeleton.spheres.material.dispose();
-						reference.skeleton.boneGeo.dispose();
-						reference.skeleton.lines.material.dispose();
-					}
-					stage.dispose();
-				}
-			};
-		}
-		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx
-		/**
-		* PoseViewer3D — Three.js skinned humanoid figure from SOMA mesh (NVIDIA mesh).
-		*
-		* ALWAYS shows the bind mesh (T-pose NVIDIA humanoid) when loaded — even when
-		* no 3D frame data is available yet. When valid frame data arrives it deforms
-		* the mesh via /poser/skin/deform (COCO-18) or /poser/skin/deform_soma (SOMA-77).
-		*
-		* For text-to-pose results, pre-computed deformed vertices arrive as base64-encoded
-		* float32 binary (deformedVerticesB64). These are decoded ONCE to a Float32Array
-		* and indexed DIRECTLY into the geometry buffer (no nested-array conversion —
-		* building 60×18056 = 1.08M small JS arrays freezes the browser tab).
-		*
-		* Mirrors the Kimodo demo scene (vendor/kimodo/kimodo/viz/scene.py):
-		*   - Camera at [2.74, 1.88, 7.68], look-at [0, 0.9, 0], fov 45°
-		*   - Grid at y=0, infinite, fade_distance ~ 3×floor_len
-		*   - Bind pose lifted so feet clear the floor: bind_pos.y -= min_y; bind_pos.y += 0.02
-		*   - Mesh color LIGHT_THEME (152,189,255) = #98BDFF
-		*   - Per-frame set_pose() writes deformed verts directly into BufferGeometry
-		*
-		* RENDERED ON THE SHARED RAW-THREE STAGE (poseStage over card-base stage3d —
-		* the substrate law). This file is the REACT SHELL: it owns the async data
-		* plumbing (bind-mesh fetch, base64 decode, alt-sample decode, reference
-		* bundle resolution) and syncs props into the imperative scene every render.
-		* The old @react-three/fiber JSX tree and the drei components live on only
-		* as their imperative analogues in poseStage.ts (the 2026-09-13 port).
-		*/
-		const NUM_VERTS = 18056;
-		const ALT_NUM_VERTS = 18056;
-		/** The altSamples default (stroke 77 bug fix): a hoisted shared
-		*  empty — a per-render `= []` default gave every omitting render a
-		*  NEW array identity, so the [altSamples] decode effect refired
-		*  each render and its setState seeded an async render loop (proven
-		*  by the motion burn-down's effect census). One stable identity,
-		*  never mutated. */
-		const NO_ALT_SAMPLES = [];
-		function PoseViewer3DImpl({ deformedVerticesB64, deformedVertsDirect, frameIdx, onFrameChange, animate = false, cameraView = "demo", cameraFraming = "full", height = "100%", opacity = 1, wireframe = false, color = "#98bdf7", fps = 30, forceBindPose = false, soma77Joints = null, soma77JointsFlat: soma77JointsFlatProp = null, showSkeleton = false, editMode = false, editableJoints = null, selectedJoint = null, onSelectJoint, onSelectChain, onJointMove, selectedChain = null, kinematicMode = "fk", gizmoMode = "rotate", editedDeformedB64 = null, lightingOrbs = [], onLightingOrbsChange, selectedOrb = null, onSelectOrb, ghostJoints = null, cameraFov = 45, darkMode = true, playbackSpeed = 1, identityModel = "anny", identityCoeffs = null, localChanges = null, customTargets = null, footContacts = null, showFootContacts = false, showStartingDirection = false, altSamples = NO_ALT_SAMPLES, onCommitSample = () => {}, root2dPoints = [], endEffectorPoints = [], showConstraintLabels = true, selectedEEId = null, onSelectEE, onChangeEEPoint, placingEE = false, eePlaceJointIdx, onPlaceEE, referenceMesh = null, refPlaybackFrameIdx, editRefMode = false, refEditableJoints, onRefJointMove, onCanvasReady, threeCtxRef, inPlace = false, customBindMesh = null }) {
-			const [meshData, setMeshData] = (0, react.useState)(null);
-			const [meshLoading, setMeshLoading] = (0, react.useState)(true);
-			const [meshError, setMeshError] = (0, react.useState)(null);
-			const [deformedFlat, setDeformedFlat] = (0, react.useState)(null);
-			const [altDecoded, setAltDecoded] = (0, react.useState)([]);
-			const canvasRef = (0, react.useRef)(null);
-			const stageRef = (0, react.useRef)(null);
-			const soma77JointsFlat = (0, react.useMemo)(() => {
-				if (soma77JointsFlatProp) return soma77JointsFlatProp;
-				if (!soma77Joints || soma77Joints.length === 0) return null;
-				const T = soma77Joints.length;
-				const flat = new Float32Array(T * 77 * 3);
-				for (let f = 0; f < T; f++) {
-					const frame = soma77Joints[f];
-					if (!frame || frame.length < 77) continue;
-					for (let j = 0; j < 77; j++) {
-						const ji = (f * 77 + j) * 3;
-						flat[ji] = frame[j][0];
-						flat[ji + 1] = frame[j][1];
-						flat[ji + 2] = frame[j][2];
-					}
-				}
-				return flat;
-			}, [soma77Joints, soma77JointsFlatProp]);
-			const [refBundle, setRefBundle] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				if (!referenceMesh) {
-					setRefBundle(null);
-					return;
-				}
-				let cancelled = false;
-				setRefBundle({
-					spec: referenceMesh,
-					meshData: null,
-					flat: null,
-					editedFlat: null
-				});
-				(async () => {
-					try {
-						const mesh = await fetchBindMesh(referenceMesh.identityModel ?? "anny", referenceMesh.identityCoeffs, referenceMesh.localChanges, referenceMesh.customTargets);
-						if (!cancelled) setRefBundle((b) => b !== null && b.spec === referenceMesh ? {
-							...b,
-							meshData: mesh
-						} : b);
-					} catch (e) {
-						console.error("ReferenceMesh bind fetch failed:", e);
-					}
-					if (referenceMesh.deformedVerticesB64) try {
-						const res = await fetch(`data:application/octet-stream;base64,${referenceMesh.deformedVerticesB64}`);
-						if (cancelled) return;
-						const buf = await res.arrayBuffer();
-						if (cancelled) return;
-						setRefBundle((b) => b !== null && b.spec === referenceMesh ? {
-							...b,
-							flat: new Float32Array(buf)
-						} : b);
-					} catch (e) {
-						if (!cancelled) console.error("ReferenceMesh decode failed:", e);
-					}
-					if (referenceMesh.editedDeformedVerticesB64) try {
-						const res = await fetch(`data:application/octet-stream;base64,${referenceMesh.editedDeformedVerticesB64}`);
-						if (cancelled) return;
-						const buf = await res.arrayBuffer();
-						if (cancelled) return;
-						setRefBundle((b) => b !== null && b.spec === referenceMesh ? {
-							...b,
-							editedFlat: new Float32Array(buf)
-						} : b);
-					} catch (e) {
-						if (!cancelled) console.error("ReferenceMesh edited decode failed:", e);
-					}
-				})();
-				return () => {
-					cancelled = true;
-				};
-			}, [referenceMesh]);
-			const coeffsKey = identityCoeffs && identityCoeffs.length > 0 ? identityCoeffs.map((v) => v.toFixed(1)).join(",") : "";
-			const localChangesKey = localChanges && Object.keys(localChanges).length > 0 ? Object.entries(localChanges).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${k}=${(Math.round(v * 20) / 20).toFixed(2)}`).join(",") : "";
-			const customTargetsKey = customTargets && Object.keys(customTargets).length > 0 ? Object.entries(customTargets).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${k}=${(Math.round(v * 20) / 20).toFixed(2)}`).join(",") : "";
-			(0, react.useEffect)(() => {
-				if (customBindMesh) {
-					setMeshData(customBindMesh);
-					setMeshLoading(false);
-					setMeshError(null);
-					return;
-				}
-				let cancel = false;
-				setMeshLoading(true);
-				setMeshError(null);
-				const timer = setTimeout(() => {
-					fetchBindMesh(identityModel, identityCoeffs, localChanges, customTargets).then((d) => {
-						if (!cancel) {
-							setMeshData(d);
-							setMeshLoading(false);
-						}
-					}).catch((e) => {
-						if (!cancel) {
-							setMeshError(e.message);
-							setMeshLoading(false);
-						}
-					});
-				}, 60);
-				return () => {
-					cancel = true;
-					clearTimeout(timer);
-				};
-			}, [
-				identityModel,
-				coeffsKey,
-				localChangesKey,
-				customTargetsKey,
-				customBindMesh
-			]);
-			const activeB64 = editedDeformedB64 ?? deformedVerticesB64;
-			(0, react.useEffect)(() => {
-				if (deformedVertsDirect && !editedDeformedB64) {
-					setDeformedFlat(deformedVertsDirect);
-					return;
-				}
-				if (!activeB64) {
-					setDeformedFlat(null);
-					return;
-				}
-				let cancelled = false;
-				setDeformedFlat(null);
-				(async () => {
-					try {
-						const res = await fetch(`data:application/octet-stream;base64,${activeB64}`);
-						if (cancelled) return;
-						const buf = await res.arrayBuffer();
-						if (cancelled) return;
-						setDeformedFlat(new Float32Array(buf));
-					} catch (e) {
-						if (!cancelled) console.error("Failed to decode deformed_vertices_b64:", e);
-						try {
-							const binary = atob(activeB64);
-							const bytes = new Uint8Array(binary.length);
-							for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-							if (!cancelled) setDeformedFlat(new Float32Array(bytes.buffer));
-						} catch (e2) {
-							if (!cancelled) {
-								console.error("Fallback decode also failed:", e2);
-								setDeformedFlat(null);
-							}
-						}
-					}
-				})();
-				return () => {
-					cancelled = true;
-				};
-			}, [
-				activeB64,
-				deformedVertsDirect,
-				editedDeformedB64
-			]);
-			(0, react.useEffect)(() => {
-				if (!altSamples || altSamples.length === 0) {
-					setAltDecoded([]);
-					return;
-				}
-				let cancelled = false;
-				const decoded = [];
-				(async () => {
-					for (let i = 0; i < altSamples.length; i++) {
-						if (cancelled) return;
-						const s = altSamples[i];
-						try {
-							const res = await fetch(`data:application/octet-stream;base64,${s.deformed_vertices_b64}`);
-							if (cancelled) return;
-							const buf = await res.arrayBuffer();
-							if (cancelled) return;
-							const frame0 = new Float32Array(buf).subarray(0, ALT_NUM_VERTS * 3);
-							decoded.push({
-								idx: i + 1,
-								verts: new Float32Array(frame0)
-							});
-							if (!cancelled) setAltDecoded([...decoded]);
-						} catch (e) {
-							console.error("[PoseViewer3D] alt-sample decode failed:", e);
-						}
-					}
-				})();
-				return () => {
-					cancelled = true;
-				};
-			}, [altSamples]);
-			const hasDeformed = !!deformedFlat && deformedFlat.length >= NUM_VERTS * 3;
-			const computedFrameCount = hasDeformed ? Math.floor(deformedFlat.length / (NUM_VERTS * 3)) : 0;
-			const showBindPose = forceBindPose || !hasDeformed || !meshData;
-			const cameraPos = (0, react.useMemo)(() => framedCameraPos(cameraView, cameraFraming)[0], [cameraView, cameraFraming]);
-			(0, react.useEffect)(() => {
-				const canvas = canvasRef.current;
-				if (!canvas || !meshData) return;
-				const handle = mountPoseStage(canvas, {
-					fov: cameraFov,
-					camera: cameraPos,
-					darkMode,
-					onCanvasReady
-				});
-				if (handle === null) return;
-				stageRef.current = handle;
-				if (threeCtxRef) threeCtxRef.current = handle.threeCtx;
-				return () => {
-					stageRef.current = null;
-					if (threeCtxRef) threeCtxRef.current = null;
-					handle.dispose();
-				};
-			}, [meshData]);
-			(0, react.useEffect)(() => {
-				const stage = stageRef.current;
-				if (!stage || !meshData) return;
-				stage.update({
-					meshData,
-					deformedFlat: hasDeformed ? deformedFlat : null,
-					numVerts: NUM_VERTS,
-					frameCount: computedFrameCount || 1,
-					frameIdx,
-					setFrameIdx: onFrameChange ?? (() => {}),
-					animate,
-					showBindPose,
-					opacity,
-					wireframe,
-					color,
-					fps,
-					soma77JointsFlat,
-					showSkeleton,
-					editMode,
-					editableJoints,
-					selectedJoint,
-					onSelectJoint: onSelectJoint ?? (() => {}),
-					onSelectChain,
-					onJointMove: onJointMove ?? (() => {}),
-					selectedChain,
-					kinematicMode,
-					gizmoMode,
-					lightingOrbs,
-					onLightingOrbsChange,
-					selectedOrb,
-					onSelectOrb,
-					ghostJoints,
-					playbackSpeed,
-					footContacts,
-					showFootContacts,
-					showStartingDirection,
-					altSamples: altDecoded,
-					onCommitSample,
-					root2dPoints,
-					endEffectorPoints,
-					showConstraintLabels,
-					selectedEEId,
-					onSelectEE,
-					onChangeEEPoint,
-					placingEE,
-					eePlaceJointIdx: eePlaceJointIdx ?? 0,
-					onPlaceEE: onPlaceEE ?? (() => {}),
-					cameraView,
-					framing: cameraFraming,
-					reference: refBundle,
-					refPlaybackFrameIdx,
-					editRefMode,
-					refEditableJoints,
-					onRefJointMove,
-					inPlace
-				});
-				stage.setDarkMode(darkMode);
-			});
-			if (meshLoading) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: PoseViewer3D_module_css_default.loadingBox,
-				style: { height },
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Loader2, { className: PoseViewer3D_module_css_default.loadingIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: PoseViewer3D_module_css_default.loadingLabel,
-					children: "Loading mesh…"
-				})]
-			});
-			if (meshError) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: PoseViewer3D_module_css_default.errorBox,
-				style: { height },
-				children: ["Mesh error: ", meshError]
-			});
-			if (!meshData) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				className: PoseViewer3D_module_css_default.errorBox,
-				style: { height },
-				children: "No mesh"
-			});
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				style: {
-					height,
-					width: "100%",
-					position: "relative"
-				},
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
-					ref: canvasRef,
-					style: {
-						display: "block",
-						width: "100%",
-						height: "100%"
-					},
-					"data-testid": "pose-viewer-3d"
-				})
-			});
-		}
-		const PoseViewer3D = (0, react.memo)(PoseViewer3DImpl);
-		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/PoseEditMode.tsx
-		init_src();
-		//#endregion
-		//#region ../../web/card-base/src/toast.tsx
-		/**
-		* ToastViewport — THE RENDERER FACE of the one toast system
-		* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
-		* atom); this file re-exports it so UI users keep the single
-		* `@melite/card-base/toast` import — and mounts the viewport.
-		*
-		* THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
-		* studio shell, the cards console — and the document still renders
-		* toasts exactly ONCE. The first live viewport owns rendering;
-		* every other mounted viewport renders nothing; ownership
-		* re-broadcasts when owners unmount. No studio wires it, no studio
-		* can forget it, no seat can duplicate it.
-		*
-		* Per-seam subpath: `@melite/card-base/toast`.
-		*/
-		init_toastStore();
-		init_toastStore();
-		const liveViewportIds = /* @__PURE__ */ new Set();
-		let viewportEpoch = 0;
-		const viewportListeners = /* @__PURE__ */ new Set();
-		function emitViewportChange() {
-			viewportEpoch++;
-			viewportListeners.forEach((l) => l());
-		}
-		function subscribeViewport(l) {
-			viewportListeners.add(l);
-			return () => {
-				viewportListeners.delete(l);
-			};
-		}
-		function getViewportEpoch() {
-			return viewportEpoch;
-		}
-		let nextViewportId = 1;
-		/** Mount anywhere the system needs a renderer — the studio shell,
-		*  the cards console, any seat. The claim law guarantees exactly one
-		*  live renderer per document: the first-mounted viewport renders,
-		*  others render nothing until the owner unmounts. Renders the live
-		*  entries through the DSH Toast atom (body-portaled banner, owner
-		*  unmounts onDone). */
-		function ToastViewport() {
-			const idRef = (0, react.useRef)(nextViewportId++);
-			(0, react.useEffect)(() => {
-				const id = idRef.current;
-				liveViewportIds.add(id);
-				emitViewportChange();
-				return () => {
-					liveViewportIds.delete(id);
-					emitViewportChange();
-				};
-			}, []);
-			(0, react.useSyncExternalStore)(subscribeViewport, getViewportEpoch, getViewportEpoch);
-			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
-			if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: toasts.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {
-				text: t.message,
-				holdMs: t.type === "error" ? 15e3 : 5e3,
-				onDone: () => removeToast(t.id)
-			}, t.id)) });
-		}
 		//#endregion
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/motion/motion/src/ui/studio/kit.module.css.mjs
 		const css$6 = ".XMVuyW_slotCol{flex-direction:column;align-items:center;gap:4px;display:flex}.XMVuyW_slotSquare{border:1px solid #0000;border-radius:8px;justify-content:center;align-items:center;transition:all .12s;display:flex;position:relative;overflow:hidden}.XMVuyW_slotSm{width:36px;height:36px}.XMVuyW_slotMd{width:80px;height:80px}.XMVuyW_slotHot{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent)}.XMVuyW_slotFilled{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 6%, transparent)}.XMVuyW_slotEmpty{border-style:dashed;border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent)}.XMVuyW_slotHover:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent)}.XMVuyW_slotDisabled{opacity:.5}.XMVuyW_hiddenInput{display:none}.XMVuyW_slotImg{object-fit:cover;width:100%;height:100%}.XMVuyW_slotUrl{text-overflow:ellipsis;white-space:nowrap;max-width:100%;color:var(--dsw-alias-label-secondary,#5b6470);padding:0 4px;font-family:ui-monospace,monospace;font-size:8px;overflow:hidden}.XMVuyW_slotEmptyGlyph{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 30%, transparent)}.XMVuyW_slotActions{align-items:center;gap:2px;display:flex;position:absolute;bottom:2px;right:2px}.XMVuyW_slotClear{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 90%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);cursor:pointer;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;display:flex;position:absolute;top:2px;right:2px}.XMVuyW_slotClear:hover{color:var(--dsw-alias-danger,#dc2626)}.XMVuyW_slotPick{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 90%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);cursor:pointer;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;display:flex;position:absolute;bottom:2px;left:2px}.XMVuyW_slotPick:hover{color:var(--dsw-alias-accent,#3b82f6)}.XMVuyW_slotLabel{text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;letter-spacing:.025em;max-width:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);font-size:10px;font-weight:500;overflow:hidden}.XMVuyW_slotLabelSm{font-size:8px}.XMVuyW_slotBadge{text-overflow:ellipsis;white-space:nowrap;max-width:100%;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 90%, transparent);font-size:9px;line-height:1.25;overflow:hidden}.XMVuyW_slotMetric{text-overflow:ellipsis;white-space:nowrap;max-width:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 50%, transparent);font-family:ui-monospace,monospace;font-size:8px;overflow:hidden}.XMVuyW_sz12{width:12px;height:12px}.XMVuyW_sz20{width:20px;height:20px}";
@@ -51267,6 +47568,1030 @@ void main() {
 			});
 		}
 		//#endregion
+		//#region src/ui/studio/motionParams.ts
+		/** Shared motion-studio param keys + stage constants.
+		*
+		*  Moved verbatim from `component.tsx` (the MotionCardEditor godfile split):
+		*  the three module-level constants the studio + its seam hooks/panels share.
+		*  `component.tsx` re-exports them so the original path keeps its surface.
+		*/
+		/** stage.params key for the Motion Card background image (option b). A user
+		*  image rendered behind the mannequin in place of the dark #0e0e1a stage.
+		*  UI-only — never sent to ComfyUI (registered in compile.ts's
+		*  _KNOWN_NON_SIG_PARAMS so it's stripped before the run). Holds either a
+		*  data: URL (file picker) or an asset URL (e.g. a scene-flow output). */
+		const MOTION_BG_IMAGE_PARAM = "motion_bg_image";
+		/** stage.params key for the Motion Card preview BODY (2026-08-15 character
+		*  import): a SOMAX-rigged character GLB the motion previews ON — the
+		*  studio's live viewport skins it client-side (lib/glbSkin.ts → the same
+		*  LBS as the neutral mannequin), and the runner's post-run preview bake
+		*  bakes each output NPZ onto it instead of the mannequin (the explicit-
+		*  import carve-out of the 2026-07-31 mannequin-default policy).
+		*
+		*  A REAL wire-level param, NOT UI-only: kimodo_motion's family signature
+		*  declares it (the card lane's input kind → glb, form_motion_kimodo
+		*  input slot), so the agent can set it headlessly. In the studio it renders as
+		*  an INPUT SUBCARD (a SlotSquare — the same square the image inputs use,
+		*  per the user directive): file pick / asset drop / OS drop / WIRE to an
+		*  upstream 3D card's GLB output (wired XOR attached — the SlotGrid
+		*  contract). Holds a data: URL (upload) or an asset URL. */
+		const MOTION_PREVIEW_GLB_PARAM = "preview_glb";
+		const FLOOR_LIFT_Y$1 = .02;
+		//#endregion
+		//#region src/ui/studio/useMotionUndoStack.ts
+		/**
+		* useMotionUndoStack — the undo/redo cluster moved verbatim from
+		* `component.tsx` (MotionCardEditor lines ~441–554).
+		*
+		* Snapshots ALL authoring state before each mutation so the user can step
+		* back through timeline edits (prompt add/move/resize/delete/split/merge,
+		* keyframe add/move/delete, interval add/move/delete) and joint-edit
+		* operations (enter edit mode, stamp, repose, discard). Read via refs so
+		* pushUndo stays stable (zero re-render cascade).
+		*
+		* Free-variable reads became explicit hook args; the verbs + snapshot fn
+		* are returned. Behavior is IDENTICAL to the inline block.
+		*/
+		function useMotionUndoStack({ tlPrompts, tlKeyframes, constraintPayloads, tlIntervals, keptEdit, editedDeformedB64, editableJointsRef, promptsAuthoredRef, setTlPrompts, setTlKeyframes, setConstraintPayloads, setTlIntervals, setEditableJoints, setKeptEdit, setEditedDeformedB64 }) {
+			const undoStack = (0, react.useRef)([]);
+			const redoStack = (0, react.useRef)([]);
+			const [undoVersion, setUndoVersion] = (0, react.useState)(0);
+			const tlPromptsRef = (0, react.useRef)(tlPrompts);
+			const tlKeyframesRef = (0, react.useRef)(tlKeyframes);
+			const constraintPayloadsRef = (0, react.useRef)(constraintPayloads);
+			const tlIntervalsRef = (0, react.useRef)(tlIntervals);
+			const keptEditRef = (0, react.useRef)(null);
+			const editedDeformedB64Ref = (0, react.useRef)(null);
+			tlPromptsRef.current = tlPrompts;
+			tlKeyframesRef.current = tlKeyframes;
+			constraintPayloadsRef.current = constraintPayloads;
+			tlIntervalsRef.current = tlIntervals;
+			keptEditRef.current = keptEdit;
+			editedDeformedB64Ref.current = editedDeformedB64;
+			const captureSnapshot = (0, react.useCallback)(() => {
+				const editableJoints = editableJointsRef.current ? new Float32Array(editableJointsRef.current) : null;
+				return {
+					tlPrompts: tlPromptsRef.current.map((p) => ({ ...p })),
+					tlKeyframes: tlKeyframesRef.current.map((k) => ({ ...k })),
+					constraintPayloads: Object.fromEntries(Object.entries(constraintPayloadsRef.current).map(([k, v]) => [k, { ...v }])),
+					tlIntervals: tlIntervalsRef.current.map(
+						/* v8 ignore next -- tlIntervalsRef is only ever written as [] (the sole writer clears wholesale — probe 2026-09-19): the mapper never runs */
+						(iv) => ({ ...iv })
+					),
+					editableJoints,
+					keptEdit: keptEditRef.current ? {
+						joints: new Float32Array(keptEditRef.current.joints),
+						frame: keptEditRef.current.frame
+					} : null,
+					editedDeformedB64: editedDeformedB64Ref.current
+				};
+			}, [editableJointsRef]);
+			/** Snapshot current state before a mutation. Call this FIRST in every
+			*  mutation handler (before the setState that changes authoring state). */
+			const pushUndo = (0, react.useCallback)(() => {
+				undoStack.current.push(captureSnapshot());
+				redoStack.current = [];
+				if (undoStack.current.length > 80) undoStack.current.shift();
+				setUndoVersion((v) => v + 1);
+			}, [captureSnapshot]);
+			const restoreSnapshot = (0, react.useCallback)((snap) => {
+				promptsAuthoredRef.current = true;
+				setTlPrompts(snap.tlPrompts);
+				setTlKeyframes(snap.tlKeyframes);
+				setConstraintPayloads(snap.constraintPayloads);
+				setTlIntervals(snap.tlIntervals);
+				setEditableJoints(snap.editableJoints);
+				editableJointsRef.current = snap.editableJoints;
+				setKeptEdit(snap.keptEdit);
+				setEditedDeformedB64(snap.editedDeformedB64);
+			}, [
+				promptsAuthoredRef,
+				editableJointsRef,
+				setTlPrompts,
+				setTlKeyframes,
+				setConstraintPayloads,
+				setTlIntervals,
+				setEditableJoints,
+				setKeptEdit,
+				setEditedDeformedB64
+			]);
+			const handleUndo = (0, react.useCallback)(() => {
+				if (undoStack.current.length === 0) return;
+				redoStack.current.push(captureSnapshot());
+				restoreSnapshot(undoStack.current.pop());
+				setUndoVersion((v) => v + 1);
+			}, [captureSnapshot, restoreSnapshot]);
+			const handleRedo = (0, react.useCallback)(() => {
+				if (redoStack.current.length === 0) return;
+				undoStack.current.push(captureSnapshot());
+				restoreSnapshot(redoStack.current.pop());
+				setUndoVersion((v) => v + 1);
+			}, [captureSnapshot, restoreSnapshot]);
+			(0, react.useEffect)(() => {
+				const handler = (e) => {
+					const el = e.target;
+					if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el?.isContentEditable) return;
+					if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+						e.preventDefault();
+						handleUndo();
+					} else if ((e.ctrlKey || e.metaKey) && (e.key === "y" || e.key === "z" && e.shiftKey)) {
+						e.preventDefault();
+						handleRedo();
+					}
+				};
+				window.addEventListener("keydown", handler);
+				return () => window.removeEventListener("keydown", handler);
+			}, [handleUndo, handleRedo]);
+			const dragUndoRef = (0, react.useRef)(null);
+			const dragUndoTimeout = (0, react.useRef)(null);
+			return {
+				pushUndo,
+				handleUndo,
+				handleRedo,
+				maybePushDragUndo: (0, react.useCallback)((key) => {
+					if (dragUndoRef.current === key) return;
+					if (dragUndoTimeout.current) clearTimeout(dragUndoTimeout.current);
+					dragUndoRef.current = key;
+					pushUndo();
+					dragUndoTimeout.current = setTimeout(() => {
+						dragUndoRef.current = null;
+					}, 300);
+				}, [pushUndo]),
+				captureSnapshot,
+				restoreSnapshot,
+				undoVersion
+			};
+		}
+		//#endregion
+		//#region src/ui/studio/useMotionMedia.ts
+		/**
+		* useMotionMedia — the asset/media cluster moved verbatim from
+		* `component.tsx` (MotionCardEditor lines ~188–421 + ~580–735).
+		*
+		* Owns: the preview-body input subcard state derivations (slot resolve,
+		* wire resolution, manual attach, file picks), the skin load (neutral +
+		* character import + body-to-somax convert queue), the motion NPZ load +
+		* chunked precompute, playback space key, tile-thumbnail capture, and the
+		* stage background image (multi-source attach + THREE background push).
+		*
+		* Owns no primitive state (the remnant orchestrates all useState/useRef);
+		* internal-only refs (thumbnail guard, bg texture) live here. Free-variable
+		* reads became explicit hook args. Behavior is IDENTICAL.
+		*/
+		init_three_module();
+		init_src$1();
+		init_src();
+		function useMotionMedia({ stage, upstreams, onSave, onWireSlot, toast, bodyGlb, setBodyGlbState, setBodyNotice, skin, setSkin, npz, setNpz, allVertsM, setAllVertsM, setError, setLoading, setFrameIdx, setPlaying, setEditMode, setKeptEdit, setEditedDeformedB64, threeCtxRef, npzUrl, bgImage, setBgImage, setBgDragOver }) {
+			const setBodyGlb = (0, react.useCallback)((url) => {
+				setBodyGlbState(url);
+				setBodyNotice(null);
+				onSave(url ? { [MOTION_PREVIEW_GLB_PARAM]: url } : { [MOTION_PREVIEW_GLB_PARAM]: "" });
+			}, [
+				onSave,
+				setBodyGlbState,
+				setBodyNotice
+			]);
+			const bodySlotIdx = (0, react.useMemo)(() => stage.params["preview_glb"] !== void 0 ? (getCachedCatalog()?.models?.[stage.service]?.input_slots ?? []).indexOf(MOTION_PREVIEW_GLB_PARAM) : -1, [stage.params, stage.service]);
+			const bodyWiredId = bodySlotIdx >= 0 ? stage.inputs[bodySlotIdx] : "";
+			const bodyWiredUpstream = bodyWiredId ? upstreams.find((u) => u.id === bodyWiredId) : void 0;
+			const bodyWired = !!bodyWiredUpstream;
+			const bodyWiredUrl = bodyWiredUpstream?.result ? [...Object.values(bodyWiredUpstream.result.artifacts ?? {}), ...bodyWiredUpstream.result.assetUrls].find((u) => typeof u === "string" && /\.(glb|gltf)(\?|#|$)/i.test(u)) ?? null : null;
+			const bodySrc = bodyWired ? bodyWiredUrl ?? "" : bodyGlb ?? "";
+			(0, react.useEffect)(() => {
+				const v = stage.params?.[MOTION_PREVIEW_GLB_PARAM];
+				setBodyGlbState(typeof v === "string" && v.length > 0 ? v : null);
+				setBodyNotice(null);
+			}, [
+				stage.id,
+				setBodyGlbState,
+				setBodyNotice
+			]);
+			(0, react.useEffect)(() => {
+				let cancelled = false;
+				setSkin(null);
+				if (!bodySrc) {
+					loadSomaSkin().then((s) => {
+						if (!cancelled) setSkin(s);
+					}).catch((e) => {
+						if (!cancelled) setError(e instanceof Error ? e.message : /* v8 ignore next -- DOMException instanceof Error === true in happy-dom and the fetch lane wraps all else (probe 2026-09-19) */ "Failed to load skin");
+					});
+					return () => {
+						cancelled = true;
+					};
+				}
+				loadGlbSkin(bodySrc).then((s) => {
+					if (!cancelled) setSkin(s);
+				}).catch(async (e) => {
+					if (cancelled) return;
+					if (e instanceof NotSomaxGlbError) {
+						setBodyNotice(`Body isn't SOMAX-rigged — converting through the queue… (${e.message})`);
+						try {
+							const somaxBody = {
+								flow: "body-to-somax",
+								glb: bodySrc
+							};
+							somaxBody.draft_id = await ensureDraftId(somaxBody);
+							const res = await fetch("/v1/flows/start", {
+								method: "POST",
+								headers: { "Content-Type": "application/json" },
+								body: JSON.stringify(somaxBody)
+							});
+							const text = await res.text();
+							if (!res.ok) throw new Error(`body-to-somax queue refused: HTTP ${res.status}${text ? `: ${text.slice(0, 300)}` : ""}`);
+							let data;
+							try {
+								data = JSON.parse(text);
+							} catch {
+								throw new Error("body-to-somax queue returned a non-JSON body");
+							}
+							const runId = data.run_id;
+							if (typeof runId !== "string" || !runId) throw new Error("body-to-somax queue returned no run_id");
+							const rigged = collectStageUrls((await pollFlowRun(runId, void 0, { onTick: () => void 0 })).stages).find((u) => /\.glb(\?|#|$)/i.test(u)) ?? null;
+							if (!rigged) throw new Error(`body-to-somax run ${runId} produced no rigged GLB`);
+							const s2 = await loadGlbSkin(rigged);
+							if (cancelled) return;
+							setSkin(s2);
+							setBodyNotice(null);
+							toast("success", "Body converted to SOMAX rig — previewing your character.");
+							return;
+						} catch (e2) {
+							if (cancelled) return;
+							const msg2 = e2 instanceof Error ? e2.message : String(e2);
+							setBodyNotice(`auto-convert failed — ${msg2}`);
+							toast("error", `SOMAX conversion failed — ${msg2}. Showing the neutral mannequin.`);
+							loadSomaSkin().then((s) => {
+								if (!cancelled) setSkin(s);
+							}).catch((e3) => {
+								if (!cancelled) setError(e3 instanceof Error ? e3.message : /* v8 ignore next -- DOMException instanceof Error === true (probe 2026-09-19) */ "Failed to load skin");
+							});
+							return;
+						}
+					}
+					/* v8 ignore next 1 -- line 158's branch diverts every NotSomaxGlbError; DOMException instanceof Error === true in happy-dom and the fetch lane wraps all else (probe 2026-09-19) */
+					const msg = e instanceof NotSomaxGlbError ? e.message : e instanceof Error ? e.message : "Failed to load character GLB";
+					setBodyNotice(msg);
+					toast("error", `Preview body not loaded — ${msg}. Showing the neutral mannequin.`);
+					loadSomaSkin().then((s) => {
+						if (!cancelled) setSkin(s);
+					}).catch((e2) => {
+						if (!cancelled) setError(e2 instanceof Error ? e2.message : /* v8 ignore next -- DOMException instanceof Error === true (probe 2026-09-19) */ "Failed to load skin");
+					});
+				});
+				return () => {
+					cancelled = true;
+				};
+			}, [
+				bodySrc,
+				toast,
+				setSkin,
+				setError,
+				setBodyNotice
+			]);
+			(0, react.useEffect)(() => {
+				if (!npzUrl) {
+					setNpz(null);
+					setAllVertsM(null);
+					setError(null);
+					setLoading(false);
+					setEditMode(false);
+					setPlaying(false);
+					setKeptEdit(null);
+					setEditedDeformedB64(null);
+					return;
+				}
+				let cancelled = false;
+				setLoading(true);
+				setError(null);
+				(async () => {
+					try {
+						if (!skin) return;
+						const [m, s] = await Promise.all([loadMotionNpz(npzUrl), Promise.resolve(skin)]);
+						if (cancelled) return;
+						setSkin(s);
+						const stride0 = s.vertexCount * 3;
+						const seedVerts = new Float32Array(m.T * stride0);
+						deformFrame(m.globalRotMats.subarray(0, 693), m.posedJoints.subarray(0, 231), s, seedVerts.subarray(0, stride0));
+						for (let i = 0; i < stride0; i++) seedVerts[i] *= 100;
+						const f0 = seedVerts.subarray(0, stride0);
+						for (let t = 1; t < m.T; t++) seedVerts.set(f0, t * stride0);
+						setNpz(m);
+						setFrameIdx(0);
+						setPlaying(false);
+						setKeptEdit(null);
+						setEditedDeformedB64(null);
+						setAllVertsM(seedVerts);
+						const verts = await precomputeDeformedVertsChunked(m, s, true);
+						if (cancelled) return;
+						setAllVertsM(verts);
+						setPlaying(true);
+					} catch (e) {
+						if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load motion");
+					} finally {
+						if (!cancelled) setLoading(false);
+					}
+				})();
+				return () => {
+					cancelled = true;
+				};
+			}, [
+				npzUrl,
+				skin,
+				setNpz,
+				setAllVertsM,
+				setError,
+				setLoading,
+				setFrameIdx,
+				setPlaying,
+				setEditMode,
+				setKeptEdit,
+				setEditedDeformedB64,
+				setSkin
+			]);
+			(0, react.useEffect)(() => {
+				if (!npz) return;
+				const onKey = (e) => {
+					const el = e.target;
+					if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el?.isContentEditable) return;
+					if (e.code === "Space") {
+						e.preventDefault();
+						setPlaying((p) => !p);
+					}
+				};
+				window.addEventListener("keydown", onKey);
+				return () => window.removeEventListener("keydown", onKey);
+			}, [npz, setPlaying]);
+			const setThumb = useMotionThumbStore((s) => s.setThumbnail);
+			const thumbCapturedForUrl = (0, react.useRef)(null);
+			(0, react.useEffect)(() => {
+				if (!npzUrl || !npz || !allVertsM) return;
+				if (thumbCapturedForUrl.current === npzUrl) return;
+				let idleId = 0;
+				idleId = requestIdleCallback(() => {
+					const ctx = threeCtxRef.current;
+					if (!ctx) return;
+					try {
+						ctx.gl.render(ctx.scene, ctx.camera);
+						ctx.gl.domElement.toBlob((blob) => {
+							if (!blob || blob.size < 100) return;
+							readAsDataURL$1(blob).then((url) => {
+								if (url.length > 100) {
+									thumbCapturedForUrl.current = npzUrl;
+									setThumb(stage.id, url);
+								}
+							}).catch(() => {});
+						}, "image/png");
+					} catch {}
+				}, { timeout: 2e3 });
+				return () => cancelIdleCallback(idleId);
+			}, [
+				npz,
+				allVertsM,
+				npzUrl,
+				stage.id,
+				setThumb,
+				threeCtxRef
+			]);
+			const setBg = (0, react.useCallback)((url) => {
+				setBgImage(url);
+				onSave(url ? { [MOTION_BG_IMAGE_PARAM]: url } : { [MOTION_BG_IMAGE_PARAM]: "" });
+			}, [onSave, setBgImage]);
+			(0, react.useEffect)(() => {
+				const v = stage.params?.[MOTION_BG_IMAGE_PARAM];
+				setBgImage(typeof v === "string" && v.length > 0 ? v : null);
+			}, [stage.id, setBgImage]);
+			const handleBgFile = (0, react.useCallback)((file) => {
+				if (!file) return;
+				readAsDataURL$1(file).then(setBg);
+			}, [setBg]);
+			const attachBody = (0, react.useCallback)((url) => {
+				if (url) onWireSlot?.(MOTION_PREVIEW_GLB_PARAM, null, null);
+				setBodyGlb(url);
+			}, [onWireSlot, setBodyGlb]);
+			const isGlbUrl = (0, react.useCallback)((u) => /\.(glb|gltf)(\?|#|$)/i.test(u), []);
+			const handleStageDrop = (0, react.useCallback)((e) => {
+				e.preventDefault();
+				setBgDragOver(false);
+				const asset = e.dataTransfer.getData(ASSET_DRAG_MIME$2);
+				if (asset) try {
+					const payload = JSON.parse(asset);
+					if (payload.url) {
+						if (isGlbUrl(payload.url)) attachBody(payload.url);
+						else setBg(payload.url);
+						return;
+					}
+				} catch {}
+				const file = e.dataTransfer.files?.[0];
+				if (!file) return;
+				if (/\.glb$/i.test(file.name) || file.type === "model/gltf-binary") {
+					readAsDataURL$1(file).then(attachBody);
+					return;
+				}
+				handleBgFile(file);
+			}, [
+				setBg,
+				handleBgFile,
+				attachBody,
+				isGlbUrl,
+				setBgDragOver
+			]);
+			const handleBodyFile = (0, react.useCallback)((file) => {
+				if (!/\.glb$/i.test(file.name) && file.type !== "model/gltf-binary") {
+					toast("error", "Preview body must be a .glb (SOMAX-rigged character).");
+					return;
+				}
+				readAsDataURL$1(file).then(attachBody).catch((err) => toast("error", `Could not read GLB: ${err instanceof Error ? err.message : String(err)}`));
+			}, [attachBody, toast]);
+			const priorStages = (0, react.useMemo)(() => {
+				const idx = upstreams.findIndex((s) => s.id === stage.id);
+				return idx === -1 ? upstreams : upstreams.slice(0, idx);
+			}, [upstreams, stage.id]);
+			const bgTexRef = (0, react.useRef)(null);
+			(0, react.useEffect)(() => {
+				const ctx = threeCtxRef.current;
+				if (!ctx) return;
+				if (bgTexRef.current) {
+					bgTexRef.current.dispose();
+					bgTexRef.current = null;
+				}
+				if (bgImage) {
+					const tex = new TextureLoader().load(bgImage);
+					tex.colorSpace = SRGBColorSpace;
+					bgTexRef.current = tex;
+					ctx.scene.background = tex;
+				} else ctx.scene.background = new Color("#0e0e1a");
+			}, [
+				bgImage,
+				npzUrl,
+				allVertsM,
+				threeCtxRef
+			]);
+			return {
+				setBodyGlb,
+				bodySlotIdx,
+				bodyWiredId,
+				bodyWiredUpstream,
+				bodyWired,
+				bodyWiredUrl,
+				bodySrc,
+				attachBody,
+				isGlbUrl,
+				handleBodyFile,
+				priorStages,
+				setBg,
+				handleBgFile,
+				handleStageDrop
+			};
+		}
+		//#endregion
+		//#region src/ui/studio/usePoseEditing.ts
+		/**
+		* usePoseEditing — the edit-mode (Phase B) verbs + live reskin moved
+		* verbatim from `component.tsx` (MotionCardEditor lines ~844–1037,
+		* minus discardKeptEdit/stampConstraintAtFrame which live in useMotionStage).
+		*
+		* Owns no primitive state (the remnant orchestrates all useState/useRef);
+		* it owns the memos, verbs, and the client-side re-skin effect.
+		* Free-variable reads became explicit hook args. Behavior is IDENTICAL.
+		*/
+		init_src();
+		init_motionConstraints();
+		function usePoseEditing({ effectiveNpz, frameIdx, tlKeyframes: _tlKeyframes, constraintPayloads, keptEdit, currentJointsM, fullbodyKfAtFrame, pushUndo, toast, skin, onSave, editMode, setEditMode, editableJoints, setEditableJoints, editableJointsRef, setSelectedJoint, setEditedDeformedB64, reposing: _reposing, setReposing, setKeptEdit, setPlaying, setConstraintPayloads }) {
+			const toggleEdit = () => {
+				/* v8 ignore next 1 -- Refine is disabled exactly when currentJointsM is null (probe 2026-09-19) */
+				if (!currentJointsM) return;
+				if (editMode) {
+					setKeptEdit(editableJoints ? {
+						joints: editableJoints,
+						frame: frameIdx
+					} : null);
+					setEditMode(false);
+					setSelectedJoint(null);
+				} else {
+					pushUndo();
+					const fromKept = keptEdit && keptEdit.frame === frameIdx ? keptEdit.joints : null;
+					const stampedPayload = fullbodyKfAtFrame ? constraintPayloads[fullbodyKfAtFrame.uuid] : null;
+					const baseM = stampedPayload && stampedPayload.kind === "fullbody" ? decodeF32(stampedPayload.jp) : currentJointsM;
+					const next = fromKept ? fromKept : jointsToCm(baseM);
+					editableJointsRef.current = next;
+					setEditableJoints(next);
+					setSelectedJoint(null);
+					setEditMode(true);
+					setPlaying(false);
+				}
+			};
+			const handleJointMove = (0, react.useCallback)((e) => {
+				const prev = editableJointsRef.current;
+				if (!prev) return;
+				const next = e.fullJoints ? e.fullJoints : prev.slice();
+				if (!e.fullJoints) {
+					next[e.idx * 3] = e.position.x;
+					next[e.idx * 3 + 1] = e.position.y;
+					next[e.idx * 3 + 2] = e.position.z;
+				}
+				editableJointsRef.current = next;
+				setEditableJoints(next);
+				const src = effectiveNpz;
+				const kf = fullbodyKfAtFrame;
+				if (!src || !kf) return;
+				const editedM = jointsFromCm(next);
+				const payload = stampEditedPose(editedM, patchFrame(src.posedJoints, src.globalRotMats, editedM, frameIdx).globalRotMats.subarray(frameIdx * 77 * 9, (frameIdx + 1) * 77 * 9), frameIdx, src.T);
+				setConstraintPayloads((p) => ({
+					...p,
+					[kf.uuid]: payload
+				}));
+			}, [
+				effectiveNpz,
+				fullbodyKfAtFrame,
+				frameIdx,
+				editableJointsRef,
+				setEditableJoints,
+				setConstraintPayloads
+			]);
+			usePoseReskinEffect({
+				skin,
+				effectiveNpz,
+				editMode,
+				editableJoints,
+				keptEdit,
+				frameIdx,
+				setEditedDeformedB64
+			});
+			return {
+				toggleEdit,
+				handleJointMove,
+				displayJointsM: (0, react.useMemo)(() => {
+					if (editMode && editableJoints) return jointsFromCm(editableJoints);
+					if (keptEdit && keptEdit.frame === frameIdx) return jointsFromCm(keptEdit.joints);
+					return currentJointsM;
+				}, [
+					editMode,
+					editableJoints,
+					keptEdit,
+					frameIdx,
+					currentJointsM
+				]),
+				handleRepose: (0, react.useCallback)(async () => {
+					if (!effectiveNpz || !editableJoints || !editMode) return;
+					setReposing(true);
+					try {
+						const editedM = jointsFromCm(editableJoints);
+						const patched = patchFrame(effectiveNpz.posedJoints, effectiveNpz.globalRotMats, editedM, frameIdx);
+						const T = frameIdx + 1;
+						onSave({ prev_motion_artifact: npzToDataUrl(await writeNpz({
+							posed_joints: {
+								data: patched.posedJoints.subarray(0, T * 77 * 3),
+								shape: [
+									T,
+									77,
+									3
+								]
+							},
+							global_rot_mats: {
+								data: patched.globalRotMats.subarray(0, T * 77 * 9),
+								shape: [
+									T,
+									77,
+									3,
+									3
+								]
+							},
+							fps: { data: new Float32Array([effectiveNpz.fps]) }
+						})) });
+						toast("success", `Reposed from edited pose at frame ${frameIdx + 1}. Hit Run to generate.`);
+					} catch (e) {
+						toast("error", `Repose failed: ${e.message}`);
+					} finally {
+						setReposing(false);
+					}
+				}, [
+					effectiveNpz,
+					editableJoints,
+					editMode,
+					frameIdx,
+					onSave,
+					toast,
+					setReposing
+				])
+			};
+		}
+		/** The re-skin effect, split for readability — same deps + body as inline. */
+		function usePoseReskinEffect({ skin, effectiveNpz, editMode, editableJoints, keptEdit, frameIdx, setEditedDeformedB64 }) {
+			(0, react.useEffect)(() => {
+				if (!skin || !effectiveNpz) return;
+				const active = editMode ? editableJoints : keptEdit && keptEdit.frame === frameIdx ? keptEdit.joints : null;
+				if (!active) {
+					setEditedDeformedB64(null);
+					return;
+				}
+				const fi = Math.min(frameIdx, effectiveNpz.T - 1);
+				const editedM = jointsFromCm(active);
+				const patched = patchFrame(effectiveNpz.posedJoints, effectiveNpz.globalRotMats, editedM, fi);
+				const out = new Float32Array(skin.vertexCount * 3);
+				deformFrame(patched.globalRotMats.subarray(fi * 77 * 9, (fi + 1) * 77 * 9), editedM, skin, out);
+				setEditedDeformedB64(vertsToB64(out, true));
+			}, [
+				editableJoints,
+				editMode,
+				keptEdit,
+				skin,
+				effectiveNpz,
+				frameIdx,
+				setEditedDeformedB64
+			]);
+		}
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/viser-timeline/motionTimelineState.ts
+		const MOTION_TIMELINE_TRACKS = [
+			{
+				uuid: "fullbody",
+				name: "Full-Body",
+				track_type: "keyframe",
+				color: [
+					219,
+					148,
+					86
+				],
+				height_scale: .5
+			},
+			{
+				uuid: "root2d",
+				name: "2D Root",
+				track_type: "keyframe",
+				color: [
+					150,
+					100,
+					200
+				],
+				height_scale: .5
+			},
+			{
+				uuid: "left-hand",
+				name: "Left Hand",
+				track_type: "keyframe",
+				color: [
+					100,
+					200,
+					150
+				],
+				height_scale: .5
+			},
+			{
+				uuid: "right-hand",
+				name: "Right Hand",
+				track_type: "keyframe",
+				color: [
+					200,
+					100,
+					150
+				],
+				height_scale: .5
+			},
+			{
+				uuid: "left-foot",
+				name: "Left Foot",
+				track_type: "keyframe",
+				color: [
+					219,
+					148,
+					86
+				],
+				height_scale: .5
+			},
+			{
+				uuid: "right-foot",
+				name: "Right Foot",
+				track_type: "keyframe",
+				color: [
+					150,
+					100,
+					200
+				],
+				height_scale: .5
+			}
+		];
+		/** UUID for locally-added keyframes/prompts/intervals. */
+		function makeTimelineId() {
+			const c = typeof crypto !== "undefined" ? crypto : void 0;
+			if (c && "randomUUID" in c) return c.randomUUID();
+			return "tl-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+		}
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarLayout.ts
+		/**
+		* MotionTimelineBarLayout — shared geometry + formatting atoms for
+		* the motion timeline bar (split from MotionTimelineBar.tsx, pure move).
+		*
+		* Pure values only (no hooks, no JSX): row heights, the pinned gutter
+		* width, zoom bounds, rgb/clamp/fmtTimecode. The bar re-exports this
+		* surface, so the public import path never moves.
+		*/
+		const rgb = (c) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+		const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+		/** Zoom bounds: multiplier steps + the px-per-frame ceiling. */
+		const ZOOM_STEP = 1.6;
+		/** mm:ss:ff at the bar's axis fps — the DaVinci position readout
+		* (2026-09-01 audit F5: the bar had NO position indicator; the only
+		* readout lived under the player with a different fps divisor). */
+		const fmtTimecode = (frame, fps) => {
+			const f = Math.max(0, Math.round(frame));
+			const safeFps = Math.max(1, Math.round(fps));
+			const ff = f % safeFps;
+			const totalSec = Math.floor(f / safeFps);
+			const ss = totalSec % 60;
+			const mm = Math.floor(totalSec / 60);
+			const p = (n) => String(n).padStart(2, "0");
+			return `${p(mm)}:${p(ss)}:${p(ff)}`;
+		};
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarScale.ts
+		/**
+		* MotionTimelineBarScale — the bar's ABSOLUTE scale model (split from
+		* MotionTimelineBar.tsx, pure move): measure-once pin, zoom,
+		* playhead-anchored scroll, frame<->px. Bodies below are the bar's.
+		*/
+		/** Ruler ticks over the content (bar line 790): seconds coverage of
+		*  the frames plus the trailing lead-out room. */
+		function buildTicks(contentW, effPpf, totalFrames, fps) {
+			const viewSec = totalFrames / Math.max(1, fps);
+			const fullSec = contentW / Math.max(1, effPpf) / Math.max(1, fps);
+			const stepSec = viewSec <= 4 ? .5 : Math.max(1, Math.ceil(viewSec / 16));
+			const ticks = [];
+			for (let s = 0; s <= fullSec + 1e-6; s += stepSec) ticks.push(Math.round(s * 10) / 10);
+			return {
+				ticks,
+				stepSec
+			};
+		}
+		/** The bar's zoom/scroll state + converters (bar line 400). */
+		function useTimelineScale(opts) {
+			const { scrollRef, frameIdx, totalFrames, fps, initialSeconds } = opts;
+			const [boxW, setBoxW] = (0, react.useState)(0);
+			const [ppf, setPpf] = (0, react.useState)(null);
+			const [basePpf, setBasePpf] = (0, react.useState)(null);
+			const [dragScale, setDragScale] = (0, react.useState)(null);
+			const anchorRef = (0, react.useRef)(null);
+			const measure = () => {
+				const el = scrollRef.current;
+				if (el && el.getBoundingClientRect().width > 0) setBoxW(el.getBoundingClientRect().width);
+			};
+			(0, react.useEffect)(() => {
+				measure();
+				let ro = null;
+				if (typeof ResizeObserver !== "undefined" && scrollRef.current) {
+					ro = new ResizeObserver(() => measure());
+					ro.observe(scrollRef.current);
+				}
+				window.addEventListener("resize", measure);
+				return () => {
+					ro?.disconnect();
+					window.removeEventListener("resize", measure);
+				};
+			}, []);
+			const T1 = Math.max(0, Math.floor(totalFrames) - 1);
+			const fitPpf = boxW > 0 && T1 > 0 ? boxW / T1 : 10;
+			(0, react.useEffect)(() => {
+				if (boxW > 0 && T1 > 0 && ppf == null) {
+					let mount = Math.max(1, fitPpf);
+					if (initialSeconds != null && initialSeconds > 0 && fps > 0) mount = Math.max(1, boxW / (initialSeconds * fps));
+					setPpf(mount);
+					setBasePpf(mount);
+				}
+			}, [boxW, T1]);
+			const effPpf = dragScale ?? ppf ?? Math.max(1, fitPpf);
+			const LEAD_OUT = Math.max(240, boxW * .35);
+			const contentW = Math.max(boxW, T1 * effPpf + LEAD_OUT);
+			const frameToPx = (f) => f * effPpf;
+			const zoom = (factor) => {
+				const el = scrollRef.current;
+				if (el) anchorRef.current = {
+					frame: frameIdx,
+					off: frameToPx(frameIdx) - el.scrollLeft
+				};
+				const next = (ppf ?? Math.max(1, fitPpf)) * factor;
+				if (next <= fitPpf * 1.0001) {
+					setPpf(Math.max(1, fitPpf));
+					setBasePpf(Math.max(1, fitPpf));
+				} else setPpf(Math.min(40, next));
+			};
+			(0, react.useLayoutEffect)(() => {
+				const el = scrollRef.current;
+				const a = anchorRef.current;
+				if (el && a) el.scrollLeft = Math.max(0, a.frame * effPpf - a.off);
+				anchorRef.current = null;
+			}, [effPpf]);
+			const frameAt = (clientX) => {
+				const el = scrollRef.current;
+				if (!el) return null;
+				const r = el.getBoundingClientRect();
+				if (r.width <= 0 && boxW <= 0) return null;
+				const x = clientX - r.left + el.scrollLeft;
+				return Math.round(x / effPpf);
+			};
+			const xToFrame = (clientX) => {
+				const f = frameAt(clientX);
+				return f == null ? null : clamp(f, 0, T1);
+			};
+			const keepTailVisible = (endFrame) => {
+				const el = scrollRef.current;
+				if (!el) return;
+				const r = el.getBoundingClientRect();
+				if (r.width <= 0) return;
+				const rightPx = endFrame * effPpf;
+				if (rightPx > el.scrollLeft + r.width - 24) {
+					const max = Math.max(0, el.scrollWidth - r.width);
+					el.scrollLeft = Math.min(max, rightPx - r.width + 24);
+				}
+			};
+			return {
+				boxW,
+				ppf,
+				setPpf,
+				basePpf,
+				setBasePpf,
+				dragScale,
+				setDragScale,
+				anchorRef,
+				T1,
+				fitPpf,
+				effPpf,
+				contentW,
+				frameToPx,
+				frameAt,
+				xToFrame,
+				zoom,
+				keepTailVisible
+			};
+		}
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarDrag.ts
+		/**
+		* MotionTimelineBarDrag — the bar's one global pointer session (split
+		* from MotionTimelineBar.tsx, pure move): scrub + clip drag/resize +
+		* keyframe drag, the pose-studio pattern (window listeners + live-ref
+		* drag state). Bodies below are the bar's.
+		*/
+		/** The bar's pointer-session state + gesture entry points (bar line 369). */
+		function useTimelineDragSession(opts) {
+			const { T1, effPpf, ppf, dragScale, setPpf, setBasePpf, setDragScale, prompts, audioLayers, packed, xToFrame, keepTailVisible, onFrameChange, onScrubStart, onScrubEnd, onSelect, onKeyframeMove, onPromptMove, onPromptResize, onExtend, onAudioClipMove } = opts;
+			const [dragId, setDragId] = (0, react.useState)(null);
+			const dragRef = (0, react.useRef)(null);
+			const suppressClickRef = (0, react.useRef)(false);
+			const lastPromptRef = (0, react.useRef)(null);
+			lastPromptRef.current = prompts.length ? prompts.reduce((a, b) => b.end_frame > a.end_frame ? b : a).uuid : null;
+			const firstPromptRef = (0, react.useRef)(null);
+			firstPromptRef.current = prompts.length ? prompts.reduce((a, b) => b.start_frame < a.start_frame ? b : a).uuid : null;
+			const promptsRef = (0, react.useRef)(prompts);
+			promptsRef.current = prompts;
+			const startDrag = (e, d) => {
+				if (e.button !== 0) return;
+				e.stopPropagation();
+				e.preventDefault();
+				dragRef.current = {
+					...d,
+					t1AtStart: T1
+				};
+				setDragScale(effPpf);
+				if (d.kind !== "scrub") setDragId(d.id);
+			};
+			(0, react.useEffect)(() => {
+				const endDrag = () => {
+					const d = dragRef.current;
+					dragRef.current = null;
+					setDragId(null);
+					setDragScale(null);
+					if (d?.moved) suppressClickRef.current = true;
+					const grewDoc = d ? T1 > (d.t1AtStart ?? T1) : false;
+					if (d && grewDoc && ppf == null && dragScale != null) {
+						setPpf(dragScale);
+						setBasePpf(dragScale);
+					}
+					if (d && d.kind === "scrub") onScrubEnd?.();
+					if (d && d.kind === "kf" && !d.moved) onFrameChange(d.frame);
+					if (d && (d.kind === "prompt-move" || d.kind === "prompt-l" || d.kind === "prompt-r") && !d.moved) onSelect?.(d.id);
+					if (d && d.kind === "audio-clip" && !d.moved) suppressClickRef.current = true;
+				};
+				const onMove = (e) => {
+					const d = dragRef.current;
+					if (!d) return;
+					if (e.pointerType === "mouse" && e.buttons === 0) {
+						endDrag();
+						return;
+					}
+					if (d.kind === "scrub") {
+						if (Math.abs(e.clientX - d.startX) > 2) d.moved = true;
+						const f = xToFrame(e.clientX);
+						if (f != null) onFrameChange(f);
+						return;
+					}
+					const dxF = (e.clientX - d.startX) / effPpf;
+					if (Math.abs(e.clientX - d.startX) > 5) d.moved = true;
+					if (d.kind === "kf") onKeyframeMove(d.id, clamp(Math.round(d.frame + dxF), 0, T1));
+					else if (d.kind === "audio-clip") {
+						const others = ((audioLayers?.find((x) => x.id === d.layerId))?.clips ?? []).filter((c) => c.id !== d.id);
+						const prevEnd = others.filter((c) => c.start_frame < d.startF).reduce((m, c) => Math.max(m ?? 0, c.start_frame + c.dur_frames), null);
+						const nextStart = others.filter((c) => c.start_frame > d.startF).reduce((m, c) => Math.min(m ?? T1, c.start_frame), null);
+						let ns = clamp(Math.round(d.startF + dxF), 0, Math.max(0, T1 - d.durF));
+						if (prevEnd != null) ns = Math.max(ns, prevEnd + 1);
+						if (nextStart != null) ns = Math.min(ns, Math.max(0, nextStart - 1 - d.durF));
+						onAudioClipMove?.(d.layerId, d.id, ns);
+					} else {
+						const neighborsOf = (id) => {
+							const sorted = [...promptsRef.current].sort((a, b) => a.start_frame - b.start_frame);
+							const i = sorted.findIndex((p) => p.uuid === id);
+							if (i === -1) return {
+								prevEnd: null,
+								prevStart: null,
+								nextStart: null,
+								nextEnd: null
+							};
+							return {
+								prevEnd: i > 0 ? sorted[i - 1].end_frame : null,
+								prevStart: i > 0 ? sorted[i - 1].start_frame : null,
+								nextStart: i < sorted.length - 1 ? sorted[i + 1].start_frame : null,
+								nextEnd: i < sorted.length - 1 ? sorted[i + 1].end_frame : null
+							};
+						};
+						if (d.kind === "prompt-move") {
+							const live = promptsRef.current.find((x) => x.uuid === d.id);
+							const endF = live?.end_frame ?? d.endF;
+							const startF = live?.start_frame ?? d.startF;
+							const dur = Math.max(1, endF - startF);
+							const { prevEnd, prevStart, nextStart, nextEnd } = neighborsOf(d.id);
+							let ns = Math.max(0, Math.round(d.startF + dxF));
+							if (prevEnd != null) ns = Math.max(ns, packed ? (prevStart ?? 0) + 1 : prevEnd + 1);
+							const ne = ns + dur;
+							if (ne > T1 && d.id === lastPromptRef.current) {
+								onExtend(ne + 1);
+								onPromptMove(d.id, ns, ne);
+								keepTailVisible(ne);
+							} else {
+								const maxNs = Math.max(0, T1 - dur);
+								let c = clamp(ns, 0, maxNs);
+								if (nextStart != null) c = Math.min(c, Math.max(0, packed ? (nextEnd ?? T1) - 1 - dur : nextStart - 1 - dur));
+								onPromptMove(d.id, c, c + dur);
+							}
+						} else if (d.kind === "prompt-l") {
+							const endF = promptsRef.current.find((x) => x.uuid === d.id)?.end_frame ?? d.endF;
+							const { prevEnd, prevStart } = neighborsOf(d.id);
+							let ns = clamp(Math.round(d.startF + dxF), 0, endF - 1);
+							if (prevEnd != null) ns = Math.max(ns, packed ? (prevStart ?? 0) + 1 : prevEnd + 1);
+							onPromptResize(d.id, ns, endF);
+							onFrameChange(ns);
+						} else {
+							const startF = promptsRef.current.find((x) => x.uuid === d.id)?.start_frame ?? d.startF;
+							const { nextStart, nextEnd } = neighborsOf(d.id);
+							let ne = Math.round(d.endF + dxF);
+							if (ne > T1 && d.id === lastPromptRef.current) onExtend(ne + 1);
+							else {
+								ne = clamp(ne, startF + 1, T1);
+								if (nextStart != null) ne = Math.min(ne, Math.max(startF + 1, packed ? (nextEnd ?? T1) - 1 : nextStart - 1));
+							}
+							onPromptResize(d.id, startF, ne);
+							onFrameChange(ne);
+							if (d.id === lastPromptRef.current) keepTailVisible(ne);
+						}
+					}
+				};
+				window.addEventListener("pointermove", onMove);
+				window.addEventListener("pointerup", endDrag);
+				window.addEventListener("pointercancel", endDrag);
+				return () => {
+					window.removeEventListener("pointermove", onMove);
+					window.removeEventListener("pointerup", endDrag);
+					window.removeEventListener("pointercancel", endDrag);
+				};
+			}, [
+				T1,
+				effPpf,
+				onFrameChange,
+				onKeyframeMove,
+				onPromptMove,
+				onPromptResize,
+				onExtend
+			]);
+			const seek = (e) => {
+				if (e.button !== 0) return;
+				dragRef.current = {
+					kind: "scrub",
+					startX: e.clientX,
+					moved: false
+				};
+				onScrubStart?.();
+				const f = xToFrame(e.clientX);
+				if (f != null) onFrameChange(f);
+			};
+			return {
+				dragId,
+				dragRef,
+				suppressClickRef,
+				lastPromptRef,
+				firstPromptRef,
+				promptsRef,
+				startDrag,
+				seek
+			};
+		}
+		//#endregion
 		//#region ../../web-kit/timeline/timeline/icons.tsx
 		function base(name, className) {
 			return {
@@ -51431,127 +48756,6 @@ void main() {
 			});
 		}
 		//#endregion
-		//#region ../../web-kit/timeline/timeline/viser-timeline/motionTimelineState.ts
-		const MOTION_TIMELINE_TRACKS = [
-			{
-				uuid: "fullbody",
-				name: "Full-Body",
-				track_type: "keyframe",
-				color: [
-					219,
-					148,
-					86
-				],
-				height_scale: .5
-			},
-			{
-				uuid: "root2d",
-				name: "2D Root",
-				track_type: "keyframe",
-				color: [
-					150,
-					100,
-					200
-				],
-				height_scale: .5
-			},
-			{
-				uuid: "left-hand",
-				name: "Left Hand",
-				track_type: "keyframe",
-				color: [
-					100,
-					200,
-					150
-				],
-				height_scale: .5
-			},
-			{
-				uuid: "right-hand",
-				name: "Right Hand",
-				track_type: "keyframe",
-				color: [
-					200,
-					100,
-					150
-				],
-				height_scale: .5
-			},
-			{
-				uuid: "left-foot",
-				name: "Left Foot",
-				track_type: "keyframe",
-				color: [
-					219,
-					148,
-					86
-				],
-				height_scale: .5
-			},
-			{
-				uuid: "right-foot",
-				name: "Right Foot",
-				track_type: "keyframe",
-				color: [
-					150,
-					100,
-					200
-				],
-				height_scale: .5
-			}
-		];
-		/** UUID for locally-added keyframes/prompts/intervals. */
-		function makeTimelineId() {
-			const c = typeof crypto !== "undefined" ? crypto : void 0;
-			if (c && "randomUUID" in c) return c.randomUUID();
-			return "tl-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-		}
-		//#endregion
-		//#region ../../web-kit/timeline/timeline/viser-timeline/styles.ts
-		const PROMPT_COLORS = [
-			[
-				0,
-				233,
-				236
-			],
-			[
-				239,
-				68,
-				68
-			],
-			[
-				249,
-				115,
-				22
-			],
-			[
-				234,
-				179,
-				8
-			],
-			[
-				34,
-				197,
-				94
-			],
-			[
-				59,
-				130,
-				246
-			],
-			[
-				168,
-				85,
-				247
-			],
-			[
-				236,
-				72,
-				153
-			]
-		];
-		PROMPT_COLORS[0];
-		//#endregion
 		//#region ../../web-kit/timeline/timeline/tip.tsx
 		const toTooltipSide = (side) => side === "left" ? "right" : side;
 		function Tip({ tip, shortcut, side = "top", delayDuration = 300, className: _className, withArrow: _withArrow, children }) {
@@ -51666,6 +48870,705 @@ void main() {
 			"zoomRow": "E4_1PW_zoomRow"
 		};
 		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarChrome.tsx
+		/**
+		* MotionTimelineBarChrome — the bar's pinned + ruler + playhead chrome
+		* (split from MotionTimelineBar.tsx, pure move): the label gutter
+		* (zoom cluster + lane heads), the scrollable content shell with the
+		* click-away deselect, the ruler, the playhead. Lane bodies live in
+		* MotionTimelineBarLanes.
+		*/
+		/** The pinned label gutter (bar line 820): the zoom cluster + lane
+		*  heads. The Fit pin reads the live scale — the body is the bar's. */
+		function TimelineGutter(props) {
+			const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks } = props;
+			const { zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf } = scale;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: timeline_module_css_default.gutter,
+				style: { width: 112 },
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.zoomRow,
+						style: { height: 28 },
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								tip: "Zoom out (back toward fit)",
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									onClick: () => zoom(1 / ZOOM_STEP),
+									"aria-label": "Zoom out",
+									className: timeline_module_css_default.zoomBtn,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomOut, {})
+								})
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								tip: "Fit the whole motion in view",
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									onClick: () => {
+										anchorRef.current = {
+											frame: frameIdx,
+											off: frameToPx(frameIdx) - (scrollRef.current?.scrollLeft ?? 0)
+										};
+										setPpf(Math.max(1, fitPpf));
+										setBasePpf(Math.max(1, fitPpf));
+									},
+									className: timeline_module_css_default.zoomPct,
+									children: [Math.round(effPpf / (basePpf ?? fitPpf) * 100), "%"]
+								})
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								tip: "Zoom in — more pixels per frame (the bar scrolls horizontally)",
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									onClick: () => zoom(ZOOM_STEP),
+									"aria-label": "Zoom in",
+									className: timeline_module_css_default.zoomBtn,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomIn, {})
+								})
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.laneHead,
+						style: { height: promptsHeight },
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Film, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.gutterLabel,
+							children: promptsLabel
+						})]
+					}),
+					beats && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.laneHeadBeats,
+						style: { height: beatsHeight },
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ListMusic, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.gutterLabel,
+							children: beatsLabel
+						})]
+					}),
+					audioLayers?.map((L) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.audioHead,
+						style: { height: 26 },
+						title: L.stem ? `${L.stem} — one bed under every cut; each window hears its own slice in time` : "drop an audio / music track — sliced to each window in time",
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, { "aria-hidden": true }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: timeline_module_css_default.gutterLabelDim,
+								children: L.label
+							}),
+							(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								size: "sm",
+								onClick: () => onAudioDetach(L.id),
+								"aria-label": `Detach ${L.label}`,
+								className: timeline_module_css_default.detachBtn,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, { "aria-hidden": true })
+							})
+						]
+					}, L.id)),
+					tracks.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.laneRow,
+						style: { height: 24 },
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.laneDot,
+							style: { background: rgb(t.color ?? [
+								176,
+								180,
+								186
+							]) },
+							"aria-hidden": true
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.laneName,
+							children: t.name
+						})]
+					}, t.uuid))
+				]
+			}) });
+		}
+		/** The scrollable shell + click-away deselect (bar line 921). */
+		function TimelineContent(props) {
+			const { scrollRef, contentW, suppressClickRef, onSelect, children } = props;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				className: timeline_module_css_default.contentWrap,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					ref: scrollRef,
+					"data-testid": "motion-timeline-scroll",
+					className: timeline_module_css_default.scroller,
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-testid": "motion-timeline-content",
+						className: timeline_module_css_default.content,
+						style: {
+							width: contentW,
+							minWidth: "100%"
+						},
+						onClick: (e) => {
+							if (suppressClickRef.current) {
+								suppressClickRef.current = false;
+								return;
+							}
+							if (e.target.closest("[data-prompt-clip],[data-beat-clip],[data-testid=\"motion-timeline-ruler\"]")) return;
+							onSelect?.(null);
+						},
+						children
+					})
+				})
+			}) });
+		}
+		/** The ruler: scrub surface, ticks, sticky timecode (bar line 947). */
+		function TimelineRuler(props) {
+			const { ticks, stepSec, fps, frameIdx, barBg, frameToPx, frameAt, seek, onPromptAdd } = props;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+				tip: onPromptAdd ? "Click or drag to move the playhead — double-click to add a call at that frame" : "Click or drag to move the playhead",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					"data-testid": "motion-timeline-ruler",
+					className: timeline_module_css_default.ruler,
+					style: { height: 28 },
+					onPointerDown: seek,
+					onDoubleClick: (e) => {
+						if (!onPromptAdd) return;
+						const f = frameAt(e.clientX);
+						if (f != null) onPromptAdd(f);
+					},
+					children: [ticks.map((s) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.tick,
+						style: { left: frameToPx(s * fps) },
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.tickLine }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.tickLabel,
+							children: stepSec < 1 ? `${s.toFixed(1)}s` : `${s}s`
+						})]
+					}, s)), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						"data-testid": "motion-timeline-timecode",
+						className: timeline_module_css_default.timecode,
+						style: {
+							background: barBg,
+							boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)"
+						},
+						children: fmtTimecode(frameIdx, fps)
+					})]
+				})
+			}) });
+		}
+		/** The playhead, spanning every row (bar line 1517). */
+		function TimelinePlayhead(props) {
+			const { frameIdx, frameToPx, playhead } = props;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				"data-testid": "motion-timeline-playhead",
+				className: timeline_module_css_default.playhead,
+				style: {
+					left: frameToPx(frameIdx),
+					width: 2,
+					background: playhead,
+					boxShadow: `0 0 6px color-mix(in srgb, ${playhead} 40%, transparent)`,
+					transform: "translateX(-50%)"
+				},
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: timeline_module_css_default.playheadCap,
+					style: { background: playhead }
+				})
+			}) });
+		}
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/viser-timeline/styles.ts
+		const PROMPT_COLORS = [
+			[
+				0,
+				233,
+				236
+			],
+			[
+				239,
+				68,
+				68
+			],
+			[
+				249,
+				115,
+				22
+			],
+			[
+				234,
+				179,
+				8
+			],
+			[
+				34,
+				197,
+				94
+			],
+			[
+				59,
+				130,
+				246
+			],
+			[
+				168,
+				85,
+				247
+			],
+			[
+				236,
+				72,
+				153
+			]
+		];
+		PROMPT_COLORS[0];
+		//#endregion
+		//#region ../../web-kit/timeline/timeline/MotionTimelineBarLanes.tsx
+		/**
+		* MotionTimelineBarLanes — the bar's lane bodies (split from
+		* MotionTimelineBar.tsx, pure move): prompt clips, beats, audio
+		* tracks, keyframe lanes. Chrome (gutter/ruler/playhead) lives in
+		* MotionTimelineBarChrome.
+		*/
+		/** Draggable/resizable prompt clips (bar line 994). */
+		function TimelinePromptsLane(props) {
+			const { prompts, fps, promptsHeight, emptyPromptsHint, onPromptAdd, dragId, lastPromptRef, firstPromptRef, selectedId, previews, frameToPx, frameAt, startDrag, playhead, onPromptUpdate, onPromptDelete } = props;
+			const [editingId, setEditingId] = (0, react.useState)(null);
+			const [editText, setEditText] = (0, react.useState)("");
+			const commitEdit = (id) => {
+				setEditingId(null);
+				const text = editText.trim();
+				const p = prompts.find((x) => x.uuid === id);
+				if (p && text !== p.text) onPromptUpdate(id, text);
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: clsx(timeline_module_css_default.promptsLane, onPromptAdd && timeline_module_css_default.canAdd),
+				style: {
+					height: promptsHeight,
+					background: "var(--dsw-alias-bg-layer-1)"
+				},
+				onDoubleClick: (e) => {
+					if (!onPromptAdd) return;
+					if (e.target.closest("[data-prompt-clip]")) return;
+					const f = frameAt(e.clientX);
+					if (f != null) onPromptAdd(f);
+				},
+				children: [prompts.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: timeline_module_css_default.emptyCenter,
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: timeline_module_css_default.emptyHint,
+						children: emptyPromptsHint
+					})
+				}), prompts.map((p, i) => {
+					const color = rgb(PROMPT_COLORS[i % PROMPT_COLORS.length]);
+					const isEditing = editingId === p.uuid;
+					const isMoving = dragId === p.uuid;
+					const isLast = p.uuid === lastPromptRef.current;
+					const isFirst = p.uuid === firstPromptRef.current;
+					const isSelected = selectedId === p.uuid;
+					const previewUrl = previews?.[p.uuid];
+					const wPx = frameToPx(Math.max(1, p.end_frame - p.start_frame));
+					const clipTip = `${p.text || "(empty)"} — frames ${p.start_frame}–${p.end_frame} (${((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1)}s)\n\nDrag body: move · Drag edges: resize · Double-click: edit · Click: select`;
+					return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+						tip: clipTip,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							"data-prompt-clip": p.uuid,
+							className: clsx(timeline_module_css_default.promptClip, isMoving ? timeline_module_css_default.clipMoving : isSelected ? timeline_module_css_default.clipSelected : void 0),
+							style: {
+								left: frameToPx(p.start_frame),
+								width: `max(26px, ${wPx}px)`,
+								background: `linear-gradient(135deg, ${color}33, ${color}14)`,
+								borderLeft: `3px solid ${color}`,
+								transition: isMoving ? "none" : "border-color .12s"
+							},
+							onMouseEnter: (e) => {
+								const v = e.currentTarget.querySelector("video");
+								if (v) v.play().catch(() => {});
+							},
+							onMouseLeave: (e) => {
+								const v = e.currentTarget.querySelector("video");
+								if (v) v.pause();
+							},
+							onPointerDown: (e) => !isEditing && startDrag(e, {
+								kind: "prompt-move",
+								id: p.uuid,
+								startX: e.clientX,
+								startF: p.start_frame,
+								endF: p.end_frame,
+								moved: false
+							}),
+							onDoubleClick: (e) => {
+								e.stopPropagation();
+								setEditText(p.text);
+								setEditingId(p.uuid);
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									"data-prompt-edge": "l",
+									title: isFirst ? "First call — nothing before it to trim into" : void 0,
+									className: clsx(timeline_module_css_default.edgeL, isFirst && timeline_module_css_default.edgeDead),
+									onPointerDown: (e) => !isFirst && startDrag(e, {
+										kind: "prompt-l",
+										id: p.uuid,
+										startX: e.clientX,
+										startF: p.start_frame,
+										endF: p.end_frame,
+										moved: false
+									}),
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.gripPill })
+								}),
+								p.seam === "extend" && !isFirst && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									className: timeline_module_css_default.seamDot,
+									style: {
+										background: playhead,
+										boxShadow: `0 0 4px ${playhead}`
+									},
+									title: "extend — latent tail carries across this seam"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+									tip: isLast ? "PULL to extend the motion — the timeline + duration grow as you drag" : "Drag to resize this card",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+										"data-prompt-edge": "r",
+										className: clsx(timeline_module_css_default.edgeR, isLast && timeline_module_css_default.edgeWide),
+										onPointerDown: (e) => startDrag(e, {
+											kind: "prompt-r",
+											id: p.uuid,
+											startX: e.clientX,
+											startF: p.start_frame,
+											endF: p.end_frame,
+											moved: false
+										}),
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: clsx(timeline_module_css_default.gripPillR, isLast && timeline_module_css_default.gripPillBright) })
+									})
+								}),
+								isEditing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+									autoFocus: true,
+									value: editText,
+									onChange: (e) => setEditText(e.target.value),
+									onBlur: () => commitEdit(p.uuid),
+									onKeyDown: (e) => {
+										if (e.key === "Enter") commitEdit(p.uuid);
+										if (e.key === "Escape") setEditingId(null);
+									},
+									onPointerDown: (e) => e.stopPropagation(),
+									onDoubleClick: (e) => e.stopPropagation(),
+									placeholder: "Enter prompt…",
+									className: timeline_module_css_default.clipEditor
+								}) : previewUrl ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: timeline_module_css_default.previewWrap,
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
+											src: previewUrl,
+											muted: true,
+											loop: true,
+											playsInline: true,
+											preload: "metadata",
+											className: timeline_module_css_default.previewVideo
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.scrim }),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+											className: timeline_module_css_default.clipTextCol,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+												className: timeline_module_css_default.clipTitle,
+												style: { color },
+												children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+													className: timeline_module_css_default.clipEmpty,
+													children: "(empty)"
+												})
+											}), wPx > 72 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+												className: timeline_module_css_default.clipDur,
+												children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
+											})]
+										})
+									]
+								}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: timeline_module_css_default.clipTextStack,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: timeline_module_css_default.clipTitle,
+										style: { color },
+										children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: timeline_module_css_default.clipEmpty,
+											children: "(empty)"
+										})
+									}), wPx > 64 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										className: timeline_module_css_default.clipDur,
+										children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
+									})]
+								}),
+								p.override && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									title: "This call overrides run knobs (per-call)",
+									className: timeline_module_css_default.knobDot
+								}),
+								p.audio && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, {
+									"aria-hidden": true,
+									className: timeline_module_css_default.refAudioBadge
+								}),
+								(p.refImages ?? 0) > 0 && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									"data-testid": "tl-ref-badge",
+									className: timeline_module_css_default.refBadge,
+									title: `${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Image$1, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: timeline_module_css_default.refCount,
+										children: p.refImages
+									})]
+								}),
+								!isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+									tip: "Delete this prompt card",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "ghost",
+										size: "sm",
+										onPointerDown: (e) => e.stopPropagation(),
+										onClick: (e) => {
+											e.stopPropagation();
+											onPromptDelete(p.uuid);
+										},
+										"aria-label": "Delete this prompt card",
+										className: timeline_module_css_default.promptDelete,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, {})
+									})
+								})
+							]
+						})
+					}, p.uuid);
+				})]
+			}) });
+		}
+		/** Layer C prompt beats within the calls (bar line 1261). */
+		function TimelineBeatsLane(props) {
+			const { beats, beatsHeight, beatsHint, fps, selectedId, onSelect, onBeatAdd, xToFrame, frameToPx } = props;
+			if (beats == null) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-beats-row": true,
+				className: clsx(timeline_module_css_default.beatsLane, onBeatAdd && timeline_module_css_default.beatsAdd),
+				style: {
+					height: beatsHeight,
+					background: "var(--dsw-alias-bg-layer-1)"
+				},
+				onDoubleClick: (e) => {
+					if (!onBeatAdd) return;
+					const f = xToFrame(e.clientX);
+					if (f != null) onBeatAdd(f);
+				},
+				children: [beats.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: timeline_module_css_default.beatsEmpty,
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: timeline_module_css_default.hintLine,
+						children: beatsHint
+					})
+				}), beats.map((b) => {
+					const color = rgb(b.color ?? [
+						176,
+						180,
+						186
+					]);
+					const isSelected = selectedId === b.id;
+					const bW = frameToPx(Math.max(1, b.end_frame - b.start_frame));
+					return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+						tip: `${b.text || "(empty)"} — frames ${b.start_frame}–${b.end_frame} (${((b.end_frame - b.start_frame) / Math.max(1, fps)).toFixed(1)}s)\n\nClick: edit in the call card`,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-beat-clip": b.id,
+							onClick: () => onSelect?.(b.id),
+							className: clsx(timeline_module_css_default.beatClip, isSelected && timeline_module_css_default.beatSelected),
+							style: {
+								left: frameToPx(b.start_frame),
+								width: `max(14px, ${bW}px)`,
+								background: `linear-gradient(135deg, ${color}2e, ${color}12)`,
+								borderLeft: `3px solid ${color}`
+							},
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: timeline_module_css_default.beatLabel,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: timeline_module_css_default.truncate,
+									children: b.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: timeline_module_css_default.beatEmpty,
+										children: "(empty)"
+									})
+								})
+							})
+						})
+					}, b.id);
+				})]
+			}) });
+		}
+		/** Native audio tracks, same scroll + scale (bar line 1316). */
+		function TimelineAudioLanes(props) {
+			const { audioLayers, prompts, fps, frameToPx, xToFrame, startDrag, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete } = props;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: audioLayers?.map((L) => {
+				const clips = L.clips ?? [];
+				return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					"data-audio-layer": L.id,
+					"data-wired": L.stem ? "true" : "false",
+					"data-clips": clips.length ? "true" : "false",
+					className: timeline_module_css_default.audioLane,
+					style: {
+						height: 26,
+						background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)"
+					},
+					onDragOver: (e) => e.preventDefault(),
+					onDrop: (e) => {
+						e.preventDefault();
+						const t = xToFrame(e.clientX);
+						const f = t != null && Number.isFinite(t) ? t : 0;
+						const file = e.dataTransfer.files?.[0];
+						if (file) {
+							onAudioFileDrop?.(L.id, file, f);
+							return;
+						}
+						try {
+							const payload = JSON.parse(e.dataTransfer.getData("application/tech-noir-asset") || "null");
+							if (payload && typeof payload.url === "string") {
+								if (onAudioDropAt) onAudioDropAt(L.id, payload.url, f);
+								else onAudioDrop?.(L.id, payload.url);
+							}
+						} catch {}
+					},
+					children: clips.length ? clips.map((c) => {
+						const a = (c.start_frame / Math.max(1, fps)).toFixed(1);
+						const b = ((c.start_frame + c.dur_frames) / Math.max(1, fps)).toFixed(1);
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							"data-audio-clip": c.id,
+							title: `${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`,
+							className: timeline_module_css_default.audioClip,
+							style: {
+								left: frameToPx(c.start_frame),
+								width: `max(6px, ${frameToPx(Math.max(1, c.dur_frames))}px)`
+							},
+							onPointerDown: (e) => {
+								if (!onAudioClipMove) return;
+								startDrag(e, {
+									kind: "audio-clip",
+									layerId: L.id,
+									id: c.id,
+									startX: e.clientX,
+									startF: c.start_frame,
+									durF: c.dur_frames,
+									moved: false
+								});
+							},
+							children: [
+								c.gain != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									"aria-hidden": true,
+									className: timeline_module_css_default.gainFill,
+									style: { height: `${Math.max(4, Math.min(100, c.gain * 50))}%` }
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									className: timeline_module_css_default.audioClipLabel,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: timeline_module_css_default.audioName,
+										children: c.name
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										className: timeline_module_css_default.audioTime,
+										children: [a, "s"]
+									})]
+								}),
+								onAudioClipDelete && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									"data-audio-clip-delete": c.id,
+									"aria-label": `Delete ${c.name}`,
+									onClick: (e) => {
+										e.stopPropagation();
+										onAudioClipDelete(L.id, c.id);
+									},
+									className: timeline_module_css_default.audioClipDelete,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, { "aria-hidden": true })
+								})
+							]
+						}, c.id);
+					}) : L.stem ? prompts.map((p, i) => {
+						const a = (p.start_frame / Math.max(1, fps)).toFixed(1);
+						const b = (p.end_frame / Math.max(1, fps)).toFixed(1);
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-audio-slice": i,
+							title: `call #${i} · window hears bed ${a}–${b}s`,
+							className: timeline_module_css_default.audioSlice,
+							style: {
+								left: frameToPx(p.start_frame),
+								width: `max(4px, ${frameToPx(Math.max(1, p.end_frame - p.start_frame))}px)`
+							},
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								className: timeline_module_css_default.sliceLabel,
+								children: [
+									a,
+									"–",
+									b,
+									"s"
+								]
+							})
+						}, p.uuid);
+					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: timeline_module_css_default.audioDrop,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.dropHint,
+							children: "drop or upload audio — clips land where you drop them, drag to move"
+						})
+					})
+				}, L.id);
+			}) });
+		}
+		/** Keyframe lanes: pin, drag, hover-X delete (bar line 1443). */
+		function TimelineKeyframeLanes(props) {
+			const { tracks, keyframes, laneHint, dragId, frameToPx, xToFrame, startDrag, onKeyframeAdd, onKeyframeDelete } = props;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: tracks.map((track, ti) => {
+				const kfs = keyframes.filter((k) => k.track_id === track.uuid);
+				const color = rgb(track.color ?? [
+					176,
+					180,
+					186
+				]);
+				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					"data-lane": track.uuid,
+					className: timeline_module_css_default.kfLane,
+					style: { height: 24 },
+					onDoubleClick: (e) => {
+						const f = xToFrame(e.clientX);
+						if (f != null) onKeyframeAdd(track.uuid, f);
+					},
+					children: [keyframes.length === 0 && ti === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: timeline_module_css_default.laneHint,
+						children: laneHint
+					}), kfs.map((kf) => {
+						const isMoving = dragId === kf.uuid;
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: timeline_module_css_default.kfWrap,
+							style: { left: frameToPx(kf.frame) },
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									"data-kf": kf.uuid,
+									"aria-label": `${track.name} keyframe at frame ${kf.frame}`,
+									onPointerDown: (e) => startDrag(e, {
+										kind: "kf",
+										id: kf.uuid,
+										startX: e.clientX,
+										frame: kf.frame,
+										moved: false
+									}),
+									onDoubleClick: (e) => e.stopPropagation(),
+									className: timeline_module_css_default.kfBtn,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: clsx(timeline_module_css_default.kfDiamond, isMoving && timeline_module_css_default.kfMoving),
+										style: {
+											background: color,
+											borderColor: color
+										}
+									})
+								})
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									onPointerDown: (e) => e.stopPropagation(),
+									onClick: (e) => {
+										e.stopPropagation();
+										onKeyframeDelete(kf.uuid);
+									},
+									"aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`,
+									className: timeline_module_css_default.kfDelete,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, {})
+								})
+							})]
+						}, kf.uuid);
+					})]
+				}, track.uuid);
+			}) });
+		}
+		//#endregion
 		//#region ../../web-kit/timeline/timeline/MotionTimelineBar.tsx
 		/**
 		* MotionTimelineBar — the motion card's bar, pose-studio display model.
@@ -51715,283 +49618,45 @@ void main() {
 		* the root, theme.{barBg,playhead} for the accents) — defaults render
 		* byte-identical, so no tenant changes.
 		*/
-		const rgb = (c) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
-		const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-		/** Row heights (px): ruler, prompts, beats (Layer C), audio layers, keyframe lanes. */
-		const RULER_H = 28;
-		const PROMPTS_H = 36;
-		const BEATS_H = 26;
-		const AUDIO_H = 26;
-		const LANE_H = 24;
-		/** Label gutter width. (audit F5, 2026-09-02: 88 → 112 — the pinned
-		* header row now carries the timecode positioning indicator beside the
-		* zoom cluster, DaVinci-style; every gutter row shares the one const.) */
-		const GUTTER_W = 112;
 		/** Playhead accent — the DSH brand token. */
 		const PLAYHEAD = "var(--dsw-alias-brand-primary)";
 		/** Unified background for the timeline bar and its sticky timecode chip. */
 		const BAR_BG = "var(--dsw-alias-bg-layer-1)";
-		/** Zoom bounds: multiplier steps + the px-per-frame ceiling. */
-		const ZOOM_STEP = 1.6;
-		/** mm:ss:ff at the bar's axis fps — the DaVinci position readout
-		* (2026-09-01 audit F5: the bar had NO position indicator; the only
-		* readout lived under the player with a different fps divisor). */
-		const fmtTimecode = (frame, fps) => {
-			const f = Math.max(0, Math.round(frame));
-			const safeFps = Math.max(1, Math.round(fps));
-			const ff = f % safeFps;
-			const totalSec = Math.floor(f / safeFps);
-			const ss = totalSec % 60;
-			const mm = Math.floor(totalSec / 60);
-			const p = (n) => String(n).padStart(2, "0");
-			return `${p(mm)}:${p(ss)}:${p(ff)}`;
-		};
-		/** Pointer travel (px) before a gesture counts as a DRAG (audit F8: 2px
-		* armed "moved" from jitter — a shaky click at high zoom rippled both
-		* cuts a frame. 5px = click still selects, jitter stays a click). */
-		const DRAG_ARM_PX = 5;
-		const MAX_PPF = 40;
-		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = "Prompts", laneHint = "Double-click a lane to pin a pose constraint at the playhead", packed = false, emptyPromptsHint = "No prompt cards — the Add button carves one", promptsHeight = PROMPTS_H, beats, beatsLabel = "Beats", beatsHeight = BEATS_H, beatsHint = "double-click to add a beat — prompt segments join into the call's one prompt", onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, className, style, theme }) {
+		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = "Prompts", laneHint = "Double-click a lane to pin a pose constraint at the playhead", packed = false, emptyPromptsHint = "No prompt cards — the Add button carves one", promptsHeight = 36, beats, beatsLabel = "Beats", beatsHeight = 26, beatsHint = "double-click to add a beat — prompt segments join into the call's one prompt", onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, className, style, theme }) {
 			const barBg = theme?.barBg ?? BAR_BG;
 			const playhead = theme?.playhead ?? PLAYHEAD;
 			const scrollRef = (0, react.useRef)(null);
-			const dragRef = (0, react.useRef)(null);
-			const suppressClickRef = (0, react.useRef)(false);
-			const lastPromptRef = (0, react.useRef)(null);
-			lastPromptRef.current = prompts.length ? prompts.reduce((a, b) => b.end_frame > a.end_frame ? b : a).uuid : null;
-			const firstPromptRef = (0, react.useRef)(null);
-			firstPromptRef.current = prompts.length ? prompts.reduce((a, b) => b.start_frame < a.start_frame ? b : a).uuid : null;
-			const promptsRef = (0, react.useRef)(prompts);
-			promptsRef.current = prompts;
-			const [dragId, setDragId] = (0, react.useState)(null);
-			const [editingId, setEditingId] = (0, react.useState)(null);
-			const [editText, setEditText] = (0, react.useState)("");
-			const [boxW, setBoxW] = (0, react.useState)(0);
-			const [ppf, setPpf] = (0, react.useState)(null);
-			const [basePpf, setBasePpf] = (0, react.useState)(null);
-			const [dragScale, setDragScale] = (0, react.useState)(null);
-			const anchorRef = (0, react.useRef)(null);
-			const measure = () => {
-				const el = scrollRef.current;
-				if (el && el.getBoundingClientRect().width > 0) setBoxW(el.getBoundingClientRect().width);
-			};
-			(0, react.useEffect)(() => {
-				measure();
-				let ro = null;
-				if (typeof ResizeObserver !== "undefined" && scrollRef.current) {
-					ro = new ResizeObserver(() => measure());
-					ro.observe(scrollRef.current);
-				}
-				window.addEventListener("resize", measure);
-				return () => {
-					ro?.disconnect();
-					window.removeEventListener("resize", measure);
-				};
-			}, []);
-			const T1 = Math.max(0, Math.floor(totalFrames) - 1);
-			const fitPpf = boxW > 0 && T1 > 0 ? boxW / T1 : 10;
-			(0, react.useEffect)(() => {
-				if (boxW > 0 && T1 > 0 && ppf == null) {
-					let mount = Math.max(1, fitPpf);
-					if (initialSeconds != null && initialSeconds > 0 && fps > 0) mount = Math.max(1, boxW / (initialSeconds * fps));
-					setPpf(mount);
-					setBasePpf(mount);
-				}
-			}, [boxW, T1]);
-			const effPpf = dragScale ?? ppf ?? Math.max(1, fitPpf);
-			const LEAD_OUT = Math.max(240, boxW * .35);
-			const contentW = Math.max(boxW, T1 * effPpf + LEAD_OUT);
-			const frameToPx = (f) => f * effPpf;
-			const zoom = (factor) => {
-				const el = scrollRef.current;
-				if (el) anchorRef.current = {
-					frame: frameIdx,
-					off: frameToPx(frameIdx) - el.scrollLeft
-				};
-				const next = (ppf ?? Math.max(1, fitPpf)) * factor;
-				if (next <= fitPpf * 1.0001) {
-					setPpf(Math.max(1, fitPpf));
-					setBasePpf(Math.max(1, fitPpf));
-				} else setPpf(Math.min(MAX_PPF, next));
-			};
-			(0, react.useLayoutEffect)(() => {
-				const el = scrollRef.current;
-				const a = anchorRef.current;
-				if (el && a) el.scrollLeft = Math.max(0, a.frame * effPpf - a.off);
-				anchorRef.current = null;
-			}, [effPpf]);
-			const frameAt = (clientX) => {
-				const el = scrollRef.current;
-				if (!el) return null;
-				const r = el.getBoundingClientRect();
-				if (r.width <= 0 && boxW <= 0) return null;
-				const x = clientX - r.left + el.scrollLeft;
-				return Math.round(x / effPpf);
-			};
-			const xToFrame = (clientX) => {
-				const f = frameAt(clientX);
-				return f == null ? null : clamp(f, 0, T1);
-			};
-			const keepTailVisible = (endFrame) => {
-				const el = scrollRef.current;
-				if (!el) return;
-				const r = el.getBoundingClientRect();
-				if (r.width <= 0) return;
-				const rightPx = endFrame * effPpf;
-				if (rightPx > el.scrollLeft + r.width - 24) {
-					const max = Math.max(0, el.scrollWidth - r.width);
-					el.scrollLeft = Math.min(max, rightPx - r.width + 24);
-				}
-			};
-			const startDrag = (e, d) => {
-				if (e.button !== 0) return;
-				e.stopPropagation();
-				e.preventDefault();
-				dragRef.current = {
-					...d,
-					t1AtStart: T1
-				};
-				setDragScale(effPpf);
-				if (d.kind !== "scrub") setDragId(d.id);
-			};
-			(0, react.useEffect)(() => {
-				const endDrag = () => {
-					const d = dragRef.current;
-					dragRef.current = null;
-					setDragId(null);
-					setDragScale(null);
-					if (d?.moved) suppressClickRef.current = true;
-					const grewDoc = d ? T1 > (d.t1AtStart ?? T1) : false;
-					if (d && grewDoc && ppf == null && dragScale != null) {
-						setPpf(dragScale);
-						setBasePpf(dragScale);
-					}
-					if (d && d.kind === "scrub") onScrubEnd?.();
-					if (d && d.kind === "kf" && !d.moved) onFrameChange(d.frame);
-					if (d && (d.kind === "prompt-move" || d.kind === "prompt-l" || d.kind === "prompt-r") && !d.moved) onSelect?.(d.id);
-					if (d && d.kind === "audio-clip" && !d.moved) suppressClickRef.current = true;
-				};
-				const onMove = (e) => {
-					const d = dragRef.current;
-					if (!d) return;
-					if (e.pointerType === "mouse" && e.buttons === 0) {
-						endDrag();
-						return;
-					}
-					if (d.kind === "scrub") {
-						if (Math.abs(e.clientX - d.startX) > 2) d.moved = true;
-						const f = xToFrame(e.clientX);
-						if (f != null) onFrameChange(f);
-						return;
-					}
-					const dxF = (e.clientX - d.startX) / effPpf;
-					if (Math.abs(e.clientX - d.startX) > DRAG_ARM_PX) d.moved = true;
-					if (d.kind === "kf") onKeyframeMove(d.id, clamp(Math.round(d.frame + dxF), 0, T1));
-					else if (d.kind === "audio-clip") {
-						const others = ((audioLayers?.find((x) => x.id === d.layerId))?.clips ?? []).filter((c) => c.id !== d.id);
-						const prevEnd = others.filter((c) => c.start_frame < d.startF).reduce((m, c) => Math.max(m ?? 0, c.start_frame + c.dur_frames), null);
-						const nextStart = others.filter((c) => c.start_frame > d.startF).reduce((m, c) => Math.min(m ?? T1, c.start_frame), null);
-						let ns = clamp(Math.round(d.startF + dxF), 0, Math.max(0, T1 - d.durF));
-						if (prevEnd != null) ns = Math.max(ns, prevEnd + 1);
-						if (nextStart != null) ns = Math.min(ns, Math.max(0, nextStart - 1 - d.durF));
-						onAudioClipMove?.(d.layerId, d.id, ns);
-					} else {
-						const neighborsOf = (id) => {
-							const sorted = [...promptsRef.current].sort((a, b) => a.start_frame - b.start_frame);
-							const i = sorted.findIndex((p) => p.uuid === id);
-							if (i === -1) return {
-								prevEnd: null,
-								prevStart: null,
-								nextStart: null,
-								nextEnd: null
-							};
-							return {
-								prevEnd: i > 0 ? sorted[i - 1].end_frame : null,
-								prevStart: i > 0 ? sorted[i - 1].start_frame : null,
-								nextStart: i < sorted.length - 1 ? sorted[i + 1].start_frame : null,
-								nextEnd: i < sorted.length - 1 ? sorted[i + 1].end_frame : null
-							};
-						};
-						if (d.kind === "prompt-move") {
-							const live = promptsRef.current.find((x) => x.uuid === d.id);
-							const endF = live?.end_frame ?? d.endF;
-							const startF = live?.start_frame ?? d.startF;
-							const dur = Math.max(1, endF - startF);
-							const { prevEnd, prevStart, nextStart, nextEnd } = neighborsOf(d.id);
-							let ns = Math.max(0, Math.round(d.startF + dxF));
-							if (prevEnd != null) ns = Math.max(ns, packed ? (prevStart ?? 0) + 1 : prevEnd + 1);
-							const ne = ns + dur;
-							if (ne > T1 && d.id === lastPromptRef.current) {
-								onExtend(ne + 1);
-								onPromptMove(d.id, ns, ne);
-								keepTailVisible(ne);
-							} else {
-								const maxNs = Math.max(0, T1 - dur);
-								let c = clamp(ns, 0, maxNs);
-								if (nextStart != null) c = Math.min(c, Math.max(0, packed ? (nextEnd ?? T1) - 1 - dur : nextStart - 1 - dur));
-								onPromptMove(d.id, c, c + dur);
-							}
-						} else if (d.kind === "prompt-l") {
-							const endF = promptsRef.current.find((x) => x.uuid === d.id)?.end_frame ?? d.endF;
-							const { prevEnd, prevStart } = neighborsOf(d.id);
-							let ns = clamp(Math.round(d.startF + dxF), 0, endF - 1);
-							if (prevEnd != null) ns = Math.max(ns, packed ? (prevStart ?? 0) + 1 : prevEnd + 1);
-							onPromptResize(d.id, ns, endF);
-							onFrameChange(ns);
-						} else {
-							const startF = promptsRef.current.find((x) => x.uuid === d.id)?.start_frame ?? d.startF;
-							const { nextStart, nextEnd } = neighborsOf(d.id);
-							let ne = Math.round(d.endF + dxF);
-							if (ne > T1 && d.id === lastPromptRef.current) onExtend(ne + 1);
-							else {
-								ne = clamp(ne, startF + 1, T1);
-								if (nextStart != null) ne = Math.min(ne, Math.max(startF + 1, packed ? (nextEnd ?? T1) - 1 : nextStart - 1));
-							}
-							onPromptResize(d.id, startF, ne);
-							onFrameChange(ne);
-							if (d.id === lastPromptRef.current) keepTailVisible(ne);
-						}
-					}
-				};
-				window.addEventListener("pointermove", onMove);
-				window.addEventListener("pointerup", endDrag);
-				window.addEventListener("pointercancel", endDrag);
-				return () => {
-					window.removeEventListener("pointermove", onMove);
-					window.removeEventListener("pointerup", endDrag);
-					window.removeEventListener("pointercancel", endDrag);
-				};
-			}, [
-				T1,
-				effPpf,
+			const scale = useTimelineScale({
+				scrollRef,
+				frameIdx,
+				totalFrames,
+				fps,
+				initialSeconds
+			});
+			const drag = useTimelineDragSession({
+				T1: scale.T1,
+				effPpf: scale.effPpf,
+				ppf: scale.ppf,
+				dragScale: scale.dragScale,
+				setPpf: scale.setPpf,
+				setBasePpf: scale.setBasePpf,
+				setDragScale: scale.setDragScale,
+				prompts,
+				audioLayers,
+				packed,
+				xToFrame: scale.xToFrame,
+				keepTailVisible: scale.keepTailVisible,
 				onFrameChange,
+				onScrubStart,
+				onScrubEnd,
+				onSelect,
 				onKeyframeMove,
 				onPromptMove,
 				onPromptResize,
-				onExtend
-			]);
-			const viewSec = totalFrames / Math.max(1, fps);
-			const fullSec = contentW / Math.max(1, effPpf) / Math.max(1, fps);
-			const stepSec = viewSec <= 4 ? .5 : Math.max(1, Math.ceil(viewSec / 16));
-			const ticks = [];
-			for (let s = 0; s <= fullSec + 1e-6; s += stepSec) ticks.push(Math.round(s * 10) / 10);
-			const commitEdit = (id) => {
-				setEditingId(null);
-				const text = editText.trim();
-				const p = prompts.find((x) => x.uuid === id);
-				if (p && text !== p.text) onPromptUpdate(id, text);
-			};
-			const seek = (e) => {
-				if (e.button !== 0) return;
-				dragRef.current = {
-					kind: "scrub",
-					startX: e.clientX,
-					moved: false
-				};
-				onScrubStart?.();
-				const f = xToFrame(e.clientX);
-				if (f != null) onFrameChange(f);
-			};
+				onExtend,
+				onAudioClipMove
+			});
+			const { ticks, stepSec } = buildTicks(scale.contentW, scale.effPpf, totalFrames, fps);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				"data-testid": "motion-timeline-bar",
 				className: clsx(timeline_module_css_default.root, className),
@@ -51999,599 +49664,94 @@ void main() {
 					background: barBg,
 					...style
 				},
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: timeline_module_css_default.gutter,
-					style: { width: GUTTER_W },
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineGutter, {
+					scale,
+					scrollRef,
+					frameIdx,
+					promptsHeight,
+					promptsLabel,
+					beats,
+					beatsLabel,
+					beatsHeight,
+					audioLayers,
+					onAudioDetach,
+					tracks
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(TimelineContent, {
+					scrollRef,
+					contentW: scale.contentW,
+					suppressClickRef: drag.suppressClickRef,
+					onSelect,
 					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.zoomRow,
-							style: { height: RULER_H },
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-									tip: "Zoom out (back toward fit)",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										size: "sm",
-										onClick: () => zoom(1 / ZOOM_STEP),
-										"aria-label": "Zoom out",
-										className: timeline_module_css_default.zoomBtn,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomOut, {})
-									})
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-									tip: "Fit the whole motion in view",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										size: "sm",
-										onClick: () => {
-											anchorRef.current = {
-												frame: frameIdx,
-												off: frameToPx(frameIdx) - (scrollRef.current?.scrollLeft ?? 0)
-											};
-											setPpf(Math.max(1, fitPpf));
-											setBasePpf(Math.max(1, fitPpf));
-										},
-										className: timeline_module_css_default.zoomPct,
-										children: [Math.round(effPpf / (basePpf ?? fitPpf) * 100), "%"]
-									})
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-									tip: "Zoom in — more pixels per frame (the bar scrolls horizontally)",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										size: "sm",
-										onClick: () => zoom(ZOOM_STEP),
-										"aria-label": "Zoom in",
-										className: timeline_module_css_default.zoomBtn,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomIn, {})
-									})
-								})
-							]
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineRuler, {
+							ticks,
+							stepSec,
+							fps,
+							frameIdx,
+							barBg,
+							frameToPx: scale.frameToPx,
+							frameAt: scale.frameAt,
+							seek: drag.seek,
+							onPromptAdd
 						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.laneHead,
-							style: { height: promptsHeight },
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Film, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: timeline_module_css_default.gutterLabel,
-								children: promptsLabel
-							})]
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelinePromptsLane, {
+							prompts,
+							fps,
+							promptsHeight,
+							emptyPromptsHint,
+							onPromptAdd,
+							dragId: drag.dragId,
+							selectedId,
+							previews,
+							lastPromptRef: drag.lastPromptRef,
+							firstPromptRef: drag.firstPromptRef,
+							frameToPx: scale.frameToPx,
+							frameAt: scale.frameAt,
+							startDrag: drag.startDrag,
+							playhead,
+							onPromptUpdate,
+							onPromptDelete
 						}),
-						beats && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.laneHeadBeats,
-							style: { height: beatsHeight },
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ListMusic, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: timeline_module_css_default.gutterLabel,
-								children: beatsLabel
-							})]
+						beats && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineBeatsLane, {
+							beats,
+							beatsHeight,
+							beatsHint,
+							fps,
+							selectedId,
+							onSelect,
+							onBeatAdd,
+							xToFrame: scale.xToFrame,
+							frameToPx: scale.frameToPx
 						}),
-						audioLayers?.map((L) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.audioHead,
-							style: { height: AUDIO_H },
-							title: L.stem ? `${L.stem} — one bed under every cut; each window hears its own slice in time` : "drop an audio / music track — sliced to each window in time",
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, { "aria-hidden": true }),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: timeline_module_css_default.gutterLabelDim,
-									children: L.label
-								}),
-								(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									size: "sm",
-									onClick: () => onAudioDetach(L.id),
-									"aria-label": `Detach ${L.label}`,
-									className: timeline_module_css_default.detachBtn,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, { "aria-hidden": true })
-								})
-							]
-						}, L.id)),
-						tracks.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.laneRow,
-							style: { height: LANE_H },
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: timeline_module_css_default.laneDot,
-								style: { background: rgb(t.color ?? [
-									176,
-									180,
-									186
-								]) },
-								"aria-hidden": true
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: timeline_module_css_default.laneName,
-								children: t.name
-							})]
-						}, t.uuid))
-					]
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-					className: timeline_module_css_default.contentWrap,
-					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						ref: scrollRef,
-						"data-testid": "motion-timeline-scroll",
-						className: timeline_module_css_default.scroller,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							"data-testid": "motion-timeline-content",
-							className: timeline_module_css_default.content,
-							style: {
-								width: contentW,
-								minWidth: "100%"
-							},
-							onClick: (e) => {
-								if (suppressClickRef.current) {
-									suppressClickRef.current = false;
-									return;
-								}
-								if (e.target.closest("[data-prompt-clip],[data-beat-clip],[data-testid=\"motion-timeline-ruler\"]")) return;
-								onSelect?.(null);
-							},
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-									tip: onPromptAdd ? "Click or drag to move the playhead — double-click to add a call at that frame" : "Click or drag to move the playhead",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										"data-testid": "motion-timeline-ruler",
-										className: timeline_module_css_default.ruler,
-										style: { height: RULER_H },
-										onPointerDown: seek,
-										onDoubleClick: (e) => {
-											if (!onPromptAdd) return;
-											const f = frameAt(e.clientX);
-											if (f != null) onPromptAdd(f);
-										},
-										children: [ticks.map((s) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-											className: timeline_module_css_default.tick,
-											style: { left: frameToPx(s * fps) },
-											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.tickLine }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												className: timeline_module_css_default.tickLabel,
-												children: stepSec < 1 ? `${s.toFixed(1)}s` : `${s}s`
-											})]
-										}, s)), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											"data-testid": "motion-timeline-timecode",
-											className: timeline_module_css_default.timecode,
-											style: {
-												background: barBg,
-												boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)"
-											},
-											children: fmtTimecode(frameIdx, fps)
-										})]
-									})
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: clsx(timeline_module_css_default.promptsLane, onPromptAdd && timeline_module_css_default.canAdd),
-									style: {
-										height: promptsHeight,
-										background: "var(--dsw-alias-bg-layer-1)"
-									},
-									onDoubleClick: (e) => {
-										if (!onPromptAdd) return;
-										if (e.target.closest("[data-prompt-clip]")) return;
-										const f = frameAt(e.clientX);
-										if (f != null) onPromptAdd(f);
-									},
-									children: [prompts.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										className: timeline_module_css_default.emptyCenter,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: timeline_module_css_default.emptyHint,
-											children: emptyPromptsHint
-										})
-									}), prompts.map((p, i) => {
-										const color = rgb(PROMPT_COLORS[i % PROMPT_COLORS.length]);
-										const isEditing = editingId === p.uuid;
-										const isMoving = dragId === p.uuid;
-										const isLast = p.uuid === lastPromptRef.current;
-										const isFirst = p.uuid === firstPromptRef.current;
-										const isSelected = selectedId === p.uuid;
-										const previewUrl = previews?.[p.uuid];
-										const wPx = frameToPx(Math.max(1, p.end_frame - p.start_frame));
-										const clipTip = `${p.text || "(empty)"} — frames ${p.start_frame}–${p.end_frame} (${((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1)}s)\n\nDrag body: move · Drag edges: resize · Double-click: edit · Click: select`;
-										return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-											tip: clipTip,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-												"data-prompt-clip": p.uuid,
-												className: clsx(timeline_module_css_default.promptClip, isMoving ? timeline_module_css_default.clipMoving : isSelected ? timeline_module_css_default.clipSelected : void 0),
-												style: {
-													left: frameToPx(p.start_frame),
-													width: `max(26px, ${wPx}px)`,
-													background: `linear-gradient(135deg, ${color}33, ${color}14)`,
-													borderLeft: `3px solid ${color}`,
-													transition: isMoving ? "none" : "border-color .12s"
-												},
-												onMouseEnter: (e) => {
-													const v = e.currentTarget.querySelector("video");
-													if (v) v.play().catch(() => {});
-												},
-												onMouseLeave: (e) => {
-													const v = e.currentTarget.querySelector("video");
-													if (v) v.pause();
-												},
-												onPointerDown: (e) => !isEditing && startDrag(e, {
-													kind: "prompt-move",
-													id: p.uuid,
-													startX: e.clientX,
-													startF: p.start_frame,
-													endF: p.end_frame,
-													moved: false
-												}),
-												onDoubleClick: (e) => {
-													e.stopPropagation();
-													setEditText(p.text);
-													setEditingId(p.uuid);
-												},
-												children: [
-													/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-														"data-prompt-edge": "l",
-														title: isFirst ? "First call — nothing before it to trim into" : void 0,
-														className: clsx(timeline_module_css_default.edgeL, isFirst && timeline_module_css_default.edgeDead),
-														onPointerDown: (e) => !isFirst && startDrag(e, {
-															kind: "prompt-l",
-															id: p.uuid,
-															startX: e.clientX,
-															startF: p.start_frame,
-															endF: p.end_frame,
-															moved: false
-														}),
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.gripPill })
-													}),
-													p.seam === "extend" && !isFirst && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-														className: timeline_module_css_default.seamDot,
-														style: {
-															background: playhead,
-															boxShadow: `0 0 4px ${playhead}`
-														},
-														title: "extend — latent tail carries across this seam"
-													}),
-													/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-														tip: isLast ? "PULL to extend the motion — the timeline + duration grow as you drag" : "Drag to resize this card",
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-															"data-prompt-edge": "r",
-															className: clsx(timeline_module_css_default.edgeR, isLast && timeline_module_css_default.edgeWide),
-															onPointerDown: (e) => startDrag(e, {
-																kind: "prompt-r",
-																id: p.uuid,
-																startX: e.clientX,
-																startF: p.start_frame,
-																endF: p.end_frame,
-																moved: false
-															}),
-															children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: clsx(timeline_module_css_default.gripPillR, isLast && timeline_module_css_default.gripPillBright) })
-														})
-													}),
-													isEditing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-														autoFocus: true,
-														value: editText,
-														onChange: (e) => setEditText(e.target.value),
-														onBlur: () => commitEdit(p.uuid),
-														onKeyDown: (e) => {
-															if (e.key === "Enter") commitEdit(p.uuid);
-															if (e.key === "Escape") setEditingId(null);
-														},
-														onPointerDown: (e) => e.stopPropagation(),
-														onDoubleClick: (e) => e.stopPropagation(),
-														placeholder: "Enter prompt…",
-														className: timeline_module_css_default.clipEditor
-													}) : previewUrl ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-														className: timeline_module_css_default.previewWrap,
-														children: [
-															/* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
-																src: previewUrl,
-																muted: true,
-																loop: true,
-																playsInline: true,
-																preload: "metadata",
-																className: timeline_module_css_default.previewVideo
-															}),
-															/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.scrim }),
-															/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-																className: timeline_module_css_default.clipTextCol,
-																children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																	className: timeline_module_css_default.clipTitle,
-																	style: { color },
-																	children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																		className: timeline_module_css_default.clipEmpty,
-																		children: "(empty)"
-																	})
-																}), wPx > 72 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-																	className: timeline_module_css_default.clipDur,
-																	children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
-																})]
-															})
-														]
-													}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-														className: timeline_module_css_default.clipTextStack,
-														children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-															className: timeline_module_css_default.clipTitle,
-															style: { color },
-															children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: timeline_module_css_default.clipEmpty,
-																children: "(empty)"
-															})
-														}), wPx > 64 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-															className: timeline_module_css_default.clipDur,
-															children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
-														})]
-													}),
-													p.override && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-														title: "This call overrides run knobs (per-call)",
-														className: timeline_module_css_default.knobDot
-													}),
-													p.audio && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, {
-														"aria-hidden": true,
-														className: timeline_module_css_default.refAudioBadge
-													}),
-													(p.refImages ?? 0) > 0 && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-														"data-testid": "tl-ref-badge",
-														className: timeline_module_css_default.refBadge,
-														title: `${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`,
-														children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Image$1, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-															className: timeline_module_css_default.refCount,
-															children: p.refImages
-														})]
-													}),
-													!isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-														tip: "Delete this prompt card",
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-															variant: "ghost",
-															size: "sm",
-															onPointerDown: (e) => e.stopPropagation(),
-															onClick: (e) => {
-																e.stopPropagation();
-																onPromptDelete(p.uuid);
-															},
-															"aria-label": "Delete this prompt card",
-															className: timeline_module_css_default.promptDelete,
-															children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, {})
-														})
-													})
-												]
-											})
-										}, p.uuid);
-									})]
-								}),
-								beats && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									"data-beats-row": true,
-									className: clsx(timeline_module_css_default.beatsLane, onBeatAdd && timeline_module_css_default.beatsAdd),
-									style: {
-										height: beatsHeight,
-										background: "var(--dsw-alias-bg-layer-1)"
-									},
-									onDoubleClick: (e) => {
-										if (!onBeatAdd) return;
-										const f = xToFrame(e.clientX);
-										if (f != null) onBeatAdd(f);
-									},
-									children: [beats.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										className: timeline_module_css_default.beatsEmpty,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: timeline_module_css_default.hintLine,
-											children: beatsHint
-										})
-									}), beats.map((b) => {
-										const color = rgb(b.color ?? [
-											176,
-											180,
-											186
-										]);
-										const isSelected = selectedId === b.id;
-										const bW = frameToPx(Math.max(1, b.end_frame - b.start_frame));
-										return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-											tip: `${b.text || "(empty)"} — frames ${b.start_frame}–${b.end_frame} (${((b.end_frame - b.start_frame) / Math.max(1, fps)).toFixed(1)}s)\n\nClick: edit in the call card`,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-												"data-beat-clip": b.id,
-												onClick: () => onSelect?.(b.id),
-												className: clsx(timeline_module_css_default.beatClip, isSelected && timeline_module_css_default.beatSelected),
-												style: {
-													left: frameToPx(b.start_frame),
-													width: `max(14px, ${bW}px)`,
-													background: `linear-gradient(135deg, ${color}2e, ${color}12)`,
-													borderLeft: `3px solid ${color}`
-												},
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-													className: timeline_module_css_default.beatLabel,
-													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-														className: timeline_module_css_default.truncate,
-														children: b.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-															className: timeline_module_css_default.beatEmpty,
-															children: "(empty)"
-														})
-													})
-												})
-											})
-										}, b.id);
-									})]
-								}),
-								audioLayers?.map((L) => {
-									const clips = L.clips ?? [];
-									return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										"data-audio-layer": L.id,
-										"data-wired": L.stem ? "true" : "false",
-										"data-clips": clips.length ? "true" : "false",
-										className: timeline_module_css_default.audioLane,
-										style: {
-											height: AUDIO_H,
-											background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)"
-										},
-										onDragOver: (e) => e.preventDefault(),
-										onDrop: (e) => {
-											e.preventDefault();
-											const t = xToFrame(e.clientX);
-											const f = t != null && Number.isFinite(t) ? t : 0;
-											const file = e.dataTransfer.files?.[0];
-											if (file) {
-												onAudioFileDrop?.(L.id, file, f);
-												return;
-											}
-											try {
-												const payload = JSON.parse(e.dataTransfer.getData("application/tech-noir-asset") || "null");
-												if (payload && typeof payload.url === "string") {
-													if (onAudioDropAt) onAudioDropAt(L.id, payload.url, f);
-													else onAudioDrop?.(L.id, payload.url);
-												}
-											} catch {}
-										},
-										children: clips.length ? clips.map((c) => {
-											const a = (c.start_frame / Math.max(1, fps)).toFixed(1);
-											const b = ((c.start_frame + c.dur_frames) / Math.max(1, fps)).toFixed(1);
-											return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-												"data-audio-clip": c.id,
-												title: `${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`,
-												className: timeline_module_css_default.audioClip,
-												style: {
-													left: frameToPx(c.start_frame),
-													width: `max(6px, ${frameToPx(Math.max(1, c.dur_frames))}px)`
-												},
-												onPointerDown: (e) => {
-													if (!onAudioClipMove) return;
-													startDrag(e, {
-														kind: "audio-clip",
-														layerId: L.id,
-														id: c.id,
-														startX: e.clientX,
-														startF: c.start_frame,
-														durF: c.dur_frames,
-														moved: false
-													});
-												},
-												children: [
-													c.gain != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-														"aria-hidden": true,
-														className: timeline_module_css_default.gainFill,
-														style: { height: `${Math.max(4, Math.min(100, c.gain * 50))}%` }
-													}),
-													/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-														className: timeline_module_css_default.audioClipLabel,
-														children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-															className: timeline_module_css_default.audioName,
-															children: c.name
-														}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-															className: timeline_module_css_default.audioTime,
-															children: [a, "s"]
-														})]
-													}),
-													onAudioClipDelete && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-														variant: "ghost",
-														size: "sm",
-														"data-audio-clip-delete": c.id,
-														"aria-label": `Delete ${c.name}`,
-														onClick: (e) => {
-															e.stopPropagation();
-															onAudioClipDelete(L.id, c.id);
-														},
-														className: timeline_module_css_default.audioClipDelete,
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, { "aria-hidden": true })
-													})
-												]
-											}, c.id);
-										}) : L.stem ? prompts.map((p, i) => {
-											const a = (p.start_frame / Math.max(1, fps)).toFixed(1);
-											const b = (p.end_frame / Math.max(1, fps)).toFixed(1);
-											return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-												"data-audio-slice": i,
-												title: `call #${i} · window hears bed ${a}–${b}s`,
-												className: timeline_module_css_default.audioSlice,
-												style: {
-													left: frameToPx(p.start_frame),
-													width: `max(4px, ${frameToPx(Math.max(1, p.end_frame - p.start_frame))}px)`
-												},
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-													className: timeline_module_css_default.sliceLabel,
-													children: [
-														a,
-														"–",
-														b,
-														"s"
-													]
-												})
-											}, p.uuid);
-										}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-											className: timeline_module_css_default.audioDrop,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												className: timeline_module_css_default.dropHint,
-												children: "drop or upload audio — clips land where you drop them, drag to move"
-											})
-										})
-									}, L.id);
-								}),
-								tracks.map((track, ti) => {
-									const kfs = keyframes.filter((k) => k.track_id === track.uuid);
-									const color = rgb(track.color ?? [
-										176,
-										180,
-										186
-									]);
-									return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										"data-lane": track.uuid,
-										className: timeline_module_css_default.kfLane,
-										style: { height: LANE_H },
-										onDoubleClick: (e) => {
-											const f = xToFrame(e.clientX);
-											if (f != null) onKeyframeAdd(track.uuid, f);
-										},
-										children: [keyframes.length === 0 && ti === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: timeline_module_css_default.laneHint,
-											children: laneHint
-										}), kfs.map((kf) => {
-											const isMoving = dragId === kf.uuid;
-											return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-												className: timeline_module_css_default.kfWrap,
-												style: { left: frameToPx(kf.frame) },
-												children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-													tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`,
-													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-														variant: "ghost",
-														size: "sm",
-														"data-kf": kf.uuid,
-														"aria-label": `${track.name} keyframe at frame ${kf.frame}`,
-														onPointerDown: (e) => startDrag(e, {
-															kind: "kf",
-															id: kf.uuid,
-															startX: e.clientX,
-															frame: kf.frame,
-															moved: false
-														}),
-														onDoubleClick: (e) => e.stopPropagation(),
-														className: timeline_module_css_default.kfBtn,
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-															className: clsx(timeline_module_css_default.kfDiamond, isMoving && timeline_module_css_default.kfMoving),
-															style: {
-																background: color,
-																borderColor: color
-															}
-														})
-													})
-												}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
-													tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
-													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-														variant: "ghost",
-														size: "sm",
-														onPointerDown: (e) => e.stopPropagation(),
-														onClick: (e) => {
-															e.stopPropagation();
-															onKeyframeDelete(kf.uuid);
-														},
-														"aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`,
-														className: timeline_module_css_default.kfDelete,
-														children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, {})
-													})
-												})]
-											}, kf.uuid);
-										})]
-									}, track.uuid);
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-									"data-testid": "motion-timeline-playhead",
-									className: timeline_module_css_default.playhead,
-									style: {
-										left: frameToPx(frameIdx),
-										width: 2,
-										background: playhead,
-										boxShadow: `0 0 6px color-mix(in srgb, ${playhead} 40%, transparent)`,
-										transform: "translateX(-50%)"
-									},
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: timeline_module_css_default.playheadCap,
-										style: { background: playhead }
-									})
-								})
-							]
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineAudioLanes, {
+							audioLayers,
+							prompts,
+							fps,
+							frameToPx: scale.frameToPx,
+							xToFrame: scale.xToFrame,
+							startDrag: drag.startDrag,
+							onAudioDrop,
+							onAudioDropAt,
+							onAudioFileDrop,
+							onAudioClipMove,
+							onAudioClipDelete
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineKeyframeLanes, {
+							tracks,
+							keyframes,
+							laneHint,
+							dragId: drag.dragId,
+							frameToPx: scale.frameToPx,
+							xToFrame: scale.xToFrame,
+							startDrag: drag.startDrag,
+							onKeyframeAdd,
+							onKeyframeDelete
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelinePlayhead, {
+							frameIdx,
+							frameToPx: scale.frameToPx,
+							playhead
 						})
-					})
+					]
 				})]
 			});
 		}
@@ -52668,664 +49828,26 @@ void main() {
 		});
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
 		//#endregion
-		//#region ../../web/card-base/src/studioRail.tsx
+		//#region src/ui/studio/useMotionStage.ts
 		/**
-		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
-		* (spec docs/design/card-studio-pattern.md §5 + §7.10).
+		* useMotionStage — the 3D/stage cluster moved verbatim from `component.tsx`.
 		*
-		* WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
-		* so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
-		* live in the RAIL, but their state lives INSIDE the tenant component
-		* (showSkeleton, editMode, bgImage…). Splitting the tenant into two
-		* registered components would force that state up through the shell —
-		* breaking E1 (the tenant receives exactly {stage, running, onSave}).
-		* Instead the tenant stays ONE component and PROJECTS its tools into the
-		* shell's slot; the shell stays genre-blind (it renders an empty div and
-		* knows nothing about motion).
+		* Covers the mega-function's stage seams:
+		* - jointsFlatCm memo (~788): T×77×3 cm flat for the skeleton overlay,
+		*   with the kept-refine overlay.
+		* - discardKeptEdit (~897): revert the kept refine at the current frame.
+		* - stampConstraintAtFrame (~941): capture the edited pose as a fullbody
+		*   keyframe at the current frame (create or update the bound diamond).
+		* - Export framing (~1051–1178): typed-pixel output truth + aspect-locked
+		*   stage rect (move + corner-resize math), coherence refits, and the
+		*   ResizeObserver live-refit while framing.
 		*
-		* THE CONTRACT IS UNCHANGED: portaled tools write through the same
-		* onSave channel — nothing about the write path moves. Without the shell
-		* (a tenant mounted inline, e.g. the form view) the tools render in place
-		* — the exact layout the tenant had before the slot existed.
-		*
-		* Mount order (no flash): CardStudio renders the slot div and the tenant
-		* in the same commit; the div's ref lands before the tenant's effects
-		* run, so the portal binds on the first effect pass. The one render
-		* before that is inside the skeleton-masked mount anyway.
+		* Free-variable reads became explicit hook args; the memo + verbs +
+		* framing state/handlers are returned. Behavior is IDENTICAL.
 		*/
-		/** The rail's tools-slot element, published by CardStudio. Null when the
-		*  tenant is mounted outside a studio shell (inline fallback). */
-		const StudioRailCtx = (0, react.createContext)(null);
-		/** TENANT side: renders children into the studio rail when one exists,
-		*  inline otherwise. Wrap the tenant's toolbar in this — nothing else. */
-		function StudioRail({ children }) {
-			const slot = (0, react.useContext)(StudioRailCtx);
-			const [el, setEl] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				if (slot && slot !== el) setEl(slot);
-			}, [slot]);
-			if (el) return (0, react_dom.createPortal)(children, el);
-			if (slot) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children });
-		}
-		//#endregion
-		//#region \0dsh-css:card-base/src/shell.module.css.mjs
-		const css$1 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
-		const tagId$1 = "@melite/motion-motion/shell.module.css@62658dc6";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$1;
-			tag.textContent = css$1;
-			document.head.appendChild(tag);
-		}
-		var shell_module_css_default = {
-			"errorIcon": "_4etGFq_errorIcon",
-			"errorLine": "_4etGFq_errorLine",
-			"errorRow": "_4etGFq_errorRow",
-			"railHead": "_4etGFq_railHead",
-			"railSection": "_4etGFq_railSection",
-			"railTitle": "_4etGFq_railTitle",
-			"shell": "_4etGFq_shell"
-		};
-		//#endregion
-		//#region ../../web/card-base/src/shell.tsx
-		/** The loud error line — shell-owned chrome. Same DOM the assembly
-		*  body always rendered. */
-		function StudioShellErrorLine({ errors }) {
-			if (errors.length === 0) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				role: "alert",
-				className: shell_module_css_default.errorLine,
-				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-					className: shell_module_css_default.errorRow,
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: shell_module_css_default.errorIcon }),
-						e.id,
-						": ",
-						e.message
-					]
-				}, e.id))
-			});
-		}
-		/** The studio body: params column LEFT (projected into the shell rail
-		*  slot when one exists), preview RIGHT, optional bottom bar, then the
-		*  error line. The uniform three-slot shape — timeline and form cards
-		*  are the same grain, forms simply leave the right/bottom slots empty.
-		*
-		*  THE TOAST LAW (stroke 36): the shell mounts the ONE toast viewport
-		*  — toasts are shell-owned chrome exactly like the error line (the
-		*  construction law: no studio wires it, no studio can forget it).
-		*  Before: motion hand-mounted a copy in a slot the contract never
-		*  had (type drift), anny pushed toasts with NO viewport mounted —
-		*  silently dropped — and ideogram4 hand-wired its own outside the
-		*  shell. The per-studio mount is DEAD; any toast pushed from any
-		*  seam renders here, once. */
-		function StudioShell({ params, preview, bottom, errors = [], className }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: cx(shell_module_css_default.shell, className),
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
-					preview,
-					bottom,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {})
-				]
-			});
-		}
-		/** The construction door: one obvious way to build a declaration,
-		*  typed at the call site. Runtime-frozen. */
-		function defineShellDeclaration(declaration) {
-			return Object.freeze(declaration);
-		}
-		//#endregion
-		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/motion/motion/src/ui/studio/component.module.css.mjs
-		const css = "@keyframes U-ygCG_motionSpin{to{transform:rotate(360deg)}}.U-ygCG_shellPad{gap:8px;padding:12px 16px}.U-ygCG_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.U-ygCG_railGroupLabel{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 40%, transparent);grid-column:span 2;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_contents{display:contents}.U-ygCG_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);color:var(--dsw-alias-label-secondary,#5b6470)}.U-ygCG_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.U-ygCG_stampBtn:disabled{opacity:.5}.U-ygCG_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_reposeBtn:disabled{opacity:.5}.U-ygCG_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_hiddenInput{display:none}.U-ygCG_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.U-ygCG_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.U-ygCG_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.U-ygCG_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.U-ygCG_wireBtn:hover,.U-ygCG_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent)}.U-ygCG_centerRow{flex:1;gap:8px;min-height:0;display:flex}.U-ygCG_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.U-ygCG_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.U-ygCG_ovBg{z-index:0}.U-ygCG_ovCam{z-index:30}.U-ygCG_ovDrop{pointer-events:none;z-index:20}.U-ygCG_ovRect{pointer-events:none;z-index:40}.U-ygCG_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.U-ygCG_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.U-ygCG_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.U-ygCG_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_skelAvatar{border-radius:999px;width:96px;height:96px}.U-ygCG_skelAvatarSm{border-radius:999px;width:80px;height:80px}.U-ygCG_skelLine{width:112px;height:12px}.U-ygCG_stageVeil{width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);background:#0e0e1a99;flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.U-ygCG_veilText{font-size:12px}.U-ygCG_camPill{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);backdrop-filter:blur(4px);border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_camBtn{width:28px;height:28px;color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 80%, transparent);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.U-ygCG_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_frameBtnIdle{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 55%, transparent)}.U-ygCG_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.U-ygCG_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.U-ygCG_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.U-ygCG_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.U-ygCG_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.U-ygCG_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.U-ygCG_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.U-ygCG_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.U-ygCG_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary,#0f1115);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_playBtn:hover{background:#fff3}.U-ygCG_playBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_playIcon{width:14px;height:14px;margin-left:2px}.U-ygCG_timeWrap{flex-shrink:0;font-size:11px}.U-ygCG_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 80%, transparent);font-family:ui-monospace,monospace}.U-ygCG_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);align-items:center;gap:4px;display:flex}.U-ygCG_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.U-ygCG_fpsChip{display:block}}.U-ygCG_hintWrap{align-items:center;gap:8px;display:flex}.U-ygCG_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.U-ygCG_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.U-ygCG_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.U-ygCG_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.U-ygCG_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 80%, transparent)}.U-ygCG_i12{width:12px;height:12px}.U-ygCG_i14{width:14px;height:14px}.U-ygCG_spinIcon{width:14px;height:14px;animation:1s linear infinite U-ygCG_motionSpin}";
-		const tagId = "@melite/motion-motion/component.module.css@c15e8a96";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId;
-			tag.textContent = css;
-			document.head.appendChild(tag);
-		}
-		var component_module_css_default = {
-			"addCardBtn": "U-ygCG_addCardBtn",
-			"bgBtnIdle": "U-ygCG_bgBtnIdle",
-			"bgImg": "U-ygCG_bgImg",
-			"bodyEmptyIcon": "U-ygCG_bodyEmptyIcon",
-			"bodyNotice": "U-ygCG_bodyNotice",
-			"bodySquareWrap": "U-ygCG_bodySquareWrap",
-			"camBtn": "U-ygCG_camBtn",
-			"camDivider": "U-ygCG_camDivider",
-			"camPill": "U-ygCG_camPill",
-			"centerRow": "U-ygCG_centerRow",
-			"contents": "U-ygCG_contents",
-			"cornerHandle": "U-ygCG_cornerHandle",
-			"cornerNE": "U-ygCG_cornerNE",
-			"cornerNW": "U-ygCG_cornerNW",
-			"cornerSE": "U-ygCG_cornerSE",
-			"cornerSW": "U-ygCG_cornerSW",
-			"crossH": "U-ygCG_crossH",
-			"crossV": "U-ygCG_crossV",
-			"dropVeil": "U-ygCG_dropVeil",
-			"dropVeilLabel": "U-ygCG_dropVeilLabel",
-			"editHintBar": "U-ygCG_editHintBar",
-			"editHintIcon": "U-ygCG_editHintIcon",
-			"editHintStrong": "U-ygCG_editHintStrong",
-			"exportRect": "U-ygCG_exportRect",
-			"fpsChip": "U-ygCG_fpsChip",
-			"frameBtn": "U-ygCG_frameBtn",
-			"frameBtnActive": "U-ygCG_frameBtnActive",
-			"frameBtnIdle": "U-ygCG_frameBtnIdle",
-			"hiddenInput": "U-ygCG_hiddenInput",
-			"hintTitle": "U-ygCG_hintTitle",
-			"hintWrap": "U-ygCG_hintWrap",
-			"i12": "U-ygCG_i12",
-			"i14": "U-ygCG_i14",
-			"motionSpin": "U-ygCG_motionSpin",
-			"noMotion": "U-ygCG_noMotion",
-			"ovBg": "U-ygCG_ovBg",
-			"ovCam": "U-ygCG_ovCam",
-			"ovDrop": "U-ygCG_ovDrop",
-			"ovRect": "U-ygCG_ovRect",
-			"playBtn": "U-ygCG_playBtn",
-			"playIcon": "U-ygCG_playIcon",
-			"railBtn": "U-ygCG_railBtn",
-			"railBtnActive": "U-ygCG_railBtnActive",
-			"railBtnDanger": "U-ygCG_railBtnDanger",
-			"railBtnEditActive": "U-ygCG_railBtnEditActive",
-			"railBtnIdle": "U-ygCG_railBtnIdle",
-			"railGrid": "U-ygCG_railGrid",
-			"railGroupLabel": "U-ygCG_railGroupLabel",
-			"railGroupLabelMt": "U-ygCG_railGroupLabelMt",
-			"rectHint": "U-ygCG_rectHint",
-			"reposeBtn": "U-ygCG_reposeBtn",
-			"shellPad": "U-ygCG_shellPad",
-			"skelAvatar": "U-ygCG_skelAvatar",
-			"skelAvatarSm": "U-ygCG_skelAvatarSm",
-			"skelLine": "U-ygCG_skelLine",
-			"spinIcon": "U-ygCG_spinIcon",
-			"stageFrame": "U-ygCG_stageFrame",
-			"stageFrameDrag": "U-ygCG_stageFrameDrag",
-			"stageLoading": "U-ygCG_stageLoading",
-			"stageVeil": "U-ygCG_stageVeil",
-			"stampBtn": "U-ygCG_stampBtn",
-			"timeText": "U-ygCG_timeText",
-			"timeWrap": "U-ygCG_timeWrap",
-			"timelineEmpty": "U-ygCG_timelineEmpty",
-			"timelineShell": "U-ygCG_timelineShell",
-			"transportHead": "U-ygCG_transportHead",
-			"veilText": "U-ygCG_veilText",
-			"warnIcon": "U-ygCG_warnIcon",
-			"wireBtn": "U-ygCG_wireBtn",
-			"wireBtnOff": "U-ygCG_wireBtnOff",
-			"wireBtnOn": "U-ygCG_wireBtnOn"
-		};
-		//#endregion
-		//#region src/ui/studio/component.tsx
-		/**
-		* MotionCardEditor — the drill-down surface for a genre:"motion" card
-		* (kimodo text→motion). Turns the card into a live 3D stage like the Body
-		* Card: the somax mannequin rendered from the run's motion NPZ, a scrubber
-		* strip, an 8-angle azimuth ring, click-drag joint refinement, and the
-		* VNCCS export pair (mesh + openpose at an azimuth).
-		*
-		* Data flow (all client-side, mirrors MotionViewer):
-		* 1. npzUrl from stage.result.artifacts["motion_npz"] (fallback: first
-		* .npz asset) → loadMotionNpz (meters) + loadSomaSkin (neutral bind).
-		* 2. precomputeDeformedVerts → (T, V, 3) meters → vertsToB64(…, cm) →
-		* PoseViewer3D's deformedVerticesB64. The skin's bind mesh (meters →
-		* cm) is handed over as customBindMesh so the viewer skips the
-		* /poser/skin/mesh fetch entirely — the render is 1:1 with MotionViewer.
-		* 3. Playback is PoseViewer3D's own AnimController (animate prop); the
-		* scrubber reads frameIdx (throttled ~10fps) + seeks by state.
-		*
-		* FREEZE → STOP (2026-08-15): the studio SHELL owns the rail's Run row and
-		* with it the interrupt (editorClient.stopRun → /v1/flows/stop → ComfyUI
-		* /interrupt — the kimodo node's per-step hook makes the abort land
-		* mid-generation). The tenant carries ZERO rpc imports: its only write
-		* channel is onSave (E1, enforced by card-studio-boundary.test.ts).
-		*
-		* REPOSE (Phase B): edit mode drives PoseViewer3D's joint gizmos. The
-		* sculpt is re-skinned client-side (edited joints cm→m → deformFrame →
-		* vertsToB64 → editedDeformedB64). "Repose" patches the current frame's
-		* rotations (patchFrame), truncates the motion to frameIdx+1, writes an NPZ
-		* data URL, and saves it as prev_motion_artifact (the chain slot —
-		* _upload_input_images converts the data URL to a bare .npz). The user hits
-		* Run separately — kimodo conditions the next generation on the saved pose.
-		* Zero backend changes.
-		*
-		* NO-RUN STATE (2026-08-10, policy: "compare it to the Kimodo Pose
-		* Studio"): the stage ALWAYS renders. Before any run exists there is no NPZ,
-		* so PoseViewer3D receives no deformed vertices and SkinnedHumanoid falls
-		* back to the bind pose — the neutral somax mannequin, live and interactive
-		* (orbit/zoom/azimuth), exactly like opening the pose studio. Scrubber,
-		* Refine, and Export stay honestly disabled ("run the card" hints) — no
-		* placeholder preview, no blank box.
-		*/
-		init_three_module();
-		init_src$1();
 		init_src();
 		init_motionConstraints();
-		/** stage.params key for the Motion Card background image (option b). A user
-		*  image rendered behind the mannequin in place of the dark #0e0e1a stage.
-		*  UI-only — never sent to ComfyUI (registered in compile.ts's
-		*  _KNOWN_NON_SIG_PARAMS so it's stripped before the run). Holds either a
-		*  data: URL (file picker) or an asset URL (e.g. a scene-flow output). */
-		const MOTION_BG_IMAGE_PARAM = "motion_bg_image";
-		/** stage.params key for the Motion Card preview BODY (2026-08-15 character
-		*  import): a SOMAX-rigged character GLB the motion previews ON — the
-		*  studio's live viewport skins it client-side (lib/glbSkin.ts → the same
-		*  LBS as the neutral mannequin), and the runner's post-run preview bake
-		*  bakes each output NPZ onto it instead of the mannequin (the explicit-
-		*  import carve-out of the 2026-07-31 mannequin-default policy).
-		*
-		*  A REAL wire-level param, NOT UI-only: kimodo_motion's family signature
-		*  declares it (the card lane's input kind → glb, form_motion_kimodo
-		*  input slot), so the agent can set it headlessly. In the studio it renders as
-		*  an INPUT SUBCARD (a SlotSquare — the same square the image inputs use,
-		*  per the user directive): file pick / asset drop / OS drop / WIRE to an
-		*  upstream 3D card's GLB output (wired XOR attached — the SlotGrid
-		*  contract). Holds a data: URL (upload) or an asset URL. */
-		const MOTION_PREVIEW_GLB_PARAM = "preview_glb";
-		const FLOOR_LIFT_Y = .02;
-		function MotionCardEditor({ stage, onSave, upstreams = [], onWireSlot }) {
-			const toast = useToastStore((s) => s.addToast);
-			const { spec: kimodoSpec, error: kimodoError } = useFormSpec("kimodo");
-			const userParams = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
-			const paramValues = (0, react.useMemo)(() => kimodoSpec !== null ? resolveValue(kimodoSpec, userParams) : userParams, [kimodoSpec, userParams]);
-			const onParamEdit = (0, react.useCallback)((name, value) => {
-				onSave({ [name]: value });
-			}, [onSave]);
-			const npzUrl = (0, react.useMemo)(() => {
-				const arts = stage.result?.artifacts;
-				if (arts) {
-					const named = arts["motion_npz"];
-					if (typeof named === "string") return named;
-					const npzArt = Object.values(arts).find((u) => typeof u === "string" && u.endsWith(".npz"));
-					if (npzArt) return npzArt;
-				}
-				return stage.result?.assetUrls?.find((u) => typeof u === "string" && u.endsWith(".npz")) ?? null;
-			}, [stage.result]);
-			const [bodyGlb, setBodyGlbState] = (0, react.useState)(null);
-			const [bodyNotice, setBodyNotice] = (0, react.useState)(null);
-			const [bodyWireOpen, setBodyWireOpen] = (0, react.useState)(false);
-			const setBodyGlb = (0, react.useCallback)((url) => {
-				setBodyGlbState(url);
-				setBodyNotice(null);
-				onSave(url ? { [MOTION_PREVIEW_GLB_PARAM]: url } : { [MOTION_PREVIEW_GLB_PARAM]: "" });
-			}, [onSave]);
-			const bodySlotIdx = (0, react.useMemo)(() => stageSlots(stage.params, formOf(stage.service), stage.service).indexOf(MOTION_PREVIEW_GLB_PARAM), [stage.params, stage.service]);
-			const bodyWiredId = bodySlotIdx >= 0 ? stage.inputs[bodySlotIdx] : "";
-			const bodyWiredUpstream = bodyWiredId ? upstreams.find((u) => u.id === bodyWiredId) : void 0;
-			const bodyWired = !!bodyWiredUpstream;
-			const bodyWiredUrl = bodyWiredUpstream?.result ? [...Object.values(bodyWiredUpstream.result.artifacts ?? {}), ...bodyWiredUpstream.result.assetUrls].find((u) => typeof u === "string" && /\.(glb|gltf)(\?|#|$)/i.test(u)) ?? null : null;
-			const bodySrc = bodyWired ? bodyWiredUrl ?? "" : bodyGlb ?? "";
-			(0, react.useEffect)(() => {
-				const v = stage.params?.[MOTION_PREVIEW_GLB_PARAM];
-				setBodyGlbState(typeof v === "string" && v.length > 0 ? v : null);
-				setBodyNotice(null);
-			}, [stage.id]);
-			const [skin, setSkin] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				let cancelled = false;
-				setSkin(null);
-				if (!bodySrc) {
-					loadSomaSkin().then((s) => {
-						if (!cancelled) setSkin(s);
-					}).catch((e) => {
-						if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load skin");
-					});
-					return () => {
-						cancelled = true;
-					};
-				}
-				loadGlbSkin(bodySrc).then((s) => {
-					if (!cancelled) setSkin(s);
-				}).catch(async (e) => {
-					if (cancelled) return;
-					if (e instanceof NotSomaxGlbError) {
-						setBodyNotice(`Body isn't SOMAX-rigged — converting through the queue… (${e.message})`);
-						try {
-							const somaxBody = {
-								flow: "body-to-somax",
-								glb: bodySrc
-							};
-							somaxBody.draft_id = await ensureDraftId(somaxBody);
-							const res = await fetch("/v1/flows/start", {
-								method: "POST",
-								headers: { "Content-Type": "application/json" },
-								body: JSON.stringify(somaxBody)
-							});
-							const text = await res.text();
-							if (!res.ok) throw new Error(`body-to-somax queue refused: HTTP ${res.status}${text ? `: ${text.slice(0, 300)}` : ""}`);
-							let data;
-							try {
-								data = JSON.parse(text);
-							} catch {
-								throw new Error("body-to-somax queue returned a non-JSON body");
-							}
-							const runId = data.run_id;
-							if (typeof runId !== "string" || !runId) throw new Error("body-to-somax queue returned no run_id");
-							const rigged = collectStageUrls((await pollFlowRun(runId, void 0, { onTick: () => void 0 })).stages).find((u) => /\.glb(\?|#|$)/i.test(u)) ?? null;
-							if (!rigged) throw new Error(`body-to-somax run ${runId} produced no rigged GLB`);
-							const s2 = await loadGlbSkin(rigged);
-							if (cancelled) return;
-							setSkin(s2);
-							setBodyNotice(null);
-							toast("success", "Body converted to SOMAX rig — previewing your character.");
-							return;
-						} catch (e2) {
-							if (cancelled) return;
-							const msg2 = e2 instanceof Error ? e2.message : String(e2);
-							setBodyNotice(`auto-convert failed — ${msg2}`);
-							toast("error", `SOMAX conversion failed — ${msg2}. Showing the neutral mannequin.`);
-							loadSomaSkin().then((s) => {
-								if (!cancelled) setSkin(s);
-							}).catch((e3) => {
-								if (!cancelled) setError(e3 instanceof Error ? e3.message : "Failed to load skin");
-							});
-							return;
-						}
-					}
-					const msg = e instanceof NotSomaxGlbError ? e.message : e instanceof Error ? e.message : "Failed to load character GLB";
-					setBodyNotice(msg);
-					toast("error", `Preview body not loaded — ${msg}. Showing the neutral mannequin.`);
-					loadSomaSkin().then((s) => {
-						if (!cancelled) setSkin(s);
-					}).catch((e2) => {
-						if (!cancelled) setError(e2 instanceof Error ? e2.message : "Failed to load skin");
-					});
-				});
-				return () => {
-					cancelled = true;
-				};
-			}, [bodySrc, toast]);
-			const [npz, setNpz] = (0, react.useState)(null);
-			const [allVertsM, setAllVertsM] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
-			const [loading, setLoading] = (0, react.useState)(false);
-			const [keptEdit, setKeptEdit] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				if (!npzUrl) {
-					setNpz(null);
-					setAllVertsM(null);
-					setError(null);
-					setLoading(false);
-					setEditMode(false);
-					setPlaying(false);
-					setKeptEdit(null);
-					setEditedDeformedB64(null);
-					return;
-				}
-				let cancelled = false;
-				setLoading(true);
-				setError(null);
-				(async () => {
-					try {
-						if (!skin) return;
-						const [m, s] = await Promise.all([loadMotionNpz(npzUrl), Promise.resolve(skin)]);
-						if (cancelled) return;
-						setSkin(s);
-						const stride0 = s.vertexCount * 3;
-						const seedVerts = new Float32Array(m.T * stride0);
-						deformFrame(m.globalRotMats.subarray(0, 693), m.posedJoints.subarray(0, 231), s, seedVerts.subarray(0, stride0));
-						for (let i = 0; i < stride0; i++) seedVerts[i] *= 100;
-						const f0 = seedVerts.subarray(0, stride0);
-						for (let t = 1; t < m.T; t++) seedVerts.set(f0, t * stride0);
-						setNpz(m);
-						setFrameIdx(0);
-						setPlaying(false);
-						setKeptEdit(null);
-						setEditedDeformedB64(null);
-						setAllVertsM(seedVerts);
-						const verts = await precomputeDeformedVertsChunked(m, s, true);
-						if (cancelled) return;
-						setAllVertsM(verts);
-						setPlaying(true);
-					} catch (e) {
-						if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load motion");
-					} finally {
-						if (!cancelled) setLoading(false);
-					}
-				})();
-				return () => {
-					cancelled = true;
-				};
-			}, [npzUrl, skin]);
-			const [frameIdx, setFrameIdx] = (0, react.useState)(0);
-			const [playing, setPlaying] = (0, react.useState)(true);
-			(0, react.useEffect)(() => {
-				if (!npz) return;
-				const onKey = (e) => {
-					const el = e.target;
-					if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el?.isContentEditable) return;
-					if (e.code === "Space") {
-						e.preventDefault();
-						setPlaying((p) => !p);
-					}
-				};
-				window.addEventListener("keydown", onKey);
-				return () => window.removeEventListener("keydown", onKey);
-			}, [npz]);
-			const [tlKeyframes, setTlKeyframes] = (0, react.useState)([]);
-			const [tlIntervals, setTlIntervals] = (0, react.useState)([]);
-			const [tlPrompts, setTlPrompts] = (0, react.useState)([]);
-			const [constraintPayloads, setConstraintPayloads] = (0, react.useState)({});
-			const undoStack = (0, react.useRef)([]);
-			const redoStack = (0, react.useRef)([]);
-			const [undoVersion, setUndoVersion] = (0, react.useState)(0);
-			const tlPromptsRef = (0, react.useRef)(tlPrompts);
-			const tlKeyframesRef = (0, react.useRef)(tlKeyframes);
-			const constraintPayloadsRef = (0, react.useRef)(constraintPayloads);
-			const tlIntervalsRef = (0, react.useRef)(tlIntervals);
-			const keptEditRef = (0, react.useRef)(null);
-			const editedDeformedB64Ref = (0, react.useRef)(null);
-			tlPromptsRef.current = tlPrompts;
-			tlKeyframesRef.current = tlKeyframes;
-			constraintPayloadsRef.current = constraintPayloads;
-			tlIntervalsRef.current = tlIntervals;
-			keptEditRef.current = keptEdit;
-			const captureSnapshot = (0, react.useCallback)(() => ({
-				tlPrompts: tlPromptsRef.current.map((p) => ({ ...p })),
-				tlKeyframes: tlKeyframesRef.current.map((k) => ({ ...k })),
-				constraintPayloads: Object.fromEntries(Object.entries(constraintPayloadsRef.current).map(([k, v]) => [k, { ...v }])),
-				tlIntervals: tlIntervalsRef.current.map((iv) => ({ ...iv })),
-				editableJoints: editableJointsRef.current ? new Float32Array(editableJointsRef.current) : null,
-				keptEdit: keptEditRef.current ? {
-					joints: new Float32Array(keptEditRef.current.joints),
-					frame: keptEditRef.current.frame
-				} : null,
-				editedDeformedB64: editedDeformedB64Ref.current
-			}), []);
-			/** Snapshot current state before a mutation. Call this FIRST in every
-			*  mutation handler (before the setState that changes authoring state). */
-			const pushUndo = (0, react.useCallback)(() => {
-				undoStack.current.push(captureSnapshot());
-				redoStack.current = [];
-				if (undoStack.current.length > 80) undoStack.current.shift();
-				setUndoVersion((v) => v + 1);
-			}, [captureSnapshot]);
-			const restoreSnapshot = (0, react.useCallback)((snap) => {
-				setTlPrompts(snap.tlPrompts);
-				setTlKeyframes(snap.tlKeyframes);
-				setConstraintPayloads(snap.constraintPayloads);
-				setTlIntervals(snap.tlIntervals);
-				setEditableJoints(snap.editableJoints);
-				editableJointsRef.current = snap.editableJoints;
-				setKeptEdit(snap.keptEdit);
-				setEditedDeformedB64(snap.editedDeformedB64);
-			}, []);
-			const handleUndo = (0, react.useCallback)(() => {
-				if (undoStack.current.length === 0) return;
-				redoStack.current.push(captureSnapshot());
-				restoreSnapshot(undoStack.current.pop());
-				setUndoVersion((v) => v + 1);
-			}, [captureSnapshot, restoreSnapshot]);
-			const handleRedo = (0, react.useCallback)(() => {
-				if (redoStack.current.length === 0) return;
-				undoStack.current.push(captureSnapshot());
-				restoreSnapshot(redoStack.current.pop());
-				setUndoVersion((v) => v + 1);
-			}, [captureSnapshot, restoreSnapshot]);
-			(0, react.useEffect)(() => {
-				const handler = (e) => {
-					const el = e.target;
-					if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el?.isContentEditable) return;
-					if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-						e.preventDefault();
-						handleUndo();
-					} else if ((e.ctrlKey || e.metaKey) && (e.key === "y" || e.key === "z" && e.shiftKey)) {
-						e.preventDefault();
-						handleRedo();
-					}
-				};
-				window.addEventListener("keydown", handler);
-				return () => window.removeEventListener("keydown", handler);
-			}, [handleUndo, handleRedo]);
-			const dragUndoRef = (0, react.useRef)(null);
-			const dragUndoTimeout = (0, react.useRef)(null);
-			const maybePushDragUndo = (0, react.useCallback)((key) => {
-				if (dragUndoRef.current === key) return;
-				if (dragUndoTimeout.current) clearTimeout(dragUndoTimeout.current);
-				dragUndoRef.current = key;
-				pushUndo();
-				dragUndoTimeout.current = setTimeout(() => {
-					dragUndoRef.current = null;
-				}, 300);
-			}, [pushUndo]);
-			const [cameraView, setCameraView] = (0, react.useState)("az-0");
-			const [framing, setFraming] = (0, react.useState)("full");
-			const [showSkeleton, setShowSkeleton] = (0, react.useState)(false);
-			const [inPlace, setInPlace] = (0, react.useState)(true);
-			const [exportOpen, setExportOpen] = (0, react.useState)(false);
-			const [stageRect, setStageRect] = (0, react.useState)(DEFAULT_STAGE_RECT);
-			const threeCtxRef = (0, react.useRef)(null);
-			const setThumb = useMotionThumbStore((s) => s.setThumbnail);
-			const thumbCapturedForUrl = (0, react.useRef)(null);
-			(0, react.useEffect)(() => {
-				if (!npzUrl || !npz || !allVertsM) return;
-				if (thumbCapturedForUrl.current === npzUrl) return;
-				let idleId = 0;
-				idleId = requestIdleCallback(() => {
-					const ctx = threeCtxRef.current;
-					if (!ctx) return;
-					try {
-						ctx.gl.render(ctx.scene, ctx.camera);
-						ctx.gl.domElement.toBlob((blob) => {
-							if (!blob || blob.size < 100) return;
-							readAsDataURL(blob).then((url) => {
-								if (url.length > 100) {
-									thumbCapturedForUrl.current = npzUrl;
-									setThumb(stage.id, url);
-								}
-							}).catch(() => {});
-						}, "image/png");
-					} catch {}
-				}, { timeout: 2e3 });
-				return () => cancelIdleCallback(idleId);
-			}, [
-				npz,
-				allVertsM,
-				npzUrl,
-				stage.id,
-				setThumb
-			]);
-			const bgInputRef = (0, react.useRef)(null);
-			const [bgImage, setBgImage] = (0, react.useState)(null);
-			const [bgDragOver, setBgDragOver] = (0, react.useState)(false);
-			const bgTexRef = (0, react.useRef)(null);
-			const setBg = (0, react.useCallback)((url) => {
-				setBgImage(url);
-				onSave(url ? { [MOTION_BG_IMAGE_PARAM]: url } : { [MOTION_BG_IMAGE_PARAM]: "" });
-			}, [onSave]);
-			(0, react.useEffect)(() => {
-				const v = stage.params?.[MOTION_BG_IMAGE_PARAM];
-				setBgImage(typeof v === "string" && v.length > 0 ? v : null);
-			}, [stage.id]);
-			const handleBgFile = (0, react.useCallback)((file) => {
-				if (!file) return;
-				readAsDataURL(file).then(setBg);
-			}, [setBg]);
-			const attachBody = (0, react.useCallback)((url) => {
-				if (url) onWireSlot?.(MOTION_PREVIEW_GLB_PARAM, null, null);
-				setBodyGlb(url);
-			}, [onWireSlot, setBodyGlb]);
-			const isGlbUrl = (0, react.useCallback)((u) => /\.(glb|gltf)(\?|#|$)/i.test(u), []);
-			const handleStageDrop = (0, react.useCallback)((e) => {
-				e.preventDefault();
-				setBgDragOver(false);
-				const asset = e.dataTransfer.getData(ASSET_DRAG_MIME$2);
-				if (asset) try {
-					const payload = JSON.parse(asset);
-					if (payload.url) {
-						if (isGlbUrl(payload.url)) attachBody(payload.url);
-						else setBg(payload.url);
-						return;
-					}
-				} catch {}
-				const file = e.dataTransfer.files?.[0];
-				if (!file) return;
-				if (/\.glb$/i.test(file.name) || file.type === "model/gltf-binary") {
-					readAsDataURL(file).then(attachBody);
-					return;
-				}
-				handleBgFile(file);
-			}, [
-				setBg,
-				handleBgFile,
-				attachBody,
-				isGlbUrl
-			]);
-			const handleBodyFile = (0, react.useCallback)((file) => {
-				if (!/\.glb$/i.test(file.name) && file.type !== "model/gltf-binary") {
-					toast("error", "Preview body must be a .glb (SOMAX-rigged character).");
-					return;
-				}
-				readAsDataURL(file).then(attachBody).catch((err) => toast("error", `Could not read GLB: ${err instanceof Error ? err.message : String(err)}`));
-			}, [attachBody, toast]);
-			const priorStages = (0, react.useMemo)(() => {
-				const idx = upstreams.findIndex((s) => s.id === stage.id);
-				return idx === -1 ? upstreams : upstreams.slice(0, idx);
-			}, [upstreams, stage.id]);
-			(0, react.useEffect)(() => {
-				const ctx = threeCtxRef.current;
-				if (!ctx) return;
-				if (bgTexRef.current) {
-					bgTexRef.current.dispose();
-					bgTexRef.current = null;
-				}
-				if (bgImage) {
-					const tex = new TextureLoader().load(bgImage);
-					tex.colorSpace = SRGBColorSpace;
-					bgTexRef.current = tex;
-					ctx.scene.background = tex;
-				} else ctx.scene.background = new Color("#0e0e1a");
-			}, [
-				bgImage,
-				npzUrl,
-				allVertsM
-			]);
-			const firstNonEmptyCardText = (0, react.useMemo)(() => tlPrompts.find((p) => p.text.trim())?.text ?? "", [tlPrompts]);
-			(0, react.useEffect)(() => {
-				onSave({ prompt: firstNonEmptyCardText });
-			}, [firstNonEmptyCardText]);
-			const restNpz = (0, react.useMemo)(() => {
-				if (!skin) return null;
-				return {
-					posedJoints: skin.restJoints,
-					globalRotMats: skin.restRots,
-					fps: 30,
-					T: 1
-				};
-			}, [skin]);
-			const effectiveNpz = npz ?? restNpz;
-			const effectiveVertsM = (0, react.useMemo)(() => {
-				if (!restNpz || !skin) return null;
-				return precomputeDeformedVerts(restNpz, skin);
-			}, [restNpz, skin]);
-			const restB64 = (0, react.useMemo)(() => effectiveVertsM ? vertsToB64(effectiveVertsM, true) : null, [effectiveVertsM]);
+		function useMotionStage({ effectiveNpz, keptEdit, editableJoints, frameIdx, fullbodyKfAtFrame, toast, pushUndo, setKeptEdit, setEditedDeformedB64, setConstraintPayloads, setTlKeyframes, exportOpen, stageRect, setStageRect }) {
 			const jointsFlatCm = (0, react.useMemo)(() => {
 				const src = effectiveNpz;
 				if (!src) return null;
@@ -53346,100 +49868,14 @@ void main() {
 				}
 				return flat;
 			}, [effectiveNpz, keptEdit]);
-			const customBindMesh = (0, react.useMemo)(() => {
-				if (!skin) return null;
-				const bv = skin.bindVertices;
-				const vertices = [];
-				for (let i = 0; i < bv.length; i += 3) vertices.push([
-					bv[i] * 100,
-					bv[i + 1] * 100,
-					bv[i + 2] * 100
-				]);
-				const f = skin.faces;
-				const faces = [];
-				for (let i = 0; i < f.length; i += 3) faces.push([
-					f[i],
-					f[i + 1],
-					f[i + 2]
-				]);
-				return {
-					vertices,
-					faces
-				};
-			}, [skin]);
-			const liftY = (0, react.useMemo)(() => {
-				if (!skin) return 0;
-				let minY = Infinity;
-				const bv = skin.bindVertices;
-				for (let i = 1; i < bv.length; i += 3) if (bv[i] < minY) minY = bv[i];
-				return isFinite(minY) ? FLOOR_LIFT_Y - minY : FLOOR_LIFT_Y;
-			}, [skin]);
-			const [editMode, setEditMode] = (0, react.useState)(false);
-			const [editableJoints, setEditableJoints] = (0, react.useState)(null);
-			const editableJointsRef = (0, react.useRef)(null);
-			const [selectedJoint, setSelectedJoint] = (0, react.useState)(null);
-			const [editedDeformedB64, setEditedDeformedB64] = (0, react.useState)(null);
-			const [reposing, setReposing] = (0, react.useState)(false);
-			keptEditRef.current = keptEdit;
-			editedDeformedB64Ref.current = editedDeformedB64;
-			const currentJointsM = (0, react.useMemo)(() => {
-				const src = effectiveNpz;
-				if (!src) return null;
-				const i = Math.min(frameIdx, src.T - 1) * 77 * 3;
-				return src.posedJoints.slice(i, i + 231);
-			}, [effectiveNpz, frameIdx]);
-			const fullbodyKfAtFrame = (0, react.useMemo)(() => tlKeyframes.find((k) => k.track_id === "fullbody" && k.frame === frameIdx) ?? null, [tlKeyframes, frameIdx]);
-			const toggleEdit = () => {
-				if (!currentJointsM) return;
-				if (editMode) {
-					setKeptEdit(editableJoints ? {
-						joints: editableJoints,
-						frame: frameIdx
-					} : null);
-					setEditMode(false);
-					setSelectedJoint(null);
-				} else {
-					pushUndo();
-					const fromKept = keptEdit && keptEdit.frame === frameIdx ? keptEdit.joints : null;
-					const stampedPayload = fullbodyKfAtFrame ? constraintPayloads[fullbodyKfAtFrame.uuid] : null;
-					const baseM = stampedPayload && stampedPayload.kind === "fullbody" ? decodeF32(stampedPayload.jp) : currentJointsM;
-					const next = fromKept ? fromKept : jointsToCm(baseM);
-					editableJointsRef.current = next;
-					setEditableJoints(next);
-					setSelectedJoint(null);
-					setEditMode(true);
-					setPlaying(false);
-				}
-			};
 			const discardKeptEdit = (0, react.useCallback)(() => {
 				pushUndo();
 				setKeptEdit(null);
 				setEditedDeformedB64(null);
-			}, []);
-			const handleJointMove = (0, react.useCallback)((e) => {
-				const prev = editableJointsRef.current;
-				if (!prev) return;
-				const next = e.fullJoints ? e.fullJoints : prev.slice();
-				if (!e.fullJoints) {
-					next[e.idx * 3] = e.position.x;
-					next[e.idx * 3 + 1] = e.position.y;
-					next[e.idx * 3 + 2] = e.position.z;
-				}
-				editableJointsRef.current = next;
-				setEditableJoints(next);
-				const src = effectiveNpz;
-				const kf = fullbodyKfAtFrame;
-				if (!src || !kf) return;
-				const editedM = jointsFromCm(next);
-				const payload = stampEditedPose(editedM, patchFrame(src.posedJoints, src.globalRotMats, editedM, frameIdx).globalRotMats.subarray(frameIdx * 77 * 9, (frameIdx + 1) * 77 * 9), frameIdx, src.T);
-				setConstraintPayloads((p) => ({
-					...p,
-					[kf.uuid]: payload
-				}));
 			}, [
-				effectiveNpz,
-				fullbodyKfAtFrame,
-				frameIdx
+				pushUndo,
+				setKeptEdit,
+				setEditedDeformedB64
 			]);
 			const stampConstraintAtFrame = (0, react.useCallback)(() => {
 				const src = effectiveNpz;
@@ -53478,80 +49914,10 @@ void main() {
 				editableJoints,
 				frameIdx,
 				fullbodyKfAtFrame,
-				toast
-			]);
-			(0, react.useEffect)(() => {
-				if (!skin || !effectiveNpz) return;
-				const active = editMode ? editableJoints : keptEdit && keptEdit.frame === frameIdx ? keptEdit.joints : null;
-				if (!active) {
-					setEditedDeformedB64(null);
-					return;
-				}
-				const fi = Math.min(frameIdx, effectiveNpz.T - 1);
-				const editedM = jointsFromCm(active);
-				const patched = patchFrame(effectiveNpz.posedJoints, effectiveNpz.globalRotMats, editedM, fi);
-				const out = new Float32Array(skin.vertexCount * 3);
-				deformFrame(patched.globalRotMats.subarray(fi * 77 * 9, (fi + 1) * 77 * 9), editedM, skin, out);
-				setEditedDeformedB64(vertsToB64(out, true));
-			}, [
-				editableJoints,
-				editMode,
-				keptEdit,
-				skin,
-				effectiveNpz,
-				frameIdx
-			]);
-			const displayJointsM = (0, react.useMemo)(() => {
-				if (editMode && editableJoints) return jointsFromCm(editableJoints);
-				if (keptEdit && keptEdit.frame === frameIdx) return jointsFromCm(keptEdit.joints);
-				return currentJointsM;
-			}, [
-				editMode,
-				editableJoints,
-				keptEdit,
-				frameIdx,
-				currentJointsM
-			]);
-			const handleRepose = (0, react.useCallback)(async () => {
-				if (!effectiveNpz || !editableJoints || !editMode) return;
-				setReposing(true);
-				try {
-					const editedM = jointsFromCm(editableJoints);
-					const patched = patchFrame(effectiveNpz.posedJoints, effectiveNpz.globalRotMats, editedM, frameIdx);
-					const T = frameIdx + 1;
-					onSave({ prev_motion_artifact: npzToDataUrl(await writeNpz({
-						posed_joints: {
-							data: patched.posedJoints.subarray(0, T * 77 * 3),
-							shape: [
-								T,
-								77,
-								3
-							]
-						},
-						global_rot_mats: {
-							data: patched.globalRotMats.subarray(0, T * 77 * 9),
-							shape: [
-								T,
-								77,
-								3,
-								3
-							]
-						},
-						fps: { data: new Float32Array([effectiveNpz.fps]) }
-					})) });
-					toast("success", `Reposed from edited pose at frame ${frameIdx + 1}. Hit Run to generate.`);
-				} catch (e) {
-					toast("error", `Repose failed: ${e.message}`);
-				} finally {
-					setReposing(false);
-				}
-			}, [
-				effectiveNpz,
-				editableJoints,
-				editMode,
-				frameIdx,
-				onSave,
-				toast
+				toast,
+				pushUndo,
+				setConstraintPayloads,
+				setTlKeyframes
 			]);
 			const [exportOut, setExportOut] = (0, react.useState)({
 				w: 768,
@@ -53617,7 +49983,7 @@ void main() {
 					w,
 					h
 				});
-			}, [exportOut]);
+			}, [exportOut, setStageRect]);
 			(0, react.useEffect)(() => {
 				setStageRect((r) => {
 					const next = rectWithAspect(rectAspectNorm(), r.x + r.w / 2, r.y + r.h / 2);
@@ -53626,11 +49992,13 @@ void main() {
 			}, [
 				exportOpen,
 				exportOut.w,
-				exportOut.h
+				exportOut.h,
+				setStageRect
 			]);
 			(0, react.useEffect)(() => {
 				if (!exportOpen || typeof ResizeObserver === "undefined") return;
 				const el = stageBoxRef.current;
+				/* v8 ignore next 1 -- stageBoxRef is always the stage frame div (the ref attaches with the export panel — probe 2026-09-19) */
 				if (!el) return;
 				const ro = new ResizeObserver(() => {
 					setStageRect((r) => rectWithAspect(rectAspectNorm(), r.x + r.w / 2, r.y + r.h / 2));
@@ -53640,7 +50008,8 @@ void main() {
 			}, [
 				exportOpen,
 				exportOut.w,
-				exportOut.h
+				exportOut.h,
+				setStageRect
 			]);
 			const rectDragRef = (0, react.useRef)(null);
 			const beginRectDrag = (e, mode) => {
@@ -53702,12 +50071,37 @@ void main() {
 			const endRectDrag = () => {
 				rectDragRef.current = null;
 			};
-			const totalSec = npz ? npz.T / npz.fps : 0;
-			const curSec = npz ? frameIdx / npz.fps : 0;
-			const fmt = (s) => {
-				const m = Math.floor(s / 60);
-				return `${m}:${(s - m * 60).toFixed(1).padStart(4, "0")}`;
+			return {
+				jointsFlatCm,
+				discardKeptEdit,
+				stampConstraintAtFrame,
+				exportOut,
+				handleOutSize,
+				handleFramePreset,
+				stageBoxRef,
+				beginRectDrag,
+				onRectPointerMove,
+				endRectDrag
 			};
+		}
+		//#endregion
+		//#region src/ui/studio/useTimelineEnvelope.ts
+		/**
+		* useTimelineEnvelope — the timeline synthesis + persistence cluster moved
+		* verbatim from `component.tsx` (MotionCardEditor lines ~1189–1372).
+		*
+		* Owns: persisted-constraints hydration, the authoring envelope
+		* (baseT/tlExtendT/targetT + pull-the-tail extend), the prompt seed effect
+		* with THE AUTHORING GUARD (promptsAuthoredRef law — a late envelope settle
+		* never rewrites authored frames), the no-overlap heal, and the two persist
+		* effects (constraints + prompts → stage.params).
+		*
+		* Owns no primitive authoring state (the remnant orchestrates all
+		* useState/useRef); promptsAuthoredRef is shared and passed in, the rest of
+		* the envelope refs live here. Behavior is IDENTICAL.
+		*/
+		init_motionConstraints();
+		function useTimelineEnvelope({ stage, effectiveNpz, onSave, toast, promptsAuthoredRef, tlPrompts, setTlPrompts, tlKeyframes, setTlKeyframes, constraintPayloads, setConstraintPayloads, setTlIntervals }) {
 			(0, react.useEffect)(() => {
 				const raw = stage.params?.[MOTION_CONSTRAINTS_PARAM];
 				const hydrated = raw ? hydrateConstraints(raw) : null;
@@ -53719,7 +50113,12 @@ void main() {
 					setConstraintPayloads({});
 				}
 				setTlIntervals([]);
-			}, [stage.id]);
+			}, [
+				stage.id,
+				setTlKeyframes,
+				setConstraintPayloads,
+				setTlIntervals
+			]);
 			const baseT = (0, react.useMemo)(() => {
 				if (effectiveNpz && effectiveNpz.T > 1) return effectiveNpz.T;
 				const d = typeof stage.params?.duration_sec === "number" ? stage.params.duration_sec : 5;
@@ -53730,6 +50129,8 @@ void main() {
 			(0, react.useEffect)(() => {
 				setTlExtendT(0);
 			}, [baseT]);
+			const lastExtendToastRef = (0, react.useRef)(0);
+			const lastSeededT = (0, react.useRef)(-1);
 			const onTimelineExtend = (0, react.useCallback)((newTotal) => {
 				const t = Math.max(1, Math.floor(newTotal));
 				lastSeededT.current = t;
@@ -53740,13 +50141,7 @@ void main() {
 					lastExtendToastRef.current = now;
 					toast("info", `Timeline extended to ${(t / 30).toFixed(1)}s`);
 				}
-			}, [
-				targetT,
-				onSave,
-				toast
-			]);
-			const lastExtendToastRef = (0, react.useRef)(0);
-			const lastSeededT = (0, react.useRef)(-1);
+			}, [onSave, toast]);
 			const didHydratePrompts = (0, react.useRef)(false);
 			(0, react.useEffect)(() => {
 				if (!didHydratePrompts.current) {
@@ -53778,7 +50173,9 @@ void main() {
 				}
 				if (targetT === lastSeededT.current) return;
 				lastSeededT.current = targetT;
+				if (promptsAuthoredRef.current) return;
 				setTlPrompts((prev) => {
+					/* v8 ignore next 4 -- the seed prompt always exists before any rescale (probe 2026-09-19) */
 					if (prev.length === 0) return [{
 						uuid: "motion-prompt",
 						text: "",
@@ -53787,6 +50184,7 @@ void main() {
 						color: null
 					}];
 					const oldT = prev.reduce((max, p) => Math.max(max, p.end_frame), 0) + 1;
+					/* v8 ignore next 1 -- end_frame ≥ 0 from every constructor ⟹ oldT ≥ 1 (probe 2026-09-19) */
 					if (oldT <= 0) return prev;
 					const scale = targetT / oldT;
 					return prev.map((p) => ({
@@ -53798,7 +50196,7 @@ void main() {
 			}, [targetT]);
 			(0, react.useEffect)(() => {
 				setTlPrompts((prev) => untanglePrompts(prev));
-			}, [tlPrompts]);
+			}, [tlPrompts, setTlPrompts]);
 			const lastPersistedRef = (0, react.useRef)("");
 			(0, react.useEffect)(() => {
 				const json = serializeConstraints(tlKeyframes.map((k) => ({
@@ -53810,652 +50208,4986 @@ void main() {
 				if (candidate === lastPersistedRef.current) return;
 				lastPersistedRef.current = candidate;
 				onSave({ [MOTION_CONSTRAINTS_PARAM]: candidate });
-			}, [tlKeyframes, constraintPayloads]);
+			}, [
+				tlKeyframes,
+				constraintPayloads,
+				onSave
+			]);
 			const lastPromptsPersistedRef = (0, react.useRef)("");
 			(0, react.useEffect)(() => {
-				const fps = effectiveNpz?.fps ?? 30;
-				const candidate = serializeMotionPrompts(tlPrompts, fps);
+				const candidate = serializeMotionPrompts(tlPrompts, effectiveNpz?.fps ?? 30);
 				if (candidate === lastPromptsPersistedRef.current) return;
 				lastPromptsPersistedRef.current = candidate;
 				onSave({ [MOTION_PROMPTS_PARAM]: candidate });
-			}, [tlPrompts, effectiveNpz]);
-			const handleTimelineFrameChange = (0, react.useCallback)((f) => {
-				setFrameIdx(f);
-				setPlaying(false);
-			}, []);
-			const onKeyframeAdd = (0, react.useCallback)((trackId, frame) => {
-				const uuid = makeTimelineId();
-				const src = effectiveNpz;
-				if (!src) {
-					toast("error", "Motion still loading — add a keyframe once the stage is live");
-					return uuid;
-				}
-				pushUndo();
-				const payload = snapshotConstraint(trackId, frame, src);
-				if (!payload) {
-					toast("error", `Unknown constraint lane "${trackId}"`);
-					return uuid;
-				}
-				setConstraintPayloads((prev) => ({
-					...prev,
-					[uuid]: payload
-				}));
-				setTlKeyframes((prev) => [...prev, {
-					uuid,
-					track_id: trackId,
-					frame: payload.frame,
-					value: null,
-					opacity: 1,
-					locked: false
-				}]);
-				return uuid;
-			}, [effectiveNpz, toast]);
-			const onKeyframeMove = (0, react.useCallback)((id, frame) => {
-				const f = Math.max(0, Math.floor(frame));
-				maybePushDragUndo(`kf:${id}`);
-				setTlKeyframes((prev) => prev.map((k) => k.uuid === id ? {
-					...k,
-					frame: f
-				} : k));
-				setConstraintPayloads((prev) => {
-					const p = prev[id];
-					if (!p) return prev;
-					return {
+			}, [
+				tlPrompts,
+				effectiveNpz,
+				onSave
+			]);
+			return {
+				baseT,
+				targetT,
+				onTimelineExtend
+			};
+		}
+		//#endregion
+		//#region src/ui/studio/useTimelineAuthoring.ts
+		/**
+		* useTimelineAuthoring — the timeline authoring verbs moved verbatim from
+		* `component.tsx` (MotionCardEditor lines ~1381–1457).
+		*
+		* Returns the bar's verbs. THE AUTHORING GUARD is preserved EXACTLY:
+		* every verb that set `promptsAuthoredRef` inline still sets it here, and
+		* the verbs that never set it (keyframe add/move/delete, prompt resize)
+		* still don't — the rescale-guard regression test pins the authored-drag
+		* law ("a late envelope settle never erases an authored drag").
+		*
+		* Free-variable reads became explicit hook args. Behavior is IDENTICAL.
+		*/
+		init_motionConstraints();
+		function useTimelineAuthoring({ effectiveNpz, toast, pushUndo, maybePushDragUndo, promptsAuthoredRef, targetT, setFrameIdx, setPlaying, setConstraintPayloads, setTlKeyframes, setTlPrompts }) {
+			return {
+				handleTimelineFrameChange: (0, react.useCallback)((f) => {
+					setFrameIdx(f);
+					setPlaying(false);
+				}, [setFrameIdx, setPlaying]),
+				onKeyframeAdd: (0, react.useCallback)((trackId, frame) => {
+					const uuid = makeTimelineId();
+					const src = effectiveNpz;
+					if (!src) {
+						toast("error", "Motion still loading — add a keyframe once the stage is live");
+						return uuid;
+					}
+					pushUndo();
+					const payload = snapshotConstraint(trackId, frame, src);
+					/* v8 ignore next 4 -- all six lane uuids are known constants; hydrate drops orphans (probe 2026-09-19) */
+					if (!payload) {
+						toast("error", `Unknown constraint lane "${trackId}"`);
+						return uuid;
+					}
+					setConstraintPayloads((prev) => ({
 						...prev,
-						[id]: {
-							...p,
-							frame: f
-						}
-					};
-				});
-			}, []);
-			const onKeyframeDelete = (0, react.useCallback)((id) => {
-				pushUndo();
-				setTlKeyframes((prev) => prev.filter((k) => k.uuid !== id));
-				setConstraintPayloads((prev) => {
-					if (!(id in prev)) return prev;
-					const next = { ...prev };
-					delete next[id];
-					return next;
-				});
-			}, []);
-			const onPromptUpdate = (0, react.useCallback)((id, text) => {
-				pushUndo();
-				setTlPrompts((prev) => prev.map((p) => p.uuid === id ? {
-					...p,
-					text
-				} : p));
-			}, []);
-			const onPromptResize = (0, react.useCallback)((id, startFrame, endFrame) => {
-				maybePushDragUndo(`pr:${id}`);
-				setTlPrompts((prev) => prev.map((p) => p.uuid === id ? {
-					...p,
-					start_frame: startFrame,
-					end_frame: endFrame
-				} : p));
-			}, []);
-			const onPromptMove = (0, react.useCallback)((id, startFrame, endFrame) => {
-				maybePushDragUndo(`pm:${id}`);
-				setTlPrompts((prev) => prev.map((p) => p.uuid === id ? {
-					...p,
-					start_frame: startFrame,
-					end_frame: endFrame
-				} : p));
-			}, []);
-			const onPromptDelete = (0, react.useCallback)((id) => {
-				pushUndo();
-				setTlPrompts((prev) => prev.filter((p) => p.uuid !== id));
-			}, []);
-			const addPromptCard = (0, react.useCallback)(() => {
-				pushUndo();
-				setTlPrompts((prev) => carveNewPromptCard(prev, targetT));
-			}, [targetT]);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShell, {
-				className: component_module_css_default.shellPad,
-				params: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: component_module_css_default.railGrid,
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: component_module_css_default.railGroupLabel,
-							children: "View"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-							tip: effectiveNpz ? "Show the joint skeleton over the mesh" : "Loading mannequin…",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: component_module_css_default.contents,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: () => setShowSkeleton((s) => !s),
-									disabled: !effectiveNpz,
-									className: cn(component_module_css_default.railBtn, showSkeleton ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
-									children: [showSkeleton ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EyeAlt, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EyeOff, { className: component_module_css_default.i14 }), "Skeleton"]
-								})
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-							tip: !effectiveNpz ? "Loading mannequin…" : inPlace ? "Pinned at the origin — same motion, no travel (treadmill). Toggle to play the root's travel across the stage." : "Playing the root's travel across the stage. Toggle to pin the figure at the origin — same motion, no travel.",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: component_module_css_default.contents,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: () => setInPlace((v) => !v),
-									disabled: !effectiveNpz,
-									"aria-pressed": inPlace,
-									className: cn(component_module_css_default.railBtn, inPlace ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Target, { className: component_module_css_default.i14 }), "In-place"]
-								})
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: component_module_css_default.railGroupLabelMt,
-							children: "Pose"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-							tip: !effectiveNpz ? "Loading mannequin…" : editMode ? "Exit edit mode — keeps the refined pose on the character at this frame" : "Drag joints to refine the pose at this frame",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: component_module_css_default.contents,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: toggleEdit,
-									disabled: !effectiveNpz,
-									className: cn(component_module_css_default.railBtn, editMode ? component_module_css_default.railBtnEditActive : component_module_css_default.railBtnIdle),
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Move, { className: component_module_css_default.i14 }), editMode ? "Done" : "Refine pose"]
-								})
-							})
-						}),
-						editMode && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-							tip: fullbodyKfAtFrame ? `Update the full-body keyframe at frame ${frameIdx + 1} with this pose` : `Write this pose into the timeline as a full-body keyframe at frame ${frameIdx + 1}`,
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: component_module_css_default.contents,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: stampConstraintAtFrame,
-									disabled: !editableJoints,
-									className: component_module_css_default.stampBtn,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Target, { className: component_module_css_default.i14 }), "Stamp"]
-								})
-							})
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-							tip: "Chain the edited pose as the starting point — kimodo conditions the next generation on it. Hit Run when ready.",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: component_module_css_default.contents,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: handleRepose,
-									disabled: reposing || !editableJoints,
-									className: component_module_css_default.reposeBtn,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefreshCw, { className: reposing ? component_module_css_default.spinIcon : component_module_css_default.i14 }), reposing ? "Reposing…" : "Repose"]
-								})
-							})
-						})] }),
-						!editMode && keptEdit && keptEdit.frame === frameIdx && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-							tip: "Discard the refined pose at this frame — revert to the raw motion",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
-								onClick: discardKeptEdit,
-								className: component_module_css_default.railBtnDanger,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCcw, { className: component_module_css_default.i14 }), "Reset pose"]
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecPanel, {
-							model: "kimodo",
-							spec: kimodoSpec,
-							error: kimodoError,
-							values: paramValues,
-							onEdit: onParamEdit,
-							sections: [
-								{
-									title: "Generation",
-									testid: "mo-gen-panel",
-									rows: [
-										{ name: "duration_sec" },
-										{ name: "diffusion_steps" },
-										{ name: "num_samples" },
-										{ name: "num_transition_frames" }
-									]
-								},
-								{
-									title: "Guidance",
-									testid: "mo-guide-panel",
-									rows: [{ name: "cfg_weight_a" }, { name: "cfg_weight_b" }]
-								},
-								{
-									title: "Clock",
-									testid: "mo-clock-panel",
-									rows: [{ name: "seed" }]
-								}
-							]
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: component_module_css_default.railGroupLabelMt,
-							children: "Output"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-							tip: !effectiveNpz ? "Loading mannequin…" : exportOpen ? "Close the export panel" : "Frame a shot with the stage rectangle — no run needed; exports mesh / openpose / depth at the typed pixel size",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: component_module_css_default.contents,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: () => setExportOpen((o) => !o),
-									disabled: !effectiveNpz,
-									"aria-pressed": exportOpen,
-									className: cn(component_module_css_default.railBtn, exportOpen ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Download, { className: component_module_css_default.i14 }), "Export"]
-								})
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-							tip: bgImage ? "Replace the background image behind the mannequin (or drop an asset/file on the stage)" : "Set a background image behind the mannequin — click to pick, or drop an asset/file on the stage",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
-								onClick: () => bgInputRef.current?.click(),
-								className: component_module_css_default.bgBtnIdle,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ImagePlus, { className: component_module_css_default.i14 }), "Background"]
-							})
-						}),
-						bgImage && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-							tip: "Clear the background image",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
-								onClick: () => setBg(null),
-								"aria-label": "Clear the background image",
-								className: component_module_css_default.railBtnDanger,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(X$1, { className: component_module_css_default.i14 }), "Clear"]
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-							ref: bgInputRef,
-							type: "file",
-							accept: "image/*",
-							className: component_module_css_default.hiddenInput,
-							onChange: (e) => handleBgFile(e.target.files?.[0] ?? null)
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: component_module_css_default.railGroupLabelMt,
-							children: "Preview body"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							"data-motion-body": true,
-							className: component_module_css_default.bodySquareWrap,
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SlotSquare, {
-								size: "md",
-								label: MOTION_PREVIEW_GLB_PARAM,
-								value: bodySrc || void 0,
-								badge: bodyWired ? bodyWiredUpstream.title : void 0,
-								metric: bodyWired && !bodyWiredUrl ? "waiting for upstream" : void 0,
-								emptyIcon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PersonStanding, { className: component_module_css_default.bodyEmptyIcon }),
-								onPickFile: (f) => handleBodyFile(f),
-								onDropFile: (f) => handleBodyFile(f),
-								onDropAsset: (url) => {
-									if (!isGlbUrl(url)) {
-										toast("error", "Preview body must be a .glb (SOMAX-rigged character).");
-										return;
-									}
-									attachBody(url);
-								},
-								onClear: bodyWired ? () => {
-									onWireSlot?.(MOTION_PREVIEW_GLB_PARAM, null, null);
-									onSave({
-										...stage.params,
-										[MOTION_PREVIEW_GLB_PARAM]: null
-									});
-								} : () => attachBody(null),
-								actions: onWireSlot && bodySlotIdx >= 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-									tip: "Wire from an earlier card's GLB output",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										type: "button",
-										onClick: (e) => {
-											e.stopPropagation();
-											setBodyWireOpen(true);
-										},
-										"aria-label": "Wire the preview body from an earlier card",
-										"data-motion-body-wire": true,
-										className: cn(component_module_css_default.wireBtn, bodyWired ? component_module_css_default.wireBtnOn : component_module_css_default.wireBtnOff),
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Link2, { className: component_module_css_default.i12 })
-									})
-								})
-							})
-						}),
-						bodyNotice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							"data-motion-body-error": true,
-							className: component_module_css_default.bodyNotice,
-							children: bodyNotice.includes("converting through the queue") ? bodyNotice : `${bodyNotice} — previewing on the neutral mannequin.`
-						})
-					]
-				}),
-				preview: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: component_module_css_default.centerRow,
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ViewportFrame, {
-						ref: stageBoxRef,
-						className: cn(component_module_css_default.stageFrame, bgDragOver && component_module_css_default.stageFrameDrag),
-						onDragOver: (e) => {
-							if (e.dataTransfer.types.includes("application/tech-noir-asset") || e.dataTransfer.types.includes("Files")) {
-								e.preventDefault();
-								setBgDragOver(true);
+						[uuid]: payload
+					}));
+					setTlKeyframes((prev) => [...prev, {
+						uuid,
+						track_id: trackId,
+						frame: payload.frame,
+						value: null,
+						opacity: 1,
+						locked: false
+					}]);
+					return uuid;
+				}, [
+					effectiveNpz,
+					toast,
+					pushUndo,
+					setConstraintPayloads,
+					setTlKeyframes
+				]),
+				onKeyframeMove: (0, react.useCallback)((id, frame) => {
+					const f = Math.max(0, Math.floor(frame));
+					maybePushDragUndo(`kf:${id}`);
+					setTlKeyframes((prev) => prev.map((k) => k.uuid === id ? {
+						...k,
+						frame: f
+					} : k));
+					setConstraintPayloads((prev) => {
+						const p = prev[id];
+						/* v8 ignore next 1 -- keyframes and payloads are written paired; hydrate drops orphans (probe 2026-09-19) */
+						if (!p) return prev;
+						return {
+							...prev,
+							[id]: {
+								...p,
+								frame: f
 							}
+						};
+					});
+				}, [
+					maybePushDragUndo,
+					setTlKeyframes,
+					setConstraintPayloads
+				]),
+				onKeyframeDelete: (0, react.useCallback)((id) => {
+					pushUndo();
+					setTlKeyframes((prev) => prev.filter((k) => k.uuid !== id));
+					setConstraintPayloads((prev) => {
+						/* v8 ignore next 1 -- keyframes and payloads are written paired; hydrate drops orphans (probe 2026-09-19) */
+						if (!(id in prev)) return prev;
+						const next = { ...prev };
+						delete next[id];
+						return next;
+					});
+				}, [
+					pushUndo,
+					setTlKeyframes,
+					setConstraintPayloads
+				]),
+				onPromptUpdate: (0, react.useCallback)((id, text) => {
+					promptsAuthoredRef.current = true;
+					pushUndo();
+					setTlPrompts((prev) => prev.map((p) => p.uuid === id ? {
+						...p,
+						text
+					} : p));
+				}, [
+					promptsAuthoredRef,
+					pushUndo,
+					setTlPrompts
+				]),
+				onPromptResize: (0, react.useCallback)((id, startFrame, endFrame) => {
+					maybePushDragUndo(`pr:${id}`);
+					setTlPrompts((prev) => prev.map((p) => p.uuid === id ? {
+						...p,
+						start_frame: startFrame,
+						end_frame: endFrame
+					} : p));
+				}, [maybePushDragUndo, setTlPrompts]),
+				onPromptMove: (0, react.useCallback)((id, startFrame, endFrame) => {
+					promptsAuthoredRef.current = true;
+					maybePushDragUndo(`pm:${id}`);
+					setTlPrompts((prev) => prev.map((p) => p.uuid === id ? {
+						...p,
+						start_frame: startFrame,
+						end_frame: endFrame
+					} : p));
+				}, [
+					promptsAuthoredRef,
+					maybePushDragUndo,
+					setTlPrompts
+				]),
+				onPromptDelete: (0, react.useCallback)((id) => {
+					promptsAuthoredRef.current = true;
+					pushUndo();
+					setTlPrompts((prev) => prev.filter((p) => p.uuid !== id));
+				}, [
+					promptsAuthoredRef,
+					pushUndo,
+					setTlPrompts
+				]),
+				addPromptCard: (0, react.useCallback)(() => {
+					promptsAuthoredRef.current = true;
+					pushUndo();
+					setTlPrompts((prev) => carveNewPromptCard(prev, targetT));
+				}, [
+					targetT,
+					promptsAuthoredRef,
+					pushUndo,
+					setTlPrompts
+				])
+			};
+		}
+		//#endregion
+		//#region src/ui/studio/MotionRail.tsx
+		function MotionRail({ effectiveNpz, showSkeleton, setShowSkeleton, inPlace, setInPlace, editMode, toggleEdit, fullbodyKfAtFrame, frameIdx, stampConstraintAtFrame, editableJoints, handleRepose, reposing, keptEdit, discardKeptEdit, kimodoSpec, kimodoError, paramValues, onParamEdit, exportOpen, setExportOpen, bgImage, bgInputRef, handleBgFile, setBg, bodySrc, bodyWired, bodyWiredUpstream, bodyWiredUrl, handleBodyFile, isGlbUrl, toast, attachBody, onWireSlot, bodySlotIdx, onSave, stage, setBodyWireOpen, bodyNotice }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: component_module_css_default.railGrid,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: component_module_css_default.railGroupLabel,
+						children: "View"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+						tip: effectiveNpz ? "Show the joint skeleton over the mesh" : "Loading mannequin…",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: component_module_css_default.contents,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								onClick: () => setShowSkeleton((s) => !s),
+								disabled: !effectiveNpz,
+								className: cn(component_module_css_default.railBtn, showSkeleton ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
+								children: [showSkeleton ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EyeAlt, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EyeOff, { className: component_module_css_default.i14 }), "Skeleton"]
+							})
+						})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+						tip: !effectiveNpz ? "Loading mannequin…" : inPlace ? "Pinned at the origin — same motion, no travel (treadmill). Toggle to play the root's travel across the stage." : "Playing the root's travel across the stage. Toggle to pin the figure at the origin — same motion, no travel.",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: component_module_css_default.contents,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								onClick: () => setInPlace((v) => !v),
+								disabled: !effectiveNpz,
+								"aria-pressed": inPlace,
+								className: cn(component_module_css_default.railBtn, inPlace ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Target, { className: component_module_css_default.i14 }), "In-place"]
+							})
+						})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: component_module_css_default.railGroupLabelMt,
+						children: "Pose"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+						tip: !effectiveNpz ? "Loading mannequin…" : editMode ? "Exit edit mode — keeps the refined pose on the character at this frame" : "Drag joints to refine the pose at this frame",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: component_module_css_default.contents,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								onClick: toggleEdit,
+								disabled: !effectiveNpz,
+								className: cn(component_module_css_default.railBtn, editMode ? component_module_css_default.railBtnEditActive : component_module_css_default.railBtnIdle),
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Move, { className: component_module_css_default.i14 }), editMode ? "Done" : "Refine pose"]
+							})
+						})
+					}),
+					editMode && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+						tip: fullbodyKfAtFrame ? `Update the full-body keyframe at frame ${frameIdx + 1} with this pose` : `Write this pose into the timeline as a full-body keyframe at frame ${frameIdx + 1}`,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: component_module_css_default.contents,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								onClick: stampConstraintAtFrame,
+								disabled: !editableJoints,
+								className: component_module_css_default.stampBtn,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Target, { className: component_module_css_default.i14 }), "Stamp"]
+							})
+						})
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+						tip: "Chain the edited pose as the starting point — kimodo conditions the next generation on it. Hit Run when ready.",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: component_module_css_default.contents,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								onClick: handleRepose,
+								disabled: reposing || !editableJoints,
+								className: component_module_css_default.reposeBtn,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefreshCw, { className: reposing ? component_module_css_default.spinIcon : component_module_css_default.i14 }), reposing ? "Reposing…" : "Repose"]
+							})
+						})
+					})] }),
+					!editMode && keptEdit && keptEdit.frame === frameIdx && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+						tip: "Discard the refined pose at this frame — revert to the raw motion",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							variant: "ghost",
+							onClick: discardKeptEdit,
+							className: component_module_css_default.railBtnDanger,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCcw, { className: component_module_css_default.i14 }), "Reset pose"]
+						})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecPanel, {
+						model: "kimodo",
+						spec: kimodoSpec,
+						error: kimodoError,
+						values: paramValues,
+						onEdit: onParamEdit,
+						sections: [
+							{
+								title: "Generation",
+								testid: "mo-gen-panel",
+								rows: [
+									{ name: "duration_sec" },
+									{ name: "diffusion_steps" },
+									{ name: "num_samples" },
+									{ name: "num_transition_frames" }
+								]
+							},
+							{
+								title: "Guidance",
+								testid: "mo-guide-panel",
+								rows: [{ name: "cfg_weight_a" }, { name: "cfg_weight_b" }]
+							},
+							{
+								title: "Clock",
+								testid: "mo-clock-panel",
+								rows: [{ name: "seed" }]
+							}
+						]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: component_module_css_default.railGroupLabelMt,
+						children: "Output"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+						tip: !effectiveNpz ? "Loading mannequin…" : exportOpen ? "Close the export panel" : "Frame a shot with the stage rectangle — no run needed; exports mesh / openpose / depth at the typed pixel size",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: component_module_css_default.contents,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								onClick: () => setExportOpen((o) => !o),
+								disabled: !effectiveNpz,
+								"aria-pressed": exportOpen,
+								className: cn(component_module_css_default.railBtn, exportOpen ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Download, { className: component_module_css_default.i14 }), "Export"]
+							})
+						})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+						tip: bgImage ? "Replace the background image behind the mannequin (or drop an asset/file on the stage)" : "Set a background image behind the mannequin — click to pick, or drop an asset/file on the stage",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							variant: "ghost",
+							onClick: () => bgInputRef.current?.click(),
+							className: component_module_css_default.bgBtnIdle,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ImagePlus, { className: component_module_css_default.i14 }), "Background"]
+						})
+					}),
+					bgImage && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+						tip: "Clear the background image",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							variant: "ghost",
+							onClick: () => setBg(null),
+							"aria-label": "Clear the background image",
+							className: component_module_css_default.railBtnDanger,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(X$1, { className: component_module_css_default.i14 }), "Clear"]
+						})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+						ref: bgInputRef,
+						type: "file",
+						accept: "image/*",
+						className: component_module_css_default.hiddenInput,
+						onChange: (e) => handleBgFile(e.target.files?.[0] ?? null)
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: component_module_css_default.railGroupLabelMt,
+						children: "Preview body"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-motion-body": true,
+						className: component_module_css_default.bodySquareWrap,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SlotSquare, {
+							size: "md",
+							label: MOTION_PREVIEW_GLB_PARAM,
+							value: bodySrc || void 0,
+							badge: bodyWired ? bodyWiredUpstream.title : void 0,
+							metric: bodyWired && !bodyWiredUrl ? "waiting for upstream" : void 0,
+							emptyIcon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PersonStanding, { className: component_module_css_default.bodyEmptyIcon }),
+							onPickFile: (f) => handleBodyFile(f),
+							onDropFile: (f) => handleBodyFile(f),
+							onDropAsset: (url) => {
+								if (!isGlbUrl(url)) {
+									toast("error", "Preview body must be a .glb (SOMAX-rigged character).");
+									return;
+								}
+								attachBody(url);
+							},
+							onClear: bodyWired ? () => {
+								onWireSlot?.(MOTION_PREVIEW_GLB_PARAM, null, null);
+								onSave({
+									...stage.params,
+									[MOTION_PREVIEW_GLB_PARAM]: null
+								});
+							} : () => attachBody(null),
+							actions: onWireSlot && bodySlotIdx >= 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+								tip: "Wire from an earlier card's GLB output",
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									type: "button",
+									onClick: (e) => {
+										e.stopPropagation();
+										setBodyWireOpen(true);
+									},
+									"aria-label": "Wire the preview body from an earlier card",
+									"data-motion-body-wire": true,
+									className: cn(component_module_css_default.wireBtn, bodyWired ? component_module_css_default.wireBtnOn : component_module_css_default.wireBtnOff),
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Link2, { className: component_module_css_default.i12 })
+								})
+							})
+						})
+					}),
+					bodyNotice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						"data-motion-body-error": true,
+						className: component_module_css_default.bodyNotice,
+						children: bodyNotice.includes("converting through the queue") ? bodyNotice : `${bodyNotice} — previewing on the neutral mannequin.`
+					})
+				]
+			});
+		}
+		//#endregion
+		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/engines/comfyui/action_cards/ui-icons.module.css.mjs
+		const css$1 = "@keyframes mK8r1a_uiIconSpin{to{transform:rotate(360deg)}}.mK8r1a_spin{animation:1s linear infinite mK8r1a_uiIconSpin}";
+		const tagId$1 = "@melite/motion-motion/ui-icons.module.css@ce70639a";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/motion-motion";
+			tag.dataset.pluginCss = tagId$1;
+			tag.textContent = css$1;
+			document.head.appendChild(tag);
+		}
+		var ui_icons_module_css_default = {
+			"spin": "mK8r1a_spin",
+			"uiIconSpin": "mK8r1a_uiIconSpin"
+		};
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/ui-icons.tsx
+		function Svg({ className, children }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
+				viewBox: "0 0 24 24",
+				fill: "none",
+				stroke: "currentColor",
+				strokeWidth: 2,
+				strokeLinecap: "round",
+				strokeLinejoin: "round",
+				"aria-hidden": "true",
+				className,
+				children
+			});
+		}
+		function Loader2({ className }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
+				className: className ? `${ui_icons_module_css_default.spin} ${className}` : ui_icons_module_css_default.spin,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" })
+			});
+		}
+		//#endregion
+		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/engines/comfyui/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css.mjs
+		const css = ".Xnnowa_loadingBox{background:var(--dsw-alias-bg-base);flex-direction:column;justify-content:center;align-items:center;gap:12px;display:flex}.Xnnowa_loadingIcon{width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent)}.Xnnowa_loadingLabel{color:color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);font-size:12px}.Xnnowa_errorBox{background:var(--dsw-alias-bg-base);color:color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);justify-content:center;align-items:center;font-size:12px;display:flex}";
+		const tagId = "@melite/motion-motion/PoseViewer3D.module.css@3cd59d93";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/motion-motion";
+			tag.dataset.pluginCss = tagId;
+			tag.textContent = css;
+			document.head.appendChild(tag);
+		}
+		var PoseViewer3D_module_css_default = {
+			"errorBox": "Xnnowa_errorBox",
+			"loadingBox": "Xnnowa_loadingBox",
+			"loadingIcon": "Xnnowa_loadingIcon",
+			"loadingLabel": "Xnnowa_loadingLabel"
+		};
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageSkeleton.ts
+		init_three_module();
+		init_src();
+		/** Centimeters → meters. SOMA-X/ANNY joints arrive in cm; the Three.js scene
+		*  is authored in meters. Applied at every display boundary. The drag handler
+		*  converts gizmo.position back to cm so IK/FK math stays in the native cm
+		*  space (matching jointsFlat and the backend deformSomaJoints API). */
+		const CM_TO_M = .01;
+		/** child index → parent index. Root (0) has no parent (maps to -1). */
+		const SOMA77_PARENT = (() => {
+			const parent = new Array(77).fill(-1);
+			for (const [p, c] of SOMA77_BONE_CONNECTIONS) parent[c] = p;
+			return parent;
+		})();
+		/** Return the joint chain from `jointIdx` up to (and including) `chainRoot`,
+		*  ordered root-first. Used by multi-joint selection and IK. */
+		function getJointChain(jointIdx, chainRoot = 0) {
+			const chain = [];
+			let cur = jointIdx;
+			let guard = 0;
+			while (cur >= 0 && cur < 77 && guard++ < 77) {
+				chain.unshift(cur);
+				if (cur === chainRoot) break;
+				cur = SOMA77_PARENT[cur];
+			}
+			return chain;
+		}
+		const SOMA77_CHILDREN = (() => {
+			const children = Array.from({ length: 77 }, () => []);
+			for (let i = 0; i < 77; i++) {
+				const p = SOMA77_PARENT[i];
+				if (p >= 0) children[p].push(i);
+			}
+			return children;
+		})();
+		/** Return ALL descendant joint indices of `jointIdx`. Used by FK propagation. */
+		function getDescendants(jointIdx) {
+			const result = [];
+			const stack = [...SOMA77_CHILDREN[jointIdx]];
+			while (stack.length > 0) {
+				const cur = stack.pop();
+				result.push(cur);
+				stack.push(...SOMA77_CHILDREN[cur]);
+			}
+			return result;
+		}
+		function solveCCD(jointsFlat, chain, target, iterations = 8, tolerance = .005) {
+			if (chain.length < 2) return jointsFlat;
+			const out = new Float32Array(jointsFlat);
+			const ee = chain[chain.length - 1];
+			const eePos = new Vector3(out[ee * 3], out[ee * 3 + 1], out[ee * 3 + 2]);
+			if (eePos.distanceTo(target) < tolerance) return out;
+			const chainDescendants = chain.map((j) => getDescendants(j));
+			const tmpJoint = new Vector3();
+			const tmpEE = new Vector3();
+			const curDir = new Vector3();
+			const tgtDir = new Vector3();
+			const quat = new Quaternion();
+			const axis = new Vector3();
+			const cp = new Vector3();
+			for (let iter = 0; iter < iterations; iter++) {
+				for (let i = chain.length - 2; i >= 0; i--) {
+					const j = chain[i];
+					tmpJoint.set(out[j * 3], out[j * 3 + 1], out[j * 3 + 2]);
+					tmpEE.set(out[ee * 3], out[ee * 3 + 1], out[ee * 3 + 2]);
+					curDir.subVectors(tmpEE, tmpJoint).normalize();
+					tgtDir.subVectors(target, tmpJoint).normalize();
+					const dot = MathUtils.clamp(curDir.dot(tgtDir), -1, 1);
+					const angle = Math.acos(dot);
+					axis.crossVectors(curDir, tgtDir);
+					if (axis.lengthSq() < 1e-8 || angle < 1e-5) continue;
+					axis.normalize();
+					quat.setFromAxisAngle(axis, angle);
+					for (const c of chainDescendants[i]) {
+						cp.set(out[c * 3], out[c * 3 + 1], out[c * 3 + 2]);
+						cp.sub(tmpJoint).applyQuaternion(quat).add(tmpJoint);
+						out[c * 3] = cp.x;
+						out[c * 3 + 1] = cp.y;
+						out[c * 3 + 2] = cp.z;
+					}
+				}
+				eePos.set(out[ee * 3], out[ee * 3 + 1], out[ee * 3 + 2]);
+				if (eePos.distanceTo(target) < tolerance) break;
+			}
+			return out;
+		}
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageCamera.ts
+		init_src();
+		function cameraPosFor(view) {
+			switch (view) {
+				case "side": return [
+					3.2,
+					1.2,
+					.01
+				];
+				case "three-quarter": return [
+					2.4,
+					1.4,
+					2.4
+				];
+				case "front": return [
+					0,
+					1.2,
+					3.4
+				];
+				default:
+					if (view.startsWith("az-")) return azimuthCameraPos(view);
+					return [
+						2.74,
+						1.88,
+						5.68
+					];
+			}
+		}
+		const FRAMING = {
+			full: {
+				dist: 2.6,
+				camY: 1.15,
+				targetY: .92
+			},
+			upper: {
+				dist: 1.25,
+				camY: 1.5,
+				targetY: 1.3
+			}
+		};
+		const LEGACY_TARGET_Y = {
+			full: .9,
+			upper: 1.32
+		};
+		const LEGACY_DIST_SCALE = {
+			full: 1,
+			upper: .5
+		};
+		function framedCameraPos(view, framing) {
+			const base = cameraPosFor(view);
+			if (view.startsWith("az-")) {
+				const angle = Math.atan2(base[0], base[2]);
+				const f = FRAMING[framing];
+				return [[
+					Math.sin(angle) * f.dist,
+					f.camY,
+					Math.cos(angle) * f.dist
+				], f.targetY];
+			}
+			const ty = LEGACY_TARGET_Y[framing];
+			const s = LEGACY_DIST_SCALE[framing];
+			const dir = [
+				base[0],
+				base[1] - .9,
+				base[2]
+			];
+			return [[
+				dir[0] * s,
+				ty + dir[1] * s,
+				dir[2] * s
+			], ty];
+		}
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageMesh.ts
+		init_three_module();
+		init_src$1();
+		const FLOOR_LIFT_Y = .02;
+		/** Compute the Y-offset that places the mesh's lowest point at FLOOR_LIFT_Y. */
+		function computeMeshLiftY(meshData) {
+			let minY = Infinity;
+			const verts = meshData.vertices;
+			for (let i = 0; i < verts.length; i++) if (verts[i][1] < minY) minY = verts[i][1];
+			return isFinite(minY) ? FLOOR_LIFT_Y - minY * CM_TO_M : FLOOR_LIFT_Y;
+		}
+		function buildGeometry(meshData) {
+			const geo = new BufferGeometry();
+			const verts = meshData.vertices;
+			const arr = new Float32Array(verts.length * 3);
+			for (let i = 0; i < verts.length; i++) {
+				arr[i * 3] = verts[i][0] * CM_TO_M;
+				arr[i * 3 + 1] = verts[i][1] * CM_TO_M;
+				arr[i * 3 + 2] = verts[i][2] * CM_TO_M;
+			}
+			geo.setAttribute("position", new BufferAttribute(arr, 3));
+			const idx = meshData.faces.flat(2);
+			geo.setIndex(idx);
+			geo.computeVertexNormals();
+			geo.computeBoundingSphere();
+			return geo;
+		}
+		const _meshCache = /* @__PURE__ */ new Map();
+		async function fetchBindMesh(identityModel = "anny", identityCoeffs, localChanges, customTargets) {
+			const key = identityModel || "anny";
+			const coeffsSig = identityCoeffs && identityCoeffs.length > 0 ? identityCoeffs.map((v) => v.toFixed(1)).join(",") : null;
+			const lcEntries = localChanges && Object.keys(localChanges).length > 0 ? Object.entries(localChanges).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : null;
+			const ctEntries = customTargets && Object.keys(customTargets).length > 0 ? Object.entries(customTargets).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : null;
+			const cacheKey = [
+				key,
+				coeffsSig,
+				lcEntries,
+				ctEntries
+			].filter(Boolean).join("|");
+			const cached = _meshCache.get(cacheKey);
+			if (cached) return cached;
+			let data;
+			if (coeffsSig || lcEntries || ctEntries) {
+				const res = await apiFetch("/v1/poser/mesh", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						identity_model: key,
+						...coeffsSig ? { identity_coeffs: identityCoeffs } : {},
+						...lcEntries ? { local_changes: localChanges } : {},
+						...ctEntries ? { custom_targets: customTargets } : {}
+					})
+				});
+				if (!res.ok) throw new Error(`Failed to fetch shaped mesh (${key}): ${res.status}`);
+				data = await res.json();
+			} else {
+				const res = await apiFetch(`/v1/poser/mesh?identity_model=${encodeURIComponent(key)}`);
+				if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`);
+				data = await res.json();
+			}
+			_meshCache.set(cacheKey, data);
+			return data;
+		}
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageCarriers.ts
+		init_three_module();
+		init_src();
+		function createSkinCarrier(liftGroup) {
+			return {
+				mesh: null,
+				geo: null,
+				mat: null,
+				scratch: /* @__PURE__ */ new Float32Array(0),
+				lastUploadedIdx: -2,
+				meshData: null,
+				deformedFlat: null,
+				numVerts: 0,
+				lastAnimate: false,
+				setMesh(p) {
+					this.numVerts = p.numVerts;
+					if (this.meshData !== p.meshData) {
+						this.meshData = p.meshData;
+						this.geo?.dispose();
+						this.geo = buildGeometry(p.meshData);
+						this.scratch = new Float32Array(p.numVerts * 3);
+						if (this.mesh === null) {
+							this.mat = new MeshStandardMaterial({
+								color: new Color(p.color),
+								roughness: .55,
+								metalness: .05,
+								flatShading: false,
+								side: 2
+							});
+							this.mesh = new Mesh(this.geo, this.mat);
+							this.mesh.castShadow = true;
+							this.mesh.receiveShadow = true;
+							liftGroup.add(this.mesh);
+						} else this.mesh.geometry = this.geo;
+						this.lastUploadedIdx = -2;
+					}
+					const opacity = p.editMode ? Math.min(p.opacity, .85) : p.opacity;
+					if (this.mat !== null) {
+						this.mat.color.set(p.color);
+						this.mat.opacity = opacity;
+						this.mat.transparent = opacity < 1;
+						this.mat.wireframe = p.wireframe;
+					}
+				},
+				setData(deformedFlat) {
+					if (this.deformedFlat !== deformedFlat) {
+						this.deformedFlat = deformedFlat;
+						this.lastUploadedIdx = -2;
+					}
+				},
+				uploadFrame(idx, showBindPose, animate) {
+					const geo = this.geo;
+					if (geo === null || this.meshData === null) return;
+					const pos = geo.attributes.position;
+					const arr = pos.array;
+					const meshVertCount = this.meshData.vertices.length;
+					if (!(!showBindPose && !!this.deformedFlat && meshVertCount === this.numVerts)) {
+						const scale = meshVertCount === 18056 ? CM_TO_M : 1;
+						const verts = this.meshData.vertices;
+						for (let i = 0; i < verts.length; i++) {
+							arr[i * 3] = verts[i][0] * scale;
+							arr[i * 3 + 1] = verts[i][1] * scale;
+							arr[i * 3 + 2] = verts[i][2] * scale;
+						}
+						this.lastUploadedIdx = -1;
+						pos.needsUpdate = true;
+						geo.computeVertexNormals();
+						geo.computeBoundingSphere();
+						return;
+					}
+					const stride = this.numVerts * 3;
+					const frameCount = this.deformedFlat.length / stride;
+					const clamped = Math.max(0, Math.min(idx, frameCount - 1));
+					const base = clamped * stride;
+					const src = this.deformedFlat.subarray(base, base + stride);
+					for (let i = 0; i < stride; i++) this.scratch[i] = src[i] * CM_TO_M;
+					arr.set(this.scratch, 0);
+					pos.needsUpdate = true;
+					if (!animate) {
+						geo.computeVertexNormals();
+						geo.computeBoundingSphere();
+					}
+					this.lastUploadedIdx = clamped;
+				}
+			};
+		}
+		function createAnimClock(frameIdxRef) {
+			return {
+				time: 0,
+				uiAccum: 0,
+				lastSyncedIdx: -1,
+				animate: false,
+				enabled: false,
+				frameCount: 1,
+				fps: 30,
+				speed: 1,
+				setFrameIdx: (_f) => {},
+				reset() {
+					this.time = 0;
+					this.uiAccum = 0;
+				},
+				tick(delta) {
+					if (!this.animate || !this.enabled || this.frameCount < 2) return;
+					this.time += delta * this.speed;
+					const frameDelta = Math.floor(this.time * this.fps);
+					if (frameDelta > 0) {
+						this.time -= frameDelta / this.fps;
+						const newIdx = (frameIdxRef.current + frameDelta) % this.frameCount;
+						if (newIdx !== frameIdxRef.current) frameIdxRef.current = newIdx;
+					}
+					this.uiAccum += delta;
+					if (this.uiAccum >= .1) {
+						this.uiAccum = 0;
+						const cur = frameIdxRef.current;
+						if (cur !== this.lastSyncedIdx) {
+							this.lastSyncedIdx = cur;
+							this.setFrameIdx(cur);
+						}
+					}
+				}
+			};
+		}
+		function createSkeletonOverlay(liftGroup) {
+			return {
+				spheres: null,
+				lines: null,
+				boneGeo: null,
+				dummy: new Object3D(),
+				ensure() {
+					if (this.spheres !== null) return;
+					const sphereGeo = new SphereGeometry(.018, 8, 8);
+					const sphereMat = new MeshBasicMaterial({ color: 16764006 });
+					this.spheres = new InstancedMesh(sphereGeo, sphereMat, 77);
+					const positions = new Float32Array(SOMA77_BONE_CONNECTIONS.length * 6);
+					this.boneGeo = new BufferGeometry();
+					this.boneGeo.setAttribute("position", new BufferAttribute(positions, 3));
+					const boneMat = new LineBasicMaterial({
+						color: 16746564,
+						transparent: true,
+						opacity: .7
+					});
+					this.lines = new LineSegments(this.boneGeo, boneMat);
+					liftGroup.add(this.spheres);
+					liftGroup.add(this.lines);
+				},
+				update(jointsFlat, frameIdx) {
+					if (jointsFlat === null) {
+						if (this.spheres !== null) this.spheres.visible = false;
+						if (this.lines !== null) this.lines.visible = false;
+						return;
+					}
+					this.ensure();
+					this.spheres.visible = true;
+					this.lines.visible = true;
+					const stride = 231;
+					const frameCount = jointsFlat.length / stride;
+					const base = Math.max(0, Math.min(frameIdx, frameCount - 1)) * stride;
+					for (let j = 0; j < 77; j++) {
+						this.dummy.position.set(jointsFlat[base + j * 3] * CM_TO_M, jointsFlat[base + j * 3 + 1] * CM_TO_M, jointsFlat[base + j * 3 + 2] * CM_TO_M);
+						this.dummy.scale.setScalar(1);
+						this.dummy.updateMatrix();
+						this.spheres.setMatrixAt(j, this.dummy.matrix);
+					}
+					this.spheres.instanceMatrix.needsUpdate = true;
+					const pos = this.boneGeo.attributes.position;
+					const arr = pos.array;
+					for (let b = 0; b < SOMA77_BONE_CONNECTIONS.length; b++) {
+						const [pp, cc] = SOMA77_BONE_CONNECTIONS[b];
+						arr[b * 6 + 0] = jointsFlat[base + pp * 3] * CM_TO_M;
+						arr[b * 6 + 1] = jointsFlat[base + pp * 3 + 1] * CM_TO_M;
+						arr[b * 6 + 2] = jointsFlat[base + pp * 3 + 2] * CM_TO_M;
+						arr[b * 6 + 3] = jointsFlat[base + cc * 3] * CM_TO_M;
+						arr[b * 6 + 4] = jointsFlat[base + cc * 3 + 1] * CM_TO_M;
+						arr[b * 6 + 5] = jointsFlat[base + cc * 3 + 2] * CM_TO_M;
+					}
+					pos.needsUpdate = true;
+					this.boneGeo.computeBoundingSphere();
+				}
+			};
+		}
+		//#endregion
+		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/TransformControls.js
+		init_three_module();
+		const _raycaster = new Raycaster();
+		const _tempVector = new Vector3();
+		const _tempVector2 = new Vector3();
+		const _tempQuaternion = new Quaternion();
+		const _unit = {
+			X: new Vector3(1, 0, 0),
+			Y: new Vector3(0, 1, 0),
+			Z: new Vector3(0, 0, 1)
+		};
+		/**
+		* Fires if any type of change (object or property change) is performed. Property changes
+		* are separate events you can add event listeners to. The event type is "propertyname-changed".
+		*
+		* @event TransformControls#change
+		* @type {Object}
+		*/
+		const _changeEvent = { type: "change" };
+		/**
+		* Fires if a pointer (mouse/touch) becomes active.
+		*
+		* @event TransformControls#mouseDown
+		* @type {Object}
+		*/
+		const _mouseDownEvent = {
+			type: "mouseDown",
+			mode: null
+		};
+		/**
+		* Fires if a pointer (mouse/touch) is no longer active.
+		*
+		* @event TransformControls#mouseUp
+		* @type {Object}
+		*/
+		const _mouseUpEvent = {
+			type: "mouseUp",
+			mode: null
+		};
+		/**
+		* Fires if the controlled 3D object is changed.
+		*
+		* @event TransformControls#objectChange
+		* @type {Object}
+		*/
+		const _objectChangeEvent = { type: "objectChange" };
+		/**
+		* This class can be used to transform objects in 3D space by adapting a similar interaction model
+		* of DCC tools like Blender. Unlike other controls, it is not intended to transform the scene's camera.
+		*
+		* `TransformControls` expects that its attached 3D object is part of the scene graph.
+		*
+		* @augments Controls
+		* @three_import import { TransformControls } from 'three/addons/controls/TransformControls.js';
+		*/
+		var TransformControls = class extends Controls {
+			/**
+			* Constructs a new controls instance.
+			*
+			* @param {Camera} camera - The camera of the rendered scene.
+			* @param {?HTMLElement} domElement - The HTML element used for event listeners.
+			*/
+			constructor(camera, domElement = null) {
+				super(void 0, domElement);
+				const root = new TransformControlsRoot(this);
+				this._root = root;
+				const gizmo = new TransformControlsGizmo();
+				this._gizmo = gizmo;
+				root.add(gizmo);
+				const plane = new TransformControlsPlane();
+				this._plane = plane;
+				root.add(plane);
+				const scope = this;
+				function defineProperty(propName, defaultValue) {
+					let propValue = defaultValue;
+					Object.defineProperty(scope, propName, {
+						get: function() {
+							return propValue !== void 0 ? propValue : defaultValue;
 						},
-						onDragLeave: () => setBgDragOver(false),
-						onDrop: handleStageDrop,
-						children: [
-							bgImage && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-								dock: "fill",
-								className: component_module_css_default.ovBg,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-									src: bgImage,
-									alt: "",
-									"aria-hidden": true,
-									className: component_module_css_default.bgImg
+						set: function(value) {
+							if (propValue !== value) {
+								propValue = value;
+								plane[propName] = value;
+								gizmo[propName] = value;
+								scope.dispatchEvent({
+									type: propName + "-changed",
+									value
+								});
+								scope.dispatchEvent(_changeEvent);
+							}
+						}
+					});
+					scope[propName] = defaultValue;
+					plane[propName] = defaultValue;
+					gizmo[propName] = defaultValue;
+				}
+				/**
+				* The camera of the rendered scene.
+				*
+				* @name TransformControls#camera
+				* @type {Camera}
+				*/
+				defineProperty("camera", camera);
+				defineProperty("object", void 0);
+				defineProperty("enabled", true);
+				/**
+				* The current transformation axis.
+				*
+				* @name TransformControls#axis
+				* @type {string}
+				*/
+				defineProperty("axis", null);
+				/**
+				* The current transformation axis.
+				*
+				* @name TransformControls#mode
+				* @type {('translate'|'rotate'|'scale')}
+				* @default 'translate'
+				*/
+				defineProperty("mode", "translate");
+				/**
+				* By default, 3D objects are continuously translated. If you set this property to a numeric
+				* value (world units), you can define in which steps the 3D object should be translated.
+				*
+				* @name TransformControls#translationSnap
+				* @type {?number}
+				* @default null
+				*/
+				defineProperty("translationSnap", null);
+				/**
+				* By default, 3D objects are continuously rotated. If you set this property to a numeric
+				* value (radians), you can define in which steps the 3D object should be rotated.
+				*
+				* @name TransformControls#rotationSnap
+				* @type {?number}
+				* @default null
+				*/
+				defineProperty("rotationSnap", null);
+				/**
+				* By default, 3D objects are continuously scaled. If you set this property to a numeric
+				* value, you can define in which steps the 3D object should be scaled.
+				*
+				* @name TransformControls#scaleSnap
+				* @type {?number}
+				* @default null
+				*/
+				defineProperty("scaleSnap", null);
+				/**
+				* Defines in which coordinate space transformations should be performed.
+				*
+				* @name TransformControls#space
+				* @type {('world'|'local')}
+				* @default 'world'
+				*/
+				defineProperty("space", "world");
+				/**
+				* The size of the helper UI (axes/planes).
+				*
+				* @name TransformControls#size
+				* @type {number}
+				* @default 1
+				*/
+				defineProperty("size", 1);
+				/**
+				* Whether dragging is currently performed or not.
+				*
+				* @name TransformControls#dragging
+				* @type {boolean}
+				* @readonly
+				* @default false
+				*/
+				defineProperty("dragging", false);
+				/**
+				* Whether the x-axis helper should be visible or not.
+				*
+				* @name TransformControls#showX
+				* @type {boolean}
+				* @default true
+				*/
+				defineProperty("showX", true);
+				/**
+				* Whether the y-axis helper should be visible or not.
+				*
+				* @name TransformControls#showY
+				* @type {boolean}
+				* @default true
+				*/
+				defineProperty("showY", true);
+				/**
+				* Whether the z-axis helper should be visible or not.
+				*
+				* @name TransformControls#showZ
+				* @type {boolean}
+				* @default true
+				*/
+				defineProperty("showZ", true);
+				/**
+				* Whether the xy-plane helper should be visible or not.
+				*
+				* @name TransformControls#showXY
+				* @type {boolean}
+				* @default true
+				*/
+				defineProperty("showXY", true);
+				/**
+				* Whether the yz-plane helper should be visible or not.
+				*
+				* @name TransformControls#showYZ
+				* @type {boolean}
+				* @default true
+				*/
+				defineProperty("showYZ", true);
+				/**
+				* Whether the xz-axis helper should be visible or not.
+				*
+				* @name TransformControls#showXZ
+				* @type {boolean}
+				* @default true
+				*/
+				defineProperty("showXZ", true);
+				/**
+				* The minimum allowed X position during translation.
+				*
+				* @name TransformControls#minX
+				* @type {number}
+				* @default -Infinity
+				*/
+				defineProperty("minX", -Infinity);
+				/**
+				* The maximum allowed X position during translation.
+				*
+				* @name TransformControls#maxX
+				* @type {number}
+				* @default Infinity
+				*/
+				defineProperty("maxX", Infinity);
+				/**
+				* The minimum allowed y position during translation.
+				*
+				* @name TransformControls#minY
+				* @type {number}
+				* @default -Infinity
+				*/
+				defineProperty("minY", -Infinity);
+				/**
+				* The maximum allowed Y position during translation.
+				*
+				* @name TransformControls#maxY
+				* @type {number}
+				* @default Infinity
+				*/
+				defineProperty("maxY", Infinity);
+				/**
+				* The minimum allowed z position during translation.
+				*
+				* @name TransformControls#minZ
+				* @type {number}
+				* @default -Infinity
+				*/
+				defineProperty("minZ", -Infinity);
+				/**
+				* The maximum allowed Z position during translation.
+				*
+				* @name TransformControls#maxZ
+				* @type {number}
+				* @default Infinity
+				*/
+				defineProperty("maxZ", Infinity);
+				const worldPosition = new Vector3();
+				const worldPositionStart = new Vector3();
+				const worldQuaternion = new Quaternion();
+				const worldQuaternionStart = new Quaternion();
+				const cameraPosition = new Vector3();
+				const cameraQuaternion = new Quaternion();
+				const pointStart = new Vector3();
+				const pointEnd = new Vector3();
+				const rotationAxis = new Vector3();
+				const rotationAngle = 0;
+				const eye = new Vector3();
+				defineProperty("worldPosition", worldPosition);
+				defineProperty("worldPositionStart", worldPositionStart);
+				defineProperty("worldQuaternion", worldQuaternion);
+				defineProperty("worldQuaternionStart", worldQuaternionStart);
+				defineProperty("cameraPosition", cameraPosition);
+				defineProperty("cameraQuaternion", cameraQuaternion);
+				defineProperty("pointStart", pointStart);
+				defineProperty("pointEnd", pointEnd);
+				defineProperty("rotationAxis", rotationAxis);
+				defineProperty("rotationAngle", rotationAngle);
+				defineProperty("eye", eye);
+				this._offset = new Vector3();
+				this._startNorm = new Vector3();
+				this._endNorm = new Vector3();
+				this._cameraScale = new Vector3();
+				this._parentPosition = new Vector3();
+				this._parentQuaternion = new Quaternion();
+				this._parentQuaternionInv = new Quaternion();
+				this._parentScale = new Vector3();
+				this._worldScaleStart = new Vector3();
+				this._worldQuaternionInv = new Quaternion();
+				this._worldScale = new Vector3();
+				this._positionStart = new Vector3();
+				this._quaternionStart = new Quaternion();
+				this._scaleStart = new Vector3();
+				this._getPointer = getPointer.bind(this);
+				this._onPointerDown = onPointerDown.bind(this);
+				this._onPointerHover = onPointerHover.bind(this);
+				this._onPointerMove = onPointerMove.bind(this);
+				this._onPointerUp = onPointerUp.bind(this);
+				if (domElement !== null) this.connect(domElement);
+			}
+			connect(element) {
+				super.connect(element);
+				this.domElement.addEventListener("pointerdown", this._onPointerDown);
+				this.domElement.addEventListener("pointermove", this._onPointerHover);
+				this.domElement.addEventListener("pointerup", this._onPointerUp);
+				this.domElement.style.touchAction = "none";
+			}
+			disconnect() {
+				this.domElement.removeEventListener("pointerdown", this._onPointerDown);
+				this.domElement.removeEventListener("pointermove", this._onPointerHover);
+				this.domElement.removeEventListener("pointermove", this._onPointerMove);
+				this.domElement.removeEventListener("pointerup", this._onPointerUp);
+				this.domElement.style.touchAction = "";
+			}
+			/**
+			* Returns the visual representation of the controls. Add the helper to your scene to
+			* visually transform the attached  3D object.
+			*
+			* @return {TransformControlsRoot} The helper.
+			*/
+			getHelper() {
+				return this._root;
+			}
+			pointerHover(pointer) {
+				if (this.object === void 0 || this.dragging === true) return;
+				if (pointer !== null) _raycaster.setFromCamera(pointer, this.camera);
+				const intersect = intersectObjectWithRay(this._gizmo.picker[this.mode], _raycaster);
+				if (intersect) this.axis = intersect.object.name;
+				else this.axis = null;
+			}
+			pointerDown(pointer) {
+				if (this.object === void 0 || this.dragging === true || pointer != null && pointer.button !== 0) return;
+				if (this.axis !== null) {
+					if (pointer !== null) _raycaster.setFromCamera(pointer, this.camera);
+					const planeIntersect = intersectObjectWithRay(this._plane, _raycaster, true);
+					if (planeIntersect) {
+						this.object.updateMatrixWorld();
+						this.object.parent.updateMatrixWorld();
+						this._positionStart.copy(this.object.position);
+						this._quaternionStart.copy(this.object.quaternion);
+						this._scaleStart.copy(this.object.scale);
+						this.object.matrixWorld.decompose(this.worldPositionStart, this.worldQuaternionStart, this._worldScaleStart);
+						this.pointStart.copy(planeIntersect.point).sub(this.worldPositionStart);
+					}
+					this.dragging = true;
+					_mouseDownEvent.mode = this.mode;
+					this.dispatchEvent(_mouseDownEvent);
+				}
+			}
+			pointerMove(pointer) {
+				const axis = this.axis;
+				const mode = this.mode;
+				const object = this.object;
+				let space = this.space;
+				if (mode === "scale") space = "local";
+				else if (axis === "E" || axis === "XYZE" || axis === "XYZ") space = "world";
+				if (object === void 0 || axis === null || this.dragging === false || pointer !== null && pointer.button !== -1) return;
+				if (pointer !== null) _raycaster.setFromCamera(pointer, this.camera);
+				const planeIntersect = intersectObjectWithRay(this._plane, _raycaster, true);
+				if (!planeIntersect) return;
+				this.pointEnd.copy(planeIntersect.point).sub(this.worldPositionStart);
+				if (mode === "translate") {
+					this._offset.copy(this.pointEnd).sub(this.pointStart);
+					if (space === "local" && axis !== "XYZ") this._offset.applyQuaternion(this._worldQuaternionInv);
+					if (axis.indexOf("X") === -1) this._offset.x = 0;
+					if (axis.indexOf("Y") === -1) this._offset.y = 0;
+					if (axis.indexOf("Z") === -1) this._offset.z = 0;
+					if (space === "local" && axis !== "XYZ") this._offset.applyQuaternion(this._quaternionStart).divide(this._parentScale);
+					else this._offset.applyQuaternion(this._parentQuaternionInv).divide(this._parentScale);
+					object.position.copy(this._offset).add(this._positionStart);
+					if (this.translationSnap) {
+						if (space === "local") {
+							object.position.applyQuaternion(_tempQuaternion.copy(this._quaternionStart).invert());
+							if (axis.search("X") !== -1) object.position.x = Math.round(object.position.x / this.translationSnap) * this.translationSnap;
+							if (axis.search("Y") !== -1) object.position.y = Math.round(object.position.y / this.translationSnap) * this.translationSnap;
+							if (axis.search("Z") !== -1) object.position.z = Math.round(object.position.z / this.translationSnap) * this.translationSnap;
+							object.position.applyQuaternion(this._quaternionStart);
+						}
+						if (space === "world") {
+							if (object.parent) object.position.add(_tempVector.setFromMatrixPosition(object.parent.matrixWorld));
+							if (axis.search("X") !== -1) object.position.x = Math.round(object.position.x / this.translationSnap) * this.translationSnap;
+							if (axis.search("Y") !== -1) object.position.y = Math.round(object.position.y / this.translationSnap) * this.translationSnap;
+							if (axis.search("Z") !== -1) object.position.z = Math.round(object.position.z / this.translationSnap) * this.translationSnap;
+							if (object.parent) object.position.sub(_tempVector.setFromMatrixPosition(object.parent.matrixWorld));
+						}
+					}
+					object.position.x = Math.max(this.minX, Math.min(this.maxX, object.position.x));
+					object.position.y = Math.max(this.minY, Math.min(this.maxY, object.position.y));
+					object.position.z = Math.max(this.minZ, Math.min(this.maxZ, object.position.z));
+				} else if (mode === "scale") {
+					if (axis.search("XYZ") !== -1) {
+						let d = this.pointEnd.length() / this.pointStart.length();
+						if (this.pointEnd.dot(this.pointStart) < 0) d *= -1;
+						_tempVector2.set(d, d, d);
+					} else {
+						_tempVector.copy(this.pointStart);
+						_tempVector2.copy(this.pointEnd);
+						_tempVector.applyQuaternion(this._worldQuaternionInv);
+						_tempVector2.applyQuaternion(this._worldQuaternionInv);
+						_tempVector2.divide(_tempVector);
+						if (axis.search("X") === -1) _tempVector2.x = 1;
+						if (axis.search("Y") === -1) _tempVector2.y = 1;
+						if (axis.search("Z") === -1) _tempVector2.z = 1;
+					}
+					object.scale.copy(this._scaleStart).multiply(_tempVector2);
+					if (this.scaleSnap) {
+						if (axis.search("X") !== -1) object.scale.x = Math.round(object.scale.x / this.scaleSnap) * this.scaleSnap || this.scaleSnap;
+						if (axis.search("Y") !== -1) object.scale.y = Math.round(object.scale.y / this.scaleSnap) * this.scaleSnap || this.scaleSnap;
+						if (axis.search("Z") !== -1) object.scale.z = Math.round(object.scale.z / this.scaleSnap) * this.scaleSnap || this.scaleSnap;
+					}
+				} else if (mode === "rotate") {
+					this._offset.copy(this.pointEnd).sub(this.pointStart);
+					const ROTATION_SPEED = 20 / this.worldPosition.distanceTo(_tempVector.setFromMatrixPosition(this.camera.matrixWorld));
+					let _inPlaneRotation = false;
+					if (axis === "XYZE") {
+						this.rotationAxis.copy(this._offset).cross(this.eye).normalize();
+						this.rotationAngle = this._offset.dot(_tempVector.copy(this.rotationAxis).cross(this.eye)) * ROTATION_SPEED;
+					} else if (axis === "X" || axis === "Y" || axis === "Z") {
+						this.rotationAxis.copy(_unit[axis]);
+						_tempVector.copy(_unit[axis]);
+						if (space === "local") _tempVector.applyQuaternion(this.worldQuaternion);
+						_tempVector.cross(this.eye);
+						if (_tempVector.length() === 0) _inPlaneRotation = true;
+						else this.rotationAngle = this._offset.dot(_tempVector.normalize()) * ROTATION_SPEED;
+					}
+					if (axis === "E" || _inPlaneRotation) {
+						this.rotationAxis.copy(this.eye);
+						this.rotationAngle = this.pointEnd.angleTo(this.pointStart);
+						this._startNorm.copy(this.pointStart).normalize();
+						this._endNorm.copy(this.pointEnd).normalize();
+						this.rotationAngle *= this._endNorm.cross(this._startNorm).dot(this.eye) < 0 ? 1 : -1;
+					}
+					if (this.rotationSnap) this.rotationAngle = Math.round(this.rotationAngle / this.rotationSnap) * this.rotationSnap;
+					if (space === "local" && axis !== "E" && axis !== "XYZE") {
+						object.quaternion.copy(this._quaternionStart);
+						object.quaternion.multiply(_tempQuaternion.setFromAxisAngle(this.rotationAxis, this.rotationAngle)).normalize();
+					} else {
+						this.rotationAxis.applyQuaternion(this._parentQuaternionInv);
+						object.quaternion.copy(_tempQuaternion.setFromAxisAngle(this.rotationAxis, this.rotationAngle));
+						object.quaternion.multiply(this._quaternionStart).normalize();
+					}
+				}
+				this.dispatchEvent(_changeEvent);
+				this.dispatchEvent(_objectChangeEvent);
+			}
+			pointerUp(pointer) {
+				if (pointer !== null && pointer.button !== 0) return;
+				if (this.dragging && this.axis !== null) {
+					_mouseUpEvent.mode = this.mode;
+					this.dispatchEvent(_mouseUpEvent);
+				}
+				this.dragging = false;
+				this.axis = null;
+			}
+			dispose() {
+				this.disconnect();
+				this._root.dispose();
+			}
+			/**
+			* Sets the 3D object that should be transformed and ensures the controls UI is visible.
+			*
+			* @param {Object3D} object -  The 3D object that should be transformed.
+			* @return {TransformControls} A reference to this controls.
+			*/
+			attach(object) {
+				this.object = object;
+				this._root.visible = true;
+				return this;
+			}
+			/**
+			* Removes the current 3D object from the controls and makes the helper UI invisible.
+			*
+			* @return {TransformControls} A reference to this controls.
+			*/
+			detach() {
+				this.object = void 0;
+				this.axis = null;
+				this._root.visible = false;
+				return this;
+			}
+			/**
+			* Resets the object's position, rotation and scale to when the current transform began.
+			*/
+			reset() {
+				if (!this.enabled) return;
+				if (this.dragging) {
+					this.object.position.copy(this._positionStart);
+					this.object.quaternion.copy(this._quaternionStart);
+					this.object.scale.copy(this._scaleStart);
+					this.dispatchEvent(_changeEvent);
+					this.dispatchEvent(_objectChangeEvent);
+					this.pointStart.copy(this.pointEnd);
+				}
+			}
+			/**
+			* Returns the raycaster that is used for user interaction. This object is shared between all
+			* instances of `TransformControls`.
+			*
+			* @returns {Raycaster} The internal raycaster.
+			*/
+			getRaycaster() {
+				return _raycaster;
+			}
+			/**
+			* Returns the transformation mode.
+			*
+			* @returns {'translate'|'rotate'|'scale'} The transformation mode.
+			*/
+			getMode() {
+				return this.mode;
+			}
+			/**
+			* Sets the given transformation mode.
+			*
+			* @param {'translate'|'rotate'|'scale'} mode - The transformation mode to set.
+			*/
+			setMode(mode) {
+				this.mode = mode;
+			}
+			/**
+			* Sets the translation snap.
+			*
+			* @param {?number} translationSnap - The translation snap to set.
+			*/
+			setTranslationSnap(translationSnap) {
+				this.translationSnap = translationSnap;
+			}
+			/**
+			* Sets the rotation snap.
+			*
+			* @param {?number} rotationSnap - The rotation snap to set.
+			*/
+			setRotationSnap(rotationSnap) {
+				this.rotationSnap = rotationSnap;
+			}
+			/**
+			* Sets the scale snap.
+			*
+			* @param {?number} scaleSnap - The scale snap to set.
+			*/
+			setScaleSnap(scaleSnap) {
+				this.scaleSnap = scaleSnap;
+			}
+			/**
+			* Sets the size of the helper UI.
+			*
+			* @param {number} size - The size to set.
+			*/
+			setSize(size) {
+				this.size = size;
+			}
+			/**
+			* Sets the coordinate space in which transformations are applied.
+			*
+			* @param {'world'|'local'} space - The space to set.
+			*/
+			setSpace(space) {
+				this.space = space;
+			}
+			/**
+			* Sets the colors of the control's gizmo.
+			*
+			* @param {number|Color|string} xAxis - The x-axis color.
+			* @param {number|Color|string} yAxis - The y-axis color.
+			* @param {number|Color|string} zAxis - The z-axis color.
+			* @param {number|Color|string} active - The color for active elements.
+			*/
+			setColors(xAxis, yAxis, zAxis, active) {
+				const materialLib = this._gizmo.materialLib;
+				materialLib.xAxis.color.set(xAxis);
+				materialLib.yAxis.color.set(yAxis);
+				materialLib.zAxis.color.set(zAxis);
+				materialLib.active.color.set(active);
+				materialLib.xAxisTransparent.color.set(xAxis);
+				materialLib.yAxisTransparent.color.set(yAxis);
+				materialLib.zAxisTransparent.color.set(zAxis);
+				materialLib.activeTransparent.color.set(active);
+				if (materialLib.xAxis._color) materialLib.xAxis._color.set(xAxis);
+				if (materialLib.yAxis._color) materialLib.yAxis._color.set(yAxis);
+				if (materialLib.zAxis._color) materialLib.zAxis._color.set(zAxis);
+				if (materialLib.active._color) materialLib.active._color.set(active);
+				if (materialLib.xAxisTransparent._color) materialLib.xAxisTransparent._color.set(xAxis);
+				if (materialLib.yAxisTransparent._color) materialLib.yAxisTransparent._color.set(yAxis);
+				if (materialLib.zAxisTransparent._color) materialLib.zAxisTransparent._color.set(zAxis);
+				if (materialLib.activeTransparent._color) materialLib.activeTransparent._color.set(active);
+			}
+		};
+		function getPointer(event) {
+			if (this.domElement.ownerDocument.pointerLockElement) return {
+				x: 0,
+				y: 0,
+				button: event.button
+			};
+			else {
+				const rect = this.domElement.getBoundingClientRect();
+				return {
+					x: (event.clientX - rect.left) / rect.width * 2 - 1,
+					y: -(event.clientY - rect.top) / rect.height * 2 + 1,
+					button: event.button
+				};
+			}
+		}
+		function onPointerHover(event) {
+			if (!this.enabled) return;
+			switch (event.pointerType) {
+				case "mouse":
+				case "pen": this.pointerHover(this._getPointer(event));
+			}
+		}
+		function onPointerDown(event) {
+			if (!this.enabled) return;
+			if (!document.pointerLockElement) this.domElement.setPointerCapture(event.pointerId);
+			this.domElement.addEventListener("pointermove", this._onPointerMove);
+			this.pointerHover(this._getPointer(event));
+			this.pointerDown(this._getPointer(event));
+		}
+		function onPointerMove(event) {
+			if (!this.enabled) return;
+			this.pointerMove(this._getPointer(event));
+		}
+		function onPointerUp(event) {
+			if (!this.enabled) return;
+			this.domElement.releasePointerCapture(event.pointerId);
+			this.domElement.removeEventListener("pointermove", this._onPointerMove);
+			this.pointerUp(this._getPointer(event));
+		}
+		function intersectObjectWithRay(object, raycaster, includeInvisible) {
+			const allIntersections = raycaster.intersectObject(object, true);
+			for (let i = 0; i < allIntersections.length; i++) if (allIntersections[i].object.visible || includeInvisible) return allIntersections[i];
+			return false;
+		}
+		const _tempEuler = new Euler();
+		const _alignVector = new Vector3(0, 1, 0);
+		const _zeroVector = new Vector3(0, 0, 0);
+		const _lookAtMatrix = new Matrix4();
+		const _tempQuaternion2 = new Quaternion();
+		const _identityQuaternion = new Quaternion();
+		const _dirVector = new Vector3();
+		const _tempMatrix = new Matrix4();
+		const _unitX = new Vector3(1, 0, 0);
+		const _unitY = new Vector3(0, 1, 0);
+		const _unitZ = new Vector3(0, 0, 1);
+		const _v1 = new Vector3();
+		const _v2 = new Vector3();
+		const _v3 = new Vector3();
+		var TransformControlsRoot = class extends Object3D {
+			constructor(controls) {
+				super();
+				this.isTransformControlsRoot = true;
+				this.controls = controls;
+				this.visible = false;
+			}
+			updateMatrixWorld(force) {
+				const controls = this.controls;
+				if (controls.object !== void 0) {
+					controls.object.updateMatrixWorld();
+					if (controls.object.parent === null) console.error("TransformControls: The attached 3D object must be a part of the scene graph.");
+					else controls.object.parent.matrixWorld.decompose(controls._parentPosition, controls._parentQuaternion, controls._parentScale);
+					controls.object.matrixWorld.decompose(controls.worldPosition, controls.worldQuaternion, controls._worldScale);
+					controls._parentQuaternionInv.copy(controls._parentQuaternion).invert();
+					controls._worldQuaternionInv.copy(controls.worldQuaternion).invert();
+				}
+				controls.camera.updateMatrixWorld();
+				controls.camera.matrixWorld.decompose(controls.cameraPosition, controls.cameraQuaternion, controls._cameraScale);
+				if (controls.camera.isOrthographicCamera) controls.camera.getWorldDirection(controls.eye).negate();
+				else controls.eye.copy(controls.cameraPosition).sub(controls.worldPosition).normalize();
+				super.updateMatrixWorld(force);
+			}
+			dispose() {
+				this.traverse(function(child) {
+					if (child.geometry) child.geometry.dispose();
+					if (child.material) child.material.dispose();
+				});
+			}
+		};
+		var TransformControlsGizmo = class extends Object3D {
+			constructor() {
+				super();
+				this.isTransformControlsGizmo = true;
+				this.type = "TransformControlsGizmo";
+				const gizmoMaterial = new MeshBasicMaterial({
+					depthTest: false,
+					depthWrite: false,
+					fog: false,
+					toneMapped: false,
+					transparent: true
+				});
+				const gizmoLineMaterial = new LineBasicMaterial({
+					depthTest: false,
+					depthWrite: false,
+					fog: false,
+					toneMapped: false,
+					transparent: true
+				});
+				const matInvisible = gizmoMaterial.clone();
+				matInvisible.opacity = .15;
+				const matHelper = gizmoLineMaterial.clone();
+				matHelper.opacity = .5;
+				const matRed = gizmoMaterial.clone();
+				matRed.color.setHex(16711680);
+				const matGreen = gizmoMaterial.clone();
+				matGreen.color.setHex(65280);
+				const matBlue = gizmoMaterial.clone();
+				matBlue.color.setHex(255);
+				const matRedTransparent = gizmoMaterial.clone();
+				matRedTransparent.color.setHex(16711680);
+				matRedTransparent.opacity = .5;
+				const matGreenTransparent = gizmoMaterial.clone();
+				matGreenTransparent.color.setHex(65280);
+				matGreenTransparent.opacity = .5;
+				const matBlueTransparent = gizmoMaterial.clone();
+				matBlueTransparent.color.setHex(255);
+				matBlueTransparent.opacity = .5;
+				const matWhiteTransparent = gizmoMaterial.clone();
+				matWhiteTransparent.opacity = .25;
+				const matYellowTransparent = gizmoMaterial.clone();
+				matYellowTransparent.color.setHex(16776960);
+				matYellowTransparent.opacity = .25;
+				const matYellow = gizmoMaterial.clone();
+				matYellow.color.setHex(16776960);
+				const matGray = gizmoMaterial.clone();
+				matGray.color.setHex(7895160);
+				this.materialLib = {
+					xAxis: matRed,
+					yAxis: matGreen,
+					zAxis: matBlue,
+					active: matYellow,
+					xAxisTransparent: matRedTransparent,
+					yAxisTransparent: matGreenTransparent,
+					zAxisTransparent: matBlueTransparent,
+					activeTransparent: matYellowTransparent
+				};
+				const arrowGeometry = new CylinderGeometry(0, .04, .1, 12);
+				arrowGeometry.translate(0, .05, 0);
+				const scaleHandleGeometry = new BoxGeometry(.08, .08, .08);
+				scaleHandleGeometry.translate(0, .04, 0);
+				const lineGeometry = new BufferGeometry();
+				lineGeometry.setAttribute("position", new Float32BufferAttribute([
+					0,
+					0,
+					0,
+					1,
+					0,
+					0
+				], 3));
+				const lineGeometry2 = new CylinderGeometry(.0075, .0075, .5, 3);
+				lineGeometry2.translate(0, .25, 0);
+				function CircleGeometry(radius, arc) {
+					const geometry = new TorusGeometry(radius, .0075, 3, 64, arc * Math.PI * 2);
+					geometry.rotateY(Math.PI / 2);
+					geometry.rotateX(Math.PI / 2);
+					return geometry;
+				}
+				function TranslateHelperGeometry() {
+					const geometry = new BufferGeometry();
+					geometry.setAttribute("position", new Float32BufferAttribute([
+						0,
+						0,
+						0,
+						1,
+						1,
+						1
+					], 3));
+					return geometry;
+				}
+				const gizmoTranslate = {
+					X: [
+						[
+							new Mesh(arrowGeometry, matRed),
+							[
+								.5,
+								0,
+								0
+							],
+							[
+								0,
+								0,
+								-Math.PI / 2
+							]
+						],
+						[
+							new Mesh(arrowGeometry, matRed),
+							[
+								-.5,
+								0,
+								0
+							],
+							[
+								0,
+								0,
+								Math.PI / 2
+							]
+						],
+						[
+							new Mesh(lineGeometry2, matRed),
+							[
+								0,
+								0,
+								0
+							],
+							[
+								0,
+								0,
+								-Math.PI / 2
+							]
+						]
+					],
+					Y: [
+						[new Mesh(arrowGeometry, matGreen), [
+							0,
+							.5,
+							0
+						]],
+						[
+							new Mesh(arrowGeometry, matGreen),
+							[
+								0,
+								-.5,
+								0
+							],
+							[
+								Math.PI,
+								0,
+								0
+							]
+						],
+						[new Mesh(lineGeometry2, matGreen)]
+					],
+					Z: [
+						[
+							new Mesh(arrowGeometry, matBlue),
+							[
+								0,
+								0,
+								.5
+							],
+							[
+								Math.PI / 2,
+								0,
+								0
+							]
+						],
+						[
+							new Mesh(arrowGeometry, matBlue),
+							[
+								0,
+								0,
+								-.5
+							],
+							[
+								-Math.PI / 2,
+								0,
+								0
+							]
+						],
+						[
+							new Mesh(lineGeometry2, matBlue),
+							null,
+							[
+								Math.PI / 2,
+								0,
+								0
+							]
+						]
+					],
+					XYZ: [[new Mesh(new OctahedronGeometry(.1, 0), matWhiteTransparent), [
+						0,
+						0,
+						0
+					]]],
+					XY: [[new Mesh(new BoxGeometry(.15, .15, .01), matBlueTransparent), [
+						.15,
+						.15,
+						0
+					]]],
+					YZ: [[
+						new Mesh(new BoxGeometry(.15, .15, .01), matRedTransparent),
+						[
+							0,
+							.15,
+							.15
+						],
+						[
+							0,
+							Math.PI / 2,
+							0
+						]
+					]],
+					XZ: [[
+						new Mesh(new BoxGeometry(.15, .15, .01), matGreenTransparent),
+						[
+							.15,
+							0,
+							.15
+						],
+						[
+							-Math.PI / 2,
+							0,
+							0
+						]
+					]]
+				};
+				const pickerTranslate = {
+					X: [[
+						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
+						[
+							.3,
+							0,
+							0
+						],
+						[
+							0,
+							0,
+							-Math.PI / 2
+						]
+					], [
+						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
+						[
+							-.3,
+							0,
+							0
+						],
+						[
+							0,
+							0,
+							Math.PI / 2
+						]
+					]],
+					Y: [[new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible), [
+						0,
+						.3,
+						0
+					]], [
+						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
+						[
+							0,
+							-.3,
+							0
+						],
+						[
+							0,
+							0,
+							Math.PI
+						]
+					]],
+					Z: [[
+						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
+						[
+							0,
+							0,
+							.3
+						],
+						[
+							Math.PI / 2,
+							0,
+							0
+						]
+					], [
+						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
+						[
+							0,
+							0,
+							-.3
+						],
+						[
+							-Math.PI / 2,
+							0,
+							0
+						]
+					]],
+					XYZ: [[new Mesh(new OctahedronGeometry(.2, 0), matInvisible)]],
+					XY: [[new Mesh(new BoxGeometry(.2, .2, .01), matInvisible), [
+						.15,
+						.15,
+						0
+					]]],
+					YZ: [[
+						new Mesh(new BoxGeometry(.2, .2, .01), matInvisible),
+						[
+							0,
+							.15,
+							.15
+						],
+						[
+							0,
+							Math.PI / 2,
+							0
+						]
+					]],
+					XZ: [[
+						new Mesh(new BoxGeometry(.2, .2, .01), matInvisible),
+						[
+							.15,
+							0,
+							.15
+						],
+						[
+							-Math.PI / 2,
+							0,
+							0
+						]
+					]]
+				};
+				const helperTranslate = {
+					START: [[
+						new Mesh(new OctahedronGeometry(.01, 2), matHelper),
+						null,
+						null,
+						null,
+						"helper"
+					]],
+					END: [[
+						new Mesh(new OctahedronGeometry(.01, 2), matHelper),
+						null,
+						null,
+						null,
+						"helper"
+					]],
+					DELTA: [[
+						new Line(TranslateHelperGeometry(), matHelper),
+						null,
+						null,
+						null,
+						"helper"
+					]],
+					X: [[
+						new Line(lineGeometry, matHelper),
+						[
+							-1e3,
+							0,
+							0
+						],
+						null,
+						[
+							1e6,
+							1,
+							1
+						],
+						"helper"
+					]],
+					Y: [[
+						new Line(lineGeometry, matHelper),
+						[
+							0,
+							-1e3,
+							0
+						],
+						[
+							0,
+							0,
+							Math.PI / 2
+						],
+						[
+							1e6,
+							1,
+							1
+						],
+						"helper"
+					]],
+					Z: [[
+						new Line(lineGeometry, matHelper),
+						[
+							0,
+							0,
+							-1e3
+						],
+						[
+							0,
+							-Math.PI / 2,
+							0
+						],
+						[
+							1e6,
+							1,
+							1
+						],
+						"helper"
+					]]
+				};
+				const gizmoRotate = {
+					XYZE: [[
+						new Mesh(CircleGeometry(.5, 1), matGray),
+						null,
+						[
+							0,
+							Math.PI / 2,
+							0
+						]
+					]],
+					X: [[new Mesh(CircleGeometry(.5, .5), matRed)]],
+					Y: [[
+						new Mesh(CircleGeometry(.5, .5), matGreen),
+						null,
+						[
+							0,
+							0,
+							-Math.PI / 2
+						]
+					]],
+					Z: [[
+						new Mesh(CircleGeometry(.5, .5), matBlue),
+						null,
+						[
+							0,
+							Math.PI / 2,
+							0
+						]
+					]],
+					E: [[
+						new Mesh(CircleGeometry(.75, 1), matYellowTransparent),
+						null,
+						[
+							0,
+							Math.PI / 2,
+							0
+						]
+					]]
+				};
+				const helperRotate = { AXIS: [[
+					new Line(lineGeometry, matHelper),
+					[
+						-1e3,
+						0,
+						0
+					],
+					null,
+					[
+						1e6,
+						1,
+						1
+					],
+					"helper"
+				]] };
+				const pickerRotate = {
+					XYZE: [[new Mesh(new SphereGeometry(.25, 10, 8), matInvisible)]],
+					X: [[
+						new Mesh(new TorusGeometry(.5, .1, 4, 24), matInvisible),
+						[
+							0,
+							0,
+							0
+						],
+						[
+							0,
+							-Math.PI / 2,
+							-Math.PI / 2
+						]
+					]],
+					Y: [[
+						new Mesh(new TorusGeometry(.5, .1, 4, 24), matInvisible),
+						[
+							0,
+							0,
+							0
+						],
+						[
+							Math.PI / 2,
+							0,
+							0
+						]
+					]],
+					Z: [[
+						new Mesh(new TorusGeometry(.5, .1, 4, 24), matInvisible),
+						[
+							0,
+							0,
+							0
+						],
+						[
+							0,
+							0,
+							-Math.PI / 2
+						]
+					]],
+					E: [[new Mesh(new TorusGeometry(.75, .1, 2, 24), matInvisible)]]
+				};
+				const gizmoScale = {
+					X: [
+						[
+							new Mesh(scaleHandleGeometry, matRed),
+							[
+								.5,
+								0,
+								0
+							],
+							[
+								0,
+								0,
+								-Math.PI / 2
+							]
+						],
+						[
+							new Mesh(lineGeometry2, matRed),
+							[
+								0,
+								0,
+								0
+							],
+							[
+								0,
+								0,
+								-Math.PI / 2
+							]
+						],
+						[
+							new Mesh(scaleHandleGeometry, matRed),
+							[
+								-.5,
+								0,
+								0
+							],
+							[
+								0,
+								0,
+								Math.PI / 2
+							]
+						]
+					],
+					Y: [
+						[new Mesh(scaleHandleGeometry, matGreen), [
+							0,
+							.5,
+							0
+						]],
+						[new Mesh(lineGeometry2, matGreen)],
+						[
+							new Mesh(scaleHandleGeometry, matGreen),
+							[
+								0,
+								-.5,
+								0
+							],
+							[
+								0,
+								0,
+								Math.PI
+							]
+						]
+					],
+					Z: [
+						[
+							new Mesh(scaleHandleGeometry, matBlue),
+							[
+								0,
+								0,
+								.5
+							],
+							[
+								Math.PI / 2,
+								0,
+								0
+							]
+						],
+						[
+							new Mesh(lineGeometry2, matBlue),
+							[
+								0,
+								0,
+								0
+							],
+							[
+								Math.PI / 2,
+								0,
+								0
+							]
+						],
+						[
+							new Mesh(scaleHandleGeometry, matBlue),
+							[
+								0,
+								0,
+								-.5
+							],
+							[
+								-Math.PI / 2,
+								0,
+								0
+							]
+						]
+					],
+					XY: [[new Mesh(new BoxGeometry(.15, .15, .01), matBlueTransparent), [
+						.15,
+						.15,
+						0
+					]]],
+					YZ: [[
+						new Mesh(new BoxGeometry(.15, .15, .01), matRedTransparent),
+						[
+							0,
+							.15,
+							.15
+						],
+						[
+							0,
+							Math.PI / 2,
+							0
+						]
+					]],
+					XZ: [[
+						new Mesh(new BoxGeometry(.15, .15, .01), matGreenTransparent),
+						[
+							.15,
+							0,
+							.15
+						],
+						[
+							-Math.PI / 2,
+							0,
+							0
+						]
+					]],
+					XYZ: [[new Mesh(new BoxGeometry(.1, .1, .1), matWhiteTransparent)]]
+				};
+				const pickerScale = {
+					X: [[
+						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
+						[
+							.3,
+							0,
+							0
+						],
+						[
+							0,
+							0,
+							-Math.PI / 2
+						]
+					], [
+						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
+						[
+							-.3,
+							0,
+							0
+						],
+						[
+							0,
+							0,
+							Math.PI / 2
+						]
+					]],
+					Y: [[new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible), [
+						0,
+						.3,
+						0
+					]], [
+						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
+						[
+							0,
+							-.3,
+							0
+						],
+						[
+							0,
+							0,
+							Math.PI
+						]
+					]],
+					Z: [[
+						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
+						[
+							0,
+							0,
+							.3
+						],
+						[
+							Math.PI / 2,
+							0,
+							0
+						]
+					], [
+						new Mesh(new CylinderGeometry(.2, 0, .6, 4), matInvisible),
+						[
+							0,
+							0,
+							-.3
+						],
+						[
+							-Math.PI / 2,
+							0,
+							0
+						]
+					]],
+					XY: [[new Mesh(new BoxGeometry(.2, .2, .01), matInvisible), [
+						.15,
+						.15,
+						0
+					]]],
+					YZ: [[
+						new Mesh(new BoxGeometry(.2, .2, .01), matInvisible),
+						[
+							0,
+							.15,
+							.15
+						],
+						[
+							0,
+							Math.PI / 2,
+							0
+						]
+					]],
+					XZ: [[
+						new Mesh(new BoxGeometry(.2, .2, .01), matInvisible),
+						[
+							.15,
+							0,
+							.15
+						],
+						[
+							-Math.PI / 2,
+							0,
+							0
+						]
+					]],
+					XYZ: [[new Mesh(new BoxGeometry(.2, .2, .2), matInvisible), [
+						0,
+						0,
+						0
+					]]]
+				};
+				const helperScale = {
+					X: [[
+						new Line(lineGeometry, matHelper),
+						[
+							-1e3,
+							0,
+							0
+						],
+						null,
+						[
+							1e6,
+							1,
+							1
+						],
+						"helper"
+					]],
+					Y: [[
+						new Line(lineGeometry, matHelper),
+						[
+							0,
+							-1e3,
+							0
+						],
+						[
+							0,
+							0,
+							Math.PI / 2
+						],
+						[
+							1e6,
+							1,
+							1
+						],
+						"helper"
+					]],
+					Z: [[
+						new Line(lineGeometry, matHelper),
+						[
+							0,
+							0,
+							-1e3
+						],
+						[
+							0,
+							-Math.PI / 2,
+							0
+						],
+						[
+							1e6,
+							1,
+							1
+						],
+						"helper"
+					]]
+				};
+				function setupGizmo(gizmoMap) {
+					const gizmo = new Object3D();
+					for (const name in gizmoMap) for (let i = gizmoMap[name].length; i--;) {
+						const object = gizmoMap[name][i][0].clone();
+						const position = gizmoMap[name][i][1];
+						const rotation = gizmoMap[name][i][2];
+						const scale = gizmoMap[name][i][3];
+						const tag = gizmoMap[name][i][4];
+						object.name = name;
+						object.tag = tag;
+						if (position) object.position.set(position[0], position[1], position[2]);
+						if (rotation) object.rotation.set(rotation[0], rotation[1], rotation[2]);
+						if (scale) object.scale.set(scale[0], scale[1], scale[2]);
+						object.updateMatrix();
+						const tempGeometry = object.geometry.clone();
+						tempGeometry.applyMatrix4(object.matrix);
+						object.geometry = tempGeometry;
+						object.renderOrder = Infinity;
+						object.position.set(0, 0, 0);
+						object.rotation.set(0, 0, 0);
+						object.scale.set(1, 1, 1);
+						gizmo.add(object);
+					}
+					return gizmo;
+				}
+				this.gizmo = {};
+				this.picker = {};
+				this.helper = {};
+				this.add(this.gizmo["translate"] = setupGizmo(gizmoTranslate));
+				this.add(this.gizmo["rotate"] = setupGizmo(gizmoRotate));
+				this.add(this.gizmo["scale"] = setupGizmo(gizmoScale));
+				this.add(this.picker["translate"] = setupGizmo(pickerTranslate));
+				this.add(this.picker["rotate"] = setupGizmo(pickerRotate));
+				this.add(this.picker["scale"] = setupGizmo(pickerScale));
+				this.add(this.helper["translate"] = setupGizmo(helperTranslate));
+				this.add(this.helper["rotate"] = setupGizmo(helperRotate));
+				this.add(this.helper["scale"] = setupGizmo(helperScale));
+				this.picker["translate"].visible = false;
+				this.picker["rotate"].visible = false;
+				this.picker["scale"].visible = false;
+			}
+			updateMatrixWorld(force) {
+				const quaternion = (this.mode === "scale" ? "local" : this.space) === "local" ? this.worldQuaternion : _identityQuaternion;
+				this.gizmo["translate"].visible = this.mode === "translate";
+				this.gizmo["rotate"].visible = this.mode === "rotate";
+				this.gizmo["scale"].visible = this.mode === "scale";
+				this.helper["translate"].visible = this.mode === "translate";
+				this.helper["rotate"].visible = this.mode === "rotate";
+				this.helper["scale"].visible = this.mode === "scale";
+				let handles = [];
+				handles = handles.concat(this.picker[this.mode].children);
+				handles = handles.concat(this.gizmo[this.mode].children);
+				handles = handles.concat(this.helper[this.mode].children);
+				for (let i = 0; i < handles.length; i++) {
+					const handle = handles[i];
+					handle.visible = true;
+					handle.rotation.set(0, 0, 0);
+					handle.position.copy(this.worldPosition);
+					let factor;
+					if (this.camera.isOrthographicCamera) factor = (this.camera.top - this.camera.bottom) / this.camera.zoom;
+					else factor = this.worldPosition.distanceTo(this.cameraPosition) * Math.min(1.9 * Math.tan(Math.PI * this.camera.fov / 360) / this.camera.zoom, 7);
+					handle.scale.set(1, 1, 1).multiplyScalar(factor * this.size / 4);
+					if (handle.tag === "helper") {
+						handle.visible = false;
+						if (handle.name === "AXIS") {
+							handle.visible = !!this.axis;
+							if (this.axis === "X") {
+								_tempQuaternion.setFromEuler(_tempEuler.set(0, 0, 0));
+								handle.quaternion.copy(quaternion).multiply(_tempQuaternion);
+								if (Math.abs(_alignVector.copy(_unitX).applyQuaternion(quaternion).dot(this.eye)) > .9) handle.visible = false;
+							}
+							if (this.axis === "Y") {
+								_tempQuaternion.setFromEuler(_tempEuler.set(0, 0, Math.PI / 2));
+								handle.quaternion.copy(quaternion).multiply(_tempQuaternion);
+								if (Math.abs(_alignVector.copy(_unitY).applyQuaternion(quaternion).dot(this.eye)) > .9) handle.visible = false;
+							}
+							if (this.axis === "Z") {
+								_tempQuaternion.setFromEuler(_tempEuler.set(0, Math.PI / 2, 0));
+								handle.quaternion.copy(quaternion).multiply(_tempQuaternion);
+								if (Math.abs(_alignVector.copy(_unitZ).applyQuaternion(quaternion).dot(this.eye)) > .9) handle.visible = false;
+							}
+							if (this.axis === "XYZE") {
+								_tempQuaternion.setFromEuler(_tempEuler.set(0, Math.PI / 2, 0));
+								_alignVector.copy(this.rotationAxis);
+								handle.quaternion.setFromRotationMatrix(_lookAtMatrix.lookAt(_zeroVector, _alignVector, _unitY));
+								handle.quaternion.multiply(_tempQuaternion);
+								handle.visible = this.dragging;
+							}
+							if (this.axis === "E") handle.visible = false;
+						} else if (handle.name === "START") {
+							handle.position.copy(this.worldPositionStart);
+							handle.visible = this.dragging;
+						} else if (handle.name === "END") {
+							handle.position.copy(this.worldPosition);
+							handle.visible = this.dragging;
+						} else if (handle.name === "DELTA") {
+							handle.position.copy(this.worldPositionStart);
+							handle.quaternion.copy(this.worldQuaternionStart);
+							_tempVector.set(1e-10, 1e-10, 1e-10).add(this.worldPositionStart).sub(this.worldPosition).multiplyScalar(-1);
+							_tempVector.applyQuaternion(this.worldQuaternionStart.clone().invert());
+							handle.scale.copy(_tempVector);
+							handle.visible = this.dragging;
+						} else {
+							handle.quaternion.copy(quaternion);
+							if (this.dragging) handle.position.copy(this.worldPositionStart);
+							else handle.position.copy(this.worldPosition);
+							if (this.axis) handle.visible = this.axis.search(handle.name) !== -1;
+						}
+						continue;
+					}
+					handle.quaternion.copy(quaternion);
+					if (this.mode === "translate" || this.mode === "scale") {
+						const AXIS_HIDE_THRESHOLD = .99;
+						const PLANE_HIDE_THRESHOLD = .2;
+						if (handle.name === "X") {
+							if (Math.abs(_alignVector.copy(_unitX).applyQuaternion(quaternion).dot(this.eye)) > AXIS_HIDE_THRESHOLD) {
+								handle.scale.set(1e-10, 1e-10, 1e-10);
+								handle.visible = false;
+							}
+						}
+						if (handle.name === "Y") {
+							if (Math.abs(_alignVector.copy(_unitY).applyQuaternion(quaternion).dot(this.eye)) > AXIS_HIDE_THRESHOLD) {
+								handle.scale.set(1e-10, 1e-10, 1e-10);
+								handle.visible = false;
+							}
+						}
+						if (handle.name === "Z") {
+							if (Math.abs(_alignVector.copy(_unitZ).applyQuaternion(quaternion).dot(this.eye)) > AXIS_HIDE_THRESHOLD) {
+								handle.scale.set(1e-10, 1e-10, 1e-10);
+								handle.visible = false;
+							}
+						}
+						if (handle.name === "XY") {
+							if (Math.abs(_alignVector.copy(_unitZ).applyQuaternion(quaternion).dot(this.eye)) < PLANE_HIDE_THRESHOLD) {
+								handle.scale.set(1e-10, 1e-10, 1e-10);
+								handle.visible = false;
+							}
+						}
+						if (handle.name === "YZ") {
+							if (Math.abs(_alignVector.copy(_unitX).applyQuaternion(quaternion).dot(this.eye)) < PLANE_HIDE_THRESHOLD) {
+								handle.scale.set(1e-10, 1e-10, 1e-10);
+								handle.visible = false;
+							}
+						}
+						if (handle.name === "XZ") {
+							if (Math.abs(_alignVector.copy(_unitY).applyQuaternion(quaternion).dot(this.eye)) < PLANE_HIDE_THRESHOLD) {
+								handle.scale.set(1e-10, 1e-10, 1e-10);
+								handle.visible = false;
+							}
+						}
+					} else if (this.mode === "rotate") {
+						_tempQuaternion2.copy(quaternion);
+						_alignVector.copy(this.eye).applyQuaternion(_tempQuaternion.copy(quaternion).invert());
+						if (handle.name.search("E") !== -1) handle.quaternion.setFromRotationMatrix(_lookAtMatrix.lookAt(this.eye, _zeroVector, _unitY));
+						if (handle.name === "X") {
+							_tempQuaternion.setFromAxisAngle(_unitX, Math.atan2(-_alignVector.y, _alignVector.z));
+							_tempQuaternion.multiplyQuaternions(_tempQuaternion2, _tempQuaternion);
+							handle.quaternion.copy(_tempQuaternion);
+						}
+						if (handle.name === "Y") {
+							_tempQuaternion.setFromAxisAngle(_unitY, Math.atan2(_alignVector.x, _alignVector.z));
+							_tempQuaternion.multiplyQuaternions(_tempQuaternion2, _tempQuaternion);
+							handle.quaternion.copy(_tempQuaternion);
+						}
+						if (handle.name === "Z") {
+							_tempQuaternion.setFromAxisAngle(_unitZ, Math.atan2(_alignVector.y, _alignVector.x));
+							_tempQuaternion.multiplyQuaternions(_tempQuaternion2, _tempQuaternion);
+							handle.quaternion.copy(_tempQuaternion);
+						}
+					}
+					handle.visible = handle.visible && (handle.name.indexOf("X") === -1 || this.showX);
+					handle.visible = handle.visible && (handle.name.indexOf("Y") === -1 || this.showY);
+					handle.visible = handle.visible && (handle.name.indexOf("Z") === -1 || this.showZ);
+					handle.visible = handle.visible && (handle.name.indexOf("E") === -1 || this.showX && this.showY && this.showZ);
+					handle.visible = handle.visible && (handle.name.indexOf("XY") === -1 || this.showXY);
+					handle.visible = handle.visible && (handle.name.indexOf("YZ") === -1 || this.showYZ);
+					handle.visible = handle.visible && (handle.name.indexOf("XZ") === -1 || this.showXZ);
+					handle.material._color = handle.material._color || handle.material.color.clone();
+					handle.material._opacity = handle.material._opacity || handle.material.opacity;
+					handle.material.color.copy(handle.material._color);
+					handle.material.opacity = handle.material._opacity;
+					if (this.enabled && this.axis) {
+						if (handle.name === this.axis) {
+							handle.material.color.copy(this.materialLib.active.color);
+							handle.material.opacity = 1;
+						} else if (this.axis.split("").some(function(a) {
+							return handle.name === a;
+						})) {
+							handle.material.color.copy(this.materialLib.active.color);
+							handle.material.opacity = 1;
+						}
+					}
+				}
+				super.updateMatrixWorld(force);
+			}
+		};
+		var TransformControlsPlane = class extends Mesh {
+			constructor() {
+				super(new PlaneGeometry(1e5, 1e5, 2, 2), new MeshBasicMaterial({
+					visible: false,
+					wireframe: true,
+					side: 2,
+					transparent: true,
+					opacity: .1,
+					toneMapped: false
+				}));
+				this.isTransformControlsPlane = true;
+				this.type = "TransformControlsPlane";
+			}
+			updateMatrixWorld(force) {
+				let space = this.space;
+				this.position.copy(this.worldPosition);
+				if (this.mode === "scale") space = "local";
+				_v1.copy(_unitX).applyQuaternion(space === "local" ? this.worldQuaternion : _identityQuaternion);
+				_v2.copy(_unitY).applyQuaternion(space === "local" ? this.worldQuaternion : _identityQuaternion);
+				_v3.copy(_unitZ).applyQuaternion(space === "local" ? this.worldQuaternion : _identityQuaternion);
+				_alignVector.copy(_v2);
+				switch (this.mode) {
+					case "translate":
+					case "scale":
+						switch (this.axis) {
+							case "X":
+								_alignVector.copy(this.eye).cross(_v1);
+								_dirVector.copy(_v1).cross(_alignVector);
+								break;
+							case "Y":
+								_alignVector.copy(this.eye).cross(_v2);
+								_dirVector.copy(_v2).cross(_alignVector);
+								break;
+							case "Z":
+								_alignVector.copy(this.eye).cross(_v3);
+								_dirVector.copy(_v3).cross(_alignVector);
+								break;
+							case "XY":
+								_dirVector.copy(_v3);
+								break;
+							case "YZ":
+								_dirVector.copy(_v1);
+								break;
+							case "XZ":
+								_alignVector.copy(_v3);
+								_dirVector.copy(_v2);
+								break;
+							case "XYZ":
+							case "E": _dirVector.set(0, 0, 0);
+						}
+						break;
+					default: _dirVector.set(0, 0, 0);
+				}
+				if (_dirVector.length() === 0) this.quaternion.copy(this.cameraQuaternion);
+				else {
+					_tempMatrix.lookAt(_tempVector.set(0, 0, 0), _dirVector, _alignVector);
+					this.quaternion.setFromRotationMatrix(_tempMatrix);
+				}
+				super.updateMatrixWorld(force);
+			}
+		};
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageManipulators.ts
+		init_three_module();
+		init_src();
+		const JOINT_RADIUS = {};
+		for (let i = 0; i < 77; i++) JOINT_RADIUS[i] = .02;
+		for (const j of [
+			0,
+			3,
+			6,
+			11,
+			12,
+			13,
+			14,
+			39,
+			40,
+			41,
+			42,
+			67,
+			68,
+			69,
+			72,
+			73,
+			74
+		]) JOINT_RADIUS[j] = .028;
+		for (const j of [
+			18,
+			23,
+			28,
+			33,
+			38,
+			46,
+			51,
+			56,
+			61,
+			66,
+			71,
+			76
+		]) JOINT_RADIUS[j] = .012;
+		function createJointManipulator(deps) {
+			const { stage, scene } = deps;
+			return {
+				root: null,
+				jointMeshes: [],
+				jointMats: [],
+				boneGeo: null,
+				pivot: new Group(),
+				tc: null,
+				hovered: -1,
+				dragging: false,
+				prevRot: new Euler(0, 0, 0),
+				active: false,
+				jointsFlat: null,
+				selectedJoint: null,
+				selectedChain: null,
+				onSelectJoint: (_i, _a) => {},
+				onSelectChain: void 0,
+				onJointMove: (_e) => {},
+				gizmoMode: "rotate",
+				kinematicMode: "fk",
+				get isIKActive() {
+					return this.kinematicMode === "ik" && this.selectedJoint !== null && this.selectedJoint !== 0;
+				},
+				get effectiveMode() {
+					return this.isIKActive ? "translate" : this.gizmoMode;
+				},
+				ensure(root) {
+					if (this.root !== null) return;
+					this.root = new Group();
+					root.add(this.root);
+					const positions = new Float32Array(SOMA77_BONE_CONNECTIONS.length * 6);
+					this.boneGeo = new BufferGeometry();
+					this.boneGeo.setAttribute("position", new BufferAttribute(positions, 3));
+					const boneMat = new LineBasicMaterial({
+						color: 16746564,
+						transparent: true,
+						opacity: .5
+					});
+					this.root.add(new LineSegments(this.boneGeo, boneMat));
+					for (let j = 0; j < 77; j++) {
+						const mat = new MeshBasicMaterial({ color: 16764006 });
+						const mesh = new Mesh(new SphereGeometry(JOINT_RADIUS[j] || .02, 12, 12), mat);
+						mesh.userData.pick = {
+							click: (_point, ev) => {
+								this.handleJointClick(j, ev);
+							},
+							over: () => {
+								this.hovered = j;
+								document.body.style.cursor = "pointer";
+								this.paint();
+							},
+							out: () => {
+								if (this.hovered === j) this.hovered = -1;
+								document.body.style.cursor = "auto";
+								this.paint();
+							}
+						};
+						this.jointMeshes[j] = mesh;
+						this.jointMats[j] = mat;
+						this.root.add(mesh);
+					}
+					root.add(this.pivot);
+				},
+				handleJointClick(j, ev) {
+					const additive = ev.shiftKey;
+					this.onSelectJoint(j, additive);
+					if (this.onSelectChain !== void 0) this.onSelectChain(additive ? getJointChain(j, 0) : null);
+				},
+				paint() {
+					for (let j = 0; j < 77; j++) {
+						const inChain = this.selectedChain?.includes(j) ?? false;
+						this.jointMats[j].color.set(this.selectedJoint === j ? "#00ff88" : inChain ? "#ff66ff" : this.hovered === j ? "#ffdd00" : "#ffcc66");
+					}
+				},
+				updateJoints() {
+					const jf = this.jointsFlat;
+					if (jf === null) return;
+					for (let j = 0; j < 77; j++) this.jointMeshes[j].position.set(jf[j * 3] * CM_TO_M, jf[j * 3 + 1] * CM_TO_M, jf[j * 3 + 2] * CM_TO_M);
+					const pos = this.boneGeo.attributes.position;
+					const arr = pos.array;
+					for (let b = 0; b < SOMA77_BONE_CONNECTIONS.length; b++) {
+						const [pp, cc] = SOMA77_BONE_CONNECTIONS[b];
+						arr[b * 6 + 0] = jf[pp * 3] * CM_TO_M;
+						arr[b * 6 + 1] = jf[pp * 3 + 1] * CM_TO_M;
+						arr[b * 6 + 2] = jf[pp * 3 + 2] * CM_TO_M;
+						arr[b * 6 + 3] = jf[cc * 3] * CM_TO_M;
+						arr[b * 6 + 4] = jf[cc * 3 + 1] * CM_TO_M;
+						arr[b * 6 + 5] = jf[cc * 3 + 2] * CM_TO_M;
+					}
+					pos.needsUpdate = true;
+					this.boneGeo.computeBoundingSphere();
+					this.paint();
+				},
+				positionGizmo() {
+					if (this.dragging) return;
+					const jf = this.jointsFlat;
+					if (this.selectedJoint === null || jf === null) return;
+					const j = this.selectedJoint;
+					this.pivot.position.set(jf[j * 3] * CM_TO_M, jf[j * 3 + 1] * CM_TO_M, jf[j * 3 + 2] * CM_TO_M);
+					this.pivot.rotation.set(0, 0, 0);
+					this.prevRot.set(0, 0, 0);
+				},
+				handleGizmoDrag() {
+					const jf = this.jointsFlat;
+					if (this.selectedJoint === null || jf === null) return;
+					const selectedJoint = this.selectedJoint;
+					if (this.isIKActive) {
+						const target = this.pivot.position.clone().multiplyScalar(1 / CM_TO_M);
+						const chainParent = SOMA77_PARENT[selectedJoint];
+						if (chainParent < 0) return;
+						const newJoints = solveCCD(jf, [chainParent, selectedJoint], target);
+						this.onJointMove({
+							idx: selectedJoint,
+							position: target,
+							fullJoints: newJoints
+						});
+					} else if (this.effectiveMode === "rotate") {
+						const curRot = this.pivot.rotation;
+						const prev = this.prevRot;
+						const dx = curRot.x - prev.x;
+						const dy = curRot.y - prev.y;
+						const dz = curRot.z - prev.z;
+						if (Math.abs(dx) < 1e-7 && Math.abs(dy) < 1e-7 && Math.abs(dz) < 1e-7) return;
+						const px = jf[selectedJoint * 3];
+						const py = jf[selectedJoint * 3 + 1];
+						const pz = jf[selectedJoint * 3 + 2];
+						const quat = new Quaternion().setFromEuler(new Euler(dx, dy, dz, "XYZ"));
+						const newJoints = new Float32Array(jf);
+						const descendants = getDescendants(selectedJoint);
+						const tmp = new Vector3();
+						for (const j of descendants) {
+							tmp.set(newJoints[j * 3] - px, newJoints[j * 3 + 1] - py, newJoints[j * 3 + 2] - pz);
+							tmp.applyQuaternion(quat);
+							newJoints[j * 3] = tmp.x + px;
+							newJoints[j * 3 + 1] = tmp.y + py;
+							newJoints[j * 3 + 2] = tmp.z + pz;
+						}
+						this.prevRot.copy(curRot);
+						this.onJointMove({
+							idx: selectedJoint,
+							position: new Vector3(px, py, pz),
+							fullJoints: newJoints
+						});
+					} else {
+						const target = this.pivot.position.clone().multiplyScalar(1 / CM_TO_M);
+						this.onJointMove({
+							idx: selectedJoint,
+							position: target
+						});
+					}
+				},
+				syncGizmo() {
+					const want = this.active && this.selectedJoint !== null && this.jointsFlat !== null;
+					if (want && this.tc === null) {
+						this.tc = new TransformControls(stage.camera, stage.canvas);
+						this.tc.setSize(.8);
+						this.tc.addEventListener("dragging-changed", (ev) => {
+							const on = ev.value;
+							stage.controls.enabled = !on;
+							this.dragging = on;
+						});
+						this.tc.addEventListener("mouseDown", () => {
+							this.dragging = true;
+							this.prevRot.set(0, 0, 0);
+						});
+						this.tc.addEventListener("objectChange", () => this.handleGizmoDrag());
+						this.tc.addEventListener("mouseUp", () => {
+							this.dragging = false;
+							this.handleGizmoDrag();
+						});
+						scene.add(this.tc);
+					}
+					if (this.tc === null) return;
+					if (want) {
+						this.tc.attach(this.pivot);
+						this.tc.setMode(this.effectiveMode);
+						this.tc.enabled = true;
+					} else {
+						this.tc.detach();
+						this.tc.enabled = false;
+					}
+				}
+			};
+		}
+		function createReferenceManipulator(deps) {
+			const { stage, scene } = deps;
+			return {
+				root: null,
+				jointMeshes: [],
+				jointMats: [],
+				boneGeo: null,
+				pivot: new Group(),
+				tc: null,
+				hovered: -1,
+				dragging: false,
+				prevRot: new Euler(0, 0, 0),
+				jointsFlat: null,
+				selectedJoint: null,
+				selectedChain: null,
+				onSelectJoint: (_i, _a) => {},
+				onSelectChain: void 0,
+				onJointMove: (_e) => {},
+				gizmoMode: "rotate",
+				kinematicMode: "fk",
+				ensure(root) {
+					if (this.root !== null) {
+						if (this.root.parent !== root) root.add(this.root);
+						return;
+					}
+					this.root = new Group();
+					root.add(this.root);
+					const positions = new Float32Array(SOMA77_BONE_CONNECTIONS.length * 6);
+					this.boneGeo = new BufferGeometry();
+					this.boneGeo.setAttribute("position", new BufferAttribute(positions, 3));
+					const boneMat = new LineBasicMaterial({
+						color: 16746564,
+						transparent: true,
+						opacity: .5
+					});
+					this.root.add(new LineSegments(this.boneGeo, boneMat));
+					for (let j = 0; j < 77; j++) {
+						const mat = new MeshBasicMaterial({ color: 16764006 });
+						const mesh = new Mesh(new SphereGeometry(JOINT_RADIUS[j] || .02, 12, 12), mat);
+						mesh.userData.pick = {
+							click: (_point, ev) => {
+								const additive = ev.shiftKey;
+								this.onSelectJoint(j, additive);
+								if (this.onSelectChain !== void 0) this.onSelectChain(additive ? getJointChain(j, 0) : null);
+							},
+							over: () => {
+								this.hovered = j;
+								document.body.style.cursor = "pointer";
+								this.paint();
+							},
+							out: () => {
+								if (this.hovered === j) this.hovered = -1;
+								document.body.style.cursor = "auto";
+								this.paint();
+							}
+						};
+						this.jointMeshes[j] = mesh;
+						this.jointMats[j] = mat;
+						this.root.add(mesh);
+					}
+					root.add(this.pivot);
+				},
+				paint() {
+					for (let j = 0; j < 77; j++) {
+						const inChain = this.selectedChain?.includes(j) ?? false;
+						this.jointMats[j].color.set(this.selectedJoint === j ? "#00ff88" : inChain ? "#ff66ff" : this.hovered === j ? "#ffdd00" : "#ffcc66");
+					}
+				},
+				updateJoints() {
+					const jf = this.jointsFlat;
+					if (jf === null || this.root === null) return;
+					for (let j = 0; j < 77; j++) this.jointMeshes[j].position.set(jf[j * 3] * CM_TO_M, jf[j * 3 + 1] * CM_TO_M, jf[j * 3 + 2] * CM_TO_M);
+					const pos = this.boneGeo.attributes.position;
+					const arr = pos.array;
+					for (let b = 0; b < SOMA77_BONE_CONNECTIONS.length; b++) {
+						const [pp, cc] = SOMA77_BONE_CONNECTIONS[b];
+						arr[b * 6 + 0] = jf[pp * 3] * CM_TO_M;
+						arr[b * 6 + 1] = jf[pp * 3 + 1] * CM_TO_M;
+						arr[b * 6 + 2] = jf[pp * 3 + 2] * CM_TO_M;
+						arr[b * 6 + 3] = jf[cc * 3] * CM_TO_M;
+						arr[b * 6 + 4] = jf[cc * 3 + 1] * CM_TO_M;
+						arr[b * 6 + 5] = jf[cc * 3 + 2] * CM_TO_M;
+					}
+					pos.needsUpdate = true;
+					this.boneGeo.computeBoundingSphere();
+					this.paint();
+				},
+				get isIKActive() {
+					return this.kinematicMode === "ik" && this.selectedJoint !== null && this.selectedJoint !== 0;
+				},
+				get effectiveMode() {
+					return this.isIKActive ? "translate" : this.gizmoMode;
+				},
+				positionGizmo() {
+					if (this.dragging) return;
+					const jf = this.jointsFlat;
+					if (this.selectedJoint === null || jf === null) return;
+					const j = this.selectedJoint;
+					this.pivot.position.set(jf[j * 3] * CM_TO_M, jf[j * 3 + 1] * CM_TO_M, jf[j * 3 + 2] * CM_TO_M);
+					this.pivot.rotation.set(0, 0, 0);
+					this.prevRot.set(0, 0, 0);
+				},
+				handleGizmoDrag() {
+					const jf = this.jointsFlat;
+					if (this.selectedJoint === null || jf === null) return;
+					const selectedJoint = this.selectedJoint;
+					if (this.isIKActive) {
+						const target = this.pivot.position.clone().multiplyScalar(1 / CM_TO_M);
+						const chainParent = SOMA77_PARENT[selectedJoint];
+						if (chainParent < 0) return;
+						const newJoints = solveCCD(jf, [chainParent, selectedJoint], target);
+						this.onJointMove({
+							idx: selectedJoint,
+							position: target,
+							fullJoints: newJoints
+						});
+					} else if (this.effectiveMode === "rotate") {
+						const curRot = this.pivot.rotation;
+						const prev = this.prevRot;
+						const dx = curRot.x - prev.x;
+						const dy = curRot.y - prev.y;
+						const dz = curRot.z - prev.z;
+						if (Math.abs(dx) < 1e-7 && Math.abs(dy) < 1e-7 && Math.abs(dz) < 1e-7) return;
+						const px = jf[selectedJoint * 3];
+						const py = jf[selectedJoint * 3 + 1];
+						const pz = jf[selectedJoint * 3 + 2];
+						const quat = new Quaternion().setFromEuler(new Euler(dx, dy, dz, "XYZ"));
+						const newJoints = new Float32Array(jf);
+						const descendants = getDescendants(selectedJoint);
+						const tmp = new Vector3();
+						for (const j of descendants) {
+							tmp.set(newJoints[j * 3] - px, newJoints[j * 3 + 1] - py, newJoints[j * 3 + 2] - pz);
+							tmp.applyQuaternion(quat);
+							newJoints[j * 3] = tmp.x + px;
+							newJoints[j * 3 + 1] = tmp.y + py;
+							newJoints[j * 3 + 2] = tmp.z + pz;
+						}
+						this.prevRot.copy(curRot);
+						this.onJointMove({
+							idx: selectedJoint,
+							position: new Vector3(px, py, pz),
+							fullJoints: newJoints
+						});
+					} else {
+						const target = this.pivot.position.clone().multiplyScalar(1 / CM_TO_M);
+						this.onJointMove({
+							idx: selectedJoint,
+							position: target
+						});
+					}
+				},
+				syncGizmo() {
+					const want = this.root !== null && this.selectedJoint !== null && this.jointsFlat !== null;
+					if (want && this.tc === null) {
+						this.tc = new TransformControls(stage.camera, stage.canvas);
+						this.tc.setSize(.8);
+						this.tc.addEventListener("dragging-changed", (ev) => {
+							const on = ev.value;
+							stage.controls.enabled = !on;
+							this.dragging = on;
+						});
+						this.tc.addEventListener("mouseDown", () => {
+							this.dragging = true;
+							this.prevRot.set(0, 0, 0);
+						});
+						this.tc.addEventListener("objectChange", () => this.handleGizmoDrag());
+						this.tc.addEventListener("mouseUp", () => {
+							this.dragging = false;
+							this.handleGizmoDrag();
+						});
+						scene.add(this.tc);
+					}
+					if (this.tc === null) return;
+					if (want) {
+						this.tc.attach(this.pivot);
+						this.tc.setMode(this.effectiveMode);
+						this.tc.enabled = true;
+					} else {
+						this.tc.detach();
+						this.tc.enabled = false;
+					}
+				},
+				show(root) {
+					if (root === null) {
+						if (this.root !== null) this.root.visible = false;
+						this.pivot.visible = false;
+					} else {
+						this.ensure(root);
+						this.root.visible = true;
+						this.pivot.visible = true;
+					}
+				}
+			};
+		}
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageOverlays.ts
+		init_three_module();
+		init_src();
+		function createLightingOrbs(deps) {
+			const { stage, scene } = deps;
+			const orbs = {
+				root: new Group(),
+				entries: [],
+				onChange: void 0,
+				onSelectOrb: void 0,
+				orbs: [],
+				selectedOrb: null,
+				constructorDone: false,
+				update(list, selectedOrb) {
+					this.orbs = list;
+					this.selectedOrb = selectedOrb;
+					for (const e of this.entries) {
+						e.group.removeFromParent();
+						e.sphereMat.dispose();
+						e.light.dispose();
+						if (e.tc !== null) {
+							e.tc.dispose();
+							e.tc.removeFromParent();
+						}
+					}
+					this.entries = [];
+					for (const orb of list) {
+						const group = new Group();
+						group.position.set(orb.position[0], orb.position[1], orb.position[2]);
+						const sphereMat = new MeshBasicMaterial({
+							color: new Color(orb.color),
+							transparent: true,
+							opacity: selectedOrb === orb.id ? 1 : .8
+						});
+						const sphere = new Mesh(new SphereGeometry(.04, 12, 12), sphereMat);
+						sphere.userData.pick = {
+							click: () => {
+								this.onSelectOrb?.(orb.id);
+							},
+							over: () => {
+								document.body.style.cursor = "pointer";
+							},
+							out: () => {
+								document.body.style.cursor = "auto";
+							}
+						};
+						group.add(sphere);
+						const haloMat = new MeshBasicMaterial({
+							color: new Color(orb.color),
+							transparent: true,
+							opacity: .15
+						});
+						group.add(new Mesh(new SphereGeometry(.08, 12, 12), haloMat));
+						const light = new PointLight(new Color(orb.color), orb.intensity, orb.distance);
+						light.castShadow = orb.castShadow;
+						group.add(light);
+						this.root.add(group);
+						this.entries.push({
+							id: orb.id,
+							group,
+							sphereMat,
+							light,
+							tc: null
+						});
+					}
+					const selIdx = list.findIndex((o) => o.id === selectedOrb);
+					if (selIdx >= 0) {
+						const e = this.entries[selIdx];
+						e.tc = new TransformControls(stage.camera, stage.canvas);
+						e.tc.setSize(.6);
+						e.tc.setMode("translate");
+						e.tc.addEventListener("dragging-changed", (ev) => {
+							stage.controls.enabled = !ev.value;
+						});
+						const push = () => {
+							this.handleOrbDrag(e.id);
+						};
+						e.tc.addEventListener("objectChange", push);
+						e.tc.addEventListener("mouseUp", push);
+						e.tc.attach(e.group);
+						scene.add(e.tc);
+					}
+				},
+				handleOrbDrag(id) {
+					const i = this.orbs.findIndex((o) => o.id === id);
+					const e = this.entries.find((en) => en.id === id);
+					if (i < 0 || e === void 0 || this.onChange === void 0) return;
+					const updated = [...this.orbs];
+					updated[i] = {
+						...updated[i],
+						position: [
+							e.group.position.x,
+							e.group.position.y,
+							e.group.position.z
+						]
+					};
+					this.onChange(updated);
+				}
+			};
+			scene.add(orbs.root);
+			return orbs;
+		}
+		function createKeyframeGhost(liftGroup) {
+			return {
+				lines: null,
+				geo: null,
+				update(joints) {
+					if (joints === null) {
+						if (this.lines !== null) this.lines.visible = false;
+						return;
+					}
+					if (this.lines === null) {
+						const positions = new Float32Array(SOMA77_BONE_CONNECTIONS.length * 6);
+						this.geo = new BufferGeometry();
+						this.geo.setAttribute("position", new BufferAttribute(positions, 3));
+						const mat = new LineBasicMaterial({
+							color: 65535,
+							transparent: true,
+							opacity: .3
+						});
+						this.lines = new LineSegments(this.geo, mat);
+						liftGroup.add(this.lines);
+					}
+					this.lines.visible = true;
+					const pos = this.geo.attributes.position;
+					const arr = pos.array;
+					for (let b = 0; b < SOMA77_BONE_CONNECTIONS.length; b++) {
+						const [pp, cc] = SOMA77_BONE_CONNECTIONS[b];
+						arr[b * 6 + 0] = joints[pp * 3] * CM_TO_M;
+						arr[b * 6 + 1] = joints[pp * 3 + 1] * CM_TO_M;
+						arr[b * 6 + 2] = joints[pp * 3 + 2] * CM_TO_M;
+						arr[b * 6 + 3] = joints[cc * 3] * CM_TO_M;
+						arr[b * 6 + 4] = joints[cc * 3 + 1] * CM_TO_M;
+						arr[b * 6 + 5] = joints[cc * 3 + 2] * CM_TO_M;
+					}
+					pos.needsUpdate = true;
+					this.geo.computeBoundingSphere();
+				}
+			};
+		}
+		function createFootContacts(liftGroup) {
+			return {
+				meshes: [],
+				mats: [],
+				ensure() {
+					if (this.meshes.length > 0) return;
+					for (let i = 0; i < 4; i++) {
+						const mat = new MeshBasicMaterial({
+							color: 16777215,
+							transparent: true,
+							side: 2
+						});
+						const mesh = new Mesh(new RingGeometry(.028, .04, 16), mat);
+						mesh.rotation.x = -Math.PI / 2;
+						liftGroup.add(mesh);
+						this.meshes.push(mesh);
+						this.mats.push(mat);
+					}
+				},
+				update(footContacts, frameIdx, jointsFlat) {
+					const show = !!footContacts && footContacts.length > 0 && !!jointsFlat;
+					this.ensure();
+					const colors = [
+						3900150,
+						15485081,
+						11032055,
+						15680580
+					];
+					for (const m of this.meshes) m.visible = show;
+					if (!show) return;
+					const fi = Math.max(0, Math.min(frameIdx, footContacts.length - 1));
+					const fc = footContacts[fi];
+					if (!fc || fc.length < 4) {
+						for (const m of this.meshes) m.visible = false;
+						return;
+					}
+					const stride = 231;
+					const frameCount = jointsFlat.length / stride;
+					const base = Math.max(0, Math.min(fi, frameCount - 1)) * stride;
+					const footPos = [69, 74].map((j) => [
+						jointsFlat[base + j * 3] * CM_TO_M,
+						jointsFlat[base + j * 3 + 1] * CM_TO_M,
+						jointsFlat[base + j * 3 + 2] * CM_TO_M
+					]);
+					const src = [
+						footPos[0],
+						footPos[1],
+						footPos[0],
+						footPos[1]
+					];
+					for (let i = 0; i < 4; i++) {
+						const contact = fc[i];
+						const dz = i < 2 ? -.04 : .04;
+						const radius = .04 + contact * .04;
+						this.meshes[i].position.set(src[i][0], .005, src[i][2] + dz);
+						this.meshes[i].scale.setScalar(radius / .04);
+						this.mats[i].color.setHex(colors[i]);
+						this.mats[i].opacity = .2 + contact * .8;
+					}
+				}
+			};
+		}
+		function createDirectionArrow(liftGroup) {
+			return {
+				group: null,
+				update(jointsFlat) {
+					const rebuild = () => {
+						if (this.group !== null) {
+							this.group.removeFromParent();
+							this.group = null;
+						}
+						if (jointsFlat === null || jointsFlat.length < 6) return;
+						const stride = 231;
+						if (Math.floor(jointsFlat.length / stride) < 2) return;
+						const r0 = [jointsFlat[0] * CM_TO_M, jointsFlat[2] * CM_TO_M];
+						const r1 = [jointsFlat[stride] * CM_TO_M, jointsFlat[233] * CM_TO_M];
+						const dx = r1[0] - r0[0];
+						const dz = r1[1] - r0[1];
+						const len = Math.hypot(dx, dz);
+						if (len < .01) return;
+						const angle = Math.atan2(dx, dz);
+						const arrowLen = Math.min(.8, len * 2 + .2);
+						const g = new Group();
+						g.position.set(r0[0], .01, r0[1]);
+						g.rotation.y = angle;
+						const shaftMat = new MeshBasicMaterial({
+							color: 16498468,
+							transparent: true,
+							opacity: .85
+						});
+						const shaft = new Mesh(new CylinderGeometry(.012, .012, arrowLen, 8), shaftMat);
+						shaft.position.set(0, 0, arrowLen / 2);
+						shaft.rotation.x = Math.PI / 2;
+						g.add(shaft);
+						const headMat = new MeshBasicMaterial({
+							color: 16498468,
+							transparent: true,
+							opacity: .95
+						});
+						const head = new Mesh(new ConeGeometry(.04, .1, 12), headMat);
+						head.position.set(0, 0, arrowLen);
+						head.rotation.x = Math.PI / 2;
+						g.add(head);
+						liftGroup.add(g);
+						this.group = g;
+					};
+					rebuild();
+				},
+				setVisible(v) {
+					if (this.group !== null) this.group.visible = v;
+				}
+			};
+		}
+		function createAltSamples() {
+			return {
+				root: new Group(),
+				samples: [],
+				faces: [],
+				onCommit: (_i) => {},
+				update(samples, meshData, onCommit) {
+					this.onCommit = onCommit;
+					this.root.clear();
+					this.samples = samples;
+					if (meshData === null || samples.length === 0) return;
+					for (let i = 0; i < samples.length; i++) {
+						const s = samples[i];
+						const g = new BufferGeometry();
+						const arr = new Float32Array(s.verts);
+						g.setAttribute("position", new BufferAttribute(arr, 3));
+						g.setIndex(meshData.faces.flat(2));
+						g.computeVertexNormals();
+						const mat = new MeshStandardMaterial({
+							color: 11053224,
+							transparent: true,
+							opacity: .45,
+							roughness: .7
+						});
+						const mesh = new Mesh(g, mat);
+						mesh.userData.pick = {
+							click: () => {
+								this.onCommit(s.idx);
+							},
+							over: () => {
+								document.body.style.cursor = "pointer";
+							},
+							out: () => {
+								document.body.style.cursor = "auto";
+							}
+						};
+						const holder = new Group();
+						holder.position.set(1.2 + i * .6, 0, -.3);
+						holder.add(mesh);
+						const hintMat = new MeshBasicMaterial({
+							color: 10010103,
+							transparent: true,
+							opacity: .6
+						});
+						const hint = new Mesh(new SphereGeometry(.05, 8, 8), hintMat);
+						hint.position.set(0, 1.6, 0);
+						holder.add(hint);
+						this.root.add(holder);
+					}
+				}
+			};
+		}
+		function createConstraintOverlays(deps) {
+			const { stage, scene } = deps;
+			return {
+				root: new Group(),
+				eeTC: null,
+				eeGroups: [],
+				eeMats: [],
+				eeIds: [],
+				points: [],
+				editMode: false,
+				selectedEEId: null,
+				showLabels: true,
+				onSelectEE: void 0,
+				onChangeEEPoint: void 0,
+				eeColor: {
+					LeftHand: "#f59e0b",
+					RightHand: "#ef4444",
+					LeftFoot: "#10b981",
+					RightFoot: "#3b82f6"
+				},
+				update(root2dPoints, endEffectorPoints, showLabels, editMode, selectedEEId) {
+					this.points = endEffectorPoints;
+					this.showLabels = showLabels;
+					this.editMode = editMode;
+					this.selectedEEId = selectedEEId;
+					this.root.clear();
+					this.eeGroups = [];
+					this.eeMats = [];
+					this.eeIds = [];
+					for (const p of root2dPoints) {
+						const g = new Group();
+						g.position.set(p.x, .005, p.z);
+						const mat = new MeshBasicMaterial({
+							color: 16096779,
+							transparent: true,
+							opacity: .85,
+							side: 2
+						});
+						const ring = new Mesh(new RingGeometry(.025, .04, 24), mat);
+						ring.rotation.x = -Math.PI / 2;
+						g.add(ring);
+						if (showLabels) {
+							const label = makeLabelSprite(`F${p.frame}`, "#fcd34d", .035);
+							label.position.set(0, .08, 0);
+							g.add(label);
+						}
+						this.root.add(g);
+					}
+					for (const p of endEffectorPoints) {
+						const color = this.eeColor[p.joint_name] ?? "#ffffff";
+						const isSelected = editMode && selectedEEId === p.id;
+						const g = new Group();
+						g.position.set(p.position[0], p.position[1], p.position[2]);
+						const mat = new MeshBasicMaterial({
+							color: new Color(isSelected ? "#ffffff" : color),
+							transparent: true,
+							opacity: isSelected ? 1 : .9
+						});
+						const sphere = new Mesh(new SphereGeometry(isSelected ? .034 : .028, 16, 16), mat);
+						sphere.userData.pick = {
+							click: () => {
+								if (editMode) this.onSelectEE?.(p.id);
+							},
+							over: () => {
+								if (editMode) document.body.style.cursor = "move";
+							},
+							out: () => {
+								document.body.style.cursor = "auto";
+							}
+						};
+						g.add(sphere);
+						if (isSelected) {
+							const haloMat = new MeshBasicMaterial({
+								color: new Color(color),
+								transparent: true,
+								opacity: .18
+							});
+							g.add(new Mesh(new SphereGeometry(.05, 16, 16), haloMat));
+						}
+						if (showLabels) {
+							const label = makeLabelSprite(`${p.joint_name[0] ?? "E"}·F${p.frame}`, isSelected ? "#ffffff" : color, .03);
+							label.position.set(0, .08, 0);
+							g.add(label);
+						}
+						this.root.add(g);
+						this.eeGroups.push(g);
+						this.eeMats.push(mat);
+						this.eeIds.push(p.id);
+						if (isSelected && this.onChangeEEPoint !== void 0) {
+							if (this.eeTC === null) {
+								this.eeTC = new TransformControls(stage.camera, stage.canvas);
+								this.eeTC.setSize(.7);
+								this.eeTC.setMode("translate");
+								this.eeTC.addEventListener("dragging-changed", (ev) => {
+									stage.controls.enabled = !ev.value;
+								});
+								this.eeTC.addEventListener("objectChange", () => {
+									if (this.selectedEEId !== null) this.handleEEDrag(this.selectedEEId);
+								});
+								this.eeTC.addEventListener("mouseUp", () => {
+									if (this.selectedEEId !== null) this.handleEEDrag(this.selectedEEId);
+								});
+								scene.add(this.eeTC);
+							}
+							this.eeTC.attach(g);
+							this.eeTC.enabled = true;
+						}
+					}
+					if (this.eeTC !== null && !(editMode && selectedEEId !== null && endEffectorPoints.some((pt) => pt.id === selectedEEId))) {
+						this.eeTC.detach();
+						this.eeTC.enabled = false;
+					}
+				},
+				handleEEDrag(id) {
+					if (this.onChangeEEPoint === void 0) return;
+					const i = this.eeIds.indexOf(id);
+					if (i < 0) return;
+					const g = this.eeGroups[i];
+					this.onChangeEEPoint(id, [
+						g.position.x,
+						g.position.y,
+						g.position.z
+					]);
+				}
+			};
+		}
+		function createEEPlacementPlane(liftGroup) {
+			return {
+				mesh: null,
+				setVisible(v) {
+					if (this.mesh !== null) this.mesh.visible = v;
+				},
+				update(placingEE, eePlaceJointIdx, editableJoints, jointsFlat, frameIdx, onPlaceEE) {
+					if (placingEE && this.mesh === null) {
+						const mat = new MeshBasicMaterial({
+							transparent: true,
+							opacity: 0,
+							side: 2,
+							depthWrite: false
+						});
+						this.mesh = new Mesh(new PlaneGeometry(100, 100), mat);
+						this.mesh.rotation.x = -Math.PI / 2;
+						liftGroup.add(this.mesh);
+					}
+					if (this.mesh === null) return;
+					this.mesh.visible = placingEE;
+					if (!placingEE) return;
+					const ji = eePlaceJointIdx ?? 0;
+					const y = editableJoints ? editableJoints[ji * 3 + 1] * CM_TO_M : jointsFlat ? jointsFlat[(frameIdx * 77 + ji) * 3 + 1] * CM_TO_M : 1;
+					this.mesh.position.set(0, y, 0);
+					this.mesh.userData.pick = { click: (point) => {
+						onPlaceEE([
+							point.x,
+							y,
+							point.z
+						]);
+					} };
+				}
+			};
+		}
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageReference.ts
+		init_three_module();
+		init_src();
+		function createReferenceCarrier(deps) {
+			const { liftGroup, refManip } = deps;
+			return {
+				root: null,
+				mesh: null,
+				geo: null,
+				mat: null,
+				skeleton: null,
+				scratch: /* @__PURE__ */ new Float32Array(0),
+				lastUploaded: -2,
+				bundle: null,
+				lastSig: "",
+				update(p) {
+					const b = p.reference;
+					const sig = b === null ? "" : [
+						b.spec.deformedVerticesB64.length,
+						b.spec.editedDeformedVerticesB64?.length ?? 0,
+						b.spec.offset.join(","),
+						b.meshData?.vertices.length ?? 0,
+						b.flat?.length ?? 0,
+						b.editedFlat?.length ?? 0,
+						b.spec.jointFrames?.length ?? 0
+					].join("|");
+					if (sig !== this.lastSig) {
+						this.lastSig = sig;
+						this.disposeMesh();
+						if (b === null) {
+							this.root?.removeFromParent();
+							this.root = null;
+							this.skeleton?.spheres.removeFromParent();
+							this.skeleton?.lines.removeFromParent();
+							this.skeleton = null;
+							return;
+						}
+						this.bundle = b;
+						this.root = new Group();
+						const jointFramesFlat = b.spec.jointFrames && b.spec.jointFrames.length >= 3 ? new Float32Array(b.spec.jointFrames) : null;
+						const hasEdited = !!b.spec.editedDeformedVerticesB64 && !!b.editedFlat && b.editedFlat.length >= 3;
+						const activeFlat = hasEdited ? b.editedFlat : b.flat;
+						if (!!jointFramesFlat && (!activeFlat || activeFlat.length < 3)) {
+							this.root.position.set(b.spec.offset[0], 0, b.spec.offset[1]);
+							const sphereGeo = new SphereGeometry(.018, 8, 8);
+							const sphereMat = new MeshBasicMaterial({ color: 16498468 });
+							const spheres = new InstancedMesh(sphereGeo, sphereMat, 77);
+							const positions = new Float32Array(SOMA77_BONE_CONNECTIONS.length * 6);
+							const boneGeo = new BufferGeometry();
+							boneGeo.setAttribute("position", new BufferAttribute(positions, 3));
+							const boneMat = new LineBasicMaterial({
+								color: 16096779,
+								transparent: true,
+								opacity: .7
+							});
+							const lines = new LineSegments(boneGeo, boneMat);
+							this.root.add(spheres);
+							this.root.add(lines);
+							this.skeleton = {
+								spheres,
+								lines,
+								boneGeo,
+								dummy: new Object3D()
+							};
+							this.root.__skelFlat = jointFramesFlat;
+						} else {
+							if (b.meshData === null || activeFlat === null || activeFlat.length < 3) {
+								liftGroup.add(this.root);
+								return;
+							}
+							const refLiftDelta = computeMeshLiftY(b.meshData) - computeMeshLiftY(p.meshData);
+							this.root.position.set(b.spec.offset[0], refLiftDelta, b.spec.offset[1]);
+							this.geo = buildGeometry(b.meshData);
+							const refFrameCount = hasEdited ? 1 : b.spec.frameCount ?? 1;
+							const numVerts = Math.floor(activeFlat.length / 3 / Math.max(1, refFrameCount));
+							this.scratch = new Float32Array(numVerts * 3);
+							this.mat = new MeshStandardMaterial({
+								color: new Color(b.spec.color ?? "#9ca3af"),
+								roughness: .55,
+								metalness: .05,
+								flatShading: false,
+								side: 2,
+								transparent: (b.spec.opacity ?? .42) < 1,
+								opacity: b.spec.opacity ?? .42
+							});
+							this.mesh = new Mesh(this.geo, this.mat);
+							this.mesh.castShadow = true;
+							this.mesh.receiveShadow = true;
+							this.root.add(this.mesh);
+							this.root.__refFlat = activeFlat;
+							this.root.__refFrames = refFrameCount;
+						}
+						liftGroup.add(this.root);
+						this.lastUploaded = -2;
+					} else if (b !== null && this.root !== null && this.mesh === null && this.skeleton === null) {
+						this.lastSig = "";
+						this.update(p);
+						return;
+					}
+					if (this.root === null) return;
+					if (this.skeleton !== null) {
+						const flat = this.root.__skelFlat;
+						const fc = Math.max(1, Math.floor(flat.length / 231));
+						const base = (fc > 1 ? Math.max(0, Math.min(p.refPlaybackFrameIdx ?? p.frameIdx, fc - 1)) : 0) * 77 * 3;
+						const d = this.skeleton.dummy;
+						for (let j = 0; j < 77; j++) {
+							d.position.set(flat[base + j * 3] * CM_TO_M, flat[base + j * 3 + 1] * CM_TO_M, flat[base + j * 3 + 2] * CM_TO_M);
+							d.scale.setScalar(1);
+							d.updateMatrix();
+							this.skeleton.spheres.setMatrixAt(j, d.matrix);
+						}
+						this.skeleton.spheres.instanceMatrix.needsUpdate = true;
+						const pos = this.skeleton.boneGeo.attributes.position;
+						const arr = pos.array;
+						for (let bb = 0; bb < SOMA77_BONE_CONNECTIONS.length; bb++) {
+							const [pp, cc] = SOMA77_BONE_CONNECTIONS[bb];
+							arr[bb * 6 + 0] = flat[base + pp * 3] * CM_TO_M;
+							arr[bb * 6 + 1] = flat[base + pp * 3 + 1] * CM_TO_M;
+							arr[bb * 6 + 2] = flat[base + pp * 3 + 2] * CM_TO_M;
+							arr[bb * 6 + 3] = flat[base + cc * 3] * CM_TO_M;
+							arr[bb * 6 + 4] = flat[base + cc * 3 + 1] * CM_TO_M;
+							arr[bb * 6 + 5] = flat[base + cc * 3 + 2] * CM_TO_M;
+						}
+						pos.needsUpdate = true;
+						this.skeleton.boneGeo.computeBoundingSphere();
+					} else if (this.mesh !== null && this.geo !== null) {
+						const flat = this.root.__refFlat;
+						const refFrames = this.root.__refFrames ?? 1;
+						if (flat !== void 0) {
+							const stride = this.scratch.length / 3 * 3;
+							const refIdx = refFrames > 1 ? Math.max(0, Math.min(p.refPlaybackFrameIdx ?? p.frameIdx, refFrames - 1)) : 0;
+							if (refIdx !== this.lastUploaded) {
+								const pos = this.geo.attributes.position;
+								const arr = pos.array;
+								const src = flat.subarray(refIdx * stride, refIdx * stride + stride);
+								for (let i = 0; i < stride; i++) this.scratch[i] = src[i] * CM_TO_M;
+								arr.set(this.scratch, 0);
+								pos.needsUpdate = true;
+								if (!(refFrames > 1 && p.animate)) {
+									this.geo.computeVertexNormals();
+									this.geo.computeBoundingSphere();
+								}
+								this.lastUploaded = refIdx;
+							}
+						}
+					}
+					if (b !== null && p.editRefMode && p.refEditableJoints) {
+						refManip.show(this.root);
+						refManip.jointsFlat = p.refEditableJoints;
+						refManip.selectedJoint = p.selectedJoint ?? null;
+						refManip.selectedChain = p.selectedChain ?? null;
+						refManip.onSelectJoint = p.onSelectJoint;
+						refManip.onSelectChain = p.onSelectChain;
+						refManip.onJointMove = p.onRefJointMove ?? (() => {});
+						refManip.gizmoMode = p.gizmoMode;
+						refManip.kinematicMode = p.kinematicMode ?? "fk";
+						refManip.updateJoints();
+						refManip.positionGizmo();
+					} else refManip.show(null);
+					refManip.syncGizmo();
+				},
+				disposeMesh() {
+					this.mesh?.removeFromParent();
+					this.geo?.dispose();
+					this.mat?.dispose();
+					this.mesh = null;
+					this.geo = null;
+					this.mat = null;
+				}
+			};
+		}
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStage.ts
+		init_three_module();
+		function mountPoseStage(canvas, opts) {
+			const stage = mountStage3D(canvas, {
+				fov: opts.fov,
+				near: .05,
+				far: 100,
+				camera: opts.camera,
+				target: [
+					0,
+					.9,
+					0
+				],
+				minDistance: .8,
+				maxDistance: 12,
+				maxPolarAngle: Math.PI / 1.85,
+				alpha: false,
+				preserveDrawingBuffer: true,
+				onContextFailure: opts.onFail,
+				onEmptyClick: () => {
+					if (refManip.root !== null) {
+						refManip.onSelectJoint(null);
+						refManip.onSelectChain?.(null);
+					} else if (manip.active) {
+						manip.onSelectJoint(null);
+						manip.onSelectChain?.(null);
+					}
+				}
+			});
+			if (stage === null) return null;
+			opts.onCanvasReady?.(canvas);
+			const scene = stage.scene;
+			const dark = opts.darkMode;
+			stage.renderer.setClearColor(new Color(dark ? "#0e0e1a" : "#e4e4f0"));
+			const ambient = new AmbientLight(16777215, .45);
+			scene.add(ambient);
+			const key = new DirectionalLight(16777215, 1);
+			key.position.set(5, 8, 5);
+			key.castShadow = true;
+			key.shadow.mapSize.set(2048, 2048);
+			key.shadow.camera.left = -3;
+			key.shadow.camera.right = 3;
+			key.shadow.camera.top = 3;
+			key.shadow.camera.bottom = -3;
+			key.shadow.camera.near = .5;
+			key.shadow.camera.far = 20;
+			key.shadow.bias = -5e-4;
+			scene.add(key);
+			const fill = new DirectionalLight(16777215, .25);
+			fill.position.set(-4, 3, -2);
+			scene.add(fill);
+			const hemi = new HemisphereLight(13489908, 1710638, .35);
+			scene.add(hemi);
+			const groundMat = new ShadowMaterial({ opacity: .55 });
+			const ground = new Mesh(new PlaneGeometry(12, 12), groundMat);
+			ground.rotation.x = -Math.PI / 2;
+			ground.position.y = .001;
+			ground.receiveShadow = true;
+			scene.add(ground);
+			const grid = new GridHelper(12, 48, 5921418, 3816026);
+			const gridMat = grid.material;
+			gridMat.transparent = true;
+			gridMat.opacity = .9;
+			scene.add(grid);
+			const liftGroup = new Group();
+			scene.add(liftGroup);
+			const skin = createSkinCarrier(liftGroup);
+			const frameIdxRef = { current: 0 };
+			const anim = createAnimClock(frameIdxRef);
+			stage.addTick((delta) => anim.tick(delta));
+			stage.addTick(() => {
+				if (skin.geo === null || skin.mesh === null) return;
+				const target = frameIdxRef.current;
+				if (target !== skin.lastUploadedIdx) skin.uploadFrame(target, showBindPose0, anim0);
+			});
+			let showBindPose0 = true;
+			let anim0 = false;
+			const skeleton = createSkeletonOverlay(liftGroup);
+			const manip = createJointManipulator({
+				stage,
+				scene
+			});
+			const refManip = createReferenceManipulator({
+				stage,
+				scene
+			});
+			const orbs = createLightingOrbs({
+				stage,
+				scene
+			});
+			const ghost = createKeyframeGhost(liftGroup);
+			const contacts = createFootContacts(liftGroup);
+			const arrow = createDirectionArrow(liftGroup);
+			let arrowJointsRef = null;
+			const alts = createAltSamples();
+			liftGroup.add(alts.root);
+			const constraints = createConstraintOverlays({
+				stage,
+				scene
+			});
+			liftGroup.add(constraints.root);
+			const eePlane = createEEPlacementPlane(liftGroup);
+			const reference = createReferenceCarrier({
+				liftGroup,
+				refManip
+			});
+			let lastCameraView = "";
+			let lastFraming = "";
+			let lastLiftY = NaN;
+			let lastOrbSel = null;
+			let orbsSig = "";
+			let lastEEsSig = "";
+			let lastR2dSig = "";
+			let lastAltSig = "";
+			let darkCur = opts.darkMode;
+			function update(p) {
+				frameIdxRef.current = p.frameIdx;
+				anim.animate = p.animate;
+				anim.enabled = !p.showBindPose && !p.editMode;
+				anim.frameCount = p.frameCount;
+				anim.fps = p.fps;
+				anim.speed = p.playbackSpeed;
+				anim.setFrameIdx = p.setFrameIdx;
+				if (p.animate && (!skinLastAnimate || anim.frameCount !== animLastFrameCount)) anim.reset();
+				animLastFrameCount = p.frameCount;
+				showBindPose0 = p.showBindPose;
+				anim0 = p.animate;
+				skin.setMesh(p);
+				skin.setData(p.deformedFlat);
+				if (skin.lastUploadedIdx === -2 || p.showBindPose !== showBindPosePrev || p.animate === false && skinLastAnimate === true) skin.uploadFrame(frameIdxRef.current, p.showBindPose, p.animate);
+				skinLastAnimate = p.animate;
+				showBindPosePrev = p.showBindPose;
+				const liftY = computeMeshLiftY(p.meshData);
+				let inPlaceX = 0, inPlaceZ = 0;
+				if (p.inPlace && !p.showBindPose && p.soma77JointsFlat) {
+					const stride = 231;
+					const frameCount = Math.floor(p.soma77JointsFlat.length / stride);
+					if (frameCount >= 1) {
+						const r0x = p.soma77JointsFlat[0];
+						const r0z = p.soma77JointsFlat[2];
+						const base = Math.max(0, Math.min(p.frameIdx, frameCount - 1)) * stride;
+						inPlaceX = (r0x - p.soma77JointsFlat[base]) * CM_TO_M;
+						inPlaceZ = (r0z - p.soma77JointsFlat[base + 2]) * CM_TO_M;
+					}
+				}
+				if (liftY !== lastLiftY || liftGroup.position.x !== inPlaceX || liftGroup.position.z !== inPlaceZ) {
+					liftGroup.position.set(inPlaceX, liftY, inPlaceZ);
+					lastLiftY = liftY;
+				}
+				const hasOrbs = p.lightingOrbs.length > 0;
+				ambient.intensity = hasOrbs ? .06 : p.editMode ? .25 : .45;
+				key.intensity = hasOrbs ? 0 : 1;
+				key.castShadow = !hasOrbs;
+				fill.intensity = hasOrbs ? 0 : .25;
+				hemi.intensity = hasOrbs ? .08 : .35;
+				groundMat.opacity = hasOrbs ? 0 : .55;
+				const orbsSigNew = p.lightingOrbs.map((o) => `${o.id}:${o.position.join(",")}:${o.color}:${o.intensity}:${o.distance}:${o.castShadow}`).join(";");
+				if (orbsSigNew !== orbsSig || p.selectedOrb !== lastOrbSel) {
+					orbsSig = orbsSigNew;
+					lastOrbSel = p.selectedOrb;
+					orbs.onChange = p.onLightingOrbsChange;
+					orbs.onSelectOrb = p.onSelectOrb;
+					orbs.update(p.lightingOrbs, p.selectedOrb);
+				}
+				skeleton.update(p.showSkeleton && !p.editMode ? p.editableJoints ?? p.soma77JointsFlat : null, p.frameIdx);
+				if (p.editMode && !p.editRefMode && !!p.editableJoints) {
+					manip.ensure(liftGroup);
+					manip.active = true;
+					manip.jointsFlat = p.editableJoints;
+					manip.selectedJoint = p.selectedJoint;
+					manip.selectedChain = p.selectedChain ?? null;
+					manip.onSelectJoint = p.onSelectJoint;
+					manip.onSelectChain = p.onSelectChain;
+					manip.onJointMove = p.onJointMove;
+					manip.gizmoMode = p.gizmoMode;
+					manip.kinematicMode = p.kinematicMode ?? "fk";
+					manip.root.visible = true;
+					manip.updateJoints();
+					manip.positionGizmo();
+				} else {
+					manip.active = false;
+					if (manip.root !== null) manip.root.visible = false;
+				}
+				manip.syncGizmo();
+				ghost.update(p.ghostJoints);
+				contacts.update(p.footContacts, p.frameIdx, p.soma77JointsFlat);
+				if (p.soma77JointsFlat !== arrowJointsRef) {
+					arrowJointsRef = p.soma77JointsFlat;
+					arrow.update(p.soma77JointsFlat);
+				}
+				arrow.setVisible(p.showStartingDirection && !p.editMode);
+				const altSig = p.altSamples.map((s) => s.idx).join(",") + "#" + p.meshData.vertices.length;
+				if (altSig !== lastAltSig) {
+					lastAltSig = altSig;
+					alts.update(p.altSamples, p.meshData, p.onCommitSample);
+				} else if (p.altSamples.length > 0) alts.onCommit = p.onCommitSample;
+				const eesSig = p.endEffectorPoints.map((e) => `${e.id}:${e.position.join(",")}:${e.frame}`).join(";");
+				const r2dSig = p.root2dPoints.map((r) => `${r.frame}:${r.x},${r.z}`).join(";");
+				if (eesSig !== lastEEsSig || r2dSig !== lastR2dSig || constraints.editMode !== p.editMode || constraints.selectedEEId !== (p.selectedEEId ?? null) || constraints.showLabels !== p.showConstraintLabels) {
+					lastEEsSig = eesSig;
+					lastR2dSig = r2dSig;
+					constraints.onSelectEE = p.onSelectEE;
+					constraints.onChangeEEPoint = p.onChangeEEPoint;
+					constraints.update(p.root2dPoints, p.endEffectorPoints, p.showConstraintLabels, p.editMode, p.selectedEEId ?? null);
+				}
+				eePlane.update(p.placingEE, p.eePlaceJointIdx, p.editableJoints, p.soma77JointsFlat, p.frameIdx, p.onPlaceEE);
+				reference.update(p);
+				if (p.cameraView !== lastCameraView || p.framing !== lastFraming) {
+					lastCameraView = p.cameraView;
+					lastFraming = p.framing;
+					applyCamera(p.cameraView, p.framing);
+				}
+			}
+			let skinLastAnimate = false;
+			let showBindPosePrev = true;
+			let animLastFrameCount = 1;
+			const framedCameraPosFor = (view, framing) => framedCameraPos(view, framing);
+			const applyCamera = (view, framing) => {
+				const [pos, ty] = framedCameraPosFor(view, framing);
+				stage.camera.position.set(pos[0], pos[1], pos[2]);
+				stage.controls.target.set(0, ty, 0);
+				stage.controls.update();
+				stage.camera.lookAt(0, ty, 0);
+			};
+			return {
+				threeCtx: {
+					gl: stage.renderer,
+					scene,
+					camera: stage.camera
+				},
+				update,
+				applyCamera,
+				setDarkMode(dark) {
+					if (dark !== darkCur) {
+						darkCur = dark;
+						stage.renderer.setClearColor(new Color(dark ? "#0e0e1a" : "#e4e4f0"));
+					}
+				},
+				dispose() {
+					manip.tc?.dispose();
+					refManip.tc?.dispose();
+					constraints.eeTC?.dispose();
+					for (const e of orbs.entries) e.tc?.dispose();
+					skin.geo?.dispose();
+					skin.mat?.dispose();
+					reference.disposeMesh();
+					if (reference.skeleton !== null) {
+						reference.skeleton.spheres.geometry.dispose();
+						reference.skeleton.spheres.material.dispose();
+						reference.skeleton.boneGeo.dispose();
+						reference.skeleton.lines.material.dispose();
+					}
+					stage.dispose();
+				}
+			};
+		}
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx
+		/**
+		* PoseViewer3D — Three.js skinned humanoid figure from SOMA mesh (NVIDIA mesh).
+		*
+		* ALWAYS shows the bind mesh (T-pose NVIDIA humanoid) when loaded — even when
+		* no 3D frame data is available yet. When valid frame data arrives it deforms
+		* the mesh via /poser/skin/deform (COCO-18) or /poser/skin/deform_soma (SOMA-77).
+		*
+		* For text-to-pose results, pre-computed deformed vertices arrive as base64-encoded
+		* float32 binary (deformedVerticesB64). These are decoded ONCE to a Float32Array
+		* and indexed DIRECTLY into the geometry buffer (no nested-array conversion —
+		* building 60×18056 = 1.08M small JS arrays freezes the browser tab).
+		*
+		* Mirrors the Kimodo demo scene (vendor/kimodo/kimodo/viz/scene.py):
+		*   - Camera at [2.74, 1.88, 7.68], look-at [0, 0.9, 0], fov 45°
+		*   - Grid at y=0, infinite, fade_distance ~ 3×floor_len
+		*   - Bind pose lifted so feet clear the floor: bind_pos.y -= min_y; bind_pos.y += 0.02
+		*   - Mesh color LIGHT_THEME (152,189,255) = #98BDFF
+		*   - Per-frame set_pose() writes deformed verts directly into BufferGeometry
+		*
+		* RENDERED ON THE SHARED RAW-THREE STAGE (poseStage over card-base stage3d —
+		* the substrate law). This file is the REACT SHELL: it owns the async data
+		* plumbing (bind-mesh fetch, base64 decode, alt-sample decode, reference
+		* bundle resolution) and syncs props into the imperative scene every render.
+		* The old @react-three/fiber JSX tree and the drei components live on only
+		* as their imperative analogues in poseStage.ts (the 2026-09-13 port).
+		*/
+		const NUM_VERTS = 18056;
+		const ALT_NUM_VERTS = 18056;
+		/** The altSamples default (stroke 77 bug fix): a hoisted shared
+		*  empty — a per-render `= []` default gave every omitting render a
+		*  NEW array identity, so the [altSamples] decode effect refired
+		*  each render and its setState seeded an async render loop (proven
+		*  by the motion burn-down's effect census). One stable identity,
+		*  never mutated. */
+		const NO_ALT_SAMPLES = [];
+		function PoseViewer3DImpl({ deformedVerticesB64, deformedVertsDirect, frameIdx, onFrameChange, animate = false, cameraView = "demo", cameraFraming = "full", height = "100%", opacity = 1, wireframe = false, color = "#98bdf7", fps = 30, forceBindPose = false, soma77Joints = null, soma77JointsFlat: soma77JointsFlatProp = null, showSkeleton = false, editMode = false, editableJoints = null, selectedJoint = null, onSelectJoint, onSelectChain, onJointMove, selectedChain = null, kinematicMode = "fk", gizmoMode = "rotate", editedDeformedB64 = null, lightingOrbs = [], onLightingOrbsChange, selectedOrb = null, onSelectOrb, ghostJoints = null, cameraFov = 45, darkMode = true, playbackSpeed = 1, identityModel = "anny", identityCoeffs = null, localChanges = null, customTargets = null, footContacts = null, showFootContacts = false, showStartingDirection = false, altSamples = NO_ALT_SAMPLES, onCommitSample = () => {}, root2dPoints = [], endEffectorPoints = [], showConstraintLabels = true, selectedEEId = null, onSelectEE, onChangeEEPoint, placingEE = false, eePlaceJointIdx, onPlaceEE, referenceMesh = null, refPlaybackFrameIdx, editRefMode = false, refEditableJoints, onRefJointMove, onCanvasReady, threeCtxRef, inPlace = false, customBindMesh = null }) {
+			const [meshData, setMeshData] = (0, react.useState)(null);
+			const [meshLoading, setMeshLoading] = (0, react.useState)(true);
+			const [meshError, setMeshError] = (0, react.useState)(null);
+			const [deformedFlat, setDeformedFlat] = (0, react.useState)(null);
+			const [altDecoded, setAltDecoded] = (0, react.useState)([]);
+			const canvasRef = (0, react.useRef)(null);
+			const stageRef = (0, react.useRef)(null);
+			const soma77JointsFlat = (0, react.useMemo)(() => {
+				if (soma77JointsFlatProp) return soma77JointsFlatProp;
+				if (!soma77Joints || soma77Joints.length === 0) return null;
+				const T = soma77Joints.length;
+				const flat = new Float32Array(T * 77 * 3);
+				for (let f = 0; f < T; f++) {
+					const frame = soma77Joints[f];
+					if (!frame || frame.length < 77) continue;
+					for (let j = 0; j < 77; j++) {
+						const ji = (f * 77 + j) * 3;
+						flat[ji] = frame[j][0];
+						flat[ji + 1] = frame[j][1];
+						flat[ji + 2] = frame[j][2];
+					}
+				}
+				return flat;
+			}, [soma77Joints, soma77JointsFlatProp]);
+			const [refBundle, setRefBundle] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				if (!referenceMesh) {
+					setRefBundle(null);
+					return;
+				}
+				let cancelled = false;
+				setRefBundle({
+					spec: referenceMesh,
+					meshData: null,
+					flat: null,
+					editedFlat: null
+				});
+				(async () => {
+					try {
+						const mesh = await fetchBindMesh(referenceMesh.identityModel ?? "anny", referenceMesh.identityCoeffs, referenceMesh.localChanges, referenceMesh.customTargets);
+						if (!cancelled) setRefBundle((b) => b !== null && b.spec === referenceMesh ? {
+							...b,
+							meshData: mesh
+						} : b);
+					} catch (e) {
+						console.error("ReferenceMesh bind fetch failed:", e);
+					}
+					if (referenceMesh.deformedVerticesB64) try {
+						const res = await fetch(`data:application/octet-stream;base64,${referenceMesh.deformedVerticesB64}`);
+						if (cancelled) return;
+						const buf = await res.arrayBuffer();
+						if (cancelled) return;
+						setRefBundle((b) => b !== null && b.spec === referenceMesh ? {
+							...b,
+							flat: new Float32Array(buf)
+						} : b);
+					} catch (e) {
+						if (!cancelled) console.error("ReferenceMesh decode failed:", e);
+					}
+					if (referenceMesh.editedDeformedVerticesB64) try {
+						const res = await fetch(`data:application/octet-stream;base64,${referenceMesh.editedDeformedVerticesB64}`);
+						if (cancelled) return;
+						const buf = await res.arrayBuffer();
+						if (cancelled) return;
+						setRefBundle((b) => b !== null && b.spec === referenceMesh ? {
+							...b,
+							editedFlat: new Float32Array(buf)
+						} : b);
+					} catch (e) {
+						if (!cancelled) console.error("ReferenceMesh edited decode failed:", e);
+					}
+				})();
+				return () => {
+					cancelled = true;
+				};
+			}, [referenceMesh]);
+			const coeffsKey = identityCoeffs && identityCoeffs.length > 0 ? identityCoeffs.map((v) => v.toFixed(1)).join(",") : "";
+			const localChangesKey = localChanges && Object.keys(localChanges).length > 0 ? Object.entries(localChanges).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${k}=${(Math.round(v * 20) / 20).toFixed(2)}`).join(",") : "";
+			const customTargetsKey = customTargets && Object.keys(customTargets).length > 0 ? Object.entries(customTargets).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${k}=${(Math.round(v * 20) / 20).toFixed(2)}`).join(",") : "";
+			(0, react.useEffect)(() => {
+				if (customBindMesh) {
+					setMeshData(customBindMesh);
+					setMeshLoading(false);
+					setMeshError(null);
+					return;
+				}
+				let cancel = false;
+				setMeshLoading(true);
+				setMeshError(null);
+				const timer = setTimeout(() => {
+					fetchBindMesh(identityModel, identityCoeffs, localChanges, customTargets).then((d) => {
+						if (!cancel) {
+							setMeshData(d);
+							setMeshLoading(false);
+						}
+					}).catch((e) => {
+						if (!cancel) {
+							setMeshError(e.message);
+							setMeshLoading(false);
+						}
+					});
+				}, 60);
+				return () => {
+					cancel = true;
+					clearTimeout(timer);
+				};
+			}, [
+				identityModel,
+				coeffsKey,
+				localChangesKey,
+				customTargetsKey,
+				customBindMesh
+			]);
+			const activeB64 = editedDeformedB64 ?? deformedVerticesB64;
+			(0, react.useEffect)(() => {
+				if (deformedVertsDirect && !editedDeformedB64) {
+					setDeformedFlat(deformedVertsDirect);
+					return;
+				}
+				if (!activeB64) {
+					setDeformedFlat(null);
+					return;
+				}
+				let cancelled = false;
+				setDeformedFlat(null);
+				(async () => {
+					try {
+						const res = await fetch(`data:application/octet-stream;base64,${activeB64}`);
+						if (cancelled) return;
+						const buf = await res.arrayBuffer();
+						if (cancelled) return;
+						setDeformedFlat(new Float32Array(buf));
+					} catch (e) {
+						if (!cancelled) console.error("Failed to decode deformed_vertices_b64:", e);
+						try {
+							const binary = atob(activeB64);
+							const bytes = new Uint8Array(binary.length);
+							for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+							if (!cancelled) setDeformedFlat(new Float32Array(bytes.buffer));
+						} catch (e2) {
+							if (!cancelled) {
+								console.error("Fallback decode also failed:", e2);
+								setDeformedFlat(null);
+							}
+						}
+					}
+				})();
+				return () => {
+					cancelled = true;
+				};
+			}, [
+				activeB64,
+				deformedVertsDirect,
+				editedDeformedB64
+			]);
+			(0, react.useEffect)(() => {
+				if (!altSamples || altSamples.length === 0) {
+					setAltDecoded([]);
+					return;
+				}
+				let cancelled = false;
+				const decoded = [];
+				(async () => {
+					for (let i = 0; i < altSamples.length; i++) {
+						if (cancelled) return;
+						const s = altSamples[i];
+						try {
+							const res = await fetch(`data:application/octet-stream;base64,${s.deformed_vertices_b64}`);
+							if (cancelled) return;
+							const buf = await res.arrayBuffer();
+							if (cancelled) return;
+							const frame0 = new Float32Array(buf).subarray(0, ALT_NUM_VERTS * 3);
+							decoded.push({
+								idx: i + 1,
+								verts: new Float32Array(frame0)
+							});
+							if (!cancelled) setAltDecoded([...decoded]);
+						} catch (e) {
+							console.error("[PoseViewer3D] alt-sample decode failed:", e);
+						}
+					}
+				})();
+				return () => {
+					cancelled = true;
+				};
+			}, [altSamples]);
+			const hasDeformed = !!deformedFlat && deformedFlat.length >= NUM_VERTS * 3;
+			const computedFrameCount = hasDeformed ? Math.floor(deformedFlat.length / (NUM_VERTS * 3)) : 0;
+			const showBindPose = forceBindPose || !hasDeformed || !meshData;
+			const cameraPos = (0, react.useMemo)(() => framedCameraPos(cameraView, cameraFraming)[0], [cameraView, cameraFraming]);
+			(0, react.useEffect)(() => {
+				const canvas = canvasRef.current;
+				if (!canvas || !meshData) return;
+				const handle = mountPoseStage(canvas, {
+					fov: cameraFov,
+					camera: cameraPos,
+					darkMode,
+					onCanvasReady
+				});
+				if (handle === null) return;
+				stageRef.current = handle;
+				if (threeCtxRef) threeCtxRef.current = handle.threeCtx;
+				return () => {
+					stageRef.current = null;
+					if (threeCtxRef) threeCtxRef.current = null;
+					handle.dispose();
+				};
+			}, [meshData]);
+			(0, react.useEffect)(() => {
+				const stage = stageRef.current;
+				if (!stage || !meshData) return;
+				stage.update({
+					meshData,
+					deformedFlat: hasDeformed ? deformedFlat : null,
+					numVerts: NUM_VERTS,
+					frameCount: computedFrameCount || 1,
+					frameIdx,
+					setFrameIdx: onFrameChange ?? (() => {}),
+					animate,
+					showBindPose,
+					opacity,
+					wireframe,
+					color,
+					fps,
+					soma77JointsFlat,
+					showSkeleton,
+					editMode,
+					editableJoints,
+					selectedJoint,
+					onSelectJoint: onSelectJoint ?? (() => {}),
+					onSelectChain,
+					onJointMove: onJointMove ?? (() => {}),
+					selectedChain,
+					kinematicMode,
+					gizmoMode,
+					lightingOrbs,
+					onLightingOrbsChange,
+					selectedOrb,
+					onSelectOrb,
+					ghostJoints,
+					playbackSpeed,
+					footContacts,
+					showFootContacts,
+					showStartingDirection,
+					altSamples: altDecoded,
+					onCommitSample,
+					root2dPoints,
+					endEffectorPoints,
+					showConstraintLabels,
+					selectedEEId,
+					onSelectEE,
+					onChangeEEPoint,
+					placingEE,
+					eePlaceJointIdx: eePlaceJointIdx ?? 0,
+					onPlaceEE: onPlaceEE ?? (() => {}),
+					cameraView,
+					framing: cameraFraming,
+					reference: refBundle,
+					refPlaybackFrameIdx,
+					editRefMode,
+					refEditableJoints,
+					onRefJointMove,
+					inPlace
+				});
+				stage.setDarkMode(darkMode);
+			});
+			if (meshLoading) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: PoseViewer3D_module_css_default.loadingBox,
+				style: { height },
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Loader2, { className: PoseViewer3D_module_css_default.loadingIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: PoseViewer3D_module_css_default.loadingLabel,
+					children: "Loading mesh…"
+				})]
+			});
+			if (meshError) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: PoseViewer3D_module_css_default.errorBox,
+				style: { height },
+				children: ["Mesh error: ", meshError]
+			});
+			if (!meshData) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				className: PoseViewer3D_module_css_default.errorBox,
+				style: { height },
+				children: "No mesh"
+			});
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				style: {
+					height,
+					width: "100%",
+					position: "relative"
+				},
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
+					ref: canvasRef,
+					style: {
+						display: "block",
+						width: "100%",
+						height: "100%"
+					},
+					"data-testid": "pose-viewer-3d"
+				})
+			});
+		}
+		const PoseViewer3D = (0, react.memo)(PoseViewer3DImpl);
+		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/PoseEditMode.tsx
+		init_src();
+		//#endregion
+		//#region src/ui/studio/MotionStageView.tsx
+		init_src();
+		function MotionStageView({ stageBoxRef, bgDragOver, setBgDragOver, handleStageDrop, bgImage, skin, allVertsM, restB64, editedDeformedB64, frameIdx, setFrameIdx, npz, playing, editMode, cameraView, framing, jointsFlatCm, showSkeleton, effectiveNpz, customBindMesh, inPlace, threeCtxRef, editableJoints, selectedJoint, setSelectedJoint, handleJointMove, loading, error, setCameraView, setFraming, exportOpen, stageRect, beginRectDrag, onRectPointerMove, endRectDrag, setExportOpen, npzUrl, stage, setPlaying, displayJointsM, liftY, setStageRect, exportOut, handleOutSize, handleFramePreset }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: component_module_css_default.centerRow,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ViewportFrame, {
+					ref: stageBoxRef,
+					className: cn(component_module_css_default.stageFrame, bgDragOver && component_module_css_default.stageFrameDrag),
+					onDragOver: (e) => {
+						if (e.dataTransfer.types.includes("application/tech-noir-asset") || e.dataTransfer.types.includes("Files")) {
+							e.preventDefault();
+							setBgDragOver(true);
+						}
+					},
+					onDragLeave: () => setBgDragOver(false),
+					onDrop: handleStageDrop,
+					children: [
+						bgImage && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+							dock: "fill",
+							className: component_module_css_default.ovBg,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+								src: bgImage,
+								alt: "",
+								"aria-hidden": true,
+								className: component_module_css_default.bgImg
+							})
+						}),
+						bgDragOver && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+							dock: "fill",
+							className: component_module_css_default.ovDrop,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								className: component_module_css_default.dropVeil,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: component_module_css_default.dropVeilLabel,
+									children: "Drop a GLB to set the preview body — an image to set the background"
 								})
-							}),
-							bgDragOver && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-								dock: "fill",
-								className: component_module_css_default.ovDrop,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-									className: component_module_css_default.dropVeil,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: component_module_css_default.dropVeilLabel,
-										children: "Drop a GLB to set the preview body — an image to set the background"
-									})
-								})
-							}),
-							skin ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PoseViewer3D, {
-								deformedVertsDirect: allVertsM,
-								deformedVerticesB64: restB64 ?? "",
-								editedDeformedB64,
-								frameIdx,
-								onFrameChange: setFrameIdx,
-								animate: npz ? playing && !editMode : false,
-								fps: npz?.fps ?? 30,
-								cameraView,
-								cameraFraming: framing,
-								soma77JointsFlat: jointsFlatCm,
-								showSkeleton: effectiveNpz ? showSkeleton && !editMode : false,
-								customBindMesh,
-								identityModel: "soma",
-								inPlace,
-								threeCtxRef,
-								darkMode: true,
-								editMode,
-								editableJoints,
-								selectedJoint,
-								onSelectJoint: setSelectedJoint,
-								onJointMove: handleJointMove,
-								kinematicMode: "ik",
-								gizmoMode: "translate"
-							}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							})
+						}),
+						skin ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PoseViewer3D, {
+							deformedVertsDirect: allVertsM,
+							deformedVerticesB64: /* v8 ignore next -- the viewer renders only when skin loaded, which seeds restB64 (probe 2026-09-19) */ restB64 ?? "",
+							editedDeformedB64,
+							frameIdx,
+							onFrameChange: setFrameIdx,
+							animate: npz ? playing && !editMode : false,
+							fps: npz?.fps ?? 30,
+							cameraView,
+							cameraFraming: framing,
+							soma77JointsFlat: jointsFlatCm,
+							showSkeleton: /* v8 ignore next -- viewer renders only under skin ⟹ restNpz/effectiveNpz/restB64 non-null (probe 2026-09-19) */ effectiveNpz ? showSkeleton && !editMode : false,
+							customBindMesh,
+							identityModel: "soma",
+							inPlace,
+							threeCtxRef,
+							darkMode: true,
+							editMode,
+							editableJoints,
+							selectedJoint,
+							onSelectJoint: setSelectedJoint,
+							onJointMove: handleJointMove,
+							kinematicMode: "ik",
+							gizmoMode: "translate"
+						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							role: "status",
+							"aria-busy": "true",
+							"aria-label": "Loading mannequin",
+							className: component_module_css_default.stageLoading,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton$1, { className: component_module_css_default.skelAvatar }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton$1, { className: component_module_css_default.skelLine })]
+						}),
+						loading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+							dock: "fill",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								role: "status",
 								"aria-busy": "true",
-								"aria-label": "Loading mannequin",
-								className: component_module_css_default.stageLoading,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelAvatar }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelLine })]
-							}),
-							loading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-								dock: "fill",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									role: "status",
-									"aria-busy": "true",
-									"aria-label": "Loading motion",
-									className: component_module_css_default.stageVeil,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelAvatarSm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelLine })]
-								})
-							}),
-							error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-								dock: "fill",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: component_module_css_default.stageVeil,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: component_module_css_default.warnIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: component_module_css_default.veilText,
-										children: error
-									})]
-								})
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-								dock: "top-right",
-								className: component_module_css_default.ovCam,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: component_module_css_default.camPill,
-									children: [
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-											tip: "Rotate view left (45°)",
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-												variant: "ghost",
-												onClick: () => setCameraView(stepAzimuth(cameraView, -1)),
-												"aria-label": "Rotate view left (45°)",
-												className: component_module_css_default.camBtn,
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCcw, { className: component_module_css_default.i14 })
-											})
-										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { className: component_module_css_default.camDivider }),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-											tip: "Full body framing",
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-												variant: "ghost",
-												onClick: () => setFraming("full"),
-												"aria-label": "Full body framing",
-												"aria-pressed": framing === "full",
-												className: cn(component_module_css_default.frameBtn, framing === "full" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PersonStanding, { className: component_module_css_default.i14 })
-											})
-										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-											tip: "Upper half framing — closer, chest-height camera at the same angle",
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-												variant: "ghost",
-												onClick: () => setFraming("upper"),
-												"aria-label": "Upper half framing",
-												"aria-pressed": framing === "upper",
-												className: cn(component_module_css_default.frameBtn, framing === "upper" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(User, { className: component_module_css_default.i14 })
-											})
-										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-											tip: "Rotate view right (45°)",
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-												variant: "ghost",
-												onClick: () => setCameraView(stepAzimuth(cameraView, 1)),
-												"aria-label": "Rotate view right (45°)",
-												className: component_module_css_default.camBtn,
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCw, { className: component_module_css_default.i14 })
-											})
-										})
-									]
-								})
-							}),
-							exportOpen && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ViewportAnchor, {
-								"data-export-rect-overlay": true,
-								dock: "fill",
-								className: component_module_css_default.ovRect,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									"data-export-rect": true,
-									role: "presentation",
-									"aria-label": "Export frame — drag to move, drag a corner to resize",
-									onPointerDown: (e) => beginRectDrag(e, "move"),
-									onPointerMove: onRectPointerMove,
-									onPointerUp: endRectDrag,
-									onPointerCancel: endRectDrag,
-									className: component_module_css_default.exportRect,
-									style: {
-										left: `${stageRect.x * 100}%`,
-										top: `${stageRect.y * 100}%`,
-										width: `${stageRect.w * 100}%`,
-										height: `${stageRect.h * 100}%`,
-										boxShadow: "0 0 0 9999px rgba(0,0,0,0.35)"
-									},
-									children: [
-										[
-											{
-												corner: "nw",
-												cls: component_module_css_default.cornerNW
-											},
-											{
-												corner: "ne",
-												cls: component_module_css_default.cornerNE
-											},
-											{
-												corner: "sw",
-												cls: component_module_css_default.cornerSW
-											},
-											{
-												corner: "se",
-												cls: component_module_css_default.cornerSE
-											}
-										].map((h) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-											"data-export-corner": h.corner,
-											onPointerDown: (e) => beginRectDrag(e, h.corner),
-											onPointerMove: onRectPointerMove,
-											onPointerUp: endRectDrag,
-											onPointerCancel: endRectDrag,
-											className: cn(component_module_css_default.cornerHandle, h.cls)
-										}, h.corner)),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: component_module_css_default.crossV }),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: component_module_css_default.crossH })
-									]
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-									dock: "bottom-center",
-									className: component_module_css_default.rectHint,
-									children: "Drag the rectangle over the character · corners resize (aspect-locked) · any size exports the typed pixels · orbit for the angle"
+								"aria-label": "Loading motion",
+								className: component_module_css_default.stageVeil,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton$1, { className: component_module_css_default.skelAvatarSm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton$1, { className: component_module_css_default.skelLine })]
+							})
+						}),
+						error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+							dock: "fill",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: component_module_css_default.stageVeil,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: component_module_css_default.warnIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: component_module_css_default.veilText,
+									children: error
 								})]
 							})
-						]
-					}), effectiveNpz && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionExportDialog, {
-						open: exportOpen,
-						onClose: () => setExportOpen(false),
-						npz: effectiveNpz,
-						npzUrl,
-						glbUrl: stage.result?.motionPreviews?.find((m) => m.url)?.url ?? null,
-						frameIdx,
-						onFrameChange: (f) => {
-							setFrameIdx(f);
-							setPlaying(false);
-						},
-						cameraView,
-						displayJointsM,
-						liftY,
-						inPlace,
-						threeCtxRef,
-						stageRect,
-						onStageRectChange: setStageRect,
-						outW: exportOut.w,
-						outH: exportOut.h,
-						onOutSize: handleOutSize,
-						onFramePreset: handleFramePreset
-					})]
-				}),
-				bottom: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(PaneShell, {
-						className: component_module_css_default.timelineShell,
-						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PaneHeader, {
-								variant: "strip",
-								className: component_module_css_default.transportHead,
-								lead: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+							dock: "top-right",
+							className: component_module_css_default.ovCam,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: component_module_css_default.camPill,
+								children: [
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-										tip: !npz ? "Run the card first — nothing to play yet" : editMode ? "Pause playback while refining" : playing ? "Pause (Space)" : "Play (Space)",
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: component_module_css_default.contents,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-												variant: "ghost",
-												onClick: () => setPlaying((p) => !p),
-												disabled: editMode || !npz,
-												"aria-label": playing ? "Pause (Space)" : "Play (Space)",
-												className: component_module_css_default.playBtn,
-												children: playing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Pause, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PlayAlt, { className: component_module_css_default.playIcon })
-											})
+										tip: "Rotate view left (45°)",
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											variant: "ghost",
+											onClick: () => setCameraView(stepAzimuth(cameraView, -1)),
+											"aria-label": "Rotate view left (45°)",
+											className: component_module_css_default.camBtn,
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCcw, { className: component_module_css_default.i14 })
 										})
 									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										className: component_module_css_default.timeWrap,
-										children: npz ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-											className: component_module_css_default.timeText,
-											children: [
-												fmt(curSec),
-												" / ",
-												fmt(totalSec)
-											]
-										}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-											className: component_module_css_default.noMotion,
-											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Info, { className: component_module_css_default.i14 }), "No motion yet — run the card"]
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { className: component_module_css_default.camDivider }),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+										tip: "Full body framing",
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											variant: "ghost",
+											onClick: () => setFraming("full"),
+											"aria-label": "Full body framing",
+											"aria-pressed": framing === "full",
+											className: cn(component_module_css_default.frameBtn, framing === "full" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PersonStanding, { className: component_module_css_default.i14 })
 										})
 									}),
-									npz && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										className: component_module_css_default.fpsChip,
-										children: `${npz.fps.toFixed(0)} fps · ${npz.T}f`
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+										tip: "Upper half framing — closer, chest-height camera at the same angle",
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											variant: "ghost",
+											onClick: () => setFraming("upper"),
+											"aria-label": "Upper half framing",
+											"aria-pressed": framing === "upper",
+											className: cn(component_module_css_default.frameBtn, framing === "upper" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(User, { className: component_module_css_default.i14 })
+										})
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+										tip: "Rotate view right (45°)",
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											variant: "ghost",
+											onClick: () => setCameraView(stepAzimuth(cameraView, 1)),
+											"aria-label": "Rotate view right (45°)",
+											className: component_module_css_default.camBtn,
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCw, { className: component_module_css_default.i14 })
+										})
 									})
-								] }),
-								hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-									className: component_module_css_default.hintWrap,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-										className: component_module_css_default.hintTitle,
-										children: ["Timeline · prompt cards", tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""]
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-										tip: targetT > 0 ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment" : "Loading the timeline…",
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: component_module_css_default.contents,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-												variant: "ghost",
-												onClick: addPromptCard,
-												disabled: targetT <= 0,
-												className: component_module_css_default.addCardBtn,
-												children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Plus, { className: component_module_css_default.i12 }), "Add prompt card"]
-											})
-										})
-									})]
-								})
-							}),
-							targetT > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
-								prompts: tlPrompts,
-								keyframes: tlKeyframes,
-								frameIdx,
-								totalFrames: targetT,
-								fps: effectiveNpz?.fps ?? 30,
-								onExtend: onTimelineExtend,
-								onFrameChange: handleTimelineFrameChange,
-								onKeyframeAdd,
-								onKeyframeMove,
-								onKeyframeDelete,
-								onPromptUpdate,
-								onPromptMove,
-								onPromptResize,
-								onPromptDelete
-							}),
-							!targetT && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: component_module_css_default.timelineEmpty,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Info, { className: component_module_css_default.i14 }), "Run the card — the timeline appears with the motion"]
+								]
 							})
-						]
-					}),
-					editMode && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: component_module_css_default.editHintBar,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCw, { className: component_module_css_default.editHintIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
-							"Drag joints to refine the pose at this frame (IK moves the chain).",
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("b", {
-								className: component_module_css_default.editHintStrong,
-								children: " Repose"
-							}),
-							" patches rotations for the edited frame and saves it as the chain start. Hit Run when ready — kimodo conditions on it. Finger/toe tip rotations are approximate (translate edits)."
-						] })]
-					}),
-					bodyWireOpen && onWireSlot && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(WirePickerModal, {
-						slot: MOTION_PREVIEW_GLB_PARAM,
-						priorStages,
-						currentId: bodyWired ? bodyWiredId : "",
-						currentOutput: null,
-						onPick: (upstreamId) => {
-							onWireSlot(MOTION_PREVIEW_GLB_PARAM, upstreamId, null);
-							onSave({ [MOTION_PREVIEW_GLB_PARAM]: null });
-							setBodyGlbState(null);
-							setBodyNotice(null);
-							setBodyWireOpen(false);
-						},
-						onUnwire: () => {
-							onWireSlot(MOTION_PREVIEW_GLB_PARAM, null, null);
-							onSave({ [MOTION_PREVIEW_GLB_PARAM]: null });
-							setBodyWireOpen(false);
-						},
-						onClose: () => setBodyWireOpen(false)
-					})
-				] })
+						}),
+						exportOpen && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ViewportAnchor, {
+							"data-export-rect-overlay": true,
+							dock: "fill",
+							className: component_module_css_default.ovRect,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								"data-export-rect": true,
+								role: "presentation",
+								"aria-label": "Export frame — drag to move, drag a corner to resize",
+								onPointerDown: (e) => beginRectDrag(e, "move"),
+								onPointerMove: onRectPointerMove,
+								onPointerUp: endRectDrag,
+								onPointerCancel: endRectDrag,
+								className: component_module_css_default.exportRect,
+								style: {
+									left: `${stageRect.x * 100}%`,
+									top: `${stageRect.y * 100}%`,
+									width: `${stageRect.w * 100}%`,
+									height: `${stageRect.h * 100}%`,
+									boxShadow: "0 0 0 9999px rgba(0,0,0,0.35)"
+								},
+								children: [
+									[
+										{
+											corner: "nw",
+											cls: component_module_css_default.cornerNW
+										},
+										{
+											corner: "ne",
+											cls: component_module_css_default.cornerNE
+										},
+										{
+											corner: "sw",
+											cls: component_module_css_default.cornerSW
+										},
+										{
+											corner: "se",
+											cls: component_module_css_default.cornerSE
+										}
+									].map((h) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+										"data-export-corner": h.corner,
+										onPointerDown: (e) => beginRectDrag(e, h.corner),
+										onPointerMove: onRectPointerMove,
+										onPointerUp: endRectDrag,
+										onPointerCancel: endRectDrag,
+										className: cn(component_module_css_default.cornerHandle, h.cls)
+									}, h.corner)),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: component_module_css_default.crossV }),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: component_module_css_default.crossH })
+								]
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+								dock: "bottom-center",
+								className: component_module_css_default.rectHint,
+								children: "Drag the rectangle over the character · corners resize (aspect-locked) · any size exports the typed pixels · orbit for the angle"
+							})]
+						})
+					]
+				}), effectiveNpz && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionExportDialog, {
+					open: exportOpen,
+					onClose: () => setExportOpen(false),
+					npz: effectiveNpz,
+					npzUrl,
+					glbUrl: stage.result?.motionPreviews?.find((m) => m.url)?.url ?? null,
+					frameIdx,
+					onFrameChange: (f) => {
+						setFrameIdx(f);
+						setPlaying(false);
+					},
+					cameraView,
+					displayJointsM,
+					liftY,
+					inPlace,
+					threeCtxRef,
+					stageRect,
+					onStageRectChange: setStageRect,
+					outW: exportOut.w,
+					outH: exportOut.h,
+					onOutSize: handleOutSize,
+					onFramePreset: handleFramePreset
+				})]
+			});
+		}
+		//#endregion
+		//#region src/ui/studio/MotionTimelineSection.tsx
+		function MotionTimelineSection({ npz, editMode, playing, setPlaying, fmt, curSec, totalSec, tlPrompts, targetT, addPromptCard, tlKeyframes, frameIdx, effectiveNpz, onTimelineExtend, handleTimelineFrameChange, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, bodyWireOpen, onWireSlot, priorStages, bodyWired, bodyWiredId, onSave, setBodyGlbState, setBodyNotice, setBodyWireOpen }) {
+			/* v8 ignore next 1 -- targetT ≥ 1 from every constructor (probe 2026-09-19): the empty-timeline face is the zero-frame fence */
+			const emptyTimelineFace = !targetT && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: component_module_css_default.timelineEmpty,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Info, { className: component_module_css_default.i14 }), "Run the card — the timeline appears with the motion"]
+			});
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(PaneShell, {
+					className: component_module_css_default.timelineShell,
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PaneHeader, {
+							variant: "strip",
+							className: component_module_css_default.transportHead,
+							lead: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+									tip: !npz ? "Run the card first — nothing to play yet" : editMode ? "Pause playback while refining" : playing ? "Pause (Space)" : "Play (Space)",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: component_module_css_default.contents,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											variant: "ghost",
+											onClick: () => setPlaying((p) => !p),
+											disabled: editMode || !npz,
+											"aria-label": playing ? "Pause (Space)" : "Play (Space)",
+											className: component_module_css_default.playBtn,
+											children: playing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Pause, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PlayAlt, { className: component_module_css_default.playIcon })
+										})
+									})
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									className: component_module_css_default.timeWrap,
+									children: npz ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										className: component_module_css_default.timeText,
+										children: [
+											fmt(curSec),
+											" / ",
+											fmt(totalSec)
+										]
+									}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										className: component_module_css_default.noMotion,
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Info, { className: component_module_css_default.i14 }), "No motion yet — run the card"]
+									})
+								}),
+								npz && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									className: component_module_css_default.fpsChip,
+									children: `${npz.fps.toFixed(0)} fps · ${npz.T}f`
+								})
+							] }),
+							hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								className: component_module_css_default.hintWrap,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									className: component_module_css_default.hintTitle,
+									children: ["Timeline · prompt cards", tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""]
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+									tip: /* v8 ignore next -- targetT = max(baseT≥1, …) ≥ 1 from every constructor (probe 2026-09-19) */ targetT > 0 ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment" : "Loading the timeline…",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: component_module_css_default.contents,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											variant: "ghost",
+											onClick: addPromptCard,
+											disabled: targetT <= 0,
+											className: component_module_css_default.addCardBtn,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Plus, { className: component_module_css_default.i12 }), "Add prompt card"]
+										})
+									})
+								})]
+							})
+						}),
+						targetT > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
+							prompts: tlPrompts,
+							keyframes: tlKeyframes,
+							frameIdx,
+							totalFrames: targetT,
+							fps: effectiveNpz?.fps ?? 30,
+							onExtend: onTimelineExtend,
+							onFrameChange: handleTimelineFrameChange,
+							onKeyframeAdd,
+							onKeyframeMove,
+							onKeyframeDelete,
+							onPromptUpdate,
+							onPromptMove,
+							onPromptResize,
+							onPromptDelete
+						}),
+						emptyTimelineFace
+					]
+				}),
+				editMode && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: component_module_css_default.editHintBar,
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCw, { className: component_module_css_default.editHintIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+						"Drag joints to refine the pose at this frame (IK moves the chain).",
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("b", {
+							className: component_module_css_default.editHintStrong,
+							children: " Repose"
+						}),
+						" patches rotations for the edited frame and saves it as the chain start. Hit Run when ready — kimodo conditions on it. Finger/toe tip rotations are approximate (translate edits)."
+					] })]
+				}),
+				bodyWireOpen && onWireSlot && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(WirePickerModal, {
+					slot: "preview_glb",
+					priorStages,
+					currentId: bodyWired ? bodyWiredId : "",
+					currentOutput: null,
+					onPick: (upstreamId) => {
+						onWireSlot("preview_glb", upstreamId, null);
+						onSave({ ["preview_glb"]: null });
+						setBodyGlbState(null);
+						setBodyNotice(null);
+						setBodyWireOpen(false);
+					},
+					onUnwire: () => {
+						onWireSlot("preview_glb", null, null);
+						onSave({ ["preview_glb"]: null });
+						setBodyWireOpen(false);
+					},
+					onClose: () => setBodyWireOpen(false)
+				})
+			] });
+		}
+		//#endregion
+		//#region src/ui/studio/component.tsx
+		/**
+		* MotionCardEditor — the drill-down surface for a genre:"motion" card
+		* (kimodo text→motion). Turns the card into a live 3D stage like the Body
+		* Card: the somax mannequin rendered from the run's motion NPZ, a scrubber
+		* strip, an 8-angle azimuth ring, click-drag joint refinement, and the
+		* VNCCS export pair (mesh + openpose at an azimuth).
+		*
+		* Data flow (all client-side, mirrors MotionViewer):
+		* 1. npzUrl from stage.result.artifacts["motion_npz"] (fallback: first
+		* .npz asset) → loadMotionNpz (meters) + loadSomaSkin (neutral bind).
+		* 2. precomputeDeformedVerts → (T, V, 3) meters → vertsToB64(…, cm) →
+		* PoseViewer3D's deformedVerticesB64. The skin's bind mesh (meters →
+		* cm) is handed over as customBindMesh so the viewer skips the
+		* /poser/skin/mesh fetch entirely — the render is 1:1 with MotionViewer.
+		* 3. Playback is PoseViewer3D's own AnimController (animate prop); the
+		* scrubber reads frameIdx (throttled ~10fps) + seeks by state.
+		*
+		* FREEZE → STOP (2026-08-15): the studio SHELL owns the rail's Run row and
+		* with it the interrupt (editorClient.stopRun → /v1/flows/stop → ComfyUI
+		* /interrupt — the kimodo node's per-step hook makes the abort land
+		* mid-generation). The tenant carries ZERO rpc imports: its only write
+		* channel is onSave (E1, enforced by card-studio-boundary.test.ts).
+		*
+		* REPOSE (Phase B): edit mode drives PoseViewer3D's joint gizmos. The
+		* sculpt is re-skinned client-side (edited joints cm→m → deformFrame →
+		* vertsToB64 → editedDeformedB64). "Repose" patches the current frame's
+		* rotations (patchFrame), truncates the motion to frameIdx+1, writes an NPZ
+		* data URL, and saves it as prev_motion_artifact (the chain slot —
+		* _upload_input_images converts the data URL to a bare .npz). The user hits
+		* Run separately — kimodo conditions the next generation on the saved pose.
+		* Zero backend changes.
+		*
+		* NO-RUN STATE (2026-08-10, policy: "compare it to the Kimodo Pose
+		* Studio"): the stage ALWAYS renders. Before any run exists there is no NPZ,
+		* so PoseViewer3D receives no deformed vertices and SkinnedHumanoid falls
+		* back to the bind pose — the neutral somax mannequin, live and interactive
+		* (orbit/zoom/azimuth), exactly like opening the pose studio. Scrubber,
+		* Refine, and Export stay honestly disabled ("run the card" hints) — no
+		* placeholder preview, no blank box.
+		*
+		* SPLIT (godfile remediation): this module is now state orchestration +
+		* composition only. The inner units moved verbatim to seams —
+		* useMotionUndoStack (undo/redo), useMotionMedia (body/skin/load/playback/
+		* thumb/background), usePoseEditing (edit mode + reskin + repose),
+		* useMotionStage (joints flat + stamp/discard + export framing),
+		* useTimelineEnvelope (envelope + seed guard + persists),
+		* useTimelineAuthoring (timeline CRUD verbs), and the MotionRail /
+		* MotionStageView / MotionTimelineSection panels. Behavior is IDENTICAL.
+		*/
+		init_src();
+		function MotionCardEditor({ stage, onSave, upstreams = [], onWireSlot }) {
+			const toast = useToastStore((s) => s.addToast);
+			const { spec: kimodoSpec, error: kimodoError, resolved: paramValues, edit: onParamEdit } = useResolvedForm("kimodo", typeof stage.params === "object" && stage.params !== null ? stage.params : {}, (name, value) => {
+				onSave({ [name]: value });
+			});
+			const npzUrl = (0, react.useMemo)(() => {
+				const arts = stage.result?.artifacts;
+				if (arts) {
+					const named = arts["motion_npz"];
+					if (typeof named === "string") return named;
+					const npzArt = Object.values(arts).find((u) => typeof u === "string" && u.endsWith(".npz"));
+					if (npzArt) return npzArt;
+				}
+				return stage.result?.assetUrls?.find((u) => typeof u === "string" && u.endsWith(".npz")) ?? null;
+			}, [stage.result]);
+			const [bodyGlb, setBodyGlbState] = (0, react.useState)(null);
+			const [bodyNotice, setBodyNotice] = (0, react.useState)(null);
+			const [bodyWireOpen, setBodyWireOpen] = (0, react.useState)(false);
+			const [skin, setSkin] = (0, react.useState)(null);
+			const [npz, setNpz] = (0, react.useState)(null);
+			const [allVertsM, setAllVertsM] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const [loading, setLoading] = (0, react.useState)(false);
+			const [keptEdit, setKeptEdit] = (0, react.useState)(null);
+			const [frameIdx, setFrameIdx] = (0, react.useState)(0);
+			const [playing, setPlaying] = (0, react.useState)(false);
+			const [tlKeyframes, setTlKeyframes] = (0, react.useState)([]);
+			const [tlIntervals, setTlIntervals] = (0, react.useState)([]);
+			const [tlPrompts, setTlPrompts] = (0, react.useState)([]);
+			const [constraintPayloads, setConstraintPayloads] = (0, react.useState)({});
+			const [editMode, setEditMode] = (0, react.useState)(false);
+			const [editableJoints, setEditableJoints] = (0, react.useState)(null);
+			const editableJointsRef = (0, react.useRef)(null);
+			const [selectedJoint, setSelectedJoint] = (0, react.useState)(null);
+			const [editedDeformedB64, setEditedDeformedB64] = (0, react.useState)(null);
+			const [reposing, setReposing] = (0, react.useState)(false);
+			const [cameraView, setCameraView] = (0, react.useState)("az-0");
+			const [framing, setFraming] = (0, react.useState)("full");
+			const [showSkeleton, setShowSkeleton] = (0, react.useState)(true);
+			const [inPlace, setInPlace] = (0, react.useState)(false);
+			const [exportOpen, setExportOpen] = (0, react.useState)(false);
+			const [stageRect, setStageRect] = (0, react.useState)(DEFAULT_STAGE_RECT);
+			const threeCtxRef = (0, react.useRef)(null);
+			const bgInputRef = (0, react.useRef)(null);
+			const [bgImage, setBgImage] = (0, react.useState)(null);
+			const [bgDragOver, setBgDragOver] = (0, react.useState)(false);
+			const promptsAuthoredRef = (0, react.useRef)(false);
+			const restNpz = (0, react.useMemo)(() => {
+				if (!skin) return null;
+				return {
+					posedJoints: skin.restJoints,
+					globalRotMats: skin.restRots,
+					fps: 30,
+					T: 1
+				};
+			}, [skin]);
+			const effectiveNpz = npz ?? restNpz;
+			const effectiveVertsM = (0, react.useMemo)(() => {
+				if (!restNpz || !skin) return null;
+				return precomputeDeformedVerts(restNpz, skin);
+			}, [restNpz, skin]);
+			const restB64 = (0, react.useMemo)(() => effectiveVertsM ? vertsToB64(effectiveVertsM, true) : null, [effectiveVertsM]);
+			const customBindMesh = (0, react.useMemo)(() => {
+				if (!skin) return null;
+				const bv = skin.bindVertices;
+				const vertices = [];
+				for (let i = 0; i < bv.length; i += 3) vertices.push([
+					bv[i] * 100,
+					bv[i + 1] * 100,
+					bv[i + 2] * 100
+				]);
+				const f = skin.faces;
+				const faces = [];
+				for (let i = 0; i < f.length; i += 3) faces.push([
+					f[i],
+					f[i + 1],
+					f[i + 2]
+				]);
+				return {
+					vertices,
+					faces
+				};
+			}, [skin]);
+			const liftY = (0, react.useMemo)(() => {
+				if (!skin) return 0;
+				let minY = Infinity;
+				const bv = skin.bindVertices;
+				for (let i = 1; i < bv.length; i += 3) if (bv[i] < minY) minY = bv[i];
+				return isFinite(minY) ? FLOOR_LIFT_Y$1 - minY : FLOOR_LIFT_Y$1;
+			}, [skin]);
+			const currentJointsM = (0, react.useMemo)(() => {
+				const src = effectiveNpz;
+				if (!src) return null;
+				const i = Math.min(frameIdx, src.T - 1) * 77 * 3;
+				return src.posedJoints.slice(i, i + 231);
+			}, [effectiveNpz, frameIdx]);
+			const fullbodyKfAtFrame = (0, react.useMemo)(() => tlKeyframes.find((k) => k.track_id === "fullbody" && k.frame === frameIdx) ?? null, [tlKeyframes, frameIdx]);
+			const firstNonEmptyCardText = (0, react.useMemo)(() => tlPrompts.find((p) => p.text.trim())?.text ?? "", [tlPrompts]);
+			(0, react.useEffect)(() => {
+				onSave({ prompt: firstNonEmptyCardText });
+			}, [firstNonEmptyCardText]);
+			const { bodySlotIdx, bodyWiredId, bodyWiredUpstream, bodyWired, bodyWiredUrl, bodySrc, attachBody, isGlbUrl, handleBodyFile, priorStages, setBg, handleBgFile, handleStageDrop } = useMotionMedia({
+				stage,
+				upstreams,
+				onSave,
+				onWireSlot,
+				toast,
+				bodyGlb,
+				setBodyGlbState,
+				setBodyNotice,
+				skin,
+				setSkin,
+				npz,
+				setNpz,
+				allVertsM,
+				setAllVertsM,
+				setError,
+				setLoading,
+				setFrameIdx,
+				setPlaying,
+				setEditMode,
+				setKeptEdit,
+				setEditedDeformedB64,
+				threeCtxRef,
+				npzUrl,
+				bgImage,
+				setBgImage,
+				setBgDragOver
+			});
+			const { pushUndo, handleUndo, handleRedo, maybePushDragUndo } = useMotionUndoStack({
+				tlPrompts,
+				tlKeyframes,
+				constraintPayloads,
+				tlIntervals,
+				keptEdit,
+				editedDeformedB64,
+				editableJointsRef,
+				promptsAuthoredRef,
+				setTlPrompts,
+				setTlKeyframes,
+				setConstraintPayloads,
+				setTlIntervals,
+				setEditableJoints,
+				setKeptEdit,
+				setEditedDeformedB64
+			});
+			const { toggleEdit, handleJointMove, displayJointsM, handleRepose } = usePoseEditing({
+				effectiveNpz,
+				frameIdx,
+				tlKeyframes,
+				constraintPayloads,
+				keptEdit,
+				currentJointsM,
+				fullbodyKfAtFrame,
+				pushUndo,
+				toast,
+				skin,
+				onSave,
+				editMode,
+				setEditMode,
+				editableJoints,
+				setEditableJoints,
+				editableJointsRef,
+				setSelectedJoint,
+				setEditedDeformedB64,
+				reposing,
+				setReposing,
+				setKeptEdit,
+				setPlaying,
+				setConstraintPayloads
+			});
+			const { jointsFlatCm, discardKeptEdit, stampConstraintAtFrame, exportOut, handleOutSize, handleFramePreset, stageBoxRef, beginRectDrag, onRectPointerMove, endRectDrag } = useMotionStage({
+				effectiveNpz,
+				keptEdit,
+				editableJoints,
+				frameIdx,
+				fullbodyKfAtFrame,
+				toast,
+				pushUndo,
+				setKeptEdit,
+				setEditedDeformedB64,
+				setConstraintPayloads,
+				setTlKeyframes,
+				exportOpen,
+				stageRect,
+				setStageRect
+			});
+			const { targetT, onTimelineExtend } = useTimelineEnvelope({
+				stage,
+				effectiveNpz,
+				onSave,
+				toast,
+				promptsAuthoredRef,
+				tlPrompts,
+				setTlPrompts,
+				tlKeyframes,
+				setTlKeyframes,
+				constraintPayloads,
+				setConstraintPayloads,
+				setTlIntervals
+			});
+			const { handleTimelineFrameChange, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptResize, onPromptMove, onPromptDelete, addPromptCard } = useTimelineAuthoring({
+				effectiveNpz,
+				toast,
+				pushUndo,
+				maybePushDragUndo,
+				promptsAuthoredRef,
+				targetT,
+				setFrameIdx,
+				setPlaying,
+				setConstraintPayloads,
+				setTlKeyframes,
+				setTlPrompts
+			});
+			const totalSec = npz ? npz.T / npz.fps : 0;
+			const curSec = npz ? frameIdx / npz.fps : 0;
+			const fmt = (s) => {
+				const m = Math.floor(s / 60);
+				return `${m}:${(s - m * 60).toFixed(1).padStart(4, "0")}`;
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShell, {
+				className: component_module_css_default.shellPad,
+				params: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionRail, {
+					effectiveNpz,
+					showSkeleton,
+					setShowSkeleton,
+					inPlace,
+					setInPlace,
+					editMode,
+					toggleEdit,
+					fullbodyKfAtFrame,
+					frameIdx,
+					stampConstraintAtFrame,
+					editableJoints,
+					handleRepose,
+					reposing,
+					keptEdit,
+					discardKeptEdit,
+					kimodoSpec,
+					kimodoError,
+					paramValues,
+					onParamEdit,
+					exportOpen,
+					setExportOpen,
+					bgImage,
+					bgInputRef,
+					handleBgFile,
+					setBg,
+					bodySrc,
+					bodyWired,
+					bodyWiredUpstream,
+					bodyWiredUrl,
+					handleBodyFile,
+					isGlbUrl,
+					toast,
+					attachBody,
+					onWireSlot,
+					bodySlotIdx,
+					onSave,
+					stage,
+					setBodyWireOpen,
+					bodyNotice
+				}),
+				preview: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionStageView, {
+					stageBoxRef,
+					bgDragOver,
+					setBgDragOver,
+					handleStageDrop,
+					bgImage,
+					skin,
+					allVertsM,
+					restB64,
+					editedDeformedB64,
+					frameIdx,
+					setFrameIdx,
+					npz,
+					playing,
+					editMode,
+					cameraView,
+					framing,
+					jointsFlatCm,
+					showSkeleton,
+					effectiveNpz,
+					customBindMesh,
+					inPlace,
+					threeCtxRef,
+					editableJoints,
+					selectedJoint,
+					setSelectedJoint,
+					handleJointMove,
+					loading,
+					error,
+					setCameraView,
+					setFraming,
+					exportOpen,
+					stageRect,
+					beginRectDrag,
+					onRectPointerMove,
+					endRectDrag,
+					setExportOpen,
+					npzUrl,
+					stage,
+					setPlaying,
+					displayJointsM,
+					liftY,
+					setStageRect,
+					exportOut,
+					handleOutSize,
+					handleFramePreset
+				}),
+				bottom: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineSection, {
+					npz,
+					editMode,
+					playing,
+					setPlaying,
+					fmt,
+					curSec,
+					totalSec,
+					tlPrompts,
+					targetT,
+					addPromptCard,
+					tlKeyframes,
+					frameIdx,
+					effectiveNpz,
+					onTimelineExtend,
+					handleTimelineFrameChange,
+					onKeyframeAdd,
+					onKeyframeMove,
+					onKeyframeDelete,
+					onPromptUpdate,
+					onPromptMove,
+					onPromptResize,
+					onPromptDelete,
+					bodyWireOpen,
+					onWireSlot,
+					priorStages,
+					bodyWired,
+					bodyWiredId,
+					onSave,
+					setBodyGlbState,
+					setBodyNotice,
+					setBodyWireOpen
+				})
 			});
 		}
 		defineShellDeclaration({

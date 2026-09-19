@@ -223,12 +223,18 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   // unless the host claimed the square seam itself.
   const own = useSquareProvider(edit, wire ?? { candidates: [] })
   const squareFor = square ?? own.square
-  // THE STACK ROW (one per declared image_list field): cells bind
-  // entries[i] through SourceRow — the SAME square-with-verbs seam
-  // the singles use; a pick commits the append, a clear SPLICES the
-  // entry (never a phantom '' in the bag). The add-cell is the
-  // EMPTY square — its verbs ARE the add drill; it vanishes at the
-  // declared cap (the mods' max_stack law, the rail's face).
+  // THE STACK ROW (one per declared image_list field — the ADDITIVE
+  // BAG grammar, #37: the operator's law "laid out like the additive
+  // mod thing"). The mods' own face, verbatim: the list's name rides
+  // ABOVE the row (uppercase title + the count hint — modHead/
+  // modTitle/modHint, one skin), never as an inline caption crammed
+  // beside the first square; the cells flow in ONE wrap row with the
+  // add-cell inline after the last (dashed, the mods' plus-square
+  // face); cell captions carry the INDEX only (the head already
+  // named the list — the full seat name rides aria + the verbs).
+  // A pick commits the append, a clear SPLICES the entry (never a
+  // phantom '' in the bag); the add-cell vanishes at the declared
+  // cap (the mods' max_stack law, the rail's face).
   const stackRow = (f: SpecField): ReturnType<typeof h> => {
     const v = value[f.name]
     const entries = Array.isArray(v)
@@ -237,43 +243,51 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     const cap = typeof f.max_stack === 'number' && f.max_stack > 0 ? f.max_stack : 8
     const kind = f.media === 'video' || f.media === 'audio' ? 'file' : 'image'
     const accept = f.media === 'video' ? 'video/*' : f.media === 'audio' ? 'audio/*' : undefined
-    const cellLabel = (i: number): string =>
-      `${f.label} ${String(i + 1)}${f.media !== undefined && f.media !== '' ? ' (' + f.media + ')' : ''}`
-    return h('div', { className: css.specSlotRow, 'data-input-stack': f.name, 'data-stack-count': String(entries.length) },
-      h('span', { className: css.specFieldKey, 'data-stack-label': f.name }, f.label),
-      entries.map((entry, i) =>
-        h('div', {
-          key: f.name + ':' + String(i),
-          className: css.specSlotCell,
-          title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
-        },
-          h(SourceRow, {
-            label: cellLabel(i), kind, value: entry,
-            ...(accept !== undefined ? { accept } : {}),
-            onEdit: (next: string): void => {
-              const arr = [...entries]
-              if (next === '') arr.splice(i, 1)
-              else arr[i] = next
-              edit(f.name, arr)
-            },
-            ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
-          }),
-        )),
-      entries.length < cap
-        ? h('div', { className: css.specSlotCell, 'data-stack-add': f.name, title: f.tooltip },
+    return h('div', { key: 'stack-' + f.name, className: css.specStack, 'data-input-stack': f.name, 'data-stack-count': String(entries.length) },
+      h('div', { className: css.modHead, 'data-stack-head': f.name, title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined },
+        h('span', { className: css.modTitle }, f.label),
+        h('span', { className: css.modHint },
+          `${String(entries.length)} / ${String(cap)}${f.media !== undefined && f.media !== '' ? ' · ' + f.media : ''}`),
+      ),
+      h('div', { className: css.specSlotRow },
+        entries.map((entry, i) =>
+          h('div', {
+            key: f.name + ':' + String(i),
+            className: css.specSlotCell,
+            title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
+          },
             h(SourceRow, {
-              label: `Add ${f.label}`, kind, value: null,
+              label: String(i + 1),
+              ariaLabel: `${f.label} ${String(i + 1)}`,
+              kind, value: entry,
               ...(accept !== undefined ? { accept } : {}),
               onEdit: (next: string): void => {
-                // the add drill commits ONLY real picks — an empty
-                // verb (clear on the empty cell) adds nothing
-                /* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
-                if (next !== '') edit(f.name, [...entries, next])
+                const arr = [...entries]
+                if (next === '') arr.splice(i, 1)
+                else arr[i] = next
+                edit(f.name, arr)
               },
               ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
             }),
-          )
-        : null,
+          )),
+        entries.length < cap
+          ? h('div', { className: css.specSlotCell, 'data-stack-add': f.name, title: f.tooltip },
+              h(SourceRow, {
+                label: '',
+                ariaLabel: `Add ${f.label}`,
+                kind, value: null,
+                ...(accept !== undefined ? { accept } : {}),
+                onEdit: (next: string): void => {
+                  // the add drill commits ONLY real picks — an empty
+                  // verb (clear on the empty cell) adds nothing
+                  /* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
+                  if (next !== '') edit(f.name, [...entries, next])
+                },
+                ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
+              }),
+            )
+          : null,
+      ),
     )
   }
   return h('div', { className: css.specForm },
@@ -283,6 +297,10 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     h(ModelAxes, { spec, value, onSet: edit, onDownloadModel }),
     railFields.length > 0 || stackFields.length > 0
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
+          // THE SECTION HEAD (#37, the Modifiers symmetry): the input
+          // zone names itself like the mod zone does — one grammar,
+          // head-above then the flowing rows.
+          h('h4', { className: css.specGroupTitle }, 'Inputs'),
           railFields.length > 0
             ? h('div', { className: css.specSlotRow },
                 railFields.map((f) => {
@@ -299,7 +317,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
                 }),
               )
             : null,
-          stackFields.map((f) => h('div', { key: 'stack-' + f.name, className: css.inputRail }, stackRow(f))),
+          stackFields.map((f) => stackRow(f)),
         )
       : null,
     submenu && activeGroup !== undefined

@@ -38,6 +38,7 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
     wireMenu,
     h(InputSquare, {
       label: props.hideLabel === true ? '' : props.label,
+      ...(props.ariaLabel !== undefined ? { ariaLabel: props.ariaLabel } : {}),
       value: shown !== null && isImageUrl(shown) ? shown : null,
       metric: typeof props.value === 'string' && props.value !== '' && !isImageUrl(props.value)
         ? props.value

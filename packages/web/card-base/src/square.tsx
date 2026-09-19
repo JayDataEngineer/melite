@@ -76,6 +76,11 @@ export interface InputSquareProps extends InputSquareVerbs {
    *  Empty string = NO caption (the owning section already names it
    *  — the 2026-09-15 duplicate-label fix). */
   label: string
+  /** The ACCESSIBLE name when the visible caption is not the seat's
+   *  name (the input stacks, #37: the head names the list, cells
+   *  show their INDEX — aria carries "Reference images 1"). Falls
+   *  back to `label`. */
+  ariaLabel?: string
   /** Attached value → thumbnail when it passes isImageUrl. */
   value?: string | null
   /** Secondary mono line. */
@@ -95,6 +100,10 @@ function assetPayload(e: DragEvent): string | null {
 
 export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
   const { label, value, metric, disabled } = props
+  // THE SEAT NAME (aria) may differ from the visible caption — the
+  // head-above law (#37): one name for the list, indices under the
+  // cells, the full seat name for assistive tech and the verbs.
+  const seat = props.ariaLabel ?? label
   const fileRef = useRef<HTMLInputElement | null>(null)
   const boxRef = useRef<HTMLDivElement | null>(null)
   const [over, setOver] = useState(false)
@@ -114,7 +123,7 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
       className: css.squareBox + (over ? ' ' + css.squareOver : ''),
       role: 'button',
       tabIndex: 0,
-      'aria-label': (label || 'source') + (label ? ' source' : ''),
+      'aria-label': (seat || 'source') + (seat !== '' ? ' source' : ''),
       onClick: pick,
       onKeyDown: (e: unknown) => { if ((e as KeyboardEvent).key === 'Enter') pick() },
       onDragOver: (e: DragEvent) => {
@@ -141,7 +150,7 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
             className: css.squareX,
             type: 'button',
             title: 'Detach',
-            'aria-label': 'Detach ' + (label || 'source'),
+            'aria-label': 'Detach ' + (seat || 'source'),
             onClick: (e: MouseEvent) => { e.stopPropagation(); props.onClear!() },
           }, '✕')
         : null,

@@ -212,6 +212,10 @@ export type FieldAtomClaim = (props: {
 export interface SourceRowProps {
   /** Short key shown under the square. */
   label: string
+  /** The ACCESSIBLE seat name when the visible caption is not it
+   *  (the input stacks, #37: visible = the cell's index, aria = the
+   *  full "List name N"). Falls back to `label`. */
+  ariaLabel?: string
   /** Hide the caption under the square — the owning section already
    *  names it (2026-09-15: the studio's First/Last frame subcards
    *  rendered the label TWICE). Default shows it. */

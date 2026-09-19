@@ -201,6 +201,15 @@ test('STEPS EDIT: the dial rewrites the claim; a blank input DROPS it (never a l
   })
   openEditTile('loras-0')
   expect((screen.getByLabelText('Steps applied') as HTMLInputElement).value).toBe('8')
+  // THE ENTRY'S ROW RIDES THE DIAL (#38, the steps-choice fix): the
+  // domain is STATED, BOUNDED, and seeded from the ENTRY's turbo row
+  // — never the first catalog row's facts ("fixed at 4", unbounded,
+  // placeholder 4). Editing a 4-to-8 adapter reads 4-to-8.
+  expect(screen.getByText('Steps applied 4–8')).not.toBeNull()
+  const editDial = screen.getByLabelText('Steps applied') as HTMLInputElement
+  expect(editDial.min).toBe('4')
+  expect(editDial.max).toBe('8')
+  expect(editDial.placeholder).toBe('8')
   fireEvent.change(screen.getByLabelText('Steps applied'), { target: { value: '5' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6, steps: 5 }])
@@ -213,6 +222,46 @@ test('STEPS EDIT: the dial rewrites the claim; a blank input DROPS it (never a l
   fireEvent.change(drop.getByLabelText('Steps applied'), { target: { value: '' } })
   fireEvent.click(drop.getByRole('button', { name: 'Save' }))
   expect(drop.onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6 }])
+})
+
+test('STEPS BADGE (#38, the choice made visible): the tile carries the EFFECTIVE count — the entry claim, else the row default', () => {
+  const stated = openLeaf({
+    kinds: [LORA_DISTILL],
+    values: { loras: [{ id: 'turbo', strength: 0.6, steps: 5 }] },
+  })
+  expect(document.querySelector('[data-mod-tile="loras-0"]')!.textContent).toContain('5 steps')
+  cleanup()
+  // an id-only recipe stamp badges the row's married count (8)
+  const seeded = openLeaf({
+    kinds: [LORA_DISTILL],
+    values: { loras: [{ id: 'turbo' }] },
+  })
+  expect(document.querySelector('[data-mod-tile="loras-0"]')!.textContent).toContain('8 steps')
+  cleanup()
+  // a fixed-point row badges its married count too
+  const dareties = openLeaf({
+    kinds: [LORA_DISTILL],
+    values: { loras: [{ id: 'dareties', strength: 0.8 }] },
+  })
+  expect(document.querySelector('[data-mod-tile="loras-0"]')!.textContent).toContain('4 steps')
+  cleanup()
+  // a kind whose rows claim no steps carries no badge
+  const plain = openLeaf({ kinds: [LORA], values: { loras: [{ id: 'detail', strength: 0.8 }] } })
+  expect(document.querySelector('[data-mod-tile="loras-0"]')!.textContent).not.toContain('steps')
+})
+
+test('OPTION EDIT (#38 papercut): a blank strength dial falls to the ENTRY row default — an id-only stamp edits without a refusal', () => {
+  const { onEdit } = openLeaf({ kinds: [LORA_DISTILL], values: { loras: [{ id: 'turbo' }] } })
+  openEditTile('loras-0')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6 }])
+})
+
+test('OPTION EDIT: an id-less drifted entry still opens (the leaf never crashes on drift — the compose door owns the loud refusal)', () => {
+  const { onEdit } = openLeaf({ kinds: [LORA_DISTILL], values: { loras: [{ strength: 0.5 }] } })
+  openEditTile('loras-0')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledWith('loras', [{ strength: 0.5 }])
 })
 
 test('STEPS RANGE (the 4-to-8 correction): the dial states and bounds to the row domain; outside refuses LOUD', () => {

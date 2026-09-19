@@ -57,13 +57,35 @@ function bindMedia(items: Array<{ url: string; name: string }>): void {
   } as Parameters<typeof bindEstateRemote>[0])
 }
 
-test('STACKS: an empty stack seats its label + the add-cell (the next slot, waiting)', () => {
+test('STACKS: the head names the list ABOVE the row — the additive-bag grammar (#37)', () => {
+  form({ user: { refs: ['https://host/a.png'] } })
+  const rail = document.querySelector('[data-input-rail]')
+  if (rail === null) throw new Error('stacks claim the rail')
+  const stack = rail.querySelector('[data-input-stack="refs"]')
+  if (stack === null) throw new Error('the refs stack seats')
+  // THE HEAD rides above (title + the count hint) — NEVER an inline
+  // caption crammed beside the first square (the #37 defect)
+  const head = stack.querySelector('[data-stack-head="refs"]')
+  if (head === null) throw new Error('the stack head seats above the row')
+  expect(stack.firstElementChild).toBe(head)
+  expect(head.textContent).toContain('Refs')
+  expect(head.textContent).toContain('1 / 2')
+  expect(stack.querySelector('[data-stack-label]')).toBeNull()
+  // the cells carry the INDEX only (the head named the list); the
+  // full seat name rides aria
+  const box = stack.querySelector('[role="button"]')
+  expect(box?.getAttribute('aria-label')).toBe('Refs 1 source')
+  expect(stack.querySelector('[data-stack-add="refs"]')).not.toBeNull()
+})
+
+test('STACKS: an empty stack seats its head + the add-cell (the next slot, waiting)', () => {
   form()
   const rail = document.querySelector('[data-input-rail]')
   if (rail === null) throw new Error('stacks claim the rail')
   const stack = rail.querySelector('[data-input-stack="refs"]')
   if (stack === null) throw new Error('the refs stack seats')
   expect(stack.getAttribute('data-stack-count')).toBe('0')
+  expect(stack.querySelector('[data-stack-head="refs"]')?.textContent).toContain('0 / 2')
   expect(stack.querySelector('[data-stack-add="refs"]')).not.toBeNull()
 })
 
@@ -114,19 +136,19 @@ test('STACKS: at the cap the add-cell vanishes (the mods max_stack law, the rail
   expect(document.querySelector('[data-stack-add="refs"]')).not.toBeNull()
 })
 
-test('STACKS: media kinds ride the caption (video cells are the file face, never image picks)', () => {
+test('STACKS: media kinds ride the head hint (video cells are the file face, never image picks)', () => {
   form({ user: { clips: ['https://host/v.mp4'] } })
   const stack = document.querySelector('[data-input-stack="clips"]')
   if (stack === null) throw new Error('the video stack seats')
-  expect(stack.textContent).toContain('Clips 1 (video)')
+  expect(stack.querySelector('[data-stack-head="clips"]')?.textContent).toContain('1 / 3 · video')
   expect(stack.querySelector('[data-stack-add="clips"]')).not.toBeNull()
 })
 
-test('STACKS: the audio lane seats its own caption (the OS dialog filters audio/*, never the image triad)', () => {
+test('STACKS: the audio lane seats its own head hint (the OS dialog filters audio/*, never the image triad)', () => {
   form({ user: { takes: ['https://host/t.wav'] } })
   const stack = document.querySelector('[data-input-stack="takes"]')
   if (stack === null) throw new Error('the audio stack seats')
-  expect(stack.textContent).toContain('Takes 1 (audio)')
+  expect(stack.querySelector('[data-stack-head="takes"]')?.textContent).toContain('1 / 8 · audio')
   expect(stack.querySelector('[data-stack-add="takes"]')).not.toBeNull()
 })
 

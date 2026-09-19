@@ -186,6 +186,12 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       }
       setDraftParams(params)
     } else if (isOptionKind(k)) {
+      // THE ENTRY'S ROW RIDES THE DIAL (the steps-choice fix, #38):
+      // a bare '' fell to rowOpts[0] — editing a 4-to-8 turbo read
+      // the FIRST row's facts ("fixed at 4", unbounded, placeholder
+      // 4) and the domain the operator chose by was invisible.
+      // Seed the entry's id so the Steps row follows THE ENTRY.
+      setDraftOption(typeof entry['id'] === 'string' ? entry['id'] as string : '')
       const strength = typeof entry['strength'] === 'number' ? entry['strength'] as number : undefined
       setDraftStrength(strength !== undefined ? String(strength) : '')
       setDraftSteps(typeof entry['steps'] === 'number' ? String(entry['steps'] as number) : '')
@@ -262,7 +268,12 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       } else {
         const entry = entries[open.index]
         if (entry === undefined) { setLeaf(null); return }
-        const strength = Number(draftStrength)
+        // strength (edit): a blank dial falls to the ENTRY'S row
+        // default (create's law mirrored) — an id-only recipe stamp
+        // edits without a NaN refusal; a stated dial wins.
+        const editRow = (k.options ?? []).find((o) => o.value === entry.id)
+        const strengthSeed = typeof editRow?.defaults?.strength === 'number' ? editRow.defaults.strength : 1.0
+        const strength = draftStrength.trim() === '' ? strengthSeed : Number(draftStrength)
         if (!Number.isFinite(strength)) { setLeafError('Strength must be a number.'); return }
         // steps applied (edit): a blank input DROPS the claim (back
         // to the ambient steps row); a stated count replaces it.
@@ -273,9 +284,8 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         // RANGE (the 4-to-8 correction): the ENTRY's row bounds the
         // claim — outside refuses LOUD, never a silent clamp.
         if (steps !== undefined) {
-          const row = (k.options ?? []).find((o) => o.value === entry.id)
-          const min = row?.defaults?.steps_min
-          const max = row?.defaults?.steps_max
+          const min = editRow?.defaults?.steps_min
+          const max = editRow?.defaults?.steps_max
           if (typeof min === 'number' && steps < min) { setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`); return }
           if (typeof max === 'number' && steps > max) { setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`); return }
         }
@@ -381,11 +391,19 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
               const strength = typeof entry[scalar] === 'number'
                 ? entry[scalar] as number
                 : option !== null && option.defaults !== undefined && typeof option.defaults[scalar] === 'number' ? option.defaults[scalar] as number : undefined
+              // THE STEPS BADGE (#38, the choice made visible): the
+              // EFFECTIVE count — the entry's own claim, else the
+              // row's married default — reads on the tile beside
+              // strength (what the film's sampler runs).
+              const steps = typeof entry['steps'] === 'number'
+                ? entry['steps'] as number
+                : option !== null && option.defaults !== undefined && typeof option.defaults['steps'] === 'number' ? option.defaults['steps'] as number : undefined
           return h(ModTile, {
             key: k.param_key + '-' + i,
             tileId: k.param_key + '-' + i,
             label: option !== null ? option.label : (id !== '' ? titleCaseId(id) : (isOptionKind(k) ? k.label + ' ' + String(i + 1) : k.label)),
             ...(strength !== undefined ? { strength } : {}),
+            ...(steps !== undefined ? { steps } : {}),
             onOpen: () => { openEdit(k, i) },
             dragging: dragTile === k.param_key + '-' + i,
             dragOver: overTile === k.param_key + '-' + i && dragTile !== null && dragTile !== overTile,
@@ -725,6 +743,9 @@ function ModTile(props: {
   tileId: string
   label: string
   strength?: number
+  /** The EFFECTIVE step count (entry claim ?? row default) — the
+   *  distill choice made visible beside strength (#38). */
+  steps?: number
   onOpen: () => void
   dragging: boolean
   dragOver: boolean
@@ -772,6 +793,9 @@ function ModTile(props: {
     h('span', { className: css.modTileLabel }, props.label),
     props.strength !== undefined
       ? h('span', { className: css.modTileStrength }, props.strength.toFixed(2))
+      : null,
+    props.steps !== undefined
+      ? h('span', { className: css.modTileSteps }, `${String(props.steps)} steps`)
       : null,
   )
 }

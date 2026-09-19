@@ -585,8 +585,8 @@ function apply(ctx) {
 		id: "img-to-mesh",
 		skeleton: "img-to-mesh",
 		boarded: [
-			"trellis2-native",
 			"pixal3d",
+			"trellis2-native",
 			"transfer_rig"
 		],
 		tags: [
@@ -620,17 +620,24 @@ function apply(ctx) {
 		},
 		schema,
 		compose(p, model, g, runId) {
+			const doc = schema(p);
 			if (model.id === "transfer_rig") {
 				const missing = [];
-				if (!String(p.rigged_glb || "").trim()) missing.push("rigged_glb");
-				if (!String(p.target_glb || "").trim()) missing.push("target_glb");
-				if (missing.length > 0) throw new Error(`required param(s) ${missing.map((m) => `'${m}'`).join(", ")} missing on the transfer_rig lane — the rig copy needs the donor rig AND the clothed target`);
-				transferRigArm(g, p);
+				if (!String(doc.rigged_glb || "").trim()) missing.push("rigged_glb");
+				if (!String(doc.target_glb || "").trim()) missing.push("target_glb");
+				if (missing.length > 0) {
+					const label = {
+						rigged_glb: "Rigged source GLB",
+						target_glb: "Target GLB"
+					};
+					throw new Error(`required param(s) ${missing.map((m) => `'${m}' (${label[m]})`).join(", ")} missing on the transfer_rig lane — the rig copy needs the donor rig AND the clothed target`);
+				}
+				transferRigArm(g, doc);
 				return;
 			}
-			admitMeshLift(p, model);
-			if (model.id === "pixal3d") pixalArm(g, p, model);
-			else trellisArm(g, p, model);
+			admitMeshLift(doc, model);
+			if (model.id === "pixal3d") pixalArm(g, doc, model);
+			else trellisArm(g, doc, model);
 		}
 	}));
 }

@@ -190,6 +190,8 @@
 .modTile:active { cursor: grabbing; }
 .modTileLabel { font-size: 11px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .modTileStrength { font-size: 9px; opacity: .55; }
+/* THE STEPS BADGE (#38): the effective distill count beside strength. */
+.modTileSteps { font-size: 9px; opacity: .55; font-variant-numeric: tabular-nums; }
 .modAddSquare {
   align-items: center; background: transparent;
   border: 1px dashed var(--dsw-alias-border-l3, rgba(0, 0, 0, 0.28)); border-radius: 8px;
@@ -313,6 +315,16 @@
  * clean data in, ONE rail out). The input zone is the rail: squares in
  * declared-signature order, the list row in the same zone. */
 .inputRail { gap: 10px; }
+
+/* THE INPUT STACK (#37, the operator's law: the input rows laid out
+ * "like the additive mod thing"): ONE grammar with the mods' own bag
+ * — the head names the list ABOVE the row (modHead/modTitle/
+ * modHint, one skin), the cells flow in one wrap row, the add-cell
+ * rides inline after the last cell wearing the mods' dashed
+ * plus-square face. Never an inline caption beside the first
+ * square, never a repeated list name under every cell. */
+.specStack { display: flex; flex-direction: column; gap: 6px; }
+[data-stack-add] .squareBox { border-style: dashed; }
 
 /* == THE WIRE PICKER (promoted from the mask-studio local port,
    hour 25 stroke 17 - one shared component; the audit found the
