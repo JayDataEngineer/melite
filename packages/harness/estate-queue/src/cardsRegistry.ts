@@ -115,6 +115,7 @@ export type { VariantSelection } from "./cardsVariant.ts";
 export { findCardDangling } from "./cardsDangling.ts";
 export type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
 import { liveObjectInfo, resolveEngineBaseUrl, resolveRepoRoot } from "@melite/comfyui-cordis";
+import { composeOnce, prepareCardParams, type ComposeSeat } from "./cardsCompose.ts";
 /** The card-envelope keys (CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
 export const CARD_ENVELOPE_KEYS: readonly string[] = [
@@ -355,80 +356,6 @@ export class CardRegistryService extends Service {
     return mid;
   }
 
-  /** Resolve + sweep + select + overlay + lift (steps 2-6):
-   *  everything before compose. Throws CardArmError (the door maps
-   *  it to the refusal envelope). `phase` stamps the phase-N voice
-   *  on R1 selection refusals ("1" for validate/phase-1). Order
-   *  mirrors resolve_card_model + the validate modelArm: artifact
-   *  sweep FIRST (fail fast — a sloppy compose never runs), then
-   *  legality, existence, the non-cordis arm check, selection,
-   *  overlay, lift. */
-  prepareCardParams(
-    body: Record<string, unknown>,
-    mid: string,
-    phase: string,
-  ): PreparedCard {
-    const dangling = findCardDangling(body);
-    if (dangling !== null) {
-      const [location, ref, why] = dangling;
-      throw new CardArmError(
-        400,
-        "dangling artifact ref at " + JSON.stringify(location) + ": " + ref + " (" + why + ")",
-        "invalid_request",
-      );
-    }
-    if (!FLOW_ID_RE.test(mid)) {
-      throw new CardArmError(
-        400,
-        "model id " + JSON.stringify(mid) + " is not a legal identifier",
-        "invalid_request",
-      );
-    }
-    const facts: Record<string, ModelFactsRow> = this.modelFacts();
-    const resolves: boolean =
-      mid in facts || this.resolveCardFamily(mid, facts) in facts || this.modelMids().has(mid);
-    if (!resolves) {
-      throw new CardArmError(
-        400,
-        "no model unit for model: " + mid + " (no .catalog.models row " + mid +
-          " in the frozen discovery catalog and no family declares route " + mid +
-          " in its variants' cells — checked the class tree's _routes map)",
-        "invalid_request",
-      );
-    }
-    const fam: string = this.resolveCardFamily(mid, facts);
-    const famRow: ModelFactsRow | undefined = facts[fam];
-    /* v8 ignore next -- the frozen catalog covers every facts family+card today (probe 2026-09-12): the skew fence never fires */
-    if (famRow === undefined) {
-      throw new CardArmError(
-        400,
-        "card_compose phase " + phase + ": model " + JSON.stringify(mid) +
-          " composes outside the cordis plane (no family row — the model resolves but the facts file declares nothing for it)",
-        "card_compose",
-      );
-    }
-    const decls: Record<string, CardDeclRow> = this.cardDecls(facts);
-    const decl: CardDeclRow | undefined = decls[famRow.card];
-    /* v8 ignore next -- the frozen catalog covers every facts family+card today (probe 2026-09-12): the skew fence never fires */
-    if (decl === undefined) {
-      throw new CardArmError(
-        400,
-        "card_compose phase " + phase + ": unknown card " + JSON.stringify(famRow.card) +
-          " (no registered card definition for the card model " + JSON.stringify(mid) + " names)",
-        "card_compose",
-      );
-    }
-    const sel: VariantSelection = selectCardVariant(mid, famRow, body, phase);
-    const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel);
-    return {
-      mid,
-      fam,
-      card: famRow.card,
-      skeleton: decl.skeleton !== "" ? decl.skeleton : /* v8 ignore next -- every real decl carries a skeleton (probe 2026-09-12) */ mid,
-      decl,
-      params: liftCardParams(stamped),
-    };
-  }
 
   /** THE RESOLVED SERVE (hour-26 stroke 15, the 1:1 run law): the
    *  map the NEXT RUN composes from a stage row — prepareCardParams'
@@ -540,7 +467,7 @@ export class CardRegistryService extends Service {
     const mid: unknown = body["model"];
     if (typeof mid !== "string" || mid === "") return null;
     try {
-      return this.prepareCardParams(body, mid, "serve").params;
+      return prepareCardParams(this, body, mid, "serve").params;
     } catch {
       return null;
     }
@@ -584,124 +511,6 @@ export class CardRegistryService extends Service {
     return { fam, card: famRow.card, params: liftCardParams(stamped) };
   }
 
-  /** In-process compose (the core: steps 7-9) — per-call throwaway
-   *  Context + ComfyUIService (owned by the call, never shared). */
-  private async composeOnce(
-    card: string,
-    fam: string,
-    params: Record<string, unknown>,
-    runId: string,
-    phase: string,
-  ): Promise<Record<string, unknown>> {
-    // R3 (live): the engine's own node set arms the gate — an
-    // unreachable engine refuses CLOSED, never composes blind.
-    if (!(await this.primeObjectInfo())) {
-      throw phaseRefusal(
-        phase,
-        "comfyui engine unreachable for live object_info (" +
-          resolveEngineBaseUrl() +
-          ") — refusing closed (EXTENSION LAW: never compose unauthenticated)",
-      );
-    }
-    const oi: Record<string, unknown> | null = this.objectInfo();
-    if (oi === null) {
-      throw phaseRefusal(
-        phase,
-        "comfyui live object_info primed empty — refusing closed (EXTENSION LAW: never compose unauthenticated)",
-      );
-    }
-    const ctx = new EngineContext();
-    await ctx.plugin({
-      apply(c: EngineContext): void {
-        new ComfyUIService(c);
-      },
-    });
-    // THE CARD PACKAGES (the card sweep, 2026-09-09): the compose
-    // boot rides the SAME composition table as loadCardDefs —
-    // composeCards (exported from @melite/comfyui; the engine
-    // src/cards readdir glob died with the sweep). A card lands by
-    // adding its package + one table row; no shared-file edit.
-    await composeCards(ctx);
-    // THE MOD PLANE (2026-09-10 — the flavorless compose): this fresh
-    // service composed cards ONLY, so flavor rows were absent and
-    // every mod id refused at compose. Same composeModPlane as
-    // loadCardDefs — one composition, two riders.
-    await composeModPlane(ctx);
-    ctx.comfyui.setFacts(loadFacts(factsPath(), this.readsSync()));
-    ctx.comfyui.setObjectInfo(oi);
-    // THE NESTED STANZA UNWRAP (cli.ts:82-91): a `params` dict key in
-    // the incoming params IS the stanza; siblings merge over it.
-    let lifted: Record<string, unknown> = params;
-    {
-      const inner: unknown = lifted["params"];
-      if (
-        typeof inner === "object" && inner !== null && !Array.isArray(inner)
-      ) {
-        lifted = {
-          ...(inner as Record<string, unknown>),
-          ...Object.fromEntries(Object.entries(lifted).filter(([k]) => k !== "params")),
-        };
-      }
-    }
-    // THE ADMISSION CONTRACT GATE (cli.ts admission verbatim voice):
-    // every param key must be a declared knob or ride the admits row.
-    const decls: Record<string, CardDeclRow> = this.cardDecls();
-    // (prepareCardParams guarantees a registered card — its
-    // unknown-card arm refuses first — so the lookup never misses.)
-    const decl: CardDeclRow = decls[card] as CardDeclRow;
-    {
-    const knobs: Set<string> = new Set(decl.schemaNames);
-    const admits: readonly string[] = decl.admits;
-    // THE ABSORBED MOD SURFACE (the interlock, 2026-09-08):
-    // admission is the declared surface — and the mod fields a
-    // family ABSORBS are part of that surface (registerMod through
-    // the service; scope = declaring ∩ boarded, filtered to THIS
-    // run's family exactly as the emission scopes).
-    let modNames: Set<string> = new Set();
-    /* v8 ignore start -- theService() boots in the engine fiber, never
-       the test fiber (always throws here): the mod surface stays empty
-       in tests; knobs+admits still gate (2026-09-12) */
-    try {
-      modNames = new Set(
-        theService()
-          .cardModFields(card)
-          .filter((a) => a.families.includes(fam))
-          .flatMap((a) => Object.keys(a.fields.dict ?? {})),
-      );
-      /* v8 ignore stop */
-    } catch {
-      // card defs not booted in this fiber — the mod surface is
-      // empty here; the knobs+admits rows still gate.
-    }
-    const admitted = (key: string): boolean =>
-      knobs.has(key) ||
-      modNames.has(key) ||
-      admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))));
-    const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort();
-    if (unknown.length > 0) {
-      throw phaseRefusal(
-        phase,
-        "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
-          " (admission is the declared surface — knobs + contract admits; see the card's TS definition)",
-      );
-    }
-    }
-    try {
-      return ctx.comfyui.compose(card, fam, lifted, runId) as Record<string, unknown>;
-    } catch (e) {
-      if (e instanceof ComposeRefusal) {
-        throw phaseRefusal(phase, e.code + ": " + e.message);
-      }
-      throw phaseRefusal(
-        phase,
-        e instanceof Error
-          ? e.message
-          : /* v8 ignore next -- compose throws Errors: the String
-               fallback never fires (2026-09-12) */ String(e),
-      );
-    }
-  }
-
   /** In-process validate compose (the CLI subprocess retired,
    *  2026-09-09): the SAME composeOnce pipeline the start path
    *  rides — facts + pin snapshot + stanza unwrap + admission gate
@@ -716,7 +525,7 @@ export class CardRegistryService extends Service {
     params: Record<string, unknown>,
   ): Promise<{ message: string; code: string } | null> {
     try {
-      await this.composeOnce(card, fam, params, "", "1");
+      await composeOnce(this, card, fam, params, "", "1");
       return null;
     } catch (e) {
       if (e instanceof CardArmError) {
@@ -733,7 +542,7 @@ export class CardRegistryService extends Service {
     body: Record<string, unknown>,
     mid: string,
   ): Promise<Phase1Card> {
-    const prep: PreparedCard = this.prepareCardParams(body, mid, "1");
+    const prep: PreparedCard = prepareCardParams(this, body, mid, "1");
     // THE LANE PRESENCE GATE (one pattern, every family): before any
     // graph composes, the family's declared lane files must stand on
     // disk. Img Gen vs Img Edit was luck, not law — this is the law.
@@ -750,7 +559,7 @@ export class CardRegistryService extends Service {
     if (Object.keys(pool).length > 0) {
       return { ...prep, spell: { skeleton: prep.skeleton, inputs: pool } };
     }
-    await this.composeOnce(prep.card, prep.fam, prep.params, "", "1");
+    await composeOnce(this, prep.card, prep.fam, prep.params, "", "1");
     return { ...prep, spell: null };
   }
 
@@ -761,7 +570,7 @@ export class CardRegistryService extends Service {
    *  wires into the Load* file slot; the merged path refuses a
    *  link-in-file-slot LOUDLY, test_two_card_flow). */
   async phase2Card(p1: Phase1Card, runId: string): Promise<ComposedCard> {
-    const graph: Record<string, unknown> = await this.composeOnce(
+    const graph: Record<string, unknown> = await composeOnce(this, 
       p1.card,
       p1.fam,
       p1.params,
