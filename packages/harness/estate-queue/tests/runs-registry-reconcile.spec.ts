@@ -469,6 +469,41 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     assert.deepEqual(side2["skipped_stages"], ["", "s1"]);
   });
 
+  it("a refused replay with a null-ish identity settles at the coercion floor", async () => {
+    // settleReplayRefusal's zero arms: stages null -> [], skipped
+    // null -> [], created_at "5" (a string) -> 0, pipeline
+    // absent -> "flow_inline" — the row identity never leaks
+    // untyped shapes into the failed settle.
+    const s = seat();
+    engineSeat(s);
+    const outRoot = join(s.state, "output");
+    mkdirSync(join(outRoot, "run-nullish"), { recursive: true });
+    writeFileSync(
+      join(outRoot, "run-nullish", "_flow.json"),
+      JSON.stringify({ status: "queued", draft_id: "d1", created_at: "5", graph: [], stages: null, skipped_stages: null, artifacts: [] }),
+    );
+    writeFileSync(
+      join(outRoot, "run-nullish", "_request.json"),
+      JSON.stringify({ draft_id: "nope", test: false, flow_inline: wfBody82()["flow_inline"] }),
+    );
+    s.svc.reconciled = false;
+    const revived = await s.svc.bootReconcile();
+    assert.deepEqual(revived, [], "a refused replay revives nothing");
+    const side = JSON.parse(readFileSync(join(outRoot, "run-nullish", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(side["status"], "failed");
+    assert.deepEqual(side["stages"], []);
+    assert.deepEqual(side["skipped_stages"], []);
+    assert.equal(side["created_at"], 0, "a string created_at tolls the number gate's zero arm");
+    assert.equal(side["pipeline"], "flow_inline");
+  });
+
+  it("the service's modelValidateArm delegates to the extracted arm", async () => {
+    const s = seat();
+    engineSeat(s);
+    const ans = await s.svc.modelValidateArm({ model: undefined });
+    assert.ok([200, 400, 500].includes(ans.status), "an envelope answer, never a throw");
+  });
+
   it("a stale RUNNING claim sweeps after the replay (the boot disposition is ledgered)", async () => {
     const s = seat();
     engineSeat(s);

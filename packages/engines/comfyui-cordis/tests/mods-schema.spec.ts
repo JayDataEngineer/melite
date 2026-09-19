@@ -23,6 +23,17 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
     })]);
   });
 
+  it("null and array defaults name their JS truth (the type-truth ternaries)", () => {
+    assert.throws(
+      () => validateDeclaredMods("c", [base({ fields: [{ name: "n", label: "N", type: "string", default: null }] })]),
+      /its default is null/,
+    );
+    assert.throws(
+      () => validateDeclaredMods("c", [base({ fields: [{ name: "n", label: "N", type: "string", default: ["a"] }] })]),
+      /its default is array/,
+    );
+  });
+
   it("a number default on a string field refuses loud", () => {
     assert.throws(
       () => validateDeclaredMods("c", [base({ fields: [{ name: "n", label: "N", type: "string", default: 42 }] })]),

@@ -98,6 +98,18 @@ describe("parse law", () => {
     assert.equal(code, 422);
     assert.equal(env.action, "bogus");
     assert.equal((await manage({ action: 5 }))[1].action, "5");
+    // a scalar (non-object) doc labels the action "?" through the
+    // envelope's left conjunct
+    assert.equal((await manage("flat"))[1].action, "?");
+    // a MISSING action refuses with the required voice; a nullish
+    // action key tolls the envelope's "?" fallback
+    const [mc, me] = await manage({});
+    assert.equal(mc, 422);
+    assert.equal(me.detail, "Field required: action");
+    assert.equal(me.action, "?");
+    const [nc, ne] = await manage({ action: null });
+    assert.equal(nc, 422);
+    assert.equal(ne.action, "?");
   });
 
   it("junk shapes coerce (nodes map/filter, wait/nulls, numbers, target)", async () => {

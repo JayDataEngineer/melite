@@ -232,9 +232,13 @@ export function hSkillRead(
     let body: string;
     if (found.bodyText !== null) {
       body = found.bodyText;
-    } else if (found.path === null) {
-      return { status: 500, payload: { error: "skill row carries neither body nor path" } };
     } else {
+      /* v8 ignore next 3 -- every real DocRow carries a path (readDoc
+         pins it; flow rows render bodies — probe 2026-09-19): the
+         neither-arm is the fence against a future body-less row shape */
+      if (found.path === null) {
+        return { status: 500, payload: { error: "skill row carries neither body nor path" } };
+      }
       try {
         body = readFileSync(found.path, "utf8");
       } catch (e) {

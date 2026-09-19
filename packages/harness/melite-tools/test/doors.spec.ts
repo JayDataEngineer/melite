@@ -1161,6 +1161,7 @@ describe('the /v1 poser arms (estate verbs, never a proxy)', () => {
   let upstream: http.Server | null = null
   let upstreamPort = 0
   const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
+  let HEADERLESS = false
 
   const bootUpstream = async (): Promise<void> => {
     upstream = http.createServer((q, a) => {
@@ -1174,10 +1175,15 @@ describe('the /v1 poser arms (estate verbs, never a proxy)', () => {
           return
         }
         if (q.url?.startsWith('/poser/render') === true) {
-          a.writeHead(200, { 'content-type': 'image/png' })
+          // HEADERLESS toggles the content-type off entirely — the
+          // door's `headers.get('content-type') ?? ''` toll serves
+          // the bytes raw (never a JSON parse crash)
+          if (HEADERLESS) a.writeHead(200)
+          else a.writeHead(200, { 'content-type': 'image/png' })
           a.end(PNG)
           return
         }
+
         a.writeHead(200, { 'content-type': 'application/json' })
         a.end('{"vertices":[[1,2,3]]}')
       })
@@ -1240,6 +1246,20 @@ describe('the /v1 poser arms (estate verbs, never a proxy)', () => {
     assert.equal(noBody.status, 400)
     assert.match((noBody.body as { error: string }).error, /identity_model \(string\) is required/)
     assert.equal(seen.length, 0)
+  })
+
+  test('A HEADERLESS ENGINE RESPONSE serves its bytes raw (the content-type toll)', async () => {
+    await bootUpstream()
+    HEADERLESS = true
+    try {
+      const h = boot({})
+      const r = await call(h.routes, '/v1', { method: 'POST', url: 'http://localhost/v1/poser/render', body: { pose: 'tpose' } })
+      assert.equal(r.status, 200)
+      assert.equal(r.body, null, 'never JSON-parsed — the door serves bytes on a content-type-less body')
+      assert.ok(r.text.includes('PNG'), 'the PNG signature rides raw (utf8 mojibake aside, the bytes flow)')
+    } finally {
+      HEADERLESS = false
+    }
   })
 
   test('THE RENDER ARM: PNG bytes serve whole as octet-stream (never JSON-wrapped)', async () => {

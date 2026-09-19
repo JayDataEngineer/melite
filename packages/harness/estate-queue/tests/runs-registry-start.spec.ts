@@ -338,6 +338,22 @@ describe("start model arm", () => {
     params: {},
     spell: null,
   };
+  it("a model key with a NULLISH value rides the empty-mid coerce", async () => {
+    // String(undefined ?? "") — the door's model-less card body:
+    // phase-1 still probes with the coerced "" mid (a refusal
+    // voice names it, never a crash on the coerce itself)
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => {
+        throw new CardArmError(400, "no model unit for model: ", "invalid_request");
+      },
+    });
+    const err = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, model: undefined }, sig()),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /no model unit/);
+  });
+
   it("phase-1 compose failures refuse (mapped and unmapped); transports rethrow", async () => {
     const mapped = seat({
       phase1Card: async (): Promise<unknown> => {
