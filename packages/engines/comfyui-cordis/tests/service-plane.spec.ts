@@ -636,6 +636,16 @@ describe("compose (the model path)", () => {
     assert.ok(!("refine" in seen[3]!), "unset rider serializes nothing");
   });
 
+  it("a rowless refine catalog says 'registered: none' (never a dangling list)", async () => {
+    const svc = await bootModel({ compose: () => {} });
+    svc.registerPack({ pack: "loras", fields: fields({}) });
+    svc.registerFlavor({ pack: "loras", families: ["fam1"], rows: [] });
+    assert.throws(
+      () => svc.compose("card1", "fam1", { refine_lora: "ghost" }, "f1"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-refine-lora" && /\(registered: none\)/.test(e.message),
+    );
+  });
+
   it("hand-authored weight rows honor the weight (strength-first, never silent full)", async () => {
     const seen: Record<string, unknown>[] = [];
     const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });

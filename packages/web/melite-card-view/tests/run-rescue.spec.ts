@@ -77,4 +77,21 @@ describe('runRescueCall (names only, the one wire)', () => {
     const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
     await expect(call({ kind: 'extension', pack: 'GhostPack' }, '')).rejects.toThrow('pack unknown')
   })
+
+  it('a reply with no detail line still answers honest defaults (both kinds)', async () => {
+    vi.doMock('@melite/card-base/wire', () => ({
+      postManageAction: vi.fn().mockResolvedValue({ ok: true }),
+    }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
+    await expect(call({ kind: 'extension', pack: 'P' }, '')).resolves.toBe('P installed')
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toBe('fam provisioned')
+  })
+
+  it('a detail-less refusal still names itself', async () => {
+    vi.doMock('@melite/card-base/wire', () => ({
+      postManageAction: vi.fn().mockResolvedValue({ ok: false }),
+    }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).rejects.toThrow('manage refused')
+  })
 })

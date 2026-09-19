@@ -86,3 +86,12 @@ test('a model miss with a family provisions the family (the DECL owns the URL)',
   await waitFor(() => { expect(screen.getByText(/downloaded: 2/)).toBeTruthy() })
   expect(wire.postManageAction).toHaveBeenCalledWith('provision_model', { model: 'h3-timeline' })
 })
+
+test('a wire that rejects with a non-Error still surfaces a word', async () => {
+  wire.postManageAction.mockRejectedValue('gateway down')
+  render(
+    <RunRescue error="card 'x' requires 'P' (nodes A)" stages={STAGES} onRun={() => {}} />,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Install & continue' }))
+  await waitFor(() => { expect(screen.getByText('install failed')).toBeTruthy() })
+})

@@ -944,7 +944,10 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     }).out()
     const mab = g.node('ModelAttentionBackend', {
       model: loraModel,
-      attention: (p.attention_backend as string | undefined) ?? 'comfy kitchen attention',
+      // schema-defaulted knob (the vocabulary door guarantees the
+      // field — 'comfy kitchen attention' when the caller stays
+      // silent; no compose-side fallback arm to keep alive)
+      attention: p.attention_backend as string,
     }).out()
     const picked = g.node('ComfySwitchNode', {
       switch: p.sla_switch ?? true, on_true: sla, on_false: mab,
