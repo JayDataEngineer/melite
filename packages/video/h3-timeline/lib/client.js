@@ -668,7 +668,10 @@ window.__ModuleLoader__.load({
 				if (v === null || v === void 0 || Array.isArray(v)) continue;
 				out[k] = v;
 			}
-			Object.assign(out, user);
+			for (const [k, v] of Object.entries(user)) {
+				if (v === null || v === void 0) continue;
+				out[k] = v;
+			}
 			return out;
 		}
 		/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
@@ -2698,7 +2701,11 @@ window.__ModuleLoader__.load({
 		function resolveValueLayered(spec, base, user) {
 			if (spec === null) {
 				const out = { ...base ?? {} };
-				return Object.assign(out, user);
+				for (const [k, v] of Object.entries(user)) {
+					if (v === null || v === void 0) continue;
+					out[k] = v;
+				}
+				return out;
 			}
 			return resolveValue(spec, user, base);
 		}

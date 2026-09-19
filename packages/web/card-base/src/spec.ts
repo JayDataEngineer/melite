@@ -656,7 +656,21 @@ export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecVal
       out[k] = v
     }
   }
-  Object.assign(out, user)
+  // THE INHERIT LAW (the blank-rows cure's own header: "undefined is
+  // the tri-state's inherit signal — the unset"): a materialized
+  // undefined/null key on the user layer INHERITS the resolved
+  // default — it never overwrites it. The raw Object.assign wrote
+  // undefined over every declared default for any surface whose
+  // state materializes its knobs (the h3 studio's LayerA does —
+  // every optNum key is an own undefined when unset), blanking
+  // Steps/Denoise/Shift on a fresh document while every wall ran
+  // green (they pass sparse fixtures, never materialized ones).
+  // Arrays RIDE (the mod bag is a user pick; only base/model layers
+  // skip arrays — their owners are the DECL, not the user).
+  for (const [k, v] of Object.entries(user)) {
+    if (v === null || v === undefined) continue
+    out[k] = v
+  }
   return out
 }
 

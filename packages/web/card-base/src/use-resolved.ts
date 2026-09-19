@@ -81,7 +81,14 @@ export function resolveValueLayered(
 ): Record<string, unknown> {
   if (spec === null) {
     const out: Record<string, unknown> = { ...(base ?? {}) }
-    return Object.assign(out, user)
+    // THE INHERIT LAW (same as resolveValue's user layer): a
+    // materialized undefined is the unset signal — it inherits
+    // base's held value, never blanks it.
+    for (const [k, v] of Object.entries(user)) {
+      if (v === null || v === undefined) continue
+      out[k] = v
+    }
+    return out
   }
   return resolveValue(spec, user, base)
 }

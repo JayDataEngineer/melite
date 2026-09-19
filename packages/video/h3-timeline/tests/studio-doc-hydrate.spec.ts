@@ -263,3 +263,35 @@ describe("serializeLayerA (Layer A → persisted shape)", () => {
     assert.ok(!("sr_resolution" in stray))
   })
 })
+
+// ── THE BLANK-STEPS CHAIN REPRO (correction #35, the operator's
+// repro verbatim): a FRESH document hydrates a LayerA whose every
+// unset knob is an OWN undefined key — the resolver's INHERIT LAW
+// must hold through the whole chain: resolved steps = the served
+// default 12, denoise = 1, NEVER blank. The old Object.assign
+// wrote undefined over every default; every compose wall stayed
+// green because JSON drops undefined before the walk. ──
+describe("the blank-steps chain (hydrate → resolve, #35)", () => {
+  it("a fully-undefined LayerA inherits the served defaults", async () => {
+    const { resolveValueLayered } = await import("@melite/card-base")
+    const layerA = hydrateLayerA({})
+    assert.equal(layerA.steps, undefined, "the hydrate materializes unset steps as own-undefined (the poisoned input)")
+    const spec = {
+      schema: { uid: 0, refs: {
+        0: { type: "object", dict: { steps: 1, denoise: 2 } },
+        1: { type: "number", meta: { default: 12 } },
+        2: { type: "number", meta: { default: 1 } },
+      } },
+    } as never
+    const resolved = resolveValueLayered(spec as never, undefined, layerA as never) as Record<string, unknown>
+    assert.equal(resolved["steps"], 12, "steps renders the served default — never blank")
+    assert.equal(resolved["denoise"], 1, "denoise renders the served default — never blank")
+  })
+  it("the pre-fetch arm never blanks a held base through materialized undefined", async () => {
+    const { resolveValueLayered } = await import("@melite/card-base")
+    const layerA = hydrateLayerA({ seed: 7 })
+    const pre = resolveValueLayered(null, { steps: 8 }, layerA as never) as Record<string, unknown>
+    assert.equal(pre["steps"], 8, "the synchronous face holds base until the spec lands")
+    assert.equal(pre["seed"], 7, "an explicit pick rides verbatim")
+  })
+})

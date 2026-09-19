@@ -5,6 +5,7 @@
 // override mark, never the value); the variant/quant axes reseed
 // on every pick so no run composes an impossible coordinate.
 import { expect, test } from 'vitest'
+import { resolveValueLayered } from '../src/use-resolved.ts'
 
 import {
   activeRowId,
@@ -87,6 +88,30 @@ test('THE CASCADE: null/array model defaults never invent', () => {
   expect(resolveValue(doc(), {})).not.toHaveProperty('dead')
   expect(resolveValue(doc(), {})).not.toHaveProperty('bag')
   expect(resolveValue({ form: 'x' }, {})).toEqual({})
+})
+
+// ── THE INHERIT LAW (the blank-steps correction, #35): a MATERIAL-
+// IZED undefined/null key on the USER layer is the unset signal —
+// it inherits the resolved default, NEVER overwrites it. The real
+// h3 LayerA materializes every optNum knob as an own undefined;
+// the old bare Object.assign blanked Steps/Denoise on every fresh
+// document while every compose-side wall stayed green (they assert
+// through the walk, which JSON's undefined-drop protects). User
+// ARRAYS still ride — the mod bag is a user pick, only base/model
+// layers skip arrays. ──
+test('THE INHERIT LAW: materialized undefined/null on the user layer inherits, never blanks', () => {
+  // the operator's repro: every unset knob an OWN undefined key
+  const r = resolveValue(doc(), { steps: undefined, cfg: null, seed: 7 })
+  expect(r).toMatchObject({ steps: 30, cfg: 5, seed: 7 })
+  // the mod bag rides verbatim (user arrays are picks, not stamps)
+  expect(resolveValue(doc(), { bag: [{ id: 'x' }] })).toMatchObject({ bag: [{ id: 'x' }] })
+})
+
+test('THE INHERIT LAW: the pre-fetch arm holds base through materialized undefined', () => {
+  // spec-null render (fetch in flight): base under user, undefined
+  // inherits base — the synchronous face never blanks a held value
+  expect(resolveValueLayered(null, { steps: 8, cfg: 1 }, { steps: undefined, seed: 7 }))
+    .toEqual({ steps: 8, cfg: 1, seed: 7 })
 })
 
 test('fieldVisible: the wire shows unless its rule names a mismatched state', () => {

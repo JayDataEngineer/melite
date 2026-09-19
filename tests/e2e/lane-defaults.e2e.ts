@@ -56,4 +56,22 @@ describe.skipIf(!laneUp)('the served lane carries every family\'s defaults (the 
       }
     })
   }
+
+  // THE FULL-CHAIN GATE (#35, the blank-steps correction): the live
+  // payload driven through the REAL client resolver with the REAL
+  // poisoned input — a state layer whose every unset knob is an OWN
+  // undefined key (what every h3 LayerA actually is). The face must
+  // fill, never blank. The compose-side walls cannot see this: JSON
+  // drops undefined before the walk, so the film rendered true while
+  // the face lied — exactly what the operator hit.
+  it('the live payload resolves through the real client resolver: materialized-undefined inherits, never blanks', async () => {
+    const { resolveValue } = await import('../../packages/web/card-base/src/spec.ts')
+    const r = await fetch(LANE + '/v1/form-spec?model=h3-timeline', { signal: AbortSignal.timeout(5000) })
+    const spec = await r.json() as Parameters<typeof resolveValue>[0]
+    const poisoned = { steps: undefined, denoise: undefined, seed: 7, sampler_name: undefined }
+    const resolved = resolveValue(spec, poisoned, undefined)
+    expect(resolved['steps'], 'steps fills the served default through own-undefined (#35)').toBe(12)
+    expect(resolved['denoise'], 'denoise fills the served default through own-undefined (#35)').toBe(1)
+    expect(resolved['seed'], 'an explicit pick still rides').toBe(7)
+  })
 })
