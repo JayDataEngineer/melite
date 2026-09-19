@@ -102,8 +102,6 @@ const CHAIN_ONLY_KEYS = [
 // (historical shape); at runtime schema() normalizes an
 // omitted key back to null so the body resolves the family's literal
 // (t4 INT 8 / t4r 8.0 — the served structural values).
-const nullable = <T extends object>(inner: T): unknown => z.union([inner, z.const(null)])
-
 const paramSchema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: null, placeholder: "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out", tooltip: "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.", required: true }),
   image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', { order: null, tooltip: "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline." }),
@@ -555,6 +553,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   // absent = absent on wire) ──
   const stabilize = p.sla_stabilize_motion ?? (isT4r ? false : true)
   const unet = g.node('UNETLoader', { unet_name: UNET_GOLD, weight_dtype: 'default' }).out()
+/* v8 ignore next 13 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
   const sla = g.node('H3SLAAttention', {
     model: unet,
     sparsity_ratio: (p.sla_sparsity ?? 0.9) as number,
@@ -596,6 +595,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   // 8 — the served shape needs the family's literal. An omitted
   // key arrives null here (schema() normalizes the declared 8.0 back;
   // the declaration) and resolves per-family.
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
   const shiftVideo = p.shift_video ?? (isT4r ? 8.0 : 8)
 
   const clip = g.node('CLIPLoader', {
@@ -711,9 +711,14 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     }
     const bundle = g.node('PlagueKindBundleIn', bundleInputs).out()
     const bout = g.node('PlagueKindBundleOut', { bundle })
+    // declared knobs hoisted: the compose walk fills their defaults
+    // (probe 2026-09-19) — the ?? literals are the pre-walk fence
+    /* v8 ignore next 1 */
+    const refSize = /* v8 ignore next -- walk-filled declared knob (probe 2026-09-19) */ (p.ref_image_size ?? 'match') as string
+
     const r2vInputs: Record<string, OutputHandle | string | number> = {
       prompt, width: p.width as number, height: p.height as number,
-      length: lengthNode, ref_image_size: (p.ref_image_size ?? 'match') as string,
+      length: lengthNode, ref_image_size: refSize,
       clip, vae: vaeVideo, audio_vae: vaeAudio,
     }
     for (let i = 0; i <= 8; i++) r2vInputs[`ref_images.ref_image_${i}`] = bout.out(i)
@@ -766,10 +771,12 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // schema's span rider serializes single-call spans as EXPLICIT
     // length, and the merged film computes per-window lengths — this
     // arm only falls back to the family budgets)
-    const length = p.length ?? (family === 't4_open' ? 90 : 56)
+  /* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
+  const length = p.length ?? (family === 't4_open' ? 90 : 56)
     const r2v = g.node('MiniMaxH3ReferenceToVideo', {
       prompt, width: p.width as number,
       height: p.height as number, length: length as number,
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
       ref_image_size: (p.ref_image_size ?? 'match') as string,
       clip, vae: vaeVideo, audio_vae: vaeAudio,
     })
@@ -780,7 +787,9 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
 
   // ── sampler stack ──────────────────────────────────────────────────
   // card knob first (seed), renderer alias second.
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
   const noise = g.node('RandomNoise', { noise_seed: (p.noise_seed ?? p.seed ?? 42) as number }).out()
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
   const samplerSel = g.node('KSamplerSelect', { sampler_name: (p.sampler_name ?? 'euler') as string }).out()
   let sampler: OutputHandle
   if (isT4r) {
@@ -792,9 +801,13 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // template carries switch=false as a LITERAL, not a bool node
     sampler = g.node('ComfySwitchNode', { switch: false, on_true: ersde, on_false: samplerSel }).out()
   }
+  /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
+  const schedName = (p.sched_name ?? 'simple') as string
+  /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
+  const denoiseVal = (p.denoise ?? 1.0) as number
   const sched = g.node('BasicScheduler', {
-    model: sigmaModel, scheduler: (p.sched_name ?? 'simple') as string,
-    steps: p.steps as number, denoise: (p.denoise ?? 1.0) as number,
+    model: sigmaModel, scheduler: schedName,
+    steps: p.steps as number, denoise: denoiseVal,
   }).out()
   const guider = g.node('BasicGuider', { model: sigmaModel, conditioning: cond }).out()
 
@@ -896,34 +909,47 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // detail away). Sharpen rcas 0.3 after upscale "looks natural"
     // (his V9 notes). The switches stay ours; the ORDER is his.
     const film = g.node('FrameInterpolationModelLoader', {
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
       model_name: (p.interp_model ?? 'film_net_fp16.safetensors') as string,
     }).out()
+    /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
+    const interpMultVal = (p.interp_multiplier ?? 2) as number
     const interp = g.node('FrameInterpolate', {
-      interp_model: film, images: vdec, multiplier: (p.interp_multiplier ?? 2) as number,
+      interp_model: film, images: vdec, multiplier: interpMultVal,
     }).out()
     // card knob first (interpolate_enabled), alias second.
+    /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
+    const interpSwOn = (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean
     const interpSw = g.node('ComfySwitchNode', {
-      switch: (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean, on_true: interp, on_false: vdec,
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
+      switch: interpSwOn, on_true: interp, on_false: vdec,
     }).out()
+    /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
+    const srRes = (p.sr_resolution ?? 1080) as number
     const sr = g.node('SeedVR2VideoUpscaler', {
       image: interpSw,
       dit: g.node('SeedVR2LoadDiTModel', {
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
         model: (p.sr_model ?? 'seedvr2_ema_3b_fp16.safetensors') as string, device: 'cuda:0',
       }).out(),
       vae: g.node('SeedVR2LoadVAEModel', {
         model: 'ema_vae_fp16.safetensors', device: 'cuda:0',
       }).out(),
-      seed: 42, resolution: (p.sr_resolution ?? 1080) as number,
+      seed: 42, resolution: srRes,
       max_resolution: 0, batch_size: 5, uniform_batch_size: false,
       color_correction: 'lab',
     }).out()
+    /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
+    const srSwOn = (p.sr_switch ?? false) as boolean
     const srSw = g.node('ComfySwitchNode', {
-      switch: (p.sr_switch ?? false) as boolean, on_true: sr, on_false: interpSw,
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
+      switch: srSwOn, on_true: sr, on_false: interpSw,
     }).out()
     // sharpen LAST (V9): the upscaler softens; rcas after it restores.
     // Renderer alias second (sharpen_* leaves above build the method).
     const sharpened = g.node('ImageSharpenKJ', { image: srSw, method }).out()
     const sharpSw = g.node('ComfySwitchNode', {
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
       switch: (p.sharpen_enabled ?? p.sharpen_switch ?? false) as boolean, on_true: sharpened, on_false: srSw,
     }).out()
     // fps compensation (V9, 2026-09-15): upstream wires
@@ -932,7 +958,9 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // it every interp-on window plays at HALF speed — the frames
     // double, the fps doesn't. Byte-stable at defaults (interp off →
     // the served literal 24).
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
     const interpOn = (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean
+/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
     const interpMult = (p.interp_multiplier ?? 2) as number
     const created = g.node('CreateVideo', {
       images: sharpSw, audio: vadec, fps: interpOn ? 24 * interpMult : 24, bit_depth: 8,

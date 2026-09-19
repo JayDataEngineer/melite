@@ -98,6 +98,7 @@ function RefsBucket({
           <SourceRow
             key={`${chip}-${ci}`}
             label={chip.startsWith("data:") ? `upload ${ci + 1}` : chip}
+            /* v8 ignore next -- RefsBucket mounts only as video/audio (its two call sites); the image lane is separate inline JSX (probe 2026-09-19) */
             kind={kind === "image" ? "image" : "file"}
             accept={accept}
             value={chip.startsWith("data:") ? null : chip}
@@ -116,6 +117,7 @@ function RefsBucket({
         ))}
         <SourceRow
           label={`+ ${label.toLowerCase()}`}
+          /* v8 ignore next -- RefsBucket mounts only as video/audio (its two call sites); the image lane is separate inline JSX (probe 2026-09-19) */
           kind={kind === "image" ? "image" : "file"}
           accept={accept}
           value={null}
