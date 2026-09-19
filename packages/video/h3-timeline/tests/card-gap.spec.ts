@@ -86,6 +86,29 @@ describe("the schema gate arms", () => {
     assert.equal(out.shift_video, 8);
   });
 
+  it("the sampling knobs share the kit's layout (the generic seam — sampler beside scheduler)", () => {
+    const carrier = def.schemaCarrier as unknown as {
+      dict: Record<string, { meta?: { extra?: Record<string, unknown> } }>;
+    };
+    assert.ok(carrier?.dict !== undefined, "the registered carrier exposes its declared field extras");
+    const layout = (name: string): Record<string, unknown> => {
+      const extra = carrier.dict[name]?.meta?.extra ?? {};
+      return {
+        order: extra["order"], group: extra["group"], columns: extra["columns"],
+        width: extra["width"], zone: extra["zone"], wtype: extra["wtype"],
+      };
+    };
+    // steps/sampler/scheduler ride the kit helper (canonical orders
+    // 0/2/3); the h3-only denoise/shifts declare the same facts
+    // inline (orders 4/5/6) — one 2-column sampling grid everywhere.
+    assert.deepEqual(layout("steps"), { order: 0, group: "sampling", columns: 2, width: 1, zone: "params", wtype: "number" });
+    assert.deepEqual(layout("sampler_name"), { order: 2, group: "sampling", columns: 2, width: 1, zone: "params", wtype: "select" });
+    assert.deepEqual(layout("sched_name"), { order: 3, group: "sampling", columns: 2, width: 1, zone: "params", wtype: "select" });
+    assert.deepEqual(layout("denoise"), { order: 4, group: "sampling", columns: 2, width: 1, zone: "params", wtype: "number" });
+    assert.deepEqual(layout("shift_video"), { order: 5, group: "sampling", columns: 2, width: 1, zone: "params", wtype: "number" });
+    assert.deepEqual(layout("shift_audio"), { order: 6, group: "sampling", columns: 2, width: 1, zone: "params", wtype: "number" });
+  });
+
   it("t4r openers refuse the post-ladder leaves", () => {
     assert.throws(
       () => def.schema({ variant: "t4r", calls: [SHOT()], sharpen_switch: true }),

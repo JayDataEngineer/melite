@@ -134,7 +134,7 @@ export function CallCard({
 }) {
   const {
     selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups,
-    isRef2va, refArtifacts,
+    refArtifacts,
     handlePromptDelete, handlePromptUpdate,
     enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo,
     setCallSpan, setCallGuide, setCallTransition,

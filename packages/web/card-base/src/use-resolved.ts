@@ -62,7 +62,20 @@ export function useResolvedForm(
   )
   const edit = useCallback(
     (name: string, v: unknown): void => {
-      onWrite(name, coerceFieldEdit(fieldOf(name), v))
+      const f = fieldOf(name)
+      // THE STUDIOS' BLANK-INHERITS LAW (the knob-audit law,
+      // 2026-09-19: "blanking the window width writes undefined —
+      // blank inherits preset geometry"): on THIS rail a numeric
+      // row's EMPTY edit is the unset signal, never a loud "" at
+      // the run. The bench drill keeps '' verbatim (display
+      // continuity through clear-and-retype) — each face owns its
+      // blank semantics at its own door.
+      if (v === '' && f !== undefined
+          && (f.type === 'number' || f.type === 'seed' || f.type === 'slider')) {
+        onWrite(name, undefined)
+        return
+      }
+      onWrite(name, coerceFieldEdit(f, v))
     },
     [fieldOf, onWrite],
   )

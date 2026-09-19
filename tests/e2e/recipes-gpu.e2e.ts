@@ -237,9 +237,11 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
         model: 'h3-timeline',
         prompt: 'a red cube slides slowly across a white table',
         image: anchor, width: 768, height: 448,
-        // THE PILL PAYLOAD VERBATIM (turbo_lightx2v): the bag row the
-        // family's Recipe row stamps — strength 0.6, steps 8 married
-        loras: [{ id: 'h3_lightx2v_turbo', strength: 0.6, steps: 8 }],
+        // THE PILL PAYLOAD VERBATIM (turbo_lightx2v, #36): the
+        // recipe stamps the SELECTION ONLY — the id. Strength 0.6
+        // and the married 8 steps ride from the catalog row at
+        // compose (unknown ids refuse loud).
+        loras: [{ id: 'h3_lightx2v_turbo' }],
       }, 'h3 turbo_lightx2v')
       const ltx = nodesWith(s, /LTX_lora_loader/)
       assert.ok(ltx.length >= 1, 'the RUN workflow carries the LTX lora loader')
@@ -247,7 +249,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
       const stack = JSON.parse(String(inputs['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
       const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('lightx2v_turbo'))
       assert.ok(row !== undefined, 'the stack carries the resolved turbo adapter ON')
-      assert.equal(row!['str'], 0.6, 'the strength is the recipe-declared 0.6')
+      assert.equal(row!['str'], 0.6, 'the strength is the catalog-declared 0.6')
       assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
     } finally {
       w.stop()

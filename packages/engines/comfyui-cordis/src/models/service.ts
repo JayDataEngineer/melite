@@ -536,13 +536,18 @@ export function assertModInterlock(
   verbRegs: readonly { id: string; families: readonly string[] }[],
   packFate: Record<string, string> | null,
 ): void {
+  // THE MARRIAGE GRAMMAR (#36): DECL.mods entries are pack names or
+  // {pack, marries} objects — the boarding test reads the pack name
+  // either way (one normalizer, never two truths).
+  const boardedPacks = (mods: ModelDecl['mods']): string[] =>
+    (mods ?? []).map((m) => (typeof m === 'string' ? m : m.pack))
   for (const flavor of flavorsOf) {
     for (const fam of flavor.families) {
       const d = decls.find((x) => x.id === fam);
       if (d === undefined) {
         throw new ModelError(`no registered model '${fam}' (routes compose; the registry holds atoms)`);
       }
-      if (!(d.mods ?? []).includes(flavor.pack)) {
+      if (!boardedPacks(d.mods).includes(flavor.pack)) {
         throw new ModelError(
           `model ${fam}: a '${flavor.pack}' flavor is registered for it but DECL.mods does not board the pack — an undeclared mutation (the model declares its mods, nothing else)`,
         );
@@ -558,7 +563,7 @@ export function assertModInterlock(
       if (d === undefined) {
         throw new ModelError(`no registered model '${fam}' (routes compose; the registry holds atoms)`);
       }
-      if (!(d.mods ?? []).includes(verb.id)) {
+      if (!boardedPacks(d.mods).includes(verb.id)) {
         throw new ModelError(
           `model ${fam}: verb '${verb.id}' claims it but DECL.mods does not board the verb — an undeclared mutation (the model declares its mods, nothing else)`,
         );
@@ -566,10 +571,10 @@ export function assertModInterlock(
     }
   }
   for (const d of decls) {
-    for (const entry of d.mods ?? []) {
-      if (packs.has(entry) || verbs.has(entry)) continue;
+    for (const pack of boardedPacks(d.mods)) {
+      if (packs.has(pack) || verbs.has(pack)) continue;
       throw new ModelError(
-        `model ${d.id}: DECL.mods '${entry}' names no registered pack or verb — a dead boarding is drift, not a skip (the amnesty is over)`,
+        `model ${d.id}: DECL.mods '${pack}' names no registered pack or verb — a dead boarding is drift, not a skip (the amnesty is over)`,
       );
     }
     // the satisfaction law's third edge: a DECLARED pack boarding
@@ -582,7 +587,7 @@ export function assertModInterlock(
     // no lane fires or refuses-loud = a surfaced knob with no
     // lane to carry it. Verbs skip: their fate is the
     // family-scoped mount, pinned above.
-    for (const entry of d.mods ?? []) {
+    for (const entry of boardedPacks(d.mods)) {
       if (verbs.has(entry)) continue;
       const mine = flavorsOf.some((f) => f.pack === entry && f.families.includes(d.id));
       if (!mine) {

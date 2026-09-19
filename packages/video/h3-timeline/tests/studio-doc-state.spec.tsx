@@ -53,25 +53,6 @@ describe("hydration", () => {
   })
 })
 
-describe("the model route (which per-call inputs the editor shows)", () => {
-  it("params.model wins; then the stage model; then the default", () => {
-    const viaParams = renderHook(() => useDocState(stage({ model: "h3-timeline-ref" })))
-    assert.equal(viaParams.result.current.routeKey, "h3-timeline-ref")
-    assert.equal(viaParams.result.current.isRef2va, true)
-    const viaStage = renderHook(() => useDocState(stage({}, "timeline-ref2va")))
-    assert.equal(viaStage.result.current.routeKey, "timeline-ref2va")
-    assert.equal(viaStage.result.current.isRef2va, true)
-    const viaNothing = renderHook(() => useDocState(stage({})))
-    assert.equal(viaNothing.result.current.routeKey, "")
-    assert.equal(viaNothing.result.current.isRef2va, false)
-    // variant rides when model is absent
-    const viaVariant = renderHook(() => useDocState(stage({ variant: "v9" })))
-    assert.equal(viaVariant.result.current.routeKey, "v9")
-    assert.equal(viaVariant.result.current.stageModel, "")
-    // a non-string stage model is not a route
-    const numModel = renderHook(() => useDocState(stage({}, 42)))
-    assert.equal(numModel.result.current.stageModel, "")
-    assert.equal(numModel.result.current.isRef2va, false)
-    expect(viaNothing.result.current.routeKey).toBe("")
-  })
-})
+// THE ROUTE LENS IS DEAD (operator 2026-09-20: "we use ONE
+// model") — the fused b30-49 checkpoint takes anchors AND refs in
+// one graph; no doc key names a second wiring.)

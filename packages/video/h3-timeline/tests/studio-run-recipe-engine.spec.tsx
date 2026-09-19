@@ -1,18 +1,17 @@
 /**
  * RunRecipeEngine — Recipe + Engine folds (BEHAVIORAL).
  *
- * RULE A — THE RECIPE LAW (operator, 2026-09-18): the family's
- * recipes render as PILLS next to the Model route, stamped from the
- * served spec's Recipe rows — the lora bag payloads INCLUDED (the
- * card's hand preset select is DEAD; the family owns presets). The
- * doc FPS stays a document control. The sampling knobs ride the served form-spec
- * via SpecPanel at their WIRE names
- * (sampler_name/sched_name/steps/denoise/shift_*); Seed rides the
- * panel too. Window width/height are real injects (studio
- * NumberControls — blank inherits preset geometry). The py-era
- * fictions (Audio mode, Seam continuity, Attention, FP16/Torch/CFG/
- * context frames, legacy sampler/scheduling_steps spellings) are
- * pinned ABSENT.
+ * THE GENERIC SEAM LAW (operator, 2026-09-19: "h3 FORM SEAM = THE
+ * GENERIC FORM SEAM"): the parameter surface IS CardForm — the same
+ * component the bench drill seats. The recipe pills ride its axes,
+ * every knob renders at its WIRE name through the served groups,
+ * window width/height are real injects at their declared rows, and
+ * the sampling grid seats sampler + scheduler side by side (the
+ * kit's columns/width facts). Studio chrome stays chrome: Model
+ * route (the sibling-family pin) + doc FPS + the geometry readout.
+ * The py-era fictions (Audio mode, Seam continuity, Attention,
+ * FP16/Torch/CFG/context frames, legacy spellings) stay pinned
+ * ABSENT.
  */
 import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
@@ -22,14 +21,22 @@ import { schemaEnvelope } from "@melite/card-base"
 import type { LayerA } from "../src/ui/studio/docModel.ts"
 
 function envelope(): unknown {
-  const num = (description: string, dflt: number, meta2: Record<string, unknown> = {}) => ({
-    type: "number", meta: { description, default: dflt, ...meta2 },
+  const num = (description: string, dflt: number, meta2: Record<string, unknown> = {}, extra: Record<string, unknown> = {}) => ({
+    type: "number", meta: { description, default: dflt, ...meta2, extra: { group: "sampling", ...extra } },
   })
-  const sel = (description: string, consts: string[], dflt: string) => ({
-    consts, meta: { description, default: dflt, extra: { wtype: "select" } },
+  // the kit's sampling facts (columns 2 / width 1) — the same
+  // layout truth samplingExtra() serves on the real card
+  const bool = (description: string, dflt: boolean, extra: Record<string, unknown> = {}) => ({
+    type: "boolean", meta: { description, default: dflt, extra },
+  })
+  const sel = (description: string, consts: string[], dflt: string, extra: Record<string, unknown> = { wtype: "select" }) => ({
+    consts, meta: { description, default: dflt, extra: { wtype: "select", ...extra } },
   })
   return {
     form: "h3-timeline",
+    // the axes ride the FEATURES (variant_groups) — the pills seat
+    // INSIDE ModelAxes; a fixture without groups renders no pills
+    features: { variant_groups: { Variant: { label: "Variant" }, Recipe: { label: "Recipe" } } },
     schema: schemaEnvelope({
       // sliders write their raw string edits (the atom's law:
       // "edited as a raw string, coercion once at patch") — the
@@ -38,19 +45,23 @@ function envelope(): unknown {
       // 1 re-types the field as a seed row.
       shift_video: num("Video sigma shift", 0, { min: 0, max: 20 }),
       shift_audio: num("Audio sigma shift", 0, { min: 0, max: 10 }),
-      sampler_name: sel("Sampler (run)", ["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun"], "euler"),
-      sched_name: sel("Scheduler (run)", ["default", "karras", "simple_cfg", "vp", "exponential"], "default"),
+      sampler_name: sel("Sampler (run)", ["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun"], "euler", { group: "sampling", columns: 2, width: 1, wtype: "select" }),
+      sched_name: sel("Scheduler (run)", ["default", "karras", "simple_cfg", "vp", "exponential"], "default", { group: "sampling", columns: 2, width: 1, wtype: "select" }),
       steps: num("Sampling steps (run)", 20, { min: 4, max: 40 }),
       denoise: num("Denoise (run)", 0.7, { min: 0, max: 1, step: 0.05 }),
       seed: { type: "number", meta: { description: "Seed", default: -1, step: 1 } },
+      sharpen_enabled: bool("Sharpen", false, { wtype: "tri" }),
+      width: num("Width", 1344, { min: 448, max: 1344 }),
+      height: num("Height", 768, { min: 448, max: 768 }),
     }),
     // RULE A: the family's Recipe rows as the spec door serves them
     // (discovery.ts variantRow — resolver+wire defaults merged into
     // the row's `defaults` payload).
     variants: [
+      { id: "h3", label: "Standard", group: "Variant", defaults: {}, route: "h3-timeline", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
       { id: "default", label: "Default", group: "Recipe", defaults: {}, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
       { id: "turbo_lightx2v", label: "Turbo LightX2V", group: "Recipe",
-        defaults: { loras: [{ id: "h3_lightx2v_turbo", strength: 0.6, steps: 8 }] },
+        defaults: { loras: [{ id: "h3_lightx2v_turbo" }] },
         route: "", hint: "the married count rides the bag row", engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
       { id: "draft_02mp", label: "Draft 02MP", group: "Recipe",
         defaults: { width: 768, height: 448 },
@@ -71,67 +82,58 @@ function engine(layerA: Record<string, unknown>, over?: Record<string, unknown>)
       stage={{ params: { width: 800, height: 600 } } as never}
       layerA={{ fps: 24, ...layerA } as unknown as LayerA}
       setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
-      isRef2va={false}
       {...over}
     />,
   )
   return { keys, els }
 }
 
-describe("recipe (clock + route) — the document's identity", () => {
-  it("the route select switches the card's model id (FL2VA ↔ Ref2VA)", async () => {
-    serve()
-    const { keys } = engine({})
-    const sel = await screen.findByLabelText("Model route")
-    assert.equal((sel as HTMLSelectElement).value, "h3-timeline")
-    fireEvent.change(sel, { target: { value: "h3-timeline-ref" } })
-    assert.deepEqual(keys, [["model", "h3-timeline-ref"]])
-    cleanup()
-  })
+// THE SUBMENU LAW (stroke 89): a multi-group form renders tabs —
+// the sampling fields seat on THEIR tab (the generic seam's own
+// chrome, the same face every multi-group card serves)
+const openSampling = async (): Promise<void> => {
+  const tab = await screen.findByRole("tab", { name: "Sampling" })
+  fireEvent.click(tab)
+}
 
-  it("the Ref2VA route renders its own face", () => {
+describe("recipe (clock + route) — the document's identity", () => {
+  it("THE ROUTE ROW IS DEAD (operator 2026-09-20: we use ONE model — the fused checkpoint takes anchors AND refs)", async () => {
     serve()
-    render(
-      <RunRecipeEngine
-        stage={{ params: { width: 800, height: 600 } } as never}
-        layerA={{ fps: 24 } as unknown as LayerA}
-        setLayerAKey={() => {}}
-        isRef2va={true}
-      />,
-    )
-    const sel = screen.getByLabelText("Model route") as HTMLSelectElement
-    assert.equal(sel.value, "h3-timeline-ref")
-    assert.ok(document.body.textContent!.includes("Ref2VA · Identity Refs"))
+    engine({})
+    await screen.findByTestId("tl-recipe-chrome")
+    // no fake model switch ever renders — one route, one graph
+    assert.equal(screen.queryByLabelText("Model route"), null)
+    assert.ok(!document.body.textContent!.includes("Ref2VA · Identity Refs"))
     cleanup()
   })
 
   it("RULE A: the family's recipe pills stamp next to the model — the lora bag INCLUDED", async () => {
     serve()
     const { keys } = engine({ fps: 30 })
-    await screen.findByText("Clock")
-    // the pills render (stamp-carrying rows only; the stamp-less
-    // `default` renders nothing)
-    // THE DROPDOWN (2026-09-18): one select, never link-buttons
-    const recipeSelect = () =>
-      screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-select]') as HTMLElement
-    const turbo = recipeSelect()
+    // the pills ride CardForm's own axes (the generic seam seats
+    // them — the hand-seated copy is dead)
+    const recipeSelect = async (): Promise<HTMLElement> => {
+      const el = await screen.findByLabelText("Recipe")
+      return el as HTMLElement
+    }
+    const turbo = await recipeSelect()
     assert.ok(turbo !== null, "the turbo pill renders")
-    const optionIds = Array.from(recipeSelect().querySelectorAll("option")).map((o) => o.getAttribute("value"))
+    const optionIds = Array.from(turbo.querySelectorAll("option")).map((o) => o.getAttribute("value"))
     assert.ok(optionIds.includes("draft_02mp"))
     assert.ok(!optionIds.includes("default")) // stamp-less row: a dead option renders never
     // the click writes the FULL payload — the lora bag rides the
     // stamp (the Rule A amendment of stroke 38's drop)
     fireEvent.change(turbo as HTMLElement, { target: { value: "turbo_lightx2v" } })
-    assert.deepEqual(keys, [["loras", [{ id: "h3_lightx2v_turbo", strength: 0.6, steps: 8 }]]])
+    assert.deepEqual(keys, [["loras", [{ id: "h3_lightx2v_turbo" }]]])
     cleanup()
   })
 
   it("the geometry pill stamps width/height; FPS stays an editable document control", async () => {
     serve()
     const { keys } = engine({ fps: 30 })
-    await screen.findByText("Clock")
+    await screen.findByLabelText("Recipe")
     assert.ok(document.body.textContent!.includes("800×600 @ 30 doc-fps"))
-    fireEvent.change(screen.getByTestId("tl-recipe-chrome").querySelector('[data-recipe-select]') as HTMLElement, { target: { value: "draft_02mp" } })
+    fireEvent.change(await screen.findByLabelText("Recipe"), { target: { value: "draft_02mp" } })
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "24" } })
     assert.deepEqual(keys, [["width", 768], ["height", 448], ["fps", 24]])
     cleanup()
@@ -140,7 +142,7 @@ describe("recipe (clock + route) — the document's identity", () => {
   it("a non-positive FPS never writes (the >0 guard)", async () => {
     serve()
     const { keys } = engine({ fps: 30 })
-    await screen.findByText("Clock")
+    await screen.findByLabelText("Recipe")
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "0" } })
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "" } })
     assert.deepEqual(keys, [])
@@ -155,6 +157,7 @@ describe("engine (served spec — wire names)", () => {
     // drops the input) — seed them; the preset is draft_02mp so the
     // tail reads the injected default, not a write.
     const { keys } = engine({ shift_video: 0, shift_audio: 0, steps: 20, denoise: 1 })
+    await openSampling()
     await screen.findByText("Video sigma shift")
     // the spec rows are served sliders (input type=range), scoped to
     // their labelled row — the estate's row chrome owns the label.
@@ -179,9 +182,28 @@ describe("engine (served spec — wire names)", () => {
     cleanup()
   })
 
+  it("THE PAIRING (anti-DRY, operator 2026-09-19): sampler + scheduler share ONE grid row — the kit's columns law", async () => {
+    serve()
+    engine({})
+    await openSampling()
+    const sampler = await screen.findByLabelText("Sampler (run)")
+    const sched = await screen.findByLabelText("Scheduler (run)")
+    const samplerCell = sampler.closest("[style*='grid-column']") ?? sampler.parentElement
+    const schedCell = sched.closest("[style*='grid-column']") ?? sched.parentElement
+    // same grid container, one span each — side by side, the exact
+    // shape every normal card serves (image-gen et al.)
+    assert.ok(samplerCell !== null && schedCell !== null, "both cells seat in grid cells")
+    assert.equal(samplerCell.parentElement, schedCell.parentElement, "the sampling group is ONE grid")
+    assert.equal((samplerCell as HTMLElement).style.gridColumn, "span 1")
+    assert.equal((schedCell as HTMLElement).style.gridColumn, "span 1")
+    cleanup()
+  })
+
   it("seed rides the served spec at its wire name", async () => {
     serve()
     const { keys } = engine({ seed: -1 })
+    // seed stays GENERAL (the real card's own grouping) — open its tab
+    fireEvent.click(await screen.findByRole("tab", { name: "General" }))
     const el = await screen.findByLabelText("Seed")
     fireEvent.change(el, { target: { value: "7" } })
     // the schema-boundary edit law (the studio seam coerces; the
@@ -191,45 +213,44 @@ describe("engine (served spec — wire names)", () => {
   })
 })
 
-describe("engine header (resolved, never placeholders)", () => {
-  it("stage params win; otherwise the preset geometry rides", () => {
+describe("geometry (resolved readout + the declared inject rows)", () => {
+  it("the tri-state INHERIT op fires the rail's unset (undefined — the default returns)", async () => {
     serve()
-    engine({ steps: 20 })
-    assert.ok(screen.getByText("Engine (H3)"))
-    assert.ok(document.body.textContent!.includes("window 800×600 · steps 20"))
+    const { keys } = engine({ sharpen_enabled: true })
+    fireEvent.click(await screen.findByRole("tab", { name: "General" }))
+    const el = await screen.findByLabelText("Sharpen")
+    // 'inherit' = the tri-state's unset signal — CardForm's edit
+    // routes undefined to onUnset, the rail writes undefined
+    fireEvent.change(el, { target: { value: "" } })
+    assert.deepEqual(keys, [["sharpen_enabled", undefined]])
     cleanup()
   })
 
-  it("no stage params = the family floor (1344×768); stamped width/height win; no steps = auto", () => {
+  it("stage params win in the readout; the family floor otherwise", async () => {
     serve()
-    const h1 = render(
-      <RunRecipeEngine
-        stage={{} as never}
-        layerA={{ fps: 24 } as unknown as LayerA}
-        setLayerAKey={() => {}}
-        isRef2va={false}
-      />,
-    )
-    assert.ok(document.body.textContent!.includes("window 1344×768 · steps auto"))
-    h1.unmount()
+    engine({ steps: 20 })
+    await screen.findByLabelText("Recipe")
+    assert.ok(document.body.textContent!.includes("800×600 @ 24 doc-fps"))
+    cleanup()
     serve()
     render(
       <RunRecipeEngine
         stage={{} as never}
-        layerA={{ width: 768, height: 448, fps: 24 } as unknown as LayerA}
+        layerA={{ fps: 24 } as unknown as LayerA}
         setLayerAKey={() => {}}
-        isRef2va={false}
       />,
     )
-    assert.ok(document.body.textContent!.includes("window 768×448 · steps auto"))
+    await screen.findByLabelText("Recipe")
+    assert.ok(document.body.textContent!.includes("1344×768 @ 24 doc-fps"))
     cleanup()
   })
 
-  it("window width/height are real injects (blank inherits preset geometry)", () => {
+  it("window width/height are real injects at their DECLARED rows (the generic seam renders them)", async () => {
     serve()
     const { keys } = engine({})
-    fireEvent.change(screen.getByLabelText("Window width (run)"), { target: { value: "1024" } })
-    fireEvent.change(screen.getByLabelText("Window height (run)"), { target: { value: "512" } })
+    fireEvent.change(await screen.findByLabelText("Width"), { target: { value: "1024" } })
+    fireEvent.change(await screen.findByLabelText("Height"), { target: { value: "512" } })
+    // the schema-boundary edit law: numeric strings ride as numbers
     assert.deepEqual(keys, [["width", 1024], ["height", 512]])
     cleanup()
   })
@@ -239,7 +260,8 @@ describe("the dead recipe fictions stay dead (pinned absent)", () => {
   it("no audio/continuity/attention/fps16/cfg/context knobs", async () => {
     serve()
     engine({})
-    await screen.findByText("Engine (H3)")
+    await openSampling()
+    await screen.findByLabelText("Sampler (run)")
     for (const dead of [
       "Audio mode", "Seam continuity", "Attention (run)",
       "FP16 accumulation (run)", "Torch compile (run)", "CFG (run)",

@@ -32,7 +32,6 @@ export interface CallCardDeps {
   callCardRefs: { current: (HTMLDivElement | null)[] }
   artifactIndex: { byName: Map<string, string>; byUrl: Map<string, string> }
   linkGroups: LinkArtifact[]
-  isRef2va: boolean
   refArtifacts: Array<{ name: string; url: string }>
   handlePromptDelete: (id: string) => void
   handlePromptUpdate: (id: string, text: string) => void

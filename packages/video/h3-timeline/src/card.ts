@@ -33,6 +33,7 @@ import { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { finalizeH3 } from '@melite/comfyui-card-kit'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
+import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 
 // inputs the t4 family templates OMIT whose pin defaults comfy-script
 // would auto-fill at serialization — the strip set lives in src/kit.ts
@@ -145,7 +146,7 @@ const paramSchema = z.object({
   // default) is on-grid; the omitted-key path normalizes to null in
   // schema() so the body computes the family's frame budget.
   length: z.number().description("Frames").min(22).max(362).step(17).default(56).extra('extra', { order: null, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
-  steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', { order: null, tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)", wtype: 'number' }),
+  steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', samplingExtra('steps', { tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
   sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
   sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, visible_when: "sharpen_enabled=true", tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
   // interpolate_enabled: HONEST DEFAULT (hour 20): the card's
@@ -164,7 +165,15 @@ const paramSchema = z.object({
   // (sampling_steps / sampler / scheduler / interpolate_model /
   // interpolate_multiplier / rtx_vsr_enabled) never matched these,
   // were never read, and die with the studio rework.
-  denoise: z.number().description("Denoise").min(0).max(1).step(0.05).default(1.0).extra('extra', { order: null, wtype: 'number', tooltip: "How much of the latent the sampler rewrites. 1.0 = full denoise (fresh windows); lower inherits structure." }),
+  // ANTI-DRY (operator catch, 2026-09-19: "why do normal forms have
+  // sampler and scheduler next to each other but here they're on
+  // different rows?"): the sampling layout truth (group/columns/
+  // width/zone) is the KIT's — steps/sampler/scheduler ride
+  // samplingExtra() like every normal card; h3-only knobs (denoise,
+  // the shifts) declare the SAME layout facts inline (card-owned
+  // kinds, one place each). The 2-column grid seats sampler +
+  // scheduler side by side on EVERY face that honors the grammar.
+  denoise: z.number().description("Denoise").min(0).max(1).step(0.05).default(1.0).extra('extra', { order: 4, group: 'sampling', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: "How much of the latent the sampler rewrites. 1.0 = full denoise (fresh windows); lower inherits structure." }),
   // CLOSED TYPES (hour 22 incident): these were
   // z.string() with a DECORATIVE extra options list — the gate accepted
   // any string (no membership refusal), the face showed the hand-stamped
@@ -183,8 +192,8 @@ const paramSchema = z.object({
     // README rec (beta57); seeds_2/seeds_3 are the "dual clock"
     // family the arena's top i2v runs rode with larryvrh v4.
     "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3",
-  ]).description("Sampler").default("euler").extra('extra', { order: null, wtype: 'select', tooltip: "The KSampler solver. euler family pairs with turbo adapters; res_multistep is the official-template solver; er_sde+beta is the Parasyte rec; seeds_2/3 are the dual-clock family." }),
-  sched_name: vocabulary(["simple", "beta", "linear_quadratic", "normal", "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform"]).description("Scheduler").default("simple").extra('extra', { order: null, wtype: 'select', tooltip: "The sigma schedule shape." }),
+  ]).description("Sampler").default("euler").extra('extra', samplingExtra('sampler', { tooltip: "The KSampler solver. euler family pairs with turbo adapters; res_multistep is the official-template solver; er_sde+beta is the Parasyte rec; seeds_2/3 are the dual-clock family." })),
+  sched_name: vocabulary(["simple", "beta", "linear_quadratic", "normal", "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform"]).description("Scheduler").default("simple").extra('extra', samplingExtra('scheduler', { tooltip: "The sigma schedule shape." })),
   // ── THE T3 REFINE RIDER (roadmap item 2; ledger #30 §3(2)) —
   // the crowd's third tier: a short CLOSING pass over each
   // window's output latent, the refiner lora on its OWN loader
@@ -236,8 +245,8 @@ const paramSchema = z.object({
   // LOUD at the walk. The hour-22 double-default (same 8 spelled on
   // the union and the inner arm) never made the walk fill 8; it
   // bought the face a number while the call kept the body literal.
-  shift_video: z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' }),
-  shift_audio: z.number().description("Audio Shift").min(1).max(10).step(0.5).default(3).extra('extra', { order: null, tooltip: "Timestep shift for audio attention. Lower = more detailed sound.", wtype: 'number' }),
+  shift_video: z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: 5, group: 'sampling', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: "Timestep shift for video attention. Higher = more coherent motion." }),
+  shift_audio: z.number().description("Audio Shift").min(1).max(10).step(0.5).default(3).extra('extra', { order: 6, group: 'sampling', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: "Timestep shift for audio attention. Lower = more detailed sound.", }),
   // ── the SLA family (hour 16, item 3): compose-read knobs, now
   // EMITTED — the studio's advanced panel rides the served spec
   // (SpecFieldRow) instead of hand-rolled rows. Defaults are the

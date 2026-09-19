@@ -39,9 +39,7 @@ export interface SourceRow {
   repo_id?: string;
   filename?: string;
 }
-
-export const SourceRow: z<SourceRow> = z.object({
-  type: z.string().default(""),
+export const SourceRow: z<SourceRow> = z.object({  type: z.string().default(""),
   repo_id: z.string(),
   filename: z.string(),
   note: z.string(),
@@ -219,6 +217,28 @@ export const ProvisionRow: z<ProvisionRow> = z.object({
  *  now resolves every DECL through this schema STRICTLY; the strict
  *  leg strips unknown keys, and the service refuses the strip as
  *  drift (resolve result vs input key count) — forbid, honestly. */
+/** THE MARRIAGE DECLARATION (#36, the recipes rework): an object
+ *  DECL.mods entry boards the pack AND declares the knob marriage —
+ *  a flavor row in this pack carries a value for a DECLARED card
+ *  knob (the distill adapters' married step counts) that OWNS the
+ *  knob while a counting bag row rides. 'max' is the one
+ *  aggregation law (compose card.ts: "8 on a 4-step distill is
+ *  fine, 4 on an 8-step is undercooked" — Math.max). Served
+ *  verbatim on the form-spec kind so EVERY client face mirrors
+ *  compose; the catalog row stays the ONE value owner (recipes
+ *  reference ids — strength/steps never duplicated). Named const
+ *  in the union (the SourceRow pattern — the inline object literal
+ *  admits no contextual inference through z.union's tuple). */
+export interface ModPackMarriage {
+  pack: string;
+  marries: Record<string, "max">;
+}
+
+export const ModPackMarriage: z<ModPackMarriage> = z.object({
+  pack: z.string(),
+  marries: z.dict(z.const('max')),
+})
+
 // Un-annotated on purpose: the z<T> annotation demands exact
 // inference alignment the interface's optional/readonly fields
 // (studio unions, ReadonlyArray presets) do not admit without a
@@ -242,7 +262,9 @@ export const ModelDecl = z.object({
     layout: z.string(),
     kind: z.string(),
   }), z.const(null)]),
-  mods: z.array(z.string()).default([]),
+  // string = pack name; object = pack + the knob marriage (the
+  // ModPackMarriage const above owns the shape and its law).
+  mods: z.array(z.union([z.string(), ModPackMarriage])).default([]),
   variants: z.array(VariantRow),
   variant_groups: z.array(VariantGroupRow).default([]),
   provisions: z.array(ProvisionRow).default([]),
@@ -294,8 +316,10 @@ export interface ModelDecl {
     layout?: string;
     kind?: string;
   } | null;
-  /** Absent = boards nothing (the z-image shape). */
-  mods?: string[];
+  /** Absent = boards nothing (the z-image shape). String = pack
+   *  name; object = pack + the knob marriage declaration (the
+   *  zod grammar above owns the shape). */
+  mods?: Array<string | { pack: string; marries: Record<string, 'max'> }>;
   variants: VariantRow[];
   variant_groups?: VariantGroupRow[];
   provisions?: ProvisionRow[];

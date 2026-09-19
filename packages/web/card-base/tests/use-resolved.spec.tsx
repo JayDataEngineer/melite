@@ -25,12 +25,13 @@ function doc(): FormSpecDoc {
     schema: {
       uid: 0,
       refs: {
-        0: { type: 'object', dict: { shift_video: 1, shift_audio: 2, steps: 3, loras: 4 } },
+        0: { type: 'object', dict: { shift_video: 1, shift_audio: 2, steps: 3, loras: 4, cfg: 6 } },
         1: { type: 'number', meta: { default: 2.5, min: 0, max: 10, step: 0.1, extra: { group: 'engine' } } },
         2: { type: 'number', meta: { default: 1.5, min: 0, max: 10, step: 0.1, extra: { group: 'engine' } } },
         3: { type: 'number', meta: { default: 30, min: 1, max: 100, step: 1, extra: { group: 'engine' } } },
         4: { type: 'array', meta: {}, inner: 5 },
         5: { type: 'object', meta: {}, dict: {} },
+        6: { type: 'number', meta: { default: 5, extra: { wtype: 'number' } } },
       },
     },
   } as unknown as FormSpecDoc
@@ -55,6 +56,31 @@ function Harness({ family, user, onWrite, base }: {
       type: 'button',
       onClick: () => { edit('loras', [{ id: 'x' }]) },
     }, 'edit-mod'),
+    h('button', {
+      'data-testid': 'edit-blank-seed',
+      type: 'button',
+      onClick: () => { edit('steps', '') },
+    }, 'edit-blank-seed'),
+    h('button', {
+      'data-testid': 'edit-blank-slider',
+      type: 'button',
+      onClick: () => { edit('shift_video', '') },
+    }, 'edit-blank-slider'),
+    h('button', {
+      'data-testid': 'edit-blank-number',
+      type: 'button',
+      onClick: () => { edit('cfg', '') },
+    }, 'edit-blank-number'),
+    h('button', {
+      'data-testid': 'edit-blank-bag',
+      type: 'button',
+      onClick: () => { edit('loras', '') },
+    }, 'edit-blank-bag'),
+    h('button', {
+      'data-testid': 'edit-blank-missing',
+      type: 'button',
+      onClick: () => { edit('missing', '') },
+    }, 'edit-blank-missing'),
   )
 }
 
@@ -109,6 +135,34 @@ test('EDITS COERCE at the schema boundary; undeclared keys ride verbatim', async
     screen.getByTestId('edit-mod').click()
     expect(writes[0]).toEqual(['steps', 8])
     expect(writes[1]).toEqual(['loras', [{ id: 'x' }]])
+  } finally {
+    globalThis.fetch = realFetch
+  }
+})
+
+test('THE STUDIOS’ BLANK-INHERITS LAW: empty numeric edits are the unset signal, nothing else', async () => {
+  const fetchMock = vi.fn(async () => Response.json(doc()))
+  const realFetch = globalThis.fetch
+  globalThis.fetch = fetchMock as unknown as typeof fetch
+  const writes: Array<[string, unknown]> = []
+  try {
+    render(h(Harness, {
+      family: 'h3-timeline', user: {},
+      onWrite: (n, v) => { writes.push([n, v]) },
+    }))
+    await waitFor(() => { expect(screen.getByTestId('state').textContent).toContain('"spec":true') })
+    screen.getByTestId('edit-blank-seed').click()
+    screen.getByTestId('edit-blank-slider').click()
+    screen.getByTestId('edit-blank-number').click()
+    screen.getByTestId('edit-blank-bag').click()
+    screen.getByTestId('edit-blank-missing').click()
+    expect(writes).toEqual([
+      ['steps', undefined],
+      ['shift_video', undefined],
+      ['cfg', undefined],
+      ['loras', ''],
+      ['missing', ''],
+    ])
   } finally {
     globalThis.fetch = realFetch
   }

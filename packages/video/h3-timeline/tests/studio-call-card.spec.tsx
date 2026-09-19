@@ -45,7 +45,6 @@ function deps(over?: Record<string, unknown>) {
     callCardRefs: { current: [] as (HTMLDivElement | null)[] },
     artifactIndex: { byName: BY_NAME, byUrl: BY_URL },
     linkGroups: [],
-    isRef2va: false,
     refArtifacts: [{ name: "ra", url: "https://u/ra.png" }],
     handlePromptDelete: (id: string) => { calls.deleted.push(id) },
     handlePromptUpdate: () => {},
@@ -206,7 +205,7 @@ describe("identity refs + knob fold", () => {
   })
 
   it("a From-flow pick writes the artifact NAME (the URL translates)", () => {
-    const { d, calls } = deps({ isRef2va: true })
+    const { d, calls } = deps({})
     function Live() {
       const [c, setC] = useState<DocCall>(BASE)
       return (

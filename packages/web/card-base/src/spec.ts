@@ -204,6 +204,15 @@ export interface ModifierKind {
    *  each receiving the previous outputs — modifying the model call,
    *  never independent inference. Served verbatim. */
   category?: 'standalone' | 'ordered'
+  /** THE MARRIAGE DECLARATION (#36, served from the family DECL):
+   *  knob → aggregation — a flavor row in this pack carries a value
+   *  for the named card knob (the distill adapters' married step
+   *  counts); while a counting bag row rides, the knob is the
+   *  BAG's, not the cascade's. 'max' mirrors compose's layering
+   *  (Math.max — "8 on a 4-step distill is fine, 4 on an 8-step
+   *  is undercooked"). The resolver applies it; every face mirrors
+   *  the film. */
+  marries?: Record<string, 'max'>
   /** THE LEAF FACE (paint-leaf-canvas.md): 'paint-canvas' = the
    *  payload image field offers the brush verb (the host's modal;
    *  absent host degrades to the three-source square).
@@ -227,6 +236,7 @@ export function modOwnedFields(spec: FormSpecDoc): Set<string> {
   }
   return owned
 }
+
 
 /** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
  *  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
@@ -260,7 +270,9 @@ export interface ModifierOption {
   label: string
   tooltip?: string
   /** The row's scalar default, keyed by the pack's scalar field
-   *  (strength for lora/controlnet, weight for ip_adapter). */
+   *  (strength for lora/controlnet, weight for ip_adapter) — plus
+   *  the MARRIED step counts the distill adapters carry (steps,
+   *  steps_min/max — the discovery face serves them verbatim). */
   defaults?: { [scalar: string]: number | undefined }
   model?: string
   preprocessor?: string
@@ -609,10 +621,14 @@ function projectDict(
 /** THE EDIT COERCION (the one specPatch duty that survives, moved
  * to the edit boundary): atoms emit raw strings while typing; a
  * numeric field's edit rides the user layer as a NUMBER. An
- * unparseable/empty numeric string rides VERBATIM (the run's schema
- * parse refuses loud, naming the field — never a silent 0). `v ===
- * undefined` stays undefined (the tri-state's inherit — the caller's
- * unset signal). PURE. */
+ * unparseable/empty numeric string rides VERBATIM (display
+ * continuity through clear-and-retype — the bench drill's law; a
+ * blank that reaches the run's schema parse refuses loud, naming
+ * the field — never a silent 0). `v === undefined` stays undefined
+ * (the tri-state's inherit — the caller's unset signal). The
+ * STUDIOS' blank-inherits law lives one door up, at their own edit
+ * verb (useResolvedForm) — each face owns its blank semantics.
+ * PURE. */
 export function coerceFieldEdit(f: SpecField | undefined, v: unknown): unknown {
   if (v === undefined) return undefined
   if (f !== undefined && (f.type === 'number' || f.type === 'seed' || f.type === 'slider')
@@ -670,6 +686,40 @@ export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecVal
   for (const [k, v] of Object.entries(user)) {
     if (v === null || v === undefined) continue
     out[k] = v
+  }
+  // THE MARRIAGE MIRROR (#36, the recipes rework — compose card.ts's
+  // own layering verbatim: "a call's own knobs > the lora entry's
+  // steps > this steps row"): when a served kind declares a knob
+  // marriage and a counting bag rides, the knob is the BAG's —
+  // stated on the row first, else the catalog row's default, Math.max
+  // across the bag ("8 on a 4-step distill is fine, 4 on an 8-step
+  // is undercooked"). The film already runs this law server-side
+  // (the service resolves bag ids against the family catalog); the
+  // face shows what the film runs — Steps reads 8 with the plaguekind
+  // turbo riding, 4 with dareties, NEVER the neutral 12. A bag id
+  // the catalog does not serve contributes nothing HERE (the mod
+  // plane and the compose door refuse unknown ids loudly — the
+  // resolver never invents a refusal of its own).
+  for (const kind of spec.features?.modifiers ?? []) {
+    if (kind.marries === undefined) continue
+    const bag = out[kind.param_key]
+    if (!Array.isArray(bag) || bag.length === 0) continue
+    const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]))
+    for (const knob of Object.keys(kind.marries)) {
+      const counts: number[] = []
+      for (const row of bag as Array<Record<string, unknown>>) {
+        const stated = row?.[knob]
+        if (typeof stated === 'number' && Number.isFinite(stated)) {
+          counts.push(stated)
+          continue
+        }
+        const id = typeof row?.['id'] === 'string' ? row['id'] : undefined
+        const fromCatalog = id === undefined ? undefined
+          : (catalog.get(id)?.defaults as Record<string, unknown> | undefined)?.[knob]
+        if (typeof fromCatalog === 'number' && Number.isFinite(fromCatalog)) counts.push(fromCatalog)
+      }
+      if (counts.length > 0) out[knob] = Math.max(...counts)
+    }
   }
   return out
 }

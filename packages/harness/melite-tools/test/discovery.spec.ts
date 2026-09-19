@@ -543,6 +543,11 @@ describe('live door arms', () => {
     const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
     const lora = modifiers.find((m) => m['kind'] === 'lora')
     assert.ok(lora !== undefined, 'the loras pack serves on h3-timeline')
+    // THE MARRIAGE DECLARATION (#36, the recipes rework): the kind
+    // serves the knob marriage VERBATIM from the family DECL — the
+    // client resolver mirrors compose (lora steps > steps row,
+    // Math.max) so the face shows what the film runs.
+    assert.deepEqual(lora!['marries'], { steps: 'max' }, 'the loras kind declares the steps marriage (max aggregation)')
     const opts = lora!['options'] as Array<Record<string, unknown>>
     const dareties = opts.find((o) => o['value'] === 'h3_lightx2v_dareties')
     const turbo = opts.find((o) => o['value'] === 'h3_lightx2v_turbo')

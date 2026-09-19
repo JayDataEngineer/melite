@@ -195,11 +195,18 @@ function parseSkillFile(text: string, file: string): ParsedFile {
 }
 
 /** THE COMPOSED TABLE (module cache — the declaration tree is static
- *  per process): route key → served recipe string. */
-export function enhanceRecipes(): Record<string, string> {
+ *  per process): route key → served recipe string. The ROOT SEAM:
+ *  the sweep defaults to the declaration tree; tests pass their own
+ *  fixture root so error arms never write the production tree (a
+ *  parallel worker's sweep could read a broken fixture mid-test —
+ *  the cross-process poison window, killed at the seam). The cache
+ *  keys per root. */
+const TABLE_CACHE = new Map<string, Record<string, string>>()
+export function enhanceRecipes(root = declarationModelsRoot()): Record<string, string> {
+  const cached = TABLE_CACHE.get(root)
+  if (cached !== undefined) return cached
   const routes = new Map<string, RecipeRow>();
   const shared = new Map<string, string>();
-  const root = declarationModelsRoot();
   if (isDir(root)) {
     for (const genre of readdirSync(root)) {
       const gdir = join(root, genre);
@@ -235,6 +242,7 @@ export function enhanceRecipes(): Record<string, string> {
     }
     out[key] = recipe + "\n"; // the old composer's final newline
   }
+  TABLE_CACHE.set(root, out)
   return out;
 }
 

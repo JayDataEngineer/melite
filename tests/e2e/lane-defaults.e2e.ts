@@ -74,4 +74,23 @@ describe.skipIf(!laneUp)('the served lane carries every family\'s defaults (the 
     expect(resolved['denoise'], 'denoise fills the served default through own-undefined (#35)').toBe(1)
     expect(resolved['seed'], 'an explicit pick still rides').toBe(7)
   })
+
+  // THE MARRIAGE CHAIN LIVE (#36, the recipes rework): the served
+  // kind carries the DECL's marriage declaration, and the REAL
+  // resolver mirrors compose through the LIVE payload — a plaguekind
+  // turbo bag (the recipe's pure id selection) puts STEPS at the
+  // married 8 on the face, never the neutral 12. This is the gate
+  // that was missing when the operator clicked the recipe pills and
+  // Steps refused to move: the film ran 8 the whole time.
+  it('the live kind declares the marriage and a distill bag owns steps through the real resolver', async () => {
+    const { resolveValue } = await import('../../packages/web/card-base/src/spec.ts')
+    const r = await fetch(LANE + '/v1/form-spec?model=h3-timeline', { signal: AbortSignal.timeout(5000) })
+    const spec = await r.json() as Parameters<typeof resolveValue>[0]
+    const loraKind = (spec.features?.modifiers ?? []).find((k) => k.param_key === 'loras')
+    expect(loraKind?.marries, 'the loras kind serves the DECL marriage declaration (#36)').toEqual({ steps: 'max' })
+    const resolved = resolveValue(spec, { loras: [{ id: 'h3_lightx2v_turbo' }] }, undefined)
+    expect(resolved['steps'], 'the plaguekind turbo bag owns Steps at its married 8 (#36)').toBe(8)
+    const dareties = resolveValue(spec, { loras: [{ id: 'h3_lightx2v_dareties' }] }, undefined)
+    expect(dareties['steps'], 'the dareties bag owns Steps at its married 4 (#36)').toBe(4)
+  })
 })

@@ -43,7 +43,7 @@ function panel(over?: Record<string, unknown>) {
     deps: {
       selected: null, fps: 24, knobFields: REAL_KNOB_FIELDS, callCardRefs: { current: [] },
       artifactIndex: { byName: new Map(), byUrl: new Map() }, linkGroups: [],
-      isRef2va: false, refArtifacts: [],
+      refArtifacts: [],
       handlePromptDelete: () => {}, handlePromptUpdate: () => {},
       enhanceOne: () => {}, undoEnhance: () => {},
       enhancing: {}, enhanceErr: {}, enhanceUndo: {},

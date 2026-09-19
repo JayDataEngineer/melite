@@ -66,7 +66,14 @@ export const DECL: ModelDecl = {
     "size": "huge",
     "layout": "studio"
   },
-  "mods": ["loras"],
+  // THE MARRIAGE DECLARATION (#36, the recipes rework): the loras
+  // pack's distill adapters carry married step counts — while a
+  // counting bag row rides, STEPS is theirs (compose card.ts:
+  // call knobs > lora steps > the steps row, Math.max across the
+  // bag). Served on the form-spec kind so every client face
+  // mirrors compose — one truth per value: the catalog row owns
+  // strength + steps; recipes reference ids ONLY.
+  "mods": [{ "pack": "loras", "marries": { "steps": "max" } }],
   "genre": "video",
   "variants": [
     {
@@ -113,17 +120,22 @@ export const DECL: ModelDecl = {
       "hint": "The 4-to-8-step distill at 0.6 — the bag row carries its married 8-step count.",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_lightx2v_turbo", "strength": 0.6, "steps": 8 }],
+        // SELECTION ONLY (#36): the catalog row owns strength 0.6
+        // and the married 8-step count — compose resolves ids
+        // against the flavor catalog (unknown ids refuse LOUD) and
+        // the face mirrors the served marriage. A recipe NEVER
+        // duplicates a catalog value (one value, one owner).
+        "loras": [{ "id": "h3_lightx2v_turbo" }],
       },
       "cells": [],
     },
     {
       "id": "dareties_lightx2v",
       "label": "Dareties LightX2V",
-      "hint": "The v4 distill at 0.4 — married to 4 steps.",
+      "hint": "The v4 distill at 0.8 — married to 4 steps.",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_lightx2v_dareties", "strength": 0.4, "steps": 4 }],
+        "loras": [{ "id": "h3_lightx2v_dareties" }],
       },
       "cells": [],
     },

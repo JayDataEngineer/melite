@@ -211,17 +211,21 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
   const packs = new Set(svc.packNames());
   const verbs = new Set(svc.verbIds());
   // every DECL.mods entry is a live pack or verb id (the MODEL
-  // plane — variant routes inherit the boarding, never re-declare)
+  // plane — variant routes inherit the boarding, never re-declare).
+  // THE MARRIAGE GRAMMAR (#36): entries are pack names or
+  // {pack, marries} declarations — the boarding test reads the
+  // pack name either way (one normalizer, the service's own law)
   for (const id of registryIds()) {
-    for (const entry of getModel(id).mods ?? []) {
+    for (const entry of (getModel(id).mods ?? []).map((m) => (typeof m === "string" ? m : m.pack))) {
       assert.ok(packs.has(entry) || verbs.has(entry),
         `${id} boards '${entry}' — dead boarding (the amnesty is over)`);
     }
   }
-  // every flavor's family boards its pack (undeclared mutation)
+  // every flavor's family boards its pack (undeclared mutation —
+  // the marriage grammar normalizes to pack names, the same law)
   for (const flavor of svc.flavorRegistrations()) {
     for (const fam of flavor.families) {
-      assert.ok((getModel(fam).mods ?? []).includes(flavor.pack),
+      assert.ok((getModel(fam).mods ?? []).map((m) => (typeof m === "string" ? m : m.pack)).includes(flavor.pack),
         `${fam} carries a '${flavor.pack}' flavor its DECL does not board`);
     }
   }
@@ -229,7 +233,7 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
   // satisfaction law's third edge — a boarding whose flavor file
   // was lost is a silent dead mutation, the boot gate refuses it)
   for (const id of registryIds()) {
-    for (const entry of getModel(id).mods ?? []) {
+    for (const entry of (getModel(id).mods ?? []).map((m) => (typeof m === "string" ? m : m.pack))) {
       if (verbs.has(entry)) continue;
       assert.ok(
         svc.flavorRegistrations().some((f) => f.pack === entry && f.families.includes(id)),
@@ -473,7 +477,8 @@ test("gate (d), the pack fate: every boarded pack is fired or refused-loud", asy
   const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
   const verbs = new Set(svc.verbIds());
   for (const id of registryIds()) {
-    for (const entry of (registryModel(id).mods ?? []) as readonly string[]) {
+    for (const entry of ((registryModel(id).mods ?? []) as readonly (string | { pack: string })[])
+      .map((m) => (typeof m === "string" ? m : m.pack))) {
       if (verbs.has(entry)) continue;
       assert.ok(
         (guard.PACK_FATE as Record<string, string>)[entry] !== undefined,
@@ -491,7 +496,8 @@ test("the verb mirror: every mounted verb is boarded by its families' DECLs", as
   for (const verb of svc.verbRegistrations()) {
     assert.ok(verb.families.length > 0, `verb '${verb.id}' claims no family`);
     for (const fam of verb.families) {
-      const mods = (registryModel(fam).mods ?? []) as readonly string[];
+      const mods = ((registryModel(fam).mods ?? []) as readonly (string | { pack: string })[])
+        .map((m) => (typeof m === "string" ? m : m.pack));
       assert.ok(mods.includes(verb.id), `verb '${verb.id}' claims '${fam}' but its DECL never boarded it`);
     }
   }
@@ -501,7 +507,8 @@ test("the verb mirror: every mounted verb is boarded by its families' DECLs", as
   const { registryIds } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
   for (const id of registryIds()) {
     const { registryModel: rm } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
-    for (const entry of (rm(id).mods ?? []) as readonly string[]) {
+    for (const entry of ((rm(id).mods ?? []) as readonly (string | { pack: string })[])
+      .map((m) => (typeof m === "string" ? m : m.pack))) {
       if (svc.packNames().includes(entry)) continue;
       assert.ok(mounted.has(entry), `model '${id}' boards verb '${entry}' no verb registers`);
     }

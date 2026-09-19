@@ -6,6 +6,7 @@
 // on every pick so no run composes an impossible coordinate.
 import { expect, test } from 'vitest'
 import { resolveValueLayered } from '../src/use-resolved.ts'
+import { coerceFieldEdit } from '../src/spec.ts'
 
 import {
   activeRowId,
@@ -112,6 +113,68 @@ test('THE INHERIT LAW: the pre-fetch arm holds base through materialized undefin
   // inherits base — the synchronous face never blanks a held value
   expect(resolveValueLayered(null, { steps: 8, cfg: 1 }, { steps: undefined, seed: 7 }))
     .toEqual({ steps: 8, cfg: 1, seed: 7 })
+})
+
+// ── THE MARRIAGE MIRROR (#36, the recipes rework): a served kind
+// declaring marries hands the named knob to a counting bag —
+// stated on the row first, else the catalog row's default, max
+// across the bag (compose card.ts's own layering: call knobs >
+// lora steps > the steps row). The face shows what the film runs:
+// Steps reads 8 with a turbo bag riding, NEVER the neutral
+// default. Recipes reference ids ONLY — the catalog owns every
+// derived value, so nothing can drift. ──
+function marriedDoc(): FormSpecDoc {
+  const d = doc()
+  d.features = {
+    ...d.features,
+    modifiers: [{
+      kind: 'lora',
+      label: 'Loras',
+      param_key: 'loras',
+      cardinality: 'many',
+      marries: { steps: 'max' },
+      options: [
+        { value: 'turbo', label: 'Turbo', defaults: { strength: 0.6, steps: 8 } },
+        { value: 'dareties', label: 'Dareties', defaults: { strength: 0.8, steps: 4 } },
+      ],
+    }],
+  }
+  return d
+}
+
+test('THE MARRIAGE MIRROR: a counting bag owns the married knob (catalog counts, max law)', () => {
+  // the plaguekind repro: an id-only bag (the recipe's pure
+  // selection) — steps reads the CATALOG count, never the cascade's
+  expect(resolveValue(marriedDoc(), { loras: [{ id: 'turbo' }] })).toMatchObject({ steps: 8 })
+  expect(resolveValue(marriedDoc(), { loras: [{ id: 'dareties' }] })).toMatchObject({ steps: 4 })
+  // the stack runs at the HIGHER count (compose's max law)
+  expect(resolveValue(marriedDoc(), { loras: [{ id: 'turbo' }, { id: 'dareties' }] })).toMatchObject({ steps: 8 })
+  // a STATED count on the row beats the catalog (the entry's own word)
+  expect(resolveValue(marriedDoc(), { loras: [{ id: 'turbo', steps: 6 }] })).toMatchObject({ steps: 6 })
+  // even an explicit user steps pick LOSES to the bag — the film
+  // ignores the doc row while the marriage rides; so does the face
+  expect(resolveValue(marriedDoc(), { loras: [{ id: 'dareties' }], steps: 20 })).toMatchObject({ steps: 4 })
+})
+
+test('THE MARRIAGE MIRROR: no counting bag → the cascade owns the knob untouched', () => {
+  // no bag at all, an empty bag, a bag with no married counts, an
+  // unknown id (the mod plane refuses those loudly at its own
+  // door — the resolver never invents a refusal), no marries on
+  // the kind: every shape leaves the cascade's steps alone.
+  expect(resolveValue(marriedDoc(), {})).toMatchObject({ steps: 30 })
+  expect(resolveValue(marriedDoc(), { loras: [] })).toMatchObject({ steps: 30 })
+  expect(resolveValue(marriedDoc(), { loras: [{ strength: 0.5 }] })).toMatchObject({ steps: 30 })
+  expect(resolveValue(marriedDoc(), { loras: [{ id: 'no-such-row' }] })).toMatchObject({ steps: 30 })
+  // a married kind without a catalog cannot count: the cascade owns
+  // the knob, untouched.
+  const optionless = marriedDoc()
+  const [optioned] = optionless.features?.modifiers ?? []
+  const { options: _options, ...rest } = optioned ?? {}
+  optionless.features = { ...optionless.features, modifiers: [rest] }
+  expect(resolveValue(optionless, { loras: [{ id: 'turbo' }] })).toMatchObject({ steps: 30 })
+  const unkind = marriedDoc()
+  unkind.features = { ...unkind.features, modifiers: [{ kind: 'lora', label: 'Loras', param_key: 'loras', cardinality: 'many', options: [] }] }
+  expect(resolveValue(unkind, { loras: [{ id: 'turbo', steps: 8 }] })).toMatchObject({ steps: 30 })
 })
 
 test('fieldVisible: the wire shows unless its rule names a mismatched state', () => {
@@ -352,4 +415,19 @@ test('seedUser: axes seed under the held bag; a poison recipe drops (the stamp n
     },
   } as unknown as FormSpecDoc
   expect(seedUser(withRecipe, { recipe: 'macro-pick' })).toMatchObject({ recipe: 'macro-pick' })
+})
+
+// THE VERBATIM-STRING LAW (#36's settled shape): coerceFieldEdit
+// rides '' VERBATIM (display continuity — each FACE owns its blank
+// semantics at its own door: the studios' edit verb converts '' to
+// the unset signal; the bench's run door refuses a blank loud).
+// Pinned here at the shared coercion, pinned at the studio verb
+// through the h3 rail's own suite.
+test('THE EDIT COERCION: blank and unparseable strings ride verbatim', () => {
+  const num = { name: 'steps', label: 'Steps', type: 'number' } as SpecField
+  expect(coerceFieldEdit(num, '')).toBe('')
+  expect(coerceFieldEdit(num, '  ')).toBe('  ')
+  expect(coerceFieldEdit(num, '12')).toBe(12)
+  expect(coerceFieldEdit(num, 'abc')).toBe('abc') // unparseable rides verbatim (the loud backstop)
+  expect(coerceFieldEdit(undefined, '')).toBe('') // undeclared keys ride untouched (the mod bag's own law)
 })

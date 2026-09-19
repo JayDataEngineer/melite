@@ -1,14 +1,13 @@
 // @melite/comfyui-cordis — the prompt-enhance recipe loader battery.
 //
-// SEAM: the declaration tree is STATIC per process (the package's own
-// models/ dir — self-locating, never env-seamed by design), so the
-// loader's ONLY inputs are real SKILL.md files. Positive arms pin the
-// real tree's served table (route grammar, alias copies, shared merge,
-// exact/family/null lookup); error arms ride EPHEMERAL fixture genres
-// (zz-cov-<pid>/ — one genre at a time, created and removed inside the
-// test, so the sweep reads them for real and no residue can poison the
-// tree or a later run). No mocks, no network: real fs, real parser,
-// loud refusals matched by shape.
+// SEAM: the loader's ONLY inputs are real SKILL.md files. Positive
+// arms pin the real tree's served table (route grammar, alias
+// copies, shared merge, exact/family/null lookup); every error arm
+// rides an EPHEMERAL fixture root (zz-er-<pid>-<seq>/ — created and
+// removed inside the test, so the sweep reads real files and no
+// residue or production-tree write can poison the tree, a later
+// run, or a parallel worker). No mocks, no network: real fs, real
+// parser, loud refusals matched by shape.
 import { beforeEach, describe, it, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
 import {
@@ -22,34 +21,41 @@ import {
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { enhanceRecipeFor, enhanceRecipes } from "../src/models/enhanceRecipes.ts";
+// THE ROOT SEAM (the cross-process poison window, killed): every
+// fixture arm sweeps its OWN root under this spec's directory —
+// real files, real parser, ZERO writes to the production tree (a
+// parallel worker's sweep can never read a broken fixture
+// mid-test).
+const tmp = dirname(fileURLToPath(import.meta.url));
+let rootSeq = 0;
+const fixtureRoot = (): string => join(tmp, `.zz-er-${process.pid}-${(rootSeq += 1)}`);
 
-const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
-const modelsRoot = join(pkgRoot, "models");
-const GENRE = `zz-cov-${process.pid}`;
-const genreDir = join(modelsRoot, GENRE);
-
-const skillPath = (fam: string): string =>
-  join(genreDir, fam, "agents", "skills", "prompt-enhance", "SKILL.md");
+const skills = (root: string, fam: string): string =>
+  join(root, "zz-genre", fam, "agents", "skills", "prompt-enhance", "SKILL.md");
 
 /** Lay fixture skills, run fn, always remove the genre (residue would
  *  poison every later sweep — the finally owns the removal, the
  *  onTestFinished owns the crash path). */
-const withSkills = (rows: Array<[string, string]>, fn: () => void): void => {
-  onTestFinished(() => rmSync(genreDir, { recursive: true, force: true }));
+const withSkills = (
+  rows: Array<[string, string]>,
+  fn: (root: string) => void,
+): void => {
+  const root = fixtureRoot();
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   try {
     for (const [fam, text] of rows) {
-      mkdirSync(dirname(skillPath(fam)), { recursive: true });
-      writeFileSync(skillPath(fam), text);
+      mkdirSync(dirname(skills(root, fam)), { recursive: true });
+      writeFileSync(skills(root, fam), text);
     }
-    fn();
+    fn(root);
   } finally {
-    rmSync(genreDir, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
   }
 };
 
 beforeEach(() => {
-  // a crashed run must never poison this one — drop stale fixtures first
-  rmSync(genreDir, { recursive: true, force: true });
+  // a crashed run must never poison this one — drop stale fixture roots
+  rmSync(join(tmp, `.zz-er-${process.pid}`), { recursive: true, force: true });
 });
 
 describe("enhanceRecipes (the served table over the real tree)", () => {
@@ -69,47 +75,24 @@ describe("enhanceRecipes (the served table over the real tree)", () => {
     assert.ok(iNote > 0 && iNote < iShared && iShared < iJson, "role, notes, shared, shared_json compose in order");
   });
 
-  it("a stray file at the tree root is skipped (genres are dirs)", () => {
-    const stray = join(modelsRoot, `zz-stray-${process.pid}.txt`);
-    onTestFinished(() => rmSync(stray, { force: true }));
-    try {
-      writeFileSync(stray, "not a genre");
-      const table = enhanceRecipes();
-      assert.equal(table["krea-2-raw"], table["krea-2"], "the sweep rides past the stray file");
-    } finally {
-      rmSync(stray, { force: true });
-    }
-  });
-
-  it("a dangling entry never breaks the sweep (stat failures read as not-a-dir)", () => {
-    const link = join(modelsRoot, `zz-dangle-${process.pid}`);
-    onTestFinished(() => rmSync(link, { force: true }));
-    try {
-      symlinkSync(join(modelsRoot, "no-such-target"), link);
-      const table = enhanceRecipes();
-      assert.equal(table["krea-2-raw"], table["krea-2"], "the sweep rides past the dangling entry");
-    } finally {
-      rmSync(link, { force: true });
-    }
+  it("a stray file and a dangling entry at the fixture root are skipped (genres are dirs)", () => {
+    withSkills([[`zz-fam`, `zz-one:
+  role: "Be brief."
+  notes:
+    - "Keep it short."
+`]], (root) => {
+      writeFileSync(join(root, "zz-stray.txt"), "not a genre");
+      symlinkSync(join(root, "no-such-target"), join(root, "zz-dangle"));
+      const table = enhanceRecipes(root);
+      assert.equal(table["zz-one"], "Be brief.\n\n- Keep it short.\n", "the sweep rides past the non-genre entries");
+    });
   });
 
   it("a missing declaration tree serves the empty table (the no-file law)", () => {
-    const hidden = `${modelsRoot}.hidden-${process.pid}`;
-    onTestFinished(() => {
-      try {
-        renameSync(hidden, modelsRoot);
-      } catch {
-        /* the finally already restored */
-      }
-    });
-    renameSync(modelsRoot, hidden);
-    try {
-      assert.deepEqual(enhanceRecipes(), {});
-      assert.equal(enhanceRecipeFor("krea-2", "krea-2"), null);
-    } finally {
-      renameSync(hidden, modelsRoot);
-    }
-    assert.ok(existsSync(join(modelsRoot, "image")), "the tree is restored");
+    // THE ROOT SEAM: an absent root is a fixture-root call away —
+    // the production tree is never renamed out from under parallel
+    // workers (the poison window, killed at the seam)
+    assert.deepEqual(enhanceRecipes(join(tmp, `.zz-er-absent-${process.pid}`)), {});
   });
 });
 
@@ -133,8 +116,8 @@ describe("parseSkillFile (the constrained grammar over fixture files)", () => {
   role: "Be brief."
   notes:
     - "Keep it short."
-`]], () => {
-      assert.equal(enhanceRecipes()["zz-one"], "Be brief.\n\n- Keep it short.\n");
+`]], (root) => {
+      assert.equal(enhanceRecipes(root)["zz-one"], "Be brief.\n\n- Keep it short.\n");
     });
   });
 
@@ -175,8 +158,8 @@ zz-second: *zzanchor
 zz-third:
   role: "Third."
   base: zz_missing
-`]], () => {
-      const table = enhanceRecipes();
+`]], (root) => {
+      const table = enhanceRecipes(root);
       assert.equal(
         table["zz-first"],
         "First \"role\" here.\nSecond line.\n\n- Note one.\n- Note two \\ done.\n\nLine one.\n\nLine two here.\n",
@@ -193,21 +176,20 @@ zz-third:
 services:
   x: |
     y
-`]], () => {
-      assert.equal(enhanceRecipes()["zz-solo"], "Solo.\n\n\n");
+`]], (root) => {
+      assert.equal(enhanceRecipes(root)["zz-solo"], "Solo.\n\n\n");
     });
   });
 
   it("a family dir without the skill is skipped (the ENOENT law)", () => {
-    const emptySkillDir = join(genreDir, "zz-empty", "agents", "skills", "prompt-enhance");
-    onTestFinished(() => rmSync(genreDir, { recursive: true, force: true }));
+    const root = fixtureRoot();
+    onTestFinished(() => rmSync(root, { recursive: true, force: true }));
     try {
-      mkdirSync(emptySkillDir, { recursive: true });
-      const table = enhanceRecipes();
-      assert.equal(table["krea-2-raw"], table["krea-2"], "the sweep rides past the skill-less family");
+      mkdirSync(join(root, "zz-genre", "zz-empty", "agents", "skills", "prompt-enhance"), { recursive: true });
+      const table = enhanceRecipes(root);
       assert.equal(table["zz-empty"], undefined, "no skill, no routes");
     } finally {
-      rmSync(genreDir, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true });
     }
   });
 
@@ -225,8 +207,8 @@ zz-a:
 zz-b:
   role: "B."
 `],
-    ], () => {
-      const table = enhanceRecipes();
+    ], (root1) => {
+      const table = enhanceRecipes(root1);
       assert.equal(table["zz-a"], "A.\n\n\n");
       assert.equal(table["zz-b"], "B.\n\n\n");
     });
@@ -243,8 +225,8 @@ zz-a:
 zz-b:
   role: "B."
 `],
-    ], () => {
-      assert.throws(() => enhanceRecipes(), /shared block 'zz_dup' declared twice with different bodies/);
+    ], (root2) => {
+      assert.throws(() => enhanceRecipes(root2), /shared block 'zz_dup' declared twice with different bodies/);
     });
   });
 });
@@ -253,30 +235,30 @@ describe("parseSkillFile (every malformed shape refuses loud)", () => {
   it("an unterminated frontmatter leaves the dashes to refuse as an unexpected line", () => {
     withSkills([["zz-fam", `---
 name: zz
-`]], () => {
-      assert.throws(() => enhanceRecipes(), /unexpected line '---'/);
+`]], (root) => {
+      assert.throws(() => enhanceRecipes(root), /unexpected line '---'/);
     });
   });
 
   it("an indented top-level line refuses (top-level entries only)", () => {
     withSkills([["zz-fam", `  indented: x
-`]], () => {
-      assert.throws(() => enhanceRecipes(), /unexpected line 'indented: x'/);
+`]], (root) => {
+      assert.throws(() => enhanceRecipes(root), /unexpected line 'indented: x'/);
     });
   });
 
   it("a shared entry that is not 'name: |' refuses named", () => {
     withSkills([["zz-fam", `shared:
   oops
-`]], () => {
-      assert.throws(() => enhanceRecipes(), /shared block must be 'name: \|' \(got 'oops'\)/);
+`]], (root) => {
+      assert.throws(() => enhanceRecipes(root), /shared block must be 'name: \|' \(got 'oops'\)/);
     });
   });
 
   it("an alias with no anchor refuses named", () => {
     withSkills([["zz-fam", `zz-a: *ghost
-`]], () => {
-      assert.throws(() => enhanceRecipes(), /alias '\*ghost' has no anchor/);
+`]], (root) => {
+      assert.throws(() => enhanceRecipes(root), /alias '\*ghost' has no anchor/);
     });
   });
 
@@ -284,16 +266,16 @@ name: zz
     withSkills([["zz-fam", `zz-a:
   role: "R."
   bogus line here
-`]], () => {
-      assert.throws(() => enhanceRecipes(), /unknown nested line 'bogus line here'/);
+`]], (root) => {
+      assert.throws(() => enhanceRecipes(root), /unknown nested line 'bogus line here'/);
     });
   });
 
   it("an unquoted role refuses (roles are double-quoted)", () => {
     withSkills([["zz-fam", `zz-a:
   role: bare
-`]], () => {
-      assert.throws(() => enhanceRecipes(), /role must be double-quoted/);
+`]], (root) => {
+      assert.throws(() => enhanceRecipes(root), /role must be double-quoted/);
     });
   });
 
@@ -301,8 +283,8 @@ name: zz
     withSkills([["zz-fam", `zz-a:
   role: "R."
   notes: x
-`]], () => {
-      assert.throws(() => enhanceRecipes(), /notes must be a dash list/);
+`]], (root) => {
+      assert.throws(() => enhanceRecipes(root), /notes must be a dash list/);
     });
   });
 
@@ -310,16 +292,16 @@ name: zz
     withSkills([["zz-fam", `zz-a:
   role: "R."
   size: 1
-`]], () => {
-      assert.throws(() => enhanceRecipes(), /unknown field 'size'/);
+`]], (root) => {
+      assert.throws(() => enhanceRecipes(root), /unknown field 'size'/);
     });
   });
 
   it("an entry without a role refuses named", () => {
     withSkills([["zz-fam", `zz-a:
   base: zz_base
-`]], () => {
-      assert.throws(() => enhanceRecipes(), /entry 'zz-a' has no role/);
+`]], (root) => {
+      assert.throws(() => enhanceRecipes(root), /entry 'zz-a' has no role/);
     });
   });
 });

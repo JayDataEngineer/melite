@@ -455,6 +455,20 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region ../../web/card-base/src/spec.ts
+		/** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
+		*  served modifier kind owns — its fields' names plus its param_key
+		*  (the bag storage). CardForm EXCLUDES these from the flat param
+		*  groups: mod params render ONLY inside the mod system. PURE. */
+		function modOwnedFields(spec) {
+			const owned = /* @__PURE__ */ new Set();
+			for (const k of spec.features?.modifiers ?? []) owned.add(k.param_key);
+			for (const env of Object.values(spec.mod_schemas ?? {})) {
+				if (env == null) continue;
+				const root = env.refs[env.uid];
+				for (const name of Object.keys(root?.dict ?? {})) owned.add(name);
+			}
+			return owned;
+		}
 		/** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
 		*  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
 		function isOptionKind(k) {
@@ -552,6 +566,31 @@ window.__ModuleLoader__.load({
 			const root = env.refs[env.uid];
 			return projectDict(env, root?.dict ?? {}, family);
 		}
+		/** THE HYBRID PROJECTION (the controlnet restoration): the envelope
+		*  root's bag array (param_key) holds entry OBJECTS — project the
+		*  ELEMENT's dict as the kind's entry fields (the catalog select
+		*  joins them in the leaf). Empty when the bag is absent or its
+		*  element is not an object (a pure OPTION kind like lora). */
+		function entryFieldsOfEnvelope(env, paramKey, family) {
+			if (env == null) return [];
+			const at = env.refs[env.uid]?.dict?.[paramKey];
+			const node = at === void 0 ? void 0 : env.refs[at];
+			const innerId = node?.inner;
+			const inner = typeof innerId === "number" ? env.refs[innerId] : void 0;
+			if (node?.type !== "array" || inner?.type !== "object") return [];
+			return projectDict(env, inner.dict ?? {}, family);
+		}
+		/** THE PACK-LEVEL PROJECTION (the controlnet strength floor): the
+		*  envelope root's fields OUTSIDE the bag array — the section's own
+		*  rows above the tiles. Bag-external arrays are not section rows
+		*  (no atom renders a bag) — scalars only. */
+		function kindScalarFieldsOfEnvelope(env, paramKey, family) {
+			if (env == null) return [];
+			const dict = { ...env.refs[env.uid]?.dict ?? {} };
+			delete dict[paramKey];
+			for (const [name, id] of Object.entries(dict)) if (env.refs[id]?.type === "array") delete dict[name];
+			return projectDict(env, dict, family);
+		}
 		/** The dict projector (the walker's body — one meta path for the
 		*  root, the hybrid element, and the pack-level rows). */
 		function projectDict(env, dict, family) {
@@ -628,10 +667,14 @@ window.__ModuleLoader__.load({
 		/** THE EDIT COERCION (the one specPatch duty that survives, moved
 		* to the edit boundary): atoms emit raw strings while typing; a
 		* numeric field's edit rides the user layer as a NUMBER. An
-		* unparseable/empty numeric string rides VERBATIM (the run's schema
-		* parse refuses loud, naming the field — never a silent 0). `v ===
-		* undefined` stays undefined (the tri-state's inherit — the caller's
-		* unset signal). PURE. */
+		* unparseable/empty numeric string rides VERBATIM (display
+		* continuity through clear-and-retype — the bench drill's law; a
+		* blank that reaches the run's schema parse refuses loud, naming
+		* the field — never a silent 0). `v === undefined` stays undefined
+		* (the tri-state's inherit — the caller's unset signal). The
+		* STUDIOS' blank-inherits law lives one door up, at their own edit
+		* verb (useResolvedForm) — each face owns its blank semantics.
+		* PURE. */
 		function coerceFieldEdit(f, v) {
 			if (v === void 0) return void 0;
 			if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
@@ -672,6 +715,26 @@ window.__ModuleLoader__.load({
 				if (v === null || v === void 0) continue;
 				out[k] = v;
 			}
+			for (const kind of spec.features?.modifiers ?? []) {
+				if (kind.marries === void 0) continue;
+				const bag = out[kind.param_key];
+				if (!Array.isArray(bag) || bag.length === 0) continue;
+				const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]));
+				for (const knob of Object.keys(kind.marries)) {
+					const counts = [];
+					for (const row of bag) {
+						const stated = row?.[knob];
+						if (typeof stated === "number" && Number.isFinite(stated)) {
+							counts.push(stated);
+							continue;
+						}
+						const id = typeof row?.["id"] === "string" ? row["id"] : void 0;
+						const fromCatalog = id === void 0 ? void 0 : (catalog.get(id)?.defaults)?.[knob];
+						if (typeof fromCatalog === "number" && Number.isFinite(fromCatalog)) counts.push(fromCatalog);
+					}
+					if (counts.length > 0) out[knob] = Math.max(...counts);
+				}
+			}
 			return out;
 		}
 		/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
@@ -692,6 +755,22 @@ window.__ModuleLoader__.load({
 				if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
 			}
 			return true;
+		}
+		/** Group the visible fields (the spec's own group key, first-appearance
+		*  order — ungrouped first under no heading). */
+		function groupFields(fields, values) {
+			const out = [];
+			for (const f of fields) {
+				if (!fieldVisible(f, values)) continue;
+				const g = typeof f.group === "string" && f.group !== "" ? f.group : null;
+				const known = out.find((x) => x.group === g);
+				if (known === void 0) out.push({
+					group: g,
+					fields: [f]
+				});
+				else known.fields.push(f);
+			}
+			return out;
 		}
 		/** The axis groups in declaration order: features.variant_groups'
 		*  key order when the door serves it, else the rows' distinct groups
@@ -731,6 +810,16 @@ window.__ModuleLoader__.load({
 				}
 				return true;
 			});
+		}
+		/** The Model select's options (stroke 21, the operator's law:
+		*  "WHY IS KREA-2 AND KREA-2-RAW MODELS! THAT IS A VARIANT") — THE
+		*  FAMILY THE SPEC SERVES, full stop. A variant row's re-point
+		*  (krea-2-raw) is the DECL's compose stamp, resolved server-side
+		*  into the run's params — it is NOT a model and never renders as
+		*  one. The rail's other options are the card's boarded families
+		*  (spec.families, served from the card package). */
+		function modelChoices(spec) {
+			return typeof spec.model === "string" && spec.model !== "" ? [spec.model] : [];
 		}
 		/** The ACTIVE RECIPE (the dropdown's selection state, derived from
 		* the ONE truth -- never a persisted key): a recipe row is active
@@ -773,6 +862,28 @@ window.__ModuleLoader__.load({
 			}
 			return false;
 		}
+		/** One group's active row under the owner chain (inner recursion of
+		*  activeVariantId — Variant resolves first, chained groups after). */
+		function activeRowId(spec, values, group, active) {
+			const held = typeof values["model"] === "string" ? values["model"] : void 0;
+			if (held === void 0) return void 0;
+			for (const v of rowsFor(spec, group)) {
+				const rePoint = typeof v.defaults["model"] === "string" ? v.defaults["model"] : v.route;
+				if (rePoint === "" || rePoint !== held) continue;
+				if (v.owner !== void 0 && v.owner !== "") {
+					let chainHolds = false;
+					for (const g of axisGroups(spec)) {
+						if (g === group) continue;
+						if (rowsFor(spec, g).find((x) => x.id === v.owner) !== void 0) {
+							chainHolds = active[g] === v.owner;
+							break;
+						}
+					}
+					if (!chainHolds) continue;
+				}
+				return v.id;
+			}
+		}
 		/** The durable param key an axis rides (the group's id, lowercased —
 		*  'variant', 'quant', 'recipe', 'precision'). */
 		function axisKey(group) {
@@ -801,6 +912,39 @@ window.__ModuleLoader__.load({
 				if (composing.length > 0) patch[axisKey(g)] = composing[0].id;
 				else patch[axisKey(g)] = "";
 			}
+			return patch;
+		}
+		/** A model switch's full value patch (the stale-variant cure,
+		*  operator 2026-09-14: model anima + variant turbo refused at
+		*  compose — a switch that keeps the old family's axes is a broken
+		*  stage). Every axis re-seeds to its FIRST row re-pointing at the
+		*  new model (else its first composing row), and the picked rows'
+		*  defaults overlay rides (raw → {model, steps, cfg} — the pick
+		*  law, same as axisPickPatch). The caller writes every key through
+		*  onEdit. PURE. */
+		function modelSwitchPatch(spec, model) {
+			const patch = { model };
+			const groups = axisGroups(spec);
+			const active = {};
+			const crossSpec = model !== "" && model !== spec.model;
+			for (const g of groups) {
+				const composing = composingRows(spec, g, active);
+				if (composing.length === 0 || crossSpec) {
+					patch[axisKey(g)] = "";
+					active[g] = "";
+					continue;
+				}
+				const row = composing.find((r) => {
+					return (typeof r.defaults["model"] === "string" && r.defaults["model"] !== "" ? r.defaults["model"] : r.route) === model;
+				}) ?? composing[0];
+				for (const [k, v] of Object.entries(row.defaults)) {
+					if (k === "model") continue;
+					patch[k] = v;
+				}
+				patch[axisKey(g)] = row.id;
+				active[g] = row.id;
+			}
+			patch["model"] = model;
 			return patch;
 		}
 		//#endregion
@@ -1843,6 +1987,146 @@ window.__ModuleLoader__.load({
 		//#region ../../web/card-base/src/axes.tsx
 		/** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
 		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE PACK PROMPT (the no-silent-drop law's extension half,
+		*  stroke 18): the card's DECLARED extension packs that the engine
+		*  cannot see render AS THEMSELVES — marked missing, with the
+		*  install verb one click away (the manage door's install_extension;
+		*  the host owns the wire). Present and unknown packs render nothing
+		*  (nothing to act on; the spec carries their truth for anyone who
+		*  reads it). Never a silently absent pack: the run's refusal text
+		*  and this prompt name the same id. */
+		function PackPrompt({ spec, onInstallPack }) {
+			const missing = (spec.packs ?? []).filter((p) => p.present === false);
+			if (missing.length === 0 || onInstallPack === void 0) return null;
+			return (0, react.createElement)("section", {
+				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
+				"data-pack-prompt": "1"
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Extensions"), missing.map((p) => (0, react.createElement)(PackPromptRow, {
+				key: p.id,
+				id: p.id,
+				onInstallPack
+			})));
+		}
+		function PackPromptRow({ id, onInstallPack }) {
+			const [st, setSt] = (0, react.useState)("idle");
+			return (0, react.createElement)("div", {
+				className: card_module_css_default.specHint,
+				"data-missing-pack": id
+			}, id + " is required by this card but not installed on the engine.", " ", (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specLinkBtn,
+				disabled: st !== "idle",
+				onClick: () => {
+					setSt("busy");
+					onInstallPack(id).then((ok) => setSt(ok ? "queued" : "failed")).catch(() => setSt("failed"));
+				}
+			}, st === "idle" ? "Install " + id : st === "busy" ? "Requesting…" : st === "queued" ? "Install queued ✓ (restart the engine when it lands)" : "Install request failed — retry from the assets tab"));
+		}
+		function ModelAxes({ spec, value, onSet, onDownloadModel }) {
+			const groups = axisGroups(spec);
+			if (groups.length === 0) return null;
+			const models = modelChoices(spec);
+			const matrixSet = new Set(models);
+			const familyRows = (spec.families ?? []).map((f) => ({
+				...f,
+				inMatrix: matrixSet.has(f.id)
+			}));
+			const familyFace = /* @__PURE__ */ new Map();
+			for (const f of spec.families ?? []) if (f.label !== void 0 && f.label !== "") familyFace.set(f.id, f.label);
+			const contract = spec.features?.variant_groups ?? {};
+			const pick = (row) => {
+				const patch = axisPickPatch(spec, row);
+				for (const [k, v] of Object.entries(patch)) onSet(k, v);
+			};
+			const knobStamp = (r) => axisPickPatch(spec, r);
+			rowsFor(spec, "Recipe").filter((r) => Object.keys(knobStamp(r)).length > 0);
+			const heldModelRaw = value["model"];
+			const heldModel = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : void 0;
+			const knownModel = (m) => models.includes(m) || (spec.families ?? []).some((f) => f.id === m);
+			const refusedModel = heldModel !== void 0 && !knownModel(heldModel) ? heldModel : void 0;
+			const shownModel = heldModel ?? (typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "");
+			const heldFam = (spec.families ?? []).find((f) => f.id === shownModel && !f.present);
+			const [dlState, setDlState] = (0, react.useState)("idle");
+			(0, react.useEffect)(() => {
+				setDlState("idle");
+			}, [shownModel]);
+			const rowsOf = (g, active) => composingRows(spec, g, active);
+			const active = {};
+			for (const g of groups) {
+				const heldRaw = value[axisKey(g)];
+				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
+				const rows = rowsOf(g, active);
+				if (heldId !== void 0 && rows.some((r) => r.id === heldId)) active[g] = heldId;
+				else if (heldId !== void 0) active[g] = heldId;
+				else active[g] = activeRowId(spec, value, g, active) ?? (rows.length > 0 ? rows[0].id : "");
+			}
+			return (0, react.createElement)("section", {
+				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
+				"data-model-axes": "1"
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Model"), (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Model"), (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"aria-label": "Model",
+				...refusedModel !== void 0 ? { "data-refused": "model" } : {},
+				value: shownModel,
+				onChange: (e) => {
+					const m = e.target.value;
+					const patch = modelSwitchPatch(spec, m);
+					for (const [k, v] of Object.entries(patch)) onSet(k, v);
+				}
+			}, refusedModel !== void 0 ? (0, react.createElement)("option", {
+				key: refusedModel,
+				value: refusedModel
+			}, titleCaseId(refusedModel) + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
+				key: "fam-" + f.id,
+				value: f.id
+			}, (f.label ?? titleCaseId(f.id)) + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
+				key: m,
+				value: m
+			}, familyFace.get(m) ?? titleCaseId(m)))), heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.specHint,
+				"data-download-prompt": heldFam.id
+			}, titleCaseId(heldFam.id) + " is offered by this card but not downloaded on this machine.", " ", (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specLinkBtn,
+				disabled: dlState !== "idle",
+				onClick: () => {
+					setDlState("busy");
+					onDownloadModel(heldFam.id).then((ok) => setDlState(ok ? "queued" : "failed")).catch(() => setDlState("failed"));
+				}
+			}, dlState === "idle" ? "Download " + (heldFam.label ?? titleCaseId(heldFam.id)) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
+				const rows = rowsOf(g, active);
+				const heldRaw = value[axisKey(g)];
+				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
+				const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId) ? heldId : void 0;
+				if (rows.length === 0 && refusedId === void 0) return null;
+				const label = contract[g]?.label ?? titleCaseId(g);
+				return (0, react.createElement)("label", {
+					key: g,
+					className: card_module_css_default.specField
+				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)("select", {
+					className: card_module_css_default.specSelect,
+					"aria-label": label,
+					"data-axis": g,
+					...refusedId !== void 0 ? { "data-refused": g } : {},
+					value: active[g],
+					onChange: (e) => {
+						const id = e.target.value;
+						const row = rows.find((v) => v.id === id);
+						if (row !== void 0) pick(row);
+					}
+				}, refusedId !== void 0 ? (0, react.createElement)("option", {
+					key: refusedId,
+					value: refusedId
+				}, titleCaseId(refusedId) + " — invalid " + label.toLowerCase() + " for " + titleCaseId(heldModel ?? shownModel)) : null, rows.map((v) => (0, react.createElement)("option", {
+					key: v.id,
+					value: v.id
+				}, titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
+			}), (0, react.createElement)(RecipePills, {
+				spec,
+				onSet,
+				values: value
+			}));
+		}
 		/** THE FAMILY RECIPE DROPDOWN (Rule A -- the recipe law; the
 		* operator's order, 2026-09-18: "RECIPES AREN'T EVEN A DROPDOWN"):
 		* the family's preset macros as ONE SELECT beside the axes -- the
@@ -2016,6 +2300,245 @@ window.__ModuleLoader__.load({
 		* layout-only module CSS over native elements, every color an
 		* inherited --dsw-alias-* token (the package's documented pattern).
 		*/
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). The constructor OWNS the square
+		*  provider (no call site wires it, no call site can forget it). */
+		function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }) {
+			const fields = fieldsOf(spec);
+			const value = resolveValue(spec, user, base);
+			const fieldByName = new Map(fields.map((f) => [f.name, f]));
+			const edit = (name, v) => {
+				if (v === void 0) {
+					onUnset?.(name);
+					return;
+				}
+				onSet(name, coerceFieldEdit(fieldByName.get(name), v));
+			};
+			const family = typeof spec.model === "string" ? spec.model : void 0;
+			const modKinds = (spec.features?.modifiers ?? []).map((k) => {
+				const env = spec.mod_schemas?.[k.schema_key ?? k.param_key];
+				const hybrid = k.entry === "hybrid";
+				const declared = (rows) => rows?.map((f) => typeof f.wtype === "string" && f.wtype !== "" ? {
+					...f,
+					type: f.wtype
+				} : f);
+				return {
+					...k,
+					fields: hybrid ? entryFieldsOfEnvelope(env, k.param_key, family) : declared(k.fields) ?? fieldsOfEnvelope(env, family),
+					kindFields: hybrid ? kindScalarFieldsOfEnvelope(env, k.param_key, family) : declared(k.kindFields) ?? []
+				};
+			});
+			const owned = modOwnedFields(spec);
+			const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields;
+			const signature = Array.isArray(spec.inputs) ? spec.inputs : [];
+			const modFieldByName = /* @__PURE__ */ new Map();
+			for (const k of modKinds) for (const f of k.fields) if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f);
+			const railOf = (inp) => {
+				const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name);
+				if (f === void 0) return void 0;
+				if (f.type === "image" || f.type === "file") return f;
+			};
+			const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0);
+			const railNames = new Set(railFields.map((f) => f.name));
+			const stackFields = flatFields.filter((f) => f.type === "image_list" && !modFieldByName.has(f.name));
+			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
+			const groups = groupFields(flatFields.filter(visible), value);
+			const submenu = groups.length > 1;
+			const [openGroup, setOpenGroup] = (0, react.useState)(void 0);
+			const activeGroup = submenu ? groups.find((g) => g.group === openGroup) ?? groups[0] : void 0;
+			const shownGroups = submenu && activeGroup !== void 0 ? [activeGroup] : groups;
+			const atomOf = (f) => atoms?.[f.type];
+			const own = useSquareProvider(edit, wire ?? { candidates: [] });
+			const squareFor = square ?? own.square;
+			const stackRow = (f) => {
+				const v = value[f.name];
+				const entries = Array.isArray(v) ? v.filter((x) => typeof x === "string" && x !== "") : [];
+				const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : 8;
+				const kind = f.media === "video" || f.media === "audio" ? "file" : "image";
+				const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : void 0;
+				const cellLabel = (i) => `${f.label} ${String(i + 1)}${f.media !== void 0 && f.media !== "" ? " (" + f.media + ")" : ""}`;
+				return (0, react.createElement)("div", {
+					className: card_module_css_default.specSlotRow,
+					"data-input-stack": f.name,
+					"data-stack-count": String(entries.length)
+				}, (0, react.createElement)("span", {
+					className: card_module_css_default.specFieldKey,
+					"data-stack-label": f.name
+				}, f.label), entries.map((entry, i) => (0, react.createElement)("div", {
+					key: f.name + ":" + String(i),
+					className: card_module_css_default.specSlotCell,
+					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+				}, (0, react.createElement)(SourceRow, {
+					label: cellLabel(i),
+					kind,
+					value: entry,
+					...accept !== void 0 ? { accept } : {},
+					onEdit: (next) => {
+						const arr = [...entries];
+						if (next === "") arr.splice(i, 1);
+						else arr[i] = next;
+						edit(f.name, arr);
+					},
+					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
+				}))), entries.length < cap ? (0, react.createElement)("div", {
+					className: card_module_css_default.specSlotCell,
+					"data-stack-add": f.name,
+					title: f.tooltip
+				}, (0, react.createElement)(SourceRow, {
+					label: `Add ${f.label}`,
+					kind,
+					value: null,
+					...accept !== void 0 ? { accept } : {},
+					onEdit: (next) => {
+						/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
+						if (next !== "") edit(f.name, [...entries, next]);
+					},
+					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
+				})) : null);
+			};
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, (0, react.createElement)(PackPrompt, {
+				spec,
+				onInstallPack
+			}), (0, react.createElement)(ModelAxes, {
+				spec,
+				value,
+				onSet: edit,
+				onDownloadModel
+			}), railFields.length > 0 || stackFields.length > 0 ? (0, react.createElement)("section", {
+				className: card_module_css_default.specGroup + " " + card_module_css_default.inputRail,
+				"data-input-rail": "1"
+			}, railFields.length > 0 ? (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, railFields.map((f) => {
+				return (0, react.createElement)("div", {
+					key: f.name,
+					className: card_module_css_default.specSlotCell,
+					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+				}, (0, react.createElement)(SpecAtom, {
+					f,
+					value: value[f.name],
+					onEdit: edit,
+					square: squareFor(f),
+					...wire?.candidates !== void 0 ? { wireCandidates: wire.candidates } : {}
+				}));
+			})) : null, stackFields.map((f) => (0, react.createElement)("div", {
+				key: "stack-" + f.name,
+				className: card_module_css_default.inputRail
+			}, stackRow(f)))) : null, submenu && activeGroup !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.groupTabs,
+				role: "tablist",
+				"data-form-submenu": "1"
+			}, groups.map((g) => {
+				const selected = activeGroup.group === g.group;
+				return (0, react.createElement)("button", {
+					key: g.group ?? "__general__",
+					type: "button",
+					role: "tab",
+					"aria-selected": selected ? "true" : "false",
+					"data-form-group-tab": g.group ?? "general",
+					className: card_module_css_default.groupTab + (selected ? " " + card_module_css_default.groupTabActive : ""),
+					onClick: () => {
+						setOpenGroup(g.group);
+					}
+				}, titleCaseId(g.group ?? "General"));
+			})) : null, shownGroups.map((g) => {
+				const gridCols = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 2)?.columns;
+				const cellStyle = (f) => {
+					if (f.type === "textarea") return {
+						gridColumn: "1 / -1",
+						minWidth: "0"
+					};
+					return {
+						gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}`,
+						minWidth: "0"
+					};
+				};
+				const children = [];
+				let row = [];
+				const flush = () => {
+					if (row.length === 0) return;
+					children.push((0, react.createElement)("div", {
+						key: "slotrow-" + String(children.length),
+						className: card_module_css_default.specSlotRow,
+						...gridCols !== void 0 ? { style: {
+							gridColumn: "1 / -1",
+							minWidth: "0"
+						} } : {}
+					}, row));
+					row = [];
+				};
+				for (const f of g.fields) {
+					const claim = atomOf(f);
+					const sq = squareFor(f);
+					const wireCandidates = wire?.candidates;
+					if (claim !== void 0) {
+						flush();
+						const cell = (0, react.createElement)("div", {
+							key: f.name,
+							className: card_module_css_default.specField
+						}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), claim({
+							f,
+							value: value[f.name],
+							onEdit: edit,
+							square: sq
+						}));
+						children.push(gridCols === void 0 ? cell : (0, react.createElement)("div", {
+							key: f.name + "-cell",
+							style: cellStyle(f)
+						}, cell));
+						continue;
+					}
+					if (f.type === "image" || f.type === "file") {
+						row.push((0, react.createElement)("div", {
+							key: f.name,
+							className: card_module_css_default.specSlotCell,
+							title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+						}, (0, react.createElement)(SpecAtom, {
+							f,
+							value: value[f.name],
+							onEdit: edit,
+							square: sq,
+							...wireCandidates !== void 0 ? { wireCandidates } : {}
+						})));
+						continue;
+					}
+					flush();
+					const cell = (0, react.createElement)(SpecFieldRow, {
+						key: f.name,
+						f,
+						value: value[f.name],
+						onEdit: edit,
+						...sq !== void 0 ? { square: sq } : {},
+						...wireCandidates !== void 0 ? { wireCandidates } : {}
+					});
+					children.push(gridCols === void 0 ? cell : (0, react.createElement)("div", {
+						key: f.name + "-cell",
+						style: cellStyle(f)
+					}, cell));
+				}
+				flush();
+				return (0, react.createElement)("section", {
+					key: g.group ?? "",
+					className: card_module_css_default.specGroup,
+					"data-form-group-panel": g.group ?? "general"
+				}, g.group !== null && !submenu ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, titleCaseId(g.group)) : null, gridCols === void 0 ? children : (0, react.createElement)("div", {
+					className: card_module_css_default.specGrid,
+					style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }
+				}, children));
+			}), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
+				kinds: modKinds,
+				values: value,
+				onEdit: edit,
+				railSeated: railNames,
+				...onPatch !== void 0 ? { onPatch } : {},
+				...paintFace !== void 0 ? { paintFace } : {},
+				...bboxFace !== void 0 ? { bboxFace } : {},
+				...paintReference !== void 0 ? { paintReference } : {},
+				...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
+			}) : null, own.wireMenu);
+		}
 		//#endregion
 		//#region ../../web/card-base/src/mods.tsx
 		/**
@@ -2688,7 +3211,12 @@ window.__ModuleLoader__.load({
 				error,
 				resolved,
 				edit: (0, react.useCallback)((name, v) => {
-					onWrite(name, coerceFieldEdit(fieldOf(name), v));
+					const f = fieldOf(name);
+					if (v === "" && f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider")) {
+						onWrite(name, void 0);
+						return;
+					}
+					onWrite(name, coerceFieldEdit(f, v));
 				}, [fieldOf, onWrite]),
 				fieldOf
 			};
@@ -4902,23 +5430,25 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region src/ui/studio/RunRecipeEngine.tsx
 		/**
-		* h3-timeline studio split (2026-09-06) — PURE MOVE from
-		* ui/studio/component.tsx.
+		* RunRecipeEngine — the Layer A rail.
 		*
-		* THE LAYER A/B LAW REWORK (2026-09-17): the Engine knob rows ride
-		* the SHARED SpecPanel (the estate's parameter system: the served
-		* form-spec → SpecFieldRow → wire names) — one mechanism every card
-		* seats, never an h3 re-walk.
+		* THE GENERIC SEAM LAW (operator, 2026-09-19: "h3 FORM SEAM = THE
+		* GENERIC FORM SEAM — we added primitives to the default card UI
+		* package to handle this"): the parameter surface IS CardForm —
+		* the same component the bench drill seats. Groups, the sampling
+		* 2-column grid (sampler + scheduler side by side, the kit's
+		* columns/width facts), visible_when, the recipe pills on the
+		* model axes, mod-owned exclusion — every layout law lands in
+		* card-base ONCE and every card inherits it. The hand-rolled
+		* SpecPanel sections and window SpecAtoms are DEAD (the anti-DRY
+		* break: any law the generic seam learned, this surface silently
+		* missed — the blank-steps and split-sampler crimes both lived
+		* here).
 		*
-		* RULE A — THE RECIPE LAW (operator, 2026-09-18): the family's
-		* recipes render as PILLS NEXT TO THE MODEL ROUTE — the same
-		* RecipePills every CardForm seats, stamped from the served spec
-		* (the family's own DECL rows: the distill presets carry the LORA
-		* BAG, the geometry rows carry the window keys — 1:1 with the
-		* card's declared params). The card's hand preset select
-		* (draft_02mp/final_hd + PRESET_GEOM) is DEAD: a card never
-		* hand-authors presets, the family owns them. Route/FPS stay
-		* document-local clock facts rendered as studio chrome.
+		* What stays STUDIO CHROME (never card params): the Model-route
+		* pin (the sibling-family switch, a document concept), the doc
+		* FPS (a document-local clock fact, undeclared by design), and
+		* the geometry readout (resolved width×height @ doc-fps).
 		*/
 		/** The family's geometry floor (the card schema's own defaults —
 		* 1344×768; draft recipes stamp 768×448 over it). */
@@ -4927,139 +5457,55 @@ window.__ModuleLoader__.load({
 			h: 768
 		};
 		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
-		function RunRecipeEngine({ stage, layerA, setLayerAKey, isRef2va }) {
+		function RunRecipeEngine({ stage, layerA, setLayerAKey }) {
 			const { spec, resolved, edit } = useResolvedForm("h3-timeline", layerA, setLayerAKey, stage.params ?? void 0);
-			const onSet = edit;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: studio_module_css_default.group,
-					"data-testid": "tl-recipe-chrome",
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: studio_module_css_default.groupTitle,
-							children: "Recipe"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Model route",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
-								f: {
-									name: "model",
-									label: "Model route",
-									type: "select",
-									options: [{
-										value: "h3-timeline",
-										label: "FL2VA · First/Last"
-									}, {
-										value: "h3-timeline-ref",
-										label: "Ref2VA · Identity Refs"
-									}],
-									tooltip: isRef2va ? "Ref2VA — identity refs (per-call override windows)" : "FL2VA — first/last-frame conditioning"
-								},
-								value: isRef2va ? "h3-timeline-ref" : "h3-timeline",
-								onEdit: (_, v) => setLayerAKey("model", v)
-							})
-						}),
-						spec !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RecipePills, {
-							spec,
-							onSet,
-							values: layerA
-						}) : null,
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "FPS",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
-								f: {
-									name: "fps",
-									label: "FPS",
-									type: "number",
-									min: 1,
-									max: 60,
-									step: 1
-								},
-								value: layerA.fps,
-								placeholder: "",
-								onEdit: (_, v) => {
-									const n = typeof v === "string" && v.trim() !== "" ? Number(v) : void 0;
-									if (n !== void 0 && n > 0) setLayerAKey("fps", n);
-								}
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: studio_module_css_default.recipeGeom,
-							"data-testid": "tl-recipe-geom",
-							children: [
-								String(resolved.width ?? FAMILY_GEOM.w),
-								"×",
-								String(resolved.height ?? FAMILY_GEOM.h),
-								" @ ",
-								layerA.fps,
-								" doc-fps"
-							]
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: studio_module_css_default.group,
+				"data-testid": "tl-recipe-chrome",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: studio_module_css_default.groupTitle,
+						children: "Recipe"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
+						label: "FPS",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
+							f: {
+								name: "fps",
+								label: "FPS",
+								type: "number",
+								min: 1,
+								max: 60,
+								step: 1
+							},
+							value: layerA.fps,
+							placeholder: "",
+							onEdit: (_, v) => {
+								const n = typeof v === "string" && v.trim() !== "" ? Number(v) : void 0;
+								if (n !== void 0 && n > 0) setLayerAKey("fps", n);
+							}
 						})
-					]
-				}),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecPanel, {
-					model: "h3-timeline",
-					values: resolved,
-					onEdit: edit,
-					sections: [{
-						title: "Clock",
-						testid: "tl-recipe-panel",
-						rows: [{ name: "seed" }]
-					}, {
-						title: "Engine (H3)",
-						testid: "tl-engine-panel",
-						rows: [
-							{ name: "shift_video" },
-							{ name: "shift_audio" },
-							{ name: "sampler_name" },
-							{ name: "sched_name" },
-							{ name: "steps" },
-							{ name: "denoise" }
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: studio_module_css_default.recipeGeom,
+						"data-testid": "tl-recipe-geom",
+						children: [
+							String(resolved.width ?? FAMILY_GEOM.w),
+							"×",
+							String(resolved.height ?? FAMILY_GEOM.h),
+							" @ ",
+							layerA.fps,
+							" doc-fps"
 						]
-					}]
-				}),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: studio_module_css_default.winSize,
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SectionLabel, {
-							tail: `window ${String(resolved.width ?? FAMILY_GEOM.w)}×${String(resolved.height ?? FAMILY_GEOM.h)} · steps ${String(resolved.steps ?? "auto")}`,
-							children: "Engine (H3)"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
-							f: {
-								name: "width",
-								label: "Window width (run)",
-								type: "number",
-								min: 256,
-								max: 1920,
-								step: 32,
-								tooltip: `blank — the family default rides ${FAMILY_GEOM.w}×${FAMILY_GEOM.h}`
-							},
-							value: resolved.width,
-							placeholder: String(FAMILY_GEOM.w),
-							onEdit: (_, v) => setLayerAKey("width", typeof v === "string" && v.trim() !== "" ? Number(v) : void 0)
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: studio_module_css_default.times,
-							children: "×"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
-							f: {
-								name: "height",
-								label: "Window height (run)",
-								type: "number",
-								min: 256,
-								max: 1920,
-								step: 32,
-								tooltip: `blank — the family default rides ${FAMILY_GEOM.w}×${FAMILY_GEOM.h}`
-							},
-							value: resolved.height,
-							placeholder: String(FAMILY_GEOM.h),
-							onEdit: (_, v) => setLayerAKey("height", typeof v === "string" && v.trim() !== "" ? Number(v) : void 0)
-						})
-					]
-				})
-			] });
+					})
+				]
+			}), spec !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardForm, {
+				spec,
+				user: layerA,
+				base: stage.params ?? void 0,
+				onSet: edit,
+				onUnset: (n) => setLayerAKey(n, void 0)
+			}) : null] });
 		}
 		//#endregion
 		//#region src/ui/studio/RunAdvancedPanels.tsx
@@ -5606,7 +6052,7 @@ window.__ModuleLoader__.load({
 		/** One focused model-call card (monolith lines 3418–3466 + 3641–3844;
 		*  the prompt block lives in CallCardPrompt). */
 		function CallCard({ c, i, deps }) {
-			const { selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups, isRef2va, refArtifacts, handlePromptDelete, handlePromptUpdate, enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo, setCallSpan, setCallGuide, setCallTransition, setCallRefs, setCallKnob } = deps;
+			const { selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups, refArtifacts, handlePromptDelete, handlePromptUpdate, enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo, setCallSpan, setCallGuide, setCallTransition, setCallRefs, setCallKnob } = deps;
 			if (selected != null && i !== selected.callIdx) return null;
 			const activeKnobs = c.knobs ? Object.keys(c.knobs).length : 0;
 			const callSelected = selected?.callIdx === i;
@@ -6437,8 +6883,6 @@ window.__ModuleLoader__.load({
 			const lastCallsRef = (0, react.useRef)(rawList !== null ? JSON.stringify(calls) : "");
 			const [keyframes, setKeyframes] = (0, react.useState)(() => hydrateKeyframes(stage.params?.keyframes));
 			const [layerA, setLayerA] = (0, react.useState)(() => hydrateLayerA(stage.params));
-			const stageModel = typeof stage.model === "string" ? String(stage.model) : "";
-			const routeKey = layerA.model ?? layerA.variant ?? stageModel;
 			return {
 				calls,
 				setCalls,
@@ -6446,9 +6890,6 @@ window.__ModuleLoader__.load({
 				setKeyframes,
 				layerA,
 				setLayerA,
-				stageModel,
-				routeKey,
-				isRef2va: routeKey === "h3-timeline-ref" || routeKey.includes("ref2va"),
 				lastCallsRef,
 				lastKeyframesRef: (0, react.useRef)(JSON.stringify(keyframes)),
 				lastLayerARef: (0, react.useRef)(JSON.stringify(serializeLayerA(layerA)))
@@ -12378,7 +12819,6 @@ window.__ModuleLoader__.load({
 								callCardRefs: view.callCardRefs,
 								artifactIndex: audio.artifactIndex,
 								linkGroups: derived.linkGroups,
-								isRef2va: doc.isRef2va,
 								refArtifacts: audio.refArtifacts,
 								handlePromptDelete: pr.handlePromptDelete,
 								handlePromptUpdate: pr.handlePromptUpdate,
@@ -12416,8 +12856,7 @@ window.__ModuleLoader__.load({
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunRecipeEngine, {
 										stage,
 										layerA,
-										setLayerAKey: fx.setLayerAKey,
-										isRef2va: doc.isRef2va
+										setLayerAKey: fx.setLayerAKey
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunAdvancedPanels, {
 										layerA,
@@ -12449,7 +12888,6 @@ window.__ModuleLoader__.load({
 								callCardRefs: view.callCardRefs,
 								artifactIndex: audio.artifactIndex,
 								linkGroups: derived.linkGroups,
-								isRef2va: doc.isRef2va,
 								refArtifacts: audio.refArtifacts,
 								handlePromptDelete: pr.handlePromptDelete,
 								handlePromptUpdate: pr.handlePromptUpdate,

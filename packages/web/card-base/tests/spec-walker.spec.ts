@@ -327,6 +327,9 @@ test('THE EDIT COERCION: numeric strings ride as numbers; poison rides verbatim;
   expect(coerceFieldEdit(num, '3.5')).toBe(3.5)
   expect(coerceFieldEdit(seed, '42')).toBe(42)
   expect(coerceFieldEdit(count, ' 7 ')).toBe(7)
+  // '' rides VERBATIM (each face owns its blank semantics — the
+  // studios' verb converts '' to the unset signal; the bench's run
+  // door refuses a blank loud, naming the field)
   expect(coerceFieldEdit(num, '')).toBe('')
   expect(coerceFieldEdit(num, '  ')).toBe('  ')
   expect(coerceFieldEdit(num, 'abc')).toBe('abc')

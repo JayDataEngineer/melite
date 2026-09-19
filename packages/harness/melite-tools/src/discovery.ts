@@ -291,7 +291,12 @@ function specModifiers(
   def: CardDefinition | undefined,
 ): Record<string, unknown>[] {
   const out: Record<string, unknown>[] = []
-  for (const pack of decl?.mods ?? []) {
+  for (const m of decl?.mods ?? []) {
+    // THE MARRIAGE GRAMMAR (#36): entries are pack names or
+    // {pack, marries} declarations — normalized once here, served
+    // verbatim on the kind (the client face mirrors compose).
+    const pack = typeof m === 'string' ? m : m.pack
+    const marries = typeof m === 'string' ? undefined : m.marries
     const meta = MODIFIER_PACKS[pack]
     if (meta === undefined) continue
     const cat = svc.modCatalog(pack, key)
@@ -309,6 +314,7 @@ function specModifiers(
       schema_key: pack,
       cardinality: meta.cardinality,
     }
+    if (marries !== undefined) entry.marries = marries
     if (meta.max_stack !== undefined) entry.max_stack = meta.max_stack
     // THE ENTRY MODE rides verbatim (the leaf's switch — served,
     // never client-switched on the kind name).

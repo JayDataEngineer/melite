@@ -377,7 +377,9 @@ function optionTooltip(row, shared) {
 *  fields, one meta path). */
 function specModifiers(svc, card, key, decl, def) {
 	const out = [];
-	for (const pack of decl?.mods ?? []) {
+	for (const m of decl?.mods ?? []) {
+		const pack = typeof m === "string" ? m : m.pack;
+		const marries = typeof m === "string" ? void 0 : m.marries;
 		const meta = MODIFIER_PACKS[pack];
 		if (meta === void 0) continue;
 		const cat = svc.modCatalog(pack, key);
@@ -388,6 +390,7 @@ function specModifiers(svc, card, key, decl, def) {
 			schema_key: pack,
 			cardinality: meta.cardinality
 		};
+		if (marries !== void 0) entry.marries = marries;
 		if (meta.max_stack !== void 0) entry.max_stack = meta.max_stack;
 		if (meta.entry !== void 0) entry.entry = meta.entry;
 		if (meta.option_key !== void 0) entry.option_key = meta.option_key;

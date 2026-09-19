@@ -41,21 +41,14 @@ export function useDocState(stage: CardStage) {
   // The model ROUTE: params.model (the Layer A selector — wins at the
   // run door) → the STAGE's model (a flow authored on the
   // timeline-ref2fa/ref2va variant) → FL2VA default. Drives which
-  // per-call inputs the call editor shows (FL2VA: first/last frame
-  // subcards; Ref2VA: the per-call identity refs section).
-  const stageModel = typeof (stage as { model?: unknown }).model === "string"
-    ? String((stage as { model?: unknown }).model) : ""
-  const routeKey = layerA.model ?? layerA.variant ?? stageModel
-  // The agent-lane ROUTE id is "h3-timeline-ref" (no "ref2va" substring —
-  // that lives in the CHECKPOINT name, minimax_h3_ref2va_*); the variant id
-  // "timeline-ref2va" does carry it. Match both spellings.
-  const isRef2va = routeKey === "h3-timeline-ref" || routeKey.includes("ref2va")
+  // THE ROUTE LENS IS DEAD (operator 2026-09-20: "we use ONE
+  // model") — the fused checkpoint takes anchors AND refs in one
+  // graph; there is no second wiring to detect.
   const lastKeyframesRef = useRef(JSON.stringify(keyframes))
   const lastLayerARef = useRef(JSON.stringify(serializeLayerA(layerA)))
 
   return {
     calls, setCalls, keyframes, setKeyframes, layerA, setLayerA,
-    stageModel, routeKey, isRef2va,
     lastCallsRef, lastKeyframesRef, lastLayerARef,
   }
 }

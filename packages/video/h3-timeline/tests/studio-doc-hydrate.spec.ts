@@ -295,3 +295,39 @@ describe("the blank-steps chain (hydrate → resolve, #35)", () => {
     assert.equal(pre["seed"], 7, "an explicit pick rides verbatim")
   })
 })
+
+// ── THE MARRIAGE CHAIN (#36, the recipes rework): a bag riding in
+// the doc OWNS the married knob — the catalog's count, max across
+// the bag, stated-beats-catalog. The face shows what the film runs
+// (compose card.ts: call knobs > lora steps > the steps row). The
+// recipe rows reference ids ONLY; the catalog owns every derived
+// value — nothing can drift. ──
+describe("the marriage chain (bag rides → steps mirrors compose, #36)", () => {
+  it("an id-only bag (the recipe's pure selection) resolves steps from the served catalog", async () => {
+    const { resolveValue } = await import("@melite/card-base")
+    const spec = {
+      model_defaults: { steps: 12 },
+      schema: { uid: 0, refs: {
+        0: { type: "object", dict: { steps: 1, loras: 2 } },
+        1: { type: "number", meta: { default: 12 } },
+        2: { type: "array" },
+      } },
+      features: { modifiers: [{
+        kind: "lora", label: "Loras", param_key: "loras", cardinality: "many",
+        marries: { steps: "max" },
+        options: [
+          { value: "h3_lightx2v_turbo", label: "Turbo", defaults: { strength: 0.6, steps: 8 } },
+          { value: "h3_lightx2v_dareties", label: "Dareties", defaults: { strength: 0.8, steps: 4 } },
+        ],
+      }] },
+    } as never
+    // the plaguekind solo recipe: click the pill → layerA.loras =
+    // [{id}] → the face reads 8 (the film's count), never the
+    // neutral 12
+    const r = resolveValue(spec as never, { loras: [{ id: "h3_lightx2v_turbo" }] }, undefined) as Record<string, unknown>
+    assert.equal(r["steps"], 8, "turbo bag rides → the face shows the married 8, not the neutral 12")
+    // even against an explicit user steps pick — the marriage owns it
+    const over = resolveValue(spec as never, { loras: [{ id: "h3_lightx2v_dareties" }], steps: 20 }, undefined) as Record<string, unknown>
+    assert.equal(over["steps"], 4, "the film ignores the doc row while the marriage rides; so does the face")
+  })
+})

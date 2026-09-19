@@ -47,7 +47,6 @@ function deps(over?: Record<string, unknown>) {
     callCardRefs: { current: [] as (HTMLDivElement | null)[] },
     artifactIndex: { byName: BY_NAME, byUrl: BY_URL },
     linkGroups: [],
-    isRef2va: false,
     refArtifacts: ARTIFACTS,
     handlePromptDelete: () => {},
     handlePromptUpdate: () => {},

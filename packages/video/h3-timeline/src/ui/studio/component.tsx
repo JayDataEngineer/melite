@@ -210,7 +210,7 @@ export function VideoTimelineStudio({
               selected, fps, layerA, knobFields,
               callCardRefs: view.callCardRefs,
               artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
-              isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,
+              refArtifacts: audio.refArtifacts,
               handlePromptDelete: pr.handlePromptDelete,
               handlePromptUpdate: pr.handlePromptUpdate,
               enhanceOne: enh.enhanceOne, undoEnhance: enh.undoEnhance,
@@ -236,7 +236,6 @@ export function VideoTimelineStudio({
             stage={stage}
             layerA={layerA}
             setLayerAKey={fx.setLayerAKey}
-            isRef2va={doc.isRef2va}
           />
           <RunAdvancedPanels layerA={layerA} setLayerAKey={fx.setLayerAKey} />
           <RunRefsClips
@@ -262,7 +261,7 @@ export function VideoTimelineStudio({
               selected, fps, layerA, knobFields,
               callCardRefs: view.callCardRefs,
               artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
-              isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,
+              refArtifacts: audio.refArtifacts,
               handlePromptDelete: pr.handlePromptDelete,
               handlePromptUpdate: pr.handlePromptUpdate,
               enhanceOne: enh.enhanceOne, undoEnhance: enh.undoEnhance,
