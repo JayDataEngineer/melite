@@ -38,7 +38,7 @@
 //     configured base == null — the mount leg is skipped).
 //
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
@@ -318,11 +318,30 @@ export function checkModelPresent(
   return findModelPresent(relativePath, name, repoRoot, cfg);
 }
 
-/** The pure presence core (I/O: existsSync probes only, no cache):
- *  cfg null = mount leg skipped (unparseable endpoint collapses to
- *  None, same as the module function's try/catch). Shared by the
- *  module function (non-plugin callers) and
- *  ModelsService.checkModelPresent (plugin paths). */
+/** The root inheritance base: the root config's models.read_root
+ *  (inference.config.json at the repo root). Empty string = no
+ *  root statement (missing file, no models block, non-string
+ *  read_root) — the mount leg then needs the endpoint's own base.
+ *  One deterministic read, no cache. */
+function rootModelsReadRoot(repoRoot: string): string {
+  try {
+    const raw: unknown = JSON.parse(readFileSync(join(repoRoot, "inference.config.json"), "utf8"));
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return "";
+    const models: unknown = (raw as Record<string, unknown>)["models"];
+    if (typeof models !== "object" || models === null || Array.isArray(models)) return "";
+    const rr: unknown = (models as Record<string, unknown>)["read_root"];
+    return typeof rr === "string" ? rr.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+/** The pure presence core (I/O: existsSync probes + the one
+ *  root-inheritance read, no cache): cfg null = mount leg skipped
+ *  (unparseable endpoint collapses to None, same as the module
+ *  function's try/catch). Shared by the module function
+ *  (non-plugin callers) and ModelsService.checkModelPresent
+ *  (plugin paths). */
 export function findModelPresent(
   relativePath: string,
   name: string,
@@ -338,7 +357,11 @@ export function findModelPresent(
   const rawBase: unknown = cfg["model_base_path"];
   const base: string =
     typeof rawBase === "string" ? rawBase.trim() : String(rawBase ?? "").trim();
-  if (base === "" || base === "undefined") return null;
+  // ROOT-CONFIG INHERITANCE: an endpoint machine statement without
+  // model_base_path inherits the root config's models.read_root —
+  // the machine's own statement always wins.
+  const mountBase: string = base !== "" && base !== "undefined" ? base : rootModelsReadRoot(repoRoot);
+  if (mountBase === "" || mountBase === "undefined") return null;
   const extras: Record<string, unknown> =
     isRecord(cfg["extra_model_folders"]) && cfg["extra_model_folders"] !== null
       ? (cfg["extra_model_folders"] as Record<string, unknown>)
@@ -352,7 +375,7 @@ export function findModelPresent(
       ? stripSlashes(mapped)
       : head;
   const mountHit: string =
-    rest !== "" ? join(base, sub, rest, name) : join(base, sub, name);
+    rest !== "" ? join(mountBase, sub, rest, name) : join(mountBase, sub, name);
   if (existsSync(mountHit)) return mountHit;
   return null;
 }

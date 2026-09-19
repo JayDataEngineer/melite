@@ -163,6 +163,29 @@ describe("findModelPresent (runtime first, then the mount leg)", () => {
     assert.equal(findModelPresent("models/checkpoints", "missing.safetensors", root, { model_base_path: 42 }), null);
   });
 
+  it("root-config inheritance: no endpoint base falls to models.read_root", () => {
+    const base = mkdtempSync(join(tmpdir(), "rootmount-"));
+    mkdirSync(join(base, "checkpoints"), { recursive: true });
+    writeFileSync(join(base, "checkpoints", "r.safetensors"), "x");
+    writeFileSync(join(root, "inference.config.json"), JSON.stringify({ models: { read_root: base } }));
+    // the endpoint statement carries no model_base_path — the root config owns the mount
+    assert.equal(
+      findModelPresent("models/checkpoints", "r.safetensors", root, {}),
+      join(base, "checkpoints", "r.safetensors"),
+    );
+    // the machine's OWN statement still wins over the root
+    const own = mkdtempSync(join(tmpdir(), "ownmount-"));
+    mkdirSync(join(own, "checkpoints"), { recursive: true });
+    writeFileSync(join(own, "checkpoints", "o.safetensors"), "x");
+    assert.equal(
+      findModelPresent("models/checkpoints", "o.safetensors", root, { model_base_path: own }),
+      join(own, "checkpoints", "o.safetensors"),
+    );
+    // a root config without models.read_root keeps the leg skipped
+    writeFileSync(join(root, "inference.config.json"), JSON.stringify({ models: {} }));
+    assert.equal(findModelPresent("models/checkpoints", "r.safetensors", root, {}), null);
+  });
+
   it("the mount leg maps heads through extra_model_folders", () => {
     const base = mkdtempSync(join(tmpdir(), "mount-"));
     mkdirSync(join(base, "mapped", "sub"), { recursive: true });
