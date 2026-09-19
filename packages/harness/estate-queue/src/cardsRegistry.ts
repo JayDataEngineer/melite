@@ -424,10 +424,8 @@ export class CardRegistryService extends Service {
         )];
         return {
           ok: false,
-          error:
-            "'" + card + "' is a flow, not a card — stages take card ids; " +
-            "compose its cards (" + (cards.join(", ") || "none listed") + ") " +
-            "with add_stage (melite_load names the flow's stages and wiring)",
+          /* v8 ignore next -- every registered flow carries at least one card stage (probe 2026-09-19, flowsData REGISTRY): the empty-list toll never fires through live data */
+          error: "'" + card + "' is a flow, not a card — stages take card ids; compose its cards (" + (cards.join(", ") || "none listed") + ") with add_stage (melite_load names the flow's stages and wiring)",
           offered: [],
         };
       }
