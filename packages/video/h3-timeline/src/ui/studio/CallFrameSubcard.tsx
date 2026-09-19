@@ -110,113 +110,42 @@ export function FirstFrameSlot({
   )
 }
 
-/** The call's seam law — cut vs extend, and the prev-video/latent
- * continuation (rule 3b). Renders under the image bus (the seam is
- * the CALL'S join, not a bundle slot). */
+/** The call's seam law — carried vs cut (rule 3b). Renders under the
+ *  image bus (the seam is the CALL'S join, not a bundle slot).
+ *  (2026-09-20: the seam is AUTOMATIC — the drift-control continuation
+ *  carries every non-cut join at the director's proven 22-frame
+ *  overlap with the soft AV audio release; the seconds picker died
+ *  with the MotionContext seam. The one authorable fact left is
+ *  whether the join carries at all.) */
 export function SeamControls({
   callIndex,
-  prevSec,
-  onPrevSec,
   transition,
   onTransition,
-  prevDisabled,
-  prevNote,
-  testId,
 }: {
   callIndex: number
-  prevSec?: number
-  onPrevSec?: (sec: number | null) => void
   transition?: "extend" | "cut"
   onTransition?: (t: "extend" | "cut") => void
-  prevDisabled?: boolean
-  prevNote?: string
-  testId: string
 }) {
   return (
     <>
       {onTransition !== undefined && (
         <div
           className={s.seamRow}
-          title="How this call joins the previous one: cut re-feeds the previous VIDEO tail as an opener clip; extend chains the previous LATENT — seamless motion, texture and audio phase carry across the seam"
+          title="How this call joins the previous one: carried continues the previous window's latent through drift control (schedule-matched carry, soft audio release — seamless across the seam); cut is an independent window, a true butt"
         >
           <span className={s.seamLabel}>seam</span>
           <SpecAtom
             f={{
               name: "seam_mode", label: "Call " + callIndex + " seam mode", type: "select",
               options: [
-                { value: "cut", label: "cut — prev video opener" },
-                { value: "extend", label: "extend — latent chain" },
+                { value: "extend", label: "carried — drift-control chain" },
+                { value: "cut", label: "cut — independent window" },
               ],
             }}
             value={transition === "cut" ? "cut" : "extend"}
             onEdit={(_, v) => onTransition?.(v === "extend" ? "extend" : "cut")}
           />
         </div>
-      )}
-      {onPrevSec !== undefined && (
-      <label
-        className={cn(s.prevLabel, prevDisabled ? s.prevLabelOff : s.prevLabelOn)}
-        title={prevNote}
-      >
-        <span data-testid={testId + "-prev-toggle"}>
-          <Switch
-            label={"Call " + callIndex + " continue from previous"}
-            disabled={prevDisabled}
-            checked={prevSec != null}
-            onChange={(v) => onPrevSec?.(v ? (transition === "extend" ? 3 : 2) : null)}
-          />
-        </span>
-        {transition === "extend" ? (
-          <>
-            <span className={s.nowrap}>chain the last</span>
-            {prevSec != null && (
-              <Input
-                type="number" min={0.5} step={0.5}
-                value={prevSec}
-                aria-label={"Call " + callIndex + " latent carry seconds"}
-                data-testid={testId + "-prev-sec"}
-                onChange={(e) => {
-                  const n = Number(e.target.value)
-                  if (Number.isFinite(n) && n > 0) onPrevSec?.(n)
-                }}
-                className={s.prevNum}
-              />
-            )}
-            <span className={s.nowrap}>s of the previous latent</span>
-            {prevSec != null && (
-              <span className={s.prevNote}>
-                seamless carry — the motion-context node splices the previous window's latent tail; carried slots hold bit-exact while the rest denoises (windows stitch into one continuous clip)
-              </span>
-            )}
-          </>
-        ) : (
-          <>
-            <span className={s.nowrap}>open from the last</span>
-            {prevSec != null && (
-              <Input
-                type="number" min={0.5} step={0.5}
-                value={prevSec}
-                aria-label={"Call " + callIndex + " previous video tail seconds"}
-                data-testid={testId + "-prev-sec"}
-                onChange={(e) => {
-                  const n = Number(e.target.value)
-                  if (Number.isFinite(n) && n > 0) onPrevSec?.(n)
-                }}
-                className={cn(s.prevNum, s.prevNum9)}
-              />
-            )}
-            <span className={s.nowrap}>s of the previous video</span>
-            {prevSec != null && (
-              <span className={s.prevNote}>
-                the tail carries the opening motion — the plan snaps it to the guide-clip packing rule
-              </span>
-            )}
-          </>
-        )}
-        {prevDisabled && (
-          <span className={s.prevNote}>{prevNote}</span>
-        )}
-      </label>
       )}
     </>
   )

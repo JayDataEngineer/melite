@@ -63,10 +63,10 @@ describe("global mode (compact rows)", () => {
     assert.ok(screen.getByText("opening"))
     assert.ok(screen.getByText("(empty — needs a prompt)"))
     // the LIST shows the DELIVERED duration (after the seam's carry):
-    // the opener carries nothing; the crossfaded second row delivers
-    // 48 − 39 = 9f = 0.4s (the span stays in the row's title).
+    // the opener carries nothing; the carried second row delivers
+    // 48 − 22 = 26f ≈ 1.1s (the span stays in the row's title).
     assert.equal(screen.getAllByText("2.0s").length, 1)
-    assert.ok(screen.getByText("0.4s"))
+    assert.ok(screen.getByText("1.1s"))
     fireEvent.click(screen.getByText("opening"))
     assert.deepEqual(seen.selected, [{ callIdx: 0 }])
     // datalist carries the source options

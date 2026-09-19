@@ -65,44 +65,17 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
     })
   }
 
-  /** Toggle the call's prev-video opener (the compiler's rule 3b): the
-   * last X seconds of the PREVIOUS window's rendered video carry the
-   * call's opening motion. null deletes the key (absent = no opener —
-   * the run's continuity toggle decides); the seconds input writes the
-   * raw value VERBATIM (the compiler snaps it to the guide-clip packing
-   * rule and refuses impossible tails — never a client-side silent
-   * snap). Enabling defaults to 2 s. */
-  /** Seam mode per call: 'extend' = seamless latent chain (prev-sec reads
-   * as SECONDS OF LATENT carried from the previous window's tail via the
-   * motion-context node); 'cut' = fresh window + prev-video opener clip. */
+  /** Seam mode per call (2026-09-20: the seam is AUTOMATIC —
+   * 'extend' = the drift-control continuation carries the previous
+   * window's latent at the director's proven 22-frame overlap with
+   * the soft AV audio release; 'cut' = independent window, a true
+   * butt. The seconds picker died with the MotionContext seam.) */
   const setCallTransition = (i: number, t: "extend" | "cut") => {
     setCalls((prev) => {
       if (i < 0 || i >= prev.length) return prev
       const call = { ...prev[i]! }
       if (call.transition === t) return prev
       call.transition = t
-      // Switching modes re-bases the carry default so the plan always
-      // has sane numbers: extend defaults to a 3 s latent carry, cut to
-      // a 2 s video tail.
-      if (call.first_frame_prev_sec != null) {
-        call.first_frame_prev_sec = t === "extend" ? 3 : 2
-      }
-      const next = [...prev]
-      next[i] = call
-      return next
-    })
-  }
-  const setCallPrevSec = (i: number, sec: number | null) => {
-    setCalls((prev) => {
-      if (i < 0 || i >= prev.length) return prev
-      const call = { ...prev[i]! }
-      if (sec == null || !Number.isFinite(sec) || sec <= 0) {
-        if (call.first_frame_prev_sec === undefined) return prev
-        delete call.first_frame_prev_sec
-      } else {
-        if (call.first_frame_prev_sec === sec) return prev
-        call.first_frame_prev_sec = sec
-      }
       const next = [...prev]
       next[i] = call
       return next
@@ -179,7 +152,7 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
   }
   return {
     handleExtend, addCallAt,
-    setCallGuide, setCallTransition, setCallPrevSec, setCallRefs,
+    setCallGuide, setCallTransition, setCallRefs,
     setCallSpan, setCallKnob,
   }
 }

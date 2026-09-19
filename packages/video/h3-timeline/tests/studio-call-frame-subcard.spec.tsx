@@ -185,40 +185,35 @@ describe("takeFile (the studio's own file law)", () => {
   })
 })
 
-describe("the seam (first-frame continuation)", () => {
+describe("the seam (carried vs cut — the carry itself is automatic)", () => {
   function seam(over?: Record<string, unknown>) {
-    const prevs: (number | null)[] = []
     const trans: string[] = []
     const p = {
       callIndex: 0,
-      testId: "tl-frame-first",
-      prevSec: undefined as number | undefined,
-      onPrevSec: (n: number | null) => { prevs.push(n) },
       transition: "cut" as "cut" | "extend",
       onTransition: (t: "extend" | "cut") => { trans.push(t) },
       ...over,
     }
-    return { p, prevs, trans }
+    return { p, trans }
   }
 
-  it("absent without both doors; cut mode arms the opener", () => {
-    const bare = seam({ onPrevSec: undefined, onTransition: undefined })
+  it("absent without the door; the faces voice the automatic law", () => {
+    const bare = seam({ onTransition: undefined })
     const h1 = render(<SeamControls {...bare.p} />)
-    assert.equal(screen.queryByLabelText("Call 0 continue from previous"), null)
     assert.equal(screen.queryByLabelText("Call 0 seam mode"), null)
     h1.unmount()
-    const half = seam({ onTransition: undefined })
-    const h2 = render(<SeamControls {...half.p} />)
-    // prev label without the seam row (no mode select)
-    assert.ok(screen.getByLabelText("Call 0 continue from previous"))
-    assert.equal(screen.queryByLabelText("Call 0 seam mode"), null)
-    h2.unmount()
     const { p } = seam()
     render(<SeamControls {...p} />)
     const mode = screen.getByLabelText("Call 0 seam mode") as HTMLSelectElement
     assert.equal(mode.value, "cut")
-    assert.ok(screen.getByText("open from the last"))
-    assert.ok(screen.getByText("s of the previous video"))
+    const faces = [...mode.options].map((o) => o.textContent)
+    assert.deepEqual(faces, [
+      "Carried — Drift Control Chain",
+      "Cut — Independent Window",
+    ], "the two faces name the mechanic, never a seconds ask")
+    const tip = mode.closest("[title]") as HTMLElement | null
+    assert.ok(tip !== null && tip.title.includes("drift control"),
+      "the tooltip names the automatic mechanic")
   })
 
   it("absent transition DISPLAYS extend — what the compose actually does (the wire-up law, 2026-09-17)", () => {
@@ -228,26 +223,8 @@ describe("the seam (first-frame continuation)", () => {
     assert.equal(mode.value, "extend")
   });
 
-  it("the toggle writes 2 (cut) / 3 (extend) / null (off)", () => {
-    const cut = seam()
-    const h1 = render(<SeamControls {...cut.p} />)
-    fireEvent.click(screen.getByLabelText("Call 0 continue from previous"))
-    assert.deepEqual(cut.prevs, [2])
-    h1.unmount()
-    const ext = seam({ transition: "extend" })
-    const h2 = render(<SeamControls {...ext.p} />)
-    fireEvent.click(screen.getByLabelText("Call 0 continue from previous"))
-    assert.deepEqual(ext.prevs, [3])
-    h2.unmount()
-    const on = seam({ prevSec: 2 })
-    const h3 = render(<SeamControls {...on.p} />)
-    fireEvent.click(screen.getByLabelText("Call 0 continue from previous"))
-    assert.deepEqual(on.prevs, [null])
-    h3.unmount()
-  })
-
-  it("the mode select switches; carry seconds edit (valid only)", () => {
-    const { p, prevs, trans } = seam({ transition: "extend", prevSec: 3 })
+  it("the mode select switches; no seconds control exists anymore (the seam is automatic)", () => {
+    const { p, trans } = seam({ transition: "extend" })
     render(<SeamControls {...p} />)
     const mode = screen.getByLabelText("Call 0 seam mode") as HTMLSelectElement
     assert.equal(mode.value, "extend")
@@ -255,29 +232,11 @@ describe("the seam (first-frame continuation)", () => {
     assert.deepEqual(trans, ["cut"])
     fireEvent.change(mode, { target: { value: "extend" } })
     assert.deepEqual(trans, ["cut", "extend"])
-    const num = screen.getByLabelText("Call 0 latent carry seconds") as HTMLInputElement
-    assert.equal(num.value, "3")
-    fireEvent.change(num, { target: { value: "2.5" } })
-    fireEvent.change(num, { target: { value: "" } })
-    fireEvent.change(num, { target: { value: "-1" } })
-    fireEvent.change(num, { target: { value: "abc" } })
-    assert.deepEqual(prevs, [2.5])
-    assert.ok(screen.getByText("chain the last"))
-  })
-
-  it("cut carry seconds + disabled note faces", () => {
-    const { p, prevs } = seam({ prevSec: 2, prevDisabled: true, prevNote: "no prev yet" })
-    render(<SeamControls {...p} />)
-    const num = screen.getByLabelText("Call 0 previous video tail seconds") as HTMLInputElement
-    fireEvent.change(num, { target: { value: "4" } })
-    assert.deepEqual(prevs, [4])
-    // invalid edits hold (never a write)
-    fireEvent.change(num, { target: { value: "" } })
-    fireEvent.change(num, { target: { value: "0" } })
-    assert.deepEqual(prevs, [4])
-    assert.ok(screen.getByText("no prev yet"))
-    const tgl = screen.getByLabelText("Call 0 continue from previous") as HTMLInputElement
-    assert.equal(tgl.disabled, true)
-    expect(num.value).toBe("2")
+    // the drift-control carry owns the seam — nothing to author
+    assert.equal(screen.queryByLabelText("Call 0 latent carry seconds"), null)
+    assert.equal(screen.queryByLabelText("Call 0 previous video tail seconds"), null)
+    assert.equal(screen.queryByLabelText("Call 0 continue from previous"), null)
+    const faces = [...mode.options].map((o) => o.textContent)
+    assert.ok(faces.includes("Carried — Drift Control Chain"))
   })
 })

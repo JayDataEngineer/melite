@@ -57,7 +57,7 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition => {
       calls: {
         type: 'json',
         required: true,
-        description: 'Shots — one per film shot: [{ text, start_frame, end_frame, image?, seam_carry?, refs?, audio? }]. Spans are ints (end > start); seam_carry 0 = hard cut, else 1-64.',
+        description: 'Shots — one per film shot: [{ text, start_frame, end_frame, image?, transition?, refs?, audio? }]. Spans are ints (end > start); the seam is automatic (drift-control carry at 22 frames); transition "cut" = independent window, nothing carries.',
       },
     } as ParameterSchemaSpec,
     presentCall(args: unknown) {

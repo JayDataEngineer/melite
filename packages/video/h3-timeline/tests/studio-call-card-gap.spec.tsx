@@ -116,30 +116,27 @@ function LiveCall(start: DocCall, over?: Record<string, unknown>) {
 
 describe("the seam-carry readout (deliveredFrames)", () => {
   it("snaps the carry to the legal latent steps (unit truth)", () => {
-    // first windows deliver whole spans; a cut without an opener
-    // carries nothing (a true fresh window); extends chain with the
-    // default 39-step carry unless the opener names one
+    // (2026-09-20: the seam is automatic — the drift-control
+    // continuation carries every non-cut join at the director's
+    // proven 22 frames; there is nothing to author anymore)
     assert.equal(deliveredFrames({ ...BASE }, 0), 48)
-    assert.equal(deliveredFrames({ ...BASE, first_frame_prev_sec: 1 }, 0), 48 - 22)
-    assert.equal(deliveredFrames({ ...BASE, first_frame_prev_sec: 0.1 }, 1), 48 - 5)
     assert.equal(deliveredFrames({ ...BASE, transition: "cut" }, 1), 48)
-    assert.equal(deliveredFrames({ ...BASE, transition: "extend" }, 1), 48 - 39)
-    assert.equal(deliveredFrames({ ...BASE, transition: "cut", first_frame_prev_sec: 2.5 }, 1), 0)
+    assert.equal(deliveredFrames({ ...BASE, transition: "extend" }, 1), 48 - 22)
+    assert.equal(deliveredFrames({ ...BASE }, 1), 48 - 22, "absent transition = carried")
     expect(deliveredFrames({ ...BASE }, 0)).toBe(48)
   })
 
-  it("the header voices the delivered span (first call with an opener)", () => {
-    const h = render(<CallCard c={{ ...BASE, first_frame_prev_sec: 1 }} i={0} deps={deps().d} />)
-    const span = document.querySelector('[data-call-card="0"] [class*="cardSpan"]')!
+  it("the header voices the delivered span (a carried call)", () => {
+    const h = render(<CallCard c={{ ...BASE }} i={1} deps={deps().d} />)
+    const span = document.querySelector('[data-call-card="1"] [class*="cardSpan"]')!
     assert.ok(span.textContent!.includes("delivered 1.1s"), span.textContent!)
     assert.ok(span.getAttribute("title")!.includes("delivered 26f"))
     h.unmount()
   })
 
-  it("a chained cut that over-carries delivers nothing (clamped, never negative)", () => {
-    const h = render(
-      <CallCard c={{ ...BASE, transition: "cut", first_frame_prev_sec: 2.5 }} i={1} deps={deps().d} />,
-    )
+  it("a short carried call clamps at nothing (never negative)", () => {
+    const tiny: DocCall = { text: "a flash", start_frame: 0, end_frame: 10 }
+    const h = render(<CallCard c={tiny} i={1} deps={deps().d} />)
     const span = document.querySelector('[data-call-card="1"] [class*="cardSpan"]')!
     assert.ok(span.textContent!.includes("delivered 0.0s"), span.textContent!)
     h.unmount()

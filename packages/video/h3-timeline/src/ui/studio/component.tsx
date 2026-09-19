@@ -217,7 +217,7 @@ export function VideoTimelineStudio({
               enhancing: enh.enhancing, enhanceErr: enh.enhanceErr,
               enhanceUndo: enh.enhanceUndo,
               setCallSpan: mut.setCallSpan, setCallGuide: mut.setCallGuide,
-              setCallPrevSec: mut.setCallPrevSec, setCallTransition: mut.setCallTransition,
+              setCallTransition: mut.setCallTransition,
               setCallRefs: mut.setCallRefs, setCallKnob: mut.setCallKnob,
             }}
           />
@@ -269,7 +269,7 @@ export function VideoTimelineStudio({
               enhancing: enh.enhancing, enhanceErr: enh.enhanceErr,
               enhanceUndo: enh.enhanceUndo,
               setCallSpan: mut.setCallSpan, setCallGuide: mut.setCallGuide,
-              setCallPrevSec: mut.setCallPrevSec, setCallTransition: mut.setCallTransition,
+              setCallTransition: mut.setCallTransition,
               setCallRefs: mut.setCallRefs, setCallKnob: mut.setCallKnob,
             }}
           />

@@ -56,7 +56,6 @@ function deps(over?: Record<string, unknown>) {
     enhanceUndo: {},
     setCallSpan: (i: number, w: "start" | "end", f: number) => { calls.spans.push([i, w, f]) },
     setCallGuide: (i: number, k: string, s: string) => { calls.guides.push([i, k, s]) },
-    setCallPrevSec: (i: number, s: number | null) => { calls.prevs.push([i, s]) },
     setCallTransition: (i: number, t: string) => { calls.trans.push([i, t]) },
     setCallRefs: (i: number, k: string, v: string) => { calls.refs.push([i, k, v]) },
     setCallKnob: (i: number, k: string, v: unknown) => { calls.knobs.push([i, k, v]) },
@@ -144,7 +143,7 @@ describe("span + guides", () => {
     assert.deepEqual(files, ["image/png,image/jpeg,image/webp", "video/*", "audio/*"],
       "each lane's OS picker accepts its own MIME family (the two-audio fix)")
     // the seam rides AFTER the bus — the call's join, never a lane between lanes
-    const seam = screen.getByTestId("tl-first-frame-prev-toggle")
+    const seam = screen.getByLabelText("Call 1 seam mode")
     assert.ok(buckets[2].compareDocumentPosition(seam) & Node.DOCUMENT_POSITION_FOLLOWING,
       "the audios lane precedes the seam in the DOM")
   })
@@ -232,20 +231,22 @@ describe("identity refs + knob fold", () => {
     assert.deepEqual(calls.refs, [[0, "images", "ra"]])
   })
 
-  it("the knob fold replaces per call (first call owns no prev)", () => {
+  it("the knob fold replaces per call", () => {
     const { d, calls } = deps()
     render(<CallCard c={{ ...BASE, knobs: { denoise: 0.7 } }} i={0} deps={d} />)
     fireEvent.change(screen.getByLabelText("Call 0 knob: denoise"), { target: { value: "0.5" } })
     assert.deepEqual(calls.knobs, [[0, "denoise", 0.5]])
-    assert.ok(screen.getByText("the first call has no previous video to continue from"))
+    // (the first-call prev note died with the seconds picker — the
+    // seam is automatic; the first call simply has nothing to carry)
   })
 
-  it("later calls own a live prev door", () => {
+  it("later calls own the live seam select (cut is the one authored fact)", () => {
     const { d, calls } = deps()
     render(<CallCard c={BASE} i={1} deps={d} />)
-    assert.equal(screen.queryByText("the first call has no previous video to continue from"), null)
-    fireEvent.click(screen.getByLabelText("Call 1 continue from previous"))
-    assert.deepEqual(calls.prevs, [[1, 2]])
-    assert.deepEqual(calls.trans, [])
+    const mode = screen.getByLabelText("Call 1 seam mode") as HTMLSelectElement
+    assert.equal(mode.value, "extend", "absent transition displays carried")
+    fireEvent.change(mode, { target: { value: "cut" } })
+    assert.deepEqual(calls.trans, [[1, "cut"]])
+    assert.deepEqual(calls.prevs, [])
   })
 })

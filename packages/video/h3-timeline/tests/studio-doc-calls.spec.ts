@@ -135,10 +135,11 @@ describe("hydrateCalls (params → document)", () => {
     }
   })
 
-  it("the prev-video opener survives only as a positive finite number", () => {
-    assert.equal(hydrateCalls({ calls: [{ ...CALL, first_frame_prev_sec: 2 }] })[0]!.first_frame_prev_sec, 2)
-    for (const bad of [0, -1, NaN, Infinity, "2", null]) {
-      assert.ok(!("first_frame_prev_sec" in hydrateCalls({ calls: [{ ...CALL, first_frame_prev_sec: bad }] })[0]!))
+  it("the retired prev-sec opener never hydrates (dead vocabulary, dropped on read)", () => {
+    // (2026-09-20: the seam is automatic — drift control carries
+    // every non-cut join; old drafts carrying the field lose it)
+    for (const v of [2, 0, -1, NaN, Infinity, "2", null]) {
+      assert.ok(!("first_frame_prev_sec" in hydrateCalls({ calls: [{ ...CALL, first_frame_prev_sec: v }] })[0]!))
     }
   })
 
@@ -370,9 +371,8 @@ describe("serializeCalls (document → persisted shape)", () => {
     assert.ok(!("audio" in c!))
   })
 
-  it("prev-sec + transition ride only when set (never null noise)", () => {
-    const [a] = serializeCalls([{ ...CALL, first_frame_prev_sec: 2, transition: "cut" }])
-    assert.equal(a!.first_frame_prev_sec, 2)
+  it("transition rides only when set; prev-sec never serializes (retired)", () => {
+    const [a] = serializeCalls([{ ...CALL, transition: "cut" }])
     assert.equal(a!.transition, "cut")
     const [b] = serializeCalls([{ ...CALL, transition: "wipe" as never }])
     assert.ok(!("transition" in b!))

@@ -207,13 +207,11 @@ describe("the shot laws (the card gate — py schema.py port)", () => {
     assert.equal(out.interpolate_enabled, false);
   });
 
-  it("seam_carry 0 is a hard cut; out-of-range carry refuses", () => {
-    // 0 rides (hard cut)
-    const out = schema({ ...BASE, calls: [{ ...SHOT, seam_carry: 0 }] }) as Record<string, unknown>;
-    assert.equal(out.variant, "t4_open");
-    assert.throws(
-      () => schema({ ...BASE, calls: [{ ...SHOT, seam_carry: 99 }] }),
-      /seam_carry 99 outside \[1, 64\]/,
-    );
+  it("the seam is automatic — seam_carry is retired vocabulary (never read, never gated)", () => {
+    // (2026-09-20: the drift-control continuation owns the chaining;
+    // overlap is the director's proven 22, a 'cut' call is their
+    // overlap-0 arm. The old lane-physics law died with MotionContext.)
+    const out = schema({ ...BASE, calls: [{ ...SHOT, seam_carry: 99 }] }) as Record<string, unknown>;
+    assert.equal(out.variant, "t4_open", "a single call stays t4_open, the junk key rides inert");
   });
 });

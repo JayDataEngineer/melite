@@ -78,15 +78,13 @@ type Family = (typeof FAMILIES)[number]
 
 // family-conditional admission (the production renderer's explicit-set
 // gate on the renderer vocabulary: t4r openers reject the post-ladder
-// leaves; non-chain windows reject the chaining rail).
+// leaves). The old CHAIN_ONLY gate died with the MotionContext seam —
+// the drift-control continuation owns the chaining rail now and
+// carries no renderer vocabulary of its own (the seam is automatic).
 const T4_ONLY_KEYS = [
   'sharpen_switch', 'sharpen_method', 'sharpen_strength', 'sharpen_radius',
   'sharpen_threshold', 'sharpen_iterations', 'interp_switch',
   'interp_multiplier', 'interp_model', 'sr_switch', 'sr_model', 'sr_resolution',
-] as const
-const CHAIN_ONLY_KEYS = [
-  'ctx_load_latent_path', 'ctx_load_clip_index', 'motion_context_length',
-  'motion_audio_context_length',
 ] as const
 
 // ── the params schema — H3TimelineCard mirrored 1:1 ─────────────────────────
@@ -255,12 +253,6 @@ const paramSchema = z.object({
   interp_switch: z.boolean().description("Interpolate switch (legacy alias)"),
   sharpen_switch: z.boolean().description("Sharpen switch (legacy alias)"),
   sla_switch: z.boolean().description("SLA switch (legacy alias)"),
-  motion_context_length: vocabulary(["5", "22", "39", "56"]).description("Motion context carry (the chaining rail)"),
-  motion_audio_context_length: z.number().description("Motion audio context frames").min(0).max(240).step(1),
-  ctx_save_prefix: z.string().description("Context save prefix"),
-  ctx_save_clip_index: z.number().description("Context save clip index").min(0).step(1),
-  ctx_load_clip_index: z.number().description("Context load clip index").min(0).step(1),
-  ctx_load_latent_path: z.string().description("Context load latent path"),
   image_name: z.string().description("Guide image (renderer alias)"),
 })
 
@@ -333,16 +325,11 @@ export function schema(v: unknown): Record<string, unknown> {
     // are the card gate's, never a silent re-default: the retired era
     // quietly re-defaulted an out-of-range seam and rendered a
     // reversed span as 56 frames; both banned there, banned here).
-    // CARRY_MIN/CARRY_MAX: timeline/laws.py lane physics.
-    const CARRY_MIN = 1, CARRY_MAX = 64
+    // (the seam_carry law died with the MotionContext seam — the
+    // drift-control continuation owns the chaining now, overlap is
+    // automatic, never user-authored lane physics)
     for (let i = 0; i < calls.length; i++) {
       const c = (calls[i] ?? {}) as Record<string, unknown>
-      if (c.seam_carry !== undefined && c.seam_carry !== null) {
-        const sc = c.seam_carry as number
-        if (sc !== 0 && !(Number.isInteger(sc) && CARRY_MIN <= sc && sc <= CARRY_MAX)) {
-          throw new Error(`calls[${i}]: seam_carry ${sc} outside [${CARRY_MIN}, ${CARRY_MAX}] — 0 is a hard cut, otherwise carry is bounded lane physics`)
-        }
-      }
       for (const name of ['start_frame', 'end_frame'] as const) {
         const v = c[name]
         if (v === undefined || v === null || typeof v !== 'number' || !Number.isInteger(v)) {
@@ -419,10 +406,6 @@ export function schema(v: unknown): Record<string, unknown> {
     const b = bad(T4_ONLY_KEYS)
     if (b.length) throw new Error(`h3_window(t4r): unsanctioned inject keys: ${b.join(', ')}`)
   }
-  if (variant !== undefined && variant !== 't4_chain') {
-    const b = bad(CHAIN_ONLY_KEYS)
-    if (b.length) throw new Error(`h3_window(${variant}): unsanctioned inject keys: ${b.join(', ')}`)
-  }
   return out
 }
 
@@ -490,14 +473,6 @@ const assertOverlayGated = (doc: Record<string, unknown>, where: string): void =
 function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // (the compose dispatch guarantees calls is a non-empty array here)
   const calls = p.calls as Array<Record<string, unknown>>
-  const CARRY_LEGAL = [5, 22, 39, 56]
-  const snapCarry = (frames: number): string => {
-    let best = CARRY_LEGAL[0] as number
-    for (const v of CARRY_LEGAL) {
-      if (Math.abs(v - frames) < Math.abs(best - frames)) best = v
-    }
-    return String(best)
-  }
   const str = (v: unknown): string => (typeof v === 'string' ? v : '')
   const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
@@ -507,12 +482,19 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // stanza's own duration as it renders.
   let bedElapsed = 0
   // THE FILM RAIL (the operator's call, 2026-09-17: the film is media
-  // composition — the ENGINE'S job, never a harness-side ffmpeg): each
-  // window's DELIVERED streams butt through MiniMaxH3FilmConcat nodes
-  // at the prompt's top level (the film is the doc's, not a window's),
-  // and ONE CreateVideo + SaveVideo emits the film the timeline
-  // promised. The estate reorders artifacts so the film leads; it
-  // never concats.
+  // composition — the ENGINE'S job, never a harness-side ffmpeg).
+  // THE SEAM (2026-09-20, the operator's order: forget the
+  // MotionContext seam exists): ONE mechanic, automatic — the
+  // TimelineDirector drift-control continuation. Every window k≥2
+  // carries the previous window's sampled latent through
+  // MiniMaxH3FiniteLatentContinuation (schedule-matched prefix noise
+  // + Soft AV audio release); a 'cut' call is their overlap-0 arm
+  // (independent windows, no guidance). No seam vocabulary, no
+  // modes — the film accumulates through their finalize chain
+  // (video: the previous window owns the overlap; audio: the
+  // incoming soft-released head owns the join) and ONE CreateVideo +
+  // SaveVideo emits the film the timeline promised. The estate
+  // reorders artifacts so the film leads; it never concats.
   let film: { images: OutputHandle, audio: OutputHandle } | undefined
   // LORA STEPS APPLIED (operator correction, 2026-09-18): a distill
   // adapter is married to its step count — one lora for four steps,
@@ -530,8 +512,14 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     const k = i + 1
     const guide = str(call.image ?? call.ref_image ?? call.image_name)
     const text = str(call.text).trim() || str(p.prompt)
-    const transition = call.transition === 'cut' ? 'cut' : 'extend'
-    const secs = num(call.first_frame_prev_sec)
+    // THE SEAM LAW (2026-09-20): ONE mechanic, automatic. A 'cut'
+    // call is the director's overlap-0 arm (independent windows — no
+    // continuation, no guidance, nothing carried); every other seam
+    // rides the drift-control continuation at their proven default
+    // (22 frames ≈ 0.92s). first_frame_prev_sec retired with the
+    // MotionContext seam — cross-run continuity is the FL2VA anchor
+    // (set the first-frame square to the previous film's last frame).
+    const overlap = call.transition === 'cut' ? 0 : 22
     const knobs = (call.knobs ?? {}) as Record<string, unknown>
     // refs are a LAYER B (per-call) property — the reference bundle
     // rides the stanza; a refs-carrying call is t4r EVEN without a
@@ -542,11 +530,11 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     const declaredRefCount = wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length
       + (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '' ? 1 : 0)
     const hasRefs = declaredRefCount + wireList(rb.images).length + wireList(rb.videos).length + wireList(rb.audios).length > 0
-    const chainLike = i > 0 && (transition === 'extend' || secs !== null)
+    const chainLike = i > 0 && overlap > 0
     const sf = num(call.start_frame)
     const ef = num(call.end_frame)
 
-    const stanza: Record<string, unknown> = { ...p, ...knobs, prompt: text, k, ctx_save_clip_index: k }
+    const stanza: Record<string, unknown> = { ...p, ...knobs, prompt: text, k }
     stanza.variant = (guide !== '' || hasRefs) ? 't4r' : chainLike ? 't4_chain' : 't4_open'
     // the distill's steps apply unless this call's knobs pinned steps
     if (knobs.steps === undefined && loraStepsApplied !== null) stanza.steps = loraStepsApplied
@@ -558,11 +546,10 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       const kk = Math.round((ef - sf - 22) / 17)
       stanza.length = Math.min(362, Math.max(22, 22 + 17 * kk))
     }
-    if (i > 0 && secs !== null) {
-      stanza.motion_context_length = snapCarry(secs * 24)
-      stanza.motion_audio_context_length = Math.min(240, Math.max(0, Math.round(secs * 24)))
+    if (i > 0) {
+      stanza.__iteration = k - 1
+      stanza.__overlap = overlap
     }
-    if (chainLike) stanza.__seam = transition === 'cut' ? 'cut-frames' : 'extend'
     if (prev !== undefined) stanza.__prev = prev
     // THE AUDIO BED CUT LAW (the convenience layer): the film's
     // windows carry their OWN slice of the bed — window 1 starts at
@@ -589,11 +576,31 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     if (film === undefined) {
       film = { images: h.filmImages, audio: h.filmAudio }
     } else {
-      const c = g.node('MiniMaxH3FilmConcat', {
-        images_a: film.images, images_b: h.filmImages,
-        audio_a: film.audio, audio_b: h.filmAudio,
+      // THE FILM ACCUMULATION (the director's own law): video rides
+      // their finalize at overlap 0 — the seam's frame dedup already
+      // happened inside each window (the clip finalize trims the
+      // carried overlap off the window's own head before its tail),
+      // so this is the pure temporal accumulate (prev's images own
+      // the overlap; the incoming window's duplicate opening is gone).
+      const acc = g.node('MiniMaxH3FiniteSegmentFinalize', {
+        sampled_latent: h.latOut, images: h.filmImages, audio: h.filmAudio,
+        iteration: 1, overlap_frames: 0, trim_audio_head: false,
+        accumulated_images: film.images,
       })
-      film = { images: c.out(0), audio: c.out(1) }
+      // AUDIO: the Soft AV seam — the incoming window's audio was
+      // generated WITH the carried audio latent softly released into
+      // its head, so its opening owns the join; the previous film's
+      // tail yields its overlap. A 'cut' seam (overlap 0) keeps the
+      // previous tail whole — a true butt.
+      const prevTail = overlap > 0
+        ? g.node('MiniMaxH3FiniteAudioTrimTail', {
+            audio: film.audio, overlap_frames: overlap,
+          }).out(0)
+        : film.audio
+      const join = g.node('AudioConcat', {
+        audio1: prevTail, audio2: h.filmAudio, direction: 'after',
+      })
+      film = { images: acc.out(1), audio: join.out(0) }
     }
   })
   // (calls.length >= 1 — the shot laws refuse the empty doc, so the
@@ -717,7 +724,6 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   let latent: OutputHandle
   let sigmaModel: OutputHandle
   let fpsInput: OutputHandle | number
-  let trimFrames: OutputHandle | undefined
 
   if (isT4r) {
     // opener: switch(SLABool) picks SLA-direct vs chunked; lora rides
@@ -968,73 +974,72 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     model: sigmaModel, scheduler: schedName,
     steps: p.steps as number, denoise: denoiseVal,
   }).out()
-  const guider = g.node('BasicGuider', { model: sigmaModel, conditioning: cond }).out()
+  let guider = g.node('BasicGuider', { model: sigmaModel, conditioning: cond }).out()
+  let targetLatent = latent
 
+  // THE SEAM (2026-09-20, the operator's order: the MotionContext
+  // seam is FORGOTTEN — the TimelineDirector drift-control
+  // continuation is the one way, automatic): window k≥2 with a
+  // carried seam rides MiniMaxH3FiniteLatentContinuation — the
+  // previous window's RAW sampled latent becomes this window's
+  // drift-controlled opening (schedule-matched prefix noise: the
+  // carried tail's noise level walks down the sampler's own sigma
+  // schedule, so the model never fights the anchor — the anti-drift
+  // core for unbounded chains), the audio latent rides the Soft AV
+  // half-cosine release (no seam pops), and the MODEL comes back
+  // PATCHED — the guider rebinds to it and the sampler's target is
+  // the MASKED latent. A 'cut' call (overlap 0) and every opener
+  // never mount this block: a true fresh window.
   if (isChain) {
-    // THE SEAM (h3-motion-context pack) — two REAL paths, the node's
-    // own vocabulary (1:1 with the vendored extension, 2026-09-17):
-    //   EXTEND — context_latent wired to the PREVIOUS window's
-    //   sampler-output latent: "sliced straight out, skipping the
-    //   decode and re-encode that cost a little quality at every
-    //   link of a chain" (the node's own tooltip). In the merged
-    //   film this is a live in-prompt wire; in a standalone
-    //   single-window stanza it is the cross-prompt convention
-    //   (SaveLatent→LoadLatent by path, the frozen served shape).
-    //   CUT+PREV_SEC — context_frames/context_audio wired to the
-    //   previous window's RAW decode: the video-tail opener (decoded
-    //   picture + sound, the node's context_frames arm).
-    // Both pin the carried tail as never-denoised rows and report
-    // trim_frames; CUT without prev_sec never mounts this block (a
-    // true fresh window, the opener's own shape).
     const prev = p.__prev as WindowHandles | undefined
-    const mcInputs: Record<string, unknown> = {
-      conditioning: cond, vae: vaeVideo, latent,
-      context_length: (p.motion_context_length ?? '39') as string,
-      audio_context_length: (p.motion_audio_context_length ?? 24) as number,
+    /* v8 ignore next 1 -- the film loop stamps __iteration on every window k≥2 before the render (the seam block mounts only when it did) */
+    const iteration = (p.__iteration as number) ?? 0
+    /* v8 ignore next 1 -- the film loop stamps __overlap on every window k≥2 before the render (the seam block mounts only when it did) */
+    const overlap = (p.__overlap as number) ?? 0
+    if (prev !== undefined && overlap > 0) {
+      const cont = g.node('MiniMaxH3FiniteLatentContinuation', {
+        positive: cond, target_latent: targetLatent,
+        iteration, overlap_frames: overlap,
+        continue_audio_latent: true,
+        model: sigmaModel, sigmas: sched,
+        previous_latent: prev.latOut,
+      })
+      cond = cont.out(0)
+      targetLatent = cont.out(1)
+      guider = g.node('BasicGuider', { model: cont.out(3), conditioning: cont.out(0) }).out()
     }
-    if (prev !== undefined && p.__seam === 'cut-frames') {
-      mcInputs.context_frames = prev.vdec
-      mcInputs.audio_vae = vaeAudio
-      mcInputs.context_audio = prev.vadec
-    } else if (prev !== undefined) {
-      mcInputs.context_latent = prev.latOut
-    } else {
-      // the standalone stanza (frozen served shape): the
-      // cross-prompt convention — Save/Load by filesystem path,
-      // the same-prompt seam as a pre-namespaced foreign link.
-      const path = (p.ctx_load_latent_path ?? '') as string
-      const latentPath: string | (string | number)[] = (k >= 2 && !path)
-        ? [`window${k - 1}_MiniMaxH3MotionContextSaveLatent.0`, 0]
-        : path
-      mcInputs.context_latent = g.node('MiniMaxH3MotionContextLoadLatent', {
-        latent_path: latentPath, clip_index: (p.ctx_load_clip_index ?? 0) as number,
-      }).out()
-    }
-    const mc = g.node('MiniMaxH3MotionContext', mcInputs)
-    cond = mc.out(0)
-    trimFrames = mc.out(1)
   }
   const sampled = g.node('SamplerCustomAdvanced', {
-    noise, guider, sampler, sigmas: sched, latent_image: latent,
+    noise, guider, sampler, sigmas: sched, latent_image: targetLatent,
   })
   const latOut = sampled.out(0)
 
   // ── decode + save ──────────────────────────────────────────────────
   let vdec = g.node('VAEDecode', { samples: latOut, vae: vaeVideo }).out()
   let vadec = g.node('VAEDecodeAudio', { samples: latOut, vae: vaeAudio }).out()
-  // the RAW pair is the seam currency (trim/sharpen happen downstream);
+  // the RAW audio head is the soft seam's currency — the film's join
+  // takes the incoming window's UNTRIMMED opening (it owns the seam);
+  // captured BEFORE the clip finalize trims the overlap off
+  let vadecRaw: OutputHandle | undefined
   // `delivered` fills at the save branches (both families save)
   let delivered: { images: OutputHandle, audio: OutputHandle } | null = null
   const rawHandles: WindowHandles = { latOut, vdec, vadec, filmImages: latOut, filmAudio: latOut }
   if (isChain) {
-    // cut the pinned overlap off picture AND sound by the same
-    // duration (the pack's Trim; fps must match CreateVideo)
-    const trim = g.node('MiniMaxH3MotionContextTrim', {
-      images: vdec, trim_frames: trimFrames, audio: vadec,
-      fps: 24.0, match_tail: true,
-    })
-    vdec = trim.out(0)
-    vadec = trim.out(1)
+    const prev = p.__prev as WindowHandles | undefined
+    /* v8 ignore next 1 -- the film loop stamps __overlap on every window k≥2 before the render (the block mounts only when it did) */
+    const overlap = (p.__overlap as number) ?? 0
+    if (prev !== undefined && overlap > 0) {
+      vadecRaw = vadec
+      // the window's OWN clip: the carried overlap leaves picture AND
+      // sound by the same duration (their finalize, hard audio trim —
+      // a clip never replays the seam it grew from)
+      const fin = g.node('MiniMaxH3FiniteSegmentFinalize', {
+        sampled_latent: latOut, images: vdec, audio: vadec,
+        iteration: 1, overlap_frames: overlap, trim_audio_head: true,
+      })
+      vdec = fin.out(1)
+      vadec = fin.out(2)
+    }
   }
   if (isT4r) {
     const created = g.node('CreateVideo', {
@@ -1132,17 +1137,18 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     delivered = { images: sharpSw, audio: vadec }
   }
 
-  // the chain rail's persistence: the context save lands after the
-  // saved video (ONE serialization walk over both output nodes).
-  g.node('MiniMaxH3MotionContextSaveLatent', {
-    latent: latOut, filename_prefix: (p.ctx_save_prefix ?? 'h3_context/clip') as string,
-    clip_index: p.ctx_save_clip_index ?? k,
-  })
-  // (every family path delivers — t4r/t4_open save the window film,
-  // t4_chain saves the context rail; no null arm: the family
-  // dispatch is exhaustive over FAMILIES)
+  // (every family path delivers — both arms save the window's clip;
+  // no null arm: the family dispatch is exhaustive over FAMILIES.
+  // The old MotionContextSaveLatent persistence died with the seam —
+  // cross-run continuity is the FL2VA anchor: set the first-frame
+  // square to the previous film's last frame, latent-true.)
   rawHandles.filmImages = (delivered as { images: OutputHandle, audio: OutputHandle }).images
-  rawHandles.filmAudio = (delivered as { images: OutputHandle, audio: OutputHandle }).audio
+  // THE FILM'S AUDIO SEAM CURRENCY: a carried window hands the film
+  // its UNTRIMMED opening (the soft-released head owns the join);
+  // every other window hands its delivered audio
+  rawHandles.filmAudio = vadecRaw !== undefined
+    ? vadecRaw
+    : (delivered as { images: OutputHandle, audio: OutputHandle }).audio
   return rawHandles
 }
 

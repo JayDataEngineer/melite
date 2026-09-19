@@ -90,10 +90,6 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
         `VideoTimelineStudio: call ${calls.length} carried last_frame (${r.last_frame}) — dropped; the closing-still control was cut 2026-09-15 (the reference lane owns no last-frame input)`,
       )
     }
-    const ps = r.first_frame_prev_sec
-    if (typeof ps === "number" && Number.isFinite(ps) && ps > 0) {
-      call.first_frame_prev_sec = ps
-    }
     if (r.transition === "extend" || r.transition === "cut") {
       call.transition = r.transition
     }
@@ -258,9 +254,8 @@ export function serializeCalls(calls: DocCall[]): DocCall[] {
       const src = c[kind]
       if (src && src.trim()) out[kind] = src
     }
-    // The prev-video opener rides the blank-never rule (null = no
-    // opener). last_frame is never written — cut 2026-09-15.
-    if (c.first_frame_prev_sec != null) out.first_frame_prev_sec = c.first_frame_prev_sec
+    // first_frame_prev_sec is never written — cut 2026-09-20 (the
+    // seam is automatic; last_frame — cut 2026-09-15).
     if (c.transition === "extend" || c.transition === "cut") out.transition = c.transition
     // Per-call refs: the wire form is the COMMA STRING (the card's
     // wireList law — trimmed entries, empties absent). All three

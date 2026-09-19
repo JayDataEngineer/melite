@@ -93,49 +93,78 @@ describe("the schema gate arms", () => {
     );
   });
 
-  it("non-chain windows refuse the chaining rail", () => {
-    assert.throws(
-      () => def.schema({ variant: "t4_open", calls: [SHOT()], motion_context_length: "39" }),
-      /h3_window\(t4_open\): unsanctioned inject keys: motion_context_length/,
-    );
+  it("the chaining rail vocabulary is retired — the seam is automatic, never authored", () => {
+    // (2026-09-20: the MotionContext seam is forgotten; the
+    // drift-control continuation owns the chaining. The old carry
+    // knobs ride INERT — no admission gate, no node, nothing read)
+    const walked = def.schema({
+      variant: "t4_open", calls: [SHOT()],
+      motion_context_length: "39", ctx_load_latent_path: "/tmp/x.latent",
+    }) as Record<string, unknown>;
+    assert.equal(walked.motion_context_length, "39", "lenient walk, inert key");
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, "run_retired_vocab");
+    const out = graphOf(g);
+    assert.equal(ofClass(out, "MiniMaxH3MotionContext").length, 0, "the retired seam never mounts");
+    assert.equal(ofClass(out, "MiniMaxH3MotionContextLoadLatent").length, 0, "no cross-prompt load");
   });
 });
 
-describe("the merged film (carry, seams, prompt fallback)", () => {
-  it("a cut+prev_sec seam snaps the carry and wires the raw tail (cut-frames)", () => {
-    const g = new GraphBuilder();
-    def.compose(
-      def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124, first_frame_prev_sec: 2, transition: "cut" })],
-      }),
-      model, g, "run_cut_seam",
-    );
-    const out = graphOf(g);
-    const mc = scoped(out, "window2_", "MiniMaxH3MotionContext");
-    assert.equal(mc.length, 1, "the chained window mounts the seam block");
-    // 2s × 24fps = 48 frames → snapped to the legal 56-step carry
-    assert.equal(mc[0]![1].inputs.context_length, "56");
-    assert.equal(mc[0]![1].inputs.audio_context_length, 48);
-    // cut-frames = the previous window's RAW decode (never the latent)
-    assert.ok(Array.isArray(mc[0]![1].inputs.context_frames), "the video-tail opener wires decoded frames");
-    assert.ok(mc[0]![1].inputs.context_audio !== undefined, "the video-tail opener wires decoded audio");
-    assert.equal(mc[0]![1].inputs.context_latent, undefined, "a cut never chains the latent");
-  });
-
-  it("an extend seam chains the previous latent (no decode round-trip)", () => {
+describe("the merged film (the drift-control seam, automatic)", () => {
+  it("a carried seam rides the drift-control continuation (previous sampled latent + patched model)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
       }),
-      model, g, "run_extend_seam",
+      model, g, "run_carry_seam",
     );
     const out = graphOf(g);
-    const mc = scoped(out, "window2_", "MiniMaxH3MotionContext");
-    assert.equal(mc.length, 1);
-    assert.ok(Array.isArray(mc[0]![1].inputs.context_latent), "extend chains the sampler-output latent");
-    assert.equal(mc[0]![1].inputs.context_frames, undefined);
-    expect(ofClass(out, "MiniMaxH3FilmConcat").length).toBe(1);
+    const cont = scoped(out, "window2_", "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(cont.length, 1, "window 2 mounts the drift-control seam");
+    const cin = cont[0]![1].inputs;
+    assert.equal(cin.iteration, 1, "window 2 is segment 2 of the film");
+    assert.equal(cin.overlap_frames, 22, "the director's proven default, automatic");
+    assert.equal(cin.continue_audio_latent, true, "Soft AV audio release on");
+    // the carried latent IS window 1's sampler output — straight out,
+    // never a decode round-trip
+    const w1Sampled = scoped(out, "window1_", "SamplerCustomAdvanced")[0]!;
+    assert.deepEqual(cin.previous_latent, [w1Sampled[0], 0], "the previous RAW latent feeds the seam");
+    // the opener never mounts the block (a true fresh window)
+    assert.equal(scoped(out, "window1_", "MiniMaxH3FiniteLatentContinuation").length, 0);
+    // the guider rebinds to the PATCHED model (drift control wraps it)
+    const w2Guiders = scoped(out, "window2_", "BasicGuider");
+    const patched = w2Guiders.find(([, n]) => Array.isArray(n.inputs.model)
+      && (n.inputs.model as [string, number])[0] === cont[0]![0]);
+    assert.ok(patched, "window 2's guider carries the drift-controlled model");
+  });
+
+  it("the seam's overlap leaves the window's own clip (finalize) and the film joins soft", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      }),
+      model, g, "run_seam_dedup",
+    );
+    const out = graphOf(g);
+    // the window's OWN clip: the carried overlap trimmed off picture
+    // AND sound (their finalize, hard audio trim)
+    const fin = scoped(out, "window2_", "MiniMaxH3FiniteSegmentFinalize");
+    assert.equal(fin.length, 1);
+    assert.equal(fin[0]![1].inputs.overlap_frames, 22);
+    assert.equal(fin[0]![1].inputs.trim_audio_head, true, "a clip never replays its seam");
+    // THE FILM: no FilmConcat anywhere — accumulation through their
+    // finalize (video) + the soft audio join (tail yields, incoming head owns)
+    assert.equal(ofClass(out, "MiniMaxH3FilmConcat").length, 0, "the old concat is forgotten");
+    const acc = ofClass(out, "MiniMaxH3FiniteSegmentFinalize").filter(([id]) => !id.startsWith("window"));
+    assert.equal(acc.length, 1, "the film accumulates at the prompt's top level");
+    assert.equal(acc[0]![1].inputs.overlap_frames, 0, "video dedup already happened in-window");
+    const tail = ofClass(out, "MiniMaxH3FiniteAudioTrimTail");
+    assert.equal(tail.length, 1, "the previous film audio yields its overlap");
+    assert.equal(tail[0]![1].inputs.overlap_frames, 22);
+    const joins = ofClass(out, "AudioConcat");
+    assert.equal(joins.length, 1, "the film's audio joins after the trimmed tail");
   });
 
   it("a blank call text falls back to the run prompt (never an empty window)", () => {
@@ -152,7 +181,7 @@ describe("the merged film (carry, seams, prompt fallback)", () => {
     assert.equal(r2v[0]![1].inputs.prompt, "the run prompt");
   });
 
-  it("a cut without prev_sec is a true fresh window (no seam block)", () => {
+  it("a cut call is the director's overlap-0 arm (independent windows, a true butt)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
@@ -161,8 +190,13 @@ describe("the merged film (carry, seams, prompt fallback)", () => {
       model, g, "run_hard_cut",
     );
     const out = graphOf(g);
-    assert.equal(ofClass(out, "MiniMaxH3MotionContext").length, 0, "a hard cut mounts no seam");
-    assert.equal(ofClass(out, "MiniMaxH3FilmConcat").length, 1, "the film still concats both windows");
+    assert.equal(ofClass(out, "MiniMaxH3FiniteLatentContinuation").length, 0, "a cut carries nothing");
+    assert.equal(scoped(out, "window2_", "MiniMaxH3FiniteSegmentFinalize").length, 0, "nothing to dedup");
+    // the film still joins — video accumulates, audio butts whole
+    const acc = ofClass(out, "MiniMaxH3FiniteSegmentFinalize").filter(([id]) => !id.startsWith("window"));
+    assert.equal(acc.length, 1, "the film accumulates both windows");
+    assert.equal(ofClass(out, "MiniMaxH3FiniteAudioTrimTail").length, 0, "no tail yields at a true cut");
+    assert.equal(ofClass(out, "AudioConcat").length, 1, "the audio joins whole");
   });
 });
 
@@ -210,7 +244,8 @@ describe("the film's per-window stanza (guides, refs, lora steps, length pins)",
     const g = new GraphBuilder();
     def.compose(gated, model, g, "run_null_length");
     const out = graphOf(g);
-    assert.equal(ofClass(out, "MiniMaxH3FilmConcat").length, 1, "the film composes after the delete");
+    const acc = ofClass(out, "MiniMaxH3FiniteSegmentFinalize").filter(([id]) => !id.startsWith("window"));
+    assert.equal(acc.length, 1, "the film accumulates after the delete");
   });
 });
 
@@ -324,19 +359,22 @@ describe("the single-window doors", () => {
 });
 
 describe("the standalone chain stanza (the cross-prompt convention)", () => {
-  it("k≥2 without a path names the previous window's save (frozen shape)", () => {
+  it("a standalone chain stanza composes FRESH (the cross-prompt Save/Load convention is retired)", () => {
+    // (2026-09-20: with no previous window IN the prompt there is
+    // nothing to carry — cross-run continuity is the FL2VA anchor:
+    // set the first-frame square to the previous film's last frame)
     const g = new GraphBuilder();
     def.compose(
       def.schema({ variant: "t4_chain", calls: [SHOT()], k: 2 }),
       model, g, "run_standalone",
     );
-    const loads = ofClass(graphOf(g), "MiniMaxH3MotionContextLoadLatent");
-    assert.equal(loads.length, 1);
-    assert.deepEqual(loads[0]![1].inputs.latent_path, ["window1_MiniMaxH3MotionContextSaveLatent.0", 0]);
-    assert.equal(loads[0]![1].inputs.clip_index, 0);
+    const out = graphOf(g);
+    assert.equal(ofClass(out, "MiniMaxH3MotionContextLoadLatent").length, 0, "no cross-prompt load");
+    assert.equal(ofClass(out, "MiniMaxH3MotionContextSaveLatent").length, 0, "no cross-prompt save");
+    assert.equal(ofClass(out, "MiniMaxH3FiniteLatentContinuation").length, 0, "nothing carried, nothing continued");
   });
 
-  it("an explicit latent path + clip index ride verbatim", () => {
+  it("the retired ctx_load keys ride inert (dead vocabulary, never a node)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
@@ -345,10 +383,8 @@ describe("the standalone chain stanza (the cross-prompt convention)", () => {
       }),
       model, g, "run_standalone_path",
     );
-    const loads = ofClass(graphOf(g), "MiniMaxH3MotionContextLoadLatent");
-    assert.equal(loads[0]![1].inputs.latent_path, "/tmp/x.latent");
-    assert.equal(loads[0]![1].inputs.clip_index, 3);
-    expect(loads[0]![1].inputs.clip_index).toBe(3);
+    const out = graphOf(g);
+    assert.equal(ofClass(out, "MiniMaxH3MotionContextLoadLatent").length, 0, "the retired loader never mounts");
   });
 });
 

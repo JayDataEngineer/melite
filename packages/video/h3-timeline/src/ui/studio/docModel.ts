@@ -23,9 +23,9 @@ import type { TimelineTrack } from "@melite-plugin/timeline/ui/timeline"
  * frame-conditioning subcards: `last_frame` was CUT 2026-09-15 — the
  * PlagueKind gen lane (ReferenceToVideo) owns no last-frame input, so
  * the control wrote wire nothing reads. `first_frame_prev_sec`
- * = open from the last X seconds of the PREVIOUS window's rendered
- * video (a motion continuation; coherent WITH `image` — the still
- * anchors frame 0, the tail clip carries the motion). The optional
+ * was CUT 2026-09-20 — the seam is AUTOMATIC (the drift-control
+ * continuation carries every non-cut join; nothing to author). The
+ * optional
  * `knobs` dict is the per-call REPLACE (CALL_KNOB_KEYS = the run's
  * RENDER_KNOB_KEYS minus audio_mode — that one is recipe-level);
  * absent key = inherit the Layer A value. */
@@ -36,13 +36,10 @@ export interface DocCall {
   image?: string
   clip?: string
   audio?: string
-  first_frame_prev_sec?: number
-  /** Seam mode into this call: 'extend' (ABSENT = extend — the previous
-   * window's SAMPLER latent chains in, prev-sec = seconds of carry)
-   * or 'cut' (a fresh window; with prev-sec the previous VIDEO tail
-   * — decoded picture + sound — opens this window via the
-   * motion-context node's context_frames arm; without it, a true
-   * hard cut, no carry at all). */
+  /** Seam mode into this call: 'extend' (ABSENT = extend — the
+   * drift-control continuation carries the previous window's latent,
+   * automatic at the director's proven 22-frame overlap) or 'cut'
+   * (an independent window, a true butt — nothing carries). */
   transition?: "extend" | "cut"
   knobs?: BeatKnobs
   /** Per-call identity refs (Ref2VA route): REPLACE the run-level refs

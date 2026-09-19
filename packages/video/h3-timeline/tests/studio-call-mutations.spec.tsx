@@ -94,16 +94,18 @@ describe("setCallGuide", () => {
 })
 
 describe("setCallTransition", () => {
-  it("switching modes re-bases a present carry (extend=3s latent, cut=2s tail)", () => {
-    const { result } = harness([{ ...A, transition: "cut", first_frame_prev_sec: 5 }])
+  it("writes the seam mode; the carry itself is automatic (never authored)", () => {
+    // (2026-09-20: the seconds picker died with the MotionContext
+    // seam — the drift-control continuation carries every non-cut
+    // join at the director's proven 22 frames)
+    const { result } = harness([{ ...A, transition: "cut" }])
     act(() => { result.current.setCallTransition(0, "extend") })
     assert.equal(result.current.calls[0]!.transition, "extend")
-    assert.equal(result.current.calls[0]!.first_frame_prev_sec, 3)
     act(() => { result.current.setCallTransition(0, "cut") })
-    assert.equal(result.current.calls[0]!.first_frame_prev_sec, 2)
+    assert.equal(result.current.calls[0]!.transition, "cut")
   })
 
-  it("same-mode and out-of-range writes no-op; absent carry stays absent", () => {
+  it("same-mode and out-of-range writes no-op", () => {
     const { result } = harness([A])
     const before = result.current.calls
     act(() => {
@@ -111,7 +113,6 @@ describe("setCallTransition", () => {
     })
     // transition was undefined → setting cut writes (not a no-op)
     assert.equal(result.current.calls[0]!.transition, "cut")
-    assert.ok(!("first_frame_prev_sec" in result.current.calls[0]!))
     const after = result.current.calls
     act(() => {
       result.current.setCallTransition(0, "cut")
@@ -120,34 +121,6 @@ describe("setCallTransition", () => {
     })
     assert.ok(result.current.calls === after)
     expect(before).not.toBe(after)
-  })
-})
-
-describe("setCallPrevSec", () => {
-  it("writes valid seconds verbatim; junk clears the key", () => {
-    const { result } = harness([A])
-    act(() => { result.current.setCallPrevSec(0, 2.5) })
-    assert.equal(result.current.calls[0]!.first_frame_prev_sec, 2.5)
-    for (const bad of [null, NaN, Infinity, 0, -2]) {
-      act(() => { result.current.setCallPrevSec(0, bad) })
-    }
-    assert.ok(!("first_frame_prev_sec" in result.current.calls[0]!))
-  })
-
-  it("clearing an absent key and rewriting the same value no-op; ranges guard", () => {
-    const { result } = harness([A])
-    const before = result.current.calls
-    act(() => { result.current.setCallPrevSec(0, null) })
-    assert.ok(result.current.calls === before)
-    act(() => { result.current.setCallPrevSec(0, 2) })
-    const after = result.current.calls
-    act(() => { result.current.setCallPrevSec(0, 2) })
-    assert.ok(result.current.calls === after)
-    act(() => {
-      result.current.setCallPrevSec(-1, 2)
-      result.current.setCallPrevSec(5, 2)
-    })
-    assert.ok(result.current.calls === after)
   })
 })
 

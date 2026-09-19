@@ -18,28 +18,16 @@ import { CallCardPrompt } from "./CallCardPrompt"
 import { REF_UPLOAD_SPEC, refGenreOf, splitRefList } from "./refUtils"
 import type { CallCardDeps } from "./CallCardsPanel"
 
-/** THE SEAM-CARRY TRUTH (mirror of the card's own law): a chained
- *  window's delivered frames are its span MINUS the carry its seam
- *  consumes — extend defaults 39 (snapped to the 5/22/39/56 latent
- *  steps), cut+prev_sec carries prev_sec×24 snapped. First windows
- *  and hard cuts deliver their whole span. */
-const CARRY_LEGAL = [5, 22, 39, 56]
-const snapCarry = (frames: number): number => {
-  let best = CARRY_LEGAL[0] as number
-  for (const v of CARRY_LEGAL) {
-    if (Math.abs(v - frames) < Math.abs(best - frames)) best = v
-  }
-  return best
-}
+/** THE SEAM-CARRY TRUTH (mirror of the card's own law, 2026-09-20):
+ *  a carried window's delivered frames are its span MINUS the seam's
+ *  overlap — the drift-control continuation carries the director's
+ *  proven 22 frames, automatic. First windows and cuts deliver their
+ *  whole span. */
+const SEAM_OVERLAP_FRAMES = 22
 export const deliveredFrames = (c: DocCall, i: number): number => {
   const span = c.end_frame - c.start_frame
-  if (i === 0 || c.transition === "cut") {
-    const secs = c.first_frame_prev_sec
-    const carry = secs != null ? snapCarry(secs * 24) : 0
-    return Math.max(0, span - carry)
-  }
-  const secs = c.first_frame_prev_sec
-  return Math.max(0, span - (secs != null ? snapCarry(secs * 24) : 39))
+  if (i === 0 || c.transition === "cut") return span
+  return Math.max(0, span - SEAM_OVERLAP_FRAMES)
 }
 
 /** ONE ref bucket — the estate's SourceRow per chip (the operator's
@@ -149,7 +137,7 @@ export function CallCard({
     isRef2va, refArtifacts,
     handlePromptDelete, handlePromptUpdate,
     enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo,
-    setCallSpan, setCallGuide, setCallPrevSec, setCallTransition,
+    setCallSpan, setCallGuide, setCallTransition,
     setCallRefs, setCallKnob,
   } = deps
   // Focused mode: only the SELECTED call's card renders — the
@@ -363,21 +351,14 @@ export function CallCard({
           artifacts={refArtifacts}
           onChange={(v) => setCallRefs(i, "audios", v)}
         />
-        {/* THE SEAM — the call's join (cut vs extend + the prev
-            continuation). LAST ROW under the bus, after every lane:
-            the seam is the call's join, never a lane between
-            lanes. */}
+        {/* THE SEAM — the call's join (carried vs cut; the carry
+            itself is automatic — drift control, never authored). LAST
+            ROW under the bus, after every lane: the seam is the
+            call's join, never a lane between lanes. */}
         <SeamControls
           callIndex={i}
-          testId="tl-first-frame"
-          prevSec={c.first_frame_prev_sec}
-          onPrevSec={(sec) => setCallPrevSec(i, sec)}
           transition={c.transition}
           onTransition={(t) => setCallTransition(i, t)}
-          prevDisabled={i === 0}
-          prevNote={i === 0
-            ? "the first call has no previous video to continue from"
-            : undefined}
         />
       </div>
     </div>
