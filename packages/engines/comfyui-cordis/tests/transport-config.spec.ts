@@ -112,3 +112,43 @@ describe("endpoint config (the SSOT read)", () => {
     assert.equal(new ComfyError("x").name, "ComfyError");
   });
 });
+
+describe("liveObjectInfo (the closed-body refusal + the cache)", () => {
+  it("a non-object /object_info body refuses closed; object bodies cache per server", async () => {
+    const { createServer } = await import("node:http");
+    const { liveObjectInfo } = await import("../src/comfyui-transport.ts");
+    let mode: "array" | "object" = "array";
+    let served = 0;
+    const srv = createServer((req, res) => {
+      served += 1;
+      if (String(req.url).includes("object_info")) {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(mode === "array" ? "[1,2]" : JSON.stringify({ Node: {} }));
+        return;
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end("{}");
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    onTestFinished(() => new Promise<void>((resolve) => srv.close(() => resolve())));
+    try {
+      // the refusal: first serve is a JSON array (non-object)
+      await assert.rejects(
+        () => liveObjectInfo(base),
+        (e: unknown) => e instanceof Error && /non-object body/.test(e.message),
+      );
+      // the object body rides and then CACHES (one serve per server)
+      mode = "object";
+      served = 0;
+      const doc = await liveObjectInfo(base);
+      assert.ok(typeof doc === "object" && doc !== null);
+      const again = await liveObjectInfo(base);
+      assert.equal(again, doc, "the per-server cache returns the identical record");
+      assert.equal(served, 1);
+    } finally {
+      srv.close();
+    }
+  });
+});

@@ -1,0 +1,283 @@
+// comfyui-upload.spec.ts — the upload plane's every arm (TEST-2
+// breadth, the deterministic census): spliceWorkflow's inject law,
+// uploadFile's ctype table + refusal, isFile, and uploadReferenced's
+// full walk (data URLs, linked inputs, estate assets, runs-relative,
+// cwd, the VHS exemption, object descent).
+import { afterAll, beforeAll, describe, it, expect, vi } from "vitest";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  spliceWorkflow,
+  uploadFile,
+  isFile,
+  uploadReferenced,
+} from "../src/comfyui-upload.ts";
+import type { Client } from "@stable-canvas/comfyui-client";
+
+const DIR = join(tmpdir(), "melite-upload-" + process.pid);
+const ROOT = join(DIR, "runs");
+beforeAll(() => {
+  mkdirSync(join(ROOT, "run-1"), { recursive: true });
+  writeFileSync(join(ROOT, "run-1", "local.png"), "png");
+  writeFileSync(join(DIR, "abs.gif"), "gif");
+  writeFileSync(join(DIR, "rel.webp"), "webp");
+  writeFileSync(join(process.cwd(), "cwd-rel.webp"), "webp");
+});
+afterAll(() => {
+  rmSync(DIR, { recursive: true, force: true });
+  rmSync(join(process.cwd(), "cwd-rel.webp"), { force: true });
+});
+
+const uploads: Array<{ name: string; type: string }> = [];
+const fakeClient = (over: Record<string, unknown> = {}): Client =>
+  ({
+    fetchApi: async (_url: string, init: RequestInit) => {
+      const fd = init.body as FormData;
+      const blob = fd.get("image") as Blob;
+      uploads.push({ name: "blob", type: blob.type });
+      return new Response(JSON.stringify({ name: "staged-" + uploads.length + ".bin" }), { status: 200 });
+    },
+    ...over,
+  }) as unknown as Client;
+
+describe("spliceWorkflow (the inject law)", () => {
+  it("injects into named nodes' inputs", () => {
+    const g = spliceWorkflow({
+      workflow: { n1: { class_type: "X", inputs: { seed: 0, other: 1 } } },
+      inject: { "n1.seed": 42 },
+    });
+    expect((g["n1"] as { inputs: Record<string, unknown> }).inputs["seed"]).toBe(42);
+    expect((g["n1"] as { inputs: Record<string, unknown> }).inputs["other"]).toBe(1);
+  });
+  it("a missing workflow refuses (no silent empty render)", () => {
+    expect(() => spliceWorkflow({})).toThrow(/no inline workflow/);
+    expect(() => spliceWorkflow({ workflow: [1] })).toThrow(/no inline workflow/);
+  });
+  it("a non-object inject refuses", () => {
+    expect(() => spliceWorkflow({ workflow: {}, inject: 5 })).toThrow(/inject must be an object/);
+  });
+  it("inject without a dot, missing node, or missing key refuses", () => {
+    const wf = { workflow: { n1: { class_type: "X", inputs: { a: 1 } } } };
+    expect(() => spliceWorkflow({ ...wf, inject: { nodot: 1 } })).toThrow(/targets nothing/);
+    expect(() => spliceWorkflow({ ...wf, inject: { "ghost.a": 1 } })).toThrow(/targets nothing/);
+    expect(() => spliceWorkflow({ ...wf, inject: { "n1.missing": 1 } })).toThrow(/targets nothing/);
+    expect(() => spliceWorkflow({
+      workflow: { bare: 5 },
+      inject: { "bare.a": 1 },
+    })).toThrow(/targets nothing/);
+    expect(() => spliceWorkflow({
+      workflow: { n2: { class_type: "X", inputs: "flat" } },
+      inject: { "n2.a": 1 },
+    })).toThrow(/targets nothing/);
+  });
+});
+
+describe("uploadFile (the ctype table + the receipt)", () => {
+  it("each extension maps its mime; the server name rides back", async () => {
+    const cases: Array<[string, string]> = [
+      ["a.png", "image/png"], ["a.jpg", "image/jpeg"], ["a.jpeg", "image/jpeg"],
+      ["a.webp", "image/webp"], ["a.gif", "image/gif"], ["a.mp4", "video/mp4"],
+      ["a.wav", "audio/wav"], ["a.mp3", "audio/mpeg"], ["a.glb", "model/gltf-binary"],
+      ["a.xyz", "application/octet-stream"],
+    ];
+    for (const [name, mime] of cases) {
+      const p = join(DIR, name);
+      writeFileSync(p, "x");
+      const out = await uploadFile(fakeClient(), p);
+      expect(out.name).toMatch(/^staged-/);
+      expect(uploads.at(-1)?.type).toBe(mime);
+    }
+  });
+  it("a server answer without a name refuses", async () => {
+    const bad = { fetchApi: async () => new Response("{}", { status: 200 }) } as unknown as Client;
+    await expect(uploadFile(bad, join(DIR, "a.png"))).rejects.toThrow(/upload failed/);
+  });
+});
+
+describe("isFile", () => {
+  it("files true; dirs, missing, and unreadable false", () => {
+    expect(isFile(join(DIR, "a.png"))).toBe(true);
+    expect(isFile(DIR)).toBe(false);
+    expect(isFile(join(DIR, "nope"))).toBe(false);
+  });
+});
+
+describe("uploadReferenced (the staging walk)", () => {
+  it("a data:image URL decodes, uploads, and substitutes", async () => {
+    const url = "data:image/png;base64," + Buffer.from("png").toString("base64");
+    const { graph, uploaded } = await uploadReferenced(fakeClient(), {
+      n: { class_type: "LoadImage", inputs: { image: url } },
+    });
+    expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/^staged-/);
+    expect(uploaded[url]).toMatch(/^staged-/);
+  });
+  it("non-image and empty-payload data URLs ride untouched", async () => {
+    const { graph } = await uploadReferenced(fakeClient(), {
+      a: { class_type: "X", inputs: { v: "data:text/plain;base64,aGk=" } },
+      b: { class_type: "X", inputs: { v: "data:image/png;base64," } },
+      c: { class_type: "X", inputs: { v: "data:not-even-a-url" } },
+    });
+    expect((graph["a"] as { inputs: { v: string } }).inputs["v"]).toBe("data:text/plain;base64,aGk=");
+    expect((graph["b"] as { inputs: { v: string } }).inputs["v"]).toBe("data:image/png;base64,");
+    expect((graph["c"] as { inputs: { v: string } }).inputs["v"]).toBe("data:not-even-a-url");
+  });
+  it("a linked http input fetches, stages, and substitutes", async () => {
+    const fetchMock = vi.fn(async () => new Response("bytes", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const { graph } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: "https://up/run-1/out.png" } },
+      });
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/^staged-/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+  it("a failed linked fetch refuses loud (status and wire both)", async () => {
+    const statusMock = vi.fn(async () => new Response("x", { status: 502 }));
+    vi.stubGlobal("fetch", statusMock);
+    try {
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "X", inputs: { v: "https://up/x.png" } },
+      })).rejects.toThrow(/linked input fetch failed/);
+      vi.unstubAllGlobals();
+      const wireMock = vi.fn(async () => { throw new Error("wire died"); });
+      vi.stubGlobal("fetch", wireMock);
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "X", inputs: { v: "https://up/x.png" } },
+      })).rejects.toThrow(/linked input fetch failed/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+  it("an estate asset URL resolves under the runs root (both prefixes)", async () => {
+    for (const prefix of ["/melite-media/runs/", "/v1/assets/runs/"]) {
+      const { graph } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: prefix + "run-1/local.png" } },
+      }, { runsRoot: ROOT });
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/^staged-/);
+    }
+  });
+  it("an estate URL without a runs root refuses", async () => {
+    await expect(uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { v: "/v1/assets/runs/run-1/local.png" } },
+    })).rejects.toThrow(/without a runs root/);
+  });
+  it("a traversal estate URL refuses", async () => {
+    await expect(uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { v: "/v1/assets/runs/../escape.png" } },
+    }, { runsRoot: ROOT })).rejects.toThrow(/refuses traversal/);
+  });
+  it("a dangling estate URL refuses loud", async () => {
+    await expect(uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { v: "/v1/assets/runs/run-1/ghost.png" } },
+    }, { runsRoot: ROOT })).rejects.toThrow(/not found/);
+  });
+  it("runs-relative names resolve under the root; a miss falls to cwd", async () => {
+    const { graph } = await uploadReferenced(fakeClient(), {
+      hit: { class_type: "X", inputs: { v: "run-1/local.png" } },
+      miss: { class_type: "X", inputs: { v: "run-9/none.png" } },
+    }, { runsRoot: ROOT });
+    expect((graph["hit"] as { inputs: { v: string } }).inputs["v"]).toMatch(/^staged-/);
+    expect((graph["miss"] as { inputs: { v: string } }).inputs["v"]).toBe("run-9/none.png");
+  });
+  it("absolute and cwd-relative files stage; misses ride", async () => {
+    const { graph } = await uploadReferenced(fakeClient(), {
+      abs: { class_type: "X", inputs: { v: join(DIR, "abs.gif") } },
+      rel: { class_type: "X", inputs: { v: "cwd-rel.webp" } },
+      miss: { class_type: "X", inputs: { v: "not-there.png" } },
+    }, undefined);
+    expect((graph["abs"] as { inputs: { v: string } }).inputs["v"]).toMatch(/^staged-/);
+    expect((graph["rel"] as { inputs: { v: string } }).inputs["v"]).toMatch(/^staged-/);
+    expect((graph["miss"] as { inputs: { v: string } }).inputs["v"]).toBe("not-there.png");
+  });
+  it("the VHS video exemption rides the file path untouched", async () => {
+    const { graph } = await uploadReferenced(fakeClient(), {
+      vhs: {
+        class_type: "VHS_LoadVideoPath",
+        inputs: { video: "/abs/should/not/stage.mp4", other: join(DIR, "abs.gif") },
+      },
+      vhs2: { class_type: "VHS_LoadVideo", inputs: { video: "keep.webp" } },
+    });
+    const v = graph["vhs"] as { inputs: Record<string, string> };
+    expect(v.inputs["video"]).toBe("/abs/should/not/stage.mp4");
+    expect(v.inputs["other"]).toMatch(/^staged-/);
+    expect((graph["vhs2"] as { inputs: Record<string, string> }).inputs["video"]).toBe("keep.webp");
+  });
+  it("objects descend, arrays walk, non-strings ride", async () => {
+    const { graph } = await uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { nested: { deep: join(DIR, "abs.gif") }, arr: ["cwd-rel.webp", 5, null] } },
+      scalar: 7,
+    });
+    const n = graph["n"] as { inputs: Record<string, unknown> };
+    expect((n.inputs["nested"] as { deep: string }).deep).toMatch(/^staged-/);
+    expect((n.inputs["arr"] as unknown[])[0]).toMatch(/^staged-/);
+    expect((n.inputs["arr"] as unknown[])[1]).toBe(5);
+    expect(graph["scalar"]).toBe(7);
+  });
+  it("a node with no extension match rides verbatim", async () => {
+    const { graph } = await uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { v: "some-model-name" } },
+    });
+    expect((graph["n"] as { inputs: { v: string } }).inputs["v"]).toBe("some-model-name");
+  });
+});
+
+describe("the seen-map dedup (one upload per unique ref)", () => {
+  it("a data URL twice uploads once and substitutes twice", async () => {
+    const url = "data:image/png;base64," + Buffer.from("dup").toString("base64");
+    const before = uploads.length;
+    const { graph } = await uploadReferenced(fakeClient(), {
+      a: { class_type: "X", inputs: { v: url } },
+      b: { class_type: "X", inputs: { v: url } },
+    });
+    expect(uploads.length).toBe(before + 1);
+    expect((graph["a"] as { inputs: { v: string } }).inputs["v"])
+      .toBe((graph["b"] as { inputs: { v: string } }).inputs["v"]);
+  });
+  it("an estate asset twice uploads once", async () => {
+    const before = uploads.length;
+    await uploadReferenced(fakeClient(), {
+      a: { class_type: "X", inputs: { v: "/v1/assets/runs/run-1/local.png" } },
+      b: { class_type: "X", inputs: { v: "/melite-media/runs/run-1/local.png" } },
+    }, { runsRoot: ROOT });
+    expect(uploads.length).toBe(before + 1);
+  });
+  it("a runs-relative name twice uploads once; a cwd file twice uploads once", async () => {
+    const before = uploads.length;
+    await uploadReferenced(fakeClient(), {
+      a: { class_type: "X", inputs: { v: "run-1/local.png" } },
+      b: { class_type: "X", inputs: { v: "run-1/local.png" } },
+    }, { runsRoot: ROOT });
+    expect(uploads.length).toBe(before + 1);
+    const b2 = uploads.length;
+    await uploadReferenced(fakeClient(), {
+      a: { class_type: "X", inputs: { v: join(DIR, "abs.gif") } },
+      b: { class_type: "X", inputs: { v: join(DIR, "abs.gif") } },
+    });
+    expect(uploads.length).toBe(b2 + 1);
+  });
+  it("a linked input twice fetches and uploads once", async () => {
+    const fetchMock = vi.fn(async () => new Response("b", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const before = uploads.length;
+      await uploadReferenced(fakeClient(), {
+        a: { class_type: "X", inputs: { v: "https://up/dup.png" } },
+        b: { class_type: "X", inputs: { v: "https://up/dup.png" } },
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(uploads.length).toBe(before + 1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("spliceWorkflow's absent-inject toll", () => {
+  it("a workflow with no inject key rides the ?? arm untouched", () => {
+    const g = spliceWorkflow({ workflow: { n1: { class_type: "X", inputs: { a: 1 } } } });
+    expect((g["n1"] as { inputs: Record<string, number> }).inputs["a"]).toBe(1);
+  });
+});

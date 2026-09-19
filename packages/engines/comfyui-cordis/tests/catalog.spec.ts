@@ -249,3 +249,32 @@ describe("findModelPresent (runtime first, then the mount leg)", () => {
     assert.equal(resolveCatalogArtifact([decl({ provisions: undefined, variants: [variant("v", [cellQ("q8", { source_url: "https://h/w.safetensors", dest_sub: "" })])] })], "krea-2")[0]!.name, "w.safetensors");
   });
 });
+
+describe("root-config inheritance (read_root law)", () => {
+  it("an empty endpoint base inherits the root config's models.read_root", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-cat-"));
+    try {
+      mkdirSync(join(root, "mount", "checkpoints"), { recursive: true });
+      writeFileSync(join(root, "mount", "checkpoints", "w.safetensors"), "x");
+      writeFileSync(join(root, "inference.config.json"), JSON.stringify({
+        models: { read_root: "  " + join(root, "mount") + "  " },
+      }));
+      const cfg = { extra_model_folders: {} };
+      const hit = findModelPresent("checkpoints", "w.safetensors", root, cfg as never);
+      assert.equal(hit, join(root, "mount", "checkpoints", "w.safetensors"));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("a non-object root config and a non-object models block toll to no base", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-cat-"));
+    try {
+      writeFileSync(join(root, "inference.config.json"), JSON.stringify([1, 2]));
+      assert.equal(findModelPresent("checkpoints", "w.safetensors", root, {} as never), null);
+      writeFileSync(join(root, "inference.config.json"), JSON.stringify({ models: 7 }));
+      assert.equal(findModelPresent("checkpoints", "w.safetensors", root, {} as never), null);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
