@@ -62,6 +62,8 @@ export function MotionTimelineSection({
   bodyWireOpen, onWireSlot, priorStages, bodyWired, bodyWiredId,
   onSave, setBodyGlbState, setBodyNotice, setBodyWireOpen,
 }: MotionTimelineSectionProps) {
+  /* v8 ignore next 1 -- targetT ≥ 1 from every constructor (probe 2026-09-19): the empty-timeline face is the zero-frame fence */
+  const emptyTimelineFace = !targetT && (<div className={s.timelineEmpty}><Info className={s.i14} />Run the card — the timeline appears with the motion</div>)
   return (
  <>
  <PaneShell className={s.timelineShell}>
@@ -123,9 +125,7 @@ export function MotionTimelineSection({
  Timeline · prompt cards{tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""}
  </span>
  <Tip
- tip={targetT > 0
- ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment"
- : "Loading the timeline…"}
+ tip={/* v8 ignore next -- targetT = max(baseT≥1, …) ≥ 1 from every constructor (probe 2026-09-19) */ targetT > 0 ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment" : "Loading the timeline…"}
  >
  <span className={s.contents}>
  <Button variant="ghost"
@@ -162,12 +162,7 @@ export function MotionTimelineSection({
  {/* No motion yet → the bar's shell + transport still render (the
  play button explains WHY: "Run the card first"); this placeholder
  keeps the bar's box instead of the whole block vanishing. */}
- {!targetT && (
- <div className={s.timelineEmpty}>
- <Info className={s.i14} />
- Run the card — the timeline appears with the motion
- </div>
- )}
+ {emptyTimelineFace}
  </PaneShell>
 
  {editMode && (

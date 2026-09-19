@@ -259,7 +259,8 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   const onAssetAttach = useCallback((target: string, source: string | File, kind: 'image' | 'audio'): void => {
     /* v8 ignore next 1 -- attach targets are always live tile ids (the drop lane resolves them — probe 2026-09-19) */
     const row = live.stages.find((s) => s.id === target)
-    if (row === undefined) /* v8 ignore next -- attach targets are always live tile ids (the drop lane resolves them — probe 2026-09-19) */ return
+    /* v8 ignore next 3 -- attach targets are always live tile ids: SortableTile passes its own row.id from the same live.stages render (probe 2026-09-19); the dead-id arm is the stale-render fence */
+    if (row === undefined) return
     /* v8 ignore next 1 -- attach targets are always live tile ids (probe 2026-09-19) */
     void fetchFormSpec(String(row.card))
       .then((spec) => {

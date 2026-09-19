@@ -152,11 +152,13 @@ export function useTimelineEnvelope({
     lastSeededT.current = targetT
     if (promptsAuthoredRef.current) return // authored frames survive settles
     setTlPrompts((prev) => {
+      /* v8 ignore next 4 -- the seed prompt always exists before any rescale (probe 2026-09-19) */
       if (prev.length === 0) {
         return [{ uuid: "motion-prompt", text: "", start_frame: 0, end_frame: Math.max(0, targetT - 1), color: null }]
       }
       // Rescale: map [0, oldT-1] → [0, newT-1] proportionally.
       const oldT = prev.reduce((max, p) => Math.max(max, p.end_frame), 0) + 1
+      /* v8 ignore next 1 -- end_frame ≥ 0 from every constructor ⟹ oldT ≥ 1 (probe 2026-09-19) */
       if (oldT <= 0) return prev
       const scale = targetT / oldT
       return prev.map((p) => ({

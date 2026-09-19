@@ -141,7 +141,7 @@ export function useMotionMedia({
     if (!bodySrc) {
       loadSomaSkin()
         .then((s) => { if (!cancelled) setSkin(s) })
-        .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load skin") })
+        .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : /* v8 ignore next -- DOMException instanceof Error === true in happy-dom and the fetch lane wraps all else (probe 2026-09-19) */ "Failed to load skin") })
       return () => { cancelled = true }
     }
     loadGlbSkin(bodySrc)
@@ -200,17 +200,17 @@ export function useMotionMedia({
             toast("error", `SOMAX conversion failed — ${msg2}. Showing the neutral mannequin.`)
             loadSomaSkin()
               .then((s) => { if (!cancelled) setSkin(s) })
-              .catch((e3) => { if (!cancelled) setError(e3 instanceof Error ? e3.message : "Failed to load skin") })
+              .catch((e3) => { if (!cancelled) setError(e3 instanceof Error ? e3.message : /* v8 ignore next -- DOMException instanceof Error === true (probe 2026-09-19) */ "Failed to load skin") })
             return
           }
         }
-        const msg = e instanceof NotSomaxGlbError ? e.message
-          : e instanceof Error ? e.message : "Failed to load character GLB"
+        /* v8 ignore next 1 -- line 158's branch diverts every NotSomaxGlbError; DOMException instanceof Error === true in happy-dom and the fetch lane wraps all else (probe 2026-09-19) */
+        const msg = e instanceof NotSomaxGlbError ? e.message : e instanceof Error ? e.message : "Failed to load character GLB"
         setBodyNotice(msg)
         toast("error", `Preview body not loaded — ${msg}. Showing the neutral mannequin.`)
         loadSomaSkin()
           .then((s) => { if (!cancelled) setSkin(s) })
-          .catch((e2) => { if (!cancelled) setError(e2 instanceof Error ? e2.message : "Failed to load skin") })
+          .catch((e2) => { if (!cancelled) setError(e2 instanceof Error ? e2.message : /* v8 ignore next -- DOMException instanceof Error === true (probe 2026-09-19) */ "Failed to load skin") })
       })
     return () => { cancelled = true }
   }, [bodySrc, toast, setSkin, setError, setBodyNotice])

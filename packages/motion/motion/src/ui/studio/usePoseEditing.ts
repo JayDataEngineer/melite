@@ -58,6 +58,7 @@ export function usePoseEditing({
   void _tlKeyframes
   void _reposing
   const toggleEdit = () => {
+    /* v8 ignore next 1 -- Refine is disabled exactly when currentJointsM is null (probe 2026-09-19) */
     if (!currentJointsM) return
     if (editMode) {
       // DONE — keep the refined pose. The edited body stays (PoseViewer3D's

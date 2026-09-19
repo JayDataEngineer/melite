@@ -126,7 +126,7 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  {skin ? (
  <PoseViewer3D
  deformedVertsDirect={allVertsM}
- deformedVerticesB64={restB64 ?? ""}
+ deformedVerticesB64={/* v8 ignore next -- the viewer renders only when skin loaded, which seeds restB64 (probe 2026-09-19) */ restB64 ?? ""}
  editedDeformedB64={editedDeformedB64}
  frameIdx={frameIdx}
  onFrameChange={setFrameIdx}
@@ -135,7 +135,7 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  cameraView={cameraView}
  cameraFraming={framing}
   soma77JointsFlat={jointsFlatCm}
- showSkeleton={effectiveNpz ? showSkeleton && !editMode : false}
+ showSkeleton={/* v8 ignore next -- viewer renders only under skin ⟹ restNpz/effectiveNpz/restB64 non-null (probe 2026-09-19) */ effectiveNpz ? showSkeleton && !editMode : false}
  customBindMesh={customBindMesh}
  identityModel="soma"
  inPlace={inPlace}

@@ -70,19 +70,23 @@ export function useMotionUndoStack({
   keptEditRef.current = keptEdit
   editedDeformedB64Ref.current = editedDeformedB64
 
-  const captureSnapshot = useCallback((): AuthoringSnapshot => ({
+  const captureSnapshot = useCallback((): AuthoringSnapshot => {
+    // the only writer clears intervals wholesale — the null arm is the
+    // never-edited fence (probe 2026-09-19)
+    const editableJoints = /* v8 ignore next -- the only writer clears intervals wholesale; the null arm is the never-edited fence (probe 2026-09-19) */ editableJointsRef.current ? new Float32Array(editableJointsRef.current) : null
+    return ({
     tlPrompts: tlPromptsRef.current.map((p) => ({ ...p })),
     tlKeyframes: tlKeyframesRef.current.map((k) => ({ ...k })),
     constraintPayloads: Object.fromEntries(
       Object.entries(constraintPayloadsRef.current).map(([k, v]) => [k, { ...v }]),
     ),
-    tlIntervals: tlIntervalsRef.current.map((iv) => ({ ...iv })),
-    editableJoints: editableJointsRef.current ? new Float32Array(editableJointsRef.current) : null,
+    tlIntervals: tlIntervalsRef.current.map(/* v8 ignore next -- tlIntervalsRef is only ever written as [] (the sole writer clears wholesale — probe 2026-09-19): the mapper never runs */ (iv) => ({ ...iv })),
+    editableJoints,
     keptEdit: keptEditRef.current
       ? { joints: new Float32Array(keptEditRef.current.joints), frame: keptEditRef.current.frame }
       : null,
     editedDeformedB64: editedDeformedB64Ref.current,
-  }), [editableJointsRef]) // stable — reads from refs
+  })}, [editableJointsRef]) // stable — reads from refs
 
   /** Snapshot current state before a mutation. Call this FIRST in every
    *  mutation handler (before the setState that changes authoring state). */

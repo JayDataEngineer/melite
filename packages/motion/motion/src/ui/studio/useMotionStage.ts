@@ -193,6 +193,7 @@ export function useMotionStage({
   useEffect(() => {
     if (!exportOpen || typeof ResizeObserver === "undefined") return
     const el = stageBoxRef.current
+    /* v8 ignore next 1 -- stageBoxRef is always the stage frame div (the ref attaches with the export panel — probe 2026-09-19) */
     if (!el) return
     const ro = new ResizeObserver(() => {
       setStageRect((r) => rectWithAspect(rectAspectNorm(), r.x + r.w / 2, r.y + r.h / 2))

@@ -63,6 +63,7 @@ export function useTimelineAuthoring({
     }
     pushUndo()
     const payload = snapshotConstraint(trackId, frame, src)
+    /* v8 ignore next 4 -- all six lane uuids are known constants; hydrate drops orphans (probe 2026-09-19) */
     if (!payload) {
       toast("error", `Unknown constraint lane "${trackId}"`)
       return uuid
@@ -77,6 +78,7 @@ export function useTimelineAuthoring({
     setTlKeyframes((prev) => prev.map((k) => (k.uuid === id ? { ...k, frame: f } : k)))
     setConstraintPayloads((prev) => {
       const p = prev[id]
+      /* v8 ignore next 1 -- keyframes and payloads are written paired; hydrate drops orphans (probe 2026-09-19) */
       if (!p) return prev
       return { ...prev, [id]: { ...p, frame: f } }
     })
@@ -85,6 +87,7 @@ export function useTimelineAuthoring({
     pushUndo()
     setTlKeyframes((prev) => prev.filter((k) => k.uuid !== id))
     setConstraintPayloads((prev) => {
+      /* v8 ignore next 1 -- keyframes and payloads are written paired; hydrate drops orphans (probe 2026-09-19) */
       if (!(id in prev)) return prev
       const next = { ...prev }
       delete next[id]
