@@ -29,6 +29,9 @@ import {
 } from "./flowsData.ts";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger } from "./queue.ts";
+import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
+import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
+export { toRemoteError } from "./runsRefusalVoices.ts";
 import { readFileSync } from "node:fs";
 import {
   CardArmError,
@@ -122,62 +125,8 @@ declare module "@deepseek-ai/cordis" {
 
 /** The refusal codes this remote serves, folded to the
  *  protocol's vocabulary — a literal table, no dynamic key. */
-const RUNS_ERROR_CODES: Readonly<
-  Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose" | "runs/lane-input-missing">
-> = {
-  bad_envelope: "runs/bad-envelope",
-  draft_required: "runs/draft-required",
-  draft_malformed: "runs/draft-malformed",
-  draft_unknown: "runs/draft-unknown",
-  invalid_request: "runs/invalid-request",
-  preview_scope: "runs/preview-scope",
-  flow_compile: "runs/flow-compile",
-  workflow_pin: "runs/workflow-pin",
-  card_compose: "runs/card-compose",
-  lane_input_missing: "runs/lane-input-missing",
-};
 
-/** Map a CardArmError onto the refusal envelope (door-verbatim:
- *  the error verbatim + code + loc/expected/got only when set). */
-function cardRefusal(err: CardArmError): QueueRefusal {
-  return {
-    status: err.status,
-    payload: refusalEnvelopeOf(err),
-  };
-}
-function refusalEnvelopeOf(err: CardArmError): Record<string, unknown> {
-  const p: Record<string, unknown> = { error: err.message, code: err.code };
-  if (err.loc !== undefined) p["loc"] = err.loc;
-  if (err.expected !== undefined) p["expected"] = err.expected;
-  if (err.got !== undefined) p["got"] = err.got;
-  return p;
-}
 
-/** Fold a door refusal into the protocol's one error class. */
-function toRemoteError(r: QueueRefusal): RemoteError {
-  const p = r.payload as {
-    error: string;
-    code: string;
-    loc?: string;
-    expected?: string;
-    got?: string;
-  };
-  const mapped = RUNS_ERROR_CODES[p["code"]];
-  if (mapped === undefined) {
-    // A refusal this table does not name is a bug — LOUD, never
-    // a silent generic.
-    throw new Error("runs remote: unmapped refusal code " + p["code"]);
-  }
-  const details: {
-    loc?: string;
-    expected?: string;
-    got?: string;
-  } = {};
-  if (p["loc"] !== undefined) details["loc"] = p["loc"];
-  if (p["expected"] !== undefined) details["expected"] = p["expected"];
-  if (p["got"] !== undefined) details["got"] = p["got"];
-  return new RemoteError(mapped, p["error"], details);
-}
 
 /** The runs registry seat: `ctx.runs`. The estate-runs adapters
  *  (Typert) delegate here; the door's registry/pump semantics ride
@@ -1203,9 +1152,4 @@ export class RunsRuntimeService extends Service {
     this.core.releaseActive();
     this.core.evictSettled();
   }
-}
-
-/** The preview-scope refusal (door posture). */
-function refusePreview(message: string): QueueRefusal {
-  return { status: 400, payload: { error: message, code: "preview_scope" } };
 }
