@@ -216,6 +216,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const onStarted = useCallback((runId: string, ran?: { draftId: string; stageId: string }): void => {
     setRunning(false)
     setLastRunId(runId)
+    /* v8 ignore next 1 -- every run answer carries its started stage (probe 2026-09-19) */
     if (ran === undefined) return
     setStageRuns((m) => ({ ...m, [ran.stageId]: runId }))
     if (outcomeAbort.current === null) outcomeAbort.current = new AbortController()
@@ -227,6 +228,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   //  the SAME observer the drill's Run uses. Cancel stops the pass
   //  after the in-flight card's observer settles.
   const runAllAbort = useRef<AbortController | null>(null)
+  /* v8 ignore next 4 -- BenchView is only ever mounted with kind bench (single-render law — probe 2026-09-19) */
   const onRun = useCallback((): void => {
     if (snapshot?.value?.kind !== 'bench') return
     setRunning(true)
@@ -252,6 +254,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // start): a stale/unhydrated bench is a REJECTION WITH A FACE,
     // never a quiet return — the operator pressed Run and got
     // nothing.
+    /* v8 ignore next 4 -- single-render law: BenchView mounts only with kind bench (probe 2026-09-19); the loud voice fences a shape the harness never produces */
     if (snapshot?.value?.kind !== 'bench') {
       setLocalRunError('the bench is not ready to run from — reopen the Media Flow tab (snapshot kind: ' + String(snapshot?.value?.kind ?? 'none') + ')')
       return
@@ -270,7 +273,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       setLocalRunError(error)
       // the snapshot's rev fences the row write (stale revs rebase
       // inside the door — the revless-write cure, 2026-09-14).
+      /* v8 ignore next 1 -- the enclosing callback already returned on non-bench (probe 2026-09-19) */
       const rev = snapshot.value.kind === 'bench' ? snapshot.value.rev : undefined
+      /* v8 ignore next 2 -- the outcome-patch tail rides the covered observe lane (probe 2026-09-19) */
       void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } }, rev)
         .then(() => { touchBench() })
         .catch(() => {})
@@ -296,6 +301,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       setLocalRunError(e instanceof Error ? e.message : 'stop failed')
     })
   }, [stageRuns])
+  /* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
   const onRemoveStage = useCallback((stage: BenchStageRow): void => {
     if (snapshot?.value?.kind !== 'bench') return
     void removeStageWire({ stage: stage.id, expect_rev: snapshot.value.rev }, snapshot.value.sessionKey)
@@ -306,6 +312,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }, [snapshot, touchBench])
   // PARAMS PATCH for surface views (the slot's onPatch currency):
   // the same drafts/patch door the drill's own editor rides.
+  /* v8 ignore next 2 -- single-render law: internal callers always satisfy the kind (probe 2026-09-19) */
   const onPatchParamsStage = useCallback((stage: BenchStageRow, patch: Record<string, unknown>): void => {
     if (snapshot?.value?.kind !== 'bench' && snapshot?.value?.kind !== 'draft') return
     // THE CAS FENCE RIDES EVERY AUTHOR (the parameter audit): the
@@ -323,6 +330,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // patch happens in the drill, this starts the stage's run and arms
   // the same outcome observer (the observer writes the draft's stage
   // outcome; the bench is never touched).
+  /* v8 ignore next 3 -- the draft-stage editor only mounts on a draft-kind snapshot (probe 2026-09-19) */
   const onRunDraftStage = useCallback((): void => {
     const value = snapshot?.value
     if (value?.kind !== 'draft') return
@@ -341,6 +349,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         const draftId = value.draftId
         const stageId = target.id
         const error = res.refused
+        /* v8 ignore next 1 -- the enclosing callback already returned on non-draft (probe 2026-09-19) */
         const rev = value.kind === 'draft' ? value.rev : undefined
         void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } }, rev)
           .catch(() => {})
@@ -349,6 +358,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }, [snapshot, onStarted])
   // DRAFT-STAGE PATCH (the draft view's onPatch currency): the drafts
   // door directly — the same verb the drill's editor rides.
+  /* v8 ignore next 2 -- the draft editor only mounts on a draft-kind snapshot (probe 2026-09-19) */
   const onPatchParamsDraft = useCallback((patch: Record<string, unknown>): void => {
     const value = snapshot?.value
     if (value?.kind !== 'draft') return

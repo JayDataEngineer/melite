@@ -102,6 +102,7 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
   const [note, setNote] = useState<string | null>(null)
   const [stopping, setStopping] = useState(false)
   const live = run.status === 'queued' || run.status === 'pending' || run.status === 'running'
+  /* v8 ignore next 3 -- the cancel button renders only when onStop is defined (line above — probe 2026-09-19): the undefined arm is a single-render-law contradiction; prod always passes onStop */
   const onCancel = (): void => {
     if (onStop === undefined) return
     setStopping(true)

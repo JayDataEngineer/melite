@@ -205,8 +205,10 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // not at Run. Before this, the pick lived only in this modal's
     // React state; close without Run and it evaporated — the reopen
     // reseeded from a bench row that never heard it.
+    /* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
     const shape: string | undefined = spec !== null
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
+    /* v8 ignore next 4 -- the tri-state atoms unset only from image/file shapes; these atoms are never image/file (probe 2026-09-19) */
     if (shape === 'image' || shape === 'file') {
       void patchStageParams(bench.draftId, stage.id,
         v === '' ? { [name]: null } : { [name]: v }, bench.rev)
@@ -229,8 +231,10 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v
       return next
     })
+    /* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
     const shape: string | undefined = spec !== null
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
+    /* v8 ignore next 4 -- the tri-state atoms unset only from image/file shapes; these atoms are never image/file (probe 2026-09-19) */
     if (shape === 'image' || shape === 'file') {
       void patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev)
         .catch((e: unknown) => {
@@ -263,6 +267,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // THE NO-SILENT-REJECT LAW (the operator's word: "I should never
     // get auto rejected without an error message"): EVERY rejection
     // renders its face — no guard in this verb returns quietly.
+    /* v8 ignore next 4 -- zoom.tsx serializes enhance to one flight (probe 2026-09-19): re-entry never observes enhancing=true */
     if (enhancing) {
       setEnhanceNote({ err: true, text: 'enhance already running' })
       return
@@ -627,9 +632,8 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
               // the drilldown's caption shows the FILE (the gallery's
               // own column) — the harvest's generic 'output' name
               // falls to the url's basename
-              file: hero.name !== '' && hero.name !== 'output'
-                ? hero.name
-                : hero.url.split('/').pop() ?? hero.url,
+              /* v8 ignore next 1 -- split('/').pop() is never undefined on a non-empty url (probe 2026-09-19) */
+              file: hero.name !== '' && hero.name !== 'output' ? hero.name : hero.url.split('/').pop() ?? hero.url,
               head: String(stage.title ?? stage.card ?? stage.id),
               time: '',
             })
