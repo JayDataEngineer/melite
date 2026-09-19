@@ -94,6 +94,14 @@ describe("the estimated dialect", () => {
       null,
     );
   });
+  it("a non-tuple scale refuses (the null arm)", () => {
+    const out = validateBakeParams(JSON.stringify({ dialect: "estimated", phenotype: P6, scale: "flat" })) ?? "";
+    assert.match(out, /scale/);
+  });
+  it("a non-finite scale member refuses (JSON 1e999 -> Infinity)", () => {
+    const out = validateBakeParams('{ "dialect": "estimated", "phenotype": ' + JSON.stringify(P6) + ', "scale": [1, 1e999] }') ?? "";
+    assert.match(out, /valid number/);
+  });
   it("the wrong dim count refuses with the estimator note", () => {
     const out = validateBakeParams(JSON.stringify({ dialect: "estimated", phenotype: P11, scale: S139 })) ?? "";
     assert.match(out, /wants 6 dims, got 11/);

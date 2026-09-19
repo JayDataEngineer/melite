@@ -18,6 +18,9 @@ import {
   checkUploadsStructure,
   checkFlowsStartEnvelope,
   checkDraftPatch,
+  checkStrictBody,
+  checkFlowInlineTop,
+  checkFlowStage,
 } from "../src/runsGates.ts";
 
 describe("decodeStrictBody (the strict wire)", () => {
@@ -148,5 +151,54 @@ describe("checkDraftPatch (the stage patch verdicts)", () => {
     const out = checkDraftPatch({ mystery: 1 });
     assert.equal(out.kind, "unknown-keys");
     assert.deepEqual((out as { unknown: string[] }).unknown, ["mystery"]);
+  });
+  it("each field gate refuses its verdict on a bad leaf", () => {
+    assert.equal(checkDraftPatch({ result: 7 }).kind, "bad-result");
+    assert.equal(checkDraftPatch({ runStatus: 7 }).kind, "bad-runStatus");
+    assert.equal(checkDraftPatch({ params: "flat" }).kind, "bad-params");
+    assert.equal(checkDraftPatch({ inputs: 7 }).kind, "bad-inputs");
+    assert.equal(checkDraftPatch({ inputOutputs: 7 }).kind, "bad-inputOutputs");
+  });
+  it("a legal patch rides ok with its payload", () => {
+    const out = checkDraftPatch({ runStatus: "done", params: { a: 1 }, inputs: [] });
+    assert.equal(out.kind, "ok");
+    assert.deepEqual((out as { patch: unknown }).patch, { runStatus: "done", params: { a: 1 }, inputs: [] });
+  });
+});
+
+describe("checkFlowInlineTop (the inline top verdicts)", () => {
+  it("every verdict arm", () => {
+    assert.equal(checkFlowInlineTop(7).kind, "not-object");
+    assert.equal(checkFlowInlineTop({ extra: 1 }).kind, "unknown-keys");
+    assert.equal(checkFlowInlineTop({ description: "d" }).kind, "missing-id-stages");
+    assert.equal(checkFlowInlineTop({ id: "f", stages: "flat" }).kind, "bad-stages");
+    assert.equal(checkFlowInlineTop({ id: "f", stages: [] }).kind, "bad-stages");
+    const ok = checkFlowInlineTop({ id: "f", stages: [{}] });
+    assert.equal(ok.kind, "ok");
+  });
+});
+
+describe("checkFlowStage (the stage row verdicts)", () => {
+  it("every verdict arm", () => {
+    assert.equal(checkFlowStage(7).kind, "not-object");
+    const extras = checkFlowStage({ id: "s", mystery: 1 });
+    assert.equal(extras.kind, "unknown-fields");
+    assert.equal(checkFlowStage({ id: "BAD ID" }).kind, "bad-id");
+    assert.equal(checkFlowStage({ id: "legal-id_1" }).kind, "ok");
+    assert.equal(checkFlowStage({}).kind, "bad-id", "an absent id tolls to the empty string");
+  });
+});
+
+describe("checkStrictBody (the retired-knob and underscore doors)", () => {
+  it("retired runner knobs and unknown underscore keys land in bad; carry keys ride", () => {
+    const out = checkStrictBody({
+      "start_from": 1,       // retired runner knob
+      "_mystery": 2,         // underscore, not a door
+      "_flow": 3,            // underscored door name — still bad (doors are literal)
+      "flow": 4,             // the literal door key rides clean
+      "pipe": 5,             // retired carry key -> carry list
+    });
+    assert.deepEqual(out.bad, ["start_from", "_mystery", "_flow"]);
+    assert.deepEqual(out.carry, ["pipe"]);
   });
 });

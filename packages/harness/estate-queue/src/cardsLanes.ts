@@ -73,12 +73,15 @@ export function lanePresenceRefusal(fam: string): CardArmError | null {
   const envPath: string = process.env["COMFYUI_ENDPOINT_CONFIG"] ?? "";
   if (sandbox !== "" && envPath === "") return null;
   const decl = getModel(fam);
+  // fused guard (2026-09-19): non-string and blank lane rows skip
+  // in ONE v8-visible ternary — the old continue-chain reported
+  // dark under the v8 provider even while executing (instrument-
+  // proved mid-coverage-run); this shape keeps one truth.
   const li = (decl.lane_inputs ?? {}) as Record<string, unknown>;
   const packs = lanePackFolders();
   for (const [key, stock] of Object.entries(LANE_FOLDERS)) {
     const raw: unknown = li[key];
-    if (typeof raw !== "string") continue;
-    const name = raw.trim();
+    const name: string = typeof raw === "string" ? raw.trim() : "";
     if (name === "") continue;
     const folders: readonly string[] = [
       ...stock,

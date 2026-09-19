@@ -6,12 +6,19 @@
 // flow, running/queued resettle), sweepSidecar's deep resettle.
 import { afterAll, beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   acquireLock,
   releaseLock,
+  refuseStartLine,
+  appendLedger,
+  atomicWriteJson,
+  resolveStateRoot,
+  outRootFor,
+  ledgerPathFor,
+  bootGate,
   isPidAlive,
 } from "../src/queueLock.ts";
 import { pipelineOf } from "../src/queueSidecar.ts";
@@ -20,6 +27,106 @@ import { bootSweep, sweepSidecar } from "../src/queueSweep.ts";
 const ROOT = join(tmpdir(), "melite-lock-" + process.pid);
 beforeAll(() => mkdirSync(ROOT, { recursive: true }));
 afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
+
+describe("the lock plane's tail arms", () => {
+  it("refuseStartLine voices the em-dash byte-exact", () => {
+    assert.equal(
+      refuseStartLine("note"),
+      "[gateway] REFUSING TO START: note — one writer per state root",
+    );
+  });
+  it("an unreadable holder (a directory at the lock path) steals as garbage", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-lockd-"));
+    try {
+      mkdirSync(join(root, "gateway.lock"), { recursive: true });
+      const r = acquireLock(root, 222222);
+      // the directory holder read throws -> "" -> garbage steal
+      // (writePidFile then fails too — the path IS a directory — so
+      // the steal refuses with the failed-write voice)
+      assert.equal(r.ok, false);
+      assert.match(r.note, /lock steal failed/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("a read-only root after a dead-pid collision refuses the steal", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-lockr-"));
+    try {
+      writeFileSync(join(root, "gateway.lock"), String(2 ** 31 - 1));
+      chmodSync(root, 0o555);
+      const r = acquireLock(root, 333333);
+      assert.equal(r.ok, false);
+      assert.match(r.note, /lock steal failed/);
+    } finally {
+      chmodSync(root, 0o755);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("releaseLock: absent file, foreign holder, and read-only unlink all refuse", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-lockrel-"));
+    try {
+      assert.equal(releaseLock(root, 444444), false, "absent lock refuses");
+      writeFileSync(join(root, "gateway.lock"), String(555555));
+      assert.equal(releaseLock(root, 444444), false, "a foreign pid never frees another's lock");
+      writeFileSync(join(root, "gateway.lock"), String(444444));
+      chmodSync(root, 0o555);
+      assert.equal(releaseLock(root, 444444), false, "an unremovable lock refuses");
+      chmodSync(root, 0o755);
+      assert.equal(releaseLock(root, 444444), true, "the owner frees its own");
+    } finally {
+      chmodSync(root, 0o755);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("resolveStateRoot honors the env override; outRootFor and ledgerPathFor compose", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-lockpaths-"));
+    try {
+      assert.equal(resolveStateRoot(root), join(root, "data", "runs"));
+      process.env["MELITE_STATE_ROOT"] = join(root, "elsewhere");
+      try {
+        assert.equal(resolveStateRoot(root), join(root, "elsewhere"));
+      } finally {
+        delete process.env["MELITE_STATE_ROOT"];
+      }
+      assert.equal(outRootFor(root, true), join(root, "test-output"));
+      assert.equal(outRootFor(root, false), join(root, "output"));
+      assert.equal(ledgerPathFor(root), join(root, "output", "_ledger.jsonl"));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("bootGate delegates to acquireLock (one spelling)", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-lockboot-"));
+    try {
+      // the FIRST writer is THIS live process: a second boot from
+      // the same live pid refuses — one writer per state root
+      assert.equal(bootGate(root, process.pid).ok, true);
+      assert.equal(bootGate(root, process.pid).ok, false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("appendLedger without data rides the empty-object toll; a bad root never throws", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-lockled-"));
+    try {
+      appendLedger(root, "server.no_data");
+      const line = readFileSync(join(root, "output", "_ledger.jsonl"), "utf8").trim();
+      assert.match(line, /"data":\{\}/);
+      appendLedger(join(root, "not", "writable", "path"), "never.throws");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("atomicWriteJson stringifies undefined to the literal null", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-lockaw-"));
+    try {
+      atomicWriteJson(join(root, "doc.json"), undefined);
+      assert.equal(readFileSync(join(root, "doc.json"), "utf8"), "null");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("acquireLock (the single-gateway lock)", () => {
   it("a fresh root acquires", () => {
