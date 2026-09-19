@@ -268,6 +268,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
                 edit(f.name, arr)
               },
               ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
+              ...(wire?.candidates !== undefined ? { candidates: wire.candidates } : {}),
             }),
           )),
         entries.length < cap
@@ -284,6 +285,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
                   if (next !== '') edit(f.name, [...entries, next])
                 },
                 ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
+                ...(wire?.candidates !== undefined ? { candidates: wire.candidates } : {}),
               }),
             )
           : null,

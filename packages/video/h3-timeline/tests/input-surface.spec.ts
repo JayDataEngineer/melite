@@ -14,6 +14,7 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import { fieldsOfEnvelope } from "@melite/card-base";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
@@ -102,6 +103,75 @@ describe("the input surface: the schema owns the wire form", () => {
     }) as Record<string, unknown>;
     assert.equal(walked.bed_start, 0, "the walk fills the bed origin");
     assert.deepEqual(walked.ref_images, ["/m/a.png", "/m/b.png"], "arrays ride verbatim");
+  });
+});
+
+describe("the input surface: EVERY slot declares its slot shape (the freeform-text lie, 2026-09-21)", () => {
+  // THE PROJECTION WALL (the operator's catch: "THESE ARE FREEFORM
+  // TEXT FIELDS. YOU SAID EVERY LAST PARAMETER WAS VALIDATED BY THE
+  // SCHEMA SETUP"): the served envelope's own projection — the same
+  // walk the client runs — types every slot field by its DECLARED
+  // wtype. An undeclared string field derives 'text' and renders a
+  // freeform box: the 2026-09-21 lie was image/last_frame riding
+  // bare .role('path') with no wtype. This wall walks the REAL
+  // carrier's toJSON (the envelope formSchemas serves) and pins the
+  // projection: slot fields are 'image'/'file', stacks are
+  // 'image_list' — the only legal text field is the prompt itself.
+  const typeOf = (name: string): string | undefined =>
+    fieldsOfEnvelope(
+      ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
+    ).find((f) => f.name === name)?.type;
+
+  it("the FL2VA pixel anchors project as IMAGE rail rows, never text boxes", () => {
+    assert.equal(typeOf("image"), "image", "First frame is a slot");
+    assert.equal(typeOf("last_frame"), "image", "Last frame is a slot");
+  });
+
+  it("VALIDATION-ONLY KEYS NEVER PROJECT — the renderer vocabulary, the legacy aliases, and the renderer spelling are gate keys, not surface fields (the blank-rows catch, 2026-09-21)", () => {
+    // "WHAT IS WINDOW INDEX, WHY IS IT BLANK" — k + noise_seed are
+    // declared DELIBERATELY default-less (the renderer's ?? chains
+    // stay authoritative; the walk refuses garbage only). Rendered,
+    // they were blank rows. The hidden arm (extra.hidden) keeps the
+    // schema enforcement and kills the face row. The aliases
+    // (interp/sharpen/sla switches) are the mods' switches' old
+    // spellings; image_name is the renderer's guide-image key — the
+    // rail's First frame is the user face.
+    const names = fieldsOfEnvelope(
+      ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
+    ).map((f) => f.name);
+    for (const gone of ["k", "noise_seed", "interp_switch", "sharpen_switch", "sla_switch", "image_name"]) {
+      assert.ok(!names.includes(gone), `${gone} is validation-only — a rendered ${gone} row is a lie`);
+    }
+  });
+
+  it("the conditioning bus + bed project at their declared slot shapes", () => {
+    assert.equal(typeOf("ref_images"), "image_list");
+    assert.equal(typeOf("ref_videos"), "image_list");
+    assert.equal(typeOf("ref_audios"), "image_list");
+    assert.equal(typeOf("bed_audio"), "file");
+  });
+
+  it("the refine lora pick is a CATALOG-FED SELECT — the freeform lora id is dead (LORAS ARE ONLY MODS)", () => {
+    const ff = fieldsOfEnvelope(
+      ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
+    ).find((f) => f.name === "refine_lora")!;
+    assert.equal(ff.type, "select", "the pick serves as a select");
+    // the OPTIONS ride the door's runtime stamp (optionsFrom), never
+    // a closed schema list — the wall pins the declaration, the
+    // discovery stamp wall pins the serve
+    assert.ok((ff.tooltip ?? "").includes("LORAS ARE ONLY MODS"));
+  });
+
+  it("the only card-owned TEXT fields are the prompt and the two mod-zone stragglers — a new one is a freeform lie", () => {
+    // sr_model + sla_dense_steps are declared for the WALK (compose
+    // parses them off the card schema) but render ONLY in the mod
+    // zone — the client strips them from params via modOwnedFields.
+    // Any FOURTH text projection is a live freeform field on the
+    // params face and must be refused here.
+    const textFields = fieldsOfEnvelope(
+      ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
+    ).filter((f) => f.type === "text").map((f) => f.name);
+    assert.deepEqual(textFields, ["prompt", "sr_model", "sla_dense_steps"]);
   });
 });
 

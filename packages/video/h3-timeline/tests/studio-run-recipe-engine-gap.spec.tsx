@@ -42,6 +42,7 @@ function engine(layerA: Record<string, unknown>) {
       stage={{ params: {} } as never}
       layerA={{ fps: 24, ...layerA } as never}
       setLayerAKey={(k: string, v: unknown) => { keys.push([k, v]) }}
+      refArtifacts={[]}
     />,
   )
   return { keys }

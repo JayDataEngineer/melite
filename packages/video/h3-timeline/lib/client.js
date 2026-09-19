@@ -608,6 +608,7 @@ window.__ModuleLoader__.load({
 				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
 				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
 				if (families !== null && family !== void 0 && !families.includes(family)) continue;
+				if (extra["hidden"] === true) continue;
 				let options;
 				if (node.type === "union" && Array.isArray(node.list)) {
 					const opts = [];
@@ -2389,7 +2390,8 @@ window.__ModuleLoader__.load({
 						else arr[i] = next;
 						edit(f.name, arr);
 					},
-					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
+					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
+					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
 				}))), entries.length < cap ? (0, react.createElement)("div", {
 					className: card_module_css_default.specSlotCell,
 					"data-stack-add": f.name,
@@ -2404,7 +2406,8 @@ window.__ModuleLoader__.load({
 						/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
 						if (next !== "") edit(f.name, [...entries, next]);
 					},
-					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
+					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
+					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
 				})) : null));
 			};
 			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, (0, react.createElement)(PackPrompt, {
@@ -5436,6 +5439,51 @@ window.__ModuleLoader__.load({
 			})] });
 		}
 		//#endregion
+		//#region ../../web/card-base/src/estate-remote.ts
+		/** The estate's domain refusal ({ok:false} answers): the message
+		* rides verbatim; the class separates DOMAIN verdicts from transport
+		* failures so policy code (the gone-verdict, the poll, the CAS
+		* rebase) can discriminate. */
+		var EstateRefusedError = class extends Error {
+			constructor(message) {
+				super(message);
+				this.name = "EstateRefusedError";
+			}
+		};
+		/** The bound namespaces — LOUD when unbound: a verb call before the
+		* mount (or after unload) is a wiring bug, never a silent fallback. */
+		function estateRemote() {
+			throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
+		}
+		/** Await one namespace method's RemoteResult and unwrap it: the
+		*  value on ok, the estate's refusal text (verbatim) on the error
+		*  branch. Accepts the promise directly so call sites stay one
+		*  expression. */
+		async function unwrapRemote(result, voice) {
+			const settled = await result;
+			if (settled.ok === true) return settled.value;
+			const { error } = settled;
+			const failure = error;
+			throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
+		}
+		//#endregion
+		//#region ../../web/card-base/src/media-library.ts
+		/**
+		* media-library.ts — the runs-tree library over the mounted media
+		* namespace (stroke 81b: moved beside the bind it rides).
+		*
+		* The picker's injected source (SquareWire.loadMedia): kind-filtered
+		* media/list rows, shaped to {url, name}. Every surface — the bench
+		* drill, the mod leaf, the studio SourceRows — injects THIS function
+		* (or a test fake); the base form carries no transport of its own.
+		*/
+		/** media/list — the runs-tree library (the picker's injected
+		*  source; kind-filtered). */
+		async function fetchMediaLibrary(kind, signal) {
+			const v = await unwrapRemote(estateRemote().media.list(kind, signal), "media/list");
+			return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === "string" && typeof it?.name === "string") : [];
+		}
+		//#endregion
 		//#region src/ui/studio/RunRecipeEngine.tsx
 		/**
 		* RunRecipeEngine — the Layer A rail.
@@ -5454,65 +5502,56 @@ window.__ModuleLoader__.load({
 		* here).
 		*
 		* What stays STUDIO CHROME (never card params): the Model-route
-		* pin (the sibling-family switch, a document concept), the doc
-		* FPS (a document-local clock fact, undeclared by design), and
-		* the geometry readout (resolved width×height @ doc-fps).
+		* pin (the sibling-family switch, a document concept) and the doc
+		* FPS (a document-local clock fact, undeclared by design). THE
+		* GEOMETRY READOUT IS DEAD (operator 2026-09-21: "WHY DO I STIL
+		* SEE THIS [REDACTED 2026-11-05] SKIN? 1344×768 @ 24 doc-fps" — a read-only text
+		* row outside the generic seam's grid grammar; the Width/Height
+		* injects own geometry, one surface).
 		*/
-		/** The family's geometry floor (the card schema's own defaults —
-		* 1344×768; draft recipes stamp 768×448 over it). */
-		const FAMILY_GEOM = {
-			w: 1344,
-			h: 768
-		};
 		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
-		function RunRecipeEngine({ stage, layerA, setLayerAKey }) {
-			const { spec, resolved, edit } = useResolvedForm("h3-timeline", layerA, setLayerAKey, stage.params ?? void 0);
+		function RunRecipeEngine({ stage, layerA, setLayerAKey, refArtifacts }) {
+			const { spec, edit } = useResolvedForm("h3-timeline", layerA, setLayerAKey, stage.params ?? void 0);
+			const wire = {
+				candidates: refArtifacts.map((a) => ({
+					id: a.name,
+					label: a.name,
+					url: a.url
+				})),
+				loadMedia: fetchMediaLibrary
+			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.group,
 				"data-testid": "tl-recipe-chrome",
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: studio_module_css_default.groupTitle,
-						children: "Recipe"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-						label: "FPS",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
-							f: {
-								name: "fps",
-								label: "FPS",
-								type: "number",
-								min: 1,
-								max: 60,
-								step: 1
-							},
-							value: layerA.fps,
-							placeholder: "",
-							onEdit: (_, v) => {
-								const n = typeof v === "string" && v.trim() !== "" ? Number(v) : void 0;
-								if (n !== void 0 && n > 0) setLayerAKey("fps", n);
-							}
-						})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: studio_module_css_default.recipeGeom,
-						"data-testid": "tl-recipe-geom",
-						children: [
-							String(resolved.width ?? FAMILY_GEOM.w),
-							"×",
-							String(resolved.height ?? FAMILY_GEOM.h),
-							" @ ",
-							layerA.fps,
-							" doc-fps"
-						]
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: studio_module_css_default.groupTitle,
+					children: "Recipe"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
+					label: "FPS",
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecAtom, {
+						f: {
+							name: "fps",
+							label: "FPS",
+							type: "number",
+							min: 1,
+							max: 60,
+							step: 1
+						},
+						value: layerA.fps,
+						placeholder: "",
+						onEdit: (_, v) => {
+							const n = typeof v === "string" && v.trim() !== "" ? Number(v) : void 0;
+							if (n !== void 0 && n > 0) setLayerAKey("fps", n);
+						}
 					})
-				]
+				})]
 			}), spec !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardForm, {
 				spec,
 				user: layerA,
 				base: stage.params ?? void 0,
 				onSet: edit,
-				onUnset: (n) => setLayerAKey(n, void 0)
+				onUnset: (n) => setLayerAKey(n, void 0),
+				wire
 			}) : null] });
 		}
 		//#endregion
@@ -5645,51 +5684,6 @@ window.__ModuleLoader__.load({
 					})
 				]
 			}) });
-		}
-		//#endregion
-		//#region ../../web/card-base/src/estate-remote.ts
-		/** The estate's domain refusal ({ok:false} answers): the message
-		* rides verbatim; the class separates DOMAIN verdicts from transport
-		* failures so policy code (the gone-verdict, the poll, the CAS
-		* rebase) can discriminate. */
-		var EstateRefusedError = class extends Error {
-			constructor(message) {
-				super(message);
-				this.name = "EstateRefusedError";
-			}
-		};
-		/** The bound namespaces — LOUD when unbound: a verb call before the
-		* mount (or after unload) is a wiring bug, never a silent fallback. */
-		function estateRemote() {
-			throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
-		}
-		/** Await one namespace method's RemoteResult and unwrap it: the
-		*  value on ok, the estate's refusal text (verbatim) on the error
-		*  branch. Accepts the promise directly so call sites stay one
-		*  expression. */
-		async function unwrapRemote(result, voice) {
-			const settled = await result;
-			if (settled.ok === true) return settled.value;
-			const { error } = settled;
-			const failure = error;
-			throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
-		}
-		//#endregion
-		//#region ../../web/card-base/src/media-library.ts
-		/**
-		* media-library.ts — the runs-tree library over the mounted media
-		* namespace (stroke 81b: moved beside the bind it rides).
-		*
-		* The picker's injected source (SquareWire.loadMedia): kind-filtered
-		* media/list rows, shaped to {url, name}. Every surface — the bench
-		* drill, the mod leaf, the studio SourceRows — injects THIS function
-		* (or a test fake); the base form carries no transport of its own.
-		*/
-		/** media/list — the runs-tree library (the picker's injected
-		*  source; kind-filtered). */
-		async function fetchMediaLibrary(kind, signal) {
-			const v = await unwrapRemote(estateRemote().media.list(kind, signal), "media/list");
-			return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === "string" && typeof it?.name === "string") : [];
 		}
 		//#endregion
 		//#region src/ui/studio/CallFrameSubcard.tsx
@@ -12864,7 +12858,8 @@ window.__ModuleLoader__.load({
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunRecipeEngine, {
 										stage,
 										layerA,
-										setLayerAKey: fx.setLayerAKey
+										setLayerAKey: fx.setLayerAKey,
+										refArtifacts: audio.refArtifacts
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunAdvancedPanels, {
 										layerA,

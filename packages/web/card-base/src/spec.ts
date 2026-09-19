@@ -553,6 +553,15 @@ function projectDict(
       ? extra['families'] as unknown[] : null
     if (families !== null && family !== undefined
         && !families.includes(family)) continue
+    // THE HIDDEN ARM (2026-09-21, the blank-rows catch): a field
+    // declaring extra.hidden is VALIDATION-ONLY — the schema walk
+    // still refuses garbage for it (the operator's vocabulary
+    // law: "the schema enforces EVERY key the renderer reads"),
+    // but it NEVER renders: renderer vocabulary (k, noise_seed),
+    // legacy aliases (interp_switch), and renderer spellings
+    // (image_name) are gate keys, not surface fields. A blank
+    // default-less row on the form face is a lie.
+    if (extra['hidden'] === true) continue
     // union options: const members, labels from their meta.description
     let options: Array<string | { value: string; label: string }> | undefined
     if (node.type === 'union' && Array.isArray(node.list)) {

@@ -94,6 +94,21 @@ test('fieldsOfEnvelope: a dangling dict id skips (the walker never invents a fie
   expect(fieldsOfEnvelope(env)).toEqual([])
 })
 
+test('THE HIDDEN ARM (2026-09-21, the blank-rows catch): extra.hidden is validation-only — the field NEVER projects', () => {
+  // "WHAT IS WINDOW INDEX, WHY IS IT BLANK" — a schema may declare
+  // a key for the WALK only (renderer vocabulary with no default,
+  // legacy aliases, renderer spellings). extra.hidden keeps the
+  // schema enforcement (the compose door still refuses garbage)
+  // and removes the face row. A default-less number rendered is a
+  // blank lie; this arm is the only sanctioned way to declare a
+  // non-surface key.
+  const env = schemaEnvelope({
+    k: { type: 'number', meta: { description: 'Window index', extra: { hidden: true } } },
+    prompt: { type: 'string', meta: { description: 'Prompt' } },
+  })
+  expect(fieldsOfEnvelope(env).map((f) => f.name)).toEqual(['prompt'])
+})
+
 test('THE WALK: one meta path — native wins, the extra bag fills, label falls to the name', () => {
   const env = schemaEnvelope({
     steps: { type: 'number', meta: { description: '', default: 20, min: 1, max: 60, step: 1, extra: { group: 'Run', order: 2, required: true } } },

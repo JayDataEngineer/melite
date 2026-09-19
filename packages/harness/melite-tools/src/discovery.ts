@@ -407,6 +407,56 @@ function familyFace(fam: string): string {
   }
 }
 
+/** THE CATALOG-FED SELECT STAMP (2026-09-21): walks the envelope's
+ * root dict; any field whose node declares extra.optionsFrom gets
+ * its options stamped from the named mod pack's LIVE catalog rows
+ * for this family (value = row id, label = row id). The empty arm
+ * rides first when the field's default is '' so a pick can clear.
+ * Mutates the freshly-toJSON'd envelope in place — formSchemas
+ * serializes per call, so no shared carrier is touched. */
+interface StampNode {
+  dict?: Record<string, unknown>
+  meta?: { default?: unknown; extra?: Record<string, unknown> }
+}
+interface StampEnv {
+  uid?: number | string
+  refs?: Record<string, StampNode>
+}
+export function stampOptionsFrom(
+  schema: unknown,
+  svc: { modCatalog(pack: string, family: string): { rows: ReadonlyArray<{ id: string }> } },
+  family: string,
+): void {
+  const env = schema as StampEnv | null
+  if (env == null || env.refs == null || env.uid == null) return
+  const root = env.refs[String(env.uid)] ?? env.refs[env.uid as never]
+  if (root?.dict == null) return
+  for (const refId of Object.values(root.dict)) {
+    const node = env.refs[String(refId)]
+    if (node == null || node.meta == null) continue
+    const extra = node.meta.extra
+    if (extra == null || typeof extra.optionsFrom !== 'string') continue
+    const pack = extra.optionsFrom
+    let rows: ReadonlyArray<{ id: string }> = []
+    try {
+      rows = svc.modCatalog(pack, family).rows
+    } catch {
+      /* v8 ignore next -- an unregistered pack name on a live lane
+         degrades to an empty select (visible, honest); the compose
+         door remains the loud backstop for a picked-then-refused id */
+      rows = []
+    }
+    const options: Array<{ value: string; label: string }> = []
+    if (node.meta.default === '' || node.meta.default === undefined) {
+      options.push({ value: '', label: '— none —' })
+    }
+    for (const r of rows) options.push({ value: r.id, label: r.id })
+    const clone: Record<string, unknown> = { ...extra, options }
+    delete clone.optionsFrom
+    node.meta.extra = clone
+  }
+}
+
 export function specBody(
   svc: ComfyUIService,
   defs: Map<string, CardDefinition>,
@@ -438,6 +488,15 @@ export function specBody(
   if (schemas === null) {
     throw new Error(`form-spec: card '${res.card}' unknown`)
   }
+  // THE CATALOG-FED SELECT (2026-09-21, the freeform-lie kill): a
+  // field declaring extra.optionsFrom names a MOD PACK — the door
+  // stamps its options from the pack's LIVE flavor rows at serve
+  // time (the schema cannot close what the runtime serves; the
+  // compose door keeps refusing unknown ids loud). The empty arm
+  // rides first when the field's default is '' (a refine pick must
+  // be clearable). LORAS ARE ONLY MODS: the ids come from the
+  // served rows, never a hand-spelled string.
+  stampOptionsFrom(schemas.schema, svc, key)
   // THE MOD SYSTEM OWNS MODS (the old SubcardGrid law, 2026-08-09:
   // "LoRA is a MOD, never a standalone addition — the free-text
   // grid must not render the mod bags as raw JSON rows; the

@@ -236,6 +236,7 @@ export function VideoTimelineStudio({
             stage={stage}
             layerA={layerA}
             setLayerAKey={fx.setLayerAKey}
+            refArtifacts={audio.refArtifacts}
           />
           <RunAdvancedPanels layerA={layerA} setLayerAKey={fx.setLayerAKey} />
           <RunRefsClips

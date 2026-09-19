@@ -27,7 +27,7 @@ vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
 
 import type { CardDefinition, ComfyUIService } from '@melite/comfyui-cordis'
 import {
-  cardToolsArm, formSpecArm as formSpecArmRaw, resolveSpecKey, specBody as specBodyRaw,
+  cardToolsArm, formSpecArm as formSpecArmRaw, resolveSpecKey, specBody as specBodyRaw, stampOptionsFrom,
 } from '../src/discovery.ts'
 
 /** THE TRANSIENT-GENRE RACE (stroke 83, the discovery.spec twin):
@@ -538,5 +538,59 @@ describe('specBody declaration-absent arms', () => {
     // the seam's own toJSON answers ({} for the function-schema
     // fixture); the body adds no walk of its own
     assert.deepEqual(spec['model_defaults'], {})
+  })
+})
+
+describe('the catalog-fed select stamp (2026-09-21, the freeform-lie kill)', () => {
+  /** An envelope carrying one optionsFrom field (default '' — the
+   * clearable shape) and one ordinary field (never touched). */
+  const env = (): Record<string, unknown> => ({
+    uid: 0,
+    refs: {
+      0: { type: 'object', dict: { refine_lora: 1, prompt: 2 } },
+      1: { type: 'string', meta: { description: 'Refine lora', default: '', extra: { wtype: 'select', optionsFrom: 'loras' } } },
+      2: { type: 'string', meta: { description: 'Prompt', extra: {} } },
+    },
+  })
+  const rowsSvc = (rows: Array<{ id: string }>) =>
+    ({ modCatalog: (pack: string) => (pack === 'loras' ? { rows } : { rows: [] }) }) as never
+
+  test('stamps options from the pack\'s LIVE rows — the empty arm first for a clearable default', () => {
+    const e = env()
+    stampOptionsFrom(e, rowsSvc([{ id: 'h3_taomate_3step' }, { id: 'h3_lightx2v_turbo' }]), 'h3-timeline')
+    const node = (e.refs as Record<string, { meta: { extra: Record<string, unknown> } }>)['1']
+    assert.deepEqual(node.meta.extra.options, [
+      { value: '', label: '— none —' },
+      { value: 'h3_taomate_3step', label: 'h3_taomate_3step' },
+      { value: 'h3_lightx2v_turbo', label: 'h3_lightx2v_turbo' },
+    ])
+    assert.equal(node.meta.extra.optionsFrom, undefined, 'the hint never rides the served doc')
+  })
+
+  test('a non-empty default serves rows only; an unknown pack degrades to the honest empty select', () => {
+    const e = env()
+    const node1 = (e.refs as Record<string, { meta: { default: string; extra: Record<string, unknown> } }>)['1']
+    node1.meta.default = 'h3_taomate_3step'
+    stampOptionsFrom(e, rowsSvc([{ id: 'h3_taomate_3step' }]), 'h3-timeline')
+    assert.deepEqual(node1.meta.extra.options, [{ value: 'h3_taomate_3step', label: 'h3_taomate_3step' }])
+    const e2 = env()
+    const throwing = { modCatalog: () => { throw new Error('no pack') } } as never
+    stampOptionsFrom(e2, throwing, 'h3-timeline')
+    const node2 = (e2.refs as Record<string, { meta: { extra: Record<string, unknown> } }>)['1']
+    assert.deepEqual(node2.meta.extra.options, [{ value: '', label: '— none —' }], 'visible and honest, never a throw')
+  })
+
+  test('ordinary fields are untouched; a null-ish envelope is a no-op (never a throw)', () => {
+    const e = env()
+    stampOptionsFrom(e, rowsSvc([{ id: 'x' }]), 'h3-timeline')
+    const prompt = (e.refs as Record<string, { meta: { extra: Record<string, unknown> } }>)['2']
+    assert.deepEqual(prompt.meta.extra, {}, "a field without the hint never gains options")
+    stampOptionsFrom(null, rowsSvc([]), 'x')
+    stampOptionsFrom({} as never, rowsSvc([]), 'x')
+    // a root with NO dict and a ref id that misses the refs table:
+    // both walk arms return/continue, never throw
+    stampOptionsFrom({ uid: 0, refs: { 0: { type: 'object' } } } as never, rowsSvc([]), 'x')
+    stampOptionsFrom({ uid: 9, refs: { 0: { type: 'object', dict: { a: 1 } } } } as never, rowsSvc([]), 'x')
+    stampOptionsFrom({ uid: 0, refs: { 0: { type: 'object', dict: { a: 1 } } } } as never, rowsSvc([]), 'x')
   })
 })

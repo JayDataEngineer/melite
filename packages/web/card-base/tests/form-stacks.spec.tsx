@@ -116,13 +116,28 @@ test('STACKS: a pick on a FILLED cell replaces in place (order is the apply orde
   ])
   const { onSet } = form({
     user: { refs: ['https://host/a.png', 'https://host/b.png'] },
-    wire: { loadMedia: fetchMediaLibrary },
+    // candidates ride the wire TOO (the studio fix, 2026-09-21): a
+    // FILLED entry's From flow serves the surface's artifact rows —
+    // the entries arm of the stack wire, not just the add-cell's
+    wire: { loadMedia: fetchMediaLibrary, candidates: [{ id: 's1', label: 'image-gen', url: 'https://host/flow.png' }] },
   })
   fireEvent.click(screen.getByRole('button', { name: 'Refs 1 source' }))
   fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
   const rows = await screen.findAllByTestId('source-pick-row')
   fireEvent.click(rows[1]!)
   expect(onSet).toHaveBeenCalledWith('refs', ['https://host/z.png', 'https://host/b.png'])
+  // and the FLOW arm on the same filled cell: the candidate row
+  // replaces in place through the entries' candidates spread
+  cleanup()
+  const again = form({
+    user: { refs: ['https://host/a.png', 'https://host/b.png'] },
+    wire: { loadMedia: fetchMediaLibrary, candidates: [{ id: 's1', label: 'image-gen', url: 'https://host/flow.png' }] },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Refs 1 source' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From flow' }))
+  const flowRows = await screen.findAllByTestId('source-pick-row')
+  fireEvent.click(flowRows[0]!)
+  expect(again.onSet).toHaveBeenCalledWith('refs', ['https://host/flow.png', 'https://host/b.png'])
 })
 
 test('STACKS: at the cap the add-cell vanishes (the mods max_stack law, the rail face)', () => {

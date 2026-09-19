@@ -104,7 +104,7 @@ const T4_ONLY_KEYS = [
 // (t4 INT 8 / t4r 8.0 — the served structural values).
 const paramSchema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: null, placeholder: "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out", tooltip: "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.", required: true }),
-  image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', { order: null, tooltip: "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline." }),
+  image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', { order: null, wtype: 'image', tooltip: "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline." }),
   // THE INPUT SURFACE (the H3 architecture truth — two DIFFERENT
   // mechanics, the FL2VA latent anchors vs the Ref2VA conditioning
   // bus): first_frame/last_frame are PIXEL anchors (bundle inputs
@@ -117,7 +117,7 @@ const paramSchema = z.object({
   // `expected array length <= 8`), never rides silent. The legacy
   // `refs` stanza bag keeps its compose-side wireList readers; the
   // declared fields are the primary surface.
-  last_frame: z.string().role('path').description("Last frame (end anchor)").extra('extra', { order: null, tooltip: "FL2VA end anchor — bundle input 2. Locks the final frame's pixels; H3 generates the motion between the two anchors." }),
+  last_frame: z.string().role('path').description("Last frame (end anchor)").extra('extra', { order: null, wtype: 'image', tooltip: "FL2VA end anchor — bundle input 2. Locks the final frame's pixels; H3 generates the motion between the two anchors." }),
   ref_images: z.array(z.string().role('path')).description("Reference images").max(8).extra('extra', { order: null, wtype: 'image_list', max_stack: 8, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." }),
   ref_videos: z.array(z.string().role('path')).description("Reference videos").max(3).extra('extra', { order: null, wtype: 'image_list', media: 'video', max_stack: 3, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." }),
   ref_audios: z.array(z.string().role('path')).description("Reference audios").max(3).extra('extra', { order: null, wtype: 'image_list', media: 'audio', max_stack: 3, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." }),
@@ -204,7 +204,7 @@ const paramSchema = z.object({
   // refine_lora picks the instrument; strength/steps default from
   // THE ROW (no silent overrides); the pass rides the doc's own
   // sampler/scheduler.
-  refine_lora: z.string().description("Refine lora").default("").extra('extra', { order: null, wtype: 'text', tooltip: "Catalog id of a refiner lora (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row." }),
+  refine_lora: z.string().description("Refine lora").default("").extra('extra', { order: null, wtype: 'select', optionsFrom: 'loras', tooltip: "Catalog id of a refiner lora (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row. LORAS ARE ONLY MODS — the pick serves from the loras flavor rows, never a hand-spelled id (the compose door refuses unknown ids loud)." }),
   refine_strength: z.number().description("Refine strength").min(0).max(2).step(0.05).extra('extra', { order: null, wtype: 'number', tooltip: "Override the refiner row's strength. Rides only when refine_lora is set." }),
   refine_steps: z.number().description("Refine steps").min(1).max(10).step(1).extra('extra', { order: null, wtype: 'number', tooltip: "Override the refiner row's step count (taomate: 3). Rides only when refine_lora is set." }),
   // ── THE ATTENTION BACKEND (roadmap item 3; the h3_attention
@@ -280,14 +280,20 @@ const paramSchema = z.object({
   // undeclared (it rode `admits` and every walk passed it verbatim
   // while renderH3Window blind-cast it). Types mirror the renderer's
   // reads exactly; NO defaults — the renderer's ?? fallback chains
-  // stay authoritative, the walk only REFUSES garbage.
-  k: z.number().description("Window index (film vocabulary)").step(1),
-  noise_seed: z.number().description("Per-window noise seed").step(1),
+  // stay authoritative, the walk only REFUSES garbage. HIDDEN FROM
+  // THE FACE (2026-09-21, the operator's catch — "WHAT IS WINDOW
+  // INDEX, WHY IS IT BLANK"): validation-only keys never render; a
+  // default-less blank row on the form is a lie.
+  k: z.number().description("Window index (film vocabulary)").step(1).extra('extra', { hidden: true }),
+  noise_seed: z.number().description("Per-window noise seed").step(1).extra('extra', { hidden: true }),
   fps_seconds: z.number().description("Clip seconds (fps rail)").min(1).max(60).default(10).extra('extra', { order: null, wtype: 'number', tooltip: "The clip's duration in seconds (the fps rail's duration primitive); the audio-bed slicer follows it." }),
-  interp_switch: z.boolean().description("Interpolate switch (legacy alias)"),
-  sharpen_switch: z.boolean().description("Sharpen switch (legacy alias)"),
-  sla_switch: z.boolean().description("SLA switch (legacy alias)"),
-  image_name: z.string().description("Guide image (renderer alias)"),
+  // THE LEGACY ALIASES (renderer-era spellings of the mod switches)
+  // — gate-admitted for old drafts, never user surface: the MODS
+  // own the switches (the operator's law), one face each.
+  interp_switch: z.boolean().description("Interpolate switch (legacy alias)").extra('extra', { hidden: true }),
+  sharpen_switch: z.boolean().description("Sharpen switch (legacy alias)").extra('extra', { hidden: true }),
+  sla_switch: z.boolean().description("SLA switch (legacy alias)").extra('extra', { hidden: true }),
+  image_name: z.string().role('path').description("Guide image (renderer alias)").extra('extra', { hidden: true, wtype: 'image', tooltip: "The renderer's guide-image spelling — gate-admitted for old docs; the rail's First frame is the user face." }),
 })
 
 /** Schemastery objects are lenient (unknown/missing keys ride); the
@@ -454,6 +460,19 @@ export function schema(v: unknown): Record<string, unknown> {
 // description prose, stated once).
 export const carrier = paramSchema
 
+// ONE MODEL (the operator's law, 2026-09-20 "we use ONE model" +
+// 2026-09-21 "HOW IS MINIMAX H3 AND H3 TIMELINE TWO DIFFERENT
+// MODELS?"): the sibling boardings below (h3, h3-keyframe — the
+// same minimax weights as sibling family packages) render as THREE
+// different "models" in the Model dropdown: a fake model switch,
+// the exact crime the route row died for. OWED (roadmap #41): the
+// three families consolidate into ONE (h3 + h3-keyframe variants
+// fold into h3-timeline cells; their facts rows and roster entries
+// die with them) — until then the boardings stand because the h3 /
+// h3-keyframe FACTS ROWS name this card as their only card (the
+// boot contract refuses a card-less facts row), and their DECL
+// variants route here. Un-boarding without the merge orphans them
+// at boot.
 export const BOARDED: string[] = ['h3-timeline', 'h3', 'h3-keyframe']
 
 export const identity = {

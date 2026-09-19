@@ -15,32 +15,40 @@
  * here).
  *
  * What stays STUDIO CHROME (never card params): the Model-route
- * pin (the sibling-family switch, a document concept), the doc
- * FPS (a document-local clock fact, undeclared by design), and
- * the geometry readout (resolved width×height @ doc-fps).
+ * pin (the sibling-family switch, a document concept) and the doc
+ * FPS (a document-local clock fact, undeclared by design). THE
+ * GEOMETRY READOUT IS DEAD (operator 2026-09-21: "WHY DO I STIL
+ * SEE THIS [REDACTED 2026-11-05] SKIN? 1344×768 @ 24 doc-fps" — a read-only text
+ * row outside the generic seam's grid grammar; the Width/Height
+ * injects own geometry, one surface).
  */
-import { CardForm, ControlRow, SpecAtom, useResolvedForm } from "@melite/card-base"
+import { CardForm, ControlRow, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base"
+import { fetchMediaLibrary } from "@melite/card-base/media-library"
 import s from "./studio.module.css"
 import type { LayerA, SetLayerAKey } from "./docModel"
 import type { CardStage } from "@melite/contracts"
 
-/** The family's geometry floor (the card schema's own defaults —
- * 1344×768; draft recipes stamp 768×448 over it). */
-const FAMILY_GEOM = { w: 1344, h: 768 } as const
-
 /** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 export function RunRecipeEngine({
-  stage, layerA, setLayerAKey,
+  stage, layerA, setLayerAKey, refArtifacts,
 }: {
   stage: CardStage
   layerA: LayerA
   setLayerAKey: SetLayerAKey
+  /** The pickers' artifact index (own run ∪ upstreams — the studio's
+   * one candidate source, the same rows the call-card ref buckets
+   * serve). Threaded to the form wire so the input rail's From-flow /
+   * From-media verbs live HERE too (the 2026-09-21 break: the studio
+   * mounted CardForm with NO wire — every rail row's From media
+   * opened onto the honest-empty list; the bench drill always wired
+   * this, the studio silently didn't). */
+  refArtifacts: Array<{ name: string; url: string }>
 }) {
   // THE STUDIO SEAM (one shared hook): the served spec, the
   // RESOLVED values (schema defaults <- model defaults <- Layer A —
   // a sparse document renders its declared defaults, NEVER blanks),
   // and the edit verb that coerces at the schema boundary.
-  const { spec, resolved, edit } = useResolvedForm(
+  const { spec, edit } = useResolvedForm(
     "h3-timeline",
     layerA as unknown as Record<string, unknown>,
     setLayerAKey as unknown as (n: string, v: unknown) => void,
@@ -48,6 +56,15 @@ export function RunRecipeEngine({
     // wins over the document's, the persisted truth under the edit)
     (stage.params ?? undefined) as Record<string, unknown> | undefined,
   )
+  // THE PICKER WIRE (the bench drill's own law, threaded through the
+  // studio seam): candidates = the artifact index in the wire's row
+  // shape; loadMedia = the one media-library fetch. CardForm's input
+  // rail hands BOTH to every SourceRow — absent, From media is the
+  // honest-empty modal (the break this wire closes).
+  const wire: SquareWire = {
+    candidates: refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url })),
+    loadMedia: fetchMediaLibrary,
+  }
   return (
     <>
       <div className={s.group} data-testid="tl-recipe-chrome">
@@ -69,9 +86,6 @@ export function RunRecipeEngine({
             }}
           />
         </ControlRow>
-        <div className={s.recipeGeom} data-testid="tl-recipe-geom">
-          {String(resolved.width ?? FAMILY_GEOM.w)}×{String(resolved.height ?? FAMILY_GEOM.h)} @ {layerA.fps} doc-fps
-        </div>
       </div>
       {/* THE GENERIC SEAM: every card param, one component — the
        * recipe pills, the sampling grid (sampler + scheduler side
@@ -86,6 +100,7 @@ export function RunRecipeEngine({
           base={(stage.params ?? undefined) as Record<string, unknown> | undefined}
           onSet={edit}
           onUnset={(n) => setLayerAKey(n as keyof LayerA, undefined)}
+          wire={wire}
         />
       ) : null}
     </>

@@ -18,6 +18,7 @@ import assert from "node:assert/strict"
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
 import { schemaEnvelope } from "@melite/card-base"
+import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/estate-remote"
 import type { LayerA } from "../src/ui/studio/docModel.ts"
 
 function envelope(): unknown {
@@ -53,6 +54,7 @@ function envelope(): unknown {
       sharpen_enabled: bool("Sharpen", false, { wtype: "tri" }),
       width: num("Width", 1344, { min: 448, max: 1344 }),
       height: num("Height", 768, { min: 448, max: 768 }),
+      ref_images: { type: "array", meta: { description: "Reference images", extra: { wtype: "image_list", max_stack: 8 } } },
     }),
     // RULE A: the family's Recipe rows as the spec door serves them
     // (discovery.ts variantRow — resolver+wire defaults merged into
@@ -82,11 +84,69 @@ function engine(layerA: Record<string, unknown>, over?: Record<string, unknown>)
       stage={{ params: { width: 800, height: 600 } } as never}
       layerA={{ fps: 24, ...layerA } as unknown as LayerA}
       setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
+      refArtifacts={[{ name: "own_out.png", url: "/melite-media/runs/r8/img/own_out.png" }]}
       {...over}
     />,
   )
   return { keys, els }
 }
+
+// ── THE PICKER WIRE (2026-09-21, the From-media break) ──────────────
+// The studio mounted CardForm with NO wire — every input rail row's
+// From media opened onto the honest-empty list (the bench drill
+// always wired this; the studio silently didn't). The wire now rides
+// RunRecipeEngine: candidates = the artifact index, loadMedia = the
+// one media-library fetch over the BOUND estate namespace.
+
+/** Bind the estate fakes the real fetchMediaLibrary rides (the
+ *  form-stacks pattern: dead namespaces throw, media serves rows). */
+function bindMedia(items: Array<{ url: string; name: string }>): void {
+  const dead = (method: string) => async (): Promise<never> => { throw new Error("unused namespace in this wall: " + method) }
+  bindEstateRemote({
+    bench: { get: dead("bench/get"), "add-stage": dead("bench/add-stage"), "remove-stage": dead("bench/remove-stage") },
+    drafts: { get: dead("drafts/get"), patch: dead("drafts/patch") },
+    runs: {
+      list: dead("runs/list"), start: dead("runs/start"), status: dead("runs/status"),
+      stop: dead("runs/stop"), validate: dead("runs/validate"),
+    },
+    media: { list: async () => ({ ok: true, value: { items } }) },
+  } as unknown as Parameters<typeof bindEstateRemote>[0])
+}
+
+describe("the picker wire — From media / From flow live in the studio rail", () => {
+  it("From media on an input-card rail row lists the runs library and the pick lands on the doc", async () => {
+    serve()
+    bindMedia([{ url: "/melite-media/runs/r9/gen_00002_.png", name: "gen_00002_.png" }])
+    const { keys } = engine({})
+    const add = await screen.findByRole("button", { name: /Add Reference images/ })
+    fireEvent.click(add)
+    fireEvent.click(screen.getByText("From media").closest('[role="menuitem"], [role="option"], li') as HTMLElement)
+    const row = (await screen.findAllByTestId("source-pick-row"))
+      .find((el) => el.textContent?.includes("gen_00002_.png") === true)
+    assert.ok(row, "the media row lists in the studio's picker modal")
+    fireEvent.click(row as HTMLElement)
+    assert.deepEqual(keys, [["ref_images", ["/melite-media/runs/r9/gen_00002_.png"]]],
+      "the picked url lands on the doc key — the pick commits")
+    cleanup()
+    unbindEstateRemote()
+  })
+
+  it("From flow serves the studio's artifact index (own run ∪ upstreams)", async () => {
+    serve()
+    bindMedia([])
+    const { keys } = engine({})
+    const add = await screen.findByRole("button", { name: /Add Reference images/ })
+    fireEvent.click(add)
+    fireEvent.click(screen.getByText("From flow").closest('[role="menuitem"], [role="option"], li') as HTMLElement)
+    const row = (await screen.findAllByTestId("source-pick-row"))
+      .find((el) => el.textContent?.includes("own_out.png") === true)
+    assert.ok(row, "the artifact-index candidate lists")
+    fireEvent.click(row as HTMLElement)
+    assert.deepEqual(keys, [["ref_images", ["/melite-media/runs/r8/img/own_out.png"]]])
+    cleanup()
+    unbindEstateRemote()
+  })
+})
 
 // THE SUBMENU LAW (stroke 89): a multi-group form renders tabs —
 // the sampling fields seat on THEIR tab (the generic seam's own
@@ -132,7 +192,11 @@ describe("recipe (clock + route) — the document's identity", () => {
     serve()
     const { keys } = engine({ fps: 30 })
     await screen.findByLabelText("Recipe")
-    assert.ok(document.body.textContent!.includes("800×600 @ 30 doc-fps"))
+    // THE READOUT IS DEAD (operator 2026-09-21: "WHY DO I STIL SEE
+    // THIS [REDACTED 2026-11-05] SKIN?"): geometry owns ONE surface — the Width /
+    // Height injects. No derived text row ever renders.
+    assert.ok(!document.body.textContent!.includes("doc-fps"))
+    assert.equal(document.querySelector('[data-testid="tl-recipe-geom"]'), null)
     fireEvent.change(await screen.findByLabelText("Recipe"), { target: { value: "draft_02mp" } })
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "24" } })
     assert.deepEqual(keys, [["width", 768], ["height", 448], ["fps", 24]])
@@ -226,11 +290,12 @@ describe("geometry (resolved readout + the declared inject rows)", () => {
     cleanup()
   })
 
-  it("stage params win in the readout; the family floor otherwise", async () => {
+  it("THE GEOMETRY READOUT IS DEAD — no derived text row, on any layering", async () => {
     serve()
     engine({ steps: 20 })
     await screen.findByLabelText("Recipe")
-    assert.ok(document.body.textContent!.includes("800×600 @ 24 doc-fps"))
+    assert.equal(document.querySelector('[data-testid="tl-recipe-geom"]'), null)
+    assert.ok(!document.body.textContent!.includes("doc-fps"))
     cleanup()
     serve()
     render(
@@ -238,10 +303,12 @@ describe("geometry (resolved readout + the declared inject rows)", () => {
         stage={{} as never}
         layerA={{ fps: 24 } as unknown as LayerA}
         setLayerAKey={() => {}}
+        refArtifacts={[]}
       />,
     )
     await screen.findByLabelText("Recipe")
-    assert.ok(document.body.textContent!.includes("1344×768 @ 24 doc-fps"))
+    assert.ok(!document.body.textContent!.includes("doc-fps"))
+    assert.ok(!document.body.textContent!.includes("1344×768"))
     cleanup()
   })
 
