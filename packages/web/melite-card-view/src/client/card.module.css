@@ -1817,3 +1817,33 @@
   color: var(--dsw-alias-text-tertiary);
   font-size: 12px;
 }
+
+/* ── THE RUN-GATE RESCUE (roadmap item 4): the install offer under
+ * a rescueable failed run — a missing extension pack or model
+ * file, one confirm through the manage seat. Token-only. ── */
+.rescue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  border: 1px solid var(--dsw-alias-border-secondary);
+  border-radius: 6px;
+}
+.rescueNote {
+  color: var(--dsh-alias-text-secondary, var(--dsw-alias-text-secondary));
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.rescueBtn,
+.rescueRun {
+  font-size: 12px;
+  cursor: pointer;
+}
+.rescueErr {
+  color: var(--dsw-alias-state-error-primary);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
