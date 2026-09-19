@@ -54,7 +54,7 @@ export const schema = z.object({
   reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", tooltip: "Multi-image picker (up to 3). Used by workflows that pass resolved image lists; complements the individual Image 2 / Image 3 slots above.", wtype: 'image_list' }),
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
   negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
-  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "resolution", width: 1, zone: 'params' }),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "sampling", width: 1, zone: 'params' }),
   steps: z.number().description("Steps").min(1).max(50).step(1).default(4).extra('extra', samplingExtra('steps')),
   cfg: z.number().description("Guidance Scale").min(0.1).max(10).step(0.1).default(1).extra('extra', samplingExtra('cfg', { tooltip: "Qwen-Image-Edit uses low CFG (flow-matching)." })),
   sampler: SAMPLERS.description("Sampler").extra('extra', samplingExtra('sampler')),
