@@ -15,7 +15,7 @@ ONE nested JSON `document`; the card does the rest — compile → windows
 ```json
 {
   "fps": 24,
-  "preset": "draft_02mp",
+  "width": 768, "height": 448,
   "max_window_seconds": 5.5,
   "audio_stem": "music.mp3",
   "transition": "extend",
@@ -97,7 +97,10 @@ latent chain IS the seam — the plan refuses the conflict).
      overflows (a call too long for any window), carry snaps;
    - `windows` — the render plan (lengths, feeds, carry math).
 3. Repair the document; re-plan. Repeat until `ready: true`.
-4. `submit_timeline_run(document)` → `get_run_status(run_id)`.
+4. `melite_construct` lands the repaired document on the shared
+   bench (live in the user's cards tab). THE USER'S RUN PRESS
+   starts the render — never yours. Stay on the bench: refine as
+   they ask; the run's own status surfaces on the card.
 
 A failed plan returns the compile-layer violation list — surface the
 ACTUAL error to the user, never a summary.
@@ -106,37 +109,43 @@ ACTUAL error to the user, never a summary.
 
 The main iteration loop is MANY SMALL FAST GENS, never one long gen:
 
-- Windows stay 4–6 s (Rule 2), `preset: "draft_02mp"`,
-  `sampling_steps: 10`.
+- Windows stay 4–6 s (Rule 2); draft at `width: 768, height: 448`
+  (the draft recipe pill's geometry) with `steps: 8` when a turbo
+  row rides the doc (the marriage below), `steps: 10` bare.
 - Speed backend ONCE at doc level: `h3_attention: "sage"`
   (alternatives `"sol"`, `"kitchen"` — ONE at a time; omit on the
   final pass).
-- Turbo LoRAs ride the doc-level `loras` list (applied to every window,
-  part of every window's cache key). Pair the LightX2V distill with its
-  step count and keep strength 0.75–1.0:
+- Turbo LoRAs ride the doc-level `loras` list (applied to every
+  window, part of every window's cache key) — USER PICKS from the
+  family's catalog, and EVERY row carries its own marriage
+  (strength + step count; the service takes steps from the row
+  when the doc doesn't pin them — trust the row over folklore):
 
-      "loras": [{"name": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16",
-                 "strength": 1.0}]
+      "loras": [{"id": "h3_turbo8_v1", "strength": 1.0}]
 
-  (`...4step_v1.1_768p...` pairs with `sampling_steps: 4`.) A name
-  with no file on disk is a TODO like any source — provision once via
-  `comfy_manage` `provision_model` for `h3`, then re-plan.
-- The FINAL pass drops the shortcuts: `final_hd` preset,
-  `sampling_steps: 30`, no `h3_attention`, no `loras`. Same calls
-  otherwise — windows whose cache key changed simply re-render.
+  (`h3_turbo4_v1` pairs with `steps: 4`; `h3_larryvrh_v4_ema` runs
+  6 steps at 1.0; `h3_pk_parasyte` declares 1.5 at 8 steps — the
+  arena's operating points, landed with the evidence.) A catalog
+  id with no file on disk is a TODO like any source — provision
+  once via `comfy_manage` `provision_model` for `h3`, then re-plan.
+- The FINAL pass drops the shortcuts: `width: 1344, height: 768`
+  (the `final_hd` recipe pill), `steps: 30`, no `h3_attention`, no
+  `loras`. Same calls otherwise — windows whose cache key changed
+  simply re-render.
 
 ## Gotchas
 
 - A call needs `text` (or `beats` — prompt segments WITHIN the call,
   joined with time markers; never both).
 - `knobs` on a call override the doc for that call's window only
-  (sampling_steps, sampler, scheduler, shift_video, shift_audio,
+  (steps, sampler_name, sched_name, shift_video, shift_audio,
   h3_attention, h3_fp16_accumulation, h3_torch_compile).
-- Draft preset (`draft_02mp`) for iteration; `final_hd` for output.
+- Draft geometry (768×448) for iteration; 1344×768 for output —
+  the family's recipe pills stamp both.
 - Sources are the attachment filenames the user gave you — spell them
   exactly; an unwired source is a named TODO, never a silent render.
 
-## Rule 6 — lock identity with refs (the h3-timeline-ref route)
+## Rule 7 — lock identity with refs (the h3-timeline-ref route)
 
 Cast/creature identity across the whole timeline: put "model":
 "h3-timeline-ref" and a doc-level refs block. Refs condition EVERY

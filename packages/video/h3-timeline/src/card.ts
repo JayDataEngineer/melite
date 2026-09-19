@@ -173,7 +173,17 @@ const paramSchema = z.object({
   // the gate refuses off-set values at the compose door (the kit's own
   // law: sampler/scheduler knobs ride vocabulary()), and the declared
   // default stays reachable (fill === walk by construction).
-  sampler_name: vocabulary(["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun"]).description("Sampler").default("euler").extra('extra', { order: null, wtype: 'select', tooltip: "The KSampler solver (turbo adapters pair with euler/euler_cfg_pp)." }),
+  sampler_name: vocabulary([
+    "euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun",
+    // THE TIER-1/2 WINNERS (arena + Comfy-Org's own t2v/i2v/r2v
+    // templates; every name verified against the live engine's
+    // object_info 2026-09-20 — ROADMAP item 1, ledger #30 §3(1)):
+    // res_multistep is what the official templates run; er_sde +
+    // the beta scheduler (already on sched_name) is Parasyte's
+    // README rec (beta57); seeds_2/seeds_3 are the "dual clock"
+    // family the arena's top i2v runs rode with larryvrh v4.
+    "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3",
+  ]).description("Sampler").default("euler").extra('extra', { order: null, wtype: 'select', tooltip: "The KSampler solver. euler family pairs with turbo adapters; res_multistep is the official-template solver; er_sde+beta is the Parasyte rec; seeds_2/3 are the dual-clock family." }),
   sched_name: vocabulary(["simple", "beta", "linear_quadratic", "normal", "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform"]).description("Scheduler").default("simple").extra('extra', { order: null, wtype: 'select', tooltip: "The sigma schedule shape." }),
   interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
   interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." }),
