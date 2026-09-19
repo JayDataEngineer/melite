@@ -313,12 +313,16 @@ describe("the single-window doors", () => {
     expect(scoped(graphOf(g2), "", "BasicScheduler")[0]![1].inputs.steps).toBe(12);
   });
 
-  it("an empty loras bag falls back to the frozen gold pair", () => {
+  it("an empty loras bag falls back to the frozen gold solo (turbo 0.6 — plaguekind 1:1, never a pair)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ calls: [SHOT()], loras: [] }), model, g, "run_lora_empty");
     const stacks = ofClass(graphOf(g), "LTX_lora_loader");
     assert.ok(stacks.length >= 1);
-    assert.ok(String(stacks[0]![1].inputs.stack_data).includes("dareties"), "the gold pair rides");
+    const rows = JSON.parse(String(stacks[0]![1].inputs.stack_data)) as Array<{ on?: boolean, lora?: string, str?: number }>;
+    const on = rows.filter((r) => r.on === true);
+    assert.equal(on.length, 1, "ONE lora rides — never a pair, never a fallback stack");
+    assert.ok(String(on[0]!.lora).includes("lightx2v_turbo"), "the solo turbo rides");
+    assert.equal(on[0]!.str, 0.6, "at plaguekind's 0.6");
   });
 
   it("interpolate_enabled doubles the playout fps (the V9 compensation)", () => {

@@ -46,9 +46,11 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 // CLIP_GOLD ← text_encoders/qwen3vl_32b_minimax_h3_int8_convrot;
 // VAE_VIDEO_GOLD ← vae/minimax_h3_video_vae_int8_convrot;
 // VAE_AUDIO_GOLD ← vae/minimax_h3_audio_vae_fp32;
-// LORA_STACK_GOLD ← loras/h3/minimax_h3_fl2v_lightx2v_v0.1_dareties
-//_v4_step600_comfy_fro + loras/h3/
-// minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.
+// LORA_STACK_GOLD ← loras/h3/
+// minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties,
+// solo at 0.6 — plaguekind's turbo setup 1:1 (the 768p v4 turbo rides
+// solo, the fro row drops; the V7-era two-stack is retired, never a
+// fallback). Married to 8 steps via the resolved bag row.
 // (No local CardDefinition augmentation: the service's schemaCarrier
 // seat — Schema-typed since ledger row 23 — already carries this.)
 
@@ -57,8 +59,7 @@ const CLIP_GOLD = 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors'
 const VAE_VIDEO_GOLD = 'minimax_h3_video_vae_int8_convrot.safetensors'
 const VAE_AUDIO_GOLD = 'minimax_h3_audio_vae_fp32.safetensors'
 const LORA_STACK_GOLD =
-  '[{"on":true,"lora":"h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors","str":0.4,"v":1,"a":1,"t":1},' +
-  '{"on":true,"lora":"h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors","str":0.6,"v":1,"a":1,"t":1}]'
+  '[{"on":true,"lora":"h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors","str":0.6,"v":1,"a":1,"t":1}]'
 // His 17k+5 grid, in-graph (ComfyMathExpression): snap latent steps to 2 mod 5
 // (the card's own principles row: "Length snaps to the 17k+5 frame grid
 // at 24fps" — the principles).
@@ -502,8 +503,8 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // another for eight — so the resolved bag rows carry `steps` and
   // the windows honor it. LAYERING: a call's own knobs > the lora
   // entry's steps > this steps row (the row is the no-distill
-  // default; a stacked pair runs at the HIGHER count — 8 steps on a
-  // 4-step distill is fine, 4 on an 8-step is undercooked).
+  // default; a user-stacked pair runs at the HIGHER count — 8 steps
+  // on a 4-step distill is fine, 4 on an 8-step is undercooked).
   const loraRows = Array.isArray(p.loras) ? (p.loras as Array<Record<string, unknown>>) : []
   const loraStepsList = loraRows
     .map((r) => r.steps)
@@ -693,7 +694,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   // Those rows build the upstream stack verbatim ({on, lora, str,
   // v:1, a:1, t:1}); the raw
   // `lora_stack` JSON string stays the 1:1 escape hatch; absent
-  // both, the frozen gold pair rides.
+  // both, the frozen gold solo rides (turbo 0.6 — plaguekind 1:1).
   const loraStack = Array.isArray(p.loras) && (p.loras as unknown[]).length > 0
     ? JSON.stringify((p.loras as Array<Record<string, unknown>>).map((r) => ({
         // the service resolves every row against the family catalog

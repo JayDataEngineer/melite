@@ -98,6 +98,15 @@ export const DECL: ModelDecl = {
     // against this family's flavor catalog in mods/loras.ts), the
     // geometry rows stamp the window keys. Migrated out of the card's
     // hand-authored preset select (the drift the law outlaws).
+    //
+    // ONE-TO-ONE WITH PLAGUEKIND (operator, 2026-09-20: "the
+    // plaguekind recipe is wrong — it uses TWO loras and not one"):
+    // plaguekind's turbo setup runs the 768p turbo SOLO at 0.6 (the
+    // fro row drops — presets.yaml turbo-768; his V9 runs effectively
+    // solo too). The V7-era two-stack (dareties 0.4 + turbo 0.6,
+    // formerly the `gold_pair` row) is RETIRED — deleted, never kept
+    // as a fallback. Solo turbo IS `turbo_lightx2v`; a second pill
+    // stamping the same payload would be two names for one truth.
     {
       "id": "turbo_lightx2v",
       "label": "Turbo LightX2V",
@@ -115,19 +124,6 @@ export const DECL: ModelDecl = {
       "group": "Recipe",
       "wire_defaults": {
         "loras": [{ "id": "h3_lightx2v_dareties", "strength": 0.4, "steps": 4 }],
-      },
-      "cells": [],
-    },
-    {
-      "id": "gold_pair",
-      "label": "Gold Pair",
-      "hint": "The married stack — dareties 0.4 + turbo 0.6; runs at the higher married count (8).",
-      "group": "Recipe",
-      "wire_defaults": {
-        "loras": [
-          { "id": "h3_lightx2v_dareties", "strength": 0.4, "steps": 4 },
-          { "id": "h3_lightx2v_turbo", "strength": 0.6, "steps": 8 },
-        ],
       },
       "cells": [],
     },

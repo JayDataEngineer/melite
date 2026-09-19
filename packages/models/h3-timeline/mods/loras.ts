@@ -1,10 +1,10 @@
 // @melite/models-h3-timeline/mods/loras.ts — THE H3 FAMILY'S LORAS
 // FLAVOR (the mod plane, the operator's law 2026-09-12: "MOD SYSTEM
 // IS CORE. NEVER HARDCODED. The LORAS should not be on cards, the
-// MOD SYSTEM SHOULD"). The two distill adapters the frozen goldens
-// stack via LTX_lora_loader.stack_data (LORA_STACK_GOLD — the
-// dareties v4 distill at 0.4 + the turbo 4-to-8-step at 0.6; the
-// goldens' own rows carry str 0.4/0.6 and v/a/t 1). FAMILY-OWNED
+// MOD SYSTEM SHOULD"). The two distill adapters (the dareties v4
+// distill at 0.4 + the turbo 4-to-8-step at 0.6) — EITHER rides solo;
+// the live stack is the solo turbo (plaguekind 1:1, 2026-09-20 —
+// the V7-era pair is retired, never a fallback). FAMILY-OWNED
 // DATA: the rows live with the family; the pack contract
 // (engines/comfyui-cordis/src/mods/packs.ts) supplies the inherited
 // fields; DECL.mods = ['loras'] boards the pack (boot-gated ≡ this
