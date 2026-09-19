@@ -549,6 +549,27 @@ describe('live door arms', () => {
     assert.ok(dareties !== undefined && turbo !== undefined, 'both distill rows serve')
     assert.deepEqual(dareties!['defaults'], { strength: 0.4, steps: 4 }, 'dareties v4: a four-step distill (fixed point)')
     assert.deepEqual(turbo!['defaults'], { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8 }, 'turbo 4-8: the married default rides WITH its declared range')
+    // ── THE CATALOG EXPANSION (2026-09-20, operator: "add multiple
+    // loras and let the user choose"): the official lightx2v turbos
+    // + the Kijai Acc adapters serve as user picks — strength 1 per
+    // Comfy-Org's own t2v/i2v/r2v templates, steps married. ──
+    const turbo8 = opts.find((o) => o['value'] === 'h3_turbo8_v1')
+    const acc8 = opts.find((o) => o['value'] === 'h3_acc8_fl2va')
+    assert.ok(turbo8 !== undefined && acc8 !== undefined, 'the expansion rows serve on the picker')
+    assert.deepEqual(turbo8!['defaults'], { strength: 1, steps: 8 }, 'official 8-step v1.0: full strength (the template operating point)')
+    assert.deepEqual(acc8!['defaults'], { strength: 1, steps: 8 }, 'Kijai Acc 8-Step: designed at full strength')
+    // ── THE ARENA ROWS (the 15k-vote leaderboard + authors' READMEs):
+    // larryvrh #1 at 6 steps strength 1 (his README: "6–8 steps,
+    // where v4 looks its best"); Parasyte #2 at the author's 1.5
+    // strength / 8 steps (a strength-2 contract, not a typo);
+    // TaoMate the refiner instrument (0.7 / 3 steps). ──
+    const larry = opts.find((o) => o['value'] === 'h3_larryvrh_v4_ema')
+    const para = opts.find((o) => o['value'] === 'h3_pk_parasyte')
+    const tao = opts.find((o) => o['value'] === 'h3_taomate_3step')
+    assert.ok(larry !== undefined && para !== undefined && tao !== undefined, 'the arena rows serve on the picker')
+    assert.deepEqual(larry!['defaults'], { strength: 1, steps: 6, steps_min: 4, steps_max: 8 }, 'larryvrh v4-600 EMA: the crowd #1, 6 steps per README')
+    assert.deepEqual(para!['defaults'], { strength: 1.5, steps: 8, steps_min: 6, steps_max: 8 }, 'Parasyte: the author rec — 1.5 str / 8 steps / er_sde beta57')
+    assert.deepEqual(tao!['defaults'], { strength: 0.7, steps: 3 }, 'TaoMate: the refiner operating point (0.7 over 3 closing steps)')
   })
 
   test("formSpecArm serves the AGENT ENGINE doc from the declared contract (stroke 66 — the census rides LIVE)", async () => {

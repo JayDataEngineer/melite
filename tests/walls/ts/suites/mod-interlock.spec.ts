@@ -129,11 +129,17 @@ test("krea lora rows: the 12 rows pinned (id/label/strength)", () => {
 
 test("THE RUNTIME CATALOG LAW: qwen serves the union; family rows win", () => {
   const union = svc.modRows("loras", "qwen-img-edit-2511");
-  // 12 krea rows + z-image's 7 + h3-timeline's 2 (the mod-plane
-  // stroke boards the h3 distill pair — the union is every family's
-  // rows, never a frozen count)
-  assert.equal(union.length, 21, "the union of every family's rows");
+  // 12 krea rows + z-image's 7 + h3-timeline's 10 (the two dareties
+  // rows + the 2026-09-20 catalog expansion: three Comfy-Org
+  // lightx2v turbos + two Kijai Acc adapters + the ARENA rows —
+  // larryvrh v4-600 EMA (the crowd's #1) and Plaguekind Parasyte
+  // (#2) — and the TaoMate refiner. User picks, the mod-plane
+  // stroke boards them; the union is every family's rows)
+  assert.equal(union.length, 29, "the union of every family's rows");
   assert.ok(union.some((r) => r.id === "h3_lightx2v_dareties"), "the h3 gold distill row serves");
+  assert.ok(union.some((r) => r.id === "h3_turbo8_v1"), "the official lightx2v 8-step turbo serves (the catalog expansion)");
+  assert.ok(union.some((r) => r.id === "h3_larryvrh_v4_ema"), "the arena #1 (larryvrh v4-600 EMA) serves");
+  assert.ok(union.some((r) => r.id === "h3_pk_parasyte"), "the arena #2 (Plaguekind Parasyte) serves");
   assert.ok(union.some((r) => r.id === "krea2_realism_lora"));
   const own = svc.modRows("loras", "krea-2");
   assert.equal(own.length, 12, "family rows unchanged (they ARE the union source)");

@@ -173,9 +173,9 @@ export const DECL: ModelDecl = {
     },
     {
       "name": "minimax_h3_video_vae_int8_convrot.safetensors",
-      "url": "https://huggingface.co/Kijai/MiniMax-H3-experimental/resolve/main/minimax_h3_video_vae_int8_convrot.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
       "folder": "vae",
-      "sha256": "9bb2d96f218c76babd85e0611b85ca8fb330a90546c01a0005e8a58a59593410"
+      "sha256": "52a2c8c73583c86e4f41cdcce3a6ad0ea562987bc0bf3d60a0cef5f5c8e60c0e"
     },
     {
       "name": "minimax_h3_video_vae_fp16.safetensors",
@@ -188,12 +188,6 @@ export const DECL: ModelDecl = {
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
       "folder": "vae",
       "sha256": "8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48"
-    },
-    {
-      "name": "minimax_h3_turbo_v4_step600_ema_pruned_comfyui.safetensors",
-      "url": "https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/minimax_h3_turbo_v4_step600_ema_pruned_comfyui.safetensors",
-      "folder": "loras/h3",
-      "sha256": "7098acf3ee75028fd9fcd948f50fcc8d995057fabb76f86bd3ca2c0ffc58e409"
     }
   ],
   "has_agent": true,
