@@ -1,0 +1,138 @@
+// cardsVariant.ts — R1 variant/quant selection + the route-lens
+// overlay + params lift. Extracted from cardsRegistry: the pure
+// coordinate math of {model:} resolution.
+import type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
+import { CardArmError } from "./cardsArmError.ts";
+import { CARD_ENVELOPE_KEYS } from "./cardsRegistry.ts";
+
+// ── R1 variant/quant selection + route-lens stamp overlay ──────────
+
+export interface VariantSelection {
+  readonly variantId: string;
+  readonly quant: string;
+  readonly resolverDefaults: Record<string, unknown>;
+}
+
+function knownVariantIds(row: ModelFactsRow): string[] {
+  return (row.variants ?? []).map((v) => v.id);
+}
+
+/** Select the matrix cell (R1 wire contract): explicit body
+ *  variant/quant keys win when stated (matched against facts
+ *  variant id/route + cell quant); unstated coordinates fall to
+ *  the FIRST non-Recipe variant / first cell (Model.resolve —
+ *  the family default). Unknown coordinates refuse LOUD (never a
+ *  silent neighbor cell). */
+export function selectCardVariant(
+  mid: string,
+  famRow: ModelFactsRow,
+  body: Record<string, unknown>,
+  phase: string,
+): VariantSelection {
+  const variants: VariantRow[] = famRow.variants ?? [];
+  const configured: VariantRow[] = variants.filter((v) => v.group !== "Recipe");
+  const pool: VariantRow[] = configured.length > 0 ? configured : variants;
+  const rawVariant: unknown = body["variant"];
+  const rawQuant: unknown = body["quant"];
+  let variant: VariantRow | undefined;
+  if (rawVariant === undefined || rawVariant === null) {
+    variant = pool[0];
+  } else {
+    if (typeof rawVariant !== "string") {
+      throw new CardArmError(
+        400,
+        "card_compose phase " + phase + ": variant must be a string (got " +
+          (Array.isArray(rawVariant) ? "list" : typeof rawVariant) + ")",
+        "card_compose",
+      );
+    }
+    variant = variants.find((v) => v.id === rawVariant || v.route === rawVariant);
+    if (variant === undefined) {
+      throw new CardArmError(
+        400,
+        "card_compose phase " + phase + ": unknown variant " + JSON.stringify(rawVariant) +
+          " for model " + JSON.stringify(mid) + " (known: " + knownVariantIds(famRow).join(", ") + ")",
+        "card_compose",
+      );
+    }
+  }
+  let quant = "";
+  if (rawQuant !== undefined && rawQuant !== null) {
+    if (typeof rawQuant !== "string") {
+      throw new CardArmError(
+        400,
+        "card_compose phase " + phase + ": quant must be a string (got " +
+          (Array.isArray(rawQuant) ? "list" : typeof rawQuant) + ")",
+        "card_compose",
+      );
+    }
+    const cells: VariantCellRow[] = variant !== undefined ? (variant.cells ?? []) : [];
+    const hit: VariantCellRow | undefined = cells.find((c) => c.quant === rawQuant);
+    if (hit === undefined) {
+      const known: string = cells.map((c) => c.quant).join(", ");
+      throw new CardArmError(
+        400,
+        "card_compose phase " + phase + ": unknown quant " + JSON.stringify(rawQuant) +
+          " for model " + JSON.stringify(mid) + " variant " +
+          JSON.stringify(variant !== undefined ? variant.id : "") +
+          (known !== "" ? " (known: " + known + ")" : " (the variant declares no cells)"),
+        "card_compose",
+      );
+    }
+    quant = hit.quant;
+  } else if (variant !== undefined && (variant.cells ?? []).length > 0) {
+    quant = String((variant.cells as VariantCellRow[])[0]?.quant ?? "");
+  }
+  return {
+    variantId: variant !== undefined ? variant.id : "",
+    quant,
+    resolverDefaults: variant !== undefined ? { ...(variant.resolver_defaults ?? {}) } : {},
+  };
+}
+
+/** The route-lens stamp overlay (_route_stamp_overlay 705-751):
+ *  family defaults + the selected variant's resolver_defaults,
+ *  injected ONLY for absent keys, filtered to the owning card's
+ *  field surface (schema keys + admits, exact or trailing-*
+ *  prefix). None/"" stamps never ride (UNSET markers — riding
+ *  them would refuse the str fields the row leaves open).
+ *  variant/quant contract keys are CONSUMED (never ride compose —
+ *  no card declares them). Returns the STAMPED body (a copy). */
+export function stampCardOverlay(
+  body: Record<string, unknown>,
+  famRow: ModelFactsRow,
+  decl: CardDeclRow,
+  sel: VariantSelection,
+): Record<string, unknown> {
+  const stamps: Record<string, unknown> = { ...(famRow.defaults ?? {}) };
+  for (const [k, v] of Object.entries(sel.resolverDefaults)) stamps[k] = v;
+  const names: Set<string> = new Set(decl.schemaNames);
+  const admits: readonly string[] = decl.admits;
+  const onSurface = (k: string): boolean => {
+    if (names.has(k)) return true;
+    return admits.some((a) => a === k || (a.endsWith("*") && k.startsWith(a.slice(0, -1))));
+  };
+  const out: Record<string, unknown> = { ...body };
+  for (const [k, v] of Object.entries(stamps)) {
+    if (v === null || v === undefined || v === "") continue;
+    if (!onSurface(k)) continue;
+    if (k in out) continue;
+    if ((CARD_ENVELOPE_KEYS as readonly string[]).includes(k)) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
+/** The card-compose lift (card_compose_body 363-372): the run body
+ *  minus the gateway envelope, restaged as the ONE params stanza.
+ *  variant/quant ride the R1 contract (consumed at selection, never
+ *  params — no card declares knobs by those names). */
+export function liftCardParams(body: Record<string, unknown>): Record<string, unknown> {
+  const params: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(body)) {
+    if ((CARD_ENVELOPE_KEYS as readonly string[]).includes(k)) continue;
+    if (k === "variant" || k === "quant") continue;
+    params[k] = v;
+  }
+  return params;
+}
