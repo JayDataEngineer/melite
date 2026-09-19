@@ -236,7 +236,14 @@ const paramSchema = z.object({
 // so the law lives here, shared by schema() and the compose gate.)
 const coerceWireBoolean = (raw: Record<string, unknown>): Record<string, unknown> => {
   if (typeof raw.interpolate_enabled === 'string') {
-    return { ...raw, interpolate_enabled: raw.interpolate_enabled === 'true' }
+    // ENFORCEMENT (the wall's catch, 2026-09-19): the coercion admits
+    // the TWO wire literals only — any other string refused LOUD
+    // (silent garbage-to-false was a walk bypass, never the wire law).
+    const v = raw.interpolate_enabled
+    if (v !== 'true' && v !== 'false') {
+      throw new Error(`interpolate_enabled must be a boolean or the wire literal "true"/"false" — got ${JSON.stringify(v).slice(0, 40)}`)
+    }
+    return { ...raw, interpolate_enabled: v === 'true' }
   }
   return raw
 }
@@ -410,6 +417,23 @@ export const identity = {
  *  tail (the node's context_frames arm). prev_sec scales the carry:
  *  picture snapped to the node's legal context lengths (5/22/39/56
  *  frames — only whole latent steps), audio at 24 frames/second. */
+/** ENFORCEMENT-ONLY WALK (2026-09-19, the operator's order: the
+ *  schema gates EVERY hop — nothing goes around Schemaster). The
+ *  overlays (the single-call lift, the film per-window stanza)
+ *  merge user-authored knobs AFTER the compose gate walked the
+ *  entry doc; this walk keeps the carrier's REFUSALS (declared
+ *  types + bounds on every knob the overlay introduces) and
+ *  DISCARDS its default-fills — the stanza's absent-key law (null
+ *  length for per-window spans, the family budgets) owns the
+ *  semantics. */
+const assertOverlayGated = (doc: Record<string, unknown>, where: string): void => {
+  try {
+    paramSchema(doc)
+  } catch (e) {
+    throw new Error(`${where}: ${String(e)}`)
+  }
+}
+
 function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // (the compose dispatch guarantees calls is a non-empty array here)
   const calls = p.calls as Array<Record<string, unknown>>
@@ -480,6 +504,7 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     if (chainLike) stanza.__seam = transition === 'cut' ? 'cut-frames' : 'extend'
     if (prev !== undefined) stanza.__prev = prev
 
+    assertOverlayGated(stanza, `h3-timeline window ${k} knobs`)
     const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w))
     prev = h
     if (film === undefined) {
@@ -1084,6 +1109,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
           if (typeof single.text === 'string' && single.text.trim() !== '') p.prompt = single.text.trim()
         }
       }
+      assertOverlayGated(p, 'h3-timeline single-call lift')
       const guideImage = (p.image ?? p.image_name ?? '') as string
       if (p.variant === 't4r' && !guideImage) {
         // (refs-implied t4r windows carry no anchor — the bundle IS

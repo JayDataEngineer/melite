@@ -88,14 +88,20 @@ describe('rail (view + transport)', () => {
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Pause (Space)"]')) throw new Error('not playing yet')
     }, { timeout: 10000 })
-    fireEvent.keyDown(document.body, { code: 'Space' })
+    // retry the press inside the wait: under full-gate load the keydown
+    // can land before the transport handler arms (flake ledgered #16).
     await vi.waitFor(() => {
-      if (!document.body.querySelector('[aria-label="Play (Space)"]')) throw new Error('not paused yet')
-    }, { timeout: 10000 })
-    fireEvent.keyDown(document.body, { code: 'Space' })
+      if (!document.body.querySelector('[aria-label="Play (Space)"]')) {
+        fireEvent.keyDown(document.body, { code: 'Space' })
+        throw new Error('not paused yet')
+      }
+    }, { timeout: 20000 })
     await vi.waitFor(() => {
-      if (!document.body.querySelector('[aria-label="Pause (Space)"]')) throw new Error('not resumed yet')
-    }, { timeout: 10000 })
+      if (!document.body.querySelector('[aria-label="Pause (Space)"]')) {
+        fireEvent.keyDown(document.body, { code: 'Space' })
+        throw new Error('not resumed yet')
+      }
+    }, { timeout: 20000 })
   })
 })
 

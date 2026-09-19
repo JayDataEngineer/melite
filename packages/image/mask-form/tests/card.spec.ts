@@ -297,3 +297,49 @@ describe("the mask-form compose gate (the named-entry arms)", () => {
     assert.ok(json.includes("mask_fixed"), "the named draw rides verbatim");
   });
 });
+
+// THE OVERLAY LAW (2026-09-19, the operator's order: the schema
+// gates EVERY hop — nothing goes around Schemaster). The mod-owned
+// scalars ride `admits` (the flat schema walk passes them verbatim);
+// these rows prove the sam3 DECLARATION's own kindFields bound them
+// at compose — the bounds are read from the declaration, never
+// re-typed at the call site.
+describe("the mask-form compose gate (the mod-owned scalars cannot go around the declaration)", () => {
+  it("an out-of-bounds detection_threshold refuses loud (0.05–0.95 declared)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person" }], detection_threshold: 99 }, DUMMY, new GraphBuilder(), "r_dt_oob"),
+      /detection_threshold.*0\.05.*0\.95/,
+    );
+  });
+
+  it("a wrong-typed detection_threshold refuses loud (declared a number)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person" }], detection_threshold: "high" }, DUMMY, new GraphBuilder(), "r_dt_type"),
+      /detection_threshold must be a number/,
+    );
+  });
+
+  it("a negative max_instances refuses loud (0–100 declared)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person" }], max_instances: -1 }, DUMMY, new GraphBuilder(), "r_mi_oob"),
+      /max_instances.*0.*100/,
+    );
+  });
+
+  it("a wrong-typed export_boxes refuses loud (declared a boolean — never coerced)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person" }], export_boxes: "yes" }, DUMMY, new GraphBuilder(), "r_eb_type"),
+      /export_boxes must be a boolean/,
+    );
+  });
+
+  it("bounded scalars ride the RT-DETR lane verbatim (the graph carries them)", () => {
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam3: [{ via_rtdetr: true }], detection_threshold: 0.5, max_instances: 10 }, DUMMY, g, "r_rt_ok");
+    const rtdetr = Object.values(g.toJSON()).find((n) => (n as { class_type?: string })["class_type"] === "RTDETR_detect") as { inputs?: Record<string, unknown> } | undefined;
+    assert.ok(rtdetr, "the RT-DETR proposal lane renders for a via_rtdetr primary");
+    assert.equal(rtdetr!.inputs!["threshold"], 0.5);
+    assert.equal(rtdetr!.inputs!["max_detections"], 10);
+  });
+});
+

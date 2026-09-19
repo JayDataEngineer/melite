@@ -71,7 +71,7 @@ export function stubLoads(opts: {
   // The wire affordance is catalog-derived (useMotionMedia: no
   // catalog = no wire, honest no-truth) — seed the service row the
   // studio spec's stages sit on, with the preview-glb input slot.
-  primeCatalog({ models: { kimodo_motion: { input_slots: ['preview_glb'] } } } as Parameters<typeof primeCatalog>[0])
+  primeCatalog({ models: { kimodo_motion: { input_slots: ['preview_glb'] } } } as unknown as Parameters<typeof primeCatalog>[0])
 
   vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
     const u = typeof input === 'string' ? input : (input as Request).url ?? String(input)

@@ -114,7 +114,7 @@ function thumbs(): Record<string, string> {
 }
 
 function stubEditable(): string | null {
-  return document.body.querySelector('[data-stub-editable]')?.getAttribute('data-stub-editable')
+  return document.body.querySelector('[data-stub-editable]')?.getAttribute('data-stub-editable') ?? null
 }
 
 /** Buttons by visible label — the edit-mode hint bar repeats some labels

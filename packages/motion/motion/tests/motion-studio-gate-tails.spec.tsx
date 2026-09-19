@@ -352,7 +352,7 @@ describe('media: motion load races', () => {
     }, { timeout: 20000 })
     unmountAll()
     const { motionResponse } = await import('./fixtures.ts')
-    release(motionResponse(4, 30))
+    release(await motionResponse(4, 30))
     await new Promise((r) => setTimeout(r, 800))
     // the post-await guard saw cancelled (and the finally skipped
     // setLoading): nothing landed, nothing toasted.
@@ -461,10 +461,13 @@ describe('stage + undo + authoring tails', () => {
     stubLoads()
     mountEditor()
     await waitForText('No motion yet')
-    fireEvent.click(railButton('Refine pose'))
+    // retry the press inside the wait: under full-gate load the first
+    // click can land before the handler arms (the flake ledgered twice).
     await vi.waitFor(() => {
+      const done = document.body.textContent?.includes('Done') === true
+      if (!done) fireEvent.click(railButton('Refine pose'))
       getByText(document.body, 'Done')
-    }, { timeout: 10000 })
+    }, { timeout: 20000 })
     // undo the edit-enter: the restore clears editableJoints while editMode
     // stays live, so Done takes its null-kept arm.
     fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })

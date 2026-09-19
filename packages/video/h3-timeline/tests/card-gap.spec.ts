@@ -351,3 +351,81 @@ describe("the standalone chain stanza (the cross-prompt convention)", () => {
     expect(loads[0]![1].inputs.clip_index).toBe(3);
   });
 });
+
+// THE OVERLAY LAW (2026-09-19, the operator's order: the schema
+// gates EVERY hop — nothing goes around Schemaster). The
+// single-call lift and the film per-window stanza merge
+// user-authored knobs AFTER the compose gate walked the entry doc;
+// these rows prove the carrier's refusals reach every overlay —
+// out-of-bounds and wrong-typed knobs refuse LOUD at the lift and
+// per window, bounded knobs ride the graph verbatim, and unknown
+// keys stay inert (the lenient-object design, declared).
+describe("the overlays cannot go around Schemaster", () => {
+  it("an out-of-bounds knob in the single-call lift refuses loud (width 448–1344 declared)", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose(
+        { calls: [{ text: "a push in", knobs: { width: 9999 } }] },
+        model, g, "run_lift_oob",
+      ),
+      /single-call lift.*width.*1344/,
+    );
+  });
+
+  it("a wrong-typed knob in the single-call lift refuses loud (width declared a number)", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose(
+        { calls: [{ text: "a push in", knobs: { width: "wide" } }] },
+        model, g, "run_lift_type",
+      ),
+      /single-call lift.*width.*number/,
+    );
+  });
+
+  it("a bounded knob in the single-call lift rides the anchor window verbatim", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90, knobs: { width: 896 } }] }),
+      model, g, "run_lift_ok",
+    );
+    const out = graphOf(g);
+    const r2v = ofClass(out, "MiniMaxH3ReferenceToVideo");
+    assert.ok(r2v.length > 0, "the lifted image-anchor window renders the r2v lane");
+    assert.equal(r2v[0]![1].inputs.width, 896);
+  });
+
+  it("an out-of-bounds knob on a film window refuses loud and names the window (steps 4–30 declared)", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose(
+        { calls: [SHOT(), SHOT({ text: "a second push", start_frame: 56, end_frame: 124, knobs: { steps: 999 } })] },
+        model, g, "run_stanza_oob",
+      ),
+      /window 2 knobs.*steps.*30/,
+    );
+  });
+
+  it("a bounded knob on a film window rides that window's scheduler verbatim", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      { calls: [SHOT(), SHOT({ text: "a second push", start_frame: 56, end_frame: 124, knobs: { steps: 8 } })] },
+      model, g, "run_stanza_ok",
+    );
+    const out = graphOf(g);
+    const sched = scoped(out, "window2_", "BasicScheduler");
+    assert.ok(sched.length > 0, "window 2 owns a scheduler");
+    assert.equal(sched[0]![1].inputs.steps, 8);
+  });
+
+  it("an unknown knob rides inert (the lenient-object law — it never reaches a node input)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90, knobs: { bogus_knob: 1 } }] }),
+      model, g, "run_lift_unknown",
+    );
+    const json = JSON.stringify(graphOf(g));
+    assert.ok(!json.includes("bogus_knob"), "the unknown key never lands on a node input");
+  });
+});
+

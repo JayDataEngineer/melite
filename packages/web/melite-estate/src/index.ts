@@ -250,7 +250,9 @@ const rows: readonly Plugin[] = [
           if (found === null) return null;
           if (found.bodyText !== null) return found.bodyText;
           try {
-            return await readFile(found.path, "utf8");
+            // the FlowRow invariant (skillRows): bodyText is null only
+            // when the file path is set — the cast carries it, branch-free.
+            return await readFile(found.path as string, "utf8");
           } catch {
             return null;
           }

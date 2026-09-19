@@ -220,6 +220,35 @@ export function apply(ctx: Context): void {
       // THE STANDALONE WALK: sources in bag order — the FIRST
       // standalone entry is the primary (mask_combined, the union
       // anchor); every entry after it is a per-name export.
+      // ENFORCEMENT (2026-09-19, the operator's order — nothing goes
+      // around the declared law): the mod-owned scalars ride `admits`
+      // (the flat schema passes them verbatim), so the sam3
+      // declaration's own kindFields bound them at compose — the
+      // bounds are READ FROM the declaration (single source of
+      // truth), never re-typed here.
+      {
+        // EVERY declared kindFields bag gates (sam3 today; any future
+        // mod's scalars join the law for free — no per-key re-typing).
+        for (const mod of MODS) {
+        for (const f of (mod.kindFields ?? []) as Array<{ name?: unknown; type?: unknown; min?: unknown; max?: unknown }>) {
+          const key = String(f.name)
+          const v = doc[key]
+          if (v === undefined || v === null) continue
+          if (f.type === 'boolean') {
+            if (typeof v !== 'boolean') {
+              throw new Error(`${key} must be a boolean — got ${JSON.stringify(v).slice(0, 40)}`)
+            }
+          } else {
+            if (typeof v !== 'number' || !Number.isFinite(v)) {
+              throw new Error(`${key} must be a number (${String(f.min)}–${String(f.max)}) — got ${JSON.stringify(v).slice(0, 40)}`)
+            }
+            if (v < (f.min as number) || v > (f.max as number)) {
+              throw new Error(`${key} must be within ${String(f.min)}–${String(f.max)} — got ${String(v)}`)
+            }
+          }
+        }
+        }
+      }
       const lane: Record<string, unknown> = {
         input_image: doc.input_image,
         sam_threshold: doc.sam_threshold,
