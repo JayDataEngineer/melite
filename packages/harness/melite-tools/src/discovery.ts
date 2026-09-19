@@ -27,6 +27,7 @@ import {
   modelIds,
   theService,
   emitModifierKinds,
+  declaredDefaults,
 } from '@melite/comfyui-cordis'
 import type {
   CardDefinition,
@@ -468,10 +469,26 @@ export function specBody(
   }))
   return {
     contract: null,
-    // THE BASE LAYER INPUT (the parameter audit): the family row's
-    // own defaults — resolveValue layers schema defaults <- this <-
-    // recipe params <- user, the engine's compose order verbatim.
-    model_defaults: decl?.defaults ?? {},
+    // THE BASE LAYER INPUT (the parameter audit, re-owned 2026-09-20
+    // per the no-silent-resolution law): the WALKED DECLARED DEFAULTS
+    // (the same enumeration the compose door enforces and the tool
+    // face serves — one spelling) under the family row's own
+    // defaults (nulls and arrays never ride, the engine's compose
+    // order verbatim: schema defaults <- this <- recipe <- user).
+    // Before this, the row served decl.defaults alone — the UI
+    // prefilled {seed: 42} while the door walked 30+ real defaults,
+    // and the operator read BLANK knobs over a healthy compose.
+    model_defaults: {
+      // (a schema-less synthetic def carries no declared defaults —
+      // nothing to layer; real cards always carry the carrier)
+      ...(def.schema === undefined ? {} : declaredDefaults(
+        ((def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema) as never,
+        def.boarded ?? [],
+      )),
+      ...Object.fromEntries(
+        Object.entries(decl?.defaults ?? {}).filter(([, v]) => v !== null && !Array.isArray(v)),
+      ),
+    },
     engine: decl?.engine ?? 'comfyui',
     enhance_prompt: null,
     // THE RECIPE SEAT (hour 24 stroke 10): the model's prompt-enhance

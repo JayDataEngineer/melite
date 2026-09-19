@@ -12,6 +12,7 @@ import { assertControlNetSchedule } from '@melite/comfyui-card-kit/guard'
 import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { ProvisionRow } from './models/families/contract.ts'
 import { validateFields, validateVerb, resolveControlNetEntry } from "./serviceMods.ts";
+import { unwalkedParams, declaredDefaults as declaredDefaultsFor } from "./no-cheat.ts";
 // the mod/verb plane re-exports through the service door (one surface)
 export { resolveControlNetEntry } from "./serviceMods.ts";
 import type { ModFields } from "./serviceMods.ts";
@@ -27,6 +28,35 @@ export class ComposeRefusal extends Error {
   constructor(code: string, message: string) {
     super(message)
     this.code = code
+  }
+}
+
+/** THE NO-CHEAT DOOR (2026-09-20, the operator's order: "you edit
+ *  the shared library to always walk every single parameter no
+ *  matter what — that way you can't cheat"): after the full cascade,
+ *  every knob DECLARED with a non-null default must hold a non-null
+ *  value in the merged doc. A declared default the walk drops (the
+ *  union-null arm, the buried inner default, the family-literal
+ *  resolution path) is a broken card, refused loud by name — the
+ *  renderer's silent `??` floors are outlawed, not trusted. Knobs
+ *  declared without a default keep their own lawful optionality.
+ *  Card-agnostic: both compose paths, every card, no opt-out. */
+function assertNoCheat(cardId: string, def: Pick<CardDefinition, 'schema' | 'schemaCarrier' | 'boarded'>, merged: Record<string, unknown>, rawParams?: unknown): void {
+  const carrier = (def.schemaCarrier ?? def.schema) as unknown as import('./params-emit.ts').Schema
+  // THE NO-SILENT-REPAIR ARM: schemastery's walk quietly resolves an
+  // explicit user null to the declared default — a repair the user
+  // never sees. The door refuses the null BEFORE the walk can hide
+  // it: send a real value or omit the key, never null-on-a-default.
+  const raw = (rawParams ?? {}) as Record<string, unknown>
+  const declared = declaredDefaultsFor(carrier, def.boarded)
+  const nulled = Object.keys(declared).filter((k) => Object.prototype.hasOwnProperty.call(raw, k) && raw[k] === null)
+  if (nulled.length > 0) {
+    throw new ComposeRefusal('nulled-param', `card '${cardId}' refused params: ${nulled.map((k) => `'${k}' is null but its declaration carries a default (${JSON.stringify(declared[k])}) — send a real value or omit the key, never null`).join(', ')}`)
+  }
+  const offenders = unwalkedParams(carrier, def.boarded, merged)
+  if (offenders.length > 0) {
+    const rows = offenders.map((o) => `'${o.name}' (declared default ${JSON.stringify(o.declared)}, walked ${o.walked === undefined ? 'absent' : 'null'})`).join(', ')
+    throw new ComposeRefusal('unwalked-param', `card '${cardId}' declared defaults the walk did not deliver: ${rows} — the card's schema is broken; fix the declaration, never the renderer`)
   }
 }
 
@@ -491,6 +521,7 @@ export class ComfyUIService extends Service {
       } catch (e) {
         throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}`)
       }
+      assertNoCheat(cardId, def, merged, params)
       const packs = def.requires
       if (packs?.length && this.objectInfoNodes) {
         const extMap = this.facts?.extension_node_types ?? {}
@@ -530,6 +561,7 @@ export class ComfyUIService extends Service {
       throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}`)
     }
     merged = { ...merged, ...Object.fromEntries(Object.entries(model.defaults).filter(([, v]) => v !== null && !Array.isArray(v))), ...((params ?? {}) as Record<string, unknown>) }
+    assertNoCheat(cardId, def, merged, params)
 
     // LORA WIRE RESOLUTION (2026-09-10 — the id/name split): the UI
     // boundary emits id-keyed rows ({id, strength} — LoRAEntry, the

@@ -6,7 +6,7 @@
 // rows already pin the mainline through the walls.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { validateRegistryAgainstCards } from "../src/models/validate.ts";
+import { validateRegistryAgainstCards, fieldDomains } from "../src/models/validate.ts";
 import { buildCatalog, isServedFamily } from "../src/models/catalogEmission.ts";
 import type { ModelDecl } from "../src/models/families/contract.ts";
 
@@ -153,5 +153,39 @@ describe("buildCatalog (the served-row arms)", () => {
     // no catalog-level slot vocabulary or static sections (DELETED
     // 2026-09-18 with the frozen pin set); seats ride each model
     // row's input_slots.
+  });
+});
+
+describe("fieldDomains (the union-options projection)", () => {
+  it("a union branch carrying null NEVER joins the options (the retired shift_video shape)", () => {
+    const dict = {
+      shift_video: {
+        type: "union",
+        list: [
+          { type: "number", value: 8 },
+          { type: "const", value: null },
+        ],
+      },
+    } as never;
+    const out = fieldDomains(dict as never);
+    const opts = out.get("shift_video")?.options ?? [];
+    assert.deepEqual(opts, ["8"], "the number branch stringifies in; the null branch never joins");
+  });
+
+  it("a union whose branches are ALL null projects NO options (the empty-opts arm)", () => {
+    const dict = {
+      ghost: { type: "union", list: [{ type: "const", value: null }, { type: "const", value: null }] },
+    } as never;
+    const out = fieldDomains(dict as never);
+    assert.equal(out.get("ghost")?.options, undefined, "no non-null branch — no options key at all");
+  });
+
+  it("a plain bounded field carries min/max into its domain", () => {
+    const dict = {
+      steps: { type: "number", meta: { min: 4, max: 30 } },
+    } as never;
+    const out = fieldDomains(dict as never);
+    assert.equal(out.get("steps")?.min, 4);
+    assert.equal(out.get("steps")?.max, 30);
   });
 });

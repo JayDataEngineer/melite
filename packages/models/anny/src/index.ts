@@ -21,7 +21,7 @@ export const DECL: ModelDecl = {
     "framing": 1.2,
     "focal_length": 50,
     "samples": 64,
-    "transparent": true,
+    "transparent": "true",
     "gender": 0.5,
     "age": 0.5,
     "muscle": 0.5,

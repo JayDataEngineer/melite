@@ -236,16 +236,19 @@ describe("the film's per-window stanza (guides, refs, lora steps, length pins)",
     expect(sched1).toBe(8);
   });
 
-  it("a null length deletes before the walk (the multi-call span rider)", () => {
+  it("multi-call length stands INERT at the walked default (no nulls — spans own the film)", () => {
     const gated = def.schema({
       calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
     }) as Record<string, unknown>;
-    assert.equal(gated.length, null, "multi-call docs keep null through the gate");
+    assert.equal(gated.length, 56, "no null through the gate — the walked default stands (the doc-level length is a WINDOW knob; chains have no doc-level window)");
     const g = new GraphBuilder();
     def.compose(gated, model, g, "run_null_length");
     const out = graphOf(g);
     const acc = ofClass(out, "MiniMaxH3FiniteSegmentFinalize").filter(([id]) => !id.startsWith("window"));
-    assert.equal(acc.length, 1, "the film accumulates after the delete");
+    assert.equal(acc.length, 1, "the film accumulates (per-window stanza lengths come from each call's span)");
+    const r2v1 = scoped(out, "window1_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.length;
+    const r2v2 = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.length;
+    assert.notEqual(r2v2, 56, "window 2 never renders the inert doc-level default");
   });
 });
 
@@ -462,6 +465,92 @@ describe("the overlays cannot go around Schemaster", () => {
     );
     const json = JSON.stringify(graphOf(g));
     assert.ok(!json.includes("bogus_knob"), "the unknown key never lands on a node input");
+  });
+
+  it("the post-process knobs ride EXPLICIT and DECLARED (one owner each — the legacy switch aliases are retired)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT()],
+        interpolate_enabled: true, interp_model: "rife47.pth", interp_multiplier: 3,
+        sr_switch: true, sr_model: "seedvr2_ema_3b_fp16.safetensors",
+        sharpen_enabled: true,
+      }),
+      model, g, "run_legacy_aliases",
+    );
+    const out = graphOf(g);
+    const film = ofClass(out, "FrameInterpolationModelLoader")[0]![1].inputs.model_name;
+    assert.equal(film, "rife47.pth", "the explicit interp_model rides (no floor)");
+    assert.equal(ofClass(out, "FrameInterpolate")[0]![1].inputs.multiplier, 3, "the explicit multiplier rides");
+    const sr = ofClass(out, "SeedVR2VideoUpscaler");
+    assert.ok(sr.length > 0, "the sr_switch alias arms the upscaler");
+    assert.equal(sr[0]![1].inputs.resolution, 1080, "the walked sr_resolution default rides (no floor)");
+    const cv = ofClass(out, "CreateVideo")[0]![1].inputs;
+    assert.equal(cv.fps, 72, "interp ON pays the V9 compensation (24 × 3)");
+  });
+
+  it("a non-string call text falls to the run prompt (the film str() coercion, never a crash)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "the carry",
+        calls: [
+          { text: "first push", start_frame: 0, end_frame: 56 },
+          { text: 123, start_frame: 56, end_frame: 124 },
+        ],
+      }),
+      model, g, "run_junk_text",
+    );
+    const out = graphOf(g);
+    const r2v2 = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.prompt;
+    assert.equal(r2v2, "the carry", "junk text in the film loop coerces empty and the run prompt carries the window");
+  });
+
+  it("a stanza-pinned fps_seconds advances the bed clock by the window's OWN duration", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        bed_audio: "/inputs/bed.wav",
+        calls: [
+          { text: "first push", start_frame: 0, end_frame: 90, knobs: { fps_seconds: 4 } },
+          { text: "second push", start_frame: 90, end_frame: 180 },
+        ],
+      }),
+      model, g, "run_bed_pin",
+    );
+    const out = graphOf(g);
+    const slices = ofClass(out, "MeliteAudioSlice");
+    assert.ok(slices.length >= 2, "both windows slice the bed");
+    const starts = slices.map(([, n]) => Number(n.inputs.start_seconds)).sort((a, b) => a - b);
+    assert.equal(starts[1] - starts[0], 4, "the pinned fps_seconds (4s) advanced the bed clock exactly");
+  });
+
+  it("a non-finite frame number skips the stanza length pin (num() refuses NaN, never crashes)", () => {
+    const g = new GraphBuilder();
+    // DIRECT compose (pre-walked doc shape): schema()'s own shot laws
+    // refuse NaN LOUD for authored docs — this arm is the film
+    // renderer's fence for hand-built docs that skipped the walk
+    def.compose(
+      {
+        prompt: "a push",
+        calls: [
+          { text: "first push", start_frame: 0, end_frame: 56 },
+          { text: "junk frames", start_frame: Number.NaN, end_frame: 124 },
+        ],
+      },
+      model, g, "run_nan_frames",
+    );
+    const out = graphOf(g);
+    const r2v2 = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs;
+    assert.ok(typeof r2v2.length === "object" || typeof r2v2.length === "number", "window 2 composes (the NaN pin skipped, the length node rides)");
+  });
+
+  it("an explicit null length REFUSES at the card gate (no silent delete-and-refill)", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose({ ...def.schema({ calls: [SHOT()] }), length: null }, model, g, "run_null_len"),
+      /length is null — send a real frame count or omit the key/,
+    );
   });
 });
 

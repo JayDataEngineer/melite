@@ -38,7 +38,8 @@
 import type z from '@deepseek-ai/schemastery'
 import type { DeclaredModifierKind } from './service.ts'
 
-type Schema = {
+/** The carrier dict shape (shared with the no-cheat door). */
+export type Schema = {
   type: string
   meta?: Record<string, unknown>
   dict?: Record<string, Schema>

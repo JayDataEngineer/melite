@@ -30,6 +30,7 @@ export type { FactsFile, FactsReads, ModelFacts, LaneInputsFacts } from "@melite
 export { loadTextPair, decodeSave, stackLoras } from '@melite/comfyui-card-kit';
 export { emitKnob, emitParamsSchema, emitParamsSpec, emitModifierKinds } from "./params-emit.ts";
 export type { ParamsSchema, ParamsSpec, ParamSpecNode } from "./params-emit.ts";
+export { declaredDefaults, unwalkedParams } from "./no-cheat.ts";
 export { assertCardIdentity, cardPackages, composeCards, composeModPlane, loadCardDefs, pluginPackage, provisionsByFamily, theService } from "./cardDefs.ts";
 export { ASSET_RUNS_PREFIX, resolveLinkedInput, runsRoot } from "./linked.ts";
 // LIVE VOCABULARIES for serving surfaces (hand-owned, wall-pinned):

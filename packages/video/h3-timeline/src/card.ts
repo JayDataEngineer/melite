@@ -194,20 +194,16 @@ const paramSchema = z.object({
   // string (the mod bag `loras` is the sanctioned surface; this rides
   // for hand-authored edge cases)
   lora_stack: z.string().description("Lora stack (raw)"),
-  // nullable inner: min/max validate only the number branch — null
-  // (the family-literal resolution path) passes untouched.
-  // DECLARED-DEFAULT LAW (hour 22 incident): the declared
-  // default must be reachable by the gate AND visible to the walk.
-  // With the default buried in the union's inner arm only, carrier({})
-  // left the key absent — the face showed 8 (the walk reads the inner
-  // arm) while the body's hand-rolled family literal (isT4r ? 8.0 : 8)
-  // actually owned the call: convention only, a dormant silent
-  // drop (t5 ships 10 → face says 8, call sends 10). The default rides
-  // BOTH sites of this one expression now — the OUTER union (the gate's
-  // fill) and the inner arm (the walk's read) — and the two
-  // spellings stay equal per key. The body literal
-  // stays as the explicit-null backstop only.
-  shift_video: z.union([z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' }), z.const(null)]).default(8),
+  // NO SILENT RESOLUTION LAW (2026-09-20, the operator's order):
+  // one truth, one owner. shift_video is a NUMBER, default 8, served
+  // and walked identically. The old z.const(null) arm — the
+  // "family-literal resolution path" that walked empty docs to null
+  // so the renderer's ?? floor could silently pick the family's own
+  // literal — is deleted. An explicit null in a draft now REFUSES
+  // LOUD at the walk. The hour-22 double-default (same 8 spelled on
+  // the union and the inner arm) never made the walk fill 8; it
+  // bought the face a number while the call kept the body literal.
+  shift_video: z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' }),
   shift_audio: z.number().description("Audio Shift").min(1).max(10).step(0.5).default(3).extra('extra', { order: null, tooltip: "Timestep shift for audio attention. Lower = more detailed sound.", wtype: 'number' }),
   // ── the SLA family (hour 16, item 3): compose-read knobs, now
   // EMITTED — the studio's advanced panel rides the served spec
@@ -249,7 +245,7 @@ const paramSchema = z.object({
   // stay authoritative, the walk only REFUSES garbage.
   k: z.number().description("Window index (film vocabulary)").step(1),
   noise_seed: z.number().description("Per-window noise seed").step(1),
-  fps_seconds: z.number().description("Clip seconds (fps rail)").min(1).max(60),
+  fps_seconds: z.number().description("Clip seconds (fps rail)").min(1).max(60).default(10).extra('extra', { order: null, wtype: 'number', tooltip: "The clip's duration in seconds (the fps rail's duration primitive); the audio-bed slicer follows it." }),
   interp_switch: z.boolean().description("Interpolate switch (legacy alias)"),
   sharpen_switch: z.boolean().description("Sharpen switch (legacy alias)"),
   sla_switch: z.boolean().description("SLA switch (legacy alias)"),
@@ -364,11 +360,15 @@ export function schema(v: unknown): Record<string, unknown> {
     throw new Error(`unknown window family '${variant}' (known: ${[...FAMILIES].sort().join(', ')})`)
   }
   const explicit = new Set(Object.keys(raw))
-  // shift_video's declared .default(8.0) is the declared default;
-  // an omitted key normalizes back to null here so the
-  // body resolves the family's literal (t4 INT 8 / t4r 8.0) and the
-  // frozen graphs stay byte-identical.
-  if (!explicit.has('shift_video')) out.shift_video = null
+  // NO SILENT RESOLUTION LAW (2026-09-20): shift_video's declared
+  // default(8) is THE owner. The old nulling — "an omitted key
+  // normalizes back to null so the body resolves the family's
+  // literal (t4 INT 8 / t4r 8.0) and the frozen graphs stay
+  // byte-identical" — was the two-owner disease in its purest form:
+  // the declaration promised 8, the walk delivered null, the body
+  // invented 8 back. JS serializes 8.0 and 8 identically, so the
+  // nulling bought nothing but the lie. The no-cheat door refuses
+  // this card shape on sight now.
   // length: the SAME law (the walk-shadow fix, 2026-09-13) — the
   // declared .default(56) is the declared default,
   // but the body computes the family's frame budget where the python
@@ -376,16 +376,17 @@ export function schema(v: unknown): Record<string, unknown> {
   // Without this normalization the schemastery walk materializes 56 on
   // every doc that omits the key and the t4_open 90 branch is dead —
   // a hand-authored single text window silently rendered 56 frames.
-  // THE SPAN RIDER (2026-09-17, the said-7-got-3 catch): a null is
-  // NOT what the compose door receives — the door's cascade re-boards
-  // the schema default 56 over it, and the fresh press rendered 56
-  // (2.33s, live receipt) while the studio readout promised the
-  // window's span. A SINGLE-CALL doc now serializes its span as an
-  // EXPLICIT length (grid-snapped to the card's declared 17k+5 —
-  // normalization, not a gate; spans of any width ride), so the
-  // cascade carries it verbatim — the doc's span IS the film.
-  // Multi-call chains keep null: their windows render at the family
-  // budgets / the studio presets' own f values.
+  // NO SILENT RESOLUTION LAW, length arm (2026-09-20): a declared
+  // default may never walk null. Single-call docs keep the span
+  // rider (the window's grid-snapped span, EXPLICIT — the doc's span
+  // IS the film). Multi-call docs let the walked default stand INERT
+  // — the doc-level length is a WINDOW knob and multi-call films
+  // have no doc-level window; the per-window stanza lengths own the
+  // film (each call's span), and the studio's timeline readouts
+  // compute off the calls, never this key. (An earlier arm of this
+  // rework filled the FILM TOTAL here — wrong law: the 17k+5 grid
+  // belongs to windows, a total is arbitrary span arithmetic, and
+  // the walk's grid validation rightly refused off-grid totals.)
   if (!explicit.has('length')) {
     const rows = Array.isArray(out.calls) ? out.calls as Array<Record<string, unknown>> : []
     if (rows.length === 1) {
@@ -397,9 +398,9 @@ export function schema(v: unknown): Record<string, unknown> {
       // single-call doc rides the snap arm; no defensive else)
       const k = Math.round((ef! - sf! - 22) / 17)
       out.length = Math.min(362, Math.max(22, 22 + 17 * k))
-    } else {
-      out.length = null
     }
+    // rows.length !== 1: the walked default stands (56 fresh-card,
+    // inert for multi-call chains — spans own the film)
   }
   const bad = (keys: readonly string[]) => keys.filter((kk) => explicit.has(kk)).sort()
   if (variant === 't4r') {
@@ -564,13 +565,12 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       // value, never a pre-walk fence
       stanza.bed_window_start = (p.bed_start as number) + bedElapsed
     }
-    // advance the bed clock by THIS stanza's own duration (knobs may
-    // pin a per-window fps_seconds; the bed follows it) — num()
-    // refuses junk to null, the film default (10.0, the t4r branch's
-    // own duration literal) carries the absent arm
-    bedElapsed += num(stanza.fps_seconds ?? p.fps_seconds) ?? 10.0
-
     assertOverlayGated(stanza, `h3-timeline window ${k} knobs`)
+    // advance the bed clock by THIS stanza's own duration (knobs may
+    // pin a per-window fps_seconds; the bed follows it) — POST-GATE:
+    // the overlay walk refused junk and filled the declared default
+    // 10, so this is a gated NUMBER (direct read, never a fence)
+    bedElapsed += stanza.fps_seconds as number
     const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w))
     prev = h
     if (film === undefined) {
@@ -668,20 +668,19 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   // absent = absent on wire) ──
   const stabilize = p.sla_stabilize_motion ?? (isT4r ? false : true)
   const unet = g.node('UNETLoader', { unet_name: UNET_GOLD, weight_dtype: 'default' }).out()
-/* v8 ignore next 13 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
   const sla = g.node('H3SLAAttention', {
     model: unet,
-    sparsity_ratio: (p.sla_sparsity ?? 0.9) as number,
-    block_size: (p.sla_block_size ?? '32') as string,
-    min_seq_len: (p.sla_min_seq_len ?? 12288) as number,
-    dense_last_steps: (p.sla_dense_last_steps ?? 1) as number,
-    protect_audio: (p.sla_protect_audio ?? true) as boolean,
+    sparsity_ratio: p.sla_sparsity as number,
+    block_size: p.sla_block_size as string,
+    min_seq_len: p.sla_min_seq_len as number,
+    dense_last_steps: p.sla_dense_last_steps as number,
+    protect_audio: p.sla_protect_audio as boolean,
     enabled: true,
-    dense_steps: (p.sla_dense_steps ?? '0') as string,
-    dense_backend: (p.sla_dense_backend ?? 'comfy_kitchen') as string,
-    disable_fp16_accum: (p.sla_disable_fp16_accum ?? true) as boolean,
+    dense_steps: p.sla_dense_steps as string,
+    dense_backend: p.sla_dense_backend as string,
+    disable_fp16_accum: p.sla_disable_fp16_accum as boolean,
     stabilize_motion: stabilize,
-    reference_protection: (p.sla_reference_protection ?? 'Heavy Enforcement') as string,
+    reference_protection: p.sla_reference_protection as string,
   }).out()
   const chunked = g.node('MiniMaxChunkFeedForward', {
     model: g.node('MiniMaxLowVRAMAttention', { model: sla, head_chunks: 4 }).out(),
@@ -707,11 +706,10 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       })))
     : (p.lora_stack ?? LORA_STACK_GOLD)
   // t4r templates carry shift_video 8.0; the t4 family carries the INT
-  // 8 — the served shape needs the family's literal. An omitted
-  // key arrives null here (schema() normalizes the declared 8.0 back;
-  // the declaration) and resolves per-family.
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
-  const shiftVideo = p.shift_video ?? (isT4r ? 8.0 : 8)
+  // NO SILENT RESOLUTION LAW: the walked shift_video IS the value
+  // (declared default 8; the family literals retired with the
+  // nulling that fed them — 8.0 and 8 serialize identically anyway)
+  const shiftVideo = p.shift_video as number
 
   const clip = g.node('CLIPLoader', {
     clip_name: CLIP_GOLD, type: 'minimax',
@@ -738,7 +736,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     const loraModel = g.node('LTX_lora_loader', {
       model: picked, mode: 'minimax', stack_data: loraStack, lora_ui: '',
     }).out()
-    const seconds = g.node('PrimitiveFloat', { value: (p.fps_seconds ?? 10.0) as number }).out()  // id .1
+    const seconds = g.node('PrimitiveFloat', { value: p.fps_seconds as number }).out()  // id .1
     const lengthNode = g.node('ComfyMathExpression', {
       expression: MATH_STEPS_GOLD, 'values.a': seconds,
     }).out(1)
@@ -855,8 +853,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     const bout = g.node('PlagueKindBundleOut', { bundle })
     // declared knobs hoisted: the compose walk fills their defaults
     // (probe 2026-09-19) — the ?? literals are the pre-walk fence
-    /* v8 ignore next 1 */
-    const refSize = /* v8 ignore next -- walk-filled declared knob (probe 2026-09-19) */ (p.ref_image_size ?? 'match') as string
+    const refSize = p.ref_image_size as string
 
     const r2vInputs: Record<string, OutputHandle | string | number> = {
       prompt, width: p.width as number, height: p.height as number,
@@ -884,7 +881,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
         // bed-carrying stanza (the stamp ⟺ this block) — the cast
         // reads it, never a fence
         start_seconds: p.bed_window_start as number,
-        duration_seconds: (p.fps_seconds ?? 10.0) as number,
+        duration_seconds: p.fps_seconds as number,
       }).out(0)
       r2vInputs['ref_audios.ref_audio_0'] = slice
       // the user's audios shift behind the bed (Audio 2-3); the
@@ -936,13 +933,15 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // schema's span rider serializes single-call spans as EXPLICIT
     // length, and the merged film computes per-window lengths — this
     // arm only falls back to the family budgets)
-  /* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
-  const length = p.length ?? (family === 't4_open' ? 90 : 56)
+  // NO SILENT RESOLUTION LAW: the walked/stanza length IS the value
+  // (single-call: the span rider's explicit span; multi-call: the
+  // film total; fresh: the walked default; the 90/56 family budgets
+  // retired with the nulling that fed them)
+  const length = p.length as number
     const r2v = g.node('MiniMaxH3ReferenceToVideo', {
       prompt, width: p.width as number,
       height: p.height as number, length: length as number,
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
-      ref_image_size: (p.ref_image_size ?? 'match') as string,
+      ref_image_size: p.ref_image_size as string,
       clip, vae: vaeVideo, audio_vae: vaeAudio,
     })
     cond = r2v.out(0)
@@ -952,10 +951,8 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
 
   // ── sampler stack ──────────────────────────────────────────────────
   // card knob first (seed), renderer alias second.
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
-  const noise = g.node('RandomNoise', { noise_seed: (p.noise_seed ?? p.seed ?? 42) as number }).out()
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
-  const samplerSel = g.node('KSamplerSelect', { sampler_name: (p.sampler_name ?? 'euler') as string }).out()
+  const noise = g.node('RandomNoise', { noise_seed: (p.noise_seed ?? p.seed) as number }).out()
+  const samplerSel = g.node('KSamplerSelect', { sampler_name: p.sampler_name as string }).out()
   let sampler: OutputHandle
   if (isT4r) {
     sampler = samplerSel
@@ -966,10 +963,8 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // template carries switch=false as a LITERAL, not a bool node
     sampler = g.node('ComfySwitchNode', { switch: false, on_true: ersde, on_false: samplerSel }).out()
   }
-  /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
-  const schedName = (p.sched_name ?? 'simple') as string
-  /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
-  const denoiseVal = (p.denoise ?? 1.0) as number
+  const schedName = p.sched_name as string
+  const denoiseVal = p.denoise as number
   const sched = g.node('BasicScheduler', {
     model: sigmaModel, scheduler: schedName,
     steps: p.steps as number, denoise: denoiseVal,
@@ -1073,28 +1068,25 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // detail away). Sharpen rcas 0.3 after upscale "looks natural"
     // (his V9 notes). The switches stay ours; the ORDER is his.
     const film = g.node('FrameInterpolationModelLoader', {
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
-      model_name: (p.interp_model ?? 'film_net_fp16.safetensors') as string,
+      model_name: p.interp_model as string,
     }).out()
-    /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
-    const interpMultVal = (p.interp_multiplier ?? 2) as number
+    const interpMultVal = p.interp_multiplier as number
     const interp = g.node('FrameInterpolate', {
       interp_model: film, images: vdec, multiplier: interpMultVal,
     }).out()
-    // card knob first (interpolate_enabled), alias second.
-    /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
-    const interpSwOn = (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean
+    // ONE OWNER (2026-09-20): interpolate_enabled owns the switch
+    // (declared default false). The legacy interp_switch alias is
+    // retired — post-declaration the walk materializes the primary,
+    // so the alias arm was unreachable dead law.
+    const interpSwOn = p.interpolate_enabled as boolean
     const interpSw = g.node('ComfySwitchNode', {
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
       switch: interpSwOn, on_true: interp, on_false: vdec,
     }).out()
-    /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
-    const srRes = (p.sr_resolution ?? 1080) as number
+    const srRes = p.sr_resolution as number
     const sr = g.node('SeedVR2VideoUpscaler', {
       image: interpSw,
       dit: g.node('SeedVR2LoadDiTModel', {
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
-        model: (p.sr_model ?? 'seedvr2_ema_3b_fp16.safetensors') as string, device: 'cuda:0',
+        model: p.sr_model as string, device: 'cuda:0',
       }).out(),
       vae: g.node('SeedVR2LoadVAEModel', {
         model: 'ema_vae_fp16.safetensors', device: 'cuda:0',
@@ -1103,18 +1095,15 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       max_resolution: 0, batch_size: 5, uniform_batch_size: false,
       color_correction: 'lab',
     }).out()
-    /* v8 ignore next 1 -- walk-filled declared knob (probe 2026-09-19) */
-    const srSwOn = (p.sr_switch ?? false) as boolean
+    const srSwOn = p.sr_switch as boolean
     const srSw = g.node('ComfySwitchNode', {
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
       switch: srSwOn, on_true: sr, on_false: interpSw,
     }).out()
     // sharpen LAST (V9): the upscaler softens; rcas after it restores.
     // Renderer alias second (sharpen_* leaves above build the method).
     const sharpened = g.node('ImageSharpenKJ', { image: srSw, method }).out()
     const sharpSw = g.node('ComfySwitchNode', {
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
-      switch: (p.sharpen_enabled ?? p.sharpen_switch ?? false) as boolean, on_true: sharpened, on_false: srSw,
+      switch: p.sharpen_enabled as boolean, on_true: sharpened, on_false: srSw,
     }).out()
     // fps compensation (V9, 2026-09-15): upstream wires
     // CreateVideo.fps = base × interp multiplier (his Enhancements:
@@ -1122,10 +1111,8 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // it every interp-on window plays at HALF speed — the frames
     // double, the fps doesn't. Byte-stable at defaults (interp off →
     // the served literal 24).
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
-    const interpOn = (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean
-/* v8 ignore next 1 -- declared knob: the compose door's paramSchema walk fills every declared default before this point (probe 2026-09-19: carrier({}) fills all 20+ keys; explicit null resolves to the default too) — the ?? literal arms are the pre-walk fence, unreachable post-walk */
-    const interpMult = (p.interp_multiplier ?? 2) as number
+    const interpOn = p.interpolate_enabled as boolean
+    const interpMult = p.interp_multiplier as number
     const created = g.node('CreateVideo', {
       images: sharpSw, audio: vadec, fps: interpOn ? 24 * interpMult : 24, bit_depth: 8,
       // color_space: pin autofill "sRGB"
@@ -1229,12 +1216,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // one-line pattern. The composer's reads below are reads of the
       // GATED doc.
       // The wire law is SHARED (coerceWireBoolean — the same
-      // definition schema() uses, hour 20); the null-length drop is
-      // gate-context only and runs BEFORE the walk (the walk keeps
-      // null for multi-call docs — here the run-level default 56
-      // fills instead).
+      // definition schema() uses, hour 20). NO SILENT REPAIR
+      // (2026-09-20): an explicit null length used to be deleted
+      // here so the walk would silently fill the default — the same
+      // quiet-fix the door now refuses ('nulled-param'). The card's
+      // own gate voices the same refusal: send a number or omit the
+      // key, never null.
       const gateInput = coerceWireBoolean(p as Record<string, unknown>)
-      if (gateInput.length === null) delete gateInput.length
+      if (gateInput.length === null) {
+        throw new Error('length is null — send a real frame count or omit the key; the 17k+5 grid default fills natively (never null)')
+      }
       p = paramSchema(gateInput) as unknown as Record<string, unknown>
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its
