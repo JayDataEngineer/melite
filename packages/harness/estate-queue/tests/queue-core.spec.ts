@@ -8,7 +8,7 @@
 // stopped-rows-stay).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { QueueCore, newRunId, type QueueRunRow } from "../src/queueCore.ts";
+import { QueueCore, newRunId, terminalFrame, type QueueRunRow } from "../src/queueCore.ts";
 import { MAX_SETTLED_RUNS } from "../src/queueLock.ts";
 
 const row = (runId: string, over: Partial<QueueRunRow> = {}): QueueRunRow => ({
@@ -142,6 +142,31 @@ describe("QueueCore.evictSettled (the 500 cap, oldest first)", () => {
     assert.equal(evicted.length, 1);
     assert.equal(evicted[0], "run-0000");
     assert.ok(q.runs.has(`run-${String(total - 1).padStart(4, "0")}`));
+  });
+});
+
+describe("evictSettled tie-break, descending insertion", () => {
+  it("the ASC run-id order owns even when a later insert sorts first", () => {
+    const q = new QueueCore();
+    // insert 9 BEFORE 1: the comparator must see a>b pairs too
+    for (const i of [9, 1, 2, 3, 4, 5, 6, 7, 8, 0]) {
+      q.enqueue(row(`run-${String(i).padStart(4, "0")}`, { status: "failed", createdAt: 7 }));
+    }
+    const total = MAX_SETTLED_RUNS + 1;
+    for (let i = 10; i < total; i++) {
+      q.enqueue(row(`run-${String(i).padStart(4, "0")}`, { status: "failed", createdAt: 7 }));
+    }
+    const evicted = q.evictSettled();
+    assert.equal(evicted.length, 1);
+    assert.equal(evicted[0], "run-0000", "ASC id wins the tie regardless of insertion order");
+  });
+});
+
+describe("terminalFrame (the wire frame)", () => {
+  it("every terminal state renders its type/status pair", () => {
+    for (const status of ["completed", "failed", "stopped"] as const) {
+      assert.deepEqual(terminalFrame(status), { type: "run", status });
+    }
   });
 });
 

@@ -34,6 +34,12 @@ describe("required fields", () => {
     const out = validateBakeParams(JSON.stringify({ dialect: "authored", phenotype: 5 })) ?? "";
     assert.match(out, /value must be an array/);
   });
+  it("a JSON 1e999 parses to Infinity: the finite fence refuses", () => {
+    const out = validateBakeParams(
+      JSON.stringify({ dialect: "authored", phenotype: [1e999, ...P11.slice(1)] }),
+    ) ?? "";
+    assert.match(out, /Input should be a valid number/);
+  });
   it("a non-number phenotype item refuses at its index", () => {
     const out = validateBakeParams(JSON.stringify({ dialect: "authored", phenotype: ["x", ...P11.slice(1)] })) ?? "";
     assert.match(out, /Input should be a valid number/);

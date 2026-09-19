@@ -6,15 +6,41 @@
 // by proof, not by absence of tests.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resolveArtifactFile } from "../src/cardsDangling.ts";
+import { resolveArtifactFile, findCardDangling, sweepRoots } from "../src/cardsDangling.ts";
 
 const ROOT = join(tmpdir(), "melite-dangling-" + process.pid);
 mkdirSync(ROOT, { recursive: true });
 mkdirSync(join(ROOT, "run-1"), { recursive: true });
 writeFileSync(join(ROOT, "run-1", "out.png"), "x");
+
+describe("findCardDangling (the deep walk)", () => {
+  it("a live ref nested in arrays/objects rides (refLocations walk)", () => {
+    // findCardDangling probes the REPO's real sweep roots — the live
+    // fixture must land there (mkdir + file, swept after)
+    const { outRoot } = sweepRoots();
+    mkdirSync(join(outRoot, "run-walk"), { recursive: true });
+    writeFileSync(join(outRoot, "run-walk", "out.png"), "x");
+    try {
+      const body = {
+        gallery: [{ image: "/v1/assets/runs/run-walk/out.png" }, { other: 5 }],
+        plain: "not a ref",
+      };
+      assert.equal(findCardDangling(body), null, "the live ref resolves in the real root");
+    } finally {
+      rmSync(join(outRoot, "run-walk"), { recursive: true, force: true });
+    }
+  });
+  it("a dangling ref returns location + ref + the first refusal message", () => {
+    const body = { deep: [{ ghost: "/v1/assets/runs/run-9/ghost.png" }] };
+    const out = findCardDangling(body);
+    assert.ok(Array.isArray(out));
+    assert.equal((out as unknown[])[1], "/v1/assets/runs/run-9/ghost.png");
+    assert.match(String((out as unknown[])[2]), /run-9/);
+  });
+});
 
 describe("resolveArtifactFile (the artifact rim)", () => {
   it("a live artifact URL resolves inside the root", () => {
