@@ -53,10 +53,13 @@ import type {
 } from "@melite/comfyui-cordis/model-contract";
 import { createHash } from "node:crypto";
 import {
+  closeSync,
   createWriteStream,
   existsSync,
   mkdirSync,
+  openSync,
   readFileSync,
+  readSync,
   renameSync,
   rmSync,
   statSync,
@@ -231,9 +234,25 @@ export async function provisionsForFamily(
   return decl.provisions ?? [];
 }
 
-/** sha256 hex of one file (the DECL sha gates every serve). */
+/** sha256 hex of one file (the DECL sha gates every serve).
+ *  CHUNKED, never whole-file: a single Buffer refuses >2GiB files
+ *  (Node's fs cap — the 2.81GB int8 VAE hit it 2026-09-20 and
+ *  killed the provision run mid-verify); the digest is identical,
+ *  the memory is bounded at 8MB whatever the artifact. */
 export function sha256OfFile(path: string): string {
-  return createHash("sha256").update(readFileSync(path)).digest("hex");
+  const h = createHash("sha256");
+  const fd = openSync(path, "r");
+  try {
+    const chunk = Buffer.alloc(8 * 1024 * 1024);
+    for (;;) {
+      const n = readSync(fd, chunk, 0, chunk.length, null);
+      if (n === 0) break;
+      h.update(chunk.subarray(0, n));
+    }
+  } finally {
+    closeSync(fd);
+  }
+  return h.digest("hex");
 }
 
 /** Resolve the DECL place: <store>/<folder>/<name>. A folder

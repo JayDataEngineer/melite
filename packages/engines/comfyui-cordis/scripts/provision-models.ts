@@ -2,7 +2,7 @@
 // Split from scripts/provision.ts (pure move — no logic changes).
 
 import { createHash } from "node:crypto";
-import { createWriteStream, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, unlinkSync } from "node:fs";
+import { closeSync, createWriteStream, existsSync, mkdirSync, openSync, readSync, realpathSync, renameSync, unlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -14,7 +14,22 @@ import { sameWorld } from "./provision-extensions-install.ts";
 // ── models via the estate downloader + frozen catalog + sha256 gate ──
 
 export function sha256Of(path: string): string {
-  return createHash("sha256").update(readFileSync(path)).digest("hex");
+  // CHUNKED (the estate sha256OfFile fix, mirrored): a whole-file
+  // Buffer refuses >2GiB (Node fs cap — the 2.81GB int8 VAE killed
+  // the run mid-verify, 2026-09-20); same digest, bounded memory.
+  const h = createHash("sha256");
+  const fd = openSync(path, "r");
+  try {
+    const chunk = Buffer.alloc(8 * 1024 * 1024);
+    for (;;) {
+      const n = readSync(fd, chunk, 0, chunk.length, null);
+      if (n === 0) break;
+      h.update(chunk.subarray(0, n));
+    }
+  } finally {
+    closeSync(fd);
+  }
+  return h.digest("hex");
 }
 
 export interface ProvisionRow {
