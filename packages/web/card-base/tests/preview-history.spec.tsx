@@ -18,8 +18,11 @@ import { createElement as h } from 'react'
 
 import { ImageStagePreview, MeshStagePreview } from '../src/preview.tsx'
 import type { PreviewOwnerProps } from '@melite/contracts'
+import { resetPickCellsForTests } from '../src/preview.tsx'
 
-afterEach(cleanup)
+// THE CELLS ARE IDENTITY-SHARED BY DESIGN (DSH's client-state law);
+// walls reset between cases so no pick bleeds across tests
+afterEach(() => { cleanup(); resetPickCellsForTests() })
 
 const CURRENT: PreviewOwnerProps = {
   kind: 'image',
@@ -217,4 +220,108 @@ test('THE PICKED MARK: the tile owning the hero carries the active class (an unm
   fireEvent.click(tiles[1] as HTMLElement)
   expect((tiles[0] as HTMLElement).className).not.toContain('historyTileActive')
   expect((tiles[1] as HTMLElement).className).toContain('historyTileActive')
+})
+
+test('THE PICK IS A KEY, NEVER AN INDEX (the operator\'s catch, 2026-09-21: "the state constantly corrupts") — history growth never swaps the viewed entry', () => {
+  const holder: { props: PreviewOwnerProps } = { props: CURRENT }
+  const { rerender } = render(h(ImageStagePreview, holder.props))
+  const tiles = () => document.querySelectorAll('[data-testid="stage-output-history"] button')
+  fireEvent.click(tiles()[1] as HTMLElement) // prev2 (index 1, newest-first)
+  // an archive lands at the HEAD with NO new current run — every
+  // index shifts by one; an index-based pick would silently swap
+  // to prev1. The keyed pick stays on prev2.
+  holder.props = {
+    ...holder.props,
+    history: [[{ name: 'out', url: '/runs/prev0/out.png' }], ...holder.props.history!],
+  }
+  rerender(h(ImageStagePreview, holder.props))
+  const hero = document.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement
+  expect(hero.getAttribute('src')).toBe('/runs/prev2/out.png')
+  // and the ACTIVE MARK follows the same entry (index 2 now) —
+  // the pressed tile's own thumb is the picked url
+  const active = document.querySelector('[data-testid="stage-output-history"] button[aria-pressed="true"]') as HTMLElement
+  const activeThumb = active.querySelector('img, [data-testid="history-thumb-missing"]') as HTMLImageElement
+  expect(activeThumb.getAttribute('src')).toBe('/runs/prev2/out.png')
+})
+
+test('THE CROSS-STAGE LEAK IS DEAD — a stage switch resets the pick (hosts mount unkeyed; the selection never outlives its stage)', () => {
+  const holder: { props: PreviewOwnerProps } = { props: CURRENT }
+  const { rerender } = render(h(ImageStagePreview, holder.props))
+  const tiles = () => document.querySelectorAll('[data-testid="stage-output-history"] button')
+  fireEvent.click(tiles()[0] as HTMLElement) // prev1 picked
+  expect(document.querySelector('[data-testid="history-stale-badge"]')).not.toBeNull()
+  // the user drills ANOTHER stage: same mount position, same
+  // component instance — the pick must NOT survive the switch
+  holder.props = {
+    ...holder.props,
+    stageId: 's_7',
+    artifacts: [{ name: 'other', url: '/runs/other/out.png' }],
+    history: [[{ name: 'other', url: '/runs/other-prev/out.png' }]],
+  }
+  rerender(h(ImageStagePreview, holder.props))
+  const hero = document.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement
+  expect(hero.getAttribute('src')).toBe('/runs/other/out.png')
+  expect(document.querySelector('[data-testid="history-stale-badge"]')).toBeNull()
+})
+
+test('THE HONEST DEAD FACE (the operator\'s catch, 2026-09-21: "There\'s no sideways error") — a gone artifact shows its name, never a silent broken void', () => {
+  const owner: PreviewOwnerProps = {
+    ...CURRENT,
+    history: [[{ name: 'dead_gen.png', url: '/runs/gone/dead_gen.png' }]],
+  }
+  const { container } = render(h(ImageStagePreview, owner))
+  const img = container.querySelector('[data-testid="stage-output-history"] img') as HTMLImageElement
+  fireEvent.error(img)
+  const dead = container.querySelector('[data-testid="history-thumb-missing"]') as HTMLElement
+  expect(dead).not.toBeNull()
+  expect(dead.textContent).toBe('gone')
+  expect(dead.getAttribute('title')).toContain('dead_gen.png')
+})
+
+test('THE EMPTY NOTE SLOT (alignment law): an entry without a params snapshot renders NO differs chip — the badge stays clean', () => {
+  const owner: PreviewOwnerProps = {
+    ...CURRENT,
+    historyNotes: ['', 'steps, seed'],
+  }
+  const { container } = render(h(ImageStagePreview, owner))
+  const tiles = container.querySelectorAll('[data-testid="stage-output-history"] button')
+  // the snapshotted entry names its keys
+  fireEvent.click(tiles[1] as HTMLElement)
+  let badge = container.querySelector('[data-testid="history-stale-badge"]') as HTMLElement
+  expect(badge.textContent).toContain('differs: steps, seed')
+  // the snapshot-less entry (EMPTY slot — kept for index alignment)
+  // renders the badge with NO differs chip at all
+  fireEvent.click(tiles[0] as HTMLElement)
+  badge = container.querySelector('[data-testid="history-stale-badge"]') as HTMLElement
+  expect(badge.textContent).not.toContain('differs')
+})
+
+test('THE CELL CAP (64, LRU): an ancient stage\'s pick is evicted by churn; a recent one survives it', () => {
+  resetPickCellsForTests()
+  const first: PreviewOwnerProps = { ...CURRENT, stageId: 's_first' }
+  const r1 = render(h(ImageStagePreview, first))
+  fireEvent.click(r1.container.querySelectorAll('[data-testid="stage-output-history"] button')[0] as HTMLElement)
+  expect((r1.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/prev1/out.png')
+  cleanup()
+  // 64 MORE identities ride through — the first stage's cell is the
+  // oldest insertion and falls out of the capped store
+  for (let i = 0; i < 64; i++) {
+    render(h(ImageStagePreview, { ...CURRENT, stageId: 's_bulk_' + i }))
+    cleanup()
+  }
+  const again = render(h(ImageStagePreview, first))
+  expect((again.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/cur/out.png')
+  // a RECENT identity keeps its pick across the same churn (LRU:
+  // re-reading refreshes insertion order, eviction takes the OLDEST)
+  resetPickCellsForTests()
+  const recent: PreviewOwnerProps = { ...CURRENT, stageId: 's_recent' }
+  const r2 = render(h(ImageStagePreview, recent))
+  fireEvent.click(r2.container.querySelectorAll('[data-testid="stage-output-history"] button')[0] as HTMLElement)
+  cleanup()
+  for (let i = 0; i < 8; i++) {
+    render(h(ImageStagePreview, { ...CURRENT, stageId: 's_more_' + i }))
+    cleanup()
+  }
+  const r3 = render(h(ImageStagePreview, recent))
+  expect((r3.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/prev1/out.png')
 })

@@ -11,12 +11,67 @@
  * to specialize — the h3 studio rides the shared VIDEO preview for
  * its hero, exactly as an image-gen card rides the IMAGE one.
  */
-import { createElement as h, useEffect, useState } from 'react'
+import { createElement as h, useState, useSyncExternalStore } from 'react'
 import { GlbStagePreview } from './glb-stage.tsx'
 import { PoserFigureStage } from './poser-figure.tsx'
 import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
 import { cn } from './chrome.ts'
 import s from './preview.module.css'
+
+/** THE PICK CELLS (DSH's client state law — web-client.md: the
+ *  client keeps "identity-stable, React-free mirrors" and the UI
+ *  subscribes through useSyncExternalStore; a presentation
+ *  component never owns store-lifetime state). The history pick
+ *  lives in an EXTERNAL cell keyed by the view's IDENTITY — the
+ *  stage plus the current run's urls. The cell is shared across
+ *  mounts: an unkeyed remount (the drill swaps stages in the same
+ *  mount position) reads the SAME cell as its identity dictates —
+ *  a different stage or a new run is a DIFFERENT cell (fresh,
+ *  unpicked), so the pick can never leak across stages or runs;
+ *  history growth keeps the same cell, so a keyed pick survives
+ *  index shifts. No effects, no mount-lifetime coupling.
+ *  THE CAP: 64 cells, insertion-pruned — a long session never
+ *  grows the map unbounded. */
+type PickCell = { key: string | null, listeners: Set<() => void> }
+const pickCells = new Map<string, PickCell>()
+const PICK_CELL_CAP = 64
+function pickCellOf(id: string): PickCell {
+  let cell = pickCells.get(id)
+  if (cell === undefined) {
+    if (pickCells.size >= PICK_CELL_CAP) {
+      // the map is non-empty at cap — take the OLDEST insertion
+      for (const oldest of pickCells.keys()) {
+        pickCells.delete(oldest)
+        break
+      }
+    }
+    cell = { key: null, listeners: new Set() }
+    pickCells.set(id, cell)
+  } else {
+    // refresh insertion order (LRU, not FIFO-of-birth)
+    pickCells.delete(id)
+    pickCells.set(id, cell)
+  }
+  return cell
+}
+function usePickCell(id: string): [string | null, (key: string | null) => void] {
+  const cell = pickCellOf(id)
+  const key = useSyncExternalStore(
+    (onChange: () => void) => { cell.listeners.add(onChange); return () => { cell.listeners.delete(onChange) } },
+    () => cell.key,
+  )
+  const set = (next: string | null): void => {
+    cell.key = next
+    for (const l of cell.listeners) l()
+  }
+  return [key, set]
+}
+
+/** The test seam: cells are module-shared BY DESIGN (identity-stable
+ *  across mounts); walls reset between cases so no pick bleeds. */
+export function resetPickCellsForTests(): void {
+  pickCells.clear()
+}
 
 /** THE HISTORY HERO (stroke 40 + the output-component stroke): one
  * hook, three faces — the hero artifact, the REST of whatever set
@@ -31,22 +86,34 @@ function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | und
   const flat: PreviewArtifact[] = props.artifacts.length > 0
     ? props.artifacts
     : (props.history ?? []).flat()
-  const [picked, setPicked] = useState<number>(-1)
-  // a NEW result resets the view to the current run (keyed on the
-  // current artifacts' urls — the selection never outlives the run
-  // it was made against)
-  const currentKey = props.artifacts.map((a) => a.url).join('|')
-  useEffect(() => { setPicked(-1) }, [currentKey])
   const history = props.history ?? []
+  // THE PICK IS A KEY, NEVER AN INDEX (the operator's catch,
+  // 2026-09-21: "the state constantly corrupts"): history is
+  // NEWEST-FIRST and grows at the HEAD — an index-based pick points
+  // at a DIFFERENT entry the moment a run archives (viewing the
+  // wrong generation, silently). The pick stores the entry's url-set
+  // key (its stable identity); the index is DERIVED per render.
+  const keyOf = (entry: PreviewArtifact[]): string => entry.map((a) => a.url).join('|')
+  // THE CELL ID IS THE VIEW IDENTITY (stage + current run): a new
+  // run or a stage switch IS a different cell — the reset falls out
+  // of identity, no effect timers, no mount-lifetime coupling. The
+  // DSH client-state law: the store lives outside the component.
+  const cellId = `${props.stageId}\u0000${props.artifacts.map((a) => a.url).join('|')}`
+  const [pickedKey, setPickedKey] = usePickCell(cellId)
+  const picked = pickedKey === null ? -1 : history.findIndex((e) => keyOf(e) === pickedKey)
   // THE TOGGLE LAW (the operator's bug report, 2026-09-16: "not
   // respecting whether I click on historical preview or the image
   // preview"): a history pick is a VIEW, not a one-way door —
   // clicking the picked tile again returns to current, and the
-  // badge's return control rides the same seam. Before this, the
-  // ONLY reset was a brand-new run: every click on the current
-  // side was dead once a history entry owned the hero.
-  const promote = (i: number): void => { setPicked(picked === i ? -1 : i) }
-  const returnToCurrent = (): void => { setPicked(-1) }
+  // badge's return control rides the same seam.
+  const promote = (i: number): void => {
+    // the strip only renders tiles for entries that exist (the
+    // owner builder filters empty rows) — a bad index would throw
+    // LOUD at keyOf, never silently collapse
+    const k = keyOf(history[i] as PreviewArtifact[])
+    setPickedKey(k !== pickedKey ? k : null)
+  }
+  const returnToCurrent = (): void => { setPickedKey(null) }
   const entry = picked >= 0 && history[picked] !== undefined && history[picked].length > 0
     ? history[picked]
     : null
@@ -88,6 +155,27 @@ function StaleBadge(props: { note?: string, onReturn: () => void }): ReturnType<
   )
 }
 
+/** ONE HISTORY THUMB with an HONEST DEAD FACE (the operator's
+ *  catch, 2026-09-21: "There's no sideways error"): an archived
+ *  artifact whose file left the disk rendered the browser's silent
+ *  broken-image glyph — no error, no name, nothing. The strip is
+ *  the sideways row; a dead entry shows its NAME and a missing
+ *  marker, never a silent void. */
+function HistoryThumb(props: { a: PreviewArtifact }): ReturnType<typeof h> {
+  const [dead, setDead] = useState(false)
+  if (dead) {
+    return h('span', {
+      className: cn(s.thumb, s.thumbDead),
+      'data-testid': 'history-thumb-missing',
+      title: `${props.a.name} — the artifact file is gone`,
+    }, 'gone')
+  }
+  return h('img', {
+    key: props.a.url, className: s.thumb, src: props.a.url, alt: props.a.name, loading: 'lazy',
+    onError: () => { setDead(true) },
+  })
+}
+
 function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, testid: string, picked: number): ReturnType<typeof h> | null {
   // THE OPT-OUT (gap 4): a card that claims its own bottom bar
   // serves historyStrip: false — the strip is OFF, the history data
@@ -111,9 +199,7 @@ function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, te
         title: entry.map((a) => a.name).join(', ') + (notes[i] ? ` (differs: ${notes[i]})` : '') + (i === picked ? ' (viewing — click to return to current)' : ''),
         onClick: () => { promote(i) },
       },
-        entry.slice(0, 1).map((a) => h('img', {
-          key: a.url, className: s.thumb, src: a.url, alt: a.name, loading: 'lazy',
-        }))))),
+        entry.slice(0, 1).map((a) => h(HistoryThumb, { key: a.url, a }))))),
   )
 }
 

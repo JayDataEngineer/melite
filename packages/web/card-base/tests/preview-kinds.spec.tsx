@@ -7,12 +7,13 @@
 // preview-history.spec.tsx — here each kind proves it plugs in.
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
+import { resetPickCellsForTests } from '../src/preview.tsx'
 import { createElement as h } from 'react'
 
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview } from '../src/preview.tsx'
 import type { PreviewOwnerProps } from '@melite/contracts'
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); resetPickCellsForTests() })
 
 const video = (over: Partial<PreviewOwnerProps> = {}): PreviewOwnerProps => ({
   kind: 'video',

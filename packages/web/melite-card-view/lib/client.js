@@ -9022,6 +9022,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
 				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
 				if (families !== null && family !== void 0 && !families.includes(family)) continue;
+				if (extra["hidden"] === true) continue;
 				let options;
 				if (node.type === "union" && Array.isArray(node.list)) {
 					const opts = [];
@@ -10595,7 +10596,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						else arr[i] = next;
 						edit(f.name, arr);
 					},
-					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
+					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
+					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
 				}))), entries.length < cap ? (0, react.createElement)("div", {
 					className: card_module_css_default.specSlotCell,
 					"data-stack-add": f.name,
@@ -10610,7 +10612,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
 						if (next !== "") edit(f.name, [...entries, next]);
 					},
-					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
+					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
+					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
 				})) : null));
 			};
 			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, (0, react.createElement)(PackPrompt, {
@@ -10654,7 +10657,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}
 				}, titleCaseId(g.group ?? "General"));
 			})) : null, shownGroups.map((g) => {
-				const gridCols = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 2)?.columns;
+				const declared = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 1)?.columns;
+				const gridCols = Math.max(1, Math.floor(declared ?? 2));
 				const cellStyle = (f) => {
 					if (f.type === "textarea") return {
 						gridColumn: "1 / -1",
@@ -10672,10 +10676,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					children.push((0, react.createElement)("div", {
 						key: "slotrow-" + String(children.length),
 						className: card_module_css_default.specSlotRow,
-						...gridCols !== void 0 ? { style: {
+						style: {
 							gridColumn: "1 / -1",
 							minWidth: "0"
-						} } : {}
+						}
 					}, row));
 					row = [];
 				};
@@ -10694,7 +10698,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							onEdit: edit,
 							square: sq
 						}));
-						children.push(gridCols === void 0 ? cell : (0, react.createElement)("div", {
+						children.push((0, react.createElement)("div", {
 							key: f.name + "-cell",
 							style: cellStyle(f)
 						}, cell));
@@ -10723,7 +10727,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						...sq !== void 0 ? { square: sq } : {},
 						...wireCandidates !== void 0 ? { wireCandidates } : {}
 					});
-					children.push(gridCols === void 0 ? cell : (0, react.createElement)("div", {
+					children.push((0, react.createElement)("div", {
 						key: f.name + "-cell",
 						style: cellStyle(f)
 					}, cell));
@@ -10733,7 +10737,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					key: g.group ?? "",
 					className: card_module_css_default.specGroup,
 					"data-form-group-panel": g.group ?? "general"
-				}, g.group !== null && !submenu ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, titleCaseId(g.group)) : null, gridCols === void 0 ? children : (0, react.createElement)("div", {
+				}, g.group !== null && !submenu ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, titleCaseId(g.group)) : null, (0, react.createElement)("div", {
 					className: card_module_css_default.specGrid,
 					style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }
 				}, children));
@@ -55850,6 +55854,40 @@ void main() {
 		* to specialize — the h3 studio rides the shared VIDEO preview for
 		* its hero, exactly as an image-gen card rides the IMAGE one.
 		*/
+		const pickCells = /* @__PURE__ */ new Map();
+		const PICK_CELL_CAP = 64;
+		function pickCellOf(id) {
+			let cell = pickCells.get(id);
+			if (cell === void 0) {
+				if (pickCells.size >= PICK_CELL_CAP) for (const oldest of pickCells.keys()) {
+					pickCells.delete(oldest);
+					break;
+				}
+				cell = {
+					key: null,
+					listeners: /* @__PURE__ */ new Set()
+				};
+				pickCells.set(id, cell);
+			} else {
+				pickCells.delete(id);
+				pickCells.set(id, cell);
+			}
+			return cell;
+		}
+		function usePickCell(id) {
+			const cell = pickCellOf(id);
+			const key = (0, react.useSyncExternalStore)((onChange) => {
+				cell.listeners.add(onChange);
+				return () => {
+					cell.listeners.delete(onChange);
+				};
+			}, () => cell.key);
+			const set = (next) => {
+				cell.key = next;
+				for (const l of cell.listeners) l();
+			};
+			return [key, set];
+		}
 		/** THE HISTORY HERO (stroke 40 + the output-component stroke): one
 		* hook, three faces — the hero artifact, the REST of whatever set
 		* the hero belongs to (the current run's other outputs, or a picked
@@ -55861,17 +55899,16 @@ void main() {
 		* the closest thing to current, not a stale one). */
 		function useHistoryHero(props) {
 			const flat = props.artifacts.length > 0 ? props.artifacts : (props.history ?? []).flat();
-			const [picked, setPicked] = (0, react.useState)(-1);
-			const currentKey = props.artifacts.map((a) => a.url).join("|");
-			(0, react.useEffect)(() => {
-				setPicked(-1);
-			}, [currentKey]);
 			const history = props.history ?? [];
+			const keyOf = (entry) => entry.map((a) => a.url).join("|");
+			const [pickedKey, setPickedKey] = usePickCell(`${props.stageId}\u0000${props.artifacts.map((a) => a.url).join("|")}`);
+			const picked = pickedKey === null ? -1 : history.findIndex((e) => keyOf(e) === pickedKey);
 			const promote = (i) => {
-				setPicked(picked === i ? -1 : i);
+				const k = keyOf(history[i]);
+				setPickedKey(k !== pickedKey ? k : null);
 			};
 			const returnToCurrent = () => {
-				setPicked(-1);
+				setPickedKey(null);
 			};
 			const entry = picked >= 0 && history[picked] !== void 0 && history[picked].length > 0 ? history[picked] : null;
 			const source = entry ?? flat;
@@ -55904,6 +55941,30 @@ void main() {
 				title: "Return to the current generation"
 			}, "Not current — earlier generation", props.note === void 0 ? null : ` · differs: ${props.note}`, " · Return to current");
 		}
+		/** ONE HISTORY THUMB with an HONEST DEAD FACE (the operator's
+		*  catch, 2026-09-21: "There's no sideways error"): an archived
+		*  artifact whose file left the disk rendered the browser's silent
+		*  broken-image glyph — no error, no name, nothing. The strip is
+		*  the sideways row; a dead entry shows its NAME and a missing
+		*  marker, never a silent void. */
+		function HistoryThumb(props) {
+			const [dead, setDead] = (0, react.useState)(false);
+			if (dead) return (0, react.createElement)("span", {
+				className: cn(preview_module_css_default.thumb, preview_module_css_default.thumbDead),
+				"data-testid": "history-thumb-missing",
+				title: `${props.a.name} — the artifact file is gone`
+			}, "gone");
+			return (0, react.createElement)("img", {
+				key: props.a.url,
+				className: preview_module_css_default.thumb,
+				src: props.a.url,
+				alt: props.a.name,
+				loading: "lazy",
+				onError: () => {
+					setDead(true);
+				}
+			});
+		}
 		function HistoryStrip(props, promote, testid, picked) {
 			if (props.historyStrip === false) return null;
 			const history = props.history ?? [];
@@ -55921,12 +55982,9 @@ void main() {
 				onClick: () => {
 					promote(i);
 				}
-			}, entry.slice(0, 1).map((a) => (0, react.createElement)("img", {
+			}, entry.slice(0, 1).map((a) => (0, react.createElement)(HistoryThumb, {
 				key: a.url,
-				className: preview_module_css_default.thumb,
-				src: a.url,
-				alt: a.name,
-				loading: "lazy"
+				a
 			}))))));
 		}
 		/** THE VIDEO PREVIEW — one hero film, one native player (the kit's
