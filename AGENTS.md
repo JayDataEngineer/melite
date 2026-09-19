@@ -103,3 +103,9 @@ This document holds a record of the mechanics of the code repository for an up t
   * What is non in alignment with DSH Cordis with reasoning.
 
 By keeping track of this document, it can be shown where to code needs to better conform to the ideals outlined in this document.
+
+The forward-looking index of OWED work is docs/ROADMAP.md — the
+ledger archives what landed; the roadmap holds what is owed, each
+item with its evidence and gates. READ IT FIRST on any new session
+or goal round, before planning work: it survives context compaction
+(this is the compact law, operator 2026-09-20).
