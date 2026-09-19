@@ -600,6 +600,42 @@ describe("compose (the model path)", () => {
     assert.deepEqual(seen[4]!["loras"], [{ name: "dareties.safetensors", strength: 1.0, steps: 4 }]);
   });
 
+  // ── THE T3 REFINE RIDER RESOLUTION (roadmap item 2): the same
+  // law as the bag — the id resolves against the served rows, the
+  // row seeds strength+steps, caller overrides win, unknown ids
+  // and count-less rows refuse LOUD, and an unset rider leaves
+  // params clean (the cache keys of existing films never move). ──
+  it("the refine rider resolves (row seeds, caller wins, count-less refuses, unset stays absent)", async () => {
+    const seen: Record<string, unknown>[] = [];
+    const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });
+    svc.registerPack({ pack: "loras", fields: fields({}) });
+    svc.registerFlavor({
+      pack: "loras",
+      families: ["fam1"],
+      rows: [
+        { id: "taomate", filename: "taomate.safetensors", source_url: "https://h/t", default_strength: 0.7, steps: 3 },
+        { id: "bare", filename: "bare.safetensors", source_url: "https://h/b" },
+      ],
+    });
+    svc.compose("card1", "fam1", { refine_lora: "taomate" }, "f1");
+    assert.deepEqual(seen[0]!["refine"], { name: "taomate.safetensors", strength: 0.7, steps: 3 }, "the row's marriage seeds the rider (taomate: 0.7 @ 3)");
+    svc.compose("card1", "fam1", { refine_lora: "taomate", refine_strength: 1.0, refine_steps: 4 }, "f2");
+    assert.deepEqual(seen[1]!["refine"], { name: "taomate.safetensors", strength: 1.0, steps: 4 }, "the caller's overrides win");
+    assert.throws(
+      () => svc.compose("card1", "fam1", { refine_lora: "ghost" }, "f3"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-refine-lora" && /no 'fam1' flavor row/.test(e.message),
+    );
+    assert.throws(
+      () => svc.compose("card1", "fam1", { refine_lora: "bare" }, "f4"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "refine-steps" && /needs a count/.test(e.message),
+      "a count-less row with no explicit steps refuses (no silent count)",
+    );
+    svc.compose("card1", "fam1", { refine_lora: "bare", refine_steps: 2 }, "f5");
+    assert.deepEqual(seen[2]!["refine"], { name: "bare.safetensors", strength: 1.0, steps: 2 }, "explicit steps rescue a count-less row");
+    svc.compose("card1", "fam1", {}, "f6");
+    assert.ok(!("refine" in seen[3]!), "unset rider serializes nothing");
+  });
+
   it("hand-authored weight rows honor the weight (strength-first, never silent full)", async () => {
     const seen: Record<string, unknown>[] = [];
     const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });

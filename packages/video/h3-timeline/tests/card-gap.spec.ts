@@ -325,6 +325,36 @@ describe("the single-window doors", () => {
     assert.equal(on[0]!.str, 0.6, "at plaguekind's 0.6");
   });
 
+  // ── THE T3 REFINE RIDER (roadmap item 2): the service-resolved
+  // refine row mounts a CLOSING pass — the refiner on its OWN
+  // loader (primary stack untouched), short full-denoise schedule
+  // from the row's marriage, riding the doc's own solver. Absent
+  // row = absent rider (one sampler, the graph exactly as before). ──
+  it("the refine rider mounts a closing pass (own loader, the row's marriage, the doc's solver)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      { ...def.schema({ calls: [SHOT()] }), refine: { name: "taomate.safetensors", strength: 0.7, steps: 3 } },
+      model, g, "run_refine",
+    );
+    const stacks = ofClass(graphOf(g), "LTX_lora_loader");
+    const refineStack = stacks.find(([, n]) => String((n.inputs as Record<string, unknown>).stack_data).includes("taomate"));
+    assert.ok(refineStack !== undefined, "the rider's own loader carries the refiner row");
+    const rows = JSON.parse(String(refineStack![1].inputs.stack_data)) as Array<{ on?: boolean, lora?: string, str?: number }>;
+    assert.equal(rows.filter((r) => r.on === true).length, 1, "ONE refiner row on the rider's loader");
+    assert.equal(rows[0]!.str, 0.7, "at the row's 0.7");
+    const scheds = scoped(graphOf(g), "", "BasicScheduler");
+    assert.ok(scheds.some(([, n]) => n.inputs.steps === 3 && n.inputs.denoise === 1.0), "the closing schedule: the row's 3 steps, full denoise");
+    assert.equal(scoped(graphOf(g), "", "SamplerCustomAdvanced").length, 2, "pass A + pass B");
+  });
+
+  it("no refine row, no rider (one sampler, the graph exactly as before)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ calls: [SHOT()] }), model, g, "run_norefine");
+    assert.equal(scoped(graphOf(g), "", "SamplerCustomAdvanced").length, 1, "pass A only");
+    const stacks = ofClass(graphOf(g), "LTX_lora_loader").filter(([, n]) => String((n.inputs as Record<string, unknown>).stack_data).length > 0 && String((n.inputs as Record<string, unknown>).stack_data) !== "[]");
+    assert.ok(stacks.every(([, n]) => !String((n.inputs as Record<string, unknown>).stack_data).includes("taomate")), "no refiner row anywhere");
+  });
+
   it("interpolate_enabled doubles the playout fps (the V9 compensation)", () => {
     const g = new GraphBuilder();
     def.compose(

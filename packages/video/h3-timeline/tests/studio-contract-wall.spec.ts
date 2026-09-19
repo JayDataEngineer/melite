@@ -30,6 +30,7 @@ const ADMITS = new Set(["loras", "audio_clips", "audio_stem"])
 const LAYER_A_ALL_KEYS: string[] = [
   "seed", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
   "sampler_name", "sched_name",
+  "refine_lora", "refine_strength", "refine_steps",
   "sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps",
   "sla_dense_steps", "sla_dense_backend", "sla_reference_protection",
   "sla_protect_audio", "sla_stabilize_motion", "sla_disable_fp16_accum",
@@ -63,6 +64,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
       else if (key === "audio_stem" || key === "model" || key === "ref_image_size"
         || key === "sampler_name" || key === "sched_name" || key === "sharpen_method"
         || key === "interp_model" || key === "sla_dense_backend") populated[key] = "euler"
+      else if (key === "refine_lora") populated[key] = "h3_taomate_3step"
       else if (key === "sr_model") populated[key] = "seedvr2"
       else populated[key] = 1
     }

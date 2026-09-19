@@ -185,6 +185,19 @@ const paramSchema = z.object({
     "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3",
   ]).description("Sampler").default("euler").extra('extra', { order: null, wtype: 'select', tooltip: "The KSampler solver. euler family pairs with turbo adapters; res_multistep is the official-template solver; er_sde+beta is the Parasyte rec; seeds_2/3 are the dual-clock family." }),
   sched_name: vocabulary(["simple", "beta", "linear_quadratic", "normal", "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform"]).description("Scheduler").default("simple").extra('extra', { order: null, wtype: 'select', tooltip: "The sigma schedule shape." }),
+  // ── THE T3 REFINE RIDER (roadmap item 2; ledger #30 §3(2)) —
+  // the crowd's third tier: a short CLOSING pass over each
+  // window's output latent, the refiner lora on its OWN loader
+  // (the primary stack never changes). Empty refine_lora = no
+  // rider, the graph renders exactly as before. The instrument:
+  // the catalog's refiner rows (h3_taomate_3step — 0.7 @ 3 steps,
+  // the arena's refiner operating point). ONE OWNER PER KNOB:
+  // refine_lora picks the instrument; strength/steps default from
+  // THE ROW (no silent overrides); the pass rides the doc's own
+  // sampler/scheduler.
+  refine_lora: z.string().description("Refine lora").default("").extra('extra', { order: null, wtype: 'text', tooltip: "Catalog id of a refiner lora (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row." }),
+  refine_strength: z.number().description("Refine strength").min(0).max(2).step(0.05).extra('extra', { order: null, wtype: 'number', tooltip: "Override the refiner row's strength. Rides only when refine_lora is set." }),
+  refine_steps: z.number().description("Refine steps").min(1).max(10).step(1).extra('extra', { order: null, wtype: 'number', tooltip: "Override the refiner row's step count (taomate: 3). Rides only when refine_lora is set." }),
   interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
   interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." }),
   sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', { order: null, tooltip: "Upscale the final film through SeedVR2 before saving." }),
@@ -1018,7 +1031,36 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   const sampled = g.node('SamplerCustomAdvanced', {
     noise, guider, sampler, sigmas: sched, latent_image: targetLatent,
   })
-  const latOut = sampled.out(0)
+  let latOut = sampled.out(0)
+
+  // ── THE T3 REFINE RIDER (roadmap item 2 — the crowd's third
+  // tier, formalized): a short CLOSING pass over the window's
+  // output latent — the refiner lora on its OWN loader (the
+  // primary stack above NEVER changes), full-denoise short
+  // schedule from the same noise seed, riding the doc's own
+  // sampler/scheduler (the rider owns NO solver of its own — one
+  // owner per knob). Mounted ONLY when the service resolved a
+  // refine row; absent = the graph renders exactly as before.
+  // The TaoMate refiner thread's mechanics: pass A full, pass B
+  // closes. The rider sits UPSTREAM of decode AND of the film's
+  // seam handles — the chained texture is the refined one.
+  const refine = p.refine as { name: string, strength: number, steps: number } | undefined
+  if (refine !== undefined) {
+    const refineModel = g.node('LTX_lora_loader', {
+      model: sigmaModel, mode: 'minimax',
+      stack_data: JSON.stringify([{ on: true, lora: refine.name, str: refine.strength, v: 1, a: 1, t: 1 }]),
+      lora_ui: '',
+    }).out()
+    const refineSched = g.node('BasicScheduler', {
+      model: refineModel, scheduler: schedName,
+      steps: refine.steps, denoise: 1.0,
+    }).out()
+    const refineGuider = g.node('BasicGuider', { model: refineModel, conditioning: cond }).out()
+    const refined = g.node('SamplerCustomAdvanced', {
+      noise, guider: refineGuider, sampler: samplerSel, sigmas: refineSched, latent_image: latOut,
+    })
+    latOut = refined.out(0)
+  }
 
   // ── decode + save ──────────────────────────────────────────────────
   let vdec = g.node('VAEDecode', { samples: latOut, vae: vaeVideo }).out()

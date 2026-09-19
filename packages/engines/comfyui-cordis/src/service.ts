@@ -608,6 +608,37 @@ export class ComfyUIService extends Service {
       })
     }
 
+    // ── THE T3 REFINE RIDER RESOLUTION (roadmap item 2) — the
+    // SAME law as the loras bag above: refine_lora is a catalog
+    // id resolved against the SAME served rows (never a
+    // hand-spelled filename); unknown ids refuse LOUD. Strength
+    // and steps default from the ROW (the row is the family's
+    // truth — taomate: 0.7 @ 3); explicit refine_strength /
+    // refine_steps override. A row that declares no step count
+    // AND no explicit refine_steps REFUSES — the closing pass
+    // needs a count, and none is invented silently. The resolved
+    // row rides params as `refine` (compose mounts the second
+    // sampler only when it is present; absent = the window cache
+    // keys stay untouched — existing films keep their hits).
+    const refineId = typeof merged.refine_lora === 'string' && (merged.refine_lora as string) !== ''
+      ? merged.refine_lora as string : undefined
+    if (refineId !== undefined) {
+      const refineCat = this.modCatalog('loras', modelId)
+      const row = refineCat.rows.find((r) => r.id === refineId)
+      if (row === undefined) {
+        throw new ComposeRefusal('unknown-refine-lora', `card '${cardId}' names refine_lora '${refineId}' with no '${modelId}' flavor row (registered: ${refineCat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`)
+      }
+      const statedStrength = typeof merged.refine_strength === 'number' ? merged.refine_strength as number : undefined
+      const statedSteps = typeof merged.refine_steps === 'number' ? merged.refine_steps as number : undefined
+      const steps = statedSteps ?? row.steps
+      if (steps === undefined) {
+        throw new ComposeRefusal('refine-steps', `refine_lora '${refineId}' declares no step count and refine_steps is unset — the closing pass needs a count (pin refine_steps or pick a row that declares one)`)
+      }
+      merged.refine = { name: row.filename, strength: statedStrength ?? row.default_strength ?? 1.0, steps }
+    } else {
+      delete merged.refine
+    }
+
     // CONTROLNET WIRE RESOLUTION (the z-image restoration — the
     // type/model split, the LoRA law above): the leaf emits
     // catalog-keyed rows ({type, strength, ...} — model + preprocessor

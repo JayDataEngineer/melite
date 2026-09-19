@@ -133,6 +133,15 @@ function nodesWith(s: Settled, needle: RegExp): Array<[string, unknown]> {
   return Object.entries(s.workflow).filter(([, r]) => needle.test(JSON.stringify(r)))
 }
 
+/** The composed node rows of EXACTLY one class (nodesWith greps the
+ * whole row JSON — reference edges match too; this counts REAL
+ * nodes: the refine-rider receipt needs pass A + pass B, not their
+ * referencing neighbors). */
+function byClass(s: Settled, cls: string): Array<[string, { class_type?: string, inputs?: Record<string, unknown> }]> {
+  return Object.entries(s.workflow)
+    .filter(([, r]) => (r as { class_type?: string }).class_type === cls) as Array<[string, { class_type?: string, inputs?: Record<string, unknown> }]>
+}
+
 describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', () => {
   it('krea-2 turbo_distill: the pill payload composes the rank-64 adapter at 1.0 and RUNS', async () => {
     const w = await bootWorld('recipes-krea-')
@@ -240,6 +249,43 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
       assert.ok(row !== undefined, 'the stack carries the resolved turbo adapter ON')
       assert.equal(row!['str'], 0.6, 'the strength is the recipe-declared 0.6')
       assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 600_000)
+
+  // ── THE T3 REFINE RIDER'S GPU RECEIPT (roadmap item 2 — the
+  // crowd's third tier on real silicon): pass A rides the official
+  // 8-step turbo (the marriage), pass B is the RIDER — taomate
+  // from the served catalog at the ROW's own 0.7 @ 3 (no explicit
+  // overrides: the row is the truth). Asserts the closing pass
+  // MOUNTS on the run workflow (two samplers, the rider's own
+  // loader, the row-declared schedule) and the film settles with
+  // real bytes. ──
+  it('h3-timeline T3 refine rider: the taomate closing pass mounts (own loader @ 0.7/3) and RUNS', async () => {
+    const w = await bootWorld('recipes-h3-refine-')
+    try {
+      const s = await runCard(w, {
+        model: 'h3-timeline',
+        prompt: 'a red cube slides slowly across a white table',
+        width: 768, height: 448, steps: 8,
+        loras: [{ id: 'h3_turbo8_v1' }],
+        refine_lora: 'h3_taomate_3step',
+      }, 'h3 refine rider')
+      const passes = byClass(s, 'SamplerCustomAdvanced')
+      assert.equal(passes.length, 2, 'pass A + the closing pass B')
+      const ltx = byClass(s, 'LTX_lora_loader')
+      const refineLoader = ltx.filter(([, n]) =>
+        String((n.inputs?.['stack_data'] ?? '')).includes('taomate'))
+      assert.equal(refineLoader.length, 1, 'the rider rides its OWN loader (the primary stack untouched)')
+      const rows = JSON.parse(String(refineLoader[0]![1].inputs!['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
+      const row = rows.find((r) => r['on'] === true)
+      assert.ok(row !== undefined && String(row['lora']).includes('taomate'), 'the refiner row is ON')
+      assert.equal(row!['str'], 0.7, 'the strength is the row-declared 0.7')
+      const scheds = byClass(s, 'BasicScheduler')
+      assert.ok(scheds.some(([, n]) => n.inputs?.['steps'] === 3 && n.inputs?.['denoise'] === 1.0), "the closing schedule: the row's 3 steps at full denoise")
+      assert.equal(firstBytes(s).length > 1024, true, 'the refined video artifact is real bytes')
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
