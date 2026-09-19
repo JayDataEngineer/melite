@@ -96,6 +96,19 @@ test('the estate lane renders the sidebar with Media + cards (the operator censu
     .poll(async () => (await page.locator('body').innerText()) !== before, { timeout: 30_000 })
     .toBe(true)
 
+  // THE ARCHIVE PROOF: the Media panel renders REAL run rows (the
+  // estate's runs face through the gallery — the 500-run window).
+  // A lane whose queue seat silently deferred serves an empty
+  // panel: the gallery's 502 becomes an empty list, not an error.
+  // (From the open Media Flow bench: New tab → the Media guide.)
+  await page.getByRole('button', { name: 'New tab' }).click({ timeout: 30_000 })
+  await page.getByText('Media', { exact: true }).first().click({ timeout: 30_000 })
+  // the archive's visible signature: the stat line (N runs · M
+  // artifacts) — rows render by intent + artifact names, not ids
+  await expect
+    .poll(async () => /runs · /.test(await page.locator('body').innerText()), { timeout: 45_000 })
+    .toBe(true)
+
   // ZERO console errors across the tour (a bundle that serves but
   // dies in the browser fails the audit)
   expect(consoleErrors, `console errors: ${consoleErrors.join(' ;; ')}`).toEqual([])
