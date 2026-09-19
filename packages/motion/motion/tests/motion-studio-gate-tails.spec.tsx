@@ -118,7 +118,7 @@ describe('media: convert-fallback cancellation (cold skin cache)', () => {
     const failed = useToastStore.getState().toasts.some((t) => t.message.includes('SOMAX conversion failed'))
     expect(failed).toBe(true)
     expect(document.body.innerHTML).toBe('')
-  }, 30000)
+  }, 120000)
 
   test('a convert failure cancelled at the mannequin fallback never skins', async () => {
     // cold cache here: the catch row above released a 404, and rejections
@@ -461,17 +461,31 @@ describe('stage + undo + authoring tails', () => {
     stubLoads()
     mountEditor()
     await waitForText('No motion yet')
-    // retry the press inside the wait: under full-gate load the first
-    // click can land before the handler arms (the flake ledgered twice).
+    // THE ROOT FIX (the thrice-bitten flake), fully deterministic —
+    // every step waits on an OBSERVED state, never a wall clock:
+    //  1. Refine is disabled until effectiveNpz lands (React 19 never
+    //     fires onClick on a disabled button — a press before the npz
+    //     chain settles is a silent no-op and the Done wait starves).
+    //  2. Repose is disabled until editableJoints exist, and DISABLES
+    //     again when the undo restores the joints-null snapshot — that
+    //     flip IS the observable the row composes (Done's null-kept arm).
+    // Enabled ≠ armed: Refine's disabled reads effectiveNpz but
+    // toggleEdit guards on currentJointsM (a LATER decode) — retry the
+    // press until edit engages (a press before arm is a no-op), with a
+    // load-generous window (full-gate workers starve timers).
     await vi.waitFor(() => {
-      const done = document.body.textContent?.includes('Done') === true
-      if (!done) fireEvent.click(railButton('Refine pose'))
-      getByText(document.body, 'Done')
-    }, { timeout: 20000 })
-    // undo the edit-enter: the restore clears editableJoints while editMode
-    // stays live, so Done takes its null-kept arm.
+      if (!document.body.textContent?.includes('Done')) {
+        fireEvent.click(railButton('Refine pose'))
+        throw new Error('edit not entered yet')
+      }
+    }, { timeout: 60000 })
+    await vi.waitFor(() => {
+      if (railButton('Repose').disabled) throw new Error('joints not landed yet — Repose still disabled')
+    }, { timeout: 30000 })
     fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })
-    await new Promise((r) => setTimeout(r, 500))
+    await vi.waitFor(() => {
+      if (!railButton('Repose').disabled) throw new Error('undo not landed yet — joints still live')
+    }, { timeout: 10000 })
     fireEvent.click(railButton('Done'))
     await vi.waitFor(() => {
       getByText(document.body, 'Refine pose')

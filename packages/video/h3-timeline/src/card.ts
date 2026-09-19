@@ -216,6 +216,26 @@ const paramSchema = z.object({
   // face (src/tool.ts); the SHOT LAWS are the card gate's (schema()
   // below — the model_validator port), so every composer
   // agent tool, studio, any future caller — meets the same gate.
+  // THE VOCABULARY DECLARATION (2026-09-19, the operator's order: the
+  // schema enforces EVERY key the renderer reads — no blind casts, no
+  // silent rides): the stanza/film vocabulary below was historically
+  // undeclared (it rode `admits` and every walk passed it verbatim
+  // while renderH3Window blind-cast it). Types mirror the renderer's
+  // reads exactly; NO defaults — the renderer's ?? fallback chains
+  // stay authoritative, the walk only REFUSES garbage.
+  k: z.number().description("Window index (film vocabulary)").step(1),
+  noise_seed: z.number().description("Per-window noise seed").step(1),
+  fps_seconds: z.number().description("Clip seconds (fps rail)").min(1).max(60),
+  interp_switch: z.boolean().description("Interpolate switch (legacy alias)"),
+  sharpen_switch: z.boolean().description("Sharpen switch (legacy alias)"),
+  sla_switch: z.boolean().description("SLA switch (legacy alias)"),
+  motion_context_length: vocabulary(["5", "22", "39", "56"]).description("Motion context carry (the chaining rail)"),
+  motion_audio_context_length: z.number().description("Motion audio context frames").min(0).max(240).step(1),
+  ctx_save_prefix: z.string().description("Context save prefix"),
+  ctx_save_clip_index: z.number().description("Context save clip index").min(0).step(1),
+  ctx_load_clip_index: z.number().description("Context load clip index").min(0).step(1),
+  ctx_load_latent_path: z.string().description("Context load latent path"),
+  image_name: z.string().description("Guide image (renderer alias)"),
 })
 
 /** Schemastery objects are lenient (unknown/missing keys ride); the

@@ -26,7 +26,39 @@ vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
 })
 
 import type { CardDefinition, ComfyUIService } from '@melite/comfyui-cordis'
-import { cardToolsArm, formSpecArm, resolveSpecKey, specBody } from '../src/discovery.ts'
+import {
+  cardToolsArm, formSpecArm as formSpecArmRaw, resolveSpecKey, specBody as specBodyRaw,
+} from '../src/discovery.ts'
+
+/** THE TRANSIENT-GENRE RACE (stroke 83, the discovery.spec twin):
+ * enhance-recipes.spec (comfyui-cordis) lays EPHEMERAL zz-cov-<pid>
+ * genres under the real models root — a parallel worker's sweep here
+ * can catch one mid-flight. Bounded retry on exactly that scratch
+ * signature; any real fault fails untouched. */
+const sweepRetry = async <T>(run: () => Promise<T>): Promise<T> => {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await run()
+    } catch (error) {
+      if (attempt >= 4 || !/zz-cov-\d+/.test(String(error))) throw error
+      await new Promise((r): void => setTimeout(r, 200))
+    }
+  }
+}
+/** specBody is SYNC (every row uses it un-awaited) — the retry sleeps
+ * the worker thread via Atomics.wait (the one honest sync sleep). */
+const specBody = (...a: Parameters<typeof specBodyRaw>): ReturnType<typeof specBodyRaw> => {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return specBodyRaw(...a)
+    } catch (error) {
+      if (attempt >= 4 || !/zz-cov-\d+/.test(String(error))) throw error
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 200)
+    }
+  }
+}
+const formSpecArm = (...a: Parameters<typeof formSpecArmRaw>): ReturnType<typeof formSpecArmRaw> =>
+  sweepRetry(() => formSpecArmRaw(...a))
 
 function card(partial: Record<string, unknown>): CardDefinition {
   // THE EVERY-CARD-DECLARES LAW: real cards all carry flowKinds (the

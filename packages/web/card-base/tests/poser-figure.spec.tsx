@@ -26,8 +26,14 @@ import type { PreviewOwnerProps } from '@melite/contracts'
 import type { FormSpecDoc, SpecValues } from '../src/spec.ts'
 
 const mountState = vi.hoisted(() => ({
-  spy: vi.fn((): { scene: { children: unknown[] }; dispose: () => void } => ({
-    scene: { children: [] },
+  // the DEFAULT stub must be a COMPLETE stage: .add rides (an
+  // unexpected extra mount call — load-timing shifts under the full
+  // gate — falls back here, and a scene without add kills the row).
+  spy: vi.fn((): { scene: { children: unknown[]; add: (...o: unknown[]) => void }; dispose: () => void } => ({
+    scene: {
+      children: [] as unknown[],
+      add: (...o: unknown[]): void => {},
+    },
     dispose: () => {},
   })),
 }))
