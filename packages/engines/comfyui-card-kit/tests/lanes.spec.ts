@@ -17,7 +17,7 @@ import {
  inputPrepLane, maskT1, taggerLane,
   annyLane,
   admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
-  quadRemeshLane, musicT1, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion,
+  quadRemeshLane, musicT1, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion, finalizeH3,
 } from "../src/kit.ts";
 import { loadFacts } from "../src/facts.ts";
 import { deriveDefaults } from "../src/graph.ts";
@@ -466,6 +466,28 @@ describe("kit helpers (strip/defaults — the ideogram lane retired with its car
     assert.ok(!("prev_motion_npz" in out.M.inputs), "the empty string drops");
     assert.equal(out.M.inputs.motion_prompts, "a walk", "a non-empty value stays");
     assert.equal(out.N.inputs.image, "kept.png", "classes outside the table ride untouched");
+  });
+
+  it("finalizeH3: the t4r family marker rides untouched (strip never fires)", () => {
+    const out = finalizeH3({
+      "MiniMaxH3ImageToVideo.0": { class_type: "MiniMaxH3ImageToVideo", inputs: { image: "x.png" } },
+    } as never);
+    assert.deepEqual(out, {
+      "MiniMaxH3ImageToVideo.0": { class_type: "MiniMaxH3ImageToVideo", inputs: { image: "x.png" } },
+    }, "the t4r marker short-circuits the strip");
+  });
+
+  it("finalizeH3: a non-t4r graph strips the t4 autofill keys, keeps the rest", () => {
+    const out = finalizeH3({
+      L: { class_type: "LTX_lora_loader", inputs: { lora_ui: "", strength: 0.8 } },
+      S: { class_type: "SeedVR2LoadVAEModel", inputs: { cache_model: true, decode_tiled: "", keep: 1 } },
+      X: { class_type: "LoadImage", inputs: { image: "ref.png" } },
+    } as never);
+    assert.ok(!("lora_ui" in out.L.inputs), "a strip-table empty drops");
+    assert.equal(out.L.inputs.strength, 0.8, "a non-empty table value stays");
+    assert.ok(!("decode_tiled" in out.S.inputs), "the seed strip row drops empties too");
+    assert.equal(out.S.inputs.keep, 1, "untouched seed keys stay");
+    assert.equal(out.X.inputs.image, "ref.png", "classes outside the table ride");
   });
 
   it("deriveDefaults walks a spec with NO required section", () => {
