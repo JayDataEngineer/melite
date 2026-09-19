@@ -339,14 +339,17 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
         )
       : null,
     shownGroups.map((g) => {
-      // THE DECL GRID (stroke 22): the group's `columns` (declared on
-      // its fields — first-seen wins) grids the section; each field
-      // spans its declared `width`. Undeclared → the stacked face.
-      const gridCols = g.fields.find((f) => typeof f.columns === 'number' && f.columns >= 2)?.columns
+      // THE GRID IS THE LAW (2026-09-21, the operator's catch: "WHY
+      // THE [REDACTED 2026-11-05] IS WIDTH AND HEIGHT ON DIFFERENT VERTICAL ROWS?"):
+      // the form-card grammar — pairs on a row — is the SYSTEM
+      // default at the CARD level, never per-card decoration a card
+      // can forget (h3's General face stacked because the grid was
+      // opt-in). Every params group grids 2 columns; a card may
+      // declare another count (columns: 3) or an explicit stack
+      // (columns: 1). Declared first-seen wins.
+      const declared = g.fields.find((f) => typeof f.columns === 'number' && f.columns >= 1)?.columns
+      const gridCols = Math.max(1, Math.floor(declared ?? 2))
       const cellStyle = (f: SpecField): Record<string, string> => {
-        // NO gridCols-undefined ARM (the guarded-call-site proof):
-        // the sole call below runs only in the gridded branch, so
-        // gridCols is ALWAYS defined here.
         // THE TEXTAREA LAW: prompts never sit side by side — a
         // textarea spans the full row however the group grids
         // THE OVERFLOW LAW (stroke 24): minWidth 0 lets the ITEM
@@ -364,7 +367,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
         if (row.length === 0) return
         children.push(h('div', {
           key: 'slotrow-' + String(children.length), className: css.specSlotRow,
-          ...(gridCols !== undefined ? { style: { gridColumn: '1 / -1', minWidth: '0' } } : {}),
+          style: { gridColumn: '1 / -1', minWidth: '0' },
         }, row))
         row = []
       }
@@ -385,7 +388,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
             ),
             claim({ f, value: value[f.name], onEdit: edit, square: sq }),
           )
-          children.push(gridCols === undefined ? cell : h('div', { key: f.name + '-cell', style: cellStyle(f) }, cell))
+          children.push(h('div', { key: f.name + '-cell', style: cellStyle(f) }, cell))
           continue
         }
         if (f.type === 'image' || f.type === 'file') {
@@ -404,15 +407,14 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
           ...(sq !== undefined ? { square: sq } : {}),
           ...(wireCandidates !== undefined ? { wireCandidates } : {}),
         })
-        children.push(gridCols === undefined ? cell : h('div', { key: f.name + '-cell', style: cellStyle(f) }, cell))
+        children.push(h('div', { key: f.name + '-cell', style: cellStyle(f) }, cell))
       }
       flush()
       return h('section', { key: g.group ?? '', className: css.specGroup, 'data-form-group-panel': g.group ?? 'general' },
         // THE SUBMENU NAMES THE PANEL: when the tab rail carries the
         // group's title, the panel repeats nothing (the DRY law).
         g.group !== null && !submenu ? h('h4', { className: css.specGroupTitle }, titleCaseId(g.group)) : null,
-        gridCols === undefined ? children
-          : h('div', { className: css.specGrid, style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` } }, children),
+        h('div', { className: css.specGrid, style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` } }, children),
       )
     }),
     // THE MOD SYSTEM — rendered by the constructor itself: every

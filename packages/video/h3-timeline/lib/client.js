@@ -2451,7 +2451,8 @@ window.__ModuleLoader__.load({
 					}
 				}, titleCaseId(g.group ?? "General"));
 			})) : null, shownGroups.map((g) => {
-				const gridCols = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 2)?.columns;
+				const declared = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 1)?.columns;
+				const gridCols = Math.max(1, Math.floor(declared ?? 2));
 				const cellStyle = (f) => {
 					if (f.type === "textarea") return {
 						gridColumn: "1 / -1",
@@ -2469,10 +2470,10 @@ window.__ModuleLoader__.load({
 					children.push((0, react.createElement)("div", {
 						key: "slotrow-" + String(children.length),
 						className: card_module_css_default.specSlotRow,
-						...gridCols !== void 0 ? { style: {
+						style: {
 							gridColumn: "1 / -1",
 							minWidth: "0"
-						} } : {}
+						}
 					}, row));
 					row = [];
 				};
@@ -2491,7 +2492,7 @@ window.__ModuleLoader__.load({
 							onEdit: edit,
 							square: sq
 						}));
-						children.push(gridCols === void 0 ? cell : (0, react.createElement)("div", {
+						children.push((0, react.createElement)("div", {
 							key: f.name + "-cell",
 							style: cellStyle(f)
 						}, cell));
@@ -2520,7 +2521,7 @@ window.__ModuleLoader__.load({
 						...sq !== void 0 ? { square: sq } : {},
 						...wireCandidates !== void 0 ? { wireCandidates } : {}
 					});
-					children.push(gridCols === void 0 ? cell : (0, react.createElement)("div", {
+					children.push((0, react.createElement)("div", {
 						key: f.name + "-cell",
 						style: cellStyle(f)
 					}, cell));
@@ -2530,7 +2531,7 @@ window.__ModuleLoader__.load({
 					key: g.group ?? "",
 					className: card_module_css_default.specGroup,
 					"data-form-group-panel": g.group ?? "general"
-				}, g.group !== null && !submenu ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, titleCaseId(g.group)) : null, gridCols === void 0 ? children : (0, react.createElement)("div", {
+				}, g.group !== null && !submenu ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, titleCaseId(g.group)) : null, (0, react.createElement)("div", {
 					className: card_module_css_default.specGrid,
 					style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }
 				}, children));

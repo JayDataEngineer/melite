@@ -209,7 +209,14 @@ test('GRID: declared columns grid the group; prompts span; width floors at one',
   // stacked-all-groups render is retired; the panel is exclusive).
   fireEvent.click(document.querySelector('[data-form-group-tab="general"]'))
   expect(screen.getAllByTestId('claimed').length).toBe(1)
-  expect(container.querySelector('[style*="grid-template-columns"]')).toBeNull()
+  // THE GRID IS THE LAW (2026-09-21, the operator's catch): the
+  // undeclared group grids 2 columns by DEFAULT — the form-card
+  // grammar (pairs on a row) is the system default at the CARD
+  // level, never per-card decoration a card can forget. A card
+  // declares its own stack with columns: 1.
+  const defaultGrid = container.querySelector('[data-form-group-panel="general"] [style*="grid-template-columns"]')
+  expect(defaultGrid).not.toBeNull()
+  expect(defaultGrid!.getAttribute('style')).toContain('repeat(2')
 })
 
 test('GRID: no signature — singles stay grouped, but a declared stack still claims the rail (a stack always has a face)', () => {
@@ -353,4 +360,28 @@ test('SUBMENU: a single group keeps the stacked sections (no rail)', () => {
   expect(document.querySelector('[data-form-submenu]')).toBeNull()
   expect(screen.getByLabelText('Prompt')).not.toBeNull()
   expect(screen.getByLabelText('Steps')).not.toBeNull()
+})
+
+test('THE GRID IS THE LAW (2026-09-21): every params group grids 2 by default; a declared stack (columns: 1) is the card\'s explicit word', () => {
+  const refs: Record<number, Ref> = {
+    0: { type: 'object', dict: { w: 1, h: 2, s: 3, d: 4 } },
+    1: { type: 'number', meta: { description: 'Width', extra: { group: 'geo' } } },
+    2: { type: 'number', meta: { description: 'Height', extra: { group: 'geo' } } },
+    3: { type: 'number', meta: { description: 'Seed', extra: { group: 'stack' } } },
+    4: { type: 'number', meta: { description: 'Denoise', extra: { group: 'stack', columns: 1 } } },
+  }
+  const spec = doc({ schema: { uid: 0, refs } })
+  const { container } = form({ spec, user: {} })
+  // THE SUBMENU LAW: each group seats behind its tab — open them
+  fireEvent.click(document.querySelector('[data-form-group-tab="geo"]')!)
+  // the UNDECLARED geo group grids 2 — Width and Height share a row
+  const grid = container.querySelector('[data-form-group-panel="geo"] [style*="grid-template-columns"]')
+  expect(grid).not.toBeNull()
+  expect(grid!.getAttribute('style')).toContain('repeat(2')
+  // the declared columns: 1 wins over the default (the card's
+  // explicit stack is honored — the law is a default, not a cage)
+  fireEvent.click(document.querySelector('[data-form-group-tab="stack"]')!)
+  const stack = container.querySelector('[data-form-group-panel="stack"] [style*="grid-template-columns"]')
+  expect(stack).not.toBeNull()
+  expect(stack!.getAttribute('style')).toContain('repeat(1')
 })

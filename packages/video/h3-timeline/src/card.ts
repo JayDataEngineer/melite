@@ -103,7 +103,7 @@ const T4_ONLY_KEYS = [
 // omitted key back to null so the body resolves the family's literal
 // (t4 INT 8 / t4r 8.0 — the served structural values).
 const paramSchema = z.object({
-  prompt: z.string().description("Prompt").extra('extra', { order: null, placeholder: "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out", tooltip: "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.", required: true }),
+  prompt: z.string().description("Prompt").extra('extra', { order: null, wtype: 'textarea', placeholder: "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out", tooltip: "The window's text (single-call shape). A film's calls carry their own text — a textless call refuses at compose; this field never substitutes for one." }),
   image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', { order: null, wtype: 'image', tooltip: "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline." }),
   // THE INPUT SURFACE (the H3 architecture truth — two DIFFERENT
   // mechanics, the FL2VA latent anchors vs the Ref2VA conditioning
@@ -130,10 +130,10 @@ const paramSchema = z.object({
   // MeliteAudioSlice node — sample-grain slicing + silence pad to
   // the legal AV duration).
   bed_audio: z.string().role('path').description("Audio bed (film-wide)").extra('extra', { order: null, wtype: 'file', tooltip: "One track across all windows — each generation carries its own slice as hidden <Audio 1> conditioning. ComfyUI cuts it." }),
-  bed_start: z.number().description("Bed start (s)").min(0).step(0.01).default(0).extra('extra', { order: null, wtype: 'number', tooltip: "Where in the bed track the film's window 1 begins." }),
-  seed: z.number().description("Seed").step(1).default(42).extra('extra', { order: null, tooltip: "Same seed across re-rolls = same world texture" }),
-  width: z.number().description("Width").min(448).max(1344).step(64).default(1344).extra('extra', { order: null, wtype: 'number' }),
-  height: z.number().description("Height").min(448).max(768).step(64).default(768).extra('extra', { order: null, wtype: 'number' }),
+  bed_start: z.number().description("Bed start (s)").min(0).step(0.01).default(0).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1, tooltip: "Where in the bed track the film's window 1 begins." }),
+  seed: z.number().description("Seed").step(1).default(42).extra('extra', { order: null, columns: 2, width: 1, tooltip: "Same seed across re-rolls = same world texture" }),
+  width: z.number().description("Width").min(448).max(1344).step(64).default(1344).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1 }),
+  height: z.number().description("Height").min(448).max(768).step(64).default(768).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1 }),
   // length (the grid-law fix, 2026-09-13): the row's old validators
   // (min 21, step 5) contradicted the card's own declared law — the
   // 17k+5 frame grid (identity principle + tooltip: 56/90/124/362).
@@ -145,7 +145,7 @@ const paramSchema = z.object({
   // explicit 90 passes the walk. 56 (the declared
   // default) is on-grid; the omitted-key path normalizes to null in
   // schema() so the body computes the family's frame budget.
-  length: z.number().description("Frames").min(22).max(362).step(17).default(56).extra('extra', { order: null, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
+  length: z.number().description("Frames").min(22).max(362).step(17).default(56).extra('extra', { order: null, columns: 2, width: 1, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
   steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', samplingExtra('steps', { tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
   sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
   sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, visible_when: "sharpen_enabled=true", tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
@@ -569,7 +569,19 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   calls.forEach((call, i) => {
     const k = i + 1
     const guide = str(call.image ?? call.ref_image ?? call.image_name)
-    const text = str(call.text).trim() || str(p.prompt)
+    // A CALL OWNS ITS TEXT (the operator's no-fallbacks law, enforced
+    // 2026-09-21: the film-level prompt silently rode textless calls —
+    // a source substitution, the exact crime class the law bans). The
+    // directing skill's own contract says it: "A call needs text (or
+    // beats — prompt segments WITHIN the call)". The film-level prompt
+    // is the single-window shape's text face (lifted there by the
+    // single-call mapping) — NEVER a per-call substitute.
+    const text = typeof call.text === 'string' ? call.text.trim() : ''
+    if (text === '') {
+      throw new Error(
+        `calls[${i}]: a call needs its own text — the film-level prompt is not a fallback (write the shot's text on the call)`,
+      )
+    }
     // THE SEAM LAW (2026-09-20): ONE mechanic, automatic. A 'cut'
     // call is the director's overlap-0 arm (independent windows — no
     // continuation, no guidance, nothing carried); every other seam

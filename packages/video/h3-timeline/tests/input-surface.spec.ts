@@ -167,11 +167,30 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     // parses them off the card schema) but render ONLY in the mod
     // zone — the client strips them from params via modOwnedFields.
     // Any FOURTH text projection is a live freeform field on the
-    // params face and must be refused here.
-    const textFields = fieldsOfEnvelope(
+    // params face and must be refused here. The prompt itself is a
+    // TEXTAREA (full-row by the textarea law) — never a bare text box.
+    const fields = fieldsOfEnvelope(
       ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
-    ).filter((f) => f.type === "text").map((f) => f.name);
-    assert.deepEqual(textFields, ["prompt", "sr_model", "sla_dense_steps"]);
+    );
+    assert.equal(fields.find((f) => f.name === "prompt")?.type, "textarea");
+    const textFields = fields.filter((f) => f.type === "text").map((f) => f.name);
+    assert.deepEqual(textFields, ["sr_model", "sla_dense_steps"]);
+    // THE GRID LAW (2026-09-21, "WHY IS WIDTH AND HEIGHT ON
+    // DIFFERENT VERTICAL ROWS?"): the General group declares its
+    // grid — Bed start + Seed share a row, Width + Height share a
+    // row, Frames rides the grid. A stacked General face is the
+    // 1:1 lie the operator caught (the component was CardForm; the
+    // DECLARATIONS never carried the grid).
+    for (const gridded of ["bed_start", "seed", "width", "height", "length"]) {
+      assert.equal(fields.find((f) => f.name === gridded)?.columns, 2, `${gridded} declares the 2-col grid`);
+    }
+    // THE STAR IS DEAD (2026-09-21): the film-level prompt was
+    // `required` while compose treated it as a per-call fallback —
+    // decoration on a lie. The call owns the text; a textless call
+    // refuses at compose. The prompt is the single-window shape's
+    // text face — never required.
+    const promptField = fields.find((f) => f.name === "prompt")!;
+    assert.notEqual(promptField.required, true, "the film-level prompt is never a required field");
   });
 });
 

@@ -190,18 +190,18 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     assert.equal(joins.length, 1, "the film's audio joins after the trimmed tail");
   });
 
-  it("a blank call text falls back to the run prompt (never an empty window)", () => {
+  it("a blank call text REFUSES at the door — a call owns its text, the film prompt is not a fallback (the no-fallbacks law, 2026-09-21)", () => {
     const g = new GraphBuilder();
-    def.compose(
-      def.schema({
-        prompt: "the run prompt",
-        calls: [SHOT(), SHOT({ text: "   ", start_frame: 56, end_frame: 124 })],
-      }),
-      model, g, "run_blank_text",
+    assert.throws(
+      () => def.compose(
+        def.schema({
+          prompt: "the run prompt",
+          calls: [SHOT(), SHOT({ text: "   ", start_frame: 56, end_frame: 124 })],
+        }),
+        model, g, "run_blank_text",
+      ),
+      /a call needs its own text — the film-level prompt is not a fallback/,
     );
-    const out = graphOf(g);
-    const r2v = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo");
-    assert.equal(r2v[0]![1].inputs.prompt, "the run prompt");
   });
 
   it("a cut call is the director's overlap-0 arm (independent windows, a true butt)", () => {
@@ -570,21 +570,21 @@ describe("the overlays cannot go around Schemaster", () => {
     assert.equal(cv.fps, 72, "interp ON pays the V9 compensation (24 × 3)");
   });
 
-  it("a non-string call text falls to the run prompt (the film str() coercion, never a crash)", () => {
+  it("a non-string call text REFUSES at the door — type-honest, never a silent coercion onto the run prompt (the no-fallbacks law)", () => {
     const g = new GraphBuilder();
-    def.compose(
-      def.schema({
-        prompt: "the carry",
-        calls: [
-          { text: "first push", start_frame: 0, end_frame: 56 },
-          { text: 123, start_frame: 56, end_frame: 124 },
-        ],
-      }),
-      model, g, "run_junk_text",
+    assert.throws(
+      () => def.compose(
+        def.schema({
+          prompt: "the carry",
+          calls: [
+            { text: "first push", start_frame: 0, end_frame: 56 },
+            { text: 123, start_frame: 56, end_frame: 124 },
+          ],
+        }),
+        model, g, "run_junk_text",
+      ),
+      /a call needs its own text — the film-level prompt is not a fallback/,
     );
-    const out = graphOf(g);
-    const r2v2 = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.prompt;
-    assert.equal(r2v2, "the carry", "junk text in the film loop coerces empty and the run prompt carries the window");
   });
 
   it("a stanza-pinned fps_seconds advances the bed clock by the window's OWN duration", () => {

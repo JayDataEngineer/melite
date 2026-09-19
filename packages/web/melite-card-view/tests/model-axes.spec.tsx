@@ -870,11 +870,16 @@ test('a DECLared columns group grids its fields — Width and Height share ONE r
   expect(labels.some((t) => t.includes('Width'))).toBe(true)
   expect(labels.some((t) => t.includes('Height'))).toBe(true)
   expect((cells[0] as HTMLElement).style.gridColumn).toBe('span 1')
-  // an UNDECLARED group keeps the stacked face (no grid node) —
-  // behind its own submenu tab (stroke 89)
+  // THE GRID IS THE LAW (2026-09-21, the operator's catch: "WHY
+  // THE [REDACTED 2026-11-05] IS WIDTH AND HEIGHT ON DIFFERENT VERTICAL ROWS?"): an
+  // UNDECLARED group grids 2 by DEFAULT — the form-card grammar is
+  // the system law at the card level, never per-card decoration a
+  // card can forget. (A card that wants a stack declares columns: 1.)
   fireEvent.click(screen.getByRole('tab', { name: 'Sampling' }))
   const sampPanel = document.querySelector('[data-form-group-panel="sampling"]') as HTMLElement
-  expect(sampPanel.querySelector('div[class*="specGrid"]')).toBeNull()
+  const sampGrid = sampPanel.querySelector('div[class*="specGrid"]') as HTMLElement
+  expect(sampGrid).not.toBeNull()
+  expect(sampGrid.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))')
 })
 
 
