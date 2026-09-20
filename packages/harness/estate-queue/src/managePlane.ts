@@ -16,6 +16,7 @@ import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { endpointConfigPath, loadEndpointConfig, runtimeModelsRoot } from "@melite/comfyui-cordis";
+import { isCatalogMiss, loadCardDefs, resolveArtifactRows } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import { ManagerApiError, managerBase, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
 import { probeEndpoint, activeRuns, managerSecurity } from "./manageProbe.ts";
@@ -330,13 +331,38 @@ interface CatalogRow {
  *  from the engine-model-catalog provider row). Estate downloads
  *  land through the same TS path as download_model — no vendor
  *  dependency, no whitelist mismatch. */
-async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  need(req, "model");
+/** Card-owned provision rows as download rows (the card-id half of
+ *  provision_model): the card set boots once (module-cached,
+ *  deterministic) and the card's DECL provisions resolve through the
+ *  CATALOG's own row gate (resolveArtifactRows — the name/url
+ *  non-empty law, one spelling, pinned by the catalog's walls).
+ *  Null when no card carries the id or it declares no rows — the
+ *  caller rethrows the catalog miss (never a wrong install). */
+async function resolveCardArtifact(cardId: string): Promise<CatalogRow[] | null> {
+  const defs = await loadCardDefs();
+  const declared = defs.get(cardId)?.provisions;
+  if (!declared?.length) return null;
+  return resolveArtifactRows(
+    [{ id: cardId, genre: "card", provisions: declared, variants: [] }],
+    cardId,
+  );
+}
+
+async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {  need(req, "model");
   let rows: CatalogRow[];
   try {
     rows = ctx.models.resolveCatalogArtifact(req.model, req.variant, req.quant, ctx.repoRoot);
   } catch (e) {
-    throw notFound((e as Error).message);
+    // THE CARD-OWNED FALLBACK (the mask-form SAM2 law, 2026-09-19 —
+    // the operator: "declared, then auto provisioned"): model-less
+    // tool cards (boarded: []) carry their own weight rows on the
+    // card DECL (provisionsByFamily serves them under the CARD id).
+    // A catalog miss re-resolves against the card set — the run
+    // rescue names the card, the DECL owns the URLs either way.
+    if (!isCatalogMiss(e)) throw notFound((e as Error).message);
+    const cardRows = await resolveCardArtifact(req.model);
+    if (cardRows === null) throw notFound((e as Error).message);
+    rows = cardRows;
   }
   const done: string[] = [];
   const present: string[] = [];

@@ -415,6 +415,36 @@ export class CardRegistryService extends Service {
     // the id names a flow.
     const def: CardDefinition | undefined = this.defsSync().get(card);
     if (def === undefined) {
+      // THE GENERIC MCP CARD (2026-09-21 — "nor does this fake card
+      // even load"): the ONE engine-served card with NO card
+      // definition (the picker's row and its form ride the engine
+      // arm, never the registry's defs). It is admitted against the
+      // LIVE engines-seat census: the card exists iff at least one
+      // mcp:<server> engine is seated — the standalone-subagent
+      // spawn needs a server to provide (the card's face is the
+      // AGENT card doc; the servers are its MCPs tiles' census, the
+      // same fold the catalog/forms doors serve). A dead server
+      // pick refuses AT WRITE TIME with the seated list, same
+      // voice as a card board.
+      if (card === "mcp") {
+        const seated: string[] = this.seatedMcpEngines();
+        if (seated.length === 0) {
+          return {
+            ok: false,
+            error: "card 'mcp' has no seated MCP server on this lane (no mcp:<server> engine registered) — the card composes nothing",
+            offered: [],
+          };
+        }
+        if (typeof model === "string" && model !== "" && !seated.includes(model)) {
+          return {
+            ok: false,
+            error:
+              "model '" + model + "' is not a seated MCP server (seated: " + seated.join(", ") + ")",
+            offered: seated,
+          };
+        }
+        return { ok: true };
+      }
       const flow = getRegistryFlow(card);
       if (flow !== undefined) {
         const cards: string[] = [...new Set(
@@ -457,6 +487,22 @@ export class CardRegistryService extends Service {
     // boarded = offered = admitted. Not-yet-downloaded weights are
     // the user's download prompt (provision_model), never a refusal
     return { ok: true };
+  }
+
+  /** The seated mcp:<server> engine ids, sorted — the generic MCP
+   * card's LIVE board (the same census the catalog/forms folds
+   * serve). The same lane-read spelling runsRegistry's flow_inline
+   * compile uses: the implicit seat get returns undefined when no
+   * engines service is registered — a registry-only boot (walls,
+   * fixtures) folds an empty census and card 'mcp' refuses with its
+   * own voice, never a silent pass. */
+  private seatedMcpEngines(): string[] {
+    const seat: unknown = this.ctx.get("engines");
+    if (seat === undefined || typeof (seat as { ids?: unknown }).ids !== "function") return [];
+    return (seat as { ids(): string[] })
+      .ids()
+      .filter((id) => id.startsWith("mcp:"))
+      .sort();
   }
 
   resolveStageParams(

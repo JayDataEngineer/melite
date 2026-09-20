@@ -133,6 +133,12 @@ export const AUDIO_NATIVE_TTS: RegistryFlow = {
       card: "tts",
       description: "Qwen3-TTS text to speech via the tts card",
       inputs: { prompt: initial("prompt") },
+      // every wired input needs its expected Kind (kindsOk's own
+      // law) — this row shipped without it and only the LIVE
+      // /v1/flows/validate path tripped it; completed at the
+      // round-trip stroke 2026-09-20 beside the wall that catches
+      // the class (kindsOk over every registry flow)
+      expected: { prompt: "text" },
       cardIo: { wav: "audio" },
       params: { model: "qwen3-tts", text: "$prompt", seed: 42 },
     }),
@@ -402,6 +408,8 @@ export const IMAGE_UPSCALE: RegistryFlow = {
       card: "image-gen",
       description: "T2I via the image-gen card (the named model's own generate_t2i.json)",
       inputs: { prompt: initial("prompt") },
+      // the wiring wall's law (2026-09-20): every wired input typed
+      expected: { prompt: "text" },
       cardIo: { image: "image" },
       params: { model: "krea-2", prompt: "$prompt", seed: 42 },
     }),
@@ -411,6 +419,7 @@ export const IMAGE_UPSCALE: RegistryFlow = {
       card: "upscale-tools",
       description: "SeedVR2 1080p upscale via the upscale-tools card",
       inputs: { image: fromStage("make", "image") },
+      expected: { image: "image" },
       cardIo: { image: "image" },
       params: {
         model: "seedvr2_ema",
@@ -520,25 +529,27 @@ export const KIMODO_NATIVE: RegistryFlow = {
 export const MUSIC_NATIVE: RegistryFlow = {
   id: "music-native",
   description:
-    "audio.cpp native music generation as a CARD stage — the first production " +
-    "card= lane (stroke 4). prompt in, audio out; the card doc names its model " +
-    "row (ace-step-xl family; see GET /v1/models for the boarded rows).",
+    "Music generation as a CARD stage — prompt in, audio out via the music " +
+    "card (MiniMax Music 3, the boarded row; see GET /v1/models). Repointed " +
+    "at the mono-engine law by the wiring wall 2026-09-20: the row still " +
+    "named the retired audio_cpp tier and a card id that no longer exists — " +
+    "a fossil only the live validate path ever tripped.",
   stages: [
     plainStage({
       id: "music",
-      engine: "audio_cpp",
-      card: "music-native",
+      engine: "comfyui",
+      card: "music",
       description:
-        "audio.cpp music card — the arm composes the doc into the engine " +
-        "workflow (task/family/model rows)",
+        "MiniMax Music 3 via the music card — the lane composes the doc " +
+        "into the ComfyUI graph (UNET/CLIP/VAE loaders + the music sampler)",
       inputs: { prompt: initial("prompt") },
+      expected: { prompt: "text" },
+      cardIo: { default: "audio" },
       params: {
         prompt: "$prompt",
-        model: "ace-step-sft",
-        family: "ace-step-xl",
+        model: "music3",
         duration: 120,
         seed: -1,
-        backend: "cuda",
       },
     }),
   ],
@@ -547,7 +558,7 @@ export const MUSIC_NATIVE: RegistryFlow = {
     name: "compose_music",
     version: 1,
     description:
-      "audio.cpp native music generation in one call (ACE-Step family) — " +
+      "Music generation in one call (MiniMax Music 3 via the music card) — " +
       "prompt in, audio out.",
     properties: {
       prompt: {
@@ -561,11 +572,11 @@ export const MUSIC_NATIVE: RegistryFlow = {
       },
       duration: {
         ptype: "integer",
-        description: "seconds of music (the card caps 10..600)",
+        description: "seconds of music (the card caps 5..360)",
         default: 120,
         hasDefault: true,
-        minimum: 10,
-        maximum: 600,
+        minimum: 5,
+        maximum: 360,
         enum: null,
       },
     },

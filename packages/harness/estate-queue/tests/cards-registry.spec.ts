@@ -16,6 +16,7 @@ vi.mock("../src/cardsCompose.ts", async (importOriginal) => {
 });
 
 import { Context } from "@deepseek-ai/cordis";
+import { EnginesService } from "@melite/engine-contract";
 import {
   CardRegistryService,
   cardRegistryProvider,
@@ -186,6 +187,56 @@ describe("admitStageModel (the write-time gate)", () => {
       if (r.ok === false) expect(r.error).toMatch(/boards: none/);
       return;
     }
+  });
+});
+
+describe("admitStageModel — the GENERIC MCP CARD (engine-served, no card def)", () => {
+  /** Boot a primed registry whose ctx carries an 'engines' seat with
+   * the given mcp ids registered (a minimal real executor — the
+   * admission only reads the seat's census, never calls it). */
+  const bootSeated = async (ids: string[]): Promise<CardRegistryService> => {
+    const ctx = new Context();
+    const seat = new EnginesService(ctx);
+    for (const id of ids) ctx.effect(() => seat.register(id, {
+      executor: { executeStages: async () => ({ stages: [] }) },
+    }));
+    const s = new CardRegistryService(ctx);
+    await s.prime();
+    return s;
+  };
+  it("card 'mcp' ADMITS against the live seat census (the pick IS the add — this was the wall that killed the fake card)", async () => {
+    // 'craft' rides the SAME seat (non-mcp ids never join the census)
+    const s = await bootSeated(["craft", "mcp:blender", "mcp:unity"]);
+    expect(s.admitStageModel("mcp", undefined)).toEqual({ ok: true });
+    expect(s.admitStageModel("mcp", "")).toEqual({ ok: true });
+    expect(s.admitStageModel("mcp", "mcp:blender")).toEqual({ ok: true });
+    expect(s.admitStageModel("mcp", "craft")).toMatchObject({ ok: false });
+  });
+  it("a model outside the SEATED census refuses AT WRITE TIME with the seated list (the board law, mcp spelling)", async () => {
+    const s = await bootSeated(["mcp:blender"]);
+    const r = s.admitStageModel("mcp", "mcp:unity");
+    expect(r.ok).toBe(false);
+    if (r.ok === false) {
+      expect(r.error).toMatch(/is not a seated MCP server/);
+      expect(r.error).toMatch(/mcp:blender/);
+      expect(r.offered).toEqual(["mcp:blender"]);
+    }
+  });
+  it("NO seated mcp engine (or no seat at all — registry-only boots) refuses loud, never a silent pass", async () => {
+    const s = await bootSeated([]);
+    const r = s.admitStageModel("mcp", undefined);
+    expect(r.ok).toBe(false);
+    if (r.ok === false) expect(r.error).toMatch(/no seated MCP server/);
+    // and the shared fixture ctx (no engines seat at all) — same voice
+    const bare = svc.admitStageModel("mcp", "mcp:blender");
+    expect(bare.ok).toBe(false);
+    if (bare.ok === false) expect(bare.error).toMatch(/no seated MCP server/);
+  });
+  it("the per-server ids themselves stay UNKNOWN CARDS (only the bare 'mcp' is the card — never a row per server)", async () => {
+    const s = await bootSeated(["mcp:blender"]);
+    const r = s.admitStageModel("mcp:blender", undefined);
+    expect(r.ok).toBe(false);
+    if (r.ok === false) expect(r.error).toMatch(/no registered card definition/);
   });
 });
 

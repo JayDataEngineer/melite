@@ -28,9 +28,10 @@ let ROOT = "";
 const seenTimeouts: number[] = [];
 const fakeModels = {
   rows: [] as Array<{ url: string; relative_path: string; filename?: string; name: string }>,
-  poison: null as null | string,
+  poison: null as null | string | Error,
   present: new Set<string>(),
   resolveCatalogArtifact: (..._a: unknown[]) => {
+    if (fakeModels.poison instanceof Error) throw fakeModels.poison;
     if (fakeModels.poison !== null) throw new Error(fakeModels.poison);
     return fakeModels.rows;
   },
@@ -513,6 +514,34 @@ describe("hProvisionModel", () => {
       const [c1, e1] = await manage({ action: "provision_model", model: "x" });
       assert.equal(c1, 404);
       assert.match(e1.detail, /no such model/);
+    } finally {
+      fakeModels.poison = null;
+      rmRoot();
+    }
+  });
+
+  it("a catalog miss re-resolves against CARD-owned DECL rows (the mask-form SAM2 law)", async () => {
+    const { CatalogMiss } = await import("@melite/comfyui-cordis");
+    mkRoot();
+    try {
+      fakeModels.poison = new CatalogMiss('model "mask-form" not found in catalog');
+      route(() => new Response("BYTES"));
+      const [c1, e1] = await manage({ action: "provision_model", model: "mask-form" });
+      assert.equal(c1, 200);
+      assert.match(e1.detail, /downloaded: sam2\.1_hiera_large\.pt, yolo11m\.pt/);
+      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "sams", "sam2.1_hiera_large.pt"), "utf8"), "BYTES");
+      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "ultralytics", "bbox", "yolo11m.pt"), "utf8"), "BYTES");
+      assert.equal((e1.data as { model: string }).model, "mask-form");
+      // an unknown id stays a 404 (never a wrong install)
+      fakeModels.poison = new CatalogMiss('model "ghost" not found in catalog');
+      const [c2, e2] = await manage({ action: "provision_model", model: "ghost" });
+      assert.equal(c2, 404);
+      assert.match(e2.detail, /not found in catalog/);
+      // a KNOWN card with no provisions stays a 404 (nothing declared, nothing fetched)
+      fakeModels.poison = new CatalogMiss('model "tts" not found in catalog');
+      const [c3, e3] = await manage({ action: "provision_model", model: "tts" });
+      assert.equal(c3, 404);
+      assert.match(e3.detail, /not found in catalog/);
     } finally {
       fakeModels.poison = null;
       rmRoot();
