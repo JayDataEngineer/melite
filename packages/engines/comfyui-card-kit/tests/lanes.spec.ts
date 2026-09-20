@@ -42,7 +42,7 @@ const classes = (row: Record<string, { class_type: string }>): string[] =>
 beforeAll(() => { assert.ok(Object.keys(facts.models).length > 0, "the facts file serves"); });
 
 // ── the mask lane (RT-DETR proposals, exports, unions, manifests) ──
-const MASK_PINS = { checkpoint: "sam3_pin.pth", unet: "rtdetr_pin.pth" };
+const MASK_PINS = { checkpoint: "sam3_pin.pth", unet: "rtdetr_pin.pth", sam2: "sam2_pin.pt", yolo: "bbox/yolo_pin.pt" };
 const maskBase = {
   input_image: "/m/p.png", sam_threshold: 0.93, sam_dilation: 0,
   export_boxes: false, primary_via_rtdetr: false,
@@ -82,7 +82,7 @@ describe("maskT1 (the selection lane's arms)", () => {
     assert.equal(rt.inputs.max_detections, 100, "a zero max_instances falls back to the 100 cap");
   });
 
-  it("the exports loop: paint + text + scope (the shorter zip arm)", () => {
+  it("the exports loop: paint + text (the shorter zip arm); scope_bbox is the PRIMARY's box and never leaks into exports", () => {
     const g = new GraphBuilder();
     maskT1({
       ...maskBase, paint_mask: "/m/paint.png",
@@ -93,15 +93,84 @@ describe("maskT1 (the selection lane's arms)", () => {
     }, MASK_PINS, g, "r5");
     const row = dump(g);
     const saves = Object.values(row).filter((n) => n.class_type === "SaveImage");
-    assert.ok(saves.length >= 3, "combined + painted + scoped-text saves ride");
+    assert.ok(saves.length >= 3, "combined + painted + text saves ride");
     const names = saves.map((s) => String(s.inputs.filename_prefix));
     assert.ok(names.some((n) => n.endsWith("mask_painted")), "the paint export saves");
-    assert.ok(names.some((n) => n.endsWith("mask_cloak")), "the text export saves (scoped)");
+    assert.ok(names.some((n) => n.endsWith("mask_cloak")), "the text export saves");
     assert.ok(!names.some((n) => n.endsWith("mask_extra")), "zip stops at the shorter row");
     const detect = Object.values(row).filter((n) => n.class_type === "SAM3_Detect");
     assert.equal(detect.length, 2, "the primary + the TEXT export detect (paint rides the mask, never detects)");
     const scoped = detect.find((d) => (d.inputs.bboxes as { x?: number }).x === 8);
-    assert.deepEqual(scoped!.inputs.bboxes, { x: 8, y: 8, width: 64, height: 64 }, "the scope rides as a bbox dict");
+    assert.equal(scoped, undefined, "no export inherits the primary's box (the primary's scope multiplies the anchor, never the exports)");
+    const mult = Object.values(row).find((n) => n.class_type === "MaskComposite" && (n.inputs as { operation?: string }).operation === "multiply");
+    assert.ok(mult, "the primary's box scopes mask_combined (the rect scope)");
+  });
+
+  it("the SAM2 impact-pack arm: YOLO proposes, SAM2 refines, the pins ride (the operator's SAM2)", () => {
+    const g = new GraphBuilder();
+    maskT1({
+      ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person", yolo_threshold: 0.6,
+    }, MASK_PINS, g, "r_sam2");
+    const row = dump(g);
+    assert.deepEqual(classes(row).filter((c) => ["UltralyticsDetectorProvider", "BboxDetectorSEGS", "SAMLoader", "SAMDetectorCombined"].includes(c)).sort(),
+      ["BboxDetectorSEGS", "SAMDetectorCombined", "SAMLoader", "UltralyticsDetectorProvider"], "the full impact chain rides");
+    assert.ok(!classes(row).includes("CLIPTextEncode"), "the sam2 arm never touches the CLIP text lane");
+    const yolo = Object.values(row).find((n) => n.class_type === "UltralyticsDetectorProvider")!;
+    assert.equal(yolo.inputs.model_name, "bbox/yolo_pin.pt", "the card's YOLO pin rides (never a caller string)");
+    const det = Object.values(row).find((n) => n.class_type === "BboxDetectorSEGS")!;
+    assert.equal(det.inputs.labels, "person", "the labels word rides");
+    assert.equal(det.inputs.threshold, 0.6, "the YOLO threshold rides verbatim");
+    const sam = Object.values(row).find((n) => n.class_type === "SAMLoader")!;
+    assert.equal(sam.inputs.model_name, "sam2_pin.pt", "the card's SAM2 pin rides (never a caller string)");
+    const comb = Object.values(row).find((n) => n.class_type === "SAMDetectorCombined")!;
+    assert.equal(comb.inputs.detection_hint, "center-1", "the pack's best-practice hint rides");
+    const saves = Object.values(row).filter((n) => n.class_type === "SaveImage");
+    assert.ok(saves.some((s) => String(s.inputs.filename_prefix).endsWith("mask_combined")), "the sam2 primary anchors combined");
+  });
+
+  it("the sam2 export arm: labels + its OWN box (the primary's box never leaks)", () => {
+    const g = new GraphBuilder();
+    maskT1({
+      ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person",
+      scope_bbox: [1, 2, 30, 40],
+      exports: [["hands", "hand", [50, 60, 70, 80]]],
+      export_kind: ["sam2"],
+    }, MASK_PINS, g, "r_sam2e");
+    const row = dump(g);
+    const names = Object.values(row).filter((n) => n.class_type === "SaveImage").map((s) => String(s.inputs.filename_prefix));
+    assert.ok(names.some((n) => n.endsWith("mask_hands")), "the sam2 export saves under its own name");
+    const mults = Object.values(row).filter((n) => n.class_type === "MaskComposite" && (n.inputs as { operation?: string }).operation === "multiply");
+    assert.equal(mults.length, 2, "the primary's box AND the export's own box each scope once (never cross-applied)");
+  });
+
+  it("an empty sam2 labels word refuses LOUD (never an empty YOLO selection)", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => maskT1({ ...maskBase, primary_via_sam2: true, primary_sam2_labels: "" }, MASK_PINS, g, "r_sam2x"),
+      /a sam2 selection needs labels/,
+    );
+  });
+
+  it("an unstated sam2 labels word falls back to 'all' (the lane's YOLO fallback — never undefined)", () => {
+    const g = new GraphBuilder();
+    maskT1({ ...maskBase, primary_via_sam2: true }, MASK_PINS, g, "r_sam2a");
+    const det = Object.values(dump(g)).find((n) => n.class_type === "BboxDetectorSEGS")!;
+    assert.equal(det.inputs.labels, "all", "the detector reads 'all' (every class) when the caller states no word");
+  });
+
+  it("a scoped RTDETR primary multiplies the proposal (the primary's box scopes combined)", () => {
+    const g = new GraphBuilder();
+    maskT1({ ...maskBase, primary_via_rtdetr: true, scope_bbox: [8, 8, 64, 64] }, MASK_PINS, g, "r_rts");
+    const row = dump(g);
+    const mult = Object.values(row).find((n) => n.class_type === "MaskComposite" && (n.inputs as { operation?: string }).operation === "multiply");
+    assert.ok(mult, "the RTDETR primary's box scopes mask_combined");
+  });
+
+  it("a non-string sam2 export payload refuses LOUD at the lane (never a coerced label)", () => {
+    assert.throws(
+      () => maskT1({ ...maskBase, exports: [["x", 7 as unknown as string]], export_kind: ["sam2"] }, MASK_PINS, new GraphBuilder(), "r_sam2t"),
+      /sam2 export 'x' needs labels/,
+    );
   });
 
   it("the paint union folds into combined (GrowMask ×2 + MaskComposite)", () => {

@@ -62,6 +62,11 @@ const ModKind = z.object({
   options: z.array(OptionRow),
   category: z.union([z.const("standalone"), z.const("ordered")]),
   leaf_face: z.union([z.const("paint-canvas"), z.const("bbox-canvas")]),
+  // THE ARM-CONDITIONAL EXTENSION PACKS (service.ts): pack ids the
+  // kind's arm needs live. Bare keys stay absent-able (the existing
+  // rows omit entry/option_key the same way — the resolve fills
+  // nothing, the drift check reads carried-vs-kept).
+  requires: z.array(z.string()),
 });
 
 /** The field types the wire carries; each demands its own

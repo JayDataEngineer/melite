@@ -280,34 +280,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/audio/voice-lock:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/dsh-tools':
-        specifier: 0.1.5-rc.2
-        version: 0.1.5-rc.2(6c1de61afe47b0d69df46230a00574b7)
-      '@deepseek-ai/schemastery':
-        specifier: '*'
-        version: 3.18.2
-      '@melite/comfyui-card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-      '@melite/estate-call':
-        specifier: workspace:*
-        version: link:../../harness/estate-call
-    devDependencies:
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/engines/agent:
     dependencies:
       '@deepseek-ai/cordis':
@@ -387,9 +359,6 @@ importers:
       '@melite/audio-tts':
         specifier: workspace:*
         version: link:../../audio/tts
-      '@melite/audio-voice-lock':
-        specifier: workspace:*
-        version: link:../../audio/voice-lock
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../comfyui-card-kit
@@ -507,12 +476,24 @@ importers:
       '@melite/models-pixel_upscale':
         specifier: workspace:*
         version: link:../../models/pixel_upscale
+      '@melite/models-qwen-img-21':
+        specifier: workspace:*
+        version: link:../../models/qwen-img-21
+      '@melite/models-qwen-img-edit-21':
+        specifier: workspace:*
+        version: link:../../models/qwen-img-edit-21
       '@melite/models-qwen-img-edit-2511':
         specifier: workspace:*
         version: link:../../models/qwen-img-edit-2511
       '@melite/models-qwen3-tts':
         specifier: workspace:*
         version: link:../../models/qwen3-tts
+      '@melite/models-qwen3-tts-base':
+        specifier: workspace:*
+        version: link:../../models/qwen3-tts-base
+      '@melite/models-qwen3-tts-voicedesign':
+        specifier: workspace:*
+        version: link:../../models/qwen3-tts-voicedesign
       '@melite/models-rtx-vsr':
         specifier: workspace:*
         version: link:../../models/rtx-vsr
@@ -552,6 +533,9 @@ importers:
       '@melite/models-wd14':
         specifier: workspace:*
         version: link:../../models/wd14
+      '@melite/models-yue2':
+        specifier: workspace:*
+        version: link:../../models/yue2
       '@melite/models-z-image':
         specifier: workspace:*
         version: link:../../models/z-image
@@ -965,9 +949,6 @@ importers:
       '@melite/audio-tts':
         specifier: workspace:*
         version: link:../../audio/tts
-      '@melite/audio-voice-lock':
-        specifier: workspace:*
-        version: link:../../audio/voice-lock
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
@@ -1065,6 +1046,9 @@ importers:
       '@melite/estate-call':
         specifier: workspace:*
         version: link:../../harness/estate-call
+      '@melite/models-qwen-img-edit-21':
+        specifier: workspace:*
+        version: link:../../models/qwen-img-edit-21
     devDependencies:
       '@types/node':
         specifier: ^22.20.0
@@ -1099,6 +1083,9 @@ importers:
       '@melite/models-krea-2':
         specifier: workspace:*
         version: link:../../models/krea-2
+      '@melite/models-qwen-img-21':
+        specifier: workspace:*
+        version: link:../../models/qwen-img-21
       '@melite/models-z-image':
         specifier: workspace:*
         version: link:../../models/z-image
@@ -1741,6 +1728,38 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/models/qwen-img-21:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui-cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/models/qwen-img-edit-21:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui-cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/models/qwen-img-edit-2511:
     dependencies:
       '@deepseek-ai/cordis':
@@ -1768,6 +1787,38 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
+      '@melite/comfyui-cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/models/qwen3-tts-base:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui-cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/models/qwen3-tts-voicedesign:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
@@ -1972,6 +2023,22 @@ importers:
         version: 5.9.3
 
   packages/models/wd14:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui-cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/models/yue2:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2

@@ -1259,6 +1259,41 @@
         }
       ]
     },
+    "yue2": {
+      "card": "music",
+      "card_knobs": [
+        {
+          "card": "prompt",
+          "inject": "YuE2GenerateMusic.0.style",
+          "kind": "s"
+        },
+        {
+          "card": "lyrics",
+          "inject": "YuE2GenerateMusic.0.lyrics",
+          "kind": "s"
+        },
+        {
+          "card": "mode",
+          "inject": "YuE2GenerateMusic.0.mode",
+          "kind": "s"
+        },
+        {
+          "card": "duration",
+          "inject": "YuE2GenerateMusic.0.max_duration",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+        {
+          "card": "n_diffusion_steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        }
+      ]
+    },
     "pixal3d": {
       "card": "img-to-mesh",
       "card_knobs": [
@@ -1424,6 +1459,121 @@
         }
       ]
     },
+    "qwen-img-21": {
+      "card": "image-gen",
+      "card_knobs": [
+{
+          "card": "prompt",
+          "inject": "TextEncodeQwenImage21.0.prompt",
+          "kind": "s"
+        },
+{
+          "card": "negative_prompt",
+          "inject": "TextEncodeQwenImage21.0.negative_prompt",
+          "kind": "s"
+        },
+{
+          "card": "width",
+          "inject": "EmptyLatentImage.0.width",
+          "kind": "n"
+        },
+{
+          "card": "height",
+          "inject": "EmptyLatentImage.0.height",
+          "kind": "n"
+        },
+{
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+{
+          "card": "steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+{
+          "card": "cfg",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+{
+          "card": "sampler",
+          "inject": "KSampler.0.sampler_name",
+          "kind": "s"
+        },
+{
+          "card": "scheduler",
+          "inject": "KSampler.0.scheduler",
+          "kind": "s"
+        }
+      ]
+    },
+    "qwen-img-edit-21": {
+      "card": "image-edit",
+      "card_knobs": [
+{
+          "card": "image1",
+          "inject": "LoadImage.0.image",
+          "kind": "s"
+        },
+{
+          "card": "image2",
+          "inject": "LoadImage.1.image",
+          "kind": "s"
+        },
+{
+          "card": "image3",
+          "inject": "LoadImage.2.image",
+          "kind": "s"
+        },
+{
+          "card": "prompt",
+          "inject": "TextEncodeQwenImage21.0.prompt",
+          "kind": "s"
+        },
+{
+          "card": "negative_prompt",
+          "inject": "TextEncodeQwenImage21.0.negative_prompt",
+          "kind": "s"
+        },
+{
+          "card": "width",
+          "inject": "EmptyLatentImage.0.width",
+          "kind": "n"
+        },
+{
+          "card": "height",
+          "inject": "EmptyLatentImage.0.height",
+          "kind": "n"
+        },
+{
+          "card": "seed",
+          "inject": "KSampler.0.seed",
+          "kind": "n"
+        },
+{
+          "card": "steps",
+          "inject": "KSampler.0.steps",
+          "kind": "n"
+        },
+{
+          "card": "cfg",
+          "inject": "KSampler.0.cfg",
+          "kind": "n"
+        },
+{
+          "card": "sampler",
+          "inject": "KSampler.0.sampler_name",
+          "kind": "s"
+        },
+{
+          "card": "scheduler",
+          "inject": "KSampler.0.scheduler",
+          "kind": "s"
+        }
+      ]
+    },
     "qwen-img-edit-2511": {
       "card": "image-edit",
       "card_knobs": [
@@ -1472,47 +1622,27 @@
     "qwen3-tts": {
       "card": "tts",
       "card_knobs": [
-        {
+{
           "card": "text",
           "inject": "AudiocoreTTS.0.prompt",
           "kind": "s"
         },
-        {
+{
           "card": "voice",
           "inject": "AudiocoreTTS.0.voice",
           "kind": "s"
         },
-        {
+{
           "card": "style_instruction",
           "inject": "AudiocoreTTS.0.instruct",
           "kind": "s"
         },
-        {
-          "card": "qvoice",
-          "inject": "AudiocoreTTS.0.voice_file",
-          "kind": "s"
-        },
-        {
-          "card": "voice_pca_strengths",
-          "inject": "AudiocoreTTS.0.voice_pca_strengths",
-          "kind": "s"
-        },
-        {
+{
           "card": "temperature",
           "inject": "AudiocoreTTS.0.temperature",
           "kind": "n"
         },
-        {
-          "card": "top_p",
-          "inject": "AudiocoreTTS.0.top_p",
-          "kind": "n"
-        },
-        {
-          "card": "speed",
-          "inject": "AudiocoreTTS.0.speed",
-          "kind": "n"
-        },
-        {
+{
           "card": "seed",
           "inject": "AudiocoreTTS.0.seed",
           "kind": "n"
@@ -1522,90 +1652,35 @@
     "qwen3-tts-base": {
       "card": "tts",
       "card_knobs": [
-        {
+{
           "card": "text",
           "inject": "AudiocoreTTS.0.prompt",
           "kind": "s"
         },
-        {
-          "card": "voice",
-          "inject": "AudiocoreTTS.0.voice",
+{
+          "card": "ref_audio",
+          "inject": "AudiocoreTTS.0.reference_audio",
           "kind": "s"
         },
-        {
-          "card": "style_instruction",
-          "inject": "AudiocoreTTS.0.instruct",
+{
+          "card": "ref_text",
+          "inject": "AudiocoreTTS.0.reference_text",
           "kind": "s"
         },
-        {
-          "card": "qvoice",
-          "inject": "AudiocoreTTS.0.voice_file",
-          "kind": "s"
-        },
-        {
-          "card": "voice_pca_strengths",
-          "inject": "AudiocoreTTS.0.voice_pca_strengths",
-          "kind": "s"
-        },
-        {
+{
           "card": "temperature",
           "inject": "AudiocoreTTS.0.temperature",
-          "kind": "n"
-        },
-        {
-          "card": "top_p",
-          "inject": "AudiocoreTTS.0.top_p",
-          "kind": "n"
-        },
-        {
-          "card": "speed",
-          "inject": "AudiocoreTTS.0.speed",
-          "kind": "n"
-        },
-        {
-          "card": "seed",
-          "inject": "AudiocoreTTS.0.seed",
           "kind": "n"
         }
       ]
     },
     "qwen3-tts-voicedesign": {
-      "card": "voice-lock",
+      "card": "tts",
       "card_knobs": [
-        {
-          "card": "voice_name",
-          "inject": "AudiocoreVoiceStudio.0.name",
+{
+          "card": "text",
+          "inject": "AudiocoreVoiceStudio.0.sample_text",
           "kind": "s"
-        },
-        {
-          "card": "style_instruction",
-          "inject": "AudiocoreVoiceStudio.0.instruct",
-          "kind": "s"
-        },
-        {
-          "card": "temperature",
-          "inject": "AudiocoreVoiceStudio.0.temperature",
-          "kind": "n"
-        },
-        {
-          "card": "top_p",
-          "inject": "AudiocoreVoiceStudio.0.top_p",
-          "kind": "n"
-        },
-        {
-          "card": "speed",
-          "inject": "AudiocoreVoiceStudio.0.speed",
-          "kind": "n"
-        },
-        {
-          "card": "repetition_penalty",
-          "inject": "AudiocoreVoiceStudio.0.repetition_penalty",
-          "kind": "n"
-        },
-        {
-          "card": "seed",
-          "inject": "AudiocoreVoiceStudio.0.seed",
-          "kind": "n"
         }
       ]
     },

@@ -177,19 +177,53 @@ const MaskFields = z.object({
     .extra('extra', { wtype: 'boolean', group: 'mask', zone: 'mods', order: 6, width: 1, tooltip: 'Work OUTSIDE the painted region instead.' }),
 })
 
-// ── QVOICE (the qvoice pack): the voice-lock card's exported
-// speaker embeddings — .qvoice file + PCA steering ──
+// ── QVOICE (the qvoice pack): a saved persona artifact — the
+// .qvoice file (the qvoice_save mod exports them) + the clone
+// pipeline's identity-intensity knob. The USE half of the
+// voice-lock cycle (2026-09-20, the round-trip stroke: the
+// artifact performs the text through the studio's Python clone
+// pipeline — the AudiocoreTTS embedding path is dead at the C
+// ABI, speaker_embedding hard-fails in build_speech_request). ──
 const QvoiceFields = z.object({
   qvoice: z.string().role('path').description('Voice (.qvoice)')
     .extra('extra', {
       wtype: 'file', group: 'qvoice', zone: 'mods', order: 0,
-      tooltip: 'Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.',
+      tooltip: 'A saved .qvoice persona (the Design mod exports these). Present = this voice performs the text (codec-level clone through the studio pipeline) instead of the preset timbre.',
     }),
-  voice_pca_strengths: z.string().description('PCA Steering')
+  voice_strength: z.number().description('Voice Strength').min(0).max(2).step(0.05).default(1)
     .extra('extra', {
-      wtype: 'textarea', order: 1, group: 'qvoice', zone: 'mods',
-      tooltip: 'JSON knobs over the embedding\'s principal components, e.g. {"pca_pc1.dir": 0.5} — subtle voice direction without re-designing the persona.',
+      wtype: 'number', group: 'qvoice', zone: 'mods', order: 1,
+      tooltip: 'Identity intensity of the loaded persona — below 1 pulls toward neutral, above 1 exaggerates it (the clone pipeline scales the embedding).',
     }),
+})
+
+// ── QVOICE SAVE (the qvoice_save pack): design a voice from a
+// description and export the .qvoice embedding (the voice-lock
+// card's design half, moved into the TTS card's mods 2026-09-21 —
+// the operator: "THE VOICE LOCK CARD DIES. THE VOICE LOCK SAVE
+// AND LOAD GO INSIDE TTS CARD MODS"). Owner-only: the 1.7B
+// VoiceDesign family fires it. ──
+const QvoiceSaveFields = z.object({
+  voice_name: z.string().description('Voice Name')
+    .extra('extra', {
+      wtype: 'text', group: 'qvoice_save', zone: 'mods', order: 0, required: true,
+      tooltip: 'Name for the designed persona — becomes the .qvoice filename stem. Reused across every future TTS render.',
+    }),
+  style_instruction: z.string().description('Style Instruction')
+    .extra('extra', {
+      wtype: 'textarea', group: 'qvoice_save', zone: 'mods', order: 1, required: true,
+      tooltip: 'The voice description — becomes the VoiceDesign prompt (e.g. \'A warm female voice with a British accent\').',
+    }),
+  temperature: z.number().description('Temperature').min(0).max(2).step(0.05).default(0.7)
+    .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 2, tooltip: 'Design sampling temperature.' }),
+  top_p: z.number().description('Top-P').min(0).max(1).step(0.01).default(0.9)
+    .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 3, tooltip: 'Design sampling top-p.' }),
+  speed: z.number().description('Speed').min(0.5).max(2).step(0.1).default(1)
+    .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 4, tooltip: 'Design sampling speed.' }),
+  repetition_penalty: z.number().description('Repetition Penalty').min(0.8).max(2).step(0.01).default(1.05)
+    .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 5, tooltip: 'Design sampling repetition penalty.' }),
+  seed: z.number().description('Seed').step(1).default(-1)
+    .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 6, tooltip: 'Design seed (-1 = random).' }),
 })
 
 export function apply(ctx: Context): void {
@@ -201,4 +235,5 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerPack({ pack: 'lanpaint', fields: LanpaintFields as never }))
   ctx.effect(() => ctx.comfyui.registerPack({ pack: 'mask', fields: MaskFields as never }))
   ctx.effect(() => ctx.comfyui.registerPack({ pack: 'qvoice', fields: QvoiceFields as never }))
+  ctx.effect(() => ctx.comfyui.registerPack({ pack: 'qvoice_save', fields: QvoiceSaveFields as never }))
 }

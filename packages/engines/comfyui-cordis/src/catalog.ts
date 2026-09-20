@@ -184,8 +184,11 @@ function stripSlashes(s: string): string {
   return s.replace(/^\/+/, "").replace(/\/+$/, "");
 }
 
-/** The provisions dest derivation (manage 275-290). */
-function provisionDest(folder: string): string {
+/** The provisions dest derivation (manage 275-290). Exported —
+ *  the manage door resolves CARD-owned provision rows (card DECL
+ *  provisions) through the same derivation: one spelling of the
+ *  folder → models-tree path, never a second copy. */
+export function provisionDest(folder: string): string {
   const clean: string = stripSlashes(folder);
   if (clean.startsWith("models")) return clean;
   return clean !== "" ? "models/" + clean : "models";

@@ -52,6 +52,8 @@ import { DECL as declMusic3, family as familyMusic3 } from '../../../models/musi
 import { DECL as declPixal3d, family as familyPixal3d } from '../../../models/pixal3d/src/index.ts'
 import { DECL as declPixelUpscale, family as familyPixelUpscale } from '../../../models/pixel_upscale/src/index.ts'
 import { DECL as declQwen3Tts, family as familyQwen3Tts } from '../../../models/qwen3-tts/src/index.ts'
+import { DECL as declQwen3TtsBase, family as familyQwen3TtsBase } from '../../../models/qwen3-tts-base/src/index.ts'
+import { DECL as declQwen3TtsVoiceDesign, family as familyQwen3TtsVoiceDesign } from '../../../models/qwen3-tts-voicedesign/src/index.ts'
 import { DECL as declQwenImgEdit2511, family as familyQwenImgEdit2511 } from '../../../models/qwen-img-edit-2511/src/index.ts'
 import { DECL as declRtxVsr, family as familyRtxVsr } from '../../../models/rtx-vsr/src/index.ts'
 import { DECL as declScail2Animate, family as familyScail2Animate } from '../../../models/scail2-animate/src/index.ts'
@@ -99,6 +101,8 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'pixal3d', decl: declPixal3d as never, family: familyPixal3d as never },
   { id: 'pixel_upscale', decl: declPixelUpscale as never, family: familyPixelUpscale as never },
   { id: 'qwen3-tts', decl: declQwen3Tts as never, family: familyQwen3Tts as never },
+  { id: 'qwen3-tts-base', decl: declQwen3TtsBase as never, family: familyQwen3TtsBase as never },
+  { id: 'qwen3-tts-voicedesign', decl: declQwen3TtsVoiceDesign as never, family: familyQwen3TtsVoiceDesign as never },
   { id: 'qwen-img-edit-2511', decl: declQwenImgEdit2511 as never, family: familyQwenImgEdit2511 as never },
   { id: 'rtx-vsr', decl: declRtxVsr as never, family: familyRtxVsr as never },
   { id: 'scail2-animate', decl: declScail2Animate as never, family: familyScail2Animate as never },

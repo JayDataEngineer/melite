@@ -21,7 +21,10 @@ import { family as aceStep } from "@melite/models-ace-step";
 import { family as moss } from "@melite/models-moss";
 import { family as mossSfx } from "@melite/models-moss-sfx";
 import { family as music3 } from "@melite/models-music3";
+import { family as yue2 } from "@melite/models-yue2";
 import { family as qwen3Tts } from "@melite/models-qwen3-tts";
+import { family as qwen3TtsBase } from "@melite/models-qwen3-tts-base";
+import { family as qwen3TtsVoiceDesign } from "@melite/models-qwen3-tts-voicedesign";
 import { family as anima } from "@melite/models-anima";
 import { family as autoDetect } from "@melite/models-auto-detect";
 import { family as basic_resize } from "@melite/models-basic_resize";
@@ -32,6 +35,8 @@ import { family as joycaption } from "@melite/models-joycaption";
 import { family as joytag } from "@melite/models-joytag";
 import { family as krea2 } from "@melite/models-krea-2";
 import { family as pixel_upscale } from "@melite/models-pixel_upscale";
+import { family as qwenImg21 } from "@melite/models-qwen-img-21";
+import { family as qwenImgEdit21 } from "@melite/models-qwen-img-edit-21";
 import { family as qwenImgEdit2511 } from "@melite/models-qwen-img-edit-2511";
 import { family as seedvr2_ema } from "@melite/models-seedvr2_ema";
 import { family as wd14 } from "@melite/models-wd14";
@@ -68,7 +73,10 @@ export const FAMILY_PLUGINS: Plugin[] = [
   moss,
   mossSfx,
   music3,
+  yue2,
   qwen3Tts,
+  qwen3TtsBase,
+  qwen3TtsVoiceDesign,
   anima,
   autoDetect,
   basic_resize,
@@ -93,6 +101,8 @@ export const FAMILY_PLUGINS: Plugin[] = [
   h3,
   h3Keyframe,
   h3Timeline,
+  qwenImg21,
+  qwenImgEdit21,
   ltx23,
   ltxDirectorDistilled,
   rtxVsr,

@@ -1,13 +1,12 @@
-// families/audio/qwen3-tts — the qwen3-tts MODEL declaration (ONE
-// model — the correction stroke 2026-09-08, extended same day).
-// The truth: qwen3-tts and qwen3-tts-base declared the SAME class
-// Qwen3Tts — one model, the base checkpoint is a VARIANT (an
-// intercept over the model's base lane), not a sibling row. The
-// VoiceDesign 1.7B checkpoint rides the SAME qwen3_tts lane (same
-// family stamp, same model_path, same engine) — a third variant,
-// not a sibling model. The flat ids survive as variant routes; the
-// qvoice pack boards the MODEL (inherited by every variant and
-// quant — the mutation law).
+// families/audio/qwen3-tts — the 0.6B CustomVoice MODEL declaration
+// (2026-09-21 — the operator's README stroke: "there is no model
+// called Base; there is the .6B and the larger version; each model
+// supports different inputs"). Qwen3-TTS 12Hz 0.6B CustomVoice:
+// text-to-speech with 9 preset personas and instruct-text emotion
+// control; loads exported .qvoice embeddings through the qvoice mod.
+// Sibling families own their own packages (one family = one
+// package): @melite/models-qwen3-tts-base (the 0.6B cloner),
+// @melite/models-qwen3-tts-voicedesign (the 1.7B designer).
 //
 // PLUGIN SHAPE (the discharge stroke): every family is a plugin
 // declaring itself through ctx.models.registerFamily inside
@@ -19,8 +18,8 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 export const DECL: ModelDecl = {
   "id": "qwen3-tts",
   "form": "form_tts",
-  "label": "Qwen3-TTS 0.6B",
-  "description": "Qwen3-TTS 12Hz 0.6B — text-to-speech",
+  "label": "Qwen3-TTS 0.6B CustomVoice",
+  "description": "Qwen3-TTS 12Hz 0.6B CustomVoice — text-to-speech with 9 preset personas and instruct-text emotion control; loads exported .qvoice embeddings",
   "engine": "comfyui",
   "defaults": {
     "mode": "tts",
@@ -42,45 +41,6 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Native",
           "route": "qwen3-tts",
-        }
-      ]
-    },
-    {
-      "id": "base",
-      "label": "Base",
-      "description": "plain text-to-speech, no persona",
-      "group": "Variant",
-      "route": "qwen3-tts-base",
-      "resolver_defaults": {
-        "variant": "base"
-      },
-      "lane_inputs": {
-        "model_path": "qwen3-tts"
-      },
-      "cells": [
-        {
-          "quant": "native",
-          "label": "Native",
-          "route": "qwen3-tts-base",
-        }
-      ]
-    },
-    {
-      "id": "voicedesign",
-      "label": "VoiceDesign",
-      "description": "instruction-following voice design; the voice-lock lane",
-      "group": "Variant",
-      "route": "qwen3-tts-voicedesign",
-      "resolver_defaults": {
-        "mode": "design",
-        "variant": "voicedesign",
-        "voice": null
-      },
-      "cells": [
-        {
-          "quant": "native",
-          "label": "Native",
-          "route": "qwen3-tts-voicedesign",
         }
       ]
     },

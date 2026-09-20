@@ -60,6 +60,37 @@ function assertNoCheat(cardId: string, def: Pick<CardDefinition, 'schema' | 'sch
   }
 }
 
+/** THE ARM-CONDITIONAL EXTENSION GATE (the mask-form SAM2 law,
+ *  2026-09-19 — the operator: "declared, then auto provisioned"):
+ *  every declared kind whose `requires` names packs AND whose bag is
+ *  non-empty in the merged params must find ≥1 of each pack's nodes
+ *  live — else the missing-extension refusal (the SAME text shape
+ *  the card-level gate emits, so RunRescue parses and offers the
+ *  install). An empty/absent bag never fires: an unused arm never
+ *  blocks a run. Card-agnostic: both compose paths, every card. */
+function assertModRequires(
+  cardId: string,
+  def: Pick<CardDefinition, 'mods'>,
+  merged: Record<string, unknown>,
+  objectInfoNodes: Set<string> | null,
+  extMap: Record<string, readonly string[]>,
+): void {
+  if (objectInfoNodes === null) return
+  for (const kind of def.mods ?? []) {
+    const packs = kind.requires
+    if (packs === undefined || packs.length === 0) continue
+    const bag = merged[kind.param_key]
+    if (!Array.isArray(bag) || bag.length === 0) continue
+    for (const pack of packs) {
+      const expected = extMap[pack] ?? []
+      const found = expected.filter((n) => objectInfoNodes.has(n))
+      if (expected.length > 0 && found.length === 0) {
+        throw new ComposeRefusal('missing-extension', `card '${cardId}' requires '${pack}' (nodes ${expected.join(', ')}) — none live on the engine; install via ComfyUI-Manager`)
+      }
+    }
+  }
+}
+
 /**
  * The wire tool name derived from a card id (hyphens→underscores +
  * "_card"). ONE spelling of the law (M2′ stroke 2, 2026-09-09):
@@ -103,6 +134,14 @@ export interface DeclaredModifierKind {
    *  drags a selection on (absent host degrades to the four number
    *  inputs). Served verbatim like every declared row. */
   leaf_face?: 'paint-canvas' | 'bbox-canvas'
+  /** THE ARM-CONDITIONAL EXTENSION PACKS (the mask-form SAM2 law,
+   *  2026-09-19 — the operator: "declared, then auto provisioned"):
+   *  pack ids this KIND's arm needs live (impact-pack nodes for the
+   *  SAM2 chain). The compose door enforces them ONLY when the
+   *  kind's bag is non-empty — an unused arm never blocks a run
+   *  (the card-level `requires` above stays the always-on gate).
+   *  Served verbatim; absent = no arm requirements. */
+  requires?: readonly string[]
 }
 
 export interface CardDefinition {
@@ -270,6 +309,22 @@ export class ComfyUIService extends Service {
   registerCard(def: CardDefinition): (() => void) {
     if (this.cards.has(def.id)) {
       throw new ComposeRefusal('duplicate-card', `card '${def.id}' registered twice — one card, one plugin`)
+    }
+    // THE FAMILY-TAKEN GATE (ledger #40, the operator's outage: a
+    // profile insert's sketch boarded krea-2 and the lane served
+    // its 2-field envelope as image-gen). A DROP-IN THAT BOARDS A
+    // REAL FAMILY OWNS THAT FAMILY'S FORM — so no second card may
+    // board a family another registered card already boards. The
+    // packaged set never collides (one owner per family — the
+    // census pins it); the refusal fires LOUD here at
+    // registration, whatever the second card's source, instead of
+    // a silent first-wins downstream in the defs table.
+    for (const prior of this.cards.values()) {
+      const taken = prior.boarded.find((fam) => def.boarded.includes(fam))
+      if (taken !== undefined) {
+        throw new ComposeRefusal('family-taken',
+          `card '${def.id}' boards '${taken}' — already boarded by '${prior.id}' (one family, one card; a drop-in that boards a real family owns that family's form)`)
+      }
     }
     // THE DECLARED MOD-KIND SCHEMA GATE (hour 16): the card's mods
     // rows answer to a schemastery master here — the third mod
@@ -539,6 +594,7 @@ export class ComfyUIService extends Service {
         throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}`)
       }
       assertNoCheat(cardId, def, merged, params)
+      assertModRequires(cardId, def, merged, this.objectInfoNodes, this.facts?.extension_node_types ?? {})
       const packs = def.requires
       if (packs?.length && this.objectInfoNodes) {
         const extMap = this.facts?.extension_node_types ?? {}
@@ -672,7 +728,10 @@ export class ComfyUIService extends Service {
     }
 
     // EXTENSION LAW gate: family slice wins when present (the
-    // requires_by_family precedent); flat union otherwise.
+    // requires_by_family precedent); flat union otherwise. The
+    // arm-conditional kind gate rides alongside (bags present in the
+    // merged params only — an unused arm never blocks a run).
+    assertModRequires(cardId, def, merged, this.objectInfoNodes, this.facts.extension_node_types ?? {})
     const packs = def.requiresByFamily?.[modelId] ?? def.requires
     if (packs?.length && this.objectInfoNodes) {
       const extMap = this.facts.extension_node_types ?? {}

@@ -50,7 +50,7 @@ export {
   H3_T4_STRIP,
   finalizeH3,
 } from './lanes-video.ts'
-export { musicT1, ttsT1, sfxT1, voicelockT1 } from './lanes-audio.ts'
+export { musicT1, yue2T1, ttsT1, ttsSpeakT1, ttsCloneT1, ttsUseT1, ttsDesignT1, sfxT1 } from './lanes-audio.ts'
 export {
   ANNY_STRIP,
   finalizeAnny,

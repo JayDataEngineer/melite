@@ -210,6 +210,27 @@ describe("registerCard (one card, one plugin)", () => {
     drop();
     assert.equal(svc.getCardDef("card1"), undefined);
   });
+
+  it("a second boarder of a taken family refuses (ledger #40: the sketch stole krea-2's form)", async () => {
+    // A DROP-IN THAT BOARDS A REAL FAMILY OWNS THAT FAMILY'S FORM
+    // — the melite-test profile's sketch boarded krea-2 and the
+    // lane served its 2-field envelope as image-gen. No second
+    // card may board a family another registered card already
+    // boards, whatever its source (packaged, profile insert,
+    // drop-in): the refusal is LOUD at registration, never a
+    // silent first-wins in the defs table.
+    const svc = await boot();
+    svc.registerCard(card({ id: "image-gen", boarded: ["krea-2"] }));
+    assert.throws(
+      () => svc.registerCard(card({ id: "sketch", boarded: ["krea-2"] })),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "family-taken",
+    );
+    // the refused card never landed; the owner stands
+    assert.deepEqual(svc.cardIds(), ["image-gen"]);
+    // distinct families still compose side by side
+    svc.registerCard(card({ id: "image-edit", boarded: ["qwen-img-edit-2511"] }));
+    assert.deepEqual(svc.cardIds(), ["image-edit", "image-gen"]);
+  });
 });
 
 describe("cardModFields (the absorption)", () => {
@@ -515,6 +536,33 @@ describe("compose (the model-less path)", () => {
     svc.setObjectInfoNodes([]);
     const graph = svc.compose("card1", null, {}, "r");
     assert.ok("TestNode.0" in graph, "no facts, no gate, just the graph");
+  });
+
+  it("the ARM-CONDITIONAL kind gate: a non-empty bag with absent pack nodes refuses, an empty bag never fires", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      requiresModel: false,
+      boarded: [] as never,
+      mods: [
+        { kind: "sam2", label: "SAM2", param_key: "sam2", cardinality: "list", requires: ["pack-sam"] },
+        { kind: "draw", label: "Draw", param_key: "draw", cardinality: "list" },
+        { kind: "ghost", label: "Ghost", param_key: "ghost", cardinality: "list", requires: ["unmapped-pack"] },
+      ],
+    }));
+    svc.setFacts(factsFor({}, { "pack-sam": ["SamNode"] }));
+    svc.setObjectInfoNodes(["Other"]);
+    assert.throws(
+      () => svc.compose("card1", "", { sam2: [{ labels: "person" }] }, "r"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-extension" && /requires 'pack-sam'/.test(e.message),
+    );
+    svc.compose("card1", "", {}, "r2");
+    svc.compose("card1", "", { sam2: [] }, "r3");
+    // a kind with NO requires never gates, however full its bag
+    svc.compose("card1", "", { draw: [{ payload: "x" }] }, "r4");
+    // an unmapped pack serves the empty map (never a block — the card-level law)
+    svc.compose("card1", "", { ghost: [{ v: 1 }] }, "r5");
+    svc.setObjectInfoNodes(["SamNode"]);
+    svc.compose("card1", "", { sam2: [{ labels: "person" }] }, "r6");
   });
 
   it("a recipeless card ignores the recipe key", async () => {

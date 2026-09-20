@@ -31,7 +31,7 @@ const factsDoc = loadFacts(
 );
 
 const defs: Map<string, CardDefinition> = await loadCardDefs();
-assert.ok(defs.size >= 16, `the registry serves every card (got ${defs.size})`);
+assert.ok(defs.size >= 15, `the registry serves every card (got ${defs.size})`); // 15: the voice-lock card died 2026-09-21 (design moved into the tts card's mods)
 
 const boot = async (): Promise<ComfyUIService> => {
   const ctx = new Context();

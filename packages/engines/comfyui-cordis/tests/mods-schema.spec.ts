@@ -89,4 +89,8 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
       /declares type 'boolean' but its default is string/,
     );
   });
+
+  it("requires rides the gate (a string pack row passes — the sam2 arm's declaration)", () => {
+    validateDeclaredMods("c", [base({ requires: ["comfyui-impact-pack", "comfyui-impact-subpack"] })]);
+  });
 });

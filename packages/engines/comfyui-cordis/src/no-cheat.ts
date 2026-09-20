@@ -34,6 +34,16 @@ export const declaredDefaults = (
       // lawful, and then the door holds it to its word like any knob.
       if (!(k in dict)) continue
     }
+    // THE HIDDEN LAW OWNS BOTH PLANES (2026-09-20, gate-parity):
+    // extra.hidden is VALIDATION-ONLY — the walk never renders the
+    // knob, so the gate never materializes its default either (a
+    // phantom fill the walk would refuse to serve). The declared
+    // key still VALIDATES — compose reads it and its refusals fire
+    // verbatim when a draft carries it. (dict[k] is non-null here:
+    // the projection's only synthesized key is 'model', excluded
+    // above — every remaining served key is a declared knob.)
+    const dictKnob = dict[k] as { meta?: { extra?: { hidden?: boolean } } } | undefined
+    if (dictKnob?.meta?.extra?.hidden === true) continue
     const d = (knob as Record<string, unknown>).default
     if (d !== undefined && d !== null) out[k] = d
   }

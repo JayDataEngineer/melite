@@ -242,7 +242,7 @@ describe('live door arms', () => {
     assert.deepEqual(tools.map((t) => t['name']), [...defs.keys()].sort())
     const tts = tools.find((t) => t['name'] === 'tts')!
     assert.equal(tts['model'], 'qwen3-tts')
-    assert.deepEqual(tts['families'], ['qwen3-tts', 'qwen3-tts-base'])
+    assert.deepEqual(tts['families'], ['qwen3-tts', 'qwen3-tts-base', 'qwen3-tts-voicedesign'])
     assert.ok(typeof tts['params_schema'] === 'object')
   })
 
@@ -327,6 +327,11 @@ describe('live door arms', () => {
     // stroke 78: the bbox face rides both standalone kinds
     assert.equal(mods.find((m) => m.kind === 'sam3')?.['leaf_face'], 'bbox-canvas')
     assert.equal(mods.find((m) => m.kind === 'sam2')?.['leaf_face'], 'bbox-canvas')
+    // the SAM2 law (2026-09-19 — declared, then auto provisioned):
+    // the sam2 kind's pack requirements serve VERBATIM (the compose
+    // door enforces them only when the bag is non-empty)
+    assert.deepEqual(mods.find((m) => m.kind === 'sam2')?.['requires'], ['comfyui-impact-pack', 'comfyui-impact-subpack'])
+    assert.equal('requires' in (mods.find((m) => m.kind === 'sam3') ?? {}), false, 'sam3 declares no packs — the core lane never gates')
     // stroke 34: the recipes key never rides — the layer is dead
     assert.equal('recipes' in spec, false)
   })
@@ -675,4 +680,89 @@ describe('live door arms', () => {
       cnOpts.some((o) => 'preprocessor' in o),
       'the upstream map rides the resolved facts: ' + JSON.stringify(cnOpts[0]),
     )
+  })
+
+  test('THE THREE HONEST FACES (the README stroke 2026-09-21 — every boarded id names a family DECL, never a variant route)', async () => {
+    const defs = await loadCardDefs()
+    const svc = theService()
+    const faces = (card: string, model: string): Array<Record<string, unknown>> => {
+      const def = defs.get(card)
+      assert.ok(def !== undefined, card + ' boards')
+      return (specBody(svc, defs, { card, service: model, model })['families'] as Array<Record<string, unknown>>)
+    }
+    // the tts rail: three families, three checkpoint-honest faces —
+    // no 'Base' shorthand, no variant-route fiction (the variant
+    // scan died with the fiction: familyFace serves the DECL or the
+    // raw id, nothing in between)
+    const tts = faces('tts', 'qwen3-tts')
+    assert.deepEqual(
+      tts.map((f) => [f['id'], f['label']]),
+      [['qwen3-tts', 'Qwen3-TTS 0.6B CustomVoice'], ['qwen3-tts-base', 'Qwen3-TTS 0.6B Base'], ['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B VoiceDesign']],
+    )
+    // true families keep their DECL faces (the 2026-09-16 family-face law, unmoved)
+    const music = faces('music', 'music3')
+    assert.deepEqual(music.map((f) => [f['id'], f['label']]), [['music3', 'MiniMax Music 3'], ['yue2', 'YuE2']])
+  })
+
+  test('THE QVOICE SEAT (the voice-lock mod catch 2026-09-21 — the boarded qvoice pack renders its modifiers entry on the owner, never on the scoped-out base)', async () => {
+    const defs = await loadCardDefs()
+    const svc = theService()
+    const modsOf = (model: string): Array<Record<string, unknown>> => {
+      const def = defs.get('tts')
+      assert.ok(def !== undefined, 'the tts card boards')
+      return (specBody(svc, defs, { card: 'tts', service: 'qwen3-tts', model })['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    }
+    // the owner lane offers the LOAD/USE seat (the lanpaint
+    // precedent: boarded + enveloped + fired — the entry is owed)
+    const owner = modsOf('qwen3-tts')
+    const seat = owner.find((m) => m['kind'] === 'qvoice')
+    assert.ok(seat !== undefined, 'the qvoice kind renders: ' + JSON.stringify(owner.map((m) => m['kind'])))
+    // THE FIELD-KIND SHAPE (the mask precedent's shape, live): the
+    // entry IS the contract object — no catalog, no option key, one
+    // slot — and its param rows walk the pack envelope
+    assert.deepEqual(
+      (({ kind, param_key, schema_key, cardinality, max_stack, options }) =>
+        ({ kind, param_key, schema_key, cardinality, max_stack, options }))(
+        seat as Record<string, unknown>,
+      ),
+      {
+        kind: 'qvoice', param_key: 'qvoice', schema_key: 'qvoice',
+        cardinality: 'list', max_stack: 1, options: [],
+      },
+    )
+    // the scoped-out base lane withholds it (its envelope is
+    // dropped — a seat with no envelope is a brick by construction)
+    const base = modsOf('qwen3-tts-base')
+    assert.ok(!base.some((m) => m['kind'] === 'qvoice'), 'no qvoice seat on base: ' + JSON.stringify(base.map((m) => m['kind'])))
+  })
+
+  test('THE DESIGN SEAT (the README stroke 2026-09-21 — the save mod renders its entry on the designer, nowhere else)', async () => {
+    const defs = await loadCardDefs()
+    const svc = theService()
+    const modsOf = (model: string): Array<Record<string, unknown>> => {
+      const def = defs.get('tts')
+      assert.ok(def !== undefined, 'the tts card boards')
+      return (specBody(svc, defs, { card: 'tts', service: 'qwen3-tts-voicedesign', model })['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    }
+    // the designer offers the SAVE seat (boarded + enveloped +
+    // fired — the entry is owed)
+    const designer = modsOf('qwen3-tts-voicedesign')
+    const seat = designer.find((m) => m['kind'] === 'qvoice_save')
+    assert.ok(seat !== undefined, 'the qvoice_save kind renders: ' + JSON.stringify(designer.map((m) => m['kind'])))
+    assert.deepEqual(
+      (({ kind, param_key, schema_key, cardinality, max_stack, options }) =>
+        ({ kind, param_key, schema_key, cardinality, max_stack, options }))(
+        seat as Record<string, unknown>,
+      ),
+      {
+        kind: 'qvoice_save', param_key: 'qvoice_save', schema_key: 'qvoice_save',
+        cardinality: 'list', max_stack: 1, options: [],
+      },
+    )
+    // the 0.6B lanes withhold it (their envelopes are dropped —
+    // a seat with no envelope is a brick by construction)
+    for (const other of ['qwen3-tts', 'qwen3-tts-base']) {
+      const mods = modsOf(other)
+      assert.ok(!mods.some((m) => m['kind'] === 'qvoice_save'), 'no save seat on ' + other + ': ' + JSON.stringify(mods.map((m) => m['kind'])))
+    }
   })

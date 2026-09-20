@@ -10,7 +10,7 @@
 // default owns the floor — this module never sets one).
 
 /** The sampling group's canonical name — cards with card-specific
- *  sampling atoms (ideogram4's mu/std, voice-lock's voice knobs)
+ *  sampling atoms (ideogram4's mu/std, the tts design entry's voice knobs)
  *  join the group through this, never a retyped string. */
 export const SAMPLING_GROUP = 'sampling'
 
