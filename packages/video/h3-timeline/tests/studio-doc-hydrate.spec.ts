@@ -27,6 +27,12 @@ describe("hydrateLayerA (params → Layer A)", () => {
     assert.equal(a.sharpen_enabled, false)
     assert.equal(a.interpolate_enabled, false)
     assert.equal(a.sr_switch, false)
+    // THE SLA MASTER SWITCH (2026-09-21): absent = ON (every
+    // pre-switch doc keeps today's behavior); only explicit false
+    // turns the arm off.
+    assert.equal(a.sla_enabled, true)
+    assert.equal(hydrateLayerA({ sla_enabled: false }).sla_enabled, false)
+    assert.equal(hydrateLayerA({ sla_enabled: true }).sla_enabled, true)
     assert.equal(a.audio_clips, undefined)
     assert.equal(a.audio_stem, undefined)
     assert.equal(a.loras, undefined)
@@ -150,15 +156,17 @@ describe("hydrateLayerA (params → Layer A)", () => {
   it("variant/model/ref-size/sr rows", () => {
     const a = hydrateLayerA({
       variant: "v1", model: "h3-timeline-ref",
-      ref_image_size: "max", sr_switch: true, sr_resolution: 1440,
+      ref_image_size: "max", sr_switch: true, sr_model: "seedvr2_ema_3b_fp8_e4m3fn.safetensors", sr_resolution: 1440,
     })
     assert.equal(a.variant, "v1")
     assert.equal(a.model, "h3-timeline-ref")
     assert.equal(a.ref_image_size, "max")
     assert.equal(a.sr_switch, true)
+    assert.equal(a.sr_model, "seedvr2_ema_3b_fp8_e4m3fn.safetensors")
     assert.equal(a.sr_resolution, 1440)
     assert.equal(hydrateLayerA({ ref_image_size: "huge" }).ref_image_size, undefined)
     assert.equal(hydrateLayerA({ ref_image_size: 42 }).ref_image_size, undefined)
+    assert.equal(hydrateLayerA({ sr_model: "nope.safetensors" }).sr_model, undefined)
     assert.equal(hydrateLayerA({ variant: 7 }).variant, undefined)
     assert.equal(hydrateLayerA({ model: 7 }).model, undefined)
   })
@@ -251,16 +259,31 @@ describe("serializeLayerA (Layer A → persisted shape)", () => {
     assert.ok(!("loras" in bagEmpty))
   })
 
-  it("Super-Res rides only when ON (switch + target together)", () => {
-    const on = serializeLayerA({ ...hydrateLayerA(undefined), sr_switch: true, sr_resolution: 1440 })
+  it("Super-Res rides only when ON (switch + model + target together)", () => {
+    const on = serializeLayerA({ ...hydrateLayerA(undefined), sr_switch: true, sr_model: "seedvr2_ema_3b_fp8_e4m3fn.safetensors", sr_resolution: 1440 })
     assert.equal(on["sr_switch"], true)
+    assert.equal(on["sr_model"], "seedvr2_ema_3b_fp8_e4m3fn.safetensors")
     assert.equal(on["sr_resolution"], 1440)
     const off = serializeLayerA(hydrateLayerA(undefined))
     assert.ok(!("sr_switch" in off))
+    assert.ok(!("sr_model" in off))
     assert.ok(!("sr_resolution" in off))
-    // switch off but resolution set: nothing rides (resolution without the switch is dead)
-    const stray = serializeLayerA({ ...hydrateLayerA(undefined), sr_resolution: 1440 })
+    // switch off but model/resolution set: nothing rides (leaves without the switch are dead)
+    const stray = serializeLayerA({ ...hydrateLayerA(undefined), sr_model: "seedvr2_ema_3b_fp16.safetensors", sr_resolution: 1440 })
+    assert.ok(!("sr_model" in stray))
     assert.ok(!("sr_resolution" in stray))
+  })
+
+  it("SLA rides only when OFF (absent = on — the family default; false is the override compose reads)", () => {
+    // fresh doc: hydrated true, serialized absent (the default rides, never pinned)
+    const fresh = serializeLayerA(hydrateLayerA(undefined))
+    assert.ok(!("sla_enabled" in fresh))
+    // explicit off: the false rides the wire
+    const off = serializeLayerA({ ...hydrateLayerA(undefined), sla_enabled: false })
+    assert.equal(off["sla_enabled"], false)
+    // explicit on: still absent (on IS the default)
+    const on = serializeLayerA({ ...hydrateLayerA(undefined), sla_enabled: true })
+    assert.ok(!("sla_enabled" in on))
   })
 })
 

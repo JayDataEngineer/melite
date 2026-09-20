@@ -30,6 +30,7 @@
  */
 import { createElement as h, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { IconPlusOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { GlbStagePreview } from './glb-stage.tsx'
 import css from './card.module.css'
 
 /** The media-bar drag contract (the tab's drop surface serves the
@@ -45,6 +46,15 @@ export function isImageUrl(value: string): boolean {
     /^blob:/i.test(value) ||
     /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value)
   )
+}
+
+/** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
+ *  the base-gaps primitive ③): a .glb/.gltf value — an estate path
+ *  ('data/input/x.glb') or a run artifact URL — renders the ONE
+ *  square with the inline GLB thumb (the mini GlbStagePreview), the
+ *  same square grammar as images: never a bespoke mesh picker. */
+export function isMeshUrl(value: string): boolean {
+  return /\.(?:glb|gltf)(?:[?#]|$)/i.test(value)
 }
 
 /** Read a File/Blob and resolve its data: URL — the ONE read path for
@@ -81,7 +91,9 @@ export interface InputSquareProps extends InputSquareVerbs {
    *  show their INDEX — aria carries "Reference images 1"). Falls
    *  back to `label`. */
   ariaLabel?: string
-  /** Attached value → thumbnail when it passes isImageUrl. */
+  /** Attached value → thumbnail when it passes isImageUrl; a
+   *  .glb/.gltf value renders the inline mini GLB viewport instead
+   *  (the mesh wire type — same square, same verbs). */
   value?: string | null
   /** Secondary mono line. */
   metric?: string
@@ -108,7 +120,12 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
   const boxRef = useRef<HTMLDivElement | null>(null)
   const [over, setOver] = useState(false)
   const thumb = typeof value === 'string' && isImageUrl(value) ? value : null
-  const empty = thumb === null
+  // THE MESH THUMB (primitive ③): a .glb/.gltf value renders the
+  // inline mini viewport, not the image face — same square, same
+  // verbs, the 3D atom inside the 2D shell.
+  const mesh = thumb === null && typeof value === 'string' && value !== '' && isMeshUrl(value)
+    ? value : null
+  const empty = thumb === null && mesh === null
   const pick = (): void => {
     if (disabled) return
     // THE SLOT IS THE WIRE: with a picker attached, the click ALWAYS
@@ -144,7 +161,10 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
     },
       thumb !== null
         ? h('img', { className: css.squareThumb, src: thumb, alt: label })
-        : h(IconPlusOutline16, { className: css.squareGlyph }),
+        : mesh !== null
+          ? h('div', { className: css.squareMesh },
+              h(GlbStagePreview, { assets: [{ id: 'square-mesh', url: mesh }], label: 'square-mesh' }))
+          : h(IconPlusOutline16, { className: css.squareGlyph }),
       !empty && props.onClear !== undefined
         ? h('button', {
             className: css.squareX,

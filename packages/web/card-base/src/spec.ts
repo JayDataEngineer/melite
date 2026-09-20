@@ -220,6 +220,11 @@ export interface ModifierKind {
    *  offer the rectangle verb — the image preview the user drags a
    *  selection on (absent host degrades to the four inputs). */
   leaf_face?: 'paint-canvas' | 'bbox-canvas'
+  /** THE ARM-CONDITIONAL EXTENSION PACKS (the mask-form SAM2 law):
+   *  pack ids this kind's arm needs live on the engine. Served
+   *  verbatim; the compose door enforces them only when the kind's
+   *  bag is non-empty (an unused arm never blocks a run). */
+  requires?: string[]
 }
 
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
@@ -647,11 +652,37 @@ export function coerceFieldEdit(f: SpecField | undefined, v: unknown): unknown {
   return v
 }
 
+/** THE FAMILY-KEY RESOLUTION (the families-DRY law, 2026-09-21):
+ * a field's `families` declares BASE family ids — the card's
+ * boarded ids — while the served model key may be a COMPOSED
+ * catalog row (family-variant-quant, e.g. 'pixal3d-1536-int8').
+ * Resolve the active key to its base against the spec's OWN
+ * boarded-families rows: the longest id matching the key at a
+ * '-' boundary wins (a 'pixal3d' + 'pixal3d-pro' board resolves
+ * to the longer). An unresolved key passes through verbatim —
+ * single-family cards and keys with no boarded base walk
+ * unchanged; the resolution never drops a field, it only widens
+ * what a declared base id covers. */
+export function resolveFamilyKey(spec: FormSpecDoc): string | undefined {
+  const key = typeof spec.model === 'string' ? spec.model : undefined
+  if (key === undefined || key === '') return undefined
+  const boarded = spec.families
+  if (boarded === undefined) return key
+  let best: string | undefined
+  for (const row of boarded) {
+    const exact = key === row.id
+    const prefixed = key.startsWith(row.id + '-')
+      && (best === undefined || row.id.length > best.length)
+    if (exact || prefixed) best = row.id
+  }
+  return best ?? key
+}
+
 /** The card's own derived fields (the schema envelope walked,
  * families-scoped to the served family). Memoize at the caller for
  * hot loops — the walk is pure. */
 export function fieldsOf(spec: FormSpecDoc): SpecField[] {
-  return fieldsOfEnvelope(spec.schema, typeof spec.model === 'string' ? spec.model : undefined)
+  return fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec))
 }
 
 /** THE LAYERED RESOLUTION — the engine's compose cascade mirrored

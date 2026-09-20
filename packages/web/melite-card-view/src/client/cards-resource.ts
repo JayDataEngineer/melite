@@ -477,11 +477,40 @@ export function watchBenchLands(
 /** THE OUTCOME OBSERVER (the attribution half): poll the run to
  *  terminal on the run-wire cadence, then write runStatus + result
  *  onto the bench row through the shared-state door. Both run paths
- *  (in-tab stream and shell navigation) start this once per gesture;
- *  the patch is bookkeeping — a refusal is swallowed (the next run
- *  rewrites the row), an abort ends the watch. The result.url rides
- *  the status door's already-rewritten media route. */
-export async function observeRunOutcome(
+ *  (the sequential pass AND the tab's onStarted arm) fire it per
+ *  gesture — the SINGLE-FLIGHT registry below seats them on ONE
+ *  poller. The patch is bookkeeping — a refusal is swallowed (the
+ *  next run rewrites the row), an abort ends the watch. The
+ *  result.url rides the status door's already-rewritten media
+ *  route. */
+/** THE SINGLE-FLIGHT REGISTRY (2026-09-21, the operator's catch:
+ * the bench log carried PAIRS of identical result/runStatus patches
+ * — two writes per state move, a re-render storm mid-run that ate
+ * clicks and reset scroll): ONE observer per draft:stage:run, ever,
+ * in-process. Both run paths (the sequential pass's own await AND
+ * the tab's onStarted arm) observe the same run — the second call
+ * RIDES the first's promise instead of arming a twin poller. The
+ * entry clears when the observer settles, so a genuinely new run
+ * (or a retry after settle) observes fresh. */
+const observingRuns = new Map<string, Promise<'done' | 'failed' | 'stopped' | null>>()
+
+export function observeRunOutcome(
+  draftId: string,
+  stageId: string,
+  runId: string,
+  signal?: AbortSignal,
+  onTouched?: () => void,
+): Promise<'done' | 'failed' | 'stopped' | null> {
+  const key = `${draftId}\u0000${stageId}\u0000${runId}`
+  const inFlight = observingRuns.get(key)
+  if (inFlight !== undefined) return inFlight
+  const started = observeRunOutcomeRun(draftId, stageId, runId, signal, onTouched)
+  const seated = started.finally(() => { observingRuns.delete(key) })
+  observingRuns.set(key, seated)
+  return seated
+}
+
+async function observeRunOutcomeRun(
   draftId: string,
   stageId: string,
   runId: string,
@@ -569,42 +598,17 @@ export async function observeRunOutcome(
     }
     const stage = row.stages.find((s) => s.id === stageId)
       ?? (row.stages.length === 1 ? row.stages[0] : undefined)
-    const url = stage !== undefined && typeof stage.url === 'string' && stage.url !== ''
-      ? stage.url : ''
-    const result: Record<string, unknown> = { run_id: runId }
-    if (url !== '') result['url'] = url
-    // THE HARVEST CARRY (2026-09-12): the stage's full artifact set
-    // rides the row so studio adapters read REAL data (the h3
-    // timeline's filmstrip + window tiles key off artifacts'
-    // name→url map + the flat stitch-first list; a url-only result
-    // starves them). Gallery names rewrite onto the media route with
-    // the same one-rewrite law as the stage url.
-    const gallery: readonly { name: string }[] = stage?.gallery ?? []
-    const artNames: string[] = []
-    for (const g of gallery) {
-      if (g.name !== '') artNames.push(g.name)
-    }
-    if (artNames.length > 0) {
-      const mediaUrls = artNames.map((n): string => toRunMediaUrl(runId, n))
-      const artifacts: Record<string, string> = {}
-      if (url !== '') artifacts['video'] = url
-      for (let i = 0; i < artNames.length; i++) {
-        artifacts[artNames[i]!] = mediaUrls[i]!
-      }
-      result['artifacts'] = artifacts
-      result['assetUrls'] = url !== '' ? [url, ...mediaUrls] : mediaUrls
-    }
-    const terminal = row.status === 'completed' ? 'done' : row.status
-    // THE FAILURE CARRY (2026-09-13, the silent-failure cure): a
-    // failed run's reason rides the row verbatim — the stage's own
-    // error first (the ComfyUI validation refusal names the node and
-    // the missing file), the run-level text as fallback. Without it
-    // a failed run reads as "no response at all": the tile flips
-    // back with no artifact and no word.
-    if (terminal === 'failed') {
-      const reason = stage?.error ?? row.error
-      if (typeof reason === 'string' && reason !== '') result['error'] = reason
-    }
+    // THE TERMINAL OUTCOME, one pure builder (the operator's law,
+    // 2026-09-20: "this can all be validated by contract"). The
+    // builder's law — its output satisfies `benchResultDefects`
+    // (the bench stage result contract) for every real status
+    // shape — is PINNED BY WALLS (cards-tab-doors: builder output
+    // contract-clean for the image-gen, h3, failed, and empty
+    // shapes; the regression needle proving the contract catches
+    // the old disease). No runtime armor: the walls are the fence.
+    const rowError: unknown = (row as unknown as Record<string, unknown>)['error']
+    const runError = typeof rowError === 'string' ? rowError : undefined
+    const { result, terminal } = terminalOutcomeOf(runId, row.status, stage, runError)
     try {
       await patchStageOutcome(draftId, stageId, { runStatus: terminal, result })
       onTouched?.()
@@ -658,6 +662,78 @@ export async function reconcileBenchRuns(
       hooks.onTouched?.()
     } catch { /* bookkeeping — the row heals on a later refresh */ }
   }
+}
+
+/** THE TERMINAL OUTCOME BUILDER (pure, under CONTRACT — the
+ * operator's law, 2026-09-20). Turns a terminal runs/status row
+ * into the bench patch's result + runStatus. The row it returns
+ * satisfies `benchResultDefects` (the bench stage result contract)
+ * — the observer writes lawful rows only, and the walls drive THIS
+ * builder against the real status shape (never a hand-claimed
+ * fixture).
+ *
+ * ONE FILE, ONE KEY (the doubled-rowset cure): the artifacts map
+ * carries each file EXACTLY ONCE, keyed by its gallery name. The
+ * legacy hardcoded 'video' stamp wrote the stage url — which IS
+ * gallery[0] — under a second key, so every image-gen result
+ * rendered the same picture twice (hero + a phantom rest-thumb
+ * row). The h3 timeline (the stamp's only reader) backfills its
+ * own artifacts.video when absent — no consumer needs the stamp.
+ * The primary `url` field may name a file that also lives in the
+ * map (it is the primary POINTER, not a second key). */
+export function terminalOutcomeOf(
+  runId: string,
+  status: string,
+  stage: { url?: unknown, gallery?: unknown, error?: unknown } | undefined,
+  runError: string | undefined,
+): { result: Record<string, unknown>, terminal: 'done' | 'failed' | 'stopped' } {
+  const terminal: 'done' | 'failed' | 'stopped' = status === 'completed'
+    ? 'done'
+    : status === 'failed' ? 'failed' : 'stopped'
+  const result: Record<string, unknown> = { run_id: runId }
+  const url = stage !== undefined && typeof stage.url === 'string' && stage.url !== ''
+    ? stage.url : ''
+  if (url !== '') result['url'] = url
+  // THE HARVEST CARRY (2026-09-12): the stage's full artifact set
+  // rides the row so studio adapters read REAL data; gallery names
+  // rewrite onto the media route with the same one-rewrite law as
+  // the stage url.
+  const gallery: ReadonlyArray<{ name?: unknown }> = Array.isArray(stage?.gallery)
+    ? (stage.gallery as ReadonlyArray<{ name?: unknown }>) : []
+  const artNames: string[] = []
+  for (const g of gallery) {
+    if (typeof g?.name === 'string' && g.name !== '') artNames.push(g.name)
+  }
+  if (artNames.length > 0) {
+    // ONE FILE, ONE ENTRY — both faces: the name→url map and the
+    // flat primary-first list. An engine emitting the same file
+    // under two gallery names (or twice) never lands it twice.
+    const artifacts: Record<string, string> = {}
+    const mediaUrls: string[] = []
+    for (const n of artNames) {
+      const u = toRunMediaUrl(runId, n)
+      if (mediaUrls.includes(u)) continue
+      mediaUrls.push(u)
+      artifacts[n] = u
+    }
+    result['artifacts'] = artifacts
+    result['assetUrls'] = url !== '' && !mediaUrls.includes(url) ? [url, ...mediaUrls] : mediaUrls
+  }
+  // THE FAILURE CARRY (2026-09-13, the silent-failure cure): a
+  // failed run's reason rides the row verbatim — the stage's own
+  // error first, the run-level text as fallback.
+  if (terminal === 'failed') {
+    const reason = typeof stage?.error === 'string' && stage.error !== ''
+      ? stage.error : runError
+    if (reason !== undefined && reason !== '') result['error'] = reason
+  }
+  // THE CONTRACT: this builder's output satisfies
+  // `benchResultDefects` for every real status shape — pinned by
+  // the walls (cards-tab-doors), including the regression needle
+  // that proves the contract catches the old 'video'-stamp
+  // disease. The law lives in the contract and its walls, not in
+  // runtime armor here.
+  return { result, terminal }
 }
 
 export function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {

@@ -27,114 +27,9 @@
  *   @melite-plugin/dsh-card-view exec playwright test
  */
 import { expect, test, type Page } from '@playwright/test'
-
-const STUDIO_URL = process.env.E2E_STUDIO_URL ?? ''
+import { openAConversation, openCardsWithBench, settle, STUDIO_URL } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host with the seeded bench')
-
-/** Let the host's own boot noise land before the tour's ledger. */
-async function settle(page: Page): Promise<void> {
-  await page.goto(STUDIO_URL, { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(9_000)
-}
-
-/** Open SOME conversation (stroke 83): a fresh host lists zero
- * sessions (a brand-new profile has no conversations yet — the
- * pre-stroke spec leaned on the operator's accumulated list, which
- * made the tier pass/fail on host HISTORY). The tour needs an open
- * conversation for the header's expand seat; when no time-suffixed
- * session row exists, MINT one through the GUI's own New session
- * button, wait for the tree to carry it, then click it. */
-async function openAConversation(page: Page): Promise<boolean> {
-  const findRow = async (): Promise<number> => {
-    const sessions = page.locator('[role="treeitem"]')
-    const count = await sessions.count()
-    for (let i = 0; i < count && i < 16; i++) {
-      const label = ((await sessions.nth(i).textContent()) ?? '').trim()
-      if (/\d+\s*(min|h|d)\s*$/.test(label)) return i
-    }
-    return -1
-  }
-  let at = await findRow()
-  if (at < 0) {
-    await page.getByRole('button', { name: 'New session' }).first().click({ timeout: 10_000 })
-    await page.waitForTimeout(4_000)
-    at = await findRow()
-  }
-  if (at < 0) return false
-  await page.locator('[role="treeitem"]').nth(at).click({ timeout: 10_000 })
-  return true
-}
-
-/** One typed client-request frame over the gateway's own /api wire
- * (the api-gateway.md envelope — the same frame wire.ts spells for
- * manage/act). In-page so the fetch carries the shell's auth. */
-async function callBench(page: Page, method: string, args: Record<string, unknown>): Promise<unknown> {
-  return await page.evaluate(async ({ method, args }) => {
-    const r = await fetch('/api/' + method, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ type: 'client-request', rpcId: 'e2e-' + Date.now(), method, payload: { args } }),
-    })
-    const body = (await r.json().catch(() => null)) as { result?: { ok?: boolean; value?: unknown; error?: { message?: string } } } | null
-    const result = body?.result
-    if (result === undefined || result.ok === false) {
-      throw new Error(method + ' refused: ' + String(result && 'error' in result ? result.error?.message : 'no result'))
-    }
-    return result.value
-  }, { method, args })
-}
-
-/** The tour's bench (stroke 83's history-law fix): a FRESH host (or a
- * freshly minted conversation) carries an EMPTY bench — the old spec
- * leaned on the operator's accumulated bench-main and passed/failed
- * on host HISTORY. Seed THIS conversation's bench through the
- * estate's own add-stage door (the same door melite_construct rides
- * — never a disk write), idempotently: only when no h3-timeline
- * stage is aboard, CAS'd against the live rev. */
-async function seedBenchH3(page: Page, sessionKey: string): Promise<void> {
-  const value = (await callBench(page, 'bench/get', { sessionKey })) as
-    | { stages?: unknown[]; bench?: { rev?: number }; doc?: { stages?: unknown[]; bench?: { rev?: number } } }
-    | undefined
-  const doc = value?.doc ?? value ?? {}
-  const stages = Array.isArray(doc.stages) ? doc.stages : []
-  if (stages.some((s) => typeof s === 'object' && s !== null && 'card' in s && (s as { card?: unknown }).card === 'h3-timeline')) return
-  const rev = typeof doc.bench?.rev === 'number' ? doc.bench.rev : 0
-  await callBench(page, 'bench/add-stage', {
-    sessionKey,
-    doc: {
-      card: 'h3-timeline',
-      engine: 'comfyui',
-      params: { variant: 'h3', quant: 'int8', model: 'h3-timeline', calls: [{ text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 168 }] },
-      inputs: {},
-      outputs: { default: 'image' },
-      expect_rev: rev,
-      author: 'user',
-    },
-  })
-}
-
-/** Steps 2-3 of every tour: expand the right sidebar, open the Cards
- * tab (the tab's own bench/get names the conversation's session key
- * — captured from the wire, never guessed), seed the h3 stage when
- * the bench is empty, and let the resource stream re-hydrate. */
-async function openCardsWithBench(page: Page): Promise<void> {
-  let sessionKey = ''
-  page.on('request', (r) => {
-    if (!r.url().includes('/api/bench/get')) return
-    try {
-      const body = r.postDataJSON() as { payload?: { args?: { sessionKey?: unknown } } }
-      if (typeof body.payload?.args?.sessionKey === 'string') sessionKey = body.payload.args.sessionKey
-    } catch { /* the tab's own frame shapes it; a stranger's frame is ignored */ }
-  })
-  await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 10_000 })
-  await page.waitForTimeout(3_000)
-  await page.getByText('Cards', { exact: true }).first().click({ timeout: 10_000 })
-  await page.waitForTimeout(7_000)
-  if (sessionKey !== '') await seedBenchH3(page, sessionKey)
-  // the resource stream pushes the rev drift; give the tile time
-  await page.waitForTimeout(4_000)
-}
 
 test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic form', async ({ page }) => {
   const errors: string[] = []
@@ -154,8 +49,8 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
   // A host without the operator's sessions still carries the seeded
   // bench; the header seat needs SOME open session — mint one if
   // the list is empty, refuse loud only if even minting failed.
-  const opened = await openAConversation(page)
-  expect.soft(opened, 'a listed session to open (the expand seat needs an open conversation)').toBe(true)
+  const { opened, sessionKey } = await openAConversation(page)
+  expect.soft(opened, 'a conversation to open (the expand seat needs an open conversation)').toBe(true)
   await page.waitForTimeout(6_000)
 
   // 2 — expand the right sidebar and open the Cards tab via its guide,
@@ -166,7 +61,7 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
   // getByText('h3-timeline') matches the tile's inner label and the
   // click lands on a span whose parent never opens the zoom, and the
   // wall then reports "the form" for a studio that mounted fine.
-  await openCardsWithBench(page)
+  await openCardsWithBench(page, sessionKey)
   const tile = page.locator('button', { hasText: 'h3-timeline' }).first()
   await expect(tile).toBeVisible({ timeout: 20_000 })
 
@@ -175,25 +70,30 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
   // the full studio surface (tenant + filmstrip + doc readout +
   // timeline bar/ruler/playhead + run panel + audio + route + lora).
   await tile.click({ timeout: 10_000 })
+  // THE MARKER LIST tracks the CURRENT studio surface (the
+  // 2026-09-20 fold: RunRecipeEngine's tl-recipe-chrome and
+  // RunAdvancedPanels' tl-mods-panel succeeded the retired
+  // tl-route-select/tl-lora-panel — asserting dead testids would
+  // pin the wall to a studio that no longer ships).
   const markers = [
     'h3-studio-tenant', 'tl-filmstrip', 'tl-doc-readout',
     'motion-timeline-bar', 'motion-timeline-ruler', 'motion-timeline-playhead',
-    'tl-run-panel', 'tl-audio-upload', 'tl-route-select', 'tl-lora-panel',
+    'tl-run-panel', 'tl-audio-upload', 'tl-recipe-chrome', 'tl-mods-panel',
   ]
   await expect(page.locator('[data-testid="h3-studio-tenant"]')).toBeVisible({ timeout: 30_000 })
-  // tl-audio-upload + tl-route-select + tl-lora-panel live INSIDE the
+  // tl-audio-upload + tl-recipe-chrome + tl-mods-panel live INSIDE the
   // Run fold (RunRefsClips / RunRecipeEngine / RunAdvancedPanels) —
   // since the hour-8 law the fold is CLOSED at the rail's bottom, so
   // those three markers are asserted AFTER unfolding it. The rest
   // live on the open surface.
-  const inFold = ['tl-audio-upload', 'tl-route-select', 'tl-lora-panel']
+  const inFold = ['tl-audio-upload', 'tl-recipe-chrome', 'tl-mods-panel']
   for (const m of markers.filter((x) => !inFold.includes(x))) {
     await expect(page.locator(`[data-testid="${m}"]`), m).toBeVisible()
   }
   await page.locator('[data-testid="tl-run-panel"] summary').click({ timeout: 5_000 })
   await expect(page.locator('[data-testid="tl-audio-upload"]'), 'audio upload (unfolded Run panel)').toBeVisible({ timeout: 10_000 })
-  await expect(page.locator('[data-testid="tl-route-select"]'), 'route select (unfolded Run panel)').toBeVisible()
-  await expect(page.locator('[data-testid="tl-lora-panel"]'), 'lora panel (unfolded Run panel)').toBeVisible()
+  await expect(page.locator('[data-testid="tl-recipe-chrome"]'), 'recipe engine chrome (unfolded Run panel)').toBeVisible()
+  await expect(page.locator('[data-testid="tl-mods-panel"]'), 'mods panel (unfolded Run panel)').toBeVisible()
   // the zoom overlay titles the stage (the CardZoomOverlay shell;
   // exact — a transcript in the chat column can echo the same words)
   await expect(page.getByText('Stage h3-timeline', { exact: true })).toBeVisible({ timeout: 10_000 })
@@ -219,10 +119,10 @@ test('the studio layout: full-page modal, params left, preview right, timeline u
   page.on('response', (r) => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url().slice(0, 150)}`) })
 
   await settle(page)
-  const opened = await openAConversation(page)
-  expect.soft(opened, 'a listed session to open').toBe(true)
+  const { opened, sessionKey } = await openAConversation(page)
+  expect.soft(opened, 'a conversation to open').toBe(true)
   await page.waitForTimeout(6_000)
-  await openCardsWithBench(page)
+  await openCardsWithBench(page, sessionKey)
 
   const tile = page.locator('button', { hasText: 'h3-timeline' }).first()
   await expect(tile).toBeVisible({ timeout: 20_000 })
@@ -300,10 +200,10 @@ test('the add door shows the REAL card for h3-timeline (not the spec form)', asy
   page.on('response', (r) => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url().slice(0, 150)}`) })
 
   await settle(page)
-  const opened = await openAConversation(page)
-  expect.soft(opened, 'a listed session to open').toBe(true)
+  const { opened, sessionKey } = await openAConversation(page)
+  expect.soft(opened, 'a conversation to open').toBe(true)
   await page.waitForTimeout(6_000)
-  await openCardsWithBench(page)
+  await openCardsWithBench(page, sessionKey)
   const tilesBefore = await page.locator('button', { hasText: 'h3-timeline' }).count()
 
   // the door-opener tile (aria-label 'Add a card' — the trailing + tile)

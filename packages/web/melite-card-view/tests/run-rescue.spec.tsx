@@ -76,6 +76,17 @@ test('a model miss without a family stays honest: the offer is disabled', () => 
   expect(btn.disabled).toBe(true)
 })
 
+test('a model miss on a model-less card provisions the CARD (the card-id fallback — the mask-form SAM2 law)', async () => {
+  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'downloaded: sam2.1_hiera_large.pt' })
+  render(
+    <RunRescue error="sam2.1_hiera_large.pt not found in sams" stages={[{ card: 'mask-form', params: { input_image: '/m/p.png' } }]} onRun={() => {}} />,
+  )
+  expect(screen.getByText(/Missing model file "sam2.1.hiera.large.pt" \(card mask-form\)/)).toBeTruthy()
+  await userEvent.click(screen.getByRole('button', { name: 'Install & continue' }))
+  await waitFor(() => { expect(screen.getByText(/downloaded: sam2/)).toBeTruthy() })
+  expect(wire.postManageAction).toHaveBeenCalledWith('provision_model', { model: 'mask-form' })
+})
+
 test('a model miss with a family provisions the family (the DECL owns the URL)', async () => {
   wire.postManageAction.mockResolvedValue({ ok: true, detail: 'downloaded: 2' })
   render(

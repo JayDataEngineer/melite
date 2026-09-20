@@ -67,6 +67,9 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     height: optNum("height"),
     sampler_name: optStr("sampler_name"),
     sched_name: optStr("sched_name"),
+    // THE SLA MASTER SWITCH: absent = on (every pre-switch doc);
+    // only an explicit false turns the arm off.
+    sla_enabled: raw?.sla_enabled !== false,
     sla_sparsity: optNum("sla_sparsity"),
     sla_block_size: raw?.sla_block_size === "32" || raw?.sla_block_size === "64" || raw?.sla_block_size === "128"
       ? raw.sla_block_size : undefined,
@@ -93,6 +96,8 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
       ? raw.interp_model : undefined,
     interp_multiplier: optNum("interp_multiplier"),
     sr_switch: raw?.sr_switch === true,
+    sr_model: raw?.sr_model === "seedvr2_ema_3b_fp16.safetensors" || raw?.sr_model === "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
+      ? raw.sr_model : undefined,
     sr_resolution: optNum("sr_resolution"),
     ref_image_size: raw?.ref_image_size === "match" || raw?.ref_image_size === "max" ? raw.ref_image_size : undefined,
     loras: Array.isArray(raw?.loras)
@@ -163,11 +168,15 @@ export function serializeLayerA(a: LayerA): Record<string, unknown> {
   // ids against the family catalog at compose)
   if (a.loras !== undefined && a.loras.length > 0) out.loras = a.loras
   // Super-Res rides only when ON (absent = off — the family default);
-  // the target resolution rides only when the switch is on.
+  // the model + target resolution ride only when the switch is on.
   if (a.sr_switch === true) {
     out.sr_switch = true
+    if (a.sr_model != null) out.sr_model = a.sr_model
     if (a.sr_resolution != null) out.sr_resolution = a.sr_resolution
   }
+  // THE SLA MASTER SWITCH rides only when OFF (absent = on — the
+  // family default; a false is the real override compose reads).
+  if (a.sla_enabled === false) out.sla_enabled = false
   // (Layer A NLE) positioned audio clips — only when present (an empty
   // array = no clips = absent; the engine default is silence).
   if (a.audio_clips?.length) out.audio_clips = a.audio_clips

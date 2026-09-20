@@ -178,7 +178,9 @@ if (rows > 0) {
     return `tabY=${Math.round(r.top)} colW=${Math.round(col.getBoundingClientRect().width)} colH=${Math.round(col.getBoundingClientRect().height)} tabsInCol=${tabs} COL TEXT: ` + col.innerText.slice(0, 500)
   })
   console.log('ACTIVE PANE: ' + active.split('\n').slice(0, 16).join(' / '))
-  const markers = ['h3-studio-tenant', 'tl-filmstrip', 'tl-doc-readout', 'motion-timeline-bar', 'tl-run-panel', 'tl-audio-upload', 'tl-route-select', 'tl-lora-panel']
+  // the CURRENT studio surface (2026-09-20 fold): tl-recipe-chrome +
+  // tl-mods-panel succeeded the retired tl-route-select/tl-lora-panel
+  const markers = ['h3-studio-tenant', 'tl-filmstrip', 'tl-doc-readout', 'motion-timeline-bar', 'tl-run-panel', 'tl-audio-upload', 'tl-recipe-chrome', 'tl-mods-panel']
   const found = {}
   for (const m of markers) found[m] = await page.locator(`[data-testid="${m}"]`).count()
   console.log('STUDIO MARKERS:', JSON.stringify(found))

@@ -15,6 +15,7 @@ import {
   kindScalarFieldsOfEnvelope,
   modOwnedFields,
   optionKeyOf,
+  resolveFamilyKey,
   scalarKeyOf,
   schemaEnvelope,
   composeUnset,
@@ -92,6 +93,54 @@ test('fieldsOfEnvelope: a missing root walks to no fields (never a throw on a sh
 test('fieldsOfEnvelope: a dangling dict id skips (the walker never invents a field)', () => {
   const env: SchemaEnvelope = { uid: 0, refs: { 0: { type: 'object', dict: { ghost: 99 } } } }
   expect(fieldsOfEnvelope(env)).toEqual([])
+})
+
+test('THE FAMILY-KEY RESOLUTION (2026-09-21, the families-DRY law): a composed variant-quant key walks as its boarded BASE', () => {
+  // Fields declare BASE family ids (the boarded ids); the served
+  // model key may be a composed catalog row ('pixal3d-1536-int8').
+  // The walk resolves the key to 'pixal3d' — a field declared for
+  // the base serves every variant/quant row of that family, and a
+  // new variant cell needs NO card change.
+  const env = schemaEnvelope({
+    lift: { type: 'string', meta: { extra: { families: ['pixal3d', 'trellis2-native'] } } },
+    fov: { type: 'string', meta: { extra: { families: ['pixal3d'] } } },
+    donor: { type: 'string', meta: { extra: { families: ['transfer_rig'] } } },
+  })
+  const doc: FormSpecDoc = {
+    form: 'img-to-mesh',
+    model: 'pixal3d-1536-int8',
+    schema: env,
+    families: [
+      { id: 'pixal3d', present: true },
+      { id: 'trellis2-native', present: true },
+      { id: 'transfer_rig', present: true },
+    ],
+  }
+  // composed key resolves to 'pixal3d': lift + fov project, donor skips
+  expect(fieldsOf(doc).map((f) => f.name)).toEqual(['lift', 'fov'])
+  // the same doc under the base key itself walks identically
+  expect(fieldsOf({ ...doc, model: 'pixal3d' }).map((f) => f.name)).toEqual(['lift', 'fov'])
+  // and under the un-composed sibling family the pixal rows skip
+  expect(fieldsOf({ ...doc, model: 'trellis2-native' }).map((f) => f.name)).toEqual(['lift'])
+})
+
+test('resolveFamilyKey: longest boarded base wins a prefixed key; unresolved and bare keys pass through verbatim', () => {
+  const boarded = [
+    { id: 'pixal3d', present: true },
+    { id: 'pixal3d-pro', present: true },
+    { id: 'trellis2-native', present: true },
+  ]
+  expect(resolveFamilyKey({ form: 'x', model: 'pixal3d-pro-1024-bf16', families: boarded })).toBe('pixal3d-pro')
+  expect(resolveFamilyKey({ form: 'x', model: 'pixal3d', families: boarded })).toBe('pixal3d')
+  expect(resolveFamilyKey({ form: 'x', model: 'pixal3d-512', families: boarded })).toBe('pixal3d')
+  // no boarded block: verbatim (single-family cards walk unchanged)
+  expect(resolveFamilyKey({ form: 'x', model: 'scail2-animate' })).toBe('scail2-animate')
+  // unresolved composed key: verbatim — the resolution only widens, never drops
+  expect(resolveFamilyKey({ form: 'x', model: 'wan-vace-720p', families: boarded })).toBe('wan-vace-720p')
+  // absent/empty model: undefined (the unscoped walk)
+  expect(resolveFamilyKey({ form: 'x', model: undefined })).toBeUndefined()
+  expect(resolveFamilyKey({ form: 'x', model: '' })).toBeUndefined()
+  expect(resolveFamilyKey({ form: 'x', model: null })).toBeUndefined()
 })
 
 test('THE HIDDEN ARM (2026-09-21, the blank-rows catch): extra.hidden is validation-only — the field NEVER projects', () => {

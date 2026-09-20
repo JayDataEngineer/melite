@@ -40,12 +40,21 @@
   border-radius: 6px;
 }
 .heroImg {
-  flex: 1 1 0%;
-  width: 100%;
-  min-height: 0;
+  /* THE FIT LAW (operator 2026-09-21: "the image has to fit, but
+   * the bar below can stretch further"): the hero rides its OWN
+   * aspect at the 46vh cap, centered, width auto — no painted
+   * full-width box, no side bars. The strip owns its own capped
+   * scrolling lane below and never inflates the hero. */
+  display: block;
+  flex: 0 0 auto;
+  height: 46vh;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0 auto;
   object-fit: contain;
   background: var(--dsw-alias-bg-base);
-  border: 1px solid var(--dsw-alias-border-l2);
+  border: 1px solid var(--dsh-alias-border-l2);
   border-radius: 6px;
 }
 .heroAudio {
@@ -74,7 +83,14 @@
   padding: 2px 6px;
   text-decoration: none;
 }
-.thumbRow { display: flex; flex: none; gap: 6px; overflow-x: auto; }
+.thumbRow {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+}
 .thumb {
   height: 48px;
   border: 1px solid var(--dsw-alias-border-l2);
@@ -89,6 +105,9 @@
   gap: 4px;
   flex: none;
   padding-top: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .historyTitle {
   color: var(--dsw-alias-label-secondary, #61666b);
@@ -126,6 +145,27 @@
 }
 .staleBadge:hover { border-color: var(--dsw-alias-border-l2); }
 
+/* THE LAYER ROW (primitive ②, first slice): the stage's own layer
+ * votes — Shaded/Wireframe chips under the viewport, the stale-badge
+ * grain (chip paint, button behavior). Renders only when the caller
+ * seats the write channel (onLayers); the pressed chip reads the
+ * caller's layer state. */
+.layerRow { display: flex; flex: none; gap: 6px; }
+.layerChip {
+  flex: none;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  padding: 2px 6px;
+  background: none;
+  cursor: pointer;
+}
+.layerChip[aria-pressed="true"] {
+  color: var(--dsw-alias-brand-primary);
+  border-color: var(--dsw-alias-brand-primary);
+}
+
 /* THE MESH STAGE canvas — the raw-three viewport fills the preview
  * pane (the shell's preview column owns the overflow, hour-13).
  * THE 46vh CAP (the morph-tab stroke): the preview cell rides the
@@ -141,4 +181,17 @@
   max-height: 46vh;
   display: block;
   touch-action: none;
+}
+
+/* THE INCOMING HERO (the layout-preserving swap): absolutely seated
+ * behind the current bitmap, invisible, pointer-dead — it exists to
+ * LOAD, and its onLoad commits the swap. It must NEVER contribute
+ * layout: the seat's height belongs to the decoded image alone. */
+.heroIncoming {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
 }

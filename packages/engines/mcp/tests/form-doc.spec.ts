@@ -1,7 +1,10 @@
 // form-doc.spec.ts — THE MCP FORM DOC WALLS (the card-seam law,
 // agent's params.spec precedent): the golden literal pins the
 // served serialization; the identity pin holds the schema arm and
-// the doc together (a change must land consciously in both).
+// the doc together (a change must land consciously in both). The
+// PER-SERVER face is this lane's whole surface: the GENERIC picker
+// card moved to the agent package (the subagent spawn —
+// agentCardFormDoc; the operator's law 2026-09-21).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { mcpFormDoc, mcpParams } from "../src/formDoc.ts";

@@ -99,6 +99,14 @@ test('SPEC ATOM: the image square builds when claimed; bare text when not (never
   expect(screen.getByLabelText('Image')).not.toBeNull()
 })
 
+test('SPEC ATOM: a mesh field rides the same square — the inline viewport, never a URL input', () => {
+  const onEdit = vi.fn()
+  const f = F({ name: 'rig', label: 'Rig', type: 'mesh' })
+  render(h(SpecAtom, { f, value: 'data/input/donor.glb', onEdit, square: { verbs: {} } }))
+  expect(screen.getByRole('button', { name: 'Rig source' })).not.toBeNull()
+  expect(document.querySelector('[data-viewport="square-mesh"]')).not.toBeNull()
+})
+
 test('SPEC ATOM: the square face — mirror wins, then the value; junk values show the metric', () => {
   const onEdit = vi.fn()
   const f = F({ name: 'img', label: 'Image', type: 'image' })

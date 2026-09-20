@@ -361,6 +361,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     // dead (the old tree's own law: "the modal was a second surface;
     // both are dead").
     open !== null ? h(CardZoomOverlay, {
+      key: 'zoom',
       stage: open,
       bench: live,
       startError,

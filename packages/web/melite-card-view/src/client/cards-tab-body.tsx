@@ -57,7 +57,6 @@ import css from './card.module.css'
 import { runCardStage, runBenchSequential } from './stage-run.ts'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
 import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
-import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
 import { startCardRun, stopRun } from '@melite/card-base/runs-policy'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/preview'
@@ -387,21 +386,41 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   if (snapshot === undefined) {
     return h('p', { className: css.missing }, 'cards resource hook unavailable')
   }
-  if (snapshot.status === 'loading' || snapshot.status === 'none') {
-    return h('p', { className: css.loading }, 'loading ' + address + '…')
-  }
-  if (snapshot.status === 'failed') {
-    return h('p', { className: css.failed }, snapshot.failure?.message ?? 'cards resource failed')
-  }
+  // THE SEAT SURVIVES THE REFRESH (the DSH client-resources
+  // contract, packages/client/resources/README: `failed` arrives
+  // WITH the last value beside the failure; `loading` means the
+  // provider has not yielded YET — a held record never re-enters
+  // it (the sidebar pins the tab's address for the tab's life; a
+  // remount reads the latest value at once). The snapshot IS the
+  // state — no client memory here (ledger #44: the heldValue ref
+  // re-implemented the model's own failed-keeps-value law and is
+  // deleted). The loading/failed faces stand only when NOTHING
+  // was ever shown; a failed frame with a value renders the body
+  // PLUS the loud error line (the silent-failure law holds — the
+  // face never replaces the seat).
   const value = snapshot.value
+  const failedLine = snapshot.status === 'failed' && value !== undefined
+    ? h('p', { className: css.failed, 'data-testid': 'cards-refresh-failed' },
+        snapshot.failure?.message ?? 'cards resource failed — showing the last good state')
+    : null
   if (value === undefined) {
-    return h('p', { className: css.failed }, 'cards resource gave no value')
+    // A LIVE snapshot with no value is a broken provider (live
+    // promises the latest ok frame's value) — voice it LOUD, never
+    // a loading face that would hang forever claiming to wait.
+    if (snapshot.status === 'live') {
+      return h('p', { className: css.failed }, 'cards resource gave no value')
+    }
+    if (snapshot.status === 'failed') {
+      return h('p', { className: css.failed }, snapshot.failure?.message ?? 'cards resource failed')
+    }
+    return h('p', { className: css.loading }, 'loading ' + address + '…')
   }
   return value.kind === 'bench'
     // Pure-DSH tab (2026-09-11): the bench renders the native BenchView
     // (tiles + drill + picker on the estate doors). The legacy 1:1
     // FlowCanvas branch was retired in Phase 2 (src/old/ deleted).
     ? h(Fragment, null,
+        failedLine,
         localRunError !== null ? h('p', { className: css.runError }, localRunError) : null,
         // THE RUN-GATE RESCUE (roadmap item 4): a rescueable miss —
         // a missing extension pack or model file — offers the
@@ -433,6 +452,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       )
     : value.kind === 'draft'
     ? h(Fragment, null,
+        failedLine,
         localRunError !== null ? h('p', { className: css.runError }, localRunError) : null,
         localRunError !== null ? h(RunRescue, { error: localRunError, stages: value.stages, onRun: onRunDraftStage }) : null,
         h(DraftView, {
@@ -447,6 +467,8 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           runId: lastRunId,
         }),
       )
-    : h(RunView, { run: value, sessionKey: benchKey, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop })
+    : h(Fragment, null,
+        failedLine,
+        h(RunView, { run: value, sessionKey: benchKey, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop }))
 }
 

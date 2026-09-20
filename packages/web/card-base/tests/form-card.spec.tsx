@@ -85,6 +85,26 @@ test('RAIL: text edges never become squares — the rail seats only slot-shaped 
   expect(screen.getByLabelText('Prompt')).not.toBeNull()
 })
 
+test('RAIL: a declared mesh edge seats its square — the same slot grammar as images', () => {
+  const spec = {
+    form: 'rig-copy',
+    model: 'transfer_rig',
+    schema: {
+      uid: 0,
+      refs: {
+        0: { type: 'object', dict: { rig: 1 } },
+        1: { type: 'string', meta: { description: 'Rig', extra: { wtype: 'mesh' } } },
+      },
+    },
+    inputs: [{ name: 'rig', kind: 'mesh' }],
+    packs: [],
+  } as unknown as FormSpecDoc
+  form({ spec })
+  const rail = document.querySelector('[data-input-rail]')
+  if (rail === null) throw new Error('the mesh edge seats: rail renders')
+  expect(screen.getByRole('button', { name: 'Rig source' })).not.toBeNull()
+})
+
 test('EDIT: typing voices strings; numerics coerce at the boundary; junk rides VERBATIM', () => {
   const { onSet } = form({ user: { prompt: 'hi' } })
   fireEvent.change(screen.getByLabelText('Prompt'), { target: { value: 'a cat' } })
@@ -384,4 +404,24 @@ test('THE GRID IS THE LAW (2026-09-21): every params group grids 2 by default; a
   const stack = container.querySelector('[data-form-group-panel="stack"] [style*="grid-template-columns"]')
   expect(stack).not.toBeNull()
   expect(stack!.getAttribute('style')).toContain('repeat(1')
+})
+
+test('MODEL GUARD: a leaf declaring model=<family> hides on every other family of the card (the base seeds the grammar)', () => {
+  // two families, one card: the bespoke leaf belongs to fam-a only
+  const refs: Record<number, Ref> = {
+    0: { type: 'object', dict: { prompt: 1, bespoke: 2 } },
+    1: { type: 'string', meta: { description: 'Prompt' } },
+    2: { type: 'boolean', meta: { description: 'Bespoke Knob', default: false, extra: { visible_when: 'model=fam-a' } } },
+  }
+  const docFor = (model: string): FormSpecDoc => ({ form: 'x', model, schema: { uid: 0, refs } } as never)
+  // serving fam-a: the leaf renders
+  const a = form({ spec: docFor('fam-a') })
+  expect(screen.getByText('Bespoke Knob')).not.toBeNull()
+  cleanup()
+  // serving fam-b (the sibling family): the leaf is GONE — the user
+  // never sees a knob its lane does not fire
+  const b = form({ spec: docFor('fam-b') })
+  expect(screen.queryByText('Bespoke Knob')).toBeNull()
+  expect(screen.getByText('Prompt')).not.toBeNull()
+  void a; void b
 })

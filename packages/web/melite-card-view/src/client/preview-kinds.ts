@@ -61,13 +61,37 @@ export function paramsDiffKeys(a: unknown, b: unknown): string | undefined {
 
 /** The stage row's preview artifacts, harvested from the estate's
  *  result shape (artifacts name→url map first, the flat assetUrls
- *  list second — the harvest law the h3 adapter states). */
+ *  list second — the harvest law the h3 adapter states).
+ *  ONE FILE, ONE ARTIFACT (2026-09-20, the operator's catch: "two
+ *  rowsets under the preview image"): rows written before the
+ *  observer's de-stamp carry the same url under two keys (the
+ *  legacy 'video' stamp + the gallery name) — the harvest dedupes
+ *  BY URL so those rows render ONE artifact, and the legacy
+ *  'video' name never paints (retitled 'output'): the word
+ *  'video' on an image card is the phantom's face. */
 export function previewArtifactsFor(row: Record<string, unknown>): Array<{ name: string, url: string }> {
   const result = typeof row['result'] === 'object' && row['result'] !== null ? row['result'] as Record<string, unknown> : {}
   const out: Array<{ name: string, url: string }> = []
+  const seen = new Set<string>()
   const arts = typeof result['artifacts'] === 'object' && result['artifacts'] !== null ? result['artifacts'] as Record<string, unknown> : {}
+  // TWO PASSES: real names claim their urls first; the legacy
+  // 'video' stamp fills only UNCLAIMED urls — so a double-keyed
+  // legacy row keeps its REAL gallery name, and a lone stamp still
+  // renders (retitled 'output': the word 'video' never paints on
+  // an image row).
   for (const [name, val] of Object.entries(arts)) {
-    if (typeof val === 'string' && val !== '') out.push({ name, url: val })
+    if (name === 'video') continue
+    if (typeof val === 'string' && val !== '' && !seen.has(val)) {
+      seen.add(val)
+      out.push({ name, url: val })
+    }
+  }
+  for (const [name, val] of Object.entries(arts)) {
+    if (name !== 'video') continue
+    if (typeof val === 'string' && val !== '' && !seen.has(val)) {
+      seen.add(val)
+      out.push({ name: 'output', url: val })
+    }
   }
   if (out.length === 0 && Array.isArray(result['assetUrls'])) {
     for (const u of result['assetUrls']) {

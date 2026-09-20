@@ -53,37 +53,60 @@ export interface AgentStageParams {
  * (the kinds' param_keys — the mod law excludes them from the flat
  * groups); they are declared here for the wire's truth, not for
  * flat rendering. */
+const taskField = z.string().role("free").description("Task")
+  .extra("extra", {
+    order: 1, group: "brief", width: 2, wtype: "textarea",
+    tooltip: "The brief — what the subagent must get done. Concrete and checkable.",
+  });
+const modelField = z.string().role("free").description("Brain route")
+  .extra("extra", {
+    order: 2, group: "brief", width: 2,
+    tooltip: '"provider/model" — the boot-seated route (MELITE_AGENT_ROUTE) serves when empty.',
+  });
+const mcpsField = z.array(z.any()).description("MCPs")
+  .extra("extra", {
+    order: 1, group: "mods", width: 2,
+    tooltip: "The allow-list: each entry grants one MCP server's tools (mcp__<server>__*).",
+  });
+const skillsField = z.array(z.any()).description("Skills")
+  .extra("extra", {
+    order: 2, group: "mods", width: 2,
+    tooltip: "Spawn-injected leaves — operating instructions read at stage start.",
+  });
+const inputsField = z.array(z.any()).description("Inputs")
+  .extra("extra", {
+    order: 3, group: "mods", width: 2,
+    tooltip: "The plus-box list: {name, value} entries rendered into the brief.",
+  });
+const maxTurnsField = z.number().min(1).max(1000).step(1).description("Max turns")
+  .extra("extra", {
+    order: 3, group: "brief", width: 1,
+    tooltip: "Turn bound — default unlimited (the hard circuit breaker is 1000).",
+  });
+
 export const agentParams = z.object({
-  task: z.string().role("free").description("Task")
-    .extra("extra", {
-      order: 1, group: "brief", width: 2, wtype: "textarea",
-      tooltip: "The brief — what the subagent must get done. Concrete and checkable.",
-    }),
-  model: z.string().role("free").description("Brain route")
-    .extra("extra", {
-      order: 2, group: "brief", width: 2,
-      tooltip: '"provider/model" — the boot-seated route (MELITE_AGENT_ROUTE) serves when empty.',
-    }),
-  mcps: z.array(z.any()).description("MCPs")
-    .extra("extra", {
-      order: 1, group: "mods", width: 2,
-      tooltip: "The allow-list: each entry grants one MCP server's tools (mcp__<server>__*).",
-    }),
-  skills: z.array(z.any()).description("Skills")
-    .extra("extra", {
-      order: 2, group: "mods", width: 2,
-      tooltip: "Spawn-injected leaves — operating instructions read at stage start.",
-    }),
-  inputs: z.array(z.any()).description("Inputs")
-    .extra("extra", {
-      order: 3, group: "mods", width: 2,
-      tooltip: "The plus-box list: {name, value} entries rendered into the brief.",
-    }),
-  max_turns: z.number().min(1).max(1000).step(1).description("Max turns")
-    .extra("extra", {
-      order: 3, group: "brief", width: 1,
-      tooltip: "Turn bound — default unlimited (the hard circuit breaker is 1000).",
-    }),
+  task: taskField,
+  model: modelField,
+  mcps: mcpsField,
+  skills: skillsField,
+  inputs: inputsField,
+  max_turns: maxTurnsField,
+});
+
+/** THE CARD FACE (the generic MCP card, operator 2026-09-21: "the
+ * configuration is the MCP tools to provide, the inputs, and the
+ * prompts" — agent selection rides the host, never a card field).
+ * Same field declarations, one difference BY LAW: no `model` field
+ * — a card-stage field named 'model' is the estate's MODEL KEY (a
+ * pick re-specs the doc), and a brain route is not a spec key; the
+ * boot route (MELITE_AGENT_ROUTE) serves the spawn. The executor's
+ * gate is normalizeAgentStageParams either way. */
+export const agentCardParams = z.object({
+  task: taskField,
+  mcps: mcpsField,
+  skills: skillsField,
+  inputs: inputsField,
+  max_turns: maxTurnsField,
 });
 
 /** One census row (the LIVE enumeration — served options, never a
@@ -139,7 +162,12 @@ export function agentModKinds(census: { mcps: readonly CensusRow[]; skills: read
       max_stack: 32,
       fields: [
         { name: "name", label: "Name", type: "string", default: "", tooltip: "The entry's name (rendered into the brief)." },
-        { name: "value", label: "Value", type: "string", default: "", tooltip: "The entry's value." },
+        // THE GENERIC INPUT SQUARE (operator, 2026-09-21: "we have a
+        // generic input component… starts out as one square, then it
+        // adds another blank square"): file-typed constructs THE ONE
+        // square through the construction law — upload/drop/upstream
+        // pick; the picked artifact path rides the entry's value.
+        { name: "value", label: "Value", type: "file", default: "", tooltip: "The entry's value — an artifact picked through the square (an estate path rides verbatim)." },
       ],
     },
   ];

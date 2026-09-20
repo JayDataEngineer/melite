@@ -12,7 +12,7 @@
  * (the schema envelope, declared input/output edges, mod kinds) —
  * and constructs the surface. The resolved value derives per render
  * (resolveValue — the engine's compose cascade mirrored); every
- * image/file field gets THE ONE square (square.tsx) with the
+ * image/file/mesh field gets THE ONE square (square.tsx) with the
  * three source verbs; no card ever hand-rolls an input component.
  *
  * THE SEAM (slots.ts): each field renders through the field-atom seam
@@ -28,7 +28,7 @@
  */
 import { createElement as h, useState } from 'react'
 import { type BboxFaceComponent, ModifiersSection, type PaintFaceComponent } from './mods.tsx'
-import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, modOwnedFields, resolveValue, titleCaseId } from './spec.ts'
+import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, modOwnedFields, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
 import { useFormSpec } from './use-form-spec.ts'
 import { type FieldAtomClaim, type SquareHost, type SquareWire, useSquareProvider } from './square-provider.tsx'
@@ -133,7 +133,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   // the catalog select binds the option_key field while the bag
   // element's REMAINING fields render as entry rows, plus the
   // pack-level scalars as the section's own rows (the floor).
-  const family = typeof spec.model === 'string' ? spec.model : undefined
+  const family = resolveFamilyKey(spec)
   const modKinds = (spec.features?.modifiers ?? []).map((k) => {
     const env = spec.mod_schemas?.[k.schema_key ?? k.param_key]
     const hybrid = k.entry === 'hybrid'
@@ -184,7 +184,10 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   const railOf = (inp: { name: string; kind?: string }): SpecField | undefined => {
     const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name)
     if (f === undefined) return undefined
-    if (f.type === 'image' || f.type === 'file') return f
+    // THE SLOT-SHAPED SET (primitive ③ boards mesh): the input rail
+    // seats image, file, and mesh fields — a declared mesh edge claims
+    // its square the same way.
+    if (f.type === 'image' || f.type === 'file' || f.type === 'mesh') return f
     return undefined
   }
   const railFields = signature
@@ -204,7 +207,17 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   const visible = (f: SpecField): boolean =>
     f.type !== 'image_list' && !railNames.has(f.name)
   const groupFieldsAll = flatFields.filter(visible)
-  const groups = groupFields(groupFieldsAll, value)
+  // THE MODEL GUARD (the grammar's own key — the base owns the
+  // mechanism, the card owns the leaves): the serving family rides
+  // the visibility values as `model`, so a field may declare
+  // visible_when: "model=<family>" — a lane-bespoke knob hides on
+  // every other family of the card. Seeded HERE (visibility only),
+  // never into the form state: `model` is the rail's pick, not a
+  // field — no card declares one (the naming law), so no collision.
+  // The key is the RESOLVED family (the FAMILIES-DRY law's
+  // resolveFamilyKey — a composed variant/quant row walks as its
+  // base, the same key the leaves declare), never the raw row.
+  const groups = groupFields(groupFieldsAll, { ...value, model: family ?? '' })
   // THE PARAMETER SUBMENU (stroke 89, operator order 2026-09-17:
   // "instead of making a form card, and abstracting the form card
   // to allow for switchable submenus of parameters, you handroll" —
@@ -391,7 +404,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
           children.push(h('div', { key: f.name + '-cell', style: cellStyle(f) }, cell))
           continue
         }
-        if (f.type === 'image' || f.type === 'file') {
+        if (f.type === 'image' || f.type === 'file' || f.type === 'mesh') {
           row.push(h('div', {
             key: f.name,
             className: css.specSlotCell,

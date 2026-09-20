@@ -163,10 +163,12 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
   });
 
   it("the only card-owned TEXT fields are the prompt and the two mod-zone stragglers — a new one is a freeform lie", () => {
-    // sr_model + sla_dense_steps are declared for the WALK (compose
-    // parses them off the card schema) but render ONLY in the mod
-    // zone — the client strips them from params via modOwnedFields.
-    // Any FOURTH text projection is a live freeform field on the
+    // sla_dense_steps is declared for the WALK (compose
+    // parses it off the card schema) but renders ONLY in the mod
+    // zone — the client strips it from params via modOwnedFields.
+    // sr_model WAS here as the free-text lie (operator: "rendering
+    // as free text, and not a dropdown") — it is a closed
+    // vocabulary select now. Any SECOND text projection is a live freeform field on the
     // params face and must be refused here. The prompt itself is a
     // TEXTAREA (full-row by the textarea law) — never a bare text box.
     const fields = fieldsOfEnvelope(
@@ -174,7 +176,26 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     );
     assert.equal(fields.find((f) => f.name === "prompt")?.type, "textarea");
     const textFields = fields.filter((f) => f.type === "text").map((f) => f.name);
-    assert.deepEqual(textFields, ["sr_model", "sla_dense_steps"]);
+    assert.deepEqual(textFields, ["sla_dense_steps"]);
+    // sr_model serves as the closed dropdown, gated behind sr_switch
+    // like every other post leaf.
+    const srModel = fields.find((f) => f.name === "sr_model")!;
+    assert.equal(srModel.type, "select");
+    assert.deepEqual(
+      [...(srModel.options ?? [])].map((o) => typeof o === "string" ? o : o.value).sort(),
+      ["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"].sort(),
+    );
+    // THE SLA MASTER SWITCH (2026-09-21, operator: "is there a switch
+    // to turn SLA on/off or is it always on" — it was always on): the
+    // boolean heads the sla group, default true; every tuning leaf
+    // hides behind it like the sharpen/interp/sr leaves.
+    const slaEnabled = fields.find((f) => f.name === "sla_enabled")!;
+    assert.equal(slaEnabled.type, "boolean");
+    assert.equal(slaEnabled.default, true);
+    assert.equal(slaEnabled.group, "sla");
+    for (const leaf of ["sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps", "sla_dense_steps", "sla_dense_backend", "sla_reference_protection", "sla_protect_audio", "sla_stabilize_motion", "sla_disable_fp16_accum"]) {
+      assert.equal(fields.find((f) => f.name === leaf)?.visible_when, "sla_enabled=true", `${leaf} hides behind the master switch`);
+    }
     // THE GRID LAW (2026-09-21, "WHY IS WIDTH AND HEIGHT ON
     // DIFFERENT VERTICAL ROWS?"): the General group declares its
     // grid — Bed start + Seed share a row, Width + Height share a

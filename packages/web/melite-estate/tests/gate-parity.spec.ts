@@ -64,6 +64,23 @@ function gateCompose(def: CardDefinition): Record<string, unknown> | null {
   }
 }
 
+/** The hidden grammar (2026-09-20, ledger #40): a knob declaring
+ * extra.hidden is VALIDATION-ONLY — the carrier still fills its
+ * declared default (it IS the gate), the walk never serves it (it
+ * never renders). This reads the SAME envelope the walk reads
+ * (numeric refs off env.uid), so the wall encodes the exception
+ * exactly: an unserved gate fill is lawful IFF hidden; anything
+ * else stays a crime. */
+function hiddenKnob(def: CardDefinition, name: string): boolean {
+  const envelope = ((def.schemaCarrier ?? def.schema) as unknown as {
+    toJSON: () => { uid: number; refs: Record<number, { dict?: Record<string, number>; meta?: { extra?: { hidden?: boolean } } }> };
+  }).toJSON();
+  const root = envelope.refs?.[envelope.uid];
+  const refId = root?.dict?.[name];
+  if (typeof refId !== "number") return false;
+  return envelope.refs?.[refId]?.meta?.extra?.hidden === true;
+}
+
 describe("THE CLIENT↔GATE PARITY WALL: the walk IS the gate's truth, every card", () => {
   it("defaults: every gate fill rides the walk verbatim; the walk invents none", async () => {
     const defs = await loadCardDefs();
@@ -99,6 +116,10 @@ describe("THE CLIENT↔GATE PARITY WALL: the walk IS the gate's truth, every car
       if (gate !== null) {
         for (const [name, filled] of Object.entries(gate)) {
           if (filled === undefined || filled === null) continue;
+          // hidden fills are VALIDATION-ONLY — declared, gated, and
+          // deliberately never served (the exception above, encoded
+          // exactly: hidden and ONLY hidden may go unserved).
+          if (hiddenKnob(def, name)) continue;
           const f = fields.find((x) => x.name === name);
           assert.ok(f !== undefined, `${id}: the gate fills '${name}' but the walk does not serve the field`);
           assert.deepEqual(
@@ -207,6 +228,12 @@ describe("THE CLIENT↔GATE PARITY WALL: the walk IS the gate's truth, every car
       // h3: real public Comfy-Org frame-interpolation file; NAMED provision
       // gap (the family provisions film_net only).
       "rife47.pth": "public Comfy-Org file; provision gap named in the ledger",
+      // h3: the fp8_e4m3fn sibling the lane walked in shipped _flow.json
+      // receipts (the 2026-09-20 dropdown-law stroke's second member —
+      // fp16 stays the default); same public Comfy-Org SeedVR2 weights,
+      // same named provision gap shape as rife47 above.
+      "seedvr2_ema_3b_fp8_e4m3fn.safetensors":
+        "public Comfy-Org SeedVR2 fp8 file; provision gap named in the ledger",
     };
     const FILE_SHAPE = /\.(safetensors|pth|ckpt|pt|bin|gguf|onnx)$/;
     const provisioned = new Set<string>();

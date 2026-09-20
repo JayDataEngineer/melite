@@ -9,7 +9,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h, useState } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { ASSET_DRAG_MIME, InputSquare, isImageUrl, readAsDataUrl } from '../src/square.tsx'
+import { ASSET_DRAG_MIME, InputSquare, isImageUrl, isMeshUrl, readAsDataUrl } from '../src/square.tsx'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
@@ -97,6 +97,26 @@ test('A NON-IMAGE value files (the PLUS, never a broken thumbnail)', () => {
   const { container } = render(h(InputSquare, { label: 'x', value: 'https://host/a.svg' }))
   expect(container.querySelector('img')).toBeNull()
   expect(container.querySelector('svg')).not.toBeNull()
+})
+
+test('THE MESH RULE: estate GLB paths and artifact GLB URLs pass; everything else files', () => {
+  for (const good of [
+    'data/input/donor.glb',
+    '/runs/run-1/mesh.glb',
+    'https://host/mesh.GLB?download=1',
+    '//host/mesh.gltf#preview',
+  ]) expect(isMeshUrl(good)).toBe(true)
+  for (const bad of [
+    '', 'donor', 'https://host/mesh.glb.evil', 'https://host/a.png',
+    'data:model/gltf-binary;base64,AAA',
+  ]) expect(isMeshUrl(bad)).toBe(false)
+})
+
+test('THE MESH SQUARE: a GLB value renders the inline viewport (never the image face)', () => {
+  const { container } = render(h(InputSquare, { label: 'rigged_glb', value: 'data/input/donor.glb' }))
+  expect(container.querySelector('img')).toBeNull()
+  expect(container.querySelector('[data-viewport="square-mesh"]')).not.toBeNull()
+  expect(screen.getByText('loading mesh…')).not.toBeNull()
 })
 
 test('THE SLOT IS THE WIRE: with a picker attached the click opens it, anchored on the square', () => {

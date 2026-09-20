@@ -92,7 +92,8 @@ them to `file://` URLs).
   on the estate, linked in the family provisions, served live by a
   drop-in.
 - `real-card.plugin.ts`: the `hot-sketch` card (full CardDefinition,
-  card-kit `imageT2I` recipe, krea-2 + z-image boarding) — served in
+  card-kit `imageT2I` recipe, moss boarding — ledger #40: a
+  drop-in boards ONLY unboarded families) — served in
   `/v1/forms`, spec'd at `/v1/form-spec?model=hot-sketch`, and
   `POST /v1/flows/validate` returned `{"ok":true,"flow":"hot-sketch"}`.
 

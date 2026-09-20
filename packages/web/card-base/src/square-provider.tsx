@@ -8,10 +8,23 @@ import { type SpecField } from './spec.ts'
 import css from './card.module.css'
 
 /** The media-kind the picker fetches for a field: image fields name
- *  image; file fields take the whole library (their accept narrows
+ *  image; mesh fields name mesh (the library boards meshes only when
+ *  the media namespace serves them — an honest empty until then);
+ *  file fields take the whole library (their accept narrows
  *  client-side per row). */
 function mediaKindForField(f: SpecField): string {
-  return f.type === 'image' ? 'image' : 'all'
+  if (f.type === 'image') return 'image'
+  if (f.type === 'mesh') return 'mesh'
+  return 'all'
+}
+
+/** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
+ *  offer the GLB pair; everything else keeps the image triad (the
+ *  historic default). The provider's ONE hidden input re-targets
+ *  imperatively at click time — the accept is a property of the
+ *  field being picked, never of the provider instance. */
+export function acceptOfField(f: SpecField | null): string {
+  return f !== null && f.type === 'mesh' ? '.glb,.gltf' : 'image/png,image/jpeg,image/webp'
 }
 
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):
@@ -42,7 +55,11 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     if (wire.onFile !== undefined) { wire.onFile(file); return }
     try {
       const dataUrl = await readAsDataUrl(file)
-      setMirror((m) => ({ ...m, [f.name]: dataUrl }))
+      // THE MESH EXCEPTION: a freshly read GLB is a data: URL with no
+      // .glb name, so mirroring it would hide the square's real value
+      // (the estate path the door is about to answer). Images keep
+      // their data-URL preview; a mesh waits for its named path.
+      if (f.type !== 'mesh') setMirror((m) => ({ ...m, [f.name]: dataUrl }))
       const { name } = await uploadInputFile(file)
       onEdit(f.name, name)
     } catch (e: unknown) {
@@ -50,7 +67,10 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     }
   }, [onEdit, wire.onFile])
   const square = (f: SpecField): SquareHost | undefined => {
-    if (f.type !== 'image' && f.type !== 'file') return undefined
+    // THE SLOT-SHAPED TYPES (primitive ③ boards mesh): image, file,
+    // and mesh — a .glb value renders the same square grammar with
+    // the inline GLB thumb; every other type is not slot-shaped.
+    if (f.type !== 'image' && f.type !== 'file' && f.type !== 'mesh') return undefined
     return {
       display: mirror[f.name] ?? null,
       verbs: {
@@ -85,7 +105,16 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
       setPickAt(null)
       if (id === '__flow__') { setModalAt({ mode: 'flow', field: f }); return }
       if (id === '__media__') { setModalAt({ mode: 'media', field: f }); return }
-      if (id === '__file__') { fieldRef.current = f; fileRef.current?.click(); return }
+      if (id === '__file__') {
+        fieldRef.current = f
+        // THE ACCEPT IS THE FIELD'S (mesh → the GLB pair): the ONE
+        // input re-targets imperatively at click time — a property
+        // of the field being picked, never of the provider.
+        const input = fileRef.current!
+        input.accept = acceptOfField(f)
+        input.click()
+        return
+      }
       // NO __none__ GUARD (the exhaustive-menu proof): this closure's
       // items are the four literal ids above and the three arms above
       // return — reaching here MEANS __none__ (the danger row). A
@@ -167,7 +196,9 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   const fileInput = h('input', {
     ref: fileRef,
     type: 'file',
-    accept: wire.accept ?? 'image/png,image/jpeg,image/webp',
+    // the RESTING accept (the triad); the '__file__' branch re-targets
+    // per field at click time — wire.accept stays the bespoke override.
+    accept: wire.accept ?? acceptOfField(null),
     'aria-hidden': true,
     tabIndex: -1,
     style: { display: 'none' },

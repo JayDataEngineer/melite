@@ -11,7 +11,7 @@ export type {
   AgentSkillReader,
   AgentLlmSeam,
 } from "./agent-engine.ts";
-export { agentFormDoc } from "./formDoc.ts";
+export { agentFormDoc, agentCardFormDoc } from "./formDoc.ts";
 export type { AgentFormCensus } from "./formDoc.ts";
-export { agentParams, agentModKinds, normalizeAgentStageParams, MCP_ENTRY_FIELD, SKILL_ENTRY_FIELD } from "./params.ts";
+export { agentParams, agentCardParams, agentModKinds, normalizeAgentStageParams, MCP_ENTRY_FIELD, SKILL_ENTRY_FIELD } from "./params.ts";
 export type { AgentStageParams, CensusRow } from "./params.ts";

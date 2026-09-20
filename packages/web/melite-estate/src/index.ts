@@ -145,6 +145,63 @@ const rows: readonly Plugin[] = [
       failOnStartupError: false,
     },
   } as unknown as Plugin,
+  // THE UNITY MCP (operator 2026-09-21: "I need the Unity MCP" —
+  // interchangeable with blender on the generic card's MCP dropdown).
+  // MCPForUnity's Python relay over stdio (its README's own stdio
+  // config): `uvx --from mcpforunityserver mcp-for-unity --transport
+  // stdio` — the relay LISTS its 47 tools with no Editor attached
+  // (calls land once Unity is open with the com.coplaydev.unity-mcp
+  // package on a project), so the seat postures like blender's:
+  // failOnStartupError false, the supervisor's reconnect loop owns
+  // the Editor-not-open stretches. THE UV HOME (2026-09-21: this
+  // box's ~/.cache is read-only, so a bare uvx dies acquiring its
+  // lock): the relay child carries its cache + data homes under
+  // /tmp (re-fetched per reboot, ~20s, the tolerance above covers
+  // it) — HOME itself is never overridden (the Editor side of the
+  // bridge may depend on the real one). Witness pair: the scene +
+  // console reads (the verify loop's two tools).
+  {
+    name: "mcp-client-unity",
+    inject: mcpClientPlugin.inject,
+    Config: mcpClientPlugin.Config,
+    apply: (ctx: Context, config: unknown) => {
+      const p = (mcpClientPlugin.apply as (ctx: Context, config: McpClientConfig) => unknown)(
+        ctx,
+        config as McpClientConfig,
+      ) as unknown;
+      if (p === undefined || typeof (p as Promise<unknown>).then !== "function") return p;
+      return (p as Promise<unknown>).then(
+        (v: unknown) => {
+          const t = ctx.get("tools") as unknown as { get(name: string): unknown } | undefined;
+          const seen = ["mcp__unity__manage_scene", "mcp__unity__read_console"]
+            .map((n) => n + "=" + (t?.get(n) === undefined ? "absent" : "PRESENT"))
+            .join(" ");
+          console.log("[melite-estate] mcp-client-unity ready: " + seen);
+          return v;
+        },
+        (e: unknown) => {
+          const chain = (x: unknown, depth: number): string => {
+            if (depth > 2 || x === null || (typeof x !== "object" && typeof x !== "string")) return "";
+            const err = x as { message?: unknown; cause?: unknown };
+            const head = typeof x === "string" ? x : String(err.message ?? x);
+            return head + (err.cause === undefined ? "" : " | caused by: " + chain(err.cause, depth + 1));
+          };
+          console.log("[melite-estate] mcp-client-unity REJECTED: " + chain(e, 0).slice(0, 900));
+          throw e;
+        },
+      );
+    },
+    config: {
+      transport: "stdio",
+      serverName: "unity",
+      command: "/home/user/.local/bin/uvx",
+      args: ["--from", "mcpforunityserver", "mcp-for-unity", "--transport", "stdio"],
+      env: { XDG_CACHE_HOME: "/tmp/uv-cache", XDG_DATA_HOME: "/tmp/uv-data" },
+      cwd: "/home/user/.dsh/mcp/unity-mcp",
+      toolCallTimeoutMs: 300000,
+      failOnStartupError: false,
+    },
+  } as unknown as Plugin,
   // ...and the same server on the RUNS plane: mcp:blender stages
   // execute as mcp__blender__* tool calls through the runtime.
   // inject gates the APPLY on both seats (the comfyui adapter's
@@ -162,7 +219,7 @@ const rows: readonly Plugin[] = [
       console.log("[melite-estate] mcp row applying with config " + JSON.stringify(config));
       mcpEngines(ctx, config as { engines?: string[] });
     },
-    config: { engines: ["mcp:blender"] },
+    config: { engines: ["mcp:blender", "mcp:unity"] },
   } as unknown as Plugin,
   // The craft loop engine (async apply: the route resolution rides
   // listModels — the seat lands after the enumeration).

@@ -62,6 +62,22 @@ test('THE VIDEO SET: the active set names its windows beneath the hero', () => {
   expect(link.getAttribute('target')).toBe('_blank')
 })
 
+test('THE SEAT BUBBLE: a rest link opens its tab WITHOUT opening the walk (ledger #45)', () => {
+  // the drilldown seat is a walk-opening button; the presenter
+  // rides inside it. The link must consume its own click — the
+  // spy seat stands in for the walk opener.
+  const opened: string[] = []
+  render(h('div', { onClick: () => { opened.push('walk') } },
+    h(VideoStagePreview, video({
+      artifacts: [
+        { name: 'film', url: '/runs/cur/film.mp4' },
+        { name: 'storyboard', url: '/runs/cur/board.mp4' },
+      ],
+    }))))
+  fireEvent.click(screen.getByText('storyboard'))
+  expect(opened).toEqual([])
+})
+
 test('THE VIDEO HISTORY LAW: strip, promote, stale badge, notes ride like image', () => {
   render(h(VideoStagePreview, video({
     history: [[{ name: 'film', url: '/runs/prev/film.mp4' }]],

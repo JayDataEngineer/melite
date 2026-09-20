@@ -41,6 +41,23 @@ function stagesOf(doc) {
     // skipped at read) — no re-defense here.
     return doc["stages"];
 }
+/** THE SEED RECEIPT (2026-09-21, ledger #41: a concrete seed rode
+ *  a wholesale load while the summary said only "load N stages" —
+ *  the operator re-ran one image believing they were on random).
+ *  One incoming stage's seed state: a concrete number rides
+ *  VERBATIM at compose (pinned — the value on record); -1 is the
+ *  random sentinel; anything else is absent. The load entry names
+ *  every stage's state, so a pin can never arrive silently again. */
+function seedStateOf(row) {
+    // Post-normalize rows ALWAYS carry a record params (normalizeStages
+    // replaces junk/missing params with {}) — no re-defense here.
+    const seed = row["params"]["seed"];
+    if (typeof seed === "number" && seed !== -1)
+        return `${row["id"]} seed ${seed} (pinned)`;
+    if (seed === -1)
+        return `${row["id"]} seed random`;
+    return `${row["id"]} seed absent`;
+}
 /** Birth defaults per the composer's law (id, inputs, provenance)
  *  with the runner's object inputs. */
 function normalizeStages(stagesIn, author) {
@@ -157,6 +174,27 @@ export async function ensureBench(drafts, body, admit) {
     // (the no-leak law: admit on the LOCAL normalized list, assign to
     // the cached doc only after the gates pass.)
     const staged = normalizeStages(body["stages"], author);
+    // THE STAGE MEMORY LAW (2026-09-20, the operator's catch: "why
+    // does it never track history?"): a stage's OUTPUT MEMORY — its
+    // landed result and archived history — belongs to the STAGE'S
+    // IDENTITY, not to the doc revision it happened to land in. A
+    // wholesale load rebuilding the bench with the SAME stage ids
+    // (a chat agent re-loading the card the operator is iterating
+    // on) CARRIES the memory forward: result, runStatus, history,
+    // resultParams ride from the outgoing row onto the incoming row
+    // of the same id. A genuinely new stage id starts clean. The
+    // bench is composed state; the gallery is the stage's own.
+    const MEMORY_KEYS = ["result", "runStatus", "history", "resultParams"];
+    for (const row of staged) {
+        const prev = before.find((b) => b["id"] === row["id"]);
+        if (prev === undefined)
+            continue;
+        for (const key of MEMORY_KEYS) {
+            if (prev[key] !== undefined && row[key] === undefined) {
+                row[key] = prev[key];
+            }
+        }
+    }
     admitWiringList(staged, session);
     doc["stages"] = staged;
     if (typeof body["intent"] === "string")
@@ -164,7 +202,7 @@ export async function ensureBench(drafts, body, admit) {
     const entry = {
         author,
         kind: "load",
-        summary: "load " + stagesOf(doc).length + " stages",
+        summary: "load " + stagesOf(doc).length + " stages | " + staged.map(seedStateOf).join(" | "),
         inverse: { stages_before: before },
         rev: block.rev + 1,
         at: Math.floor(Date.now() / 1000),

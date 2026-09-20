@@ -1,7 +1,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { agentParams, agentModKinds, normalizeAgentStageParams, MCP_ENTRY_FIELD, SKILL_ENTRY_FIELD, type CensusRow } from "../src/params.ts";
-import { agentFormDoc } from "../src/formDoc.ts";
+import { agentParams, agentCardParams, agentModKinds, normalizeAgentStageParams, MCP_ENTRY_FIELD, SKILL_ENTRY_FIELD, type CensusRow } from "../src/params.ts";
+import { agentFormDoc, agentCardFormDoc } from "../src/formDoc.ts";
 
 const CAP = 1000;
 
@@ -32,6 +32,26 @@ describe("the agent params contract (stroke 66 — anti-drift)", () => {
     assert.equal((skills["fields"] as Array<{ name: string }>)[0]!.name, SKILL_ENTRY_FIELD);
     const inputs = kinds[2]!;
     assert.deepEqual((inputs["fields"] as Array<{ name: string }>).map((f) => f.name), ["name", "value"]);
+  });
+
+  it("THE CARD FACE's law: agentCardParams is the contract MINUS the model field (a card field named 'model' is the estate's model key — never a brain route)", () => {
+    const env = agentCardParams.toJSON() as unknown as { uid: number; refs: Record<string, { type: string; dict?: Record<string, number> }> };
+    const root = env.refs[String(env.uid)]!;
+    const dict = root.dict!;
+    // the full contract minus 'model' — the same shared field
+    // declarations, ONE difference by law (the boot route serves)
+    assert.deepEqual(Object.keys(dict).sort(), ["inputs", "max_turns", "mcps", "skills", "task"]);
+    assert.equal(env.refs[String(dict["task"])]!.type, "string");
+    assert.equal(env.refs[String(dict["max_turns"])]!.type, "number");
+    assert.equal(env.refs[String(dict["mcps"])]!.type, "array");
+  });
+
+  it("THE GENERIC INPUT SQUARE: the inputs kind's value field is file-typed (the construction law builds THE ONE square — upload/drop/upstream pick)", () => {
+    const kinds = agentModKinds({ mcps: [], skills: [] });
+    const inputs = kinds[2]!;
+    const value = (inputs["fields"] as Array<{ name: string; type: string }>)[1]!;
+    assert.equal(value.name, "value");
+    assert.equal(value.type, "file");
   });
 
   it("an empty census serves empty options with an empty default (never a fabricated row)", () => {
@@ -101,5 +121,31 @@ describe("agentFormDoc (the served form IS the contract)", () => {
     const env = agentParams.toJSON() as unknown as { uid: number; refs: Record<string, { type: string; dict?: Record<string, unknown> }> };
     const dict = env.refs[String(env.uid)]!.dict!;
     for (const k of kinds) assert.ok(dict[k["param_key"] as string] !== undefined);
+  });
+});
+
+describe("agentCardFormDoc (the generic MCP card's face — the subagent spawn)", () => {
+  const census = { mcps: [{ value: "blender", label: "blender" }, { value: "unity", label: "unity" }], skills: [] as CensusRow[] };
+  const doc = agentCardFormDoc(census);
+
+  it("THE IDENTITY PIN: the card's schema arm is the CARD FACE contract's own serialization", () => {
+    assert.deepEqual(doc["schema"], agentCardParams.toJSON());
+  });
+
+  it("serves the card face: form 'mcp', engine 'agent' (the spawn), no families, no rail — the servers are the MCPs tiles' own census", () => {
+    assert.equal(doc["form"], "mcp");
+    assert.equal(doc["engine"], "agent");
+    assert.equal(doc["service"], "mcp");
+    assert.deepEqual(doc["families"], []);
+    assert.deepEqual(doc["variants"], []);
+    const kinds = (doc["features"] as { modifiers: Array<Record<string, unknown>> }).modifiers;
+    const mcps = kinds[0]!;
+    const f = (mcps["fields"] as Array<{ options: Array<{ value: string }> }>)[0]!;
+    assert.deepEqual(f.options.map((o) => o.value), ["blender", "unity"]);
+  });
+
+  it("the enhance prompt seat binds the Task (the brief IS the prompt spot)", () => {
+    const ep = doc["enhance_prompts"] as { prompt: string | null };
+    assert.equal(ep.prompt, "task");
   });
 });

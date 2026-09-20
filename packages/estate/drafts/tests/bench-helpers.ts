@@ -18,6 +18,7 @@ import {
   apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
 } from "@deepseek-ai/dsh-storage-domain";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
+import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { openDraftsDomain } from "../src/store.ts";
 import type { DraftsDomainSpec } from "../src/spec.js";
 
@@ -72,6 +73,44 @@ export async function seed(
       ...doc,
     } as never,
   });
+}
+
+/** A recovered Remote failure (code + message + the structured
+ *  details the wire carries) — the cookbook's recovery shape
+ *  (adding-a-remote-api §5: remoteErrorOf after catching). */
+export type Failure = NonNullable<ReturnType<typeof remoteErrorOf>>;
+
+/** Recover a refusal the cookbook's way: `remoteErrorOf` after
+ *  catching — structural, so a throw from another module copy of the
+ *  class still matches. A resolve or a non-Remote throw is a wall
+ *  failure (NOT a string to regex): a local defect must crash the
+ *  wall, never read as a bench voice. Use for code + details
+ *  assertions; `codeOf` stays for the prose walls. */
+export async function failureOf(p: Promise<unknown>): Promise<Failure> {
+  let caught: unknown;
+  try {
+    await p;
+  } catch (e) {
+    caught = e;
+  }
+  if (caught === undefined) throw new Error("expected a refusal, the call resolved");
+  const failure = remoteErrorOf(caught);
+  if (failure === undefined) throw new Error(`not a Remote failure: ${String(caught)}`);
+  return failure;
+}
+
+/** The sync refusal's recovery (getBench throws before any await). */
+export function syncFailureOf(fn: () => unknown): Failure {
+  let caught: unknown;
+  try {
+    fn();
+  } catch (e) {
+    caught = e;
+  }
+  if (caught === undefined) throw new Error("expected a refusal, the call resolved");
+  const failure = remoteErrorOf(caught);
+  if (failure === undefined) throw new Error(`not a Remote failure: ${String(caught)}`);
+  return failure;
 }
 
 /** The refusal's code, or NO-REFUSAL on resolve. */

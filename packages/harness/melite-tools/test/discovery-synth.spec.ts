@@ -320,8 +320,13 @@ describe('specBody primary envelope', () => {
     const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
     // THE WIRE IS PLURAL (the retired controlnets bag — kind stays
     // singular, param_key is plural, schema_key names the pack
-    // envelope for the client's hybrid walk)
-    assert.deepEqual(modifiers.map((m) => m['param_key']), ['loras', 'controlnets', 'mask'])
+    // envelope for the client's hybrid walk). THE ENVELOPE MIRROR
+    // (2026-09-21): mask boards only family 'other', so syn-a serves
+    // no mask envelope (pinned below) and no mask seat — a kind with
+    // no envelope is a brick by construction (the qvoice/base live
+    // precedent: the owner offers, the scoped-out withholds).
+    assert.deepEqual(modifiers.map((m) => m['param_key']), ['loras', 'controlnets'])
+    assert.ok(!modifiers.some((m) => m['kind'] === 'mask'), 'no mask seat without its envelope')
     const loras = modifiers[0]!
     assert.equal(loras['kind'], 'lora')
     assert.equal(loras['entry'], 'option')
@@ -352,12 +357,9 @@ describe('specBody primary envelope', () => {
       },
     )
     assert.deepEqual(modifiers[1]!['options'], [])
-    assert.equal(modifiers[2]!['max_stack'], 1)
-    assert.deepEqual(modifiers[2]!['options'], [
-      { value: 'm1', label: 'M1', tooltip: 'm.safetensors', defaults: {}, model: 'm.safetensors' },
-    ])
     // THE MOD CONTRACT ENVELOPES ride keyed by pack; mask (family
-    // 'other') never boards syn-a — the law by absence
+    // 'other') never boards syn-a — the law by absence (and the seat
+    // drops with the envelope — the mirror law, asserted above)
     assert.deepEqual(Object.keys(spec['mod_schemas'] as object), ['loras', 'controlnet'])
     const groups = (spec['features'] as { variant_groups: Record<string, unknown> }).variant_groups
     assert.deepEqual(groups, {

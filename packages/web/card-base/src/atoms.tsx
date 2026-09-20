@@ -1,8 +1,8 @@
 /** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
-import { createElement as h, useCallback, useEffect, useState } from 'react'
+import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
 import { Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import { InputSquare, isImageUrl } from './square.tsx'
+import { InputSquare, isImageUrl, isMeshUrl } from './square.tsx'
 import { type SpecField, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
 import { type SourceRowProps, type SquareHost, useSquareProvider } from './square-provider.tsx'
@@ -39,8 +39,14 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
     h(InputSquare, {
       label: props.hideLabel === true ? '' : props.label,
       ...(props.ariaLabel !== undefined ? { ariaLabel: props.ariaLabel } : {}),
-      value: shown !== null && isImageUrl(shown) ? shown : null,
-      metric: typeof props.value === 'string' && props.value !== '' && !isImageUrl(props.value)
+      // THE MESH VALUE RIDES THROUGH (primitive ③'s forgotten seam:
+      // isMeshUrl was imported but the gate below only knew
+      // isImageUrl — a .glb value arrived as null + a metric line,
+      // so the square's inline viewport never mounted). Thumb rule,
+      // same for both faces: a renderable value rides as value,
+      // junk rides as metric.
+      value: shown !== null && (isImageUrl(shown) || isMeshUrl(shown)) ? shown : null,
+      metric: typeof props.value === 'string' && props.value !== '' && !isImageUrl(props.value) && !isMeshUrl(props.value)
         ? props.value
         : undefined,
       ...(host.verbs),
@@ -157,13 +163,18 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
   // square with the three source verbs — never a bare text Input).
   // THE CONSTRUCTION LAW: an emitted image/file input constructs THIS
   // component — automatically, for every card, no per-card handling.
-  if ((f.type === 'image' || f.type === 'file') && square !== undefined) {
+  // MESH BOARDS THE SAME FACE (primitive ③, 2026-09-21): a 'mesh'
+  // wtype field is slot-shaped — the square's thumb is the inline
+  // mini GLB viewport, the verbs are the same three sources.
+  if ((f.type === 'image' || f.type === 'file' || f.type === 'mesh') && square !== undefined) {
     const shown = square.display !== undefined && square.display !== null && square.display !== ''
       ? square.display : (typeof value === 'string' ? value : null)
     return h(InputSquare, {
       label: f.label !== '' ? f.label : f.name,
-      value: shown !== null && isImageUrl(shown) ? shown : null,
-      metric: typeof value === 'string' && value !== '' && !isImageUrl(value) ? value : undefined,
+      value: shown !== null && (isImageUrl(shown) || isMeshUrl(shown)) ? shown : null,
+      metric: typeof value === 'string' && value !== '' && !isImageUrl(value) && !isMeshUrl(value)
+        ? value
+        : undefined,
       ...square.verbs,
     })
   }
@@ -227,24 +238,36 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
   if (f.type === 'textarea') {
     // THE TEXTAREA LAW (stroke 23, the operator's word): "they
     // should start two lines, then as text enters them, they grow."
-    // rows=2 sets the floor; the ref + input resize keeps the box at
+    // rows=2 sets the floor; mount + value writes resize the box to
     // its content (height:auto → scrollHeight, never below the
-    // two-row floor). The ref fires on mount AND on outside writes
-    // (the enhance sweep's write-back grows it too).
-    const fit = (el: HTMLTextAreaElement | null): void => {
+    // two-row floor). THE STABLE REF (2026-09-21, the operator's
+    // per-tick card jerk): an INLINE closure ref detaches/reattaches
+    // EVERY render — every progress tick re-ran the auto→measure→set
+    // thrash and the card's content height jittered on tall screens.
+    // fitStable attaches ONCE per mount; the value-effect refits on
+    // real content change only (outside writes, the enhance sweep).
+    const fitStable = useCallback((el: HTMLTextAreaElement | null): void => {
       if (el === null) return
       el.style.height = 'auto'
       el.style.height = Math.max(el.scrollHeight, 2 * 22) + 'px'
-    }
+    }, [])
+    const fitEl = useRef<HTMLTextAreaElement | null>(null)
+    useEffect((): void => {
+      // non-null by the ref law: the callback ref attaches BEFORE
+      // effects fire — the null arm was dead and gate-uncovered
+      const el = fitEl.current!
+      el.style.height = 'auto'
+      el.style.height = Math.max(el.scrollHeight, 2 * 22) + 'px'
+    }, [String(value ?? '')])
     return h('textarea', {
       className: css.specTextarea,
       rows: 2,
       value: String(value ?? ''),
       placeholder: f.placeholder ?? '',
-      ref: fit,
+      ref: (el) => { const ta = (el ?? null) as HTMLTextAreaElement | null; fitEl.current = ta; fitStable(ta) },
       onChange: (e: unknown) => {
         const el = (e as { target: HTMLTextAreaElement }).target
-        fit(el)
+        fitStable(el)
         onEdit(f.name, el.value)
       },
       'aria-label': f.label,

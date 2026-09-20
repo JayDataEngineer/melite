@@ -13,6 +13,8 @@ import {
   runBenchSequential,
   runCardStage,
 } from "../src/client/CardsTab.tsx";
+import { terminalOutcomeOf } from "../src/client/cards-resource.ts";
+import { benchResultDefects } from "@melite/contracts";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
@@ -133,5 +135,113 @@ describe("runBenchSequential — the pre-aborted pass returns empty", () => {
     const res = await runBenchSequential(bench, { signal: AbortSignal.abort() });
     expect(res).toEqual({ ran: [], stoppedAt: null, refused: null });
     expect(calls).toEqual([]);
+  });
+});
+
+// ── ONE FILE, ONE ARTIFACT (2026-09-20, the operator's catch:
+// "why are there two rowsets under the preview image") ───────────
+// The live lane served every image-gen result with the SAME png
+// under two keys (the observer's legacy 'video' stamp + the
+// gallery name) — the preview rendered the picture twice. These
+// walls pin BOTH ends against the real bytes: the harvest renders
+// legacy rows clean, and the terminal builder WRITES clean rows
+// only (contract-fenced).
+describe("previewArtifactsFor — one file, one artifact (the legacy live row renders clean)", () => {
+  test("THE LIVE LEGACY ROW (the exact double-keyed shape the lane served): ONE artifact, the phantom 'video' name never paints", () => {
+    // live receipt, bench doc rev 404, stage s_0, 2026-09-20
+    expect(previewArtifactsFor({
+      result: {
+        run_id: "run-2f36ee24c85e-bccac24f",
+        url: "/melite-media/runs/run-2f36ee24c85e-bccac24f/generate/SaveImage.0_gen_00001_.png",
+        artifacts: {
+          video: "/melite-media/runs/run-2f36ee24c85e-bccac24f/generate/SaveImage.0_gen_00001_.png",
+          "generate/SaveImage.0_gen_00001_.png": "/melite-media/runs/run-2f36ee24c85e-bccac24f/generate/SaveImage.0_gen_00001_.png",
+        },
+      },
+    })).toEqual([{
+      name: "generate/SaveImage.0_gen_00001_.png",
+      url: "/melite-media/runs/run-2f36ee24c85e-bccac24f/generate/SaveImage.0_gen_00001_.png",
+    }]);
+  });
+
+  test("a lone 'video'-keyed image retitles 'output' — the word video never paints on an image row", () => {
+    expect(previewArtifactsFor({ result: { artifacts: { video: "/x/y.png" } } }))
+      .toEqual([{ name: "output", url: "/x/y.png" }]);
+  });
+
+  test("distinct files stay distinct (the h3 film + windows shape)", () => {
+    expect(previewArtifactsFor({ result: { artifacts: {
+      "film.mp4": "/r/film.mp4", "w1.mp4": "/r/w1.mp4",
+    } } })).toEqual([
+      { name: "film.mp4", url: "/r/film.mp4" },
+      { name: "w1.mp4", url: "/r/w1.mp4" },
+    ]);
+  });
+});
+
+describe("terminalOutcomeOf — the terminal row builder, contract-fenced", () => {
+  test("THE IMAGE-GEN SHAPE (the real status row): ONE key per file, NO 'video' stamp, contract-clean", () => {
+    const { result, terminal } = terminalOutcomeOf(
+      "run-x", "completed",
+      { url: "/melite-media/runs/run-x/generate/SaveImage.0_gen_00001_.png",
+        gallery: [{ name: "generate/SaveImage.0_gen_00001_.png" }] },
+      undefined,
+    );
+    expect(terminal).toBe("done");
+    expect(result["artifacts"]).toEqual({
+      "generate/SaveImage.0_gen_00001_.png": "/melite-media/runs/run-x/generate/SaveImage.0_gen_00001_.png",
+    });
+    expect(Object.keys(result["artifacts"] as Record<string, string>)).not.toContain("video");
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
+  test("THE REGRESSION NEEDLE: the old builder's row (the 'video' stamp) FAILS the contract — the fence catches the disease", () => {
+    const diseased = {
+      run_id: "run-x",
+      url: "/r/SaveImage.png",
+      artifacts: { video: "/r/SaveImage.png", "SaveImage.png": "/r/SaveImage.png" },
+    };
+    expect(benchResultDefects(diseased)).toHaveLength(1);
+    expect(benchResultDefects(diseased)[0]).toMatch(/one-file-one-key/);
+  });
+
+  test("THE H3 SHAPE (film + windows): every file once, assetUrls primary-first", () => {
+    const { result } = terminalOutcomeOf(
+      "run-h3", "completed",
+      { url: "/runs/run-h3/film.mp4", gallery: [{ name: "film.mp4" }, { name: "win1.mp4" }] },
+      undefined,
+    );
+    expect(result["artifacts"]).toEqual({ "film.mp4": "/melite-media/runs/run-h3/film.mp4", "win1.mp4": "/melite-media/runs/run-h3/win1.mp4" });
+    expect(result["assetUrls"]).toEqual(["/runs/run-h3/film.mp4", "/melite-media/runs/run-h3/film.mp4", "/melite-media/runs/run-h3/win1.mp4"]);
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
+  test("a failed run carries its reason (the silent-failure cure) and stays contract-clean", () => {
+    const { result, terminal } = terminalOutcomeOf(
+      "run-f", "failed",
+      { error: "KSampler: model not found" },
+      "engine exploded",
+    );
+    expect(terminal).toBe("failed");
+    expect(result["error"]).toBe("KSampler: model not found");
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
+  test("a DUPLICATED gallery name (an engine emitting the same file twice) lands ONE key", () => {
+    const { result } = terminalOutcomeOf(
+      "run-d", "completed",
+      { url: "/melite-media/runs/run-d/a.png", gallery: [{ name: "a.png" }, { name: "a.png" }] },
+      undefined,
+    );
+    expect(result["artifacts"]).toEqual({ "a.png": "/melite-media/runs/run-d/a.png" });
+    expect(result["assetUrls"]).toEqual(["/melite-media/runs/run-d/a.png"]);
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
+  test("a stage with no gallery and no url rides the run_id alone (contract-clean)", () => {
+    const { result, terminal } = terminalOutcomeOf("run-e", "stopped", undefined, undefined);
+    expect(terminal).toBe("stopped");
+    expect(result).toEqual({ run_id: "run-e" });
+    expect(benchResultDefects(result)).toEqual([]);
   });
 });

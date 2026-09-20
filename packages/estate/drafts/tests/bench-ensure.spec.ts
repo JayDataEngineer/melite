@@ -1,7 +1,7 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { ensureBench, getBench, patchBench, addStageBench, undoBench } from "../src/bench.ts";
-import { boot, seed, codeOf, syncCodeOf } from "./bench-helpers.ts";
+import { boot, seed, codeOf, syncCodeOf, failureOf, syncFailureOf } from "./bench-helpers.ts";
 
 // ── ensure: the admission voices ────────────────────────────────
 
@@ -63,8 +63,7 @@ test("the overwrite law: a wholesale load onto a non-empty bench refuses without
   );
 });
 
-test("the overwrite law spares births and empty benches", async () => {
-  const drafts = await boot();
+test("the overwrite law spares births and empty benches", async () => {  const drafts = await boot();
   // birth with stages: no bench to wipe, no confirmation needed.
   const born = await ensureBench(drafts, { session: "fresh", stages: [{ id: "a" }] });
   assert.equal(born.rev, 0);
@@ -105,4 +104,70 @@ test("getBench refuses bad sessions and unknown benches with their voices", asyn
   const born = await addStageBench(drafts, "session-born-1", { card: "image-gen", author: "user", expect_rev: 0 });
   assert.equal(born.rev, 1);
   assert.equal((getBench(drafts, "session-born-1") as { stages: unknown[] }).stages.length, 1);
+});
+
+test("the load receipt names every incoming stage's seed state (ledger #41: a pin arrived silently)", async () => {
+  // A concrete seed rode a wholesale load while the summary said
+  // only "load N stages" — the operator re-ran one image
+  // believing they were on random. The load entry now names each
+  // stage's seed state: pinned (the value, verbatim), random (the
+  // -1 sentinel), or absent.
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "s", stages: [{ id: "a" }] });
+  await ensureBench(drafts, {
+    session: "s",
+    stages: [
+      { id: "p", params: { seed: 42 } },
+      { id: "r", params: { seed: -1 } },
+      { id: "n", params: { prompt: "x" } },
+    ],
+    expect_rev: 0, overwrite: true,
+  });
+  const got = getBench(drafts, "s");
+  assert.equal(got.rev, 1);
+  const entry = got.log[got.log.length - 1] as unknown as Record<string, unknown>;
+  assert.equal(entry["kind"], "load");
+  const summary = entry["summary"] as string;
+  assert.match(summary, /load 3 stages/);
+  assert.match(summary, /p seed 42 \(pinned\)/);
+  assert.match(summary, /r seed random/);
+  assert.match(summary, /n seed absent/);
+});
+
+// ── the details receipts (cookbook adding-a-remote-api §5) ─────
+// The refusal voice is code + message + a STRUCTURED details payload
+// (RemoteErrorDetailsMap); the walls above pin the prose, this one
+// pins the payload — recovered with remoteErrorOf after catching,
+// asserted by field, never by regex over prose. A details key that
+// silently goes missing or drifts type fails HERE, at the throw the
+// client's catch-branch narrows on.
+test("every structured refusal carries its declared details on the wire", async () => {
+  const drafts = await boot();
+  // bench/overwrite-required → { current_rev, stages }
+  await ensureBench(drafts, { session: "d", stages: [{ id: "a" }, { id: "b" }] });
+  const overwrite = await failureOf(
+    ensureBench(drafts, { session: "d", stages: [{ id: "z" }], expect_rev: 0 }),
+  );
+  assert.equal(overwrite.code, "bench/overwrite-required");
+  assert.equal(typeof overwrite.message, "string");
+  assert.equal(overwrite.details.current_rev, 0);
+  assert.equal(overwrite.details.stages, 2);
+  // bench/cas-conflict → { current_rev, expect_rev }
+  const cas = await failureOf(
+    ensureBench(drafts, { session: "d", stages: [{ id: "z" }], expect_rev: 9, overwrite: true }),
+  );
+  assert.equal(cas.code, "bench/cas-conflict");
+  assert.equal(cas.details.current_rev, 0);
+  assert.equal(cas.details.expect_rev, 9);
+  // bench/stage-not-found → { session, stage }
+  const stageMiss = await failureOf(
+    patchBench(drafts, "d", { stage: "ghost", params: { x: 1 }, expect_rev: 0 }),
+  );
+  assert.equal(stageMiss.code, "bench/stage-not-found");
+  assert.equal(stageMiss.details.session, "d");
+  assert.equal(stageMiss.details.stage, "ghost");
+  // bench/not-found → { session } (getBench refuses synchronously)
+  const missing = syncFailureOf((): unknown => getBench(drafts, "ghost"));
+  assert.equal(missing.code, "bench/not-found");
+  assert.equal(missing.details.session, "ghost");
 });

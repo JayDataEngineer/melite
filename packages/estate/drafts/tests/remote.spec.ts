@@ -579,20 +579,23 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     assert.deepEqual((doc["stages"] as Array<Record<string, unknown>>)[0]?.["params"], { a: 1 });
   });
 
-  test("the archive entry carries no params key when the landing had none (resultParams undefined)", async () => {
+  test("the archive entry carries no params key when the landing had none (empty {} snapshot)", async () => {
     const { ctx, domain } = await bootCtx();
     await ensureBench(domain, {
       session: "np2",
-      stages: [{ id: "s_0", result: { url: "/old.png", run_id: "o" } }],
+      stages: [{ id: "s_0", params: {}, result: { url: "/old.png", run_id: "o" } }],
     });
     const svc = new DraftsRemoteService(ctx);
     await svc.patch("bench-np2", "s_0", { result: { url: "/new.png", run_id: "n" } }, null, sig);
     const doc = await svc.get("bench-np2", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
     const hist = stage["history"] as Array<Record<string, unknown>>;
-    assert.equal(hist.length, 1);
-    assert.deepEqual(hist[0], { url: "/old.png", run_id: "o" });
-    assert.ok(!("params" in hist[0]!));
+    // [landing (new), superseded (old)] — head is the current gen
+    assert.equal(hist.length, 2);
+    assert.deepEqual(hist[0], { url: "/new.png", run_id: "n" });
+    assert.deepEqual(hist[1], { url: "/old.png", run_id: "o" });
+    assert.ok(!("params" in hist[0]!), "an empty {} snapshot carries no params key");
+    assert.ok(!("params" in hist[1]!), "an empty {} snapshot carries no params key");
   });
 
   test("a history that already holds the urls never double-archives (already-head skip)", async () => {
@@ -609,8 +612,65 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     await svc.patch("bench-ah", "s_0", { result: { url: "/new.png", run_id: "n" } }, null, sig);
     const doc = await svc.get("bench-ah", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
-    assert.deepEqual(stage["history"], [{ url: "/cur.png", run_id: "old" }]);
+    const hist = stage["history"] as Array<Record<string, unknown>>;
+    // the superseded /cur.png is ALREADY the trail — it rides once;
+    // the landing /new.png joins at head
+    assert.deepEqual(hist, [{ url: "/new.png", run_id: "n" }, { url: "/cur.png", run_id: "old" }]);
     assert.deepEqual(stage["result"], { url: "/new.png", run_id: "n" });
+  });
+
+  // THE LANDING-ARCHIVE LAW (operator 2026-09-21, the lost-gen
+  // disease: "when I make a new gen it doesn't appear in history —
+  // clicking a history item overwrites the preview and I can't
+  // recover the most recent gen"): the supersede-only archive kept
+  // the CURRENT generation out of history — it lived only in the
+  // row's result slot, one view-pick away from unreachable. The
+  // landing itself must enter the trail: every result that CARRIES
+  // outputs is history's head the moment it lands. These walls pin
+  // the full run cycle through the REAL patch door.
+  test("a landed result enters history at its own landing (the latest gen is never outside the trail)", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, { session: "land", stages: [{ id: "s_0" }] });
+    const svc = new DraftsRemoteService(ctx);
+    // run A starts: the observer's start patch clears the row
+    await svc.patch("bench-land", "s_0", { runStatus: "running", result: { run_id: "a" } }, null, sig);
+    // run A lands (the terminal patch carries the outputs)
+    await svc.patch("bench-land", "s_0", { runStatus: "done", result: { url: "/a.png", run_id: "a" } }, null, sig);
+    const doc = await svc.get("bench-land", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    const hist = stage["history"] as Array<Record<string, unknown>>;
+    assert.equal(hist.length, 1, "the landing is the trail's head — no member yet");
+    assert.deepEqual(hist[0], { url: "/a.png", run_id: "a" });
+    assert.deepEqual(stage["result"], { url: "/a.png", run_id: "a" });
+  });
+
+  test("the full cycle: gen2's landing holds head, gen1 sits beneath (no view-pick can lose a gen)", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, { session: "cyc", stages: [{ id: "s_0" }] });
+    const svc = new DraftsRemoteService(ctx);
+    // gen1 cycle
+    await svc.patch("bench-cyc", "s_0", { runStatus: "running", result: { run_id: "g1" } }, null, sig);
+    await svc.patch("bench-cyc", "s_0", { runStatus: "done", result: { url: "/g1.png", run_id: "g1" } }, null, sig);
+    // gen2 cycle (start clears the row, terminal lands gen2)
+    await svc.patch("bench-cyc", "s_0", { runStatus: "running", result: { run_id: "g2" } }, null, sig);
+    await svc.patch("bench-cyc", "s_0", { runStatus: "done", result: { url: "/g2.png", run_id: "g2" } }, null, sig);
+    const doc = await svc.get("bench-cyc", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    const hist = stage["history"] as Array<Record<string, unknown>>;
+    assert.equal(hist.length, 2, "both distinct runs are members");
+    assert.deepEqual(hist[0], { url: "/g2.png", run_id: "g2" }, "newest first — the head is the CURRENT gen");
+    assert.deepEqual(hist[1], { url: "/g1.png", run_id: "g1" });
+    assert.deepEqual(stage["result"], { url: "/g2.png", run_id: "g2" });
+  });
+
+  test("a live mid-run patch ({run_id, progress} — no outputs) never archives", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, { session: "live", stages: [{ id: "s_0" }] });
+    const svc = new DraftsRemoteService(ctx);
+    await svc.patch("bench-live", "s_0", { runStatus: "running", result: { run_id: "r", progress: { value: 3, max: 8 } } }, null, sig);
+    const doc = await svc.get("bench-live", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.equal(stage["history"], undefined, "no urls — nothing to trail");
   });
 
   test("a drafts patch fans out to bench-change listeners under the session key", async () => {
@@ -1130,4 +1190,79 @@ test("boot() still opens the domain (the harness smoke arm)", async () => {
   const drafts = await boot();
   await seed(drafts, "smoke", { stages: [{ id: "s_0" }] });
   assert.ok(drafts.table("docs").get("bench-smoke") !== undefined);
+});
+
+// ── THE STAGE MEMORY LAW (2026-09-20, the operator's catch: "why
+// does it never track history?") — through the REAL service write
+// path (the same verbs the client's observer rides): the archive
+// law lands history on result overwrites, and a wholesale LOAD
+// rebuilding the bench with the SAME stage id carries the stage's
+// OUTPUT MEMORY (result, runStatus, history, resultParams)
+// forward. A new id starts clean. The gallery is the stage's own,
+// never the doc revision's.
+test("the stage memory law: load rebuilds the bench but a same-id stage KEEPS its landed result + archived history", async () => {
+  const { ctx } = await bootCtx();
+  ctx.provide("cardRegistry", {
+    resolveStageParams: (body: Record<string, unknown>): Record<string, unknown> | null => ({ ...body }),
+    admitStageModel: (): { ok: true } => ({ ok: true }),
+  });
+  const bench = new BenchRemoteService(ctx);
+  const drafts = new DraftsRemoteService(ctx);
+  await bench.ensure({ session: "mem", stages: [{ id: "s_0", card: "image-gen" }] }, sig);
+  // run A lands, run B overwrites — through the SAME door the
+  // client's observer rides (drafts/patch, the archive-law door)
+  await drafts.patch("bench-mem", "s_0", {
+    params: { seed: -1 },
+    result: { run_id: "run-a", url: "/runs/run-a/out.png" },
+    runStatus: "done",
+  }, 0, sig);
+  await drafts.patch("bench-mem", "s_0", {
+    result: { run_id: "run-b", url: "/runs/run-b/out.png" },
+    runStatus: "done",
+  }, 1, sig);
+  const before = await bench.get("mem", sig);
+  const beforeRow = (before.stages as Array<Record<string, unknown>>).find((r) => r["id"] === "s_0")!;
+  assert.ok(Array.isArray(beforeRow["history"]) && (beforeRow["history"] as unknown[]).length === 2,
+    "the archive law trailed BOTH landings — run-b at head (the current gen), run-a beneath");
+  // THE LOAD (a chat agent re-loads the card mid-iteration)
+  await bench.ensure({
+    session: "mem", overwrite: true, expect_rev: before.rev,
+    stages: [{ id: "s_0", card: "image-gen" }, { id: "s_new", card: "image-edit" }],
+  }, sig);
+  const after = await bench.get("mem", sig);
+  const rows = after.stages as Array<Record<string, unknown>>;
+  const same = rows.find((r) => r["id"] === "s_0")!;
+  const fresh = rows.find((r) => r["id"] === "s_new")!;
+  assert.equal((same["result"] as Record<string, unknown>)["run_id"], "run-b",
+    "the same-id stage KEEPS its landed result across the load");
+  assert.equal(same["runStatus"], "done", "and its run status");
+  const hist = same["history"] as Array<Record<string, unknown>>;
+  assert.ok(Array.isArray(hist) && hist.length === 2, "and its archived history (both landings)");
+  assert.ok(String((hist[0]?.["url"]) as string).includes("run-b"), "the head is the CURRENT gen (run-b)");
+  assert.ok(String((hist[1]?.["url"]) as string).includes("run-a"), "the RIGHT predecessor beneath (run-a)");
+  assert.equal(fresh["result"], undefined, "a genuinely new stage starts clean");
+  assert.equal(fresh["history"], undefined);
+  // THE NON-CLOBBER ARM: an incoming row that CARRIES its own
+  // memory keeps it (the carry fills gaps, never overwrites) —
+  // and a prev row with NO history contributes none.
+  const landed2 = await bench.ensure({
+    session: "mem", overwrite: true, expect_rev: 3,
+    stages: [
+      { id: "s_0", card: "image-gen", result: { run_id: "run-x" } },
+      { id: "s_histless", card: "image-gen", result: { run_id: "run-y", url: "/runs/run-y/o.png" } },
+    ],
+  }, sig);
+  void landed2;
+  const after2 = await bench.get("mem", sig);
+  const rows2 = after2.stages as Array<Record<string, unknown>>;
+  assert.equal(
+    (rows2.find((r) => r["id"] === "s_0")!["result"] as Record<string, unknown>)["run_id"],
+    "run-x",
+    "the load's OWN result wins over the carried one (fill, never clobber)",
+  );
+  assert.equal(
+    rows2.find((r) => r["id"] === "s_histless")!["history"],
+    undefined,
+    "a prev row with no history carries none",
+  );
 });

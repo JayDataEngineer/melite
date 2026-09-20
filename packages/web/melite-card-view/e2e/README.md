@@ -8,20 +8,53 @@ plane — the only wall that catches it.
 
 ## The lane (infrastructure, never booted by the spec)
 
-A throwaway profile keeps the seeded bench OFF the operator's shared
-bench (the home storages are shared by every profile — the storage
-json row is redirected to a scratch root):
+A throwaway harness home keeps the seeded bench OFF the operator's
+shared bench. The profile's node_modules symlinks are RELATIVE and
+depth-anchored to the repo layout, so the throwaway home must sit at
+`data/runtime/` beside the real one for bundle resolution to hold:
 
 ```sh
-cp -a ~/.dsh/profiles/melite-test ~/.dsh/profiles/e2e-studio
-cat > ~/.dsh/profiles/e2e-studio/cordis.patch.yml <<'YAML'
-- id: storage-json
-  config:
-    root: /tmp/e2e-studio-storages
-YAML
-MELITE_STATE_ROOT=/tmp/e2e-studio-runs dsh --profile e2e-studio \
-  --host 127.0.0.1 --port 3907 --no-open &
+mkdir -p data/runtime/e2e-studio-home/profiles
+cp -a data/runtime/dsh-harness-home/profiles/melite-test \
+      data/runtime/e2e-studio-home/profiles/e2e-studio
+cp data/runtime/dsh-harness-home/settings.yaml data/runtime/e2e-studio-home/
 ```
+
+THE WORKSPACE PRE-STATE (host state, seeded BEFORE boot — a host with
+no workspace serves only the "Choose a workspace to start" hero, the
+sessions tree stays empty, and the tour cannot open a conversation).
+One schema-valid row naming THIS repo; `createdAt`/`updatedAt` are ISO
+strings because the host's domain schema refuses anything else at boot:
+
+```sh
+mkdir -p data/runtime/e2e-studio-home/storages
+python3 - <<'PY'
+import json, uuid
+row = str(uuid.uuid4()); ts = "2026-09-21T00:00:00.000Z"
+json.dump({
+  "unit": {"name": "workspace", "version": 2},
+  "global": {"initialized": True, "workspaceIds": [row], "archivedSessionIds": []},
+  "tables": {"workspaces": {row: {
+    "path": "/home/user/Documents/programs/active/inference.cpp",
+    "title": "inference.cpp", "sessionIds": [],
+    "createdAt": ts, "updatedAt": ts}}},
+}, open("data/runtime/e2e-studio-home/storages/workspace.json", "w"))
+PY
+
+DSH_HOME=data/runtime/e2e-studio-home MELITE_STATE_ROOT=/tmp/e2e-studio-runs \
+  dsh --profile e2e-studio --host 127.0.0.1 --port 3907 --no-open &
+```
+
+`MELITE_STATE_ROOT` is not optional: QueueService refuses to boot
+without a named runs root (the cwd-guess ban, stroke 45c), and a host
+booted without it silently serves NO runs plane — `runs/list` 404s
+and the tab's runs library dies with page errors the wall rejects.
+Scratch root `/tmp/e2e-studio-runs` keeps the lane's runs OFF the
+operator's tree too.
+
+(The first-run API-key onboarding dialog is CLIENT state — it returns
+for every fresh browser context even on a configured host — so the
+spec itself dismisses it via tour.ts's `dismissOnboarding`.)
 
 Seed the bench over the host's own /api wire (cookie from the token
 redirect):

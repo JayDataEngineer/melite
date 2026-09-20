@@ -15,6 +15,15 @@
 // imports the family DECL for tsc-time spelling; a drop-in rides
 // the runtime family gate instead, trading tsc spelling for the
 // drop-in's zero-install authoring).
+// THE BOARDING LAW (ledger #40, the operator's outage: this file
+// boarded krea-2 + z-image and the lane served its 2-field
+// envelope AS image-gen). One family, one card — registerCard
+// refuses a collision LOUD — so a drop-in boards ONLY families no
+// packaged card claims. This sketch boards moss (declared,
+// offered, unboarded — and formless, so the sketch's generate
+// skeleton is the served def's only form voice): the proof
+// exercises registration, serving, and retraction through the
+// real gates, never a real run.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { imageT2I, finalizeImageGen } from '@melite/comfyui-card-kit'
@@ -31,11 +40,11 @@ export function apply(ctx: Context): void {
     const off = theService().registerCard({
       id: 'hot-sketch',
       skeleton: 'generate',
-      boarded: ['krea-2', 'z-image'],
+      boarded: ['moss'],
       tags: ['image', 'generate', 'hot'],
       identity: {
         label: 'Hot Sketch',
-        description: 'The hotload proof card — a prompt-first minimal image card authored as a drop-in; boards krea-2 and z-image and rides the card-kit t2i recipe',
+        description: 'The hotload proof card — a prompt-first minimal image card authored as a drop-in; boards the unboarded moss family (one family, one card — ledger #40) and rides the card-kit t2i recipe',
         genre: 'image',
         icon: 'spark',
       },

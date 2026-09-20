@@ -294,7 +294,7 @@ describe("observeRunOutcome — the terminal carry", () => {
     }
   });
 
-  test("gallery names rewrite onto the media route (empties filter out)", async () => {
+  test("gallery names rewrite onto the media route (empties filter out; ONE key per file — the legacy 'video' stamp is dead)", async () => {
     const { patches, fakes } = await terminal("completed", {
       stages: [{ id: "s_0", status: "succeeded", url: "out/flat.mp4", gallery: [{ name: "" }, { name: "a.png" }] }],
     });
@@ -305,7 +305,6 @@ describe("observeRunOutcome — the terminal carry", () => {
           run_id: "r_1",
           url: "/melite-media/runs/r_1/out/flat.mp4",
           artifacts: {
-            video: "/melite-media/runs/r_1/out/flat.mp4",
             "a.png": "/melite-media/runs/r_1/a.png",
           },
           assetUrls: ["/melite-media/runs/r_1/out/flat.mp4", "/melite-media/runs/r_1/a.png"],
@@ -457,4 +456,55 @@ describe("reconcileBenchRuns — the attribution half", () => {
       fakes.unmount();
     }
   });
+});
+
+// ── THE SINGLE-FLIGHT LAW (2026-09-21, the operator's catch: the
+// bench log carried PAIRS of identical result/runStatus patches —
+// two observers per run, double writes per state move, a re-render
+// storm mid-run): ONE observer per draft:stage:run, in-process.
+test("SINGLE FLIGHT: a second observe on the same run RIDES the first — one patch sequence, never two", async () => {
+  const fakes = stubEstate({
+    runDocs: [RUNNING, { run_id: "r_1", status: "completed", stages: [{ id: "s_0", status: "succeeded", url: "/r/a.png", gallery: [{ name: "a.png" }] }] }],
+  });
+  try {
+    // BOTH run paths fire: the sequential pass's await AND the tab's
+    // onStarted arm — same tick, same run
+    const [a, b] = await Promise.all([
+      observeRunOutcome("d_1", "s_0", "r_1"),
+      observeRunOutcome("d_1", "s_0", "r_1"),
+    ]);
+    expect(a).toBe("done");
+    expect(b).toBe("done");
+    const statuses = patchesOf(fakes).map((p) => String((p["patch"] as Record<string, unknown>)["runStatus"]));
+    // ONE start patch, ONE terminal patch — the pair disease is dead
+    expect(statuses).toEqual(["running", "done"]);
+    // the registry seat is FREE after settle: a fresh observe runs
+    // again (a retry after a terminal is a new observer)
+    const c = await observeRunOutcome("d_1", "s_0", "r_1");
+    expect(c).toBe("done");
+  } finally {
+    fakes.unmount();
+  }
+});
+
+test("SINGLE FLIGHT keys by run: a DIFFERENT run on the same stage observes independently", async () => {
+  const fakes = stubEstate({
+    runDocs: [
+      { run_id: "r_1", status: "completed", stages: [] },
+      { run_id: "r_2", status: "completed", stages: [] },
+    ],
+  });
+  try {
+    const [a, b] = await Promise.all([
+      observeRunOutcome("d_1", "s_0", "r_1"),
+      observeRunOutcome("d_1", "s_0", "r_2"),
+    ]);
+    expect(a).toBe("done");
+    expect(b).toBe("done");
+    const runs = patchesOf(fakes).map((p) => ((p["patch"] as Record<string, unknown>)["result"] as Record<string, unknown>)["run_id"]);
+    expect(runs).toContain("r_1");
+    expect(runs).toContain("r_2");
+  } finally {
+    fakes.unmount();
+  }
 });

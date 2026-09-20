@@ -118,7 +118,7 @@ describe('MediaPanel — the wand keys and the headless caption', () => {
   it('Enter on the wand opens the cards error honestly; other keys stay quiet', async () => {
     feed()
     render(<MediaPanel />)
-    const wand = await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement)
+    const wand = await waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement)
     fireEvent.keyDown(wand, { key: 'Tab' })
     expect(screen.queryByText(/Media Flow view unavailable/)).toBeNull()
     fireEvent.keyDown(wand, { key: 'Enter' })
@@ -130,5 +130,37 @@ describe('MediaPanel — the wand keys and the headless caption', () => {
     render(<MediaPanel />)
     const tile = await waitFor(() => screen.getByText(/walk\.mp4/).closest('button') as HTMLElement)
     expect(tile.textContent).not.toMatch(/—/)
+  })
+})
+
+// ── THE OVERLAY WALK (2026-09-20, the operator's arrows): the
+// gallery's opened artifact walks the FILTERED list — the adapter
+// re-finds the full MediaItem by url so setPreview keeps its
+// currency (id, poster, runId…).
+describe('MediaPanel — the overlay walk', () => {
+  it('drill-next walks the tiles\' list; the caption follows', async () => {
+    vi.stubGlobal('fetch', (url: string) =>
+      String(url) === '/infer-gallery/runs'
+        ? runsFeed([
+            run({ run_id: 'rA', artifacts: [{ url: '/a/one.png', type: 'image', name: 'one.png' }] }),
+            run({ run_id: 'rB', artifacts: [{ url: '/b/two.png', type: 'image', name: 'two.png' }] }),
+          ])
+        : draftsFeed([]))
+    render(<MediaPanel />)
+    const tile = await waitFor(() => {
+      const img = document.querySelector('img[src="/a/one.png"]') as HTMLImageElement | null
+      if (img === null) throw new Error('tile image not landed yet')
+      const btn = img.closest('button') as HTMLElement | null
+      if (btn === null) throw new Error('tile button not found')
+      return btn
+    })
+    fireEvent.click(tile)
+    await screen.findByLabelText('Close preview', {}, { timeout: 4000 })
+    const hero = () => (document.querySelector('div[class*="lightbox"] img') as HTMLImageElement | null)?.getAttribute('src')
+    expect(hero()).toBe('/a/one.png')
+    fireEvent.click(screen.getByTestId('drill-next'))
+    expect(hero()).toBe('/b/two.png')
+    fireEvent.click(screen.getByTestId('drill-next')) // at the tail: HOLDS — the walk is a line, not a ring
+    expect(hero()).toBe('/b/two.png')
   })
 })

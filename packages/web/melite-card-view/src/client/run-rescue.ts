@@ -50,23 +50,37 @@ export function parseRescue(error: string): Rescue | null {
 }
 
 /** Offer one rescue through the manage seat. Names only — the
- * server owns every URL (the declaration law above). Resolves
+ * server owns every URL (the declaration law above). The target
+ * is the model family OR the card id (model-less tool cards carry
+ * their own provision rows under the card id — provision_model
+ * resolves both). Resolves
  * with the reply's detail line, refuses with its own name. */
-export async function runRescueCall(rescue: Rescue, family: string): Promise<string> {
+export async function runRescueCall(rescue: Rescue, target: string): Promise<string> {
   const reply = rescue.kind === 'extension'
     ? await postManageAction('install_extension', { nodes: [rescue.pack] })
-    : await postManageAction('provision_model', { model: family })
+    : await postManageAction('provision_model', { model: target })
   if (!reply.ok) throw new Error(reply.detail ?? 'manage refused')
-  return reply.detail ?? (rescue.kind === 'extension' ? rescue.pack + ' installed' : family + ' provisioned')
+  return reply.detail ?? (rescue.kind === 'extension' ? rescue.pack + ' installed' : target + ' provisioned')
 }
 
 /** The first family id on a bench/draft's stage params (the model
  * the run shot — the rescue's provision target). Null when no
- * stage names one (the banner stays honest and offers nothing). */
+ * stage names one (the card-id fallback below gets its turn). */
 export function familyOfStages(stages: Array<{ params?: Record<string, unknown> }>): string | null {
   for (const s of stages) {
     const m = s.params?.['model']
     if (typeof m === 'string' && m !== '') return m
+  }
+  return null
+}
+
+/** THE CARD-ID FALLBACK (the mask-form SAM2 law, 2026-09-19):
+ * model-less tool cards name no family — the stage's own card id
+ * is the provision target (the manage door resolves card-owned
+ * DECL rows under it). Null when no stage names a card. */
+export function cardOfStages(stages: Array<{ card?: string }>): string | null {
+  for (const s of stages) {
+    if (typeof s.card === 'string' && s.card !== '') return s.card
   }
   return null
 }

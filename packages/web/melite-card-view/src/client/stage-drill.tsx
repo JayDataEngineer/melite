@@ -2,7 +2,7 @@
  * editor, the zoom face, the preview seam consult (extracted from
  * CardsTab.tsx hour 15 — the biggest seam). */
 
-import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
+import { createElement as h, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
@@ -32,6 +32,41 @@ import { loadFormsEdgeMeta } from './forms-edge-meta.ts'
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
+
+/**
+ * THE SCROLL LOCK (2026-09-21, the operator's law: 'whenever
+ * progress updates, it jerks the view up' — every per-tick layout
+ * change moved the scroller WITHOUT the user: img swaps, textarea
+ * autogrow, seat churn, collapse-clamps). The scroller's position
+ * is USER-OWNED: wheel/touch/keys record it; a layout effect after
+ * EVERY update restores it when anything else moved it. The law
+ * kills the whole mechanism class at the container, not per child.
+ */
+export function ScrollLockedDetail(props: { children?: ReactNode, testid?: string }): ReturnType<typeof h> {
+  const elRef = useRef<HTMLDivElement | null>(null)
+  const userTop = useRef<number | null>(null)
+  const userOwned = useRef(false)
+  const bind = useCallback((el: HTMLDivElement | null): void => {
+    elRef.current = el
+    if (el === null) { userTop.current = null; return }
+    // the user's gestures OWN the position — flag before the scroll lands
+    const own = (): void => { userOwned.current = true }
+    el.addEventListener('wheel', own, { passive: true, capture: true })
+    el.addEventListener('touchmove', own, { passive: true, capture: true })
+    el.addEventListener('keydown', own)
+    // EVERY scroll that was not user-owned is a THIEF — restore in
+    // the next frame (render-independent: no re-render needed)
+    el.addEventListener('scroll', () => {
+      if (userOwned.current) { userOwned.current = false; userTop.current = el.scrollTop; return }
+      if (userTop.current !== null && el.scrollTop !== userTop.current) {
+        const held = userTop.current
+        requestAnimationFrame(() => { el.scrollTop = held })
+      }
+    }, { passive: true })
+  }, [])
+  return h('div', { className: css.zoomDetail, ...(props.testid !== undefined ? { 'data-testid': props.testid } : {}), ref: bind }, props.children)
+}
+
 export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }: {
   stage: BenchStageRow
   bench: CardsBenchValue
@@ -83,6 +118,12 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // the media drilldown 1:1 — the SAME shared component the gallery
   // rides; the click maps the stage's primary artifact onto it).
   const [drillItem, setDrillItem] = useState<MediaDrilldownItem | null>(null)
+  // THE WALK SET (2026-09-20, the operator's arrows): FROZEN at
+  // open time — the opened image walks the gallery exactly as it
+  // stood (current run's set + every archived generation, newest
+  // first); a mid-walk archive shift never reindexes under the
+  // user's feet. Cleared with the drilldown.
+  const [drillWalk, setDrillWalk] = useState<MediaDrilldownItem[]>([])
   // THE TIMELINE SEAM (the form-seams stroke 2026-09-17): the
   // optional bottom-slot bridge — created once, wired only when the
   // served spec claims preview.timeline AND a video face renders.
@@ -200,7 +241,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     setUser((m) => ({ ...m, [name]: v }))
     // THE SLOT FLUSH LAW (2026-09-15 — the operator's burn: "when I
     // wire an image from the previous flow, it doesn't stay after I
-    // close the card"): a slot-shaped pick (image/file) is a
+    // close the card"): a slot-shaped pick (image/file/mesh) is a
     // DISCRETE GESTURE, not typing — it writes the bench row NOW,
     // not at Run. Before this, the pick lived only in this modal's
     // React state; close without Run and it evaporated — the reopen
@@ -208,8 +249,8 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     /* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
     const shape: string | undefined = spec !== null
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
-    /* v8 ignore next 4 -- the tri-state atoms unset only from image/file shapes; these atoms are never image/file (probe 2026-09-19) */
-    if (shape === 'image' || shape === 'file') {
+    /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
+    if (shape === 'image' || shape === 'file' || shape === 'mesh') {
       void patchStageParams(bench.draftId, stage.id,
         v === '' ? { [name]: null } : { [name]: v }, bench.rev)
         .catch((e: unknown) => {
@@ -234,8 +275,8 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     /* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
     const shape: string | undefined = spec !== null
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
-    /* v8 ignore next 4 -- the tri-state atoms unset only from image/file shapes; these atoms are never image/file (probe 2026-09-19) */
-    if (shape === 'image' || shape === 'file') {
+    /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
+    if (shape === 'image' || shape === 'file' || shape === 'mesh') {
       void patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev)
         .catch((e: unknown) => {
           setError(e instanceof Error ? e.message : 'slot write failed')
@@ -427,7 +468,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         onResync?.()
       }
     }
-    return h('div', { className: css.zoomDetail },
+    return h(ScrollLockedDetail, null,
       h('p', { className: css.groupNote },
         'A compound of ' + String(members.length) + ' stages. Ungroup restores them at this position.'),
       h('ol', { className: css.memberList },
@@ -457,9 +498,43 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // kind, with the card-base SHARED previews as the defaults. The
   // consult sits in the drill's RIGHT column — params LEFT, preview
   // RIGHT, the same law as the studio's rail/center.
+  // THE DRILLDOWN ITEM MAPPER (one spelling — the open site builds
+  // THE STICKY ARTIFACTS LAW (one spelling, both seats): the
+  // row's live harvest — or, when the row's urls are cleared
+  // (a run in flight, a stopped run that never landed), the
+  // HISTORY HEAD. No client memory (ledger #44: the
+  // stickyArtifactsRef is deleted): the estate's archive law
+  // pushes the superseded landed result into history in the SAME
+  // write that clears the row, so the head IS the last landed
+  // generation — a pure projection of server state. The hero
+  // never jumps to an old archive mid-run, and never blanks.
+  // THE EMPTY-FACE FALLBACK (2026-09-21, the operator's catch:
+  // "when the last gen is stopped, there is no way to recover the
+  // ACTUAL LATEST GEN until I make a new one"): a row whose current
+  // result carries NO outputs (a stopped/failed run never landed)
+  // must not render an EMPTY hero while the stage's history head
+  // IS the latest landed gen — the face falls to it. The strip
+  // stays the trail; the pick/badge law is unchanged.
+  const stageArtifacts = (): Array<{ name: string, url: string }> => {
+    const rowArtifacts = previewArtifactsFor(stage as unknown as Record<string, unknown>)
+    if (rowArtifacts.length > 0) return rowArtifacts
+    const hist = Array.isArray((stage as unknown as { history?: unknown }).history)
+      ? ((stage as unknown as { history: unknown[] }).history)
+      : []
+    const head = hist[0] as Record<string, unknown> | undefined
+    return head !== undefined ? previewArtifactsFor({ result: head }) : []
+  }
+  const drillItemOf = (a: { name: string, url: string }, kind: string): MediaDrilldownItem => ({
+    kind: (kind === 'mesh' ? 'model' : kind) as MediaDrilldownItem['kind'],
+    url: a.url,
+    /* v8 ignore next 1 -- split('/').pop() is never undefined on a non-empty url (probe 2026-09-19) */
+    file: a.name !== '' && a.name !== 'output' ? a.name : a.url.split('/').pop() ?? a.url,
+    head: String(stage.title ?? stage.card ?? stage.id),
+    time: '',
+  })
   const stagePreview = (): ReturnType<typeof h> | null => {
     if (renderPreview === undefined) return null
-    const artifacts = previewArtifactsFor(stage as unknown as Record<string, unknown>)
+    const artifacts = stageArtifacts()
     const heroUrl = artifacts[0]?.url ?? ''
     // the card's DECLARED primary output drives the kind (the spec is
     // already in hand for the form); the url sniff only stands in when
@@ -494,6 +569,12 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       kind, artifacts,
       runStatus: typeof stage.runStatus === 'string' ? stage.runStatus : '',
       stageId: stage.id,
+      // THE RUN IDENTITY (2026-09-20, the pick-cell key): the
+      // result row's run_id — STABLE across the run cycle (start
+      // patch {run_id}-only → terminal), so a picked history tile
+      // survives the mid-run url churn (the "random when I click"
+      // catch); a new run is a fresh cell by construction.
+      runId: String(((stage as Record<string, unknown>)['result'] as { run_id?: unknown } | undefined)?.run_id ?? ''),
       ...(history.length > 0 ? { history } : {}),
       ...(historyNotes !== undefined ? { historyNotes } : {}),
       // THE STRIP OPT-OUT (gap 4, stroke 67): the SERVED doc's
@@ -552,7 +633,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     ? (previewArtifactsFor(stage as unknown as Record<string, unknown>)
         .find((a) => primaryKindFor(spec, a.url) === 'video')?.url ?? null)
     : null
-  const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
+  const genericDetail = (): ReturnType<typeof h> => h(ScrollLockedDetail, null,
     webhookFeed,
     // THE UNIFORM SHELL (hour 24 stroke 15 — the operator's sharing
     // call): the zoom rides the SAME StudioShell every studio card
@@ -560,7 +641,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // outputs column claims the preview slot.
     h(StudioShell, {
     bottom: seamFilmUrl !== null
-      ? h('div', { className: css.zoomDetail, 'data-testid': 'timeline-seam-bottom' },
+      ? h(ScrollLockedDetail, { testid: 'timeline-seam-bottom' },
           h(FilmSeamBar, { seam: filmSeamRef.current }))
       : undefined,
     params: h('div', { className: css.paramsCol },
@@ -621,22 +702,30 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           tabIndex: 0,
           'aria-label': 'Open media drilldown',
           onClick: () => {
-            const artifacts = previewArtifactsFor(stage as unknown as Record<string, unknown>)
+            const artifacts = stageArtifacts()
             const hero = artifacts[0]
             if (hero === undefined) return
             const kind = primaryKindFor(spec, hero.url)
             if (kind === null) return
-            setDrillItem({
-              kind: kind === 'mesh' ? 'model' : kind,
-              url: hero.url,
-              // the drilldown's caption shows the FILE (the gallery's
-              // own column) — the harvest's generic 'output' name
-              // falls to the url's basename
-              /* v8 ignore next 1 -- split('/').pop() is never undefined on a non-empty url (probe 2026-09-19) */
-              file: hero.name !== '' && hero.name !== 'output' ? hero.name : hero.url.split('/').pop() ?? hero.url,
-              head: String(stage.title ?? stage.card ?? stage.id),
-              time: '',
-            })
+            // THE WALK SET BUILDS AT OPEN: the current run's set +
+            // every archived generation, newest first (the same
+            // flat law the preview's fallback hero reads) — frozen
+            // for the walk.
+            const hist = Array.isArray((stage as Record<string, unknown>)['history'])
+              ? ((stage as Record<string, unknown>)['history'] as unknown[])
+              : []
+            const past = hist.flatMap((e) => previewArtifactsFor({ result: e }))
+            // THE WALK DEDUP LAW (the landing-archive era): history's
+            // head IS the current generation — an undeduped walk holds
+            // the same url twice at [0] and [1], and the first › step
+            // swaps an identical image: "clicking the arrow does
+            // literally nothing." One seat per url, first-wins.
+            const seen = new Set<string>()
+            const walk = [...artifacts, ...past]
+              .filter((a) => { if (seen.has(a.url)) return false; seen.add(a.url); return true })
+              .map((a) => drillItemOf(a, kind))
+            setDrillWalk(walk)
+            setDrillItem(drillItemOf(hero, kind))
           },
           onKeyDown: (e: unknown) => {
             const ke = e as KeyboardEvent
@@ -649,7 +738,18 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           stagePreview() ?? h('div', { className: css.outputsHint },
             running ? 'rendering… the preview lands here' : 'run lands the preview here')),
         drillItem !== null
-          ? h(MediaDrilldown, { item: drillItem, onClose: () => { setDrillItem(null) } })
+          ? h(MediaDrilldown, {
+            item: drillItem,
+            onClose: () => { setDrillItem(null); setDrillWalk([]) },
+            // THE WALK ARROWS (2026-09-20, the operator's catch:
+            // "where are my side arrows when I open an image so
+            // scroll through to others"): the frozen-at-open walk
+            // set + the navigate verb — the drilldown paints ‹ ›
+            // chips and walks the LINE — left toward current, right
+            // deeper; the ends hold (drilldown.spec pins the law).
+            siblings: drillWalk,
+            onNavigate: (next) => { setDrillItem(next) },
+          })
           : null,
         // (THE FAILURE FACE MOVED TO THE FRAME (hour-26): the run's
         //  error text rides the webhook strip under the top bar —

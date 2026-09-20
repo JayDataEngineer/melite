@@ -215,18 +215,19 @@ const paramSchema = z.object({
   // estate-proven literal (plaguekind's template value, silicon
   // receipts on the t4 arm); 'pytorch attention' is the engine's
   // own enumeration. Values the engine refuses are NOT offered.
-  attention_backend: vocabulary(["comfy kitchen attention", "pytorch attention"]).description("Attention backend").default("comfy kitchen attention").extra('extra', { order: null, wtype: 'select', tooltip: "The non-SLA arm's ModelAttentionBackend. ck-kitchen is the estate-proven default; pytorch is the engine's enumerated literal. (SLA sparse attention stays the primary speed arm — its switch is on by default.)" }),
+  attention_backend: vocabulary(["comfy kitchen attention", "pytorch attention"]).description("Attention backend").default("comfy kitchen attention").extra('extra', { order: null, wtype: 'select', tooltip: "The non-SLA arm's ModelAttentionBackend — used when the SLA sparse attention switch (Sla group) is OFF. ck-kitchen is the estate-proven default; pytorch is the engine's enumerated literal." }),
   interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
   interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." }),
   sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', { order: null, tooltip: "Upscale the final film through SeedVR2 before saving." }),
   sr_resolution: z.number().description("Super-Res target").min(720).max(2160).step(360).default(1080).extra('extra', { order: null, visible_when: "sr_switch=true", wtype: 'number', tooltip: "The SeedVR2 output height in px." }),
-  // OPEN FILE SURFACE (hour 22 triage): the SeedVR2 weights
-  // span OTHER families' provisions (seedvr2_ema provisions the fp16
-  // 3B; variants keep landing) — the card cannot close what it does not
-  // own. Open string, text face, and the default is the one file the
-  // estate actually provisions (the old default pointed at a file that
-  // existed NOWHERE in the estate — a ghost; sr_switch never fires it).
-  sr_model: z.string().description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', { order: null, wtype: 'text', tooltip: "SeedVR2 weights file (models/upscale_models/)." }),
+  // CLOSED FILE SURFACE (the operator's dropdown law — a free-text
+  // weights row is a guess box): the two SeedVR2 DiT files the estate
+  // actually runs (both proven in shipped _flow.json receipts: the fp16
+  // 3B default + the fp8_e4m3fn 3B the lane walked). The union owns the
+  // dropdown AND the membership refusal (an off-set value fails at the
+  // schema door, never as a ComfyUI 400). Gated behind sr_switch like
+  // every other post leaf.
+  sr_model: vocabulary(["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]).description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', { order: null, visible_when: "sr_switch=true", wtype: 'select', tooltip: "SeedVR2 weights (models/upscale_models/): fp16 3B default, fp8_e4m3fn 3B leaner." }),
   // the R2V COMBO size mode — the literals OR a concrete WxH dimension
   // ("704x1280" rides in real runs; a number or a typo refuses LOUD at
   // the gate now, not as a ComfyUI 400). The select face serves the
@@ -248,16 +249,22 @@ const paramSchema = z.object({
   // (SpecFieldRow) instead of hand-rolled rows. Defaults are the
   // compose's own ?? fallbacks, byte-for-byte; the h3_ prefix is the
   // studio's LayerA spelling (docModel), never the card's.
-  sla_sparsity: z.number().description("SLA sparsity").min(0).max(0.95).step(0.05).default(0.9).extra('extra', { order: null, group: "sla", wtype: 'slider', tooltip: "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss." }),
-  sla_block_size: vocabulary(["32", "64", "128"]).description("SLA block size").default("32").extra('extra', { order: null, group: "sla", wtype: 'select', tooltip: "64 = clean audio; 128 = faster, robotic." }),
-  sla_min_seq_len: z.number().description("SLA min seq length").min(512).step(512).default(12288).extra('extra', { order: null, group: "sla", wtype: 'number', tooltip: "Sequences shorter than this skip sparsity." }),
-  sla_dense_last_steps: z.number().description("SLA dense last steps").min(0).max(10).step(1).default(1).extra('extra', { order: null, group: "sla", wtype: 'number', tooltip: "Final steps run dense for convergence." }),
-  sla_dense_steps: z.string().description("SLA dense steps (explicit)").default("0").extra('extra', { order: null, group: "sla", tooltip: "e.g. 0,1 or 0-2 — explicit dense step indices." }),
-  sla_dense_backend: vocabulary(["comfy_kitchen", "pytorch", "auto"]).description("SLA dense backend").default("comfy_kitchen").extra('extra', { order: null, group: "sla", wtype: 'select' }),
-  sla_reference_protection: vocabulary(["Off", "Light", "Heavy Enforcement"]).description("SLA ref protection").default("Heavy Enforcement").extra('extra', { order: null, group: "sla", wtype: 'select', tooltip: "Protects reference frames from sparse-attention drift." }),
-  sla_protect_audio: z.boolean().description("SLA protect audio").default(true).extra('extra', { order: null, group: "sla" }),
-  sla_stabilize_motion: z.boolean().description("SLA stabilize motion").extra('extra', { order: null, group: "sla", tooltip: "Default on except t4r openers (the family-conditional compose fallback stays the truth at run)." }),
-  sla_disable_fp16_accum: z.boolean().description("SLA full-precision accum").default(true).extra('extra', { order: null, group: "sla" }),
+  // THE MASTER SWITCH (operator order 2026-09-21: "is there a switch
+  // to turn SLA on/off or is it always on" — it was always on): the
+  // one boolean heads the sla group; every tuning leaf below rides
+  // visible_when behind it. Default true = today's behavior for
+  // every existing doc (absent = on at compose).
+  sla_enabled: z.boolean().description("SLA sparse attention").default(true).extra('extra', { order: null, group: "sla", tooltip: "Block-sparse attention on the DiT (the primary speed arm, ~1.75x). Off falls back to the Attention backend row." }),
+  sla_sparsity: z.number().description("SLA sparsity").min(0).max(0.95).step(0.05).default(0.9).extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'slider', tooltip: "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss." }),
+  sla_block_size: vocabulary(["32", "64", "128"]).description("SLA block size").default("32").extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select', tooltip: "64 = clean audio; 128 = faster, robotic." }),
+  sla_min_seq_len: z.number().description("SLA min seq length").min(512).step(512).default(12288).extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Sequences shorter than this skip sparsity." }),
+  sla_dense_last_steps: z.number().description("SLA dense last steps").min(0).max(10).step(1).default(1).extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Final steps run dense for convergence." }),
+  sla_dense_steps: z.string().description("SLA dense steps (explicit)").default("0").extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "e.g. 0,1 or 0-2 — explicit dense step indices." }),
+  sla_dense_backend: vocabulary(["comfy_kitchen", "pytorch", "auto"]).description("SLA dense backend").default("comfy_kitchen").extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select' }),
+  sla_reference_protection: vocabulary(["Off", "Light", "Heavy Enforcement"]).description("SLA ref protection").default("Heavy Enforcement").extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select', tooltip: "Protects reference frames from sparse-attention drift." }),
+  sla_protect_audio: z.boolean().description("SLA protect audio").default(true).extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Keep the audio stream out of the sparse path." }),
+  sla_stabilize_motion: z.boolean().description("SLA stabilize motion").extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Default on except t4r openers (the family-conditional compose fallback stays the truth at run)." }),
+  sla_disable_fp16_accum: z.boolean().description("SLA full-precision accum").default(true).extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Full-precision accumulation inside the sparse kernel." }),
   // ── the sharpen leaves (compose: only EXPLICITLY-set leaves patch
   // ImageSharpenKJ's grouped dict — bare emission defaults do NOT
   // change a run that never sets them). VISIBILITY rides the
@@ -798,9 +805,13 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // the switch; preview override wired to the in-graph step count.
     // Inject semantics: an injected SCALAR replaces the bool NODE
     // (template link severed, node orphaned) — mirrored by passing the
-    // scalar straight when sla_switch is set.
+    // scalar straight when sla_switch is set. sla_enabled=false
+    // forces the chunked (SLA-off) path; otherwise the legacy
+    // sla_switch spelling rides untouched.
     const fpsNode = g.node('PrimitiveFloat', { value: 24.0 }).out()  // id .0 — CreateVideo.fps walks first
-    let slaSel: OutputHandle | boolean | null = (p.sla_switch as boolean | undefined) ?? null
+    let slaSel: OutputHandle | boolean | null = (p.sla_enabled as boolean | undefined) === false
+      ? true
+      : ((p.sla_switch as boolean | undefined) ?? null)
     if (slaSel === null) slaSel = g.node('PrimitiveBoolean', { value: false }).out()
     const picked = g.node('ComfySwitchNode', { switch: slaSel, on_true: chunked, on_false: sla }).out()
     const loraModel = g.node('LTX_lora_loader', {
@@ -987,7 +998,11 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       attention: p.attention_backend as string,
     }).out()
     const picked = g.node('ComfySwitchNode', {
-      switch: p.sla_switch ?? true, on_true: sla, on_false: mab,
+      // THE SLA MASTER SWITCH (2026-09-21): sla_enabled=false takes
+      // the dense arm; absent = on (every existing doc); the hidden
+      // legacy sla_switch spelling still rides when sla_enabled is
+      // silent.
+      switch: (p.sla_enabled as boolean | undefined) ?? (p.sla_switch as boolean | undefined) ?? true, on_true: sla, on_false: mab,
     }).out()
     const adaln = g.node('H3AdaLNLoRAFix', { model: picked, mode: 'port' }).out()
     sigmaModel = g.node('MiniMaxH3SigmaShift', {

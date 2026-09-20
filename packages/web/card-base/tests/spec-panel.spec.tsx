@@ -129,3 +129,50 @@ test('A SLIDER ROW SCOPES TO ITS LABELLED ROW (the atom writes raw strings; coer
   fireEvent.change(slider, { target: { value: '6' } })
   expect(keys).toEqual([['engine_power', '6']])
 })
+
+test('THE MODEL GUARD (the base seeds the serving family into the grammar — a leaf may declare model=<family>)', async () => {
+  const guarded = (model = 'fam-a'): unknown => ({
+    form: 'any-card',
+    model,
+    schema: schemaEnvelope({
+      plain: { type: 'number', meta: { description: 'Plain', default: 1 } },
+      bespoke_a: { type: 'number', meta: { description: 'Bespoke A', default: 2, extra: { visible_when: 'model=fam-a' } } },
+      bespoke_b: { type: 'number', meta: { description: 'Bespoke B', default: 3, extra: { visible_when: 'model=fam-b' } } },
+    }),
+    variants: [],
+  })
+  // serving fam-a: its bespoke leaf shows, the other family's hides —
+  // the values carry NO model key (the BASE seeds it, never the host)
+  const guardSections = [{ title: 'G', rows: [{ name: 'plain' }, { name: 'bespoke_a' }, { name: 'bespoke_b' }] }]
+  serve(guarded())
+  panel({ plain: 1 }, { model: 'fam-a', sections: guardSections as never })
+  await screen.findByText('Bespoke A')
+  expect(screen.queryByText('Bespoke B')).toBeNull()
+  cleanup()
+  // serving fam-b: the mirror (the door serves the doc for the
+  // requested key — the fixture mirrors that, model rides the doc)
+  serve(guarded('fam-b'))
+  panel({ plain: 1 }, { model: 'fam-b', sections: guardSections as never })
+  await screen.findByText('Bespoke B')
+  expect(screen.queryByText('Bespoke A')).toBeNull()
+  // the ungoverned plain row rides on BOTH (a shared surface never hides)
+  expect(screen.getByText('Plain')).not.toBeNull()
+  cleanup()
+  // THE COMPOSED KEY (the FAMILIES-DRY law): a variant/quant row
+  // walks as its base — the leaf declaring model=fam-a shows under
+  // the served 'fam-a-1536-int8' key, never hidden by the suffix
+  serve({
+    form: 'any-card',
+    model: 'fam-a-1536-int8',
+    families: [{ id: 'fam-a' }, { id: 'fam-b' }],
+    schema: schemaEnvelope({
+      plain: { type: 'number', meta: { description: 'Plain', default: 1 } },
+      bespoke_a: { type: 'number', meta: { description: 'Bespoke A', default: 2, extra: { visible_when: 'model=fam-a' } } },
+      bespoke_b: { type: 'number', meta: { description: 'Bespoke B', default: 3, extra: { visible_when: 'model=fam-b' } } },
+    }),
+    variants: [],
+  })
+  panel({ plain: 1 }, { model: 'fam-a-1536-int8', sections: guardSections as never })
+  await screen.findByText('Bespoke A')
+  expect(screen.queryByText('Bespoke B')).toBeNull()
+})

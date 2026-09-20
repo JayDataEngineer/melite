@@ -321,7 +321,7 @@ export function RecipePills({ spec, onSet, values }: {
  *
  *  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
  *  img-to-mesh input component — you are not using it around — you
- *  are hardcoding"): an emitted image/file input constructs THE ONE
+ *  are hardcoding"): an emitted image/file/mesh input constructs THE ONE
  *  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
  *  square provider — no call site wires it, no call site can forget
  *  it. The caller hands only the WIRE (picker candidates), never the

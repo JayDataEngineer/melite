@@ -66,8 +66,7 @@ const HEADLESS = [...HEADLESS_TOOL_NAMES]
 const CARD_TOOLS = [
   'music',
   'tts',
-  'voice_lock',
-  'image_edit',
+  'image_edit', // voice_lock died 2026-09-21 (design moved into the tts card's mods)
   'motion',
   'h3_timeline',
 ]

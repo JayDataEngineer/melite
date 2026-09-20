@@ -1,15 +1,22 @@
 /** stage-run.ts — the card stage's run doors: ONE stage through the
- * composing {model:} door, and the bench's sequential pass (extracted
- * from CardsTab.tsx hour 15). */
+ * composing {model:} door (card stages) or the FLOW door (the
+ * generic MCP card — a standalone-subagent spawn), and the bench's
+ * sequential pass (extracted from CardsTab.tsx hour 15). */
 
 import { fetchFormSpec, fieldsOf } from './spec-form.tsx'
 import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
-import { startCardRun } from '@melite/card-base/runs-policy'
+import { startCardRun, startFlowInlineRun } from '@melite/card-base/runs-policy'
 import type { CardsBenchValue, BenchStageRow } from './cards-resource.ts'
 import { freshStageRow, observeRunOutcome } from './cards-resource.ts'
 
-/** Run ONE card stage through the COMPOSING door (the run-wire
- *  package's startCardRun — the {model:} arm). The flow_inline door
+/** The generic MCP card's id (the ONE engine-served card the run
+ * press routes on — the subagent-spawn card, engine 'agent'). */
+const MCP_CARD = 'mcp'
+
+/** Run ONE card stage through its composing door (the run-wire
+ *  package's startCardRun — the {model:} arm) — EXCEPT the engine
+ *  stage (the generic MCP card), which runs through the FLOW door
+ *  (startMcpStage below). The flow_inline door
  *  this gesture rode before cannot consume cards ("card= stages are
  *  unported on this gateway") and its executor demanded a pre-composed
  *  params.workflow nobody emitted — the Sep 11 bench runs' "node
@@ -53,6 +60,25 @@ export async function runCardStage(
   const heldModel = params['model']
   const model = typeof heldModel === 'string' && heldModel !== '' ? heldModel
     : await defaultFamilyForCard(card)
+  // THE ENGINE-STAGE ARM (the generic MCP card, operator 2026-09-21:
+  // "ALWAYS spawn a completely standalone DSH subagent"): the mcp
+  // card composes NO card graph — its run is the AGENT stage on the
+  // FLOW door (the subagent loop with the card's MCPs/Skills/Inputs
+  // tiles and the Task brief). The params ride VERBATIM (bag entries
+  // folded engine-side by the executor's own gate —
+  // normalizeAgentStageParams, never re-parsed client-side); an
+  // empty brief refuses loud AT THE PRESS, never a zombie run.
+  if (card === MCP_CARD) {
+    const task = typeof params['task'] === 'string' ? params['task'].trim() : ''
+    if (task === '') {
+      return { refused: 'write the Task first — the subagent spawns with no brief otherwise' }
+    }
+    return await startFlowInlineRun({
+      flowId: 'mcp',
+      stages: [{ id: src.id, engine: 'agent', params, outputs: { default: 'text' } }],
+      draftId,
+    })
+  }
   // the declared surface spells SELECT options as strings; a legacy
   // row may hold the matching number — normalize through the spec
   // (only when the stringified value IS a declared option; anything

@@ -170,10 +170,14 @@
 }
 .squareOver { border-color: var(--dsw-alias-border-l3, rgba(0, 0, 0, 0.28)); box-shadow: 0 0 0 2px var(--dsw-alias-border-l1, rgba(0, 0, 0, 0.08)); }
 .squareThumb { height: 100%; object-fit: cover; width: 100%; }
+/* THE MESH THUMB (primitive ③, 2026-09-21): the inline mini GLB
+   viewport, absolutely filling the same 80px square the image thumb
+   fills — the mesh atom lives INSIDE the one square grammar. */
+.squareMesh { inset: 0; pointer-events: none; position: absolute; }
 .squareGlyph { color: var(--dsw-alias-label-tertiary, rgba(0, 0, 0, 0.45)); }
 .squareX {
   align-items: center; background: var(--dsw-alias-bg-module, #fff); border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.14));
-  border-radius: 999px; cursor: pointer; display: flex; font-size: 10px; line-height: 17px;
+  border-radius: 999px; color: var(--dsw-alias-label-primary, #0f1115); cursor: pointer; display: flex; font-size: 10px; line-height: 17px;
   padding: 0 4px; position: absolute; right: 4px; top: 4px;
 }
 .squareLabel { color: var(--dsw-alias-label-primary, #0f1115); font-size: 11px; line-height: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }

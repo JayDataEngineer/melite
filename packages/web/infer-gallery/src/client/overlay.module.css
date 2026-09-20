@@ -9,7 +9,7 @@
 }
 
 /*
- * The ✦ CARDS wand (tile overlay action). Positioning ONLY — the
+ * The history wand (tile overlay action). Positioning ONLY — the
  * bubble is the DSH Tooltip, the tile is a native button. Hunk 4
  * (2026-09-10): the run itself is addressable, the wand is always
  * live; the .wandDim dim twin retired with the draft-link gate.

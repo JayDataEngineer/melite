@@ -12,8 +12,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
+import { resetFormsEdgeMetaForTests } from "../src/client/forms-edge-meta.ts"
 import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { resetPickCellsForTests } from "@melite/card-base/preview";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow, CardsBenchValue, CardsDraftValue } from "../src/client/cards-resource.ts";
@@ -80,6 +82,7 @@ function stubFetch(): void {
       });
     }
     if (path.includes("/v1/forms")) {
+      if (doors.formsTable === "reject") throw new Error("forms table down");
       if (doors.formsTable === "deferred") {
         return new Promise<Response>((resolve) => {
           doors.resolveFormsTable = (body: unknown) => resolve(new Response(JSON.stringify(body), {
@@ -126,7 +129,7 @@ function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => 
     refusals: estate?.refusals,
     throws: estate?.throws,
   });
-  render(h(CardsTab, {
+  const view = render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
       kind: "sidebar.right.pane.tab", contentId: undefined,
       navigation: { address: "dsh-resource://cards/bench" },
@@ -135,7 +138,38 @@ function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => 
     useResource: () => ({ status: "live", value: benchValue(stages) }),
     ...(renderSlot !== undefined ? { renderSlot } : {}),
   }));
+  (globalThis as { __cardsTabView?: unknown }).__cardsTabView = view;
 }
+  test("THE EMPTY-FACE FALLBACK: a stopped run with no landed outputs shows the HISTORY HEAD — the latest gen is never lost", async () => {
+    const stages: BenchStageRow[] = [{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: { prompt: "same" }, runStatus: "stopped",
+      // the stopped run never landed — the current face is empty
+      result: { run_id: "run-stopped" },
+      // the LAST LANDED gen sits at history head
+      history: [
+        { run_id: "run-last", url: "/last.png", artifacts: { "gen.png": "/last.png" } },
+        { run_id: "run-old", url: "/old.png", artifacts: { "old.png": "/old.png" } },
+      ],
+    } as never];
+    mountBench(stages);
+    await openFirstTile();
+    const hero = (previewSeat().querySelector("img") as HTMLImageElement | null)?.getAttribute("src");
+    expect(hero).toBe("/last.png");
+  });
+
+  test("a failed forms-table fetch never blocks the drill (null edge meta falls to the unfiltered picker)", async () => {
+    const stages: BenchStageRow[] = [{
+      id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "x" }, runStatus: "done",
+      result: { run_id: "run-1", url: "/a.png", artifacts: { "a.png": "/a.png" } },
+    } as never];
+    mountBench(stages); // mounts the tab (doors reset to ok)
+    resetFormsEdgeMetaForTests();
+    doors.formsTable = "reject"; // the drill's OWN mount (below) fetches against the rejected table
+    await openFirstTile();
+    expect(document.querySelector('[data-testid="stage-preview-seat"]')).not.toBeNull();
+    // the mount effect's catch ran (the fetch rejected) — the seat still renders
+  });
 
 function firstTile(): HTMLElement {
   const el = document.querySelector('button[class*="tileInner"]');
@@ -456,3 +490,329 @@ describe("the draft view's drill — the noop surface stays silent", () => {
     expect(await screen.findByText("Prompt", {}, { timeout: 4000 })).toBeTruthy();
   });
 });
+
+// ── THE WALK ARROWS ON THE CARD (2026-09-20, the operator's
+// catch: "where are my side arrows when I open an image so scroll
+// through to others") ─────────────────────────────────────────
+// The stage preview's seat opens the shared MediaDrilldown with
+// the FROZEN-AT-OPEN walk set: the current run's artifacts + every
+// archived generation, newest first. The arrows walk it.
+describe("the drilldown walk — the card's opened image scrolls the stage gallery", () => {
+  test("opening the preview walks the LINE — right deeper into history, left back to current; the ends hold (operator 2026-09-21: left must go OUT of history, not deeper)", async () => {
+    mountBench([{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: { prompt: "new" },
+      result: { url: "/cur.png", artifacts: { img: "/cur.png" } },
+      history: [
+        { url: "/h1.png", artifacts: { img: "/h1.png" } },
+        { url: "/h2.png", artifacts: { img: "/h2.png" } },
+      ],
+    } as never]);
+    await openFirstTile();
+    fireEvent.click(previewSeat());
+    // the drilldown opened with arrows (3 walkable: current + 2 history)
+    const next = await screen.findByTestId("drill-next", {}, { timeout: 4000 });
+    expect(document.querySelector('[data-testid="drill-prev"]')).not.toBeNull();
+    const hero = () => (document.querySelector('div[class*="lightbox"] img') as HTMLImageElement | null)?.getAttribute("src");
+    expect(hero()).toBe("/cur.png");
+    const user = userEvent.setup();
+    await user.click(next);                       // → history[0]
+    expect(hero()).toBe("/h1.png");
+    await user.click(screen.getByTestId("drill-next")); // → history[1]
+    expect(hero()).toBe("/h2.png");
+    await user.click(screen.getByTestId("drill-next")); // at the tail: HOLDS — never wraps to current
+    expect(hero()).toBe("/h2.png");
+    await user.click(screen.getByTestId("drill-prev")); // ← toward current
+    expect(hero()).toBe("/h1.png");
+    await user.click(screen.getByTestId("drill-prev")); // ← arrives at current
+    expect(hero()).toBe("/cur.png");
+    await user.click(screen.getByTestId("drill-prev")); // ← at current: HOLDS the viewer open (no close-on-walk)
+    await waitFor(() => { expect(drilldownOpen()).toBe(true); }, { timeout: 1000 });
+    expect(hero()).toBe("/cur.png");
+  });
+
+  test("THE WALK DEDUP LAW: the landing archive puts the CURRENT gen at history's head — the walk holds one seat per url, so the first › visibly moves (operator 2026-09-20: 'clicking the arrow does literally nothing')", async () => {
+    mountBench([{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: { prompt: "new" },
+      result: { url: "/cur.png", artifacts: { img: "/cur.png" } },
+      history: [
+        { url: "/cur.png", artifacts: { img: "/cur.png" } }, // the landing: SAME url as current
+        { url: "/old.png", artifacts: { img: "/old.png" } },
+      ],
+    } as never]);
+    await openFirstTile();
+    fireEvent.click(previewSeat());
+    await screen.findByTestId("drill-next", {}, { timeout: 4000 });
+    const hero = () => (document.querySelector('div[class*="lightbox"] img') as HTMLImageElement | null)?.getAttribute("src");
+    expect(hero()).toBe("/cur.png");
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("drill-next")); // the FIRST step must reach the OLDER gen, not an identical twin
+    expect(hero()).toBe("/old.png");
+  });
+
+  test("a stage with NO history paints no arrows (one artifact, nothing to walk)", async () => {
+    mountBench([{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: {},
+      result: { url: "/only.png", artifacts: { img: "/only.png" } },
+    } as never]);
+    await openFirstTile();
+    fireEvent.click(previewSeat());
+    await screen.findByLabelText("Close preview", {}, { timeout: 4000 });
+    expect(document.querySelector('[data-testid="drill-next"]')).toBeNull();
+    expect(document.querySelector('[data-testid="drill-prev"]')).toBeNull();
+  });
+});
+
+// ── THE STICKY HERO (2026-09-20, the operator's catch: "it jumps
+// around when I press run") ─────────────────────────────────────
+// The run's start patch CLEARS the row's urls (result {run_id}
+// only — the estate's ARCHIVE law depends on that overwrite, so
+// the ROW must clear). The VIEW holds: while the stage runs, the
+// drill serves the LAST LANDED artifacts for the stage — the hero
+// never falls to an old archive mid-run, never blanks, never
+// jumps. The new image takes the seat when it LANDS.
+describe("the sticky hero — the preview never jumps mid-run", () => {
+  test("landed → running (row cleared, archive riding the same write) → hero UNCHANGED; terminal lands → the NEW image takes the seat", async () => {
+    doors.formSpec = "ok";
+    doors.formsTable = "ok";
+    stubFetch();
+    const stages: BenchStageRow[] = [{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: { prompt: "same" },
+      runStatus: "done",
+      result: { run_id: "run-1", url: "/old.png", artifacts: { img: "/old.png" } },
+    } as never];
+    fakes = mountEstateFakes({
+      benchDoc: benchDoc(stages),
+      draftStages: stages as Array<Record<string, unknown>>,
+      draftBenchRev: 1,
+    });
+    const view = render(h(CardsTab, {
+      useTabInfo: () => ({ tab: {
+        kind: "sidebar.right.pane.tab", contentId: undefined,
+        navigation: { address: "dsh-resource://cards/bench" },
+        actions: { openResource: () => {} },
+      } }),
+      useResource: () => ({ status: "live", value: benchValue(stages) }),
+    }));
+    await openFirstTile();
+    const seatImg = (): string | null =>
+      (previewSeat().querySelector("img") as HTMLImageElement | null)?.getAttribute("src");
+    expect(await waitFor(() => expect(seatImg()).toBe("/old.png")));
+    // THE RUN STARTS: the start patch clears the row AND archives
+    // the superseded landed result into history in the SAME write
+    // (the estate's archive law) — the faithful running frame.
+    const row = stages[0] as unknown as Record<string, unknown>;
+    row["runStatus"] = "running";
+    row["result"] = { run_id: "run-2" };
+    row["history"] = [{ run_id: "run-1", url: "/old.png", artifacts: { img: "/old.png" } }];
+    view.rerender(h(CardsTab, {
+      useTabInfo: () => ({ tab: {
+        kind: "sidebar.right.pane.tab", contentId: undefined,
+        navigation: { address: "dsh-resource://cards/bench" },
+        actions: { openResource: () => {} },
+      } }),
+      useResource: () => ({ status: "live", value: benchValue(stages) }),
+    }));
+    // THE LAW: the hero HOLDS the previous generation mid-run —
+    // never a blank seat, never a fall to an old archive. No
+    // client memory: the head IS the last landed (ledger #44).
+    expect(seatImg()).toBe("/old.png");
+    // THE TERMINAL LANDS: the new image takes the seat.
+    row["runStatus"] = "done";
+    row["result"] = { run_id: "run-2", url: "/new.png", artifacts: { img: "/new.png" } };
+    view.rerender(h(CardsTab, {
+      useTabInfo: () => ({ tab: {
+        kind: "sidebar.right.pane.tab", contentId: undefined,
+        navigation: { address: "dsh-resource://cards/bench" },
+        actions: { openResource: () => {} },
+      } }),
+      useResource: () => ({ status: "live", value: benchValue(stages) }),
+    }));
+    await waitFor(() => expect(seatImg()).toBe("/new.png"));
+  });
+
+  test("a FRESH stage (never run) previews nothing even while another ran — derivation is per-row, never leftovers", async () => {
+    mountBench([{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: { prompt: "x" },
+      runStatus: "running",
+      result: { run_id: "run-9" },
+    } as never]);
+    await openFirstTile();
+    // no artifacts ever landed for s_0: the seat shows the render
+    // hint, never another stage's leftovers
+    expect(previewSeat().querySelector("img")).toBeNull();
+  });
+});
+
+// ── THE PICK ROUND-TRIP AT THE DRILL SEAM (2026-09-21, the
+// operator's catch: "when I click a history item, the last gen is
+// LOST — no way to recover the actual latest gen until a new
+// gen") ────────────────────────────────────────────────────────
+// The law (the toggle law, 2026-09-16): a history pick is a VIEW,
+// not a one-way door — the picked tile toggles back and the badge
+// returns. This wall drives the WHOLE tab (tile → drill → strip →
+// pick → toggle → badge) so the drill's owner wiring can never
+// break the round-trip the presenter promises.
+describe("the history pick round-trip at the drill seam", () => {
+  test("pick shows the archived gen; the toggle click AND the badge both return the LATEST gen", async () => {
+    resetPickCellsForTests();
+    mountBench([{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: { prompt: "x" }, runStatus: "done",
+      result: { run_id: "run-n", url: "/cur.png", artifacts: { img: "/cur.png" } },
+      history: [{ run_id: "run-p", url: "/old.png", artifacts: { img: "/old.png" } }],
+    } as never]);
+    await openFirstTile();
+    const hero = (): string | null =>
+      (previewSeat().querySelector("img") as HTMLImageElement | null)?.getAttribute("src");
+    await waitFor(() => expect(hero()).toBe("/cur.png"));
+    // THE PICK: click the archived generation's tile
+    const tiles = document.querySelectorAll('[data-testid="stage-output-history"] button');
+    expect(tiles.length).toBe(1);
+    fireEvent.click(tiles[0] as HTMLElement);
+    await waitFor(() => expect(hero()).toBe("/old.png"));
+    expect(document.querySelector('[data-testid="history-stale-badge"]')).not.toBeNull();
+    // THE SEAT BUBBLE (the operator's catch, 2026-09-21, proven
+    // LIVE): the strip and badge ride INSIDE the walk-opening seat —
+    // an unconsumed click picked AND opened the lightbox, which ate
+    // every later click (the jsdom suite never saw it: no
+    // hit-testing — only this assertion locks it). No inner click
+    // may ever open the walk; the hero (and keyboard Enter) owns it.
+    expect(drilldownOpen()).toBe(false);
+    // THE RETURN, ARM 1 — the badge
+    fireEvent.click(document.querySelector('[data-testid="history-stale-badge"]') as HTMLElement);
+    await waitFor(() => expect(hero()).toBe("/cur.png"));
+    expect(drilldownOpen()).toBe(false);
+    // THE RETURN, ARM 2 — the toggle click on the picked tile
+    fireEvent.click(tiles[0] as HTMLElement);
+    await waitFor(() => expect(hero()).toBe("/old.png"));
+    expect(drilldownOpen()).toBe(false);
+    fireEvent.click(tiles[0] as HTMLElement);
+    await waitFor(() => expect(hero()).toBe("/cur.png"));
+    expect(document.querySelector('[data-testid="history-stale-badge"]')).toBeNull();
+    expect(drilldownOpen()).toBe(false);
+  });
+});
+
+// ── THE SEAT SURVIVES THE REFRESH (2026-09-21, the operator's
+// catch: "when it's genning I can't click anything and it forces
+// me to scroll up") ─────────────────────────────────────────────
+// Every observer patch pushes a fresh bench frame. The DSH
+// client-resources contract owns the survival (packages/client/
+// resources/README: `failed` arrives WITH the last value beside
+// the failure; `loading` means not-yielded-YET — a held record
+// never re-enters it). NO client memory: these walls feed the
+// TRUE-contract snapshots — a failure frame carries its value,
+// and the seat survives on the snapshot alone (ledger #44: the
+// heldValue ref is deleted).
+describe("the seat survives the refresh (the DSH failed-keeps-value contract)", () => {
+  test("a 'failed' frame carries the last value — the drill stays mounted, scrolled, and clickable", async () => {
+    const stages: BenchStageRow[] = [{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: { prompt: "same" }, runStatus: "running",
+      result: { run_id: "run-2" },
+    } as never];
+    mountBench(stages);
+    await openFirstTile();
+    const seat = previewSeat();
+    // the user has scrolled the drill's detail
+    const detail = document.querySelector("div[class*='zoomDetail']") as HTMLElement | null;
+    expect(detail).not.toBeNull();
+    detail!.scrollTop = 120;
+    const seatNode = previewSeat();
+    expect(seatNode).toBe(seat);
+    // THE FAILURE FRAME: the stream reports failure BESIDE the
+    // last value (the DSH shape) — the drill must NOT unmount,
+    // and the failure is LOUD beside the body
+    rerenderTab(stages, "failed", "stream broke mid-run");
+    expect(document.querySelector('[data-testid="stage-preview-seat"]')).not.toBeNull();
+    expect(document.querySelector("div[class*='zoomDetail']")).toBe(detail);
+    expect((document.querySelector("div[class*='zoomDetail']") as HTMLElement).scrollTop).toBe(120);
+    expect(document.querySelector('[data-testid="cards-refresh-failed"]')?.textContent)
+      .toContain("stream broke mid-run");
+    // and a click still lands (the Run affordance answers)
+    const runBtn = document.querySelector('button[class*="zoomBar"] button, [data-testid="drill-run"]');
+    if (runBtn !== null) expect((runBtn as HTMLElement).hasAttribute("disabled")).toBe(false);
+    // back live: still mounted, same node
+    rerenderTab(stages, "live");
+    expect(document.querySelector("div[class*='zoomDetail']")).toBe(detail);
+    // the no-message arm voices its own fallback beside the body
+    rerenderTab(stages, "failed");
+    expect(document.querySelector('[data-testid="cards-refresh-failed"]')?.textContent)
+      .toContain("last good state");
+    expect(document.querySelector('[data-testid="stage-preview-seat"]')).not.toBeNull();
+  });
+
+  test("a fresh subscribe push (new object identities, same stage) never remounts the scroll container", async () => {
+    const stages: BenchStageRow[] = [{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: { prompt: "same" }, runStatus: "running",
+      result: { run_id: "run-2" },
+    } as never];
+    mountBench(stages);
+    await openFirstTile();
+    const detail = document.querySelector("div[class*='zoomDetail']") as HTMLElement;
+    detail.scrollTop = 90;
+    // the push: a whole new value tree, same stage id
+    rerenderTab([{ ...stages[0], params: { prompt: "same" } } as never], "live");
+    const after = document.querySelector("div[class*='zoomDetail']") as HTMLElement;
+    expect(after).toBe(detail);
+    expect(after.scrollTop).toBe(90);
+  });
+});
+
+  test("a first-mount failure (nothing ever shown) voices the failure — never a seat", async () => {
+    // No value beside the failure: the stream died before its
+    // first yield. The face is the failure's own words (or the
+    // fallback), never a body, never silence.
+    const stages: BenchStageRow[] = [{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: { prompt: "same" }, runStatus: "done",
+      result: { run_id: "run-2", url: "/cur.png", artifacts: { img: "/cur.png" } },
+    } as never];
+    mountBench(stages);
+    const view = (globalThis as { __cardsTabView?: { rerender: (el: unknown) => void } }).__cardsTabView;
+    expect(view).not.toBeUndefined();
+    view!.rerender(h(CardsTab, {
+      useTabInfo: () => ({ tab: {
+        kind: "sidebar.right.pane.tab", contentId: undefined,
+        navigation: { address: "dsh-resource://cards/bench" },
+        actions: { openResource: () => {} },
+      } }),
+      useResource: () => ({ status: "failed", value: undefined, failure: { message: "stream broke before first yield" } }),
+    }));
+    expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull();
+    expect(document.body.textContent).toContain("stream broke before first yield");
+    // the no-message arm voices its own fallback text
+    view!.rerender(h(CardsTab, {
+      useTabInfo: () => ({ tab: {
+        kind: "sidebar.right.pane.tab", contentId: undefined,
+        navigation: { address: "dsh-resource://cards/bench" },
+        actions: { openResource: () => {} },
+      } }),
+      useResource: () => ({ status: "failed", value: undefined }),
+    }));
+    expect(document.body.textContent).toContain("cards resource failed");
+    expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull();
+  });
+
+function rerenderTab(stages: BenchStageRow[], status: "live" | "loading" | "failed", failure?: string): void {
+  const view = (globalThis as { __cardsTabView?: { rerender: (el: unknown) => void } }).__cardsTabView;
+  if (view === undefined) throw new Error("no held view — mountBench must expose it");
+  view.rerender(h(CardsTab, {
+    useTabInfo: () => ({ tab: {
+      kind: "sidebar.right.pane.tab", contentId: undefined,
+      navigation: { address: "dsh-resource://cards/bench" },
+      actions: { openResource: () => {} },
+    } }),
+    useResource: () => ({
+      status,
+      value: benchValue(stages),
+      ...(failure === undefined ? {} : { failure: { message: failure } }),
+    }),
+  }));
+}

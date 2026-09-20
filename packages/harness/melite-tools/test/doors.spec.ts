@@ -260,41 +260,91 @@ describe('doors apply', () => {
 // ── catalog ───────────────────────────────────────────────────────
 
 describe('catalog route', () => {
-  test('THE MCP CARD (stroke 74): seated mcp servers serve form rows + per-instance form-specs; the CLI-era unity/blender rows are RETIRED', async () => {
+  test('THE GENERIC MCP CARD (2026-09-21, the operator\'s law: "ALWAYS spawn a completely standalone DSH subagent — the configuration is the MCP tools to provide, the inputs, and the prompts"): ONE row id mcp serving the AGENT card face; per-server direct-call specs still serve (the subagent/flow lane); no per-server ROWS', async () => {
     const h = fakeHost({ schemas: [
       { name: 'melite_discover', description: 'discover things' },
       { name: 'mcp__blender__scene_info', description: 'Scene contents' },
       { name: 'mcp__blender__render', description: 'Render the viewport' },
     ] })
     apply(h.host as never)
-    // the forms table: the mcp INSTANCE row is served; the retired
-    // CLI-era card rows are GONE (superseded — operator order)
+    // the forms table: ONE generic row serves, covering ITSELF (the
+    // bare key 'mcp' — every seated server is a TILE inside the
+    // card's MCPs plus-box, never a service row); the per-server
+    // rows are GONE and the CLI-era card rows stay retired
     const forms = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/forms' })
     assert.equal(forms.status, 200)
     const rows = forms.body as Record<string, Record<string, unknown>>
-    assert.ok(rows['mcp:blender'] !== undefined, 'the mcp:blender row serves')
-    assert.equal(rows['mcp:blender']!['label'], 'MCP · blender')
-    assert.equal(rows['mcp:blender']!['sidebar_key'], '3d')
-    assert.equal(rows['mcp:blender']!['plugin'], 'mcp')
+    assert.ok(rows['mcp'] !== undefined, 'the ONE generic mcp row serves')
+    assert.equal(rows['mcp']!['label'], 'MCP')
+    assert.equal(rows['mcp']!['sidebar_key'], '3d')
+    assert.equal(rows['mcp']!['plugin'], 'mcp')
+    assert.equal(rows['mcp']!['default_service'], 'mcp')
+    assert.deepEqual(rows['mcp']!['covers'], ['mcp'])
+    assert.equal(rows['mcp:blender'], undefined, 'the per-server row is retired (the servers live ON the card)')
     assert.equal(rows['unity'], undefined, 'unity retired')
     assert.equal(rows['blender'], undefined, 'blender retired')
     assert.equal(rows['blender-shot'], undefined, 'blender-shot retired')
-    // the per-instance form-spec: the LIVE tool census folds into
-    // the select options (bare names — the executor composes the
-    // wire name)
+    // the GENERIC form-spec (the bare key the bench stage's card id
+    // resolves): the AGENT card face — the spawn's engine, the
+    // MCPs/Skills/Inputs plus-boxes with the LIVE server census, and
+    // the Task brief (the prompt spot). NO model field (a card field
+    // named 'model' is the estate's model key — the boot route serves)
+    const generic = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp' })
+    assert.equal(generic.status, 200)
+    const doc = generic.body as Record<string, unknown>
+    assert.equal(doc['form'], 'mcp')
+    assert.equal(doc['label'], 'MCP')
+    assert.equal(doc['engine'], 'agent')
+    assert.deepEqual(doc['families'], [])
+    const kinds = ((doc['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers)
+    assert.deepEqual(kinds.map((k) => k['param_key']), ['mcps', 'skills', 'inputs'])
+    const mcps = kinds[0]!
+    const opts = (mcps['fields'] as Array<{ options: Array<{ value: string }> }>)[0]!.options
+    assert.deepEqual(opts.map((o) => o.value), ['blender'], 'the MCPs tile census is the LIVE seated servers')
+    const schema = JSON.stringify(doc['schema'])
+    assert.match(schema, /task/, 'the brief is a schema field (the prompt spot)')
+    assert.equal(schema.includes('"model"'), false, 'no model field on the card face (the boot route serves the spawn)')
+    assert.deepEqual(doc['enhance_prompts'], { prompt: 'task', lyrics: '' })
+    // the per-server direct-call form-spec still serves (the subagent
+    // and flow-composed rows ride these)
     const spec = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp:blender' })
     assert.equal(spec.status, 200)
-    const doc = spec.body as Record<string, unknown>
-    assert.equal(doc['engine'], 'mcp:blender')
-    assert.equal(doc['label'], 'MCP · blender')
-    const opt = JSON.stringify(doc['schema'])
-    assert.match(opt, /"value":"scene_info"/)
-    assert.match(opt, /"value":"render"/)
-    assert.equal(opt.includes('mcp__blender__scene_info'), false, 'options carry bare tool names')
+    const per = spec.body as Record<string, unknown>
+    assert.equal(per['form'], 'mcp:blender')
+    assert.equal(per['label'], 'MCP · blender')
     // an UNSEATED instance refuses 404 (the census is the truth)
     const absent = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp:unity' })
     assert.equal(absent.status, 404)
     assert.match(String((absent.body as { error: string }).error), /does not resolve/)
+    // TWO seated servers: the MCPs tile census carries BOTH (the
+    // dropdown is interchangeable — unity rides beside blender) and
+    // the per-server direct-call spec serves for each
+    const h2 = fakeHost({ schemas: [
+      { name: 'melite_discover', description: 'discover things' },
+      { name: 'mcp__blender__scene_info', description: 'Scene contents' },
+      { name: 'mcp__unity__manage_scene', description: 'Scene contents' },
+    ] })
+    apply(h2.host as never)
+    const generic2 = await call(h2.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp' })
+    const kinds2 = (((generic2.body as Record<string, unknown>)['features']) as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const opts2 = ((kinds2[0]!['fields'] as Array<{ options: Array<{ value: string }> }>)[0]!.options)
+    assert.deepEqual(opts2.map((o) => o.value), ['blender', 'unity'], 'both seated servers ride the MCPs tile')
+    const per2 = await call(h2.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp:unity' })
+    assert.equal(per2.status, 200)
+    assert.equal((per2.body as Record<string, unknown>)['form'], 'mcp:unity')
+  })
+
+  test('NO SEATED SERVERS = no mcp row at all (the census is the truth, never static)', async () => {
+    const h = fakeHost({ schemas: [
+      { name: 'melite_discover', description: 'discover things' },
+    ] })
+    apply(h.host as never)
+    const forms = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/forms' })
+    const rows = forms.body as Record<string, Record<string, unknown>>
+    assert.equal(rows['mcp'], undefined)
+    assert.equal(rows['mcp:blender'], undefined)
+    const spec = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp' })
+    assert.equal(spec.status, 404)
   })
 
   test('serves live tool schemas plus the live llm routes', async () => {
@@ -672,6 +722,40 @@ describe('uploads rail', () => {
     }
   })
 
+  test('THE MESH ARM (primitive ③): glb uploads ride the door — named mime or extension-paired octet-stream; extension-less octet refuses', async () => {
+    const h = boot({})
+    const dir = await inputDir()
+    const bytes = Buffer.from([0x67, 0x6c, 0x54, 0x46, 1, 2]) // 'glTF' magic
+    const file = path.join(dir, TAG + 'donor.glb')
+    created.push(file)
+    // the named mime — model/gltf-binary
+    const ok1 = await call(h.routes, '/v1/uploads', {
+      method: 'POST',
+      url: '/v1/uploads',
+      body: { filename: TAG + 'donor.glb', data: 'data:model/gltf-binary;base64,' + bytes.toString('base64') },
+    })
+    assert.equal(ok1.status, 200)
+    assert.deepEqual((ok1.body as { path: string }).path, 'data/input/' + TAG + 'donor.glb')
+    assert.deepEqual(await fs.readFile(file), bytes)
+    // the browser's octet-stream, PAIRED with the .glb name
+    const ok2 = await call(h.routes, '/v1/uploads', {
+      method: 'POST',
+      url: '/',
+      body: { filename: TAG + 'donor2.glb', data: 'data:application/octet-stream;base64,' + bytes.toString('base64') },
+    })
+    assert.equal(ok2.status, 200)
+    created.push(path.join(dir, TAG + 'donor2.glb'))
+    // octet-stream WITHOUT the glb name stays refused — the whitelist
+    // never opens to every binary
+    const bad = await call(h.routes, '/v1/uploads', {
+      method: 'POST',
+      url: '/',
+      body: { filename: TAG + 'x.png', data: 'data:application/octet-stream;base64,' + bytes.toString('base64') },
+    })
+    assert.equal(bad.status, 400)
+    assert.ok(String((bad.body as { error: string }).error).includes('only png / jpeg / webp / glb'))
+  })
+
   test('a symlinked escape refuses instead of writing outside', async () => {
     const h = boot({})
     const dir = await inputDir()
@@ -804,11 +888,14 @@ describe('/v1 prefix discovery arms', () => {
     assert.ok(Array.isArray((kinds.body as { kinds: unknown[] }).kinds))
   })
 
-  test('the MCP instance card is VISIBLE in the catalog fold (the operator\'s find, 2026-09-18: "the MCP card isn\'t visible at all")', async () => {
-    // ONE seated server (the tools-seat census) → ONE cards row in
-    // /v1/model-catalog — the picker reads THIS section, so the row
-    // must fold here exactly as /v1/forms folds it (a row on forms
-    // alone was invisible).
+  test('the GENERIC MCP card is VISIBLE in the catalog fold (ONE row; never a row per server)', async () => {
+    // ONE seated server (the tools-seat census) → ONE cards row id
+    // 'mcp' in /v1/model-catalog — the picker reads THIS section, so
+    // the row must fold here exactly as /v1/forms folds it (a row
+    // on forms alone was invisible). The card face is SELF-CONTAINED
+    // at the bare key 'mcp' (the agent card doc — the spawn), so
+    // the row carries NO families: every seated server is a TILE in
+    // the card's MCPs plus-box census, never a picker row or rail.
     const seated = boot({ schemas: [
       { name: 'melite_discover' },
       { name: 'mcp__blender__scene_add_cube', description: 'add a cube' },
@@ -817,19 +904,32 @@ describe('/v1 prefix discovery arms', () => {
     const r = await call(seated.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
     assert.equal(r.status, 200)
     const cards = (r.body as { cards: Record<string, Record<string, unknown>> }).cards
-    assert.ok(cards['mcp:blender'] !== undefined, 'the seated MCP server lands a cards row')
-    const row = cards['mcp:blender']!
-    assert.equal(row['label'], 'MCP · blender')
+    assert.ok(cards['mcp'] !== undefined, 'the generic MCP card lands ONE cards row')
+    const row = cards['mcp']!
+    assert.equal(row['label'], 'MCP')
     assert.equal(row['genre'], '3d')
-    assert.deepEqual(row['families'], ['mcp:blender'])
+    assert.deepEqual(row['families'], [], 'no families — the add door resolves the bare key (the agent face)')
+    assert.equal(cards['mcp:blender'], undefined, 'no per-server cards row (the servers live ON the card)')
     // the same fold on /v1/forms (parity — one census, two doors)
     const f = await call(seated.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/forms' })
-    assert.ok(((f.body as Record<string, unknown>)['mcp:blender']) !== undefined)
-    // NO seats → NO rows (the census is the truth; the tree goldens
+    assert.ok(((f.body as Record<string, unknown>)['mcp']) !== undefined)
+    // TWO seated servers still fold ONE row — the card's MCPs tile
+    // census carries both (never a row or family per server)
+    const two = boot({ schemas: [
+      { name: 'melite_discover' },
+      { name: 'mcp__blender__render_frame' },
+      { name: 'mcp__unity__build' },
+    ] })
+    const r2 = await call(two.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
+    const cards2 = (r2.body as { cards: Record<string, Record<string, unknown>> }).cards
+    assert.deepEqual(cards2['mcp']!['families'], [])
+    assert.equal(Object.keys(cards2).filter((k) => k.startsWith('mcp:')).length, 0, 'never a per-server cards row')
+    // NO seats → NO row (the census is the truth; the tree goldens
     // stay seat-free)
     const bare = await call(boot({}).routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
     const bareCards = (bare.body as { cards: Record<string, unknown> }).cards
-    assert.equal(Object.keys(bareCards).filter((k) => k.startsWith('mcp:')).length, 0)
+    assert.equal(bareCards['mcp'], undefined)
+    assert.equal(Object.keys(bareCards).filter((k) => k.startsWith('mcp')).length, 0)
   })
 
   test('form-spec serves a key, 400s without one, 404s unknown', async () => {

@@ -19,3 +19,10 @@ export function loadFormsEdgeMeta(): Promise<Record<string, { inputs?: Record<st
   })
   return formsEdgeMetaPromise
 }
+
+/** THE TEST RESET (the same seam the pick cell exports): the
+ *  session cache is module state — a wall that needs the failed
+ *  arm (or a fresh fetch) resets it between mounts. */
+export function resetFormsEdgeMetaForTests(): void {
+  formsEdgeMetaPromise = null
+}

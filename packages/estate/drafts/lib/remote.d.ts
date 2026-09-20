@@ -122,7 +122,7 @@ export declare class DraftsRemoteService extends TypertRemoteService {
      *  stages/:sid died with the app and stroke L left the client door
      *  a throwing stub). Semantics VERBATIM from the old door
      *  (hDraftStagePatch, packages/gateway/doors drafts.ts, probed
-     *  editor_runs.py 818-1204): admission on the fixed key set
+     *  editor_runs.py): admission on the fixed key set
      *  (params | result | runStatus | inputs | inputOutputs — unknown
      *  keys refuse with the door's voice), params merge PER-KEY into
      *  the stage's existing params (never replace), the domain write

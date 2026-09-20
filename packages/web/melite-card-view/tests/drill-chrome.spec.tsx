@@ -147,3 +147,22 @@ test('the running drill shows stop + the tap fold; the tile shows the percent', 
   expect(prog.textContent).toContain('sampling 7/20')
   expect(prog.textContent).toContain('35%')
 })
+
+test('THE STATUS SEAT RIDES CONTENT, NOT GEOMETRY (2026-09-21, operator: the permanent margin was struck; the SCROLL LOCK owns the geometry law — the seat exists ONLY while live or failed carries text)', async () => {
+  stubWire()
+  const user = userEvent.setup()
+  mount()
+  // open the IDLE stage's drill (tile 1): NO seat — nothing to say, no margin
+  await user.click(tileButtons()[1] as HTMLElement)
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  let drill = document.querySelector('div[class*="zoomCard"]') as HTMLElement
+  expect(within(drill).queryByTestId('zoom-status')).toBe(null)
+  // close, open the RUNNING stage (tile 0): the SAME seat carries the pill
+  await user.click(within(drill).getByRole('button', { name: 'Collapse card' }))
+  await user.click(tileButtons()[0] as HTMLElement)
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  drill = document.querySelector('div[class*="zoomCard"]') as HTMLElement
+  const seat = within(drill).getByTestId('zoom-status') as HTMLElement
+  expect(within(seat).getByTestId('drill-progress')).toBeTruthy()
+  expect(seat.getAttribute('class')).toContain('zoomWebhook')
+})

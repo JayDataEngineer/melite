@@ -120,6 +120,11 @@ function ZoomSkeleton(): ReturnType<typeof h> {
 }
 
 /** One overlay mount (keyed per stage by the caller). */
+// THE BUILD STAMP (the verification law, 2026-09-21): the operator
+// decides in one glance whether the screen runs the bytes that hold
+// the fix — UTC stamp, dim, right of the stage title.
+const ZOOM_BUILD = 'build 09-20 18:47'
+
 function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => ReturnType<typeof h> }): ReturnType<typeof h> {
   const { stage, detail, onClose, ...rest } = props
   const [ready, setReady] = useState(false)
@@ -219,6 +224,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
         },
           h('div', { className: css.zoomBar },
             h('span', { className: css.zoomTitle }, 'Stage ' + String(stage.title ?? stage.card ?? stage.id)),
+            h('span', { className: css.zoomBuild, title: ZOOM_BUILD }, ZOOM_BUILD),
             // THE RUN PILL (the one gesture seat, frame-owned): ghost
             // face, glyph + word, Stop mid-run — the drill/studio
             // bottom seats retired with it.
@@ -227,10 +233,19 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             // THE MODEL DROPDOWN rides its left edge (the ✦ verb's own
             // selector — one seat, the choice threads every enhance
             // press through the shared card-LLM preference).
+            // THE KEYED BAR (the 2026-09-21 pull, mutation-proven:
+            // enhanceVerb's promise resolves MID-RUN, this capsule
+            // flips null→array-of-2, every POSITIONAL sibling after
+            // it shifted and REMOUNTED — the seat, then the whole
+            // preview body — and the scroll clamped 355→46 in the
+            // dead frame. Children match by KEY, never by position;
+            // the capsule occupies its two slots ALWAYS (null when
+            // absent) so the list's shape never changes.
             enhanceVerb !== null
               ? [
                 llmRoutes !== null
                   ? h('select', {
+                    key: 'llm',
                     className: css.drillLlm,
                     'aria-label': 'Enhance model', 'data-testid': 'drill-llm',
                     value: cardLlm,
@@ -241,20 +256,23 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
                   )
                   : null,
                 h('button', {
+                  key: 'enhance',
                   className: css.drillRunBtn, type: 'button',
                   'aria-label': 'Agent Enhance', 'data-testid': 'drill-enhance',
                   disabled: enhancingBar,
                   onClick: fireEnhance,
                 }, h('span', null, enhancingBar ? '✦ enhancing…' : '✦ Enhance')),
               ]
-              : null,
+              : [null, null],
             live
               ? h('button', {
+                key: 'run',
                 className: css.drillRunBtn, type: 'button',
                 'aria-label': 'Stop run', 'data-testid': 'drill-stop',
                 onClick: () => { props.onStop() },
               }, h(IconStopFill16, { size: 16 }), h('span', null, 'Stop'))
               : h('button', {
+                key: 'run',
                 className: css.drillRunBtn, type: 'button',
                 'aria-label': 'Run stage', 'data-testid': 'drill-run',
                 onClick: () => { (boundRef.current ?? props.onRun)() },
@@ -263,33 +281,44 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             // SAME ghost-pill grammar as ✦ Enhance and Run — glyph +
             // word, one button row, no orphan icon seat).
             h('button', {
+              key: 'close',
               className: css.drillRunBtn,
               type: 'button',
               'aria-label': 'Collapse card',
               onClick: onClose,
             }, h('span', null, '✕'), h('span', null, 'Close')),
           ),
-          // THE WEBHOOK BAR: live → spinner + activity + percent + a
-          // thin meter; failed → the reason, whole text (the drill is
-          // where it is READ); idle/succeeded → nothing.
-          live || failedText !== null || startError !== null
-            ? h('div', { className: css.zoomWebhook, role: 'status' },
-              live
-                ? h('span', { className: css.drillProgress, 'data-testid': 'drill-progress' },
-                  h(IconLoadingOutline16, { size: 14 }),
-                  h('span', null, [
-                    act !== '' ? act : 'running',
-                    pct !== null ? ' · ' + String(pct) + '%' : '',
-                  ].join('')),
-                  pct !== null
-                    ? h('span', { className: css.zoomMeter },
-                      h('span', { className: css.zoomMeterFill, style: { width: pct + '%' } }))
-                    : null,
-                )
-                : h('span', { className: css.runError, 'data-testid': 'drill-run-error' },
-                  startError ?? failedText),
-            )
-            : null,
+          // THE GEOMETRY-INVARIANT STATUS SEAT (the 2026-09-21
+          // seizure law, operator: "everytime this component
+          // updates … it gets jerked up"): the row rides the drill
+          // from open to close — live shows spinner + activity +
+          // percent + meter, failed shows the reason (whole text —
+          // the drill is where it is READ), idle/succeeded hold
+          // the seat EMPTY. The old mount/unmount at every run
+          // boundary removed 23px ABOVE the scroll area and dragged
+          // the view up a hit at a time (measured: bodyY 123→100
+          // with scrollTop 346→74 at terminal). Content churns
+          // inside the reserved box; the box never moves.
+          (live || failedText !== null || startError !== null)
+          ? h('div', { key: 'status', className: css.zoomWebhook, role: 'status', 'data-testid': 'zoom-status' },
+            live
+              ? h('span', { className: css.drillProgress, 'data-testid': 'drill-progress' },
+                h(IconLoadingOutline16, { size: 14 }),
+                h('span', null, [
+                  act !== '' ? act : 'running',
+                  pct !== null ? ' · ' + String(pct) + '%' : '',
+                ].join('')),
+                pct !== null
+                  ? h('span', { className: css.zoomMeter },
+                    h('span', { className: css.zoomMeterFill, style: { width: pct + '%' } }))
+                  : null,
+              )
+              : failedText !== null || startError !== null
+                ? h('span', { className: css.runError, 'data-testid': 'drill-run-error' },
+                  startError ?? failedText)
+                : null,
+          )
+          : null,
           // THE BODY SEAT (the hour-7 height war): the detail sits in
           // a FLEXED, MIN-ZERO body — the studio's own height:100%
           // chain (studioRoot → .shell grid) needs a parent that GIVES
@@ -297,7 +326,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           // collapsed to the rail's content height and the preview
           // + timeline sank below the fold. Ordinary cards are
           // unaffected: their zoomDetail scrolls inside.
-          h('div', { className: css.zoomBody },
+          h('div', { key: 'body', className: css.zoomBody },
             ready
               ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onStop: rest.onStop, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId, bindRun: (r: () => void) => { boundRef.current = r }, bindEnhance: bindEnhanceStable })
               : h(ZoomSkeleton),
@@ -313,5 +342,5 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
 export function CardZoomOverlay(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => ReturnType<typeof h> }): ReturnType<typeof h> {
   const mounted = typeof document !== 'undefined'
   const tree = h(ZoomMount, { key: props.stage.id, ...props })
-  return mounted ? createPortal(tree, document.body) : tree
+  return mounted ? createPortal(tree, document.body, 'zoom-portal') : tree
 }

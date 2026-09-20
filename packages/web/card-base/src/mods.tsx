@@ -398,10 +398,22 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
               const steps = typeof entry['steps'] === 'number'
                 ? entry['steps'] as number
                 : option !== null && option.defaults !== undefined && typeof option.defaults['steps'] === 'number' ? option.defaults['steps'] as number : undefined
+              // THE ENTRY FACE (2026-09-21, the operator's "not just
+              // MCPs"): a tile names its SELECTION. The catalog hit
+              // names it (as before); else the entry's own select
+              // field names it — an MCP tile reads 'blender', a skill
+              // tile its leaf — resolved through the kind's served
+              // field options, never hand-spelled. Only then the id
+              // title and the bare kind label fallbacks.
+              const picked = (k.fields ?? []).find((f) =>
+                f.type === 'select' && typeof entry[f.name] === 'string' && (entry[f.name] as string) !== '')
+              const pickedLabel = picked === undefined ? null : (picked.options ?? [])
+                .map((o) => typeof o === 'string' ? { value: o, label: o } : o)
+                .find((o) => o.value === entry[picked.name] as string)?.label ?? null
           return h(ModTile, {
             key: k.param_key + '-' + i,
             tileId: k.param_key + '-' + i,
-            label: option !== null ? option.label : (id !== '' ? titleCaseId(id) : (isOptionKind(k) ? k.label + ' ' + String(i + 1) : k.label)),
+            label: option !== null ? option.label : (pickedLabel !== null ? pickedLabel : (id !== '' ? titleCaseId(id) : (isOptionKind(k) ? k.label + ' ' + String(i + 1) : k.label))),
             ...(strength !== undefined ? { strength } : {}),
             ...(steps !== undefined ? { steps } : {}),
             onOpen: () => { openEdit(k, i) },

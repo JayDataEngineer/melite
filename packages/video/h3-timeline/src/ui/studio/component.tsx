@@ -73,7 +73,6 @@ import s from "./studio.module.css"
 import { StudioPreview } from "./StudioPreview"
 import { StudioStripPane } from "./StudioStripPane"
 import { RunRecipeEngine } from "./RunRecipeEngine"
-import { RunAdvancedPanels } from "./RunAdvancedPanels"
 import { RunRefsClips } from "./RunRefsClips"
 import { CallCardsPanel } from "./CallCardsPanel"
 import { useDocState } from "./useDocState"
@@ -187,7 +186,8 @@ export function VideoTimelineStudio({
               is suppoesd to be an optional to unfold at the bottom of
               the input parmaeters"). The INPUT parameters — the call
               cards — own the top of the rail; the Run fold is the
-              OPTIONAL global layer beneath them, closed by default.
+              OPTIONAL global layer beneath them, open by default like
+              every other card (the closed fold was the outlier).
               Content unchanged: Recipe (preset/fps/audio/continuity/
               seed) + Engine (shift/sampler/scheduler/steps/accel) +
               the master audio stem (MIX).
@@ -223,7 +223,7 @@ export function VideoTimelineStudio({
           />
           )}
           {selected == null && (
-          <details data-testid="tl-run-panel" className={s.runFold}>
+          <details data-testid="tl-run-panel" className={s.runFold} open>
             <summary className={s.runSummary}>
               <ChevronDown className={cn(s.sz12, s.chev)} aria-hidden />
               Run parameters
@@ -238,7 +238,11 @@ export function VideoTimelineStudio({
             setLayerAKey={fx.setLayerAKey}
             refArtifacts={audio.refArtifacts}
           />
-          <RunAdvancedPanels layerA={layerA} setLayerAKey={fx.setLayerAKey} />
+          {/* RunAdvancedPanels is DEAD (the generic-seam law): CardForm
+           * above already renders every SLA leaf, every post leaf, and
+           * the loras mod section — the second SpecPanel + ModLane
+           * mount rendered all of it TWICE (the doubled SLA + doubled
+           * Modifiers the operator caught). */}
           <RunRefsClips
             layerA={layerA}
             takeAudioFile={audio.takeAudioFile}

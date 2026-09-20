@@ -364,4 +364,63 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     const doc = (calls.find((c) => c.method === "runs/start")?.args["doc"] ?? {}) as Record<string, unknown>;
     expect(doc["input_image"]).toBe("data/input/36039.jpg");
   });
+
+  // ── THE GENERIC MCP CARD'S RUN LEG (2026-09-21, the operator's
+  //  law: "ALWAYS spawn a completely standalone DSH subagent"): the
+  //  card's run IS an AGENT stage on the FLOW door (the subagent
+  //  loop) — the params ride VERBATIM (bag entries folded
+  //  engine-side by the executor's gate, never re-parsed
+  //  client-side); an empty Task refuses AT THE PRESS, never a
+  //  zombie run.
+  test("an mcp stage starts the subagent spawn through the FLOW door, engine 'agent', params verbatim", async () => {
+    const { calls } = mountFakes({
+      startDocs: [{ run_id: "run-mcp", status: "queued", queue_position: 0 }],
+    });
+    stubCatalogFetch({ cards: { mcp: { id: "mcp", label: "MCP", families: [] } } });
+    resetCardFamiliesCache();
+    const res = await runCardStage("bench-main", stage({
+      id: "s_3",
+      card: "mcp",
+      engine: "agent",
+      params: {
+        task: "rig the character",
+        mcps: [{ server: "blender" }, "unity"],
+        skills: [],
+        inputs: [{ name: "mesh", value: "data/input/char.glb" }],
+      },
+    }));
+    expect(res).toEqual({ runId: "run-mcp" });
+    const doc = (calls.find((c) => c.method === "runs/start")?.args["doc"] ?? {}) as Record<string, unknown>;
+    expect(doc["flow_inline"]).toEqual({
+      id: "mcp",
+      stages: [{
+        id: "s_3",
+        engine: "agent",
+        params: {
+          task: "rig the character",
+          mcps: [{ server: "blender" }, "unity"],
+          skills: [],
+          inputs: [{ name: "mesh", value: "data/input/char.glb" }],
+        },
+        outputs: { default: "text" },
+      }],
+    });
+    expect(doc["draft_id"]).toBe("bench-main");
+    expect(doc["test"]).toBe(false);
+  });
+
+  test("an empty Task refuses AT THE PRESS (the subagent spawns with no brief otherwise)", async () => {
+    const { calls } = mountFakes();
+    stubCatalogFetch({ cards: { mcp: { id: "mcp", families: [] } } });
+    resetCardFamiliesCache();
+    const noBrief = await runCardStage("bench-main", stage({
+      id: "s_3", card: "mcp", engine: "agent", params: { mcps: [{ server: "blender" }] },
+    }));
+    expect(String((noBrief as { refused: string }).refused)).toMatch(/write the Task first/);
+    const blankBrief = await runCardStage("bench-main", stage({
+      id: "s_3", card: "mcp", engine: "agent", params: { task: "   " },
+    }));
+    expect(String((blankBrief as { refused: string }).refused)).toMatch(/write the Task first/);
+    expect(calls.filter((c) => c.method === "runs/start")).toEqual([]);
+  });
 });

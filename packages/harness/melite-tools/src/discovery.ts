@@ -264,6 +264,24 @@ const MODIFIER_PACKS: Record<
   // — the firing gate refuses every stated entry loud (fate
   // 'refused', the ray receipt in guard.ts).
   ip_adapter: { kind: 'ip_adapter', label: 'IP-Adapter', cardinality: 'list', max_stack: 5, param_key: 'ip_adapters', entry: 'hybrid', option_key: 'kind', scalar_key: 'weight' },
+  // THE VOICE SEAT (born the voice-lock mod catch 2026-09-21 —
+  // the card died the same stroke, the seat is the TTS card's LOAD
+  // half now): the
+  // qvoice pack — a saved persona artifact (.qvoice file + the
+  // clone pipeline's identity-strength knob) — boards qwen3-tts,
+  // fires the studio generate lane in ttsT1 (the round-trip
+  // stroke 2026-09-20: the AudiocoreTTS embedding path is dead at
+  // the C ABI), serves its
+  // envelope, but no row ever offered it (the lanpaint missing-seat
+  // disease verbatim). Field mode (the mask precedent): the entry
+  // IS the contract object, no catalog.
+  qvoice: { kind: 'qvoice', label: 'Voice', cardinality: 'list', max_stack: 1 },
+  // THE DESIGN SEAT (the README stroke 2026-09-21 — the voice-lock
+  // card dies, SAVE moves into the TTS card's mods): the
+  // qvoice_save pack — name + VoiceDesign prompt + sampling —
+  // boards qwen3-tts-voicedesign, fires the 1.7B export lane.
+  // Field mode, same precedent: the entry IS the contract.
+  qvoice_save: { kind: 'qvoice_save', label: 'Design', cardinality: 'list', max_stack: 1 },
 }
 
 function optionTooltip(
@@ -282,13 +300,20 @@ function optionTooltip(
  *  pack rows (union-served rows carry the shared suffix); the
  *  entry's param rows derive client-side off `mod_schemas[pack]`
  *  (the absorbed contract's own toJSON — same walker as the card
- *  fields, one meta path). */
+ *  fields, one meta path). THE ENVELOPE MIRROR (born the
+ *  voice-lock mod catch 2026-09-21, same stroke as the seat): a
+ *  pack with no envelope for THIS family
+ *  serves no entry — the client walks mod_schemas[pack] for rows,
+ *  so a seat with no envelope is a brick by construction (the
+ *  qvoice pack boards the DECL but the base lane's envelope is
+ *  dropped by owner-scoping — the entry must drop with it). */
 function specModifiers(
   svc: ComfyUIService,
   card: string,
   key: string,
   decl: ModelDecl | null,
   def: CardDefinition | undefined,
+  enveloped: ReadonlySet<string>,
 ): Record<string, unknown>[] {
   const out: Record<string, unknown>[] = []
   for (const m of decl?.mods ?? []) {
@@ -299,6 +324,7 @@ function specModifiers(
     const marries = typeof m === 'string' ? undefined : m.marries
     const meta = MODIFIER_PACKS[pack]
     if (meta === undefined) continue
+    if (!enveloped.has(pack)) continue
     const cat = svc.modCatalog(pack, key)
     // THE PARAM FIELDS ARE THE ENVELOPE'S (the parameter audit): the
     // entry carries the pack's catalog facts; its param rows derive
@@ -384,6 +410,10 @@ function specModifiers(
     // section renderer offers the brush verb only on a declared
     // face; never sniffed from the kind name.
     if (k.leaf_face !== undefined) entry.leaf_face = k.leaf_face
+    // THE ARM-CONDITIONAL EXTENSION PACKS (the mask-form SAM2 law):
+    // served verbatim — the compose door enforces them only when
+    // the kind's bag is non-empty.
+    if (k.requires !== undefined) entry.requires = k.requires
     out.push(entry)
   }
   return out
@@ -398,7 +428,11 @@ export type { DeclaredModifierKind }
 /** The family's DECL face ("MOSS-SFX v2") — registryModel in a
  * guard, degrading to the id (the module singleton's law: a read
  * that can miss never throws — same shape as the getModel guard
- * above). Never the composed variant+quant row. */
+ * above). Never the composed variant+quant row. The variant-route
+ * scan died here 2026-09-21 (the README stroke: qwen3-tts-base was
+ * never a variant route — it is the 0.6B Base FAMILY, and every
+ * boarded id now names a family DECL; a scan for variant faces
+ * would only re-legitimize the fiction). */
 function familyFace(fam: string): string {
   try {
     return registryModel(fam).label
@@ -504,7 +538,7 @@ export function specBody(
   // pack) and render ONLY through the mod surface. ControlNet
   // proves the law by absence: the pack waits unboarded and no
   // envelope, no entry, no endpoint ever names it.
-  const modifiers = specModifiers(svc, res.card, key, decl, def)
+  const modifiers = specModifiers(svc, res.card, key, decl, def, new Set(Object.keys(schemas.mods)))
   // the machine truth (one spelling: liveScanOrder, the registry's
   // own admission read) — presence marks ride the families block
   let liveMids: Set<string>
@@ -767,9 +801,10 @@ export async function cardToolsArm(): Promise<unknown[]> {
 
 /** The full live catalog section (models/families ride the registry
  *  emission; cards/capabilities ride the cards; the vocabulary rides
- *  the slot SSOT). The MCP instance rows fold into CARDS with the
- * same live census /v1/forms rides (the picker reads this section —
- * ONE surface; a row only here is invisible, a row only there was). */
+ *  the slot SSOT). The GENERIC MCP card row folds into CARDS with
+ * the same live census /v1/forms rides (the picker reads this
+ * section — ONE surface; a row only here is invisible, a row only
+ * there was). */
 export function catalogSection(
   defs: Map<string, CardDefinition>,
   mcpServers: readonly string[] = [],
@@ -779,21 +814,24 @@ export function catalogSection(
     unknown
   >
   const { cards, capabilities } = cardSections(defs)
-  // THE MCP INSTANCE FOLD (2026-09-18, the operator's find: "the
-  // MCP card isn't visible at all"): one cards row per SEATED
-  // server, the same row the forms table serves — the census is the
-  // caller's LIVE fold (never static), so no seats = no rows and
-  // the tree stays seat-free. form-spec resolves the row
-  // through the ENGINE arm (no card, no family behind it).
-  for (const server of [...mcpServers].sort()) {
-    cards[`mcp:${server}`] = {
-      id: `mcp:${server}`,
-      label: `MCP · ${server}`,
+  // THE GENERIC MCP CARD FOLD (2026-09-21, the operator's law: "it
+  // was supposed to be a generic MCP card… ALWAYS spawn a
+  // completely standalone DSH subagent"): ONE cards row, id 'mcp',
+  // NO families — the card's face is self-contained at the bare key
+  // 'mcp' (the AGENT card doc: MCPs/Skills/Inputs plus-boxes + the
+  // Task brief; the servers to provide are the MCP tiles' OWN live
+  // census, never a picker row or rail per server). The census is
+  // the caller's LIVE fold (never static), so no seats = no row and
+  // the tree stays seat-free.
+  if (mcpServers.length > 0) {
+    cards['mcp'] = {
+      id: 'mcp',
+      label: 'MCP',
       description:
-        `Live MCP server seat — tool calls through the estate (one row per seated server; ` +
-        `the form rides the engine arm at form-spec?model=mcp:${server}).`,
+        'Spawn a standalone DSH subagent provisioned with the chosen MCP servers\u2019 tools \u2014 ' +
+        'stack MCP tiles to grant servers, hand it artifacts through Inputs, the Task is its brief.',
       genre: '3d',
-      families: [`mcp:${server}`],
+      families: [],
       principles: [],
       skills: [],
       has_inference: false,
@@ -819,8 +857,8 @@ export async function modelCatalogArm(
   return catalogSection(await loadCardDefs(), mcpServers)
 }
 
-/** /v1/forms — the forms table (card rows + the MCP INSTANCE rows:
- *  one descriptor row per seated server, §1.5 — the engine-served
+/** /v1/forms — the forms table (card rows + the GENERIC MCP row:
+ *  ONE engine-served row, id 'mcp' — the subagent-spawn card; the
  *  surface the cards tab lists; the census is the caller's LIVE
  *  fold, never static). */
 export function formsWithEngines(
@@ -828,16 +866,21 @@ export function formsWithEngines(
   mcpServers: readonly string[],
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { ...cardRows }
-  for (const [i, server] of [...mcpServers].sort().entries()) {
-    out[`mcp:${server}`] = {
-      label: `MCP · ${server}`,
+  // ONE row (the generic card's own meta; the same fold
+  // catalogSection serves — no seats = no row). The row covers
+  // ITSELF (the bare key 'mcp' — the agent card doc): every seated
+  // server is a TILE inside the card's MCPs plus-box, never a
+  // service row of its own.
+  if (mcpServers.length > 0) {
+    out['mcp'] = {
+      label: 'MCP',
       genre: '3d',
-      order: 23 + i,
+      order: 23,
       plugin: 'mcp',
       sidebar_key: '3d',
-      default_service: `mcp:${server}`,
+      default_service: 'mcp',
       hidden: false,
-      covers: [`mcp:${server}`],
+      covers: ['mcp'],
       inputs: {},
       outputs: { default: 'text' },
     }

@@ -11,7 +11,7 @@ import { mediaUrl } from './draft.ts'
 import { benchSessionKey, restoreRunToBench } from './cards-resource.ts'
 import type { CardsDraftValue, CardsRunValue, BenchStageRow, CardsBenchValue } from './cards-resource.ts'
 import { cardsRunAddress } from './cards-resource.ts'
-import { StageDrill } from './stage-drill.tsx'
+import { ScrollLockedDetail, StageDrill } from './stage-drill.tsx'
 
 /**
  * THE DRAFT VIEW (the conversation card's target, 2026-09-12 — the
@@ -42,7 +42,7 @@ export function DraftView({ value, running, onRun, onStop, onBack, onPatchParams
 }): ReturnType<typeof h> {
   const found = value.stages.find((s) => s.id === value.stageId) ?? null
   if (found === null) {
-    return h('div', { className: css.zoomDetail },
+    return h(ScrollLockedDetail, null,
       h('p', { className: css.groupNote },
         'Stage ' + value.stageId + ' is no longer on draft ' + value.draftId + '.'),
       h('div', { className: css.runRow },

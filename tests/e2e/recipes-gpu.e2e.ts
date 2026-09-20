@@ -387,3 +387,58 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 300_000)
 })
+
+// ── THE QWEN 2.1 PAIR (2026-09-21, the Comfy-Org release; the naming
+// law: qwen-img-21 = the t2i lane, qwen-img-edit-21 = the cached-
+// reference edit lane over the SAME base weights) ──────────────────
+describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)', () => {
+  it('qwen-img-21 upstream_solvers: the pill payload composes the ONE TextEncodeQwenImage21 node (pos out 0, neg out 1) and RUNS', async () => {
+    const w = await bootWorld('recipes-q21-')
+    try {
+      const cards = (w.ctx as unknown as { cardRegistry: { phase1Card: (b: Record<string, unknown>, m: string) => Promise<{ params: Record<string, unknown> }>, phase2Card: (p1: unknown, runId: string) => Promise<{ graph: Record<string, unknown> }> } }).cardRegistry
+      // the pill payload: what the upstream_solvers recipe stamps (euler/simple)
+      const p1 = await cards.phase1Card({
+        model: 'qwen-img-21', prompt: 'a small red cube on a white field',
+        width: 512, height: 512, sampler: 'euler', scheduler: 'simple',
+      }, 'qwen-img-21')
+      const graph = (await cards.phase2Card(p1, 'compose-check')).graph as Record<string, { class_type?: string, inputs?: Record<string, unknown> }>
+      const enc = Object.entries(graph).find(([, r]) => r.class_type === 'TextEncodeQwenImage21')
+      assert.ok(enc !== undefined, 'the composed graph carries the 2.1 encoder node')
+      const sampler = Object.entries(graph).find(([, r]) => r.class_type === 'KSampler')
+      assert.ok(sampler !== undefined)
+      const encId = enc![0]
+      assert.equal((sampler![1].inputs?.positive as string[])[0], encId, 'positive wires the 2.1 encoder')
+      assert.equal((sampler![1].inputs?.positive as string[])[1], 0, 'positive rides output 0')
+      assert.equal((sampler![1].inputs?.negative as string[])[0], encId, 'negative wires the SAME node (one encoder, two outputs)')
+      assert.equal((sampler![1].inputs?.negative as string[])[1], 1, 'negative rides output 1 — the node\'s second CONDITIONING')
+      assert.equal(sampler![1].inputs?.sampler_name, 'euler')
+      assert.equal(sampler![1].inputs?.scheduler, 'simple')
+
+      const s = await runCard(w, {
+        model: 'qwen-img-21', prompt: 'a small red cube on a white field',
+        width: 512, height: 512, sampler: 'euler', scheduler: 'simple',
+      }, 'qwen-img-21 t2i')
+      assert.ok(byClass(s, 'TextEncodeQwenImage21').length === 1, 'the RUN workflow carries exactly ONE 2.1 encoder')
+      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the artifact is a real PNG')
+      // the t2i artifact feeds the edit receipt (a real chain)
+      const chainInput = join(s.runDir, s.stageUrl)
+      const w2 = await bootWorld('recipes-q21e-')
+      try {
+        const s2 = await runCard(w2, {
+          model: 'qwen-img-edit-21', prompt: 'make the cube blue',
+          image1: chainInput, width: 512, height: 512,
+        }, 'qwen-img-edit-21 edit')
+        assert.ok(byClass(s2, 'QwenImage21Cache').length === 1, 'the RUN workflow wraps the unet in the 2.1 cache')
+        assert.ok(byClass(s2, 'TextEncodeQwenImage21').length === 1)
+        assert.equal(byClass(s2, 'VAEEncode').length, 0, 'the 2.1 edit NEVER VAEEncodes the source (the 2511 lane\'s move)')
+        assert.equal(firstBytes(s2).readUInt32BE(0), 0x89504e47, 'the edit artifact is a real PNG')
+      } finally {
+        w2.stop()
+        await w2.ctx.fiber.dispose()
+      }
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 900_000)
+})

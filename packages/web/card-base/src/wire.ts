@@ -136,18 +136,26 @@ export async function fetchFormsTable(signal?: AbortSignal): Promise<Record<stri
   return v1Get<Record<string, FormsTableRow>>('/v1/forms', signal)
 }
 
-/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
- *  input-dir path the param accepts. The door's own gates (type
- *  whitelist, one clean segment) are the law — the client only
- *  voices its refusals, never invents its own. */
+/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL; the
+ *  mesh wire type boards .glb/.gltf — model/gltf-binary, or the
+ *  browser's octet-stream with a GLB name) → the input-dir path the
+ *  param accepts. The door's own gates (type whitelist, one clean
+ *  segment) are the law — the client only voices its refusals, never
+ *  invents its own. */
 export async function uploadInputFile(file: File): Promise<{ name: string; file: string }> {
   const isImage = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/webp'
   const isAudio = file.type.startsWith('audio/')
-  if (!isImage && !isAudio) {
-    throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image or audio file')
+  // THE MESH ARM (primitive ③): .glb/.gltf rides the same door —
+  // model/gltf-binary when the browser knows it, octet-stream with a
+  // GLB extension when it does not (the door pairs the two the same
+  // way, extension-gated).
+  const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name)
+  const isMesh = file.type === 'model/gltf-binary' || (file.type === 'application/octet-stream' && glbName)
+  if (!isImage && !isAudio && !isMesh) {
+    throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image, audio, or .glb/.gltf file')
   }
   if (isAudio) {
-    throw new Error('audio uploads have no door yet \u2014 the uploads door boards png / jpeg / webp only')
+    throw new Error('audio uploads have no door yet \u2014 the uploads door boards png / jpeg / webp / glb only')
   }
   const dataUrl: string = await new Promise((resolve, reject) => {
     const r = new FileReader()

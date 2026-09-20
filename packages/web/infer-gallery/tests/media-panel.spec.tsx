@@ -191,7 +191,7 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
     expect(screen.getAllByText(/pic\.png/).length).toBeGreaterThanOrEqual(2)
   })
 
-  it('a final film badges FINAL FILM; a model badges 3D', async () => {
+  it('no film badges anything (the FINAL FILM tag is dead); a model badges 3D', async () => {
     vi.stubGlobal('fetch', (url: string) =>
       url === '/infer-gallery/runs'
         ? runsFeed([run({ artifacts: [
@@ -200,11 +200,11 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
           ] })])
         : draftsFeed([]))
     render(<MediaPanel />)
-    await waitFor(() => { expect(screen.getByText('FINAL FILM')).toBeTruthy() })
-    expect(screen.getByText('3D')).toBeTruthy()
+    await waitFor(() => { expect(screen.getByText('3D')).toBeTruthy() })
+    expect(screen.queryByText('FINAL FILM')).toBeNull()
   })
 
-  it('the video tile poster comes from the sibling poster map', async () => {
+  it('the video tile poster comes from the sibling poster map (as the video still — never a broken img)', async () => {
     vi.stubGlobal('fetch', (url: string) =>
       url === '/infer-gallery/runs'
         ? runsFeed([run({ artifacts: [
@@ -213,10 +213,50 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
           ] })])
         : draftsFeed([]))
     render(<MediaPanel />)
-    await waitFor(() => {
-      const posters = Array.from(document.querySelectorAll('img'))
-      expect(posters.some((i) => i.getAttribute('src') === '/v/film_last_frame.png')).toBeTruthy()
+    const tile = await waitFor(() => {
+      const v = document.querySelector('button video:not([controls])') as HTMLVideoElement | null
+      expect(v).toBeTruthy()
+      return v as HTMLVideoElement
     })
+    expect(tile.getAttribute('src')).toBe('/v/film.mp4')
+    expect(tile.getAttribute('poster')).toBe('/v/film_last_frame.png')
+    expect(document.querySelector('button img[src="/v/film.mp4"]')).toBeNull()
+  })
+
+  it('a posterless video tile renders its own first frame (muted, metadata-only — never autoplay)', async () => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs'
+        ? runsFeed([run({ artifacts: [
+            { url: '/v/clip.mp4', name: 'clip.mp4', type: 'video' },
+            { url: '/v/film_w1_ab12f.mp4', name: 'film_w1_ab12f.mp4', type: 'video' },
+          ] })])
+        : draftsFeed([]))
+    render(<MediaPanel />)
+    const tiles = await waitFor(() => {
+      const vs = Array.from(document.querySelectorAll('button video:not([controls])')) as HTMLVideoElement[]
+      expect(vs).toHaveLength(2)
+      return vs
+    })
+    for (const tile of tiles) {
+      expect(tile.muted).toBe(true)
+      expect(tile.getAttribute('preload')).toBe('metadata')
+      expect(tile.hasAttribute('autoplay')).toBe(false)
+    }
+    expect(tiles.some((t) => t.getAttribute('src') === '/v/clip.mp4')).toBe(true)
+    // the window film has no still sibling: no poster attr, the first frame shows
+    const window = tiles.find((t) => t.getAttribute('src') === '/v/film_w1_ab12f.mp4') as HTMLVideoElement
+    expect(window.hasAttribute('poster')).toBe(false)
+  })
+
+  it('the wand is a history icon (no CARDS text on the tile)', async () => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs'
+        ? runsFeed([run({ artifacts: [{ url: '/v/clip.mp4', name: 'clip.mp4', type: 'video' }] })])
+        : draftsFeed([]))
+    render(<MediaPanel />)
+    const wand = await waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement)
+    expect(wand.textContent).not.toMatch(/CARDS/)
+    expect(wand.querySelector('svg')).toBeTruthy()
   })
 
   it('model tile opens the estate-artifact resource, with a download fallback', async () => {
@@ -403,7 +443,7 @@ describe('MediaPanel — the flows face + the bench CAS load', () => {
 describe('MediaPanel — the wand restores the run onto the bench', () => {
   const draftDoc = { draft_id: 'd9', status: 'ready', intent: 'walking card', stages: [{ id: 's_1', engine: 'comfyui' }] }
 
-  it('✦ CARDS restores the run\'s card onto the bench and opens it (row draft fast path)', async () => {
+  it('the history wand restores the run\'s card onto the bench and opens it (row draft fast path)', async () => {
     const opened: string[] = []
     const bodies: Array<Record<string, unknown>> = []
     const hits: string[] = []
@@ -427,7 +467,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
         actions: { openResource: (a: string) => { opened.push(a) } } },
     }) as never} />)
     const wand = await waitFor(() => {
-      const el = screen.getByText('✦ CARDS')
+      const el = screen.getByLabelText('Open as cards — this run')
       expect(el).toBeTruthy()
       return el as HTMLElement
     })
@@ -466,7 +506,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
       tab: { navigation: { address: 'dsh-resource://media' },
         actions: { openResource: (a: string) => { opened.push(a) } } },
     }) as never} />)
-    fireEvent.click(await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement))
+    fireEvent.click(await waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement))
     await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
     expect(hits).toContain('/infer-gallery/flow?run_id=r1')
   })
@@ -498,7 +538,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
       tab: { navigation: { address: 'dsh-resource://media' },
         actions: { openResource: (a: string) => { opened.push(a) } } },
     }) as never} />)
-    fireEvent.click(await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement))
+    fireEvent.click(await waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement))
     await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
     expect(hits).not.toContain('/v1/flows/drafts/bench-main')
     expect(ensures[0]?.['expect_rev']).toBe(4)
@@ -534,7 +574,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
       tab: { navigation: { address: 'dsh-resource://media' },
         actions: { openResource: (a: string) => { opened.push(a) } } },
     }) as never} />)
-    fireEvent.click(await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement))
+    fireEvent.click(await waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement))
     await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
     expect(hits).not.toContain('/v1/flows/drafts/bench-main')
     expect(ensures[0]?.['stages']).toEqual([
@@ -575,7 +615,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
       tab: { navigation: { address: 'dsh-resource://media' },
         actions: { openResource: (a: string) => { opened.push(a) } } },
     }) as never} />)
-    fireEvent.click(await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement))
+    fireEvent.click(await waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement))
     await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
     const stages = ensures[0]?.['stages'] as Record<string, unknown>[]
     expect(stages).toHaveLength(2)
@@ -610,7 +650,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
       tab: { navigation: { address: 'dsh-resource://media' },
         actions: { openResource: (a: string) => { opened.push(a) } } },
     }) as never} />)
-    fireEvent.click(await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement))
+    fireEvent.click(await waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement))
     expect(await screen.findByText(/keeps no card record/)).toBeTruthy()
     expect(opened).toEqual([])
     expect(ensured).toBe(0)
@@ -623,7 +663,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
         : draftsFeed([]))
     render(<MediaPanel />)
     const wand = await waitFor(() => {
-      const el = screen.getByText('✦ CARDS')
+      const el = screen.getByLabelText('Open as cards — this run')
       expect(el).toBeTruthy()
       return el as HTMLElement
     })
@@ -654,7 +694,7 @@ describe('MediaPanel — DSH primitive ports (no handrolls)', () => {
     feed()
     render(<MediaPanel />)
     const wand = await waitFor(() => {
-      const el = screen.getByText('✦ CARDS')
+      const el = screen.getByLabelText('Open as cards — this run')
       expect(el.closest('button')).toBeTruthy() // the tile stays the button
       return el as HTMLElement
     })

@@ -1,7 +1,7 @@
 /** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react'
-import { type FormSpecDoc, type SpecField, fieldVisible, fieldsOf } from './spec.ts'
+import { type FormSpecDoc, type SpecField, fieldVisible, fieldsOf, resolveFamilyKey } from './spec.ts'
 import css from './card.module.css'
 import { useFormSpec } from './use-form-spec.ts'
 import { SpecFieldRow } from './rows.tsx'
@@ -59,6 +59,12 @@ export function SpecPanel({ model, sections, values, onEdit, spec: specProp, err
   }
   if (spec === null) return null as unknown as ReturnType<typeof h>
   const byName = new Map(fieldsOf(spec).map((f: SpecField) => [f.name, f]))
+  // THE MODEL GUARD's key (the FAMILIES-DRY law): the served doc's
+  // own boarded rows resolve the serving key to its base (a composed
+  // variant/quant row walks as the base the leaves declare); the
+  // model prop stays the fallback (a host-handed doc resolves the
+  // same way — the doc, never the caller, owns the rows).
+  const guardModel = resolveFamilyKey(spec) ?? model
   return h('div', { className: css.specForm },
     sections.map((sec) => h('div', {
       className: css.specGroup,
@@ -70,8 +76,11 @@ export function SpecPanel({ model, sections, values, onEdit, spec: specProp, err
         const f = byName.get(row.name)
         if (f === undefined) return null
         // the DECLARATION's own grammar gates the leaf (visible_when:
-        // "key=value" guards, &-ANDed) — never a hand-rolled predicate
-        if (!fieldVisible(f, values)) return null
+        // "key=value" guards, &-ANDed) — never a hand-rolled predicate.
+        // The MODEL GUARD rides the values the same way (the base's
+        // mechanism: the resolved serving family seeds the grammar,
+        // the leaf declares it)
+        if (!fieldVisible(f, { ...values, model: guardModel })) return null
         return h(SpecFieldRow, {
           key: row.name, f, value: values[row.name], onEdit,
         })

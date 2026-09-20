@@ -8,6 +8,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 
 import { MediaDrilldown, type MediaDrilldownItem } from '../src/drilldown.tsx'
 
@@ -96,5 +97,89 @@ describe('MediaDrilldown — the 3D sidebar door', () => {
     expect(download.getAttribute('href')).toBe('https://example.com/a.png')
     expect(download.getAttribute('download')).toBe('mesh.glb')
     fireEvent.click(download)
+  })
+})
+
+// ── THE WALK ARROWS (2026-09-20, the operator's catch: "where are
+// my side arrows when I open an image so scroll through to
+// others") ─────────────────────────────────────────────────────
+// The OPTIONAL sibling walk: arrows render only when a list of
+// 2+ rides; they walk wrap-around; ArrowLeft/ArrowRight ride the
+// same verbs; a drilldown WITHOUT siblings is exactly the old
+// face (no arrows painted).
+describe('MediaDrilldown — the walk arrows', () => {
+  const B = { ...IMAGE, url: 'https://example.com/b.png', file: 'b.png' }
+  const C = { ...IMAGE, url: 'https://example.com/c.png', file: 'c.png' }
+
+  it('NO SIBLINGS = the old face: no arrows painted', () => {
+    renderDrilldown(IMAGE)
+    expect(screen.queryByTestId('drill-prev')).toBeNull()
+    expect(screen.queryByTestId('drill-next')).toBeNull()
+  })
+
+  it('a single sibling paints no arrows either (nothing to walk)', () => {
+    render(<MediaDrilldown item={IMAGE} onClose={() => {}} siblings={[IMAGE]} />)
+    expect(screen.queryByTestId('drill-prev')).toBeNull()
+    expect(screen.queryByTestId('drill-next')).toBeNull()
+  })
+
+  it('LEFT IS OUT (operator 2026-09-21: "I wanted you to reverse the arrow direction"): ‹ walks toward current and ON current it EXITS the history view; › walks deeper and the deep end dims — the walk is a line, not a ring', async () => {
+    const user = userEvent.setup()
+    const closed = { n: 0 }
+    // the CONTROLLED harness — the real call-site law: the parent
+    // owns the current item (onNavigate re-renders with the next);
+    // the hero <img>'s src proves the walk followed each click
+    function Walk() {
+      const [cur, setCur] = useState<MediaDrilldownItem>(IMAGE)
+      return <MediaDrilldown item={cur} onClose={() => { closed.n += 1 }} siblings={[IMAGE, B, C]} onNavigate={setCur} />
+    }
+    render(<Walk />)
+    await user.click(screen.getByTestId('drill-next'))
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/b.png')
+    await user.click(screen.getByTestId('drill-next'))
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/c.png')
+    // at the TAIL (the oldest): › is DISABLED — nothing deeper, no ring
+    expect((screen.getByTestId('drill-next') as HTMLButtonElement).disabled).toBe(true)
+    await user.click(screen.getByTestId('drill-prev'))
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/b.png')
+    await user.click(screen.getByTestId('drill-prev'))
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/a.png')
+    // at the HEAD (current): ‹ HOLDS — the viewer never closes on a walk
+    // step (operator 2026-09-20: "it closes out when I scroll too far to
+    // the left"); exit rides ✕/Escape only. The chip dims, never dead-arms
+    // silently: it is visibly the end of the line.
+    await user.click(screen.getByTestId('drill-prev'))
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/a.png')
+    expect(closed.n).toBe(0)
+  })
+
+  it('THE KEYBOARD rides the same verbs: ArrowLeft on current EXITS; ArrowRight walks deeper', async () => {
+    const user = userEvent.setup()
+    const closed = { n: 0 }
+    function Walk() {
+      const [cur, setCur] = useState<MediaDrilldownItem>(IMAGE)
+      return <MediaDrilldown item={cur} onClose={() => { closed.n += 1 }} siblings={[IMAGE, B, C]} onNavigate={setCur} />
+    }
+    render(<Walk />)
+    await user.keyboard('[ArrowRight]')
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/b.png')
+    await user.keyboard('[ArrowRight]')
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/c.png')
+    // at the tail: ArrowRight HOLDS (the disabled chip's verb returns)
+    await user.keyboard('[ArrowRight]')
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/c.png')
+    await user.keyboard('[ArrowLeft]')
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/b.png')
+    await user.keyboard('[ArrowLeft]')
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/a.png')
+    await user.keyboard('[ArrowLeft]') // at the head: HOLDS — never closes
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/a.png')
+    expect(closed.n).toBe(0)
+  })
+
+  it('THE CURRENT ITEM OUTSIDE THE LIST: arrows hide (no position, no walk)', () => {
+    render(<MediaDrilldown item={IMAGE} onClose={() => {}} siblings={[B, C]} onNavigate={() => {}} />)
+    expect(screen.queryByTestId('drill-prev')).toBeNull()
+    expect(screen.queryByTestId('drill-next')).toBeNull()
   })
 })

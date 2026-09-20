@@ -39,7 +39,6 @@ import type { Context } from '@deepseek-ai/cordis'
 // card tool composes through its package now.
 import { buildMusicTool } from '@melite/audio-music/tool'
 import { buildTtsTool } from '@melite/audio-tts/tool'
-import { buildVoiceLockTool } from '@melite/audio-voice-lock/tool'
 import { buildImageEditTool } from '@melite/image-image-edit/tool'
 import { buildMotionTool } from '@melite/motion-motion/tool'
 import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool'
@@ -230,7 +229,6 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // silently downstream) — re-pin, never re-cast.
   c.tools.register(buildMusicTool(call))
   c.tools.register(buildTtsTool(call))
-  c.tools.register(buildVoiceLockTool(call))
   c.tools.register(buildImageEditTool(call))
   c.tools.register(buildMotionTool(call))
   c.tools.register(buildH3TimelineTool(call))

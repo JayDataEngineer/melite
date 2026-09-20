@@ -94,11 +94,22 @@ function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | und
   // wrong generation, silently). The pick stores the entry's url-set
   // key (its stable identity); the index is DERIVED per render.
   const keyOf = (entry: PreviewArtifact[]): string => entry.map((a) => a.url).join('|')
-  // THE CELL ID IS THE VIEW IDENTITY (stage + current run): a new
-  // run or a stage switch IS a different cell — the reset falls out
-  // of identity, no effect timers, no mount-lifetime coupling. The
+  // THE CELL ID IS THE VIEW IDENTITY (stage + run): a new run or a
+  // stage switch IS a different cell — the reset falls out of
+  // identity, no effect timers, no mount-lifetime coupling. The
   // DSH client-state law: the store lives outside the component.
-  const cellId = `${props.stageId}\u0000${props.artifacts.map((a) => a.url).join('|')}`
+  // THE RUN-ID KEY (2026-09-20, the operator's catch: "random when
+  // I click"): the key is stageId + RUN ID — NOT the artifact urls.
+  // The urls VANISH mid-run (the start patch's result is {run_id}
+  // only), so a urls-keyed cell DIED at every run boundary and a
+  // picked history tile silently unpicked — the hero jumped and the
+  // clicks read as random. The run id is stable across the whole
+  // cycle (start patch → live flips → terminal), so the pick
+  // survives the churn; a genuinely new run still resets (fresh
+  // cell). Pre-run rows (runId '') fall back to the urls key.
+  const cellId = props.runId !== undefined && props.runId !== ''
+    ? `${props.stageId}\u0000run:${props.runId}`
+    : `${props.stageId}\u0000${props.artifacts.map((a) => a.url).join('|')}`
   const [pickedKey, setPickedKey] = usePickCell(cellId)
   const picked = pickedKey === null ? -1 : history.findIndex((e) => keyOf(e) === pickedKey)
   // THE TOGGLE LAW (the operator's bug report, 2026-09-16: "not
@@ -146,7 +157,14 @@ function StaleBadge(props: { note?: string, onReturn: () => void }): ReturnType<
     type: 'button',
     className: s.staleBadge,
     'data-testid': 'history-stale-badge',
-    onClick: props.onReturn,
+    // THE SEAT BUBBLE (the operator's catch, 2026-09-21, proven
+    // LIVE: the picked state was unrecoverable): the badge rides
+    // INSIDE the drilldown seat (role=button — the whole face opens
+    // the media walk), so the return click BUBBLED to the seat and
+    // the walk overlay opened OVER the badge — every later click
+    // landed on the lightbox, never the drill. The badge consumes
+    // its own click; the hero (and only the hero) opens the walk.
+    onClick: (e: MouseEvent) => { e.stopPropagation(); props.onReturn() },
     title: 'Return to the current generation',
   },
     'Not current — earlier generation',
@@ -189,7 +207,7 @@ function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, te
     h('span', { className: s.historyTitle }, 'History'),
     h('div', { className: s.thumbRow },
       history.map((entry, i) => h('button', {
-        key: entry[0]?.url ?? String(i),
+        key: String(i) + '|' + String(entry[0]?.url ?? ''),
         type: 'button',
         // THE PICKED MARK (the toggle law): the tile that owns the
         // hero says so — a picked tile with no mark reads as an
@@ -197,10 +215,28 @@ function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, te
         className: cn(s.historyTile, i === picked ? s.historyTileActive : undefined),
         'aria-pressed': i === picked,
         title: entry.map((a) => a.name).join(', ') + (notes[i] ? ` (differs: ${notes[i]})` : '') + (i === picked ? ' (viewing — click to return to current)' : ''),
-        onClick: () => { promote(i) },
+        // THE SEAT BUBBLE (same law as the badge above): the strip
+        // rides inside the walk-opening seat — an unconsumed thumb
+        // click picked AND opened the lightbox, which ate the badge
+        // and the run button (the jsdom walls never saw it: no
+        // hit-testing). The thumb consumes its own click.
+        onClick: (e: MouseEvent) => { e.stopPropagation(); promote(i) },
       },
-        entry.slice(0, 1).map((a) => h(HistoryThumb, { key: a.url, a }))))),
+        entry.slice(0, 1).map((a, j) => h(HistoryThumb, { key: String(i) + '|' + String(j) + '|' + a.url, a }))))),
   )
+}
+
+/** THE SEAT-SAFE NEW-TAB LINK (the seat-bubble law, ledger #45):
+ *  rest links ride INSIDE the walk-opening drilldown seat — the
+ *  link consumes its own click so opening the tab never also opens
+ *  the walk (the thumb/badge fix's sibling; one wrapper, both
+ *  presenters — the platform owns the link, we own the wrap). */
+function seatSafeLink(a: PreviewArtifact, i: number = 0): ReturnType<typeof h> {
+  return h('a', {
+    key: String(i) + '|' + a.url + a.name, className: s.stripLink, href: a.url, target: '_blank', rel: 'noreferrer',
+    title: a.name,
+    onClick: (e: MouseEvent) => { e.stopPropagation() },
+  }, a.name)
 }
 
 /** THE VIDEO PREVIEW — one hero film, one native player (the kit's
@@ -222,10 +258,7 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
         }),
     rest.length > 0
       ? h('div', { className: s.strip },
-          rest.map((a) => h('a', {
-            key: a.url + a.name, className: s.stripLink, href: a.url, target: '_blank', rel: 'noreferrer',
-            title: a.name,
-          }, a.name)))
+          rest.map(seatSafeLink))
       : null,
     HistoryStrip(props, promote, 'stage-output-history', picked),
   )
@@ -239,16 +272,38 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
  *  click one to view it in the hero. Same chrome, same law. */
 export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
   const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props)
+  // THE LAYOUT-PRESERVING SWAP (the 2026-09-21 pull, frame-proven:
+  // sh 800→490 for ONE frame at landing — the url-keyed img unmounted
+  // before the new bitmap decoded, the seat collapsed 310px, the
+  // scroller clamped 355→46, and the operator's position died). The
+  // seat holds the LAST DECODED bitmap; the incoming hero rides
+  // behind (absolute, invisible) until its onLoad commits it — the
+  // seat NEVER has zero height across a generation swap, and a run
+  // that clears the result keeps the previous image standing.
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null)
+  const heroUrl = hero === undefined ? null : hero.url
+  const seatUrl = loadedUrl ?? heroUrl
+  const incoming = heroUrl !== null && seatUrl !== heroUrl ? heroUrl : null
   return h('div', { className: cn(s.stagePreview), 'data-testid': 'stage-preview-image' },
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
-    hero === undefined
-      ? h('div', { className: s.empty },
-          props.runStatus === 'running' ? 'rendering… the image lands here' : 'No render yet — run lands the image here')
-      : h('img', { className: s.heroImg, key: hero.url, src: hero.url, alt: hero.name, 'data-testid': 'stage-preview-image-hero' }),
+    seatUrl !== null
+      ? h('img', {
+          className: s.heroImg, key: seatUrl, src: seatUrl, alt: hero === undefined ? '' : hero.name,
+          'data-testid': 'stage-preview-image-hero',
+          onLoad: () => { setLoadedUrl(seatUrl) },
+        })
+      : h('div', { className: s.empty },
+          props.runStatus === 'running' ? 'rendering… the image lands here' : 'No render yet — run lands the image here'),
+    incoming !== null
+      ? h('img', {
+          key: 'incoming-' + incoming, className: s.heroIncoming, src: incoming, alt: '',
+          'data-testid': 'stage-preview-image-hero', onLoad: () => { setLoadedUrl(incoming) },
+        })
+      : null,
     rest.length > 0
       ? h('div', { className: s.thumbRow },
-          rest.map((a) => h('img', {
-            key: a.url, className: s.thumb, src: a.url, alt: a.name, loading: 'lazy',
+          rest.map((a, i) => h('img', {
+            key: String(i) + '|' + a.url, className: s.thumb, src: a.url, alt: a.name, loading: 'lazy',
           })))
       : null,
     HistoryStrip(props, promote, 'stage-output-history', picked),
@@ -271,10 +326,7 @@ export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
         }),
     rest.length > 0
       ? h('div', { className: s.strip },
-          rest.map((a) => h('a', {
-            key: a.url + a.name, className: s.stripLink, href: a.url, target: '_blank', rel: 'noreferrer',
-            title: a.name,
-          }, a.name)))
+          rest.map(seatSafeLink))
       : null,
     HistoryStrip(props, promote, 'stage-output-history', picked),
   )
@@ -321,7 +373,7 @@ export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
  *  law: NO @react-three in any client bundle). Re-exported here so
  *  the preview seam stays ONE subpath: import { GlbStagePreview }
  *  from '@melite/card-base/preview'. */
-export { GlbStagePreview, autoFitToHeight, type StageAsset } from './glb-stage.tsx'
+export { GlbStagePreview, autoFitToHeight, applyWireframe, skeletonHelperFor, type StageAsset, type StageLayers } from './glb-stage.tsx'
 export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.tsx'
 export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.tsx'
 export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.tsx'

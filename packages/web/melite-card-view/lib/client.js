@@ -6729,8 +6729,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		};
 		//#endregion
 		//#region \0dsh-css:melite-card-view/src/client/card.module.css.mjs
-		const css$6 = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary)}.vYZV7a_prompt{color:var(--dsw-alias-label-secondary);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_paramsCol,.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;display:flex}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px}.vYZV7a_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.vYZV7a_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.vYZV7a_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillLlm{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:8px;max-width:220px;height:36px;padding:0 8px;font-size:13px;font-weight:600}.vYZV7a_drillLlm:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillLlm{color-scheme:light}.vYZV7a_drillLlm option{color:canvastext;background:canvas}.vYZV7a_drillLlm:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.vYZV7a_drillProgress>svg{animation:1s linear infinite vYZV7a_tileSpinTurn}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;padding:12px 14px 18px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:.5px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-label-secondary);flex:none;font-size:11px;line-height:17px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600}.vYZV7a_runStatus{border:.5px solid var(--dsw-alias-border-l2);corner-shape:round;color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-label-secondary);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1)), background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1));font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_audioBars{box-sizing:border-box;justify-content:center;align-items:flex-end;gap:2px;width:100%;height:100%;padding:18% 12%;display:flex}.vYZV7a_audioBar{background:var(--dsw-alias-state-business-primary);opacity:.85;border-radius:1px;flex:1;max-width:6px}.vYZV7a_kindFace{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileIconBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;height:24px;transition:opacity var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);z-index:2;border-radius:999px;justify-content:center;align-items:center;width:24px;padding:0;display:inline-flex;position:absolute}.vYZV7a_tileIconBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary)}.vYZV7a_tileInner:hover .vYZV7a_tileIconBtn,.vYZV7a_tileIconBtn:focus-visible{opacity:1}.vYZV7a_tileIconBtn:disabled{cursor:default}.vYZV7a_tileTrash{color:var(--dsw-alias-label-tertiary);top:6px;right:6px}.vYZV7a_tileTrash:hover{color:var(--dsw-alias-state-error-primary)}.vYZV7a_tileRunBtn{color:var(--dsw-alias-label-secondary);bottom:6px;right:6px}.vYZV7a_tileRunBtn:hover{color:var(--dsw-alias-brand-primary)}.vYZV7a_tileSpin{color:var(--dsw-alias-brand-primary);z-index:2;align-items:center;display:inline-flex;position:absolute;bottom:6px;left:6px}.vYZV7a_tileSpin>svg{animation:1s linear infinite vYZV7a_tileSpinTurn}.vYZV7a_tilePct{font-variant-numeric:tabular-nums;margin-left:4px;font-size:11px}@keyframes vYZV7a_tileSpinTurn{to{transform:rotate(360deg)}}.vYZV7a_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:17px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-label-secondary);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;margin-top:-6px;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;display:grid}.vYZV7a_pickerGenreTitle{letter-spacing:.08em;text-transform:uppercase;color:var(--dsw-alias-label-primary);grid-column:1/-1;margin:12px 0 10px;font-size:15px;font-weight:700}.vYZV7a_drill [class*=_title_]{font-size:18px;font-weight:800}.vYZV7a_pickerCardLabel{font-size:12px;font-weight:500}.vYZV7a_pickerCard{box-sizing:border-box;border:.5px solid var(--dsw-alias-border-l2);width:100%;min-height:44px;color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;justify-content:flex-start;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_pickerCardDesc{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;overflow:hidden}.vYZV7a_specForm :where(input,textarea,select,button){box-sizing:border-box}.vYZV7a_specForm{flex-direction:column;gap:12px;display:flex}.vYZV7a_specGroup{flex-direction:column;gap:8px;display:flex}.vYZV7a_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.vYZV7a_specField{flex-direction:column;gap:6px;display:flex}.vYZV7a_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.vYZV7a_specRequired{color:var(--dsw-alias-state-error-primary)}.vYZV7a_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_specSelect option{color:canvastext;background:canvas}.vYZV7a_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.vYZV7a_specSliderRow{align-items:center;gap:8px;display:flex}.vYZV7a_specSlider{flex:1}.vYZV7a_specSliderValue{color:var(--dsw-alias-label-secondary);text-align:right;min-width:4ch;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}.vYZV7a_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.vYZV7a_tileShared{display:block;position:relative}.vYZV7a_zoomOverlay{background:var(--dsw-alias-bg-overlay);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.vYZV7a_zoomScroll{flex:1;min-height:0;overflow-y:auto}.vYZV7a_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.vYZV7a_tileDragOver{outline:2px dashed var(--dsw-alias-brand-primary);outline-offset:-2px}.vYZV7a_zoomCard{background:var(--dsw-alias-bg-layer-1);box-shadow:0 0 0 .5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);color:var(--dsw-alias-label-primary);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;animation:.18s cubic-bezier(.2,.9,.3,1) vYZV7a_zoom-in;display:flex;overflow:hidden}@keyframes vYZV7a_zoom-in{0%{opacity:0;transform:scale(.92)}}.vYZV7a_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.vYZV7a_zoomWebhook{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;align-items:center;gap:10px;min-height:0;padding:4px 14px;display:flex;overflow:hidden}.vYZV7a_zoomMeter{background:var(--dsw-alias-border-l2);border-radius:999px;flex:auto;height:3px;overflow:hidden}.vYZV7a_zoomMeterFill{background:var(--dsw-alias-fill-brand-primary);height:100%;transition:width .24s;display:block}.vYZV7a_zoomTitle{flex:auto;font-size:13px;font-weight:600;line-height:20px}.vYZV7a_closeX{color:inherit;cursor:pointer;background:0 0;border:none;border-radius:6px;padding:4px 8px;font-size:14px;line-height:1}.vYZV7a_closeX:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.vYZV7a_zoomBody{flex-direction:column;flex:1;min-height:0;display:flex;overflow:hidden}.vYZV7a_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.vYZV7a_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both vYZV7a_zoomShimmer}.vYZV7a_skWide{width:60%}.vYZV7a_skShort{flex:1;height:28px}.vYZV7a_skBlock{border-radius:10px;height:120px}.vYZV7a_skRow{gap:10px;display:flex}@keyframes vYZV7a_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes vYZV7a_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.vYZV7a_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both vYZV7a_tilePop}.vYZV7a_tileDragging{opacity:.55;z-index:2}.vYZV7a_wiredMark{color:var(--dsw-alias-state-business-primary);font-size:10px}.vYZV7a_capOver{background:var(--dsw-alias-interactive-bg-hover);outline:1px dashed var(--dsw-alias-state-business-primary);outline-offset:4px}.vYZV7a_cancelBtn{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);cursor:pointer;background:0 0;border-radius:8px;padding:5px 12px;font-size:12px}.vYZV7a_cancelBtn:disabled{cursor:default;opacity:.6}.vYZV7a_groupBar{align-items:center;gap:8px;display:flex}.vYZV7a_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary);corner-shape:round;color:var(--dsw-alias-bg-module);z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.vYZV7a_checkOn{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.vYZV7a_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.vYZV7a_memberList{margin:0 0 12px;padding:0;list-style:none}.vYZV7a_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.vYZV7a_memberIdx{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.vYZV7a_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.vYZV7a_tileEnter,.vYZV7a_skLine,.vYZV7a_skBlock{animation-duration:.01ms;animation-iteration-count:1}}.vYZV7a_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.vYZV7a_studioBody{flex-direction:column;gap:12px;display:flex}.vYZV7a_studioGroup{flex-direction:column;gap:6px;display:flex}.vYZV7a_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.vYZV7a_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.vYZV7a_squareBox:hover{border-color:var(--dsw-alias-border-l3)}.vYZV7a_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.vYZV7a_squareThumb{object-fit:cover;width:100%;height:100%}.vYZV7a_squareGlyph{color:var(--dsw-alias-label-tertiary)}.vYZV7a_squareX{background:var(--dsw-alias-bg-layer-1);border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.vYZV7a_squareX:hover{border-color:var(--dsw-alias-border-l3)}.vYZV7a_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.vYZV7a_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.vYZV7a_squareOff{opacity:.5;pointer-events:none}.vYZV7a_squareFileInput{display:none}.vYZV7a_viewport{background:var(--dsw-alias-bg-base);border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.vYZV7a_viewportEmpty{color:var(--dsw-alias-label-tertiary);align-self:center;margin:auto;font-size:12px;line-height:20px}.vYZV7a_viewport canvas{display:block}.vYZV7a_viewportCanvas{width:100%;height:380px}.vYZV7a_studioSplit{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:12px;display:grid}.vYZV7a_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}@media (width<=900px){.vYZV7a_studioSplit{grid-template-columns:1fr}}.vYZV7a_viewport:only-child{min-height:380px}.vYZV7a_modSection{border-top:1px dashed var(--dsw-alias-border-l2);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.vYZV7a_modHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.vYZV7a_modHint{opacity:.45;font-size:9px}.vYZV7a_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_modTile{border:1px solid var(--border,color-mix(in srgb, var(--dsw-alias-label-tertiary) 30%, transparent));background:var(--bg-elevated,color-mix(in srgb, var(--dsw-alias-label-tertiary) 8%, transparent));cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.vYZV7a_modTile:active{cursor:grabbing}.vYZV7a_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.vYZV7a_modTileStrength{opacity:.55;font-size:9px}.vYZV7a_modAdd{border:1px dashed var(--dsw-alias-border-l2);min-width:64px;color:inherit;cursor:pointer;opacity:.6;background:0 0;border-radius:8px;justify-content:center;align-items:center;padding:6px 10px;font-size:11px;display:flex}.vYZV7a_modAdd:hover{opacity:1}.vYZV7a_modPickList{gap:2px;display:grid}.vYZV7a_modPickRow{width:100%;color:inherit;text-align:left;cursor:pointer;background:0 0;border:0;border-radius:6px;align-items:center;gap:8px;padding:6px 8px;font-size:12px;display:flex}.vYZV7a_modPickRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.vYZV7a_modField{opacity:.85;flex-direction:column;gap:4px;font-size:11px;display:flex}.vYZV7a_modSelect{border:1px solid var(--border,color-mix(in srgb, var(--dsw-alias-label-tertiary) 30%, transparent));background:var(--bg-elevated,color-mix(in srgb, var(--dsw-alias-label-tertiary) 8%, transparent));color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.vYZV7a_h3Studio{grid-template-rows:minmax(280px,1fr) auto auto;grid-template-columns:300px 1fr;gap:12px;min-height:460px;display:grid}.vYZV7a_h3Rail{flex-direction:column;grid-area:1/1/4;gap:10px;min-height:0;padding-right:2px;display:flex;overflow-y:auto}.vYZV7a_h3RailBody{flex-direction:column;gap:10px;display:flex}.vYZV7a_h3Readout{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;font-size:11px}.vYZV7a_h3Warn{border-left:2px solid var(--dsw-alias-brand-primary);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 85%, transparent);padding-left:8px;font-size:11px;line-height:1.5}.vYZV7a_h3Recipe{border:.5px solid var(--dsw-alias-border-l2);border-radius:8px;flex-direction:column;gap:6px;padding:10px;display:flex}.vYZV7a_h3RecipeRow{justify-content:space-between;align-items:center;gap:8px;font-size:12px;display:flex}.vYZV7a_h3RecipeRow span{color:var(--dsw-alias-label-secondary)}.vYZV7a_h3RecipeRow input,.vYZV7a_h3RecipeRow select{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;border-radius:6px;width:110px;padding:4px 8px;font-size:12px}.vYZV7a_h3RecipeRow select option{color:canvastext;background:canvas}.vYZV7a_h3RecipeRow select{color-scheme:light}.vYZV7a_h3CallList{flex-direction:column;gap:4px;display:flex}.vYZV7a_h3CallRow{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;text-align:left;background:0 0;border-radius:6px;align-items:center;gap:8px;width:100%;padding:5px 8px;font-size:11px;display:flex}.vYZV7a_h3CallRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_h3CallRowFrames{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;flex:none}.vYZV7a_h3CallRowText{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.vYZV7a_h3Dot{background:var(--dsw-alias-state-business-primary);border-radius:50%;flex:none;width:6px;height:6px}.vYZV7a_h3Extend{margin-top:4px}.vYZV7a_h3Back{gap:6px;display:flex}.vYZV7a_h3Field{flex-direction:column;gap:4px;display:flex}.vYZV7a_h3FieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_h3Field textarea,.vYZV7a_h3Field input,.vYZV7a_h3Field select{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:12px}.vYZV7a_h3SpanRow{gap:6px;display:flex}.vYZV7a_h3Preview{background:color-mix(in srgb, var(--dsw-alias-label-primary) 4%, transparent);border-radius:10px;grid-area:1/2;justify-content:center;align-items:center;min-height:240px;display:flex;overflow:hidden}.vYZV7a_h3Video{max-width:100%;max-height:44vh}.vYZV7a_h3PreviewEmpty{color:var(--dsw-alias-label-secondary);font-size:12px}.vYZV7a_h3Bar{border:.5px solid var(--dsw-alias-border-l2);cursor:default;border-radius:8px;flex-direction:column;grid-area:2/1/auto/3;gap:3px;padding:8px 10px 10px 56px;display:flex}.vYZV7a_h3Ruler{color:var(--dsw-alias-label-secondary);height:12px;font-size:9px;position:relative}.vYZV7a_h3Tick{border-left:.5px solid var(--dsw-alias-border-l2);padding-left:3px;position:absolute;top:0}.vYZV7a_h3Calls{background:color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent);border-radius:6px;height:44px;position:relative}.vYZV7a_h3Call{background:var(--dsw-alias-bg-layer-1);border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;align-items:center;gap:4px;padding:2px 6px;display:flex;position:absolute;top:3px;bottom:3px;overflow:hidden}.vYZV7a_h3Call:hover{border-color:color-mix(in srgb, var(--dsw-alias-label-primary) 30%, transparent)}.vYZV7a_h3CallSel{border:1.5px solid var(--dsw-alias-brand-primary)}.vYZV7a_h3CallText{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:10px;overflow:hidden}.vYZV7a_h3BarEmpty{color:var(--dsw-alias-label-secondary);font-size:10px;position:absolute;top:14px;left:8px}.vYZV7a_h3Lane{height:14px;display:flex;position:relative}.vYZV7a_h3LaneName{text-transform:uppercase;width:40px;font-size:9px;line-height:14px;position:absolute;left:-46px}.vYZV7a_h3Pin{border-radius:2px;width:6px;position:absolute;top:2px;bottom:2px}.vYZV7a_h3RunRow{grid-area:3/1/auto/3;align-items:center;gap:8px;display:flex}.vYZV7a_ideoStudio{grid-template-columns:minmax(280px,360px) 1fr;gap:14px;display:grid}.vYZV7a_ideoStudio :where(input,textarea,select,button){box-sizing:border-box}.vYZV7a_ideoRail{flex-direction:column;gap:10px;min-width:0;display:flex}.vYZV7a_ideoField{flex-direction:column;gap:5px;display:flex}.vYZV7a_ideoFieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_ideoField input,.vYZV7a_ideoField textarea,.vYZV7a_ideoField select{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);font:inherit;border-radius:6px;width:100%;padding:6px 8px;font-size:12px}.vYZV7a_ideoField select option{color:canvastext;background:canvas}.vYZV7a_ideoField select{color-scheme:light}.vYZV7a_ideoToolbar select option{color:canvastext;background:canvas}.vYZV7a_ideoToolbar select{color-scheme:light}.vYZV7a_ideoToolbar{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.vYZV7a_ideoAspect{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);border-radius:6px;padding:5px 6px;font-size:12px}.vYZV7a_ideoStatus{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_ideoTabs{border-bottom:1px solid var(--dsw-alias-border-l2);gap:2px;display:flex}.vYZV7a_ideoTab{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;border-bottom:2px solid #0000;padding:6px 10px;font-size:12px}.vYZV7a_ideoTabOn{border-bottom-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.vYZV7a_ideoInspector,.vYZV7a_ideoStylePanel,.vYZV7a_ideoJsonPanel{flex-direction:column;gap:10px;display:flex}.vYZV7a_ideoInspectorHead{justify-content:space-between;align-items:center;display:flex}.vYZV7a_ideoInspectorActions{gap:4px;display:flex}.vYZV7a_ideoTypeBadge,.vYZV7a_ideoRowBadge{text-transform:uppercase;border-radius:4px;padding:2px 6px;font-size:10px}.vYZV7a_ideoTypeBadge[data-ideo-type=obj],.vYZV7a_ideoRowBadge[data-ideo-type=obj]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, transparent);color:var(--dsw-alias-state-business-primary)}.vYZV7a_ideoTypeBadge[data-ideo-type=text],.vYZV7a_ideoRowBadge[data-ideo-type=text]{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 18%, transparent);color:var(--dsw-alias-brand-primary)}.vYZV7a_ideoTypeBadge[data-ideo-type=logo],.vYZV7a_ideoRowBadge[data-ideo-type=logo]{background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 18%, transparent);color:var(--dsw-alias-state-warn-primary)}.vYZV7a_ideoBboxRow{grid-template-columns:repeat(4,1fr);gap:8px;display:grid}.vYZV7a_ideoFontChips{flex-wrap:wrap;gap:4px;display:flex}.vYZV7a_ideoChip{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:999px;padding:3px 8px;font-size:10px}.vYZV7a_ideoChipOn{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.vYZV7a_ideoSwatches{flex-wrap:wrap;align-items:center;gap:4px;display:flex}.vYZV7a_ideoSwatch{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:4px;width:22px;height:16px;display:inline-block}.vYZV7a_ideoSwatchAdd{background:var(--dsw-alias-bg-layer-1);border:1px dashed var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);border-radius:4px;width:84px;padding:2px 6px;font-size:10px}.vYZV7a_ideoMiniSwatch{border-radius:2px;width:10px;height:8px;display:inline-block}.vYZV7a_ideoEmpty{color:var(--dsw-alias-label-secondary);flex-direction:column;gap:8px;font-size:12px;display:flex}.vYZV7a_ideoList{flex-direction:column;gap:4px;display:flex}.vYZV7a_ideoRow{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;align-items:center;gap:8px;padding:5px 8px;display:flex}.vYZV7a_ideoRowOn{border-color:var(--dsw-alias-brand-primary)}.vYZV7a_ideoRowText{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:12px;overflow:hidden}.vYZV7a_ideoRowBbox{color:var(--dsw-alias-label-secondary);font-size:10px}.vYZV7a_ideoRowActions{gap:2px;display:flex}.vYZV7a_ideoRowActions button{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;padding:2px 4px;font-size:11px}.vYZV7a_ideoRowActions button:hover{color:var(--dsw-alias-label-primary)}.vYZV7a_ideoPre{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);white-space:pre-wrap;border-radius:6px;max-height:240px;margin:0;padding:8px;font-size:10px;overflow:auto}.vYZV7a_ideoWarn{color:var(--dsw-alias-state-error-primary);font-size:11px}.vYZV7a_ideoCanvasWrap{flex-direction:column;gap:6px;min-width:0;display:flex}.vYZV7a_ideoCanvas{background:var(--dsw-alias-interactive-bg-hover);border:1px solid var(--dsw-alias-border-l2);touch-action:none;user-select:none;border-radius:8px;width:100%;max-width:100%;margin:0 auto;position:relative;overflow:hidden}.vYZV7a_ideoCanvasDraw{cursor:crosshair}.vYZV7a_ideoCanvasBg{position:absolute;inset:0}.vYZV7a_ideoBgText{color:var(--dsw-alias-label-secondary);opacity:.28;pointer-events:none;text-align:center;word-break:break-word;justify-content:center;align-items:center;padding:24px;font-size:14px;font-weight:600;display:flex;position:absolute;inset:0;overflow:hidden}.vYZV7a_ideoGridMinor{background-image:linear-gradient(to right, color-mix(in srgb, var(--dsw-alias-label-tertiary) 6%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--dsw-alias-label-tertiary) 6%, transparent) 1px, transparent 1px);pointer-events:none;background-size:2.5% 2.5%;position:absolute;inset:0}.vYZV7a_ideoGridMajor{background-image:linear-gradient(to right, color-mix(in srgb, var(--dsw-alias-label-tertiary) 16%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--dsw-alias-label-tertiary) 16%, transparent) 1px, transparent 1px);pointer-events:none;background-size:10% 10%;position:absolute;inset:0}.vYZV7a_ideoBox{position:absolute}.vYZV7a_ideoBox_obj{--ideo-accent:var(--dsw-alias-state-business-primary)}.vYZV7a_ideoBox_text{--ideo-accent:var(--dsw-alias-brand-primary)}.vYZV7a_ideoBox_logo{--ideo-accent:var(--dsw-alias-state-warn-primary)}.vYZV7a_ideoHalo{border:2px solid var(--ideo-accent,var(--dsw-alias-state-business-primary));opacity:.45;pointer-events:none;border-radius:3px;position:absolute;inset:-4px}.vYZV7a_ideoBoxMain{border:1.5px solid var(--ideo-accent,var(--dsw-alias-state-business-primary));cursor:move;border-radius:4px;flex-direction:column;align-items:flex-start;gap:3px;width:100%;height:100%;padding:4px 6px;display:flex;overflow:hidden}.vYZV7a_ideoTag{background:var(--ideo-accent,var(--dsw-alias-state-business-primary));color:var(--dsw-alias-bg-base);text-transform:uppercase;border-radius:3px;width:fit-content;padding:1px 5px;font-size:9px;font-weight:700}.vYZV7a_ideoDesc{color:var(--dsw-alias-label-secondary);word-break:break-word;font-size:10px;line-height:1.3;overflow:hidden}.vYZV7a_ideoInlineText{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--ideo-accent,var(--dsw-alias-brand-primary));color:var(--dsw-alias-label-primary);border-radius:4px;width:100%;padding:4px 6px;font-size:11px}.vYZV7a_ideoHandle{background:var(--dsw-alias-label-primary);border:1px solid var(--dsw-alias-interactive-bg-hover);z-index:3;border-radius:2px;width:8px;height:8px;margin:-5px 0 0 -5px;position:absolute}.vYZV7a_ideoHandle_nw,.vYZV7a_ideoHandle_n,.vYZV7a_ideoHandle_w{cursor:nwse-resize}.vYZV7a_ideoHandle_se,.vYZV7a_ideoHandle_s,.vYZV7a_ideoHandle_e{cursor:nesw-resize}.vYZV7a_ideoHandle_ne,.vYZV7a_ideoHandle_sw{cursor:ns-resize}.vYZV7a_ideoDrawPreview{border:1.5px dashed var(--dsw-alias-brand-primary);pointer-events:none;z-index:4;border-radius:3px;position:absolute}.vYZV7a_ideoCoord{color:var(--dsw-alias-label-secondary);text-align:center;font-size:10px}.vYZV7a_ideoRunRow{grid-column:1/3;gap:8px;display:flex}.vYZV7a_h3Preview{flex-direction:column;align-items:stretch;gap:8px;padding:10px}.vYZV7a_h3RunHistory{flex-wrap:wrap;align-items:center;gap:4px;display:flex}.vYZV7a_h3RunHistoryLabel{color:var(--dsw-alias-label-secondary);text-transform:uppercase;letter-spacing:.04em;font-size:9px;font-weight:600}.vYZV7a_h3RunChip{border:1px solid var(--dsw-alias-border-l2);color:inherit;border-radius:999px;padding:2px 8px;font-size:10px;text-decoration:none}.vYZV7a_h3RunChip:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_h3FinalCut{flex-direction:column;flex:1;gap:6px;min-height:0;display:flex}.vYZV7a_h3Video{object-fit:contain;background:var(--dsw-alias-bg-base);border-radius:6px;flex:1;width:100%;min-height:0;max-height:44vh}.vYZV7a_h3FinalCutMeta{align-items:center;gap:10px;font-size:11px;display:flex}.vYZV7a_h3FinalCutLabel{font-weight:600}.vYZV7a_h3FinalCutStat{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}.vYZV7a_h3FinalCutOpen{color:inherit;margin-left:auto;font-size:11px}.vYZV7a_h3PreviewWindows{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.vYZV7a_h3WindowTile{flex-direction:column;gap:2px;width:200px;display:flex}.vYZV7a_h3WindowVideo{background:color-mix(in srgb, var(--dsw-alias-label-primary) 50%, transparent);object-fit:cover;border-radius:6px;width:100%}.vYZV7a_h3WindowName{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;text-overflow:ellipsis;white-space:nowrap;font-size:9px;overflow:hidden}.vYZV7a_h3BarWrap{border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;flex-direction:column;grid-column:1/3;display:flex;overflow:hidden}.vYZV7a_h3BarHeader{border-bottom:1px solid var(--dsw-alias-border-l2);flex-wrap:wrap;align-items:baseline;gap:8px;padding:6px 10px;display:flex}.vYZV7a_h3BarTitle{font-size:11px;font-weight:700}.vYZV7a_h3BarMeta{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;font-size:10px}.vYZV7a_h3BarHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9.5px}.vYZV7a_h3RunRow{grid-column:1/3;align-items:center;gap:8px;display:flex}.vYZV7a_h3RunNote{color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 80%, transparent);font-size:11px}.vYZV7a_h3Dot{background:var(--dsw-alias-brand-primary);border-radius:999px;flex-shrink:0;width:6px;height:6px;display:inline-block}.vYZV7a_outputsPreview{flex-direction:column;flex:1;min-width:280px;min-height:220px;display:flex;overflow:hidden}.vYZV7a_outputsHint{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.vYZV7a_addHugeContent{flex-direction:column;flex:1;min-height:0;padding:0 0 8px;display:flex}.vYZV7a_previewClickable{cursor:pointer}.vYZV7a_previewClickable:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.vYZV7a_enhanceRow{flex:none;align-items:center;gap:8px;padding:2px 0;display:flex}.vYZV7a_enhanceNote{color:var(--dsw-alias-text-tertiary);font-size:12px}.vYZV7a_rescue{border:1px solid var(--dsw-alias-border-secondary);border-radius:6px;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;display:flex}.vYZV7a_rescueNote{color:var(--dsh-alias-text-secondary,var(--dsw-alias-text-secondary));overflow-wrap:anywhere;margin:0;font-size:12px}.vYZV7a_rescueBtn,.vYZV7a_rescueRun{cursor:pointer;font-size:12px}.vYZV7a_rescueErr{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}";
-		const tagId$6 = "@melite-plugin/dsh-card-view/card.module.css@cecb7815";
+		const css$6 = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary)}.vYZV7a_prompt{color:var(--dsw-alias-label-secondary);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_paramsCol,.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;display:flex}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px}.vYZV7a_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.vYZV7a_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.vYZV7a_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillLlm{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:8px;max-width:220px;height:36px;padding:0 8px;font-size:13px;font-weight:600}.vYZV7a_drillLlm:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillLlm{color-scheme:light}.vYZV7a_drillLlm option{color:canvastext;background:canvas}.vYZV7a_drillLlm:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.vYZV7a_drillProgress>svg{animation:1s linear infinite vYZV7a_tileSpinTurn}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;padding:12px 14px 18px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:.5px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-label-secondary);flex:none;font-size:11px;line-height:17px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600}.vYZV7a_runStatus{border:.5px solid var(--dsw-alias-border-l2);corner-shape:round;color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-label-secondary);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1)), background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1));font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_audioBars{box-sizing:border-box;justify-content:center;align-items:flex-end;gap:2px;width:100%;height:100%;padding:18% 12%;display:flex}.vYZV7a_audioBar{background:var(--dsw-alias-state-business-primary);opacity:.85;border-radius:1px;flex:1;max-width:6px}.vYZV7a_kindFace{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileIconBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;height:24px;transition:opacity var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);z-index:2;border-radius:999px;justify-content:center;align-items:center;width:24px;padding:0;display:inline-flex;position:absolute}.vYZV7a_tileIconBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary)}.vYZV7a_tileInner:hover .vYZV7a_tileIconBtn,.vYZV7a_tileIconBtn:focus-visible{opacity:1}.vYZV7a_tileIconBtn:disabled{cursor:default}.vYZV7a_tileTrash{color:var(--dsw-alias-label-tertiary);top:6px;right:6px}.vYZV7a_tileTrash:hover{color:var(--dsw-alias-state-error-primary)}.vYZV7a_tileRunBtn{color:var(--dsw-alias-label-secondary);bottom:6px;right:6px}.vYZV7a_tileRunBtn:hover{color:var(--dsw-alias-brand-primary)}.vYZV7a_tileSpin{color:var(--dsw-alias-brand-primary);z-index:2;align-items:center;display:inline-flex;position:absolute;bottom:6px;left:6px}.vYZV7a_tileSpin>svg{animation:1s linear infinite vYZV7a_tileSpinTurn}.vYZV7a_tilePct{font-variant-numeric:tabular-nums;margin-left:4px;font-size:11px}@keyframes vYZV7a_tileSpinTurn{to{transform:rotate(360deg)}}.vYZV7a_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:17px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-label-secondary);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;margin-top:-6px;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;display:grid}.vYZV7a_pickerGenreTitle{letter-spacing:.08em;text-transform:uppercase;color:var(--dsw-alias-label-primary);grid-column:1/-1;margin:12px 0 10px;font-size:15px;font-weight:700}.vYZV7a_drill [class*=_title_]{font-size:18px;font-weight:800}.vYZV7a_pickerCardLabel{font-size:12px;font-weight:500}.vYZV7a_pickerCard{box-sizing:border-box;border:.5px solid var(--dsw-alias-border-l2);width:100%;min-height:44px;color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;justify-content:flex-start;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_pickerCardDesc{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;overflow:hidden}.vYZV7a_specForm :where(input,textarea,select,button){box-sizing:border-box}.vYZV7a_specForm{flex-direction:column;gap:12px;display:flex}.vYZV7a_specGroup{flex-direction:column;gap:8px;display:flex}.vYZV7a_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.vYZV7a_specField{flex-direction:column;gap:6px;display:flex}.vYZV7a_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.vYZV7a_specRequired{color:var(--dsw-alias-state-error-primary)}.vYZV7a_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_specSelect option{color:canvastext;background:canvas}.vYZV7a_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.vYZV7a_specSliderRow{align-items:center;gap:8px;display:flex}.vYZV7a_specSlider{flex:1}.vYZV7a_specSliderValue{color:var(--dsw-alias-label-secondary);text-align:right;min-width:4ch;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}.vYZV7a_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.vYZV7a_tileShared{display:block;position:relative}.vYZV7a_zoomOverlay{background:var(--dsw-alias-bg-overlay);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.vYZV7a_zoomScroll{flex:1;min-height:0;overflow-y:auto}.vYZV7a_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.vYZV7a_tileDragOver{outline:2px dashed var(--dsw-alias-brand-primary);outline-offset:-2px}.vYZV7a_zoomCard{background:var(--dsw-alias-bg-layer-1);box-shadow:0 0 0 .5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);color:var(--dsw-alias-label-primary);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;animation:.18s cubic-bezier(.2,.9,.3,1) vYZV7a_zoom-in;display:flex;overflow:hidden}@keyframes vYZV7a_zoom-in{0%{opacity:0;transform:scale(.92)}}.vYZV7a_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.vYZV7a_zoomWebhook{color:var(--dsw-alias-label-secondary);align-items:center;gap:8px;width:100%;min-height:0;padding:2px 0;font-size:12px;display:flex}.vYZV7a_zoomMeter{background:var(--dsw-alias-border-l2);border-radius:999px;flex:auto;height:3px;overflow:hidden}.vYZV7a_zoomMeterFill{background:var(--dsw-alias-fill-brand-primary);height:100%;transition:width .24s;display:block}.vYZV7a_zoomTitle{flex:auto;font-size:13px;font-weight:600;line-height:20px}.vYZV7a_closeX{color:inherit;cursor:pointer;background:0 0;border:none;border-radius:6px;padding:4px 8px;font-size:14px;line-height:1}.vYZV7a_closeX:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_zoomDetail{overflow-anchor:none;min-height:0;padding:14px;display:block;overflow-y:auto}.vYZV7a_zoomBody{flex-direction:column;flex:1;min-height:0;display:flex;overflow:hidden}.vYZV7a_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.vYZV7a_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both vYZV7a_zoomShimmer}.vYZV7a_skWide{width:60%}.vYZV7a_skShort{flex:1;height:28px}.vYZV7a_skBlock{border-radius:10px;height:120px}.vYZV7a_skRow{gap:10px;display:flex}@keyframes vYZV7a_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes vYZV7a_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.vYZV7a_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both vYZV7a_tilePop}.vYZV7a_tileDragging{opacity:.55;z-index:2}.vYZV7a_wiredMark{color:var(--dsw-alias-state-business-primary);font-size:10px}.vYZV7a_capOver{background:var(--dsw-alias-interactive-bg-hover);outline:1px dashed var(--dsw-alias-state-business-primary);outline-offset:4px}.vYZV7a_cancelBtn{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);cursor:pointer;background:0 0;border-radius:8px;padding:5px 12px;font-size:12px}.vYZV7a_cancelBtn:disabled{cursor:default;opacity:.6}.vYZV7a_groupBar{align-items:center;gap:8px;display:flex}.vYZV7a_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary);corner-shape:round;color:var(--dsw-alias-bg-module);z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.vYZV7a_checkOn{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.vYZV7a_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.vYZV7a_memberList{margin:0 0 12px;padding:0;list-style:none}.vYZV7a_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.vYZV7a_memberIdx{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.vYZV7a_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.vYZV7a_tileEnter,.vYZV7a_skLine,.vYZV7a_skBlock{animation-duration:.01ms;animation-iteration-count:1}}.vYZV7a_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.vYZV7a_studioBody{flex-direction:column;gap:12px;display:flex}.vYZV7a_studioGroup{flex-direction:column;gap:6px;display:flex}.vYZV7a_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.vYZV7a_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.vYZV7a_squareBox:hover{border-color:var(--dsw-alias-border-l3)}.vYZV7a_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.vYZV7a_squareThumb{object-fit:cover;width:100%;height:100%}.vYZV7a_squareGlyph{color:var(--dsw-alias-label-tertiary)}.vYZV7a_squareX{background:var(--dsw-alias-bg-layer-1);border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.vYZV7a_squareX:hover{border-color:var(--dsw-alias-border-l3)}.vYZV7a_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.vYZV7a_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.vYZV7a_squareOff{opacity:.5;pointer-events:none}.vYZV7a_squareFileInput{display:none}.vYZV7a_viewport{background:var(--dsw-alias-bg-base);border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.vYZV7a_viewportEmpty{color:var(--dsw-alias-label-tertiary);align-self:center;margin:auto;font-size:12px;line-height:20px}.vYZV7a_viewport canvas{display:block}.vYZV7a_viewportCanvas{width:100%;height:380px}.vYZV7a_studioSplit{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:12px;display:grid}.vYZV7a_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}@media (width<=900px){.vYZV7a_studioSplit{grid-template-columns:1fr}}.vYZV7a_viewport:only-child{min-height:380px}.vYZV7a_modSection{border-top:1px dashed var(--dsw-alias-border-l2);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.vYZV7a_modHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.vYZV7a_modHint{opacity:.45;font-size:9px}.vYZV7a_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_modTile{border:1px solid var(--border,color-mix(in srgb, var(--dsw-alias-label-tertiary) 30%, transparent));background:var(--bg-elevated,color-mix(in srgb, var(--dsw-alias-label-tertiary) 8%, transparent));cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.vYZV7a_modTile:active{cursor:grabbing}.vYZV7a_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.vYZV7a_modTileStrength{opacity:.55;font-size:9px}.vYZV7a_modAdd{border:1px dashed var(--dsw-alias-border-l2);min-width:64px;color:inherit;cursor:pointer;opacity:.6;background:0 0;border-radius:8px;justify-content:center;align-items:center;padding:6px 10px;font-size:11px;display:flex}.vYZV7a_modAdd:hover{opacity:1}.vYZV7a_modPickList{gap:2px;display:grid}.vYZV7a_modPickRow{width:100%;color:inherit;text-align:left;cursor:pointer;background:0 0;border:0;border-radius:6px;align-items:center;gap:8px;padding:6px 8px;font-size:12px;display:flex}.vYZV7a_modPickRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.vYZV7a_modField{opacity:.85;flex-direction:column;gap:4px;font-size:11px;display:flex}.vYZV7a_modSelect{border:1px solid var(--border,color-mix(in srgb, var(--dsw-alias-label-tertiary) 30%, transparent));background:var(--bg-elevated,color-mix(in srgb, var(--dsw-alias-label-tertiary) 8%, transparent));color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.vYZV7a_h3Studio{grid-template-rows:minmax(280px,1fr) auto auto;grid-template-columns:300px 1fr;gap:12px;min-height:460px;display:grid}.vYZV7a_h3Rail{flex-direction:column;grid-area:1/1/4;gap:10px;min-height:0;padding-right:2px;display:flex;overflow-y:auto}.vYZV7a_h3RailBody{flex-direction:column;gap:10px;display:flex}.vYZV7a_h3Readout{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;font-size:11px}.vYZV7a_h3Warn{border-left:2px solid var(--dsw-alias-brand-primary);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 85%, transparent);padding-left:8px;font-size:11px;line-height:1.5}.vYZV7a_h3Recipe{border:.5px solid var(--dsw-alias-border-l2);border-radius:8px;flex-direction:column;gap:6px;padding:10px;display:flex}.vYZV7a_h3RecipeRow{justify-content:space-between;align-items:center;gap:8px;font-size:12px;display:flex}.vYZV7a_h3RecipeRow span{color:var(--dsw-alias-label-secondary)}.vYZV7a_h3RecipeRow input,.vYZV7a_h3RecipeRow select{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;border-radius:6px;width:110px;padding:4px 8px;font-size:12px}.vYZV7a_h3RecipeRow select option{color:canvastext;background:canvas}.vYZV7a_h3RecipeRow select{color-scheme:light}.vYZV7a_h3CallList{flex-direction:column;gap:4px;display:flex}.vYZV7a_h3CallRow{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;text-align:left;background:0 0;border-radius:6px;align-items:center;gap:8px;width:100%;padding:5px 8px;font-size:11px;display:flex}.vYZV7a_h3CallRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_h3CallRowFrames{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;flex:none}.vYZV7a_h3CallRowText{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.vYZV7a_h3Dot{background:var(--dsw-alias-state-business-primary);border-radius:50%;flex:none;width:6px;height:6px}.vYZV7a_h3Extend{margin-top:4px}.vYZV7a_h3Back{gap:6px;display:flex}.vYZV7a_h3Field{flex-direction:column;gap:4px;display:flex}.vYZV7a_h3FieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_h3Field textarea,.vYZV7a_h3Field input,.vYZV7a_h3Field select{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:12px}.vYZV7a_h3SpanRow{gap:6px;display:flex}.vYZV7a_h3Preview{background:color-mix(in srgb, var(--dsw-alias-label-primary) 4%, transparent);border-radius:10px;grid-area:1/2;justify-content:center;align-items:center;min-height:240px;display:flex;overflow:hidden}.vYZV7a_h3Video{max-width:100%;max-height:44vh}.vYZV7a_h3PreviewEmpty{color:var(--dsw-alias-label-secondary);font-size:12px}.vYZV7a_h3Bar{border:.5px solid var(--dsw-alias-border-l2);cursor:default;border-radius:8px;flex-direction:column;grid-area:2/1/auto/3;gap:3px;padding:8px 10px 10px 56px;display:flex}.vYZV7a_h3Ruler{color:var(--dsw-alias-label-secondary);height:12px;font-size:9px;position:relative}.vYZV7a_h3Tick{border-left:.5px solid var(--dsw-alias-border-l2);padding-left:3px;position:absolute;top:0}.vYZV7a_h3Calls{background:color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent);border-radius:6px;height:44px;position:relative}.vYZV7a_h3Call{background:var(--dsw-alias-bg-layer-1);border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;align-items:center;gap:4px;padding:2px 6px;display:flex;position:absolute;top:3px;bottom:3px;overflow:hidden}.vYZV7a_h3Call:hover{border-color:color-mix(in srgb, var(--dsw-alias-label-primary) 30%, transparent)}.vYZV7a_h3CallSel{border:1.5px solid var(--dsw-alias-brand-primary)}.vYZV7a_h3CallText{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:10px;overflow:hidden}.vYZV7a_h3BarEmpty{color:var(--dsw-alias-label-secondary);font-size:10px;position:absolute;top:14px;left:8px}.vYZV7a_h3Lane{height:14px;display:flex;position:relative}.vYZV7a_h3LaneName{text-transform:uppercase;width:40px;font-size:9px;line-height:14px;position:absolute;left:-46px}.vYZV7a_h3Pin{border-radius:2px;width:6px;position:absolute;top:2px;bottom:2px}.vYZV7a_h3RunRow{grid-area:3/1/auto/3;align-items:center;gap:8px;display:flex}.vYZV7a_ideoStudio{grid-template-columns:minmax(280px,360px) 1fr;gap:14px;display:grid}.vYZV7a_ideoStudio :where(input,textarea,select,button){box-sizing:border-box}.vYZV7a_ideoRail{flex-direction:column;gap:10px;min-width:0;display:flex}.vYZV7a_ideoField{flex-direction:column;gap:5px;display:flex}.vYZV7a_ideoFieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_ideoField input,.vYZV7a_ideoField textarea,.vYZV7a_ideoField select{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);font:inherit;border-radius:6px;width:100%;padding:6px 8px;font-size:12px}.vYZV7a_ideoField select option{color:canvastext;background:canvas}.vYZV7a_ideoField select{color-scheme:light}.vYZV7a_ideoToolbar select option{color:canvastext;background:canvas}.vYZV7a_ideoToolbar select{color-scheme:light}.vYZV7a_ideoToolbar{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.vYZV7a_ideoAspect{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);border-radius:6px;padding:5px 6px;font-size:12px}.vYZV7a_ideoStatus{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_ideoTabs{border-bottom:1px solid var(--dsw-alias-border-l2);gap:2px;display:flex}.vYZV7a_ideoTab{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;border-bottom:2px solid #0000;padding:6px 10px;font-size:12px}.vYZV7a_ideoTabOn{border-bottom-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.vYZV7a_ideoInspector,.vYZV7a_ideoStylePanel,.vYZV7a_ideoJsonPanel{flex-direction:column;gap:10px;display:flex}.vYZV7a_ideoInspectorHead{justify-content:space-between;align-items:center;display:flex}.vYZV7a_ideoInspectorActions{gap:4px;display:flex}.vYZV7a_ideoTypeBadge,.vYZV7a_ideoRowBadge{text-transform:uppercase;border-radius:4px;padding:2px 6px;font-size:10px}.vYZV7a_ideoTypeBadge[data-ideo-type=obj],.vYZV7a_ideoRowBadge[data-ideo-type=obj]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, transparent);color:var(--dsw-alias-state-business-primary)}.vYZV7a_ideoTypeBadge[data-ideo-type=text],.vYZV7a_ideoRowBadge[data-ideo-type=text]{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 18%, transparent);color:var(--dsw-alias-brand-primary)}.vYZV7a_ideoTypeBadge[data-ideo-type=logo],.vYZV7a_ideoRowBadge[data-ideo-type=logo]{background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 18%, transparent);color:var(--dsw-alias-state-warn-primary)}.vYZV7a_ideoBboxRow{grid-template-columns:repeat(4,1fr);gap:8px;display:grid}.vYZV7a_ideoFontChips{flex-wrap:wrap;gap:4px;display:flex}.vYZV7a_ideoChip{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:999px;padding:3px 8px;font-size:10px}.vYZV7a_ideoChipOn{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.vYZV7a_ideoSwatches{flex-wrap:wrap;align-items:center;gap:4px;display:flex}.vYZV7a_ideoSwatch{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:4px;width:22px;height:16px;display:inline-block}.vYZV7a_ideoSwatchAdd{background:var(--dsw-alias-bg-layer-1);border:1px dashed var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);border-radius:4px;width:84px;padding:2px 6px;font-size:10px}.vYZV7a_ideoMiniSwatch{border-radius:2px;width:10px;height:8px;display:inline-block}.vYZV7a_ideoEmpty{color:var(--dsw-alias-label-secondary);flex-direction:column;gap:8px;font-size:12px;display:flex}.vYZV7a_ideoList{flex-direction:column;gap:4px;display:flex}.vYZV7a_ideoRow{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;align-items:center;gap:8px;padding:5px 8px;display:flex}.vYZV7a_ideoRowOn{border-color:var(--dsw-alias-brand-primary)}.vYZV7a_ideoRowText{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:12px;overflow:hidden}.vYZV7a_ideoRowBbox{color:var(--dsw-alias-label-secondary);font-size:10px}.vYZV7a_ideoRowActions{gap:2px;display:flex}.vYZV7a_ideoRowActions button{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;padding:2px 4px;font-size:11px}.vYZV7a_ideoRowActions button:hover{color:var(--dsw-alias-label-primary)}.vYZV7a_ideoPre{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);white-space:pre-wrap;border-radius:6px;max-height:240px;margin:0;padding:8px;font-size:10px;overflow:auto}.vYZV7a_ideoWarn{color:var(--dsw-alias-state-error-primary);font-size:11px}.vYZV7a_ideoCanvasWrap{flex-direction:column;gap:6px;min-width:0;display:flex}.vYZV7a_ideoCanvas{background:var(--dsw-alias-interactive-bg-hover);border:1px solid var(--dsw-alias-border-l2);touch-action:none;user-select:none;border-radius:8px;width:100%;max-width:100%;margin:0 auto;position:relative;overflow:hidden}.vYZV7a_ideoCanvasDraw{cursor:crosshair}.vYZV7a_ideoCanvasBg{position:absolute;inset:0}.vYZV7a_ideoBgText{color:var(--dsw-alias-label-secondary);opacity:.28;pointer-events:none;text-align:center;word-break:break-word;justify-content:center;align-items:center;padding:24px;font-size:14px;font-weight:600;display:flex;position:absolute;inset:0;overflow:hidden}.vYZV7a_ideoGridMinor{background-image:linear-gradient(to right, color-mix(in srgb, var(--dsw-alias-label-tertiary) 6%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--dsw-alias-label-tertiary) 6%, transparent) 1px, transparent 1px);pointer-events:none;background-size:2.5% 2.5%;position:absolute;inset:0}.vYZV7a_ideoGridMajor{background-image:linear-gradient(to right, color-mix(in srgb, var(--dsw-alias-label-tertiary) 16%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--dsw-alias-label-tertiary) 16%, transparent) 1px, transparent 1px);pointer-events:none;background-size:10% 10%;position:absolute;inset:0}.vYZV7a_ideoBox{position:absolute}.vYZV7a_ideoBox_obj{--ideo-accent:var(--dsw-alias-state-business-primary)}.vYZV7a_ideoBox_text{--ideo-accent:var(--dsw-alias-brand-primary)}.vYZV7a_ideoBox_logo{--ideo-accent:var(--dsw-alias-state-warn-primary)}.vYZV7a_ideoHalo{border:2px solid var(--ideo-accent,var(--dsw-alias-state-business-primary));opacity:.45;pointer-events:none;border-radius:3px;position:absolute;inset:-4px}.vYZV7a_ideoBoxMain{border:1.5px solid var(--ideo-accent,var(--dsw-alias-state-business-primary));cursor:move;border-radius:4px;flex-direction:column;align-items:flex-start;gap:3px;width:100%;height:100%;padding:4px 6px;display:flex;overflow:hidden}.vYZV7a_ideoTag{background:var(--ideo-accent,var(--dsw-alias-state-business-primary));color:var(--dsw-alias-bg-base);text-transform:uppercase;border-radius:3px;width:fit-content;padding:1px 5px;font-size:9px;font-weight:700}.vYZV7a_ideoDesc{color:var(--dsw-alias-label-secondary);word-break:break-word;font-size:10px;line-height:1.3;overflow:hidden}.vYZV7a_ideoInlineText{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--ideo-accent,var(--dsw-alias-brand-primary));color:var(--dsw-alias-label-primary);border-radius:4px;width:100%;padding:4px 6px;font-size:11px}.vYZV7a_ideoHandle{background:var(--dsw-alias-label-primary);border:1px solid var(--dsw-alias-interactive-bg-hover);z-index:3;border-radius:2px;width:8px;height:8px;margin:-5px 0 0 -5px;position:absolute}.vYZV7a_ideoHandle_nw,.vYZV7a_ideoHandle_n,.vYZV7a_ideoHandle_w{cursor:nwse-resize}.vYZV7a_ideoHandle_se,.vYZV7a_ideoHandle_s,.vYZV7a_ideoHandle_e{cursor:nesw-resize}.vYZV7a_ideoHandle_ne,.vYZV7a_ideoHandle_sw{cursor:ns-resize}.vYZV7a_ideoDrawPreview{border:1.5px dashed var(--dsw-alias-brand-primary);pointer-events:none;z-index:4;border-radius:3px;position:absolute}.vYZV7a_ideoCoord{color:var(--dsw-alias-label-secondary);text-align:center;font-size:10px}.vYZV7a_ideoRunRow{grid-column:1/3;gap:8px;display:flex}.vYZV7a_h3Preview{flex-direction:column;align-items:stretch;gap:8px;padding:10px}.vYZV7a_h3RunHistory{flex-wrap:wrap;align-items:center;gap:4px;display:flex}.vYZV7a_h3RunHistoryLabel{color:var(--dsw-alias-label-secondary);text-transform:uppercase;letter-spacing:.04em;font-size:9px;font-weight:600}.vYZV7a_h3RunChip{border:1px solid var(--dsw-alias-border-l2);color:inherit;border-radius:999px;padding:2px 8px;font-size:10px;text-decoration:none}.vYZV7a_h3RunChip:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_h3FinalCut{flex-direction:column;flex:1;gap:6px;min-height:0;display:flex}.vYZV7a_h3Video{object-fit:contain;background:var(--dsw-alias-bg-base);border-radius:6px;flex:1;width:100%;min-height:0;max-height:44vh}.vYZV7a_h3FinalCutMeta{align-items:center;gap:10px;font-size:11px;display:flex}.vYZV7a_h3FinalCutLabel{font-weight:600}.vYZV7a_h3FinalCutStat{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}.vYZV7a_h3FinalCutOpen{color:inherit;margin-left:auto;font-size:11px}.vYZV7a_h3PreviewWindows{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.vYZV7a_h3WindowTile{flex-direction:column;gap:2px;width:200px;display:flex}.vYZV7a_h3WindowVideo{background:color-mix(in srgb, var(--dsw-alias-label-primary) 50%, transparent);object-fit:cover;border-radius:6px;width:100%}.vYZV7a_h3WindowName{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;text-overflow:ellipsis;white-space:nowrap;font-size:9px;overflow:hidden}.vYZV7a_h3BarWrap{border:.5px solid var(--dsw-alias-border-l2);border-radius:10px;flex-direction:column;grid-column:1/3;display:flex;overflow:hidden}.vYZV7a_h3BarHeader{border-bottom:1px solid var(--dsw-alias-border-l2);flex-wrap:wrap;align-items:baseline;gap:8px;padding:6px 10px;display:flex}.vYZV7a_h3BarTitle{font-size:11px;font-weight:700}.vYZV7a_h3BarMeta{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;font-size:10px}.vYZV7a_h3BarHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9.5px}.vYZV7a_h3RunRow{grid-column:1/3;align-items:center;gap:8px;display:flex}.vYZV7a_h3RunNote{color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 80%, transparent);font-size:11px}.vYZV7a_h3Dot{background:var(--dsw-alias-brand-primary);border-radius:999px;flex-shrink:0;width:6px;height:6px;display:inline-block}.vYZV7a_outputsPreview{flex-direction:column;flex:1;min-width:280px;min-height:220px;display:flex;overflow:hidden}.vYZV7a_outputsHint{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.vYZV7a_addHugeContent{flex-direction:column;flex:1;min-height:0;padding:0 0 8px;display:flex}.vYZV7a_previewClickable{cursor:pointer}.vYZV7a_previewClickable:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.vYZV7a_enhanceRow{flex:none;align-items:center;gap:8px;padding:2px 0;display:flex}.vYZV7a_enhanceNote{color:var(--dsw-alias-text-tertiary);font-size:12px}.vYZV7a_rescue{border:1px solid var(--dsw-alias-border-secondary);border-radius:6px;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;display:flex}.vYZV7a_rescueNote{color:var(--dsh-alias-text-secondary,var(--dsw-alias-text-secondary));overflow-wrap:anywhere;margin:0;font-size:12px}.vYZV7a_rescueBtn,.vYZV7a_rescueRun{cursor:pointer;font-size:12px}.vYZV7a_rescueErr{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.vYZV7a_zoomBuild{color:var(--dsh-alias-label-tertiary);opacity:.55;flex:none;font-size:10px}";
+		const tagId$6 = "@melite-plugin/dsh-card-view/card.module.css@ca2883ff";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$6) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -7010,6 +7010,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"zoom-in": "vYZV7a_zoom-in",
 			"zoomBar": "vYZV7a_zoomBar",
 			"zoomBody": "vYZV7a_zoomBody",
+			"zoomBuild": "vYZV7a_zoomBuild",
 			"zoomCard": "vYZV7a_zoomCard",
 			"zoomDetail": "vYZV7a_zoomDetail",
 			"zoomInner": "vYZV7a_zoomInner",
@@ -7463,15 +7464,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		async function fetchFormsTable(signal) {
 			return v1Get("/v1/forms", signal);
 		}
-		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
-		*  input-dir path the param accepts. The door's own gates (type
-		*  whitelist, one clean segment) are the law — the client only
-		*  voices its refusals, never invents its own. */
+		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL; the
+		*  mesh wire type boards .glb/.gltf — model/gltf-binary, or the
+		*  browser's octet-stream with a GLB name) → the input-dir path the
+		*  param accepts. The door's own gates (type whitelist, one clean
+		*  segment) are the law — the client only voices its refusals, never
+		*  invents its own. */
 		async function uploadInputFile(file) {
 			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
 			const isAudio = file.type.startsWith("audio/");
-			if (!isImage && !isAudio) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image or audio file");
-			if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp only");
+			const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name);
+			const isMesh = file.type === "model/gltf-binary" || file.type === "application/octet-stream" && glbName;
+			if (!isImage && !isAudio && !isMesh) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image, audio, or .glb/.gltf file");
+			if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp / glb only");
 			const dataUrl = await new Promise((resolve, reject) => {
 				const r = new FileReader();
 				r.onload = () => {
@@ -7635,6 +7640,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return await startRun({
 				...input.params,
 				model: input.model,
+				draft_id: input.draftId,
+				test: input.test ?? false
+			}, signal);
+		}
+		/** Start pre-composed stages through the flow door (whole-bench Run —
+		*  honest refusal when the stages carry no workflow or the bench is
+		*  multi-stage: the single-stage policy is the estate's). */
+		async function startFlowInlineRun(input, signal) {
+			return await startRun({
+				flow_inline: {
+					id: input.flowId,
+					stages: input.stages
+				},
 				draft_id: input.draftId,
 				test: input.test ?? false
 			}, signal);
@@ -7876,11 +7894,33 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** THE OUTCOME OBSERVER (the attribution half): poll the run to
 		*  terminal on the run-wire cadence, then write runStatus + result
 		*  onto the bench row through the shared-state door. Both run paths
-		*  (in-tab stream and shell navigation) start this once per gesture;
-		*  the patch is bookkeeping — a refusal is swallowed (the next run
-		*  rewrites the row), an abort ends the watch. The result.url rides
-		*  the status door's already-rewritten media route. */
-		async function observeRunOutcome(draftId, stageId, runId, signal, onTouched) {
+		*  (the sequential pass AND the tab's onStarted arm) fire it per
+		*  gesture — the SINGLE-FLIGHT registry below seats them on ONE
+		*  poller. The patch is bookkeeping — a refusal is swallowed (the
+		*  next run rewrites the row), an abort ends the watch. The
+		*  result.url rides the status door's already-rewritten media
+		*  route. */
+		/** THE SINGLE-FLIGHT REGISTRY (2026-09-21, the operator's catch:
+		* the bench log carried PAIRS of identical result/runStatus patches
+		* — two writes per state move, a re-render storm mid-run that ate
+		* clicks and reset scroll): ONE observer per draft:stage:run, ever,
+		* in-process. Both run paths (the sequential pass's own await AND
+		* the tab's onStarted arm) observe the same run — the second call
+		* RIDES the first's promise instead of arming a twin poller. The
+		* entry clears when the observer settles, so a genuinely new run
+		* (or a retry after settle) observes fresh. */
+		const observingRuns = /* @__PURE__ */ new Map();
+		function observeRunOutcome(draftId, stageId, runId, signal, onTouched) {
+			const key = `${draftId}\u0000${stageId}\u0000${runId}`;
+			const inFlight = observingRuns.get(key);
+			if (inFlight !== void 0) return inFlight;
+			const seated = observeRunOutcomeRun(draftId, stageId, runId, signal, onTouched).finally(() => {
+				observingRuns.delete(key);
+			});
+			observingRuns.set(key, seated);
+			return seated;
+		}
+		async function observeRunOutcomeRun(draftId, stageId, runId, signal, onTouched) {
 			try {
 				const startStatus = await fetchRunStatus(runId, signal).then((r) => r.status).catch(() => "running");
 				await patchStageOutcome(draftId, stageId, {
@@ -7947,25 +7987,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					continue;
 				}
 				const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
-				const url = stage !== void 0 && typeof stage.url === "string" && stage.url !== "" ? stage.url : "";
-				const result = { run_id: runId };
-				if (url !== "") result["url"] = url;
-				const gallery = stage?.gallery ?? [];
-				const artNames = [];
-				for (const g of gallery) if (g.name !== "") artNames.push(g.name);
-				if (artNames.length > 0) {
-					const mediaUrls = artNames.map((n) => toRunMediaUrl(runId, n));
-					const artifacts = {};
-					if (url !== "") artifacts["video"] = url;
-					for (let i = 0; i < artNames.length; i++) artifacts[artNames[i]] = mediaUrls[i];
-					result["artifacts"] = artifacts;
-					result["assetUrls"] = url !== "" ? [url, ...mediaUrls] : mediaUrls;
-				}
-				const terminal = row.status === "completed" ? "done" : row.status;
-				if (terminal === "failed") {
-					const reason = stage?.error ?? row.error;
-					if (typeof reason === "string" && reason !== "") result["error"] = reason;
-				}
+				const rowError = row["error"];
+				const runError = typeof rowError === "string" ? rowError : void 0;
+				const { result, terminal } = terminalOutcomeOf(runId, row.status, stage, runError);
 				try {
 					await patchStageOutcome(draftId, stageId, {
 						runStatus: terminal,
@@ -8014,6 +8038,52 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					hooks.onTouched?.();
 				} catch {}
 			}
+		}
+		/** THE TERMINAL OUTCOME BUILDER (pure, under CONTRACT — the
+		* operator's law, 2026-09-20). Turns a terminal runs/status row
+		* into the bench patch's result + runStatus. The row it returns
+		* satisfies `benchResultDefects` (the bench stage result contract)
+		* — the observer writes lawful rows only, and the walls drive THIS
+		* builder against the real status shape (never a hand-claimed
+		* fixture).
+		*
+		* ONE FILE, ONE KEY (the doubled-rowset cure): the artifacts map
+		* carries each file EXACTLY ONCE, keyed by its gallery name. The
+		* legacy hardcoded 'video' stamp wrote the stage url — which IS
+		* gallery[0] — under a second key, so every image-gen result
+		* rendered the same picture twice (hero + a phantom rest-thumb
+		* row). The h3 timeline (the stamp's only reader) backfills its
+		* own artifacts.video when absent — no consumer needs the stamp.
+		* The primary `url` field may name a file that also lives in the
+		* map (it is the primary POINTER, not a second key). */
+		function terminalOutcomeOf(runId, status, stage, runError) {
+			const terminal = status === "completed" ? "done" : status === "failed" ? "failed" : "stopped";
+			const result = { run_id: runId };
+			const url = stage !== void 0 && typeof stage.url === "string" && stage.url !== "" ? stage.url : "";
+			if (url !== "") result["url"] = url;
+			const gallery = Array.isArray(stage?.gallery) ? stage.gallery : [];
+			const artNames = [];
+			for (const g of gallery) if (typeof g?.name === "string" && g.name !== "") artNames.push(g.name);
+			if (artNames.length > 0) {
+				const artifacts = {};
+				const mediaUrls = [];
+				for (const n of artNames) {
+					const u = toRunMediaUrl(runId, n);
+					if (mediaUrls.includes(u)) continue;
+					mediaUrls.push(u);
+					artifacts[n] = u;
+				}
+				result["artifacts"] = artifacts;
+				result["assetUrls"] = url !== "" && !mediaUrls.includes(url) ? [url, ...mediaUrls] : mediaUrls;
+			}
+			if (terminal === "failed") {
+				const reason = typeof stage?.error === "string" && stage.error !== "" ? stage.error : runError;
+				if (reason !== void 0 && reason !== "") result["error"] = reason;
+			}
+			return {
+				result,
+				terminal
+			};
 		}
 		function readRun(runId, doc) {
 			const row = readRunStatus(runId, doc);
@@ -8664,21 +8734,32 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return null;
 		}
 		/** Offer one rescue through the manage seat. Names only — the
-		* server owns every URL (the declaration law above). Resolves
+		* server owns every URL (the declaration law above). The target
+		* is the model family OR the card id (model-less tool cards carry
+		* their own provision rows under the card id — provision_model
+		* resolves both). Resolves
 		* with the reply's detail line, refuses with its own name. */
-		async function runRescueCall(rescue, family) {
-			const reply = rescue.kind === "extension" ? await postManageAction("install_extension", { nodes: [rescue.pack] }) : await postManageAction("provision_model", { model: family });
+		async function runRescueCall(rescue, target) {
+			const reply = rescue.kind === "extension" ? await postManageAction("install_extension", { nodes: [rescue.pack] }) : await postManageAction("provision_model", { model: target });
 			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
-			return reply.detail ?? (rescue.kind === "extension" ? rescue.pack + " installed" : family + " provisioned");
+			return reply.detail ?? (rescue.kind === "extension" ? rescue.pack + " installed" : target + " provisioned");
 		}
 		/** The first family id on a bench/draft's stage params (the model
 		* the run shot — the rescue's provision target). Null when no
-		* stage names one (the banner stays honest and offers nothing). */
+		* stage names one (the card-id fallback below gets its turn). */
 		function familyOfStages(stages) {
 			for (const s of stages) {
 				const m = s.params?.["model"];
 				if (typeof m === "string" && m !== "") return m;
 			}
+			return null;
+		}
+		/** THE CARD-ID FALLBACK (the mask-form SAM2 law, 2026-09-19):
+		* model-less tool cards name no family — the stage's own card id
+		* is the provision target (the manage door resolves card-owned
+		* DECL rows under it). Null when no stage names a card. */
+		function cardOfStages(stages) {
+			for (const s of stages) if (typeof s.card === "string" && s.card !== "") return s.card;
 			return null;
 		}
 		//#endregion
@@ -8704,7 +8785,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const [note, setNote] = (0, react.useState)(null);
 			if (rescue === null) return null;
 			const family = familyOfStages(stages) ?? "";
-			const what = rescue.kind === "extension" ? "extension pack \"" + rescue.pack + "\"" : "model file \"" + rescue.file + "\"" + (family !== "" ? " (family " + family + ")" : "");
+			const card = family !== "" ? "" : cardOfStages(stages) ?? "";
+			const target = family !== "" ? family : card;
+			const what = rescue.kind === "extension" ? "extension pack \"" + rescue.pack + "\"" : "model file \"" + rescue.file + "\"" + (target !== "" ? " (" + (family !== "" ? "family " : "card ") + target + ")" : "");
 			if (done !== null) return (0, react.createElement)("div", { className: card_module_css_default$1.rescue }, (0, react.createElement)("p", { className: card_module_css_default$1.rescueNote }, done + " — run again when ready."), (0, react.createElement)("button", {
 				className: card_module_css_default$1.rescueRun,
 				type: "button",
@@ -8713,12 +8796,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return (0, react.createElement)("div", { className: card_module_css_default$1.rescue }, (0, react.createElement)("p", { className: card_module_css_default$1.rescueNote }, "Missing " + what + " — install through the manage seat?"), (0, react.createElement)("button", {
 				className: card_module_css_default$1.rescueBtn,
 				type: "button",
-				disabled: busy || rescue.kind === "model" && family === "",
-				title: rescue.kind === "model" && family === "" ? "no stage names the owning family — provision via the agent door" : "install via /v1/manage (the declaration owns the URL)",
+				disabled: busy || rescue.kind === "model" && target === "",
+				title: rescue.kind === "model" && target === "" ? "no stage names the owning family or card — provision via the agent door" : "install via /v1/manage (the declaration owns the URL)",
 				onClick: () => {
 					setBusy(true);
 					setNote(null);
-					runRescueCall(rescue, family).then((line) => {
+					runRescueCall(rescue, target).then((line) => {
 						setBusy(false);
 						setDone(line);
 					}).catch((e) => {
@@ -9095,11 +9178,35 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
 			return v;
 		}
+		/** THE FAMILY-KEY RESOLUTION (the families-DRY law, 2026-09-21):
+		* a field's `families` declares BASE family ids — the card's
+		* boarded ids — while the served model key may be a COMPOSED
+		* catalog row (family-variant-quant, e.g. 'pixal3d-1536-int8').
+		* Resolve the active key to its base against the spec's OWN
+		* boarded-families rows: the longest id matching the key at a
+		* '-' boundary wins (a 'pixal3d' + 'pixal3d-pro' board resolves
+		* to the longer). An unresolved key passes through verbatim —
+		* single-family cards and keys with no boarded base walk
+		* unchanged; the resolution never drops a field, it only widens
+		* what a declared base id covers. */
+		function resolveFamilyKey(spec) {
+			const key = typeof spec.model === "string" ? spec.model : void 0;
+			if (key === void 0 || key === "") return void 0;
+			const boarded = spec.families;
+			if (boarded === void 0) return key;
+			let best;
+			for (const row of boarded) {
+				const exact = key === row.id;
+				const prefixed = key.startsWith(row.id + "-") && (best === void 0 || row.id.length > best.length);
+				if (exact || prefixed) best = row.id;
+			}
+			return best ?? key;
+		}
 		/** The card's own derived fields (the schema envelope walked,
 		* families-scoped to the served family). Memoize at the caller for
 		* hot loops — the walk is pure. */
 		function fieldsOf(spec) {
-			return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
+			return fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec));
 		}
 		/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
 		* client-side (stroke 34 — the card-recipe layer is dead): schema
@@ -9444,8 +9551,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$5 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
-		const tagId$5 = "@melite-plugin/dsh-card-view/card.module.css@563d0537";
+		const css$5 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareMesh{pointer-events:none;position:absolute;inset:0}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
+		const tagId$5 = "@melite-plugin/dsh-card-view/card.module.css@f4287eaf";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$5) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -9527,6 +9634,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"squareFileInput": "FRpSCG_squareFileInput",
 			"squareGlyph": "FRpSCG_squareGlyph",
 			"squareLabel": "FRpSCG_squareLabel",
+			"squareMesh": "FRpSCG_squareMesh",
 			"squareMetric": "FRpSCG_squareMetric",
 			"squareOff": "FRpSCG_squareOff",
 			"squareOver": "FRpSCG_squareOver",
@@ -9598,1819 +9706,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				]
 			});
 		}
-		//#endregion
-		//#region ../card-base/src/square.tsx
-		/**
-		* square.tsx — InputSquare, THE ONE square for any slot-shaped value
-		* — the base's default input component. Ported from the old system's
-		* SlotSquare law (packages/web-kit/ui/SlotSquare.tsx, 2026-08-08:
-		* "the look for it will be reused for the sub-card system") onto the
-		* DSH substrate: ui-primitives glyphs, module CSS under the
-		* web-styling chrome laws, no lucide/cn/tip.
-		*
-		* THE PLUS LAW (2026-09-13, the operator): the empty square
-		* carries the PLUS — "add a source" — and the click opens the
-		* three-entry source menu (From flow / From media / From file) in
-		* the provider; a bare square without a picker still files.
-		* THE OLD LAW, KEPT — a square thumbnail with label + badge
-		* + the THREE source verbs (operator, 2026-09-12: "we rendered a
-		* square and gave the option to do 1 of 3 things"):
-		*   a) from previous card  → onClick (the host opens the wire picker;
-		*                            badge = the upstream card's title)
-		*   b) from file upload    → onPickFile/onDropFile (hidden input +
-		*                            OS drop — the ONE read path readAsDataURL)
-		*   c) from media bar      → onDropAsset (the ASSET_DRAG_MIME contract
-		*                            the drop surface already serves)
-		* plus the X (detach). The consumer owns the doors — this shell only
-		* voices them (ui-attachment's own law: presentation registers, the
-		* service seams stay with their owners).
-		*
-		* THE CONSTRUCTION LAW (2026-09-12, the card-base founding): a card
-		* package EMITS an image input → the base constructs THIS square
-		* automatically. One input component; no card hand-rolls its own
-		* file field ever again.
-		*/
-		/** The media-bar drag contract (the tab's drop surface serves the
-		* same MIME — ONE spelling, imported from the base's law). */
-		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
-		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
-		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
-		*  artifact URLs. Every slot-shaped value renders the same way. */
-		function isImageUrl(value) {
-			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
-		}
-		/** Read a File/Blob and resolve its data: URL — the ONE read path for
-		*  every slot-shaped attach (the old law, single definition). */
-		function readAsDataUrl(file) {
-			return new Promise((resolve, reject) => {
-				const r = new FileReader();
-				r.onload = () => {
-					resolve(String(r.result));
-				};
-				r.onerror = () => {
-					reject(r.error ?? /* @__PURE__ */ new Error("read failed"));
-				};
-				r.readAsDataURL(file);
-			});
-		}
-		/** Parse the asset MIME off a drop event. null = absent or malformed. */
-		function assetPayload(e) {
-			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
-			if (raw === "") return null;
-			try {
-				const p = JSON.parse(raw);
-				return typeof p["url"] === "string" ? p["url"] : null;
-			} catch {
-				return null;
-			}
-		}
-		function InputSquare(props) {
-			const { label, value, metric, disabled } = props;
-			const seat = props.ariaLabel ?? label;
-			const fileRef = (0, react.useRef)(null);
-			const boxRef = (0, react.useRef)(null);
-			const [over, setOver] = (0, react.useState)(false);
-			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
-			const empty = thumb === null;
-			const pick = () => {
-				if (disabled) return;
-				if (props.onPick !== void 0) props.onPick(boxRef.current);
-				else if (empty && props.onFile !== void 0) fileRef.current?.click();
-			};
-			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
-				ref: boxRef,
-				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
-				role: "button",
-				tabIndex: 0,
-				"aria-label": (seat || "source") + (seat !== "" ? " source" : ""),
-				onClick: pick,
-				onKeyDown: (e) => {
-					if (e.key === "Enter") pick();
-				},
-				onDragOver: (e) => {
-					if (disabled) return;
-					e.preventDefault();
-					setOver(true);
-				},
-				onDragLeave: () => {
-					setOver(false);
-				},
-				onDrop: (e) => {
-					if (disabled) return;
-					e.preventDefault();
-					setOver(false);
-					const asset = assetPayload(e);
-					if (asset !== null && props.onAsset !== void 0) {
-						props.onAsset(asset);
-						return;
-					}
-					const f = e.dataTransfer.files[0];
-					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
-				}
-			}, thumb !== null ? (0, react.createElement)("img", {
-				className: card_module_css_default.squareThumb,
-				src: thumb,
-				alt: label
-			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
-				className: card_module_css_default.squareX,
-				type: "button",
-				title: "Detach",
-				"aria-label": "Detach " + (seat || "source"),
-				onClick: (e) => {
-					e.stopPropagation();
-					props.onClear();
-				}
-			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
-				ref: fileRef,
-				type: "file",
-				accept: "image/png,image/jpeg,image/webp",
-				className: card_module_css_default.squareFileInput,
-				"aria-hidden": true,
-				tabIndex: -1,
-				onChange: (e) => {
-					const f = e.target.files?.[0];
-					if (f !== void 0 && f !== null) props.onFile?.(f);
-					fileRef.current.value = "";
-				}
-			}) : null);
-		}
-		//#endregion
-		//#region ../card-base/src/square-provider.tsx
-		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		/** The media-kind the picker fetches for a field: image fields name
-		*  image; file fields take the whole library (their accept narrows
-		*  client-side per row). */
-		function mediaKindForField(f) {
-			return f.type === "image" ? "image" : "all";
-		}
-		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
-		*  every slot-shaped field of a stage gets the same verbs — file
-		*  upload (the /v1/uploads door + the data-URL mirror), media drop
-		*  (the asset MIME → the param), and THE PICKER (a DSH Menu anchored
-		*  on the square listing the other stages' latest outputs; picking
-		*  one writes the PARAM — the slot is the wire, no separate wiring
-		*  mechanic exists). ONE definition; the constructor and every
-		*  claimed atom ride it. */
-		function useSquareProvider(onEdit, wire) {
-			const [mirror, setMirror] = (0, react.useState)({});
-			const [pickAt, setPickAt] = (0, react.useState)(null);
-			const [modalAt, setModalAt] = (0, react.useState)(null);
-			const fieldRef = (0, react.useRef)(null);
-			const [mediaRows, setMediaRows] = (0, react.useState)(null);
-			const fileRef = (0, react.useRef)(null);
-			const onFile = (0, react.useCallback)(async (f, file) => {
-				if (wire.onFile !== void 0) {
-					wire.onFile(file);
-					return;
-				}
-				try {
-					const dataUrl = await readAsDataUrl(file);
-					setMirror((m) => ({
-						...m,
-						[f.name]: dataUrl
-					}));
-					const { name } = await uploadInputFile(file);
-					onEdit(f.name, name);
-				} catch (e) {
-					onEdit(f.name, e instanceof Error ? e.message : "upload failed");
-				}
-			}, [onEdit, wire.onFile]);
-			const square = (f) => {
-				if (f.type !== "image" && f.type !== "file") return void 0;
-				return {
-					display: mirror[f.name] ?? null,
-					verbs: {
-						onPick: (anchor) => {
-							const el = anchor instanceof HTMLElement ? anchor : null;
-							setPickAt(el !== null ? {
-								rect: el.getBoundingClientRect(),
-								field: f
-							} : {
-								rect: new DOMRect(8, 8, 1, 1),
-								field: f
-							});
-						},
-						onFile: (file) => {
-							onFile(f, file);
-						},
-						onAsset: (url) => {
-							onEdit(f.name, url);
-						},
-						onClear: () => {
-							setMirror((m) => {
-								const n = { ...m };
-								delete n[f.name];
-								return n;
-							});
-							onEdit(f.name, "");
-						}
-					}
-				};
-			};
-			const sourceMenu = pickAt === null ? null : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
-				open: true,
-				anchor: null,
-				getAnchorRect: () => pickAt.rect,
-				items: [
-					{
-						id: "__flow__",
-						label: "From flow"
-					},
-					{
-						id: "__media__",
-						label: "From media"
-					},
-					{
-						id: "__file__",
-						label: "From file"
-					},
-					{
-						type: "separator",
-						id: "sep"
-					},
-					{
-						id: "__none__",
-						label: "— clear —",
-						danger: true
-					}
-				],
-				onSelect: (id) => {
-					const f = pickAt.field;
-					setPickAt(null);
-					if (id === "__flow__") {
-						setModalAt({
-							mode: "flow",
-							field: f
-						});
-						return;
-					}
-					if (id === "__media__") {
-						setModalAt({
-							mode: "media",
-							field: f
-						});
-						return;
-					}
-					if (id === "__file__") {
-						fieldRef.current = f;
-						fileRef.current?.click();
-						return;
-					}
-					setMirror((m) => {
-						const n = { ...m };
-						delete n[f.name];
-						return n;
-					});
-					onEdit(f.name, "");
-				},
-				onClose: () => {
-					setPickAt(null);
-				},
-				portal: true
-			});
-			const loadMedia = wire?.loadMedia;
-			(0, react.useEffect)(() => {
-				if (modalAt?.mode !== "media") return;
-				if (loadMedia === void 0) {
-					setMediaRows([]);
-					return;
-				}
-				const ctrl = new AbortController();
-				setMediaRows(null);
-				loadMedia(mediaKindForField(modalAt.field), ctrl.signal).then((items) => {
-					setMediaRows(items.map((it) => ({
-						id: it.url,
-						label: it.name,
-						url: it.url
-					})));
-				}).catch(() => {
-					setMediaRows([]);
-				});
-				return () => {
-					ctrl.abort();
-				};
-			}, [modalAt, loadMedia]);
-			const pickerModal = modalAt === null ? null : (() => {
-				const f = modalAt.field;
-				const candidates = modalAt.mode === "flow" ? wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates : mediaRows ?? [];
-				const req = {
-					mode: modalAt.mode,
-					kind: mediaKindForField(f),
-					field: f,
-					candidates
-				};
-				const pick = (url) => {
-					setModalAt(null);
-					if (url !== "") onEdit(f.name, url);
-				};
-				const fallback = (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-					open: true,
-					onClose: () => {
-						setModalAt(null);
-					},
-					title: modalAt.mode === "flow" ? "From flow" : "From media",
-					description: modalAt.mode === "flow" ? "The other stages’ latest outputs" + (req.kind !== "all" ? " (" + req.kind + ")" : "") : "The runs library" + (req.kind !== "all" ? " (" + req.kind + ")" : ""),
-					closeLabel: "Close picker"
-				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : "nothing to pick yet") : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
-					key: c.id,
-					className: card_module_css_default.pickRow
-				}, (0, react.createElement)("button", {
-					type: "button",
-					className: card_module_css_default.pickBtn,
-					"data-testid": "source-pick-row",
-					onClick: () => {
-						pick(c.url);
-					}
-				}, isImageUrl(c.url) ? (0, react.createElement)("img", {
-					className: card_module_css_default.pickThumb,
-					src: c.url,
-					alt: c.label,
-					loading: "lazy"
-				}) : (0, react.createElement)("span", { className: card_module_css_default.pickGlyph }, c.label.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.pickLabel }, c.label))))));
-				return wire.renderSourcePick !== void 0 ? wire.renderSourcePick(req, fallback) : fallback;
-			})();
-			const fileInput = (0, react.createElement)("input", {
-				ref: fileRef,
-				type: "file",
-				accept: wire.accept ?? "image/png,image/jpeg,image/webp",
-				"aria-hidden": true,
-				tabIndex: -1,
-				style: { display: "none" },
-				onChange: (e) => {
-					const file = e.target.files?.[0];
-					const f = fieldRef.current;
-					if (f !== null && file !== void 0 && file !== null) {
-						fieldRef.current = null;
-						onFile(f, file);
-					}
-					fileRef.current.value = "";
-				}
-			});
-			return {
-				square,
-				wireMenu: (0, react.createElement)(react.Fragment, null, sourceMenu, pickerModal, fileInput)
-			};
-		}
-		//#endregion
-		//#region ../card-base/src/atoms.tsx
-		/** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		function SourceRow(props) {
-			const field = {
-				name: "__source_row__",
-				label: props.label,
-				type: props.kind === "image" ? "image" : "file"
-			};
-			const { square, wireMenu } = useSquareProvider((0, react.useCallback)((name, v) => {
-				props.onEdit(v);
-			}, [props.onEdit]), {
-				candidates: props.candidates ?? [],
-				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
-				...props.onFile !== void 0 ? { onFile: props.onFile } : {},
-				...props.accept !== void 0 ? { accept: props.accept } : {},
-				...props.renderSourcePick !== void 0 ? { renderSourcePick: props.renderSourcePick } : {}
-			});
-			const host = square(field);
-			const shown = host.display ?? props.value ?? null;
-			return (0, react.createElement)("div", {
-				className: card_module_css_default.sourceRow,
-				"data-source-row": props.label
-			}, wireMenu, (0, react.createElement)(InputSquare, {
-				label: props.hideLabel === true ? "" : props.label,
-				...props.ariaLabel !== void 0 ? { ariaLabel: props.ariaLabel } : {},
-				value: shown !== null && isImageUrl(shown) ? shown : null,
-				metric: typeof props.value === "string" && props.value !== "" && !isImageUrl(props.value) ? props.value : void 0,
-				...host.verbs
-			}));
-		}
-		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
-		*  promoted from h3's studio-local TriControl (same semantics, same
-		*  option order). Serves schema-bound fields of type 'tri' AND the
-		*  standalone rail rows that hand-rolled the select before. */
-		function TriStateAtom({ label, value, onEdit, name, disabled }) {
-			return (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"aria-label": label,
-				disabled: disabled === true,
-				value: value === void 0 ? "" : String(value),
-				onChange: (e) => {
-					const v = e.target.value;
-					onEdit(name, v === "" ? void 0 : v === "true");
-				}
-			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
-		}
-		/** The slider's local display during a drag (the settle law's
-		*  carrier): local owns the bubble while dragging; an external move
-		*  of the backing value (agent write, revive, another card opened)
-		*  reclaims the display. */
-		function useLocalSliderValue(value) {
-			const num = typeof value === "number" ? value : Number(value);
-			const [local, setLocal] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				setLocal(null);
-			}, [num]);
-			return {
-				value: local !== null ? local : Number.isFinite(num) ? num : null,
-				set: setLocal
-			};
-		}
-		/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
-		*  mask-studio's draft absorber, 2026-08-10): a drag fires input
-		*  60×/sec; if every step wrote to the card, updateStageParams →
-		*  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
-		*  the editor. The atom shows the drag locally and persists ONCE on
-		*  settle (the change event = release / keyboard step). External
-		*  writes (agent, revive) re-sync the display when the backing
-		*  value actually moves. */
-		function SpecSliderAtom({ f, value, onEdit }) {
-			const shown = useLocalSliderValue(value);
-			if (shown.value === null) return (0, react.createElement)("span", {
-				className: card_module_css_default.specSliderRow,
-				"data-refused": f.name
-			}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value) + " — REFUSED: not a number"));
-			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
-				className: card_module_css_default.specSlider,
-				type: "range",
-				min: f.min ?? 0,
-				max: f.max ?? 10,
-				step: f.step ?? .1,
-				value: shown.value,
-				onInput: (e) => {
-					shown.set(Number(e.target.value));
-				},
-				onChange: (e) => {
-					onEdit(f.name, e.target.value);
-				},
-				"aria-label": f.label
-			}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value)));
-		}
-		/** One spec atom — typed by the declaration, edited as a raw string
-		*  while typing (decimal dots survive; coercion happens once at patch). */
-		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }) {
-			if ((f.type === "image" || f.type === "file") && square !== void 0) {
-				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
-				return (0, react.createElement)(InputSquare, {
-					label: f.label !== "" ? f.label : f.name,
-					value: shown !== null && isImageUrl(shown) ? shown : null,
-					metric: typeof value === "string" && value !== "" && !isImageUrl(value) ? value : void 0,
-					...square.verbs
-				});
-			}
-			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				value: String(value ?? ""),
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			}, ghost !== void 0 ? (0, react.createElement)("option", { value: "" }, ghost) : null, f.options.map((o) => {
-				const row = typeof o === "string" ? {
-					value: o,
-					label: o
-				} : o;
-				return (0, react.createElement)("option", {
-					key: row.value,
-					value: row.value
-				}, titleCaseId(row.label));
-			}));
-			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
-				f,
-				value,
-				onEdit
-			});
-			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
-				label: f.label !== "" ? f.label : f.name,
-				value: value === void 0 || value === null ? void 0 : value === true || value === "true",
-				onEdit,
-				name: f.name
-			});
-			if (f.type === "switch" || f.type === "boolean") {
-				if (value !== void 0 && value !== null && typeof value !== "boolean" && value !== "true" && value !== "false") return (0, react.createElement)("span", {
-					className: card_module_css_default.specField,
-					"data-refused": f.name
-				}, f.label + ": " + String(value) + " — REFUSED: not a boolean");
-				const on = value === true || value === "true";
-				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
-					label: f.label,
-					checked: on,
-					onChange: (next) => {
-						onEdit(f.name, next);
-					}
-				});
-			}
-			if (f.type === "textarea") {
-				const fit = (el) => {
-					if (el === null) return;
-					el.style.height = "auto";
-					el.style.height = Math.max(el.scrollHeight, 44) + "px";
-				};
-				return (0, react.createElement)("textarea", {
-					className: card_module_css_default.specTextarea,
-					rows: 2,
-					value: String(value ?? ""),
-					placeholder: f.placeholder ?? "",
-					ref: fit,
-					onChange: (e) => {
-						const el = e.target;
-						fit(el);
-						onEdit(f.name, el.value);
-					},
-					"aria-label": f.label
-				});
-			}
-			if (f.type === "number") return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				min: f.min,
-				max: f.max,
-				step: f.step,
-				value: String(value ?? ""),
-				placeholder: placeholder ?? f.placeholder ?? "",
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			});
-			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				value: String(value ?? ""),
-				placeholder: placeholder ?? f.placeholder ?? "",
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			});
-		}
-		/** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
-		*  plus ONE SELECT PER SERVED AXIS GROUP — Variant, Quant, Recipe,
-		*  Precision, … the declaration's whole vocabulary, NEVER a hardcoded
-		*  list (the operator's lane proof caught the hardcoded Quant-only
-		*  list dropping seedvr2's and qwen's other axes). Order: the door's
-		*  variant_groups contract, else first-seen. Chain: an axis' options
-		*  are the rows composing with the axes above (the row's `owner`).
-		*  Each pick applies the row's defaults overlay through onEdit — the
-		*  values (model + every axis key + overlay keys) ride the caller's
-		*  map and pass along at Run. Renders nothing when the spec declares
-		*  no matrix. */
-		//#endregion
-		//#region ../card-base/src/rows.tsx
-		/** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		/** THE INFO GLYPH (hour 21): the field's declared help prose (the
-		*  schema's extra.tooltip) rides a hover (i) beside the label — one
-		*  definition for every card; absent prose, no glyph. The text is
-		*  aria-carried (the DSH Tooltip is hover-only). */
-		function infoGlyph(f) {
-			if (f.tooltip === void 0 || f.tooltip === "") return null;
-			return (0, react.createElement)(Tip, {
-				tip: f.tooltip,
-				children: (0, react.createElement)("span", {
-					className: card_module_css_default.specInfo,
-					role: "note",
-					"aria-label": `info: ${f.tooltip}`
-				}, "i")
-			});
-		}
-		/** THE SEED DICE (stroke 39 — the operator's QOL law): the seed
-		*  knob carries the RANDOM sentinel -1 (GATE S: -1 mints a fresh
-		*  seed in the lane, EVERY run). The dice sits at the key line's
-		*  right end, across from the field's name: FILLED pips = random
-		*  (a new seed every run), HOLLOW pips = fixed (this exact seed
-		*  re-runs). The state DERIVES from the resolved value alone — no
-		*  hidden mode to drift; the click writes the value: fixed → -1
-		*  (random), random → a minted concrete int (the kit's own mint
-		*  law, Math.floor(random * 2147483647)). Typing a number while
-		*  random fixes it — the dice unfills by derivation, one source
-		*  of truth. The input never paints the sentinel: random shows
-		*  the placeholder, never "-1". */
-		function SeedDice({ random, onToggle }) {
-			return (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.specDice + (random ? " " + card_module_css_default.specDiceOn : ""),
-				"data-seed-dice": random ? "random" : "fixed",
-				"aria-pressed": random,
-				"aria-label": "seed dice",
-				title: random ? "Random — a new seed every run. Click to fix one." : "Fixed seed — this exact seed re-runs. Click for a new one every run.",
-				onClick: onToggle
-			}, (0, react.createElement)("svg", {
-				width: 14,
-				height: 14,
-				viewBox: "0 0 16 16",
-				fill: "none",
-				xmlns: "http://www.w3.org/2000/svg",
-				"aria-hidden": "true"
-			}, (0, react.createElement)("rect", {
-				x: 1.4,
-				y: 1.4,
-				width: 13.2,
-				height: 13.2,
-				rx: 3.2,
-				stroke: "currentColor",
-				strokeWidth: 1.3
-			}), (0, react.createElement)("circle", {
-				cx: 5,
-				cy: 5,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 11,
-				cy: 5,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 8,
-				cy: 8,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 5,
-				cy: 11,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 11,
-				cy: 11,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			})));
-		}
-		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
-			const seedKnob = f.name === "seed";
-			const seedRandom = seedKnob && (value === -1 || value === "-1");
-			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SeedDice, {
-				random: seedRandom,
-				onToggle: () => {
-					if (seedRandom) onEdit(f.name, Math.floor(Math.random() * 2147483647));
-					else onEdit(f.name, -1);
-				}
-			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SpecAtom, {
-				f,
-				value: seedRandom ? void 0 : value,
-				...seedRandom ? { placeholder: "random — new every run" } : {},
-				onEdit,
-				square,
-				...wireCandidates !== void 0 ? { wireCandidates } : {}
-			}));
-		}
-		//#endregion
-		//#region ../card-base/src/axes.tsx
-		/** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		/** THE PACK PROMPT (the no-silent-drop law's extension half,
-		*  stroke 18): the card's DECLARED extension packs that the engine
-		*  cannot see render AS THEMSELVES — marked missing, with the
-		*  install verb one click away (the manage door's install_extension;
-		*  the host owns the wire). Present and unknown packs render nothing
-		*  (nothing to act on; the spec carries their truth for anyone who
-		*  reads it). Never a silently absent pack: the run's refusal text
-		*  and this prompt name the same id. */
-		function PackPrompt({ spec, onInstallPack }) {
-			const missing = (spec.packs ?? []).filter((p) => p.present === false);
-			if (missing.length === 0 || onInstallPack === void 0) return null;
-			return (0, react.createElement)("section", {
-				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
-				"data-pack-prompt": "1"
-			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Extensions"), missing.map((p) => (0, react.createElement)(PackPromptRow, {
-				key: p.id,
-				id: p.id,
-				onInstallPack
-			})));
-		}
-		function PackPromptRow({ id, onInstallPack }) {
-			const [st, setSt] = (0, react.useState)("idle");
-			return (0, react.createElement)("div", {
-				className: card_module_css_default.specHint,
-				"data-missing-pack": id
-			}, id + " is required by this card but not installed on the engine.", " ", (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.specLinkBtn,
-				disabled: st !== "idle",
-				onClick: () => {
-					setSt("busy");
-					onInstallPack(id).then((ok) => setSt(ok ? "queued" : "failed")).catch(() => setSt("failed"));
-				}
-			}, st === "idle" ? "Install " + id : st === "busy" ? "Requesting…" : st === "queued" ? "Install queued ✓ (restart the engine when it lands)" : "Install request failed — retry from the assets tab"));
-		}
-		function ModelAxes({ spec, value, onSet, onDownloadModel }) {
-			const groups = axisGroups(spec);
-			if (groups.length === 0) return null;
-			const models = modelChoices(spec);
-			const matrixSet = new Set(models);
-			const familyRows = (spec.families ?? []).map((f) => ({
-				...f,
-				inMatrix: matrixSet.has(f.id)
-			}));
-			const familyFace = /* @__PURE__ */ new Map();
-			for (const f of spec.families ?? []) if (f.label !== void 0 && f.label !== "") familyFace.set(f.id, f.label);
-			const contract = spec.features?.variant_groups ?? {};
-			const pick = (row) => {
-				const patch = axisPickPatch(spec, row);
-				for (const [k, v] of Object.entries(patch)) onSet(k, v);
-			};
-			const knobStamp = (r) => axisPickPatch(spec, r);
-			rowsFor(spec, "Recipe").filter((r) => Object.keys(knobStamp(r)).length > 0);
-			const heldModelRaw = value["model"];
-			const heldModel = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : void 0;
-			const knownModel = (m) => models.includes(m) || (spec.families ?? []).some((f) => f.id === m);
-			const refusedModel = heldModel !== void 0 && !knownModel(heldModel) ? heldModel : void 0;
-			const shownModel = heldModel ?? (typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "");
-			const heldFam = (spec.families ?? []).find((f) => f.id === shownModel && !f.present);
-			const [dlState, setDlState] = (0, react.useState)("idle");
-			(0, react.useEffect)(() => {
-				setDlState("idle");
-			}, [shownModel]);
-			const rowsOf = (g, active) => composingRows(spec, g, active);
-			const active = {};
-			for (const g of groups) {
-				const heldRaw = value[axisKey(g)];
-				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
-				const rows = rowsOf(g, active);
-				if (heldId !== void 0 && rows.some((r) => r.id === heldId)) active[g] = heldId;
-				else if (heldId !== void 0) active[g] = heldId;
-				else active[g] = activeRowId(spec, value, g, active) ?? (rows.length > 0 ? rows[0].id : "");
-			}
-			return (0, react.createElement)("section", {
-				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
-				"data-model-axes": "1"
-			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Model"), (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Model"), (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"aria-label": "Model",
-				...refusedModel !== void 0 ? { "data-refused": "model" } : {},
-				value: shownModel,
-				onChange: (e) => {
-					const m = e.target.value;
-					const patch = modelSwitchPatch(spec, m);
-					for (const [k, v] of Object.entries(patch)) onSet(k, v);
-				}
-			}, refusedModel !== void 0 ? (0, react.createElement)("option", {
-				key: refusedModel,
-				value: refusedModel
-			}, titleCaseId(refusedModel) + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
-				key: "fam-" + f.id,
-				value: f.id
-			}, (f.label ?? titleCaseId(f.id)) + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
-				key: m,
-				value: m
-			}, familyFace.get(m) ?? titleCaseId(m)))), heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
-				className: card_module_css_default.specHint,
-				"data-download-prompt": heldFam.id
-			}, titleCaseId(heldFam.id) + " is offered by this card but not downloaded on this machine.", " ", (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.specLinkBtn,
-				disabled: dlState !== "idle",
-				onClick: () => {
-					setDlState("busy");
-					onDownloadModel(heldFam.id).then((ok) => setDlState(ok ? "queued" : "failed")).catch(() => setDlState("failed"));
-				}
-			}, dlState === "idle" ? "Download " + (heldFam.label ?? titleCaseId(heldFam.id)) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
-				const rows = rowsOf(g, active);
-				const heldRaw = value[axisKey(g)];
-				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
-				const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId) ? heldId : void 0;
-				if (rows.length === 0 && refusedId === void 0) return null;
-				const label = contract[g]?.label ?? titleCaseId(g);
-				return (0, react.createElement)("label", {
-					key: g,
-					className: card_module_css_default.specField
-				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)("select", {
-					className: card_module_css_default.specSelect,
-					"aria-label": label,
-					"data-axis": g,
-					...refusedId !== void 0 ? { "data-refused": g } : {},
-					value: active[g],
-					onChange: (e) => {
-						const id = e.target.value;
-						const row = rows.find((v) => v.id === id);
-						if (row !== void 0) pick(row);
-					}
-				}, refusedId !== void 0 ? (0, react.createElement)("option", {
-					key: refusedId,
-					value: refusedId
-				}, titleCaseId(refusedId) + " — invalid " + label.toLowerCase() + " for " + titleCaseId(heldModel ?? shownModel)) : null, rows.map((v) => (0, react.createElement)("option", {
-					key: v.id,
-					value: v.id
-				}, titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
-			}), (0, react.createElement)(RecipePills, {
-				spec,
-				onSet,
-				values: value
-			}));
-		}
-		/** THE FAMILY RECIPE DROPDOWN (Rule A -- the recipe law; the
-		* operator's order, 2026-09-18: "RECIPES AREN'T EVEN A DROPDOWN"):
-		* the family's preset macros as ONE SELECT beside the axes -- the
-		* same shape every axis rides, never a list of link-buttons. The
-		* pick writes the row's FULL stamp (axisPickPatch -- mod-owned keys
-		* included, the Rule A amendment); the SELECTION derives from the
-		* ONE truth (activeRecipeId -- the row whose stamp the user layer
-		* holds; no recipe key persists, nothing goes stale when the rail
-		* moves). Stamp-less rows (the family `default`) render nothing: a
-		* row that writes nothing is a dead option. A hand-edited layer
-		* (no stamp-for-stamp match) shows the placeholder -- the form
-		* never lies that a recipe is active.
-		*
-		* THE REUSE LAW: extracted so EVERY model surface seats the same
-		* dropdown -- CardForm under the axes, a studio beside its model
-		* route. Never a second implementation. */
-		function RecipePills({ spec, onSet, values }) {
-			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0);
-			if (pillRows.length === 0) return null;
-			const active = values !== void 0 ? activeRecipeId(spec, values) : void 0;
-			const pick = (id) => {
-				const row = pillRows.find((r) => r.id === id);
-				if (row === void 0) return;
-				for (const [k, v] of Object.entries(axisPickPatch(spec, row))) onSet(k, v);
-			};
-			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Recipe"), (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"data-recipe-select": "1",
-				"aria-label": "Recipe",
-				value: active ?? "",
-				onChange: (e) => {
-					const id = e.currentTarget.value;
-					if (id !== "") pick(id);
-				}
-			}, (0, react.createElement)("option", {
-				key: "__none__",
-				value: "",
-				disabled: active !== void 0
-			}, active === void 0 ? "-- recipe --" : "-- custom --"), pillRows.map((r) => (0, react.createElement)("option", {
-				key: r.id,
-				value: r.id,
-				title: typeof r.hint === "string" && r.hint !== "" ? r.hint : void 0
-			}, titleCaseId(r.label) + (typeof r.hint === "string" && r.hint !== "" ? ` \u2014 ${r.hint}` : "")))));
-		}
-		/** THE CARD FORM (the constructor's surface half) — the emission's
-		*  fields walked off the schema envelope, grouped, visible-when
-		*  honored; the RESOLVED value derives per render (resolveValue —
-		*  the engine's compose cascade mirrored), edits are set/unset ops
-		*  over the USER layer (the settings law: presence IS the override
-		*  mark, the reset chip removes it). Each field renders through the
-		*  claimed atom for its emitted type when the caller passes one;
-		*  the base's built-in atom is the default.
-		*
-		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
-		*  img-to-mesh input component — you are not using it around — you
-		*  are hardcoding"): an emitted image/file input constructs THE ONE
-		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
-		*  square provider — no call site wires it, no call site can forget
-		*  it. The caller hands only the WIRE (picker candidates), never the
-		*  component; a caller that passes its own `square` fn overrides (the
-		*  host-claim seam), but the default is the constructor's own. */
-		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
-		*  required star, hint) around the atom — CardForm's own row, opened
-		*  to rail sections that render served fields outside a whole form
-		*  (mask's TuneSection). The claim seam stays CardForm's; this row
-		*  takes the resolved atom inputs. */
-		//#endregion
-		//#region ../card-base/src/use-form-spec.ts
-		/** use-form-spec.ts — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		//#endregion
-		//#region ../card-base/src/spec-panel.tsx
-		/** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		//#endregion
-		//#region ../card-base/src/form.tsx
-		/**
-		* form.tsx — @melite/card-base: THE CONSTRUCTOR (the godfile
-		* split, hour 15: the seams live in their own files now —
-		* use-form-spec.ts, square-provider.tsx, atoms.tsx, rows.tsx,
-		* spec-panel.tsx, axes.tsx — this file is the CardForm
-		* composition + the stable re-export surface).
-		*
-		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
-		* construct the card ui should see that the card package emits an
-		* image input, then constructs the input component automatically"):
-		* the base reads the card package's EMISSION — the served form-spec
-		* (the schema envelope, declared input/output edges, mod kinds) —
-		* and constructs the surface. The resolved value derives per render
-		* (resolveValue — the engine's compose cascade mirrored); every
-		* image/file field gets THE ONE square (square.tsx) with the
-		* three source verbs; no card ever hand-rolls an input component.
-		*
-		* THE SEAM (slots.ts): each field renders through the field-atom seam
-		* keyed by its emitted wire type — the caller may pass claimed atoms
-		* (the composition consults the slot machinery and hands them in);
-		* the base's built-in atom is the default (the ui-tool built-ins
-		* pattern). A whole-form takeover replaces CardForm itself.
-		*
-		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
-		* atoms the primitives set lacks (select, slider, textarea) are
-		* layout-only module CSS over native elements, every color an
-		* inherited --dsw-alias-* token (the package's documented pattern).
-		*/
-		/** THE CARD FORM (the constructor's surface half) — the emission's
-		*  fields walked off the schema envelope, grouped, visible-when
-		*  honored; the RESOLVED value derives per render (resolveValue —
-		*  the engine's compose cascade mirrored), edits are set/unset ops
-		*  over the USER layer (the settings law: presence IS the override
-		*  mark, the reset chip removes it). The constructor OWNS the square
-		*  provider (no call site wires it, no call site can forget it). */
-		function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }) {
-			const fields = fieldsOf(spec);
-			const value = resolveValue(spec, user, base);
-			const fieldByName = new Map(fields.map((f) => [f.name, f]));
-			const edit = (name, v) => {
-				if (v === void 0) {
-					onUnset?.(name);
-					return;
-				}
-				onSet(name, coerceFieldEdit(fieldByName.get(name), v));
-			};
-			const family = typeof spec.model === "string" ? spec.model : void 0;
-			const modKinds = (spec.features?.modifiers ?? []).map((k) => {
-				const env = spec.mod_schemas?.[k.schema_key ?? k.param_key];
-				const hybrid = k.entry === "hybrid";
-				const declared = (rows) => rows?.map((f) => typeof f.wtype === "string" && f.wtype !== "" ? {
-					...f,
-					type: f.wtype
-				} : f);
-				return {
-					...k,
-					fields: hybrid ? entryFieldsOfEnvelope(env, k.param_key, family) : declared(k.fields) ?? fieldsOfEnvelope(env, family),
-					kindFields: hybrid ? kindScalarFieldsOfEnvelope(env, k.param_key, family) : declared(k.kindFields) ?? []
-				};
-			});
-			const owned = modOwnedFields(spec);
-			const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields;
-			const signature = Array.isArray(spec.inputs) ? spec.inputs : [];
-			const modFieldByName = /* @__PURE__ */ new Map();
-			for (const k of modKinds) for (const f of k.fields) if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f);
-			const railOf = (inp) => {
-				const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name);
-				if (f === void 0) return void 0;
-				if (f.type === "image" || f.type === "file") return f;
-			};
-			const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0);
-			const railNames = new Set(railFields.map((f) => f.name));
-			const stackFields = flatFields.filter((f) => f.type === "image_list" && !modFieldByName.has(f.name));
-			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
-			const groups = groupFields(flatFields.filter(visible), value);
-			const submenu = groups.length > 1;
-			const [openGroup, setOpenGroup] = (0, react.useState)(void 0);
-			const activeGroup = submenu ? groups.find((g) => g.group === openGroup) ?? groups[0] : void 0;
-			const shownGroups = submenu && activeGroup !== void 0 ? [activeGroup] : groups;
-			const atomOf = (f) => atoms?.[f.type];
-			const own = useSquareProvider(edit, wire ?? { candidates: [] });
-			const squareFor = square ?? own.square;
-			const stackRow = (f) => {
-				const v = value[f.name];
-				const entries = Array.isArray(v) ? v.filter((x) => typeof x === "string" && x !== "") : [];
-				const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : 8;
-				const kind = f.media === "video" || f.media === "audio" ? "file" : "image";
-				const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : void 0;
-				return (0, react.createElement)("div", {
-					key: "stack-" + f.name,
-					className: card_module_css_default.specStack,
-					"data-input-stack": f.name,
-					"data-stack-count": String(entries.length)
-				}, (0, react.createElement)("div", {
-					className: card_module_css_default.modHead,
-					"data-stack-head": f.name,
-					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
-				}, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, f.label), (0, react.createElement)("span", { className: card_module_css_default.modHint }, `${String(entries.length)} / ${String(cap)}${f.media !== void 0 && f.media !== "" ? " · " + f.media : ""}`)), (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, entries.map((entry, i) => (0, react.createElement)("div", {
-					key: f.name + ":" + String(i),
-					className: card_module_css_default.specSlotCell,
-					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
-				}, (0, react.createElement)(SourceRow, {
-					label: String(i + 1),
-					ariaLabel: `${f.label} ${String(i + 1)}`,
-					kind,
-					value: entry,
-					...accept !== void 0 ? { accept } : {},
-					onEdit: (next) => {
-						const arr = [...entries];
-						if (next === "") arr.splice(i, 1);
-						else arr[i] = next;
-						edit(f.name, arr);
-					},
-					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
-					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
-				}))), entries.length < cap ? (0, react.createElement)("div", {
-					className: card_module_css_default.specSlotCell,
-					"data-stack-add": f.name,
-					title: f.tooltip
-				}, (0, react.createElement)(SourceRow, {
-					label: "",
-					ariaLabel: `Add ${f.label}`,
-					kind,
-					value: null,
-					...accept !== void 0 ? { accept } : {},
-					onEdit: (next) => {
-						/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
-						if (next !== "") edit(f.name, [...entries, next]);
-					},
-					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
-					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
-				})) : null));
-			};
-			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, (0, react.createElement)(PackPrompt, {
-				spec,
-				onInstallPack
-			}), (0, react.createElement)(ModelAxes, {
-				spec,
-				value,
-				onSet: edit,
-				onDownloadModel
-			}), railFields.length > 0 || stackFields.length > 0 ? (0, react.createElement)("section", {
-				className: card_module_css_default.specGroup + " " + card_module_css_default.inputRail,
-				"data-input-rail": "1"
-			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Inputs"), railFields.length > 0 ? (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, railFields.map((f) => {
-				return (0, react.createElement)("div", {
-					key: f.name,
-					className: card_module_css_default.specSlotCell,
-					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
-				}, (0, react.createElement)(SpecAtom, {
-					f,
-					value: value[f.name],
-					onEdit: edit,
-					square: squareFor(f),
-					...wire?.candidates !== void 0 ? { wireCandidates: wire.candidates } : {}
-				}));
-			})) : null, stackFields.map((f) => stackRow(f))) : null, submenu && activeGroup !== void 0 ? (0, react.createElement)("div", {
-				className: card_module_css_default.groupTabs,
-				role: "tablist",
-				"data-form-submenu": "1"
-			}, groups.map((g) => {
-				const selected = activeGroup.group === g.group;
-				return (0, react.createElement)("button", {
-					key: g.group ?? "__general__",
-					type: "button",
-					role: "tab",
-					"aria-selected": selected ? "true" : "false",
-					"data-form-group-tab": g.group ?? "general",
-					className: card_module_css_default.groupTab + (selected ? " " + card_module_css_default.groupTabActive : ""),
-					onClick: () => {
-						setOpenGroup(g.group);
-					}
-				}, titleCaseId(g.group ?? "General"));
-			})) : null, shownGroups.map((g) => {
-				const declared = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 1)?.columns;
-				const gridCols = Math.max(1, Math.floor(declared ?? 2));
-				const cellStyle = (f) => {
-					if (f.type === "textarea") return {
-						gridColumn: "1 / -1",
-						minWidth: "0"
-					};
-					return {
-						gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}`,
-						minWidth: "0"
-					};
-				};
-				const children = [];
-				let row = [];
-				const flush = () => {
-					if (row.length === 0) return;
-					children.push((0, react.createElement)("div", {
-						key: "slotrow-" + String(children.length),
-						className: card_module_css_default.specSlotRow,
-						style: {
-							gridColumn: "1 / -1",
-							minWidth: "0"
-						}
-					}, row));
-					row = [];
-				};
-				for (const f of g.fields) {
-					const claim = atomOf(f);
-					const sq = squareFor(f);
-					const wireCandidates = wire?.candidates;
-					if (claim !== void 0) {
-						flush();
-						const cell = (0, react.createElement)("div", {
-							key: f.name,
-							className: card_module_css_default.specField
-						}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), claim({
-							f,
-							value: value[f.name],
-							onEdit: edit,
-							square: sq
-						}));
-						children.push((0, react.createElement)("div", {
-							key: f.name + "-cell",
-							style: cellStyle(f)
-						}, cell));
-						continue;
-					}
-					if (f.type === "image" || f.type === "file") {
-						row.push((0, react.createElement)("div", {
-							key: f.name,
-							className: card_module_css_default.specSlotCell,
-							title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
-						}, (0, react.createElement)(SpecAtom, {
-							f,
-							value: value[f.name],
-							onEdit: edit,
-							square: sq,
-							...wireCandidates !== void 0 ? { wireCandidates } : {}
-						})));
-						continue;
-					}
-					flush();
-					const cell = (0, react.createElement)(SpecFieldRow, {
-						key: f.name,
-						f,
-						value: value[f.name],
-						onEdit: edit,
-						...sq !== void 0 ? { square: sq } : {},
-						...wireCandidates !== void 0 ? { wireCandidates } : {}
-					});
-					children.push((0, react.createElement)("div", {
-						key: f.name + "-cell",
-						style: cellStyle(f)
-					}, cell));
-				}
-				flush();
-				return (0, react.createElement)("section", {
-					key: g.group ?? "",
-					className: card_module_css_default.specGroup,
-					"data-form-group-panel": g.group ?? "general"
-				}, g.group !== null && !submenu ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, titleCaseId(g.group)) : null, (0, react.createElement)("div", {
-					className: card_module_css_default.specGrid,
-					style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }
-				}, children));
-			}), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
-				kinds: modKinds,
-				values: value,
-				onEdit: edit,
-				railSeated: railNames,
-				...onPatch !== void 0 ? { onPatch } : {},
-				...paintFace !== void 0 ? { paintFace } : {},
-				...bboxFace !== void 0 ? { bboxFace } : {},
-				...paintReference !== void 0 ? { paintReference } : {},
-				...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
-			}) : null, own.wireMenu);
-		}
-		//#endregion
-		//#region ../card-base/src/mods.tsx
-		/**
-		* mods.tsx — THE MOD SYSTEM, CORE (the old SubcardGrid, ported 1:1 —
-		* and moved into the base package 2026-09-12 after the operator's
-		* law: "MOD SYSTEM IS CORE. NEVER HARDCODED. The LORAS should not be
-		* on cards, the MOD SYSTEM SHOULD").
-		*
-		* The laws this section enforces:
-		*  - mods NEVER ride the card's param form. The estate serves the
-		*    OPEN kind vocabulary (features.modifiers); the constructor
-		*    (CardForm) renders THIS section itself and excludes every
-		*    mod-owned name from the flat groups — no surface wires it, no
-		*    surface can forget it (the construction law, same as the
-		*    square).
-		*  - THE WIRE IS THE STORAGE: params[param_key] holds the bag; the
-		*    same bag runs and the agent reads/writes it.
-		*  - commits persist immediately (the old onSaveParams law — never
-		*    deferred to Run): onEdit rides the caller's values map AND
-		*    onPatch (when present) persists to the domain on the spot.
-		*  - apply order = array order; the drag rewrites the bag.
-		*  - THREE kind shapes, all first-class (the leaf switches on the
-		*    SERVED entry mode, never the kind name):
-		*      OPTION kinds (lora): served catalog rows + strength; the
-		*        entry is { id, strength } — the row's own defaults seed the
-		*        strength.
-		*      HYBRID kinds (controlnet): served catalog rows AND entry
-		*        fields; the entry is the bag element keyed by its option_key
-		*        (type) — the leaf stamps the row's resolved facts (model +
-		*        preprocessor) onto new entries so the run record carries the
-		*        retired wire shape; the lane re-validates them, never trusts
-		*        them. Pack-level scalars (the strength floor) render as the
-		*        section's own rows above the tiles.
-		*      OPTION kinds (lora): served catalog rows + strength; the
-		*        entry is { id, strength } — the row's own defaults seed the
-		*        strength.
-		*      FIELD kinds (mask): the kind's own spec fields (image squares,
-		*        selects, sliders); the entry IS the params object. The leaf
-		*        renders kind.fields through the same constructor atoms —
-		*        the fields NEVER render flat on the card form.
-		*/
-		function ModifiersSection(props) {
-			const { kinds, values, onEdit, onPatch } = props;
-			const [dragTile, setDragTile] = (0, react.useState)(null);
-			const [overTile, setOverTile] = (0, react.useState)(null);
-			const [pickAt, setPickAt] = (0, react.useState)(null);
-			const [leaf, setLeaf] = (0, react.useState)(null);
-			const [leafError, setLeafError] = (0, react.useState)(null);
-			const [draftOption, setDraftOption] = (0, react.useState)("");
-			const [draftStrength, setDraftStrength] = (0, react.useState)("");
-			const [draftSteps, setDraftSteps] = (0, react.useState)("");
-			const [draftParams, setDraftParams] = (0, react.useState)({});
-			const entriesOf = (k) => {
-				const v = values[k.param_key];
-				return Array.isArray(v) ? v.filter((e) => typeof e === "object" && e !== null) : [];
-			};
-			const optionOf = (k, value) => (k.options ?? []).find((o) => o.value === value) ?? null;
-			/** THE HYBRID ENTRY FIELDS (the bag element minus its two bound
-			*  rows — the option_key select and the scalar dial own those). */
-			const hybridFields = (k, hidden) => {
-				const key = optionKeyOf(k);
-				const scalar = scalarKeyOf(k);
-				return (k.fields ?? []).filter((f) => f.name !== key && f.name !== scalar && !(hidden?.has(f.name) ?? false));
-			};
-			/** The scalar seed (the row's own default wins; the contract
-			*  field default is the backstop — 0.7, the retired leaf). */
-			const strengthSeedOf = (k, option) => {
-				const scalar = scalarKeyOf(k);
-				const rowDefault = option?.defaults?.[scalar];
-				if (typeof rowDefault === "number") return rowDefault;
-				const field = (k.fields ?? []).find((f) => f.name === scalar);
-				return typeof field?.default === "number" ? field.default : .7;
-			};
-			const commitScalar = (f, name, v) => {
-				const coerced = coerceFieldEdit(f, v);
-				onEdit(name, coerced);
-				onPatch?.({ [name]: coerced });
-			};
-			const commit = (k, next) => {
-				onEdit(k.param_key, next);
-				onPatch?.({ [k.param_key]: next });
-			};
-			const addable = kinds.filter((k) => k.cardinality !== "scalar");
-			if (kinds.length === 0) return null;
-			const seated = props.railSeated;
-			const fieldDefaults = (k) => {
-				const out = {};
-				for (const f of k.fields ?? []) {
-					if (seated?.has(f.name) ?? false) continue;
-					if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
-				}
-				return out;
-			};
-			const openCreate = (k) => {
-				const entries = entriesOf(k);
-				if (k.max_stack !== void 0 && entries.length >= k.max_stack) {
-					setLeafError(k.label + " stack limit reached (" + String(k.max_stack) + ") — remove one to add another.");
-					return;
-				}
-				setDraftOption("");
-				setDraftStrength("");
-				setDraftSteps("");
-				setDraftParams(fieldDefaults(k));
-				setLeafError(null);
-				setLeaf({
-					mode: "create",
-					kind: k,
-					index: -1
-				});
-			};
-			const openEdit = (k, index) => {
-				const entry = entriesOf(k)[index];
-				if (isHybridKind(k)) {
-					const key = optionKeyOf(k);
-					setDraftOption(typeof entry[key] === "string" ? entry[key] : "");
-					const scalar = scalarKeyOf(k);
-					const strength = typeof entry[scalar] === "number" ? entry[scalar] : void 0;
-					setDraftStrength(strength !== void 0 ? String(strength) : "");
-					const params = {};
-					for (const f of hybridFields(k, seated)) if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
-					setDraftParams(params);
-				} else if (isOptionKind(k)) {
-					setDraftOption(typeof entry["id"] === "string" ? entry["id"] : "");
-					const strength = typeof entry["strength"] === "number" ? entry["strength"] : void 0;
-					setDraftStrength(strength !== void 0 ? String(strength) : "");
-					setDraftSteps(typeof entry["steps"] === "number" ? String(entry["steps"]) : "");
-				} else {
-					const params = {};
-					for (const f of k.fields ?? []) {
-						if (seated?.has(f.name) ?? false) continue;
-						if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
-					}
-					setDraftParams(params);
-				}
-				setLeafError(null);
-				setLeaf({
-					mode: "edit",
-					kind: k,
-					index
-				});
-			};
-			const saveLeaf = () => {
-				const open = leaf;
-				const k = open.kind;
-				const entries = entriesOf(k);
-				if (isHybridKind(k)) {
-					const key = optionKeyOf(k);
-					if (draftOption === "") {
-						setLeafError("Pick one from the served rows.");
-						return;
-					}
-					const option = optionOf(k, draftOption);
-					if (option === null) {
-						setLeafError("‘" + draftOption + "’ is not a served " + k.label + " row — pick from the catalog, never hand-spell.");
-						return;
-					}
-					const seed = strengthSeedOf(k, option);
-					const strength = draftStrength.trim() === "" ? seed : Number(draftStrength);
-					if (!Number.isFinite(strength)) {
-						setLeafError("Strength must be a number.");
-						return;
-					}
-					const scalar = { [scalarKeyOf(k)]: strength };
-					const stamped = { [key]: draftOption };
-					if (typeof option.model === "string") stamped["model"] = option.model;
-					if (typeof option.preprocessor === "string") stamped["preprocessor"] = option.preprocessor;
-					if (open.mode === "create") commit(k, [...entries, {
-						...stamped,
-						...draftParams,
-						...scalar
-					}]);
-					else {
-						const entry = entries[open.index];
-						if (entry === void 0) {
-							setLeaf(null);
-							return;
-						}
-						const next = [...entries];
-						next[open.index] = {
-							...entry,
-							...stamped,
-							...draftParams,
-							...scalar
-						};
-						commit(k, next);
-					}
-				} else if (isOptionKind(k)) {
-					if (open.mode === "create") {
-						if (draftOption === "") {
-							setLeafError("Pick one from the served rows.");
-							return;
-						}
-						const option = optionOf(k, draftOption);
-						const seed = option !== null && option.defaults?.strength !== void 0 ? option.defaults.strength : 1;
-						const strength = draftStrength.trim() === "" ? seed : Number(draftStrength);
-						if (!Number.isFinite(strength)) {
-							setLeafError("Strength must be a number.");
-							return;
-						}
-						const stepsSeed = option?.defaults?.steps;
-						const steps = draftSteps.trim() === "" ? typeof stepsSeed === "number" ? stepsSeed : void 0 : Number(draftSteps);
-						if (steps !== void 0 && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
-							setLeafError("Steps applied must be a whole number ≥ 1.");
-							return;
-						}
-						if (steps !== void 0) {
-							const min = option?.defaults?.steps_min;
-							const max = option?.defaults?.steps_max;
-							if (typeof min === "number" && steps < min) {
-								setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`);
-								return;
-							}
-							if (typeof max === "number" && steps > max) {
-								setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`);
-								return;
-							}
-						}
-						commit(k, [...entries, steps === void 0 ? {
-							id: draftOption,
-							strength
-						} : {
-							id: draftOption,
-							strength,
-							steps
-						}]);
-					} else {
-						const entry = entries[open.index];
-						if (entry === void 0) {
-							setLeaf(null);
-							return;
-						}
-						const editRow = (k.options ?? []).find((o) => o.value === entry.id);
-						const strengthSeed = typeof editRow?.defaults?.strength === "number" ? editRow.defaults.strength : 1;
-						const strength = draftStrength.trim() === "" ? strengthSeed : Number(draftStrength);
-						if (!Number.isFinite(strength)) {
-							setLeafError("Strength must be a number.");
-							return;
-						}
-						const steps = draftSteps.trim() === "" ? void 0 : Number(draftSteps);
-						if (steps !== void 0 && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
-							setLeafError("Steps applied must be a whole number ≥ 1.");
-							return;
-						}
-						if (steps !== void 0) {
-							const min = editRow?.defaults?.steps_min;
-							const max = editRow?.defaults?.steps_max;
-							if (typeof min === "number" && steps < min) {
-								setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`);
-								return;
-							}
-							if (typeof max === "number" && steps > max) {
-								setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`);
-								return;
-							}
-						}
-						const next = [...entries];
-						if (steps === void 0) {
-							const rest = {
-								...entry,
-								strength
-							};
-							delete rest["steps"];
-							next[open.index] = rest;
-						} else next[open.index] = {
-							...entry,
-							strength,
-							steps
-						};
-						commit(k, next);
-					}
-				} else if (open.mode === "create") commit(k, [...entries, { ...draftParams }]);
-				else {
-					const entry = entries[open.index];
-					if (entry === void 0) {
-						setLeaf(null);
-						return;
-					}
-					const next = [...entries];
-					next[open.index] = {
-						...entry,
-						...draftParams
-					};
-					commit(k, next);
-				}
-				setLeaf(null);
-			};
-			const deleteLeaf = () => {
-				commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index));
-				setLeaf(null);
-			};
-			const onTileDrop = (k, active, over) => {
-				const entries = entriesOf(k);
-				const from = entries.findIndex((_, i) => k.param_key + "-" + i === active);
-				const to = entries.findIndex((_, i) => k.param_key + "-" + i === over);
-				if (from < 0 || to < 0) return;
-				const next = [...entries];
-				const [moved] = next.splice(from, 1);
-				next.splice(to, 0, moved);
-				commit(k, next);
-			};
-			const isOrdered = (k) => k.category !== "standalone";
-			const anyOrdered = kinds.some(isOrdered);
-			return (0, react.createElement)("section", {
-				className: card_module_css_default.modSection,
-				"data-subcard-grid": "on"
-			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
-				key: k.param_key + ":kind",
-				className: card_module_css_default.modLeafFields
-			}, k.kindFields.map((f) => (0, react.createElement)("label", {
-				key: f.name,
-				className: card_module_css_default.modField
-			}, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
-				f,
-				value: values[f.name] ?? f.default,
-				onEdit: (name, v) => {
-					commitScalar(f, name, v);
-				}
-			}))))), (0, react.createElement)("div", {
-				className: card_module_css_default.modRow,
-				"data-subcard-row": "flow"
-			}, kinds.map((k) => {
-				const entries = entriesOf(k);
-				if (entries.length === 0) return null;
-				const ordered = isOrdered(k);
-				return [...entries.map((entry, i) => {
-					const id = typeof entry[optionKeyOf(k)] === "string" ? entry[optionKeyOf(k)] : "";
-					const option = optionOf(k, id);
-					const scalar = scalarKeyOf(k);
-					const strength = typeof entry[scalar] === "number" ? entry[scalar] : option !== null && option.defaults !== void 0 && typeof option.defaults[scalar] === "number" ? option.defaults[scalar] : void 0;
-					const steps = typeof entry["steps"] === "number" ? entry["steps"] : option !== null && option.defaults !== void 0 && typeof option.defaults["steps"] === "number" ? option.defaults["steps"] : void 0;
-					return (0, react.createElement)(ModTile, {
-						key: k.param_key + "-" + i,
-						tileId: k.param_key + "-" + i,
-						label: option !== null ? option.label : id !== "" ? titleCaseId(id) : isOptionKind(k) ? k.label + " " + String(i + 1) : k.label,
-						...strength !== void 0 ? { strength } : {},
-						...steps !== void 0 ? { steps } : {},
-						onOpen: () => {
-							openEdit(k, i);
-						},
-						dragging: dragTile === k.param_key + "-" + i,
-						dragOver: overTile === k.param_key + "-" + i && dragTile !== null && dragTile !== overTile,
-						...ordered ? {
-							onReorderStart: (id) => {
-								setDragTile(id);
-								if (id === null) setOverTile(null);
-							},
-							onReorderOver: setOverTile,
-							onReorderDrop: (active, over) => {
-								setDragTile(null);
-								setOverTile(null);
-								onTileDrop(k, active, over);
-							}
-						} : {}
-					});
-				})];
-			}), addable.length > 0 ? (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.modAddSquare,
-				"data-subcard-add": "mod",
-				"aria-label": "Add modifier",
-				title: "Add a modifier",
-				onClick: (e) => {
-					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
-				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
-				open: true,
-				anchor: null,
-				getAnchorRect: () => pickAt.rect,
-				items: addable.map((k) => ({
-					id: k.kind,
-					label: k.label
-				})),
-				onSelect: (id) => {
-					setPickAt(null);
-					openCreate(addable.find((x) => x.kind === id));
-				},
-				onClose: () => {
-					setPickAt(null);
-				},
-				portal: true
-			}) : null, leaf !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose: () => {
-					setLeaf(null);
-				},
-				title: (leaf.mode === "create" ? "Add " : "Edit ") + leaf.kind.label,
-				closeLabel: "Close"
-			}, (0, react.createElement)(ModLeaf, {
-				leaf,
-				values,
-				hideFields: seated,
-				onDraft: {
-					setDraftOption,
-					setDraftStrength,
-					setDraftParams,
-					setDraftSteps,
-					draftOption,
-					draftStrength,
-					draftParams,
-					draftSteps
-				},
-				onError: setLeafError,
-				onSave: saveLeaf,
-				onDelete: deleteLeaf,
-				leafError,
-				paintFace: props.paintFace,
-				bboxFace: props.bboxFace,
-				paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : "",
-				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
-			})) : null);
-		}
-		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
-		*  square provider (the construction law: an image input constructs
-		*  the square automatically, even inside a mod leaf). */
-		function ModLeaf(props) {
-			const { leaf, onDraft, onSave, onDelete, leafError } = props;
-			const k = leaf.kind;
-			const hidden = props.hideFields;
-			const leafFields = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false));
-			const own = useSquareProvider((name, v) => {
-				onDraft.setDraftParams({
-					...onDraft.draftParams,
-					[name]: v
-				});
-			}, {
-				candidates: [],
-				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
-			});
-			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isHybridKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
-				className: card_module_css_default.modSelect,
-				value: onDraft.draftOption,
-				onChange: (e) => {
-					onDraft.setDraftOption(e.target.value);
-				}
-			}, (0, react.createElement)("option", { value: "" }, "— pick —"), (k.options ?? []).map((o) => (0, react.createElement)("option", {
-				key: o.value,
-				value: o.value,
-				title: o.tooltip ?? o.label
-			}, o.label)), onDraft.draftOption !== "" && (k.options ?? []).every((o) => o.value !== onDraft.draftOption) ? (0, react.createElement)("option", { value: onDraft.draftOption }, titleCaseId(onDraft.draftOption) + " (unregistered)") : null)), (0, react.createElement)("label", { className: card_module_css_default.modField }, (k.fields ?? []).find((f) => f.name === scalarKeyOf(k))?.label ?? "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				step: "0.05",
-				value: onDraft.draftStrength,
-				placeholder: "the row default",
-				onChange: (e) => {
-					onDraft.setDraftStrength(e.target.value);
-				}
-			})), (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== scalarKeyOf(k) && !(hidden?.has(f.name) ?? false)).map((f) => (0, react.createElement)("label", {
-				key: f.name,
-				className: card_module_css_default.modField
-			}, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), (0, react.createElement)(SpecAtom, {
-				f,
-				value: onDraft.draftParams[f.name] ?? f.default,
-				onEdit: (name, v) => {
-					onDraft.setDraftParams({
-						...onDraft.draftParams,
-						[name]: v
-					});
-				},
-				square: own.square(f)
-			}))), own.wireMenu) : isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
-				className: card_module_css_default.modSelect,
-				value: onDraft.draftOption,
-				onChange: (e) => {
-					onDraft.setDraftOption(e.target.value);
-				}
-			}, (0, react.createElement)("option", { value: "" }, "— pick —"), k.options.map((o) => (0, react.createElement)("option", {
-				key: o.value,
-				value: o.value
-			}, o.label)))) : null, (0, react.createElement)("label", { className: card_module_css_default.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				step: "0.05",
-				value: onDraft.draftStrength,
-				placeholder: "the row default",
-				onChange: (e) => {
-					onDraft.setDraftStrength(e.target.value);
-				}
-			})), (k.options ?? []).some((o) => typeof o.defaults?.steps === "number") ? (() => {
-				const rowOpts = k.options ?? [];
-				const activeRow = rowOpts.find((o) => o.value === onDraft.draftOption) ?? rowOpts[0];
-				const rMin = activeRow?.defaults?.steps_min;
-				const rMax = activeRow?.defaults?.steps_max;
-				const rangeText = typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? ` ${rMin}\u2013${rMax}` : typeof activeRow?.defaults?.steps === "number" ? ` (fixed at ${activeRow.defaults.steps})` : "";
-				return (0, react.createElement)("label", { className: card_module_css_default.modField }, `Steps applied${rangeText}`, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-					"aria-label": "Steps applied",
-					type: "number",
-					step: "1",
-					min: typeof rMin === "number" ? String(rMin) : void 0,
-					max: typeof rMax === "number" ? String(rMax) : void 0,
-					value: onDraft.draftSteps,
-					placeholder: String(activeRow?.defaults?.steps ?? ""),
-					title: typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? `This adapter runs ${rMin}\u2013${rMax} steps — the dial bounds to the row's declared domain; the run\u2019s sampler applies it unless a call pins steps explicitly.` : "The distill’s own step count — the run’s sampler applies it unless a call pins steps explicitly.",
-					onChange: (e) => {
-						onDraft.setDraftSteps(e.target.value);
-					}
-				}));
-			})() : null) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
-				f,
-				value: onDraft.draftParams[f.name],
-				onEdit: (name, v) => {
-					onDraft.setDraftParams({
-						...onDraft.draftParams,
-						[name]: v
-					});
-				},
-				square: own.square(f)
-			})), props.paintFace !== void 0 && k.leaf_face === "paint-canvas" && (f.type === "image" || f.wtype === "image") ? (0, react.createElement)(PaintVerb, {
-				Face: props.paintFace,
-				referenceUrl: props.paintReferenceValue,
-				payloadUrl: typeof onDraft.draftParams[f.name] === "string" ? onDraft.draftParams[f.name] : "",
-				onSaved: (dataUrl) => {
-					onDraft.setDraftParams({
-						...onDraft.draftParams,
-						[f.name]: dataUrl
-					});
-				}
-			}) : null)), props.bboxFace !== void 0 && k.leaf_face === "bbox-canvas" ? (0, react.createElement)(BboxVerb, {
-				Face: props.bboxFace,
-				referenceUrl: props.paintReferenceValue,
-				draft: onDraft.draftParams,
-				onSaved: (bbox) => {
-					onDraft.setDraftParams({
-						...onDraft.draftParams,
-						bbox_x: Math.round(bbox.x),
-						bbox_y: Math.round(bbox.y),
-						bbox_w: Math.round(bbox.width),
-						bbox_h: Math.round(bbox.height)
-					});
-				}
-			}) : null, own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "primary",
-				onClick: onSave
-			}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "ghost",
-				onClick: onDelete
-			}, "Remove") : null));
-		}
-		/** THE PAINT VERB — the brush button + modal mount (the face
-		*  component arrives from the host; this is the wiring only). */
-		function PaintVerb(props) {
-			const [open, setOpen] = (0, react.useState)(false);
-			return (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "ghost",
-				onClick: () => {
-					setOpen(true);
-				}
-			}, "Paint"), open ? (0, react.createElement)(props.Face, {
-				referenceUrl: props.referenceUrl,
-				payloadUrl: props.payloadUrl,
-				onSave: (dataUrl) => {
-					props.onSaved(dataUrl);
-					setOpen(false);
-				},
-				onCancel: () => {
-					setOpen(false);
-				}
-			}) : null);
-		}
-		/** THE BBOX VERB (stroke 78) — the selection button + modal mount:
-		*  reads the entry's current rectangle (all four present and finite
-		*  = set; anything else = null, a fresh draw), writes the four
-		*  bbox_* inputs on save. Same delivery law as the paint verb. */
-		function BboxVerb(props) {
-			const [open, setOpen] = (0, react.useState)(false);
-			const quad = [
-				props.draft["bbox_x"],
-				props.draft["bbox_y"],
-				props.draft["bbox_w"],
-				props.draft["bbox_h"]
-			];
-			const set = quad.length === 4 && quad.every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0) ? {
-				x: quad[0],
-				y: quad[1],
-				width: quad[2],
-				height: quad[3]
-			} : null;
-			return (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "ghost",
-				onClick: () => {
-					setOpen(true);
-				}
-			}, set === null ? "Draw box" : "Redraw box"), open ? (0, react.createElement)(props.Face, {
-				referenceUrl: props.referenceUrl,
-				bbox: set,
-				onSave: (bbox) => {
-					props.onSaved(bbox);
-					setOpen(false);
-				},
-				onCancel: () => {
-					setOpen(false);
-				}
-			}) : null);
-		}
-		/** One mod tile (the original, verbatim: useSortable + click to
-		*  edit + strength to 2 decimals). */
-		/** The reorder drag's MIME (native HTML5 sortable). */
-		const MOD_DRAG_MIME = "application/x-melite-mod";
-		function ModTile(props) {
-			const ordered = props.onReorderStart !== void 0;
-			return (0, react.createElement)("li", {
-				className: card_module_css_default.modTile + (props.dragging ? " " + card_module_css_default.tileDragging : "") + (props.dragOver ? " " + card_module_css_default.modTileOver : ""),
-				draggable: ordered,
-				"data-mod-tile": props.tileId,
-				title: ordered ? "Drag to reorder · click to edit" : "Click to edit (standalone — own output)",
-				onDragStart: (e) => {
-					if (!ordered) return;
-					e.dataTransfer.setData(MOD_DRAG_MIME, props.tileId);
-					e.dataTransfer.effectAllowed = "move";
-					props.onReorderStart(props.tileId);
-				},
-				onDragEnd: () => {
-					if (ordered) props.onReorderStart(null);
-				},
-				onDragOver: (e) => {
-					if (!ordered) return;
-					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
-						e.preventDefault();
-						e.dataTransfer.dropEffect = "move";
-						props.onReorderOver(props.tileId);
-					}
-				},
-				onDrop: (e) => {
-					if (!ordered) return;
-					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
-						e.preventDefault();
-						e.stopPropagation();
-						const active = e.dataTransfer.getData(MOD_DRAG_MIME);
-						if (active !== "" && active !== props.tileId) props.onReorderDrop(active, props.tileId);
-					}
-				},
-				onClick: props.onOpen
-			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null, props.steps !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileSteps }, `${String(props.steps)} steps`) : null);
-		}
-		//#endregion
-		//#region ../card-base/src/use-resolved.ts
-		/**
-		* use-resolved.ts — THE STUDIO SEAM, ONE UNIVERSAL DEFAULT SYSTEM
-		* (operator, 2026-09-18: "there is no universal default system
-		* right?"). ONE resolver composes EVERY layer — schema defaults <-
-		* model_defaults <- base (the persisted/bench layer) <- user — and
-		* the surface reads THE ONE resolved map. Never a hand `??` ladder
-		* at a call site: a ladder IS a second resolver, and every extra
-		* arm is a place the truth forks.
-		*
-		* PRE-FETCH LAW: the spec arrives async, but the resolved map is
-		* STILL the layer composition — base under user, verbatim — so a
-		* synchronous render shows the document's own held values; the
-		* fetch landing fills the declared defaults under them (the same
-		* one map, richer). Nothing renders blank, nothing flickers, no
-		* call site branches on spec-null.
-		*
-		* THE EDIT LAW: `undefined` is the tri-state's inherit signal (the
-		* unset) — it rides verbatim, the caller's write owns what it
-		* means. Edits coerce at the SCHEMA BOUNDARY (coerceFieldEdit):
-		* numeric strings ride as numbers, unparseable strings ride
-		* verbatim for the run's schema parse to refuse LOUD, and keys the
-		* spec never declared (the mod bag) ride verbatim — the mod plane
-		* owns their validation.
-		*/
 		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js
 		/**
@@ -44342,4767 +42637,6 @@ void main() {
 			};
 		}));
 		//#endregion
-		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/OrbitControls.js
-		init_three_module();
-		/**
-		* Fires when the camera has been transformed by the controls.
-		*
-		* @event OrbitControls#change
-		* @type {Object}
-		*/
-		const _changeEvent = { type: "change" };
-		/**
-		* Fires when an interaction was initiated.
-		*
-		* @event OrbitControls#start
-		* @type {Object}
-		*/
-		const _startEvent = { type: "start" };
-		/**
-		* Fires when an interaction has finished.
-		*
-		* @event OrbitControls#end
-		* @type {Object}
-		*/
-		const _endEvent = { type: "end" };
-		const _ray = new Ray();
-		const _plane = new Plane();
-		const _TILT_LIMIT = Math.cos(70 * MathUtils.DEG2RAD);
-		const _v = new Vector3();
-		const _twoPI = 2 * Math.PI;
-		const _STATE = {
-			NONE: -1,
-			ROTATE: 0,
-			DOLLY: 1,
-			PAN: 2,
-			TOUCH_ROTATE: 3,
-			TOUCH_PAN: 4,
-			TOUCH_DOLLY_PAN: 5,
-			TOUCH_DOLLY_ROTATE: 6
-		};
-		const _EPS = 1e-6;
-		/**
-		* Orbit controls allow the camera to orbit around a target.
-		*
-		* OrbitControls performs orbiting, dollying (zooming), and panning. Unlike {@link TrackballControls},
-		* it maintains the "up" direction `object.up` (+Y by default).
-		*
-		* - Orbit: Left mouse / touch: one-finger move.
-		* - Zoom: Middle mouse, or mousewheel / touch: two-finger spread or squish.
-		* - Pan: Right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move.
-		*
-		* ```js
-		* const controls = new OrbitControls( camera, renderer.domElement );
-		*
-		* // controls.update() must be called after any manual changes to the camera's transform
-		* camera.position.set( 0, 20, 100 );
-		* controls.update();
-		*
-		* function animate() {
-		*
-		* 	// required if controls.enableDamping or controls.autoRotate are set to true
-		* 	controls.update();
-		*
-		* 	renderer.render( scene, camera );
-		*
-		* }
-		* ```
-		*
-		* @augments Controls
-		* @three_import import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-		*/
-		var OrbitControls = class extends Controls {
-			/**
-			* Constructs a new controls instance.
-			*
-			* @param {Object3D} object - The object that is managed by the controls.
-			* @param {?HTMLElement} domElement - The HTML element used for event listeners.
-			*/
-			constructor(object, domElement = null) {
-				super(object, domElement);
-				this.state = _STATE.NONE;
-				/**
-				* The focus point of the controls, the `object` orbits around this.
-				* It can be updated manually at any point to change the focus of the controls.
-				*
-				* @type {Vector3}
-				*/
-				this.target = new Vector3();
-				/**
-				* The focus point of the `minTargetRadius` and `maxTargetRadius` limits.
-				* It can be updated manually at any point to change the center of interest
-				* for the `target`.
-				*
-				* @type {Vector3}
-				*/
-				this.cursor = new Vector3();
-				/**
-				* How far you can dolly in (perspective camera only).
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minDistance = 0;
-				/**
-				* How far you can dolly out (perspective camera only).
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxDistance = Infinity;
-				/**
-				* How far you can zoom in (orthographic camera only).
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minZoom = 0;
-				/**
-				* How far you can zoom out (orthographic camera only).
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxZoom = Infinity;
-				/**
-				* How close you can get the target to the 3D `cursor`.
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minTargetRadius = 0;
-				/**
-				* How far you can move the target from the 3D `cursor`.
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxTargetRadius = Infinity;
-				/**
-				* How far you can orbit vertically, lower limit. Range is `[0, Math.PI]` radians.
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minPolarAngle = 0;
-				/**
-				* How far you can orbit vertically, upper limit. Range is `[0, Math.PI]` radians.
-				*
-				* @type {number}
-				* @default Math.PI
-				*/
-				this.maxPolarAngle = Math.PI;
-				/**
-				* How far you can orbit horizontally, lower limit. If set, the interval `[ min, max ]`
-				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
-				*
-				* @type {number}
-				* @default -Infinity
-				*/
-				this.minAzimuthAngle = -Infinity;
-				/**
-				* How far you can orbit horizontally, upper limit. If set, the interval `[ min, max ]`
-				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
-				*
-				* @type {number}
-				* @default -Infinity
-				*/
-				this.maxAzimuthAngle = Infinity;
-				/**
-				* Set to `true` to enable damping (inertia), which can be used to give a sense of weight
-				* to the controls. Note that if this is enabled, you must call `update()` in your animation
-				* loop.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.enableDamping = false;
-				/**
-				* The damping inertia used if `enableDamping` is set to `true`.
-				*
-				* Note that for this to work, you must call `update()` in your animation loop.
-				*
-				* @type {number}
-				* @default 0.05
-				*/
-				this.dampingFactor = .05;
-				/**
-				* Enable or disable zooming (dollying) of the camera.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enableZoom = true;
-				/**
-				* Speed of zooming / dollying.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.zoomSpeed = 1;
-				/**
-				* Enable or disable horizontal and vertical rotation of the camera.
-				*
-				* Note that it is possible to disable a single axis by setting the min and max of the
-				* `minPolarAngle` or `minAzimuthAngle` to the same value, which will cause the vertical
-				* or horizontal rotation to be fixed at that value.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enableRotate = true;
-				/**
-				* Speed of rotation.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.rotateSpeed = 1;
-				/**
-				* How fast to rotate the camera when the keyboard is used.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.keyRotateSpeed = 1;
-				/**
-				* Enable or disable camera panning.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enablePan = true;
-				/**
-				* Speed of panning.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.panSpeed = 1;
-				/**
-				* Defines how the camera's position is translated when panning. If `true`, the camera pans
-				* in screen space. Otherwise, the camera pans in the plane orthogonal to the camera's up
-				* direction.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.screenSpacePanning = true;
-				/**
-				* How fast to pan the camera when the keyboard is used in
-				* pixels per keypress.
-				*
-				* @type {number}
-				* @default 7
-				*/
-				this.keyPanSpeed = 7;
-				/**
-				* Setting this property to `true` allows to zoom to the cursor's position.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.zoomToCursor = false;
-				/**
-				* Set to true to automatically rotate around the target
-				*
-				* Note that if this is enabled, you must call `update()` in your animation loop.
-				* If you want the auto-rotate speed to be independent of the frame rate (the refresh
-				* rate of the display), you must pass the time `deltaTime`, in seconds, to `update()`.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.autoRotate = false;
-				/**
-				* How fast to rotate around the target if `autoRotate` is `true`. The default  equates to 30 seconds
-				* per orbit at 60fps.
-				*
-				* Note that if `autoRotate` is enabled, you must call `update()` in your animation loop.
-				*
-				* @type {number}
-				* @default 2
-				*/
-				this.autoRotateSpeed = 2;
-				/**
-				* This object contains references to the keycodes for controlling camera panning.
-				*
-				* ```js
-				* controls.keys = {
-				* 	LEFT: 'ArrowLeft', //left arrow
-				* 	UP: 'ArrowUp', // up arrow
-				* 	RIGHT: 'ArrowRight', // right arrow
-				* 	BOTTOM: 'ArrowDown' // down arrow
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.keys = {
-					LEFT: "ArrowLeft",
-					UP: "ArrowUp",
-					RIGHT: "ArrowRight",
-					BOTTOM: "ArrowDown"
-				};
-				/**
-				* This object contains references to the mouse actions used by the controls.
-				*
-				* ```js
-				* controls.mouseButtons = {
-				* 	LEFT: THREE.MOUSE.ROTATE,
-				* 	MIDDLE: THREE.MOUSE.DOLLY,
-				* 	RIGHT: THREE.MOUSE.PAN
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.mouseButtons = {
-					LEFT: MOUSE.ROTATE,
-					MIDDLE: MOUSE.DOLLY,
-					RIGHT: MOUSE.PAN
-				};
-				/**
-				* This object contains references to the touch actions used by the controls.
-				*
-				* ```js
-				* controls.mouseButtons = {
-				* 	ONE: THREE.TOUCH.ROTATE,
-				* 	TWO: THREE.TOUCH.DOLLY_PAN
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.touches = {
-					ONE: TOUCH.ROTATE,
-					TWO: TOUCH.DOLLY_PAN
-				};
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {Vector3}
-				*/
-				this.target0 = this.target.clone();
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {Vector3}
-				*/
-				this.position0 = this.object.position.clone();
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {number}
-				*/
-				this.zoom0 = this.object.zoom;
-				this._cursorStyle = "auto";
-				this._domElementKeyEvents = null;
-				this._lastPosition = new Vector3();
-				this._lastQuaternion = new Quaternion();
-				this._lastTargetPosition = new Vector3();
-				this._quat = new Quaternion().setFromUnitVectors(object.up, new Vector3(0, 1, 0));
-				this._quatInverse = this._quat.clone().invert();
-				this._spherical = new Spherical();
-				this._sphericalDelta = new Spherical();
-				this._scale = 1;
-				this._panOffset = new Vector3();
-				this._rotateStart = new Vector2();
-				this._rotateEnd = new Vector2();
-				this._rotateDelta = new Vector2();
-				this._panStart = new Vector2();
-				this._panEnd = new Vector2();
-				this._panDelta = new Vector2();
-				this._dollyStart = new Vector2();
-				this._dollyEnd = new Vector2();
-				this._dollyDelta = new Vector2();
-				this._dollyDirection = new Vector3();
-				this._mouse = new Vector2();
-				this._performCursorZoom = false;
-				this._pointers = [];
-				this._pointerPositions = {};
-				this._controlActive = false;
-				this._onPointerMove = onPointerMove.bind(this);
-				this._onPointerDown = onPointerDown.bind(this);
-				this._onPointerUp = onPointerUp.bind(this);
-				this._onContextMenu = onContextMenu.bind(this);
-				this._onMouseWheel = onMouseWheel.bind(this);
-				this._onKeyDown = onKeyDown.bind(this);
-				this._onTouchStart = onTouchStart.bind(this);
-				this._onTouchMove = onTouchMove.bind(this);
-				this._onMouseDown = onMouseDown.bind(this);
-				this._onMouseMove = onMouseMove.bind(this);
-				this._interceptControlDown = interceptControlDown.bind(this);
-				this._interceptControlUp = interceptControlUp.bind(this);
-				if (this.domElement !== null) this.connect(this.domElement);
-				this.update();
-			}
-			/**
-			* Defines the visual representation of the cursor.
-			*
-			* @type {('auto'|'grab')}
-			* @default 'auto'
-			*/
-			set cursorStyle(type) {
-				this._cursorStyle = type;
-				if (type === "grab") this.domElement.style.cursor = "grab";
-				else this.domElement.style.cursor = "auto";
-			}
-			get cursorStyle() {
-				return this._cursorStyle;
-			}
-			connect(element) {
-				super.connect(element);
-				this.domElement.addEventListener("pointerdown", this._onPointerDown);
-				this.domElement.addEventListener("pointercancel", this._onPointerUp);
-				this.domElement.addEventListener("contextmenu", this._onContextMenu);
-				this.domElement.addEventListener("wheel", this._onMouseWheel, { passive: false });
-				this.domElement.getRootNode().addEventListener("keydown", this._interceptControlDown, {
-					passive: true,
-					capture: true
-				});
-				this.domElement.style.touchAction = "none";
-			}
-			disconnect() {
-				this.domElement.removeEventListener("pointerdown", this._onPointerDown);
-				this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
-				this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
-				this.domElement.removeEventListener("pointercancel", this._onPointerUp);
-				this.domElement.removeEventListener("wheel", this._onMouseWheel);
-				this.domElement.removeEventListener("contextmenu", this._onContextMenu);
-				this.stopListenToKeyEvents();
-				this.domElement.getRootNode().removeEventListener("keydown", this._interceptControlDown, { capture: true });
-				this.domElement.style.touchAction = "";
-			}
-			dispose() {
-				this.disconnect();
-			}
-			/**
-			* Get the current vertical rotation, in radians.
-			*
-			* @return {number} The current vertical rotation, in radians.
-			*/
-			getPolarAngle() {
-				return this._spherical.phi;
-			}
-			/**
-			* Get the current horizontal rotation, in radians.
-			*
-			* @return {number} The current horizontal rotation, in radians.
-			*/
-			getAzimuthalAngle() {
-				return this._spherical.theta;
-			}
-			/**
-			* Returns the distance from the camera to the target.
-			*
-			* @return {number} The distance from the camera to the target.
-			*/
-			getDistance() {
-				return this.object.position.distanceTo(this.target);
-			}
-			/**
-			* Adds key event listeners to the given DOM element.
-			* `window` is a recommended argument for using this method.
-			*
-			* @param {HTMLElement} domElement - The DOM element
-			*/
-			listenToKeyEvents(domElement) {
-				domElement.addEventListener("keydown", this._onKeyDown);
-				this._domElementKeyEvents = domElement;
-			}
-			/**
-			* Removes the key event listener previously defined with `listenToKeyEvents()`.
-			*/
-			stopListenToKeyEvents() {
-				if (this._domElementKeyEvents !== null) {
-					this._domElementKeyEvents.removeEventListener("keydown", this._onKeyDown);
-					this._domElementKeyEvents = null;
-				}
-			}
-			/**
-			* Save the current state of the controls. This can later be recovered with `reset()`.
-			*/
-			saveState() {
-				this.target0.copy(this.target);
-				this.position0.copy(this.object.position);
-				this.zoom0 = this.object.zoom;
-			}
-			/**
-			* Reset the controls to their state from either the last time the `saveState()`
-			* was called, or the initial state.
-			*/
-			reset() {
-				this.target.copy(this.target0);
-				this.object.position.copy(this.position0);
-				this.object.zoom = this.zoom0;
-				this.object.updateProjectionMatrix();
-				this.dispatchEvent(_changeEvent);
-				this.update();
-				this.state = _STATE.NONE;
-			}
-			/**
-			* Programmatically pan the camera.
-			*
-			* @param {number} deltaX - The horizontal pan amount in pixels.
-			* @param {number} deltaY - The vertical pan amount in pixels.
-			*/
-			pan(deltaX, deltaY) {
-				this._pan(deltaX, deltaY);
-				this.update();
-			}
-			/**
-			* Programmatically dolly in (zoom in for perspective camera).
-			*
-			* @param {number} dollyScale - The dolly scale factor.
-			*/
-			dollyIn(dollyScale) {
-				this._dollyIn(dollyScale);
-				this.update();
-			}
-			/**
-			* Programmatically dolly out (zoom out for perspective camera).
-			*
-			* @param {number} dollyScale - The dolly scale factor.
-			*/
-			dollyOut(dollyScale) {
-				this._dollyOut(dollyScale);
-				this.update();
-			}
-			/**
-			* Programmatically rotate the camera left (around the vertical axis).
-			*
-			* @param {number} angle - The rotation angle in radians.
-			*/
-			rotateLeft(angle) {
-				this._rotateLeft(angle);
-				this.update();
-			}
-			/**
-			* Programmatically rotate the camera up (around the horizontal axis).
-			*
-			* @param {number} angle - The rotation angle in radians.
-			*/
-			rotateUp(angle) {
-				this._rotateUp(angle);
-				this.update();
-			}
-			update(deltaTime = null) {
-				const position = this.object.position;
-				_v.copy(position).sub(this.target);
-				_v.applyQuaternion(this._quat);
-				this._spherical.setFromVector3(_v);
-				if (this.autoRotate && this.state === _STATE.NONE) this._rotateLeft(this._getAutoRotationAngle(deltaTime));
-				if (this.enableDamping) {
-					this._spherical.theta += this._sphericalDelta.theta * this.dampingFactor;
-					this._spherical.phi += this._sphericalDelta.phi * this.dampingFactor;
-				} else {
-					this._spherical.theta += this._sphericalDelta.theta;
-					this._spherical.phi += this._sphericalDelta.phi;
-				}
-				let min = this.minAzimuthAngle;
-				let max = this.maxAzimuthAngle;
-				if (isFinite(min) && isFinite(max)) {
-					if (min < -Math.PI) min += _twoPI;
-					else if (min > Math.PI) min -= _twoPI;
-					if (max < -Math.PI) max += _twoPI;
-					else if (max > Math.PI) max -= _twoPI;
-					if (min <= max) this._spherical.theta = Math.max(min, Math.min(max, this._spherical.theta));
-					else this._spherical.theta = this._spherical.theta > (min + max) / 2 ? Math.max(min, this._spherical.theta) : Math.min(max, this._spherical.theta);
-				}
-				this._spherical.phi = Math.max(this.minPolarAngle, Math.min(this.maxPolarAngle, this._spherical.phi));
-				this._spherical.makeSafe();
-				if (this.enableDamping === true) this.target.addScaledVector(this._panOffset, this.dampingFactor);
-				else this.target.add(this._panOffset);
-				this.target.sub(this.cursor);
-				this.target.clampLength(this.minTargetRadius, this.maxTargetRadius);
-				this.target.add(this.cursor);
-				let zoomChanged = false;
-				if (this.zoomToCursor && this._performCursorZoom || this.object.isOrthographicCamera) this._spherical.radius = this._clampDistance(this._spherical.radius);
-				else {
-					const prevRadius = this._spherical.radius;
-					this._spherical.radius = this._clampDistance(this._spherical.radius * this._scale);
-					zoomChanged = prevRadius != this._spherical.radius;
-				}
-				_v.setFromSpherical(this._spherical);
-				_v.applyQuaternion(this._quatInverse);
-				position.copy(this.target).add(_v);
-				this.object.lookAt(this.target);
-				if (this.enableDamping === true) {
-					this._sphericalDelta.theta *= 1 - this.dampingFactor;
-					this._sphericalDelta.phi *= 1 - this.dampingFactor;
-					this._panOffset.multiplyScalar(1 - this.dampingFactor);
-				} else {
-					this._sphericalDelta.set(0, 0, 0);
-					this._panOffset.set(0, 0, 0);
-				}
-				if (this.zoomToCursor && this._performCursorZoom) {
-					let newRadius = null;
-					if (this.object.isPerspectiveCamera) {
-						const prevRadius = _v.length();
-						newRadius = this._clampDistance(prevRadius * this._scale);
-						const radiusDelta = prevRadius - newRadius;
-						this.object.position.addScaledVector(this._dollyDirection, radiusDelta);
-						this.object.updateMatrixWorld();
-						zoomChanged = !!radiusDelta;
-					} else if (this.object.isOrthographicCamera) {
-						const mouseBefore = new Vector3(this._mouse.x, this._mouse.y, 0);
-						mouseBefore.unproject(this.object);
-						const prevZoom = this.object.zoom;
-						this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
-						this.object.updateProjectionMatrix();
-						zoomChanged = prevZoom !== this.object.zoom;
-						const mouseAfter = new Vector3(this._mouse.x, this._mouse.y, 0);
-						mouseAfter.unproject(this.object);
-						this.object.position.sub(mouseAfter).add(mouseBefore);
-						this.object.updateMatrixWorld();
-						newRadius = _v.length();
-					} else {
-						console.warn("WARNING: OrbitControls.js encountered an unknown camera type - zoom to cursor disabled.");
-						this.zoomToCursor = false;
-					}
-					if (newRadius !== null) {
-						if (this.screenSpacePanning) this.target.set(0, 0, -1).transformDirection(this.object.matrix).multiplyScalar(newRadius).add(this.object.position);
-						else {
-							_ray.origin.copy(this.object.position);
-							_ray.direction.set(0, 0, -1).transformDirection(this.object.matrix);
-							if (Math.abs(this.object.up.dot(_ray.direction)) < _TILT_LIMIT) this.object.lookAt(this.target);
-							else {
-								_plane.setFromNormalAndCoplanarPoint(this.object.up, this.target);
-								_ray.intersectPlane(_plane, this.target);
-							}
-						}
-					}
-				} else if (this.object.isOrthographicCamera) {
-					const prevZoom = this.object.zoom;
-					this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
-					if (prevZoom !== this.object.zoom) {
-						this.object.updateProjectionMatrix();
-						zoomChanged = true;
-					}
-				}
-				this._scale = 1;
-				this._performCursorZoom = false;
-				if (zoomChanged || this._lastPosition.distanceToSquared(this.object.position) > _EPS || 8 * (1 - this._lastQuaternion.dot(this.object.quaternion)) > _EPS || this._lastTargetPosition.distanceToSquared(this.target) > _EPS) {
-					this.dispatchEvent(_changeEvent);
-					this._lastPosition.copy(this.object.position);
-					this._lastQuaternion.copy(this.object.quaternion);
-					this._lastTargetPosition.copy(this.target);
-					return true;
-				}
-				return false;
-			}
-			_getAutoRotationAngle(deltaTime) {
-				if (deltaTime !== null) return _twoPI / 60 * this.autoRotateSpeed * deltaTime;
-				else return _twoPI / 60 / 60 * this.autoRotateSpeed;
-			}
-			_getZoomScale(delta) {
-				const normalizedDelta = Math.abs(delta * .01);
-				return Math.pow(.95, this.zoomSpeed * normalizedDelta);
-			}
-			_rotateLeft(angle) {
-				this._sphericalDelta.theta -= angle;
-			}
-			_rotateUp(angle) {
-				this._sphericalDelta.phi -= angle;
-			}
-			_panLeft(distance, objectMatrix) {
-				_v.setFromMatrixColumn(objectMatrix, 0);
-				_v.multiplyScalar(-distance);
-				this._panOffset.add(_v);
-			}
-			_panUp(distance, objectMatrix) {
-				if (this.screenSpacePanning === true) _v.setFromMatrixColumn(objectMatrix, 1);
-				else {
-					_v.setFromMatrixColumn(objectMatrix, 0);
-					_v.crossVectors(this.object.up, _v);
-				}
-				_v.multiplyScalar(distance);
-				this._panOffset.add(_v);
-			}
-			_pan(deltaX, deltaY) {
-				const element = this.domElement;
-				if (this.object.isPerspectiveCamera) {
-					const position = this.object.position;
-					_v.copy(position).sub(this.target);
-					let targetDistance = _v.length();
-					targetDistance *= Math.tan(this.object.fov / 2 * Math.PI / 180);
-					this._panLeft(2 * deltaX * targetDistance / element.clientHeight, this.object.matrix);
-					this._panUp(2 * deltaY * targetDistance / element.clientHeight, this.object.matrix);
-				} else if (this.object.isOrthographicCamera) {
-					this._panLeft(deltaX * (this.object.right - this.object.left) / this.object.zoom / element.clientWidth, this.object.matrix);
-					this._panUp(deltaY * (this.object.top - this.object.bottom) / this.object.zoom / element.clientHeight, this.object.matrix);
-				} else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.");
-					this.enablePan = false;
-				}
-			}
-			_dollyOut(dollyScale) {
-				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale /= dollyScale;
-				else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
-					this.enableZoom = false;
-				}
-			}
-			_dollyIn(dollyScale) {
-				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale *= dollyScale;
-				else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
-					this.enableZoom = false;
-				}
-			}
-			_updateZoomParameters(x, y) {
-				if (!this.zoomToCursor) return;
-				this._performCursorZoom = true;
-				const rect = this.domElement.getBoundingClientRect();
-				const dx = x - rect.left;
-				const dy = y - rect.top;
-				const w = rect.width;
-				const h = rect.height;
-				this._mouse.x = dx / w * 2 - 1;
-				this._mouse.y = -(dy / h) * 2 + 1;
-				this._dollyDirection.set(this._mouse.x, this._mouse.y, 1).unproject(this.object).sub(this.object.position).normalize();
-			}
-			_clampDistance(dist) {
-				return Math.max(this.minDistance, Math.min(this.maxDistance, dist));
-			}
-			_handleMouseDownRotate(event) {
-				this._rotateStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseDownDolly(event) {
-				this._updateZoomParameters(event.clientX, event.clientX);
-				this._dollyStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseDownPan(event) {
-				this._panStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseMoveRotate(event) {
-				this._rotateEnd.set(event.clientX, event.clientY);
-				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
-				const element = this.domElement;
-				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
-				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
-				this._rotateStart.copy(this._rotateEnd);
-				this.update();
-			}
-			_handleMouseMoveDolly(event) {
-				this._dollyEnd.set(event.clientX, event.clientY);
-				this._dollyDelta.subVectors(this._dollyEnd, this._dollyStart);
-				if (this._dollyDelta.y > 0) this._dollyOut(this._getZoomScale(this._dollyDelta.y));
-				else if (this._dollyDelta.y < 0) this._dollyIn(this._getZoomScale(this._dollyDelta.y));
-				this._dollyStart.copy(this._dollyEnd);
-				this.update();
-			}
-			_handleMouseMovePan(event) {
-				this._panEnd.set(event.clientX, event.clientY);
-				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
-				this._pan(this._panDelta.x, this._panDelta.y);
-				this._panStart.copy(this._panEnd);
-				this.update();
-			}
-			_handleMouseWheel(event) {
-				this._updateZoomParameters(event.clientX, event.clientY);
-				if (event.deltaY < 0) this._dollyIn(this._getZoomScale(event.deltaY));
-				else if (event.deltaY > 0) this._dollyOut(this._getZoomScale(event.deltaY));
-				this.update();
-			}
-			_handleKeyDown(event) {
-				let needsUpdate = false;
-				switch (event.code) {
-					case this.keys.UP:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateUp(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(0, this.keyPanSpeed);
-						needsUpdate = true;
-						break;
-					case this.keys.BOTTOM:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateUp(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(0, -this.keyPanSpeed);
-						needsUpdate = true;
-						break;
-					case this.keys.LEFT:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateLeft(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(this.keyPanSpeed, 0);
-						needsUpdate = true;
-						break;
-					case this.keys.RIGHT:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateLeft(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(-this.keyPanSpeed, 0);
-						needsUpdate = true;
-				}
-				if (needsUpdate) {
-					event.preventDefault();
-					this.update();
-				}
-			}
-			_handleTouchStartRotate(event) {
-				if (this._pointers.length === 1) this._rotateStart.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._rotateStart.set(x, y);
-				}
-			}
-			_handleTouchStartPan(event) {
-				if (this._pointers.length === 1) this._panStart.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._panStart.set(x, y);
-				}
-			}
-			_handleTouchStartDolly(event) {
-				const position = this._getSecondPointerPosition(event);
-				const dx = event.pageX - position.x;
-				const dy = event.pageY - position.y;
-				const distance = Math.sqrt(dx * dx + dy * dy);
-				this._dollyStart.set(0, distance);
-			}
-			_handleTouchStartDollyPan(event) {
-				if (this.enableZoom) this._handleTouchStartDolly(event);
-				if (this.enablePan) this._handleTouchStartPan(event);
-			}
-			_handleTouchStartDollyRotate(event) {
-				if (this.enableZoom) this._handleTouchStartDolly(event);
-				if (this.enableRotate) this._handleTouchStartRotate(event);
-			}
-			_handleTouchMoveRotate(event) {
-				if (this._pointers.length == 1) this._rotateEnd.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._rotateEnd.set(x, y);
-				}
-				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
-				const element = this.domElement;
-				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
-				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
-				this._rotateStart.copy(this._rotateEnd);
-			}
-			_handleTouchMovePan(event) {
-				if (this._pointers.length === 1) this._panEnd.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._panEnd.set(x, y);
-				}
-				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
-				this._pan(this._panDelta.x, this._panDelta.y);
-				this._panStart.copy(this._panEnd);
-			}
-			_handleTouchMoveDolly(event) {
-				const position = this._getSecondPointerPosition(event);
-				const dx = event.pageX - position.x;
-				const dy = event.pageY - position.y;
-				const distance = Math.sqrt(dx * dx + dy * dy);
-				this._dollyEnd.set(0, distance);
-				this._dollyDelta.set(0, Math.pow(this._dollyEnd.y / this._dollyStart.y, this.zoomSpeed));
-				this._dollyOut(this._dollyDelta.y);
-				this._dollyStart.copy(this._dollyEnd);
-				const centerX = (event.pageX + position.x) * .5;
-				const centerY = (event.pageY + position.y) * .5;
-				this._updateZoomParameters(centerX, centerY);
-			}
-			_handleTouchMoveDollyPan(event) {
-				if (this.enableZoom) this._handleTouchMoveDolly(event);
-				if (this.enablePan) this._handleTouchMovePan(event);
-			}
-			_handleTouchMoveDollyRotate(event) {
-				if (this.enableZoom) this._handleTouchMoveDolly(event);
-				if (this.enableRotate) this._handleTouchMoveRotate(event);
-			}
-			_addPointer(event) {
-				this._pointers.push(event.pointerId);
-			}
-			_removePointer(event) {
-				delete this._pointerPositions[event.pointerId];
-				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) {
-					this._pointers.splice(i, 1);
-					return;
-				}
-			}
-			_isTrackingPointer(event) {
-				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) return true;
-				return false;
-			}
-			_trackPointer(event) {
-				let position = this._pointerPositions[event.pointerId];
-				if (position === void 0) {
-					position = new Vector2();
-					this._pointerPositions[event.pointerId] = position;
-				}
-				position.set(event.pageX, event.pageY);
-			}
-			_getSecondPointerPosition(event) {
-				const pointerId = event.pointerId === this._pointers[0] ? this._pointers[1] : this._pointers[0];
-				return this._pointerPositions[pointerId];
-			}
-			_customWheelEvent(event) {
-				const mode = event.deltaMode;
-				const newEvent = {
-					clientX: event.clientX,
-					clientY: event.clientY,
-					deltaY: event.deltaY
-				};
-				switch (mode) {
-					case 1:
-						newEvent.deltaY *= 16;
-						break;
-					case 2: newEvent.deltaY *= 100;
-				}
-				if (event.ctrlKey && !this._controlActive) newEvent.deltaY *= 10;
-				return newEvent;
-			}
-		};
-		function onPointerDown(event) {
-			if (this.enabled === false) return;
-			if (this._pointers.length === 0) {
-				this.domElement.setPointerCapture(event.pointerId);
-				this.domElement.ownerDocument.addEventListener("pointermove", this._onPointerMove);
-				this.domElement.ownerDocument.addEventListener("pointerup", this._onPointerUp);
-			}
-			if (this._isTrackingPointer(event)) return;
-			this._addPointer(event);
-			if (event.pointerType === "touch") this._onTouchStart(event);
-			else this._onMouseDown(event);
-			if (this._cursorStyle === "grab") this.domElement.style.cursor = "grabbing";
-		}
-		function onPointerMove(event) {
-			if (this.enabled === false) return;
-			if (event.pointerType === "touch") this._onTouchMove(event);
-			else this._onMouseMove(event);
-		}
-		function onPointerUp(event) {
-			this._removePointer(event);
-			switch (this._pointers.length) {
-				case 0:
-					this.domElement.releasePointerCapture(event.pointerId);
-					this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
-					this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
-					this.dispatchEvent(_endEvent);
-					this.state = _STATE.NONE;
-					if (this._cursorStyle === "grab") this.domElement.style.cursor = "grab";
-					break;
-				case 1:
-					const pointerId = this._pointers[0];
-					const position = this._pointerPositions[pointerId];
-					this._onTouchStart({
-						pointerId,
-						pageX: position.x,
-						pageY: position.y
-					});
-			}
-		}
-		function onMouseDown(event) {
-			let mouseAction;
-			switch (event.button) {
-				case 0:
-					mouseAction = this.mouseButtons.LEFT;
-					break;
-				case 1:
-					mouseAction = this.mouseButtons.MIDDLE;
-					break;
-				case 2:
-					mouseAction = this.mouseButtons.RIGHT;
-					break;
-				default: mouseAction = -1;
-			}
-			switch (mouseAction) {
-				case MOUSE.DOLLY:
-					if (this.enableZoom === false) return;
-					this._handleMouseDownDolly(event);
-					this.state = _STATE.DOLLY;
-					break;
-				case MOUSE.ROTATE:
-					if (event.ctrlKey || event.metaKey || event.shiftKey) {
-						if (this.enablePan === false) return;
-						this._handleMouseDownPan(event);
-						this.state = _STATE.PAN;
-					} else {
-						if (this.enableRotate === false) return;
-						this._handleMouseDownRotate(event);
-						this.state = _STATE.ROTATE;
-					}
-					break;
-				case MOUSE.PAN:
-					if (event.ctrlKey || event.metaKey || event.shiftKey) {
-						if (this.enableRotate === false) return;
-						this._handleMouseDownRotate(event);
-						this.state = _STATE.ROTATE;
-					} else {
-						if (this.enablePan === false) return;
-						this._handleMouseDownPan(event);
-						this.state = _STATE.PAN;
-					}
-					break;
-				default: this.state = _STATE.NONE;
-			}
-			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
-		}
-		function onMouseMove(event) {
-			switch (this.state) {
-				case _STATE.ROTATE:
-					if (this.enableRotate === false) return;
-					this._handleMouseMoveRotate(event);
-					break;
-				case _STATE.DOLLY:
-					if (this.enableZoom === false) return;
-					this._handleMouseMoveDolly(event);
-					break;
-				case _STATE.PAN:
-					if (this.enablePan === false) return;
-					this._handleMouseMovePan(event);
-			}
-		}
-		function onMouseWheel(event) {
-			if (this.enabled === false || this.enableZoom === false || this.state !== _STATE.NONE) return;
-			event.preventDefault();
-			this.dispatchEvent(_startEvent);
-			this._handleMouseWheel(this._customWheelEvent(event));
-			this.dispatchEvent(_endEvent);
-		}
-		function onKeyDown(event) {
-			if (this.enabled === false) return;
-			this._handleKeyDown(event);
-		}
-		function onTouchStart(event) {
-			this._trackPointer(event);
-			switch (this._pointers.length) {
-				case 1:
-					switch (this.touches.ONE) {
-						case TOUCH.ROTATE:
-							if (this.enableRotate === false) return;
-							this._handleTouchStartRotate(event);
-							this.state = _STATE.TOUCH_ROTATE;
-							break;
-						case TOUCH.PAN:
-							if (this.enablePan === false) return;
-							this._handleTouchStartPan(event);
-							this.state = _STATE.TOUCH_PAN;
-							break;
-						default: this.state = _STATE.NONE;
-					}
-					break;
-				case 2:
-					switch (this.touches.TWO) {
-						case TOUCH.DOLLY_PAN:
-							if (this.enableZoom === false && this.enablePan === false) return;
-							this._handleTouchStartDollyPan(event);
-							this.state = _STATE.TOUCH_DOLLY_PAN;
-							break;
-						case TOUCH.DOLLY_ROTATE:
-							if (this.enableZoom === false && this.enableRotate === false) return;
-							this._handleTouchStartDollyRotate(event);
-							this.state = _STATE.TOUCH_DOLLY_ROTATE;
-							break;
-						default: this.state = _STATE.NONE;
-					}
-					break;
-				default: this.state = _STATE.NONE;
-			}
-			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
-		}
-		function onTouchMove(event) {
-			this._trackPointer(event);
-			switch (this.state) {
-				case _STATE.TOUCH_ROTATE:
-					if (this.enableRotate === false) return;
-					this._handleTouchMoveRotate(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_PAN:
-					if (this.enablePan === false) return;
-					this._handleTouchMovePan(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_DOLLY_PAN:
-					if (this.enableZoom === false && this.enablePan === false) return;
-					this._handleTouchMoveDollyPan(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_DOLLY_ROTATE:
-					if (this.enableZoom === false && this.enableRotate === false) return;
-					this._handleTouchMoveDollyRotate(event);
-					this.update();
-					break;
-				default: this.state = _STATE.NONE;
-			}
-		}
-		function onContextMenu(event) {
-			if (this.enabled === false) return;
-			event.preventDefault();
-		}
-		function interceptControlDown(event) {
-			if (event.key === "Control") {
-				this._controlActive = true;
-				this.domElement.getRootNode().addEventListener("keyup", this._interceptControlUp, {
-					passive: true,
-					capture: true
-				});
-			}
-		}
-		function interceptControlUp(event) {
-			if (event.key === "Control") {
-				this._controlActive = false;
-				this.domElement.getRootNode().removeEventListener("keyup", this._interceptControlUp, {
-					passive: true,
-					capture: true
-				});
-			}
-		}
-		//#endregion
-		//#region ../card-base/src/stage3d.ts
-		init_three_module();
-		/** The r3f pointer-events analogue lives on userData.pick (see header). */
-		function findPickCarrier(o) {
-			let cur = o;
-			while (cur !== null) {
-				if (cur.userData !== void 0 && cur.userData.pick !== void 0) return cur;
-				cur = cur.parent;
-			}
-			return null;
-		}
-		/** Skip hits on a TransformControls gizmo subtree (invisible pick planes
-		*  would swallow every click while a gizmo is attached). */
-		function isGizmoHit(o) {
-			let cur = o;
-			while (cur !== null) {
-				if (cur.gizmo !== void 0) return true;
-				cur = cur.parent;
-			}
-			return false;
-		}
-		function mountStage3D(canvas, opts = {}) {
-			let renderer;
-			try {
-				renderer = new WebGLRenderer({
-					canvas,
-					antialias: true,
-					alpha: opts.alpha !== false,
-					preserveDrawingBuffer: opts.preserveDrawingBuffer === true
-				});
-			} catch (e) {
-				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
-				return null;
-			}
-			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-			renderer.shadowMap.enabled = true;
-			renderer.shadowMap.type = 1;
-			renderer.toneMapping = opts.toneMapping ?? 4;
-			const scene = new Scene();
-			scene.background = null;
-			const camera = new PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
-			camera.position.set(...opts.camera ?? [
-				2.2,
-				1.6,
-				2.6
-			]);
-			camera.lookAt(0, .8, 0);
-			const controls = new OrbitControls(camera, canvas);
-			controls.target.set(...opts.target ?? [
-				0,
-				.8,
-				0
-			]);
-			controls.enableDamping = true;
-			controls.dampingFactor = .1;
-			if (opts.minDistance !== void 0) controls.minDistance = opts.minDistance;
-			if (opts.maxDistance !== void 0) controls.maxDistance = opts.maxDistance;
-			if (opts.maxPolarAngle !== void 0) controls.maxPolarAngle = opts.maxPolarAngle;
-			controls.update();
-			const ticks = [];
-			const addTick = (fn) => {
-				ticks.push(fn);
-				return () => {
-					const i = ticks.indexOf(fn);
-					if (i >= 0) ticks.splice(i, 1);
-				};
-			};
-			const raycaster = new Raycaster();
-			const pointer = new Vector2();
-			let hovered = null;
-			let downAt = 0;
-			const threshold = opts.clickVsDragMs ?? 350;
-			const pickAt = (ev) => {
-				const r = canvas.getBoundingClientRect();
-				if (r.width === 0 || r.height === 0) return null;
-				pointer.x = (ev.clientX - r.left) / r.width * 2 - 1;
-				pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
-				raycaster.setFromCamera(pointer, camera);
-				const hits = raycaster.intersectObjects(scene.children, true);
-				for (const hit of hits) {
-					if (isGizmoHit(hit.object)) continue;
-					const carrier = findPickCarrier(hit.object);
-					if (carrier !== null) return {
-						carrier,
-						point: hit.point
-					};
-				}
-				return null;
-			};
-			const onPointerDown = (e) => {
-				downAt = e.timeStamp;
-			};
-			const onPointerMove = (e) => {
-				const found = pickAt(e);
-				const carrier = found?.carrier ?? null;
-				if (carrier !== hovered) {
-					(hovered?.userData.pick)?.out?.(e);
-					document.body.style.cursor = "auto";
-					hovered = carrier;
-					if (carrier !== null && found !== null) carrier.userData.pick.over?.(found.point, e);
-				}
-			};
-			const onPointerLeave = (e) => {
-				if (hovered !== null) {
-					hovered.userData.pick.out?.(e);
-					document.body.style.cursor = "auto";
-					hovered = null;
-				}
-			};
-			const onClick = (e) => {
-				if (e.timeStamp - downAt > threshold) return;
-				const found = pickAt(e);
-				if (found !== null) found.carrier.userData.pick.click?.(found.point, e);
-				else opts.onEmptyClick?.();
-			};
-			canvas.addEventListener("pointerdown", onPointerDown);
-			canvas.addEventListener("pointermove", onPointerMove);
-			canvas.addEventListener("pointerleave", onPointerLeave);
-			canvas.addEventListener("click", onClick);
-			let raf = 0;
-			const clock = new Clock();
-			const frame = () => {
-				raf = requestAnimationFrame(frame);
-				const delta = clock.getDelta();
-				for (const t of ticks) t(delta);
-				controls.update();
-				renderer.render(scene, camera);
-			};
-			frame();
-			const resize = () => {
-				const w = canvas.clientWidth, h = canvas.clientHeight;
-				if (w === 0 || h === 0) return;
-				renderer.setSize(w, h, false);
-				camera.aspect = w / h;
-				camera.updateProjectionMatrix();
-			};
-			resize();
-			const ro = new ResizeObserver(resize);
-			ro.observe(canvas);
-			return {
-				canvas,
-				renderer,
-				scene,
-				camera,
-				controls,
-				addTick,
-				resize,
-				dispose: () => {
-					cancelAnimationFrame(raf);
-					ro.disconnect();
-					canvas.removeEventListener("pointerdown", onPointerDown);
-					canvas.removeEventListener("pointermove", onPointerMove);
-					canvas.removeEventListener("pointerleave", onPointerLeave);
-					canvas.removeEventListener("click", onClick);
-					controls.dispose();
-					renderer.dispose();
-				}
-			};
-		}
-		//#endregion
-		//#region src/client/stage-run.ts
-		/** stage-run.ts — the card stage's run doors: ONE stage through the
-		* composing {model:} door, and the bench's sequential pass (extracted
-		* from CardsTab.tsx hour 15). */
-		/** Run ONE card stage through the COMPOSING door (the run-wire
-		*  package's startCardRun — the {model:} arm). The flow_inline door
-		*  this gesture rode before cannot consume cards ("card= stages are
-		*  unported on this gateway") and its executor demanded a pre-composed
-		*  params.workflow nobody emitted — the Sep 11 bench runs' "node
-		*  carries no inline workflow". The {model:} door composes the card's
-		*  arms estate-side; `model` is the card's DEFAULT FAMILY from the
-		*  catalog (the runs door resolves neither card ids nor aliases —
-		*  defaultFamilyForCard carries the currency, session-cached).
-		*  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
-		*  slot holds — an upload's estate path or a picked upstream output's
-		*  media-route url — rides the start doc VERBATIM; the engine stages
-		*  it under its runs-root arm. No client-side edge resolution exists.
-		*  Exported for the tab seam's door-contract spec. */
-		async function runCardStage(draftId, row) {
-			if (typeof row.card !== "string" || row.card === "") return { refused: "this stage names no card — nothing to compose" };
-			const src = await freshStageRow(draftId, row.id) ?? row;
-			const params = typeof src.params === "object" && src.params !== null && !Array.isArray(src.params) ? src.params : {};
-			const card = typeof src.card === "string" && src.card !== "" ? src.card : "";
-			if (card === "") return { refused: "this stage names no card — nothing to compose" };
-			const heldModel = params["model"];
-			const model = typeof heldModel === "string" && heldModel !== "" ? heldModel : await defaultFamilyForCard(card);
-			let doc = params;
-			try {
-				const selects = fieldsOf(await fetchFormSpec(card)).filter((f) => f.type === "select" && Array.isArray(f.options));
-				if (selects.length > 0) {
-					doc = { ...params };
-					for (const f of selects) {
-						const v = doc[f.name];
-						if (typeof v === "number") {
-							if (f.options.map((o) => typeof o === "string" ? o : o.value).includes(String(v))) doc[f.name] = String(v);
-						}
-					}
-				}
-			} catch {}
-			return await startCardRun({
-				model,
-				params: doc,
-				draftId
-			});
-		}
-		/** THE SEQUENTIAL PASS — Run ALL, the old system's composer law
-		*  verbatim (flowExecuteSlice runAll, 2026-08-11): execute the
-		*  stages IN ORDER, one run per card (the SAME single-stage door the
-		*  drill's Run uses — a typed composer bench is never one graph
-		*  run; the flow_inline door serves the chain/graph surface, not
-		*  this one). Skip stages already done (the cache-hit skip). A
-		*  failed or refused stage STOPS the pass — fail loud, never a
-		*  doomed downstream run. The per-card observer patches each row as
-		*  it goes (running → terminal), so the tiles flip one by one and
-		*  the bench is never taken over. Exported for the door-contract
-		*  spec. */
-		async function runBenchSequential(bench, hooks = {}) {
-			const ran = [];
-			for (const stage of bench.stages) {
-				if (hooks.signal?.aborted === true) return {
-					ran,
-					stoppedAt: null,
-					refused: null
-				};
-				if (stage.runStatus === "done") continue;
-				const res = await runCardStage(bench.draftId, stage);
-				if ("refused" in res) return {
-					ran,
-					stoppedAt: stage.id,
-					refused: res.refused
-				};
-				hooks.onCardStarted?.(res.runId, {
-					draftId: bench.draftId,
-					stageId: stage.id
-				});
-				if (await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched) !== "done") return {
-					ran: [...ran, stage.id],
-					stoppedAt: stage.id,
-					refused: null
-				};
-				ran.push(stage.id);
-			}
-			return {
-				ran,
-				stoppedAt: null,
-				refused: null
-			};
-		}
-		//#endregion
-		//#region src/client/add-stage.ts
-		/**
-		* add-stage.ts — the bench's mutation verb callers (the tab's
-		* add/remove/reorder/group/ungroup paths). Every verb is ONE typed
-		* call on the mounted bench namespace (stroke 81's one-lane law —
-		* the generated client, never a hand-written envelope); the remote
-		* signature is (sessionKey, doc) — sessionKey is a TYPED first
-		* parameter, so a misaddressed bench is a type error, not a runtime
-		* refusal. The doc carries the verb's own keys and every doc rides
-		* expect_rev (the CAS law: the caller chains the bench rev it
-		* rendered, so a concurrent edit refuses instead of slicing wrong).
-		*
-		* THE REBASE LAW (2026-09-15, the operator's stuck: "bench main
-		* moved: rev is 429, caller held 35 — IT STUCK"): the bench is ONE
-		* shared doc the agent writes too, so a tab-rendered rev can be
-		* stale through no user fault. A door that refuses ONLY on CAS
-		* answers itself: re-read the rev (from the SAME session the verb
-		* addresses — the 2026-09-16 fix; the old arm hard-coded 'main' and
-		* rebased non-main verbs against the wrong bench's rev), re-apply
-		* ONCE. A second conflict or any non-CAS refusal throws loud (the
-		* named truth, never a silent drop, never a blind write) — and the
-		* view reloads on that final failure so the NEXT gesture composes
-		* against fresh truth. The stuck is structurally impossible: a
-		* moved bench costs one silent rebase, never a bricked tab.
-		*/
-		/** The bench's CURRENT rev for one session — the CAS handle for a
-		*  re-apply. Returns undefined when the read fails (the re-apply is
-		*  then skipped; the original refusal stands as the honest answer). */
-		async function benchRev(sessionKey, signal) {
-			try {
-				const rev = (await unwrapRemote(estateRemote().bench.get(sessionKey, signal), "bench/get")).rev;
-				return typeof rev === "number" ? rev : void 0;
-			} catch {
-				return;
-			}
-		}
-		/** True when the throw is the door's CAS verdict (stale expect_rev).
-		*  The server's own voice: "bench <session> moved: rev is N, caller
-		*  held M" (bench.ts casCheck; the drafts store's older arm says
-		*  "bench moved: rev is…"). THE MATCHER LAW (2026-09-15): match the
-		*  REAL words — the first cut matched 'bench moved' against 'bench
-		*  MAIN moved' and matched nothing; dead matchers make dead
-		*  rebases, and dead rebases make stuck tabs. */
-		function isCasConflict(e) {
-			const msg = e instanceof Error ? e.message : String(e);
-			return msg.includes("moved: rev is") || msg.includes("cas-conflict");
-		}
-		/** One typed bench verb with the rebase dance: try the held rev; on
-		*  the door's cas-conflict re-read the rev (the SAME session) and
-		*  re-apply ONCE with it. */
-		async function withRebase(verb, doc, sessionKey, signal) {
-			const ns = estateRemote().bench;
-			const attempt = (expectRev) => unwrapRemote(ns[verb](sessionKey, {
-				...doc,
-				expect_rev: expectRev
-			}, signal), "bench/" + verb).then((row) => row);
-			const held = doc["expect_rev"];
-			try {
-				if (typeof held !== "number") throw new Error("bench/" + verb + ": no expect_rev to write against");
-				return await attempt(held);
-			} catch (e) {
-				if (!isCasConflict(e)) throw e;
-				const fresh = await benchRev(sessionKey, signal);
-				if (fresh === void 0) throw e;
-				return await attempt(fresh);
-			}
-		}
-		/** The bench add-stage verb caller (the tab's add-card path). The
-		*  doc holds card/author/engine/params/expect_rev. */
-		async function addStageWire(doc, sessionKey, signal) {
-			return await withRebase("add-stage", doc, sessionKey, signal);
-		}
-		/** The bench remove-stage verb caller (the drill's Remove path). The
-		*  doc holds stage/expect_rev; the session key addresses the doc the
-		*  bar RENDERS (stroke 80 — 'main' hardcoding deleted against the
-		*  wrong bench and refused 'stage not found'). */
-		async function removeStageWire(doc, sessionKey, signal) {
-			return await withRebase("remove-stage", doc, sessionKey, signal);
-		}
-		/** The bench reorder verb caller (the drag-reorder path). Doc:
-		*  stage/to/expect_rev — `to` is the post-splice target index. */
-		async function reorderStageWire(doc, sessionKey, signal) {
-			return await withRebase("reorder", doc, sessionKey, signal);
-		}
-		/** The bench group verb caller (the Group Cards sub-view):
-		*  stages = 2+ ids (bench order applied server-side). */
-		async function groupStagesWire(doc, sessionKey, signal) {
-			return await withRebase("group", doc, sessionKey, signal);
-		}
-		/** The bench ungroup verb caller: spill a compound's children. */
-		async function ungroupStageWire(doc, sessionKey, signal) {
-			return await withRebase("ungroup", doc, sessionKey, signal);
-		}
-		//#endregion
-		//#region ../../web-kit/formats/src/readFile.ts
-		/**
-		* readFile — THE one read path for every slot-shaped attach, ported
-		* native from the retired kit's SlotSquare (2026-09-12, the kit
-		* retirement). A plain FileReader promise — no UI dependency owns a
-		* file read.
-		*/
-		/** Read a File / Blob and resolve its data: URL. */
-		function readAsDataURL(file) {
-			return new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => resolve(reader.result);
-				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
-				reader.readAsDataURL(file);
-			});
-		}
-		var init_readFile = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/api.ts
-		/** The named escape for non-table URLs. Every use is deliberate and
-		* greppable. */
-		function externalUrl(u) {
-			return u;
-		}
-		function shouldRetryStatus(status, method) {
-			return GATEWAY_CODES.has(status) || SAFE_METHODS.has(method) && status >= 500 && status < 600;
-		}
-		function getBackendState() {
-			return state;
-		}
-		/** Subscribe to backend liveness changes. Returns an unsubscribe fn. */
-		function onBackendState(cb) {
-			listeners.add(cb);
-			return () => {
-				listeners.delete(cb);
-			};
-		}
-		function setState(next) {
-			if (next === state) return;
-			state = next;
-			for (const cb of listeners) try {
-				cb(next);
-			} catch {}
-		}
-		/** True if `input` targets our own backend (same-origin or root-relative). */
-		function isBackendUrl(input) {
-			if (input.startsWith("/")) return true;
-			try {
-				return new URL(input, window.location.origin).origin === window.location.origin;
-			} catch {
-				return false;
-			}
-		}
-		function sleep$1(ms, signal) {
-			return new Promise((resolve, reject) => {
-				const t = setTimeout(resolve, ms);
-				signal?.addEventListener("abort", () => {
-					clearTimeout(t);
-					reject(new DOMException("Aborted", "AbortError"));
-				}, { once: true });
-			});
-		}
-		function backoffMs(attempt) {
-			const exp = Math.min(CAP_MS, BASE_MS * 2 ** attempt);
-			return Math.round(exp * (.5 + Math.random() * .5));
-		}
-		/**
-		* Drop-in replacement for `fetch()` with retry, backoff, GET dedup, and a
-		* global liveness signal. Throws only on persistent network failure (after
-		* MAX_RETRIES) or caller AbortError. Returns the Response for any HTTP
-		* status (including 4xx/5xx) so existing `if (!res.ok)` checks keep working.
-		*/
-		async function apiFetch(input, init = {}) {
-			const method = (init.method ?? "GET").toUpperCase();
-			const backend = isBackendUrl(input);
-			const dedupKey = method === "GET" && backend ? input : null;
-			if (dedupKey && inflight.has(dedupKey)) return inflight.get(dedupKey).then((r) => {
-				if (r && typeof r.clone === "function") return r.clone();
-				return r;
-			});
-			const run = async () => {
-				const deadline = Date.now() + TOTAL_BUDGET_MS;
-				let lastErr = null;
-				for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-					if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
-					try {
-						const ctrl = new AbortController();
-						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
-						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
-							if (backend) setState("degraded");
-							await sleep$1(backoffMs(attempt), callerSignal);
-							continue;
-						}
-						if (backend) {
-							consecutiveFail = 0;
-							setState("online");
-						}
-						return res;
-					} catch (err) {
-						if (err instanceof DOMException && err.name === "AbortError") throw err;
-						lastErr = err;
-						if (backend) {
-							consecutiveFail++;
-							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
-						}
-						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep$1(backoffMs(attempt));
-					}
-				}
-				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
-			};
-			const p = run();
-			if (dedupKey) {
-				inflight.set(dedupKey, p);
-				p.then(() => {
-					inflight.delete(dedupKey);
-				}, () => {
-					inflight.delete(dedupKey);
-				});
-			}
-			return p;
-		}
-		/**
-		* Convenience for JSON endpoints. Throws an Error on non-2xx (message
-		* includes status + body excerpt) so callers can use try/catch directly.
-		*/
-		async function apiJson(input, init) {
-			const res = await apiFetch(input, init);
-			if (!res.ok) {
-				let body = "";
-				try {
-					body = await res.text();
-				} catch (readErr) {
-					throw new Error(`${input}: ${res.status} ${res.statusText} (body read failed: ${readErr instanceof Error ? readErr.message : String(readErr)})`);
-				}
-				throw new Error(`${input}: ${res.status} ${res.statusText} ${body.slice(0, 200)}`);
-			}
-			return res.json();
-		}
-		/** Fetch a same-origin artifact URL and re-encode it as a data URL
-		*  (survived the unicananvas client purge 2026-08-21 — the ONE live
-		*  export of that dead module; generic wire utility, so it lives with
-		*  the transport). */
-		async function urlToDataUrl(url, signal) {
-			const res = await fetch(url, { signal });
-			if (!res.ok) throw new Error(`Canvas artifact fetch failed: HTTP ${res.status} for ${url.slice(0, 200)}`);
-			const blob = await res.blob();
-			try {
-				return await readAsDataURL(blob);
-			} catch {
-				throw new Error(`Failed to read ${url.slice(0, 200)} as data URL`);
-			}
-		}
-		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners, inflight;
-		var init_api = __esmMin((() => {
-			init_readFile();
-			MAX_RETRIES = 4;
-			BASE_MS = 400;
-			CAP_MS = 4e3;
-			OFFLINE_THRESHOLD = 3;
-			TOTAL_BUDGET_MS = 15e3;
-			SAFE_METHODS = /* @__PURE__ */ new Set(["GET", "HEAD"]);
-			GATEWAY_CODES = /* @__PURE__ */ new Set([
-				502,
-				503,
-				504
-			]);
-			state = "online";
-			consecutiveFail = 0;
-			listeners = /* @__PURE__ */ new Set();
-			inflight = /* @__PURE__ */ new Map();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContract.ts
-		function validateCatalogContract(catalog) {
-			const violations = [];
-			if (!isObj$1(catalog)) return {
-				valid: false,
-				violations: [{
-					kind: "catalog",
-					message: "Catalog is not an object — this is an error body, not a contract."
-				}]
-			};
-			const families = catalog.families;
-			if (!isObj$1(families)) violations.push({
-				kind: "catalog",
-				message: "Catalog has no `families` record — no family can be located."
-			});
-			const models = catalog.models;
-			if (!isObj$1(models)) violations.push({
-				kind: "catalog",
-				message: "Catalog has no `models` record — no model can be located."
-			});
-			const capabilities = catalog.capabilities;
-			if (capabilities !== void 0 && !isObj$1(capabilities)) violations.push({
-				kind: "catalog",
-				message: "`capabilities` is not a record keyed by id — capability routing is dead."
-			});
-			if (families === void 0 || models === void 0) return {
-				valid: false,
-				violations
-			};
-			if (isObj$1(families)) for (const [id, entry] of Object.entries(families)) {
-				if (!isObj$1(entry)) {
-					violations.push({
-						kind: id,
-						message: `Family ${id} is not an object.`
-					});
-					continue;
-				}
-				if (!isNonEmptyString(entry.label)) violations.push({
-					kind: id,
-					message: `Family ${id} declares no "label" — it would render as an empty picker entry.`
-				});
-				const modifiers = entry.modifiers;
-				if (modifiers !== void 0 && modifiers !== null && !Array.isArray(modifiers)) violations.push({
-					kind: id,
-					message: `Family ${id} declares "modifiers" but it is not an array — modifier capability is unreadable.`
-				});
-				else if (Array.isArray(modifiers)) for (const raw of modifiers) {
-					if (!isObj$1(raw) || typeof raw.kind !== "string") continue;
-					if (raw.kind !== "controlnet" && raw.kind !== "lora") continue;
-					const options = Array.isArray(raw.options) ? raw.options : [];
-					if ((raw.cardinality ?? "list") === "list" && options.length === 0 && !raw.upload_dir) violations.push({
-						kind: id,
-						message: `Family ${id} modifier kind "${raw.kind}" carries ZERO options and no upload_dir — the dropdown would render empty (phantom capability).`
-					});
-				}
-			}
-			if (isObj$1(models)) for (const [id, entry] of Object.entries(models)) {
-				if (!isObj$1(entry)) {
-					violations.push({
-						kind: id,
-						message: `Model ${id} is not an object.`
-					});
-					continue;
-				}
-				const missing = [];
-				if (!isNonEmptyString(entry.family)) missing.push("family");
-				if (!isNonEmptyString(entry.form)) missing.push("form");
-				if (!isNonEmptyString(entry.label)) missing.push("label");
-				if (missing.length > 0) violations.push({
-					kind: id,
-					message: `Model ${id} is missing required key(s) ${missing.join(", ")} — it cannot route or render.`
-				});
-			}
-			if (isObj$1(capabilities)) for (const [id, entry] of Object.entries(capabilities)) {
-				if (!isObj$1(entry)) {
-					violations.push({
-						kind: id,
-						message: `Capability ${id} is not an object.`
-					});
-					continue;
-				}
-				const missing = [];
-				if (!isNonEmptyString(entry.label)) missing.push("label");
-				const declaredFam = entry.default_family;
-				if (declaredFam !== void 0 && !isNonEmptyString(declaredFam)) missing.push("default_family (present but not a string)");
-				const resolved = entry.resolved;
-				if (!(isObj$1(resolved) && isNonEmptyString(resolved.family) && isNonEmptyString(resolved.model)) && !isNonEmptyString(declaredFam)) missing.push("default_family or resolved route");
-				if (!Array.isArray(entry.families) || entry.families.length === 0) missing.push("families");
-				else if (entry.families.some((f) => !isNonEmptyString(f))) missing.push("families (non-string entries)");
-				if (missing.length > 0) violations.push({
-					kind: id,
-					message: `Capability ${id} is missing required key(s) ${missing.join(", ")} — it cannot route.`
-				});
-			}
-			return {
-				valid: violations.length === 0,
-				violations
-			};
-		}
-		var CatalogContractError, isObj$1, isNonEmptyString;
-		var init_catalogContract = __esmMin((() => {
-			CatalogContractError = class extends Error {
-				violations;
-				constructor(violations) {
-					super(`Catalog contract violation (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
-					this.name = "CatalogContractError";
-					this.violations = violations;
-				}
-			};
-			isObj$1 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
-			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/modelCatalog.ts
-		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
-			activeVariantForRoute: () => activeVariantForRoute,
-			axisCellExists: () => axisCellExists,
-			canvasDefaultModel: () => canvasDefaultModel,
-			composeVariantRoute: () => composeVariantRoute,
-			controlnetTypesOf: () => controlnetTypesOf,
-			dropdownModels: () => dropdownModels,
-			ensureCatalog: () => ensureCatalog,
-			familiesForForm: () => familiesForForm,
-			familyAccepts: () => familyAccepts,
-			familyCardSummary: () => familyCardSummary,
-			familyConditioning: () => familyConditioning,
-			familyGenre: () => familyGenre,
-			familyHasVariantAxis: () => familyHasVariantAxis,
-			familyLabel: () => familyLabel,
-			familyOf: () => familyOf,
-			familyOptionalOutputs: () => familyOptionalOutputs,
-			familyPrimaryRoute: () => familyPrimaryRoute,
-			familyTransformMatrix: () => familyTransformMatrix,
-			formOf: () => formOf,
-			getCachedCatalog: () => getCachedCatalog,
-			hiddenFromDropdown: () => hiddenFromDropdown,
-			isCatalogLoaded: () => isCatalogLoaded,
-			loadCatalog: () => loadCatalog,
-			modelDescription: () => modelDescription,
-			modelLabel: () => modelLabel,
-			narrowGenre: () => narrowGenre,
-			onCatalogReady: () => onCatalogReady,
-			presetsForRoute: () => presetsForRoute,
-			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
-			routeCoordinates: () => routeCoordinates,
-			studioOf: () => studioOf,
-			variantLabel: () => variantLabel,
-			variantSiblings: () => variantSiblings,
-			variantsForRoute: () => variantsForRoute
-		});
-		/** Narrow the wire's plain string genre (string | null — the backend
-		* Literal does not survive the wire as a type) onto the view union.
-		* Out-of-vocabulary values return undefined (callers fall back) — never a
-		* silent cast: an unknown genre must NOT masquerade as a known one. */
-		function narrowGenre(g) {
-			return CARD_GENRES.find((genre) => genre === g);
-		}
-		/** CN type keys a family declares — derived from its ``modifiers:`` block
-		* (kind=controlnet options; the ONLY source of truth, Phase A finalé).
-		* ServicePicker advertises CN support per tile from this — the "weird
-		* reason" most models show no CN subcards: only families that declare a
-		* controlnet kind have CN support (DiT models without compatible CN
-		* trainings correctly declare nothing). */
-		function controlnetTypesOf(family) {
-			return ((family?.modifiers ?? []).find((m) => m.kind === "controlnet")?.options ?? []).map((o) => ({
-				type: o.value,
-				label: o.label
-			}));
-		}
-		function _notify() {
-			for (const fn of _listeners$3) try {
-				fn();
-			} catch (e) {
-				console.warn("[modelCatalog] listener error:", e);
-			}
-		}
-		/** Subscribe to catalog readiness. Called when _cache transitions from
-		* null → populated. Returns an unsubscribe fn. */
-		function onCatalogReady(fn) {
-			_listeners$3.add(fn);
-			return () => {
-				_listeners$3.delete(fn);
-			};
-		}
-		/** True after the catalog has been successfully loaded at least once. */
-		function isCatalogLoaded() {
-			return _loaded;
-		}
-		/** Fetch the model catalog. THROWS on non-2xx (no silent empty `{}`).
-		* The caller MUST surface the error. Returning a fake empty catalog here
-		* is what hid every "model dropdown is empty" bug — the user saw nothing
-		* and the console warning was invisible. Loud failure is honest. */
-		/** The ONE ingest gate (2026-08-11): validate BEFORE caching.
-		* A catalog that violates the contract is a BACKEND bug — reported to the
-		* contract store, NEVER cached, and the caller gets a
-		* CatalogContractError (ensureCatalog will not auto-retry it). */
-		function _ingest(data) {
-			const { valid, violations } = validateCatalogContract(data);
-			if (!valid) throw new CatalogContractError(violations);
-			useCatalogContractStore.getState().reportOk();
-			const catalog = data;
-			_cache$2 = catalog;
-			_cacheTime = Date.now();
-			_loaded = true;
-			_notify();
-			return catalog;
-		}
-		async function loadCatalog(opts) {
-			if (_cache$2 && !opts?.force) {
-				if (Date.now() - _cacheTime > _CACHE_TTL_MS && !_inflight$2) _inflight$2 = (async () => {
-					try {
-						_ingest(await apiJson("/v1/model-catalog"));
-					} catch (e) {
-						if (e instanceof CatalogContractError) useCatalogContractStore.getState().reportViolation(e.violations);
-						else useCatalogContractStore.getState().reportError(e instanceof Error ? e.message : String(e));
-					}
-					return _cache$2;
-				})().finally(() => {
-					_inflight$2 = null;
-				});
-				return _cache$2;
-			}
-			if (_inflight$2) return _inflight$2;
-			_inflight$2 = (async () => {
-				try {
-					return _ingest(await apiJson("/v1/model-catalog"));
-				} catch (e) {
-					if (e instanceof CatalogContractError) useCatalogContractStore.getState().reportViolation(e.violations);
-					else useCatalogContractStore.getState().reportError(e instanceof Error ? e.message : String(e));
-					throw e;
-				}
-			})().finally(() => {
-				_inflight$2 = null;
-			});
-			return _inflight$2;
-		}
-		/** Fire-and-forget background load with auto-retry. If the first attempt
-		* fails (gateway reloading, network blip), schedules a retry after 3s.
-		* Keeps trying until the catalog loads, then notifies subscribers.
-		* Safe to call multiple times — collapses into a single inflight request. */
-		function ensureCatalog() {
-			if (_loaded) return;
-			if (_inflight$2) return;
-			loadCatalog().then(() => {
-				if (_bgRetryTimer) {
-					clearTimeout(_bgRetryTimer);
-					_bgRetryTimer = null;
-				}
-			}).catch((e) => {
-				if (e instanceof CatalogContractError) {
-					console.error("[modelCatalog] catalog contract violation — not auto-retrying:", e.message);
-					return;
-				}
-				console.warn("[modelCatalog] load failed, will retry in 3s:", e);
-				if (_bgRetryTimer) clearTimeout(_bgRetryTimer);
-				_bgRetryTimer = setTimeout(() => {
-					_bgRetryTimer = null;
-					ensureCatalog();
-				}, 3e3);
-			});
-		}
-		function getCachedCatalog() {
-			return _cache$2;
-		}
-		/** Seed the cache with pre-fetched data (test utility — production code uses
-		* loadCatalog/ensureCatalog which fetch from the endpoint). Lets tests inject
-		* a fake catalog without going to the network. */
-		function primeCatalog(data) {
-			_cache$2 = data;
-			_loaded = true;
-			_notify();
-		}
-		/**
-		* For route keys that are NOT top-level catalog entries (e.g. a quant-tier
-		* sibling that only appears as a variant route on its parent), find the
-		* parent model that owns the route via its ``variants:`` block.
-		*/
-		function parentModelForRoute(routeKey, cat) {
-			for (const [key, spec] of Object.entries(cat.models)) if ((spec.variants ?? []).some((v) => v.route === routeKey)) return key;
-		}
-		function familyOf(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			if (!cat?.models) return void 0;
-			const own = cat.models[routeKey]?.family;
-			if (own) return own;
-			const parent = parentModelForRoute(routeKey, cat);
-			return parent ? cat.models[parent].family : void 0;
-		}
-		function studioOf(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families?.[fam]?.studio ?? void 0;
-		}
-		/**
-		* The catalog-declared FORM for a route key (the model's ``form`` — the
-		* same id _FORM_CONFIGS keys by on the backend). Resolves variants to
-		* their parent model like familyOf. The tag routes the model's
-		* editor surface (the FORM LAW: a model without a form cannot route
-		* or render). The 2026-09-18 retirement: the retired per-form alias
-		* tables are gone — forms no longer reshape slot keys.
-		*/
-		function formOf(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			if (!cat?.models) return void 0;
-			const own = cat.models[routeKey]?.form;
-			if (own) return own;
-			const parent = parentModelForRoute(routeKey, cat);
-			return parent ? cat.models[parent].form : void 0;
-		}
-		function familyLabel(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return routeKey;
-			return cat.families?.[fam]?.label ?? routeKey;
-		}
-		/**
-		* The family-declared media genre for a route key. Resolves model routes
-		* AND raw family ids (``wan-vace``, ``detect``) — the catalog passthrough
-		* emits ``genre:`` verbatim. Non-catalog services (trellis, kimodo, yaml
-		* brick families) return undefined → callers fall back to their generic
-		* badge. The schema-driven replacement for engine-name substring
-		* classifiers.
-		*/
-		function familyGenre(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			return narrowGenre((fam ? cat.families?.[fam]?.genre : void 0) ?? cat.families?.[routeKey]?.genre);
-		}
-		/**
-		* The source-media types a family declares it ingests (FamilyEntry.accepts,
-		* a closed literal on the backend). Returns the declared list, or
-		* [] when the family declares none / is unknown → the canvas drop handler
-		* treats [] as "not a drop target" (no card spawned, no hard-fail on the
-		* MIME itself — there simply is no input family to receive the drop). The
-		* gate that replaces a free-coded isImageFile prefix check. (2026-08-09)
-		*/
-		function familyAccepts(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			return cat.families?.[fam ?? routeKey]?.accepts ?? [];
-		}
-		/**
-		* The media-type→param applicability matrix for a family's gated source
-		* params: {paramName → [media types it applies to]}. Returns {} when the
-		* family declares no transforms / is unknown. The InputCardEditor gates
-		* field renders on this (no trim control for an image — no time axis) and
-		* applySource strips params whose declared types no longer include the new
-		* source's type — both driven ENTIRELY by this declaration, no hardcoded
-		* image/video/audio branches. ONE source (input_prep.yaml transforms:),
-		* TWO consumers (this editor + backend _validate_params_for_media), zero
-		* drift. (2026-08-09)
-		*/
-		function familyTransformMatrix(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			const transforms = cat.families?.[fam ?? routeKey]?.transforms;
-			if (!transforms) return {};
-			const out = {};
-			for (const t of transforms) out[t.name] = t.applies_to;
-			return out;
-		}
-		/**
-		* The family's declared video conditioning slots ([first_frame,
-		* last_frame] for ltx/wan-vace, [reference, pose, mask] for scail2) —
-		* schema-driven input-wiring labels (no engine-name classifiers).
-		*/
-		/**
-		* The compact card's declared size line (FamilyEntry.card_summary, a
-		* validated block on the backend). Returns {width_param, height_param}
-		* for generation families (rendered "WxH") OR {size_param, size_suffix} for
-		* the Enhance / upscale families (rendered as a single value), or null when
-		* the family declares no size line / is unknown. The CardTile reads whichever
-		* is declared — no free-coded per-family dimension logic in the view.
-		* (2026-08-09; size_param added 2026-08-10.)
-		*/
-		function familyCardSummary(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			return cat.families?.[fam ?? routeKey]?.card_summary ?? null;
-		}
-		function familyConditioning(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families?.[fam]?.video?.conditioning ?? void 0;
-		}
-		/**
-		* The family's declared optional outputs (Option A — the optional-outputs
-		* vocabulary). Empty/undefined when the family declares none (legacy
-		* single-output compat). Consumers render one editor per entry, keyed by
-		* ``genre`` — the input card no longer declares any (mask removed
-		* 2026-08-14), so this is the vocabulary for OTHER families that do.
-		*/
-		function familyOptionalOutputs(familyId, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			return cat.families?.[familyId]?.optional_outputs ?? [];
-		}
-		/**
-		* The catalog-declared Canvas default model route — the model whose entry
-		* carries ``canvas_default: true`` (krea-2). Replaces the hardcoded
-		* CANVAS_DEFAULT_MODEL; returns undefined before the catalog loads (the
-		* caller keeps its own pre-catalog bootstrap value).
-		*/
-		function canvasDefaultModel(cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			return Object.entries(cat.models).find(([, m]) => m.canvas_default)?.[0];
-		}
-		/** Display name for a model within its family variant picker (Turbo / Base / Raw / …). */
-		function variantLabel(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const m = cat.models?.[routeKey];
-			return m?.variant_label ?? m?.label ?? routeKey;
-		}
-		/**
-		* One entry per model family that has dropdown-visible members in the given
-		* form. The primaryRoute is the catalog-declared `default_model` if present
-		* (and visible), else the member whose key equals the family ID, else the
-		* first visible member. Used to drive the family-level dropdown and the
-		* empty-model seed. The default is FULLY catalog-declared — the frontend
-		* never picks a default itself.
-		*/
-		function familiesForForm(formTag, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const visible = dropdownModels(formTag, cat);
-			const seen = /* @__PURE__ */ new Set();
-			const result = [];
-			for (const key of visible) {
-				const fam = cat.models[key]?.family ?? key;
-				if (seen.has(fam)) continue;
-				seen.add(fam);
-				const members = visible.filter((k) => (cat.models[k]?.family ?? k) === fam);
-				const declared = cat.families[fam]?.default_model;
-				const primary = (declared && members.includes(declared) ? declared : void 0) ?? members.find((k) => k === fam) ?? members[0];
-				result.push({
-					familyId: fam,
-					primaryRoute: primary,
-					label: cat.families[fam]?.label ?? fam
-				});
-			}
-			return result;
-		}
-		/**
-		* Given a route key (including quant-tier variants like z-image-sd-q8),
-		* return the family's primary route key — the one to use as the dropdown
-		* value so the dropdown always shows the family even when a sub-variant is
-		* selected.
-		*/
-		function familyPrimaryRoute(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return routeKey;
-			const declared = cat.families[fam]?.default_model;
-			if (declared && cat.models[declared]?.family === fam) return declared;
-			const members = Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
-			return members.find((k) => k === fam) ?? members[0];
-		}
-		function modelLabel(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const m = cat.models[routeKey];
-			if (!m) return routeKey;
-			return m.label ?? cat.families[m.family]?.label ?? routeKey;
-		}
-		/** Description for a model route, or undefined. Callers provide their own
-		* fallback string — this returns `undefined` so `??` works. Reads the
-		* `description:` declared on the model's family in the catalog YAML. */
-		function modelDescription(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families?.[fam]?.description ?? void 0;
-		}
-		function promptGuide(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide ?? void 0;
-		}
-		function dropdownModels(formTag, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const out = [];
-			for (const [key, spec] of Object.entries(cat.models)) {
-				if (spec.hide_from_dropdown) continue;
-				if (formTag) {
-					if (spec.form !== formTag) continue;
-				} else if (spec.edit_only) continue;
-				out.push(key);
-			}
-			return out.sort();
-		}
-		function variantSiblings(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return routeKey ? [routeKey] : [];
-			return Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
-		}
-		/**
-		* Models hidden from the dropdown because they're reachable only via a
-		* variant toggle (e.g. z-image-q5 — picked by clicking the Q5 button).
-		*/
-		function hiddenFromDropdown(cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			return new Set(Object.entries(cat.models).filter(([, m]) => m.hide_from_dropdown).map(([k]) => k));
-		}
-		/**
-		* The ``variants:`` list for a model — resolves through the parent if the
-		* route key is a quant-tier sibling (e.g. z-image-q5 inherits z-image's
-		* variants). Returns ``[]`` for models without variants.
-		*/
-		function variantsForRoute(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const own = cat.models[routeKey]?.variants;
-			if (own) return own;
-			const parent = parentModelForRoute(routeKey, cat);
-			return parent ? cat.models[parent].variants : [];
-		}
-		/**
-		* The route's served recipe presets — the LOAD-TIME per-route merge
-		* (2026-08-18, compose model): every route's ``presets`` dict is the
-		* head base layer (presets/ on the model head) ⊕ the owning variant's
-		* layer (variants/<vid>/presets/), both only_routes-filtered AT LOAD
-		* (variant wins on id collision). Own-only read: the backend attaches
-		* the merged dict to EVERY route, so a fallback chain (tree-head scan,
-		* the retired family-block carve-out) would be a second precedence —
-		* the exact two-sources drift the composer's contract forbids. The
-		* card and the run door read the SAME per-route dict, so the
-		* h3-timeline incident dies by construction. only_routes gating is
-		* not re-derived here — the wire never carries a gated-out preset.
-		*/
-		function presetsForRoute(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const own = cat.models[routeKey]?.presets;
-			return own && typeof own === "object" && Object.keys(own).length > 0 ? own : void 0;
-		}
-		/**
-		* Find the variant whose route matches ``routeKey`` — used to highlight the
-		* active toggle when the form is hydrated from saved state.
-		*/
-		function activeVariantForRoute(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const ownList = variantsForRoute(routeKey, cat);
-			const own = ownList.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? ownList.find((v) => v.route === routeKey);
-			if (own) return own;
-			for (const spec of Object.values(cat.models)) {
-				const list = spec.variants ?? [];
-				const hit = list.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? list.find((v) => v.route === routeKey);
-				if (hit) return hit;
-			}
-		}
-		/**
-		* The matrix coordinates of a route within its family's variant grid —
-		* the values that distinguish it from its siblings. Read from the model
-		* spec's ``variant`` (Turbo / Raw / Distilled / Base …) and ``quant``
-		* (fp8 / q8 / q5 …) fields, resolving the FP8 default's quant through
-		* its variant entries (the default route omits ``quant:`` since it IS
-		* the fp8 tier).
-		*
-		* This is the ONE model for how variant axes compose (2026-08-08): every
-		* axis is a labeled toggle row declared in ``variant_groups``, and the
-		* routes are the cells of the grid. Krea 2 = Variant (Turbo/Raw) × Quant
-		* (FP8/Q8/Q5) → 6 routes. The composer below switches one axis while
-		* preserving the others.
-		*/
-		function routeCoordinates(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const m = cat.models[routeKey];
-			return {
-				variant: m?.variant ?? void 0,
-				quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant ?? void 0
-			};
-		}
-		/**
-		* Resolve the route that combines the clicked variant's axis with the
-		* current route's OTHER axes. Scans the family's routes (including the
-		* ``hide_from_dropdown`` quant siblings) for the coordinate match, so
-		* clicking "Raw" while on Turbo+Q8 lands on Raw+Q8 — never Raw+FP8.
-		*
-		* Group → axis mapping: a ``Quant`` group switches the quant tier (base
-		* variant preserved); a ``Variant`` group switches the base variant (quant
-		* preserved). The vocabulary is closed to Variant/Quant (schema.py
-		* CANONICAL_VARIANT_GROUPS, 2026-08-09 — "Speed" was a duplicate name for
-		* the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
-		* with no ``route:`` never reach here — the caller handles those as draft
-		* overlays.
-		*
-		* Falls back to the clicked entry's own ``route`` when no matrix sibling
-		* matches (single-axis families, or a quant tier with no sibling for the
-		* target variant). This is the ONE composition path — there is no longer
-		* a separate sibling-picker (2026-08-08).
-		*/
-		/** The wanted matrix coordinates after one axis switch — the ONE
-		* derivation shared by the composer and the existence check (a second
-		* copy of this arithmetic would be the exact two-sources drift the
-		* composer's contract forbids). A ``Quant`` click keeps the current
-		* variant and takes the clicked quant; a ``Variant`` click keeps the
-		* current quant and takes the clicked variant. */
-		function axisWants(currentRoute, clicked, cat) {
-			const cur = routeCoordinates(currentRoute, cat);
-			const tgt = routeCoordinates(clicked.route, cat);
-			const switchesQuant = clicked.group === "Quant";
-			return {
-				variant: switchesQuant ? cur.variant : tgt.variant ?? cur.variant,
-				quant: switchesQuant ? clicked.quant ?? tgt.quant : cur.quant
-			};
-		}
-		/** The ONE matrix-cell lookup: the route in ``fam`` whose coordinates are
-		* exactly (variant, quant), or undefined when no such cell exists. */
-		function matrixCell(fam, variant, quant, cat) {
-			for (const [key, spec] of Object.entries(cat.models)) {
-				if ((spec.family ?? key) !== fam) continue;
-				const rc = routeCoordinates(key, cat);
-				if (rc.variant === variant && rc.quant === quant) return key;
-			}
-		}
-		function composeVariantRoute(currentRoute, clicked, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(currentRoute, cat);
-			const clickedRoute = clicked.route;
-			if (!fam || !clickedRoute) return clickedRoute ?? currentRoute;
-			const wants = axisWants(currentRoute, clicked, cat);
-			return matrixCell(fam, wants.variant, wants.quant, cat) ?? clickedRoute;
-		}
-		/**
-		* Only-existing-combinations (2026-08-16 — "ONLY show models combinations
-		* that exist"): does clicking `clicked` from `currentRoute` land on a
-		* REAL catalog cell?
-		*
-		* Derives the SAME wanted coordinates as the composer (axisWants — one
-		* derivation) and asks the matrix directly whether that cell exists
-		* (matrixCell). This is NOT derivable from composeVariantRoute's return:
-		* the composer falls back to ``clicked.route`` when the cell is missing,
-		* so a phantom combo and a real one return the same string — the silent
-		* sibling-axis switch the fallback causes is exactly the phantom
-		* combination this check keeps OUT of the axis dropdowns.
-		*
-		* Patch-only variants (no ``route``) always compose — they layer onto
-		* whatever cell is active, so they always exist. An unresolvable family
-		* (catalog not loaded yet) also passes: without the matrix we cannot
-		* positively know a cell is missing, and the served variants list is
-		* itself catalog-derived — hiding is only correct on positive evidence.
-		*/
-		function axisCellExists(currentRoute, clicked, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			if (!clicked.route) return true;
-			const fam = familyOf(currentRoute, cat);
-			if (!fam) return true;
-			const wants = axisWants(currentRoute, clicked, cat);
-			return matrixCell(fam, wants.variant, wants.quant, cat) !== void 0;
-		}
-		/**
-		* True when the family owns its version axis via a declared ``Variant``
-		* group (Krea 2 Turbo/Raw, …). The legacy sibling-picker defers to the
-		* matrix system in that case so the two never render duplicate rows
-		* (2026-08-08 — one system, not two).
-		*/
-		function familyHasVariantAxis(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
-			return !!groups && "Variant" in groups;
-		}
-		var CARD_GENRES, _cache$2, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$3;
-		var init_modelCatalog = __esmMin((() => {
-			init_api();
-			init_catalogContract();
-			init_catalogContractStore();
-			CARD_GENRES = [
-				"image",
-				"video",
-				"audio",
-				"3d",
-				"motion",
-				"other",
-				"text"
-			];
-			_cache$2 = null;
-			_cacheTime = 0;
-			_CACHE_TTL_MS = 3e4;
-			_inflight$2 = null;
-			_loaded = false;
-			_bgRetryTimer = null;
-			_listeners$3 = /* @__PURE__ */ new Set();
-			/* v8 ignore next -- module warm-load runs only in browser builds, where
-			* MODE is "production"/"development"; under vitest MODE is always "test",
-			* so the taken arm is unreachable here (2026-09-12). */
-			if ({}.env?.MODE !== "test") ensureCatalog();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContractStore.ts
-		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
-		* outage that produced it, so the operator should also see WHEN it fired.
-		* 24h local time, seconds resolution. */
-		function _stamp() {
-			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
-		}
-		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
-		* re-validates + re-reports. Lazy import: modelCatalog imports THIS store
-		* (for CatalogContractError reporting) — a static import would be circular. */
-		function retryCatalog() {
-			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
-		}
-		function _subscribe$1(listener) {
-			_listeners$2.add(listener);
-			return () => {
-				_listeners$2.delete(listener);
-			};
-		}
-		function _setState$1(patch, replace) {
-			const p = typeof patch === "function" ? patch(_state$1) : patch;
-			if (replace === true) _state$1 = p;
-			else _state$1 = {
-				..._state$1,
-				...p
-			};
-			_listeners$2.forEach((l) => l());
-		}
-		function _getState$1() {
-			return _state$1;
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in catalog-contract-store.spec.ts. (2026-09-12) */
-		function _useCatalogContractStoreHook(selector) {
-			return (0, react.useSyncExternalStore)(_subscribe$1, selector ? () => selector(_getState$1()) : () => _getState$1());
-		}
-		var IDLE, _lastToastedOutage, _listeners$2, _state$1, _initialState$1, useCatalogContractStore;
-		var init_catalogContractStore = __esmMin((() => {
-			init_toastStore();
-			IDLE = {
-				state: "idle",
-				violations: [],
-				error: null
-			};
-			_lastToastedOutage = null;
-			_listeners$2 = /* @__PURE__ */ new Set();
-			_state$1 = {
-				record: IDLE,
-				reportOk: () => {
-					const wasOutage = useCatalogContractStore.getState().record.state === "error";
-					_lastToastedOutage = null;
-					_setState$1({ record: {
-						state: "loaded",
-						violations: [],
-						error: null
-					} });
-					if (wasOutage) useToastStore.getState().addToast("info", `Catalog back online (at ${_stamp()}).`);
-				},
-				reportViolation: (violations) => {
-					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
-					_setState$1({ record: {
-						state: "violation",
-						violations,
-						error: null
-					} });
-					const first = violations[0];
-					const msg = first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape";
-					useToastStore.getState().addToast("error", `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
-						label: "Retry",
-						onClick: retryCatalog
-					});
-				},
-				reportError: (message) => {
-					const clean = message.trim();
-					console.error(`[catalogContract] catalog fetch failed (at ${_stamp()}):`, clean);
-					_setState$1({ record: {
-						state: "error",
-						violations: [],
-						error: clean
-					} });
-					if (clean === _lastToastedOutage) return;
-					_lastToastedOutage = clean;
-					useToastStore.getState().addToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
-						label: "Retry",
-						onClick: retryCatalog
-					});
-				},
-				clear: () => {
-					_lastToastedOutage = null;
-					_setState$1({ record: IDLE });
-				}
-			};
-			_initialState$1 = _state$1;
-			useCatalogContractStore = Object.assign(_useCatalogContractStoreHook, {
-				getState: _getState$1,
-				setState: _setState$1,
-				subscribe: _subscribe$1,
-				getInitialState: () => _initialState$1,
-				destroy: () => {}
-			});
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContract.ts
-		/** Validate a status payload against the ONE status-channel contract.
-		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
-		* decides what a violation means on its branch. */
-		function validateRunStatusContract(payload) {
-			const violations = [];
-			if (!isObj(payload)) return {
-				valid: false,
-				violations: [{
-					field: "body",
-					kind: "shape",
-					message: "Status payload is not an object — this is an error body, not a contract."
-				}]
-			};
-			if (typeof payload.run_id !== "string" || !payload.run_id) violations.push({
-				field: "run_id",
-				kind: "missing",
-				message: "Status payload has no run_id — it cannot identify the run."
-			});
-			if (typeof payload.status !== "string" || !RUN_STATUSES.has(payload.status)) violations.push({
-				field: "status",
-				kind: "invalid",
-				message: `Run-level status ${JSON.stringify(payload.status)} is not in the backend vocabulary (${[...RUN_STATUSES].join(", ")}).`
-			});
-			if (!Array.isArray(payload.stages)) violations.push({
-				field: "stages",
-				kind: "missing",
-				message: "Status payload has no stages array — stage progress cannot be located."
-			});
-			else payload.stages.forEach((stage, i) => {
-				if (!isObj(stage)) {
-					violations.push({
-						field: `stages.${i}`,
-						kind: "shape",
-						message: `Stage ${i} is not an object.`
-					});
-					return;
-				}
-				const core = [
-					["id", stage.id],
-					["name", stage.name],
-					["index", stage.index],
-					["status", stage.status]
-				];
-				for (const [field, value] of core) if (field === "index" ? typeof value !== "number" : typeof value !== "string") violations.push({
-					field: `stages.${i}.${field}`,
-					kind: "missing",
-					message: `Stage ${i} has no ${field} — the stage cannot be rendered.`
-				});
-			});
-			return {
-				valid: violations.length === 0,
-				violations
-			};
-		}
-		/** True when a non-ok body carries the backend's contract-violation
-		* signature (flow_status 500s: {error, run_id, violations: [...]}). */
-		function hasViolationsSignature(body) {
-			return isObj(body) && Array.isArray(body.violations);
-		}
-		var _RUN_STATUS_VALUES, RUN_STATUSES, RunStatusContractError, isObj;
-		var init_runStatusContract = __esmMin((() => {
-			_RUN_STATUS_VALUES = [
-				"pending",
-				"running",
-				"completed",
-				"failed",
-				"stopped",
-				"interrupted",
-				"unknown",
-				"queued"
-			];
-			RUN_STATUSES = new Set(_RUN_STATUS_VALUES);
-			RunStatusContractError = class extends Error {
-				violations;
-				constructor(runId, violations) {
-					super(`Run status contract violation for ${runId} (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
-					this.name = "RunStatusContractError";
-					this.violations = violations;
-				}
-			};
-			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
-		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
-		* bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
-		* whole protocol layer; the store only needs it on click. */
-		function repoll(runId) {
-			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
-				maxWaitMs: 3e4,
-				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
-		}
-		function toastVerdict(v) {
-			const toast = useToastStore.getState().addToast;
-			if (v.kind === "violation") {
-				const first = v.violations[0]?.message ?? "the status response did not match the expected shape";
-				toast("error", `Run ${v.runId}: ${v.violations.length} contract issue(s) — ${first}. Retry to re-check, or re-run the card.`, {
-					label: "Retry",
-					onClick: () => repoll(v.runId)
-				});
-			} else toast("error", `Run ${v.runId}: status channel error — ${v.message}. Retry to re-check.`, {
-				label: "Retry",
-				onClick: () => repoll(v.runId)
-			});
-		}
-		function _subscribe(listener) {
-			_listeners$1.add(listener);
-			return () => {
-				_listeners$1.delete(listener);
-			};
-		}
-		function _setState(patch, replace) {
-			const p = typeof patch === "function" ? patch(_state) : patch;
-			if (replace === true) _state = p;
-			else _state = {
-				..._state,
-				...p
-			};
-			_listeners$1.forEach((l) => l());
-		}
-		function _getState() {
-			return _state;
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in run-status-contract-store.spec.ts. (2026-09-12) */
-		function _useRunStatusContractStoreHook(selector) {
-			return (0, react.useSyncExternalStore)(_subscribe, selector ? () => selector(_getState()) : () => _getState());
-		}
-		var _listeners$1, _state, _initialState, useRunStatusContractStore;
-		var init_runStatusContractStore = __esmMin((() => {
-			init_toastStore();
-			_listeners$1 = /* @__PURE__ */ new Set();
-			_state = {
-				verdict: null,
-				reportViolation: (runId, violations) => {
-					console.error("[runStatusContract] status channel violation:", runId, violations);
-					const verdict = {
-						kind: "violation",
-						runId,
-						violations
-					};
-					_setState({ verdict });
-					toastVerdict(verdict);
-				},
-				reportError: (runId, message) => {
-					console.error("[runStatusContract] status channel error:", runId, message);
-					const verdict = {
-						kind: "error",
-						runId,
-						message
-					};
-					_setState({ verdict });
-					toastVerdict(verdict);
-				},
-				clear: () => _setState({ verdict: null })
-			};
-			_initialState = _state;
-			useRunStatusContractStore = Object.assign(_useRunStatusContractStoreHook, {
-				getState: _getState,
-				setState: _setState,
-				subscribe: _subscribe,
-				getInitialState: () => _initialState,
-				destroy: () => {}
-			});
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/card.ts
-		var init_card = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/character.ts
-		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/studio.ts
-		var init_studio = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/stageView.ts
-		var init_stageView = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/stagePreview.ts
-		var init_stagePreview = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/modifierFaces.ts
-		var init_modifierFaces = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/vocab.ts
-		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
-		* metadata, a drag payload) before rendering. */
-		function isProvenance(v) {
-			return typeof v === "string" && PROVENANCE_VALUES.includes(v);
-		}
-		var Provenance, PROVENANCE_VALUES;
-		var init_vocab = __esmMin((() => {
-			Provenance = {
-				agent: "agent",
-				user: "user",
-				imported: "imported"
-			};
-			PROVENANCE_VALUES = Object.values(Provenance);
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/wire.ts
-		var init_wire = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/regions.ts
-		var init_regions = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/timelineTypes.ts
-		/** Coerce an unknown persisted/imported status into the SegmentStatus
-		* union. Anything outside it (e.g. pre-refactor persisted "error") is
-		* normalized to 'empty' — an out-of-union status silently breaks the
-		* failed-state UI (the NLE clip check tests status === 'failed'). */
-		function normalizeSegmentStatus(raw) {
-			return typeof raw === "string" && SEGMENT_STATUSES.includes(raw) ? raw : "empty";
-		}
-		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS;
-		var init_timelineTypes = __esmMin((() => {
-			SEGMENT_STATUSES = [
-				"empty",
-				"pending",
-				"generating",
-				"ready",
-				"failed"
-			];
-			FLF_MODES = [{
-				id: "off",
-				label: "First frame only (standard I2V)"
-			}, {
-				id: "on",
-				label: "First + Last frame (FLF2V)"
-			}];
-			TRACK_COLORS = [
-				"#4ade80",
-				"#facc15",
-				"#fb923c",
-				"#60a5fa",
-				"#f472b6",
-				"#a78bfa",
-				"#34d399",
-				"#fbbf24",
-				"#f87171",
-				"#38bdf8"
-			];
-			DEFAULT_SEGMENT_PARAMS = {
-				seed: 42,
-				width: 640,
-				height: 480,
-				frames: 33,
-				fps: 16,
-				resizeMethod: "crop",
-				samplingSteps: 10,
-				guideScale: 5,
-				model: "wan-vace",
-				profile: "fast",
-				motionAmplitude: 1,
-				flfMode: false,
-				teacacheEnabled: false,
-				teacacheThreshold: .01,
-				progressiveEnabled: false,
-				progressiveLevels: 2,
-				progressiveDelta: .15,
-				progressiveMode: "dct",
-				relayEpsilon: .01,
-				guideStrength: 1,
-				guideCrf: 0,
-				scaleBy: 1,
-				upscaleMethod: "bicubic",
-				useTiledEncode: false,
-				tileSize: 256,
-				tileOverlap: 64,
-				imageAttentionStrength: 1,
-				loras: [],
-				motionVideoB64: null,
-				motionStrength: .7,
-				motionTrimStart: 0,
-				motionTrimEnd: 0,
-				motionOffset: 0,
-				resampleMode: "nearest",
-				retakePrompt: "",
-				retakeStartFrame: 0,
-				retakeEndFrame: -1
-			};
-			DEFAULT_LIPSYNC_FIELDS = {
-				lipSyncedVideoUrl: null,
-				lipSyncPreferOriginal: false
-			};
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/loraTypes.ts
-		var init_loraTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/browserStorage.ts
-		/** Test hook — resets the cached connection + cache + install flag. */
-		function _resetBrowserStorageForTests() {
-			installed = false;
-			cache$1 = /* @__PURE__ */ new Map();
-			dbPromise = null;
-		}
-		function openDb() {
-			if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
-				if (typeof indexedDB === "undefined") {
-					reject(/* @__PURE__ */ new Error("IndexedDB unavailable"));
-					return;
-				}
-				const req = indexedDB.open(DB_NAME, DB_VERSION);
-				req.onupgradeneeded = () => {
-					const db = req.result;
-					if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-				};
-				req.onsuccess = () => resolve(req.result);
-				req.onerror = () => reject(req.error);
-			});
-			return dbPromise;
-		}
-		/** Full dump of the store as [key, value] pairs. */
-		async function idbDump() {
-			const req = (await openDb()).transaction(STORE, "readonly").objectStore(STORE).openCursor();
-			return new Promise((resolve, reject) => {
-				const out = [];
-				req.onsuccess = () => {
-					const cursor = req.result;
-					if (!cursor) {
-						resolve(out);
-						return;
-					}
-					out.push([String(cursor.key), String(cursor.value)]);
-					cursor.continue();
-				};
-				req.onerror = () => reject(req.error);
-			});
-		}
-		async function idbPut(key, value) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).put(value, key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbRemove(key) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).delete(key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbClear() {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).clear();
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		function writeFailure(key, e) {
-			console.error(`[storage] failed to persist '${key}' to IndexedDB:`, e);
-		}
-		/**
-		* Seed the in-memory cache from IndexedDB, migrate any leftover native
-		* localStorage into IDB, then install the facade as the global localStorage.
-		* Called once from main.tsx BEFORE the app is (dynamically) imported, so
-		* every module-eval-time read sees the persisted data. Never throws.
-		*/
-		async function initBrowserStorage() {
-			if (installed) return;
-			try {
-				const entries = await idbDump();
-				for (const [k, v] of entries) cache$1.set(k, v);
-			} catch (e) {
-				console.error("[storage] failed to load IndexedDB cache:", e);
-			}
-			try {
-				const native = globalThis.localStorage;
-				if (native && typeof native.length === "number") {
-					const jobs = [];
-					let anyMigrated = false;
-					let failed = false;
-					for (let i = 0; i < native.length; i++) {
-						const k = native.key(i);
-						if (!k) continue;
-						const v = native.getItem(k);
-						if (v == null || cache$1.has(k)) continue;
-						anyMigrated = true;
-						cache$1.set(k, v);
-						jobs.push(idbPut(k, v).catch(() => {
-							failed = true;
-						}));
-					}
-					if (jobs.length > 0) await Promise.all(jobs);
-					if (anyMigrated && !failed) try {
-						native.clear();
-					} catch {}
-				}
-			} catch (e) {
-				console.error("[storage] failed to migrate native localStorage:", e);
-			}
-			try {
-				Object.defineProperty(globalThis, "localStorage", {
-					value: facade,
-					configurable: true,
-					writable: true
-				});
-				installed = true;
-			} catch (e) {
-				console.error("[storage] failed to install IndexedDB-backed localStorage:", e);
-				installed = true;
-			}
-		}
-		var DB_NAME, DB_VERSION, STORE, dbPromise, cache$1, installed, facade;
-		var init_browserStorage = __esmMin((() => {
-			DB_NAME = "melite:browser-storage:v1";
-			DB_VERSION = 1;
-			STORE = "kv";
-			dbPromise = null;
-			cache$1 = /* @__PURE__ */ new Map();
-			installed = false;
-			facade = {
-				get length() {
-					return cache$1.size;
-				},
-				key(index) {
-					if (index < 0 || index >= cache$1.size) return null;
-					let i = 0;
-					for (const k of cache$1.keys()) {
-						if (i === index) return k;
-						i++;
-					}
-					return null;
-				},
-				getItem(key) {
-					return cache$1.has(key) ? cache$1.get(key) : null;
-				},
-				setItem(key, value) {
-					cache$1.set(key, String(value));
-					idbPut(key, String(value)).catch((e) => writeFailure(key, e));
-				},
-				removeItem(key) {
-					cache$1.delete(key);
-					idbRemove(key).catch((e) => writeFailure(key, e));
-				},
-				clear() {
-					cache$1.clear();
-					idbClear().catch((e) => writeFailure("*", e));
-				}
-			};
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/objectUrlCache.ts
-		/** True iff `s` is a base64 data URL (large enough to benefit from conversion). */
-		function isDataUrl(s) {
-			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
-		}
-		/**
-		* Convert a data URL (or pass through other URL forms) to a cached object URL.
-		*
-		* - `data:…` URLs → converted once, cached, returned.
-		* - `blob:`, `http:`, `https:`, relative paths → returned as-is.
-		* - `null` / `undefined` / empty → returned as-is (caller handles).
-		*
-		* The same input always yields the same output for the lifetime of the
-		* module (until revokeObjectUrlFor or revokeAll is called).
-		*/
-		function dataUrlToObjectUrl(url) {
-			if (url == null || url === "") return null;
-			if (!isDataUrl(url)) return url;
-			const cached = cache.get(url);
-			if (cached) return cached;
-			const obj = createObjectUrlFromDataUrl(url);
-			cache.set(url, obj);
-			return obj;
-		}
-		/** Revoke the object URL associated with `sourceUrl` (the original data URL). */
-		function revokeObjectUrlFor(sourceUrl) {
-			const obj = cache.get(sourceUrl);
-			if (obj) {
-				try {
-					URL.revokeObjectURL(obj);
-				} catch {}
-				cache.delete(sourceUrl);
-			}
-		}
-		/** Revoke every cached object URL. Intended for tests and explicit teardown. */
-		function revokeAll() {
-			for (const obj of cache.values()) try {
-				URL.revokeObjectURL(obj);
-			} catch {}
-			cache.clear();
-		}
-		/** Test-only: how many object URLs are currently cached. */
-		function _cachedCount() {
-			return cache.size;
-		}
-		function createObjectUrlFromDataUrl(dataUrl) {
-			const comma = dataUrl.indexOf(",");
-			if (comma < 0) return dataUrl;
-			const header = dataUrl.slice(0, comma);
-			const payload = dataUrl.slice(comma + 1);
-			const mime = header.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
-			const isBase64 = header.includes(";base64");
-			let bytes;
-			if (isBase64) {
-				let bin;
-				try {
-					bin = atob(payload);
-				} catch {
-					return dataUrl;
-				}
-				bytes = new Uint8Array(bin.length);
-				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-			} else bytes = new TextEncoder().encode(decodeURIComponent(payload));
-			return URL.createObjectURL(new Blob([bytes.slice()], { type: mime }));
-		}
-		var cache;
-		var init_objectUrlCache = __esmMin((() => {
-			cache = /* @__PURE__ */ new Map();
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/FlowTypes.ts
-		var init_FlowTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/modifierSubcards.ts
-		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
-		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
-		* old cards load; the next save rewrites them as id-keyed rows. */
-		function subcardId(kind, entry) {
-			return kind === "controlnet" ? entry.id ?? "" : `lora-${entry.id ?? entry.name ?? ""}`;
-		}
-		/** Normalize a wire lora row: id wins, the fossil `name` key migrates.
-		* An empty id passes through — compose refuses it loudly; the tile still
-		* renders so the operator can see and delete the broken entry. */
-		function loraIdOf(entry) {
-			return String(entry.id ?? entry.name ?? "").trim();
-		}
-		/** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
-		* id-keyed row — ONE shape leaves every boundary (modal draft, bag
-		* commit, run body). The fossil key is dropped, never re-emitted.
-		* A row missing `strength` (never emitted by the pre-flip UI, but a
-		* hand-edited draft may carry one) takes 1.0 — the same house default
-		* the catalog row seeds at compose. */
-		function normalizeLoraEntry(entry) {
-			return {
-				id: loraIdOf(entry),
-				strength: typeof entry.strength === "number" ? entry.strength : 1
-			};
-		}
-		/** Derive the subcard view from the param bag — a pure projection. */
-		function subcardsFromParams(params) {
-			const loras = params.loras ?? [];
-			const cns = params.controlnets ?? [];
-			return [...loras.map((l) => {
-				const lid = loraIdOf(l);
-				return {
-					id: `lora-${lid}`,
-					kind: "lora",
-					label: loraLabel(lid),
-					name: lid,
-					enabled: true,
-					strength: typeof l.strength === "number" ? l.strength : 1,
-					strengthSet: typeof l.strength === "number"
-				};
-			}), ...cns.map((c) => ({
-				id: subcardId("controlnet", c),
-				kind: "controlnet",
-				label: c.type,
-				enabled: c.enabled,
-				strength: c.strength,
-				type: c.type,
-				model: c.model,
-				preprocessor: c.preprocessor,
-				image_b64: c.image_b64,
-				start_percent: c.start_percent,
-				end_percent: c.end_percent
-			}))];
-		}
-		/** Human label for a LoRA entry (file base name, extension stripped). */
-		function loraLabel(name) {
-			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
-		}
-		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
-		function subcardCount(params) {
-			const loras = params.loras ?? [];
-			const cns = params.controlnets ?? [];
-			return loras.length + cns.length;
-		}
-		/** Pure array move — the ONLY way order changes (dragEnd → this). */
-		function moveItem(arr, from, to) {
-			if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
-			const next = [...arr];
-			const [moved] = next.splice(from, 1);
-			next.splice(to, 0, moved);
-			return next;
-		}
-		/**
-		* Resolve which declared kind a draggable subcard id belongs to. Walks each
-		* LIST-kind's wire array (scalar kinds aren't draggable — no reorder
-		* semantics on a single value). Returns the kind spec or null when the id
-		* isn't a known subcard (e.g. a stale drag handle). Generic over arbitrary
-		* kinds — the param_key comes from the spec, not a hardcoded kind→key map.
-		*/
-		function kindForId(params, id, kinds) {
-			for (const kind of kinds) {
-				if (kind.cardinality === "scalar") continue;
-				if ((params[kind.param_key] ?? []).some((e) => subcardId(kind.kind, e) === id)) return kind;
-			}
-			return null;
-		}
-		/**
-		* Apply a drag drop to the param bag. Cross-kind drops are no-ops (each kind
-		* has its own wire array at ``params[kind.param_key]``; a LoRA cannot swap
-		* places with a ControlNet, nor with a clip_skip). Returns the same params
-		* object when nothing moved (stable identity → no re-render).
-		*
-		* The ``kinds`` list is the declared modifier vocabulary (from
-		* modifiersFeatureOf) — the param_key lookup is data-driven, not a hardcoded
-		* ``kind === "lora" ? "loras" : "controlnets"`` ternary. A novel kind's drag
-		* works the day it's declared, with zero code change here.
-		*/
-		function applySubcardDrop(params, activeId, overId, kinds) {
-			const spec = kindForId(params, activeId, kinds);
-			if (!spec) return params;
-			if (kindForId(params, overId, kinds)?.kind !== spec.kind) return params;
-			const arr = params[spec.param_key];
-			const next = moveItem(arr, arr.findIndex((e) => subcardId(spec.kind, e) === activeId), arr.findIndex((e) => subcardId(spec.kind, e) === overId));
-			return next === arr ? params : {
-				...params,
-				[spec.param_key]: next
-			};
-		}
-		function newCnId() {
-			_cnIdCounter += 1;
-			return `cn-${Date.now().toString(36)}-${_cnIdCounter}`;
-		}
-		/**
-		* New ControlNet entry from a schema entry — honors the catalog's declared
-		* defaults (model, preprocessor, default_strength) with ControlNetApplyAdvanced
-		* defaults for the step range. Returns null when the stack is full (max_stack).
-		* Takes the KIND SPEC (the one contract entry) — no parallel feature shape.
-		*/
-		function newControlnetEntry(entries, type, cnKind) {
-			const maxStack = cnKind?.max_stack ?? 3;
-			if (entries.length >= maxStack) return null;
-			const schema = cnEntriesOf(cnKind).find((e) => e.type === type) ?? NO_CN_SCHEMA;
-			const declaredDefault = (cnKind?.fields.find((f) => f.name === "strength"))?.default;
-			const defaultStrength = typeof declaredDefault === "number" ? declaredDefault : .8;
-			return {
-				id: newCnId(),
-				type,
-				model: schema.model,
-				preprocessor: schema.preprocessor,
-				image_b64: "",
-				strength: schema.default_strength ?? defaultStrength,
-				start_percent: 0,
-				end_percent: 1,
-				enabled: true,
-				source: "user"
-			};
-		}
-		/** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
-		* own default when the spec omits it). */
-		function newLoraEntry(id, strength = 1) {
-			return {
-				id,
-				strength
-			};
-		}
-		/**
-		* New generic entry for a NOVEL modifier kind (not lora / controlnet — those
-		* keep their bespoke templates above). Renders from ``kind.fields``: the
-		* selected option's ``defaults`` win over field-level ``default`` over the
-		* raw type zero (0 / "" / false). Returns null when the list is full
-		* (``max_stack``, cardinality=list only). Scalar kinds return a single dict
-		* at ``params[kind.param_key]`` — no id, no stack check.
-		*
-		* This is the proof the user demanded: a YAML block declaring a new kind
-		* (clip_skip, sampler_override, …) gets a working create-template with ZERO
-		* code beyond the catalog edit + the one ``@register`` applier. The generic
-		* grid row + generic modal editor render from the same ``kind.fields``.
-		*/
-		function newGenericEntry(kind, stackLength, optionValue) {
-			if (kind.cardinality === "list") {
-				if (stackLength >= (kind.max_stack ?? 5)) return null;
-			}
-			const option = kind.options?.find((o) => o.value === optionValue);
-			const entry = {};
-			for (const field of kind.fields) {
-				const fromOption = option?.defaults?.[field.name];
-				if (fromOption !== void 0) entry[field.name] = fromOption;
-				else if (field.default !== void 0 && field.default !== null) entry[field.name] = field.default;
-				else entry[field.name] = defaultForType(field.type);
-			}
-			if (kind.cardinality === "list") entry.id = newCnId();
-			if (optionValue !== void 0 && !("value" in entry)) entry.value = optionValue;
-			return entry;
-		}
-		/** The type-correct zero for a modifier field with no declared default. */
-		function defaultForType(type) {
-			switch (type) {
-				case "integer":
-				case "float": return 0;
-				case "boolean": return false;
-				case "select": return "";
-				case "image": return "";
-				case "string": return "";
-			}
-		}
-		/** The lora kind's options as the legacy adapter list — the LoRA dropdown. */
-		function loraAdaptersOf(kind) {
-			if (!kind) return [];
-			return (kind.options ?? []).map((o) => ({
-				name: o.value,
-				filename: o.model ?? o.value,
-				label: o.label,
-				category: o.metadata?.category ?? "LoRA",
-				default_strength: o.defaults?.strength ?? 1,
-				prompt_hint: o.metadata?.prompt_hint ?? null,
-				installed: o.installed ?? true
-			}));
-		}
-		/** The controlnet kind's options as the legacy schema-entry list — the CN dropdown. */
-		function cnEntriesOf(kind) {
-			if (!kind) return [];
-			const strengthField = kind.fields.find((f) => f.name === "strength");
-			return (kind.options ?? []).map((o) => ({
-				type: o.value,
-				label: o.label,
-				tooltip: o.tooltip ?? void 0,
-				model: o.model ?? void 0,
-				default_strength: o.defaults?.strength ?? strengthField?.default ?? .8,
-				preprocessor: o.metadata?.preprocessor ?? void 0,
-				installed: o.installed ?? void 0
-			}));
-		}
-		/** LoRA strength bounds — from the kind's strength field (one source). */
-		function loraStrengthBoundsOf(kind) {
-			const strengthField = kind?.fields.find((f) => f.name === "strength");
-			return {
-				min: strengthField?.min ?? -2,
-				max: strengthField?.max ?? 5,
-				step: strengthField?.step ?? .05
-			};
-		}
-		/**
-		* The generic arbitrary-kind list — the ONE key the frontend reads to decide
-		* which modifier rows to render. Declared-only (Phase A finalé): the backend
-		* emits ``features.modifiers`` from the catalog's ``modifiers:`` block and
-		* nothing else — the legacy client-side projection is deleted (rule 4).
-		* Returns ``[]`` when the family declares no modifier capability.
-		*/
-		function modifiersFeatureOf(formSpec) {
-			const raw = formSpec?.features?.modifiers;
-			return Array.isArray(raw) ? raw : [];
-		}
-		/** The family declares at least one modifier kind. The grid renders iff true. */
-		function hasModifierCapability(formSpec) {
-			return modifiersFeatureOf(formSpec).length > 0;
-		}
-		/** Find a kind's spec by its discriminator — convenience for the grid/modal. */
-		function kindSpecOf(formSpec, kind) {
-			return modifiersFeatureOf(formSpec).find((k) => k.kind === kind) ?? null;
-		}
-		var NO_CN_SCHEMA, _cnIdCounter;
-		var init_modifierSubcards = __esmMin((() => {
-			NO_CN_SCHEMA = {
-				type: "",
-				label: ""
-			};
-			_cnIdCounter = 0;
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/enhanceTypes.ts
-		var init_enhanceTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/mediaTypes.ts
-		var init_mediaTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/index.ts
-		var src_exports$1 = /* @__PURE__ */ __exportAll({
-			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
-			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
-			FLF_MODES: () => FLF_MODES,
-			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
-			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
-			Provenance: () => Provenance,
-			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
-			TRACK_COLORS: () => TRACK_COLORS,
-			_cachedCount: () => _cachedCount,
-			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
-			applySubcardDrop: () => applySubcardDrop,
-			cnEntriesOf: () => cnEntriesOf,
-			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
-			hasModifierCapability: () => hasModifierCapability,
-			initBrowserStorage: () => initBrowserStorage,
-			isDataUrl: () => isDataUrl,
-			isProvenance: () => isProvenance,
-			kindForId: () => kindForId,
-			kindSpecOf: () => kindSpecOf,
-			loraAdaptersOf: () => loraAdaptersOf,
-			loraIdOf: () => loraIdOf,
-			loraLabel: () => loraLabel,
-			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
-			modifiersFeatureOf: () => modifiersFeatureOf,
-			moveItem: () => moveItem,
-			newControlnetEntry: () => newControlnetEntry,
-			newGenericEntry: () => newGenericEntry,
-			newLoraEntry: () => newLoraEntry,
-			normalizeLoraEntry: () => normalizeLoraEntry,
-			normalizeSegmentStatus: () => normalizeSegmentStatus,
-			revokeAll: () => revokeAll,
-			revokeObjectUrlFor: () => revokeObjectUrlFor,
-			subcardCount: () => subcardCount,
-			subcardId: () => subcardId,
-			subcardsFromParams: () => subcardsFromParams
-		});
-		var init_src$2 = __esmMin((() => {
-			init_card();
-			init_character();
-			init_studio();
-			init_stageView();
-			init_stagePreview();
-			init_modifierFaces();
-			init_vocab();
-			init_wire();
-			init_regions();
-			init_timelineTypes();
-			init_loraTypes();
-			init_browserStorage();
-			init_objectUrlCache();
-			init_FlowTypes();
-			init_modifierSubcards();
-			init_enhanceTypes();
-			init_mediaTypes();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyParamContract.ts
-		var familyParamContract_exports = /* @__PURE__ */ __exportAll({
-			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
-			coerceParamsToSchema: () => coerceParamsToSchema,
-			getFamilySchema: () => getFamilySchema,
-			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated,
-			loadFamilySchemas: () => loadFamilySchemas,
-			validateModifierEntries: () => validateModifierEntries,
-			validateParamsAgainstSchema: () => validateParamsAgainstSchema
-		});
-		/**
-		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
-		* level cache, inflight dedup, idempotent. Call at boot (alongside
-		* loadCatalog) so the validator never blocks on a fetch.
-		*
-		* Returns the cached index on subsequent calls (no refetch). Use
-		* { force: true } to bypass the cache.
-		*/
-		async function loadFamilySchemas(opts) {
-			if (_cache$1 && !opts?.force) return _cache$1;
-			if (_inflight$1) return _inflight$1;
-			_inflight$1 = (async () => {
-				try {
-					const data = await apiJson("/v1/flows/families/param-schemas");
-					_cache$1 = data;
-					return data;
-				} finally {
-					_inflight$1 = null;
-				}
-			})();
-			return _inflight$1;
-		}
-		/** Sync lookup — returns the cached schema for a family, or null if the
-		* cache isn't loaded yet or the family is unknown. Pure, no fetch. */
-		function getFamilySchema(familyId) {
-			if (!_cache$1) return null;
-			return _cache$1[familyId] ?? null;
-		}
-		/** Is the schema cache POPULATED (a successful bulk fetch with ≥1
-		* family)? Distinguishes "transmission worked and the family is absent"
-		* (a phantom family — throw) from the cache-cold/failed branch (defer). */
-		function isFamilySchemaCachePopulated() {
-			return !!_cache$1 && Object.keys(_cache$1).length > 0;
-		}
-		function jsonTypeOf(val) {
-			/* v8 ignore next -- defensive: both callers (coerceParamsToSchema,
-			* validateParamsAgainstSchema) route val === null through the defaulted
-			* null path BEFORE calling, so null never reaches here (2026-09-12) */
-			if (val === null) return "null";
-			if (Array.isArray(val)) return "array";
-			const t = typeof val;
-			if (t === "string") return "string";
-			if (t === "boolean") return "boolean";
-			if (t === "number") return Number.isInteger(val) ? "integer" : "number";
-			return "object";
-		}
-		/**
-		* Coerce a params dict to a family's schema types — the TYPED RUN BODY.
-		* Canonical coercions ONLY (2026-09-05 compile-time incident: form state,
-		* stale drafts and legacy editors carry strings for numbers/booleans and
-		* "" for empty arrays — the class admits the canonical forms, so the
-		* boundary normalizes them instead of refusing what the backend takes):
-		*   - integer/number: numbers kept (integer rejects fractions); a trimmed
-		*     canonical numeric string becomes Number; "" means UNSET (falls into
-		*     the null path: default-or-omit — "" is NEVER 0); anything else is
-		*     a violation (never NaN into the wire).
-		*   - boolean: booleans kept; "true"/"false" become bool; else violation.
-		*   - array: arrays kept; "" becomes [] (the unowned picker's empty
-		*     serialization — the class coerces the same); a non-empty string is
-		*     a violation (ambiguous — never a split-guess).
-		*   - string/object: kept on exact type; anything else is a violation
-		*     (never String()-collapse, never JSON.parse-guess).
-		*   - null / UNSET-"": OMITTED when the field declares a default —
-		*     absent rides the backend default (the class's own semantics:
-		*     explicit null refuses on numerics, so the boundary must never
-		*     POST a null the click gate waved through — 2026-09-06
-		*     frontend-impossible incident). A null/UNSET with NO default is
-		*     kept so the validator refuses it loudly. Untyped fields (the
-		*     loras/mask tile bags) pass null through untouched — the class's
-		*     own None-coercion owns them, and it runs on explicit values.
-		*   - fields with NO declared type (the loras/mask tile bags {}): passed
-		*     through untouched — the compose door owns them.
-		* Returns the typed copy + violations against the TYPED values (empty =
-		* the body is exactly what the class admits — the POST must send THIS
-		* body, never the raw draft).
-		*/
-		function coerceParamsToSchema(schema, params, opts = {}) {
-			const out = [];
-			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
-			const typed = {};
-			const props = schema.properties ?? {};
-			for (const [key, val] of Object.entries(params)) {
-				const field = props[key];
-				if (!field || !field.type) {
-					typed[key] = val;
-					continue;
-				}
-				const expected = field.type;
-				if (val === null) {
-					if ("default" in field) continue;
-					typed[key] = val;
-					continue;
-				}
-				const actual = jsonTypeOf(val);
-				if (actual === expected) {
-					typed[key] = val;
-					continue;
-				}
-				if (expected === "number" && actual === "integer") {
-					typed[key] = val;
-					continue;
-				}
-				const coerced = coerceScalar(key, expected, val);
-				if ("value" in coerced) {
-					typed[key] = coerced.value;
-					continue;
-				}
-				if (coerced.unset) {
-					if (field && "default" in field) continue;
-					typed[key] = null;
-					continue;
-				}
-				out.push({
-					path: `${prefix}${key}`,
-					message: `'${key}': expected ${expected}, got ${actual}`
-				});
-				typed[key] = val;
-			}
-			return {
-				params: typed,
-				violations: out
-			};
-		}
-		/** Canonical scalar coercion. ok = coerced value; unset = "" for a
-		* non-string field (the value is UNSET — the caller routes it into the
-		* null path); neither = refuse loudly. */
-		function coerceScalar(_key, expected, val) {
-			if (typeof val === "string") {
-				const t = val.trim();
-				if (t === "") {
-					if (expected === "array") return {
-						ok: true,
-						value: []
-					};
-					return {
-						ok: false,
-						unset: true
-					};
-				}
-				if (expected === "integer" || expected === "number") {
-					const n = Number(t);
-					if (!Number.isFinite(n)) return {
-						ok: false,
-						unset: false
-					};
-					if (expected === "integer" && !Number.isInteger(n)) return {
-						ok: false,
-						unset: false
-					};
-					return {
-						ok: true,
-						value: n
-					};
-				}
-				if (expected === "boolean") {
-					if (t === "true") return {
-						ok: true,
-						value: true
-					};
-					if (t === "false") return {
-						ok: true,
-						value: false
-					};
-					return {
-						ok: false,
-						unset: false
-					};
-				}
-				return {
-					ok: false,
-					unset: false
-				};
-			}
-			return {
-				ok: false,
-				unset: false
-			};
-		}
-		/**
-		* Validate a params dict against a family's param schema. Pure + synchronous.
-		* Returns violations (empty = clean). A null for a field WITH a default is
-		* treated as "use the default" (no violation) — coerce strips such nulls
-		* to absent before this runs, and absent rides the backend default; the
-		* tolerance here is defense-in-depth for direct callers (the boundary
-		* must NEVER POST a null the class would refuse — explicit null 400s
-		* on every numeric row, so coerce omits, it never forwards). A null for
-		* a field WITHOUT a default IS a violation.
-		*
-		* WHAT IT CATCHES (the motion_constraints bug class):
-		*   - TYPE mismatches: a str param sent an object/number/array.
-		*   - EXTRA fields: unknown param names (additionalProperties: false).
-		*   - null for NON-defaulted fields.
-		*
-		* WHAT IT LEAVES TO THE BACKEND (no false positives):
-		*   - REQUIRED-field presence — the frontend doesn't know which keys are
-		*     injected from flow.shared via the consumes axis (comfy_url, model).
-		*     The backend's card phase-1 compose knows the consumes set, so it
-		*     knows. The frontend defers required-checking to the hard wire gate.
-		*/
-		function validateParamsAgainstSchema(schema, params, opts = {}) {
-			const out = [];
-			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
-			const props = schema.properties ?? {};
-			if (Object.keys(props).length === 0) return out;
-			for (const [key, val] of Object.entries(params)) {
-				const field = props[key];
-				if (!field) {
-					if (schema.additionalProperties === false && !WIRE_RELAXED_KEYS.has(key)) out.push({
-						path: `${prefix}${key}`,
-						message: `unknown parameter '${key}' — not in the family signature`
-					});
-					continue;
-				}
-				if (val === null) {
-					if (!("default" in field)) out.push({
-						path: `${prefix}${key}`,
-						message: `'${key}' is null but has no default — provide a value`
-					});
-					continue;
-				}
-				const expected = field.type;
-				if (!expected) continue;
-				const actual = jsonTypeOf(val);
-				if (actual === expected) continue;
-				if (expected === "number" && actual === "integer") continue;
-				out.push({
-					path: `${prefix}${key}`,
-					message: `'${key}': expected ${expected}, got ${actual}`
-				});
-			}
-			return out;
-		}
-		/**
-		* Validate a stage's modifier entries against the family's declared kinds.
-		* Mirrors backend validate_modifier_entries: per declared kind with a
-		* param_key, params[param_key] must honor the cardinality (list kinds take
-		* a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
-		* and each entry's keys/required/type/bounds/select-membership must match
-		* the declared fields. Empty = clean; never throws. No kinds → no-op.
-		*/
-		function validateModifierEntries(kinds, params) {
-			const out = [];
-			if (!kinds) return out;
-			for (const kind of kinds) {
-				const key = kind.param_key;
-				const value = params[key];
-				if (value === void 0 || value === null) continue;
-				const fields = kind.fields ?? [];
-				if ((kind.cardinality ?? "list") === "scalar") {
-					if (typeof value === "object") {
-						out.push({
-							path: key,
-							message: `expected a single scalar value for '${kind.kind}' (cardinality='scalar'), got ${Array.isArray(value) ? "array" : "object"}`
-						});
-						continue;
-					}
-					if (fields.length > 0 && fields[0].name) checkModEntry(out, { [fields[0].name]: value }, fields, kind, key, kind.kind === "controlnet");
-					continue;
-				}
-				if (!Array.isArray(value)) {
-					out.push({
-						path: key,
-						message: `expected a list of entries for '${kind.kind}' (cardinality='list'), got ${typeof value}`
-					});
-					continue;
-				}
-				if (typeof kind.max_stack === "number" && value.length > kind.max_stack) out.push({
-					path: key,
-					message: `stack of ${value.length} exceeds the declared max_stack (${kind.max_stack}) for '${kind.kind}'`
-				});
-				const cnKind = kind.kind === "controlnet";
-				for (let i = 0; i < value.length; i++) {
-					const entry = value[i];
-					const entryPath = `${key}[${i}]`;
-					if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
-						out.push({
-							path: entryPath,
-							message: `expected a dict entry, got ${Array.isArray(entry) ? "array" : typeof entry}`
-						});
-						continue;
-					}
-					checkModEntry(out, entry, fields, kind, entryPath, cnKind);
-				}
-			}
-			return out;
-		}
-		function checkModEntry(out, entry, fields, kind, path, cnKind) {
-			const declared = /* @__PURE__ */ new Map();
-			for (const f of fields) if (f.name) declared.set(f.name, f);
-			const allowed = /* @__PURE__ */ new Set([...declared.keys(), ...EDITOR_MOD_ENTRY_KEYS]);
-			for (const entryKey of Object.keys(entry)) if (!allowed.has(entryKey)) out.push({
-				path: `${path}.${entryKey}`,
-				message: `unknown field '${entryKey}'. Declared fields: ${[...declared.keys()].sort().join(", ")}.`
-			});
-			const kindOptions = (kind.options ?? []).map((o) => o?.value).filter((v) => typeof v === "string");
-			const hasUploadDir = Boolean(kind.upload_dir);
-			for (const f of fields) {
-				const name = f.name;
-				const val = entry[name];
-				if (!(name in entry && val !== null && val !== void 0)) {
-					if (f.default === void 0 && f.type !== "image" && name !== "artifact") out.push({
-						path: `${path}.${name}`,
-						message: `missing required field '${name}'.`
-					});
-					continue;
-				}
-				if (f.type === "integer" || f.type === "float") {
-					if (typeof val !== "number") {
-						out.push({
-							path: `${path}.${name}`,
-							message: `expected a number, got ${typeof val}.`
-						});
-						continue;
-					}
-					if (f.type === "integer" && !Number.isInteger(val)) {
-						out.push({
-							path: `${path}.${name}`,
-							message: `expected an integer, got ${typeof val}.`
-						});
-						continue;
-					}
-					if (typeof f.min === "number" && val < f.min) out.push({
-						path: `${path}.${name}`,
-						message: `value ${val} below the declared minimum ${f.min}.`
-					});
-					if (typeof f.max === "number" && val > f.max) out.push({
-						path: `${path}.${name}`,
-						message: `value ${val} above the declared maximum ${f.max}.`
-					});
-				} else if (f.type === "boolean") {
-					if (typeof val !== "boolean") out.push({
-						path: `${path}.${name}`,
-						message: `expected a boolean, got ${typeof val}.`
-					});
-				} else if (f.type === "string") {
-					if (typeof val !== "string") out.push({
-						path: `${path}.${name}`,
-						message: `expected a string, got ${typeof val}.`
-					});
-					else if (name === "id" && kindOptions.length > 0 && !hasUploadDir && !cnKind) {
-						if (!kindOptions.includes(val)) out.push({
-							path: `${path}.${name}`,
-							message: `unknown adapter '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
-						});
-					}
-				} else if (f.type === "select") {
-					if (typeof val !== "string") {
-						out.push({
-							path: `${path}.${name}`,
-							message: `expected a string, got ${typeof val}.`
-						});
-						continue;
-					}
-					if (f.options && f.options.length > 0) {
-						if (!f.options.includes(val)) out.push({
-							path: `${path}.${name}`,
-							message: `unknown option '${val}'. Allowed: ${[...f.options].sort().join(", ")}.`
-						});
-					} else if (kindOptions.length > 0 && !hasUploadDir && !cnKind) {
-						if (!kindOptions.includes(val)) out.push({
-							path: `${path}.${name}`,
-							message: `unknown option '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
-						});
-					}
-				}
-			}
-		}
-		/**
-		* Pre-submit gate: resolve model → family → schema (from the ONE cache),
-		* validate params, throw on any violation. Called before EVERY GPU-starting
-		* fetch so the crash comes before the button press, not after a round-trip.
-		*
-		* Ensures the schema cache is loaded (loadFamilySchemas) on the first call,
-		* then validates synchronously.
-		*
-		* NO SILENT DEFERS (2026-08-16): the old gate no-op'd when the model was
-		* missing from the catalog or the family had no schema — silently
-		* shipping UNKNOWN params to the backend and calling that "the backend's
-		* backstop". That is the silent-drop class this contract exists to kill:
-		*   - catalog LOADED + model missing → THROW. The picker is showing a
-		*     model that DOES NOT EXIST (the original operator complaint) — the
-		*     catalog is the source of truth and the model is not in it.
-		*   - family resolved + no schema → THROW. The schema transmission is
-		*     broken (bulk fetch dropped it); deferring would validate against
-		*     NOTHING. (The workflow:* exemption died with the workflow lane —
-		*     §12.2; a workflow is a plugin card with a REAL signature now.)
-		* The ONE honest defer left: the catalog cache is still cold at boot
-		* (nothing fetched yet — cannot resolve anything, backend gate decides).
-		*/
-		async function assertParamsMatchFamilySchema(model, params) {
-			let family;
-			let modifiers;
-			let cat;
-			try {
-				const { getCachedCatalog } = await Promise.resolve().then(() => (init_src(), src_exports));
-				cat = getCachedCatalog();
-				family = cat?.models?.[model]?.family;
-				modifiers = cat?.families?.[family ?? ""]?.modifiers;
-			} catch {
-				return params;
-			}
-			if (!cat) return params;
-			if (!family) throw new Error(`Parameter validation failed — model '${model}' is not in the catalog. The picker showed a model that DOES NOT EXIST; the catalog is the source of truth and this key is not in it. (The backend wire gate would 400 the same request.)`);
-			try {
-				await loadFamilySchemas();
-			} catch {
-				return params;
-			}
-			const schema = getFamilySchema(family);
-			if (!schema) {
-				if (isFamilySchemaCachePopulated()) throw new Error(`Parameter validation failed — family '${family}' (model '${model}') has no param schema in the populated cache — the backend does not know this family. Refusing to validate against nothing.`);
-				return params;
-			}
-			const coerced = coerceParamsToSchema(schema, params);
-			const violations = [...coerced.violations];
-			violations.push(...validateParamsAgainstSchema(schema, coerced.params));
-			violations.push(...validateModifierEntries(modifiers, params));
-			if (violations.length > 0) {
-				const lines = violations.map((v) => `  - ${v.path}: ${v.message}`).join("\n");
-				throw new Error(`Parameter validation failed — the params do not match the '${family}' family signature. Fix before running:\n${lines}\n\n(The backend's wire gate would reject this same request with 400.)`);
-			}
-			return coerced.params;
-		}
-		var _cache$1, _inflight$1, WIRE_RELAXED_KEYS, EDITOR_MOD_ENTRY_KEYS;
-		var init_familyParamContract = __esmMin((() => {
-			init_api();
-			_cache$1 = null;
-			_inflight$1 = null;
-			WIRE_RELAXED_KEYS = /* @__PURE__ */ new Set([
-				"sampling_steps",
-				"guide_scale",
-				"num_frames",
-				"end_image",
-				"image1",
-				"image2",
-				"image3",
-				"input_image",
-				"first_frame",
-				"last_frame",
-				"input_glb",
-				"prev_motion_artifact",
-				"lanpaint_mask",
-				"source_glb",
-				"outfit_glb",
-				"hair_glb",
-				"motion_npz",
-				"loras",
-				"controlnets",
-				"modifiers",
-				"service",
-				"source",
-				"preset",
-				"reference_audio",
-				"reference_text",
-				"rigged_path",
-				"npz_path",
-				"export_glb",
-				"export_fbx",
-				"export_usd",
-				"export_obj",
-				"detect_mode",
-				"model_name",
-				"t5_name",
-				"vae_name"
-			]);
-			EDITOR_MOD_ENTRY_KEYS = /* @__PURE__ */ new Set([
-				"id",
-				"value",
-				"model",
-				"preprocessor",
-				"enabled",
-				"source"
-			]);
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardBirth.ts
-		var cardBirth_exports = /* @__PURE__ */ __exportAll({
-			composeCard: () => composeCard,
-			ensureDraftId: () => ensureDraftId
-		});
-		/** Mint the card doc for a start body. The doc carries the body
-		*  verbatim (intent/stages/model/params become the card extras —
-		*  see python/editor_runs.py drafts_save), so what the card shows is
-		*  what the run consumed. Throws LOUDLY on any refusal — a refused
-		*  compose never proceeds to a start (no silent cardless runs). */
-		async function composeCard(body, signal) {
-			const res = await fetch("/v1/flows/drafts", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(body),
-				signal
-			});
-			const text = await res.text();
-			if (!res.ok) throw new Error(`card compose refused: HTTP ${res.status}${text ? `: ${text.slice(0, 400)}` : ""}`);
-			let data;
-			try {
-				data = JSON.parse(text);
-			} catch {
-				throw new Error("card compose returned a non-JSON body");
-			}
-			const draftId = data.draftId;
-			if (typeof draftId !== "string" || !draftId) throw new Error("card compose returned no draftId — refusing to start cardless");
-			return draftId;
-		}
-		/** The card-birth half of every run start: return the body's
-		*  declared draft_id when present, else compose the card and return
-		*  the minted id. Stamp the result onto the start envelope BEFORE
-		*  the start fetch:
-		*
-		*    startBody.draft_id = await ensureDraftId(startBody, signal)
-		*/
-		async function ensureDraftId(body, signal) {
-			const declared = body.draft_id;
-			if (typeof declared === "string" && declared !== "") return declared;
-			return composeCard(body, signal);
-		}
-		var init_cardBirth = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowProtocol.ts
-		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({
-			assertNoParamDrops: () => assertNoParamDrops,
-			collectNamedArtifacts: () => collectNamedArtifacts,
-			collectStageUrls: () => collectStageUrls,
-			describeErrorBody: () => describeErrorBody,
-			pollFlowRun: () => pollFlowRun,
-			runCompiledGeneration: () => runCompiledGeneration,
-			sanitizeRevivedResult: () => sanitizeRevivedResult,
-			setRequiredEmptyResolver: () => setRequiredEmptyResolver
-		});
-		/**
-		* Extract the backend's error message from a non-2xx body for surfacing.
-		*
-		* Our backend always answers errors as `{"error": "..."}` — the string
-		* carries REAL newlines once parsed (the wire JSON escapes them), which is
-		* exactly what a multi-line flow doc parse error / validation report
-		* looks like in the drilldown modal. When the body isn't JSON, or has no
-		* string `error` field (proxy error page, unexpected shape), the raw text
-		* is returned unchanged.
-		*
-		* 2026-08-10: the error path used to `slice(0, 200)` the body, which cut
-		* "Validation failed: N violation(s)" reports mid-sentence — the full
-		* error is now surfaced unmodified (user: "full errors in the modals").
-		*/
-		function describeErrorBody(text) {
-			try {
-				const parsed = JSON.parse(text);
-				if (typeof parsed?.error === "string") return parsed.error;
-			} catch {}
-			return text;
-		}
-		/** Collect every artifact URL from a run status (stage.url + gallery).
-		*  The FLAT list — preserves the legacy wire-by-position behavior (the
-		*  primary output is always [0]). Use collectNamedArtifacts when the wire
-		*  needs to address a specific named output (mask, detection, …). */
-		function collectStageUrls(stages) {
-			const urls = [];
-			if (Array.isArray(stages)) for (const s of stages) {
-				if (s.url) urls.push(s.url);
-				if (Array.isArray(s.gallery)) {
-					for (const g of s.gallery) if (g && typeof g.url === "string") urls.push(g.url);
-				}
-			}
-			return urls;
-		}
-		/** Revived/stashed docs are untrusted (written by any client or session):
-		*  artifacts + assetUrls must be STRING-only, or every consumer crashes
-		*  (u.endsWith on undefined — motion card 2026-08-10). Filter instead of
-		*  casting verbatim; callers still hard-error on structural doc junk.
-		*  Missing numeric fields default so downstream guards (assetUrls.length)
-		*  behave — never a null result while the result object is present. */
-		function sanitizeRevivedResult(raw) {
-			if (!raw || typeof raw !== "object") return null;
-			const r = raw;
-			const assetUrls = Array.isArray(r.assetUrls) ? r.assetUrls.filter((u) => typeof u === "string" && !!u) : [];
-			const artifacts = {};
-			if (r.artifacts && typeof r.artifacts === "object" && !Array.isArray(r.artifacts)) {
-				for (const [k, v] of Object.entries(r.artifacts)) if (typeof v === "string" && v) artifacts[k] = v;
-			}
-			return {
-				assetUrls,
-				artifacts,
-				metadata: r.metadata && typeof r.metadata === "object" ? r.metadata : {},
-				completedAt: typeof r.completedAt === "number" ? r.completedAt : Date.now(),
-				durationSec: typeof r.durationSec === "number" ? r.durationSec : 0
-			};
-		}
-		/** Collect named artifacts from a run status → {name: URL}. The NAMED map
-		*  — lets a downstream slot wire a SPECIFIC output (mask → lanpaint_mask)
-		*  rather than only the primary (assetUrls[0]). Falls back to {} when the
-		*  backend didn't send named_urls (legacy runs / single-output bricks). */
-		function collectNamedArtifacts(stages) {
-			const out = {};
-			if (Array.isArray(stages)) {
-				for (const s of stages) if (s.named_urls && typeof s.named_urls === "object") {
-					for (const [name, url] of Object.entries(s.named_urls)) if (typeof url === "string" && url) out[name] = url;
-				}
-			}
-			return out;
-		}
-		/**
-		* Poll a flow run until terminal. Throws on error/timeout/abort.
-		*
-		* Terminal statuses: "completed"/"done" → success; "error"/"failed" →
-		* throws with the run-level error message.
-		*
-		* `onTick(status)` fires after every successful poll — used by the store
-		* to hydrate live KSampler step progress onto the running card BEFORE the
-		* run goes terminal (so the per-card progress bar animates during the
-		* run, 2026-08-08). Not fired on the terminal tick (the final status is
-		* the return value).
-		*/
-		async function pollFlowRun(runId, signal, opts) {
-			const maxWaitMs = opts?.maxWaitMs ?? 36e5;
-			const intervalMs = opts?.intervalMs ?? 2e3;
-			const started = performance.now();
-			while (performance.now() - started < maxWaitMs) {
-				if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-				const resp = await apiFetch(`/v1/flows/status/${runId}`, { signal });
-				if (!resp.ok) {
-					if (resp.status === 404) throw new Error(`Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`);
-					let errorBody = null;
-					try {
-						errorBody = await resp.json();
-					} catch {
-						errorBody = null;
-					}
-					if (hasViolationsSignature(errorBody)) {
-						const violations = errorBody.violations;
-						useRunStatusContractStore.getState().reportViolation(runId, violations);
-						throw new RunStatusContractError(runId, violations);
-					}
-					await new Promise((r) => setTimeout(r, intervalMs));
-					continue;
-				}
-				const data = await resp.json();
-				const { valid, violations } = validateRunStatusContract(data);
-				if (!valid) {
-					useRunStatusContractStore.getState().reportViolation(runId, violations);
-					throw new RunStatusContractError(runId, violations);
-				}
-				if (data.status === "completed") return data;
-				if (data.status === "failed") {
-					const detail = data.error;
-					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
-				}
-				opts?.onTick?.(data);
-				await new Promise((r) => setTimeout(r, intervalMs));
-			}
-			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
-		}
-		/** Register (or clear) the required-empty resolver. */
-		function setRequiredEmptyResolver(fn) {
-			_requiredEmptyResolver = fn;
-		}
-		/**
-		* HARD VALIDATION: no silent parameter drops in the generate request body.
-		*
-		* JSON.stringify silently drops `undefined` values — `{a: 1, b: undefined}`
-		* serializes to `{"a":1}` with ZERO error. This is the TypeScript version
-		* of the Python `**kwargs` absorb pattern: a field that was set in the form
-		* state, survived into the body object, but vanishes on the wire with no
-		* error, no warning. The backend receives defaults and the user sees
-		* degraded output they can't diagnose.
-		*
-		* This function is called before EVERY GPU-starting fetch (generate,
-		* startChain — the run doors) —
-		* it is the universal gate. It catches:
-		*   - `undefined` values (silently dropped by JSON.stringify)
-		*   - `NaN` / `Infinity` (serialized as `null` — a value mutation)
-		*   - `function` / `symbol` / `bigint` values (dropped or thrown by JSON)
-		*   - empty string for known-critical fields (prompt, model)
-		*
-		* SILENT PARAMETER DROPS ARE COMPLETELY UNACCEPTABLE ANYWHERE EVER.
-		*
-		* @param body the request body about to be JSON.stringify'd and POST'd
-		* @throws Error listing every field that would be silently dropped or mutated
-		*/
-		function assertNoParamDrops(body) {
-			const dropped = [];
-			const mutated = [];
-			for (const [key, val] of Object.entries(body)) if (val === void 0) dropped.push(key);
-			else if (typeof val === "number" && !Number.isFinite(val)) mutated.push(`${key} (NaN/Infinity → JSON serializes as null)`);
-			else if (typeof val === "function" || typeof val === "symbol") dropped.push(`${key} (${typeof val} value — JSON.stringify drops it)`);
-			else if (typeof val === "bigint") mutated.push(`${key} (bigint → JSON.stringify throws)`);
-			if (typeof body.model === "string" && _requiredEmptyResolver) {
-				const fields = _requiredEmptyResolver(body.model, body);
-				for (const field of fields ?? []) {
-					const v = body[field];
-					if (typeof v === "string" && v.trim() === "") throw new Error(`'${field}' is empty for '${body.model}' — the model's form declares it required (the engine has no conditioning signal without it). Type it before running. (Backend semantic validator would 400 this same run.)`);
-				}
-			}
-			if (dropped.length > 0 || mutated.length > 0) {
-				const parts = [dropped.length > 0 ? `DROPPED: [${dropped.join(", ")}]` : "", mutated.length > 0 ? `MUTATED: [${mutated.join(", ")}]` : ""].filter(Boolean);
-				throw new Error(`SILENT PARAMETER DROP DETECTED in generate request body — ${parts.join("; ")}. JSON.stringify would silently lose or mutate these values on the wire. SILENT PARAMETER DROPS ARE UNACCEPTABLE. Fix the caller to omit or set these fields explicitly.`);
-			}
-		}
-		/** Append the door's 400 violation envelope ({violations: [{field,
-		* message}]}) as one line per violation — a bare headline would silently
-		* DROP the dotted paths (the whole point of a refusal is seeing WHICH
-		* param failed). ONE construction, both run doors (compile + start). */
-		function violationLines(text) {
-			try {
-				const parsed = JSON.parse(text);
-				if (Array.isArray(parsed.violations)) {
-					const lines = parsed.violations.map((v) => `${String(v.field ?? "?")}: ${String(v.message ?? "")}`).filter((line) => !line.endsWith(": "));
-					if (lines.length > 0) return `\n${lines.join("\n")}`;
-				}
-			} catch {}
-			return "";
-		}
-		async function runCompiledGeneration(body, signal, opts) {
-			if (Array.isArray(body.loras)) {
-				const { normalizeLoraEntry } = await Promise.resolve().then(() => (init_src$2(), src_exports$1));
-				body = {
-					...body,
-					loras: body.loras.map((e) => e && typeof e === "object" ? normalizeLoraEntry(e) : e)
-				};
-			}
-			assertNoParamDrops(body);
-			let typedBody = body;
-			if (typeof body.model === "string") {
-				const { assertParamsMatchFamilySchema } = await Promise.resolve().then(() => (init_familyParamContract(), familyParamContract_exports));
-				const paramOnly = {};
-				for (const [k, v] of Object.entries(body)) {
-					if (k === "model") continue;
-					paramOnly[k] = v;
-				}
-				typedBody = {
-					...await assertParamsMatchFamilySchema(body.model, paramOnly),
-					model: body.model
-				};
-				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth(), cardBirth_exports));
-				typedBody.draft_id = await ensureDraftId(typedBody, signal);
-				const compileRes = await fetch("/v1/flows/validate", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify(typedBody),
-					signal
-				});
-				if (!compileRes.ok) {
-					const text = await compileRes.text();
-					throw new Error(`card failed to compile: HTTP ${compileRes.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`);
-				}
-			}
-			if (typeof typedBody.draft_id !== "string" || typedBody.draft_id === "") {
-				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth(), cardBirth_exports));
-				typedBody.draft_id = await ensureDraftId(typedBody, signal);
-			}
-			const res = await fetch("/v1/flows/start", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(typedBody),
-				signal
-			});
-			const text = await res.text();
-			if (res.ok) {
-				let data;
-				try {
-					data = JSON.parse(text);
-				} catch {
-					throw new Error(`generate failed: /v1/flows/start returned non-JSON body: ${text.slice(0, NON_JSON_BODY_CAP)}`);
-				}
-				const runId = data.run_id;
-				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
-				opts?.onStart?.(runId);
-				const status = await pollFlowRun(runId, signal, {
-					intervalMs: opts?.intervalMs,
-					onTick: opts?.onTick
-				});
-				return {
-					kind: "started",
-					runId,
-					status,
-					urls: collectStageUrls(status.stages)
-				};
-			}
-			throw new Error(`generate failed: HTTP ${res.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`);
-		}
-		var NON_JSON_BODY_CAP, _requiredEmptyResolver;
-		var init_FlowProtocol = __esmMin((() => {
-			init_api();
-			init_runStatusContract();
-			init_runStatusContractStore();
-			NON_JSON_BODY_CAP = 2e3;
-			_requiredEmptyResolver = null;
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowEvents.ts
-		/**
-		* Open the events stream for one run. Returns immediately; frames land
-		* in `onEvent`. Auto-reconnects with capped backoff until a terminal
-		* `run` frame, an explicit close, or `signal` aborts.
-		*/
-		function streamFlowEvents(runId, onEvent, opts = {}) {
-			let ws = null;
-			let terminal = false;
-			let closed = false;
-			let attempt = 0;
-			let timer = null;
-			const cleanup = () => {
-				if (timer) clearTimeout(timer);
-				timer = null;
-				if (ws) {
-					ws.onmessage = null;
-					ws.onclose = null;
-					ws.onerror = null;
-					try {
-						ws.close();
-					} catch {}
-					ws = null;
-				}
-			};
-			const finish = () => {
-				terminal = true;
-				cleanup();
-			};
-			const connect = () => {
-				/* v8 ignore next -- defensive: close()/finish() always clear the pending reconnect timer, so connect() can never run after close or a terminal frame (2026-09-12) */
-				if (closed || terminal) return;
-				if (typeof WebSocket === "undefined") return;
-				const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws";
-				const host = typeof location !== "undefined" ? location.host : "";
-				try {
-					ws = new WebSocket(`${proto}://${host}/v1/flows/events?run_id=${encodeURIComponent(runId)}`);
-				} catch {
-					return;
-				}
-				ws.onmessage = (ev) => {
-					if (closed || terminal) return;
-					attempt = 0;
-					let frame = null;
-					try {
-						frame = JSON.parse(String(ev.data));
-					} catch {
-						return;
-					}
-					if (!frame || typeof frame !== "object" || typeof frame.type !== "string") return;
-					onEvent(frame);
-					if (frame.type === "run" && TERMINAL.has(String(frame.status))) finish();
-				};
-				ws.onclose = () => {
-					if (closed || terminal) return;
-					const wait = Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt++);
-					timer = setTimeout(connect, wait);
-				};
-				ws.onerror = () => {};
-			};
-			connect();
-			if (opts.signal) opts.signal.addEventListener("abort", () => {
-				closed = true;
-				cleanup();
-			}, { once: true });
-			return {
-				close: () => {
-					closed = true;
-					cleanup();
-				},
-				done: () => terminal
-			};
-		}
-		var TERMINAL, BACKOFF_BASE_MS, BACKOFF_CAP_MS;
-		var init_FlowEvents = __esmMin((() => {
-			TERMINAL = /* @__PURE__ */ new Set([
-				"completed",
-				"failed",
-				"stopped",
-				"unknown"
-			]);
-			BACKOFF_BASE_MS = 500;
-			BACKOFF_CAP_MS = 5e3;
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/tagMap.ts
-		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
-		*  a future server payload) before it enters the store. */
-		function isTagColor(v) {
-			return typeof v === "string" && TAG_COLOR_VALUES.includes(v);
-		}
-		function slugify(name) {
-			return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "tag";
-		}
-		/** Generate a unique tag id from a name, appending -2, -3, … on collision. */
-		function uniqueId(name, existing) {
-			const base = slugify(name);
-			if (!existing.has(base)) return base;
-			let n = 2;
-			while (existing.has(`${base}-${n}`)) n++;
-			return `${base}-${n}`;
-		}
-		/** Cycle through the palette so consecutive new tags get distinct colors. */
-		function nextColor(count) {
-			return TAG_COLOR_VALUES[count % TAG_COLOR_VALUES.length];
-		}
-		/**
-		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
-		* before it enters the store. Drops any tag whose color isn't in the closed
-		* enum, then rebuilds the forward index dropping orphan entries. This is the
-		* front-end mirror of the pydantic TagDocument validator; the server enforces
-		* the same rules on PUT, but we don't trust the wire even from our own server
-		* — defense in depth.
-		*/
-		function validateDocument(parsed) {
-			const empty = {
-				tags: {},
-				map: {}
-			};
-			if (!parsed) return empty;
-			const tags = {};
-			for (const [id, def] of Object.entries(parsed.tags ?? {})) if (def && typeof def.name === "string" && isTagColor(def.color)) tags[id] = {
-				id,
-				name: def.name,
-				color: def.color
-			};
-			const knownIds = new Set(Object.keys(tags));
-			const map = {};
-			for (const [key, ids] of Object.entries(parsed.map ?? {})) if (Array.isArray(ids)) {
-				const clean = ids.filter((id) => typeof id === "string" && knownIds.has(id));
-				if (clean.length > 0) map[key] = clean;
-			}
-			return {
-				tags,
-				map
-			};
-		}
-		function loadPersisted() {
-			if (typeof localStorage === "undefined") return {
-				tags: {},
-				map: {}
-			};
-			try {
-				const raw = localStorage.getItem(STORAGE_KEY);
-				if (!raw) return {
-					tags: {},
-					map: {}
-				};
-				return validateDocument(JSON.parse(raw));
-			} catch {
-				return {
-					tags: {},
-					map: {}
-				};
-			}
-		}
-		/**
-		* Write-through to localStorage (synchronous cache) + schedule a debounced
-		* server PUT. Called from every mutation action. The localStorage write is
-		* unconditional (offline fallback stays fresh); the server PUT is gated by
-		* `serverSyncEnabled`. Failures are swallowed (the local state is still
-		* valid; the next successful mutation retries).
-		*/
-		function scheduleSync(data) {
-			try {
-				localStorage.setItem(STORAGE_KEY, JSON.stringify({
-					tags: data.tags,
-					map: data.map
-				}));
-			} catch {}
-			if (!serverSyncEnabled || typeof fetch === "undefined") return;
-			if (syncTimer) clearTimeout(syncTimer);
-			syncTimer = setTimeout(() => {
-				syncTimer = null;
-				apiFetch("/v1/tags", {
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						tags: data.tags,
-						map: data.map
-					})
-				}).catch((e) => {
-					console.warn("[tagMap] server sync failed:", e);
-				});
-			}, SYNC_DEBOUNCE_MS);
-		}
-		/**
-		* Hydrate the store from the server (canonical) + enable server pushes.
-		* Called once by the app shell on mount. The store already has the
-		* localStorage cache (loaded synchronously at module init), so the UI renders
-		* immediately; this replaces it with the server copy if one exists (the server
-		* wins ties — it's the cross-device source of truth). After this call,
-		* mutations push to the server via the debounced PUT.
-		*
-		* Silent on failure: if the server is unreachable, the store keeps the
-		* localStorage cache and server pushes stay disabled (offline mode).
-		*/
-		async function initTagSync() {
-			if (serverSyncEnabled) return;
-			if (typeof fetch === "undefined") return;
-			try {
-				const res = await apiFetch("/v1/tags");
-				if (!res.ok) return;
-				const doc = validateDocument(await res.json());
-				useTagMap.setState({
-					tags: doc.tags,
-					map: doc.map
-				});
-				serverSyncEnabled = true;
-			} catch {}
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in tag-map.spec.ts. (2026-09-12) */
-		function useTagMapHook() {
-			return (0, react.useSyncExternalStore)((l) => {
-				tagMapListeners.add(l);
-				return () => {
-					tagMapListeners.delete(l);
-				};
-			}, tagMapGetState);
-		}
-		/** Read tagsOf without a React subscription. The useListFilter accessor uses
-		*  this so the filter flow doesn't need to re-subscribe on every item. */
-		function tagsOf(key) {
-			return useTagMap.getState().map[key] ?? [];
-		}
-		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapListeners, tagMapState, notifyTagMap, tagMapSetState, tagMapGetState, useTagMap, tagMapActions;
-		var init_tagMap = __esmMin((() => {
-			init_api();
-			TagColor = {
-				brand: "brand",
-				sky: "sky",
-				violet: "violet",
-				rose: "rose",
-				emerald: "emerald",
-				amber: "amber",
-				cyan: "cyan"
-			};
-			TAG_COLOR_VALUES = Object.values(TagColor);
-			TAG_COLOR_META = {
-				brand: {
-					dot: "bg-brand",
-					pill: "border-brand/30 bg-brand/10 text-brand"
-				},
-				sky: {
-					dot: "bg-sky-500",
-					pill: "border-sky-500/30 bg-sky-500/10 text-sky-400"
-				},
-				violet: {
-					dot: "bg-violet-500",
-					pill: "border-violet-500/30 bg-violet-500/10 text-violet-400"
-				},
-				rose: {
-					dot: "bg-rose-500",
-					pill: "border-rose-500/30 bg-rose-500/10 text-rose-400"
-				},
-				emerald: {
-					dot: "bg-emerald-500",
-					pill: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-				},
-				amber: {
-					dot: "bg-amber-500",
-					pill: "border-amber-500/30 bg-amber-500/10 text-amber-400"
-				},
-				cyan: {
-					dot: "bg-cyan-500",
-					pill: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400"
-				}
-			};
-			STORAGE_KEY = "melite:tag-map:v1";
-			SYNC_DEBOUNCE_MS = 500;
-			serverSyncEnabled = false;
-			syncTimer = null;
-			initial = loadPersisted();
-			tagMapListeners = /* @__PURE__ */ new Set();
-			notifyTagMap = () => {
-				for (const l of tagMapListeners) l();
-			};
-			tagMapSetState = (patch) => {
-				const p = typeof patch === "function" ? patch(tagMapState) : patch;
-				tagMapState = {
-					...tagMapState,
-					...p
-				};
-				notifyTagMap();
-			};
-			tagMapGetState = () => tagMapState;
-			useTagMap = Object.assign(useTagMapHook, {
-				getState: tagMapGetState,
-				setState: tagMapSetState,
-				subscribe: (l) => {
-					tagMapListeners.add(l);
-					return () => {
-						tagMapListeners.delete(l);
-					};
-				}
-			});
-			tagMapActions = (set, get) => ({
-				createTag: (name, color) => {
-					const trimmed = name.trim();
-					if (!trimmed) return "";
-					const id = uniqueId(trimmed, new Set(Object.keys(get().tags)));
-					const c = color ?? nextColor(Object.keys(get().tags).length);
-					set((s) => {
-						const tags = {
-							...s.tags,
-							[id]: {
-								id,
-								name: trimmed,
-								color: c
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-					return id;
-				},
-				renameTag: (id, name) => {
-					const trimmed = name.trim();
-					if (!trimmed) return;
-					set((s) => {
-						const def = s.tags[id];
-						if (!def) return s;
-						const tags = {
-							...s.tags,
-							[id]: {
-								...def,
-								name: trimmed
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-				},
-				recolorTag: (id, color) => {
-					if (!isTagColor(color)) return;
-					set((s) => {
-						const def = s.tags[id];
-						if (!def) return s;
-						const tags = {
-							...s.tags,
-							[id]: {
-								...def,
-								color
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-				},
-				deleteTag: (id) => {
-					set((s) => {
-						if (!s.tags[id]) return s;
-						const tags = { ...s.tags };
-						delete tags[id];
-						const map = {};
-						for (const [key, ids] of Object.entries(s.map)) {
-							const filtered = ids.filter((t) => t !== id);
-							if (filtered.length > 0) map[key] = filtered;
-						}
-						scheduleSync({
-							tags,
-							map
-						});
-						return {
-							tags,
-							map
-						};
-					});
-				},
-				setItemTags: (key, tagIds) => {
-					const known = new Set(Object.keys(get().tags));
-					const clean = [...new Set(tagIds)].filter((id) => known.has(id));
-					set((s) => {
-						const map = { ...s.map };
-						if (clean.length > 0) map[key] = clean;
-						else delete map[key];
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
-					});
-				},
-				addTagToItem: (key, tagId) => {
-					if (!get().tags[tagId]) return;
-					set((s) => {
-						const current = s.map[key] ?? [];
-						if (current.includes(tagId)) return s;
-						const map = {
-							...s.map,
-							[key]: [...current, tagId]
-						};
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
-					});
-				},
-				removeTagFromItem: (key, tagId) => {
-					set((s) => {
-						const current = s.map[key];
-						if (!current || !current.includes(tagId)) return s;
-						const next = current.filter((t) => t !== tagId);
-						const map = { ...s.map };
-						if (next.length > 0) map[key] = next;
-						else delete map[key];
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
-					});
-				},
-				tagsOf: (key) => get().map[key] ?? [],
-				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
-			});
-			tagMapState = {
-				...tagMapActions(tagMapSetState, tagMapGetState),
-				tags: initial.tags,
-				map: initial.map
-			};
-		}));
-		//#endregion
-		//#region ../../web-kit/formats/src/npz.ts
-		var init_npz = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/formats/src/somaSkin.ts
-		var init_somaSkin = __esmMin((() => {
-			init_src();
-		}));
-		//#endregion
-		//#region ../../web-kit/formats/src/poseCodec.ts
-		/** Encode a Uint8Array to a base64 string.
-		*
-		*  Processes the input in 32KB chunks because String.fromCharCode.apply has
-		*  a ~65K argument limit on some engines (the historical V8 stack-arg limit).
-		*  Uses Array.from() rather than the brittle `as unknown as number[]` cast. */
-		function encodeBufferToB64(bytes) {
-			let bin = "";
-			const CHUNK = 32768;
-			for (let i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, Math.min(i + CHUNK, bytes.length))));
-			return btoa(bin);
-		}
-		var SOMA_VERTEX_COUNT, SOMA77_BONE_CONNECTIONS;
-		var init_poseCodec = __esmMin((() => {
-			SOMA_VERTEX_COUNT = 18056;
-			SOMA77_BONE_CONNECTIONS = [
-				[0, 1],
-				[1, 2],
-				[2, 3],
-				[3, 4],
-				[4, 5],
-				[5, 6],
-				[6, 7],
-				[6, 8],
-				[6, 9],
-				[6, 10],
-				[3, 11],
-				[11, 12],
-				[12, 13],
-				[13, 14],
-				[14, 15],
-				[15, 16],
-				[16, 17],
-				[17, 18],
-				[14, 19],
-				[19, 20],
-				[20, 21],
-				[21, 22],
-				[22, 23],
-				[14, 24],
-				[24, 25],
-				[25, 26],
-				[26, 27],
-				[27, 28],
-				[14, 29],
-				[29, 30],
-				[30, 31],
-				[31, 32],
-				[32, 33],
-				[14, 34],
-				[34, 35],
-				[35, 36],
-				[36, 37],
-				[37, 38],
-				[3, 39],
-				[39, 40],
-				[40, 41],
-				[41, 42],
-				[42, 43],
-				[43, 44],
-				[44, 45],
-				[45, 46],
-				[42, 47],
-				[47, 48],
-				[48, 49],
-				[49, 50],
-				[50, 51],
-				[42, 52],
-				[52, 53],
-				[53, 54],
-				[54, 55],
-				[55, 56],
-				[42, 57],
-				[57, 58],
-				[58, 59],
-				[59, 60],
-				[60, 61],
-				[42, 62],
-				[62, 63],
-				[63, 64],
-				[64, 65],
-				[65, 66],
-				[0, 67],
-				[67, 68],
-				[68, 69],
-				[69, 70],
-				[70, 71],
-				[0, 72],
-				[72, 73],
-				[73, 74],
-				[74, 75],
-				[75, 76]
-			];
-		})), J;
-		var init_motionNpz = __esmMin((() => {
-			init_somaSkin();
-			init_poseCodec();
-			J = 77;
-			(() => {
-				const table = /* @__PURE__ */ new Uint32Array(256);
-				for (let n = 0; n < 256; n++) {
-					let c = n;
-					for (let k = 0; k < 8; k++) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
-					table[n] = c >>> 0;
-				}
-				return table;
-			})();
-			(() => {
-				const parent = new Array(J).fill(-1);
-				for (const [p, c] of SOMA77_BONE_CONNECTIONS) parent[c] = p;
-				const children = Array.from({ length: J }, () => []);
-				for (let i = 0; i < J; i++) {
-					const p = parent[i];
-					if (p >= 0) children[p].push(i);
-				}
-				return children;
-			})();
-		}));
-		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
 		/**
 		* Returns a new indexed geometry based on `TrianglesDrawMode` draw mode.
@@ -51838,6 +45372,6919 @@ void main() {
 				}
 			};
 		}));
+		//#endregion
+		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/OrbitControls.js
+		init_GLTFLoader();
+		init_DRACOLoader();
+		init_three_module();
+		/**
+		* Fires when the camera has been transformed by the controls.
+		*
+		* @event OrbitControls#change
+		* @type {Object}
+		*/
+		const _changeEvent = { type: "change" };
+		/**
+		* Fires when an interaction was initiated.
+		*
+		* @event OrbitControls#start
+		* @type {Object}
+		*/
+		const _startEvent = { type: "start" };
+		/**
+		* Fires when an interaction has finished.
+		*
+		* @event OrbitControls#end
+		* @type {Object}
+		*/
+		const _endEvent = { type: "end" };
+		const _ray = new Ray();
+		const _plane = new Plane();
+		const _TILT_LIMIT = Math.cos(70 * MathUtils.DEG2RAD);
+		const _v = new Vector3();
+		const _twoPI = 2 * Math.PI;
+		const _STATE = {
+			NONE: -1,
+			ROTATE: 0,
+			DOLLY: 1,
+			PAN: 2,
+			TOUCH_ROTATE: 3,
+			TOUCH_PAN: 4,
+			TOUCH_DOLLY_PAN: 5,
+			TOUCH_DOLLY_ROTATE: 6
+		};
+		const _EPS = 1e-6;
+		/**
+		* Orbit controls allow the camera to orbit around a target.
+		*
+		* OrbitControls performs orbiting, dollying (zooming), and panning. Unlike {@link TrackballControls},
+		* it maintains the "up" direction `object.up` (+Y by default).
+		*
+		* - Orbit: Left mouse / touch: one-finger move.
+		* - Zoom: Middle mouse, or mousewheel / touch: two-finger spread or squish.
+		* - Pan: Right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move.
+		*
+		* ```js
+		* const controls = new OrbitControls( camera, renderer.domElement );
+		*
+		* // controls.update() must be called after any manual changes to the camera's transform
+		* camera.position.set( 0, 20, 100 );
+		* controls.update();
+		*
+		* function animate() {
+		*
+		* 	// required if controls.enableDamping or controls.autoRotate are set to true
+		* 	controls.update();
+		*
+		* 	renderer.render( scene, camera );
+		*
+		* }
+		* ```
+		*
+		* @augments Controls
+		* @three_import import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+		*/
+		var OrbitControls = class extends Controls {
+			/**
+			* Constructs a new controls instance.
+			*
+			* @param {Object3D} object - The object that is managed by the controls.
+			* @param {?HTMLElement} domElement - The HTML element used for event listeners.
+			*/
+			constructor(object, domElement = null) {
+				super(object, domElement);
+				this.state = _STATE.NONE;
+				/**
+				* The focus point of the controls, the `object` orbits around this.
+				* It can be updated manually at any point to change the focus of the controls.
+				*
+				* @type {Vector3}
+				*/
+				this.target = new Vector3();
+				/**
+				* The focus point of the `minTargetRadius` and `maxTargetRadius` limits.
+				* It can be updated manually at any point to change the center of interest
+				* for the `target`.
+				*
+				* @type {Vector3}
+				*/
+				this.cursor = new Vector3();
+				/**
+				* How far you can dolly in (perspective camera only).
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minDistance = 0;
+				/**
+				* How far you can dolly out (perspective camera only).
+				*
+				* @type {number}
+				* @default Infinity
+				*/
+				this.maxDistance = Infinity;
+				/**
+				* How far you can zoom in (orthographic camera only).
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minZoom = 0;
+				/**
+				* How far you can zoom out (orthographic camera only).
+				*
+				* @type {number}
+				* @default Infinity
+				*/
+				this.maxZoom = Infinity;
+				/**
+				* How close you can get the target to the 3D `cursor`.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minTargetRadius = 0;
+				/**
+				* How far you can move the target from the 3D `cursor`.
+				*
+				* @type {number}
+				* @default Infinity
+				*/
+				this.maxTargetRadius = Infinity;
+				/**
+				* How far you can orbit vertically, lower limit. Range is `[0, Math.PI]` radians.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minPolarAngle = 0;
+				/**
+				* How far you can orbit vertically, upper limit. Range is `[0, Math.PI]` radians.
+				*
+				* @type {number}
+				* @default Math.PI
+				*/
+				this.maxPolarAngle = Math.PI;
+				/**
+				* How far you can orbit horizontally, lower limit. If set, the interval `[ min, max ]`
+				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
+				*
+				* @type {number}
+				* @default -Infinity
+				*/
+				this.minAzimuthAngle = -Infinity;
+				/**
+				* How far you can orbit horizontally, upper limit. If set, the interval `[ min, max ]`
+				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
+				*
+				* @type {number}
+				* @default -Infinity
+				*/
+				this.maxAzimuthAngle = Infinity;
+				/**
+				* Set to `true` to enable damping (inertia), which can be used to give a sense of weight
+				* to the controls. Note that if this is enabled, you must call `update()` in your animation
+				* loop.
+				*
+				* @type {boolean}
+				* @default false
+				*/
+				this.enableDamping = false;
+				/**
+				* The damping inertia used if `enableDamping` is set to `true`.
+				*
+				* Note that for this to work, you must call `update()` in your animation loop.
+				*
+				* @type {number}
+				* @default 0.05
+				*/
+				this.dampingFactor = .05;
+				/**
+				* Enable or disable zooming (dollying) of the camera.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enableZoom = true;
+				/**
+				* Speed of zooming / dollying.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.zoomSpeed = 1;
+				/**
+				* Enable or disable horizontal and vertical rotation of the camera.
+				*
+				* Note that it is possible to disable a single axis by setting the min and max of the
+				* `minPolarAngle` or `minAzimuthAngle` to the same value, which will cause the vertical
+				* or horizontal rotation to be fixed at that value.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enableRotate = true;
+				/**
+				* Speed of rotation.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.rotateSpeed = 1;
+				/**
+				* How fast to rotate the camera when the keyboard is used.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.keyRotateSpeed = 1;
+				/**
+				* Enable or disable camera panning.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enablePan = true;
+				/**
+				* Speed of panning.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.panSpeed = 1;
+				/**
+				* Defines how the camera's position is translated when panning. If `true`, the camera pans
+				* in screen space. Otherwise, the camera pans in the plane orthogonal to the camera's up
+				* direction.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.screenSpacePanning = true;
+				/**
+				* How fast to pan the camera when the keyboard is used in
+				* pixels per keypress.
+				*
+				* @type {number}
+				* @default 7
+				*/
+				this.keyPanSpeed = 7;
+				/**
+				* Setting this property to `true` allows to zoom to the cursor's position.
+				*
+				* @type {boolean}
+				* @default false
+				*/
+				this.zoomToCursor = false;
+				/**
+				* Set to true to automatically rotate around the target
+				*
+				* Note that if this is enabled, you must call `update()` in your animation loop.
+				* If you want the auto-rotate speed to be independent of the frame rate (the refresh
+				* rate of the display), you must pass the time `deltaTime`, in seconds, to `update()`.
+				*
+				* @type {boolean}
+				* @default false
+				*/
+				this.autoRotate = false;
+				/**
+				* How fast to rotate around the target if `autoRotate` is `true`. The default  equates to 30 seconds
+				* per orbit at 60fps.
+				*
+				* Note that if `autoRotate` is enabled, you must call `update()` in your animation loop.
+				*
+				* @type {number}
+				* @default 2
+				*/
+				this.autoRotateSpeed = 2;
+				/**
+				* This object contains references to the keycodes for controlling camera panning.
+				*
+				* ```js
+				* controls.keys = {
+				* 	LEFT: 'ArrowLeft', //left arrow
+				* 	UP: 'ArrowUp', // up arrow
+				* 	RIGHT: 'ArrowRight', // right arrow
+				* 	BOTTOM: 'ArrowDown' // down arrow
+				* }
+				* ```
+				* @type {Object}
+				*/
+				this.keys = {
+					LEFT: "ArrowLeft",
+					UP: "ArrowUp",
+					RIGHT: "ArrowRight",
+					BOTTOM: "ArrowDown"
+				};
+				/**
+				* This object contains references to the mouse actions used by the controls.
+				*
+				* ```js
+				* controls.mouseButtons = {
+				* 	LEFT: THREE.MOUSE.ROTATE,
+				* 	MIDDLE: THREE.MOUSE.DOLLY,
+				* 	RIGHT: THREE.MOUSE.PAN
+				* }
+				* ```
+				* @type {Object}
+				*/
+				this.mouseButtons = {
+					LEFT: MOUSE.ROTATE,
+					MIDDLE: MOUSE.DOLLY,
+					RIGHT: MOUSE.PAN
+				};
+				/**
+				* This object contains references to the touch actions used by the controls.
+				*
+				* ```js
+				* controls.mouseButtons = {
+				* 	ONE: THREE.TOUCH.ROTATE,
+				* 	TWO: THREE.TOUCH.DOLLY_PAN
+				* }
+				* ```
+				* @type {Object}
+				*/
+				this.touches = {
+					ONE: TOUCH.ROTATE,
+					TWO: TOUCH.DOLLY_PAN
+				};
+				/**
+				* Used internally by `saveState()` and `reset()`.
+				*
+				* @type {Vector3}
+				*/
+				this.target0 = this.target.clone();
+				/**
+				* Used internally by `saveState()` and `reset()`.
+				*
+				* @type {Vector3}
+				*/
+				this.position0 = this.object.position.clone();
+				/**
+				* Used internally by `saveState()` and `reset()`.
+				*
+				* @type {number}
+				*/
+				this.zoom0 = this.object.zoom;
+				this._cursorStyle = "auto";
+				this._domElementKeyEvents = null;
+				this._lastPosition = new Vector3();
+				this._lastQuaternion = new Quaternion();
+				this._lastTargetPosition = new Vector3();
+				this._quat = new Quaternion().setFromUnitVectors(object.up, new Vector3(0, 1, 0));
+				this._quatInverse = this._quat.clone().invert();
+				this._spherical = new Spherical();
+				this._sphericalDelta = new Spherical();
+				this._scale = 1;
+				this._panOffset = new Vector3();
+				this._rotateStart = new Vector2();
+				this._rotateEnd = new Vector2();
+				this._rotateDelta = new Vector2();
+				this._panStart = new Vector2();
+				this._panEnd = new Vector2();
+				this._panDelta = new Vector2();
+				this._dollyStart = new Vector2();
+				this._dollyEnd = new Vector2();
+				this._dollyDelta = new Vector2();
+				this._dollyDirection = new Vector3();
+				this._mouse = new Vector2();
+				this._performCursorZoom = false;
+				this._pointers = [];
+				this._pointerPositions = {};
+				this._controlActive = false;
+				this._onPointerMove = onPointerMove.bind(this);
+				this._onPointerDown = onPointerDown.bind(this);
+				this._onPointerUp = onPointerUp.bind(this);
+				this._onContextMenu = onContextMenu.bind(this);
+				this._onMouseWheel = onMouseWheel.bind(this);
+				this._onKeyDown = onKeyDown.bind(this);
+				this._onTouchStart = onTouchStart.bind(this);
+				this._onTouchMove = onTouchMove.bind(this);
+				this._onMouseDown = onMouseDown.bind(this);
+				this._onMouseMove = onMouseMove.bind(this);
+				this._interceptControlDown = interceptControlDown.bind(this);
+				this._interceptControlUp = interceptControlUp.bind(this);
+				if (this.domElement !== null) this.connect(this.domElement);
+				this.update();
+			}
+			/**
+			* Defines the visual representation of the cursor.
+			*
+			* @type {('auto'|'grab')}
+			* @default 'auto'
+			*/
+			set cursorStyle(type) {
+				this._cursorStyle = type;
+				if (type === "grab") this.domElement.style.cursor = "grab";
+				else this.domElement.style.cursor = "auto";
+			}
+			get cursorStyle() {
+				return this._cursorStyle;
+			}
+			connect(element) {
+				super.connect(element);
+				this.domElement.addEventListener("pointerdown", this._onPointerDown);
+				this.domElement.addEventListener("pointercancel", this._onPointerUp);
+				this.domElement.addEventListener("contextmenu", this._onContextMenu);
+				this.domElement.addEventListener("wheel", this._onMouseWheel, { passive: false });
+				this.domElement.getRootNode().addEventListener("keydown", this._interceptControlDown, {
+					passive: true,
+					capture: true
+				});
+				this.domElement.style.touchAction = "none";
+			}
+			disconnect() {
+				this.domElement.removeEventListener("pointerdown", this._onPointerDown);
+				this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
+				this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
+				this.domElement.removeEventListener("pointercancel", this._onPointerUp);
+				this.domElement.removeEventListener("wheel", this._onMouseWheel);
+				this.domElement.removeEventListener("contextmenu", this._onContextMenu);
+				this.stopListenToKeyEvents();
+				this.domElement.getRootNode().removeEventListener("keydown", this._interceptControlDown, { capture: true });
+				this.domElement.style.touchAction = "";
+			}
+			dispose() {
+				this.disconnect();
+			}
+			/**
+			* Get the current vertical rotation, in radians.
+			*
+			* @return {number} The current vertical rotation, in radians.
+			*/
+			getPolarAngle() {
+				return this._spherical.phi;
+			}
+			/**
+			* Get the current horizontal rotation, in radians.
+			*
+			* @return {number} The current horizontal rotation, in radians.
+			*/
+			getAzimuthalAngle() {
+				return this._spherical.theta;
+			}
+			/**
+			* Returns the distance from the camera to the target.
+			*
+			* @return {number} The distance from the camera to the target.
+			*/
+			getDistance() {
+				return this.object.position.distanceTo(this.target);
+			}
+			/**
+			* Adds key event listeners to the given DOM element.
+			* `window` is a recommended argument for using this method.
+			*
+			* @param {HTMLElement} domElement - The DOM element
+			*/
+			listenToKeyEvents(domElement) {
+				domElement.addEventListener("keydown", this._onKeyDown);
+				this._domElementKeyEvents = domElement;
+			}
+			/**
+			* Removes the key event listener previously defined with `listenToKeyEvents()`.
+			*/
+			stopListenToKeyEvents() {
+				if (this._domElementKeyEvents !== null) {
+					this._domElementKeyEvents.removeEventListener("keydown", this._onKeyDown);
+					this._domElementKeyEvents = null;
+				}
+			}
+			/**
+			* Save the current state of the controls. This can later be recovered with `reset()`.
+			*/
+			saveState() {
+				this.target0.copy(this.target);
+				this.position0.copy(this.object.position);
+				this.zoom0 = this.object.zoom;
+			}
+			/**
+			* Reset the controls to their state from either the last time the `saveState()`
+			* was called, or the initial state.
+			*/
+			reset() {
+				this.target.copy(this.target0);
+				this.object.position.copy(this.position0);
+				this.object.zoom = this.zoom0;
+				this.object.updateProjectionMatrix();
+				this.dispatchEvent(_changeEvent);
+				this.update();
+				this.state = _STATE.NONE;
+			}
+			/**
+			* Programmatically pan the camera.
+			*
+			* @param {number} deltaX - The horizontal pan amount in pixels.
+			* @param {number} deltaY - The vertical pan amount in pixels.
+			*/
+			pan(deltaX, deltaY) {
+				this._pan(deltaX, deltaY);
+				this.update();
+			}
+			/**
+			* Programmatically dolly in (zoom in for perspective camera).
+			*
+			* @param {number} dollyScale - The dolly scale factor.
+			*/
+			dollyIn(dollyScale) {
+				this._dollyIn(dollyScale);
+				this.update();
+			}
+			/**
+			* Programmatically dolly out (zoom out for perspective camera).
+			*
+			* @param {number} dollyScale - The dolly scale factor.
+			*/
+			dollyOut(dollyScale) {
+				this._dollyOut(dollyScale);
+				this.update();
+			}
+			/**
+			* Programmatically rotate the camera left (around the vertical axis).
+			*
+			* @param {number} angle - The rotation angle in radians.
+			*/
+			rotateLeft(angle) {
+				this._rotateLeft(angle);
+				this.update();
+			}
+			/**
+			* Programmatically rotate the camera up (around the horizontal axis).
+			*
+			* @param {number} angle - The rotation angle in radians.
+			*/
+			rotateUp(angle) {
+				this._rotateUp(angle);
+				this.update();
+			}
+			update(deltaTime = null) {
+				const position = this.object.position;
+				_v.copy(position).sub(this.target);
+				_v.applyQuaternion(this._quat);
+				this._spherical.setFromVector3(_v);
+				if (this.autoRotate && this.state === _STATE.NONE) this._rotateLeft(this._getAutoRotationAngle(deltaTime));
+				if (this.enableDamping) {
+					this._spherical.theta += this._sphericalDelta.theta * this.dampingFactor;
+					this._spherical.phi += this._sphericalDelta.phi * this.dampingFactor;
+				} else {
+					this._spherical.theta += this._sphericalDelta.theta;
+					this._spherical.phi += this._sphericalDelta.phi;
+				}
+				let min = this.minAzimuthAngle;
+				let max = this.maxAzimuthAngle;
+				if (isFinite(min) && isFinite(max)) {
+					if (min < -Math.PI) min += _twoPI;
+					else if (min > Math.PI) min -= _twoPI;
+					if (max < -Math.PI) max += _twoPI;
+					else if (max > Math.PI) max -= _twoPI;
+					if (min <= max) this._spherical.theta = Math.max(min, Math.min(max, this._spherical.theta));
+					else this._spherical.theta = this._spherical.theta > (min + max) / 2 ? Math.max(min, this._spherical.theta) : Math.min(max, this._spherical.theta);
+				}
+				this._spherical.phi = Math.max(this.minPolarAngle, Math.min(this.maxPolarAngle, this._spherical.phi));
+				this._spherical.makeSafe();
+				if (this.enableDamping === true) this.target.addScaledVector(this._panOffset, this.dampingFactor);
+				else this.target.add(this._panOffset);
+				this.target.sub(this.cursor);
+				this.target.clampLength(this.minTargetRadius, this.maxTargetRadius);
+				this.target.add(this.cursor);
+				let zoomChanged = false;
+				if (this.zoomToCursor && this._performCursorZoom || this.object.isOrthographicCamera) this._spherical.radius = this._clampDistance(this._spherical.radius);
+				else {
+					const prevRadius = this._spherical.radius;
+					this._spherical.radius = this._clampDistance(this._spherical.radius * this._scale);
+					zoomChanged = prevRadius != this._spherical.radius;
+				}
+				_v.setFromSpherical(this._spherical);
+				_v.applyQuaternion(this._quatInverse);
+				position.copy(this.target).add(_v);
+				this.object.lookAt(this.target);
+				if (this.enableDamping === true) {
+					this._sphericalDelta.theta *= 1 - this.dampingFactor;
+					this._sphericalDelta.phi *= 1 - this.dampingFactor;
+					this._panOffset.multiplyScalar(1 - this.dampingFactor);
+				} else {
+					this._sphericalDelta.set(0, 0, 0);
+					this._panOffset.set(0, 0, 0);
+				}
+				if (this.zoomToCursor && this._performCursorZoom) {
+					let newRadius = null;
+					if (this.object.isPerspectiveCamera) {
+						const prevRadius = _v.length();
+						newRadius = this._clampDistance(prevRadius * this._scale);
+						const radiusDelta = prevRadius - newRadius;
+						this.object.position.addScaledVector(this._dollyDirection, radiusDelta);
+						this.object.updateMatrixWorld();
+						zoomChanged = !!radiusDelta;
+					} else if (this.object.isOrthographicCamera) {
+						const mouseBefore = new Vector3(this._mouse.x, this._mouse.y, 0);
+						mouseBefore.unproject(this.object);
+						const prevZoom = this.object.zoom;
+						this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
+						this.object.updateProjectionMatrix();
+						zoomChanged = prevZoom !== this.object.zoom;
+						const mouseAfter = new Vector3(this._mouse.x, this._mouse.y, 0);
+						mouseAfter.unproject(this.object);
+						this.object.position.sub(mouseAfter).add(mouseBefore);
+						this.object.updateMatrixWorld();
+						newRadius = _v.length();
+					} else {
+						console.warn("WARNING: OrbitControls.js encountered an unknown camera type - zoom to cursor disabled.");
+						this.zoomToCursor = false;
+					}
+					if (newRadius !== null) {
+						if (this.screenSpacePanning) this.target.set(0, 0, -1).transformDirection(this.object.matrix).multiplyScalar(newRadius).add(this.object.position);
+						else {
+							_ray.origin.copy(this.object.position);
+							_ray.direction.set(0, 0, -1).transformDirection(this.object.matrix);
+							if (Math.abs(this.object.up.dot(_ray.direction)) < _TILT_LIMIT) this.object.lookAt(this.target);
+							else {
+								_plane.setFromNormalAndCoplanarPoint(this.object.up, this.target);
+								_ray.intersectPlane(_plane, this.target);
+							}
+						}
+					}
+				} else if (this.object.isOrthographicCamera) {
+					const prevZoom = this.object.zoom;
+					this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
+					if (prevZoom !== this.object.zoom) {
+						this.object.updateProjectionMatrix();
+						zoomChanged = true;
+					}
+				}
+				this._scale = 1;
+				this._performCursorZoom = false;
+				if (zoomChanged || this._lastPosition.distanceToSquared(this.object.position) > _EPS || 8 * (1 - this._lastQuaternion.dot(this.object.quaternion)) > _EPS || this._lastTargetPosition.distanceToSquared(this.target) > _EPS) {
+					this.dispatchEvent(_changeEvent);
+					this._lastPosition.copy(this.object.position);
+					this._lastQuaternion.copy(this.object.quaternion);
+					this._lastTargetPosition.copy(this.target);
+					return true;
+				}
+				return false;
+			}
+			_getAutoRotationAngle(deltaTime) {
+				if (deltaTime !== null) return _twoPI / 60 * this.autoRotateSpeed * deltaTime;
+				else return _twoPI / 60 / 60 * this.autoRotateSpeed;
+			}
+			_getZoomScale(delta) {
+				const normalizedDelta = Math.abs(delta * .01);
+				return Math.pow(.95, this.zoomSpeed * normalizedDelta);
+			}
+			_rotateLeft(angle) {
+				this._sphericalDelta.theta -= angle;
+			}
+			_rotateUp(angle) {
+				this._sphericalDelta.phi -= angle;
+			}
+			_panLeft(distance, objectMatrix) {
+				_v.setFromMatrixColumn(objectMatrix, 0);
+				_v.multiplyScalar(-distance);
+				this._panOffset.add(_v);
+			}
+			_panUp(distance, objectMatrix) {
+				if (this.screenSpacePanning === true) _v.setFromMatrixColumn(objectMatrix, 1);
+				else {
+					_v.setFromMatrixColumn(objectMatrix, 0);
+					_v.crossVectors(this.object.up, _v);
+				}
+				_v.multiplyScalar(distance);
+				this._panOffset.add(_v);
+			}
+			_pan(deltaX, deltaY) {
+				const element = this.domElement;
+				if (this.object.isPerspectiveCamera) {
+					const position = this.object.position;
+					_v.copy(position).sub(this.target);
+					let targetDistance = _v.length();
+					targetDistance *= Math.tan(this.object.fov / 2 * Math.PI / 180);
+					this._panLeft(2 * deltaX * targetDistance / element.clientHeight, this.object.matrix);
+					this._panUp(2 * deltaY * targetDistance / element.clientHeight, this.object.matrix);
+				} else if (this.object.isOrthographicCamera) {
+					this._panLeft(deltaX * (this.object.right - this.object.left) / this.object.zoom / element.clientWidth, this.object.matrix);
+					this._panUp(deltaY * (this.object.top - this.object.bottom) / this.object.zoom / element.clientHeight, this.object.matrix);
+				} else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.");
+					this.enablePan = false;
+				}
+			}
+			_dollyOut(dollyScale) {
+				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale /= dollyScale;
+				else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
+					this.enableZoom = false;
+				}
+			}
+			_dollyIn(dollyScale) {
+				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale *= dollyScale;
+				else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
+					this.enableZoom = false;
+				}
+			}
+			_updateZoomParameters(x, y) {
+				if (!this.zoomToCursor) return;
+				this._performCursorZoom = true;
+				const rect = this.domElement.getBoundingClientRect();
+				const dx = x - rect.left;
+				const dy = y - rect.top;
+				const w = rect.width;
+				const h = rect.height;
+				this._mouse.x = dx / w * 2 - 1;
+				this._mouse.y = -(dy / h) * 2 + 1;
+				this._dollyDirection.set(this._mouse.x, this._mouse.y, 1).unproject(this.object).sub(this.object.position).normalize();
+			}
+			_clampDistance(dist) {
+				return Math.max(this.minDistance, Math.min(this.maxDistance, dist));
+			}
+			_handleMouseDownRotate(event) {
+				this._rotateStart.set(event.clientX, event.clientY);
+			}
+			_handleMouseDownDolly(event) {
+				this._updateZoomParameters(event.clientX, event.clientX);
+				this._dollyStart.set(event.clientX, event.clientY);
+			}
+			_handleMouseDownPan(event) {
+				this._panStart.set(event.clientX, event.clientY);
+			}
+			_handleMouseMoveRotate(event) {
+				this._rotateEnd.set(event.clientX, event.clientY);
+				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
+				const element = this.domElement;
+				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
+				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
+				this._rotateStart.copy(this._rotateEnd);
+				this.update();
+			}
+			_handleMouseMoveDolly(event) {
+				this._dollyEnd.set(event.clientX, event.clientY);
+				this._dollyDelta.subVectors(this._dollyEnd, this._dollyStart);
+				if (this._dollyDelta.y > 0) this._dollyOut(this._getZoomScale(this._dollyDelta.y));
+				else if (this._dollyDelta.y < 0) this._dollyIn(this._getZoomScale(this._dollyDelta.y));
+				this._dollyStart.copy(this._dollyEnd);
+				this.update();
+			}
+			_handleMouseMovePan(event) {
+				this._panEnd.set(event.clientX, event.clientY);
+				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
+				this._pan(this._panDelta.x, this._panDelta.y);
+				this._panStart.copy(this._panEnd);
+				this.update();
+			}
+			_handleMouseWheel(event) {
+				this._updateZoomParameters(event.clientX, event.clientY);
+				if (event.deltaY < 0) this._dollyIn(this._getZoomScale(event.deltaY));
+				else if (event.deltaY > 0) this._dollyOut(this._getZoomScale(event.deltaY));
+				this.update();
+			}
+			_handleKeyDown(event) {
+				let needsUpdate = false;
+				switch (event.code) {
+					case this.keys.UP:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateUp(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(0, this.keyPanSpeed);
+						needsUpdate = true;
+						break;
+					case this.keys.BOTTOM:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateUp(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(0, -this.keyPanSpeed);
+						needsUpdate = true;
+						break;
+					case this.keys.LEFT:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateLeft(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(this.keyPanSpeed, 0);
+						needsUpdate = true;
+						break;
+					case this.keys.RIGHT:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateLeft(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(-this.keyPanSpeed, 0);
+						needsUpdate = true;
+				}
+				if (needsUpdate) {
+					event.preventDefault();
+					this.update();
+				}
+			}
+			_handleTouchStartRotate(event) {
+				if (this._pointers.length === 1) this._rotateStart.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._rotateStart.set(x, y);
+				}
+			}
+			_handleTouchStartPan(event) {
+				if (this._pointers.length === 1) this._panStart.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._panStart.set(x, y);
+				}
+			}
+			_handleTouchStartDolly(event) {
+				const position = this._getSecondPointerPosition(event);
+				const dx = event.pageX - position.x;
+				const dy = event.pageY - position.y;
+				const distance = Math.sqrt(dx * dx + dy * dy);
+				this._dollyStart.set(0, distance);
+			}
+			_handleTouchStartDollyPan(event) {
+				if (this.enableZoom) this._handleTouchStartDolly(event);
+				if (this.enablePan) this._handleTouchStartPan(event);
+			}
+			_handleTouchStartDollyRotate(event) {
+				if (this.enableZoom) this._handleTouchStartDolly(event);
+				if (this.enableRotate) this._handleTouchStartRotate(event);
+			}
+			_handleTouchMoveRotate(event) {
+				if (this._pointers.length == 1) this._rotateEnd.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._rotateEnd.set(x, y);
+				}
+				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
+				const element = this.domElement;
+				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
+				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
+				this._rotateStart.copy(this._rotateEnd);
+			}
+			_handleTouchMovePan(event) {
+				if (this._pointers.length === 1) this._panEnd.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._panEnd.set(x, y);
+				}
+				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
+				this._pan(this._panDelta.x, this._panDelta.y);
+				this._panStart.copy(this._panEnd);
+			}
+			_handleTouchMoveDolly(event) {
+				const position = this._getSecondPointerPosition(event);
+				const dx = event.pageX - position.x;
+				const dy = event.pageY - position.y;
+				const distance = Math.sqrt(dx * dx + dy * dy);
+				this._dollyEnd.set(0, distance);
+				this._dollyDelta.set(0, Math.pow(this._dollyEnd.y / this._dollyStart.y, this.zoomSpeed));
+				this._dollyOut(this._dollyDelta.y);
+				this._dollyStart.copy(this._dollyEnd);
+				const centerX = (event.pageX + position.x) * .5;
+				const centerY = (event.pageY + position.y) * .5;
+				this._updateZoomParameters(centerX, centerY);
+			}
+			_handleTouchMoveDollyPan(event) {
+				if (this.enableZoom) this._handleTouchMoveDolly(event);
+				if (this.enablePan) this._handleTouchMovePan(event);
+			}
+			_handleTouchMoveDollyRotate(event) {
+				if (this.enableZoom) this._handleTouchMoveDolly(event);
+				if (this.enableRotate) this._handleTouchMoveRotate(event);
+			}
+			_addPointer(event) {
+				this._pointers.push(event.pointerId);
+			}
+			_removePointer(event) {
+				delete this._pointerPositions[event.pointerId];
+				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) {
+					this._pointers.splice(i, 1);
+					return;
+				}
+			}
+			_isTrackingPointer(event) {
+				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) return true;
+				return false;
+			}
+			_trackPointer(event) {
+				let position = this._pointerPositions[event.pointerId];
+				if (position === void 0) {
+					position = new Vector2();
+					this._pointerPositions[event.pointerId] = position;
+				}
+				position.set(event.pageX, event.pageY);
+			}
+			_getSecondPointerPosition(event) {
+				const pointerId = event.pointerId === this._pointers[0] ? this._pointers[1] : this._pointers[0];
+				return this._pointerPositions[pointerId];
+			}
+			_customWheelEvent(event) {
+				const mode = event.deltaMode;
+				const newEvent = {
+					clientX: event.clientX,
+					clientY: event.clientY,
+					deltaY: event.deltaY
+				};
+				switch (mode) {
+					case 1:
+						newEvent.deltaY *= 16;
+						break;
+					case 2: newEvent.deltaY *= 100;
+				}
+				if (event.ctrlKey && !this._controlActive) newEvent.deltaY *= 10;
+				return newEvent;
+			}
+		};
+		function onPointerDown(event) {
+			if (this.enabled === false) return;
+			if (this._pointers.length === 0) {
+				this.domElement.setPointerCapture(event.pointerId);
+				this.domElement.ownerDocument.addEventListener("pointermove", this._onPointerMove);
+				this.domElement.ownerDocument.addEventListener("pointerup", this._onPointerUp);
+			}
+			if (this._isTrackingPointer(event)) return;
+			this._addPointer(event);
+			if (event.pointerType === "touch") this._onTouchStart(event);
+			else this._onMouseDown(event);
+			if (this._cursorStyle === "grab") this.domElement.style.cursor = "grabbing";
+		}
+		function onPointerMove(event) {
+			if (this.enabled === false) return;
+			if (event.pointerType === "touch") this._onTouchMove(event);
+			else this._onMouseMove(event);
+		}
+		function onPointerUp(event) {
+			this._removePointer(event);
+			switch (this._pointers.length) {
+				case 0:
+					this.domElement.releasePointerCapture(event.pointerId);
+					this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
+					this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
+					this.dispatchEvent(_endEvent);
+					this.state = _STATE.NONE;
+					if (this._cursorStyle === "grab") this.domElement.style.cursor = "grab";
+					break;
+				case 1:
+					const pointerId = this._pointers[0];
+					const position = this._pointerPositions[pointerId];
+					this._onTouchStart({
+						pointerId,
+						pageX: position.x,
+						pageY: position.y
+					});
+			}
+		}
+		function onMouseDown(event) {
+			let mouseAction;
+			switch (event.button) {
+				case 0:
+					mouseAction = this.mouseButtons.LEFT;
+					break;
+				case 1:
+					mouseAction = this.mouseButtons.MIDDLE;
+					break;
+				case 2:
+					mouseAction = this.mouseButtons.RIGHT;
+					break;
+				default: mouseAction = -1;
+			}
+			switch (mouseAction) {
+				case MOUSE.DOLLY:
+					if (this.enableZoom === false) return;
+					this._handleMouseDownDolly(event);
+					this.state = _STATE.DOLLY;
+					break;
+				case MOUSE.ROTATE:
+					if (event.ctrlKey || event.metaKey || event.shiftKey) {
+						if (this.enablePan === false) return;
+						this._handleMouseDownPan(event);
+						this.state = _STATE.PAN;
+					} else {
+						if (this.enableRotate === false) return;
+						this._handleMouseDownRotate(event);
+						this.state = _STATE.ROTATE;
+					}
+					break;
+				case MOUSE.PAN:
+					if (event.ctrlKey || event.metaKey || event.shiftKey) {
+						if (this.enableRotate === false) return;
+						this._handleMouseDownRotate(event);
+						this.state = _STATE.ROTATE;
+					} else {
+						if (this.enablePan === false) return;
+						this._handleMouseDownPan(event);
+						this.state = _STATE.PAN;
+					}
+					break;
+				default: this.state = _STATE.NONE;
+			}
+			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
+		}
+		function onMouseMove(event) {
+			switch (this.state) {
+				case _STATE.ROTATE:
+					if (this.enableRotate === false) return;
+					this._handleMouseMoveRotate(event);
+					break;
+				case _STATE.DOLLY:
+					if (this.enableZoom === false) return;
+					this._handleMouseMoveDolly(event);
+					break;
+				case _STATE.PAN:
+					if (this.enablePan === false) return;
+					this._handleMouseMovePan(event);
+			}
+		}
+		function onMouseWheel(event) {
+			if (this.enabled === false || this.enableZoom === false || this.state !== _STATE.NONE) return;
+			event.preventDefault();
+			this.dispatchEvent(_startEvent);
+			this._handleMouseWheel(this._customWheelEvent(event));
+			this.dispatchEvent(_endEvent);
+		}
+		function onKeyDown(event) {
+			if (this.enabled === false) return;
+			this._handleKeyDown(event);
+		}
+		function onTouchStart(event) {
+			this._trackPointer(event);
+			switch (this._pointers.length) {
+				case 1:
+					switch (this.touches.ONE) {
+						case TOUCH.ROTATE:
+							if (this.enableRotate === false) return;
+							this._handleTouchStartRotate(event);
+							this.state = _STATE.TOUCH_ROTATE;
+							break;
+						case TOUCH.PAN:
+							if (this.enablePan === false) return;
+							this._handleTouchStartPan(event);
+							this.state = _STATE.TOUCH_PAN;
+							break;
+						default: this.state = _STATE.NONE;
+					}
+					break;
+				case 2:
+					switch (this.touches.TWO) {
+						case TOUCH.DOLLY_PAN:
+							if (this.enableZoom === false && this.enablePan === false) return;
+							this._handleTouchStartDollyPan(event);
+							this.state = _STATE.TOUCH_DOLLY_PAN;
+							break;
+						case TOUCH.DOLLY_ROTATE:
+							if (this.enableZoom === false && this.enableRotate === false) return;
+							this._handleTouchStartDollyRotate(event);
+							this.state = _STATE.TOUCH_DOLLY_ROTATE;
+							break;
+						default: this.state = _STATE.NONE;
+					}
+					break;
+				default: this.state = _STATE.NONE;
+			}
+			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
+		}
+		function onTouchMove(event) {
+			this._trackPointer(event);
+			switch (this.state) {
+				case _STATE.TOUCH_ROTATE:
+					if (this.enableRotate === false) return;
+					this._handleTouchMoveRotate(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_PAN:
+					if (this.enablePan === false) return;
+					this._handleTouchMovePan(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_DOLLY_PAN:
+					if (this.enableZoom === false && this.enablePan === false) return;
+					this._handleTouchMoveDollyPan(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_DOLLY_ROTATE:
+					if (this.enableZoom === false && this.enableRotate === false) return;
+					this._handleTouchMoveDollyRotate(event);
+					this.update();
+					break;
+				default: this.state = _STATE.NONE;
+			}
+		}
+		function onContextMenu(event) {
+			if (this.enabled === false) return;
+			event.preventDefault();
+		}
+		function interceptControlDown(event) {
+			if (event.key === "Control") {
+				this._controlActive = true;
+				this.domElement.getRootNode().addEventListener("keyup", this._interceptControlUp, {
+					passive: true,
+					capture: true
+				});
+			}
+		}
+		function interceptControlUp(event) {
+			if (event.key === "Control") {
+				this._controlActive = false;
+				this.domElement.getRootNode().removeEventListener("keyup", this._interceptControlUp, {
+					passive: true,
+					capture: true
+				});
+			}
+		}
+		//#endregion
+		//#region ../card-base/src/stage3d.ts
+		init_three_module();
+		/** The r3f pointer-events analogue lives on userData.pick (see header). */
+		function findPickCarrier(o) {
+			let cur = o;
+			while (cur !== null) {
+				if (cur.userData !== void 0 && cur.userData.pick !== void 0) return cur;
+				cur = cur.parent;
+			}
+			return null;
+		}
+		/** Skip hits on a TransformControls gizmo subtree (invisible pick planes
+		*  would swallow every click while a gizmo is attached). */
+		function isGizmoHit(o) {
+			let cur = o;
+			while (cur !== null) {
+				if (cur.gizmo !== void 0) return true;
+				cur = cur.parent;
+			}
+			return false;
+		}
+		function mountStage3D(canvas, opts = {}) {
+			let renderer;
+			try {
+				renderer = new WebGLRenderer({
+					canvas,
+					antialias: true,
+					alpha: opts.alpha !== false,
+					preserveDrawingBuffer: opts.preserveDrawingBuffer === true
+				});
+			} catch (e) {
+				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
+				return null;
+			}
+			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = 1;
+			renderer.toneMapping = opts.toneMapping ?? 4;
+			const scene = new Scene();
+			scene.background = null;
+			const camera = new PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
+			camera.position.set(...opts.camera ?? [
+				2.2,
+				1.6,
+				2.6
+			]);
+			camera.lookAt(0, .8, 0);
+			const controls = new OrbitControls(camera, canvas);
+			controls.target.set(...opts.target ?? [
+				0,
+				.8,
+				0
+			]);
+			controls.enableDamping = true;
+			controls.dampingFactor = .1;
+			if (opts.minDistance !== void 0) controls.minDistance = opts.minDistance;
+			if (opts.maxDistance !== void 0) controls.maxDistance = opts.maxDistance;
+			if (opts.maxPolarAngle !== void 0) controls.maxPolarAngle = opts.maxPolarAngle;
+			controls.update();
+			const ticks = [];
+			const addTick = (fn) => {
+				ticks.push(fn);
+				return () => {
+					const i = ticks.indexOf(fn);
+					if (i >= 0) ticks.splice(i, 1);
+				};
+			};
+			const raycaster = new Raycaster();
+			const pointer = new Vector2();
+			let hovered = null;
+			let downAt = 0;
+			const threshold = opts.clickVsDragMs ?? 350;
+			const pickAt = (ev) => {
+				const r = canvas.getBoundingClientRect();
+				if (r.width === 0 || r.height === 0) return null;
+				pointer.x = (ev.clientX - r.left) / r.width * 2 - 1;
+				pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+				raycaster.setFromCamera(pointer, camera);
+				const hits = raycaster.intersectObjects(scene.children, true);
+				for (const hit of hits) {
+					if (isGizmoHit(hit.object)) continue;
+					const carrier = findPickCarrier(hit.object);
+					if (carrier !== null) return {
+						carrier,
+						point: hit.point
+					};
+				}
+				return null;
+			};
+			const onPointerDown = (e) => {
+				downAt = e.timeStamp;
+			};
+			const onPointerMove = (e) => {
+				const found = pickAt(e);
+				const carrier = found?.carrier ?? null;
+				if (carrier !== hovered) {
+					(hovered?.userData.pick)?.out?.(e);
+					document.body.style.cursor = "auto";
+					hovered = carrier;
+					if (carrier !== null && found !== null) carrier.userData.pick.over?.(found.point, e);
+				}
+			};
+			const onPointerLeave = (e) => {
+				if (hovered !== null) {
+					hovered.userData.pick.out?.(e);
+					document.body.style.cursor = "auto";
+					hovered = null;
+				}
+			};
+			const onClick = (e) => {
+				if (e.timeStamp - downAt > threshold) return;
+				const found = pickAt(e);
+				if (found !== null) found.carrier.userData.pick.click?.(found.point, e);
+				else opts.onEmptyClick?.();
+			};
+			canvas.addEventListener("pointerdown", onPointerDown);
+			canvas.addEventListener("pointermove", onPointerMove);
+			canvas.addEventListener("pointerleave", onPointerLeave);
+			canvas.addEventListener("click", onClick);
+			let raf = 0;
+			const clock = new Clock();
+			const frame = () => {
+				raf = requestAnimationFrame(frame);
+				const delta = clock.getDelta();
+				for (const t of ticks) t(delta);
+				controls.update();
+				renderer.render(scene, camera);
+			};
+			frame();
+			const resize = () => {
+				const w = canvas.clientWidth, h = canvas.clientHeight;
+				if (w === 0 || h === 0) return;
+				renderer.setSize(w, h, false);
+				camera.aspect = w / h;
+				camera.updateProjectionMatrix();
+			};
+			resize();
+			const ro = new ResizeObserver(resize);
+			ro.observe(canvas);
+			return {
+				canvas,
+				renderer,
+				scene,
+				camera,
+				controls,
+				addTick,
+				resize,
+				dispose: () => {
+					cancelAnimationFrame(raf);
+					ro.disconnect();
+					canvas.removeEventListener("pointerdown", onPointerDown);
+					canvas.removeEventListener("pointermove", onPointerMove);
+					canvas.removeEventListener("pointerleave", onPointerLeave);
+					canvas.removeEventListener("click", onClick);
+					controls.dispose();
+					renderer.dispose();
+				}
+			};
+		}
+		//#endregion
+		//#region \0dsh-css:card-base/src/preview.module.css.mjs
+		const css$4 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.ClEuBa_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
+		const tagId$4 = "@melite-plugin/dsh-card-view/preview.module.css@120c4109";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
+			tag.dataset.pluginCss = tagId$4;
+			tag.textContent = css$4;
+			document.head.appendChild(tag);
+		}
+		var preview_module_css_default = {
+			"empty": "ClEuBa_empty",
+			"figureError": "ClEuBa_figureError",
+			"hero": "ClEuBa_hero",
+			"heroAudio": "ClEuBa_heroAudio",
+			"heroImg": "ClEuBa_heroImg",
+			"heroIncoming": "ClEuBa_heroIncoming",
+			"historyBlock": "ClEuBa_historyBlock",
+			"historyTile": "ClEuBa_historyTile",
+			"historyTileActive": "ClEuBa_historyTileActive",
+			"historyTitle": "ClEuBa_historyTitle",
+			"stageCanvas": "ClEuBa_stageCanvas",
+			"stagePreview": "ClEuBa_stagePreview",
+			"staleBadge": "ClEuBa_staleBadge",
+			"strip": "ClEuBa_strip",
+			"stripLink": "ClEuBa_stripLink",
+			"thumb": "ClEuBa_thumb",
+			"thumbRow": "ClEuBa_thumbRow"
+		};
+		//#endregion
+		//#region ../card-base/src/glb-stage.tsx
+		/**
+		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
+		* claim, hour 14 2026-09-13). Grown from img-to-mesh's GlbViewport
+		* (the raw-three substrate, verbatim) + the old @melite-plugin/3d
+		* Stage's multi-asset contract (assets/selection/per-asset errors —
+		* the four props anny's assembly actually uses; drop-placement
+		* gizmos and mixers stay unported until a consumer ports them, the
+		* promotion law).
+		*
+		* SUBSTRATE LAW (verbatim, the 2026-09-12 boot-crash lesson): RAW
+		* three.js — imperative scene in a useEffect, NO @react-three. r3f's
+		* bundled react-reconciler reads the seeded React 19 internals by
+		* minified single-letter fields and a version-skew throws at boot
+		* ("reading 'S' of undefined"). three is a pure leaf library: no
+		* React entanglement, mounts like any imperative canvas lib.
+		*
+		* THE PREVIEW-PORT INTERACTION LAW (the operator's catch, hour 14:
+		* "Anny and Trellis are close to the same, but the way they interact
+		* with the preview port is different"): ONE stage component serves
+		* both — selection + per-asset errors are the stage's own uniform
+		* interaction surface; studio chrome (anchors, badges, in-card
+		* actions like anny's HMR fit-body) docks AROUND it, never inside.
+		*/
+		init_three_module();
+		let draco = null;
+		function loader() {
+			if (draco === null) {
+				draco = new DRACOLoader();
+				draco.setDecoderPath("/draco/gltf/");
+			}
+			const l = new GLTFLoader();
+			l.setDRACOLoader(draco);
+			return l;
+		}
+		/** Normalize a loaded scene to a known viewing size — the
+		*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
+		*  dimension to targetHeight, feet on y=0. Mutates the root in place.
+		*  (Meshes arrive at wildly different scales; this is the ONE place
+		*  that reconciles them so every viewport frames identically.) */
+		function autoFitToHeight(root, targetHeight = 1.6) {
+			const box = new Box3().setFromObject(root);
+			const size = new Vector3();
+			box.getSize(size);
+			const largest = Math.max(size.x, size.y, size.z);
+			if (largest > 0) root.scale.multiplyScalar(targetHeight / largest);
+			root.updateMatrixWorld(true);
+			const box2 = new Box3().setFromObject(root);
+			const center = new Vector3();
+			box2.getCenter(center);
+			root.position.x -= center.x;
+			root.position.z -= center.z;
+			root.position.y -= box2.min.y;
+			root.updateMatrixWorld(true);
+			const box3 = new Box3().setFromObject(root);
+			const size3 = new Vector3();
+			box3.getSize(size3);
+			return {
+				box: box3,
+				height: size3.y
+			};
+		}
+		/** The imperative three scene — BUILT ON THE SHARED STAGE CORE
+		*  (stage3d.ts): the core owns renderer/camera/controls/rAF/resize/picking;
+		*  this adds the glb-stage's own light rig + floor grid and maps the core's
+		*  pick semantics onto the stage-asset id (group.userData.pick → clickSink,
+		*  empty click → clickSink(null)). A drag-orbit never reads as a click. */
+		function mountScene(canvas, onFail) {
+			let clickSink = () => {};
+			const stage = mountStage3D(canvas, {
+				fov: 40,
+				camera: [
+					2.2,
+					1.6,
+					2.6
+				],
+				target: [
+					0,
+					.8,
+					0
+				],
+				toneMapping: 0,
+				onContextFailure: onFail,
+				onEmptyClick: () => clickSink(null)
+			});
+			if (stage === null) return null;
+			const scene = stage.scene;
+			scene.add(new HemisphereLight(16777215, 9079434, 1.4));
+			const key = new DirectionalLight(16777215, 2.2);
+			key.position.set(3, 5, 2);
+			scene.add(key);
+			const fill = new DirectionalLight(16777215, .6);
+			fill.position.set(-3, 2, -2);
+			scene.add(fill);
+			const grid = new GridHelper(6, 24, 12303291, 14540253);
+			const gridMat = grid.material;
+			gridMat.transparent = true;
+			gridMat.opacity = .35;
+			scene.add(grid);
+			return {
+				scene,
+				setClickSink: (fn) => {
+					clickSink = fn;
+				},
+				dispose: () => {
+					grid.geometry.dispose();
+					stage.dispose();
+				}
+			};
+		}
+		/** The selection tint — emissive lift on the selected group's meshes
+		*  (the old Stage's highlight, the DOM-free way; lifted meshes read
+		*  at any theme because emissive adds, never replaces). */
+		function tint(root, on) {
+			root.traverse((o) => {
+				const m = o.material;
+				if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
+			});
+		}
+		/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
+		*  row, click to select, per-asset load failures reported upward).
+		*  No assets → the honest empty state; the canvas mounts when the
+		*  first asset lands. */
+		function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label }) {
+			const canvasRef = (0, react.useRef)(null);
+			const sceneRef = (0, react.useRef)(null);
+			const [loaded, setLoaded] = (0, react.useState)([]);
+			const [failed, setFailed] = (0, react.useState)(null);
+			const [ready, setReady] = (0, react.useState)(false);
+			const selectRef = (0, react.useRef)(onSelect);
+			selectRef.current = onSelect;
+			const key = assets.map((a) => a.id + "@" + a.url).join("|");
+			const errRef = (0, react.useRef)(onAssetError);
+			errRef.current = onAssetError;
+			(0, react.useEffect)(() => {
+				setLoaded([]);
+				setFailed(null);
+				setReady(false);
+				if (assets.length === 0) return;
+				let alive = true;
+				let pending = assets.length;
+				const settle = () => {
+					if (alive && pending === 0) setReady(true);
+				};
+				for (const a of assets) loader().load(a.url, (g) => {
+					if (!alive) return;
+					autoFitToHeight(g.scene);
+					const group = new Group();
+					group.userData.stageId = a.id;
+					group.userData.pick = { click: () => selectRef.current?.(a.id) };
+					group.add(g.scene);
+					if (a.scale !== void 0) group.scale.multiplyScalar(a.scale);
+					if (a.rotation !== void 0) group.rotation.set(a.rotation[0], a.rotation[1], a.rotation[2]);
+					if (a.position !== void 0) group.position.set(a.position[0], a.position[1], a.position[2]);
+					setLoaded((prev) => [...prev, {
+						asset: a,
+						group
+					}]);
+					errRef.current?.(a.id, null);
+					pending -= 1;
+					settle();
+				}, void 0, (e) => {
+					if (!alive) return;
+					errRef.current?.(a.id, e instanceof Error ? e.message : "glb load failed");
+					pending -= 1;
+					settle();
+				});
+				return () => {
+					alive = false;
+				};
+			}, [key]);
+			(0, react.useEffect)(() => {
+				if (!ready || loaded.length === 0) return;
+				const canvas = canvasRef.current;
+				const mounted = mountScene(canvas, (m) => setFailed(m));
+				if (mounted === null) return;
+				sceneRef.current = mounted;
+				mounted.setClickSink((id) => selectRef.current?.(id));
+				let x = 0;
+				for (const { asset, group } of loaded) {
+					mounted.scene.add(group);
+					if (asset.position === void 0) {
+						const box = new Box3().setFromObject(group);
+						const size = new Vector3();
+						box.getSize(size);
+						group.position.x += x + size.x / 2;
+						x += size.x + .4;
+					}
+				}
+				return () => {
+					sceneRef.current = null;
+					mounted.dispose();
+				};
+			}, [ready, loaded]);
+			(0, react.useEffect)(() => {
+				for (const { asset, group } of loaded) tint(group, asset.id === selectedId);
+			}, [loaded, selectedId]);
+			return (0, react.createElement)("div", {
+				className: preview_module_css_default.stagePreview,
+				"data-viewport": label ?? "glb-stage"
+			}, assets.length === 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, emptyHint ?? "Run the card to see the mesh") : failed !== null ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "viewport failed: " + failed) : !ready ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "loading mesh…") : (0, react.createElement)("canvas", {
+				ref: canvasRef,
+				className: preview_module_css_default.stageCanvas,
+				"data-testid": "stage-preview-glb"
+			}));
+		}
+		//#endregion
+		//#region ../card-base/src/square.tsx
+		/**
+		* square.tsx — InputSquare, THE ONE square for any slot-shaped value
+		* — the base's default input component. Ported from the old system's
+		* SlotSquare law (packages/web-kit/ui/SlotSquare.tsx, 2026-08-08:
+		* "the look for it will be reused for the sub-card system") onto the
+		* DSH substrate: ui-primitives glyphs, module CSS under the
+		* web-styling chrome laws, no lucide/cn/tip.
+		*
+		* THE PLUS LAW (2026-09-13, the operator): the empty square
+		* carries the PLUS — "add a source" — and the click opens the
+		* three-entry source menu (From flow / From media / From file) in
+		* the provider; a bare square without a picker still files.
+		* THE OLD LAW, KEPT — a square thumbnail with label + badge
+		* + the THREE source verbs (operator, 2026-09-12: "we rendered a
+		* square and gave the option to do 1 of 3 things"):
+		*   a) from previous card  → onClick (the host opens the wire picker;
+		*                            badge = the upstream card's title)
+		*   b) from file upload    → onPickFile/onDropFile (hidden input +
+		*                            OS drop — the ONE read path readAsDataURL)
+		*   c) from media bar      → onDropAsset (the ASSET_DRAG_MIME contract
+		*                            the drop surface already serves)
+		* plus the X (detach). The consumer owns the doors — this shell only
+		* voices them (ui-attachment's own law: presentation registers, the
+		* service seams stay with their owners).
+		*
+		* THE CONSTRUCTION LAW (2026-09-12, the card-base founding): a card
+		* package EMITS an image input → the base constructs THIS square
+		* automatically. One input component; no card hand-rolls its own
+		* file field ever again.
+		*/
+		/** The media-bar drag contract (the tab's drop surface serves the
+		* same MIME — ONE spelling, imported from the base's law). */
+		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
+		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
+		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
+		*  artifact URLs. Every slot-shaped value renders the same way. */
+		function isImageUrl(value) {
+			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+		}
+		/** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
+		*  the base-gaps primitive ③): a .glb/.gltf value — an estate path
+		*  ('data/input/x.glb') or a run artifact URL — renders the ONE
+		*  square with the inline GLB thumb (the mini GlbStagePreview), the
+		*  same square grammar as images: never a bespoke mesh picker. */
+		function isMeshUrl(value) {
+			return /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
+		}
+		/** Read a File/Blob and resolve its data: URL — the ONE read path for
+		*  every slot-shaped attach (the old law, single definition). */
+		function readAsDataUrl(file) {
+			return new Promise((resolve, reject) => {
+				const r = new FileReader();
+				r.onload = () => {
+					resolve(String(r.result));
+				};
+				r.onerror = () => {
+					reject(r.error ?? /* @__PURE__ */ new Error("read failed"));
+				};
+				r.readAsDataURL(file);
+			});
+		}
+		/** Parse the asset MIME off a drop event. null = absent or malformed. */
+		function assetPayload(e) {
+			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
+			if (raw === "") return null;
+			try {
+				const p = JSON.parse(raw);
+				return typeof p["url"] === "string" ? p["url"] : null;
+			} catch {
+				return null;
+			}
+		}
+		function InputSquare(props) {
+			const { label, value, metric, disabled } = props;
+			const seat = props.ariaLabel ?? label;
+			const fileRef = (0, react.useRef)(null);
+			const boxRef = (0, react.useRef)(null);
+			const [over, setOver] = (0, react.useState)(false);
+			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
+			const mesh = thumb === null && typeof value === "string" && value !== "" && isMeshUrl(value) ? value : null;
+			const empty = thumb === null && mesh === null;
+			const pick = () => {
+				if (disabled) return;
+				if (props.onPick !== void 0) props.onPick(boxRef.current);
+				else if (empty && props.onFile !== void 0) fileRef.current?.click();
+			};
+			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
+				ref: boxRef,
+				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
+				role: "button",
+				tabIndex: 0,
+				"aria-label": (seat || "source") + (seat !== "" ? " source" : ""),
+				onClick: pick,
+				onKeyDown: (e) => {
+					if (e.key === "Enter") pick();
+				},
+				onDragOver: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(true);
+				},
+				onDragLeave: () => {
+					setOver(false);
+				},
+				onDrop: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(false);
+					const asset = assetPayload(e);
+					if (asset !== null && props.onAsset !== void 0) {
+						props.onAsset(asset);
+						return;
+					}
+					const f = e.dataTransfer.files[0];
+					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
+				}
+			}, thumb !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default.squareThumb,
+				src: thumb,
+				alt: label
+			}) : mesh !== null ? (0, react.createElement)("div", { className: card_module_css_default.squareMesh }, (0, react.createElement)(GlbStagePreview, {
+				assets: [{
+					id: "square-mesh",
+					url: mesh
+				}],
+				label: "square-mesh"
+			})) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
+				className: card_module_css_default.squareX,
+				type: "button",
+				title: "Detach",
+				"aria-label": "Detach " + (seat || "source"),
+				onClick: (e) => {
+					e.stopPropagation();
+					props.onClear();
+				}
+			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+				ref: fileRef,
+				type: "file",
+				accept: "image/png,image/jpeg,image/webp",
+				className: card_module_css_default.squareFileInput,
+				"aria-hidden": true,
+				tabIndex: -1,
+				onChange: (e) => {
+					const f = e.target.files?.[0];
+					if (f !== void 0 && f !== null) props.onFile?.(f);
+					fileRef.current.value = "";
+				}
+			}) : null);
+		}
+		//#endregion
+		//#region ../card-base/src/square-provider.tsx
+		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** The media-kind the picker fetches for a field: image fields name
+		*  image; mesh fields name mesh (the library boards meshes only when
+		*  the media namespace serves them — an honest empty until then);
+		*  file fields take the whole library (their accept narrows
+		*  client-side per row). */
+		function mediaKindForField(f) {
+			if (f.type === "image") return "image";
+			if (f.type === "mesh") return "mesh";
+			return "all";
+		}
+		/** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
+		*  offer the GLB pair; everything else keeps the image triad (the
+		*  historic default). The provider's ONE hidden input re-targets
+		*  imperatively at click time — the accept is a property of the
+		*  field being picked, never of the provider instance. */
+		function acceptOfField(f) {
+			return f !== null && f.type === "mesh" ? ".glb,.gltf" : "image/png,image/jpeg,image/webp";
+		}
+		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
+		*  every slot-shaped field of a stage gets the same verbs — file
+		*  upload (the /v1/uploads door + the data-URL mirror), media drop
+		*  (the asset MIME → the param), and THE PICKER (a DSH Menu anchored
+		*  on the square listing the other stages' latest outputs; picking
+		*  one writes the PARAM — the slot is the wire, no separate wiring
+		*  mechanic exists). ONE definition; the constructor and every
+		*  claimed atom ride it. */
+		function useSquareProvider(onEdit, wire) {
+			const [mirror, setMirror] = (0, react.useState)({});
+			const [pickAt, setPickAt] = (0, react.useState)(null);
+			const [modalAt, setModalAt] = (0, react.useState)(null);
+			const fieldRef = (0, react.useRef)(null);
+			const [mediaRows, setMediaRows] = (0, react.useState)(null);
+			const fileRef = (0, react.useRef)(null);
+			const onFile = (0, react.useCallback)(async (f, file) => {
+				if (wire.onFile !== void 0) {
+					wire.onFile(file);
+					return;
+				}
+				try {
+					const dataUrl = await readAsDataUrl(file);
+					if (f.type !== "mesh") setMirror((m) => ({
+						...m,
+						[f.name]: dataUrl
+					}));
+					const { name } = await uploadInputFile(file);
+					onEdit(f.name, name);
+				} catch (e) {
+					onEdit(f.name, e instanceof Error ? e.message : "upload failed");
+				}
+			}, [onEdit, wire.onFile]);
+			const square = (f) => {
+				if (f.type !== "image" && f.type !== "file" && f.type !== "mesh") return void 0;
+				return {
+					display: mirror[f.name] ?? null,
+					verbs: {
+						onPick: (anchor) => {
+							const el = anchor instanceof HTMLElement ? anchor : null;
+							setPickAt(el !== null ? {
+								rect: el.getBoundingClientRect(),
+								field: f
+							} : {
+								rect: new DOMRect(8, 8, 1, 1),
+								field: f
+							});
+						},
+						onFile: (file) => {
+							onFile(f, file);
+						},
+						onAsset: (url) => {
+							onEdit(f.name, url);
+						},
+						onClear: () => {
+							setMirror((m) => {
+								const n = { ...m };
+								delete n[f.name];
+								return n;
+							});
+							onEdit(f.name, "");
+						}
+					}
+				};
+			};
+			const sourceMenu = pickAt === null ? null : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+				open: true,
+				anchor: null,
+				getAnchorRect: () => pickAt.rect,
+				items: [
+					{
+						id: "__flow__",
+						label: "From flow"
+					},
+					{
+						id: "__media__",
+						label: "From media"
+					},
+					{
+						id: "__file__",
+						label: "From file"
+					},
+					{
+						type: "separator",
+						id: "sep"
+					},
+					{
+						id: "__none__",
+						label: "— clear —",
+						danger: true
+					}
+				],
+				onSelect: (id) => {
+					const f = pickAt.field;
+					setPickAt(null);
+					if (id === "__flow__") {
+						setModalAt({
+							mode: "flow",
+							field: f
+						});
+						return;
+					}
+					if (id === "__media__") {
+						setModalAt({
+							mode: "media",
+							field: f
+						});
+						return;
+					}
+					if (id === "__file__") {
+						fieldRef.current = f;
+						const input = fileRef.current;
+						input.accept = acceptOfField(f);
+						input.click();
+						return;
+					}
+					setMirror((m) => {
+						const n = { ...m };
+						delete n[f.name];
+						return n;
+					});
+					onEdit(f.name, "");
+				},
+				onClose: () => {
+					setPickAt(null);
+				},
+				portal: true
+			});
+			const loadMedia = wire?.loadMedia;
+			(0, react.useEffect)(() => {
+				if (modalAt?.mode !== "media") return;
+				if (loadMedia === void 0) {
+					setMediaRows([]);
+					return;
+				}
+				const ctrl = new AbortController();
+				setMediaRows(null);
+				loadMedia(mediaKindForField(modalAt.field), ctrl.signal).then((items) => {
+					setMediaRows(items.map((it) => ({
+						id: it.url,
+						label: it.name,
+						url: it.url
+					})));
+				}).catch(() => {
+					setMediaRows([]);
+				});
+				return () => {
+					ctrl.abort();
+				};
+			}, [modalAt, loadMedia]);
+			const pickerModal = modalAt === null ? null : (() => {
+				const f = modalAt.field;
+				const candidates = modalAt.mode === "flow" ? wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates : mediaRows ?? [];
+				const req = {
+					mode: modalAt.mode,
+					kind: mediaKindForField(f),
+					field: f,
+					candidates
+				};
+				const pick = (url) => {
+					setModalAt(null);
+					if (url !== "") onEdit(f.name, url);
+				};
+				const fallback = (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+					open: true,
+					onClose: () => {
+						setModalAt(null);
+					},
+					title: modalAt.mode === "flow" ? "From flow" : "From media",
+					description: modalAt.mode === "flow" ? "The other stages’ latest outputs" + (req.kind !== "all" ? " (" + req.kind + ")" : "") : "The runs library" + (req.kind !== "all" ? " (" + req.kind + ")" : ""),
+					closeLabel: "Close picker"
+				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : "nothing to pick yet") : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
+					key: c.id,
+					className: card_module_css_default.pickRow
+				}, (0, react.createElement)("button", {
+					type: "button",
+					className: card_module_css_default.pickBtn,
+					"data-testid": "source-pick-row",
+					onClick: () => {
+						pick(c.url);
+					}
+				}, isImageUrl(c.url) ? (0, react.createElement)("img", {
+					className: card_module_css_default.pickThumb,
+					src: c.url,
+					alt: c.label,
+					loading: "lazy"
+				}) : (0, react.createElement)("span", { className: card_module_css_default.pickGlyph }, c.label.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.pickLabel }, c.label))))));
+				return wire.renderSourcePick !== void 0 ? wire.renderSourcePick(req, fallback) : fallback;
+			})();
+			const fileInput = (0, react.createElement)("input", {
+				ref: fileRef,
+				type: "file",
+				accept: wire.accept ?? acceptOfField(null),
+				"aria-hidden": true,
+				tabIndex: -1,
+				style: { display: "none" },
+				onChange: (e) => {
+					const file = e.target.files?.[0];
+					const f = fieldRef.current;
+					if (f !== null && file !== void 0 && file !== null) {
+						fieldRef.current = null;
+						onFile(f, file);
+					}
+					fileRef.current.value = "";
+				}
+			});
+			return {
+				square,
+				wireMenu: (0, react.createElement)(react.Fragment, null, sourceMenu, pickerModal, fileInput)
+			};
+		}
+		//#endregion
+		//#region ../card-base/src/atoms.tsx
+		/** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		function SourceRow(props) {
+			const field = {
+				name: "__source_row__",
+				label: props.label,
+				type: props.kind === "image" ? "image" : "file"
+			};
+			const { square, wireMenu } = useSquareProvider((0, react.useCallback)((name, v) => {
+				props.onEdit(v);
+			}, [props.onEdit]), {
+				candidates: props.candidates ?? [],
+				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
+				...props.onFile !== void 0 ? { onFile: props.onFile } : {},
+				...props.accept !== void 0 ? { accept: props.accept } : {},
+				...props.renderSourcePick !== void 0 ? { renderSourcePick: props.renderSourcePick } : {}
+			});
+			const host = square(field);
+			const shown = host.display ?? props.value ?? null;
+			return (0, react.createElement)("div", {
+				className: card_module_css_default.sourceRow,
+				"data-source-row": props.label
+			}, wireMenu, (0, react.createElement)(InputSquare, {
+				label: props.hideLabel === true ? "" : props.label,
+				...props.ariaLabel !== void 0 ? { ariaLabel: props.ariaLabel } : {},
+				value: shown !== null && (isImageUrl(shown) || isMeshUrl(shown)) ? shown : null,
+				metric: typeof props.value === "string" && props.value !== "" && !isImageUrl(props.value) && !isMeshUrl(props.value) ? props.value : void 0,
+				...host.verbs
+			}));
+		}
+		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
+		*  promoted from h3's studio-local TriControl (same semantics, same
+		*  option order). Serves schema-bound fields of type 'tri' AND the
+		*  standalone rail rows that hand-rolled the select before. */
+		function TriStateAtom({ label, value, onEdit, name, disabled }) {
+			return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"aria-label": label,
+				disabled: disabled === true,
+				value: value === void 0 ? "" : String(value),
+				onChange: (e) => {
+					const v = e.target.value;
+					onEdit(name, v === "" ? void 0 : v === "true");
+				}
+			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
+		}
+		/** The slider's local display during a drag (the settle law's
+		*  carrier): local owns the bubble while dragging; an external move
+		*  of the backing value (agent write, revive, another card opened)
+		*  reclaims the display. */
+		function useLocalSliderValue(value) {
+			const num = typeof value === "number" ? value : Number(value);
+			const [local, setLocal] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				setLocal(null);
+			}, [num]);
+			return {
+				value: local !== null ? local : Number.isFinite(num) ? num : null,
+				set: setLocal
+			};
+		}
+		/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
+		*  mask-studio's draft absorber, 2026-08-10): a drag fires input
+		*  60×/sec; if every step wrote to the card, updateStageParams →
+		*  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
+		*  the editor. The atom shows the drag locally and persists ONCE on
+		*  settle (the change event = release / keyboard step). External
+		*  writes (agent, revive) re-sync the display when the backing
+		*  value actually moves. */
+		function SpecSliderAtom({ f, value, onEdit }) {
+			const shown = useLocalSliderValue(value);
+			if (shown.value === null) return (0, react.createElement)("span", {
+				className: card_module_css_default.specSliderRow,
+				"data-refused": f.name
+			}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value) + " — REFUSED: not a number"));
+			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
+				className: card_module_css_default.specSlider,
+				type: "range",
+				min: f.min ?? 0,
+				max: f.max ?? 10,
+				step: f.step ?? .1,
+				value: shown.value,
+				onInput: (e) => {
+					shown.set(Number(e.target.value));
+				},
+				onChange: (e) => {
+					onEdit(f.name, e.target.value);
+				},
+				"aria-label": f.label
+			}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value)));
+		}
+		/** One spec atom — typed by the declaration, edited as a raw string
+		*  while typing (decimal dots survive; coercion happens once at patch). */
+		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }) {
+			if ((f.type === "image" || f.type === "file" || f.type === "mesh") && square !== void 0) {
+				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
+				return (0, react.createElement)(InputSquare, {
+					label: f.label !== "" ? f.label : f.name,
+					value: shown !== null && (isImageUrl(shown) || isMeshUrl(shown)) ? shown : null,
+					metric: typeof value === "string" && value !== "" && !isImageUrl(value) && !isMeshUrl(value) ? value : void 0,
+					...square.verbs
+				});
+			}
+			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				value: String(value ?? ""),
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			}, ghost !== void 0 ? (0, react.createElement)("option", { value: "" }, ghost) : null, f.options.map((o) => {
+				const row = typeof o === "string" ? {
+					value: o,
+					label: o
+				} : o;
+				return (0, react.createElement)("option", {
+					key: row.value,
+					value: row.value
+				}, titleCaseId(row.label));
+			}));
+			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
+				f,
+				value,
+				onEdit
+			});
+			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
+				label: f.label !== "" ? f.label : f.name,
+				value: value === void 0 || value === null ? void 0 : value === true || value === "true",
+				onEdit,
+				name: f.name
+			});
+			if (f.type === "switch" || f.type === "boolean") {
+				if (value !== void 0 && value !== null && typeof value !== "boolean" && value !== "true" && value !== "false") return (0, react.createElement)("span", {
+					className: card_module_css_default.specField,
+					"data-refused": f.name
+				}, f.label + ": " + String(value) + " — REFUSED: not a boolean");
+				const on = value === true || value === "true";
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+					label: f.label,
+					checked: on,
+					onChange: (next) => {
+						onEdit(f.name, next);
+					}
+				});
+			}
+			if (f.type === "textarea") {
+				const fitStable = (0, react.useCallback)((el) => {
+					if (el === null) return;
+					el.style.height = "auto";
+					el.style.height = Math.max(el.scrollHeight, 44) + "px";
+				}, []);
+				const fitEl = (0, react.useRef)(null);
+				(0, react.useEffect)(() => {
+					const el = fitEl.current;
+					el.style.height = "auto";
+					el.style.height = Math.max(el.scrollHeight, 44) + "px";
+				}, [String(value ?? "")]);
+				return (0, react.createElement)("textarea", {
+					className: card_module_css_default.specTextarea,
+					rows: 2,
+					value: String(value ?? ""),
+					placeholder: f.placeholder ?? "",
+					ref: (el) => {
+						const ta = el ?? null;
+						fitEl.current = ta;
+						fitStable(ta);
+					},
+					onChange: (e) => {
+						const el = e.target;
+						fitStable(el);
+						onEdit(f.name, el.value);
+					},
+					"aria-label": f.label
+				});
+			}
+			if (f.type === "number") return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				min: f.min,
+				max: f.max,
+				step: f.step,
+				value: String(value ?? ""),
+				placeholder: placeholder ?? f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			});
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				value: String(value ?? ""),
+				placeholder: placeholder ?? f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			});
+		}
+		/** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
+		*  plus ONE SELECT PER SERVED AXIS GROUP — Variant, Quant, Recipe,
+		*  Precision, … the declaration's whole vocabulary, NEVER a hardcoded
+		*  list (the operator's lane proof caught the hardcoded Quant-only
+		*  list dropping seedvr2's and qwen's other axes). Order: the door's
+		*  variant_groups contract, else first-seen. Chain: an axis' options
+		*  are the rows composing with the axes above (the row's `owner`).
+		*  Each pick applies the row's defaults overlay through onEdit — the
+		*  values (model + every axis key + overlay keys) ride the caller's
+		*  map and pass along at Run. Renders nothing when the spec declares
+		*  no matrix. */
+		//#endregion
+		//#region ../card-base/src/rows.tsx
+		/** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE INFO GLYPH (hour 21): the field's declared help prose (the
+		*  schema's extra.tooltip) rides a hover (i) beside the label — one
+		*  definition for every card; absent prose, no glyph. The text is
+		*  aria-carried (the DSH Tooltip is hover-only). */
+		function infoGlyph(f) {
+			if (f.tooltip === void 0 || f.tooltip === "") return null;
+			return (0, react.createElement)(Tip, {
+				tip: f.tooltip,
+				children: (0, react.createElement)("span", {
+					className: card_module_css_default.specInfo,
+					role: "note",
+					"aria-label": `info: ${f.tooltip}`
+				}, "i")
+			});
+		}
+		/** THE SEED DICE (stroke 39 — the operator's QOL law): the seed
+		*  knob carries the RANDOM sentinel -1 (GATE S: -1 mints a fresh
+		*  seed in the lane, EVERY run). The dice sits at the key line's
+		*  right end, across from the field's name: FILLED pips = random
+		*  (a new seed every run), HOLLOW pips = fixed (this exact seed
+		*  re-runs). The state DERIVES from the resolved value alone — no
+		*  hidden mode to drift; the click writes the value: fixed → -1
+		*  (random), random → a minted concrete int (the kit's own mint
+		*  law, Math.floor(random * 2147483647)). Typing a number while
+		*  random fixes it — the dice unfills by derivation, one source
+		*  of truth. The input never paints the sentinel: random shows
+		*  the placeholder, never "-1". */
+		function SeedDice({ random, onToggle }) {
+			return (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specDice + (random ? " " + card_module_css_default.specDiceOn : ""),
+				"data-seed-dice": random ? "random" : "fixed",
+				"aria-pressed": random,
+				"aria-label": "seed dice",
+				title: random ? "Random — a new seed every run. Click to fix one." : "Fixed seed — this exact seed re-runs. Click for a new one every run.",
+				onClick: onToggle
+			}, (0, react.createElement)("svg", {
+				width: 14,
+				height: 14,
+				viewBox: "0 0 16 16",
+				fill: "none",
+				xmlns: "http://www.w3.org/2000/svg",
+				"aria-hidden": "true"
+			}, (0, react.createElement)("rect", {
+				x: 1.4,
+				y: 1.4,
+				width: 13.2,
+				height: 13.2,
+				rx: 3.2,
+				stroke: "currentColor",
+				strokeWidth: 1.3
+			}), (0, react.createElement)("circle", {
+				cx: 5,
+				cy: 5,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 11,
+				cy: 5,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 8,
+				cy: 8,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 5,
+				cy: 11,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 11,
+				cy: 11,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			})));
+		}
+		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
+			const seedKnob = f.name === "seed";
+			const seedRandom = seedKnob && (value === -1 || value === "-1");
+			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SeedDice, {
+				random: seedRandom,
+				onToggle: () => {
+					if (seedRandom) onEdit(f.name, Math.floor(Math.random() * 2147483647));
+					else onEdit(f.name, -1);
+				}
+			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SpecAtom, {
+				f,
+				value: seedRandom ? void 0 : value,
+				...seedRandom ? { placeholder: "random — new every run" } : {},
+				onEdit,
+				square,
+				...wireCandidates !== void 0 ? { wireCandidates } : {}
+			}));
+		}
+		//#endregion
+		//#region ../card-base/src/axes.tsx
+		/** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE PACK PROMPT (the no-silent-drop law's extension half,
+		*  stroke 18): the card's DECLARED extension packs that the engine
+		*  cannot see render AS THEMSELVES — marked missing, with the
+		*  install verb one click away (the manage door's install_extension;
+		*  the host owns the wire). Present and unknown packs render nothing
+		*  (nothing to act on; the spec carries their truth for anyone who
+		*  reads it). Never a silently absent pack: the run's refusal text
+		*  and this prompt name the same id. */
+		function PackPrompt({ spec, onInstallPack }) {
+			const missing = (spec.packs ?? []).filter((p) => p.present === false);
+			if (missing.length === 0 || onInstallPack === void 0) return null;
+			return (0, react.createElement)("section", {
+				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
+				"data-pack-prompt": "1"
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Extensions"), missing.map((p) => (0, react.createElement)(PackPromptRow, {
+				key: p.id,
+				id: p.id,
+				onInstallPack
+			})));
+		}
+		function PackPromptRow({ id, onInstallPack }) {
+			const [st, setSt] = (0, react.useState)("idle");
+			return (0, react.createElement)("div", {
+				className: card_module_css_default.specHint,
+				"data-missing-pack": id
+			}, id + " is required by this card but not installed on the engine.", " ", (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specLinkBtn,
+				disabled: st !== "idle",
+				onClick: () => {
+					setSt("busy");
+					onInstallPack(id).then((ok) => setSt(ok ? "queued" : "failed")).catch(() => setSt("failed"));
+				}
+			}, st === "idle" ? "Install " + id : st === "busy" ? "Requesting…" : st === "queued" ? "Install queued ✓ (restart the engine when it lands)" : "Install request failed — retry from the assets tab"));
+		}
+		function ModelAxes({ spec, value, onSet, onDownloadModel }) {
+			const groups = axisGroups(spec);
+			if (groups.length === 0) return null;
+			const models = modelChoices(spec);
+			const matrixSet = new Set(models);
+			const familyRows = (spec.families ?? []).map((f) => ({
+				...f,
+				inMatrix: matrixSet.has(f.id)
+			}));
+			const familyFace = /* @__PURE__ */ new Map();
+			for (const f of spec.families ?? []) if (f.label !== void 0 && f.label !== "") familyFace.set(f.id, f.label);
+			const contract = spec.features?.variant_groups ?? {};
+			const pick = (row) => {
+				const patch = axisPickPatch(spec, row);
+				for (const [k, v] of Object.entries(patch)) onSet(k, v);
+			};
+			const knobStamp = (r) => axisPickPatch(spec, r);
+			rowsFor(spec, "Recipe").filter((r) => Object.keys(knobStamp(r)).length > 0);
+			const heldModelRaw = value["model"];
+			const heldModel = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : void 0;
+			const knownModel = (m) => models.includes(m) || (spec.families ?? []).some((f) => f.id === m);
+			const refusedModel = heldModel !== void 0 && !knownModel(heldModel) ? heldModel : void 0;
+			const shownModel = heldModel ?? (typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "");
+			const heldFam = (spec.families ?? []).find((f) => f.id === shownModel && !f.present);
+			const [dlState, setDlState] = (0, react.useState)("idle");
+			(0, react.useEffect)(() => {
+				setDlState("idle");
+			}, [shownModel]);
+			const rowsOf = (g, active) => composingRows(spec, g, active);
+			const active = {};
+			for (const g of groups) {
+				const heldRaw = value[axisKey(g)];
+				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
+				const rows = rowsOf(g, active);
+				if (heldId !== void 0 && rows.some((r) => r.id === heldId)) active[g] = heldId;
+				else if (heldId !== void 0) active[g] = heldId;
+				else active[g] = activeRowId(spec, value, g, active) ?? (rows.length > 0 ? rows[0].id : "");
+			}
+			return (0, react.createElement)("section", {
+				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
+				"data-model-axes": "1"
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Model"), (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Model"), (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"aria-label": "Model",
+				...refusedModel !== void 0 ? { "data-refused": "model" } : {},
+				value: shownModel,
+				onChange: (e) => {
+					const m = e.target.value;
+					const patch = modelSwitchPatch(spec, m);
+					for (const [k, v] of Object.entries(patch)) onSet(k, v);
+				}
+			}, refusedModel !== void 0 ? (0, react.createElement)("option", {
+				key: refusedModel,
+				value: refusedModel
+			}, titleCaseId(refusedModel) + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
+				key: "fam-" + f.id,
+				value: f.id
+			}, (f.label ?? titleCaseId(f.id)) + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
+				key: m,
+				value: m
+			}, familyFace.get(m) ?? titleCaseId(m)))), heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.specHint,
+				"data-download-prompt": heldFam.id
+			}, titleCaseId(heldFam.id) + " is offered by this card but not downloaded on this machine.", " ", (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specLinkBtn,
+				disabled: dlState !== "idle",
+				onClick: () => {
+					setDlState("busy");
+					onDownloadModel(heldFam.id).then((ok) => setDlState(ok ? "queued" : "failed")).catch(() => setDlState("failed"));
+				}
+			}, dlState === "idle" ? "Download " + (heldFam.label ?? titleCaseId(heldFam.id)) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
+				const rows = rowsOf(g, active);
+				const heldRaw = value[axisKey(g)];
+				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
+				const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId) ? heldId : void 0;
+				if (rows.length === 0 && refusedId === void 0) return null;
+				const label = contract[g]?.label ?? titleCaseId(g);
+				return (0, react.createElement)("label", {
+					key: g,
+					className: card_module_css_default.specField
+				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)("select", {
+					className: card_module_css_default.specSelect,
+					"aria-label": label,
+					"data-axis": g,
+					...refusedId !== void 0 ? { "data-refused": g } : {},
+					value: active[g],
+					onChange: (e) => {
+						const id = e.target.value;
+						const row = rows.find((v) => v.id === id);
+						if (row !== void 0) pick(row);
+					}
+				}, refusedId !== void 0 ? (0, react.createElement)("option", {
+					key: refusedId,
+					value: refusedId
+				}, titleCaseId(refusedId) + " — invalid " + label.toLowerCase() + " for " + titleCaseId(heldModel ?? shownModel)) : null, rows.map((v) => (0, react.createElement)("option", {
+					key: v.id,
+					value: v.id
+				}, titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
+			}), (0, react.createElement)(RecipePills, {
+				spec,
+				onSet,
+				values: value
+			}));
+		}
+		/** THE FAMILY RECIPE DROPDOWN (Rule A -- the recipe law; the
+		* operator's order, 2026-09-18: "RECIPES AREN'T EVEN A DROPDOWN"):
+		* the family's preset macros as ONE SELECT beside the axes -- the
+		* same shape every axis rides, never a list of link-buttons. The
+		* pick writes the row's FULL stamp (axisPickPatch -- mod-owned keys
+		* included, the Rule A amendment); the SELECTION derives from the
+		* ONE truth (activeRecipeId -- the row whose stamp the user layer
+		* holds; no recipe key persists, nothing goes stale when the rail
+		* moves). Stamp-less rows (the family `default`) render nothing: a
+		* row that writes nothing is a dead option. A hand-edited layer
+		* (no stamp-for-stamp match) shows the placeholder -- the form
+		* never lies that a recipe is active.
+		*
+		* THE REUSE LAW: extracted so EVERY model surface seats the same
+		* dropdown -- CardForm under the axes, a studio beside its model
+		* route. Never a second implementation. */
+		function RecipePills({ spec, onSet, values }) {
+			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0);
+			if (pillRows.length === 0) return null;
+			const active = values !== void 0 ? activeRecipeId(spec, values) : void 0;
+			const pick = (id) => {
+				const row = pillRows.find((r) => r.id === id);
+				if (row === void 0) return;
+				for (const [k, v] of Object.entries(axisPickPatch(spec, row))) onSet(k, v);
+			};
+			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Recipe"), (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"data-recipe-select": "1",
+				"aria-label": "Recipe",
+				value: active ?? "",
+				onChange: (e) => {
+					const id = e.currentTarget.value;
+					if (id !== "") pick(id);
+				}
+			}, (0, react.createElement)("option", {
+				key: "__none__",
+				value: "",
+				disabled: active !== void 0
+			}, active === void 0 ? "-- recipe --" : "-- custom --"), pillRows.map((r) => (0, react.createElement)("option", {
+				key: r.id,
+				value: r.id,
+				title: typeof r.hint === "string" && r.hint !== "" ? r.hint : void 0
+			}, titleCaseId(r.label) + (typeof r.hint === "string" && r.hint !== "" ? ` \u2014 ${r.hint}` : "")))));
+		}
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). Each field renders through the
+		*  claimed atom for its emitted type when the caller passes one;
+		*  the base's built-in atom is the default.
+		*
+		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
+		*  img-to-mesh input component — you are not using it around — you
+		*  are hardcoding"): an emitted image/file/mesh input constructs THE ONE
+		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
+		*  square provider — no call site wires it, no call site can forget
+		*  it. The caller hands only the WIRE (picker candidates), never the
+		*  component; a caller that passes its own `square` fn overrides (the
+		*  host-claim seam), but the default is the constructor's own. */
+		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
+		*  required star, hint) around the atom — CardForm's own row, opened
+		*  to rail sections that render served fields outside a whole form
+		*  (mask's TuneSection). The claim seam stays CardForm's; this row
+		*  takes the resolved atom inputs. */
+		//#endregion
+		//#region ../card-base/src/use-form-spec.ts
+		/** use-form-spec.ts — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		//#endregion
+		//#region ../card-base/src/spec-panel.tsx
+		/** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		//#endregion
+		//#region ../card-base/src/form.tsx
+		/**
+		* form.tsx — @melite/card-base: THE CONSTRUCTOR (the godfile
+		* split, hour 15: the seams live in their own files now —
+		* use-form-spec.ts, square-provider.tsx, atoms.tsx, rows.tsx,
+		* spec-panel.tsx, axes.tsx — this file is the CardForm
+		* composition + the stable re-export surface).
+		*
+		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
+		* construct the card ui should see that the card package emits an
+		* image input, then constructs the input component automatically"):
+		* the base reads the card package's EMISSION — the served form-spec
+		* (the schema envelope, declared input/output edges, mod kinds) —
+		* and constructs the surface. The resolved value derives per render
+		* (resolveValue — the engine's compose cascade mirrored); every
+		* image/file/mesh field gets THE ONE square (square.tsx) with the
+		* three source verbs; no card ever hand-rolls an input component.
+		*
+		* THE SEAM (slots.ts): each field renders through the field-atom seam
+		* keyed by its emitted wire type — the caller may pass claimed atoms
+		* (the composition consults the slot machinery and hands them in);
+		* the base's built-in atom is the default (the ui-tool built-ins
+		* pattern). A whole-form takeover replaces CardForm itself.
+		*
+		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
+		* atoms the primitives set lacks (select, slider, textarea) are
+		* layout-only module CSS over native elements, every color an
+		* inherited --dsw-alias-* token (the package's documented pattern).
+		*/
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). The constructor OWNS the square
+		*  provider (no call site wires it, no call site can forget it). */
+		function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }) {
+			const fields = fieldsOf(spec);
+			const value = resolveValue(spec, user, base);
+			const fieldByName = new Map(fields.map((f) => [f.name, f]));
+			const edit = (name, v) => {
+				if (v === void 0) {
+					onUnset?.(name);
+					return;
+				}
+				onSet(name, coerceFieldEdit(fieldByName.get(name), v));
+			};
+			const family = resolveFamilyKey(spec);
+			const modKinds = (spec.features?.modifiers ?? []).map((k) => {
+				const env = spec.mod_schemas?.[k.schema_key ?? k.param_key];
+				const hybrid = k.entry === "hybrid";
+				const declared = (rows) => rows?.map((f) => typeof f.wtype === "string" && f.wtype !== "" ? {
+					...f,
+					type: f.wtype
+				} : f);
+				return {
+					...k,
+					fields: hybrid ? entryFieldsOfEnvelope(env, k.param_key, family) : declared(k.fields) ?? fieldsOfEnvelope(env, family),
+					kindFields: hybrid ? kindScalarFieldsOfEnvelope(env, k.param_key, family) : declared(k.kindFields) ?? []
+				};
+			});
+			const owned = modOwnedFields(spec);
+			const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields;
+			const signature = Array.isArray(spec.inputs) ? spec.inputs : [];
+			const modFieldByName = /* @__PURE__ */ new Map();
+			for (const k of modKinds) for (const f of k.fields) if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f);
+			const railOf = (inp) => {
+				const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name);
+				if (f === void 0) return void 0;
+				if (f.type === "image" || f.type === "file" || f.type === "mesh") return f;
+			};
+			const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0);
+			const railNames = new Set(railFields.map((f) => f.name));
+			const stackFields = flatFields.filter((f) => f.type === "image_list" && !modFieldByName.has(f.name));
+			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
+			const groups = groupFields(flatFields.filter(visible), {
+				...value,
+				model: family ?? ""
+			});
+			const submenu = groups.length > 1;
+			const [openGroup, setOpenGroup] = (0, react.useState)(void 0);
+			const activeGroup = submenu ? groups.find((g) => g.group === openGroup) ?? groups[0] : void 0;
+			const shownGroups = submenu && activeGroup !== void 0 ? [activeGroup] : groups;
+			const atomOf = (f) => atoms?.[f.type];
+			const own = useSquareProvider(edit, wire ?? { candidates: [] });
+			const squareFor = square ?? own.square;
+			const stackRow = (f) => {
+				const v = value[f.name];
+				const entries = Array.isArray(v) ? v.filter((x) => typeof x === "string" && x !== "") : [];
+				const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : 8;
+				const kind = f.media === "video" || f.media === "audio" ? "file" : "image";
+				const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : void 0;
+				return (0, react.createElement)("div", {
+					key: "stack-" + f.name,
+					className: card_module_css_default.specStack,
+					"data-input-stack": f.name,
+					"data-stack-count": String(entries.length)
+				}, (0, react.createElement)("div", {
+					className: card_module_css_default.modHead,
+					"data-stack-head": f.name,
+					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+				}, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, f.label), (0, react.createElement)("span", { className: card_module_css_default.modHint }, `${String(entries.length)} / ${String(cap)}${f.media !== void 0 && f.media !== "" ? " · " + f.media : ""}`)), (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, entries.map((entry, i) => (0, react.createElement)("div", {
+					key: f.name + ":" + String(i),
+					className: card_module_css_default.specSlotCell,
+					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+				}, (0, react.createElement)(SourceRow, {
+					label: String(i + 1),
+					ariaLabel: `${f.label} ${String(i + 1)}`,
+					kind,
+					value: entry,
+					...accept !== void 0 ? { accept } : {},
+					onEdit: (next) => {
+						const arr = [...entries];
+						if (next === "") arr.splice(i, 1);
+						else arr[i] = next;
+						edit(f.name, arr);
+					},
+					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
+					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
+				}))), entries.length < cap ? (0, react.createElement)("div", {
+					className: card_module_css_default.specSlotCell,
+					"data-stack-add": f.name,
+					title: f.tooltip
+				}, (0, react.createElement)(SourceRow, {
+					label: "",
+					ariaLabel: `Add ${f.label}`,
+					kind,
+					value: null,
+					...accept !== void 0 ? { accept } : {},
+					onEdit: (next) => {
+						/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
+						if (next !== "") edit(f.name, [...entries, next]);
+					},
+					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
+					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
+				})) : null));
+			};
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, (0, react.createElement)(PackPrompt, {
+				spec,
+				onInstallPack
+			}), (0, react.createElement)(ModelAxes, {
+				spec,
+				value,
+				onSet: edit,
+				onDownloadModel
+			}), railFields.length > 0 || stackFields.length > 0 ? (0, react.createElement)("section", {
+				className: card_module_css_default.specGroup + " " + card_module_css_default.inputRail,
+				"data-input-rail": "1"
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Inputs"), railFields.length > 0 ? (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, railFields.map((f) => {
+				return (0, react.createElement)("div", {
+					key: f.name,
+					className: card_module_css_default.specSlotCell,
+					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+				}, (0, react.createElement)(SpecAtom, {
+					f,
+					value: value[f.name],
+					onEdit: edit,
+					square: squareFor(f),
+					...wire?.candidates !== void 0 ? { wireCandidates: wire.candidates } : {}
+				}));
+			})) : null, stackFields.map((f) => stackRow(f))) : null, submenu && activeGroup !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.groupTabs,
+				role: "tablist",
+				"data-form-submenu": "1"
+			}, groups.map((g) => {
+				const selected = activeGroup.group === g.group;
+				return (0, react.createElement)("button", {
+					key: g.group ?? "__general__",
+					type: "button",
+					role: "tab",
+					"aria-selected": selected ? "true" : "false",
+					"data-form-group-tab": g.group ?? "general",
+					className: card_module_css_default.groupTab + (selected ? " " + card_module_css_default.groupTabActive : ""),
+					onClick: () => {
+						setOpenGroup(g.group);
+					}
+				}, titleCaseId(g.group ?? "General"));
+			})) : null, shownGroups.map((g) => {
+				const declared = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 1)?.columns;
+				const gridCols = Math.max(1, Math.floor(declared ?? 2));
+				const cellStyle = (f) => {
+					if (f.type === "textarea") return {
+						gridColumn: "1 / -1",
+						minWidth: "0"
+					};
+					return {
+						gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}`,
+						minWidth: "0"
+					};
+				};
+				const children = [];
+				let row = [];
+				const flush = () => {
+					if (row.length === 0) return;
+					children.push((0, react.createElement)("div", {
+						key: "slotrow-" + String(children.length),
+						className: card_module_css_default.specSlotRow,
+						style: {
+							gridColumn: "1 / -1",
+							minWidth: "0"
+						}
+					}, row));
+					row = [];
+				};
+				for (const f of g.fields) {
+					const claim = atomOf(f);
+					const sq = squareFor(f);
+					const wireCandidates = wire?.candidates;
+					if (claim !== void 0) {
+						flush();
+						const cell = (0, react.createElement)("div", {
+							key: f.name,
+							className: card_module_css_default.specField
+						}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), claim({
+							f,
+							value: value[f.name],
+							onEdit: edit,
+							square: sq
+						}));
+						children.push((0, react.createElement)("div", {
+							key: f.name + "-cell",
+							style: cellStyle(f)
+						}, cell));
+						continue;
+					}
+					if (f.type === "image" || f.type === "file" || f.type === "mesh") {
+						row.push((0, react.createElement)("div", {
+							key: f.name,
+							className: card_module_css_default.specSlotCell,
+							title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+						}, (0, react.createElement)(SpecAtom, {
+							f,
+							value: value[f.name],
+							onEdit: edit,
+							square: sq,
+							...wireCandidates !== void 0 ? { wireCandidates } : {}
+						})));
+						continue;
+					}
+					flush();
+					const cell = (0, react.createElement)(SpecFieldRow, {
+						key: f.name,
+						f,
+						value: value[f.name],
+						onEdit: edit,
+						...sq !== void 0 ? { square: sq } : {},
+						...wireCandidates !== void 0 ? { wireCandidates } : {}
+					});
+					children.push((0, react.createElement)("div", {
+						key: f.name + "-cell",
+						style: cellStyle(f)
+					}, cell));
+				}
+				flush();
+				return (0, react.createElement)("section", {
+					key: g.group ?? "",
+					className: card_module_css_default.specGroup,
+					"data-form-group-panel": g.group ?? "general"
+				}, g.group !== null && !submenu ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, titleCaseId(g.group)) : null, (0, react.createElement)("div", {
+					className: card_module_css_default.specGrid,
+					style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }
+				}, children));
+			}), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
+				kinds: modKinds,
+				values: value,
+				onEdit: edit,
+				railSeated: railNames,
+				...onPatch !== void 0 ? { onPatch } : {},
+				...paintFace !== void 0 ? { paintFace } : {},
+				...bboxFace !== void 0 ? { bboxFace } : {},
+				...paintReference !== void 0 ? { paintReference } : {},
+				...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
+			}) : null, own.wireMenu);
+		}
+		//#endregion
+		//#region ../card-base/src/mods.tsx
+		/**
+		* mods.tsx — THE MOD SYSTEM, CORE (the old SubcardGrid, ported 1:1 —
+		* and moved into the base package 2026-09-12 after the operator's
+		* law: "MOD SYSTEM IS CORE. NEVER HARDCODED. The LORAS should not be
+		* on cards, the MOD SYSTEM SHOULD").
+		*
+		* The laws this section enforces:
+		*  - mods NEVER ride the card's param form. The estate serves the
+		*    OPEN kind vocabulary (features.modifiers); the constructor
+		*    (CardForm) renders THIS section itself and excludes every
+		*    mod-owned name from the flat groups — no surface wires it, no
+		*    surface can forget it (the construction law, same as the
+		*    square).
+		*  - THE WIRE IS THE STORAGE: params[param_key] holds the bag; the
+		*    same bag runs and the agent reads/writes it.
+		*  - commits persist immediately (the old onSaveParams law — never
+		*    deferred to Run): onEdit rides the caller's values map AND
+		*    onPatch (when present) persists to the domain on the spot.
+		*  - apply order = array order; the drag rewrites the bag.
+		*  - THREE kind shapes, all first-class (the leaf switches on the
+		*    SERVED entry mode, never the kind name):
+		*      OPTION kinds (lora): served catalog rows + strength; the
+		*        entry is { id, strength } — the row's own defaults seed the
+		*        strength.
+		*      HYBRID kinds (controlnet): served catalog rows AND entry
+		*        fields; the entry is the bag element keyed by its option_key
+		*        (type) — the leaf stamps the row's resolved facts (model +
+		*        preprocessor) onto new entries so the run record carries the
+		*        retired wire shape; the lane re-validates them, never trusts
+		*        them. Pack-level scalars (the strength floor) render as the
+		*        section's own rows above the tiles.
+		*      OPTION kinds (lora): served catalog rows + strength; the
+		*        entry is { id, strength } — the row's own defaults seed the
+		*        strength.
+		*      FIELD kinds (mask): the kind's own spec fields (image squares,
+		*        selects, sliders); the entry IS the params object. The leaf
+		*        renders kind.fields through the same constructor atoms —
+		*        the fields NEVER render flat on the card form.
+		*/
+		function ModifiersSection(props) {
+			const { kinds, values, onEdit, onPatch } = props;
+			const [dragTile, setDragTile] = (0, react.useState)(null);
+			const [overTile, setOverTile] = (0, react.useState)(null);
+			const [pickAt, setPickAt] = (0, react.useState)(null);
+			const [leaf, setLeaf] = (0, react.useState)(null);
+			const [leafError, setLeafError] = (0, react.useState)(null);
+			const [draftOption, setDraftOption] = (0, react.useState)("");
+			const [draftStrength, setDraftStrength] = (0, react.useState)("");
+			const [draftSteps, setDraftSteps] = (0, react.useState)("");
+			const [draftParams, setDraftParams] = (0, react.useState)({});
+			const entriesOf = (k) => {
+				const v = values[k.param_key];
+				return Array.isArray(v) ? v.filter((e) => typeof e === "object" && e !== null) : [];
+			};
+			const optionOf = (k, value) => (k.options ?? []).find((o) => o.value === value) ?? null;
+			/** THE HYBRID ENTRY FIELDS (the bag element minus its two bound
+			*  rows — the option_key select and the scalar dial own those). */
+			const hybridFields = (k, hidden) => {
+				const key = optionKeyOf(k);
+				const scalar = scalarKeyOf(k);
+				return (k.fields ?? []).filter((f) => f.name !== key && f.name !== scalar && !(hidden?.has(f.name) ?? false));
+			};
+			/** The scalar seed (the row's own default wins; the contract
+			*  field default is the backstop — 0.7, the retired leaf). */
+			const strengthSeedOf = (k, option) => {
+				const scalar = scalarKeyOf(k);
+				const rowDefault = option?.defaults?.[scalar];
+				if (typeof rowDefault === "number") return rowDefault;
+				const field = (k.fields ?? []).find((f) => f.name === scalar);
+				return typeof field?.default === "number" ? field.default : .7;
+			};
+			const commitScalar = (f, name, v) => {
+				const coerced = coerceFieldEdit(f, v);
+				onEdit(name, coerced);
+				onPatch?.({ [name]: coerced });
+			};
+			const commit = (k, next) => {
+				onEdit(k.param_key, next);
+				onPatch?.({ [k.param_key]: next });
+			};
+			const addable = kinds.filter((k) => k.cardinality !== "scalar");
+			if (kinds.length === 0) return null;
+			const seated = props.railSeated;
+			const fieldDefaults = (k) => {
+				const out = {};
+				for (const f of k.fields ?? []) {
+					if (seated?.has(f.name) ?? false) continue;
+					if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+				}
+				return out;
+			};
+			const openCreate = (k) => {
+				const entries = entriesOf(k);
+				if (k.max_stack !== void 0 && entries.length >= k.max_stack) {
+					setLeafError(k.label + " stack limit reached (" + String(k.max_stack) + ") — remove one to add another.");
+					return;
+				}
+				setDraftOption("");
+				setDraftStrength("");
+				setDraftSteps("");
+				setDraftParams(fieldDefaults(k));
+				setLeafError(null);
+				setLeaf({
+					mode: "create",
+					kind: k,
+					index: -1
+				});
+			};
+			const openEdit = (k, index) => {
+				const entry = entriesOf(k)[index];
+				if (isHybridKind(k)) {
+					const key = optionKeyOf(k);
+					setDraftOption(typeof entry[key] === "string" ? entry[key] : "");
+					const scalar = scalarKeyOf(k);
+					const strength = typeof entry[scalar] === "number" ? entry[scalar] : void 0;
+					setDraftStrength(strength !== void 0 ? String(strength) : "");
+					const params = {};
+					for (const f of hybridFields(k, seated)) if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
+					setDraftParams(params);
+				} else if (isOptionKind(k)) {
+					setDraftOption(typeof entry["id"] === "string" ? entry["id"] : "");
+					const strength = typeof entry["strength"] === "number" ? entry["strength"] : void 0;
+					setDraftStrength(strength !== void 0 ? String(strength) : "");
+					setDraftSteps(typeof entry["steps"] === "number" ? String(entry["steps"]) : "");
+				} else {
+					const params = {};
+					for (const f of k.fields ?? []) {
+						if (seated?.has(f.name) ?? false) continue;
+						if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
+					}
+					setDraftParams(params);
+				}
+				setLeafError(null);
+				setLeaf({
+					mode: "edit",
+					kind: k,
+					index
+				});
+			};
+			const saveLeaf = () => {
+				const open = leaf;
+				const k = open.kind;
+				const entries = entriesOf(k);
+				if (isHybridKind(k)) {
+					const key = optionKeyOf(k);
+					if (draftOption === "") {
+						setLeafError("Pick one from the served rows.");
+						return;
+					}
+					const option = optionOf(k, draftOption);
+					if (option === null) {
+						setLeafError("‘" + draftOption + "’ is not a served " + k.label + " row — pick from the catalog, never hand-spell.");
+						return;
+					}
+					const seed = strengthSeedOf(k, option);
+					const strength = draftStrength.trim() === "" ? seed : Number(draftStrength);
+					if (!Number.isFinite(strength)) {
+						setLeafError("Strength must be a number.");
+						return;
+					}
+					const scalar = { [scalarKeyOf(k)]: strength };
+					const stamped = { [key]: draftOption };
+					if (typeof option.model === "string") stamped["model"] = option.model;
+					if (typeof option.preprocessor === "string") stamped["preprocessor"] = option.preprocessor;
+					if (open.mode === "create") commit(k, [...entries, {
+						...stamped,
+						...draftParams,
+						...scalar
+					}]);
+					else {
+						const entry = entries[open.index];
+						if (entry === void 0) {
+							setLeaf(null);
+							return;
+						}
+						const next = [...entries];
+						next[open.index] = {
+							...entry,
+							...stamped,
+							...draftParams,
+							...scalar
+						};
+						commit(k, next);
+					}
+				} else if (isOptionKind(k)) {
+					if (open.mode === "create") {
+						if (draftOption === "") {
+							setLeafError("Pick one from the served rows.");
+							return;
+						}
+						const option = optionOf(k, draftOption);
+						const seed = option !== null && option.defaults?.strength !== void 0 ? option.defaults.strength : 1;
+						const strength = draftStrength.trim() === "" ? seed : Number(draftStrength);
+						if (!Number.isFinite(strength)) {
+							setLeafError("Strength must be a number.");
+							return;
+						}
+						const stepsSeed = option?.defaults?.steps;
+						const steps = draftSteps.trim() === "" ? typeof stepsSeed === "number" ? stepsSeed : void 0 : Number(draftSteps);
+						if (steps !== void 0 && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
+							setLeafError("Steps applied must be a whole number ≥ 1.");
+							return;
+						}
+						if (steps !== void 0) {
+							const min = option?.defaults?.steps_min;
+							const max = option?.defaults?.steps_max;
+							if (typeof min === "number" && steps < min) {
+								setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`);
+								return;
+							}
+							if (typeof max === "number" && steps > max) {
+								setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`);
+								return;
+							}
+						}
+						commit(k, [...entries, steps === void 0 ? {
+							id: draftOption,
+							strength
+						} : {
+							id: draftOption,
+							strength,
+							steps
+						}]);
+					} else {
+						const entry = entries[open.index];
+						if (entry === void 0) {
+							setLeaf(null);
+							return;
+						}
+						const editRow = (k.options ?? []).find((o) => o.value === entry.id);
+						const strengthSeed = typeof editRow?.defaults?.strength === "number" ? editRow.defaults.strength : 1;
+						const strength = draftStrength.trim() === "" ? strengthSeed : Number(draftStrength);
+						if (!Number.isFinite(strength)) {
+							setLeafError("Strength must be a number.");
+							return;
+						}
+						const steps = draftSteps.trim() === "" ? void 0 : Number(draftSteps);
+						if (steps !== void 0 && (!Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1)) {
+							setLeafError("Steps applied must be a whole number ≥ 1.");
+							return;
+						}
+						if (steps !== void 0) {
+							const min = editRow?.defaults?.steps_min;
+							const max = editRow?.defaults?.steps_max;
+							if (typeof min === "number" && steps < min) {
+								setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`);
+								return;
+							}
+							if (typeof max === "number" && steps > max) {
+								setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`);
+								return;
+							}
+						}
+						const next = [...entries];
+						if (steps === void 0) {
+							const rest = {
+								...entry,
+								strength
+							};
+							delete rest["steps"];
+							next[open.index] = rest;
+						} else next[open.index] = {
+							...entry,
+							strength,
+							steps
+						};
+						commit(k, next);
+					}
+				} else if (open.mode === "create") commit(k, [...entries, { ...draftParams }]);
+				else {
+					const entry = entries[open.index];
+					if (entry === void 0) {
+						setLeaf(null);
+						return;
+					}
+					const next = [...entries];
+					next[open.index] = {
+						...entry,
+						...draftParams
+					};
+					commit(k, next);
+				}
+				setLeaf(null);
+			};
+			const deleteLeaf = () => {
+				commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index));
+				setLeaf(null);
+			};
+			const onTileDrop = (k, active, over) => {
+				const entries = entriesOf(k);
+				const from = entries.findIndex((_, i) => k.param_key + "-" + i === active);
+				const to = entries.findIndex((_, i) => k.param_key + "-" + i === over);
+				if (from < 0 || to < 0) return;
+				const next = [...entries];
+				const [moved] = next.splice(from, 1);
+				next.splice(to, 0, moved);
+				commit(k, next);
+			};
+			const isOrdered = (k) => k.category !== "standalone";
+			const anyOrdered = kinds.some(isOrdered);
+			return (0, react.createElement)("section", {
+				className: card_module_css_default.modSection,
+				"data-subcard-grid": "on"
+			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
+				key: k.param_key + ":kind",
+				className: card_module_css_default.modLeafFields
+			}, k.kindFields.map((f) => (0, react.createElement)("label", {
+				key: f.name,
+				className: card_module_css_default.modField
+			}, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
+				f,
+				value: values[f.name] ?? f.default,
+				onEdit: (name, v) => {
+					commitScalar(f, name, v);
+				}
+			}))))), (0, react.createElement)("div", {
+				className: card_module_css_default.modRow,
+				"data-subcard-row": "flow"
+			}, kinds.map((k) => {
+				const entries = entriesOf(k);
+				if (entries.length === 0) return null;
+				const ordered = isOrdered(k);
+				return [...entries.map((entry, i) => {
+					const id = typeof entry[optionKeyOf(k)] === "string" ? entry[optionKeyOf(k)] : "";
+					const option = optionOf(k, id);
+					const scalar = scalarKeyOf(k);
+					const strength = typeof entry[scalar] === "number" ? entry[scalar] : option !== null && option.defaults !== void 0 && typeof option.defaults[scalar] === "number" ? option.defaults[scalar] : void 0;
+					const steps = typeof entry["steps"] === "number" ? entry["steps"] : option !== null && option.defaults !== void 0 && typeof option.defaults["steps"] === "number" ? option.defaults["steps"] : void 0;
+					return (0, react.createElement)(ModTile, {
+						key: k.param_key + "-" + i,
+						tileId: k.param_key + "-" + i,
+						label: option !== null ? option.label : id !== "" ? titleCaseId(id) : isOptionKind(k) ? k.label + " " + String(i + 1) : k.label,
+						...strength !== void 0 ? { strength } : {},
+						...steps !== void 0 ? { steps } : {},
+						onOpen: () => {
+							openEdit(k, i);
+						},
+						dragging: dragTile === k.param_key + "-" + i,
+						dragOver: overTile === k.param_key + "-" + i && dragTile !== null && dragTile !== overTile,
+						...ordered ? {
+							onReorderStart: (id) => {
+								setDragTile(id);
+								if (id === null) setOverTile(null);
+							},
+							onReorderOver: setOverTile,
+							onReorderDrop: (active, over) => {
+								setDragTile(null);
+								setOverTile(null);
+								onTileDrop(k, active, over);
+							}
+						} : {}
+					});
+				})];
+			}), addable.length > 0 ? (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.modAddSquare,
+				"data-subcard-add": "mod",
+				"aria-label": "Add modifier",
+				title: "Add a modifier",
+				onClick: (e) => {
+					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
+				}
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+				open: true,
+				anchor: null,
+				getAnchorRect: () => pickAt.rect,
+				items: addable.map((k) => ({
+					id: k.kind,
+					label: k.label
+				})),
+				onSelect: (id) => {
+					setPickAt(null);
+					openCreate(addable.find((x) => x.kind === id));
+				},
+				onClose: () => {
+					setPickAt(null);
+				},
+				portal: true
+			}) : null, leaf !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose: () => {
+					setLeaf(null);
+				},
+				title: (leaf.mode === "create" ? "Add " : "Edit ") + leaf.kind.label,
+				closeLabel: "Close"
+			}, (0, react.createElement)(ModLeaf, {
+				leaf,
+				values,
+				hideFields: seated,
+				onDraft: {
+					setDraftOption,
+					setDraftStrength,
+					setDraftParams,
+					setDraftSteps,
+					draftOption,
+					draftStrength,
+					draftParams,
+					draftSteps
+				},
+				onError: setLeafError,
+				onSave: saveLeaf,
+				onDelete: deleteLeaf,
+				leafError,
+				paintFace: props.paintFace,
+				bboxFace: props.bboxFace,
+				paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : "",
+				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
+			})) : null);
+		}
+		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
+		*  square provider (the construction law: an image input constructs
+		*  the square automatically, even inside a mod leaf). */
+		function ModLeaf(props) {
+			const { leaf, onDraft, onSave, onDelete, leafError } = props;
+			const k = leaf.kind;
+			const hidden = props.hideFields;
+			const leafFields = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false));
+			const own = useSquareProvider((name, v) => {
+				onDraft.setDraftParams({
+					...onDraft.draftParams,
+					[name]: v
+				});
+			}, {
+				candidates: [],
+				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
+			});
+			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isHybridKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
+				className: card_module_css_default.modSelect,
+				value: onDraft.draftOption,
+				onChange: (e) => {
+					onDraft.setDraftOption(e.target.value);
+				}
+			}, (0, react.createElement)("option", { value: "" }, "— pick —"), (k.options ?? []).map((o) => (0, react.createElement)("option", {
+				key: o.value,
+				value: o.value,
+				title: o.tooltip ?? o.label
+			}, o.label)), onDraft.draftOption !== "" && (k.options ?? []).every((o) => o.value !== onDraft.draftOption) ? (0, react.createElement)("option", { value: onDraft.draftOption }, titleCaseId(onDraft.draftOption) + " (unregistered)") : null)), (0, react.createElement)("label", { className: card_module_css_default.modField }, (k.fields ?? []).find((f) => f.name === scalarKeyOf(k))?.label ?? "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				step: "0.05",
+				value: onDraft.draftStrength,
+				placeholder: "the row default",
+				onChange: (e) => {
+					onDraft.setDraftStrength(e.target.value);
+				}
+			})), (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== scalarKeyOf(k) && !(hidden?.has(f.name) ?? false)).map((f) => (0, react.createElement)("label", {
+				key: f.name,
+				className: card_module_css_default.modField
+			}, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), (0, react.createElement)(SpecAtom, {
+				f,
+				value: onDraft.draftParams[f.name] ?? f.default,
+				onEdit: (name, v) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						[name]: v
+					});
+				},
+				square: own.square(f)
+			}))), own.wireMenu) : isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
+				className: card_module_css_default.modSelect,
+				value: onDraft.draftOption,
+				onChange: (e) => {
+					onDraft.setDraftOption(e.target.value);
+				}
+			}, (0, react.createElement)("option", { value: "" }, "— pick —"), k.options.map((o) => (0, react.createElement)("option", {
+				key: o.value,
+				value: o.value
+			}, o.label)))) : null, (0, react.createElement)("label", { className: card_module_css_default.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				step: "0.05",
+				value: onDraft.draftStrength,
+				placeholder: "the row default",
+				onChange: (e) => {
+					onDraft.setDraftStrength(e.target.value);
+				}
+			})), (k.options ?? []).some((o) => typeof o.defaults?.steps === "number") ? (() => {
+				const rowOpts = k.options ?? [];
+				const activeRow = rowOpts.find((o) => o.value === onDraft.draftOption) ?? rowOpts[0];
+				const rMin = activeRow?.defaults?.steps_min;
+				const rMax = activeRow?.defaults?.steps_max;
+				const rangeText = typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? ` ${rMin}\u2013${rMax}` : typeof activeRow?.defaults?.steps === "number" ? ` (fixed at ${activeRow.defaults.steps})` : "";
+				return (0, react.createElement)("label", { className: card_module_css_default.modField }, `Steps applied${rangeText}`, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					"aria-label": "Steps applied",
+					type: "number",
+					step: "1",
+					min: typeof rMin === "number" ? String(rMin) : void 0,
+					max: typeof rMax === "number" ? String(rMax) : void 0,
+					value: onDraft.draftSteps,
+					placeholder: String(activeRow?.defaults?.steps ?? ""),
+					title: typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? `This adapter runs ${rMin}\u2013${rMax} steps — the dial bounds to the row's declared domain; the run\u2019s sampler applies it unless a call pins steps explicitly.` : "The distill’s own step count — the run’s sampler applies it unless a call pins steps explicitly.",
+					onChange: (e) => {
+						onDraft.setDraftSteps(e.target.value);
+					}
+				}));
+			})() : null) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
+				f,
+				value: onDraft.draftParams[f.name],
+				onEdit: (name, v) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						[name]: v
+					});
+				},
+				square: own.square(f)
+			})), props.paintFace !== void 0 && k.leaf_face === "paint-canvas" && (f.type === "image" || f.wtype === "image") ? (0, react.createElement)(PaintVerb, {
+				Face: props.paintFace,
+				referenceUrl: props.paintReferenceValue,
+				payloadUrl: typeof onDraft.draftParams[f.name] === "string" ? onDraft.draftParams[f.name] : "",
+				onSaved: (dataUrl) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						[f.name]: dataUrl
+					});
+				}
+			}) : null)), props.bboxFace !== void 0 && k.leaf_face === "bbox-canvas" ? (0, react.createElement)(BboxVerb, {
+				Face: props.bboxFace,
+				referenceUrl: props.paintReferenceValue,
+				draft: onDraft.draftParams,
+				onSaved: (bbox) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						bbox_x: Math.round(bbox.x),
+						bbox_y: Math.round(bbox.y),
+						bbox_w: Math.round(bbox.width),
+						bbox_h: Math.round(bbox.height)
+					});
+				}
+			}) : null, own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				onClick: onSave
+			}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: onDelete
+			}, "Remove") : null));
+		}
+		/** THE PAINT VERB — the brush button + modal mount (the face
+		*  component arrives from the host; this is the wiring only). */
+		function PaintVerb(props) {
+			const [open, setOpen] = (0, react.useState)(false);
+			return (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: () => {
+					setOpen(true);
+				}
+			}, "Paint"), open ? (0, react.createElement)(props.Face, {
+				referenceUrl: props.referenceUrl,
+				payloadUrl: props.payloadUrl,
+				onSave: (dataUrl) => {
+					props.onSaved(dataUrl);
+					setOpen(false);
+				},
+				onCancel: () => {
+					setOpen(false);
+				}
+			}) : null);
+		}
+		/** THE BBOX VERB (stroke 78) — the selection button + modal mount:
+		*  reads the entry's current rectangle (all four present and finite
+		*  = set; anything else = null, a fresh draw), writes the four
+		*  bbox_* inputs on save. Same delivery law as the paint verb. */
+		function BboxVerb(props) {
+			const [open, setOpen] = (0, react.useState)(false);
+			const quad = [
+				props.draft["bbox_x"],
+				props.draft["bbox_y"],
+				props.draft["bbox_w"],
+				props.draft["bbox_h"]
+			];
+			const set = quad.length === 4 && quad.every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0) ? {
+				x: quad[0],
+				y: quad[1],
+				width: quad[2],
+				height: quad[3]
+			} : null;
+			return (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: () => {
+					setOpen(true);
+				}
+			}, set === null ? "Draw box" : "Redraw box"), open ? (0, react.createElement)(props.Face, {
+				referenceUrl: props.referenceUrl,
+				bbox: set,
+				onSave: (bbox) => {
+					props.onSaved(bbox);
+					setOpen(false);
+				},
+				onCancel: () => {
+					setOpen(false);
+				}
+			}) : null);
+		}
+		/** One mod tile (the original, verbatim: useSortable + click to
+		*  edit + strength to 2 decimals). */
+		/** The reorder drag's MIME (native HTML5 sortable). */
+		const MOD_DRAG_MIME = "application/x-melite-mod";
+		function ModTile(props) {
+			const ordered = props.onReorderStart !== void 0;
+			return (0, react.createElement)("li", {
+				className: card_module_css_default.modTile + (props.dragging ? " " + card_module_css_default.tileDragging : "") + (props.dragOver ? " " + card_module_css_default.modTileOver : ""),
+				draggable: ordered,
+				"data-mod-tile": props.tileId,
+				title: ordered ? "Drag to reorder · click to edit" : "Click to edit (standalone — own output)",
+				onDragStart: (e) => {
+					if (!ordered) return;
+					e.dataTransfer.setData(MOD_DRAG_MIME, props.tileId);
+					e.dataTransfer.effectAllowed = "move";
+					props.onReorderStart(props.tileId);
+				},
+				onDragEnd: () => {
+					if (ordered) props.onReorderStart(null);
+				},
+				onDragOver: (e) => {
+					if (!ordered) return;
+					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
+						e.preventDefault();
+						e.dataTransfer.dropEffect = "move";
+						props.onReorderOver(props.tileId);
+					}
+				},
+				onDrop: (e) => {
+					if (!ordered) return;
+					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
+						e.preventDefault();
+						e.stopPropagation();
+						const active = e.dataTransfer.getData(MOD_DRAG_MIME);
+						if (active !== "" && active !== props.tileId) props.onReorderDrop(active, props.tileId);
+					}
+				},
+				onClick: props.onOpen
+			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null, props.steps !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileSteps }, `${String(props.steps)} steps`) : null);
+		}
+		//#endregion
+		//#region ../card-base/src/use-resolved.ts
+		/**
+		* use-resolved.ts — THE STUDIO SEAM, ONE UNIVERSAL DEFAULT SYSTEM
+		* (operator, 2026-09-18: "there is no universal default system
+		* right?"). ONE resolver composes EVERY layer — schema defaults <-
+		* model_defaults <- base (the persisted/bench layer) <- user — and
+		* the surface reads THE ONE resolved map. Never a hand `??` ladder
+		* at a call site: a ladder IS a second resolver, and every extra
+		* arm is a place the truth forks.
+		*
+		* PRE-FETCH LAW: the spec arrives async, but the resolved map is
+		* STILL the layer composition — base under user, verbatim — so a
+		* synchronous render shows the document's own held values; the
+		* fetch landing fills the declared defaults under them (the same
+		* one map, richer). Nothing renders blank, nothing flickers, no
+		* call site branches on spec-null.
+		*
+		* THE EDIT LAW: `undefined` is the tri-state's inherit signal (the
+		* unset) — it rides verbatim, the caller's write owns what it
+		* means. Edits coerce at the SCHEMA BOUNDARY (coerceFieldEdit):
+		* numeric strings ride as numbers, unparseable strings ride
+		* verbatim for the run's schema parse to refuse LOUD, and keys the
+		* spec never declared (the mod bag) ride verbatim — the mod plane
+		* owns their validation.
+		*/
+		//#endregion
+		//#region src/client/stage-run.ts
+		/** stage-run.ts — the card stage's run doors: ONE stage through the
+		* composing {model:} door (card stages) or the FLOW door (the
+		* generic MCP card — a standalone-subagent spawn), and the bench's
+		* sequential pass (extracted from CardsTab.tsx hour 15). */
+		/** The generic MCP card's id (the ONE engine-served card the run
+		* press routes on — the subagent-spawn card, engine 'agent'). */
+		const MCP_CARD = "mcp";
+		/** Run ONE card stage through its composing door (the run-wire
+		*  package's startCardRun — the {model:} arm) — EXCEPT the engine
+		*  stage (the generic MCP card), which runs through the FLOW door
+		*  (startMcpStage below). The flow_inline door
+		*  this gesture rode before cannot consume cards ("card= stages are
+		*  unported on this gateway") and its executor demanded a pre-composed
+		*  params.workflow nobody emitted — the Sep 11 bench runs' "node
+		*  carries no inline workflow". The {model:} door composes the card's
+		*  arms estate-side; `model` is the card's DEFAULT FAMILY from the
+		*  catalog (the runs door resolves neither card ids nor aliases —
+		*  defaultFamilyForCard carries the currency, session-cached).
+		*  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
+		*  slot holds — an upload's estate path or a picked upstream output's
+		*  media-route url — rides the start doc VERBATIM; the engine stages
+		*  it under its runs-root arm. No client-side edge resolution exists.
+		*  Exported for the tab seam's door-contract spec. */
+		async function runCardStage(draftId, row) {
+			if (typeof row.card !== "string" || row.card === "") return { refused: "this stage names no card — nothing to compose" };
+			const src = await freshStageRow(draftId, row.id) ?? row;
+			const params = typeof src.params === "object" && src.params !== null && !Array.isArray(src.params) ? src.params : {};
+			const card = typeof src.card === "string" && src.card !== "" ? src.card : "";
+			if (card === "") return { refused: "this stage names no card — nothing to compose" };
+			const heldModel = params["model"];
+			const model = typeof heldModel === "string" && heldModel !== "" ? heldModel : await defaultFamilyForCard(card);
+			if (card === MCP_CARD) {
+				if ((typeof params["task"] === "string" ? params["task"].trim() : "") === "") return { refused: "write the Task first — the subagent spawns with no brief otherwise" };
+				return await startFlowInlineRun({
+					flowId: "mcp",
+					stages: [{
+						id: src.id,
+						engine: "agent",
+						params,
+						outputs: { default: "text" }
+					}],
+					draftId
+				});
+			}
+			let doc = params;
+			try {
+				const selects = fieldsOf(await fetchFormSpec(card)).filter((f) => f.type === "select" && Array.isArray(f.options));
+				if (selects.length > 0) {
+					doc = { ...params };
+					for (const f of selects) {
+						const v = doc[f.name];
+						if (typeof v === "number") {
+							if (f.options.map((o) => typeof o === "string" ? o : o.value).includes(String(v))) doc[f.name] = String(v);
+						}
+					}
+				}
+			} catch {}
+			return await startCardRun({
+				model,
+				params: doc,
+				draftId
+			});
+		}
+		/** THE SEQUENTIAL PASS — Run ALL, the old system's composer law
+		*  verbatim (flowExecuteSlice runAll, 2026-08-11): execute the
+		*  stages IN ORDER, one run per card (the SAME single-stage door the
+		*  drill's Run uses — a typed composer bench is never one graph
+		*  run; the flow_inline door serves the chain/graph surface, not
+		*  this one). Skip stages already done (the cache-hit skip). A
+		*  failed or refused stage STOPS the pass — fail loud, never a
+		*  doomed downstream run. The per-card observer patches each row as
+		*  it goes (running → terminal), so the tiles flip one by one and
+		*  the bench is never taken over. Exported for the door-contract
+		*  spec. */
+		async function runBenchSequential(bench, hooks = {}) {
+			const ran = [];
+			for (const stage of bench.stages) {
+				if (hooks.signal?.aborted === true) return {
+					ran,
+					stoppedAt: null,
+					refused: null
+				};
+				if (stage.runStatus === "done") continue;
+				const res = await runCardStage(bench.draftId, stage);
+				if ("refused" in res) return {
+					ran,
+					stoppedAt: stage.id,
+					refused: res.refused
+				};
+				hooks.onCardStarted?.(res.runId, {
+					draftId: bench.draftId,
+					stageId: stage.id
+				});
+				if (await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched) !== "done") return {
+					ran: [...ran, stage.id],
+					stoppedAt: stage.id,
+					refused: null
+				};
+				ran.push(stage.id);
+			}
+			return {
+				ran,
+				stoppedAt: null,
+				refused: null
+			};
+		}
+		//#endregion
+		//#region src/client/add-stage.ts
+		/**
+		* add-stage.ts — the bench's mutation verb callers (the tab's
+		* add/remove/reorder/group/ungroup paths). Every verb is ONE typed
+		* call on the mounted bench namespace (stroke 81's one-lane law —
+		* the generated client, never a hand-written envelope); the remote
+		* signature is (sessionKey, doc) — sessionKey is a TYPED first
+		* parameter, so a misaddressed bench is a type error, not a runtime
+		* refusal. The doc carries the verb's own keys and every doc rides
+		* expect_rev (the CAS law: the caller chains the bench rev it
+		* rendered, so a concurrent edit refuses instead of slicing wrong).
+		*
+		* THE REBASE LAW (2026-09-15, the operator's stuck: "bench main
+		* moved: rev is 429, caller held 35 — IT STUCK"): the bench is ONE
+		* shared doc the agent writes too, so a tab-rendered rev can be
+		* stale through no user fault. A door that refuses ONLY on CAS
+		* answers itself: re-read the rev (from the SAME session the verb
+		* addresses — the 2026-09-16 fix; the old arm hard-coded 'main' and
+		* rebased non-main verbs against the wrong bench's rev), re-apply
+		* ONCE. A second conflict or any non-CAS refusal throws loud (the
+		* named truth, never a silent drop, never a blind write) — and the
+		* view reloads on that final failure so the NEXT gesture composes
+		* against fresh truth. The stuck is structurally impossible: a
+		* moved bench costs one silent rebase, never a bricked tab.
+		*/
+		/** The bench's CURRENT rev for one session — the CAS handle for a
+		*  re-apply. Returns undefined when the read fails (the re-apply is
+		*  then skipped; the original refusal stands as the honest answer). */
+		async function benchRev(sessionKey, signal) {
+			try {
+				const rev = (await unwrapRemote(estateRemote().bench.get(sessionKey, signal), "bench/get")).rev;
+				return typeof rev === "number" ? rev : void 0;
+			} catch {
+				return;
+			}
+		}
+		/** True when the throw is the door's CAS verdict (stale expect_rev).
+		*  The server's own voice: "bench <session> moved: rev is N, caller
+		*  held M" (bench.ts casCheck; the drafts store's older arm says
+		*  "bench moved: rev is…"). THE MATCHER LAW (2026-09-15): match the
+		*  REAL words — the first cut matched 'bench moved' against 'bench
+		*  MAIN moved' and matched nothing; dead matchers make dead
+		*  rebases, and dead rebases make stuck tabs. */
+		function isCasConflict(e) {
+			const msg = e instanceof Error ? e.message : String(e);
+			return msg.includes("moved: rev is") || msg.includes("cas-conflict");
+		}
+		/** One typed bench verb with the rebase dance: try the held rev; on
+		*  the door's cas-conflict re-read the rev (the SAME session) and
+		*  re-apply ONCE with it. */
+		async function withRebase(verb, doc, sessionKey, signal) {
+			const ns = estateRemote().bench;
+			const attempt = (expectRev) => unwrapRemote(ns[verb](sessionKey, {
+				...doc,
+				expect_rev: expectRev
+			}, signal), "bench/" + verb).then((row) => row);
+			const held = doc["expect_rev"];
+			try {
+				if (typeof held !== "number") throw new Error("bench/" + verb + ": no expect_rev to write against");
+				return await attempt(held);
+			} catch (e) {
+				if (!isCasConflict(e)) throw e;
+				const fresh = await benchRev(sessionKey, signal);
+				if (fresh === void 0) throw e;
+				return await attempt(fresh);
+			}
+		}
+		/** The bench add-stage verb caller (the tab's add-card path). The
+		*  doc holds card/author/engine/params/expect_rev. */
+		async function addStageWire(doc, sessionKey, signal) {
+			return await withRebase("add-stage", doc, sessionKey, signal);
+		}
+		/** The bench remove-stage verb caller (the drill's Remove path). The
+		*  doc holds stage/expect_rev; the session key addresses the doc the
+		*  bar RENDERS (stroke 80 — 'main' hardcoding deleted against the
+		*  wrong bench and refused 'stage not found'). */
+		async function removeStageWire(doc, sessionKey, signal) {
+			return await withRebase("remove-stage", doc, sessionKey, signal);
+		}
+		/** The bench reorder verb caller (the drag-reorder path). Doc:
+		*  stage/to/expect_rev — `to` is the post-splice target index. */
+		async function reorderStageWire(doc, sessionKey, signal) {
+			return await withRebase("reorder", doc, sessionKey, signal);
+		}
+		/** The bench group verb caller (the Group Cards sub-view):
+		*  stages = 2+ ids (bench order applied server-side). */
+		async function groupStagesWire(doc, sessionKey, signal) {
+			return await withRebase("group", doc, sessionKey, signal);
+		}
+		/** The bench ungroup verb caller: spill a compound's children. */
+		async function ungroupStageWire(doc, sessionKey, signal) {
+			return await withRebase("ungroup", doc, sessionKey, signal);
+		}
+		//#endregion
+		//#region ../../web-kit/formats/src/readFile.ts
+		/**
+		* readFile — THE one read path for every slot-shaped attach, ported
+		* native from the retired kit's SlotSquare (2026-09-12, the kit
+		* retirement). A plain FileReader promise — no UI dependency owns a
+		* file read.
+		*/
+		/** Read a File / Blob and resolve its data: URL. */
+		function readAsDataURL(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
+				reader.readAsDataURL(file);
+			});
+		}
+		var init_readFile = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/api.ts
+		/** The named escape for non-table URLs. Every use is deliberate and
+		* greppable. */
+		function externalUrl(u) {
+			return u;
+		}
+		function shouldRetryStatus(status, method) {
+			return GATEWAY_CODES.has(status) || SAFE_METHODS.has(method) && status >= 500 && status < 600;
+		}
+		function getBackendState() {
+			return state;
+		}
+		/** Subscribe to backend liveness changes. Returns an unsubscribe fn. */
+		function onBackendState(cb) {
+			listeners.add(cb);
+			return () => {
+				listeners.delete(cb);
+			};
+		}
+		function setState(next) {
+			if (next === state) return;
+			state = next;
+			for (const cb of listeners) try {
+				cb(next);
+			} catch {}
+		}
+		/** True if `input` targets our own backend (same-origin or root-relative). */
+		function isBackendUrl(input) {
+			if (input.startsWith("/")) return true;
+			try {
+				return new URL(input, window.location.origin).origin === window.location.origin;
+			} catch {
+				return false;
+			}
+		}
+		function sleep$1(ms, signal) {
+			return new Promise((resolve, reject) => {
+				const t = setTimeout(resolve, ms);
+				signal?.addEventListener("abort", () => {
+					clearTimeout(t);
+					reject(new DOMException("Aborted", "AbortError"));
+				}, { once: true });
+			});
+		}
+		function backoffMs(attempt) {
+			const exp = Math.min(CAP_MS, BASE_MS * 2 ** attempt);
+			return Math.round(exp * (.5 + Math.random() * .5));
+		}
+		/**
+		* Drop-in replacement for `fetch()` with retry, backoff, GET dedup, and a
+		* global liveness signal. Throws only on persistent network failure (after
+		* MAX_RETRIES) or caller AbortError. Returns the Response for any HTTP
+		* status (including 4xx/5xx) so existing `if (!res.ok)` checks keep working.
+		*/
+		async function apiFetch(input, init = {}) {
+			const method = (init.method ?? "GET").toUpperCase();
+			const backend = isBackendUrl(input);
+			const dedupKey = method === "GET" && backend ? input : null;
+			if (dedupKey && inflight.has(dedupKey)) return inflight.get(dedupKey).then((r) => {
+				if (r && typeof r.clone === "function") return r.clone();
+				return r;
+			});
+			const run = async () => {
+				const deadline = Date.now() + TOTAL_BUDGET_MS;
+				let lastErr = null;
+				for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+					if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+					try {
+						const ctrl = new AbortController();
+						const callerSignal = init.signal;
+						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
+						const res = await fetch(input, {
+							...init,
+							signal: ctrl.signal
+						});
+						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
+							if (backend) setState("degraded");
+							await sleep$1(backoffMs(attempt), callerSignal);
+							continue;
+						}
+						if (backend) {
+							consecutiveFail = 0;
+							setState("online");
+						}
+						return res;
+					} catch (err) {
+						if (err instanceof DOMException && err.name === "AbortError") throw err;
+						lastErr = err;
+						if (backend) {
+							consecutiveFail++;
+							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
+						}
+						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep$1(backoffMs(attempt));
+					}
+				}
+				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
+			};
+			const p = run();
+			if (dedupKey) {
+				inflight.set(dedupKey, p);
+				p.then(() => {
+					inflight.delete(dedupKey);
+				}, () => {
+					inflight.delete(dedupKey);
+				});
+			}
+			return p;
+		}
+		/**
+		* Convenience for JSON endpoints. Throws an Error on non-2xx (message
+		* includes status + body excerpt) so callers can use try/catch directly.
+		*/
+		async function apiJson(input, init) {
+			const res = await apiFetch(input, init);
+			if (!res.ok) {
+				let body = "";
+				try {
+					body = await res.text();
+				} catch (readErr) {
+					throw new Error(`${input}: ${res.status} ${res.statusText} (body read failed: ${readErr instanceof Error ? readErr.message : String(readErr)})`);
+				}
+				throw new Error(`${input}: ${res.status} ${res.statusText} ${body.slice(0, 200)}`);
+			}
+			return res.json();
+		}
+		/** Fetch a same-origin artifact URL and re-encode it as a data URL
+		*  (survived the unicananvas client purge 2026-08-21 — the ONE live
+		*  export of that dead module; generic wire utility, so it lives with
+		*  the transport). */
+		async function urlToDataUrl(url, signal) {
+			const res = await fetch(url, { signal });
+			if (!res.ok) throw new Error(`Canvas artifact fetch failed: HTTP ${res.status} for ${url.slice(0, 200)}`);
+			const blob = await res.blob();
+			try {
+				return await readAsDataURL(blob);
+			} catch {
+				throw new Error(`Failed to read ${url.slice(0, 200)} as data URL`);
+			}
+		}
+		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners, inflight;
+		var init_api = __esmMin((() => {
+			init_readFile();
+			MAX_RETRIES = 4;
+			BASE_MS = 400;
+			CAP_MS = 4e3;
+			OFFLINE_THRESHOLD = 3;
+			TOTAL_BUDGET_MS = 15e3;
+			SAFE_METHODS = /* @__PURE__ */ new Set(["GET", "HEAD"]);
+			GATEWAY_CODES = /* @__PURE__ */ new Set([
+				502,
+				503,
+				504
+			]);
+			state = "online";
+			consecutiveFail = 0;
+			listeners = /* @__PURE__ */ new Set();
+			inflight = /* @__PURE__ */ new Map();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/catalogContract.ts
+		function validateCatalogContract(catalog) {
+			const violations = [];
+			if (!isObj$1(catalog)) return {
+				valid: false,
+				violations: [{
+					kind: "catalog",
+					message: "Catalog is not an object — this is an error body, not a contract."
+				}]
+			};
+			const families = catalog.families;
+			if (!isObj$1(families)) violations.push({
+				kind: "catalog",
+				message: "Catalog has no `families` record — no family can be located."
+			});
+			const models = catalog.models;
+			if (!isObj$1(models)) violations.push({
+				kind: "catalog",
+				message: "Catalog has no `models` record — no model can be located."
+			});
+			const capabilities = catalog.capabilities;
+			if (capabilities !== void 0 && !isObj$1(capabilities)) violations.push({
+				kind: "catalog",
+				message: "`capabilities` is not a record keyed by id — capability routing is dead."
+			});
+			if (families === void 0 || models === void 0) return {
+				valid: false,
+				violations
+			};
+			if (isObj$1(families)) for (const [id, entry] of Object.entries(families)) {
+				if (!isObj$1(entry)) {
+					violations.push({
+						kind: id,
+						message: `Family ${id} is not an object.`
+					});
+					continue;
+				}
+				if (!isNonEmptyString(entry.label)) violations.push({
+					kind: id,
+					message: `Family ${id} declares no "label" — it would render as an empty picker entry.`
+				});
+				const modifiers = entry.modifiers;
+				if (modifiers !== void 0 && modifiers !== null && !Array.isArray(modifiers)) violations.push({
+					kind: id,
+					message: `Family ${id} declares "modifiers" but it is not an array — modifier capability is unreadable.`
+				});
+				else if (Array.isArray(modifiers)) for (const raw of modifiers) {
+					if (!isObj$1(raw) || typeof raw.kind !== "string") continue;
+					if (raw.kind !== "controlnet" && raw.kind !== "lora") continue;
+					const options = Array.isArray(raw.options) ? raw.options : [];
+					if ((raw.cardinality ?? "list") === "list" && options.length === 0 && !raw.upload_dir) violations.push({
+						kind: id,
+						message: `Family ${id} modifier kind "${raw.kind}" carries ZERO options and no upload_dir — the dropdown would render empty (phantom capability).`
+					});
+				}
+			}
+			if (isObj$1(models)) for (const [id, entry] of Object.entries(models)) {
+				if (!isObj$1(entry)) {
+					violations.push({
+						kind: id,
+						message: `Model ${id} is not an object.`
+					});
+					continue;
+				}
+				const missing = [];
+				if (!isNonEmptyString(entry.family)) missing.push("family");
+				if (!isNonEmptyString(entry.form)) missing.push("form");
+				if (!isNonEmptyString(entry.label)) missing.push("label");
+				if (missing.length > 0) violations.push({
+					kind: id,
+					message: `Model ${id} is missing required key(s) ${missing.join(", ")} — it cannot route or render.`
+				});
+			}
+			if (isObj$1(capabilities)) for (const [id, entry] of Object.entries(capabilities)) {
+				if (!isObj$1(entry)) {
+					violations.push({
+						kind: id,
+						message: `Capability ${id} is not an object.`
+					});
+					continue;
+				}
+				const missing = [];
+				if (!isNonEmptyString(entry.label)) missing.push("label");
+				const declaredFam = entry.default_family;
+				if (declaredFam !== void 0 && !isNonEmptyString(declaredFam)) missing.push("default_family (present but not a string)");
+				const resolved = entry.resolved;
+				if (!(isObj$1(resolved) && isNonEmptyString(resolved.family) && isNonEmptyString(resolved.model)) && !isNonEmptyString(declaredFam)) missing.push("default_family or resolved route");
+				if (!Array.isArray(entry.families) || entry.families.length === 0) missing.push("families");
+				else if (entry.families.some((f) => !isNonEmptyString(f))) missing.push("families (non-string entries)");
+				if (missing.length > 0) violations.push({
+					kind: id,
+					message: `Capability ${id} is missing required key(s) ${missing.join(", ")} — it cannot route.`
+				});
+			}
+			return {
+				valid: violations.length === 0,
+				violations
+			};
+		}
+		var CatalogContractError, isObj$1, isNonEmptyString;
+		var init_catalogContract = __esmMin((() => {
+			CatalogContractError = class extends Error {
+				violations;
+				constructor(violations) {
+					super(`Catalog contract violation (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
+					this.name = "CatalogContractError";
+					this.violations = violations;
+				}
+			};
+			isObj$1 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
+			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
+			activeVariantForRoute: () => activeVariantForRoute,
+			axisCellExists: () => axisCellExists,
+			canvasDefaultModel: () => canvasDefaultModel,
+			composeVariantRoute: () => composeVariantRoute,
+			controlnetTypesOf: () => controlnetTypesOf,
+			dropdownModels: () => dropdownModels,
+			ensureCatalog: () => ensureCatalog,
+			familiesForForm: () => familiesForForm,
+			familyAccepts: () => familyAccepts,
+			familyCardSummary: () => familyCardSummary,
+			familyConditioning: () => familyConditioning,
+			familyGenre: () => familyGenre,
+			familyHasVariantAxis: () => familyHasVariantAxis,
+			familyLabel: () => familyLabel,
+			familyOf: () => familyOf,
+			familyOptionalOutputs: () => familyOptionalOutputs,
+			familyPrimaryRoute: () => familyPrimaryRoute,
+			familyTransformMatrix: () => familyTransformMatrix,
+			formOf: () => formOf,
+			getCachedCatalog: () => getCachedCatalog,
+			hiddenFromDropdown: () => hiddenFromDropdown,
+			isCatalogLoaded: () => isCatalogLoaded,
+			loadCatalog: () => loadCatalog,
+			modelDescription: () => modelDescription,
+			modelLabel: () => modelLabel,
+			narrowGenre: () => narrowGenre,
+			onCatalogReady: () => onCatalogReady,
+			presetsForRoute: () => presetsForRoute,
+			primeCatalog: () => primeCatalog,
+			promptGuide: () => promptGuide,
+			routeCoordinates: () => routeCoordinates,
+			studioOf: () => studioOf,
+			variantLabel: () => variantLabel,
+			variantSiblings: () => variantSiblings,
+			variantsForRoute: () => variantsForRoute
+		});
+		/** Narrow the wire's plain string genre (string | null — the backend
+		* Literal does not survive the wire as a type) onto the view union.
+		* Out-of-vocabulary values return undefined (callers fall back) — never a
+		* silent cast: an unknown genre must NOT masquerade as a known one. */
+		function narrowGenre(g) {
+			return CARD_GENRES.find((genre) => genre === g);
+		}
+		/** CN type keys a family declares — derived from its ``modifiers:`` block
+		* (kind=controlnet options; the ONLY source of truth, Phase A finalé).
+		* ServicePicker advertises CN support per tile from this — the "weird
+		* reason" most models show no CN subcards: only families that declare a
+		* controlnet kind have CN support (DiT models without compatible CN
+		* trainings correctly declare nothing). */
+		function controlnetTypesOf(family) {
+			return ((family?.modifiers ?? []).find((m) => m.kind === "controlnet")?.options ?? []).map((o) => ({
+				type: o.value,
+				label: o.label
+			}));
+		}
+		function _notify() {
+			for (const fn of _listeners$3) try {
+				fn();
+			} catch (e) {
+				console.warn("[modelCatalog] listener error:", e);
+			}
+		}
+		/** Subscribe to catalog readiness. Called when _cache transitions from
+		* null → populated. Returns an unsubscribe fn. */
+		function onCatalogReady(fn) {
+			_listeners$3.add(fn);
+			return () => {
+				_listeners$3.delete(fn);
+			};
+		}
+		/** True after the catalog has been successfully loaded at least once. */
+		function isCatalogLoaded() {
+			return _loaded;
+		}
+		/** Fetch the model catalog. THROWS on non-2xx (no silent empty `{}`).
+		* The caller MUST surface the error. Returning a fake empty catalog here
+		* is what hid every "model dropdown is empty" bug — the user saw nothing
+		* and the console warning was invisible. Loud failure is honest. */
+		/** The ONE ingest gate (2026-08-11): validate BEFORE caching.
+		* A catalog that violates the contract is a BACKEND bug — reported to the
+		* contract store, NEVER cached, and the caller gets a
+		* CatalogContractError (ensureCatalog will not auto-retry it). */
+		function _ingest(data) {
+			const { valid, violations } = validateCatalogContract(data);
+			if (!valid) throw new CatalogContractError(violations);
+			useCatalogContractStore.getState().reportOk();
+			const catalog = data;
+			_cache$2 = catalog;
+			_cacheTime = Date.now();
+			_loaded = true;
+			_notify();
+			return catalog;
+		}
+		async function loadCatalog(opts) {
+			if (_cache$2 && !opts?.force) {
+				if (Date.now() - _cacheTime > _CACHE_TTL_MS && !_inflight$2) _inflight$2 = (async () => {
+					try {
+						_ingest(await apiJson("/v1/model-catalog"));
+					} catch (e) {
+						if (e instanceof CatalogContractError) useCatalogContractStore.getState().reportViolation(e.violations);
+						else useCatalogContractStore.getState().reportError(e instanceof Error ? e.message : String(e));
+					}
+					return _cache$2;
+				})().finally(() => {
+					_inflight$2 = null;
+				});
+				return _cache$2;
+			}
+			if (_inflight$2) return _inflight$2;
+			_inflight$2 = (async () => {
+				try {
+					return _ingest(await apiJson("/v1/model-catalog"));
+				} catch (e) {
+					if (e instanceof CatalogContractError) useCatalogContractStore.getState().reportViolation(e.violations);
+					else useCatalogContractStore.getState().reportError(e instanceof Error ? e.message : String(e));
+					throw e;
+				}
+			})().finally(() => {
+				_inflight$2 = null;
+			});
+			return _inflight$2;
+		}
+		/** Fire-and-forget background load with auto-retry. If the first attempt
+		* fails (gateway reloading, network blip), schedules a retry after 3s.
+		* Keeps trying until the catalog loads, then notifies subscribers.
+		* Safe to call multiple times — collapses into a single inflight request. */
+		function ensureCatalog() {
+			if (_loaded) return;
+			if (_inflight$2) return;
+			loadCatalog().then(() => {
+				if (_bgRetryTimer) {
+					clearTimeout(_bgRetryTimer);
+					_bgRetryTimer = null;
+				}
+			}).catch((e) => {
+				if (e instanceof CatalogContractError) {
+					console.error("[modelCatalog] catalog contract violation — not auto-retrying:", e.message);
+					return;
+				}
+				console.warn("[modelCatalog] load failed, will retry in 3s:", e);
+				if (_bgRetryTimer) clearTimeout(_bgRetryTimer);
+				_bgRetryTimer = setTimeout(() => {
+					_bgRetryTimer = null;
+					ensureCatalog();
+				}, 3e3);
+			});
+		}
+		function getCachedCatalog() {
+			return _cache$2;
+		}
+		/** Seed the cache with pre-fetched data (test utility — production code uses
+		* loadCatalog/ensureCatalog which fetch from the endpoint). Lets tests inject
+		* a fake catalog without going to the network. */
+		function primeCatalog(data) {
+			_cache$2 = data;
+			_loaded = true;
+			_notify();
+		}
+		/**
+		* For route keys that are NOT top-level catalog entries (e.g. a quant-tier
+		* sibling that only appears as a variant route on its parent), find the
+		* parent model that owns the route via its ``variants:`` block.
+		*/
+		function parentModelForRoute(routeKey, cat) {
+			for (const [key, spec] of Object.entries(cat.models)) if ((spec.variants ?? []).some((v) => v.route === routeKey)) return key;
+		}
+		function familyOf(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!cat?.models) return void 0;
+			const own = cat.models[routeKey]?.family;
+			if (own) return own;
+			const parent = parentModelForRoute(routeKey, cat);
+			return parent ? cat.models[parent].family : void 0;
+		}
+		function studioOf(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.studio ?? void 0;
+		}
+		/**
+		* The catalog-declared FORM for a route key (the model's ``form`` — the
+		* same id _FORM_CONFIGS keys by on the backend). Resolves variants to
+		* their parent model like familyOf. The tag routes the model's
+		* editor surface (the FORM LAW: a model without a form cannot route
+		* or render). The 2026-09-18 retirement: the retired per-form alias
+		* tables are gone — forms no longer reshape slot keys.
+		*/
+		function formOf(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!cat?.models) return void 0;
+			const own = cat.models[routeKey]?.form;
+			if (own) return own;
+			const parent = parentModelForRoute(routeKey, cat);
+			return parent ? cat.models[parent].form : void 0;
+		}
+		function familyLabel(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return routeKey;
+			return cat.families?.[fam]?.label ?? routeKey;
+		}
+		/**
+		* The family-declared media genre for a route key. Resolves model routes
+		* AND raw family ids (``wan-vace``, ``detect``) — the catalog passthrough
+		* emits ``genre:`` verbatim. Non-catalog services (trellis, kimodo, yaml
+		* brick families) return undefined → callers fall back to their generic
+		* badge. The schema-driven replacement for engine-name substring
+		* classifiers.
+		*/
+		function familyGenre(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			return narrowGenre((fam ? cat.families?.[fam]?.genre : void 0) ?? cat.families?.[routeKey]?.genre);
+		}
+		/**
+		* The source-media types a family declares it ingests (FamilyEntry.accepts,
+		* a closed literal on the backend). Returns the declared list, or
+		* [] when the family declares none / is unknown → the canvas drop handler
+		* treats [] as "not a drop target" (no card spawned, no hard-fail on the
+		* MIME itself — there simply is no input family to receive the drop). The
+		* gate that replaces a free-coded isImageFile prefix check. (2026-08-09)
+		*/
+		function familyAccepts(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			return cat.families?.[fam ?? routeKey]?.accepts ?? [];
+		}
+		/**
+		* The media-type→param applicability matrix for a family's gated source
+		* params: {paramName → [media types it applies to]}. Returns {} when the
+		* family declares no transforms / is unknown. The InputCardEditor gates
+		* field renders on this (no trim control for an image — no time axis) and
+		* applySource strips params whose declared types no longer include the new
+		* source's type — both driven ENTIRELY by this declaration, no hardcoded
+		* image/video/audio branches. ONE source (input_prep.yaml transforms:),
+		* TWO consumers (this editor + backend _validate_params_for_media), zero
+		* drift. (2026-08-09)
+		*/
+		function familyTransformMatrix(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			const transforms = cat.families?.[fam ?? routeKey]?.transforms;
+			if (!transforms) return {};
+			const out = {};
+			for (const t of transforms) out[t.name] = t.applies_to;
+			return out;
+		}
+		/**
+		* The family's declared video conditioning slots ([first_frame,
+		* last_frame] for ltx/wan-vace, [reference, pose, mask] for scail2) —
+		* schema-driven input-wiring labels (no engine-name classifiers).
+		*/
+		/**
+		* The compact card's declared size line (FamilyEntry.card_summary, a
+		* validated block on the backend). Returns {width_param, height_param}
+		* for generation families (rendered "WxH") OR {size_param, size_suffix} for
+		* the Enhance / upscale families (rendered as a single value), or null when
+		* the family declares no size line / is unknown. The CardTile reads whichever
+		* is declared — no free-coded per-family dimension logic in the view.
+		* (2026-08-09; size_param added 2026-08-10.)
+		*/
+		function familyCardSummary(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			return cat.families?.[fam ?? routeKey]?.card_summary ?? null;
+		}
+		function familyConditioning(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.video?.conditioning ?? void 0;
+		}
+		/**
+		* The family's declared optional outputs (Option A — the optional-outputs
+		* vocabulary). Empty/undefined when the family declares none (legacy
+		* single-output compat). Consumers render one editor per entry, keyed by
+		* ``genre`` — the input card no longer declares any (mask removed
+		* 2026-08-14), so this is the vocabulary for OTHER families that do.
+		*/
+		function familyOptionalOutputs(familyId, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return cat.families?.[familyId]?.optional_outputs ?? [];
+		}
+		/**
+		* The catalog-declared Canvas default model route — the model whose entry
+		* carries ``canvas_default: true`` (krea-2). Replaces the hardcoded
+		* CANVAS_DEFAULT_MODEL; returns undefined before the catalog loads (the
+		* caller keeps its own pre-catalog bootstrap value).
+		*/
+		function canvasDefaultModel(cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return Object.entries(cat.models).find(([, m]) => m.canvas_default)?.[0];
+		}
+		/** Display name for a model within its family variant picker (Turbo / Base / Raw / …). */
+		function variantLabel(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models?.[routeKey];
+			return m?.variant_label ?? m?.label ?? routeKey;
+		}
+		/**
+		* One entry per model family that has dropdown-visible members in the given
+		* form. The primaryRoute is the catalog-declared `default_model` if present
+		* (and visible), else the member whose key equals the family ID, else the
+		* first visible member. Used to drive the family-level dropdown and the
+		* empty-model seed. The default is FULLY catalog-declared — the frontend
+		* never picks a default itself.
+		*/
+		function familiesForForm(formTag, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const visible = dropdownModels(formTag, cat);
+			const seen = /* @__PURE__ */ new Set();
+			const result = [];
+			for (const key of visible) {
+				const fam = cat.models[key]?.family ?? key;
+				if (seen.has(fam)) continue;
+				seen.add(fam);
+				const members = visible.filter((k) => (cat.models[k]?.family ?? k) === fam);
+				const declared = cat.families[fam]?.default_model;
+				const primary = (declared && members.includes(declared) ? declared : void 0) ?? members.find((k) => k === fam) ?? members[0];
+				result.push({
+					familyId: fam,
+					primaryRoute: primary,
+					label: cat.families[fam]?.label ?? fam
+				});
+			}
+			return result;
+		}
+		/**
+		* Given a route key (including quant-tier variants like z-image-sd-q8),
+		* return the family's primary route key — the one to use as the dropdown
+		* value so the dropdown always shows the family even when a sub-variant is
+		* selected.
+		*/
+		function familyPrimaryRoute(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return routeKey;
+			const declared = cat.families[fam]?.default_model;
+			if (declared && cat.models[declared]?.family === fam) return declared;
+			const members = Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
+			return members.find((k) => k === fam) ?? members[0];
+		}
+		function modelLabel(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models[routeKey];
+			if (!m) return routeKey;
+			return m.label ?? cat.families[m.family]?.label ?? routeKey;
+		}
+		/** Description for a model route, or undefined. Callers provide their own
+		* fallback string — this returns `undefined` so `??` works. Reads the
+		* `description:` declared on the model's family in the catalog YAML. */
+		function modelDescription(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.description ?? void 0;
+		}
+		function promptGuide(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families[fam]?.prompt_guide ?? void 0;
+		}
+		function dropdownModels(formTag, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const out = [];
+			for (const [key, spec] of Object.entries(cat.models)) {
+				if (spec.hide_from_dropdown) continue;
+				if (formTag) {
+					if (spec.form !== formTag) continue;
+				} else if (spec.edit_only) continue;
+				out.push(key);
+			}
+			return out.sort();
+		}
+		function variantSiblings(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return routeKey ? [routeKey] : [];
+			return Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
+		}
+		/**
+		* Models hidden from the dropdown because they're reachable only via a
+		* variant toggle (e.g. z-image-q5 — picked by clicking the Q5 button).
+		*/
+		function hiddenFromDropdown(cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return new Set(Object.entries(cat.models).filter(([, m]) => m.hide_from_dropdown).map(([k]) => k));
+		}
+		/**
+		* The ``variants:`` list for a model — resolves through the parent if the
+		* route key is a quant-tier sibling (e.g. z-image-q5 inherits z-image's
+		* variants). Returns ``[]`` for models without variants.
+		*/
+		function variantsForRoute(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const own = cat.models[routeKey]?.variants;
+			if (own) return own;
+			const parent = parentModelForRoute(routeKey, cat);
+			return parent ? cat.models[parent].variants : [];
+		}
+		/**
+		* The route's served recipe presets — the LOAD-TIME per-route merge
+		* (2026-08-18, compose model): every route's ``presets`` dict is the
+		* head base layer (presets/ on the model head) ⊕ the owning variant's
+		* layer (variants/<vid>/presets/), both only_routes-filtered AT LOAD
+		* (variant wins on id collision). Own-only read: the backend attaches
+		* the merged dict to EVERY route, so a fallback chain (tree-head scan,
+		* the retired family-block carve-out) would be a second precedence —
+		* the exact two-sources drift the composer's contract forbids. The
+		* card and the run door read the SAME per-route dict, so the
+		* h3-timeline incident dies by construction. only_routes gating is
+		* not re-derived here — the wire never carries a gated-out preset.
+		*/
+		function presetsForRoute(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const own = cat.models[routeKey]?.presets;
+			return own && typeof own === "object" && Object.keys(own).length > 0 ? own : void 0;
+		}
+		/**
+		* Find the variant whose route matches ``routeKey`` — used to highlight the
+		* active toggle when the form is hydrated from saved state.
+		*/
+		function activeVariantForRoute(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const ownList = variantsForRoute(routeKey, cat);
+			const own = ownList.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? ownList.find((v) => v.route === routeKey);
+			if (own) return own;
+			for (const spec of Object.values(cat.models)) {
+				const list = spec.variants ?? [];
+				const hit = list.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? list.find((v) => v.route === routeKey);
+				if (hit) return hit;
+			}
+		}
+		/**
+		* The matrix coordinates of a route within its family's variant grid —
+		* the values that distinguish it from its siblings. Read from the model
+		* spec's ``variant`` (Turbo / Raw / Distilled / Base …) and ``quant``
+		* (fp8 / q8 / q5 …) fields, resolving the FP8 default's quant through
+		* its variant entries (the default route omits ``quant:`` since it IS
+		* the fp8 tier).
+		*
+		* This is the ONE model for how variant axes compose (2026-08-08): every
+		* axis is a labeled toggle row declared in ``variant_groups``, and the
+		* routes are the cells of the grid. Krea 2 = Variant (Turbo/Raw) × Quant
+		* (FP8/Q8/Q5) → 6 routes. The composer below switches one axis while
+		* preserving the others.
+		*/
+		function routeCoordinates(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models[routeKey];
+			return {
+				variant: m?.variant ?? void 0,
+				quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant ?? void 0
+			};
+		}
+		/**
+		* Resolve the route that combines the clicked variant's axis with the
+		* current route's OTHER axes. Scans the family's routes (including the
+		* ``hide_from_dropdown`` quant siblings) for the coordinate match, so
+		* clicking "Raw" while on Turbo+Q8 lands on Raw+Q8 — never Raw+FP8.
+		*
+		* Group → axis mapping: a ``Quant`` group switches the quant tier (base
+		* variant preserved); a ``Variant`` group switches the base variant (quant
+		* preserved). The vocabulary is closed to Variant/Quant (schema.py
+		* CANONICAL_VARIANT_GROUPS, 2026-08-09 — "Speed" was a duplicate name for
+		* the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
+		* with no ``route:`` never reach here — the caller handles those as draft
+		* overlays.
+		*
+		* Falls back to the clicked entry's own ``route`` when no matrix sibling
+		* matches (single-axis families, or a quant tier with no sibling for the
+		* target variant). This is the ONE composition path — there is no longer
+		* a separate sibling-picker (2026-08-08).
+		*/
+		/** The wanted matrix coordinates after one axis switch — the ONE
+		* derivation shared by the composer and the existence check (a second
+		* copy of this arithmetic would be the exact two-sources drift the
+		* composer's contract forbids). A ``Quant`` click keeps the current
+		* variant and takes the clicked quant; a ``Variant`` click keeps the
+		* current quant and takes the clicked variant. */
+		function axisWants(currentRoute, clicked, cat) {
+			const cur = routeCoordinates(currentRoute, cat);
+			const tgt = routeCoordinates(clicked.route, cat);
+			const switchesQuant = clicked.group === "Quant";
+			return {
+				variant: switchesQuant ? cur.variant : tgt.variant ?? cur.variant,
+				quant: switchesQuant ? clicked.quant ?? tgt.quant : cur.quant
+			};
+		}
+		/** The ONE matrix-cell lookup: the route in ``fam`` whose coordinates are
+		* exactly (variant, quant), or undefined when no such cell exists. */
+		function matrixCell(fam, variant, quant, cat) {
+			for (const [key, spec] of Object.entries(cat.models)) {
+				if ((spec.family ?? key) !== fam) continue;
+				const rc = routeCoordinates(key, cat);
+				if (rc.variant === variant && rc.quant === quant) return key;
+			}
+		}
+		function composeVariantRoute(currentRoute, clicked, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(currentRoute, cat);
+			const clickedRoute = clicked.route;
+			if (!fam || !clickedRoute) return clickedRoute ?? currentRoute;
+			const wants = axisWants(currentRoute, clicked, cat);
+			return matrixCell(fam, wants.variant, wants.quant, cat) ?? clickedRoute;
+		}
+		/**
+		* Only-existing-combinations (2026-08-16 — "ONLY show models combinations
+		* that exist"): does clicking `clicked` from `currentRoute` land on a
+		* REAL catalog cell?
+		*
+		* Derives the SAME wanted coordinates as the composer (axisWants — one
+		* derivation) and asks the matrix directly whether that cell exists
+		* (matrixCell). This is NOT derivable from composeVariantRoute's return:
+		* the composer falls back to ``clicked.route`` when the cell is missing,
+		* so a phantom combo and a real one return the same string — the silent
+		* sibling-axis switch the fallback causes is exactly the phantom
+		* combination this check keeps OUT of the axis dropdowns.
+		*
+		* Patch-only variants (no ``route``) always compose — they layer onto
+		* whatever cell is active, so they always exist. An unresolvable family
+		* (catalog not loaded yet) also passes: without the matrix we cannot
+		* positively know a cell is missing, and the served variants list is
+		* itself catalog-derived — hiding is only correct on positive evidence.
+		*/
+		function axisCellExists(currentRoute, clicked, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!clicked.route) return true;
+			const fam = familyOf(currentRoute, cat);
+			if (!fam) return true;
+			const wants = axisWants(currentRoute, clicked, cat);
+			return matrixCell(fam, wants.variant, wants.quant, cat) !== void 0;
+		}
+		/**
+		* True when the family owns its version axis via a declared ``Variant``
+		* group (Krea 2 Turbo/Raw, …). The legacy sibling-picker defers to the
+		* matrix system in that case so the two never render duplicate rows
+		* (2026-08-08 — one system, not two).
+		*/
+		function familyHasVariantAxis(routeKey, cat = _cache$2 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
+			return !!groups && "Variant" in groups;
+		}
+		var CARD_GENRES, _cache$2, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$3;
+		var init_modelCatalog = __esmMin((() => {
+			init_api();
+			init_catalogContract();
+			init_catalogContractStore();
+			CARD_GENRES = [
+				"image",
+				"video",
+				"audio",
+				"3d",
+				"motion",
+				"other",
+				"text"
+			];
+			_cache$2 = null;
+			_cacheTime = 0;
+			_CACHE_TTL_MS = 3e4;
+			_inflight$2 = null;
+			_loaded = false;
+			_bgRetryTimer = null;
+			_listeners$3 = /* @__PURE__ */ new Set();
+			/* v8 ignore next -- module warm-load runs only in browser builds, where
+			* MODE is "production"/"development"; under vitest MODE is always "test",
+			* so the taken arm is unreachable here (2026-09-12). */
+			if ({}.env?.MODE !== "test") ensureCatalog();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
+		* outage that produced it, so the operator should also see WHEN it fired.
+		* 24h local time, seconds resolution. */
+		function _stamp() {
+			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
+		}
+		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
+		* re-validates + re-reports. Lazy import: modelCatalog imports THIS store
+		* (for CatalogContractError reporting) — a static import would be circular. */
+		function retryCatalog() {
+			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+		}
+		function _subscribe$1(listener) {
+			_listeners$2.add(listener);
+			return () => {
+				_listeners$2.delete(listener);
+			};
+		}
+		function _setState$1(patch, replace) {
+			const p = typeof patch === "function" ? patch(_state$1) : patch;
+			if (replace === true) _state$1 = p;
+			else _state$1 = {
+				..._state$1,
+				...p
+			};
+			_listeners$2.forEach((l) => l());
+		}
+		function _getState$1() {
+			return _state$1;
+		}
+		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+		* for useSyncExternalStore (dom-project territory, like the slots seam's
+		* useVersion). The selector contract is pinned node-side through
+		* getState/subscribe in catalog-contract-store.spec.ts. (2026-09-12) */
+		function _useCatalogContractStoreHook(selector) {
+			return (0, react.useSyncExternalStore)(_subscribe$1, selector ? () => selector(_getState$1()) : () => _getState$1());
+		}
+		var IDLE, _lastToastedOutage, _listeners$2, _state$1, _initialState$1, useCatalogContractStore;
+		var init_catalogContractStore = __esmMin((() => {
+			init_toastStore();
+			IDLE = {
+				state: "idle",
+				violations: [],
+				error: null
+			};
+			_lastToastedOutage = null;
+			_listeners$2 = /* @__PURE__ */ new Set();
+			_state$1 = {
+				record: IDLE,
+				reportOk: () => {
+					const wasOutage = useCatalogContractStore.getState().record.state === "error";
+					_lastToastedOutage = null;
+					_setState$1({ record: {
+						state: "loaded",
+						violations: [],
+						error: null
+					} });
+					if (wasOutage) useToastStore.getState().addToast("info", `Catalog back online (at ${_stamp()}).`);
+				},
+				reportViolation: (violations) => {
+					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
+					_setState$1({ record: {
+						state: "violation",
+						violations,
+						error: null
+					} });
+					const first = violations[0];
+					const msg = first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape";
+					useToastStore.getState().addToast("error", `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
+						label: "Retry",
+						onClick: retryCatalog
+					});
+				},
+				reportError: (message) => {
+					const clean = message.trim();
+					console.error(`[catalogContract] catalog fetch failed (at ${_stamp()}):`, clean);
+					_setState$1({ record: {
+						state: "error",
+						violations: [],
+						error: clean
+					} });
+					if (clean === _lastToastedOutage) return;
+					_lastToastedOutage = clean;
+					useToastStore.getState().addToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
+						label: "Retry",
+						onClick: retryCatalog
+					});
+				},
+				clear: () => {
+					_lastToastedOutage = null;
+					_setState$1({ record: IDLE });
+				}
+			};
+			_initialState$1 = _state$1;
+			useCatalogContractStore = Object.assign(_useCatalogContractStoreHook, {
+				getState: _getState$1,
+				setState: _setState$1,
+				subscribe: _subscribe$1,
+				getInitialState: () => _initialState$1,
+				destroy: () => {}
+			});
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		/** Validate a status payload against the ONE status-channel contract.
+		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
+		* decides what a violation means on its branch. */
+		function validateRunStatusContract(payload) {
+			const violations = [];
+			if (!isObj(payload)) return {
+				valid: false,
+				violations: [{
+					field: "body",
+					kind: "shape",
+					message: "Status payload is not an object — this is an error body, not a contract."
+				}]
+			};
+			if (typeof payload.run_id !== "string" || !payload.run_id) violations.push({
+				field: "run_id",
+				kind: "missing",
+				message: "Status payload has no run_id — it cannot identify the run."
+			});
+			if (typeof payload.status !== "string" || !RUN_STATUSES.has(payload.status)) violations.push({
+				field: "status",
+				kind: "invalid",
+				message: `Run-level status ${JSON.stringify(payload.status)} is not in the backend vocabulary (${[...RUN_STATUSES].join(", ")}).`
+			});
+			if (!Array.isArray(payload.stages)) violations.push({
+				field: "stages",
+				kind: "missing",
+				message: "Status payload has no stages array — stage progress cannot be located."
+			});
+			else payload.stages.forEach((stage, i) => {
+				if (!isObj(stage)) {
+					violations.push({
+						field: `stages.${i}`,
+						kind: "shape",
+						message: `Stage ${i} is not an object.`
+					});
+					return;
+				}
+				const core = [
+					["id", stage.id],
+					["name", stage.name],
+					["index", stage.index],
+					["status", stage.status]
+				];
+				for (const [field, value] of core) if (field === "index" ? typeof value !== "number" : typeof value !== "string") violations.push({
+					field: `stages.${i}.${field}`,
+					kind: "missing",
+					message: `Stage ${i} has no ${field} — the stage cannot be rendered.`
+				});
+			});
+			return {
+				valid: violations.length === 0,
+				violations
+			};
+		}
+		/** True when a non-ok body carries the backend's contract-violation
+		* signature (flow_status 500s: {error, run_id, violations: [...]}). */
+		function hasViolationsSignature(body) {
+			return isObj(body) && Array.isArray(body.violations);
+		}
+		var _RUN_STATUS_VALUES, RUN_STATUSES, RunStatusContractError, isObj;
+		var init_runStatusContract = __esmMin((() => {
+			_RUN_STATUS_VALUES = [
+				"pending",
+				"running",
+				"completed",
+				"failed",
+				"stopped",
+				"interrupted",
+				"unknown",
+				"queued"
+			];
+			RUN_STATUSES = new Set(_RUN_STATUS_VALUES);
+			RunStatusContractError = class extends Error {
+				violations;
+				constructor(runId, violations) {
+					super(`Run status contract violation for ${runId} (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
+					this.name = "RunStatusContractError";
+					this.violations = violations;
+				}
+			};
+			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
+		* bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
+		* whole protocol layer; the store only needs it on click. */
+		function repoll(runId) {
+			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
+				maxWaitMs: 3e4,
+				intervalMs: 2e3
+			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
+		}
+		function toastVerdict(v) {
+			const toast = useToastStore.getState().addToast;
+			if (v.kind === "violation") {
+				const first = v.violations[0]?.message ?? "the status response did not match the expected shape";
+				toast("error", `Run ${v.runId}: ${v.violations.length} contract issue(s) — ${first}. Retry to re-check, or re-run the card.`, {
+					label: "Retry",
+					onClick: () => repoll(v.runId)
+				});
+			} else toast("error", `Run ${v.runId}: status channel error — ${v.message}. Retry to re-check.`, {
+				label: "Retry",
+				onClick: () => repoll(v.runId)
+			});
+		}
+		function _subscribe(listener) {
+			_listeners$1.add(listener);
+			return () => {
+				_listeners$1.delete(listener);
+			};
+		}
+		function _setState(patch, replace) {
+			const p = typeof patch === "function" ? patch(_state) : patch;
+			if (replace === true) _state = p;
+			else _state = {
+				..._state,
+				...p
+			};
+			_listeners$1.forEach((l) => l());
+		}
+		function _getState() {
+			return _state;
+		}
+		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+		* for useSyncExternalStore (dom-project territory, like the slots seam's
+		* useVersion). The selector contract is pinned node-side through
+		* getState/subscribe in run-status-contract-store.spec.ts. (2026-09-12) */
+		function _useRunStatusContractStoreHook(selector) {
+			return (0, react.useSyncExternalStore)(_subscribe, selector ? () => selector(_getState()) : () => _getState());
+		}
+		var _listeners$1, _state, _initialState, useRunStatusContractStore;
+		var init_runStatusContractStore = __esmMin((() => {
+			init_toastStore();
+			_listeners$1 = /* @__PURE__ */ new Set();
+			_state = {
+				verdict: null,
+				reportViolation: (runId, violations) => {
+					console.error("[runStatusContract] status channel violation:", runId, violations);
+					const verdict = {
+						kind: "violation",
+						runId,
+						violations
+					};
+					_setState({ verdict });
+					toastVerdict(verdict);
+				},
+				reportError: (runId, message) => {
+					console.error("[runStatusContract] status channel error:", runId, message);
+					const verdict = {
+						kind: "error",
+						runId,
+						message
+					};
+					_setState({ verdict });
+					toastVerdict(verdict);
+				},
+				clear: () => _setState({ verdict: null })
+			};
+			_initialState = _state;
+			useRunStatusContractStore = Object.assign(_useRunStatusContractStoreHook, {
+				getState: _getState,
+				setState: _setState,
+				subscribe: _subscribe,
+				getInitialState: () => _initialState,
+				destroy: () => {}
+			});
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/card.ts
+		var init_card = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/character.ts
+		var init_character = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/studio.ts
+		var init_studio = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/stageView.ts
+		var init_stageView = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/stagePreview.ts
+		var init_stagePreview = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/benchResult.ts
+		/** Validate a result row against the contract. Returns the defect
+		* list — EMPTY means the row is lawful. Each defect names the law
+		* and the offending keys, in the door's own voice. */
+		function benchResultDefects(row) {
+			if (typeof row !== "object" || row === null || Array.isArray(row)) return ["result: not an object"];
+			const r = row;
+			const defects = [];
+			if (typeof r.run_id !== "string" || r.run_id === "") defects.push("run_id: missing or empty (every result names its run)");
+			if (r.url !== void 0 && (typeof r.url !== "string" || r.url === "")) defects.push("url: present but not a non-empty string");
+			if (r.artifacts !== void 0) {
+				if (typeof r.artifacts !== "object" || r.artifacts === null || Array.isArray(r.artifacts)) defects.push("artifacts: not an object (the name→url map)");
+				else {
+					const seen = /* @__PURE__ */ new Map();
+					for (const [k, v] of Object.entries(r.artifacts)) {
+						if (typeof v !== "string" || v === "") {
+							defects.push(`artifacts.${k}: not a non-empty string url`);
+							continue;
+						}
+						const keys = seen.get(v) ?? [];
+						keys.push(k);
+						seen.set(v, keys);
+					}
+					for (const [url, keys] of seen) if (keys.length > 1) defects.push("one-file-one-key: " + url + " rides " + keys.length + " keys (" + keys.join(", ") + ") — a file under two keys renders twice");
+				}
+			}
+			if (r.assetUrls !== void 0) {
+				if (!Array.isArray(r.assetUrls)) defects.push("assetUrls: not an array");
+				else r.assetUrls.forEach((u, i) => {
+					if (typeof u !== "string" || u === "") defects.push(`assetUrls[${String(i)}]: not a non-empty string url`);
+				});
+			}
+			if (r.error !== void 0 && typeof r.error !== "string") defects.push("error: present but not a string");
+			return defects;
+		}
+		var init_benchResult = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/modifierFaces.ts
+		var init_modifierFaces = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/vocab.ts
+		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
+		* metadata, a drag payload) before rendering. */
+		function isProvenance(v) {
+			return typeof v === "string" && PROVENANCE_VALUES.includes(v);
+		}
+		var Provenance, PROVENANCE_VALUES;
+		var init_vocab = __esmMin((() => {
+			Provenance = {
+				agent: "agent",
+				user: "user",
+				imported: "imported"
+			};
+			PROVENANCE_VALUES = Object.values(Provenance);
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/wire.ts
+		var init_wire = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/regions.ts
+		var init_regions = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/timelineTypes.ts
+		/** Coerce an unknown persisted/imported status into the SegmentStatus
+		* union. Anything outside it (e.g. pre-refactor persisted "error") is
+		* normalized to 'empty' — an out-of-union status silently breaks the
+		* failed-state UI (the NLE clip check tests status === 'failed'). */
+		function normalizeSegmentStatus(raw) {
+			return typeof raw === "string" && SEGMENT_STATUSES.includes(raw) ? raw : "empty";
+		}
+		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS;
+		var init_timelineTypes = __esmMin((() => {
+			SEGMENT_STATUSES = [
+				"empty",
+				"pending",
+				"generating",
+				"ready",
+				"failed"
+			];
+			FLF_MODES = [{
+				id: "off",
+				label: "First frame only (standard I2V)"
+			}, {
+				id: "on",
+				label: "First + Last frame (FLF2V)"
+			}];
+			TRACK_COLORS = [
+				"#4ade80",
+				"#facc15",
+				"#fb923c",
+				"#60a5fa",
+				"#f472b6",
+				"#a78bfa",
+				"#34d399",
+				"#fbbf24",
+				"#f87171",
+				"#38bdf8"
+			];
+			DEFAULT_SEGMENT_PARAMS = {
+				seed: 42,
+				width: 640,
+				height: 480,
+				frames: 33,
+				fps: 16,
+				resizeMethod: "crop",
+				samplingSteps: 10,
+				guideScale: 5,
+				model: "wan-vace",
+				profile: "fast",
+				motionAmplitude: 1,
+				flfMode: false,
+				teacacheEnabled: false,
+				teacacheThreshold: .01,
+				progressiveEnabled: false,
+				progressiveLevels: 2,
+				progressiveDelta: .15,
+				progressiveMode: "dct",
+				relayEpsilon: .01,
+				guideStrength: 1,
+				guideCrf: 0,
+				scaleBy: 1,
+				upscaleMethod: "bicubic",
+				useTiledEncode: false,
+				tileSize: 256,
+				tileOverlap: 64,
+				imageAttentionStrength: 1,
+				loras: [],
+				motionVideoB64: null,
+				motionStrength: .7,
+				motionTrimStart: 0,
+				motionTrimEnd: 0,
+				motionOffset: 0,
+				resampleMode: "nearest",
+				retakePrompt: "",
+				retakeStartFrame: 0,
+				retakeEndFrame: -1
+			};
+			DEFAULT_LIPSYNC_FIELDS = {
+				lipSyncedVideoUrl: null,
+				lipSyncPreferOriginal: false
+			};
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/loraTypes.ts
+		var init_loraTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/browserStorage.ts
+		/** Test hook — resets the cached connection + cache + install flag. */
+		function _resetBrowserStorageForTests() {
+			installed = false;
+			cache$1 = /* @__PURE__ */ new Map();
+			dbPromise = null;
+		}
+		function openDb() {
+			if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
+				if (typeof indexedDB === "undefined") {
+					reject(/* @__PURE__ */ new Error("IndexedDB unavailable"));
+					return;
+				}
+				const req = indexedDB.open(DB_NAME, DB_VERSION);
+				req.onupgradeneeded = () => {
+					const db = req.result;
+					if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+				};
+				req.onsuccess = () => resolve(req.result);
+				req.onerror = () => reject(req.error);
+			});
+			return dbPromise;
+		}
+		/** Full dump of the store as [key, value] pairs. */
+		async function idbDump() {
+			const req = (await openDb()).transaction(STORE, "readonly").objectStore(STORE).openCursor();
+			return new Promise((resolve, reject) => {
+				const out = [];
+				req.onsuccess = () => {
+					const cursor = req.result;
+					if (!cursor) {
+						resolve(out);
+						return;
+					}
+					out.push([String(cursor.key), String(cursor.value)]);
+					cursor.continue();
+				};
+				req.onerror = () => reject(req.error);
+			});
+		}
+		async function idbPut(key, value) {
+			const tx = (await openDb()).transaction(STORE, "readwrite");
+			tx.objectStore(STORE).put(value, key);
+			await new Promise((res, rej) => {
+				tx.oncomplete = () => res();
+				tx.onerror = () => rej(tx.error);
+				tx.onabort = () => rej(tx.error);
+			});
+		}
+		async function idbRemove(key) {
+			const tx = (await openDb()).transaction(STORE, "readwrite");
+			tx.objectStore(STORE).delete(key);
+			await new Promise((res, rej) => {
+				tx.oncomplete = () => res();
+				tx.onerror = () => rej(tx.error);
+				tx.onabort = () => rej(tx.error);
+			});
+		}
+		async function idbClear() {
+			const tx = (await openDb()).transaction(STORE, "readwrite");
+			tx.objectStore(STORE).clear();
+			await new Promise((res, rej) => {
+				tx.oncomplete = () => res();
+				tx.onerror = () => rej(tx.error);
+				tx.onabort = () => rej(tx.error);
+			});
+		}
+		function writeFailure(key, e) {
+			console.error(`[storage] failed to persist '${key}' to IndexedDB:`, e);
+		}
+		/**
+		* Seed the in-memory cache from IndexedDB, migrate any leftover native
+		* localStorage into IDB, then install the facade as the global localStorage.
+		* Called once from main.tsx BEFORE the app is (dynamically) imported, so
+		* every module-eval-time read sees the persisted data. Never throws.
+		*/
+		async function initBrowserStorage() {
+			if (installed) return;
+			try {
+				const entries = await idbDump();
+				for (const [k, v] of entries) cache$1.set(k, v);
+			} catch (e) {
+				console.error("[storage] failed to load IndexedDB cache:", e);
+			}
+			try {
+				const native = globalThis.localStorage;
+				if (native && typeof native.length === "number") {
+					const jobs = [];
+					let anyMigrated = false;
+					let failed = false;
+					for (let i = 0; i < native.length; i++) {
+						const k = native.key(i);
+						if (!k) continue;
+						const v = native.getItem(k);
+						if (v == null || cache$1.has(k)) continue;
+						anyMigrated = true;
+						cache$1.set(k, v);
+						jobs.push(idbPut(k, v).catch(() => {
+							failed = true;
+						}));
+					}
+					if (jobs.length > 0) await Promise.all(jobs);
+					if (anyMigrated && !failed) try {
+						native.clear();
+					} catch {}
+				}
+			} catch (e) {
+				console.error("[storage] failed to migrate native localStorage:", e);
+			}
+			try {
+				Object.defineProperty(globalThis, "localStorage", {
+					value: facade,
+					configurable: true,
+					writable: true
+				});
+				installed = true;
+			} catch (e) {
+				console.error("[storage] failed to install IndexedDB-backed localStorage:", e);
+				installed = true;
+			}
+		}
+		var DB_NAME, DB_VERSION, STORE, dbPromise, cache$1, installed, facade;
+		var init_browserStorage = __esmMin((() => {
+			DB_NAME = "melite:browser-storage:v1";
+			DB_VERSION = 1;
+			STORE = "kv";
+			dbPromise = null;
+			cache$1 = /* @__PURE__ */ new Map();
+			installed = false;
+			facade = {
+				get length() {
+					return cache$1.size;
+				},
+				key(index) {
+					if (index < 0 || index >= cache$1.size) return null;
+					let i = 0;
+					for (const k of cache$1.keys()) {
+						if (i === index) return k;
+						i++;
+					}
+					return null;
+				},
+				getItem(key) {
+					return cache$1.has(key) ? cache$1.get(key) : null;
+				},
+				setItem(key, value) {
+					cache$1.set(key, String(value));
+					idbPut(key, String(value)).catch((e) => writeFailure(key, e));
+				},
+				removeItem(key) {
+					cache$1.delete(key);
+					idbRemove(key).catch((e) => writeFailure(key, e));
+				},
+				clear() {
+					cache$1.clear();
+					idbClear().catch((e) => writeFailure("*", e));
+				}
+			};
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/objectUrlCache.ts
+		/** True iff `s` is a base64 data URL (large enough to benefit from conversion). */
+		function isDataUrl(s) {
+			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
+		}
+		/**
+		* Convert a data URL (or pass through other URL forms) to a cached object URL.
+		*
+		* - `data:…` URLs → converted once, cached, returned.
+		* - `blob:`, `http:`, `https:`, relative paths → returned as-is.
+		* - `null` / `undefined` / empty → returned as-is (caller handles).
+		*
+		* The same input always yields the same output for the lifetime of the
+		* module (until revokeObjectUrlFor or revokeAll is called).
+		*/
+		function dataUrlToObjectUrl(url) {
+			if (url == null || url === "") return null;
+			if (!isDataUrl(url)) return url;
+			const cached = cache.get(url);
+			if (cached) return cached;
+			const obj = createObjectUrlFromDataUrl(url);
+			cache.set(url, obj);
+			return obj;
+		}
+		/** Revoke the object URL associated with `sourceUrl` (the original data URL). */
+		function revokeObjectUrlFor(sourceUrl) {
+			const obj = cache.get(sourceUrl);
+			if (obj) {
+				try {
+					URL.revokeObjectURL(obj);
+				} catch {}
+				cache.delete(sourceUrl);
+			}
+		}
+		/** Revoke every cached object URL. Intended for tests and explicit teardown. */
+		function revokeAll() {
+			for (const obj of cache.values()) try {
+				URL.revokeObjectURL(obj);
+			} catch {}
+			cache.clear();
+		}
+		/** Test-only: how many object URLs are currently cached. */
+		function _cachedCount() {
+			return cache.size;
+		}
+		function createObjectUrlFromDataUrl(dataUrl) {
+			const comma = dataUrl.indexOf(",");
+			if (comma < 0) return dataUrl;
+			const header = dataUrl.slice(0, comma);
+			const payload = dataUrl.slice(comma + 1);
+			const mime = header.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
+			const isBase64 = header.includes(";base64");
+			let bytes;
+			if (isBase64) {
+				let bin;
+				try {
+					bin = atob(payload);
+				} catch {
+					return dataUrl;
+				}
+				bytes = new Uint8Array(bin.length);
+				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+			} else bytes = new TextEncoder().encode(decodeURIComponent(payload));
+			return URL.createObjectURL(new Blob([bytes.slice()], { type: mime }));
+		}
+		var cache;
+		var init_objectUrlCache = __esmMin((() => {
+			cache = /* @__PURE__ */ new Map();
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/FlowTypes.ts
+		var init_FlowTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/modifierSubcards.ts
+		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
+		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
+		* old cards load; the next save rewrites them as id-keyed rows. */
+		function subcardId(kind, entry) {
+			return kind === "controlnet" ? entry.id ?? "" : `lora-${entry.id ?? entry.name ?? ""}`;
+		}
+		/** Normalize a wire lora row: id wins, the fossil `name` key migrates.
+		* An empty id passes through — compose refuses it loudly; the tile still
+		* renders so the operator can see and delete the broken entry. */
+		function loraIdOf(entry) {
+			return String(entry.id ?? entry.name ?? "").trim();
+		}
+		/** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
+		* id-keyed row — ONE shape leaves every boundary (modal draft, bag
+		* commit, run body). The fossil key is dropped, never re-emitted.
+		* A row missing `strength` (never emitted by the pre-flip UI, but a
+		* hand-edited draft may carry one) takes 1.0 — the same house default
+		* the catalog row seeds at compose. */
+		function normalizeLoraEntry(entry) {
+			return {
+				id: loraIdOf(entry),
+				strength: typeof entry.strength === "number" ? entry.strength : 1
+			};
+		}
+		/** Derive the subcard view from the param bag — a pure projection. */
+		function subcardsFromParams(params) {
+			const loras = params.loras ?? [];
+			const cns = params.controlnets ?? [];
+			return [...loras.map((l) => {
+				const lid = loraIdOf(l);
+				return {
+					id: `lora-${lid}`,
+					kind: "lora",
+					label: loraLabel(lid),
+					name: lid,
+					enabled: true,
+					strength: typeof l.strength === "number" ? l.strength : 1,
+					strengthSet: typeof l.strength === "number"
+				};
+			}), ...cns.map((c) => ({
+				id: subcardId("controlnet", c),
+				kind: "controlnet",
+				label: c.type,
+				enabled: c.enabled,
+				strength: c.strength,
+				type: c.type,
+				model: c.model,
+				preprocessor: c.preprocessor,
+				image_b64: c.image_b64,
+				start_percent: c.start_percent,
+				end_percent: c.end_percent
+			}))];
+		}
+		/** Human label for a LoRA entry (file base name, extension stripped). */
+		function loraLabel(name) {
+			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
+		}
+		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
+		function subcardCount(params) {
+			const loras = params.loras ?? [];
+			const cns = params.controlnets ?? [];
+			return loras.length + cns.length;
+		}
+		/** Pure array move — the ONLY way order changes (dragEnd → this). */
+		function moveItem(arr, from, to) {
+			if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
+			const next = [...arr];
+			const [moved] = next.splice(from, 1);
+			next.splice(to, 0, moved);
+			return next;
+		}
+		/**
+		* Resolve which declared kind a draggable subcard id belongs to. Walks each
+		* LIST-kind's wire array (scalar kinds aren't draggable — no reorder
+		* semantics on a single value). Returns the kind spec or null when the id
+		* isn't a known subcard (e.g. a stale drag handle). Generic over arbitrary
+		* kinds — the param_key comes from the spec, not a hardcoded kind→key map.
+		*/
+		function kindForId(params, id, kinds) {
+			for (const kind of kinds) {
+				if (kind.cardinality === "scalar") continue;
+				if ((params[kind.param_key] ?? []).some((e) => subcardId(kind.kind, e) === id)) return kind;
+			}
+			return null;
+		}
+		/**
+		* Apply a drag drop to the param bag. Cross-kind drops are no-ops (each kind
+		* has its own wire array at ``params[kind.param_key]``; a LoRA cannot swap
+		* places with a ControlNet, nor with a clip_skip). Returns the same params
+		* object when nothing moved (stable identity → no re-render).
+		*
+		* The ``kinds`` list is the declared modifier vocabulary (from
+		* modifiersFeatureOf) — the param_key lookup is data-driven, not a hardcoded
+		* ``kind === "lora" ? "loras" : "controlnets"`` ternary. A novel kind's drag
+		* works the day it's declared, with zero code change here.
+		*/
+		function applySubcardDrop(params, activeId, overId, kinds) {
+			const spec = kindForId(params, activeId, kinds);
+			if (!spec) return params;
+			if (kindForId(params, overId, kinds)?.kind !== spec.kind) return params;
+			const arr = params[spec.param_key];
+			const next = moveItem(arr, arr.findIndex((e) => subcardId(spec.kind, e) === activeId), arr.findIndex((e) => subcardId(spec.kind, e) === overId));
+			return next === arr ? params : {
+				...params,
+				[spec.param_key]: next
+			};
+		}
+		function newCnId() {
+			_cnIdCounter += 1;
+			return `cn-${Date.now().toString(36)}-${_cnIdCounter}`;
+		}
+		/**
+		* New ControlNet entry from a schema entry — honors the catalog's declared
+		* defaults (model, preprocessor, default_strength) with ControlNetApplyAdvanced
+		* defaults for the step range. Returns null when the stack is full (max_stack).
+		* Takes the KIND SPEC (the one contract entry) — no parallel feature shape.
+		*/
+		function newControlnetEntry(entries, type, cnKind) {
+			const maxStack = cnKind?.max_stack ?? 3;
+			if (entries.length >= maxStack) return null;
+			const schema = cnEntriesOf(cnKind).find((e) => e.type === type) ?? NO_CN_SCHEMA;
+			const declaredDefault = (cnKind?.fields.find((f) => f.name === "strength"))?.default;
+			const defaultStrength = typeof declaredDefault === "number" ? declaredDefault : .8;
+			return {
+				id: newCnId(),
+				type,
+				model: schema.model,
+				preprocessor: schema.preprocessor,
+				image_b64: "",
+				strength: schema.default_strength ?? defaultStrength,
+				start_percent: 0,
+				end_percent: 1,
+				enabled: true,
+				source: "user"
+			};
+		}
+		/** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
+		* own default when the spec omits it). */
+		function newLoraEntry(id, strength = 1) {
+			return {
+				id,
+				strength
+			};
+		}
+		/**
+		* New generic entry for a NOVEL modifier kind (not lora / controlnet — those
+		* keep their bespoke templates above). Renders from ``kind.fields``: the
+		* selected option's ``defaults`` win over field-level ``default`` over the
+		* raw type zero (0 / "" / false). Returns null when the list is full
+		* (``max_stack``, cardinality=list only). Scalar kinds return a single dict
+		* at ``params[kind.param_key]`` — no id, no stack check.
+		*
+		* This is the proof the user demanded: a YAML block declaring a new kind
+		* (clip_skip, sampler_override, …) gets a working create-template with ZERO
+		* code beyond the catalog edit + the one ``@register`` applier. The generic
+		* grid row + generic modal editor render from the same ``kind.fields``.
+		*/
+		function newGenericEntry(kind, stackLength, optionValue) {
+			if (kind.cardinality === "list") {
+				if (stackLength >= (kind.max_stack ?? 5)) return null;
+			}
+			const option = kind.options?.find((o) => o.value === optionValue);
+			const entry = {};
+			for (const field of kind.fields) {
+				const fromOption = option?.defaults?.[field.name];
+				if (fromOption !== void 0) entry[field.name] = fromOption;
+				else if (field.default !== void 0 && field.default !== null) entry[field.name] = field.default;
+				else entry[field.name] = defaultForType(field.type);
+			}
+			if (kind.cardinality === "list") entry.id = newCnId();
+			if (optionValue !== void 0 && !("value" in entry)) entry.value = optionValue;
+			return entry;
+		}
+		/** The type-correct zero for a modifier field with no declared default. */
+		function defaultForType(type) {
+			switch (type) {
+				case "integer":
+				case "float": return 0;
+				case "boolean": return false;
+				case "select": return "";
+				case "image": return "";
+				case "string": return "";
+			}
+		}
+		/** The lora kind's options as the legacy adapter list — the LoRA dropdown. */
+		function loraAdaptersOf(kind) {
+			if (!kind) return [];
+			return (kind.options ?? []).map((o) => ({
+				name: o.value,
+				filename: o.model ?? o.value,
+				label: o.label,
+				category: o.metadata?.category ?? "LoRA",
+				default_strength: o.defaults?.strength ?? 1,
+				prompt_hint: o.metadata?.prompt_hint ?? null,
+				installed: o.installed ?? true
+			}));
+		}
+		/** The controlnet kind's options as the legacy schema-entry list — the CN dropdown. */
+		function cnEntriesOf(kind) {
+			if (!kind) return [];
+			const strengthField = kind.fields.find((f) => f.name === "strength");
+			return (kind.options ?? []).map((o) => ({
+				type: o.value,
+				label: o.label,
+				tooltip: o.tooltip ?? void 0,
+				model: o.model ?? void 0,
+				default_strength: o.defaults?.strength ?? strengthField?.default ?? .8,
+				preprocessor: o.metadata?.preprocessor ?? void 0,
+				installed: o.installed ?? void 0
+			}));
+		}
+		/** LoRA strength bounds — from the kind's strength field (one source). */
+		function loraStrengthBoundsOf(kind) {
+			const strengthField = kind?.fields.find((f) => f.name === "strength");
+			return {
+				min: strengthField?.min ?? -2,
+				max: strengthField?.max ?? 5,
+				step: strengthField?.step ?? .05
+			};
+		}
+		/**
+		* The generic arbitrary-kind list — the ONE key the frontend reads to decide
+		* which modifier rows to render. Declared-only (Phase A finalé): the backend
+		* emits ``features.modifiers`` from the catalog's ``modifiers:`` block and
+		* nothing else — the legacy client-side projection is deleted (rule 4).
+		* Returns ``[]`` when the family declares no modifier capability.
+		*/
+		function modifiersFeatureOf(formSpec) {
+			const raw = formSpec?.features?.modifiers;
+			return Array.isArray(raw) ? raw : [];
+		}
+		/** The family declares at least one modifier kind. The grid renders iff true. */
+		function hasModifierCapability(formSpec) {
+			return modifiersFeatureOf(formSpec).length > 0;
+		}
+		/** Find a kind's spec by its discriminator — convenience for the grid/modal. */
+		function kindSpecOf(formSpec, kind) {
+			return modifiersFeatureOf(formSpec).find((k) => k.kind === kind) ?? null;
+		}
+		var NO_CN_SCHEMA, _cnIdCounter;
+		var init_modifierSubcards = __esmMin((() => {
+			NO_CN_SCHEMA = {
+				type: "",
+				label: ""
+			};
+			_cnIdCounter = 0;
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/enhanceTypes.ts
+		var init_enhanceTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/mediaTypes.ts
+		var init_mediaTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/index.ts
+		var src_exports$1 = /* @__PURE__ */ __exportAll({
+			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
+			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
+			FLF_MODES: () => FLF_MODES,
+			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
+			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
+			Provenance: () => Provenance,
+			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
+			TRACK_COLORS: () => TRACK_COLORS,
+			_cachedCount: () => _cachedCount,
+			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
+			applySubcardDrop: () => applySubcardDrop,
+			benchResultDefects: () => benchResultDefects,
+			cnEntriesOf: () => cnEntriesOf,
+			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
+			hasModifierCapability: () => hasModifierCapability,
+			initBrowserStorage: () => initBrowserStorage,
+			isDataUrl: () => isDataUrl,
+			isProvenance: () => isProvenance,
+			kindForId: () => kindForId,
+			kindSpecOf: () => kindSpecOf,
+			loraAdaptersOf: () => loraAdaptersOf,
+			loraIdOf: () => loraIdOf,
+			loraLabel: () => loraLabel,
+			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
+			modifiersFeatureOf: () => modifiersFeatureOf,
+			moveItem: () => moveItem,
+			newControlnetEntry: () => newControlnetEntry,
+			newGenericEntry: () => newGenericEntry,
+			newLoraEntry: () => newLoraEntry,
+			normalizeLoraEntry: () => normalizeLoraEntry,
+			normalizeSegmentStatus: () => normalizeSegmentStatus,
+			revokeAll: () => revokeAll,
+			revokeObjectUrlFor: () => revokeObjectUrlFor,
+			subcardCount: () => subcardCount,
+			subcardId: () => subcardId,
+			subcardsFromParams: () => subcardsFromParams
+		});
+		var init_src$2 = __esmMin((() => {
+			init_card();
+			init_character();
+			init_studio();
+			init_stageView();
+			init_stagePreview();
+			init_benchResult();
+			init_modifierFaces();
+			init_vocab();
+			init_wire();
+			init_regions();
+			init_timelineTypes();
+			init_loraTypes();
+			init_browserStorage();
+			init_objectUrlCache();
+			init_FlowTypes();
+			init_modifierSubcards();
+			init_enhanceTypes();
+			init_mediaTypes();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/familyParamContract.ts
+		var familyParamContract_exports = /* @__PURE__ */ __exportAll({
+			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
+			coerceParamsToSchema: () => coerceParamsToSchema,
+			getFamilySchema: () => getFamilySchema,
+			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated,
+			loadFamilySchemas: () => loadFamilySchemas,
+			validateModifierEntries: () => validateModifierEntries,
+			validateParamsAgainstSchema: () => validateParamsAgainstSchema
+		});
+		/**
+		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
+		* level cache, inflight dedup, idempotent. Call at boot (alongside
+		* loadCatalog) so the validator never blocks on a fetch.
+		*
+		* Returns the cached index on subsequent calls (no refetch). Use
+		* { force: true } to bypass the cache.
+		*/
+		async function loadFamilySchemas(opts) {
+			if (_cache$1 && !opts?.force) return _cache$1;
+			if (_inflight$1) return _inflight$1;
+			_inflight$1 = (async () => {
+				try {
+					const data = await apiJson("/v1/flows/families/param-schemas");
+					_cache$1 = data;
+					return data;
+				} finally {
+					_inflight$1 = null;
+				}
+			})();
+			return _inflight$1;
+		}
+		/** Sync lookup — returns the cached schema for a family, or null if the
+		* cache isn't loaded yet or the family is unknown. Pure, no fetch. */
+		function getFamilySchema(familyId) {
+			if (!_cache$1) return null;
+			return _cache$1[familyId] ?? null;
+		}
+		/** Is the schema cache POPULATED (a successful bulk fetch with ≥1
+		* family)? Distinguishes "transmission worked and the family is absent"
+		* (a phantom family — throw) from the cache-cold/failed branch (defer). */
+		function isFamilySchemaCachePopulated() {
+			return !!_cache$1 && Object.keys(_cache$1).length > 0;
+		}
+		function jsonTypeOf(val) {
+			/* v8 ignore next -- defensive: both callers (coerceParamsToSchema,
+			* validateParamsAgainstSchema) route val === null through the defaulted
+			* null path BEFORE calling, so null never reaches here (2026-09-12) */
+			if (val === null) return "null";
+			if (Array.isArray(val)) return "array";
+			const t = typeof val;
+			if (t === "string") return "string";
+			if (t === "boolean") return "boolean";
+			if (t === "number") return Number.isInteger(val) ? "integer" : "number";
+			return "object";
+		}
+		/**
+		* Coerce a params dict to a family's schema types — the TYPED RUN BODY.
+		* Canonical coercions ONLY (2026-09-05 compile-time incident: form state,
+		* stale drafts and legacy editors carry strings for numbers/booleans and
+		* "" for empty arrays — the class admits the canonical forms, so the
+		* boundary normalizes them instead of refusing what the backend takes):
+		*   - integer/number: numbers kept (integer rejects fractions); a trimmed
+		*     canonical numeric string becomes Number; "" means UNSET (falls into
+		*     the null path: default-or-omit — "" is NEVER 0); anything else is
+		*     a violation (never NaN into the wire).
+		*   - boolean: booleans kept; "true"/"false" become bool; else violation.
+		*   - array: arrays kept; "" becomes [] (the unowned picker's empty
+		*     serialization — the class coerces the same); a non-empty string is
+		*     a violation (ambiguous — never a split-guess).
+		*   - string/object: kept on exact type; anything else is a violation
+		*     (never String()-collapse, never JSON.parse-guess).
+		*   - null / UNSET-"": OMITTED when the field declares a default —
+		*     absent rides the backend default (the class's own semantics:
+		*     explicit null refuses on numerics, so the boundary must never
+		*     POST a null the click gate waved through — 2026-09-06
+		*     frontend-impossible incident). A null/UNSET with NO default is
+		*     kept so the validator refuses it loudly. Untyped fields (the
+		*     loras/mask tile bags) pass null through untouched — the class's
+		*     own None-coercion owns them, and it runs on explicit values.
+		*   - fields with NO declared type (the loras/mask tile bags {}): passed
+		*     through untouched — the compose door owns them.
+		* Returns the typed copy + violations against the TYPED values (empty =
+		* the body is exactly what the class admits — the POST must send THIS
+		* body, never the raw draft).
+		*/
+		function coerceParamsToSchema(schema, params, opts = {}) {
+			const out = [];
+			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
+			const typed = {};
+			const props = schema.properties ?? {};
+			for (const [key, val] of Object.entries(params)) {
+				const field = props[key];
+				if (!field || !field.type) {
+					typed[key] = val;
+					continue;
+				}
+				const expected = field.type;
+				if (val === null) {
+					if ("default" in field) continue;
+					typed[key] = val;
+					continue;
+				}
+				const actual = jsonTypeOf(val);
+				if (actual === expected) {
+					typed[key] = val;
+					continue;
+				}
+				if (expected === "number" && actual === "integer") {
+					typed[key] = val;
+					continue;
+				}
+				const coerced = coerceScalar(key, expected, val);
+				if ("value" in coerced) {
+					typed[key] = coerced.value;
+					continue;
+				}
+				if (coerced.unset) {
+					if (field && "default" in field) continue;
+					typed[key] = null;
+					continue;
+				}
+				out.push({
+					path: `${prefix}${key}`,
+					message: `'${key}': expected ${expected}, got ${actual}`
+				});
+				typed[key] = val;
+			}
+			return {
+				params: typed,
+				violations: out
+			};
+		}
+		/** Canonical scalar coercion. ok = coerced value; unset = "" for a
+		* non-string field (the value is UNSET — the caller routes it into the
+		* null path); neither = refuse loudly. */
+		function coerceScalar(_key, expected, val) {
+			if (typeof val === "string") {
+				const t = val.trim();
+				if (t === "") {
+					if (expected === "array") return {
+						ok: true,
+						value: []
+					};
+					return {
+						ok: false,
+						unset: true
+					};
+				}
+				if (expected === "integer" || expected === "number") {
+					const n = Number(t);
+					if (!Number.isFinite(n)) return {
+						ok: false,
+						unset: false
+					};
+					if (expected === "integer" && !Number.isInteger(n)) return {
+						ok: false,
+						unset: false
+					};
+					return {
+						ok: true,
+						value: n
+					};
+				}
+				if (expected === "boolean") {
+					if (t === "true") return {
+						ok: true,
+						value: true
+					};
+					if (t === "false") return {
+						ok: true,
+						value: false
+					};
+					return {
+						ok: false,
+						unset: false
+					};
+				}
+				return {
+					ok: false,
+					unset: false
+				};
+			}
+			return {
+				ok: false,
+				unset: false
+			};
+		}
+		/**
+		* Validate a params dict against a family's param schema. Pure + synchronous.
+		* Returns violations (empty = clean). A null for a field WITH a default is
+		* treated as "use the default" (no violation) — coerce strips such nulls
+		* to absent before this runs, and absent rides the backend default; the
+		* tolerance here is defense-in-depth for direct callers (the boundary
+		* must NEVER POST a null the class would refuse — explicit null 400s
+		* on every numeric row, so coerce omits, it never forwards). A null for
+		* a field WITHOUT a default IS a violation.
+		*
+		* WHAT IT CATCHES (the motion_constraints bug class):
+		*   - TYPE mismatches: a str param sent an object/number/array.
+		*   - EXTRA fields: unknown param names (additionalProperties: false).
+		*   - null for NON-defaulted fields.
+		*
+		* WHAT IT LEAVES TO THE BACKEND (no false positives):
+		*   - REQUIRED-field presence — the frontend doesn't know which keys are
+		*     injected from flow.shared via the consumes axis (comfy_url, model).
+		*     The backend's card phase-1 compose knows the consumes set, so it
+		*     knows. The frontend defers required-checking to the hard wire gate.
+		*/
+		function validateParamsAgainstSchema(schema, params, opts = {}) {
+			const out = [];
+			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
+			const props = schema.properties ?? {};
+			if (Object.keys(props).length === 0) return out;
+			for (const [key, val] of Object.entries(params)) {
+				const field = props[key];
+				if (!field) {
+					if (schema.additionalProperties === false && !WIRE_RELAXED_KEYS.has(key)) out.push({
+						path: `${prefix}${key}`,
+						message: `unknown parameter '${key}' — not in the family signature`
+					});
+					continue;
+				}
+				if (val === null) {
+					if (!("default" in field)) out.push({
+						path: `${prefix}${key}`,
+						message: `'${key}' is null but has no default — provide a value`
+					});
+					continue;
+				}
+				const expected = field.type;
+				if (!expected) continue;
+				const actual = jsonTypeOf(val);
+				if (actual === expected) continue;
+				if (expected === "number" && actual === "integer") continue;
+				out.push({
+					path: `${prefix}${key}`,
+					message: `'${key}': expected ${expected}, got ${actual}`
+				});
+			}
+			return out;
+		}
+		/**
+		* Validate a stage's modifier entries against the family's declared kinds.
+		* Mirrors backend validate_modifier_entries: per declared kind with a
+		* param_key, params[param_key] must honor the cardinality (list kinds take
+		* a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
+		* and each entry's keys/required/type/bounds/select-membership must match
+		* the declared fields. Empty = clean; never throws. No kinds → no-op.
+		*/
+		function validateModifierEntries(kinds, params) {
+			const out = [];
+			if (!kinds) return out;
+			for (const kind of kinds) {
+				const key = kind.param_key;
+				const value = params[key];
+				if (value === void 0 || value === null) continue;
+				const fields = kind.fields ?? [];
+				if ((kind.cardinality ?? "list") === "scalar") {
+					if (typeof value === "object") {
+						out.push({
+							path: key,
+							message: `expected a single scalar value for '${kind.kind}' (cardinality='scalar'), got ${Array.isArray(value) ? "array" : "object"}`
+						});
+						continue;
+					}
+					if (fields.length > 0 && fields[0].name) checkModEntry(out, { [fields[0].name]: value }, fields, kind, key, kind.kind === "controlnet");
+					continue;
+				}
+				if (!Array.isArray(value)) {
+					out.push({
+						path: key,
+						message: `expected a list of entries for '${kind.kind}' (cardinality='list'), got ${typeof value}`
+					});
+					continue;
+				}
+				if (typeof kind.max_stack === "number" && value.length > kind.max_stack) out.push({
+					path: key,
+					message: `stack of ${value.length} exceeds the declared max_stack (${kind.max_stack}) for '${kind.kind}'`
+				});
+				const cnKind = kind.kind === "controlnet";
+				for (let i = 0; i < value.length; i++) {
+					const entry = value[i];
+					const entryPath = `${key}[${i}]`;
+					if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+						out.push({
+							path: entryPath,
+							message: `expected a dict entry, got ${Array.isArray(entry) ? "array" : typeof entry}`
+						});
+						continue;
+					}
+					checkModEntry(out, entry, fields, kind, entryPath, cnKind);
+				}
+			}
+			return out;
+		}
+		function checkModEntry(out, entry, fields, kind, path, cnKind) {
+			const declared = /* @__PURE__ */ new Map();
+			for (const f of fields) if (f.name) declared.set(f.name, f);
+			const allowed = /* @__PURE__ */ new Set([...declared.keys(), ...EDITOR_MOD_ENTRY_KEYS]);
+			for (const entryKey of Object.keys(entry)) if (!allowed.has(entryKey)) out.push({
+				path: `${path}.${entryKey}`,
+				message: `unknown field '${entryKey}'. Declared fields: ${[...declared.keys()].sort().join(", ")}.`
+			});
+			const kindOptions = (kind.options ?? []).map((o) => o?.value).filter((v) => typeof v === "string");
+			const hasUploadDir = Boolean(kind.upload_dir);
+			for (const f of fields) {
+				const name = f.name;
+				const val = entry[name];
+				if (!(name in entry && val !== null && val !== void 0)) {
+					if (f.default === void 0 && f.type !== "image" && name !== "artifact") out.push({
+						path: `${path}.${name}`,
+						message: `missing required field '${name}'.`
+					});
+					continue;
+				}
+				if (f.type === "integer" || f.type === "float") {
+					if (typeof val !== "number") {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected a number, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (f.type === "integer" && !Number.isInteger(val)) {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected an integer, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (typeof f.min === "number" && val < f.min) out.push({
+						path: `${path}.${name}`,
+						message: `value ${val} below the declared minimum ${f.min}.`
+					});
+					if (typeof f.max === "number" && val > f.max) out.push({
+						path: `${path}.${name}`,
+						message: `value ${val} above the declared maximum ${f.max}.`
+					});
+				} else if (f.type === "boolean") {
+					if (typeof val !== "boolean") out.push({
+						path: `${path}.${name}`,
+						message: `expected a boolean, got ${typeof val}.`
+					});
+				} else if (f.type === "string") {
+					if (typeof val !== "string") out.push({
+						path: `${path}.${name}`,
+						message: `expected a string, got ${typeof val}.`
+					});
+					else if (name === "id" && kindOptions.length > 0 && !hasUploadDir && !cnKind) {
+						if (!kindOptions.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown adapter '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
+						});
+					}
+				} else if (f.type === "select") {
+					if (typeof val !== "string") {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected a string, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (f.options && f.options.length > 0) {
+						if (!f.options.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown option '${val}'. Allowed: ${[...f.options].sort().join(", ")}.`
+						});
+					} else if (kindOptions.length > 0 && !hasUploadDir && !cnKind) {
+						if (!kindOptions.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown option '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
+						});
+					}
+				}
+			}
+		}
+		/**
+		* Pre-submit gate: resolve model → family → schema (from the ONE cache),
+		* validate params, throw on any violation. Called before EVERY GPU-starting
+		* fetch so the crash comes before the button press, not after a round-trip.
+		*
+		* Ensures the schema cache is loaded (loadFamilySchemas) on the first call,
+		* then validates synchronously.
+		*
+		* NO SILENT DEFERS (2026-08-16): the old gate no-op'd when the model was
+		* missing from the catalog or the family had no schema — silently
+		* shipping UNKNOWN params to the backend and calling that "the backend's
+		* backstop". That is the silent-drop class this contract exists to kill:
+		*   - catalog LOADED + model missing → THROW. The picker is showing a
+		*     model that DOES NOT EXIST (the original operator complaint) — the
+		*     catalog is the source of truth and the model is not in it.
+		*   - family resolved + no schema → THROW. The schema transmission is
+		*     broken (bulk fetch dropped it); deferring would validate against
+		*     NOTHING. (The workflow:* exemption died with the workflow lane —
+		*     §12.2; a workflow is a plugin card with a REAL signature now.)
+		* The ONE honest defer left: the catalog cache is still cold at boot
+		* (nothing fetched yet — cannot resolve anything, backend gate decides).
+		*/
+		async function assertParamsMatchFamilySchema(model, params) {
+			let family;
+			let modifiers;
+			let cat;
+			try {
+				const { getCachedCatalog } = await Promise.resolve().then(() => (init_src(), src_exports));
+				cat = getCachedCatalog();
+				family = cat?.models?.[model]?.family;
+				modifiers = cat?.families?.[family ?? ""]?.modifiers;
+			} catch {
+				return params;
+			}
+			if (!cat) return params;
+			if (!family) throw new Error(`Parameter validation failed — model '${model}' is not in the catalog. The picker showed a model that DOES NOT EXIST; the catalog is the source of truth and this key is not in it. (The backend wire gate would 400 the same request.)`);
+			try {
+				await loadFamilySchemas();
+			} catch {
+				return params;
+			}
+			const schema = getFamilySchema(family);
+			if (!schema) {
+				if (isFamilySchemaCachePopulated()) throw new Error(`Parameter validation failed — family '${family}' (model '${model}') has no param schema in the populated cache — the backend does not know this family. Refusing to validate against nothing.`);
+				return params;
+			}
+			const coerced = coerceParamsToSchema(schema, params);
+			const violations = [...coerced.violations];
+			violations.push(...validateParamsAgainstSchema(schema, coerced.params));
+			violations.push(...validateModifierEntries(modifiers, params));
+			if (violations.length > 0) {
+				const lines = violations.map((v) => `  - ${v.path}: ${v.message}`).join("\n");
+				throw new Error(`Parameter validation failed — the params do not match the '${family}' family signature. Fix before running:\n${lines}\n\n(The backend's wire gate would reject this same request with 400.)`);
+			}
+			return coerced.params;
+		}
+		var _cache$1, _inflight$1, WIRE_RELAXED_KEYS, EDITOR_MOD_ENTRY_KEYS;
+		var init_familyParamContract = __esmMin((() => {
+			init_api();
+			_cache$1 = null;
+			_inflight$1 = null;
+			WIRE_RELAXED_KEYS = /* @__PURE__ */ new Set([
+				"sampling_steps",
+				"guide_scale",
+				"num_frames",
+				"end_image",
+				"image1",
+				"image2",
+				"image3",
+				"input_image",
+				"first_frame",
+				"last_frame",
+				"input_glb",
+				"prev_motion_artifact",
+				"lanpaint_mask",
+				"source_glb",
+				"outfit_glb",
+				"hair_glb",
+				"motion_npz",
+				"loras",
+				"controlnets",
+				"modifiers",
+				"service",
+				"source",
+				"preset",
+				"reference_audio",
+				"reference_text",
+				"rigged_path",
+				"npz_path",
+				"export_glb",
+				"export_fbx",
+				"export_usd",
+				"export_obj",
+				"detect_mode",
+				"model_name",
+				"t5_name",
+				"vae_name"
+			]);
+			EDITOR_MOD_ENTRY_KEYS = /* @__PURE__ */ new Set([
+				"id",
+				"value",
+				"model",
+				"preprocessor",
+				"enabled",
+				"source"
+			]);
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/cardBirth.ts
+		var cardBirth_exports = /* @__PURE__ */ __exportAll({
+			composeCard: () => composeCard,
+			ensureDraftId: () => ensureDraftId
+		});
+		/** Mint the card doc for a start body. The doc carries the body
+		*  verbatim (intent/stages/model/params become the card extras —
+		*  see python/editor_runs.py drafts_save), so what the card shows is
+		*  what the run consumed. Throws LOUDLY on any refusal — a refused
+		*  compose never proceeds to a start (no silent cardless runs). */
+		async function composeCard(body, signal) {
+			const res = await fetch("/v1/flows/drafts", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+				signal
+			});
+			const text = await res.text();
+			if (!res.ok) throw new Error(`card compose refused: HTTP ${res.status}${text ? `: ${text.slice(0, 400)}` : ""}`);
+			let data;
+			try {
+				data = JSON.parse(text);
+			} catch {
+				throw new Error("card compose returned a non-JSON body");
+			}
+			const draftId = data.draftId;
+			if (typeof draftId !== "string" || !draftId) throw new Error("card compose returned no draftId — refusing to start cardless");
+			return draftId;
+		}
+		/** The card-birth half of every run start: return the body's
+		*  declared draft_id when present, else compose the card and return
+		*  the minted id. Stamp the result onto the start envelope BEFORE
+		*  the start fetch:
+		*
+		*    startBody.draft_id = await ensureDraftId(startBody, signal)
+		*/
+		async function ensureDraftId(body, signal) {
+			const declared = body.draft_id;
+			if (typeof declared === "string" && declared !== "") return declared;
+			return composeCard(body, signal);
+		}
+		var init_cardBirth = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/FlowProtocol.ts
+		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({
+			assertNoParamDrops: () => assertNoParamDrops,
+			collectNamedArtifacts: () => collectNamedArtifacts,
+			collectStageUrls: () => collectStageUrls,
+			describeErrorBody: () => describeErrorBody,
+			pollFlowRun: () => pollFlowRun,
+			runCompiledGeneration: () => runCompiledGeneration,
+			sanitizeRevivedResult: () => sanitizeRevivedResult,
+			setRequiredEmptyResolver: () => setRequiredEmptyResolver
+		});
+		/**
+		* Extract the backend's error message from a non-2xx body for surfacing.
+		*
+		* Our backend always answers errors as `{"error": "..."}` — the string
+		* carries REAL newlines once parsed (the wire JSON escapes them), which is
+		* exactly what a multi-line flow doc parse error / validation report
+		* looks like in the drilldown modal. When the body isn't JSON, or has no
+		* string `error` field (proxy error page, unexpected shape), the raw text
+		* is returned unchanged.
+		*
+		* 2026-08-10: the error path used to `slice(0, 200)` the body, which cut
+		* "Validation failed: N violation(s)" reports mid-sentence — the full
+		* error is now surfaced unmodified (user: "full errors in the modals").
+		*/
+		function describeErrorBody(text) {
+			try {
+				const parsed = JSON.parse(text);
+				if (typeof parsed?.error === "string") return parsed.error;
+			} catch {}
+			return text;
+		}
+		/** Collect every artifact URL from a run status (stage.url + gallery).
+		*  The FLAT list — preserves the legacy wire-by-position behavior (the
+		*  primary output is always [0]). Use collectNamedArtifacts when the wire
+		*  needs to address a specific named output (mask, detection, …). */
+		function collectStageUrls(stages) {
+			const urls = [];
+			if (Array.isArray(stages)) for (const s of stages) {
+				if (s.url) urls.push(s.url);
+				if (Array.isArray(s.gallery)) {
+					for (const g of s.gallery) if (g && typeof g.url === "string") urls.push(g.url);
+				}
+			}
+			return urls;
+		}
+		/** Revived/stashed docs are untrusted (written by any client or session):
+		*  artifacts + assetUrls must be STRING-only, or every consumer crashes
+		*  (u.endsWith on undefined — motion card 2026-08-10). Filter instead of
+		*  casting verbatim; callers still hard-error on structural doc junk.
+		*  Missing numeric fields default so downstream guards (assetUrls.length)
+		*  behave — never a null result while the result object is present. */
+		function sanitizeRevivedResult(raw) {
+			if (!raw || typeof raw !== "object") return null;
+			const r = raw;
+			const assetUrls = Array.isArray(r.assetUrls) ? r.assetUrls.filter((u) => typeof u === "string" && !!u) : [];
+			const artifacts = {};
+			if (r.artifacts && typeof r.artifacts === "object" && !Array.isArray(r.artifacts)) {
+				for (const [k, v] of Object.entries(r.artifacts)) if (typeof v === "string" && v) artifacts[k] = v;
+			}
+			return {
+				assetUrls,
+				artifacts,
+				metadata: r.metadata && typeof r.metadata === "object" ? r.metadata : {},
+				completedAt: typeof r.completedAt === "number" ? r.completedAt : Date.now(),
+				durationSec: typeof r.durationSec === "number" ? r.durationSec : 0
+			};
+		}
+		/** Collect named artifacts from a run status → {name: URL}. The NAMED map
+		*  — lets a downstream slot wire a SPECIFIC output (mask → lanpaint_mask)
+		*  rather than only the primary (assetUrls[0]). Falls back to {} when the
+		*  backend didn't send named_urls (legacy runs / single-output bricks). */
+		function collectNamedArtifacts(stages) {
+			const out = {};
+			if (Array.isArray(stages)) {
+				for (const s of stages) if (s.named_urls && typeof s.named_urls === "object") {
+					for (const [name, url] of Object.entries(s.named_urls)) if (typeof url === "string" && url) out[name] = url;
+				}
+			}
+			return out;
+		}
+		/**
+		* Poll a flow run until terminal. Throws on error/timeout/abort.
+		*
+		* Terminal statuses: "completed"/"done" → success; "error"/"failed" →
+		* throws with the run-level error message.
+		*
+		* `onTick(status)` fires after every successful poll — used by the store
+		* to hydrate live KSampler step progress onto the running card BEFORE the
+		* run goes terminal (so the per-card progress bar animates during the
+		* run, 2026-08-08). Not fired on the terminal tick (the final status is
+		* the return value).
+		*/
+		async function pollFlowRun(runId, signal, opts) {
+			const maxWaitMs = opts?.maxWaitMs ?? 36e5;
+			const intervalMs = opts?.intervalMs ?? 2e3;
+			const started = performance.now();
+			while (performance.now() - started < maxWaitMs) {
+				if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+				const resp = await apiFetch(`/v1/flows/status/${runId}`, { signal });
+				if (!resp.ok) {
+					if (resp.status === 404) throw new Error(`Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`);
+					let errorBody = null;
+					try {
+						errorBody = await resp.json();
+					} catch {
+						errorBody = null;
+					}
+					if (hasViolationsSignature(errorBody)) {
+						const violations = errorBody.violations;
+						useRunStatusContractStore.getState().reportViolation(runId, violations);
+						throw new RunStatusContractError(runId, violations);
+					}
+					await new Promise((r) => setTimeout(r, intervalMs));
+					continue;
+				}
+				const data = await resp.json();
+				const { valid, violations } = validateRunStatusContract(data);
+				if (!valid) {
+					useRunStatusContractStore.getState().reportViolation(runId, violations);
+					throw new RunStatusContractError(runId, violations);
+				}
+				if (data.status === "completed") return data;
+				if (data.status === "failed") {
+					const detail = data.error;
+					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
+				}
+				opts?.onTick?.(data);
+				await new Promise((r) => setTimeout(r, intervalMs));
+			}
+			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
+		}
+		/** Register (or clear) the required-empty resolver. */
+		function setRequiredEmptyResolver(fn) {
+			_requiredEmptyResolver = fn;
+		}
+		/**
+		* HARD VALIDATION: no silent parameter drops in the generate request body.
+		*
+		* JSON.stringify silently drops `undefined` values — `{a: 1, b: undefined}`
+		* serializes to `{"a":1}` with ZERO error. This is the TypeScript version
+		* of the Python `**kwargs` absorb pattern: a field that was set in the form
+		* state, survived into the body object, but vanishes on the wire with no
+		* error, no warning. The backend receives defaults and the user sees
+		* degraded output they can't diagnose.
+		*
+		* This function is called before EVERY GPU-starting fetch (generate,
+		* startChain — the run doors) —
+		* it is the universal gate. It catches:
+		*   - `undefined` values (silently dropped by JSON.stringify)
+		*   - `NaN` / `Infinity` (serialized as `null` — a value mutation)
+		*   - `function` / `symbol` / `bigint` values (dropped or thrown by JSON)
+		*   - empty string for known-critical fields (prompt, model)
+		*
+		* SILENT PARAMETER DROPS ARE COMPLETELY UNACCEPTABLE ANYWHERE EVER.
+		*
+		* @param body the request body about to be JSON.stringify'd and POST'd
+		* @throws Error listing every field that would be silently dropped or mutated
+		*/
+		function assertNoParamDrops(body) {
+			const dropped = [];
+			const mutated = [];
+			for (const [key, val] of Object.entries(body)) if (val === void 0) dropped.push(key);
+			else if (typeof val === "number" && !Number.isFinite(val)) mutated.push(`${key} (NaN/Infinity → JSON serializes as null)`);
+			else if (typeof val === "function" || typeof val === "symbol") dropped.push(`${key} (${typeof val} value — JSON.stringify drops it)`);
+			else if (typeof val === "bigint") mutated.push(`${key} (bigint → JSON.stringify throws)`);
+			if (typeof body.model === "string" && _requiredEmptyResolver) {
+				const fields = _requiredEmptyResolver(body.model, body);
+				for (const field of fields ?? []) {
+					const v = body[field];
+					if (typeof v === "string" && v.trim() === "") throw new Error(`'${field}' is empty for '${body.model}' — the model's form declares it required (the engine has no conditioning signal without it). Type it before running. (Backend semantic validator would 400 this same run.)`);
+				}
+			}
+			if (dropped.length > 0 || mutated.length > 0) {
+				const parts = [dropped.length > 0 ? `DROPPED: [${dropped.join(", ")}]` : "", mutated.length > 0 ? `MUTATED: [${mutated.join(", ")}]` : ""].filter(Boolean);
+				throw new Error(`SILENT PARAMETER DROP DETECTED in generate request body — ${parts.join("; ")}. JSON.stringify would silently lose or mutate these values on the wire. SILENT PARAMETER DROPS ARE UNACCEPTABLE. Fix the caller to omit or set these fields explicitly.`);
+			}
+		}
+		/** Append the door's 400 violation envelope ({violations: [{field,
+		* message}]}) as one line per violation — a bare headline would silently
+		* DROP the dotted paths (the whole point of a refusal is seeing WHICH
+		* param failed). ONE construction, both run doors (compile + start). */
+		function violationLines(text) {
+			try {
+				const parsed = JSON.parse(text);
+				if (Array.isArray(parsed.violations)) {
+					const lines = parsed.violations.map((v) => `${String(v.field ?? "?")}: ${String(v.message ?? "")}`).filter((line) => !line.endsWith(": "));
+					if (lines.length > 0) return `\n${lines.join("\n")}`;
+				}
+			} catch {}
+			return "";
+		}
+		async function runCompiledGeneration(body, signal, opts) {
+			if (Array.isArray(body.loras)) {
+				const { normalizeLoraEntry } = await Promise.resolve().then(() => (init_src$2(), src_exports$1));
+				body = {
+					...body,
+					loras: body.loras.map((e) => e && typeof e === "object" ? normalizeLoraEntry(e) : e)
+				};
+			}
+			assertNoParamDrops(body);
+			let typedBody = body;
+			if (typeof body.model === "string") {
+				const { assertParamsMatchFamilySchema } = await Promise.resolve().then(() => (init_familyParamContract(), familyParamContract_exports));
+				const paramOnly = {};
+				for (const [k, v] of Object.entries(body)) {
+					if (k === "model") continue;
+					paramOnly[k] = v;
+				}
+				typedBody = {
+					...await assertParamsMatchFamilySchema(body.model, paramOnly),
+					model: body.model
+				};
+				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth(), cardBirth_exports));
+				typedBody.draft_id = await ensureDraftId(typedBody, signal);
+				const compileRes = await fetch("/v1/flows/validate", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(typedBody),
+					signal
+				});
+				if (!compileRes.ok) {
+					const text = await compileRes.text();
+					throw new Error(`card failed to compile: HTTP ${compileRes.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`);
+				}
+			}
+			if (typeof typedBody.draft_id !== "string" || typedBody.draft_id === "") {
+				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth(), cardBirth_exports));
+				typedBody.draft_id = await ensureDraftId(typedBody, signal);
+			}
+			const res = await fetch("/v1/flows/start", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(typedBody),
+				signal
+			});
+			const text = await res.text();
+			if (res.ok) {
+				let data;
+				try {
+					data = JSON.parse(text);
+				} catch {
+					throw new Error(`generate failed: /v1/flows/start returned non-JSON body: ${text.slice(0, NON_JSON_BODY_CAP)}`);
+				}
+				const runId = data.run_id;
+				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
+				opts?.onStart?.(runId);
+				const status = await pollFlowRun(runId, signal, {
+					intervalMs: opts?.intervalMs,
+					onTick: opts?.onTick
+				});
+				return {
+					kind: "started",
+					runId,
+					status,
+					urls: collectStageUrls(status.stages)
+				};
+			}
+			throw new Error(`generate failed: HTTP ${res.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`);
+		}
+		var NON_JSON_BODY_CAP, _requiredEmptyResolver;
+		var init_FlowProtocol = __esmMin((() => {
+			init_api();
+			init_runStatusContract();
+			init_runStatusContractStore();
+			NON_JSON_BODY_CAP = 2e3;
+			_requiredEmptyResolver = null;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/FlowEvents.ts
+		/**
+		* Open the events stream for one run. Returns immediately; frames land
+		* in `onEvent`. Auto-reconnects with capped backoff until a terminal
+		* `run` frame, an explicit close, or `signal` aborts.
+		*/
+		function streamFlowEvents(runId, onEvent, opts = {}) {
+			let ws = null;
+			let terminal = false;
+			let closed = false;
+			let attempt = 0;
+			let timer = null;
+			const cleanup = () => {
+				if (timer) clearTimeout(timer);
+				timer = null;
+				if (ws) {
+					ws.onmessage = null;
+					ws.onclose = null;
+					ws.onerror = null;
+					try {
+						ws.close();
+					} catch {}
+					ws = null;
+				}
+			};
+			const finish = () => {
+				terminal = true;
+				cleanup();
+			};
+			const connect = () => {
+				/* v8 ignore next -- defensive: close()/finish() always clear the pending reconnect timer, so connect() can never run after close or a terminal frame (2026-09-12) */
+				if (closed || terminal) return;
+				if (typeof WebSocket === "undefined") return;
+				const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws";
+				const host = typeof location !== "undefined" ? location.host : "";
+				try {
+					ws = new WebSocket(`${proto}://${host}/v1/flows/events?run_id=${encodeURIComponent(runId)}`);
+				} catch {
+					return;
+				}
+				ws.onmessage = (ev) => {
+					if (closed || terminal) return;
+					attempt = 0;
+					let frame = null;
+					try {
+						frame = JSON.parse(String(ev.data));
+					} catch {
+						return;
+					}
+					if (!frame || typeof frame !== "object" || typeof frame.type !== "string") return;
+					onEvent(frame);
+					if (frame.type === "run" && TERMINAL.has(String(frame.status))) finish();
+				};
+				ws.onclose = () => {
+					if (closed || terminal) return;
+					const wait = Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt++);
+					timer = setTimeout(connect, wait);
+				};
+				ws.onerror = () => {};
+			};
+			connect();
+			if (opts.signal) opts.signal.addEventListener("abort", () => {
+				closed = true;
+				cleanup();
+			}, { once: true });
+			return {
+				close: () => {
+					closed = true;
+					cleanup();
+				},
+				done: () => terminal
+			};
+		}
+		var TERMINAL, BACKOFF_BASE_MS, BACKOFF_CAP_MS;
+		var init_FlowEvents = __esmMin((() => {
+			TERMINAL = /* @__PURE__ */ new Set([
+				"completed",
+				"failed",
+				"stopped",
+				"unknown"
+			]);
+			BACKOFF_BASE_MS = 500;
+			BACKOFF_CAP_MS = 5e3;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/tagMap.ts
+		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
+		*  a future server payload) before it enters the store. */
+		function isTagColor(v) {
+			return typeof v === "string" && TAG_COLOR_VALUES.includes(v);
+		}
+		function slugify(name) {
+			return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "tag";
+		}
+		/** Generate a unique tag id from a name, appending -2, -3, … on collision. */
+		function uniqueId(name, existing) {
+			const base = slugify(name);
+			if (!existing.has(base)) return base;
+			let n = 2;
+			while (existing.has(`${base}-${n}`)) n++;
+			return `${base}-${n}`;
+		}
+		/** Cycle through the palette so consecutive new tags get distinct colors. */
+		function nextColor(count) {
+			return TAG_COLOR_VALUES[count % TAG_COLOR_VALUES.length];
+		}
+		/**
+		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
+		* before it enters the store. Drops any tag whose color isn't in the closed
+		* enum, then rebuilds the forward index dropping orphan entries. This is the
+		* front-end mirror of the pydantic TagDocument validator; the server enforces
+		* the same rules on PUT, but we don't trust the wire even from our own server
+		* — defense in depth.
+		*/
+		function validateDocument(parsed) {
+			const empty = {
+				tags: {},
+				map: {}
+			};
+			if (!parsed) return empty;
+			const tags = {};
+			for (const [id, def] of Object.entries(parsed.tags ?? {})) if (def && typeof def.name === "string" && isTagColor(def.color)) tags[id] = {
+				id,
+				name: def.name,
+				color: def.color
+			};
+			const knownIds = new Set(Object.keys(tags));
+			const map = {};
+			for (const [key, ids] of Object.entries(parsed.map ?? {})) if (Array.isArray(ids)) {
+				const clean = ids.filter((id) => typeof id === "string" && knownIds.has(id));
+				if (clean.length > 0) map[key] = clean;
+			}
+			return {
+				tags,
+				map
+			};
+		}
+		function loadPersisted() {
+			if (typeof localStorage === "undefined") return {
+				tags: {},
+				map: {}
+			};
+			try {
+				const raw = localStorage.getItem(STORAGE_KEY);
+				if (!raw) return {
+					tags: {},
+					map: {}
+				};
+				return validateDocument(JSON.parse(raw));
+			} catch {
+				return {
+					tags: {},
+					map: {}
+				};
+			}
+		}
+		/**
+		* Write-through to localStorage (synchronous cache) + schedule a debounced
+		* server PUT. Called from every mutation action. The localStorage write is
+		* unconditional (offline fallback stays fresh); the server PUT is gated by
+		* `serverSyncEnabled`. Failures are swallowed (the local state is still
+		* valid; the next successful mutation retries).
+		*/
+		function scheduleSync(data) {
+			try {
+				localStorage.setItem(STORAGE_KEY, JSON.stringify({
+					tags: data.tags,
+					map: data.map
+				}));
+			} catch {}
+			if (!serverSyncEnabled || typeof fetch === "undefined") return;
+			if (syncTimer) clearTimeout(syncTimer);
+			syncTimer = setTimeout(() => {
+				syncTimer = null;
+				apiFetch("/v1/tags", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						tags: data.tags,
+						map: data.map
+					})
+				}).catch((e) => {
+					console.warn("[tagMap] server sync failed:", e);
+				});
+			}, SYNC_DEBOUNCE_MS);
+		}
+		/**
+		* Hydrate the store from the server (canonical) + enable server pushes.
+		* Called once by the app shell on mount. The store already has the
+		* localStorage cache (loaded synchronously at module init), so the UI renders
+		* immediately; this replaces it with the server copy if one exists (the server
+		* wins ties — it's the cross-device source of truth). After this call,
+		* mutations push to the server via the debounced PUT.
+		*
+		* Silent on failure: if the server is unreachable, the store keeps the
+		* localStorage cache and server pushes stay disabled (offline mode).
+		*/
+		async function initTagSync() {
+			if (serverSyncEnabled) return;
+			if (typeof fetch === "undefined") return;
+			try {
+				const res = await apiFetch("/v1/tags");
+				if (!res.ok) return;
+				const doc = validateDocument(await res.json());
+				useTagMap.setState({
+					tags: doc.tags,
+					map: doc.map
+				});
+				serverSyncEnabled = true;
+			} catch {}
+		}
+		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+		* for useSyncExternalStore (dom-project territory, like the slots seam's
+		* useVersion). The selector contract is pinned node-side through
+		* getState/subscribe in tag-map.spec.ts. (2026-09-12) */
+		function useTagMapHook() {
+			return (0, react.useSyncExternalStore)((l) => {
+				tagMapListeners.add(l);
+				return () => {
+					tagMapListeners.delete(l);
+				};
+			}, tagMapGetState);
+		}
+		/** Read tagsOf without a React subscription. The useListFilter accessor uses
+		*  this so the filter flow doesn't need to re-subscribe on every item. */
+		function tagsOf(key) {
+			return useTagMap.getState().map[key] ?? [];
+		}
+		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapListeners, tagMapState, notifyTagMap, tagMapSetState, tagMapGetState, useTagMap, tagMapActions;
+		var init_tagMap = __esmMin((() => {
+			init_api();
+			TagColor = {
+				brand: "brand",
+				sky: "sky",
+				violet: "violet",
+				rose: "rose",
+				emerald: "emerald",
+				amber: "amber",
+				cyan: "cyan"
+			};
+			TAG_COLOR_VALUES = Object.values(TagColor);
+			TAG_COLOR_META = {
+				brand: {
+					dot: "bg-brand",
+					pill: "border-brand/30 bg-brand/10 text-brand"
+				},
+				sky: {
+					dot: "bg-sky-500",
+					pill: "border-sky-500/30 bg-sky-500/10 text-sky-400"
+				},
+				violet: {
+					dot: "bg-violet-500",
+					pill: "border-violet-500/30 bg-violet-500/10 text-violet-400"
+				},
+				rose: {
+					dot: "bg-rose-500",
+					pill: "border-rose-500/30 bg-rose-500/10 text-rose-400"
+				},
+				emerald: {
+					dot: "bg-emerald-500",
+					pill: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+				},
+				amber: {
+					dot: "bg-amber-500",
+					pill: "border-amber-500/30 bg-amber-500/10 text-amber-400"
+				},
+				cyan: {
+					dot: "bg-cyan-500",
+					pill: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400"
+				}
+			};
+			STORAGE_KEY = "melite:tag-map:v1";
+			SYNC_DEBOUNCE_MS = 500;
+			serverSyncEnabled = false;
+			syncTimer = null;
+			initial = loadPersisted();
+			tagMapListeners = /* @__PURE__ */ new Set();
+			notifyTagMap = () => {
+				for (const l of tagMapListeners) l();
+			};
+			tagMapSetState = (patch) => {
+				const p = typeof patch === "function" ? patch(tagMapState) : patch;
+				tagMapState = {
+					...tagMapState,
+					...p
+				};
+				notifyTagMap();
+			};
+			tagMapGetState = () => tagMapState;
+			useTagMap = Object.assign(useTagMapHook, {
+				getState: tagMapGetState,
+				setState: tagMapSetState,
+				subscribe: (l) => {
+					tagMapListeners.add(l);
+					return () => {
+						tagMapListeners.delete(l);
+					};
+				}
+			});
+			tagMapActions = (set, get) => ({
+				createTag: (name, color) => {
+					const trimmed = name.trim();
+					if (!trimmed) return "";
+					const id = uniqueId(trimmed, new Set(Object.keys(get().tags)));
+					const c = color ?? nextColor(Object.keys(get().tags).length);
+					set((s) => {
+						const tags = {
+							...s.tags,
+							[id]: {
+								id,
+								name: trimmed,
+								color: c
+							}
+						};
+						scheduleSync({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+					return id;
+				},
+				renameTag: (id, name) => {
+					const trimmed = name.trim();
+					if (!trimmed) return;
+					set((s) => {
+						const def = s.tags[id];
+						if (!def) return s;
+						const tags = {
+							...s.tags,
+							[id]: {
+								...def,
+								name: trimmed
+							}
+						};
+						scheduleSync({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+				},
+				recolorTag: (id, color) => {
+					if (!isTagColor(color)) return;
+					set((s) => {
+						const def = s.tags[id];
+						if (!def) return s;
+						const tags = {
+							...s.tags,
+							[id]: {
+								...def,
+								color
+							}
+						};
+						scheduleSync({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+				},
+				deleteTag: (id) => {
+					set((s) => {
+						if (!s.tags[id]) return s;
+						const tags = { ...s.tags };
+						delete tags[id];
+						const map = {};
+						for (const [key, ids] of Object.entries(s.map)) {
+							const filtered = ids.filter((t) => t !== id);
+							if (filtered.length > 0) map[key] = filtered;
+						}
+						scheduleSync({
+							tags,
+							map
+						});
+						return {
+							tags,
+							map
+						};
+					});
+				},
+				setItemTags: (key, tagIds) => {
+					const known = new Set(Object.keys(get().tags));
+					const clean = [...new Set(tagIds)].filter((id) => known.has(id));
+					set((s) => {
+						const map = { ...s.map };
+						if (clean.length > 0) map[key] = clean;
+						else delete map[key];
+						scheduleSync({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				addTagToItem: (key, tagId) => {
+					if (!get().tags[tagId]) return;
+					set((s) => {
+						const current = s.map[key] ?? [];
+						if (current.includes(tagId)) return s;
+						const map = {
+							...s.map,
+							[key]: [...current, tagId]
+						};
+						scheduleSync({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				removeTagFromItem: (key, tagId) => {
+					set((s) => {
+						const current = s.map[key];
+						if (!current || !current.includes(tagId)) return s;
+						const next = current.filter((t) => t !== tagId);
+						const map = { ...s.map };
+						if (next.length > 0) map[key] = next;
+						else delete map[key];
+						scheduleSync({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				tagsOf: (key) => get().map[key] ?? [],
+				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
+			});
+			tagMapState = {
+				...tagMapActions(tagMapSetState, tagMapGetState),
+				tags: initial.tags,
+				map: initial.map
+			};
+		}));
+		//#endregion
+		//#region ../../web-kit/formats/src/npz.ts
+		var init_npz = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/formats/src/somaSkin.ts
+		var init_somaSkin = __esmMin((() => {
+			init_src();
+		}));
+		//#endregion
+		//#region ../../web-kit/formats/src/poseCodec.ts
+		/** Encode a Uint8Array to a base64 string.
+		*
+		*  Processes the input in 32KB chunks because String.fromCharCode.apply has
+		*  a ~65K argument limit on some engines (the historical V8 stack-arg limit).
+		*  Uses Array.from() rather than the brittle `as unknown as number[]` cast. */
+		function encodeBufferToB64(bytes) {
+			let bin = "";
+			const CHUNK = 32768;
+			for (let i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, Math.min(i + CHUNK, bytes.length))));
+			return btoa(bin);
+		}
+		var SOMA_VERTEX_COUNT, SOMA77_BONE_CONNECTIONS;
+		var init_poseCodec = __esmMin((() => {
+			SOMA_VERTEX_COUNT = 18056;
+			SOMA77_BONE_CONNECTIONS = [
+				[0, 1],
+				[1, 2],
+				[2, 3],
+				[3, 4],
+				[4, 5],
+				[5, 6],
+				[6, 7],
+				[6, 8],
+				[6, 9],
+				[6, 10],
+				[3, 11],
+				[11, 12],
+				[12, 13],
+				[13, 14],
+				[14, 15],
+				[15, 16],
+				[16, 17],
+				[17, 18],
+				[14, 19],
+				[19, 20],
+				[20, 21],
+				[21, 22],
+				[22, 23],
+				[14, 24],
+				[24, 25],
+				[25, 26],
+				[26, 27],
+				[27, 28],
+				[14, 29],
+				[29, 30],
+				[30, 31],
+				[31, 32],
+				[32, 33],
+				[14, 34],
+				[34, 35],
+				[35, 36],
+				[36, 37],
+				[37, 38],
+				[3, 39],
+				[39, 40],
+				[40, 41],
+				[41, 42],
+				[42, 43],
+				[43, 44],
+				[44, 45],
+				[45, 46],
+				[42, 47],
+				[47, 48],
+				[48, 49],
+				[49, 50],
+				[50, 51],
+				[42, 52],
+				[52, 53],
+				[53, 54],
+				[54, 55],
+				[55, 56],
+				[42, 57],
+				[57, 58],
+				[58, 59],
+				[59, 60],
+				[60, 61],
+				[42, 62],
+				[62, 63],
+				[63, 64],
+				[64, 65],
+				[65, 66],
+				[0, 67],
+				[67, 68],
+				[68, 69],
+				[69, 70],
+				[70, 71],
+				[0, 72],
+				[72, 73],
+				[73, 74],
+				[74, 75],
+				[75, 76]
+			];
+		})), J;
+		var init_motionNpz = __esmMin((() => {
+			init_somaSkin();
+			init_poseCodec();
+			J = 77;
+			(() => {
+				const table = /* @__PURE__ */ new Uint32Array(256);
+				for (let n = 0; n < 256; n++) {
+					let c = n;
+					for (let k = 0; k < 8; k++) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+					table[n] = c >>> 0;
+				}
+				return table;
+			})();
+			(() => {
+				const parent = new Array(J).fill(-1);
+				for (const [p, c] of SOMA77_BONE_CONNECTIONS) parent[c] = p;
+				const children = Array.from({ length: J }, () => []);
+				for (let i = 0; i < J; i++) {
+					const p = parent[i];
+					if (p >= 0) children[p].push(i);
+				}
+				return children;
+			})();
+		}));
 		var init_glbLoad = __esmMin((() => {
 			({}).env?.BASE_URL;
 		}));
@@ -53547,6 +53994,7 @@ void main() {
 			return (0, react.createElement)("div", { className: card_module_css_default$1.zoomSkeleton }, (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skWide }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skBlock }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skRow }, (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skShort }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skShort })));
 		}
 		/** One overlay mount (keyed per stage by the caller). */
+		const ZOOM_BUILD = "build 09-20 18:47";
 		function ZoomMount(props) {
 			const { stage, detail, onClose, ...rest } = props;
 			const [ready, setReady] = (0, react.useState)(false);
@@ -53615,7 +54063,11 @@ void main() {
 			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomScroll }, (0, react.createElement)("div", { className: card_module_css_default$1.zoomInner }, (0, react.createElement)("div", {
 				className: card_module_css_default$1.zoomCard,
 				style: zoomSizeFor(surfaceSize)
-			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default$1.zoomTitle }, "Stage " + String(stage.title ?? stage.card ?? stage.id)), enhanceVerb !== null ? [llmRoutes !== null ? (0, react.createElement)("select", {
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default$1.zoomTitle }, "Stage " + String(stage.title ?? stage.card ?? stage.id)), (0, react.createElement)("span", {
+				className: card_module_css_default$1.zoomBuild,
+				title: ZOOM_BUILD
+			}, ZOOM_BUILD), enhanceVerb !== null ? [llmRoutes !== null ? (0, react.createElement)("select", {
+				key: "llm",
 				className: card_module_css_default$1.drillLlm,
 				"aria-label": "Enhance model",
 				"data-testid": "drill-llm",
@@ -53627,13 +54079,15 @@ void main() {
 				value: r,
 				key: r
 			}, r))) : null, (0, react.createElement)("button", {
+				key: "enhance",
 				className: card_module_css_default$1.drillRunBtn,
 				type: "button",
 				"aria-label": "Agent Enhance",
 				"data-testid": "drill-enhance",
 				disabled: enhancingBar,
 				onClick: fireEnhance
-			}, (0, react.createElement)("span", null, enhancingBar ? "✦ enhancing…" : "✦ Enhance"))] : null, live ? (0, react.createElement)("button", {
+			}, (0, react.createElement)("span", null, enhancingBar ? "✦ enhancing…" : "✦ Enhance"))] : [null, null], live ? (0, react.createElement)("button", {
+				key: "run",
 				className: card_module_css_default$1.drillRunBtn,
 				type: "button",
 				"aria-label": "Stop run",
@@ -53642,6 +54096,7 @@ void main() {
 					props.onStop();
 				}
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 16 }), (0, react.createElement)("span", null, "Stop")) : (0, react.createElement)("button", {
+				key: "run",
 				className: card_module_css_default$1.drillRunBtn,
 				type: "button",
 				"aria-label": "Run stage",
@@ -53650,23 +54105,29 @@ void main() {
 					(boundRef.current ?? props.onRun)();
 				}
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 16 }), (0, react.createElement)("span", null, "Run")), (0, react.createElement)("button", {
+				key: "close",
 				className: card_module_css_default$1.drillRunBtn,
 				type: "button",
 				"aria-label": "Collapse card",
 				onClick: onClose
 			}, (0, react.createElement)("span", null, "✕"), (0, react.createElement)("span", null, "Close"))), live || failedText !== null || startError !== null ? (0, react.createElement)("div", {
+				key: "status",
 				className: card_module_css_default$1.zoomWebhook,
-				role: "status"
+				role: "status",
+				"data-testid": "zoom-status"
 			}, live ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.drillProgress,
 				"data-testid": "drill-progress"
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }), (0, react.createElement)("span", null, [act !== "" ? act : "running", pct !== null ? " · " + String(pct) + "%" : ""].join("")), pct !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.zoomMeter }, (0, react.createElement)("span", {
 				className: card_module_css_default$1.zoomMeterFill,
 				style: { width: pct + "%" }
-			})) : null) : (0, react.createElement)("span", {
+			})) : null) : failedText !== null || startError !== null ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.runError,
 				"data-testid": "drill-run-error"
-			}, startError ?? failedText)) : null, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBody }, ready ? (0, react.createElement)(props.detail, {
+			}, startError ?? failedText) : null) : null, (0, react.createElement)("div", {
+				key: "body",
+				className: card_module_css_default$1.zoomBody
+			}, ready ? (0, react.createElement)(props.detail, {
 				stage,
 				bench: rest.bench,
 				running: rest.running,
@@ -53693,7 +54154,7 @@ void main() {
 				key: props.stage.id,
 				...props
 			});
-			return mounted ? (0, react_dom.createPortal)(tree, document.body) : tree;
+			return mounted ? (0, react_dom.createPortal)(tree, document.body, "zoom-portal") : tree;
 		}
 		//#endregion
 		//#region src/client/dnd-payloads.ts
@@ -53783,15 +54244,39 @@ void main() {
 		}
 		/** The stage row's preview artifacts, harvested from the estate's
 		*  result shape (artifacts name→url map first, the flat assetUrls
-		*  list second — the harvest law the h3 adapter states). */
+		*  list second — the harvest law the h3 adapter states).
+		*  ONE FILE, ONE ARTIFACT (2026-09-20, the operator's catch: "two
+		*  rowsets under the preview image"): rows written before the
+		*  observer's de-stamp carry the same url under two keys (the
+		*  legacy 'video' stamp + the gallery name) — the harvest dedupes
+		*  BY URL so those rows render ONE artifact, and the legacy
+		*  'video' name never paints (retitled 'output'): the word
+		*  'video' on an image card is the phantom's face. */
 		function previewArtifactsFor(row) {
 			const result = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : {};
 			const out = [];
+			const seen = /* @__PURE__ */ new Set();
 			const arts = typeof result["artifacts"] === "object" && result["artifacts"] !== null ? result["artifacts"] : {};
-			for (const [name, val] of Object.entries(arts)) if (typeof val === "string" && val !== "") out.push({
-				name,
-				url: val
-			});
+			for (const [name, val] of Object.entries(arts)) {
+				if (name === "video") continue;
+				if (typeof val === "string" && val !== "" && !seen.has(val)) {
+					seen.add(val);
+					out.push({
+						name,
+						url: val
+					});
+				}
+			}
+			for (const [name, val] of Object.entries(arts)) {
+				if (name !== "video") continue;
+				if (typeof val === "string" && val !== "" && !seen.has(val)) {
+					seen.add(val);
+					out.push({
+						name: "output",
+						url: val
+					});
+				}
+			}
 			if (out.length === 0 && Array.isArray(result["assetUrls"])) {
 				for (const u of result["assetUrls"]) if (typeof u === "string" && u !== "") out.push({
 					name: "output",
@@ -54060,13 +54545,13 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:infer-gallery/src/client/overlay.module.css.mjs
-		const css$4 = "._2saHFG_lightbox{width:min(1200px,96vw);max-width:96vw}._2saHFG_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
-		const tagId$4 = "@melite-plugin/dsh-card-view/overlay.module.css@d29a3d30";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
+		const css$3 = "._2saHFG_lightbox{width:min(1200px,96vw);max-width:96vw}._2saHFG_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
+		const tagId$3 = "@melite-plugin/dsh-card-view/overlay.module.css@d29a3d30";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
-			tag.dataset.pluginCss = tagId$4;
-			tag.textContent = css$4;
+			tag.dataset.pluginCss = tagId$3;
+			tag.textContent = css$3;
 			document.head.appendChild(tag);
 		}
 		var overlay_module_css_default = {
@@ -54150,8 +54635,51 @@ void main() {
 				})]
 			});
 		}
-		/** THE MEDIA DRILLDOWN (the gallery Overlay, verbatim — one face). */
-		function MediaDrilldown({ item, onClose, openArtifact }) {
+		/** THE MEDIA DRILLDOWN (the gallery Overlay, verbatim — one face).
+		* THE WALK ARROWS (2026-09-20, the operator's catch: "where are my
+		* side arrows when I open an image so scroll through to others"):
+		* an OPTIONAL sibling walk — the caller passes the visible list;
+		* arrows render only when there is more than one to walk. The
+		* arrows paint their OWN chip (explicit bg + label tokens — the
+		* white-✕ lesson: never inherit the page's text color on a
+		* self-painted surface), walk WRAP-AROUND, and the keyboard
+		* ArrowLeft/ArrowRight ride the same verbs. No siblings = exactly
+		* the old face (both call sites unchanged until wired). */
+		function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate }) {
+			const walkable = siblings ?? [];
+			const at = walkable.findIndex((s) => s.url === item.url);
+			const seat = react.useRef(null);
+			react.useEffect(() => {
+				seat.current?.focus();
+			}, []);
+			const canWalk = onNavigate !== void 0 && walkable.length > 1 && at >= 0;
+			const atHead = at === 0;
+			const atTail = at === walkable.length - 1;
+			const step = (delta) => {
+				const next = at + delta;
+				if (next < 0 || next >= walkable.length) return;
+				onNavigate(walkable[next]);
+			};
+			const onKey = (e) => {
+				if (!canWalk) return;
+				if (e.key === "ArrowLeft") {
+					e.stopPropagation();
+					step(-1);
+				}
+				if (e.key === "ArrowRight") {
+					e.stopPropagation();
+					step(1);
+				}
+			};
+			react.useEffect(() => {
+				const nat = (e) => {
+					onKey(e);
+				};
+				window.addEventListener("keydown", nat);
+				return () => {
+					window.removeEventListener("keydown", nat);
+				};
+			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
 				onClose,
@@ -54159,6 +54687,8 @@ void main() {
 				headless: true,
 				className: overlay_module_css_default.lightbox,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					ref: seat,
+					tabIndex: -1,
 					style: {
 						position: "relative",
 						display: "flex",
@@ -54166,8 +54696,10 @@ void main() {
 						alignItems: "center",
 						justifyContent: "center",
 						gap: 14,
-						padding: 24
+						padding: 24,
+						outline: "none"
 					},
+					onKeyDown: onKey,
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 							"aria-label": "Close preview",
@@ -54187,6 +54719,69 @@ void main() {
 							},
 							children: "✕"
 						}),
+						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							"aria-label": "Previous media",
+							"data-testid": "drill-prev",
+							onClick: () => {
+								step(-1);
+							},
+							style: {
+								position: "absolute",
+								left: 10,
+								top: "50%",
+								transform: "translateY(-50%)",
+								zIndex: 10,
+								width: 40,
+								height: 40,
+								borderRadius: 999,
+								cursor: "pointer",
+								background: bgBase1,
+								border: `1px solid ${labelPrimary2}33`,
+								color: labelPrimary2,
+								fontSize: 22,
+								lineHeight: 1,
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								...atHead ? {
+									opacity: .3,
+									cursor: "default"
+								} : {}
+							},
+							children: "‹"
+						}) : null,
+						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							"aria-label": "Next media",
+							"data-testid": "drill-next",
+							disabled: atTail,
+							onClick: () => {
+								step(1);
+							},
+							style: {
+								position: "absolute",
+								right: 10,
+								top: "50%",
+								transform: "translateY(-50%)",
+								zIndex: 10,
+								width: 40,
+								height: 40,
+								borderRadius: 999,
+								cursor: "pointer",
+								background: bgBase1,
+								border: `1px solid ${labelPrimary2}33`,
+								color: labelPrimary2,
+								fontSize: 22,
+								lineHeight: 1,
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								...atTail ? {
+									opacity: .3,
+									cursor: "default"
+								} : {}
+							},
+							children: "›"
+						}) : null,
 						item.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
 							src: item.url,
 							controls: true,
@@ -54260,13 +54855,13 @@ void main() {
 		*/
 		//#endregion
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/web-kit/timeline/timeline/timeline.module.css.mjs
-		const css$3 = ".E4_1PW_root{user-select:none;display:flex}.E4_1PW_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.E4_1PW_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.E4_1PW_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.E4_1PW_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.E4_1PW_zoomBtn svg{width:14px;height:14px}.E4_1PW_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.E4_1PW_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.E4_1PW_laneHead,.E4_1PW_laneHeadBeats{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneHead>svg,.E4_1PW_laneHeadBeats>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.E4_1PW_laneHeadBeats>svg{color:var(--dsw-alias-brand-primary)}.E4_1PW_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_audioHead{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_audioHead>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary);flex:none}.E4_1PW_gutterLabelDim{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.E4_1PW_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_detachBtn svg{width:10px;height:10px}.E4_1PW_laneRow{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneRow:last-child{border-bottom:0}.E4_1PW_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.E4_1PW_laneName{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;overflow:hidden}.E4_1PW_contentWrap{flex:1;min-width:0;position:relative}.E4_1PW_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.E4_1PW_scroller::-webkit-scrollbar{height:8px}.E4_1PW_scroller::-webkit-scrollbar-track{background:0 0}.E4_1PW_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.E4_1PW_content{position:relative}.E4_1PW_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);cursor:ew-resize;touch-action:none;position:relative}.E4_1PW_tick{position:absolute;top:0;bottom:0}.E4_1PW_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.E4_1PW_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.E4_1PW_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.E4_1PW_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_canAdd{cursor:copy}.E4_1PW_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.E4_1PW_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.E4_1PW_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.E4_1PW_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.E4_1PW_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeDead{cursor:default;opacity:.35}.E4_1PW_edgeDead:hover{background:0 0}.E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_promptClip:hover .E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.E4_1PW_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.E4_1PW_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeWide{width:16px}.E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.E4_1PW_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.E4_1PW_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.E4_1PW_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.E4_1PW_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.E4_1PW_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.E4_1PW_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.E4_1PW_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.E4_1PW_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.E4_1PW_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.E4_1PW_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.E4_1PW_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.E4_1PW_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.E4_1PW_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.E4_1PW_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.E4_1PW_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.E4_1PW_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_promptClip:hover .E4_1PW_promptDelete{opacity:1}.E4_1PW_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_beatsAdd{cursor:crosshair}.E4_1PW_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.E4_1PW_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.E4_1PW_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.E4_1PW_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.E4_1PW_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_audioClip:active{cursor:grabbing}.E4_1PW_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.E4_1PW_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.E4_1PW_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.E4_1PW_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.E4_1PW_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_audioClip:hover .E4_1PW_audioClipDelete{display:flex}.E4_1PW_audioClipDelete svg{width:8px;height:8px}.E4_1PW_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.E4_1PW_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.E4_1PW_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_kfLane:last-child{border-bottom:0}.E4_1PW_laneHint{color:var(--dsw-alias-label-tertiary);pointer-events:none;align-items:center;padding-left:12px;font-size:10px;display:flex;position:absolute;inset:0}.E4_1PW_kfWrap{position:absolute;top:0;bottom:0}.E4_1PW_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.E4_1PW_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.E4_1PW_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.E4_1PW_kfMoving{transform:rotate(45deg)scale(1.25)}.E4_1PW_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.E4_1PW_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_kfWrap:hover .E4_1PW_kfDelete{opacity:1}.E4_1PW_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_playhead{z-index:40;pointer-events:none;position:absolute;top:0;bottom:0}.E4_1PW_playheadCap{border:1px solid var(--dsw-alias-border-l4);border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.E4_1PW_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.E4_1PW_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.E4_1PW_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.E4_1PW_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.E4_1PW_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.E4_1PW_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.E4_1PW_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.E4_1PW_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}";
-		const tagId$3 = "@melite-plugin/dsh-card-view/timeline.module.css@b5c69b6a";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
+		const css$2 = ".E4_1PW_root{user-select:none;display:flex}.E4_1PW_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.E4_1PW_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.E4_1PW_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.E4_1PW_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.E4_1PW_zoomBtn svg{width:14px;height:14px}.E4_1PW_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.E4_1PW_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.E4_1PW_laneHead,.E4_1PW_laneHeadBeats{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneHead>svg,.E4_1PW_laneHeadBeats>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.E4_1PW_laneHeadBeats>svg{color:var(--dsw-alias-brand-primary)}.E4_1PW_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_audioHead{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_audioHead>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary);flex:none}.E4_1PW_gutterLabelDim{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.E4_1PW_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_detachBtn svg{width:10px;height:10px}.E4_1PW_laneRow{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneRow:last-child{border-bottom:0}.E4_1PW_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.E4_1PW_laneName{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;overflow:hidden}.E4_1PW_contentWrap{flex:1;min-width:0;position:relative}.E4_1PW_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.E4_1PW_scroller::-webkit-scrollbar{height:8px}.E4_1PW_scroller::-webkit-scrollbar-track{background:0 0}.E4_1PW_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.E4_1PW_content{position:relative}.E4_1PW_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);cursor:ew-resize;touch-action:none;position:relative}.E4_1PW_tick{position:absolute;top:0;bottom:0}.E4_1PW_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.E4_1PW_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.E4_1PW_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.E4_1PW_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_canAdd{cursor:copy}.E4_1PW_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.E4_1PW_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.E4_1PW_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.E4_1PW_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.E4_1PW_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeDead{cursor:default;opacity:.35}.E4_1PW_edgeDead:hover{background:0 0}.E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_promptClip:hover .E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.E4_1PW_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.E4_1PW_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeWide{width:16px}.E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.E4_1PW_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.E4_1PW_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.E4_1PW_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.E4_1PW_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.E4_1PW_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.E4_1PW_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.E4_1PW_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.E4_1PW_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.E4_1PW_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.E4_1PW_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.E4_1PW_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.E4_1PW_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.E4_1PW_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.E4_1PW_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.E4_1PW_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.E4_1PW_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_promptClip:hover .E4_1PW_promptDelete{opacity:1}.E4_1PW_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_beatsAdd{cursor:crosshair}.E4_1PW_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.E4_1PW_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.E4_1PW_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.E4_1PW_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.E4_1PW_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_audioClip:active{cursor:grabbing}.E4_1PW_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.E4_1PW_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.E4_1PW_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.E4_1PW_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.E4_1PW_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_audioClip:hover .E4_1PW_audioClipDelete{display:flex}.E4_1PW_audioClipDelete svg{width:8px;height:8px}.E4_1PW_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.E4_1PW_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.E4_1PW_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_kfLane:last-child{border-bottom:0}.E4_1PW_laneHint{color:var(--dsw-alias-label-tertiary);pointer-events:none;align-items:center;padding-left:12px;font-size:10px;display:flex;position:absolute;inset:0}.E4_1PW_kfWrap{position:absolute;top:0;bottom:0}.E4_1PW_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.E4_1PW_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.E4_1PW_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.E4_1PW_kfMoving{transform:rotate(45deg)scale(1.25)}.E4_1PW_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.E4_1PW_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_kfWrap:hover .E4_1PW_kfDelete{opacity:1}.E4_1PW_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_playhead{z-index:40;pointer-events:none;position:absolute;top:0;bottom:0}.E4_1PW_playheadCap{border:1px solid var(--dsw-alias-border-l4);border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.E4_1PW_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.E4_1PW_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.E4_1PW_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.E4_1PW_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.E4_1PW_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.E4_1PW_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.E4_1PW_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.E4_1PW_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}";
+		const tagId$2 = "@melite-plugin/dsh-card-view/timeline.module.css@b5c69b6a";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
-			tag.dataset.pluginCss = tagId$3;
-			tag.textContent = css$3;
+			tag.dataset.pluginCss = tagId$2;
+			tag.textContent = css$2;
 			document.head.appendChild(tag);
 		}
 		var timeline_module_css_default = {
@@ -55240,13 +55835,13 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/shell.module.css.mjs
-		const css$2 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
-		const tagId$2 = "@melite-plugin/dsh-card-view/shell.module.css@62658dc6";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
+		const css$1 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
+		const tagId$1 = "@melite-plugin/dsh-card-view/shell.module.css@62658dc6";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
-			tag.dataset.pluginCss = tagId$2;
-			tag.textContent = css$2;
+			tag.dataset.pluginCss = tagId$1;
+			tag.textContent = css$1;
 			document.head.appendChild(tag);
 		}
 		var shell_module_css_default = {
@@ -55302,244 +55897,6 @@ void main() {
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {})
 				]
 			});
-		}
-		//#endregion
-		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$1 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{flex-direction:column;flex:none;gap:4px;padding-top:4px;display:flex}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}";
-		const tagId$1 = "@melite-plugin/dsh-card-view/preview.module.css@d7eb1a43";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
-			tag.dataset.pluginCss = tagId$1;
-			tag.textContent = css$1;
-			document.head.appendChild(tag);
-		}
-		var preview_module_css_default = {
-			"empty": "ClEuBa_empty",
-			"figureError": "ClEuBa_figureError",
-			"hero": "ClEuBa_hero",
-			"heroAudio": "ClEuBa_heroAudio",
-			"heroImg": "ClEuBa_heroImg",
-			"historyBlock": "ClEuBa_historyBlock",
-			"historyTile": "ClEuBa_historyTile",
-			"historyTileActive": "ClEuBa_historyTileActive",
-			"historyTitle": "ClEuBa_historyTitle",
-			"stageCanvas": "ClEuBa_stageCanvas",
-			"stagePreview": "ClEuBa_stagePreview",
-			"staleBadge": "ClEuBa_staleBadge",
-			"strip": "ClEuBa_strip",
-			"stripLink": "ClEuBa_stripLink",
-			"thumb": "ClEuBa_thumb",
-			"thumbRow": "ClEuBa_thumbRow"
-		};
-		//#endregion
-		//#region ../card-base/src/glb-stage.tsx
-		/**
-		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
-		* claim, hour 14 2026-09-13). Grown from img-to-mesh's GlbViewport
-		* (the raw-three substrate, verbatim) + the old @melite-plugin/3d
-		* Stage's multi-asset contract (assets/selection/per-asset errors —
-		* the four props anny's assembly actually uses; drop-placement
-		* gizmos and mixers stay unported until a consumer ports them, the
-		* promotion law).
-		*
-		* SUBSTRATE LAW (verbatim, the 2026-09-12 boot-crash lesson): RAW
-		* three.js — imperative scene in a useEffect, NO @react-three. r3f's
-		* bundled react-reconciler reads the seeded React 19 internals by
-		* minified single-letter fields and a version-skew throws at boot
-		* ("reading 'S' of undefined"). three is a pure leaf library: no
-		* React entanglement, mounts like any imperative canvas lib.
-		*
-		* THE PREVIEW-PORT INTERACTION LAW (the operator's catch, hour 14:
-		* "Anny and Trellis are close to the same, but the way they interact
-		* with the preview port is different"): ONE stage component serves
-		* both — selection + per-asset errors are the stage's own uniform
-		* interaction surface; studio chrome (anchors, badges, in-card
-		* actions like anny's HMR fit-body) docks AROUND it, never inside.
-		*/
-		init_three_module();
-		init_GLTFLoader();
-		init_DRACOLoader();
-		let draco = null;
-		function loader() {
-			if (draco === null) {
-				draco = new DRACOLoader();
-				draco.setDecoderPath("/draco/gltf/");
-			}
-			const l = new GLTFLoader();
-			l.setDRACOLoader(draco);
-			return l;
-		}
-		/** Normalize a loaded scene to a known viewing size — the
-		*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
-		*  dimension to targetHeight, feet on y=0. Mutates the root in place.
-		*  (Meshes arrive at wildly different scales; this is the ONE place
-		*  that reconciles them so every viewport frames identically.) */
-		function autoFitToHeight(root, targetHeight = 1.6) {
-			const box = new Box3().setFromObject(root);
-			const size = new Vector3();
-			box.getSize(size);
-			const largest = Math.max(size.x, size.y, size.z);
-			if (largest > 0) root.scale.multiplyScalar(targetHeight / largest);
-			root.updateMatrixWorld(true);
-			const box2 = new Box3().setFromObject(root);
-			const center = new Vector3();
-			box2.getCenter(center);
-			root.position.x -= center.x;
-			root.position.z -= center.z;
-			root.position.y -= box2.min.y;
-			root.updateMatrixWorld(true);
-			const box3 = new Box3().setFromObject(root);
-			const size3 = new Vector3();
-			box3.getSize(size3);
-			return {
-				box: box3,
-				height: size3.y
-			};
-		}
-		/** The imperative three scene — BUILT ON THE SHARED STAGE CORE
-		*  (stage3d.ts): the core owns renderer/camera/controls/rAF/resize/picking;
-		*  this adds the glb-stage's own light rig + floor grid and maps the core's
-		*  pick semantics onto the stage-asset id (group.userData.pick → clickSink,
-		*  empty click → clickSink(null)). A drag-orbit never reads as a click. */
-		function mountScene(canvas, onFail) {
-			let clickSink = () => {};
-			const stage = mountStage3D(canvas, {
-				fov: 40,
-				camera: [
-					2.2,
-					1.6,
-					2.6
-				],
-				target: [
-					0,
-					.8,
-					0
-				],
-				toneMapping: 0,
-				onContextFailure: onFail,
-				onEmptyClick: () => clickSink(null)
-			});
-			if (stage === null) return null;
-			const scene = stage.scene;
-			scene.add(new HemisphereLight(16777215, 9079434, 1.4));
-			const key = new DirectionalLight(16777215, 2.2);
-			key.position.set(3, 5, 2);
-			scene.add(key);
-			const fill = new DirectionalLight(16777215, .6);
-			fill.position.set(-3, 2, -2);
-			scene.add(fill);
-			const grid = new GridHelper(6, 24, 12303291, 14540253);
-			const gridMat = grid.material;
-			gridMat.transparent = true;
-			gridMat.opacity = .35;
-			scene.add(grid);
-			return {
-				scene,
-				setClickSink: (fn) => {
-					clickSink = fn;
-				},
-				dispose: () => {
-					grid.geometry.dispose();
-					stage.dispose();
-				}
-			};
-		}
-		/** The selection tint — emissive lift on the selected group's meshes
-		*  (the old Stage's highlight, the DOM-free way; lifted meshes read
-		*  at any theme because emissive adds, never replaces). */
-		function tint(root, on) {
-			root.traverse((o) => {
-				const m = o.material;
-				if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
-			});
-		}
-		/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
-		*  row, click to select, per-asset load failures reported upward).
-		*  No assets → the honest empty state; the canvas mounts when the
-		*  first asset lands. */
-		function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label }) {
-			const canvasRef = (0, react.useRef)(null);
-			const sceneRef = (0, react.useRef)(null);
-			const [loaded, setLoaded] = (0, react.useState)([]);
-			const [failed, setFailed] = (0, react.useState)(null);
-			const [ready, setReady] = (0, react.useState)(false);
-			const selectRef = (0, react.useRef)(onSelect);
-			selectRef.current = onSelect;
-			const key = assets.map((a) => a.id + "@" + a.url).join("|");
-			const errRef = (0, react.useRef)(onAssetError);
-			errRef.current = onAssetError;
-			(0, react.useEffect)(() => {
-				setLoaded([]);
-				setFailed(null);
-				setReady(false);
-				if (assets.length === 0) return;
-				let alive = true;
-				let pending = assets.length;
-				const settle = () => {
-					if (alive && pending === 0) setReady(true);
-				};
-				for (const a of assets) loader().load(a.url, (g) => {
-					if (!alive) return;
-					autoFitToHeight(g.scene);
-					const group = new Group();
-					group.userData.stageId = a.id;
-					group.userData.pick = { click: () => selectRef.current?.(a.id) };
-					group.add(g.scene);
-					if (a.scale !== void 0) group.scale.multiplyScalar(a.scale);
-					if (a.rotation !== void 0) group.rotation.set(a.rotation[0], a.rotation[1], a.rotation[2]);
-					if (a.position !== void 0) group.position.set(a.position[0], a.position[1], a.position[2]);
-					setLoaded((prev) => [...prev, {
-						asset: a,
-						group
-					}]);
-					errRef.current?.(a.id, null);
-					pending -= 1;
-					settle();
-				}, void 0, (e) => {
-					if (!alive) return;
-					errRef.current?.(a.id, e instanceof Error ? e.message : "glb load failed");
-					pending -= 1;
-					settle();
-				});
-				return () => {
-					alive = false;
-				};
-			}, [key]);
-			(0, react.useEffect)(() => {
-				if (!ready || loaded.length === 0) return;
-				const canvas = canvasRef.current;
-				const mounted = mountScene(canvas, (m) => setFailed(m));
-				if (mounted === null) return;
-				sceneRef.current = mounted;
-				mounted.setClickSink((id) => selectRef.current?.(id));
-				let x = 0;
-				for (const { asset, group } of loaded) {
-					mounted.scene.add(group);
-					if (asset.position === void 0) {
-						const box = new Box3().setFromObject(group);
-						const size = new Vector3();
-						box.getSize(size);
-						group.position.x += x + size.x / 2;
-						x += size.x + .4;
-					}
-				}
-				return () => {
-					sceneRef.current = null;
-					mounted.dispose();
-				};
-			}, [ready, loaded]);
-			(0, react.useEffect)(() => {
-				for (const { asset, group } of loaded) tint(group, asset.id === selectedId);
-			}, [loaded, selectedId]);
-			return (0, react.createElement)("div", {
-				className: preview_module_css_default.stagePreview,
-				"data-viewport": label ?? "glb-stage"
-			}, assets.length === 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, emptyHint ?? "Run the card to see the mesh") : failed !== null ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "viewport failed: " + failed) : !ready ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "loading mesh…") : (0, react.createElement)("canvas", {
-				ref: canvasRef,
-				className: preview_module_css_default.stageCanvas,
-				"data-testid": "stage-preview-glb"
-			}));
 		}
 		//#endregion
 		//#region ../../web-kit/formats/src/poserSkin.ts
@@ -55901,7 +56258,7 @@ void main() {
 			const flat = props.artifacts.length > 0 ? props.artifacts : (props.history ?? []).flat();
 			const history = props.history ?? [];
 			const keyOf = (entry) => entry.map((a) => a.url).join("|");
-			const [pickedKey, setPickedKey] = usePickCell(`${props.stageId}\u0000${props.artifacts.map((a) => a.url).join("|")}`);
+			const [pickedKey, setPickedKey] = usePickCell(props.runId !== void 0 && props.runId !== "" ? `${props.stageId}\u0000run:${props.runId}` : `${props.stageId}\u0000${props.artifacts.map((a) => a.url).join("|")}`);
 			const picked = pickedKey === null ? -1 : history.findIndex((e) => keyOf(e) === pickedKey);
 			const promote = (i) => {
 				const k = keyOf(history[i]);
@@ -55937,7 +56294,10 @@ void main() {
 				type: "button",
 				className: preview_module_css_default.staleBadge,
 				"data-testid": "history-stale-badge",
-				onClick: props.onReturn,
+				onClick: (e) => {
+					e.stopPropagation();
+					props.onReturn();
+				},
 				title: "Return to the current generation"
 			}, "Not current — earlier generation", props.note === void 0 ? null : ` · differs: ${props.note}`, " · Return to current");
 		}
@@ -55974,18 +56334,37 @@ void main() {
 				className: preview_module_css_default.historyBlock,
 				"data-testid": testid
 			}, (0, react.createElement)("span", { className: preview_module_css_default.historyTitle }, "History"), (0, react.createElement)("div", { className: preview_module_css_default.thumbRow }, history.map((entry, i) => (0, react.createElement)("button", {
-				key: entry[0]?.url ?? String(i),
+				key: String(i) + "|" + String(entry[0]?.url ?? ""),
 				type: "button",
 				className: cn(preview_module_css_default.historyTile, i === picked ? preview_module_css_default.historyTileActive : void 0),
 				"aria-pressed": i === picked,
 				title: entry.map((a) => a.name).join(", ") + (notes[i] ? ` (differs: ${notes[i]})` : "") + (i === picked ? " (viewing — click to return to current)" : ""),
-				onClick: () => {
+				onClick: (e) => {
+					e.stopPropagation();
 					promote(i);
 				}
-			}, entry.slice(0, 1).map((a) => (0, react.createElement)(HistoryThumb, {
-				key: a.url,
+			}, entry.slice(0, 1).map((a, j) => (0, react.createElement)(HistoryThumb, {
+				key: String(i) + "|" + String(j) + "|" + a.url,
 				a
 			}))))));
+		}
+		/** THE SEAT-SAFE NEW-TAB LINK (the seat-bubble law, ledger #45):
+		*  rest links ride INSIDE the walk-opening drilldown seat — the
+		*  link consumes its own click so opening the tab never also opens
+		*  the walk (the thumb/badge fix's sibling; one wrapper, both
+		*  presenters — the platform owns the link, we own the wrap). */
+		function seatSafeLink(a, i = 0) {
+			return (0, react.createElement)("a", {
+				key: String(i) + "|" + a.url + a.name,
+				className: preview_module_css_default.stripLink,
+				href: a.url,
+				target: "_blank",
+				rel: "noreferrer",
+				title: a.name,
+				onClick: (e) => {
+					e.stopPropagation();
+				}
+			}, a.name);
 		}
 		/** THE VIDEO PREVIEW — one hero film, one native player (the kit's
 		*  FilmPlayer law: native <video controls>; no library, no kit). The
@@ -56008,14 +56387,7 @@ void main() {
 				key: hero.url,
 				src: hero.url,
 				"data-testid": "stage-preview-video-hero"
-			}), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map((a) => (0, react.createElement)("a", {
-				key: a.url + a.name,
-				className: preview_module_css_default.stripLink,
-				href: a.url,
-				target: "_blank",
-				rel: "noreferrer",
-				title: a.name
-			}, a.name))) : null, HistoryStrip(props, promote, "stage-output-history", picked));
+			}), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map(seatSafeLink)) : null, HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		/** THE IMAGE PREVIEW — the latest render hero (native <img>), the
 		*  active set's thumbs beneath (the CURRENT run's gallery, or the
@@ -56025,20 +56397,36 @@ void main() {
 		*  click one to view it in the hero. Same chrome, same law. */
 		function ImageStagePreview(props) {
 			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
+			const [loadedUrl, setLoadedUrl] = (0, react.useState)(null);
+			const heroUrl = hero === void 0 ? null : hero.url;
+			const seatUrl = loadedUrl ?? heroUrl;
+			const incoming = heroUrl !== null && seatUrl !== heroUrl ? heroUrl : null;
 			return (0, react.createElement)("div", {
 				className: cn(preview_module_css_default.stagePreview),
 				"data-testid": "stage-preview-image"
 			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
 				note,
 				onReturn: returnToCurrent
-			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the image lands here" : "No render yet — run lands the image here") : (0, react.createElement)("img", {
+			}) : null, seatUrl !== null ? (0, react.createElement)("img", {
 				className: preview_module_css_default.heroImg,
-				key: hero.url,
-				src: hero.url,
-				alt: hero.name,
-				"data-testid": "stage-preview-image-hero"
-			}), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.thumbRow }, rest.map((a) => (0, react.createElement)("img", {
-				key: a.url,
+				key: seatUrl,
+				src: seatUrl,
+				alt: hero === void 0 ? "" : hero.name,
+				"data-testid": "stage-preview-image-hero",
+				onLoad: () => {
+					setLoadedUrl(seatUrl);
+				}
+			}) : (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the image lands here" : "No render yet — run lands the image here"), incoming !== null ? (0, react.createElement)("img", {
+				key: "incoming-" + incoming,
+				className: preview_module_css_default.heroIncoming,
+				src: incoming,
+				alt: "",
+				"data-testid": "stage-preview-image-hero",
+				onLoad: () => {
+					setLoadedUrl(incoming);
+				}
+			}) : null, rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.thumbRow }, rest.map((a, i) => (0, react.createElement)("img", {
+				key: String(i) + "|" + a.url,
 				className: preview_module_css_default.thumb,
 				src: a.url,
 				alt: a.name,
@@ -56062,14 +56450,7 @@ void main() {
 				key: hero.url,
 				src: hero.url,
 				"data-testid": "stage-preview-audio-hero"
-			}), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map((a) => (0, react.createElement)("a", {
-				key: a.url + a.name,
-				className: preview_module_css_default.stripLink,
-				href: a.url,
-				target: "_blank",
-				rel: "noreferrer",
-				title: a.name
-			}, a.name))) : null, HistoryStrip(props, promote, "stage-output-history", picked));
+			}), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map(seatSafeLink)) : null, HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		/** THE MESH PREVIEW — the seam's adapter onto the raw-three
 		*  multi-asset stage (GlbStagePreview, the substrate law: NO
@@ -56144,12 +56525,64 @@ void main() {
 		*  dump. Params left, Run right; the patch carries only CHANGED keys
 		*  (coerced once, at patch time — the editPatch law); then the run
 		*  gesture (patch lands in the domain BEFORE the run reads it). */
+		/**
+		* THE SCROLL LOCK (2026-09-21, the operator's law: 'whenever
+		* progress updates, it jerks the view up' — every per-tick layout
+		* change moved the scroller WITHOUT the user: img swaps, textarea
+		* autogrow, seat churn, collapse-clamps). The scroller's position
+		* is USER-OWNED: wheel/touch/keys record it; a layout effect after
+		* EVERY update restores it when anything else moved it. The law
+		* kills the whole mechanism class at the container, not per child.
+		*/
+		function ScrollLockedDetail(props) {
+			const elRef = (0, react.useRef)(null);
+			const userTop = (0, react.useRef)(null);
+			const userOwned = (0, react.useRef)(false);
+			const bind = (0, react.useCallback)((el) => {
+				elRef.current = el;
+				if (el === null) {
+					userTop.current = null;
+					return;
+				}
+				const own = () => {
+					userOwned.current = true;
+				};
+				el.addEventListener("wheel", own, {
+					passive: true,
+					capture: true
+				});
+				el.addEventListener("touchmove", own, {
+					passive: true,
+					capture: true
+				});
+				el.addEventListener("keydown", own);
+				el.addEventListener("scroll", () => {
+					if (userOwned.current) {
+						userOwned.current = false;
+						userTop.current = el.scrollTop;
+						return;
+					}
+					if (userTop.current !== null && el.scrollTop !== userTop.current) {
+						const held = userTop.current;
+						requestAnimationFrame(() => {
+							el.scrollTop = held;
+						});
+					}
+				}, { passive: true });
+			}, []);
+			return (0, react.createElement)("div", {
+				className: card_module_css_default$1.zoomDetail,
+				...props.testid !== void 0 ? { "data-testid": props.testid } : {},
+				ref: bind
+			}, props.children);
+		}
 		function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }) {
 			String(stage.title ?? stage.card ?? stage.id);
 			const held = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
 			const [spec, setSpec] = (0, react.useState)(null);
 			const [user, setUser] = (0, react.useState)({});
 			const [drillItem, setDrillItem] = (0, react.useState)(null);
+			const [drillWalk, setDrillWalk] = (0, react.useState)([]);
 			const filmSeamRef = (0, react.useRef)(createFilmSeam());
 			const [enhancing, setEnhancing] = (0, react.useState)(false);
 			const [enhanceNote, setEnhanceNote] = (0, react.useState)(null);
@@ -56234,8 +56667,8 @@ void main() {
 				}));
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
-				/* v8 ignore next 4 -- the tri-state atoms unset only from image/file shapes; these atoms are never image/file (probe 2026-09-19) */
-				if (shape === "image" || shape === "file") patchStageParams(bench.draftId, stage.id, v === "" ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
+				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
+				if (shape === "image" || shape === "file" || shape === "mesh") patchStageParams(bench.draftId, stage.id, v === "" ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
 					setError(e instanceof Error ? e.message : "slot write failed");
 				});
 			}, [
@@ -56253,8 +56686,8 @@ void main() {
 				});
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
-				/* v8 ignore next 4 -- the tri-state atoms unset only from image/file shapes; these atoms are never image/file (probe 2026-09-19) */
-				if (shape === "image" || shape === "file") patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev).catch((e) => {
+				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
+				if (shape === "image" || shape === "file" || shape === "mesh") patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev).catch((e) => {
 					setError(e instanceof Error ? e.message : "slot write failed");
 				});
 			}, [
@@ -56406,7 +56839,7 @@ void main() {
 						onResync?.();
 					}
 				};
-				return (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, (0, react.createElement)("p", { className: card_module_css_default$1.groupNote }, "A compound of " + String(members.length) + " stages. Ungroup restores them at this position."), (0, react.createElement)("ol", { className: card_module_css_default$1.memberList }, members.map((m, i) => (0, react.createElement)("li", {
+				return (0, react.createElement)(ScrollLockedDetail, null, (0, react.createElement)("p", { className: card_module_css_default$1.groupNote }, "A compound of " + String(members.length) + " stages. Ungroup restores them at this position."), (0, react.createElement)("ol", { className: card_module_css_default$1.memberList }, members.map((m, i) => (0, react.createElement)("li", {
 					key: m.id,
 					className: card_module_css_default$1.memberRow
 				}, (0, react.createElement)("span", { className: card_module_css_default$1.memberIdx }, String(i + 1) + "."), (0, react.createElement)("span", { className: card_module_css_default$1.memberName }, String(m.title ?? m.card ?? m.id))))), (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.runError }, error) : null, (0, react.createElement)("button", {
@@ -56418,9 +56851,23 @@ void main() {
 					}
 				}, removing ? "ungrouping…" : "Ungroup")));
 			}
+			const stageArtifacts = () => {
+				const rowArtifacts = previewArtifactsFor(stage);
+				if (rowArtifacts.length > 0) return rowArtifacts;
+				const head = (Array.isArray(stage.history) ? stage.history : [])[0];
+				return head !== void 0 ? previewArtifactsFor({ result: head }) : [];
+			};
+			const drillItemOf = (a, kind) => ({
+				kind: kind === "mesh" ? "model" : kind,
+				url: a.url,
+				/* v8 ignore next 1 -- split('/').pop() is never undefined on a non-empty url (probe 2026-09-19) */
+				file: a.name !== "" && a.name !== "output" ? a.name : a.url.split("/").pop() ?? a.url,
+				head: String(stage.title ?? stage.card ?? stage.id),
+				time: ""
+			});
 			const stagePreview = () => {
 				if (renderPreview === void 0) return null;
-				const artifacts = previewArtifactsFor(stage);
+				const artifacts = stageArtifacts();
 				const heroUrl = artifacts[0]?.url ?? "";
 				const kind = primaryKindFor(spec, heroUrl);
 				if (kind === null) return null;
@@ -56438,6 +56885,7 @@ void main() {
 					artifacts,
 					runStatus: typeof stage.runStatus === "string" ? stage.runStatus : "",
 					stageId: stage.id,
+					runId: String(stage["result"]?.run_id ?? ""),
 					...history.length > 0 ? { history } : {},
 					...historyNotes !== void 0 ? { historyNotes } : {},
 					...spec?.preview?.historyStrip === false ? { historyStrip: false } : {},
@@ -56468,11 +56916,8 @@ void main() {
 				"aria-label": "progress percent"
 			}, pct + "% (" + String(progress.value) + "/" + String(progress.max) + ")") : null);
 			const seamFilmUrl = spec?.preview?.timeline === true ? previewArtifactsFor(stage).find((a) => primaryKindFor(spec, a.url) === "video")?.url ?? null : null;
-			const genericDetail = () => (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, webhookFeed, (0, react.createElement)(StudioShell, {
-				bottom: seamFilmUrl !== null ? (0, react.createElement)("div", {
-					className: card_module_css_default$1.zoomDetail,
-					"data-testid": "timeline-seam-bottom"
-				}, (0, react.createElement)(FilmSeamBar, { seam: filmSeamRef.current })) : void 0,
+			const genericDetail = () => (0, react.createElement)(ScrollLockedDetail, null, webhookFeed, (0, react.createElement)(StudioShell, {
+				bottom: seamFilmUrl !== null ? (0, react.createElement)(ScrollLockedDetail, { testid: "timeline-seam-bottom" }, (0, react.createElement)(FilmSeamBar, { seam: filmSeamRef.current })) : void 0,
 				params: (0, react.createElement)("div", { className: card_module_css_default$1.paramsCol }, enhanceNote !== null ? (0, react.createElement)("div", {
 					className: card_module_css_default$1.enhanceRow,
 					"data-testid": "enhance-note"
@@ -56497,18 +56942,20 @@ void main() {
 					tabIndex: 0,
 					"aria-label": "Open media drilldown",
 					onClick: () => {
-						const hero = previewArtifactsFor(stage)[0];
+						const artifacts = stageArtifacts();
+						const hero = artifacts[0];
 						if (hero === void 0) return;
 						const kind = primaryKindFor(spec, hero.url);
 						if (kind === null) return;
-						setDrillItem({
-							kind: kind === "mesh" ? "model" : kind,
-							url: hero.url,
-							/* v8 ignore next 1 -- split('/').pop() is never undefined on a non-empty url (probe 2026-09-19) */
-							file: hero.name !== "" && hero.name !== "output" ? hero.name : hero.url.split("/").pop() ?? hero.url,
-							head: String(stage.title ?? stage.card ?? stage.id),
-							time: ""
-						});
+						const past = (Array.isArray(stage["history"]) ? stage["history"] : []).flatMap((e) => previewArtifactsFor({ result: e }));
+						const seen = /* @__PURE__ */ new Set();
+						const walk = [...artifacts, ...past].filter((a) => {
+							if (seen.has(a.url)) return false;
+							seen.add(a.url);
+							return true;
+						}).map((a) => drillItemOf(a, kind));
+						setDrillWalk(walk);
+						setDrillItem(drillItemOf(hero, kind));
 					},
 					onKeyDown: (e) => {
 						const ke = e;
@@ -56521,6 +56968,11 @@ void main() {
 					item: drillItem,
 					onClose: () => {
 						setDrillItem(null);
+						setDrillWalk([]);
+					},
+					siblings: drillWalk,
+					onNavigate: (next) => {
+						setDrillItem(next);
 					}
 				}) : null)
 			}));
@@ -56970,6 +57422,7 @@ void main() {
 				"aria-label": "Add a card",
 				onClick: onAddCard
 			}, (0, react.createElement)("span", { className: card_module_css_default$1.tilePreview + " " + card_module_css_default$1.addFace }, "+"), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, "Add a card"))))), open !== null ? (0, react.createElement)(CardZoomOverlay, {
+				key: "zoom",
 				stage: open,
 				bench: live,
 				startError,
@@ -57024,7 +57477,7 @@ void main() {
 		*/
 		function DraftView({ value, running, onRun, onStop, onBack, onPatchParams, renderStageView, renderPreview, runId, bindRun }) {
 			const found = value.stages.find((s) => s.id === value.stageId) ?? null;
-			if (found === null) return (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, (0, react.createElement)("p", { className: card_module_css_default$1.groupNote }, "Stage " + value.stageId + " is no longer on draft " + value.draftId + "."), (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, (0, react.createElement)("button", {
+			if (found === null) return (0, react.createElement)(ScrollLockedDetail, null, (0, react.createElement)("p", { className: card_module_css_default$1.groupNote }, "Stage " + value.stageId + " is no longer on draft " + value.draftId + "."), (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, (0, react.createElement)("button", {
 				className: card_module_css_default$1.back,
 				type: "button",
 				onClick: onBack
@@ -57403,11 +57856,17 @@ void main() {
 				if (openResource !== void 0) openResource(benchAddress);
 			}, [openResource, benchAddress]);
 			if (snapshot === void 0) return (0, react.createElement)("p", { className: card_module_css_default$1.missing }, "cards resource hook unavailable");
-			if (snapshot.status === "loading" || snapshot.status === "none") return (0, react.createElement)("p", { className: card_module_css_default$1.loading }, "loading " + address + "…");
-			if (snapshot.status === "failed") return (0, react.createElement)("p", { className: card_module_css_default$1.failed }, snapshot.failure?.message ?? "cards resource failed");
 			const value = snapshot.value;
-			if (value === void 0) return (0, react.createElement)("p", { className: card_module_css_default$1.failed }, "cards resource gave no value");
-			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, localRunError !== null ? (0, react.createElement)(RunRescue, {
+			const failedLine = snapshot.status === "failed" && value !== void 0 ? (0, react.createElement)("p", {
+				className: card_module_css_default$1.failed,
+				"data-testid": "cards-refresh-failed"
+			}, snapshot.failure?.message ?? "cards resource failed — showing the last good state") : null;
+			if (value === void 0) {
+				if (snapshot.status === "live") return (0, react.createElement)("p", { className: card_module_css_default$1.failed }, "cards resource gave no value");
+				if (snapshot.status === "failed") return (0, react.createElement)("p", { className: card_module_css_default$1.failed }, snapshot.failure?.message ?? "cards resource failed");
+				return (0, react.createElement)("p", { className: card_module_css_default$1.loading }, "loading " + address + "…");
+			}
+			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, failedLine, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, localRunError !== null ? (0, react.createElement)(RunRescue, {
 				error: localRunError,
 				stages: value.stages,
 				onRun
@@ -57426,7 +57885,7 @@ void main() {
 				runId: lastRunId,
 				refreshTick: benchTick,
 				startError: localRunError
-			})) : value.kind === "draft" ? (0, react.createElement)(react.Fragment, null, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, localRunError !== null ? (0, react.createElement)(RunRescue, {
+			})) : value.kind === "draft" ? (0, react.createElement)(react.Fragment, null, failedLine, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, localRunError !== null ? (0, react.createElement)(RunRescue, {
 				error: localRunError,
 				stages: value.stages,
 				onRun: onRunDraftStage
@@ -57442,13 +57901,13 @@ void main() {
 				renderStageView,
 				renderPreview,
 				runId: lastRunId
-			})) : (0, react.createElement)(RunView, {
+			})) : (0, react.createElement)(react.Fragment, null, failedLine, (0, react.createElement)(RunView, {
 				run: value,
 				sessionKey: benchKey,
 				onBack: openResource !== void 0 ? onBack : void 0,
 				onRestored: onBack,
 				onStop
-			});
+			}));
 		}
 		//#endregion
 		//#region src/client/index.ts

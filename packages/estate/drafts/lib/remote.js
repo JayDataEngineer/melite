@@ -264,7 +264,7 @@ let DraftsRemoteService = (() => {
          *  stages/:sid died with the app and stroke L left the client door
          *  a throwing stub). Semantics VERBATIM from the old door
          *  (hDraftStagePatch, packages/gateway/doors drafts.ts, probed
-         *  editor_runs.py 818-1204): admission on the fixed key set
+         *  editor_runs.py): admission on the fixed key set
          *  (params | result | runStatus | inputs | inputOutputs — unknown
          *  keys refuse with the door's voice), params merge PER-KEY into
          *  the stage's existing params (never replace), the domain write
@@ -362,21 +362,54 @@ let DraftsRemoteService = (() => {
                 // client diffs it against the live params for the chip.
                 const prev = stage["result"];
                 const next = patch["result"];
-                if (resultOutputUrls(prev).length > 0 && !sameResultOutputs(prev, next)) {
-                    const urls = resultOutputUrls(prev);
-                    const entry = {
-                        ...prev,
-                        ...(stage["resultParams"] === undefined ? {} : { params: stage["resultParams"] }),
-                    };
+                // THE TRAIL IS ONE LIST, HEAD = CURRENT (operator 2026-09-21,
+                // the lost-gen disease: "when I make a new gen it doesn't
+                // appear in history — clicking a history item overwrites the
+                // preview with no way to recover the most recent gen"). Two
+                // archives ride the SAME write, oldest-first so the order in
+                // the list is append-stable:
+                //   1. SUPERSEDE — a cleared/overwritten result that carried
+                //      outputs is archived (the stroke-40 law, unchanged).
+                //   2. LANDING — the incoming result itself, when it CARRIES
+                //      outputs, enters the trail at its own landing. The old
+                //      supersede-only law kept the CURRENT generation outside
+                //      history (it lived only in the result slot, one
+                //      view-pick away from unreachable). With the landing
+                //      archived, history[0] is ALWAYS the newest gen — no
+                //      pick, overwrite, or crash can orphan it. Live mid-run
+                //      patches ({run_id, progress} — no urls) archive
+                //      nothing, and the url-set dedup makes re-landings of
+                //      the same outputs idempotent.
+                const archiveInto = (urls, entry) => {
                     const hist = Array.isArray(stage["history"]) ? [...stage["history"]] : [];
-                    const alreadyHead = hist.some((e) => sameUrlSet(resultOutputUrls(e), urls));
-                    if (!alreadyHead) {
+                    const already = hist.some((e) => sameUrlSet(resultOutputUrls(e), urls));
+                    if (!already) {
                         hist.unshift(entry);
                         stage["history"] = hist.slice(0, 12);
                     }
+                };
+                // the params arm rides only when the snapshot NAMES something —
+                // an undefined or empty {} snapshot carries no key (the chip
+                // diffs against live params; an empty diff is no chip at all)
+                const paramsArm = (snapshot) => snapshot !== undefined && typeof snapshot === "object" && !Array.isArray(snapshot)
+                    && Object.keys(snapshot).length > 0
+                    ? { params: snapshot }
+                    : {};
+                if (resultOutputUrls(prev).length > 0 && !sameResultOutputs(prev, next)) {
+                    archiveInto(resultOutputUrls(prev), {
+                        ...prev,
+                        ...paramsArm(stage["resultParams"]),
+                    });
                 }
                 stage["result"] = patch["result"];
                 stage["resultParams"] = stage["params"];
+                const landingUrls = resultOutputUrls(next);
+                if (landingUrls.length > 0) {
+                    archiveInto(landingUrls, {
+                        ...next,
+                        ...paramsArm(stage["resultParams"]),
+                    });
+                }
             }
             if ("runStatus" in patch)
                 stage["runStatus"] = patch["runStatus"];

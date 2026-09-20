@@ -25,7 +25,7 @@ const DraftRecordSchema = z.object({
     updated_at: z.number().int(),
     doc: DraftDocSchema,
 });
-/** The draft-id law (editor_runs.py 818-822 heritage): 1..96 chars,
+/** The draft-id law (editor_runs.818-822 heritage): 1..96 chars,
  *  [A-Za-z0-9_-] ASCII only, path-safe. THE SSOT — the queue's
  *  submit gate and the drafts remote both test this one address
  *  (the queue re-exports it; gateway-core's copy is dead). */

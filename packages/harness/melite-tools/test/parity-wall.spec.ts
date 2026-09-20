@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { loadCardDefs, declaredDefaults, getModel } from "@melite/comfyui-cordis";
 
 const defs = await loadCardDefs();
-assert.ok(defs.size >= 16, `the registry serves every card (got ${defs.size})`);
+assert.ok(defs.size >= 15, `the registry serves every card (got ${defs.size})`); // 15: the voice-lock card died 2026-09-21 (design moved into the tts card's mods)
 
 describe("THE PARITY WALL (walked defaults ≡ served model_defaults, every card)", () => {
   for (const [id, def] of [...defs.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) {

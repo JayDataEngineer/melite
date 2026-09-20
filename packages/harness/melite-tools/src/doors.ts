@@ -41,7 +41,7 @@ import { makeEstateRequest, type EstateMethod } from './estate.ts'
 // the same seam every other Layer-A→B call resolves through.
 import { resolveEngineBaseUrl, sdkClient } from '@melite/comfyui-cordis'
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
-import { agentFormDoc } from '@melite/engine-agent'
+import { agentFormDoc, agentCardFormDoc } from '@melite/engine-agent'
 import { craftFormDoc } from '@melite/engine-craft'
 // the SUBPATH import (not the bare barrel): formDoc's graph is
 // schemastery-only — the barrel pulls mcp-engine's dsh-llm/dsh-tools
@@ -404,8 +404,17 @@ export function apply(c: CtxView, config: Config = {}): void {
           const data = typeof body?.data === 'string' ? body.data : ''
           if (filename === '' || data === '') return fail(400, 'uploads: filename + data are required')
           if (!SEG.test(filename)) return fail(400, 'uploads: bad filename')
-          const b64 = /^data:(image\/(?:png|jpeg|webp));base64,(.+)$/.exec(data)
-          if (b64 === null) return fail(400, 'uploads: only png / jpeg / webp upload')
+          // THE WHITELIST (the door's own law): the image triad, plus
+          // the mesh wire type's pair (2026-09-21, primitive ③) —
+          // model/gltf-binary, or octet-stream ONLY when the filename
+          // carries the .glb/.gltf extension (browsers disagree on
+          // the MIME; the extension closes the pair, and the whitelist
+          // stays closed to every other binary).
+          const meshName = /\.glb$/i.test(filename) || /\.gltf$/i.test(filename)
+          const b64 = /^data:(image\/(?:png|jpeg|webp)|model\/gltf-binary|application\/octet-stream);base64,(.+)$/.exec(data)
+          if (b64 === null || (b64[1] === 'application/octet-stream' && !meshName)) {
+            return fail(400, 'uploads: only png / jpeg / webp / glb upload')
+          }
           const bytes = Buffer.from(b64[2]!, 'base64')
           const dir = await inputDir()
           const fs = await import('node:fs/promises')
@@ -567,21 +576,25 @@ export function apply(c: CtxView, config: Config = {}): void {
             // (the seated MCP servers) and the skill index — LIVE,
             // never static.
             const servers = [...seatedMcpServers(c)]
+            const skillCensus = () => {
+              const idx = buildSkillIndex(disclosureRoot()) as { skills: Array<{ id: string; name: string }> }
+              return idx.skills.map((r) => ({ value: r.id, label: r.name }))
+            }
+            const mcpCensus = servers.map((v) => ({ value: v, label: v }))
             const engineDocs = new Map<string, () => Record<string, unknown>>([
-              ['agent', () => {
-                const idx = buildSkillIndex(disclosureRoot()) as { skills: Array<{ id: string; name: string }> }
-                return agentFormDoc({
-                  mcps: servers.map((v) => ({ value: v, label: v })),
-                  skills: idx.skills.map((r) => ({ value: r.id, label: r.name })),
-                })
-              }],
+              ['agent', () => agentFormDoc({ mcps: mcpCensus, skills: skillCensus() })],
               ['craft', () => craftFormDoc()],
             ])
-            // THE MCP CARD (the instance rows — one descriptor row
-            // per seated server, §1.5): mcp:<server> serves its OWN
-            // doc with its OWN live tool census; the Model rail
-            // (families) switches instances and the client's
-            // model-key refetch re-specs to the new server's tools.
+            // THE GENERIC MCP CARD (operator 2026-09-21: ALWAYS spawn
+            // a standalone DSH subagent — the configuration is the
+            // MCP tools to provide, the inputs, the prompts): the
+            // bare key 'mcp' serves the AGENT card doc; each
+            // mcp:<server> serves its OWN direct-call doc with its
+            // OWN live census (the lane flow-composed rows and the
+            // spawned subagent's own tools ride).
+            if (servers.length > 0) {
+              engineDocs.set('mcp', () => agentCardFormDoc({ mcps: mcpCensus, skills: skillCensus() }))
+            }
             for (const server of servers) {
               engineDocs.set(`mcp:${server}`, () => mcpFormDoc({
                 server,

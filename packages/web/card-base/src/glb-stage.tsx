@@ -145,13 +145,52 @@ function tint(root: THREE.Object3D, on: boolean): void {
   })
 }
 
+/** THE STAGE'S LAYER MODEL (primitive ②, first slice 2026-09-21,
+ *  skeleton second): shaded vs wireframe + the skeleton overlay.
+ *  CALLER state — studios persist layer choices exactly like
+ *  selection: `layers` reads, `onLayers` writes. Omit both for the
+ *  plain shaded stage (no chips, no new chrome); omit only
+ *  `onLayers` for a read-only layer (no write channel, no chips).
+ *  Shaded/Wireframe are the surface MODE; skeleton is an OVERLAY
+ *  (it composes with either — weights joins it later). */
+export interface StageLayers {
+  wireframe: boolean
+  skeleton: boolean
+}
+
+/** Flip the wireframe flag on every wireframe-capable material under
+ *  the root (mesh materials; points/lines have no such flag and are
+ *  left alone). Idempotent — loads mint fresh materials, so no
+ *  original-flag bookkeeping is owed. */
+export function applyWireframe(root: THREE.Object3D, on: boolean): void {
+  root.traverse((o) => {
+    const m = (o as THREE.Mesh).material
+    if (m !== undefined && m !== null && 'wireframe' in m) {
+      (m as THREE.MeshStandardMaterial).wireframe = on
+    }
+  })
+}
+
+/** A bone-visualization overlay for one loaded group — null when
+ *  the group carries no bones (unrigged meshes seat no overlay, the
+ *  honest absence). The caller adds the helper to the scene and owns
+ *  its visibility + disposal. */
+export function skeletonHelperFor(group: THREE.Group): THREE.SkeletonHelper | null {
+  const bones: THREE.Bone[] = []
+  group.traverse((o) => {
+    if ((o as THREE.Bone).isBone === true) bones.push(o as THREE.Bone)
+  })
+  if (bones.length === 0) return null
+  return new THREE.SkeletonHelper(group)
+}
+
 interface LoadedAsset { asset: StageAsset; group: THREE.Group }
 
 /** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
  *  row, click to select, per-asset load failures reported upward).
  *  No assets → the honest empty state; the canvas mounts when the
  *  first asset lands. */
-export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label }: {
+export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label, layers, onLayers }: {
   assets: readonly StageAsset[]
   /** selection is CALLER state (studios persist selections) */
   selectedId?: string | null
@@ -163,9 +202,18 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
   /** the empty state's line (default: the run hint) */
   emptyHint?: string
   label?: string
+  /** the layer model (primitive ②): reads the caller's layer state;
+   *  the wireframe flag applies to every loaded asset. Omit for
+   *  plain shaded (the default face). */
+  layers?: StageLayers
+  /** the layer write channel: when provided with assets, the
+   *  Shaded/Wireframe chips render and vote here. Omit for no
+   *  layer chrome (read-only or plain). */
+  onLayers?: (layers: StageLayers) => void
 }): ReturnType<typeof h> {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const sceneRef = useRef<{ setClickSink: (fn: (id: string | null) => void) => void } | null>(null)
+  const skeletonHelpers = useRef<THREE.SkeletonHelper[]>([])
   const [loaded, setLoaded] = useState<LoadedAsset[]>([])
   const [failed, setFailed] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
@@ -238,7 +286,27 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
         x += size.x + 0.4
       }
     }
+    // THE SKELETON OVERLAYS (primitive ②, second slice): one helper
+    // per rigged group, visibility owned by the caller flag (the
+    // visibility effect below corrects it in the same commit; the
+    // flag never remounts the scene — GPU contexts are not churn).
+    // Unrigged groups seat no helper (the honest absence).
+    const helpers: THREE.SkeletonHelper[] = []
+    for (const { group } of loaded) {
+      const helper = skeletonHelperFor(group)
+      if (helper !== null) {
+        helper.visible = false
+        mounted.scene.add(helper)
+        helpers.push(helper)
+      }
+    }
+    skeletonHelpers.current = helpers
     return () => {
+      for (const helper of skeletonHelpers.current) {
+        mounted.scene.remove(helper)
+        helper.dispose()
+      }
+      skeletonHelpers.current = []
       sceneRef.current = null
       mounted.dispose()
     }
@@ -247,6 +315,22 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
   useEffect(() => {
     for (const { asset, group } of loaded) tint(group, asset.id === selectedId)
   }, [loaded, selectedId])
+  // THE LAYER ARM (primitive ②): the caller's wireframe flag rides
+  // every loaded asset, re-applied when the load set moves (fresh
+  // materials mint unflagged — the flag is caller state, the walk
+  // re-asserts it).
+  const wireframe = layers?.wireframe ?? false
+  useEffect(() => {
+    for (const { group } of loaded) applyWireframe(group, wireframe)
+  }, [loaded, wireframe])
+  // THE SKELETON FLAG (primitive ②, second slice): the caller's
+  // overlay flag rides the mounted helpers, re-asserted when the
+  // load set moves (fresh helpers mint hidden — the flag is caller
+  // state, this walk re-asserts it, same commit as the mount).
+  const skeleton = layers?.skeleton ?? false
+  useEffect(() => {
+    for (const helper of skeletonHelpers.current) helper.visible = skeleton
+  }, [loaded, skeleton])
   return h('div', { className: s.stagePreview, 'data-viewport': label ?? 'glb-stage' },
     assets.length === 0
       ? h('div', { className: s.empty }, emptyHint ?? 'Run the card to see the mesh')
@@ -255,5 +339,23 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
         : !ready
           ? h('div', { className: s.empty }, 'loading mesh…')
           : h('canvas', { ref: canvasRef, className: s.stageCanvas, 'data-testid': 'stage-preview-glb' }),
+    onLayers !== undefined && assets.length > 0
+      ? h('div', { className: s.layerRow, role: 'group', 'aria-label': 'mesh layers' },
+          h('button', {
+            type: 'button', className: s.layerChip,
+            'aria-pressed': !wireframe,
+            onClick: () => { onLayers({ wireframe: false, skeleton }) },
+          }, 'Shaded'),
+          h('button', {
+            type: 'button', className: s.layerChip,
+            'aria-pressed': wireframe,
+            onClick: () => { onLayers({ wireframe: true, skeleton }) },
+          }, 'Wireframe'),
+          h('button', {
+            type: 'button', className: s.layerChip,
+            'aria-pressed': skeleton,
+            onClick: () => { onLayers({ wireframe, skeleton: !skeleton }) },
+          }, 'Skeleton'))
+      : null,
   )
 }

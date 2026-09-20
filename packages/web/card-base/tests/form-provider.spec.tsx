@@ -15,6 +15,7 @@ import { bindEstateRemote, unbindEstateRemote } from '../src/estate-remote.ts'
 import { fetchMediaLibrary } from '../src/media-library.ts'
 
 import { InputSquare } from '../src/square.tsx'
+import { acceptOfField } from '../src/square-provider.tsx'
 import { CardForm, SourceRow, useSquareProvider } from '../src/form.tsx'
 
 afterEach(cleanup)
@@ -22,6 +23,7 @@ afterEach(unbindEstateRemote)
 
 const IMG = { name: 'img', label: 'Image', type: 'image' } as SpecField
 const DOC = { name: 'doc', label: 'Doc', type: 'file' } as SpecField
+const MESH = { name: 'rig', label: 'Rig', type: 'mesh' } as SpecField
 const TXT = { name: 'prompt', label: 'Prompt', type: 'text' } as SpecField
 
 type Captured = { square: (f: SpecField) => unknown; wireMenu: unknown }
@@ -107,6 +109,48 @@ function fakeFetch(opts: {
 test('THE HOOK: a non-slot field builds no square (never a square on a text field)', () => {
   const { cap } = captureProvider({ candidates: [] })
   expect(cap().square(TXT)).toBeUndefined()
+})
+
+test('THE MESH HOOK: a mesh field is slot-shaped and retargets the file dialog to GLB', () => {
+  const { cap } = captureProvider({ candidates: [] })
+  const host = cap().square(MESH) as { display: string | null; verbs: { onPick: () => void } }
+  expect(host.display).toBeNull()
+  expect(acceptOfField(MESH)).toBe('.glb,.gltf')
+  expect(acceptOfField(null)).toBe('image/png,image/jpeg,image/webp')
+  act(() => { host.verbs.onPick() })
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From file' }))
+  expect(providerFileInput().getAttribute('accept')).toBe('.glb,.gltf')
+})
+
+test('FROM MEDIA: a mesh field names the mesh lane (never the whole library)', async () => {
+  const seen: string[] = []
+  const loadMedia = async (kind: string, _signal: AbortSignal): Promise<Array<{ url: string; name: string }>> => {
+    seen.push(kind)
+    return []
+  }
+  const { cap } = captureProvider({ candidates: [], loadMedia })
+  const host = cap().square(MESH) as { verbs: { onPick: () => void } }
+  act(() => { host.verbs.onPick() })
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+  expect(await screen.findByText(/runs library \(mesh\)/)).not.toBeNull()
+  expect(seen).toEqual(['mesh'])
+})
+
+test('MESH UPLOADS: no extension-less data-URL mirror; the named estate path lands', async () => {
+  const RealReader = globalThis.FileReader
+  globalThis.FileReader = fakeReader('data:application/octet-stream;base64,AAA')
+  const realFetch = globalThis.fetch
+  globalThis.fetch = fakeFetch({ uploadPath: 'data/input/donor.glb' })
+  try {
+    const { onEdit, cap } = captureProvider({ candidates: [] })
+    const host = cap().square(MESH) as { display: string | null; verbs: { onFile: (file: File) => void } }
+    host.verbs.onFile(new File(['glTF'], 'donor.glb', { type: 'model/gltf-binary' }))
+    await waitFor(() => { expect(onEdit).toHaveBeenCalledWith('rig', 'data/input/donor.glb') })
+    expect((cap().square(MESH) as { display: string | null }).display).toBeNull()
+  } finally {
+    globalThis.FileReader = RealReader
+    globalThis.fetch = realFetch
+  }
 })
 
 test('THE HOOK: onPick seats the menu — default rect without an anchor, the element rect with one', () => {
@@ -387,7 +431,7 @@ test('THE UPLOAD: wrong kinds refuse at the door (audio has no door; text is not
     fireEvent.drop(screen.getByRole('button', { name: 'Input source' }), {
       dataTransfer: { getData: () => '', files: [new File(['x'], 'a.txt', { type: 'text/plain' })] },
     })
-    await waitFor(() => { expect(onEdit2).toHaveBeenCalledWith(expect.stringContaining('drop an image or audio file')) })
+    await waitFor(() => { expect(onEdit2).toHaveBeenCalledWith(expect.stringContaining('drop an image, audio, or .glb/.gltf file')) })
     r2.unmount()
   } finally {
     globalThis.FileReader = RealReader

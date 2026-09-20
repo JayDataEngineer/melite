@@ -33,7 +33,7 @@ export type CardSeamDefs = {
 
 /** The seam ids, spelled once. Claims use these constants. */
 export const CARD_SLOTS = {
-  /** keyed by wire type: 'image' | 'file' | 'select' | ... — the
+  /** keyed by wire type: 'image' | 'file' | 'mesh' | 'select' | ... — the
    *  ATOM seam. The constructor renders every emitted field through
    *  the claim for its declared type; the base's built-in atom is
    *  the default, a card takes over its own type's atom. */

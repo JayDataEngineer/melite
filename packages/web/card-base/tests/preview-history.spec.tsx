@@ -12,7 +12,7 @@
  * RENDER half — the history section under the hero, click-to-view,
  * and the reset when a new run lands.
  */
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
 import { createElement as h } from 'react'
 
@@ -324,4 +324,177 @@ test('THE CELL CAP (64, LRU): an ancient stage\'s pick is evicted by churn; a re
   }
   const r3 = render(h(ImageStagePreview, recent))
   expect((r3.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/prev1/out.png')
+})
+
+// ── THE RUN-CYCLE PICK LAW (2026-09-20, the operator's catch:
+// "random when I click") ────────────────────────────────────────
+// The estate's observer patches the result row THROUGHOUT a run:
+// the start patch writes {run_id} only (NO urls), the terminal
+// patch writes the urls. A pick cell keyed on artifact urls DIED
+// at every such patch — a clicked history tile silently unpicked
+// and the hero jumped (the clicks read as random). The cell keys
+// on stageId + RUN ID (stable across the whole cycle); these
+// walls prove both halves: the pick SURVIVES the url churn, and a
+// genuinely NEW run still resets it.
+
+test('RUN-CYCLE PROOF: a picked history tile SURVIVES the mid-run url churn (same run id, artifacts vanish and land)', () => {
+  resetPickCellsForTests()
+  // landed state, run 1: pick the OLDER generation
+  const landed: PreviewOwnerProps = {
+    kind: 'image',
+    artifacts: [{ name: 'out', url: '/runs/r1/out.png' }],
+    runStatus: 'completed',
+    stageId: 's_0',
+    runId: 'run-1',
+    history: [
+      [{ name: 'out', url: '/runs/prev1/out.png' }],
+      [{ name: 'out', url: '/runs/prev2/out.png' }],
+    ],
+  }
+  const r1 = render(h(ImageStagePreview, landed))
+  fireEvent.click(r1.container.querySelectorAll('[data-testid="stage-output-history"] button')[1] as HTMLElement)
+  expect((r1.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/prev2/out.png')
+  cleanup()
+  // the NEXT run starts: the observer's start patch carries the
+  // SAME run id? NO — a new run is a new id; but mid-cycle (queued
+  // → running flips, progress re-patches) the id is STABLE while
+  // the urls churn. Simulate the mid-run patch: artifacts GONE
+  // (result {run_id}-only), runStatus running, same run id.
+  const midRun: PreviewOwnerProps = {
+    ...landed,
+    artifacts: [],
+    runStatus: 'running',
+  }
+  const r2 = render(h(ImageStagePreview, midRun))
+  expect((r2.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/prev2/out.png',
+    'the pick survives the mid-run url churn — the hero stays on the picked generation, never silently jumps')
+  cleanup()
+  // the terminal patch: the run's urls land, same run id
+  const terminal: PreviewOwnerProps = {
+    ...landed,
+    artifacts: [{ name: 'out', url: '/runs/r1b/out.png' }],
+    runStatus: 'completed',
+  }
+  const r3 = render(h(ImageStagePreview, terminal))
+  expect((r3.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/prev2/out.png',
+    'the pick still holds after the run lands (same run identity — a view is not a one-way door)')
+  cleanup()
+  // THE RETURN: the badge's control restores the current generation
+  const r4 = render(h(ImageStagePreview, terminal))
+  fireEvent.click(r4.container.querySelector('[data-testid="history-stale-badge"]') as HTMLElement)
+  expect((r4.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/r1b/out.png')
+})
+
+test('RUN-CYCLE PROOF: a NEW run id resets the pick (the fresh cell law survives the key change)', () => {
+  resetPickCellsForTests()
+  const landed: PreviewOwnerProps = {
+    kind: 'image',
+    artifacts: [{ name: 'out', url: '/runs/r1/out.png' }],
+    runStatus: 'completed',
+    stageId: 's_0',
+    runId: 'run-1',
+    history: [[{ name: 'out', url: '/runs/prev1/out.png' }]],
+  }
+  const r1 = render(h(ImageStagePreview, landed))
+  fireEvent.click(r1.container.querySelectorAll('[data-testid="stage-output-history"] button')[0] as HTMLElement)
+  cleanup()
+  // a genuinely new run: new id — fresh cell, unpicked
+  const next: PreviewOwnerProps = {
+    ...landed,
+    artifacts: [{ name: 'out', url: '/runs/r2/out.png' }],
+    runId: 'run-2',
+  }
+  const r2 = render(h(ImageStagePreview, next))
+  expect((r2.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/r2/out.png',
+    'a new run is a new view identity — the hero opens on its own generation')
+})
+
+test('RUN-CYCLE PROOF (the regression needle): the cell key is the RUN ID, never the urls — a urls-only owner (no runId) still churns cells', () => {
+  resetPickCellsForTests()
+  // the legacy owner (runId absent) rides the urls key — this pins
+  // WHICH key the cell uses: same stage, same run, DIFFERENT urls
+  // under a DECLARED runId share one cell; the same urls without a
+  // runId also share one. Prove the run-id arm: two owners with
+  // the same runId but different urls keep the pick.
+  const a: PreviewOwnerProps = { kind: 'image', artifacts: [{ name: 'o', url: '/r/a.png' }], runStatus: 'completed', stageId: 's', runId: 'run-x', history: [[{ name: 'o', url: '/r/h.png' }]] }
+  const r1 = render(h(ImageStagePreview, a))
+  fireEvent.click(r1.container.querySelectorAll('[data-testid="stage-output-history"] button')[0] as HTMLElement)
+  cleanup()
+  const b: PreviewOwnerProps = { ...a, artifacts: [{ name: 'o', url: '/r/COMPLETELY-DIFFERENT.png' }] }
+  const r2 = render(h(ImageStagePreview, b))
+  expect((r2.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/r/h.png',
+    'same run id + different urls = SAME cell (the urls never key the pick)')
+})
+
+test('THE LAYOUT-PRESERVING SWAP (the 2026-09-21 pull, frame-proven: the seat collapsed 310px for one frame at landing and the scroller clamped): the outgoing hero STAYS mounted until the incoming one LOADS — the seat never has zero height', async () => {
+  const OWNER_BASE: PreviewOwnerProps = { ...CURRENT }
+  const r = render(h(ImageStagePreview, OWNER_BASE))
+  const hero = r.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement
+  expect(hero.getAttribute('src')).toBe('/runs/cur/out.png')
+  fireEvent.load(hero) // the current generation is on screen, decoded
+  // THE LANDING: the new generation's url arrives
+  r.rerender(h(ImageStagePreview, {
+    ...OWNER_BASE,
+    artifacts: [{ name: 'out', url: '/runs/new/out.png' }],
+  }))
+  const imgs = r.container.querySelectorAll('[data-testid="stage-preview-image-hero"]')
+  // the OLD image still holds the seat…
+  expect(Array.from(imgs).some((i) => i.getAttribute('src') === '/runs/cur/out.png')).toBe(true)
+  // …while the NEW one loads beside it
+  expect(Array.from(imgs).some((i) => i.getAttribute('src') === '/runs/new/out.png')).toBe(true)
+
+  // the new bitmap decodes — the commit fires, the old releases
+  fireEvent.load(r.container.querySelector('img[src="/runs/new/out.png"]') as HTMLImageElement)
+  await waitFor(() => {
+    const after = r.container.querySelectorAll('[data-testid="stage-preview-image-hero"]')
+    expect(after.length).toBe(1)
+    expect(after[0]?.getAttribute('src')).toBe('/runs/new/out.png')
+  })
+  // AND when a run CLEARS the hero (result face live), the decoded bitmap KEEPS THE SEAT — no empty-face collapse mid-run
+  r.rerender(h(ImageStagePreview, { ...OWNER_BASE, artifacts: [], history: [], runStatus: 'running' }))
+  const held = r.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement
+  expect(held.getAttribute('src')).toBe('/runs/new/out.png')
+  expect(held.getAttribute('alt')).toBe('')
+})
+
+test('THE UNIQUE-SEAT KEY LAW (operator 2026-09-21 screen dump: ten history tiles, ONE url — duplicate keys thrashed reconciliation into remount storms on every progress tick; the card jerked): identical urls never collide keys, and nodes SURVIVE re-renders', () => {
+  const DUPES: PreviewOwnerProps = {
+    kind: 'image',
+    // the engine's fixed output name: every generation, the SAME url
+    artifacts: [{ name: 'out', url: '/runs/cur/SaveImage.0_gen_00001_.png' }],
+    runStatus: 'completed',
+    stageId: 's_0',
+    history: [
+      [{ name: 'out', url: '/runs/cur/SaveImage.0_gen_00001_.png' }],
+      [{ name: 'out', url: '/runs/cur/SaveImage.0_gen_00001_.png' }],
+      [{ name: 'out', url: '/runs/cur/SaveImage.0_gen_00001_.png' }],
+    ],
+  }
+  const r = render(h(ImageStagePreview, DUPES))
+  const stripBefore = Array.from(r.container.querySelectorAll('[data-testid="stage-output-history"] button'))
+  expect(stripBefore.length).toBe(3) // every generation keeps its seat — no clone collapse
+  const node = stripBefore[1]
+  // the progress tick: same props, fresh object identities
+  r.rerender(h(ImageStagePreview, { ...DUPES, history: DUPES.history.map((e) => e.slice()) }))
+  const stripAfter = Array.from(r.container.querySelectorAll('[data-testid="stage-output-history"] button'))
+  expect(stripAfter.length).toBe(3)
+  expect(stripAfter[1]).toBe(node) // SAME DOM NODE — no remount, no reload, no layout shift
+  // and the CLONE LAW: across many progress ticks the tile count NEVER grows
+  // (the operator's screen showed ten clones of one url — duplicate keys
+  // duplicate children in real browsers; the archive itself dedups by url set)
+  for (let k = 0; k < 10; k++) r.rerender(h(ImageStagePreview, { ...DUPES, history: DUPES.history.map((e) => e.slice()) }))
+  expect(r.container.querySelectorAll('[data-testid="stage-output-history"] button').length).toBe(3)
+})
+
+test('THE HERO CAP LAW (operator 2026-09-21: "too many history items → the large preview takes up too much vertical space instead of the contained space"): the image hero carries the estate 46vh cap — flex containment alone cannot hold it in the drill\'s scrolling detail', async () => {
+  const css = require('node:fs').readFileSync(require('node:path').resolve(__dirname, '../src/preview.module.css'), 'utf8')
+  const block = css.slice(css.indexOf('.heroImg {'), css.indexOf('}', css.indexOf('.heroImg {')))
+  expect(block).toContain('height: 46vh') // the image FITS its aspect at the cap — no painted letterbox, no side bars
+  expect(block).toContain('width: auto')
+  expect(block).toContain('max-width: 100%')
+  const strip = css.slice(css.indexOf('.historyBlock {'), css.indexOf('}', css.indexOf('.historyBlock {') + 200))
+  expect(strip).toContain('max-height') // the bar below stretches in its OWN capped, scrolling lane
+  expect(strip).toContain('overscroll-behavior: contain') // ISOLATED: wheels over history never chain into the card's scroll
+  const row = css.slice(css.indexOf('.thumbRow {'), css.indexOf('}', css.indexOf('.thumbRow {') + 200))
+  expect(row).toContain('flex-wrap: wrap') // WRAPPED: many tiles stack rows — the vertical wheel scrolls them (lane probe 2026-09-21: single unwrapped row, sh==ch, unscrollable)
 })

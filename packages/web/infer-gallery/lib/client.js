@@ -66,8 +66,8 @@ window.__ModuleLoader__.load({
 		/**
 		* Design tokens — every var(--dsw-alias-…) string in the media family
 		* declared ONCE (audit F6). Numbered suffixes = same alias, different
-		* fallback (opacity variants). Pinned by the parity wall
-		* (tests/walls/ts/suites/media-sidebar.test.ts — tokens single site).
+		* fallback (opacity variants). Pinned by
+		* tests/walls/ts/suites/media-sidebar.spec.ts (tokens single site).
 		*/
 		const bgBase1 = "var(--dsw-alias-bg-base, #000)";
 		const bgBase2 = "var(--dsw-alias-bg-base, #0b0e14)";
@@ -154,8 +154,51 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		/** THE MEDIA DRILLDOWN (the gallery Overlay, verbatim — one face). */
-		function MediaDrilldown({ item, onClose, openArtifact }) {
+		/** THE MEDIA DRILLDOWN (the gallery Overlay, verbatim — one face).
+		* THE WALK ARROWS (2026-09-20, the operator's catch: "where are my
+		* side arrows when I open an image so scroll through to others"):
+		* an OPTIONAL sibling walk — the caller passes the visible list;
+		* arrows render only when there is more than one to walk. The
+		* arrows paint their OWN chip (explicit bg + label tokens — the
+		* white-✕ lesson: never inherit the page's text color on a
+		* self-painted surface), walk WRAP-AROUND, and the keyboard
+		* ArrowLeft/ArrowRight ride the same verbs. No siblings = exactly
+		* the old face (both call sites unchanged until wired). */
+		function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate }) {
+			const walkable = siblings ?? [];
+			const at = walkable.findIndex((s) => s.url === item.url);
+			const seat = react.useRef(null);
+			react.useEffect(() => {
+				seat.current?.focus();
+			}, []);
+			const canWalk = onNavigate !== void 0 && walkable.length > 1 && at >= 0;
+			const atHead = at === 0;
+			const atTail = at === walkable.length - 1;
+			const step = (delta) => {
+				const next = at + delta;
+				if (next < 0 || next >= walkable.length) return;
+				onNavigate(walkable[next]);
+			};
+			const onKey = (e) => {
+				if (!canWalk) return;
+				if (e.key === "ArrowLeft") {
+					e.stopPropagation();
+					step(-1);
+				}
+				if (e.key === "ArrowRight") {
+					e.stopPropagation();
+					step(1);
+				}
+			};
+			react.useEffect(() => {
+				const nat = (e) => {
+					onKey(e);
+				};
+				window.addEventListener("keydown", nat);
+				return () => {
+					window.removeEventListener("keydown", nat);
+				};
+			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
 				onClose,
@@ -163,6 +206,8 @@ window.__ModuleLoader__.load({
 				headless: true,
 				className: overlay_module_css_default.lightbox,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					ref: seat,
+					tabIndex: -1,
 					style: {
 						position: "relative",
 						display: "flex",
@@ -170,8 +215,10 @@ window.__ModuleLoader__.load({
 						alignItems: "center",
 						justifyContent: "center",
 						gap: 14,
-						padding: 24
+						padding: 24,
+						outline: "none"
 					},
+					onKeyDown: onKey,
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 							"aria-label": "Close preview",
@@ -191,6 +238,69 @@ window.__ModuleLoader__.load({
 							},
 							children: "✕"
 						}),
+						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							"aria-label": "Previous media",
+							"data-testid": "drill-prev",
+							onClick: () => {
+								step(-1);
+							},
+							style: {
+								position: "absolute",
+								left: 10,
+								top: "50%",
+								transform: "translateY(-50%)",
+								zIndex: 10,
+								width: 40,
+								height: 40,
+								borderRadius: 999,
+								cursor: "pointer",
+								background: bgBase1,
+								border: `1px solid ${labelPrimary2}33`,
+								color: labelPrimary2,
+								fontSize: 22,
+								lineHeight: 1,
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								...atHead ? {
+									opacity: .3,
+									cursor: "default"
+								} : {}
+							},
+							children: "‹"
+						}) : null,
+						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							"aria-label": "Next media",
+							"data-testid": "drill-next",
+							disabled: atTail,
+							onClick: () => {
+								step(1);
+							},
+							style: {
+								position: "absolute",
+								right: 10,
+								top: "50%",
+								transform: "translateY(-50%)",
+								zIndex: 10,
+								width: 40,
+								height: 40,
+								borderRadius: 999,
+								cursor: "pointer",
+								background: bgBase1,
+								border: `1px solid ${labelPrimary2}33`,
+								color: labelPrimary2,
+								fontSize: 22,
+								lineHeight: 1,
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								...atTail ? {
+									opacity: .3,
+									cursor: "default"
+								} : {}
+							},
+							children: "›"
+						}) : null,
 						item.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
 							src: item.url,
 							controls: true,
@@ -801,7 +911,7 @@ window.__ModuleLoader__.load({
 			}
 		}
 		/** Flatten the runs feed into media tiles (poster map, frame-flood
-		*  guard, dedup by url, label law, FINAL FILM detection, newest sort). */
+		*  guard, dedup by url, label law, final-film-first sort tie-break). */
 		function flatten(runs) {
 			const items = [];
 			const seen = /* @__PURE__ */ new Set();
@@ -935,18 +1045,50 @@ window.__ModuleLoader__.load({
 			});
 			return kind;
 		}
-		/** Tile badge rule — ONE place: a model tile always badges 3D, a final
-		*  film badges FINAL FILM, everything else badges nothing. */
+		/** Tile badge rule — ONE place: a model tile always badges 3D,
+		*  everything else badges nothing (the operator's order: the FINAL
+		*  FILM tag is dead — a tile's preview IS its currency, never a
+		*  status ribbon). */
 		function badgeFor(item) {
 			if (item.kind === "model") return {
 				text: "3D",
 				warn: false
 			};
-			if (item.final) return {
-				text: "FINAL FILM",
-				warn: true
-			};
 			return null;
+		}
+		/** The wand's face — a HISTORY glyph (the operator's order:
+		*  no 'CARDS' text on the tile). The action is unchanged: restore
+		*  this run's workflow onto the bench and open the cards tab. */
+		function HistoryIcon({ size = 13 }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				width: size,
+				height: size,
+				viewBox: "0 0 24 24",
+				fill: "none",
+				"aria-hidden": "true",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+						d: "M4.6 8.2A8 8 0 1 1 4 14",
+						stroke: "currentColor",
+						strokeWidth: "2",
+						strokeLinecap: "round"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+						d: "M4.2 3.4v5h5",
+						stroke: "currentColor",
+						strokeWidth: "2",
+						strokeLinecap: "round",
+						strokeLinejoin: "round"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+						d: "M12 7.5V12l3.5 2",
+						stroke: "currentColor",
+						strokeWidth: "2",
+						strokeLinecap: "round",
+						strokeLinejoin: "round"
+					})
+				]
+			});
 		}
 		function TileBadge({ item }) {
 			const badge = badgeFor(item);
@@ -984,12 +1126,17 @@ window.__ModuleLoader__.load({
 		* as content styles. (THE LOST MODAL, restored with the full port —
 		* the bare gallery opened a new browser tab instead.)
 		*/
-		function Overlay({ item, onClose, openArtifact }) {
+		function Overlay({ item, onClose, openArtifact, siblings, onNavigate }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MediaDrilldown, {
 				item,
 				onClose,
 				openArtifact: (drill) => {
 					openArtifact(item);
+				},
+				siblings,
+				onNavigate: (next) => {
+					/* v8 ignore next 1 -- the walk item came FROM siblings; find-by-url always hits (probe 2026-09-20) */
+					onNavigate(siblings.find((s) => s.url === next.url));
 				}
 			});
 		}
@@ -1301,7 +1448,7 @@ window.__ModuleLoader__.load({
 								fontFamily: "inherit"
 							},
 							children: [
-								it.poster !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+								it.poster !== "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
 									src: it.poster,
 									alt: "",
 									loading: "lazy",
@@ -1311,6 +1458,23 @@ window.__ModuleLoader__.load({
 										width: "100%",
 										height: "100%",
 										objectFit: "cover"
+									}
+								}) : it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
+									src: it.url,
+									poster: it.poster !== "" && it.poster !== it.url ? it.poster : void 0,
+									muted: true,
+									playsInline: true,
+									preload: "metadata",
+									disablePictureInPicture: true,
+									"aria-hidden": "true",
+									tabIndex: -1,
+									style: {
+										position: "absolute",
+										inset: 0,
+										width: "100%",
+										height: "100%",
+										objectFit: "cover",
+										pointerEvents: "none"
 									}
 								}) : null,
 								it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -1347,10 +1511,10 @@ window.__ModuleLoader__.load({
 												openCards(it);
 											}
 										},
-										children: "✦ CARDS"
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(HistoryIcon, {})
 									})
 								}),
-								it.poster === "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								it.poster === "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: { color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.55))" },
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, { kind: it.kind })
 								}) : null,
@@ -1380,7 +1544,11 @@ window.__ModuleLoader__.load({
 						onClose: () => {
 							setPreview(null);
 						},
-						openArtifact
+						openArtifact,
+						siblings: shown,
+						onNavigate: (next) => {
+							setPreview(next);
+						}
 					}) : null
 				]
 			});

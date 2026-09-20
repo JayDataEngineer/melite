@@ -859,14 +859,17 @@
  * the top bar — live shows spinner + activity + percent + a thin
  * meter; failed shows the reason. Frame-owned, one per card. */
 .zoomWebhook {
+  /* the seat renders ONLY with content (2026-09-21: the operator
+   * struck the permanent margin — the SCROLL LOCK owns the
+   * geometry law now, an empty seat reserves nothing) */
   align-items: center;
-  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-secondary);
   display: flex;
-  flex: 0 0 auto;
-  gap: 10px;
+  font-size: 12px;
+  gap: 8px;
   min-height: 0;
-  overflow: hidden;
-  padding: 4px 14px;
+  padding: 2px 0;
+  width: 100%;
 }
 .zoomMeter {
   background: var(--dsw-alias-border-l2);
@@ -902,6 +905,13 @@
   display: block;
   min-height: 0;
   overflow-y: auto;
+  /* THE ANTI-PULL LAW (2026-09-20, the operator's seizure: "it
+   * gets jerked up" every progress tick / at landing): measured —
+   * scrollTop drops 309px at landing with UNCHANGED scrollHeight
+   * and no child growth: the browser's scroll ANCHOR remapping the
+   * position when the params column reflows mid-run. overflow-anchor
+   * none ends the remap: the user's scroll position is theirs. */
+  overflow-anchor: none;
   padding: 14px;
 }
 
@@ -1846,4 +1856,11 @@
   font-size: 11px;
   overflow-wrap: anywhere;
   margin: 0;
+}
+
+.zoomBuild {
+  color: var(--dsh-alias-label-tertiary);
+  flex: 0 0 auto;
+  font-size: 10px;
+  opacity: 0.55;
 }

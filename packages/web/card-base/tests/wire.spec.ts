@@ -197,9 +197,22 @@ test('uploadInputFile: the estate path rides the param (never the bare name)', a
 test('uploadInputFile: foreign types REFUSE naming themselves (empty type = that file)', async () => {
   useFake({})
   await expect(uploadInputFile(new File(['x'], 'a.pdf', { type: 'application/pdf' })))
-    .rejects.toThrow(/Input cards don’t accept application\/pdf — drop an image or audio file/)
+    .rejects.toThrow(/Input cards don’t accept application\/pdf — drop an image, audio, or \.glb\/\.gltf file/)
   await expect(uploadInputFile(new File(['x'], 'a.bin', { type: '' })))
-    .rejects.toThrow(/Input cards don’t accept that file — drop an image or audio file/)
+    .rejects.toThrow(/Input cards don’t accept that file — drop an image, audio, or \.glb\/\.gltf file/)
+})
+
+test('uploadInputFile: THE MESH ARM — .glb/.gltf rides the gate in both browser spellings', async () => {
+  useFake({ '/v1/uploads': () => json({ path: 'data/input/x.glb' }) })
+  // the known mime
+  await expect(uploadInputFile(new File(['x'], 'a.glb', { type: 'model/gltf-binary' })))
+    .resolves.toEqual({ name: 'data/input/x.glb', file: 'x.glb' })
+  // the octet-stream fallback (extension-gated)
+  await expect(uploadInputFile(new File(['x'], 'a.gltf', { type: 'application/octet-stream' })))
+    .resolves.toEqual({ name: 'data/input/x.glb', file: 'x.glb' })
+  // a foreign octet-stream WITHOUT the extension still refuses (never a mime bypass)
+  await expect(uploadInputFile(new File(['x'], 'a.bin', { type: 'application/octet-stream' })))
+    .rejects.toThrow(/Input cards don’t accept/)
 })
 
 test('uploadInputFile: audio names its missing door (never a silent image-path lie)', async () => {

@@ -1,7 +1,7 @@
-import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-CUvn19A-.mjs";
+import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-CXGK770O.mjs";
 import { resolveEngineBaseUrl, sdkClient } from "@melite/comfyui-cordis";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
-import { agentFormDoc } from "@melite/engine-agent";
+import { agentCardFormDoc, agentFormDoc } from "@melite/engine-agent";
 import { craftFormDoc } from "@melite/engine-craft";
 import { mcpFormDoc } from "@melite/engine-mcp/formDoc";
 //#region src/enhance-agent.ts
@@ -276,8 +276,9 @@ function apply(c, config = {}) {
 					const data = typeof body?.data === "string" ? body.data : "";
 					if (filename === "" || data === "") return fail(400, "uploads: filename + data are required");
 					if (!SEG.test(filename)) return fail(400, "uploads: bad filename");
-					const b64 = /^data:(image\/(?:png|jpeg|webp));base64,(.+)$/.exec(data);
-					if (b64 === null) return fail(400, "uploads: only png / jpeg / webp upload");
+					const meshName = /\.glb$/i.test(filename) || /\.gltf$/i.test(filename);
+					const b64 = /^data:(image\/(?:png|jpeg|webp)|model\/gltf-binary|application\/octet-stream);base64,(.+)$/.exec(data);
+					if (b64 === null || b64[1] === "application/octet-stream" && !meshName) return fail(400, "uploads: only png / jpeg / webp / glb upload");
 					const bytes = Buffer.from(b64[2], "base64");
 					const dir = await inputDir();
 					const fs = await import("node:fs/promises");
@@ -419,19 +420,24 @@ function apply(c, config = {}) {
 						const model = url.searchParams.get("model") ?? "";
 						if (model.length === 0) return fail(400, { error: "form-spec: the model query parameter is required" });
 						const servers = [...seatedMcpServers(c)];
-						const engineDocs = /* @__PURE__ */ new Map([["agent", () => {
-							const idx = buildSkillIndex(disclosureRoot());
-							return agentFormDoc({
-								mcps: servers.map((v) => ({
-									value: v,
-									label: v
-								})),
-								skills: idx.skills.map((r) => ({
-									value: r.id,
-									label: r.name
-								}))
-							});
-						}], ["craft", () => craftFormDoc()]]);
+						const skillCensus = () => {
+							return buildSkillIndex(disclosureRoot()).skills.map((r) => ({
+								value: r.id,
+								label: r.name
+							}));
+						};
+						const mcpCensus = servers.map((v) => ({
+							value: v,
+							label: v
+						}));
+						const engineDocs = /* @__PURE__ */ new Map([["agent", () => agentFormDoc({
+							mcps: mcpCensus,
+							skills: skillCensus()
+						})], ["craft", () => craftFormDoc()]]);
+						if (servers.length > 0) engineDocs.set("mcp", () => agentCardFormDoc({
+							mcps: mcpCensus,
+							skills: skillCensus()
+						}));
 						for (const server of servers) engineDocs.set(`mcp:${server}`, () => mcpFormDoc({
 							server,
 							tools: mcpToolsOf(c, server),

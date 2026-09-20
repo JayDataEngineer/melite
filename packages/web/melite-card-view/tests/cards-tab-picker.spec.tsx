@@ -26,7 +26,7 @@ afterEach(() => {
 // namespaces (mountEstateFakes); fetch answers ONLY the /v1
 // discovery doors. specMode stays live module state so tests arm
 // it before the mount, exactly like the old doors.
-type SpecMode = "edge" | "plain";
+type SpecMode = "edge" | "plain" | "mesh";
 let specMode: SpecMode = "edge";
 
 let fakes: EstateFakes | null = null;
@@ -48,22 +48,30 @@ function stubFetch(): void {
   vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
-      const fields: Record<string, unknown> = {
-        prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
-        input_image: { type: "image", meta: { description: "Input image" } },
-        extra: { type: "image", meta: { description: "Extra" } },
-      };
+      const fields: Record<string, unknown> = specMode === "mesh"
+        ? {
+          prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+          rigged_glb: { type: "mesh", meta: { description: "Donor mesh" } },
+        }
+        : {
+          prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+          input_image: { type: "image", meta: { description: "Input image" } },
+          extra: { type: "image", meta: { description: "Extra" } },
+        };
       return new Response(JSON.stringify({
         form: "image-gen", genre: "image", engine: "comfyui",
         ...(specMode === "edge"
           ? { inputs: [{ name: "input_image", kind: "image", required: true }] }
-          : {}),
+          : specMode === "mesh"
+            ? { inputs: [{ name: "rigged_glb", kind: "mesh", required: true }] }
+            : {}),
         schema: schemaEnvelope(fields),
       }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (path.includes("/v1/forms")) {
       return new Response(JSON.stringify({
         "image-gen": { outputs: { default: "image" } },
+        "mesh-gen": { outputs: { default: "mesh" } },
         tts: { outputs: { default: "audio" } },
       }), { status: 200, headers: { "content-type": "application/json" } });
     }
@@ -81,7 +89,11 @@ interface EstateOpts {
   throws?: EstateRefusal[];
 }
 
-function stages(mainParams: Record<string, unknown> = {}, mainResolved: Record<string, unknown> = {}): BenchStageRow[] {
+function stages(
+  mainParams: Record<string, unknown> = {},
+  mainResolved: Record<string, unknown> = {},
+  extra: BenchStageRow[] = [],
+): BenchStageRow[] {
   return [
     { id: "s_0", card: "image-gen", engine: "comfyui", params: mainParams, resolved: mainResolved },
     { id: "s_img", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/r/img.png" } },
@@ -89,6 +101,7 @@ function stages(mainParams: Record<string, unknown> = {}, mainResolved: Record<s
     { id: "s_nourl", card: "image-gen", engine: "comfyui", params: {}, result: { url: "" } },
     { id: "s_junk", card: "image-gen", engine: "comfyui", params: {}, result: "junk" },
     { id: "s_ghost", engine: "comfyui", params: {}, result: { url: "/g.png" } },
+    ...extra,
   ];
 }
 
@@ -96,10 +109,12 @@ function mountBench(
   mainParams: Record<string, unknown> = {},
   mainResolved: Record<string, unknown> = {},
   estate?: EstateOpts,
+  extra: BenchStageRow[] = [],
+  mode: SpecMode = "edge",
 ): void {
-  specMode = "edge";
+  specMode = mode;
   stubFetch();
-  const rows = stages(mainParams, mainResolved);
+  const rows = stages(mainParams, mainResolved, extra);
   fakes = mountEstateFakes({
     benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: rows },
     draftStages: rows as Array<Record<string, unknown>>,
@@ -194,6 +209,21 @@ describe("the slot flush — a pick writes the bench now, not at Run", () => {
     fireEvent.click(clear.closest('[role="menuitem"], [role="option"], li') as HTMLElement);
     await waitFor(() => { expect(patches().length).toBeGreaterThan(0); });
     expect(patches()[patches().length - 1]).toEqual({ input_image: null });
+  });
+
+  test("picking a mesh row's output patches the mesh param to its url", async () => {
+    mountBench({}, {}, undefined, [
+      { id: "s_mesh", card: "mesh-gen", engine: "comfyui", params: {}, result: { url: "/r/donor.glb" } },
+    ], "mesh");
+    await openMainDrill();
+    await openFlowModal("Donor mesh");
+    fireEvent.click(
+      [...document.querySelectorAll('[data-testid="source-pick-row"]')]
+        .find((el) => (el.textContent ?? "").includes("mesh-gen")) as HTMLElement,
+    );
+    await waitFor(() => { expect(patches().length).toBeGreaterThan(0); });
+    expect(patches()[patches().length - 1]).toEqual({ rigged_glb: "/r/donor.glb" });
+    expect(screen.getByRole("button", { name: "Detach Donor mesh" })).toBeTruthy();
   });
 
   test("a refused slot write voices the door (never a silent pick)", async () => {

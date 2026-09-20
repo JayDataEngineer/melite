@@ -276,6 +276,10 @@ export interface LayerA {
   sched_name?: string
   width?: number
   height?: number
+  /** THE SLA MASTER SWITCH (2026-09-21): Layer A only (never a per-call
+   * knob — the switch arms the whole run's attention path, like
+   * sr_switch). Absent = on. */
+  sla_enabled?: boolean
   sla_sparsity?: number
   sla_block_size?: "32" | "64" | "128"
   sla_min_seq_len?: number
@@ -297,6 +301,7 @@ export interface LayerA {
   interp_model?: "film_net_fp16.safetensors" | "rife47.pth"
   interp_multiplier?: number
   sr_switch?: boolean
+  sr_model?: "seedvr2_ema_3b_fp16.safetensors" | "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
   sr_resolution?: number
   /** R2V COMBO "match"|"max" — NOT a number (numbers fail node validation). */
   ref_image_size?: string

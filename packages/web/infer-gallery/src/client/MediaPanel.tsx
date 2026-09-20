@@ -180,7 +180,7 @@ function timeLabel(sec: unknown): string {
 }
 
 /** Flatten the runs feed into media tiles (poster map, frame-flood
- *  guard, dedup by url, label law, FINAL FILM detection, newest sort). */
+ *  guard, dedup by url, label law, final-film-first sort tie-break). */
 export function flatten(runs: RunRow[]): MediaItem[] {
   const items: MediaItem[] = []
   const seen = new Set<string>()
@@ -282,12 +282,26 @@ function Glyph({ kind, size = 26 }: { kind: Kind; size?: number }) {
   return _exhaustive
 }
 
-/** Tile badge rule — ONE place: a model tile always badges 3D, a final
- *  film badges FINAL FILM, everything else badges nothing. */
+/** Tile badge rule — ONE place: a model tile always badges 3D,
+ *  everything else badges nothing (the operator's order: the FINAL
+ *  FILM tag is dead — a tile's preview IS its currency, never a
+ *  status ribbon). */
 function badgeFor(item: MediaItem): { text: string; warn: boolean } | null {
   if (item.kind === 'model') return { text: '3D', warn: false }
-  if (item.final) return { text: 'FINAL FILM', warn: true }
   return null
+}
+
+/** The wand's face — a HISTORY glyph (the operator's order:
+ *  no 'CARDS' text on the tile). The action is unchanged: restore
+ *  this run's workflow onto the bench and open the cards tab. */
+function HistoryIcon({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4.6 8.2A8 8 0 1 1 4 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M4.2 3.4v5h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 7.5V12l3.5 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
 }
 
 function TileBadge({ item }: { item: MediaItem }): React.JSX.Element | null {
@@ -326,11 +340,34 @@ function tileBgFor(kind: Kind): string {
  * as content styles. (THE LOST MODAL, restored with the full port —
  * the bare gallery opened a new browser tab instead.)
  */
-function Overlay({ item, onClose, openArtifact }: { item: MediaItem; onClose: () => void; openArtifact: (item: MediaItem) => void }) {
+function Overlay({ item, onClose, openArtifact, siblings, onNavigate }: {
+  item: MediaItem
+  onClose: () => void
+  openArtifact: (item: MediaItem) => void
+  /** THE WALK ARROWS (2026-09-20): the gallery's filtered list —
+   * the opened artifact walks exactly what the tiles show. */
+  siblings: MediaItem[]
+  onNavigate: (next: MediaItem) => void
+}) {
   // ONE face everywhere (the operator's 1:1 order): the shared
   // MediaDrilldown — this surface only adapts its richer item (the
   // sidebar door keeps the gallery's full MediaItem currency).
-  return <MediaDrilldown item={item} onClose={onClose} openArtifact={(drill) => { openArtifact(item) }} />
+  // The walk hands back the drilldown's lean item; the panel
+  // re-finds ITS MediaItem by url (the walk set came from this
+  // list — the hit always exists) so setPreview keeps the full
+  // currency (id, poster, runId…).
+  return (
+    <MediaDrilldown
+      item={item}
+      onClose={onClose}
+      openArtifact={(drill) => { openArtifact(item) }}
+      siblings={siblings}
+      onNavigate={(next) => {
+        /* v8 ignore next 1 -- the walk item came FROM siblings; find-by-url always hits (probe 2026-09-20) */
+        onNavigate(siblings.find((s) => s.url === next.url)!)
+      }}
+    />
+  )
 }
 
 /** Sidebar tab glyph — exported for the (JSX-free) client entry. */
@@ -463,7 +500,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
 
   return (
     <PanelShell dataAttr="infer-media-panel">
-      {/* ✦ CARDS — card replay: opens THE CARDS TAB with this run's exact
+      {/* The history wand (card replay): opens THE CARDS TAB with this run's exact
           card loaded (sidecar → draft_id → the deck canvas' native card
           view: intent, shots, fps, seed, ▶ Run through the queue door).
           No editor SPA — that page renders blank on this origin. */}
@@ -549,10 +586,24 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                         textAlign: 'left', fontFamily: 'inherit',
                       }}
                     >
-                      {it.poster !== ''
+                      {it.poster !== '' && it.kind !== 'video'
                         ? <img src={it.poster} alt="" loading="lazy"
                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : null}
+                        : it.kind === 'video'
+                          ? (
+                              <video
+                                src={it.url}
+                                poster={it.poster !== '' && it.poster !== it.url ? it.poster : undefined}
+                                muted
+                                playsInline
+                                preload="metadata"
+                                disablePictureInPicture
+                                aria-hidden="true"
+                                tabIndex={-1}
+                                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
+                              />
+                            )
+                          : null}
                       {it.kind === 'video'
                         ? (
                             <span style={{
@@ -589,9 +640,9 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                               openCards(it)
                             }
                           }}
-                        >✦ CARDS</span>
+                        ><HistoryIcon /></span>
                       </Tooltip>
-                      {it.poster === ''
+                      {it.poster === '' && it.kind !== 'video'
                         ? <span style={{ color: textTertiary1 }}><Glyph kind={it.kind} /></span>
                         : null}
                       <span style={{
@@ -607,7 +658,15 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                 </div>
               ))}
 
-      {preview !== null ? <Overlay item={preview} onClose={() => { setPreview(null) }} openArtifact={openArtifact} /> : null}
+      {preview !== null
+        ? <Overlay
+          item={preview}
+          onClose={() => { setPreview(null) }}
+          openArtifact={openArtifact}
+          siblings={shown}
+          onNavigate={(next) => { setPreview(next) }}
+        />
+        : null}
     </PanelShell>
   )
 }

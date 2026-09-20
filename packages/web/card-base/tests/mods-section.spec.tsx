@@ -130,6 +130,45 @@ test('THE TILES: hybrid rows name their served type; drifted types title-case (n
   expect(within(tile('controlnets-1')).getByText('Custom X')).not.toBeNull()
 })
 
+const MCPSK = {
+  kind: 'agent_mcps', label: 'MCPs', param_key: 'mcps', cardinality: 'list',
+  fields: [
+    { name: 'server', type: 'select', label: 'Server', options: [{ value: 'blender', label: 'blender' }, { value: 'unity', label: 'unity' }] },
+  ],
+} as unknown as ModifierKind
+
+test('THE TILES: a select-shaped entry names its selection (never the bare kind label)', () => {
+  openSection({
+    kinds: [MCPSK],
+    values: { mcps: [{ server: 'unity' }, {}] },
+  })
+  expect(within(tile('mcps-0')).getByText('unity')).not.toBeNull()
+  expect(within(tile('mcps-1')).getByText('MCPs')).not.toBeNull()
+})
+
+test('THE TILES: a drifted select value falls to the kind label (never blank, never a crash)', () => {
+  openSection({ kinds: [MCPSK], values: { mcps: [{ server: 'ghost' }] } })
+  expect(within(tile('mcps-0')).getByText('MCPs')).not.toBeNull()
+})
+
+const MIXEDK = {
+  kind: 'mixed', label: 'Mixed', param_key: 'mixed', cardinality: 'list',
+  fields: [
+    { name: 'server', type: 'select', label: 'Server' },
+    { name: 'flavor', type: 'select', label: 'Flavor', options: ['spicy', { value: 'mild', label: 'Mild One' }] },
+  ],
+} as unknown as ModifierKind
+
+test('THE TILES: string options name verbatim; option-less selects fall to the kind label', () => {
+  openSection({
+    kinds: [MIXEDK],
+    values: { mixed: [{ flavor: 'spicy' }, { flavor: 'mild' }, { server: 'x' }] },
+  })
+  expect(within(tile('mixed-0')).getByText('spicy')).not.toBeNull()
+  expect(within(tile('mixed-1')).getByText('Mild One')).not.toBeNull()
+  expect(within(tile('mixed-2')).getByText('Mixed')).not.toBeNull()
+})
+
 test('THE TILES: unserved rows seed from the row default (never an unpriced dial)', () => {
   openSection({ kinds: [LORA], values: { loras: [{ id: 'detail' }] } })
   expect(within(tile('loras-0')).getByText('0.80')).not.toBeNull()

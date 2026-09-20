@@ -32,6 +32,7 @@ const LAYER_A_ALL_KEYS: string[] = [
   "sampler_name", "sched_name",
   "refine_lora", "refine_strength", "refine_steps",
   "attention_backend",
+  "sla_enabled",
   "sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps",
   "sla_dense_steps", "sla_dense_backend", "sla_reference_protection",
   "sla_protect_audio", "sla_stabilize_motion", "sla_disable_fp16_accum",
@@ -62,12 +63,15 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
       else if (key === "audio_clips") populated.audio_clips = [{ id: "a", name: "a", src: "data:audio/x", start_frame: 0, dur_frames: 24 }]
       else if (key === "seed") populated.seed = 7
       else if (key === "sharpen_enabled" || key === "interpolate_enabled" || key === "sr_switch") populated[key] = true
+      // the SLA master switch rides the wire ONLY as false (absent =
+      // on); populate the override so the emitted vocabulary pins it
+      else if (key === "sla_enabled") populated[key] = false
       else if (key === "audio_stem" || key === "model" || key === "ref_image_size"
         || key === "sampler_name" || key === "sched_name" || key === "sharpen_method"
         || key === "interp_model" || key === "sla_dense_backend") populated[key] = "euler"
       else if (key === "refine_lora") populated[key] = "h3_taomate_3step"
       else if (key === "attention_backend") populated[key] = "pytorch attention"
-      else if (key === "sr_model") populated[key] = "seedvr2"
+      else if (key === "sr_model") populated[key] = "seedvr2_ema_3b_fp16.safetensors"
       else populated[key] = 1
     }
     populated.sr_resolution = 1080

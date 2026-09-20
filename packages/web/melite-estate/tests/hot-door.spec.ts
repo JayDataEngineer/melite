@@ -12,6 +12,8 @@ import { Context } from '@deepseek-ai/cordis'
 import { loadCardDefs, theService } from '@melite/comfyui-cordis'
 import { apply as applyRealMod } from '../hot/examples/real-mod.plugin.ts'
 import { apply as applyRealCard } from '../hot/examples/real-card.plugin.ts'
+import * as realModModule from '../hot/examples/real-mod.plugin.ts'
+import * as realCardModule from '../hot/examples/real-card.plugin.ts'
 
 vi.setConfig({ testTimeout: 240000 })
 
@@ -24,6 +26,20 @@ async function mount(apply: (ctx: Context) => void): Promise<Context> {
 }
 
 describe('THE HOT DOOR (#39): the real drop-ins under hot/examples/', () => {
+  it('the drop-ins keep the loader export contract: named apply, never a default (testing.md L40 — a default replacing the named export rots the patch reload silently)', () => {
+    // The patch reload mounts these files BY PATH and requires the
+    // named `apply`; this spec's own `import { apply }` would also
+    // catch a rename, but ONLY this namespace round-trip catches the
+    // silent-rot shape: a default export ADDED beside apply (or
+    // replacing it) keeps every named-import wall green while the
+    // loader serves nothing.
+    for (const mod of [realCardModule, realModModule]) {
+      expect('default' in mod).toBe(false)
+      expect(typeof mod.apply).toBe('function')
+      expect(Object.keys(mod).sort()).toEqual(['apply'])
+    }
+  })
+
   it('real-mod.plugin.ts serves its row BESIDE the family table (the flavor merge) and reverts with the fiber', async () => {
     const defs = await loadCardDefs()
     // boot proof: the REAL table (not a vacuous pass — the hot door
@@ -62,7 +78,7 @@ describe('THE HOT DOOR (#39): the real drop-ins under hot/examples/', () => {
     const def = defs.get('hot-sketch') as unknown as Record<string, unknown>
     expect(def).not.toBe(undefined)
     expect((def.identity as { label: string }).label).toBe('Hot Sketch')
-    expect(JSON.stringify(def.boarded)).toContain('krea-2')
+    expect(JSON.stringify(def.boarded)).toContain('moss')
     // the compose gate is LOUD (the schema wall's own law)
     expect(() => (def.compose as (p: Record<string, unknown>, ...rest: never[]) => void)({ seed: 1 }, ...[] as never[]))
       .toThrow(/prompt/)

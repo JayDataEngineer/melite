@@ -32,6 +32,15 @@ export interface PreviewOwnerProps {
   runStatus: string
   /** Bench stage identity (for keyed React identity downstream). */
   stageId: string
+  /** THE RUN IDENTITY (2026-09-20, the operator's catch: "random
+   *  when I click"): the CURRENT result's run_id — STABLE across the
+   *  whole run cycle (the start patch's {run_id}-only result and the
+   *  terminal result carry the SAME id). The history pick cell keys
+   *  on stageId + runId, so a pick survives the result row's
+   *  url-flip churn; a NEW run is a fresh cell (the intended reset).
+   * Absent '' = pre-run (the artifacts-urls fallback keys the cell,
+   *  the legacy behavior). */
+  runId?: string
   /** THE OUTPUT HISTORY (stroke 40 — the operator's QOL law: the
    *  mini row under the main preview is a CARD OUTPUT HISTORY):
    *  the stage's PREVIOUS unique outputs, newest first, capped at

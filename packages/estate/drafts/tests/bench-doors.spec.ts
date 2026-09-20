@@ -47,8 +47,11 @@ describe("the drafts/patch door: the output history archive", () => {
     await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "a", url: "/runs/a/out.png", artifacts: { out: "/runs/a/out.png" } } }, 0, sig);
     await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "b", url: "/runs/b/out.png", artifacts: { out: "/runs/b/out.png" } } }, 1, sig);
     const hist = await historyOf(svc);
-    expect(hist.length).toBe(1);
-    expect((hist[0] as Record<string, unknown>)["run_id"]).toBe("a");
+    // BOTH landings are members: head is the CURRENT gen (b), the
+    // superseded a sits beneath — no pick can orphan either
+    expect(hist.length).toBe(2);
+    expect((hist[0] as Record<string, unknown>)["run_id"]).toBe("b");
+    expect((hist[1] as Record<string, unknown>)["run_id"]).toBe("a");
   });
 
   test("the SAME outputs never double-list (the operator's uniqueness: re-generate UNIQUE outputs only)", async () => {
@@ -73,9 +76,10 @@ describe("the drafts/patch door: the output history archive", () => {
     }
     const hist = await historyOf(svc);
     expect(hist.length).toBe(12);
-    // NEWEST FIRST: the head is the run just before the current
-    expect((hist[0] as Record<string, unknown>)["run_id"]).toBe("r14");
-    expect((hist[11] as Record<string, unknown>)["run_id"]).toBe("r3");
+    // NEWEST FIRST: the head is the CURRENT gen (r15); the cap
+    // drops the oldest (r0..r3)
+    expect((hist[0] as Record<string, unknown>)["run_id"]).toBe("r15");
+    expect((hist[11] as Record<string, unknown>)["run_id"]).toBe("r4");
   });
 
   test("results without outputs never archive (a progress face over a progress face)", async () => {
@@ -96,10 +100,12 @@ describe("the drafts/patch door: the output history archive", () => {
     await svc.patch("bench-main", "s_0", { params: { seed: 2 } }, 2, sig);
     await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "b", url: "/runs/b/out.png" } }, 3, sig);
     const hist = await historyOf(svc);
-    expect(hist.length).toBe(1);
-    // the archived generation is tagged with ITS OWN params, not the
-    // current ones (the edit between runs never re-labels history)
-    expect((hist[0] as Record<string, unknown>)["params"]).toEqual({ seed: 1 });
+    expect(hist.length).toBe(2);
+    // EVERY archived generation is tagged with ITS OWN params, not
+    // the current ones (the edit between runs never re-labels
+    // history): head = b under {seed: 2}, beneath = a under {seed: 1}
+    expect((hist[0] as Record<string, unknown>)["params"]).toEqual({ seed: 2 });
+    expect((hist[1] as Record<string, unknown>)["params"]).toEqual({ seed: 1 });
     // a params-only patch never disturbs the live resultParams
     const doc = await svc.get("bench-main", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;

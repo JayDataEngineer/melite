@@ -14,11 +14,11 @@
  */
 import { createElement as h, useState } from 'react'
 import css from './card.module.css'
-import { familyOfStages, parseRescue, runRescueCall, type Rescue } from './run-rescue.ts'
+import { cardOfStages, familyOfStages, parseRescue, runRescueCall, type Rescue } from './run-rescue.ts'
 
 export function RunRescue({ error, stages, onRun }: {
   error: string
-  stages: Array<{ params?: Record<string, unknown> }>
+  stages: Array<{ params?: Record<string, unknown>; card?: string }>
   /** the caller's own run press — offered again after a successful
    * install, never fired automatically */
   onRun: () => void
@@ -28,10 +28,15 @@ export function RunRescue({ error, stages, onRun }: {
   const [done, setDone] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
   if (rescue === null) return null
+  // THE PROVISION TARGET (the mask-form SAM2 law): the model family
+  // first (the run shot a family); the stage's card id second
+  // (model-less tool cards carry their own DECL rows under it).
   const family = familyOfStages(stages) ?? ''
+  const card = family !== '' ? '' : (cardOfStages(stages) ?? '')
+  const target = family !== '' ? family : card
   const what = rescue.kind === 'extension'
     ? 'extension pack "' + rescue.pack + '"'
-    : 'model file "' + rescue.file + '"' + (family !== '' ? ' (family ' + family + ')' : '')
+    : 'model file "' + rescue.file + '"' + (target !== '' ? ' (' + (family !== '' ? 'family ' : 'card ') + target + ')' : '')
   if (done !== null) {
     return h('div', { className: css.rescue },
       h('p', { className: css.rescueNote }, done + ' — run again when ready.'),
@@ -44,12 +49,12 @@ export function RunRescue({ error, stages, onRun }: {
     h('button', {
       className: css.rescueBtn,
       type: 'button',
-      disabled: busy || (rescue.kind === 'model' && family === ''),
-      title: rescue.kind === 'model' && family === '' ? 'no stage names the owning family — provision via the agent door' : 'install via /v1/manage (the declaration owns the URL)',
+      disabled: busy || (rescue.kind === 'model' && target === ''),
+      title: rescue.kind === 'model' && target === '' ? 'no stage names the owning family or card — provision via the agent door' : 'install via /v1/manage (the declaration owns the URL)',
       onClick: () => {
         setBusy(true)
         setNote(null)
-        runRescueCall(rescue as Rescue, family)
+        runRescueCall(rescue as Rescue, target)
           .then((line) => { setBusy(false); setDone(line) })
           .catch((e: unknown) => { setBusy(false); setNote(e instanceof Error ? e.message : 'install failed') })
       },
