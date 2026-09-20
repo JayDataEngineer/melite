@@ -35,41 +35,58 @@ import { imageEdit, refuseImageEditFiring, finalizeImageEdit } from '@melite/com
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
+import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
 
 export const schema = z.object({
-  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): the
-  // referee (frozen form_spec qwen-img-edit-2511) names exactly
-  // these as the card's own — declaration order = the field
-  // order. EVERY mod-owned knob (image1 — the lanpaint brick's
-  // anchor slot; lanpaint_*; outpaint_*; loras; mask/input_mask/
-  // mask_*) lives in mods/{lanpaint,loras,mask}.ts registering
+  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): declaration
+  // order = the field order. image1 IS THE PLAIN ANCHOR (2026-09-21,
+  // the 2.1 rework: it rode the lanpaint mod and was therefore
+  // 2511-hardcoded — the naming law makes the ANCHOR card-owned so
+  // every edit lane admits it; 2511's lanpaint flavor keeps its
+  // inpaint knobs mod-owned, the admission union serves both).
+  // Remaining mod-owned knobs (lanpaint_*; outpaint_*; loras;
+  // mask/input_mask/
+  // mask_*) live in mods/{lanpaint,loras,mask}.ts registering
   // through ctx.comfyui.registerMod (the _absorb_models
   // interlock). Schemastery passes unknown keys through, so
   // compose still reads p.image1/p.loras/... — validation of
   // required anchors stays in compose (the gate below), exactly
   // the split: the mod declares the editor surface, compose
   // owns firing.
+  image1: z.string().role('path').description("Image 1").extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image', tooltip: 'The edit anchor — the image to edit.' }),
   image2: z.string().role('path').description("Image 2").extra('extra', { order: 0, group: "input", width: 1, zone: 'inputs', wtype: 'image' }),
   image3: z.string().role('path').description("Image 3").extra('extra', { order: 1, group: "input", width: 1, zone: 'inputs', wtype: 'image' }),
-  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", tooltip: "Multi-image picker (up to 3). Used by workflows that pass resolved image lists; complements the individual Image 2 / Image 3 slots above.", wtype: 'image_list' }),
+  // reference_images is VALIDATION-ONLY (hidden, 2026-09-20 — the
+  // operator's catch: the field rendered a 0/8 picker the compose
+  // REFUSES the moment you fill it — a lying stack). The key stays
+  // declared so a draft carrying it still hits the loud
+  // 'reference_images fires' refusal at compose; it never renders.
+  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", hidden: true, tooltip: "Validation-only: the plain-edit lane has no slot mapping for multi-image lists — use Image 2 / Image 3.", wtype: 'image_list' }),
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
   negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
+  width: z.number().description("Width").extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
+  height: z.number().description("Height").extra('extra', { order: 1, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "sampling", width: 1, zone: 'params' }),
   steps: z.number().description("Steps").min(1).max(50).step(1).default(4).extra('extra', samplingExtra('steps')),
   cfg: z.number().description("Guidance Scale").min(0.1).max(10).step(0.1).default(1).extra('extra', samplingExtra('cfg', { tooltip: "Qwen-Image-Edit uses low CFG (flow-matching)." })),
   sampler: SAMPLERS.description("Sampler").extra('extra', samplingExtra('sampler')),
   scheduler: SCHEDULERS.description("Scheduler").extra('extra', samplingExtra('scheduler')),
-  use_stock_nodes: z.boolean().description("Use Stock Nodes").default(false).extra('extra', { order: 1, group: "edit_tuning", width: 1, tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' }),
-  double_reference: z.boolean().description("Double Reference").default(false).extra('extra', { order: 2, group: "edit_tuning", width: 1, tooltip: "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable.", zone: 'params' }),
+  use_stock_nodes: z.boolean().description("Use Stock Nodes").default(false).extra('extra', { order: 1, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' }),
+  double_reference: z.boolean().description("Double Reference").default(false).extra('extra', { order: 2, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable.", zone: 'params' }),
 })
 
-export const BOARDED: string[] = ['qwen-img-edit-2511']
+// THE BOARDING (2026-09-21, the naming law): the card names its
+// LANES — the family ids name models+versions, never operations.
+// 2511: the dedicated edit checkpoint (VAEEncode-of-source lane);
+// 2.1: the unified base — its edit rides QwenImage21Cache over the
+// SAME weights as t2i (branch by lane_inputs.text_encode_node).
+export const BOARDED: string[] = ['qwen-img-edit-2511', qwenImgEdit21Decl.id]
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
 export const identity = {
   label: 'Image Edit',
-  description: 'Instruction-driven image editing — the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.',
+  description: 'Instruction-driven image editing — the edit_image interface card boarding the qwen image edit LANES: qwen-img-edit-2511 (the dedicated edit checkpoint — lightning/standard cascade, lanpaint flavor) and qwen-img-edit-21 (the cached-reference edit lane of the same 2.1 weights as the t2i sibling family). The family names the model, the card names the operation. The surface scopes itself.',
   genre: 'image',
   icon: 'edit',
   principles: [
@@ -93,7 +110,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // and ModelSamplingAuraFlow is comfy_extras.nodes_model_advanced
     // — both core; the qweneditutils/vnccs_utils rows in the
     // extension map over-claim core nodes. No requires to declare.
-    boarded: ['qwen-img-edit-2511'],
+    boarded: [...BOARDED],
     tags: ['image', 'edit'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen

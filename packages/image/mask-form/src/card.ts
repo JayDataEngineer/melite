@@ -9,10 +9,13 @@
 //            (via_rtdetr). Optional bbox — a drawn rectangle the
 //            selection locks to (the bbox-canvas leaf face: an
 //            image preview the user drags a selection on).
-//   sam2[] — standalone: the person-parts segmenter (face | hands
-//            | body — the closed CLIP vocabulary; the retired
-//            studio labeled this arm "sam2"). Optional bbox, same
-//            face.
+//   sam2[] — standalone: the YOLO + SAM2 arm (the operator's SAM2:
+//            YOLO proposes boxes for the labels word, SAM2 refines
+//            them into masks). Optional bbox — a drawn rectangle
+//            the selection locks to (the bbox-canvas leaf face).
+//            Declares its packs (impact-pack + impact-subpack) and
+//            its weights (sam2 checkpoint + yolo) — declared, then
+//            auto provisioned.
 //   draw[] — ORDERED: the painted payload (alpha = strokes). A
 //            draw STACKS — it receives the previous outputs and
 //            unions onto the combined mask (the ordered chain:
@@ -31,15 +34,16 @@ import { maskT1 } from '@melite/comfyui-card-kit'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
 
-/** The person-part vocabulary (the closed set — face | hands |
- * body; SAM3's CLIP leg segments the class word). */
-const MASK_PARTS = ['face', 'hands', 'body'] as const
-
 // THE ACTION CARD OWNS ITS PINS (the studio's law, shared — the
-// same weights, the same lane).
+// same weights, the same lane). sam2 + yolo are the SAM2
+// impact-pack arm's pins (the card DECLARES them as provisions
+// below — declared, then auto provisioned, the operator's
+// 2026-09-19 order).
 const PINS = {
   checkpoint: 'sam3.1_multiplex_fp16.safetensors',
   unet: 'rt_detr_v4-x-hgnet_fp32.safetensors',
+  sam2: 'sam2.1_hiera_large.pt',
+  yolo: 'bbox/yolo11m.pt',
 }
 
 // THE SIMPLE FORM (the operator's law: the card IS simple — the
@@ -117,9 +121,19 @@ const MODS: readonly DeclaredModifierKind[] = [
     cardinality: 'list',
     max_stack: 3,
     leaf_face: 'bbox-canvas',
+    // THE DECLARED DEPENDENCIES (the operator's 2026-09-19 order —
+    // "declared, then auto provisioned"): the SAM2 arm rides the
+    // impact-pack chain (YOLO proposes, SAM2 refines), so the kind
+    // declares BOTH packs — the compose door refuses without them
+    // (an unused sam2 bag never fires the gate), and RunRescue
+    // offers the install through the manage seat.
+    requires: ['comfyui-impact-pack', 'comfyui-impact-subpack'],
+    kindFields: [
+      { name: 'yolo_threshold', label: 'YOLO threshold', type: 'number', default: 0.5, min: 0.05, max: 0.95, step: 0.05, tooltip: 'YOLO box confidence. Lower catches more instances, noisier boxes.' },
+    ],
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam2', tooltip: "The saved mask's name (mask_<name>)." },
-      { name: 'part', label: 'Part', type: 'select', default: 'face', tooltip: 'The person part to segment (its own mask export).', options: MASK_PARTS.map((p) => ({ value: p, label: p[0]!.toUpperCase()! + p.slice(1) })) },
+      { name: 'labels', label: 'Labels', type: 'string', default: 'person', tooltip: 'The YOLO class word to segment (person, face, hand — the detector proposes, SAM2 refines).' },
       ...BBOX_FIELDS,
     ],
   },
@@ -142,7 +156,7 @@ const MODS: readonly DeclaredModifierKind[] = [
 
 export const identity = {
   label: 'Mask Form',
-  description: 'Simple mask form: pick the input, then ADD sources — sam3 (text selection, optional box), sam2 (person parts, optional box), draw (painted, stacks onto the rest).',
+  description: 'Simple mask form: pick the input, then ADD sources — sam3 (text selection, optional box), sam2 (YOLO proposes + SAM2 refines, optional box), draw (painted, stacks onto the rest).',
   genre: 'image',
   icon: 'mask',
   ability: 'tool',
@@ -179,7 +193,29 @@ export function apply(ctx: Context): void {
     tags: ['image', 'mask', 'edit', 'form'],
     requiresModel: false,
     identity,
-    provisions: [],
+    // THE DECLARED WEIGHTS (the operator's 2026-09-19 order —
+    // "declared, then auto provisioned"): the SAM2 arm's two weight
+    // files — the sam2 checkpoint (SAMLoader reads models/sams/)
+    // and the YOLO detector (the subpack provider reads
+    // models/ultralytics/bbox/). Hashes minted by direct download
+    // 2026-09-19 (the supply-chain law: a declared hash is a
+    // VERIFIED hash, never copied from a README).
+    provisions: [
+      {
+        name: 'sam2.1_hiera_large.pt',
+        url: 'https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt',
+        folder: 'sams',
+        sha256: '2647878d5dfa5098f2f8649825738a9345572bae2d4350a2468587ece47dd318',
+        size_bytes: 898083611,
+      },
+      {
+        name: 'yolo11m.pt',
+        url: 'https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11m.pt',
+        folder: 'ultralytics/bbox',
+        sha256: 'd5ffc1a674953a08e11a8d21e022781b1b23a19b730afc309290bd9fb5305b95',
+        size_bytes: 40684120,
+      },
+    ],
     sidebar: { key: 'image', order: 9 },
     // no surface row — a FORM card (layout serves null)
     flowKinds: {
@@ -190,7 +226,7 @@ export function apply(ctx: Context): void {
     // THE MOD-OWNED NAMES ride admits (the compose door's explicit-
     // params overlay — the bags + the section's kindFields scalars
     // never touch the flat schema).
-    admits: ['sam3', 'sam2', 'draw', 'detection_threshold', 'max_instances', 'export_boxes'],
+    admits: ['sam3', 'sam2', 'draw', 'detection_threshold', 'max_instances', 'export_boxes', 'yolo_threshold'],
     mods: MODS,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
@@ -278,6 +314,14 @@ export function apply(ctx: Context): void {
 
       // ── the primary (the first standalone source) ──
       const primary = sources[0]
+      // THE PRIMARY SCOPE (the first entry's drawn box — threads as
+      // the lane's scope_bbox; every SELECTION primary honors it).
+      const primaryBox = bboxOf(primary.entry, primary.kind)
+      if (primaryBox) lane['scope_bbox'] = primaryBox
+      // YOLO knobs (sam2's kindFields) thread when committed
+      // (absent rides the lane fallback); the sam3 RT-DETR knobs
+      // ride above.
+      if (doc.yolo_threshold !== undefined) lane['yolo_threshold'] = doc.yolo_threshold
       if (primary.kind === 'sam3') {
         if (primary.entry['via_rtdetr'] === true) {
           lane['primary_via_rtdetr'] = true
@@ -289,12 +333,14 @@ export function apply(ctx: Context): void {
           lane['primary_prompt'] = prompt
         }
       } else {
-        // sam2 parts ride the CLIP text lane (the class word)
-        const part = primary.entry['part']
-        if (typeof part !== 'string' || !MASK_PARTS.includes(part as (typeof MASK_PARTS)[number])) {
-          throw new Error(`sam2 entry 0 needs a 'part' (face | hands | body) — got ${JSON.stringify(part)}`)
+        // sam2 rides the YOLO + SAM2 arm (the detector proposes the
+        // labels word, SAM2 refines) — never the CLIP text lane.
+        const labels = primary.entry['labels']
+        if (typeof labels !== 'string' || labels === '') {
+          throw new Error(`sam2 entry 0 needs 'labels' (a YOLO class word — e.g. person) — got ${JSON.stringify(labels)}`)
         }
-        lane['primary_prompt'] = part
+        lane['primary_via_sam2'] = true
+        lane['primary_sam2_labels'] = labels
       }
 
       // ── every source after the primary: its own export ──
@@ -309,13 +355,13 @@ export function apply(ctx: Context): void {
           exports.push([nameOf(src, `sam3_${src.i + 1}`), prompt, bbox ?? undefined])
           exportKind.push('text')
         } else {
-          const part = src.entry['part']
-          if (typeof part !== 'string' || !MASK_PARTS.includes(part as (typeof MASK_PARTS)[number])) {
-            throw new Error(`sam2 entry ${src.i} needs a 'part' (face | hands | body) — got ${JSON.stringify(part)}`)
+          const labels = src.entry['labels']
+          if (typeof labels !== 'string' || labels === '') {
+            throw new Error(`sam2 entry ${src.i} needs 'labels' (a YOLO class word — e.g. person) — got ${JSON.stringify(labels)}`)
           }
           const bbox = bboxOf(src.entry, 'sam2')
-          exports.push([nameOf(src, `sam2_${src.i + 1}`), part, bbox ?? undefined])
-          exportKind.push('text')
+          exports.push([nameOf(src, `sam2_${src.i + 1}`), labels, bbox ?? undefined])
+          exportKind.push('sam2')
         }
       }
       if (exports.length > 0) {

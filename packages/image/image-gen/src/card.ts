@@ -16,6 +16,7 @@ import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
 import { DECL as animaDecl } from '@melite/models-anima'
+import { DECL as qwenImg21Decl } from '@melite/models-qwen-img-21'
 
 /** The card's boarding — where the card gets its models: THE AI
  *  MODELS' own plugin declarations (packages/models/*), each
@@ -24,7 +25,7 @@ import { DECL as animaDecl } from '@melite/models-anima'
  *  plugin; a rename breaks at tsc, never silently at the
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
-export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id] as const
+export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id] as const
 
 export const schema = z.object({
   // CARD-OWNED SURFACE (the 1:1 port, 2026-09-08): declaration
@@ -46,7 +47,7 @@ export const schema = z.object({
 
 export const identity = {
   label: 'Image',
-  description: 'Text-to-image generation — the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself',
+  description: 'Text-to-image generation — the generate_image interface card boarding krea-2, z-image, anima, and qwen-img-21 (the Qwen Image 2.1 base — its 2.1 lane emits the TextEncodeQwenImage21 graph; the edit sibling qwen-img-edit-21 boards the image-edit card); each family declares its mods and the surface scopes itself',
   genre: 'image',
   icon: 'image',
   principles: [

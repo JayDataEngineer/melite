@@ -43,6 +43,32 @@ export function imageT2I(p: Record<string, unknown>, model: ModelFacts, g: Graph
   // image quietly).
   refuseIPAdapterFiring(model, p)
   const { clip, vae } = loadTextPair(g, li)
+  // THE 2.1 LANE (2026-09-21, the Comfy-Org Qwen-Image-2.1 release;
+  // branch key = lane_inputs.text_encode_node — the latent_node
+  // precedent, data never a family-id switch): ONE encoder node
+  // emits positive AND negative (outputs [CONDITIONING,
+  // CONDITIONING, LATENT] — the negative rides out index 1); the
+  // resolution input sizes reference images only (t2i carries none
+  // — 1024 is the official template's inert default).
+  if (li.text_encode_node === 'TextEncodeQwenImage21') {
+    const enc21 = g.node('TextEncodeQwenImage21', {
+      clip, prompt: p.prompt, negative_prompt: p.negative_prompt ?? '', resolution: 1024,
+    })
+    const latent21 = g.node('EmptyLatentImage', { batch_size: 1, width: p.width, height: p.height })
+    const sampled21 = g.node('KSampler', {
+      seed,
+      steps: p.steps,
+      cfg: p.cfg,
+      sampler_name: p.sampler,
+      scheduler: p.scheduler,
+      denoise: 1.0,
+      latent_image: latent21.out(),
+      model: unet,
+      positive: enc21.out(0),
+      negative: enc21.out(1),
+    })
+    return decodeSave(g, sampled21.out(), vae, `${runId}/gen`).out()
+  }
   // THE CONTROLNET STACK (the z-image restoration): the fired picks
   // wrap the LoRA'd model — ModelPatchLoader → ZImageFunControlnet
   // per entry, array order = apply order. Empty picks = the bare
@@ -143,6 +169,60 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   const slot3 = ((p.image3 ?? '') as string).trim()
   const ref2 = slot2 ? g.node('LoadImage', { image: slot2, upload: 'image' }).out(0) : null
   const ref3 = slot3 ? g.node('LoadImage', { image: slot3, upload: 'image' }).out(0) : null
+  // ── THE 2.1 EDIT LANE (2026-09-21, the Comfy-Org release; branch
+  // key = lane_inputs.text_encode_node, the latent_node precedent)
+  // ── the 2.1 base has NO separate edit weights: the edit rides
+  // QwenImage21Cache (the reference-prefix KV cache wrapped around
+  // the SAME unet) + TextEncodeQwenImage21 conditioned on the anchor
+  // images through its own image_N autogrow slots, sampled on an
+  // EmptyLatentImage at the TARGET resolution (the official
+  // image_qwen_image_2_1_image_edit template graph — NOT the 2511
+  // VAEEncode-of-source lane). vae rides the encoder's optional
+  // input (reference latents splice); one encoder node emits pos+neg.
+  if (li.text_encode_node === 'TextEncodeQwenImage21') {
+    // (the 2.1 edit arm — the target-resolution knobs are ITS; see
+    // the block comment above)
+    const cached = g.node('QwenImage21Cache', { model: unet, device: 'auto', dtype: 'default' }).out()
+    // THE AUTOGROW KEYS (the live v0.37 law, proven on the engine:
+    // execute(clip, prompt, negative_prompt, vae, resolution, images)
+    // — the slots ride DOTTED 'images.image_N' node-input keys, the
+    // executor's dynamic-path split nests them into the images dict;
+    // a bare 'image_1' reaches execute() as a kwarg and dies)
+    const images21: Record<string, OutputHandle> = { 'images.image_1': image }
+    if (ref2) images21['images.image_2'] = ref2
+    if (ref3) images21['images.image_3'] = ref3
+    const enc21 = g.node('TextEncodeQwenImage21', {
+      clip, vae, prompt: p.prompt, negative_prompt: p.negative_prompt ?? '', resolution: 1024,
+      ...images21,
+    })
+    const latent21 = g.node('EmptyLatentImage', {
+      batch_size: 1,
+      width: ((p.width as number | undefined) ?? 1024),
+      height: ((p.height as number | undefined) ?? 1024),
+    })
+    const sampled21 = g.node('KSampler', {
+      seed,
+      steps: p.steps,
+      cfg: p.cfg,
+      sampler_name: p.sampler || 'euler',
+      scheduler: p.scheduler || 'simple',
+      denoise: 1.0,
+      latent_image: latent21.out(),
+      model: cached,
+      positive: enc21.out(0),
+      negative: enc21.out(1),
+    })
+    decodeSave(g, sampled21.out(), vae, `${runId}/edit`)
+    return
+  }
+  // THE NEVER-LIE GUARD (the firing law): width/height are the 2.1
+  // lane's target-resolution knobs — stated on the 2511 lane they
+  // would wire to nothing (the 2511 edit rides the source's own
+  // resolution through VAEEncode), and a stated knob that does
+  // nothing is a lying stack. Refuse field-named.
+  if (p.width !== undefined || p.height !== undefined) {
+    throw new Error("'width'/'height' fire on the image-edit card only on the Qwen Image 2.1 lane (target-resolution edit) — the 2511 lane edits at the source's own resolution; clear them or switch the model lane")
+  }
   const pos = g.node('TextEncodeQwenImageEditPlus', {
     clip, image1: image, vae, prompt: p.prompt,
     ...(ref2 ? { image2: ref2 } : {}),

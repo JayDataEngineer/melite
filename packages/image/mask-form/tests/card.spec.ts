@@ -37,19 +37,38 @@ describe("the mask-form card declaration (stroke 78 — the mods-abstraction law
     assert.equal(mods[2]!.category, "ordered", "draw stacks — it modifies the mask call, never independent inference");
   });
 
-  it("sam2 is the closed parts vocabulary; the bbox fields ride both standalone kinds (the -1 unset law)", () => {
+  it("sam2 is the YOLO + SAM2 arm (labels word + declared packs); the bbox fields ride both standalone kinds (the -1 unset law)", () => {
     const mods = def.mods ?? [];
     const sam2 = mods.find((k) => k.kind === "sam2")!;
-    const part = (sam2.fields ?? []).find((f) => f["name"] === "part") as { options: Array<{ value: string }> };
-    assert.deepEqual(part.options.map((o) => o.value), ["face", "hands", "body"], "the parts vocabulary is a closed set");
+    const names = ((sam2.fields ?? []) as Array<{ name?: unknown }>).map((f) => String(f.name));
+    assert.ok(names.includes("labels"), "sam2 selects by the YOLO labels word (never the retired parts vocabulary)");
+    assert.ok(!names.includes("part"), "the parts vocabulary is gone — the detector proposes, SAM2 refines");
+    assert.deepEqual([...sam2.requires ?? []], ["comfyui-impact-pack", "comfyui-impact-subpack"],
+      "sam2 declares BOTH packs (the pack owns SAM/BBOX nodes; the subpack owns the YOLO provider)");
+    assert.deepEqual(((sam2.kindFields ?? []) as Array<{ name?: unknown }>).map((f) => String(f.name)), ["yolo_threshold"],
+      "YOLO's threshold is sam2's own arm scalar");
     for (const k of [mods[0]!, mods[1]!]) {
-      const names = (k.fields ?? []).map((f) => String(f["name"]));
-      assert.deepEqual(names.filter((n) => n.startsWith("bbox_")), ["bbox_x", "bbox_y", "bbox_w", "bbox_h"], `${k.kind} carries the four bbox fields`);
-      const bx = (k.fields ?? []).find((f) => f["name"] === "bbox_x") as { default?: number };
+      const knames = ((k.fields ?? []) as Array<{ name?: unknown }>).map((f) => String(f.name));
+      assert.deepEqual(knames.filter((n) => n.startsWith("bbox_")), ["bbox_x", "bbox_y", "bbox_w", "bbox_h"], `${k.kind} carries the four bbox fields`);
+      const bx = (k.fields ?? []).find((f) => (f as { name?: unknown })["name"] === "bbox_x") as { default?: number };
       assert.equal(bx.default, -1, "unset = -1 (the selection runs unscoped)");
     }
     const draw = mods.find((k) => k.kind === "draw")!;
-    assert.ok(!(draw.fields ?? []).some((f) => f["name"] === "bbox_x"), "draw carries no bbox — it stacks, never selects");
+    assert.ok(!(draw.fields ?? []).some((f) => (f as { name?: unknown })["name"] === "bbox_x"), "draw carries no bbox — it stacks, never selects");
+  });
+
+  it("sam2 declares its weights (declared, then auto provisioned — the operator's 2026-09-19 order)", () => {
+    const rows = def.provisions ?? [];
+    assert.equal(rows.length, 2, "the SAM2 arm's two weight files");
+    const sam2 = rows.find((r) => r.name === "sam2.1_hiera_large.pt")!;
+    assert.ok(sam2, "the sam2 checkpoint rides");
+    assert.equal(sam2.folder, "sams", "SAMLoader reads models/sams/");
+    assert.match(sam2.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted by direct download)");
+    assert.ok((sam2.size_bytes ?? 0) > 0 && sam2.url.startsWith("https://"), "the URL + size ride");
+    const yolo = rows.find((r) => r.name === "yolo11m.pt")!;
+    assert.ok(yolo, "the YOLO detector rides");
+    assert.equal(yolo.folder, "ultralytics/bbox", "the subpack provider reads models/ultralytics/bbox/");
+    assert.match(yolo.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted by direct download)");
   });
 
   it("the leaf faces: bbox-canvas on the standalone kinds, paint-canvas on draw (declared, never sniffed)", () => {
@@ -67,8 +86,8 @@ describe("the mask-form card declaration (stroke 78 — the mods-abstraction law
       "the simple form: the input + the shared SAM knobs — everything else is mod-owned");
   });
 
-  it("admits the mod-owned names past the flat schema (bags + the sam3 section scalars)", () => {
-    assert.deepEqual([...def.admits ?? []], ["sam3", "sam2", "draw", "detection_threshold", "max_instances", "export_boxes"]);
+  it("admits the mod-owned names past the flat schema (bags + the sam3/sam2 section scalars)", () => {
+    assert.deepEqual([...def.admits ?? []], ["sam3", "sam2", "draw", "detection_threshold", "max_instances", "export_boxes", "yolo_threshold"]);
   });
 });
 
@@ -170,21 +189,42 @@ describe("the mask-form compose gate (the bag is the recipe)", () => {
     assert.equal(drawn, undefined, "an explicit false refuses the manifest (RTDETR_detect itself stays — via_rtdetr's proposal lane)");
   });
 
-  it("the sam2 parts lane: closed vocabulary through the CLIP text lane; off-vocabulary refuses LOUD", () => {
+  it("the sam2 YOLO + SAM2 arm: the detector proposes the labels word, SAM2 refines; empty labels refuse LOUD", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ input_image: "/m/pic.png", sam2: [{ part: "face" }, { part: "hands" }] }), DUMMY, g, "run_p");
+    def.compose(def.schema({ input_image: "/m/pic.png", export_boxes: false, sam2: [{ labels: "person" }, { labels: "face" }] }), DUMMY, g, "run_p");
     const json = JSON.stringify(g.toJSON());
-    assert.ok(json.includes("CLIPTextEncode"), "the parts ride the text lane");
-    assert.ok(json.includes("face") && json.includes("hands"), "the class words ride verbatim");
+    assert.ok(json.includes("UltralyticsDetectorProvider"), "the YOLO provider rides (the subpack node)");
+    assert.ok(json.includes("BboxDetectorSEGS"), "the YOLO boxes become SEGS");
+    assert.ok(json.includes("SAMLoader"), "the sam2 model loads (the pack node)");
+    assert.ok(json.includes("SAMDetectorCombined"), "SAM2 refines the SEGS");
+    assert.ok(!json.includes("CLIPTextEncode"), "the sam2 arm never touches the CLIP text lane (the manifest is off)");
+    assert.ok(json.includes("person") && json.includes("face"), "the labels words ride verbatim");
+    assert.ok(json.includes("mask_combined"), "the first standalone source anchors mask_combined");
     assert.throws(
-      () => def.compose(def.schema({ input_image: "/m/pic.png", sam2: [{ part: "torso" }] }), DUMMY, new GraphBuilder(), "r1"),
-      /sam2 entry 0 needs a 'part' \(face \| hands \| body\)/,
+      () => def.compose(def.schema({ input_image: "/m/pic.png", sam2: [{ labels: "" }] }), DUMMY, new GraphBuilder(), "r1"),
+      /sam2 entry 0 needs 'labels' \(a YOLO class word/,
     );
+  });
+
+  it("a committed yolo_threshold threads the YOLO detector verbatim (absent rides the lane fallback)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ input_image: "/m/pic.png", export_boxes: false, sam2: [{ labels: "person" }], yolo_threshold: 0.35 }), DUMMY, g, "run_yt");
+    const det = Object.values(g.toJSON()).find((n: { class_type?: string }) => n["class_type"] === "BboxDetectorSEGS") as { inputs: Record<string, unknown> };
+    assert.equal(det.inputs.threshold, 0.35, "sam2's own arm scalar rides");
+  });
+
+  it("the sam2 primary with a drawn box scopes mask_combined (the rect scope — core nodes only)", () => {    const g = new GraphBuilder();
+    def.compose(def.schema({ input_image: "/m/pic.png", sam2: [{ labels: "person", bbox_x: 10, bbox_y: 20, bbox_w: 100, bbox_h: 80 }] }), DUMMY, g, "run_s");
+    const row = g.toJSON();
+    const scopes = Object.values(row).filter((n: { class_type?: string }) => n["class_type"] === "MaskComposite");
+    const mult = scopes.find((n) => ((n as { inputs?: Record<string, unknown> }).inputs?.operation === "multiply"));
+    assert.ok(mult, "the drawn box scopes the sam2 selection (multiply over the rect)");
+    assert.ok(Object.values(row).some((n: { class_type?: string }) => n["class_type"] === "GetImageSizeAndCount"), "the rect sizes to the image");
   });
 
   it("sam3-before-sam2 is the primary order (the first standalone source anchors combined)", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ input_image: "/m/pic.png", sam2: [{ part: "face" }], sam3: [{ prompt: "the cloak" }] }), DUMMY, g, "run_o");
+    def.compose(def.schema({ input_image: "/m/pic.png", sam2: [{ labels: "face" }], sam3: [{ prompt: "the cloak" }] }), DUMMY, g, "run_o");
     const json = JSON.stringify(g.toJSON());
     assert.ok(json.includes("mask_combined"), "combined saves");
     assert.ok(json.includes("the cloak"), "sam3 (declared first) is the primary");
@@ -207,12 +247,17 @@ describe("the mask-form compose gate (the bag is the recipe)", () => {
     );
   });
 
-  it("a bbox on the PRIMARY is honored by unset (the primary rides unscoped — the anchor law)", () => {
-    // the primary's bbox fields are -1 (unset): the anchor rides the
-    // prompt lane; per-entry bboxes are the exports' law
+  it("a bbox on the PRIMARY scopes mask_combined (the rect scope); unset (-1) rides unscoped", () => {
+    // the primary's drawn box locks the selection to the rectangle
+    // (the bbox-canvas leaf's promise); -1 fields stay unset and the
+    // anchor rides unscoped
     const g = new GraphBuilder();
-    def.compose(def.schema({ input_image: "/m/pic.png", sam3: [{ prompt: "anchor", bbox_x: -1, bbox_y: -1, bbox_w: -1, bbox_h: -1 }] }), DUMMY, g, "run_pb");
-    assert.ok(Object.keys(g.toJSON()).length > 0, "unset bbox fields never refuse the anchor");
+    def.compose(def.schema({ input_image: "/m/pic.png", sam3: [{ prompt: "anchor", bbox_x: 4, bbox_y: 6, bbox_w: 50, bbox_h: 40 }] }), DUMMY, g, "run_pb");
+    const mult = Object.values(g.toJSON()).find((n: { class_type?: string }) => n["class_type"] === "MaskComposite" && ((n as { inputs?: Record<string, unknown> }).inputs?.operation === "multiply"));
+    assert.ok(mult, "the primary's box scopes the anchor (no longer silently ignored)");
+    const g2 = new GraphBuilder();
+    def.compose(def.schema({ input_image: "/m/pic.png", sam3: [{ prompt: "anchor", bbox_x: -1, bbox_y: -1, bbox_w: -1, bbox_h: -1 }] }), DUMMY, g2, "run_pb2");
+    assert.ok(Object.keys(g2.toJSON()).length > 0, "unset bbox fields never refuse the anchor");
   });
 
   it("the draw stack: each payload exports AND unions onto combined in bag order (the ordered chain)", () => {
@@ -245,10 +290,10 @@ describe("the mask-form compose gate (the refuse-arm sweep)", () => {
     assert.ok(json.includes("mask_sam3_2"), "the entry rides unscoped");
   });
 
-  it("a non-string part on the sam2 PRIMARY refuses (the typeof arm)", () => {
+  it("empty labels on the sam2 PRIMARY refuse (the typeof arm)", () => {
     assert.throws(
-      () => def.compose(def.schema({ input_image: "/m/pic.png", sam2: [{ part: 7 }] }), DUMMY, new GraphBuilder(), "r1"),
-      /sam2 entry 0 needs a 'part' \(face \| hands \| body\) — got 7/,
+      () => def.compose(def.schema({ input_image: "/m/pic.png", sam2: [{ labels: 7 }] }), DUMMY, new GraphBuilder(), "r1"),
+      /sam2 entry 0 needs 'labels' \(a YOLO class word.*got 7/,
     );
   });
 
@@ -259,10 +304,10 @@ describe("the mask-form compose gate (the refuse-arm sweep)", () => {
     );
   });
 
-  it("a bad part on a LATER sam2 entry refuses (the export typeof arm)", () => {
+  it("empty labels on a LATER sam2 entry refuse (the export typeof arm)", () => {
     assert.throws(
-      () => def.compose(def.schema({ input_image: "/m/pic.png", sam2: [{ part: "face" }, { part: 7 }] }), DUMMY, new GraphBuilder(), "r1"),
-      /sam2 entry 1 needs a 'part' \(face \| hands \| body\) — got 7/,
+      () => def.compose(def.schema({ input_image: "/m/pic.png", sam2: [{ labels: "person" }, { labels: 7 }] }), DUMMY, new GraphBuilder(), "r1"),
+      /sam2 entry 1 needs 'labels' \(a YOLO class word.*got 7/,
     );
   });
 });
@@ -330,6 +375,13 @@ describe("the mask-form compose gate (the mod-owned scalars cannot go around the
     assert.throws(
       () => def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person" }], export_boxes: "yes" }, DUMMY, new GraphBuilder(), "r_eb_type"),
       /export_boxes must be a boolean/,
+    );
+  });
+
+  it("an out-of-bounds yolo_threshold refuses loud (0.05–0.95 declared on sam2's kindFields)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }], yolo_threshold: 99 }, DUMMY, new GraphBuilder(), "r_yt_oob"),
+      /yolo_threshold.*0\.05.*0\.95/,
     );
   });
 

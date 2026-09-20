@@ -11,8 +11,11 @@ type BboxDict = { x: number; y: number; width: number; height: number }
 
 /** The mask_t1 block — the selection lane (detect → refine → save),
  *  moved verbatim from the mask-studio card; the input_image
- *  admission stays on the card. */
-export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; unet: string }, g: GraphBuilder, runId: string): void {
+ *  admission stays on the card. TWO selection families: the SAM3
+ *  CLIP/RT-DETR leg (checkpoint + unet pins) and the SAM2
+ *  impact-pack arm (sam2 + yolo pins — YOLO proposes, SAM2
+ *  refines). */
+export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; unet: string; sam2: string; yolo: string }, g: GraphBuilder, runId: string): void {
   const li = pins          // the ACTION CARD owns its pins (no model row — mask-studio is a tool, not weights)
   const prefix = `${runId}/mask`        // the arm's "%s/mask" % run_id
   const samThreshold = p.sam_threshold as number
@@ -64,7 +67,72 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     g.node('SaveImage', { images: m2i.out(0), filename_prefix: `${prefix}/${name}` })
   }
 
+  // THE RECT SCOPE (the drawn box — the bbox-canvas leaf's
+  // [x, y, w, h] pixels): a zeros W×H mask plus a ones w×h box at
+  // (x, y) (MaskComposite add), multiplied over the selection. CORE
+  // nodes only (SolidMask + MaskComposite + GetImageSizeAndCount —
+  // all live on every engine; the scope never depends on the
+  // impact arm that made the mask).
+  const rectMask = (scope: BboxDict): OutputHandle => {
+    const size = g.node('GetImageSizeAndCount', { image: img() })
+    const zeros = g.node('SolidMask', { value: 0, width: size.out(1), height: size.out(2) }).out(0)
+    const ones = g.node('SolidMask', { value: 1, width: scope.width, height: scope.height }).out(0)
+    return g.node('MaskComposite', { destination: zeros, source: ones, x: scope.x, y: scope.y, operation: 'add' }).out(0)
+  }
+  const scopeMask = (mask: OutputHandle, scope: BboxDict): OutputHandle =>
+    g.node('MaskComposite', { destination: mask, source: rectMask(scope), x: 0, y: 0, operation: 'multiply' }).out(0)
+
+  // THE SAM2 IMPACT-PACK ARM (the operator's SAM2: YOLO proposes +
+  // SAM2 refines; the mask-form card declares the packs + weights,
+  // the compose door refuses without them — never a silent CLIP
+  // leg). UltralyticsDetectorProvider (subpack, PINNED yolo model)
+  // → BboxDetectorSEGS (image + the YOLO boxes + the card's labels)
+  // → SEGS → SAMDetectorCombined (PINNED sam2 model, center-1 —
+  // the pack's own best-practice default) → MASK. The drawn box
+  // scopes after (the rect scope above).
+  let samH: OutputHandle | null = null
+  let yoloH: OutputHandle | null = null
+  const samLoader = (): OutputHandle =>
+    (samH ??= g.node('SAMLoader', { model_name: li.sam2 as string, device_mode: 'AUTO' }).out(0))
+  const yoloProvider = (): OutputHandle =>
+    (yoloH ??= g.node('UltralyticsDetectorProvider', { model_name: li.yolo as string }).out(0))
+  const sam2detect = (labels: string, scope?: BboxDict): OutputHandle => {
+    if (labels === '') {
+      throw new Error('maskT1: a sam2 selection needs labels (a YOLO class word — the card refuses empty)')
+    }
+    const segs = g.node('BboxDetectorSEGS', {
+      bbox_detector: yoloProvider(),
+      image: img(),
+      threshold: ((p.yolo_threshold ?? 0.5) as number),
+      dilation: 10,
+      crop_factor: 3.0,
+      drop_size: 10,
+      labels,
+    }).out(0)
+    const refined = g.node('SAMDetectorCombined', {
+      sam_model: samLoader(),
+      segs,
+      image: img(),
+      detection_hint: 'center-1',
+      dilation,
+      threshold: samThreshold,
+      bbox_expansion: 0,
+      mask_hint_threshold: 0.7,
+      mask_hint_use_negative: 'False',
+    }).out(0)
+    return scope ? scopeMask(refined, scope) : refined
+  }
+
   let primaryMask: OutputHandle | null = null
+
+  // THE PRIMARY SCOPE (the first standalone entry's drawn box —
+  // the card threads it as scope_bbox; absent = unscoped). Every
+  // SELECTION primary honors it; the paint primary never does (the
+  // strokes ARE the mask — a scope would cut them).
+  const scopeQuad = p.scope_bbox as [number, number, number, number] | undefined
+  const primaryScope: BboxDict | undefined = scopeQuad && scopeQuad.length === 4
+    ? { x: scopeQuad[0]!, y: scopeQuad[1]!, width: scopeQuad[2]!, height: scopeQuad[3]! }
+    : undefined
 
   // ── the RT-DETR proposal lane (primary body + box manifest) ──
   let rtdetrBoxes: OutputHandle | null = null
@@ -80,14 +148,22 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   }
   const primaryClass = p.primary_class as string | undefined
   const primaryPrompt = p.primary_prompt as string | undefined
+  const viaSam2 = p.primary_via_sam2 as boolean
+  const primarySam2Labels = p.primary_sam2_labels as string | undefined
   if (viaRtdetr && rtdetrBoxes) {
     primaryMask = detect(undefined, rtdetrBoxes)
+    if (primaryScope) primaryMask = scopeMask(primaryMask, primaryScope)
+    save(primaryMask, 'mask_combined')
+  } else if (viaSam2) {
+    primaryMask = sam2detect(primarySam2Labels ?? 'all', primaryScope)
     save(primaryMask, 'mask_combined')
   } else if (primaryClass) {
     primaryMask = detect(clipCond(primaryClass))
+    if (primaryScope) primaryMask = scopeMask(primaryMask, primaryScope)
     save(primaryMask, 'mask_combined')
   } else if (primaryPrompt) {
     primaryMask = detect(clipCond(primaryPrompt))
+    if (primaryScope) primaryMask = scopeMask(primaryMask, primaryScope)
     save(primaryMask, 'mask_combined')
   } else if (p.primary_is_paint as boolean) {
     // NOTE: the engine primary `painted` and the exports' `paint_masked`
@@ -103,9 +179,11 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   // the third arm (optional) = the per-entry bbox [x, y, w, h]
   const exports = (p.exports as Array<[string, string, unknown?]>) ?? []
   const kinds = (p.export_kind as string[]) ?? []
-  const scopeBbox = p.scope_bbox as [number, number, number, number] | undefined
-  if (scopeBbox && scopeBbox.length !== 4) {
-    throw new Error(`scope_bbox refused on the mask-studio card: needs exactly [x, y, w, h] pixels (got ${scopeBbox.length} values)`)
+  // SCOPE VALIDATION (the lane's own gate — the card threads the
+  // primary entry's box here; a malformed quad refuses LOUD, never
+  // a silently unscoped primary).
+  if (scopeQuad && scopeQuad.length !== 4) {
+    throw new Error(`scope_bbox refused on the mask-studio card: needs exactly [x, y, w, h] pixels (got ${scopeQuad.length} values)`)
   }
   // PER-ENTRY PAINT PAYLOADS (the ordered-draw law, stroke 78): each
   // draw owns its PNG — cached by path (two draws on one payload
@@ -151,14 +229,25 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
       continue
     }
     let conditioning: OutputHandle | undefined
-    if (payload) {
+    if (kind !== 'sam2' && payload) {
       // the text lane rides EVEN under scope (boxes to segment within
-      // + the vocabulary) — a scope never silently drops the prompt
+      // + the vocabulary) — a scope never silently drops the prompt.
+      // sam2 exports skip it (their payload is the YOLO labels word
+      // — the detector proposes, SAM2 refines, never CLIP).
       conditioning = clipCond(payload)
     }
-    const bboxes = entryBbox(trip[2]) ?? (scopeBbox
-      ? { x: scopeBbox[0], y: scopeBbox[1], width: scopeBbox[2], height: scopeBbox[3] }
-      : undefined)
+    // THE PER-ENTRY BOX (stroke 78): the export's OWN third arm —
+    // the card-wide scope_bbox is the PRIMARY's box and never leaks
+    // into an export (an export without its own box runs unscoped).
+    const bboxes = entryBbox(trip[2])
+    if (kind === 'sam2') {
+      if (typeof payload !== 'string' || payload === '') {
+        throw new Error(`maskT1: sam2 export '${name}' needs labels (a YOLO class word — the card refuses empty)`)
+      }
+      const sel = sam2detect(payload, bboxes ? { x: bboxes.x, y: bboxes.y, width: bboxes.width, height: bboxes.height } : undefined)
+      save(sel, `mask_${name}`)
+      continue
+    }
     const sel = detect(conditioning, bboxes)
     save(sel, `mask_${name}`)
   }

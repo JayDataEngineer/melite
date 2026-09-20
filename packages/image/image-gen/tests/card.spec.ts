@@ -66,3 +66,70 @@ describe("the image-gen compose gate", () => {
       "the gated doc carries the undeclared loras bag through to the composer");
   });
 });
+
+// ── GATE S PROOF (2026-09-20, the operator's demand: "when it is
+// on 'random seed', the seed isn't randomized when I press run
+// again" — UNLESS IT IS PROGRAMMATICALLY PROVEN): the lane's mint
+// law, proven at the REAL compose path. Two composes of the SAME
+// doc with the sentinel (or no seed at all) MUST mint different
+// seeds — run again never repeats; a FIXED seed composes verbatim
+// every time (the other half of the law).
+describe("GATE S — the seed law on the real compose path", () => {
+  const seedOf = (g: { toJSON(): unknown }): unknown =>
+    ((g.toJSON() as Record<string, { inputs: Record<string, unknown> }>)["KSampler.0"]?.inputs.seed);
+
+  it("THE RANDOM ARM: two composes with the sentinel -1 mint DIFFERENT concrete seeds", () => {
+    const model = facts.models[def.boarded[0]!]!;
+    const g1 = new GraphBuilder();
+    def.compose(def.schema({ prompt: "a cat", seed: -1 }), model, g1, "r_rand_a");
+    const g2 = new GraphBuilder();
+    def.compose(def.schema({ prompt: "a cat", seed: -1 }), model, g2, "r_rand_b");
+    const s1 = seedOf(g1);
+    const s2 = seedOf(g2);
+    assert.ok(typeof s1 === "number" && Number.isInteger(s1) && s1 >= 0,
+      `the first compose mints a concrete non-negative int (got ${String(s1)})`);
+    assert.ok(typeof s2 === "number" && Number.isInteger(s2) && s2 >= 0,
+      `the second compose mints a concrete non-negative int (got ${String(s2)})`);
+    assert.notEqual(s1, s2, "two run-agains under random mint DIFFERENT seeds — the operator's law");
+  });
+
+  it("THE UNSTATED ARM: an absent seed walks to the declared default -1 → mints fresh every compose", () => {
+    const model = facts.models[def.boarded[0]!]!;
+    const g1 = new GraphBuilder();
+    def.compose({ prompt: "a cat" }, model, g1, "r_absent_a");
+    const g2 = new GraphBuilder();
+    def.compose({ prompt: "a cat" }, model, g2, "r_absent_b");
+    const s1 = seedOf(g1);
+    const s2 = seedOf(g2);
+    assert.ok(typeof s1 === "number" && s1 >= 0 && typeof s2 === "number" && s2 >= 0,
+      "the declared default -1 reaches the lane and mints concrete ints");
+    assert.notEqual(s1, s2, "run-again with an unstated seed never repeats either");
+  });
+
+  it("THE FIXED ARM: a stated seed composes VERBATIM — the exact seed re-runs", () => {
+    const model = facts.models[def.boarded[0]!]!;
+    const g1 = new GraphBuilder();
+    def.compose(def.schema({ prompt: "a cat", seed: 1234 }), model, g1, "r_fixed_a");
+    const g2 = new GraphBuilder();
+    def.compose(def.schema({ prompt: "a cat", seed: 1234 }), model, g2, "r_fixed_b");
+    assert.equal(seedOf(g1), 1234);
+    assert.equal(seedOf(g2), 1234);
+  });
+
+  it("THE BURIED-PIN NEEDLE: a concrete seed RIDING THE STAGE composes that seed — the face where 'run again repeats' is a FIXED stage, not a mint failure", () => {
+    // the live receipt (2026-09-20): a bench stage carried
+    // seed=2116177065 from an old whole-row load — every run
+    // composed it verbatim. The mint law is innocent; the PIN is
+    // the disease. This wall pins that reading: a concrete riding
+    // seed composes identically twice (so the cure is unpinning
+    // the stage to the sentinel, exactly what the operator's dice
+    // does).
+    const model = facts.models[def.boarded[0]!]!;
+    const g1 = new GraphBuilder();
+    def.compose(def.schema({ prompt: "a cat", seed: 2116177065 }), model, g1, "r_pin_a");
+    const g2 = new GraphBuilder();
+    def.compose(def.schema({ prompt: "a cat", seed: 2116177065 }), model, g2, "r_pin_b");
+    assert.equal(seedOf(g1), 2116177065);
+    assert.equal(seedOf(g2), 2116177065);
+  });
+});

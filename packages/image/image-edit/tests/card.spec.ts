@@ -187,3 +187,35 @@ describe("the image-edit compose gate", () => {
     assert.ok(!graph["LanPaint_KSamplerAdvanced.0"], "no lanpaint arm without a region");
   });
 });
+
+describe("the lane-bespoke leaves (the model guard — the naming law's visibility half)", () => {
+  it("THE FOUR LEAVES DECLARE THEIR FAMILY: width/height ride the 2.1 lane, use_stock_nodes/double_reference ride 2511 — never visible on the sibling", () => {
+    // the carrier dance (same as formSchemas: schemaCarrier ?? schema)
+    const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string } } }> } };
+    const json = carrier.toJSON();
+    const root = Object.values(json.refs).find((n) => n.type === "object" && n.dict !== undefined);
+    assert.ok(root, "the schema envelope serves");
+    const leaf = (name: string): string | undefined => {
+      const refId = root!.dict![name];
+      if (refId === undefined) return undefined;
+      return json.refs[refId]?.meta?.extra?.visible_when;
+    };
+    // the 2.1-only resolution knobs
+    assert.equal(leaf("width"), "model=qwen-img-edit-21", "width declares its family");
+    assert.equal(leaf("height"), "model=qwen-img-edit-21", "height declares its family");
+    // the 2511-only tuning knobs
+    assert.equal(leaf("use_stock_nodes"), "model=qwen-img-edit-2511", "use_stock_nodes declares its family");
+    assert.equal(leaf("double_reference"), "model=qwen-img-edit-2511", "double_reference declares its family");
+    // the SHARED surface never hides (no guard on the plain knobs)
+    assert.equal(leaf("prompt"), undefined, "the shared surface never carries a model guard");
+    assert.equal(leaf("image1"), undefined, "the anchor is every edit lane's surface");
+    assert.equal(leaf("seed"), undefined);
+  });
+});
+
+describe("the rail labels (the naming law: version-explicit, never the bare genre)", () => {
+  it("the two edit families are distinguishable by label alone", () => {
+    assert.equal(registryModel("qwen-img-edit-2511").label, "Qwen Image Edit 2511");
+    assert.equal(registryModel("qwen-img-edit-21").label, "Qwen Image Edit 2.1");
+  });
+});

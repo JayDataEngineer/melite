@@ -19,7 +19,8 @@
     "@deepseek-ai/schemastery": "*",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
-    "@melite/estate-call": "workspace:*"
+    "@melite/estate-call": "workspace:*",
+    "@melite/models-qwen-img-edit-21": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
