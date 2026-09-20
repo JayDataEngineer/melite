@@ -6,7 +6,8 @@
   "main": "./src/estateCall.ts",
   "exports": {
     ".": "./src/estateCall.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./cardTool": "./src/cardTool.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -14,5 +15,8 @@
   "devDependencies": {
     "typescript": "^5.9.3",
     "@types/node": "^22.20.0"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-tools": "0.1.5-rc.2"
   }
 }

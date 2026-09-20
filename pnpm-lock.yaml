@@ -884,6 +884,10 @@ importers:
         version: 5.9.3
 
   packages/harness/estate-call:
+    dependencies:
+      '@deepseek-ai/dsh-tools':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(6c1de61afe47b0d69df46230a00574b7)
     devDependencies:
       '@types/node':
         specifier: ^22.20.0

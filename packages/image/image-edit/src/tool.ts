@@ -1,170 +1,39 @@
 // tool.ts — the image-edit agent tool face (the DSH plane).
-import { GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
 //
 // The engine face (card.ts) registers the card in the estate
-// composition; THIS face registers `image_edit` where a composing host
-// provides a tools service — the dsh agent host, which has no
+// composition; THIS face registers `image_edit` where a composing
+// host provides a tools service — the dsh agent host, which has no
 // in-process ComfyUI and rides the estate's ctx seats (EstateCall).
 //
 // Tool-plane name: image_edit (the DSH plain-name convention — the
 // card id, hyphens→underscores, no suffix). Registry-row plane:
-// image_edit_card (cardWireName) — two planes, two names, each stated
-// once.
+// image_edit_card (cardWireName) — two planes, two names, each
+// stated once.
 //
-// THE MODEL INPUT: the params walk synthesizes the model knob from
-// the boarded array; execute resolves the unstated default itself
-// (the DSL plane carries no defaults — the fold lives in the
-// description). The executor's stage doc carries it as `service`;
-// the {model:} door at start owns admission legality server-side —
-// this face stays thin.
-import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { InferValue, ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
+// THE SKELETON LIVES IN THE BUILDER (roadmap §13, the audio-cards
+// DRY audit 2026-09-20): @melite/estate-call/cardTool owns the
+// flow-envelope schema, the two-door execute (drafts → start + the
+// {model:} lift), the GatewayError mapping, and every presentation
+// projection. This face owns ONLY the card's own seams.
+import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
+import { defineCardTool } from '@melite/estate-call/cardTool'
+import type { EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
 import { schema, identity, BOARDED } from './card.ts'
 
 export const TOOL_NAME = 'image_edit'
-const FLOW = 'image-edit'
-const DEFAULT_MODEL: string = BOARDED[0]
-const TIMEOUT_MS = 15e3
 
-/** The output envelope, stated once: defineTool infers execute's
- * return from it, and the execute annotation below names the same
- * inference — so multi-arm returns check arm-by-arm instead of
- * collapsing into a union whose `?: undefined` fillers poison the
- * schema's `& Record<string, JsonValue>` tail (gate-found, 2026-09-12). */
-const OUTPUT_SCHEMA = {
-  type: 'object',
-  additionalProperties: true,
-  properties: {
-    flow: { type: 'string', required: true },
-    model: { type: 'string', required: true },
-    run_id: { type: 'string', description: 'The queue run id — poll with run_status.' },
-    draft_id: { type: 'string', description: 'The minted card draft id.' },
-    status: { type: 'string', description: 'Registration status (queued/running).' },
-    error: { type: 'string', description: 'Named refusal reason, when the estate refused.' },
-  },
-} as const
-
-type OutputEnvelope = InferValue<typeof OUTPUT_SCHEMA>
-
-export const buildImageEditTool = (call: EstateCall): ToolDefinition => {
-  const gw = jsonLane(call)
-  return defineTool({
+export const buildImageEditTool = (call: EstateCall): ToolDefinition =>
+  defineCardTool(call, {
     name: TOOL_NAME,
+    flow: 'image-edit',
+    label: identity.label,
     description: identity.description,
+    // THE MODEL INPUT: the params walk synthesizes the model knob
+    // from the boarded array (a CLOSED enum — the wrapper rejects
+    // ''/unknown models at the seam); execute resolves the unstated
+    // default itself (the DSL plane carries no defaults).
     parameters: emitParamsSpec(schema as never, BOARDED) as ParameterSchemaSpec,
-    presentCall(args: unknown) {
-      // Validated args (defineTool's wrapper): prompt is a required
-      // knob — always present; model is the optional enum default.
-      const a = args as Record<string, unknown>
-      return {
-        card: 'generic',
-        title: identity.label,
-        kind: 'execute',
-        rawInput: `model=${String(a.model ?? DEFAULT_MODEL)} prompt=${String(a.prompt).slice(0, 60)}`,
-      };
-    },
-    output: {
-      schema: OUTPUT_SCHEMA,
-      render: (_args, value) => {
-        const v = (value ?? {}) as Record<string, unknown>
-        if (typeof v.error === 'string' && v.error) {
-          return [{ type: 'text', text: `${TOOL_NAME} REFUSED: ${v.error}` }]
-        }
-        return [{
-          type: 'text',
-          text: `${TOOL_NAME} [${String(v.model ?? '?')}] → ${String(v.run_id ?? '?')} — poll with run_status`,
-        }]
-      },
-      // presentationMeta: the tool-private payload persisted verbatim on
-      // tool/result — the facts presenters and client renderers narrow
-      // (model + run ids, or the named refusal). Pure: called on live
-      // streaming AND session-log replay.
-      presentationMeta: (_args, value) => {
-        const v = (value ?? {}) as Record<string, unknown>
-        return {
-          flow: String(v.flow ?? FLOW),
-          model: String(v.model ?? '?'),
-          ...typeof v.run_id === 'string' && v.run_id !== '' ? { run_id: v.run_id } : {},
-          ...typeof v.draft_id === 'string' && v.draft_id !== '' ? { draft_id: v.draft_id } : {},
-          ...typeof v.status === 'string' && v.status !== '' ? { status: v.status } : {},
-          ...typeof v.error === 'string' && v.error !== '' ? { error: v.error } : {},
-        }
-      },
-    },
-    // presentResult: the COMPLETED card's render intent — title only; the
-    // raw result content (render above) carries the body line. Reads
-    // result.meta (the projection), never re-derives.
-    presentResult(_args: unknown, result: { content?: unknown; isError?: boolean; meta?: unknown }) {
-      if (result?.meta == null) return undefined
-      const m = result.meta as Record<string, unknown>
-      const model = typeof m.model === 'string' && m.model !== '' ? m.model : '?'
-      if (typeof m.error === 'string' && m.error !== '') {
-        return { card: 'generic', title: `${identity.label} [${model}] — REFUSED` }
-      }
-      const runId = typeof m.run_id === 'string' && m.run_id !== '' ? m.run_id : '?'
-      return { card: 'generic', title: `${identity.label} [${model}] → ${runId}` }
-    },
-    // The tool plane returns the FLOW ENVELOPE (flow + model + the
-    // run ids/status/error arms the output schema declares) — never
-    // a CardResult (the card plane owns artifacts). The annotation
-    // names the schema's own inference (OUTPUT_SCHEMA above).
-    async execute(args, exec): Promise<OutputEnvelope> {
-      // Validated args (the defineTool wrapper) — always the object.
-      const a = args as Record<string, unknown>
-      // emitParamsSpec synthesizes a CLOSED model enum from BOARDED —
-      // the wrapper rejects ''/unknown models at the seam, so a
-      // validated model is always a non-empty boarded id.
-      const model = typeof a.model === 'string' ? a.model : DEFAULT_MODEL
-      const params: Record<string, unknown> = {}
-      for (const [k, v] of Object.entries(a)) if (k !== 'model') params[k] = v
-      try {
-        // DOOR ONE (compose — CARD BIRTH LAW): the stage doc names
-        // the model as the stage's service; the params carry the
-        // card's own surface.
-        const draft = await gw( 'POST', '/v1/flows/drafts', {
-          intent: FLOW,
-          stages: [{ title: identity.label, kind: 'generation', service: model, params }],
-        }, exec?.signal)
-        const draftId = typeof draft.draftId === 'string' ? draft.draftId : ''
-        if (draftId === '') return { flow: FLOW, model, error: 'gateway draft POST returned no draftId' }
-        // DOOR TWO (start): draft_id + exactly one door key — the
-        // {model:} arm resolves, composes, and queues the run.
-        // THE ENVELOPE LIFT (card_compose_body 363-372): the start
-        // body carries the card params BESIDE the envelope keys —
-        // the editor's own wire posts the SAME body (params + model)
-        // with draft_id added; the {model:} arm lifts body-minus-
-        // envelope as the ONE params stanza. A params-less body
-        // composes defaults only and refuses on required fields.
-        const started = await gw( 'POST', '/v1/flows/start', {
-          ...params,
-          model,
-          draft_id: draftId,
-        }, exec?.signal)
-        const named = typeof started.error === 'string' ? started.error : ''
-        if (named !== '') return { flow: FLOW, model, error: named }
-        if (typeof started.run_id !== 'string' || started.run_id === '') {
-          return { flow: FLOW, model, error: 'gateway start returned no run_id' }
-        }
-        return {
-          flow: FLOW,
-          model,
-          draft_id: draftId,
-          run_id: started.run_id,
-          status: typeof started.status === 'string' ? started.status : 'queued',
-        }
-      } catch (e) {
-        // jsonLane's contract: transport faults arrive wrapped as
-        // GatewayError(0, message, ""); a PRE-ABORTED signal throws
-        // the DOMException BEFORE the lane — cancellation propagates,
-        // never becomes a refusal value.
-        if (e instanceof GatewayError) {
-          // Named refusals (4xx/5xx bodies carrying {error}) are
-          // DOMAIN OUTCOMES — canonical values, not throws.
-          return { flow: FLOW, model, error: e.named || e.body || `estate ${e.status}` }
-        }
-        throw e
-      }
-    },
+    defaultModel: BOARDED[0],
+    previewField: 'prompt',
   })
-}

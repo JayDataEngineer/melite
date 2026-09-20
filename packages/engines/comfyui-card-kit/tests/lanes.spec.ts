@@ -18,6 +18,7 @@ import {
   annyLane,
   admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
   quadRemeshLane, musicT1, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion, finalizeH3,
+  ttsT1,
 } from "../src/kit.ts";
 import { loadFacts } from "../src/facts.ts";
 import { deriveDefaults } from "../src/graph.ts";
@@ -729,5 +730,47 @@ describe("maskT1 (the stroke-78 arms)", () => {
     const row = dump(g);
     assert.ok(!classes(row).includes("MaskComposite"), "the empty hop composites nothing");
     assert.ok(Object.values(row).some((n) => n.class_type === "SaveImage" && String(n.inputs.filename_prefix).endsWith("mask_combined_union")), "the terminal save still rides");
+  });
+});
+
+// ── THE TTS LANE DISPATCH (the lane-branch law, 2026-09-20) ──────────
+// branch key = lane_inputs DATA (synth_lane), never a family-id
+// switch — the latent_node/text_encode_node precedent, applied to
+// the tts trio. The stub ids are DELIBERATELY NOT the real family
+// ids: if the dispatch keyed on model.id these tests would route
+// wrong (that is the point — the key is the data, not the name).
+describe("the tts lane dispatch (synth_lane data, never the family id)", () => {
+  const stub = (id: string, synthLane: string) => ({
+    id,
+    card: "tts",
+    defaults: { mode: "tts" },
+    lane_inputs: { model_path: id, synth_lane: synthLane },
+    variants: [],
+    variant_groups: [],
+    mods: ["qvoice_save"],
+    accepts: [],
+    studio: {},
+  }) as never as import("../src/facts.ts").ModelFacts
+
+  it("synth_lane 'design' routes the VoiceStudio lane whatever the id", () => {
+    const g = new GraphBuilder();
+    ttsT1({ text: "hi", seed: 1, qvoice_save: [{ voice_name: "V", style_instruction: "warm", seed: 1 }] }, stub("not-the-real-id", "design"), g, "rd");
+    assert.ok(classes(dump(g)).includes("AudiocoreVoiceStudio"), "the design lane emits the studio node");
+  });
+
+  it("synth_lane 'clone' routes the clone lane (reference audio + transcript)", () => {
+    const g = new GraphBuilder();
+    ttsT1({ text: "hi", seed: 1, ref_audio: "/a.wav", ref_text: "a" }, stub("whatever", "clone"), g, "rc");
+    const row = dump(g);
+    assert.ok(classes(row).includes("AudiocoreTTS"), "the clone lane emits the synth node");
+    assert.ok(Object.values(row).some((n) => n.inputs.reference_audio === "/a.wav"), "the reference rides");
+  });
+
+  it("an absent key falls to the speak lane (the ''-absent law)", () => {
+    const g = new GraphBuilder();
+    ttsT1({ text: "hi", seed: 1 }, stub("anything", ""), g, "rs");
+    const row = dump(g);
+    assert.ok(classes(row).includes("AudiocoreTTS"), "the speak lane emits the synth node");
+    assert.ok(!Object.values(row).some((n) => n.class_type === "AudiocoreVoiceStudio"), "no studio node");
   });
 });

@@ -93,6 +93,7 @@ export const DECL: ModelDecl = {
     "family": "qwen3_tts",
     "latent_node": "EmptySD3LatentImage",
     "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+    "synth_lane": "speak",
     "sampling_shift": 0,
     "text_encoder": "",
     "texture_vae": "",

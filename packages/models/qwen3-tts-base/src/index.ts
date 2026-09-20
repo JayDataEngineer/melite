@@ -59,6 +59,7 @@ export const DECL: ModelDecl = {
     "family": "qwen3_tts",
     "latent_node": "EmptySD3LatentImage",
     "model_path": "qwen3-tts",
+    "synth_lane": "clone",
     "sampling_shift": 0,
     "text_encoder": "",
     "texture_vae": "",

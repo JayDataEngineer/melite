@@ -125,8 +125,14 @@ function qvoiceUse(p: Record<string, unknown>): { path: string; strength: unknow
  *  persona + embedding load, Base clone from reference, VoiceDesign
  *  export from the Design entry. */
 export function ttsT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
-  if (model.id === 'qwen3-tts-voicedesign') return ttsDesignT1(p, model, g, runId)
-  if (model.id === 'qwen3-tts-base') return ttsCloneT1(p, model, g, runId)
+  // THE LANE-BRANCH LAW (2026-09-20, the audit's finding): branch
+  // key = lane_inputs DATA (synth_lane — speak/clone/design), never
+  // a family-id switch — the latent_node/text_encode_node
+  // precedent. An absent key falls to the speak lane (''-absent).
+  const li = model.lane_inputs
+  const lane = typeof li.synth_lane === 'string' ? li.synth_lane : ''
+  if (lane === 'design') return ttsDesignT1(p, model, g, runId)
+  if (lane === 'clone') return ttsCloneT1(p, model, g, runId)
   ttsSpeakT1(p, model, g, runId)
 }
 export function ttsSpeakT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
