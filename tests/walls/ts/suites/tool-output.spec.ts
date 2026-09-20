@@ -127,7 +127,7 @@ describe("the melite tool faces answer over the live composition", () => {
       "melite_discover", "melite_construct", "melite_load", "comfy_manage",
       "skill_index", "skill_read", "ledger_tail",
       "melite_flow", "run_status",
-      "music", "tts", "voice_lock",
+      "music", "tts", // voice_lock died 2026-09-21 (design moved into the tts card's mods)
       "image_edit", "motion", "h3_timeline",
     ]) {
       assert.ok(names.includes(want), `${want} registered (got: ${names.join(", ")})`);

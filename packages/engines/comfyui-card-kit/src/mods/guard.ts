@@ -240,6 +240,7 @@ export const PACK_FATE: Record<string, "fired" | "refused" | "mounted"> = {
   loras: "fired",
   controlnet: "fired",
   qvoice: "fired",
+  qvoice_save: "fired",
   lanpaint: "refused",
   mask: "refused",
   ip_adapter: "refused",

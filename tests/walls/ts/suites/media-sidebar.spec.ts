@@ -114,7 +114,6 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['estate-artifact address prefix', 'dsh-resource://estate-artifact/'],
     ['the modal class rides (lightbox)', 'lightbox'],
     ['the wand class rides', 'wand'],
-    ['FINAL FILM badge', 'FINAL FILM'],
     ['3D badge', '3D'],
     ['honest 3D absence copy', '3D view unavailable'],
     ['honest media-flow absence copy', 'Media Flow view unavailable'],
@@ -130,6 +129,10 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['dead flows tab id', 'infer-media:flows'],
     ['dead flows tab kind', 'kind: "flows"'],
     ['dead flows guide order', 'order: 52'],
+    // THE TAG DEATH (operator order, 2026-09-20: "get rid of the
+    // [REDACTED 2026-11-05] FINAL FILM tag"): a tile's preview is its currency —
+    // the status ribbon never ships again.
+    ['dead FINAL FILM tag', 'FINAL FILM'],
   ]
   for (const [name, needle] of absent) {
     assert.ok(!bundle.includes(needle), `built lib/client.js still ships the standalone Flows tab: ${name} (${needle})`)

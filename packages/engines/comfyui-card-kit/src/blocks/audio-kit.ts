@@ -1,5 +1,5 @@
 // Tier 2 — the audio render-kit blocks (the compose/co_script audio
-// lane port). The Audiocore lanes (tts / sfx / voice-lock) leave the
+// lane port). The Audiocore lanes (tts / sfx) leave the
 // vendored pack's unspecified optional inputs to comfy-script's
 // AUTOFILL — no strip pass runs there, so the
 // graphs carry those default rows verbatim. These tables are the

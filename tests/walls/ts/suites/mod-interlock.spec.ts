@@ -54,7 +54,7 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
   assert.deepEqual(gen.flatMap(names), ["controlnets", "controlnet_strength_floor", "ip_adapters", "loras"],
     "image-gen absorbs loras + the controlnet stack (the z-image restoration) + the ip_adapter bag (the refused-fate restoration: vocabulary served, entries refuse loud)");
   const tts = svc.cardModFields("tts");
-  assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "voice_pca_strengths"], "tts absorbs the qvoice pack");
+  assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "repetition_penalty", "seed", "speed", "style_instruction", "temperature", "top_p", "voice_name", "voice_strength"], "tts absorbs the qvoice pack + the qvoice_save pack (the README stroke — save lives on the tts card's mods; voice_strength replaced the fiction PCA knob at the round-trip stroke, the clone pipeline's real knob)");
 });
 
 // THE ENVELOPE PARITY: formSchemas serves the card's own toJSON
@@ -73,7 +73,9 @@ const envelopeNames = (card: string, fam: string): string[] => {
 test("absorption: image-edit/qwen-img-edit-2511 envelope pinned (declaration order)", () => {
   const live = envelopeNames("image-edit", "qwen-img-edit-2511");
   assert.deepEqual(live, [
+    "image1", // card-owned since the 2.1 rework (was lanpaint-mod-owned — 2511-hardcoded)
     "image2", "image3", "reference_images", "prompt", "negative_prompt",
+    "width", "height", // the 2.1 edit lane's target-resolution knobs (2026-09-21)
     "seed", "steps", "cfg", "sampler", "scheduler", "use_stock_nodes",
     "double_reference",
   ]);
@@ -245,7 +247,7 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
   // its boarder with the z-image restoration — seven union types;
   // ip_adapter boards refused — the ray receipt, four vocabulary
   // rows, every stated entry refuses loud at fire time)
-  assert.deepEqual(svc.packNames(), ["controlnet", "ip_adapter", "lanpaint", "loras", "mask", "qvoice"]);
+  assert.deepEqual(svc.packNames(), ["controlnet", "ip_adapter", "lanpaint", "loras", "mask", "qvoice", "qvoice_save"]);
   const boarded = new Set(svc.flavorRegistrations().flatMap((f) => [f.pack]));
   assert.ok(boarded.has("controlnet"), "z-image boards controlnet — the pack serves its seven union types");
   assert.equal(svc.modRows("controlnet", "z-image").length, 7);
@@ -327,11 +329,11 @@ test("THE CONSUMPTION GATE (paper §3.2.2): a smuggled mutation on a non-boardin
   kit.imageT2I(base, zim, new GraphBuilder({}), "wall");
 });
 
-test("THE CONSUMPTION GATE, qvoice leg: voice_file fires only on boarding atoms", async () => {
-  // the ttsT1 lane wires p.qvoice/p.voice_pca_strengths straight
-  // into AudiocoreTTS — the second z-image-class site (ungated
-  // composition). Counterfactual shape: the qwen row with its
-  // boarding retracted must refuse, naming atom + pack.
+test("THE CONSUMPTION GATE, qvoice leg: a stated artifact fires only on boarding atoms", async () => {
+  // the ttsT1 lane routes a stated .qvoice (bag or flat) into the
+  // studio's clone pipeline — the second z-image-class site
+  // (ungated composition). Counterfactual shape: the qwen row with
+  // its boarding retracted must refuse, naming atom + pack.
   const kit = await import("../../../../packages/engines/comfyui-card-kit/src/kit.ts");
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const facts = loadFacts(
@@ -339,21 +341,23 @@ test("THE CONSUMPTION GATE, qvoice leg: voice_file fires only on boarding atoms"
     reads,
   );
   const qwen = facts.models["qwen3-tts"];
-  const base = { text: "hi", voice: "", style_instruction: "", temperature: 0.7, seed: 1, qvoice: "", voice_pca_strengths: "" };
+  const base = { text: "hi", voice: "", style_instruction: "", temperature: 0.7, seed: 1, qvoice: "" };
+  // flat legacy path smuggle
   assert.throws(
     () => kit.ttsT1({ ...base, qvoice: "stolen.wav" }, { ...qwen, mods: [] }, new GraphBuilder({}), "wall"),
     (err: unknown): boolean =>
       err instanceof Error &&
       String(err.message).includes("model 'qwen3-tts' does not board the 'qvoice' pack"),
   );
+  // bag smuggle (the surface's real form)
   assert.throws(
-    () => kit.ttsT1({ ...base, voice_pca_strengths: "smuggled" }, { ...qwen, mods: [] }, new GraphBuilder({}), "wall"),
+    () => kit.ttsT1({ ...base, qvoice: [{ qvoice: "stolen.qvoice" }] }, { ...qwen, mods: [] }, new GraphBuilder({}), "wall"),
     /does not board the 'qvoice' pack/,
   );
-  // boarding atom, stated knob → fires into the graph
+  // boarding atom, stated artifact → fires into the studio
   const gb = new GraphBuilder({});
-  kit.ttsT1({ ...base, qvoice: "maria.wav" }, qwen, gb, "wall");
-  assert.ok(JSON.stringify(gb.toJSON()).includes("maria.wav"), "boarding atom must fire voice_file");
+  kit.ttsT1({ ...base, qvoice: [{ qvoice: "maria.qvoice" }] }, qwen, gb, "wall");
+  assert.ok(JSON.stringify(gb.toJSON()).includes("maria.qvoice"), "boarding atom must fire the artifact");
   // blank knobs = no mutation = no gate
   kit.ttsT1(base, { ...qwen, mods: [] }, new GraphBuilder({}), "wall");
 });

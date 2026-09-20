@@ -70,3 +70,73 @@ describe("the music compose gate", () => {
     assert.equal(save.inputs.filename_prefix, "run_2/music");
   });
 });
+
+describe("the yue2 lane (YuE2-3B boarding — style + lyrics with ABC planning, 2026-09-20)", () => {
+  it("the yue2 facts row serves, the card boards it, and the rail resolves the checkpoint lane_inputs", () => {
+    const yue2 = facts.models.yue2!;
+    assert.ok(yue2, "the yue2 facts row serves");
+    assert.equal(yue2.card, "music");
+    assert.ok((def.boarded ?? []).includes("yue2"), "the music card boards yue2");
+    assert.equal(yue2.lane_inputs.checkpoint, "yue2_3b_int8_convrot.safetensors");
+  });
+
+  it("composes the checkpoint lane: ONE file carries model+clip+vae; ABC plans; GenerateMusic conditions; dpm_2/sgm_uniform at cfg 1", () => {
+    const yue2 = facts.models.yue2!;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "English, warm female vocal, indie pop, 96 BPM", lyrics: "[Verse]..." }), yue2, g, "run_y");
+    const graph = g.toJSON();
+    const ckpt = graph["CheckpointLoaderSimple.0"];
+    assert.ok(ckpt, "the single-checkpoint loader rides");
+    assert.equal(ckpt.inputs.ckpt_name, "yue2_3b_int8_convrot.safetensors");
+    const abc = graph["YuE2GenerateABC.0"];
+    assert.ok(abc, "the ABC planner rides (mode full default)");
+    assert.equal(abc.inputs.style, "English, warm female vocal, indie pop, 96 BPM");
+    assert.equal(abc.inputs.lyrics, "[Verse]...");
+    const music = graph["YuE2GenerateMusic.0"];
+    assert.ok(music, "the music conditioner rides");
+    assert.equal(music.inputs.mode, "full");
+    assert.equal(music.inputs.max_duration, 30, "the card duration rides as max_duration (schema default filled)");
+    assert.ok(graph["EmptyYuE2LatentAudio.0"], "the yue2 latent rides (sized by the conditioner's seconds)");
+    assert.ok(!graph["UNETLoader.0"] && !graph["MiniMaxMusic3TextEncode.0"], "the music3 loaders stay on their own lane");
+    const ks = graph["KSampler.0"];
+    assert.ok(ks, "the sampler rides");
+    assert.equal(ks.inputs.sampler_name, "dpm_2", "the template's sampler");
+    assert.equal(ks.inputs.scheduler, "sgm_uniform", "the template's scheduler");
+    assert.equal(ks.inputs.cfg, 1, "guidance lives on the AR side, not the sampler — cfg 1");
+    assert.ok(graph["VAEDecodeAudio.0"], "audio decode rides");
+    assert.equal(graph["SaveAudioAdvanced.0"].inputs.filename_prefix, "run_y/music");
+  });
+
+  it("mode off omits the ABC planner (GenerateMusic rides empty abc → the engine's own off mode)", () => {
+    const yue2 = facts.models.yue2!;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "jazz trio, brushed drums", mode: "off" }), yue2, g, "run_o");
+    const graph = g.toJSON();
+    assert.ok(!graph["YuE2GenerateABC.0"], "no planner node when mode is off");
+    assert.equal(graph["YuE2GenerateMusic.0"].inputs.abc, "");
+  });
+
+  it("mode melody plans melody-only (the cover-recommended plan)", () => {
+    const yue2 = facts.models.yue2!;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "lo-fi piano", mode: "melody" }), yue2, g, "run_me");
+    assert.equal(g.toJSON()["YuE2GenerateABC.0"].inputs.mode, "melody");
+    assert.equal(g.toJSON()["YuE2GenerateMusic.0"].inputs.mode, "melody");
+  });
+
+  it("an unknown mode refuses loud at the schema gate, never composes", () => {
+    const yue2 = facts.models.yue2!;
+    assert.throws(
+      () => def.compose({ prompt: "x", mode: "jazzy" }, yue2, new GraphBuilder(), "r_mode"),
+      /jazzy|mode|expected/i,
+    );
+  });
+
+  it("the music3 lane is unchanged by the boarding (unet+clip+vae loaders still compose, no checkpoint node)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "funk" }), music3, g, "run_m");
+    const graph = g.toJSON();
+    assert.ok(graph["UNETLoader.0"] && graph["MiniMaxMusic3TextEncode.0"], "the music3 lane body stands");
+    assert.ok(!graph["CheckpointLoaderSimple.0"], "no checkpoint node on the music3 lane");
+  });
+});
