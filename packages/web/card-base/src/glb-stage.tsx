@@ -90,6 +90,7 @@ export function autoFitToHeight(root: THREE.Object3D, targetHeight = 1.6): { box
 function mountScene(canvas: HTMLCanvasElement, onFail: (msg: string) => void): {
   scene: THREE.Scene
   setClickSink: (fn: (id: string | null) => void) => void
+  addTick: (fn: (delta: number) => void) => () => void
   dispose: () => void
 } | null {
   let clickSink: (id: string | null) => void = () => {}
@@ -122,6 +123,7 @@ function mountScene(canvas: HTMLCanvasElement, onFail: (msg: string) => void): {
   return {
     scene,
     setClickSink: (fn) => { clickSink = fn },
+    addTick: stage.addTick,
     dispose: () => {
       grid.geometry.dispose()
       stage.dispose()
@@ -184,13 +186,29 @@ export function skeletonHelperFor(group: THREE.Group): THREE.SkeletonHelper | nu
   return new THREE.SkeletonHelper(group)
 }
 
+/** THE TURNTABLE SPEED (radians/sec) — one revolution every ~12.5s,
+ *  the gentle review idle; fast enough to read as motion in a
+ *  glance, slow enough to inspect. */
+export const TURNTABLE_SPEED = 0.5
+
+/** One turntable frame: rotate every group about its OWN Y axis
+ *  (each spins in place — the row layout's positions stand). Pure —
+ *  the stage's tick seam calls it with the rAF delta; a 0 delta is
+ *  a no-op. Declared per-asset rotation rides along (the spin adds
+ *  to the current angle, never resets it). */
+export function turntableTick(groups: readonly THREE.Object3D[], delta: number): void {
+  if (delta === 0) return
+  const d = TURNTABLE_SPEED * delta
+  for (const g of groups) g.rotation.y += d
+}
+
 interface LoadedAsset { asset: StageAsset; group: THREE.Group }
 
 /** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
  *  row, click to select, per-asset load failures reported upward).
  *  No assets → the honest empty state; the canvas mounts when the
  *  first asset lands. */
-export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label, layers, onLayers }: {
+export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label, layers, onLayers, turntable }: {
   assets: readonly StageAsset[]
   /** selection is CALLER state (studios persist selections) */
   selectedId?: string | null
@@ -210,6 +228,11 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
    *  Shaded/Wireframe chips render and vote here. Omit for no
    *  layer chrome (read-only or plain). */
   onLayers?: (layers: StageLayers) => void
+  /** THE TURNTABLE (primitive ②, third slice): true spins every
+   *  loaded asset about its own Y axis on the stage's tick seam
+   *  (the review idle). The flag rides a ref — flipping it NEVER
+   *  remounts the scene (same law as the layer flags). */
+  turntable?: boolean
 }): ReturnType<typeof h> {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const sceneRef = useRef<{ setClickSink: (fn: (id: string | null) => void) => void } | null>(null)
@@ -224,6 +247,12 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
   const key = assets.map((a) => a.id + '@' + a.url).join('|')
   const errRef = useRef(onAssetError)
   errRef.current = onAssetError
+  // the turntable's own refs (the never-remount law): the tick reads
+  // the CURRENT groups + flag every frame; prop flips cost nothing
+  const groupsRef = useRef<readonly THREE.Object3D[]>([])
+  groupsRef.current = loaded.map((l) => l.group)
+  const turntableRef = useRef(turntable === true)
+  turntableRef.current = turntable === true
   useEffect(() => {
     setLoaded([])
     setFailed(null)
@@ -301,6 +330,14 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
       }
     }
     skeletonHelpers.current = helpers
+    // THE TURNTABLE (primitive ②, third slice): one tick per mount,
+    // gated by the ref — the flag flips inside the running frame,
+    // never by remounting the scene. The tick dies with the stage's
+    // own dispose (the rAF loop cancels).
+    mounted.addTick((dt) => {
+      if (!turntableRef.current) return
+      turntableTick(groupsRef.current, dt)
+    })
     return () => {
       for (const helper of skeletonHelpers.current) {
         mounted.scene.remove(helper)

@@ -1,17 +1,17 @@
 // @vitest-environment happy-dom
-// glb-stage-layers.spec.tsx — THE LAYER MODEL (primitive ②, first
-// slice): shaded vs wireframe. applyWireframe walks loaded groups
-// (mesh flags flip, points/lines/bare nodes untouched); the
-// Shaded/Wireframe chips render ONLY on the caller's write channel
-// (onLayers + assets) and vote the caller's layer state. The fetch
-// door is a FAKE (the load spec's crafted GLB, copied — walls stand
-// alone in this repo), never a module mock.
+// glb-stage-layers.spec.tsx — THE LAYER MODEL + STAGE BEHAVIORS
+// (primitive ② walls): shaded vs wireframe + the skeleton overlay
+// (applyWireframe/skeletonHelperFor walk loaded groups; the chips
+// vote the caller's state), and the turntable (turntableTick: pure
+// per-frame spin). The fetch door is a FAKE (the load spec's
+// crafted GLB, copied — walls stand alone in this repo), never a
+// module mock.
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import * as THREE from 'three'
 
-import { applyWireframe, GlbStagePreview, skeletonHelperFor } from '../src/glb-stage.tsx'
+import { applyWireframe, GlbStagePreview, skeletonHelperFor, TURNTABLE_SPEED, turntableTick } from '../src/glb-stage.tsx'
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
@@ -174,4 +174,35 @@ test('THE OVERLAY VOTE: Skeleton flips its own flag and mode votes preserve it',
   // the mode votes preserve the overlay (never a silent layer drop)
   fireEvent.click(screen.getByRole('button', { name: 'Shaded' }))
   expect(onLayers).toHaveBeenCalledWith({ wireframe: false, skeleton: true })
+})
+
+test('TURNTABLE TICK: every group spins by speed×delta about its own Y (pure, additive)', () => {
+  const a = new THREE.Group()
+  a.rotation.y = 0.25 // a declared rotation — the spin ADDS, never resets
+  const b = new THREE.Group()
+  turntableTick([a, b], 2)
+  expect(a.rotation.y).toBeCloseTo(0.25 + TURNTABLE_SPEED * 2, 12)
+  expect(b.rotation.y).toBeCloseTo(TURNTABLE_SPEED * 2, 12)
+  // a zero delta is a no-op; an empty set is a no-op (never a throw)
+  const before = a.rotation.y
+  turntableTick([a], 0)
+  expect(a.rotation.y).toBe(before)
+  turntableTick([], 1)
+})
+
+test('THE TURNTABLE PROP: seats without a throw headless (the honest mount-refusal face stands)', async () => {
+  stubGlbDoor()
+  const { rerender } = render(h(GlbStagePreview, {
+    assets: [{ id: 'a', url: '/mesh-turntable.glb' }],
+    turntable: true,
+  }))
+  // WebGL is absent headless — the mount refuses, the face is honest,
+  // and the tick registration arm never threw on the way there
+  await waitFor(() => { expect(screen.getByText(/viewport failed:/)).not.toBeNull() })
+  // the flag flips without remount cost (the ref law — never a throw)
+  rerender(h(GlbStagePreview, {
+    assets: [{ id: 'a', url: '/mesh-turntable.glb' }],
+    turntable: false,
+  }))
+  expect(screen.getByText(/viewport failed:/)).not.toBeNull()
 })
