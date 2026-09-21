@@ -111,6 +111,58 @@ async function readBench(
   }
 }
 
+/** Enrich bench stages with the draft's latest run (the lookup
+ *  the agent cannot do itself: runs are born from drafts — the
+ *  start door refuses cardless runs — so the bench's draft_id
+ *  joins to /v1/flows/runs rows server-side; the agent never
+ *  touches a filesystem path). A stage that has run carries
+ *  last_run {run_id, status, created_at, thumbnail, artifacts} —
+ *  view it with melite_view, chain it with {stage, output}.
+ *  Enrichment DEGRADES, never refuses: a failed runs call (seat
+ *  absent, lane hiccup) or no draft match returns the stages
+ *  verbatim — the bench read is the payload, the run is garnish.
+ *  One window: the newest 100 global runs; a draft whose latest
+ *  run is older resolves nothing (documented, not silent — the
+ *  key is simply absent). */
+async function withLastRun(
+  request: EstateRequest, bench: Record<string, unknown>, signal: AbortSignal,
+): Promise<unknown> {
+  const stages: unknown = bench['stages']
+  if (!Array.isArray(stages) || stages.length === 0) return stages
+  const draftId: unknown = bench['draft_id']
+  if (typeof draftId !== 'string' || draftId === '') return stages
+  let rows: unknown
+  try {
+    const r = await request('GET', '/v1/flows/runs?limit=100', undefined, signal, 15000) as Record<string, unknown>
+    rows = r['runs']
+  } catch {
+    return stages
+  }
+  if (!Array.isArray(rows)) return stages
+  const mine: Array<{ created: number; row: Record<string, unknown> }> = []
+  for (const r of rows) {
+    if (typeof r !== 'object' || r === null || Array.isArray(r)) continue
+    const rec = r as Record<string, unknown>
+    if (rec['draft_id'] !== draftId) continue
+    const created: unknown = rec['created_at']
+    mine.push({ created: typeof created === 'number' ? created : 0, row: rec })
+  }
+  if (mine.length === 0) return stages
+  mine.sort((a, b): number => b.created - a.created)
+  const win: Record<string, unknown> = (mine[0] as { row: Record<string, unknown> }).row
+  const lastRun: Record<string, unknown> = {
+    run_id: win['run_id'],
+    status: win['status'],
+    created_at: win['created_at'],
+    thumbnail: win['thumbnail'],
+    artifacts: win['artifacts'],
+  }
+  return stages.map((s): unknown => {
+    if (typeof s !== 'object' || s === null || Array.isArray(s)) return s
+    return { ...(s as Record<string, unknown>), last_run: lastRun }
+  })
+}
+
 /** Project bench stage rows onto the flow_inline wire contract
  *  (extra=forbid at the start/validate doors: card, provenance,
  *  runStatus, result, title strip; engine defaults comfyui). */
@@ -161,9 +213,13 @@ export function meliteConstruct(
         ? 'This never executes (melite_flow runs what is here; the user presses Run). '
         : 'You compose the flow and edit its state here, live with the user — runs start at the user\'s Run press, never yours. ')
       + 'Verbs: read (the state — '
-      + 'always start here) | load (replace stages wholesale — DESTRUCTIVE: refused on a non-empty bench unless '
+      + 'always start here; a stage that has run carries last_run {run_id, status, artifacts} — view it with '
+      + 'melite_view, chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE: refused on a non-empty bench unless '
       + 'overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, '
-      + 'inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile '
+      + 'inputs?} (inputs wire PRIOR STAGES, never files: {image1: {stage: "s_0", output: "default"}} — the queue '
+      + 'resolves the stage\'s latest output at run time; to chain the last generation, bind its stage, never hunt '
+      + 'its artifact on disk) | remove_stage {stage} | rewire {stage, input, from?} (from is {stage, output} | '
+      + '{initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile '
       + 'check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with '
       + 'current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.',
     parameters: {
@@ -267,7 +323,7 @@ export function meliteConstruct(
         if (verb === 'read' || verb === '') {
           const b = await readBench(request, bench, signal)
           return out({
-            rev: b.rev, intent: b.intent, stages: b.stages, log: b.log,
+            rev: b.rev, intent: b.intent, stages: await withLastRun(request, b, signal), log: b.log,
             hint: 'mutate with expect_rev=' + String(b.rev),
           })
         }

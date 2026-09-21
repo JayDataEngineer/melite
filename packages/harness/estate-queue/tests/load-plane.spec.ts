@@ -22,6 +22,7 @@ import {
   resolveCardPackageDir,
   skillLineForRef,
   skillLinesForCard,
+  skillLinesForFamilies,
   toolRowFor,
 } from "../src/loadPlane.ts";
 import { toolBaseRows } from "../src/toolProjection.ts";
@@ -276,6 +277,36 @@ describe("loadCard", () => {
     assert.throws(
       () => loadCard(REPO, cards as never, models as never, "ghost"),
       /unknown card 'ghost'/,
+    );
+  });
+
+  it("boarded families' model skills ride the bundle (the one-load contract)", () => {
+    // the operator's anima case: loading a card boarded on anima
+    // serves model:anima:prompt-enhance beside the card lines — the
+    // agent reads the prompt guide before compose, never hunts it
+    // after. A boarded ghost contributes nothing, never a refusal.
+    const defAnima = DEF({ boarded: ["anima", "ghost-fam"] });
+    const cardsAnima = {
+      defsSync: () => new Map([["anny", defAnima]]),
+      modelMids: () => new Set(["anima"]),
+    };
+    const modelsAnima = {
+      allDecls: () => [{ id: "anima", label: "Anima", description: "anime" }],
+    };
+    const b = loadCard(REPO, cardsAnima as never, modelsAnima as never, "anny");
+    const ids = (b["skills"] as Array<{ id?: unknown }>).map((l) => l.id);
+    assert.ok(ids.includes("model:anima:prompt-enhance"));
+    assert.ok(!ids.some((id) => String(id).startsWith("model:ghost-fam")));
+  });
+
+  it("skillLinesForFamilies emits boarded order, entrance first", () => {
+    const lines = skillLinesForFamilies(REPO, ["z-image", "anima", "ghost-fam"]);
+    const ids = lines.map((l) => (l as { id?: unknown }).id);
+    assert.ok(ids.includes("model:z-image:prompt-enhance"));
+    assert.ok(ids.includes("model:anima:prompt-enhance"));
+    // boarded order holds across families
+    assert.ok(
+      ids.indexOf("model:z-image:prompt-enhance") < ids.indexOf("model:anima:prompt-enhance"),
     );
   });
 });

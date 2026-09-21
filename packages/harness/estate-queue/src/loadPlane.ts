@@ -189,10 +189,54 @@ export function skillLinesForCard(repo: string, cardId: string): Array<Record<st
   return out;
 }
 
-/** The flow leaf docs (flows/<name>/**.md — the card
- *  cardSkillDocs shape: SKILL/AGENT first, sorted, capped. Serves
- *  what the leaf authors; a missing leaf reads nothing, never
- *  refuses). */
+/** Tier-1 skill LINES for boarded families (the discover+load
+ *  contract, 2026-09-22: ONE melite_load hands the agent the card's
+ *  skills AND every boarded family's model skills — the agent
+ *  learns model:anima:prompt-enhance from loading image-gen, never
+ *  from a second hunt). Entrance rows (scope "model", the family's
+ *  AGENT.md) ride when the family authors one, then its skills
+ *  (scope "model-skill"), in the boarded order — card skills first
+ *  (the caller concatenates), then family by family. A boarded id
+ *  with no rows contributes nothing (the walk is the truth — never
+ *  a refusal; anima itself ships no AGENT.md, only the skill). */
+export function skillLinesForFamilies(repo: string, fams: readonly string[]): Array<Record<string, unknown>> {
+  const out: Array<Record<string, unknown>> = [];
+  const seen = new Set<string>();
+  let engines: string[];
+  try {
+    engines = engineDirs(join(repo, "packages", "engines"));
+  } catch {
+    /* engineDirs returns [] instead of throwing (missing roots
+       read empty) */
+    return out;
+  }
+  // walk once, bucket per family — the bundle emits boarded order
+  const perFam = new Map<string, Array<{ id: string; line: Record<string, unknown>; entrance: boolean }>>();
+  for (const engine of engines) {
+    let rows;
+    try {
+      rows = modelRows(engine);
+    } catch {
+      continue;
+    }
+    for (const doc of rows) {
+      if (doc.row.model === null || !fams.includes(doc.row.model)) continue;
+      if (doc.row.scope !== "model" && doc.row.scope !== "model-skill") continue;
+      if (seen.has(doc.row.id)) continue;
+      seen.add(doc.row.id);
+      const cell = perFam.get(doc.row.model) ?? [];
+      cell.push({ id: doc.row.id, line: wireSkill(doc.row), entrance: doc.row.scope === "model" });
+      perFam.set(doc.row.model, cell);
+    }
+  }
+  for (const fam of fams) {
+    const cell = perFam.get(fam) ?? [];
+    // entrance first, then skills in walk order
+    cell.sort((a, b): number => Number(b.entrance) - Number(a.entrance));
+    for (const r of cell) out.push(r.line);
+  }
+  return out;
+}
 export function flowLeafDocs(repo: string, flowName: string): Array<{ path: string; text: string }> {
   const MAX_FILES = 8;
   const MAX_BYTES = 32768;
@@ -255,10 +299,13 @@ export function skillLineForRef(repo: string, ref: string): Record<string, unkno
 }
 
 /** Melite load for a CARD: agents md + tool-call signature +
- *  tier-1 skill lines + model hints (the boarded families' DECL
- *  identity — models as card DATA, never agent-addressed; prompt
- *  craft is the agent's own via the skill lines, and LLM-powered
- *  enhance is the user's ✦ door, never served here). Throws LOUD
+ *  tier-1 skill lines (the card's own AND every boarded family's
+ *  model skills — ONE load hands the agent the whole craft: loading
+ *  image-gen serves model:anima:prompt-enhance beside the card
+ *  lines, so the prompt guide is read before compose, never hunted
+ *  after) + model hints (the boarded families' DECL identity —
+ *  presence-marked, never a run-time surprise; LLM-powered enhance
+ *  stays the user's ✦ door, never served here). Throws LOUD
  *  on unknown ids (the door maps to 404). */
 export function loadCard(
   repo: string,
@@ -316,7 +363,13 @@ export function loadCard(
       rows,
     ),
     agents: cardSkillDocs(pkgDir),
-    skills: skillLinesForCard(repo, cardId),
+    skills: [
+      ...skillLinesForCard(repo, cardId),
+      // THE BOARDED CRAFT (discover+load contract, 2026-09-22):
+      // the boarded families' model skills ride the same bundle —
+      // no second hunt before compose.
+      ...skillLinesForFamilies(repo, (def as { boarded: readonly string[] }).boarded),
+    ],
     model_hints: hints,
     pack_hints,
   };

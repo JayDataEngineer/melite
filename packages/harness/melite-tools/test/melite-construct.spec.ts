@@ -650,3 +650,67 @@ describe('melite_construct — THE INTERFACE LAW (the agent-mode breakdown, 2026
     assert.ok(tool.description.includes('melite_flow runs what is here'), tool.description)
   })
 })
+
+describe('melite_construct read — last_run (the lookup the agent cannot do itself)', () => {
+  // Runs are born from drafts (the start door refuses cardless
+  // runs), so the bench's draft_id joins to the runs list
+  // server-side — the read annotates, the agent never hunts.
+  const BENCH = {
+    session: 'main', rev: 2, intent: 'bench', draft_id: 'bench-main',
+    stages: [{ id: 's_0', card: 'image-gen' }, { id: 's_1', card: 'image-edit' }],
+    log: [],
+  }
+  const RUNS = {
+    count: 3,
+    runs: [
+      { run_id: 'run-old-0001', draft_id: 'bench-main', status: 'done', created_at: 100, thumbnail: 't1', artifacts: [{ name: 'a.png' }] },
+      { run_id: 'run-new-0002', draft_id: 'bench-main', status: 'done', created_at: 200, thumbnail: 't2', artifacts: [{ name: 'b.png' }] },
+      { run_id: 'run-foreign-0003', draft_id: 'bench-other', status: 'done', created_at: 300, thumbnail: 't3', artifacts: [{ name: 'c.png' }] },
+    ],
+  }
+
+  test('stages carry the draft\'s NEWEST run; foreign drafts never leak', async () => {
+    const { request } = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return BENCH
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return RUNS
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const stages = out.stages as Array<Record<string, unknown>>
+    assert.equal(stages.length, 2)
+    for (const s of stages) {
+      const last = s.last_run as Record<string, unknown>
+      assert.equal(last.run_id, 'run-new-0002')
+      assert.equal(last.status, 'done')
+      assert.deepEqual(last.artifacts, [{ name: 'b.png' }])
+    }
+  })
+
+  test('a failed runs call degrades to verbatim stages — the read never refuses for garnish', async () => {
+    const { request } = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return BENCH
+      throw new Error('runs seat down')
+    })
+    const out = await meliteConstruct(request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.equal(out.ok, true)
+    assert.deepEqual(out.stages, BENCH.stages)
+  })
+
+  test('no draft match, no draft_id — stages ride without the key', async () => {
+    const norun = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return BENCH
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { count: 1, runs: [RUNS.runs[2]] }
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(norun.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    for (const s of out.stages as Array<Record<string, unknown>>) {
+      assert.ok(!('last_run' in s))
+    }
+    const nodraft = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return ROW
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const out2 = await meliteConstruct(nodraft.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.deepEqual(out2.stages, ROW.stages)
+  })
+})
