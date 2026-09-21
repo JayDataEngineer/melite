@@ -9,10 +9,14 @@ import { Context } from "@deepseek-ai/cordis";
 import { SkillDirectoryService, skillProvider } from "../src/skillRegistry.ts";
 
 let state = "";
+const tmpDirs: string[] = [];
 afterEach(() => {
   if (state !== "") {
     rmSync(state, { recursive: true, force: true });
     state = "";
+  }
+  for (const dir of tmpDirs.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -31,6 +35,7 @@ const seat = (): SkillDirectoryService => {
 // BENCH only — seed a bench doc (DSH_HOME tmp) to see vocabulary.
 function seedBench(stages: Array<{ card?: string; model?: string }>): () => void {
   const home = mkdtempSync(join(tmpdir(), "bench-home-"));
+  tmpDirs.push(home);
   mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
   writeFileSync(
     join(home, "storages", "drafts", "docs", "bench-session-test.json"),
@@ -55,18 +60,19 @@ describe("SkillDirectoryService", () => {
     // there. seedBench pins its own home for the seeded phase.
     const savedHome = process.env["DSH_HOME"];
     const emptyHome = mkdtempSync(join(tmpdir(), "skill-registry-empty-"));
+    tmpDirs.push(emptyHome);
     process.env["DSH_HOME"] = emptyHome;
     try {
-    const empty = seat().index() as { count: number; families: unknown[]; cards: unknown[]; flows: { count: number; ids: string[] } };
-    assert.equal((empty as { skills?: unknown }).skills, undefined);
-    assert.equal(empty.count, 0, "an empty bench lists nothing");
-    assert.deepEqual(empty.cards, []);
-    const restore = seedBench([{ card: "image-gen", model: "krea-2" }]);
-    try {
-      const idx = seat().index() as { count: number; families: Array<{ id: string }>; cards: Array<{ id: string }> };
-      assert.ok(idx.cards.some((c) => c.id === "image-gen"), "the benched card serves");
-      assert.ok(idx.families.some((f) => f.id === "krea-2"), " the benched family serves");
-      assert.ok(!idx.cards.some((c) => c.id === "image-edit"), "unbenched cards never ride");
+      const empty = seat().index() as { count: number; families: unknown[]; cards: unknown[]; flows: { count: number; ids: string[] } };
+      assert.equal((empty as { skills?: unknown }).skills, undefined);
+      assert.equal(empty.count, 0, "an empty bench lists nothing");
+      assert.deepEqual(empty.cards, []);
+      const restore = seedBench([{ card: "image-gen", model: "krea-2" }]);
+      try {
+        const idx = seat().index() as { count: number; families: Array<{ id: string }>; cards: Array<{ id: string }> };
+        assert.ok(idx.cards.some((c) => c.id === "image-gen"), "the benched card serves");
+        assert.ok(idx.families.some((f) => f.id === "krea-2"), " the benched family serves");
+        assert.ok(!idx.cards.some((c) => c.id === "image-edit"), "unbenched cards never ride");
     } finally {
       restore();
     }

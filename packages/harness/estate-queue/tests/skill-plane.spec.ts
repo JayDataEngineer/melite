@@ -21,11 +21,15 @@ import {
 
 const REPO = process.cwd();
 let ROOT = "";
+const tmpDirs: string[] = [];
 afterEach(() => {
   delete process.env.MELITE_REPO_ROOT;
   if (ROOT !== "") {
     rmSync(ROOT, { recursive: true, force: true });
     ROOT = "";
+  }
+  for (const dir of tmpDirs.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -81,6 +85,7 @@ const mkEstate = (withFlows = true): string => {
 // get a restore fn; an UNSEEDED call pins the empty-bench law.
 function seedBench(stages: Array<{ card?: string; model?: string }>): () => void {
   const home = mkdtempSync(join(tmpdir(), "bench-home-"));
+  tmpDirs.push(home);
   mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
   writeFileSync(
     join(home, "storages", "drafts", "docs", "bench-session-test.json"),
@@ -168,11 +173,11 @@ describe("cardRows", () => {
     writeFileSync(join(E, "src", "cards", "g2", "has_under", "AGENT.md"), "# x\n");
     assert.throws(() => cardRows(E, ROOT), /has no registry mapping/);
     try {
-      cardRows(E, ROOT);
-      assert.fail("should throw");
-    } catch (e) {
-      assert.ok(e instanceof LaneWireError);
-      assert.equal((e as Error).name, "LaneWireError");
+        cardRows(E, ROOT);
+        assert.fail("should throw");
+      } catch (e) {
+        assert.ok(e instanceof LaneWireError);
+        assert.equal((e as Error).name, "LaneWireError");
     }
   });
 });
@@ -199,9 +204,9 @@ describe("cardRows domains", () => {
     assert.deepEqual([...walk.buckets.keys()], ["acard", "img-to-mesh", "img.foo"]);
     const restore = seedBench([{ card: "acard" }]);
     try {
-      const idx = buildSkillIndex(ROOT) as { cards: Array<{ id: string; skills: number }> };
-      const acard = idx.cards.find((c) => c.id === "acard");
-      assert.ok(acard !== undefined, "the selection carries the benched acard");
+        const idx = buildSkillIndex(ROOT) as { cards: Array<{ id: string; skills: number }> };
+        const acard = idx.cards.find((c) => c.id === "acard");
+        assert.ok(acard !== undefined, "the selection carries the benched acard");
     } finally {
       restore();
     }
@@ -232,7 +237,7 @@ describe("the spawn plane (subagent-only leaves — the operator's pin)", () => 
     const restore = seedBench([{ card: "acard" }, { model: "blender" }]);
     let idx: { count: number; families: Array<{ id: string; skills: number }>; cards: Array<{ id: string; skills: number }> };
     try {
-      idx = buildSkillIndex(ROOT) as { count: number; families: Array<{ id: string; skills: number }>; cards: Array<{ id: string; skills: number }> };
+        idx = buildSkillIndex(ROOT) as { count: number; families: Array<{ id: string; skills: number }>; cards: Array<{ id: string; skills: number }> };
     } finally {
       restore();
     }
@@ -296,17 +301,18 @@ describe("buildSkillIndex + findSkill", () => {
     // makes the real doc fresh and this reads it — it did).
     const savedHome = process.env["DSH_HOME"];
     const emptyHome = mkdtempSync(join(tmpdir(), "skill-plane-empty-"));
+    tmpDirs.push(emptyHome);
     process.env["DSH_HOME"] = emptyHome;
     try {
-    const empty = buildSkillIndex(ROOT) as unknown as { count: number; cards: unknown[]; families: unknown[]; flows: { count: number } };
-    assert.equal(empty.count, 0, "the empty bench lists nothing");
-    assert.deepEqual(empty.cards, []);
-    assert.deepEqual(empty.families, []);
-    assert.equal(empty.flows.count, 0);
-    const restore = seedBench([{ model: "m1" }, { model: "m3" }, { card: "c2" }]);
-    let idx: { count: number; families: Array<{ id: string; skills: number; entrance: string | null }>; cards: Array<{ id: string; skills: number; entrance: string | null }>; flows: { count: number } };
-    try {
-      idx = buildSkillIndex(ROOT) as typeof idx;
+      const empty = buildSkillIndex(ROOT) as unknown as { count: number; cards: unknown[]; families: unknown[]; flows: { count: number } };
+      assert.equal(empty.count, 0, "the empty bench lists nothing");
+      assert.deepEqual(empty.cards, []);
+      assert.deepEqual(empty.families, []);
+      assert.equal(empty.flows.count, 0);
+      const restore = seedBench([{ model: "m1" }, { model: "m3" }, { card: "c2" }]);
+      let idx: { count: number; families: Array<{ id: string; skills: number; entrance: string | null }>; cards: Array<{ id: string; skills: number; entrance: string | null }>; flows: { count: number } };
+      try {
+        idx = buildSkillIndex(ROOT) as typeof idx;
     } finally {
       restore();
     }
@@ -347,7 +353,7 @@ describe("buildSkillIndex + findSkill", () => {
     mkdirSync(join(E, "src", "cards", "g2", "has_under"), { recursive: true });
     const restore = seedBench([{ card: "c1" }]);
     try {
-      assert.throws(() => buildSkillIndex(ROOT), /has no registry mapping/);
+        assert.throws(() => buildSkillIndex(ROOT), /has no registry mapping/);
     } finally {
       restore();
     }
@@ -359,20 +365,20 @@ describe("hSkillRead", () => {
     mkEstate();
     const state = mkdtempSync(join(tmpdir(), "state-"));
     try {
-      const f = hSkillRead(ROOT, state, "model:m1:plain.md");
-      assert.equal(f.status, 200);
-      const p = f.payload as { id: string; name: string; scope: string; content: string };
-      assert.equal(p.id, "model:m1:plain.md");
-      assert.equal(p.content, "plain skill\n");
-      const r = hSkillRead(ROOT, state, "flow:audio-native-tts");
-      assert.equal(r.status, 200);
-      assert.ok((r.payload as { content: string }).content.length > 0);
-      const n = hSkillRead(ROOT, state, "ghost");
-      assert.equal(n.status, 404);
-      assert.deepEqual(n.payload, { error: "no such skill: \"ghost\"" });
-      const journal = readFileSync(join(state, "output", "_ledger.jsonl"), "utf8");
-      assert.ok(journal.includes('"event":"skill.read"'));
-      assert.ok(journal.includes("model:m1:plain.md"));
+        const f = hSkillRead(ROOT, state, "model:m1:plain.md");
+        assert.equal(f.status, 200);
+        const p = f.payload as { id: string; name: string; scope: string; content: string };
+        assert.equal(p.id, "model:m1:plain.md");
+        assert.equal(p.content, "plain skill\n");
+        const r = hSkillRead(ROOT, state, "flow:audio-native-tts");
+        assert.equal(r.status, 200);
+        assert.ok((r.payload as { content: string }).content.length > 0);
+        const n = hSkillRead(ROOT, state, "ghost");
+        assert.equal(n.status, 404);
+        assert.deepEqual(n.payload, { error: "no such skill: \"ghost\"" });
+        const journal = readFileSync(join(state, "output", "_ledger.jsonl"), "utf8");
+        assert.ok(journal.includes('"event":"skill.read"'));
+        assert.ok(journal.includes("model:m1:plain.md"));
     } finally {
       rmSync(state, { recursive: true, force: true });
     }
@@ -384,9 +390,9 @@ describe("hSkillRead", () => {
     mkdirSync(join(E, "src", "cards", "g2", "has_under"), { recursive: true });
     const state = mkdtempSync(join(tmpdir(), "state-"));
     try {
-      const f = hSkillRead(ROOT, state, "card:c1");
-      assert.equal(f.status, 500);
-      assert.match((f.payload as { error: string }).error, /has no registry mapping/);
+        const f = hSkillRead(ROOT, state, "card:c1");
+        assert.equal(f.status, 500);
+        assert.match((f.payload as { error: string }).error, /has no registry mapping/);
     } finally {
       rmSync(state, { recursive: true, force: true });
     }
@@ -405,12 +411,12 @@ describe("hSkillRead", () => {
     mkdirSync(join(ROOT, "flows"), { recursive: true });
     const state = mkdtempSync(join(tmpdir(), "state-"));
     try {
-      // the spawn reader resolves it…
-      assert.ok(findSkill(ROOT, "model:blender:rigging") !== null);
-      // …but the constructor's read door 404s the id
-      const r = hSkillRead(ROOT, state, "model:blender:rigging");
-      assert.equal(r.status, 404);
-      assert.deepEqual(r.payload, { error: "no such skill: \"model:blender:rigging\"" });
+        // the spawn reader resolves it…
+        assert.ok(findSkill(ROOT, "model:blender:rigging") !== null);
+        // …but the constructor's read door 404s the id
+        const r = hSkillRead(ROOT, state, "model:blender:rigging");
+        assert.equal(r.status, 404);
+        assert.deepEqual(r.payload, { error: "no such skill: \"model:blender:rigging\"" });
     } finally {
       rmSync(state, { recursive: true, force: true });
     }

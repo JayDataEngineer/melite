@@ -170,7 +170,10 @@ describe('estate lane error classes', () => {
         validate: () => Promise.reject(new RemoteError(
           'runs/flow-compile',
           'flow body carries unknown keys ["flow"] — allowed: ["description","id","stages"]',
-          { loc: 'flow', errors: ['stages[0]: missing id'] },
+          // errors rows are OBJECTS at the real arm (scope/error/
+          // code/loc — runsValidateArms' CardArmError envelope), not
+          // strings; the live seat answers this exact shape
+          { loc: 'flow', errors: [{ scope: 'flow', error: 'stages[0]: missing id', code: 'flow_compile', loc: 'flow' }] },
         )),
       },
     })
@@ -180,7 +183,37 @@ describe('estate lane error classes', () => {
     assert.equal(body.code, 'runs/flow-compile')
     assert.ok(body.error.includes('unknown keys'), text)
     assert.equal(body.loc, 'flow')
-    assert.deepEqual(body.errors, ['stages[0]: missing id'])
+    assert.deepEqual(body.errors, [{ scope: 'flow', error: 'stages[0]: missing id', code: 'flow_compile', loc: 'flow' }])
+  })
+
+  test('store faults stay 502 (bench storage refusal is infra, not caller)', async () => {
+    // bench/store-failed is thrown by the bench remote's storage
+    // open wraps (drafts/src/remote.ts) — reached through the real
+    // /v1/bench/ensure door route (the second critique caught this
+    // code defaulting to 400: the same opposite-polarity lie)
+    const routes = boot({
+      benchRemote: {
+        ensure: () => Promise.reject(new RemoteError('bench/store-failed', 'the storage open refused', {})),
+      },
+    })
+    const { status, text } = await post(routes, '/v1/bench/ensure', { session: 'default' })
+    assert.equal(status, 502, 'bench/store-failed must answer 502')
+    assert.ok(text.includes('bench/store-failed'), text)
+  })
+
+  test('conflict voices answer 409 (cas, overwrite-required, duplicate-stage)', async () => {
+    const routes = boot({
+      benchRemote: {
+        patch: () => Promise.reject(new RemoteError('bench/overwrite-required', 'load onto a non-empty bench requires overwrite: true', { current_rev: 3, stages: 5 })),
+      },
+    })
+    // the real mutation-arm grammar: POST /v1/bench/:session/<verb>
+    const { status, text } = await post(routes, '/v1/bench/default/patch', { expect_rev: 2 })
+    assert.equal(status, 409)
+    const body = JSON.parse(text) as { code: string; current_rev: number; stages: number }
+    assert.equal(body.code, 'bench/overwrite-required')
+    assert.equal(body.current_rev, 3)
+    assert.equal(body.stages, 5)
   })
 
   test('GET status refusal: unknown-run is a 404 carrying runId (not-found class)', async () => {
@@ -218,7 +251,7 @@ describe('estate lane error classes', () => {
     assert.equal(body.data.url, 'http://127.0.0.1:8188')
   })
 
-  test('manage/refused with a garbage envelope status falls back to 400', async () => {
+  test('manage/refused with a garbage envelope status answers 500 (the SEAT\'s bug, never the caller\'s)', async () => {
     const routes = boot({
       manage: {
         act: () => Promise.reject(new RemoteError(
@@ -229,7 +262,10 @@ describe('estate lane error classes', () => {
       },
     })
     const { status } = await post(routes, '/v1/manage', { action: 'logs' })
-    assert.equal(status, 400)
+    // production always sets an int status (the manage plane's
+    // every return path); garbage means the seat broke its own
+    // envelope — 500, not a caller-fault 400 (critique #5)
+    assert.equal(status, 500)
   })
 
   test('no seat at all stays the loud 502 (the seat-absent voice)', async () => {

@@ -5,10 +5,10 @@
 // planes ride lookup=all|cards|flows, search filters (q tokens ALL
 // match; tags ALL match), rows are LIVE (the flows registry + the
 // primed card defs — never a frozen blob).
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "vitest";
+import { afterEach, beforeEach, test } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from '@deepseek-ai/cordis';
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
@@ -26,8 +26,39 @@ import queuePlugin, {
   type DiscloseService,
 } from "../../../../packages/harness/estate-queue/src/index.ts";
 
+// HYGIENE (extended 2026-10-08 after the second critique): every
+// boot in this wall sets MELITE_STATE_ROOT and the skills test sets
+// DSH_HOME — both leaked across tests before (the MELITE_STATE_ROOT
+// leak is the same vector that poisoned the repro wall's worker).
+// ONE restore path: capture both in beforeEach, restore both in
+// afterEach, and remove every tracked tmp home (the battery's
+// pre-run tmp-sweep only reclaims BETWEEN runs).
+const tmpDirs: string[] = [];
+function tmp(prefix: string): string {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  tmpDirs.push(dir);
+  return dir;
+}
+let savedRoot: string | undefined;
+let savedHome: string | undefined;
+
+beforeEach(() => {
+  savedRoot = process.env["MELITE_STATE_ROOT"];
+  savedHome = process.env["DSH_HOME"];
+});
+
+afterEach(() => {
+  if (savedRoot === undefined) delete process.env["MELITE_STATE_ROOT"];
+  else process.env["MELITE_STATE_ROOT"] = savedRoot;
+  if (savedHome === undefined) delete process.env["DSH_HOME"];
+  else process.env["DSH_HOME"] = savedHome;
+  for (const dir of tmpDirs.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 async function boot(): Promise<{ ctx: Context; disclose: DiscloseService }> {
-  const root = mkdtempSync(join(tmpdir(), "disclose-wall-"));
+  const root = tmp("disclose-wall-");
   const ctx = new Context();
   process.env["MELITE_STATE_ROOT"] = root;
   await ctx.plugin(timerPlugin as never);
@@ -101,7 +132,7 @@ test("the tools' lane grammar serves /v1/discover from the seat", async () => {
 });
 
 test("the manage seat — the door's vocabulary + refusal envelope (REBUILD-15)", async () => {
-  const root = mkdtempSync(join(tmpdir(), "disclose-wall-"));
+  const root = tmp("disclose-wall-");
   const ctx = new Context();
   process.env["MELITE_STATE_ROOT"] = root;
   await ctx.plugin(timerPlugin as never);
@@ -178,7 +209,7 @@ async function manageRefusal(
 }
 
 test("the skills seat — index + read, the door's voices (REBUILD-16)", async () => {
-  const root = mkdtempSync(join(tmpdir(), "disclose-wall-"));
+  const root = tmp("disclose-wall-");
   const ctx = new Context();
   process.env["MELITE_STATE_ROOT"] = root;
   // ENV-PIN LAW (the false-death lesson, pinned 2026-10-08): the
@@ -187,10 +218,9 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   // below flaked the moment a real session landed there (a music
   // stage benched on the GUI made this wall read count=2). An
   // empty pin home IS the empty bench; the seeded phase re-pins.
-  const savedHome = process.env["DSH_HOME"];
-  const emptyHome = mkdtempSync(join(tmpdir(), "disclose-empty-home-"));
+  // (The file-level afterEach is the ONE restore path now.)
+  const emptyHome = tmp("disclose-empty-home-");
   process.env["DSH_HOME"] = emptyHome;
-  try {
   await ctx.plugin(timerPlugin as never);
   await ctx.plugin(queuePlugin as never);
   await ctx.plugin(Storage as never);
@@ -212,7 +242,7 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   assert.equal(empty.count, 0, "an empty bench lists nothing");
   {
     const { mkdirSync, writeFileSync } = await import("node:fs");
-    const home = mkdtempSync(join(tmpdir(), "bench-home-"));
+    const home = tmp("bench-home-");
     mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
     writeFileSync(
       join(home, "storages", "drafts", "docs", "bench-session-test.json"),
@@ -221,7 +251,6 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
     process.env["DSH_HOME"] = home;
   }
   const idx = skills.index() as { count?: number; skills?: unknown; families?: Array<{ id: string }>; cards?: Array<{ id: string }>; flows?: { ids: string[] } };
-  try {
   assert.ok(typeof idx.count === "number" && idx.count > 0, "non-empty index over the seeded bench");
   assert.equal(idx.skills, undefined, "the flat dump is dead");
   assert.ok((idx.families ?? []).some((f) => f.id === "krea-2"), "the benched family serves");
@@ -245,22 +274,13 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   assert.ok(typeof laneIdx.count === "number" && (laneIdx.count ?? 0) > 0, "lane serves the seeded index");
   const laneDoc = (await request("GET", "/v1/skills/flow%3Afit-seat", undefined, sig)) as { id?: string };
   assert.equal(laneDoc.id, "flow:fit-seat", "lane serves the read");
-  } finally {
-    if (savedHome === undefined) delete process.env["DSH_HOME"];
-    else process.env["DSH_HOME"] = savedHome;
-  }
-  } finally {
-    // restore what the ambient process carried (the env-pinning
-    // law's other edge: a bare delete leaks OUR empty pin into
-    // whatever runs next). The OUTER try covers the EMPTY phase —
-    // an assert throw there must not leak the pin either.
-    if (savedHome === undefined) delete process.env["DSH_HOME"];
-    else process.env["DSH_HOME"] = savedHome;
-  }
+  // (env restore + tmp cleanup live in the file-level afterEach —
+  // the ONE restore path; these nested finallies were the second
+  // critique's double-restore smell)
 });
 
 test("the load seat — card + flow bundles, the door's voices (REBUILD-17)", async () => {
-  const root = mkdtempSync(join(tmpdir(), "disclose-wall-"));
+  const root = tmp("disclose-wall-");
   const ctx = new Context();
   process.env["MELITE_STATE_ROOT"] = root;
   await ctx.plugin(timerPlugin as never);

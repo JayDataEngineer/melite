@@ -28,8 +28,11 @@
 //     copy must drop the lock.
 //
 // Hygiene (the prior incident: an env leak poisoned the shared
-// worker): env saved/restored per test, every Context disposed,
-// every sandbox removed in afterEach.
+// worker): env saved/restored per test, every Context torn down
+// via its root fiber's dispose (Context itself exposes no dispose;
+// the fibers do — the second critique caught the header claiming
+// disposal while the code dropped the array), every sandbox
+// removed in afterEach.
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
@@ -63,15 +66,20 @@ beforeEach(() => {
   savedEnv = process.env["MELITE_STATE_ROOT"];
 });
 
-afterEach(() => {
+afterEach(async () => {
   if (savedEnv === undefined) delete process.env["MELITE_STATE_ROOT"];
   else process.env["MELITE_STATE_ROOT"] = savedEnv;
-  // No Context disposal: this cordis exposes no ctx.dispose (the
-  // peer walls — estate-composition, disclose, ledger-tail — all
-  // rely on worker exit; the substantive hygiene is the env restore
-  // above and the sandbox removal below, the two leaks that
-  // poisoned suites before).
-  contexts.length = 0;
+  // Context exposes no .dispose — its ROOT FIBER does (cordis
+  // lib/types/fiber.d.ts: dispose(): Promise<void>). Tear each
+  // boot down for real (best-effort: a disposal throw must not
+  // mask a test failure); the peer walls rely on worker exit, this
+  // wall does better.
+  for (const ctx of contexts.splice(0)) {
+    const fiber = (ctx as { fiber?: { dispose?: () => Promise<void> } }).fiber
+    if (fiber !== undefined && typeof fiber.dispose === "function") {
+      await fiber.dispose().catch(() => undefined)
+    }
+  }
   for (const dir of sandboxes.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -155,7 +163,10 @@ describe("the false-death hunt's four laws", () => {
     contexts.push(ctx2);
     await ctx2.plugin(timerPlugin as never);
     await ctx2.plugin(estateBundle as never);
-    const missing = await settleMissing(ctx2, ["queue"], 5_000);
+    // 2s, not 5: the burial is DETERMINISTIC (an unpinned boot never
+    // seats queue — the constructor throws) so this poll cannot
+    // flake green; it only waits out the proof window.
+    const missing = await settleMissing(ctx2, ["queue"], 2_000);
     expect(missing).toEqual(["queue"]);
   });
 
