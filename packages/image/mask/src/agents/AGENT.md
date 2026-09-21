@@ -53,7 +53,7 @@ stringified JSON blob):
 
 - The FIRST standalone entry (sam3 before sam2, bag order within)
   is the PRIMARY: it anchors `mask_combined` and owns the primary
-  arm (`via_rtdetr` on sam3; the YOLO labels word on sam2).
+  arm (`via_rtdetr` on sam3; the YOLO labels set on sam2).
 - Every later entry is its own named export carrying ITS OWN tune
   (per-entry threshold/refine/dilation/yolo_threshold — never the
   primary's).

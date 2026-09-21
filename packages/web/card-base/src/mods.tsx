@@ -206,7 +206,14 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       setDraftStrength(strength !== undefined ? String(strength) : '')
       setDraftSteps(typeof entry['steps'] === 'number' ? String(entry['steps'] as number) : '')
     } else {
-      const params: SpecValues = {}
+      // THE DISPLAY-IS-THE-COMMIT LAW (the YOLO-classes fix): the
+      // edit draft opens on the kind's defaults with the entry
+      // overlaid — create's seeding mirrored. A legacy entry
+      // missing a defaulted field (a label-less sam2) SHOWS the
+      // default AND saves it — never shows Person pressed then
+      // refuses loud on save. Graph-neutral: compose reads absent
+      // scalars as their declared defaults anyway.
+      const params: SpecValues = { ...fieldDefaults(k) }
       for (const f of k.fields ?? []) {
         if ((seated?.has(f.name) ?? false)) continue
         if (entry[f.name] !== undefined) params[f.name] = entry[f.name]

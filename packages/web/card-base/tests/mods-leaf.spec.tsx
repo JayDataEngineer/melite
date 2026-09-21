@@ -554,7 +554,10 @@ test('THE PAINT CANVAS: editing a painted entry seeds the face with its payload 
   expect(screen.getByTestId('face-value').textContent).toBe('data:image/png;base64,OLD')
   fireEvent.click(screen.getByRole('button', { name: 'Face clear' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-  expect(onEdit).toHaveBeenCalledWith('masks', [{ image: '' }])
+  // the clear commits the empty payload AND the shown Feather
+  // default (the display-is-the-commit law: create already saves
+  // feather:5 — edit mirrors it, never a skew the save drops)
+  expect(onEdit).toHaveBeenCalledWith('masks', [{ image: '', feather: 5 }])
 })
 
 test('THE PAINT CANVAS: host-less or faceless kinds render no canvas (the square holds — graceful degrade)', () => {
@@ -786,6 +789,18 @@ test('THE BBOX CANVAS: host-less degrades — the four faceOwned inputs RENDER (
   openCreate('Mask')
   expect(screen.queryByTestId('bbox-face')).toBeNull()
   faceless.unmount()
+})
+
+test('THE DISPLAY-IS-THE-COMMIT LAW: editing a legacy entry missing a defaulted field shows the default AND saves it (never shows-then-refuses)', () => {
+  const { onEdit } = openLeaf({ kinds: [MASK_PAINT], values: { masks: [{}] } })
+  openEditTile('masks-0')
+  // the knob displays the declaration's default (Feather 5)
+  expect((screen.getByLabelText('Feather') as HTMLInputElement).value).toBe('5')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  // and the save commits what was shown (the draft opened on the
+  // kind's defaults — the label-less sam2 that showed Person now
+  // saves labels:'person' instead of refusing loud)
+  expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: 5 }])
 })
 
 test('THE ACTION-CARD SHAPE: the leaf popup is BOUNDED and scrollable (never a viewport-tall stack)', () => {

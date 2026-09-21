@@ -148,6 +148,17 @@ test('SPEC ATOM: the multi chips — a closed vocabulary toggles a SET; the wire
   fireEvent.click(screen.getByText('Dog'))
   expect(onEdit).toHaveBeenCalledWith('labels', '')
   view.unmount()
+  // multi-word values title-case AND toggle (the COCO 'traffic
+  // light' face — spaced options are first-class chips)
+  const spaced = F({
+    name: 'labels', label: 'YOLO classes', type: 'select', multi: true,
+    options: ['traffic light', 'person'],
+  })
+  const sview = render(h(SpecAtom, { f: spaced, value: 'traffic light', onEdit }))
+  expect(screen.getByText('Traffic Light').getAttribute('aria-pressed')).toBe('true')
+  fireEvent.click(screen.getByText('Person'))
+  expect(onEdit).toHaveBeenCalledWith('labels', 'traffic light,person')
+  sview.unmount()
   // no tooltip, no held value: the group still names itself, the
   // unset binds to no chip (never the painted-first lie)
   const plain = render(h(SpecAtom, {
