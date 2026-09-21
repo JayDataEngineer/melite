@@ -9,7 +9,7 @@
 // stated width/height on the 2511 lane refuses field-named.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { imageT2I, imageEdit } from "../src/kit.ts";
+import { imageT2I, imageEdit, refuseImageEditFiring } from "../src/kit.ts";
 import { GraphBuilder } from "../src/graph.ts";
 
 const FACTS_21 = {
@@ -240,5 +240,45 @@ describe("the 2.1 edit lane — the reference stack (upstream: the node opens im
     const { enc } = encOf(g);
     assert.ok(enc.inputs["images.image_16"], "the thirteenth stack entry rides image_16");
     assert.equal(enc.inputs["images.image_17"], undefined, "nothing past the ceiling");
+  });
+});
+
+// ── THE LANPAINT NEVER-LIE GAP (roadmap §10, the second wave) ──
+// the lanpaint arm rides the 2511 lane only; the 2.1 lane's early
+// return would silently plain-edit a stated region — the exact
+// lying-stack crime the firing law bans. A stated input_mask (or a
+// single-entry mask bag) on the 2.1 lane REFUSES field-named.
+describe("the 2.1 edit lane — the lanpaint region never lies", () => {
+  const SOLVER21 = { width: 1024, height: 1024, seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" };
+  const SOLVER2511 = { seed: 3, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" };
+  it("input_mask stated on the 2.1 lane refuses field-named (no lanpaint sampler on this base — never a silent plain edit)", () => {
+    const g = new GraphBuilder({});
+    const params21 = { prompt: "fix the badge", image1: "in.png", input_mask: "mask.png", ...SOLVER21 };
+    // the card's own composition: the firing gate runs PRE-compose
+    assert.throws(
+      () => refuseImageEditFiring(params21, FACTS_21),
+      (err: unknown): boolean =>
+        err instanceof Error
+        && err.message.includes("'input_mask' fires on the image-edit card")
+        && err.message.includes("2511"),
+    );
+  });
+  it("a single-entry mask bag refuses the same (the bag's region counts as stated)", () => {
+    const g = new GraphBuilder({});
+    const paramsBag = { prompt: "fix the badge", image1: "in.png", mask: [{ input_mask: "mask.png" }], ...SOLVER21 };
+    assert.throws(
+      () => refuseImageEditFiring(paramsBag, FACTS_21),
+      (err: unknown): boolean =>
+        err instanceof Error && err.message.includes("'input_mask'"),
+    );
+  });
+  it("the same mask on the 2511 lane still fires the lanpaint arm (the refusal is lane-scoped, never global)", () => {
+    const g = new GraphBuilder({});
+    imageEdit(
+      { prompt: "fix the badge", image1: "in.png", input_mask: "mask.png", ...SOLVER2511 },
+      FACTS_2511, g, "probe-mask-2511",
+    );
+    const nodes: Array<{ class_type: string }> = Object.values(graphOf(g));
+    assert.ok(nodes.some((n) => n.class_type.startsWith("LanPaint")), "the 2511 lane builds the lanpaint sampler");
   });
 });

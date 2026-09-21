@@ -146,6 +146,12 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   // bag states nothing — the force flag must not pass on an empty bag
   // and then silently plain-edit.
   const maskStated = !blank(p.input_mask) || !blank(bagMask)
+  // THE LANE-SCOPED REGION LAW (roadmap §10, the second wave): the
+  // lanpaint arm rides the 2511 lane only — the 2.1 arm returns
+  // before it, and a stated region there would silently plain-edit
+  // (the lying-stack crime the firing law bans). Refuse field-named.
+  fire('input_mask', maskStated && model?.lane_inputs.text_encode_node === 'TextEncodeQwenImage21',
+    'the lanpaint region rides the 2511 lane only — the 2.1 lane has no lanpaint sampler and would silently plain-edit; clear the mask or switch the model lane')
   fire('lanpaint_enabled', p.lanpaint_enabled === true && !maskStated, 'force LanPaint with no region stated — state input_mask (the region to regenerate)')
   fire('lanpaint_beta', ((p.lanpaint_beta ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Beta 1.0, the pack knob wires to no input; back it to 0.5 or order a pack change')
   fire('lanpaint_friction', ((p.lanpaint_friction ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Friction 15, the pack knob wires to no input; back it to 0.5 or order a pack change')

@@ -115,7 +115,7 @@ export type { VariantSelection } from "./cardsVariant.ts";
 export { findCardDangling } from "./cardsDangling.ts";
 export type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
 import { liveObjectInfo, resolveEngineBaseUrl, resolveRepoRoot } from "@melite/comfyui-cordis";
-import { composeOnce, prepareCardParams, type ComposeSeat } from "./cardsCompose.ts";
+import { admissionRefusal, composeOnce, liftStanza, prepareCardParams, type ComposeSeat } from "./cardsCompose.ts";
 /** The card-envelope keys (CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
 export const CARD_ENVELOPE_KEYS: readonly string[] = [
@@ -587,6 +587,14 @@ export class CardRegistryService extends Service {
     mid: string,
   ): Promise<Phase1Card> {
     const prep: PreparedCard = prepareCardParams(this, body, mid, "1");
+    // THE REFUSAL-ORDER LAW (2026-09-21, roadmap §10's e2e debt):
+    // ADMISSION runs before the lane-presence gate — a body-shape
+    // refusal is knowable without any weights (box-independent);
+    // presence is an environment question and follows. Before this
+    // order a weight-absent box heard the presence voice even for
+    // garbage bodies, and the compose-smoke /recipe/ wall held only
+    // on boxes carrying the encoders.
+    admissionRefusal(this, prep.card, prep.fam, liftStanza(prep.params), "1");
     // THE LANE PRESENCE GATE (one pattern, every family): before any
     // graph composes, the family's declared lane files must stand on
     // disk. Img Gen vs Img Edit was luck, not law — this is the law.

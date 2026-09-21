@@ -72,6 +72,18 @@ export function lanePresenceRefusal(fam: string): CardArmError | null {
   const sandbox: string = process.env["INFERENCE_TEST_SANDBOX"] ?? "";
   const envPath: string = process.env["COMFYUI_ENDPOINT_CONFIG"] ?? "";
   if (sandbox !== "" && envPath === "") return null;
+  // the refusal is a THROW, never a value (phase1Card's pinned
+  // contract — no return-value arm there)
+  const miss: CardArmError | null = lanePresenceMiss(fam);
+  if (miss !== null) throw miss;
+  return null;
+}
+
+/** THE WEIGHTS PROBE (roadmap §10's e2e gate, 2026-09-21): the same
+ *  walk lanePresenceRefusal gates with, env-deferral stripped — the
+ *  caller (the GPU receipt rows) decides what a miss means (a skip,
+ *  never a cost signal). One loop, two seats, no divergence. */
+export function lanePresenceMiss(fam: string): CardArmError | null {
   const decl = getModel(fam);
   // fused guard (2026-09-19): non-string and blank lane rows skip
   // in ONE v8-visible ternary — the old continue-chain reported
@@ -92,7 +104,7 @@ export function lanePresenceRefusal(fam: string): CardArmError | null {
     );
     if (hit) continue;
     const prov = (decl.provisions ?? []).find((p) => p.name === name);
-    throw new CardArmError(
+    return new CardArmError(
       400,
       "lane presence: family '" + fam + "' declares " + key + " '" + name +
         "' but no store copy exists (folders checked: " + folders.join(", ") + ")" +

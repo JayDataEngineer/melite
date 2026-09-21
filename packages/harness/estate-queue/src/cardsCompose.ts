@@ -27,6 +27,21 @@ export interface ComposeSeat {
 
   /** In-process compose (the core: steps 7-9) — per-call throwaway
    *  Context + ComfyUIService (owned by the call, never shared). */
+/** THE NESTED STANZA UNWRAP (cli.ts:82-91, one function two seats):
+ *  a `params` dict key in the incoming params IS the stanza;
+ *  siblings merge over it. Exported so the phase-1 admission seat
+ *  gates the LIFTED body, never the raw stanza shell. */
+export function liftStanza(params: Record<string, unknown>): Record<string, unknown> {
+  const inner: unknown = params["params"];
+  if (typeof inner === "object" && inner !== null && !Array.isArray(inner)) {
+    return {
+      ...(inner as Record<string, unknown>),
+      ...Object.fromEntries(Object.entries(params).filter(([k]) => k !== "params")),
+    };
+  }
+  return params;
+}
+
 export async function composeOnce(
     deps: ComposeSeat,
     card: string,
@@ -73,33 +88,54 @@ export async function composeOnce(
     ctx.comfyui.setObjectInfo(oi);
     // THE NESTED STANZA UNWRAP (cli.ts:82-91): a `params` dict key in
     // the incoming params IS the stanza; siblings merge over it.
-    let lifted: Record<string, unknown> = params;
-    {
-      const inner: unknown = lifted["params"];
-      if (
-        typeof inner === "object" && inner !== null && !Array.isArray(inner)
-      ) {
-        lifted = {
-          ...(inner as Record<string, unknown>),
-          ...Object.fromEntries(Object.entries(lifted).filter(([k]) => k !== "params")),
-        };
-      }
-    }
+    const lifted: Record<string, unknown> = liftStanza(params);
     // THE ADMISSION CONTRACT GATE (cli.ts admission verbatim voice):
     // every param key must be a declared knob or ride the admits row.
-    const decls: Record<string, CardDeclRow> = deps.cardDecls();
+    // (THE REFUSAL-ORDER LAW, 2026-09-21: admission is a BODY-SHAPE
+    // question — phase1Card runs this gate BEFORE the lane-presence
+    // ENVIRONMENT gate, so the voice is box-independent; composeOnce
+    // re-runs the same function, never a divergent copy.)
+    admissionRefusal(deps, card, fam, lifted, phase)
+    try {
+      return ctx.comfyui.compose(card, fam, lifted, runId) as Record<string, unknown>
+    } catch (e) {
+      if (e instanceof ComposeRefusal) {
+        throw phaseRefusal(phase, e.code + ": " + e.message)
+      }
+      throw phaseRefusal(
+        phase,
+        e instanceof Error
+          ? e.message
+          : /* v8 ignore next -- compose throws Errors: the String
+               fallback never fires (2026-09-12) */ String(e),
+      )
+    }
+
+  }
+
+/** THE ADMISSION CONTRACT GATE (one function, two seats — the
+ *  phase-1 pre-compose seat and composeOnce's own re-run). Every
+ *  param key must be a declared knob or ride the admits row; the
+ *  absorbed mod surface counts (the interlock, 2026-09-08). */
+export function admissionRefusal(
+    deps: ComposeSeat,
+    card: string,
+    fam: string,
+    lifted: Record<string, unknown>,
+    phase: string,
+  ): void {
+    const decls: Record<string, CardDeclRow> = deps.cardDecls()
     // (prepareCardParams guarantees a registered card — its
     // unknown-card arm refuses first — so the lookup never misses.)
-    const decl: CardDeclRow = decls[card] as CardDeclRow;
-    {
-    const knobs: Set<string> = new Set(decl.schemaNames);
-    const admits: readonly string[] = decl.admits;
+    const decl: CardDeclRow = decls[card] as CardDeclRow
+    const knobs: Set<string> = new Set(decl.schemaNames)
+    const admits: readonly string[] = decl.admits
     // THE ABSORBED MOD SURFACE (the interlock, 2026-09-08):
     // admission is the declared surface — and the mod fields a
     // family ABSORBS are part of that surface (registerMod through
     // the service; scope = declaring ∩ boarded, filtered to THIS
     // run's family exactly as the emission scopes).
-    let modNames: Set<string> = new Set();
+    let modNames: Set<string> = new Set()
     /* v8 ignore start -- theService() boots in the engine fiber, never
        the test fiber (always throws here): the mod surface stays empty
        in tests; knobs+admits still gate (2026-09-12) */
@@ -109,7 +145,7 @@ export async function composeOnce(
           .cardModFields(card)
           .filter((a) => a.families.includes(fam))
           .flatMap((a) => Object.keys(a.fields.dict ?? {})),
-      );
+      )
       /* v8 ignore stop */
     } catch {
       // card defs not booted in this fiber — the mod surface is
@@ -118,31 +154,15 @@ export async function composeOnce(
     const admitted = (key: string): boolean =>
       knobs.has(key) ||
       modNames.has(key) ||
-      admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))));
-    const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort();
+      admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))))
+    const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort()
     if (unknown.length > 0) {
       throw phaseRefusal(
         phase,
         "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
           " (admission is the declared surface — knobs + contract admits; see the card's TS definition)",
-      );
+      )
     }
-    }
-    try {
-      return ctx.comfyui.compose(card, fam, lifted, runId) as Record<string, unknown>;
-    } catch (e) {
-      if (e instanceof ComposeRefusal) {
-        throw phaseRefusal(phase, e.code + ": " + e.message);
-      }
-      throw phaseRefusal(
-        phase,
-        e instanceof Error
-          ? e.message
-          : /* v8 ignore next -- compose throws Errors: the String
-               fallback never fires (2026-09-12) */ String(e),
-      );
-    }
-
   }
 
 /** Resolve + sweep + select + overlay + lift (steps 2-6):
