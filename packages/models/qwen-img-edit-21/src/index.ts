@@ -128,6 +128,14 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "remove_background",
+      "label": "Remove Background",
+      "hint": "The official one-click — the Comfy-Org background-removal template's canned prompt verbatim (the 2.1 base renders the subject on transparency; solver/cfg/steps ride the family defaults, which are the template's own values).",
+      "group": "Recipe",
+      "wire_defaults": { "prompt": "Remove the background, and output a PNG image" },
+      "cells": [],
+    },
+    {
       "id": "upstream_solvers",
       "label": "Upstream Solvers",
       "hint": "Sampler euler + scheduler simple — the official 2.1 templates' own solver truth (this family's DECL defaults, both members of the card's sampler/scheduler vocabularies).",

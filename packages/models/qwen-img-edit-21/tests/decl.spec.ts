@@ -40,4 +40,17 @@ describe("the qwen-img-edit-21 model plugin (the cached-reference edit lane of t
       assert.match(p.sha256 ?? "", /^[0-9a-f]{64}$/);
     }
   });
+
+  it("boards the official background-removal one-click: the template's canned prompt VERBATIM, selection-only (the scoping law)", () => {
+    // The official image_qwen_image_2_1_background_removal template
+    // is THIS lane + one canned prompt — same weights, same graph
+    // (verified against the Comfy-Org template this day: cfg 1,
+    // euler/simple, 25 steps — already the family defaults). The
+    // recipe stamps ONLY the prompt: one fact, one owner.
+    const row = DECL.variants.find((v) => v.id === "remove_background");
+    assert.ok(row, "the remove_background recipe row exists");
+    assert.equal(row.group, "Recipe");
+    assert.deepEqual(row.wire_defaults, { prompt: "Remove the background, and output a PNG image" },
+      "the stamp is the official template's prompt widget verbatim — nothing else (defaults own solver/cfg/steps)");
+  });
 });

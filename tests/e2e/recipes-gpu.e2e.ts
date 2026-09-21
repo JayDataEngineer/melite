@@ -466,6 +466,29 @@ describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)',
         assert.ok(byClass(s2, 'TextEncodeQwenImage21').length === 1)
         assert.equal(byClass(s2, 'VAEEncode').length, 0, 'the 2.1 edit NEVER VAEEncodes the source (the 2511 lane\'s move)')
         assert.equal(firstBytes(s2).readUInt32BE(0), 0x89504e47, 'the edit artifact is a real PNG')
+
+        // THE OFFICIAL BACKGROUND-REMOVAL ONE-CLICK (roadmap §10's
+        // last firing): the Comfy-Org template is THIS lane + the
+        // canned prompt — the remove_background pill payload rides
+        // the chain (the edit artifact is the anchor image), the
+        // wiring asserted verbatim before the run.
+        const bgPayload = {
+          model: 'qwen-img-edit-21', prompt: 'Remove the background, and output a PNG image',
+          image1: join(s2.runDir, s2.stageUrl), width: 512, height: 512,
+        }
+        const bg1 = await cards.phase1Card(bgPayload, 'qwen-img-edit-21')
+        const bgGraph = (await cards.phase2Card(bg1, 'bg-check')).graph as Record<string, { class_type?: string, inputs?: Record<string, unknown> }>
+        const bgEnc = Object.values(bgGraph).find((r) => r.class_type === 'TextEncodeQwenImage21')
+        assert.ok(bgEnc !== undefined)
+        assert.equal(bgEnc!.inputs?.prompt, 'Remove the background, and output a PNG image',
+          'the resolved encoder prompt is the official template\'s canned prompt verbatim (the pill\'s only stamp)')
+        const bgSampler = Object.values(bgGraph).find((r) => r.class_type === 'KSampler')!
+        assert.equal(bgSampler.inputs?.cfg, 1, 'the official path rides cfg 1 (family default)')
+        assert.equal(bgSampler.inputs?.sampler_name, 'euler')
+        assert.equal(bgSampler.inputs?.scheduler, 'simple')
+        const s3 = await runCard(w2, bgPayload, 'qwen-img-edit-21 remove_background')
+        assert.ok(byClass(s3, 'QwenImage21Cache').length === 1, 'the one-click rides the same cached-reference lane')
+        assert.equal(firstBytes(s3).readUInt32BE(0), 0x89504e47, 'the background-removal artifact is a real PNG')
       } finally {
         w2.stop()
         await w2.ctx.fiber.dispose()
