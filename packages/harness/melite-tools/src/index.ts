@@ -106,6 +106,15 @@ export interface Config {
   /** AD HOC tool names, never in a base toolset ('enhance_prompt').
    *  Accepts a single string or a list. */
   adhocTools?: string | string[]
+  /** CARD TOOL FACES (music/tts/image_edit/motion/h3_timeline):
+   *  DEFAULT FALSE — the operator's card-abstraction law
+   *  (2026-09-21): an agent lane's toolset is discover/load/
+   *  construct only; the engine faces never sit in the agent's
+   *  toolset at turn one ("make a video" reached straight for
+   *  h3_timeline before any discovery — the whole krea-2-turbo
+   *  failure mode one lane over). Maker/studio faces (the web
+   *  profile) opt in explicitly. Env: MELITE_CARD_TOOLS=1. */
+  cardTools?: boolean
 }
 
 /** BASE tool names — both interfaces (discovery, compose, view,
@@ -167,6 +176,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       ? config.adhocTools.split(',').map((s: string) => s.trim()).filter(Boolean)
       : [])
   const adhoc = adhocEnv.length ? adhocEnv : adhocCfg
+  // THE CARD GATE (default closed — the agent law above)
+  const cardTools = process.env.MELITE_CARD_TOOLS === '1' || config.cardTools === true
 
   c.logger.info(
     'melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s',
@@ -227,10 +238,20 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // ToolRunContext types resolve to one copy and the casts are
   // gone. If a future pin drifts again, tsc fails HERE (not
   // silently downstream) — re-pin, never re-cast.
-  c.tools.register(buildMusicTool(call))
-  c.tools.register(buildTtsTool(call))
-  c.tools.register(buildImageEditTool(call))
-  c.tools.register(buildMotionTool(call))
-  c.tools.register(buildH3TimelineTool(call))
+  // THE CARD GATE: registered ONLY on maker faces that opted in.
+  // The agent lane (default) composes through melite_construct —
+  // runs start at the user's Run press; a direct engine call from
+  // a chat agent bypasses the bench, the queue and every marriage.
+  if (cardTools) {
+    c.tools.register(buildMusicTool(call))
+    c.tools.register(buildTtsTool(call))
+    c.tools.register(buildImageEditTool(call))
+    c.tools.register(buildMotionTool(call))
+    c.tools.register(buildH3TimelineTool(call))
+  } else {
+    c.logger.info(
+      'melite-tools: card tool faces GATED OFF (cardTools=false) — the agent law: discover/load/compose only',
+    )
+  }
 
 }

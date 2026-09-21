@@ -35,6 +35,11 @@ export * from "./runsGates.ts";
 // the agent engine's spawn-injection reader rides these over the
 // SAME storage melite_load serves (never a second skill tree).
 export { findSkill, disclosureRoot } from "./skillPlane.ts";
+// THE LIVE BENCH (the selection's only source — the catalog law):
+// every selection-serving surface reads through these, never its
+// own glob (drift between readers is how stale docs leak back).
+export { benchPicks, benchFingerprint, benchBootMs, benchDir } from "./bench.ts";
+export type { StagePick } from "./bench.ts";
 export * from "./runsList.ts";
 export * from "./mediaKinds.ts";
 export * from "./runsTypes.ts";

@@ -15,18 +15,15 @@
 // bench docs (name+mtime+size) and invalidates on change — the
 // catalog follows the bench with one poll's latency, no context
 // spent until it changes.
-import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
-import { homedir } from "node:os";
 import type { Context } from "@deepseek-ai/cordis";
+import { benchPicks, benchFingerprint } from "@melite/estate-queue";
+import type { StagePick } from "@melite/estate-queue";
+export { benchPicks, benchFingerprint };
+export type { StagePick };
 import { hSkillRead, modelRows, cardRows, engineDirs } from "@melite/estate-queue";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import type { SkillRow } from "@melite/estate-queue";
-
-interface StagePick {
-  card: string | null;
-  model: string | null;
-}
 
 interface MeliteCandidate {
   name: string;
@@ -44,60 +41,6 @@ const INVOCATION = { modelInvocable: true, userInvocable: true } as const;
 
 function kebab(s: string): string {
   return s.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
-}
-
-function benchDir(): string {
-  const dshHome = process.env["DSH_HOME"] ?? join(homedir(), ".dsh");
-  return join(dshHome, "storages", "drafts", "docs");
-}
-
-/** Cheap change signal — name+mtime+size over the bench docs. */
-export async function benchFingerprint(): Promise<string> {
-  let files: string[] = [];
-  try {
-    files = (await readdir(benchDir())).filter((f) => f.startsWith("bench-") && f.endsWith(".json"));
-  } catch {
-    return "";
-  }
-  const parts: string[] = [];
-  for (const f of files) {
-    try {
-      const st = await stat(join(benchDir(), f));
-      parts.push(`${f}:${st.mtimeMs}:${st.size}`);
-    } catch {
-      // a vanished doc between readdir and stat contributes nothing
-    }
-  }
-  return parts.sort().join("|");
-}
-
-/** Every bench doc's stages (the drafts storage is the bench's home;
- *  the estate rides the same process as the tools that edit it). */
-export async function benchPicks(): Promise<StagePick[]> {
-  let files: string[] = [];
-  try {
-    files = (await readdir(benchDir())).filter((f) => f.startsWith("bench-") && f.endsWith(".json"));
-  } catch {
-    return [];
-  }
-  const picks: StagePick[] = [];
-  for (const f of files) {
-    try {
-      const raw = JSON.parse(await readFile(join(benchDir(), f), "utf8")) as {
-        record?: { doc?: { stages?: Array<{ card?: unknown; params?: { model?: unknown } }> } };
-        doc?: { stages?: Array<{ card?: unknown; params?: { model?: unknown } }> };
-      };
-      for (const st of raw.record?.doc?.stages ?? raw.doc?.stages ?? []) {
-        picks.push({
-          card: typeof st.card === "string" && st.card !== "" ? st.card : null,
-          model: typeof st.params?.model === "string" && st.params.model !== "" ? st.params.model : null,
-        });
-      }
-    } catch {
-      // a malformed bench doc contributes nothing — never a crash
-    }
-  }
-  return picks;
 }
 
 /** The selection's rows: the card's entrance doc + its skills, the

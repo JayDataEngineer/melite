@@ -19,6 +19,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { DIR_ID_ALIASES, disclosureRoot, stem } from "./skillFs.ts";
+import { benchPicksSync } from "./bench.ts";
 import { gateSkill } from "./skillFrontmatter.ts";
 import { projectToolProperties, flowDecls, readDoc, spawnRows, engineDirs, modelRows, cardRows, registryBody, flowRows } from "./skillRows.ts";
 // the extracted planes re-export through the skill plane's door
@@ -175,12 +176,39 @@ export function buildSkillIndex(repo: string): Record<string, unknown> {
   const cards = new Map<string, { genre: string | null; skills: number; entrance: string | null }>();
   let count = 0;
   try {
+    // THE SELECTION LAW (operator 2026-09-21): the index serves the
+    // LIVE BENCH's picks only — the cards composed this session and
+    // the families they name. An empty bench lists NOTHING: the
+    // vocabulary door is melite_discover (a paid tool call), never
+    // this index. The full-catalog dump below was the last leak —
+    // it handed the agent every card entrance for one cheap scan.
+    void repo;
+    const picks = benchPicksSync();
+    const pickedCards = new Set(
+      picks.map((p) => p.card).filter((c): c is string => c !== null),
+    );
+    const pickedModels = new Set(
+      picks.map((p) => p.model).filter((m): m is string => m !== null),
+    );
+    const selectionEmpty = pickedCards.size === 0 && pickedModels.size === 0;
+    // flows ride ONLY from the bench — and bench stages carry cards,
+    // never flows; flow discovery is melite_discover's paid plane
+    const flows: { row: SkillRow }[] = [];
+    if (selectionEmpty) {
+      return {
+        count: 0,
+        families: [],
+        cards: [],
+        flows: { count: 0, ids: [] },
+        note: "THE CATALOG IS THE SELECTION — nothing is listed while the bench is empty; call melite_discover (the paid door) to find a card or flow",
+      };
+    }
     for (const engine of engines) {
       for (const r of modelRows(engine)) {
         if (r.row.scope.endsWith("-spawn")) continue;
-        count += 1;
         const mid = r.row.model;
-        if (mid === null) continue;
+        if (mid === null || !pickedModels.has(mid)) continue;
+        count += 1;
         const cell = families.get(mid) ?? { genre: r.row.genre, skills: 0, entrance: null };
         if (r.row.scope === "model-skill") cell.skills += 1;
         if (r.row.scope === "model") cell.entrance = r.row.id;
@@ -188,16 +216,15 @@ export function buildSkillIndex(repo: string): Record<string, unknown> {
       }
       for (const r of cardRows(engine, repo).rows) {
         if (r.row.scope.endsWith("-spawn")) continue;
-        count += 1;
         const cname = r.row.card;
-        if (cname === null) continue;
+        if (cname === null || !pickedCards.has(cname)) continue;
+        count += 1;
         const cell = cards.get(cname) ?? { genre: r.row.genre, skills: 0, entrance: null };
         if (r.row.scope === "card-skill") cell.skills += 1;
         if (r.row.scope === "card") cell.entrance = r.row.id;
         cards.set(cname, cell);
       }
     }
-    const flows = flowRows(repo);
     count += flows.length;
     const famRows: BindingRow[] = [...families.entries()]
       .map(([id, c]) => ({ id, genre: c.genre, skills: c.skills, entrance: c.entrance }))

@@ -7,6 +7,8 @@ import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import * as http from 'node:http'
 import * as fs from 'node:fs/promises'
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import * as os from 'node:os'
 import { apply, inject } from '../src/doors.ts'
@@ -1034,6 +1036,18 @@ describe('/v1 prefix discovery arms', () => {
     // The door's LIVE factory (stroke 66/69): mcp__<server>__<tool>
     // names fold to servers; every other shape is ignored. The
     // three-part non-mcp name + the bare names pin the skip arms.
+    // seed the LIVE BENCH FIRST (image-gen + krea-2): the census
+    // reads the bench at REQUEST time — the seed wraps both the
+    // request and the index build below (the selection law).
+    const home = mkdtempSync(path.join(tmpdir(), 'bench-home-'))
+    mkdirSync(path.join(home, 'storages', 'drafts', 'docs'), { recursive: true })
+    writeFileSync(
+      path.join(home, 'storages', 'drafts', 'docs', 'bench-session-test.json'),
+      JSON.stringify({ record: { doc: { stages: [{ card: 'image-gen', params: { model: 'krea-2' } }] } } }),
+    )
+    const prevHome = process.env.DSH_HOME
+    process.env.DSH_HOME = home
+    try {
     const h = boot({
       schemas: [
         { name: 'melite_flow', description: 'run things' },
@@ -1062,18 +1076,25 @@ describe('/v1 prefix discovery arms', () => {
       families: Array<{ id: string; entrance: string | null }>;
       cards: Array<{ id: string; entrance: string | null }>;
     }
-    // THE NO-DUMP LAW: the census serves the vocabulary's ENTRANCE
-    // docs (never leaf skill rows — those are the owner's to serve).
+    // THE SELECTION LAW (2026-09-21): the census serves the LIVE
+    // BENCH's entrances only — the assert below pins that every
+    // option belongs to the benched selection (image-gen + krea-2).
     const entrances = [
       ...idx.families.flatMap((f) => f.entrance === null ? [] : [{ value: f.entrance, label: f.id }]),
       ...idx.cards.flatMap((c) => c.entrance === null ? [] : [{ value: c.entrance, label: c.id }]),
     ]
-    assert.ok(entrances.length > 0, 'the live vocabulary is non-empty')
+    assert.ok(entrances.length > 0, 'the live selection serves its entrances')
+    assert.ok(entrances.every((e) => e.label === 'image-gen' || e.label === 'krea-2'),
+      'the census serves ONLY the benched selection')
     assert.deepEqual(
       mods[1]!.fields![0]!.options,
       entrances,
       'the doc serves the LIVE entrance vocabulary, never a static list and never leaf rows',
     )
+    } finally {
+      if (prevHome === undefined) delete process.env.DSH_HOME
+      else process.env.DSH_HOME = prevHome
+    }
   })
 
   test('form-spec serves the craft engine doc (no card, no family)', async () => {

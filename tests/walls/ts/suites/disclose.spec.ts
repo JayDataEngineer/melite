@@ -195,12 +195,28 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   // 1. THE INDEX (the no-dump law): the binding vocabulary only —
   //    families + cards + flow ids; NEVER skill rows (a skill id is
   //    learned from its owning surface, melite_load).
+  // THE SELECTION LAW (operator 2026-09-21): the seat's index serves
+  // the LIVE BENCH only — an empty bench lists nothing; a seeded bench
+  // (image-gen + krea-2) serves exactly that selection.
+  const empty = skills.index() as { count?: number; cards?: unknown[] };
+  assert.equal(empty.count, 0, "an empty bench lists nothing");
+  {
+    const { mkdirSync, writeFileSync } = await import("node:fs");
+    const home = mkdtempSync(join(tmpdir(), "bench-home-"));
+    mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
+    writeFileSync(
+      join(home, "storages", "drafts", "docs", "bench-session-test.json"),
+      JSON.stringify({ record: { doc: { stages: [{ card: "image-gen", params: { model: "krea-2" } }] } } }),
+    );
+    process.env["DSH_HOME"] = home;
+  }
   const idx = skills.index() as { count?: number; skills?: unknown; families?: Array<{ id: string }>; cards?: Array<{ id: string }>; flows?: { ids: string[] } };
-  assert.ok(typeof idx.count === "number" && idx.count > 0, "non-empty index");
+  try {
+  assert.ok(typeof idx.count === "number" && idx.count > 0, "non-empty index over the seeded bench");
   assert.equal(idx.skills, undefined, "the flat dump is dead");
-  assert.ok((idx.families ?? []).length > 0, "family vocabulary present");
-  assert.ok((idx.cards ?? []).length > 0, "card vocabulary present");
-  assert.ok((idx.flows?.ids ?? []).some((id) => id.startsWith("flow:")), "flow ids present");
+  assert.ok((idx.families ?? []).some((f) => f.id === "krea-2"), "the benched family serves");
+  assert.ok((idx.cards ?? []).some((c) => c.id === "image-gen"), "the benched card serves");
+  assert.ok(!(idx.cards ?? []).some((c) => c.id === "image-edit"), "unbenched cards never ride");
   // 2. a flow skill read answers the DOC (the registry render or
   //    the SKILL.md leaf).
   const sig = new AbortController().signal;
@@ -216,9 +232,12 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   const { makeEstateRequest } = await import("../../../../packages/harness/melite-tools/src/estate.ts");
   const request = makeEstateRequest(ctx);
   const laneIdx = (await request("GET", "/v1/skills", undefined, sig)) as { count?: number };
-  assert.ok(typeof laneIdx.count === "number" && (laneIdx.count ?? 0) > 0, "lane serves the index");
+  assert.ok(typeof laneIdx.count === "number" && (laneIdx.count ?? 0) > 0, "lane serves the seeded index");
   const laneDoc = (await request("GET", "/v1/skills/flow%3Afit-seat", undefined, sig)) as { id?: string };
   assert.equal(laneDoc.id, "flow:fit-seat", "lane serves the read");
+  } finally {
+    delete process.env["DSH_HOME"];
+  }
 });
 
 test("the load seat — card + flow bundles, the door's voices (REBUILD-17)", async () => {

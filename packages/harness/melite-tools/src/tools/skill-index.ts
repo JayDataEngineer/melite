@@ -51,10 +51,11 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
   const def = defineTool({
     name: 'skill_index',
     description:
-      'Scan the skill vocabulary (binding counts, never skill rows): one line per model family and per card — '
-      + 'each naming its ENTRANCE doc id and skill count — plus the flow count. To see actual skills, open the owner '
-      + 'with melite_load (a card/family bundle carries its tier-1 skill lines); to read a body you already hold an '
-      + 'id for, use skill_read. This index never lists skill rows — that flat dump taught agents wrong paths.',
+      'THE SELECTION LAW (operator 2026-09-21): this index serves the LIVE BENCH only — the cards composed '
+      + 'this session and the families they name, one binding line each (entrance doc id + skill count). An '
+      + 'EMPTY BENCH LISTS NOTHING: to find a card or flow call melite_discover (the paid door), never this '
+      + 'index. To see actual skill lines, open the owner with melite_load; to read a body you already hold '
+      + 'an id for, use skill_read. This index never lists skill rows.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // — no arguments, so the map is empty.
     parameters: {},
@@ -106,9 +107,15 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
             : 'no entrance doc'
           return `  ${id}${genre} — ${entrance}`
         }
+        if (cards.length === 0 && flowCount === 0) {
+          return [{
+            type: 'text',
+            text: 'skill_index: THE CATALOG IS THE SELECTION — nothing is listed while the bench is empty. Call melite_discover (the paid door) to find a card or flow; craft rows appear here only for what the bench holds.',
+          }]
+        }
         const cardsWord = cards.length === 1 ? 'card' : 'cards'
         const out: string[] = [
-          `skill_index: ${count} skills across ${cards.length} ${cardsWord} · ${flowCount} flows — open a card with melite_load; this index never lists skill rows or model families`,
+          `skill_index: ${count} skills across ${cards.length} ${cardsWord} · ${flowCount} flows — the bench's selection only; open a card with melite_load; this index never lists skill rows or model families`,
         ]
         for (const c of cards) {
           const l = line(c)

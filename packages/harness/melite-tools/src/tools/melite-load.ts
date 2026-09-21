@@ -101,7 +101,7 @@ export function meliteLoad(
             } | null
             agents?: Array<{ path?: unknown; text?: unknown }>
             skills?: Array<Record<string, unknown>>
-            model_hints?: Array<{ id?: unknown; label?: unknown }>
+            model_hints?: Array<{ id?: unknown; label?: unknown; present?: unknown }>
             stages?: Array<Record<string, unknown>>
           }
           error?: string

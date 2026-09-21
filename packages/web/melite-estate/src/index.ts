@@ -136,16 +136,34 @@ class SkillCatalogService {
     seat.registerProvider((control: { invalidate: () => void }) => {
       catalogControl = control;
       trace("SELECTION CATALOG: provider registered");
+      // the load door's index — refreshed on every list() (the rows
+      // ARE the definitions; content rides each row already)
+      const rowsByName = new Map<string, unknown>();
       return {
         name: "melite",
         async list() {
           const rows = selectionRows(await benchPicks(), stateRoot);
+          rowsByName.clear();
+          for (const r of rows) rowsByName.set(r.name, r);
           trace(`SELECTION SNAPSHOT: ${rows.length} row(s) [${rows.map((r: { name: string }) => r.name).join(", ")}]`);
           // complete: TRUE — the observation IS whole (the bench read
           // finished; freshness rides the invalidate wire, not
           // incompleteness). tool-skip suppresses the reminder on
           // incomplete snapshots: if (!snapshot.complete) return.
           return { candidates: rows, complete: true };
+        },
+        // THE LOAD DOOR (the crash fix, 2026-09-21): dsh-skill's get()
+        // calls provider.get(candidate, options) for every `skill`
+        // load — a provider without get threw
+        // "match.provider.get is not a function" and the agent burned
+        // its calls on recovery. The definition mirrors the candidate;
+        // a name mismatch invalidates the match by seat contract.
+        async get(candidate: unknown) {
+          const c = candidate as { name?: unknown };
+          const row = typeof c?.name === "string" ? rowsByName.get(c.name) : undefined;
+          if (row === undefined) return undefined;
+          trace(`SELECTION LOAD: ${String(c?.name)}`);
+          return row;
         },
       };
     });

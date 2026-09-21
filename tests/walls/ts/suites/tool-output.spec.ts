@@ -116,7 +116,11 @@ beforeAll(async () => {
   tools = new ToolsCollector(ctx);
   await ctx.plugin(
     { name: toolsName, inject: toolsInject, apply: toolsApply } as never,
-    { headless: true },
+    // cardTools: true — THE MAKER FACE (operator law 2026-09-21):
+    // this wall proves the card faces EXECUTE + RENDER over the live
+    // composition, so it opts in; the agent lane default (BASE only)
+    // is pinned in melite-tools/test/index.spec.ts
+    { headless: true, cardTools: true },
   );
 }, 60_000);
 
@@ -193,7 +197,25 @@ describe("the melite tool faces answer over the live composition", () => {
   });
 
   it("skill_index render CARRIES the entrance ids (skill_read demands one; the dump is dead)", async () => {
-    const { envelope, lines } = await drive("skill_index", {});
+    // THE SELECTION LAW: the index serves the LIVE BENCH — seed one
+    // (image-gen) or the render serves the empty-bench pointer.
+    {
+      const home = mkdtempSync(join(tmpdir(), "bench-home-"));
+      const { mkdirSync, writeFileSync } = await import("node:fs");
+      mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
+      writeFileSync(
+        join(home, "storages", "drafts", "docs", "bench-session-test.json"),
+        JSON.stringify({ record: { doc: { stages: [{ card: "image-gen", params: {} }] } } }),
+      );
+      process.env["DSH_HOME"] = home;
+    }
+    let out: { envelope: unknown; lines: string[] };
+    try {
+      out = await drive("skill_index", {});
+    } finally {
+      delete process.env["DSH_HOME"];
+    }
+    const { envelope, lines } = out;
     const env = envelope as { families?: Array<{ entrance?: string }>; cards?: Array<{ entrance?: string }>; skills?: Array<{ id?: string }>; error?: string };
     assert.equal(env.skills, undefined, "the envelope never carries skill rows");
     const first = [...(env.families ?? []), ...(env.cards ?? [])]
@@ -203,7 +225,24 @@ describe("the melite tool faces answer over the live composition", () => {
   });
 
   it("skill_read render CARRIES the body (tier 2's whole purpose)", async () => {
-    const idx = await drive("skill_index", {});
+    // the selection law: seed the bench (image-gen) so the index
+    // carries an entrance id for skill_read to open
+    {
+      const { mkdirSync, writeFileSync } = await import("node:fs");
+      const home = mkdtempSync(join(tmpdir(), "bench-home-"));
+      mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
+      writeFileSync(
+        join(home, "storages", "drafts", "docs", "bench-session-test.json"),
+        JSON.stringify({ record: { doc: { stages: [{ card: "image-gen", params: {} }] } } }),
+      );
+      process.env["DSH_HOME"] = home;
+    }
+    let idx: { envelope: unknown; lines: string[] };
+    try {
+      idx = await drive("skill_index", {});
+    } finally {
+      delete process.env["DSH_HOME"];
+    }
     const id = [...((idx.envelope as { families?: Array<{ entrance?: string }> }).families ?? []),
       ...((idx.envelope as { cards?: Array<{ entrance?: string }> }).cards ?? [])]
       .map((r) => r.entrance).find((e): e is string => typeof e === "string" && e !== "");

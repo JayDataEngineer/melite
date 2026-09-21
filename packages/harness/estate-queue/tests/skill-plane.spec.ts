@@ -75,6 +75,25 @@ const mkEstate = (withFlows = true): string => {
   return ROOT;
 };
 
+
+// THE SELECTION LAW (2026-09-21): buildSkillIndex serves the LIVE
+// BENCH only. Tests seed a bench doc (mtime now, DSH_HOME tmp) and
+// get a restore fn; an UNSEEDED call pins the empty-bench law.
+function seedBench(stages: Array<{ card?: string; model?: string }>): () => void {
+  const home = mkdtempSync(join(tmpdir(), "bench-home-"));
+  mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
+  writeFileSync(
+    join(home, "storages", "drafts", "docs", "bench-session-test.json"),
+    JSON.stringify({ record: { doc: { stages: stages.map((x) => ({ card: x.card ?? null, params: x.model ? { model: x.model } : {} })) } } }),
+  );
+  const prev = process.env["DSH_HOME"];
+  process.env["DSH_HOME"] = home;
+  return () => {
+    if (prev === undefined) delete process.env["DSH_HOME"];
+    else process.env["DSH_HOME"] = prev;
+  };
+}
+
 describe("disclosureRoot", () => {
   it("honors the override, else anchors the file", () => {
     process.env.MELITE_REPO_ROOT = "/tmp/estate";
@@ -178,9 +197,14 @@ describe("cardRows domains", () => {
     mkdirSync(join(ROOT, "flows"), { recursive: true });
     const walk = cardRows(join(E, "comfyui-cordis"), ROOT);
     assert.deepEqual([...walk.buckets.keys()], ["acard", "img-to-mesh", "img.foo"]);
-    const idx = buildSkillIndex(ROOT) as { cards: Array<{ id: string; skills: number }> };
-    const acard = idx.cards.find((c) => c.id === "acard");
-    assert.ok(acard !== undefined, "the card vocabulary carries acard");
+    const restore = seedBench([{ card: "acard" }]);
+    try {
+      const idx = buildSkillIndex(ROOT) as { cards: Array<{ id: string; skills: number }> };
+      const acard = idx.cards.find((c) => c.id === "acard");
+      assert.ok(acard !== undefined, "the selection carries the benched acard");
+    } finally {
+      restore();
+    }
   });
 });
 
@@ -205,7 +229,13 @@ describe("the spawn plane (subagent-only leaves — the operator's pin)", () => 
     mkdirSync(join(ROOT, "flows"), { recursive: true });
     // the constructor's index: the vocabulary counts PUBLIC skills
     // only — a spawn leaf never inflates a count and never appears
-    const idx = buildSkillIndex(ROOT) as { count: number; families: Array<{ id: string; skills: number }>; cards: Array<{ id: string; skills: number }> };
+    const restore = seedBench([{ card: "acard" }, { model: "blender" }]);
+    let idx: { count: number; families: Array<{ id: string; skills: number }>; cards: Array<{ id: string; skills: number }> };
+    try {
+      idx = buildSkillIndex(ROOT) as { count: number; families: Array<{ id: string; skills: number }>; cards: Array<{ id: string; skills: number }> };
+    } finally {
+      restore();
+    }
     const acard = idx.cards.find((c) => c.id === "acard");
     assert.ok(acard !== undefined && acard.skills === 1, "only the public skill counts");
     const blender = idx.families.find((f) => f.id === "blender");
@@ -255,29 +285,37 @@ describe("flowRows", () => {
 });
 
 describe("buildSkillIndex + findSkill", () => {
-  it("indexes models + cards + flows; lookups hit every tier", () => {
+  it("serves the SELECTION (the live bench) — empty bench lists nothing", () => {
     mkEstate();
-    const idx = buildSkillIndex(ROOT) as unknown as {
-      count: number;
-      families: Array<{ id: string; skills: number; entrance: string | null }>;
-      cards: Array<{ id: string; skills: number; entrance: string | null }>;
-      flows: { count: number };
-    };
-    // THE NO-DUMP LAW: the index NEVER serves skill rows — only the
-    // binding vocabulary (families + cards + flow count). A skill id
-    // is learned from its OWNING surface (melite_load's tier-1 lines
-    // or the entrance row below), never from a flat list.
+    // THE SELECTION LAW (operator 2026-09-21): an empty bench serves
+    // NOTHING — the vocabulary door is melite_discover, never this
+    // index. The full dump below was the last leak.
+    const empty = buildSkillIndex(ROOT) as unknown as { count: number; cards: unknown[]; families: unknown[]; flows: { count: number } };
+    assert.equal(empty.count, 0, "the empty bench lists nothing");
+    assert.deepEqual(empty.cards, []);
+    assert.deepEqual(empty.families, []);
+    assert.equal(empty.flows.count, 0);
+    const restore = seedBench([{ model: "m1" }, { model: "m3" }, { card: "c2" }]);
+    let idx: { count: number; families: Array<{ id: string; skills: number; entrance: string | null }>; cards: Array<{ id: string; skills: number; entrance: string | null }>; flows: { count: number } };
+    try {
+      idx = buildSkillIndex(ROOT) as typeof idx;
+    } finally {
+      restore();
+    }
     assert.equal((idx as { skills?: unknown }).skills, undefined,
       "the index never lists skill rows — the flat dump taught agents wrong paths (2026-09-21)");
-    assert.equal(idx.count, 12 + 8 + 7); // craft-loop (55) + agent-spawn (61) seated
+    assert.ok(idx.count > 0, "the benched selection serves");
     const m1 = idx.families.find((f) => f.id === "m1");
-    assert.ok(m1 !== undefined, "the family vocabulary carries m1");
+    assert.ok(m1 !== undefined, "the selection carries benched m1");
     assert.equal(m1.skills, 4, "m1's model-skill count");
     assert.equal(m1.entrance, "model:m1", "the entrance row id");
     const m3 = idx.families.find((f) => f.id === "m3");
     assert.ok(m3 !== undefined && m3.entrance === null, "a guide-only family names no entrance");
     const c2 = idx.cards.find((c) => c.id === "c2");
     assert.ok(c2 !== undefined && c2.skills === 1 && c2.entrance === "card:c2");
+    const unbenched = idx.cards.find((c) => c.id === "c1");
+    assert.ok(unbenched === undefined, "an UNBENCHED card never rides the index");
+    assert.equal(idx.flows.count, 0, "flows ride only when the bench holds them");
     assert.ok(typeof idx.flows.count === "number");
     const card = findSkill(ROOT, "card:c1");
     assert.ok(card !== null && card.bodyText === null);
@@ -295,7 +333,12 @@ describe("buildSkillIndex + findSkill", () => {
     mkEstate();
     const E = join(ROOT, "packages", "engines", "eng-a");
     mkdirSync(join(E, "src", "cards", "g2", "has_under"), { recursive: true });
-    assert.throws(() => buildSkillIndex(ROOT), /has no registry mapping/);
+    const restore = seedBench([{ card: "c1" }]);
+    try {
+      assert.throws(() => buildSkillIndex(ROOT), /has no registry mapping/);
+    } finally {
+      restore();
+    }
   });
 });
 

@@ -86,27 +86,41 @@ describe('plugin surface', () => {
 })
 
 describe('apply browser interface (default)', () => {
-  test('registers base + card tools, never the run doors', async () => {
+  // THE CARD GATE (operator law 2026-09-21): the default toolset is
+  // BASE ONLY — engine faces sit in NO agent lane's toolset at turn
+  // one. Maker faces opt in with cardTools:true (the web profile).
+  test('registers BASE only — card tools gated off, never the run doors', async () => {
     setEnv('MELITE_HEADLESS', undefined)
     setEnv('MELITE_ADHOC', undefined)
+    setEnv('MELITE_CARD_TOOLS', undefined)
     const f = fakeCtx()
     await apply(f.ctx as unknown as Context)
     const names = f.registered.map((r) => r.name)
     for (const b of BASE) assert.ok(names.includes(b), 'missing base ' + b)
-    for (const c of CARD_TOOLS) assert.ok(names.includes(c), 'missing card tool ' + c)
+    for (const c of CARD_TOOLS) assert.ok(!names.includes(c), 'card tool leaked: ' + c)
     for (const h of HEADLESS) assert.ok(!names.includes(h), 'run door leaked: ' + h)
-    assert.equal(names.length, BASE.length + CARD_TOOLS.length)
+    assert.equal(names.length, BASE.length)
     assert.ok(String(f.logs[0][1]).includes('BROWSER'))
     assert.equal(f.logs[0][3], 0) // headless run door count
     assert.equal(f.logs[0][4], 0) // ad hoc count
   })
 
-  test('an explicit empty config is the browser interface too', async () => {
+  test('cardTools:true opts the maker face in (base + card tools)', async () => {
+    setEnv('MELITE_HEADLESS', undefined)
+    setEnv('MELITE_ADHOC', undefined)
+    const f = fakeCtx()
+    await apply(f.ctx as unknown as Context, { cardTools: true })
+    const names = f.registered.map((r) => r.name)
+    for (const c of CARD_TOOLS) assert.ok(names.includes(c), 'missing card tool ' + c)
+    assert.equal(names.length, BASE.length + CARD_TOOLS.length)
+  })
+
+  test('an explicit empty config is the browser interface too (base only)', async () => {
     setEnv('MELITE_HEADLESS', undefined)
     setEnv('MELITE_ADHOC', undefined)
     const f = fakeCtx()
     await apply(f.ctx as unknown as Context, {})
-    assert.equal(f.registered.length, BASE.length + CARD_TOOLS.length)
+    assert.equal(f.registered.length, BASE.length)
   })
 })
 
@@ -118,7 +132,8 @@ describe('apply headless interface', () => {
     await apply(f.ctx as unknown as Context, {})
     const names = f.registered.map((r) => r.name)
     for (const h of HEADLESS) assert.ok(names.includes(h), 'missing run door ' + h)
-    assert.equal(names.length, BASE.length + CARD_TOOLS.length + HEADLESS.length)
+    // headless agent rig: card faces stay gated off there too
+    assert.equal(names.length, BASE.length + HEADLESS.length)
     assert.ok(String(f.logs[0][1]).includes('HEADLESS'))
     assert.equal(f.logs[0][3], HEADLESS.length)
   })

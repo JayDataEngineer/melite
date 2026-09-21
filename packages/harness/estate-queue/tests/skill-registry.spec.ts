@@ -2,7 +2,7 @@
 // repo, reads return docs / throw the door's voice, aborts refuse.
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -26,16 +26,42 @@ const seat = (): SkillDirectoryService => {
   return svc;
 };
 
+
+// THE SELECTION LAW (2026-09-21): the seat's index serves the LIVE
+// BENCH only — seed a bench doc (DSH_HOME tmp) to see vocabulary.
+function seedBench(stages: Array<{ card?: string; model?: string }>): () => void {
+  const home = mkdtempSync(join(tmpdir(), "bench-home-"));
+  mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
+  writeFileSync(
+    join(home, "storages", "drafts", "docs", "bench-session-test.json"),
+    JSON.stringify({ record: { doc: { stages: stages.map((x) => ({ card: x.card ?? null, params: x.model ? { model: x.model } : {} })) } } }),
+  );
+  const prev = process.env["DSH_HOME"];
+  process.env["DSH_HOME"] = home;
+  return () => {
+    if (prev === undefined) delete process.env["DSH_HOME"];
+    else process.env["DSH_HOME"] = prev;
+  };
+}
+
 describe("SkillDirectoryService", () => {
-  it("indexes the repo (the binding vocabulary — never skill rows)", () => {
-    const idx = seat().index() as { count: number; families: Array<{ id: string }>; cards: Array<{ id: string }>; flows: { count: number; ids: string[] } };
-    // THE NO-DUMP LAW: the index serves the vocabulary only; a skill
-    // id is learned from its owning surface (melite_load), never here.
-    assert.equal((idx as { skills?: unknown }).skills, undefined);
-    assert.ok(idx.count > 11);
-    assert.ok(idx.families.length > 5, "the family vocabulary serves");
-    assert.ok(idx.cards.length > 5, "the card vocabulary serves");
-    assert.ok(idx.flows.ids.includes("flow:audio-native-tts"), "flow ids ride the vocabulary");
+  it("serves the SELECTION — an empty bench lists nothing; a benched card serves", () => {
+    // THE SELECTION LAW (operator 2026-09-21): the catalog IS the
+    // selection. Empty bench → zero rows (melite_discover is the
+    // paid door); a benched card serves exactly its binding line.
+    const empty = seat().index() as { count: number; families: unknown[]; cards: unknown[]; flows: { count: number; ids: string[] } };
+    assert.equal((empty as { skills?: unknown }).skills, undefined);
+    assert.equal(empty.count, 0, "an empty bench lists nothing");
+    assert.deepEqual(empty.cards, []);
+    const restore = seedBench([{ card: "image-gen", model: "krea-2" }]);
+    try {
+      const idx = seat().index() as { count: number; families: Array<{ id: string }>; cards: Array<{ id: string }> };
+      assert.ok(idx.cards.some((c) => c.id === "image-gen"), "the benched card serves");
+      assert.ok(idx.families.some((f) => f.id === "krea-2"), " the benched family serves");
+      assert.ok(!idx.cards.some((c) => c.id === "image-edit"), "unbenched cards never ride");
+    } finally {
+      restore();
+    }
   });
 
   it("reads serve docs; unknowns throw the door's voice", async () => {

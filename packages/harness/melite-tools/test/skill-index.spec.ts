@@ -81,8 +81,8 @@ describe('skill_index render — the vocabulary, never rows', () => {
   const tool = skillIndex((async () => ({})) as EstateRequest)
   const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
 
-  test('the header counts the estate (0 on sparse values)', () => {
-    assert.equal(text({}), 'skill_index: 0 skills across 0 cards · 0 flows — open a card with melite_load; this index never lists skill rows or model families')
+  test('an empty selection lists NOTHING — the discover pointer only', () => {
+    assert.equal(text({}), 'skill_index: THE CATALOG IS THE SELECTION — nothing is listed while the bench is empty. Call melite_discover (the paid door) to find a card or flow; craft rows appear here only for what the bench holds.')
   })
 
   test('cards render with their ENTRANCE ids; family rows NEVER render', () => {
