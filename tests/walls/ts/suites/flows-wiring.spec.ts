@@ -65,4 +65,49 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
         `audio-native-tts stage wires input '${name}' with no expected Kind — the exact hole this wall closed`);
     }
   });
+
+  // ── THE DERIVATION LAW (roadmap §12): a card stage's input kind
+  // DERIVES from the card's own flowKinds.inputs when the port is
+  // declared — the hand-written expected is the override for
+  // initials the card cannot know, never a mirror the registry
+  // hand-copies and rots.
+  const ttsCardStage = (expected: Record<string, string>): Record<string, unknown> => ({
+    id: "tts",
+    engine: "comfyui",
+    card: "tts",
+    description: "the derivation probe (roadmap §12 wall)",
+    inputs: { prompt: { initial: "prompt" } },
+    outputs: {},
+    card_io: { wav: "audio" },
+    expected,
+    params: { model: "qwen3-tts", text: "$prompt", seed: 42 },
+  });
+
+  it("a card-declared input with NO hand-written kind derives from the card's own port map (200, never 'wired but untyped')", () => {
+    const answer = inlineArm({
+      flow_inline: {
+        id: "probe-derived",
+        description: "roadmap §12 derivation probe",
+        stages: [ttsCardStage({})],
+      },
+    }, cards);
+    assert.equal(answer.status, 200,
+      `a prompt input the tts card declares as 'text' derives — no mirror owed. Got: ${String(answer.payload["error"] ?? "?")}`);
+  });
+
+  it("a hand-written kind the card CONTRADICTS refuses LOUD (never compiles a lie)", () => {
+    const answer = inlineArm({
+      flow_inline: {
+        id: "probe-contradiction",
+        description: "roadmap §12 contradiction probe",
+        stages: [ttsCardStage({ prompt: "image" })],
+      },
+    }, cards);
+    assert.notEqual(answer.status, 200, "a contradictory hand-written kind must refuse");
+    assert.match(
+      String(answer.payload["error"] ?? ""),
+      /prompt.*contradicts card.*tts.*declares.*text/s,
+      "the refusal names the card, the port, and the card's own kind",
+    );
+  });
 });

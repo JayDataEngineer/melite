@@ -272,12 +272,59 @@ export function kindsOk(
   for (const st of stages) {
     if (st.card) cardGate(flowId, st, cards);
   }
+  // THE DERIVATION LAW (roadmap §12): a card stage's input kind
+  // DERIVES from the card's own flowKinds.inputs when the port is
+  // declared — the registry's hand-written expected is the override
+  // for initials the card cannot know, never a mirror to hand-copy
+  // and rot. A hand-written kind the card CONTRADICTS refuses LOUD
+  // (never compiles a lie).
+  let cardPorts: Map<string, Map<string, string>> | null = null;
+  for (const st of stages) {
+    if (!st.card) continue;
+    const defs = needCardRegistry(cards, "kindsOk").defsSync();
+    const def = defs.get(st.card);
+    const ports = def?.flowKinds?.inputs;
+    if (ports === undefined || Object.keys(ports).length === 0) continue;
+    if (cardPorts === null) cardPorts = new Map();
+    cardPorts.set(st.id, new Map(Object.entries(ports)));
+  }
   const outputsByStage: Map<string, Map<string, string>> = new Map();
   for (const st of stages) {
     const effectiveExpected: Map<string, string> = new Map(
       st.expected.map((e) => [e.name, e.kind]),
     );
+    const portKinds: Map<string, string> | undefined = cardPorts?.get(st.id);
     const inputNames: Set<string> = new Set(st.inputs.map((i) => i.name));
+    // the contradiction sweep FIRST (a loud, named refusal beats
+    // the generic mismatch text for the same row)
+    if (portKinds !== undefined) {
+      for (const [name, kind] of effectiveExpected) {
+        const cardKind: string | undefined = portKinds.get(name);
+        if (cardKind !== undefined && cardKind !== kind) {
+          throw new FlowError(
+            "flow " +
+              JSON.stringify(flowId) +
+              " stage " +
+              JSON.stringify(st.id) +
+              " input " +
+              JSON.stringify(name) +
+              ": expected kind " +
+              JSON.stringify(kind) +
+              " contradicts card " +
+              JSON.stringify(st.card) +
+              " (the card declares " +
+              JSON.stringify(cardKind) +
+              ") — the card's own port declaration is the truth",
+          );
+        }
+      }
+      for (const name of inputNames) {
+        const cardKind: string | undefined = portKinds.get(name);
+        if (cardKind !== undefined && !effectiveExpected.has(name)) {
+          effectiveExpected.set(name, cardKind);
+        }
+      }
+    }
     const expectedNames: Set<string> = new Set(effectiveExpected.keys());
     const onlyInput: string[] = [...inputNames].filter((k) => !expectedNames.has(k)).sort();
     const onlyExpected: string[] = [...expectedNames].filter((k) => !inputNames.has(k)).sort();

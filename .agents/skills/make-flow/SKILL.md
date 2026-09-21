@@ -29,6 +29,12 @@ const MY_FLOW: RegistryFlow = {
   // inputs: Record<string, RegistryEdge> — initial edges or
   //   fromFlow stage outputs
   // expected/outputs/cardIo: Record<string, string>
+  //   THE DERIVATION LAW (roadmap §12): for card= stages, an input
+  //   the card's own flowKinds.inputs declares needs NO hand-written
+  //   expected — the kind derives from the card (the registry row
+  //   never hand-mirrors what the card already declares). A row that
+  //   hand-writes a kind the card contradicts refuses LOUD. Hand-
+  //   write expected only for initials/edges the card cannot know.
   // params: Record<string, unknown>
 };
 const REGISTRY: Record<string, RegistryFlow> = {
