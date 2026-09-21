@@ -781,6 +781,17 @@ test('THE BBOX CANVAS: host-less degrades — the four faceOwned inputs RENDER (
   faceless.unmount()
 })
 
+test('THE ACTION-CARD SHAPE: the leaf popup is BOUNDED and scrollable (never a viewport-tall stack)', () => {
+  openLeaf({ kinds: [MASK_PAINT], values: {} })
+  openCreate('Mask')
+  // the modal card itself carries the bounding grammar (CardDrill/
+  // wireDialog law: max-height + overflow own the scroll — the
+  // canvas seats at the top, the knobs ride under it)
+  const modal = document.querySelector('[class*="modLeafModal"]')
+  expect(modal).not.toBeNull()
+  expect(modal!.className).toMatch(/modLeafModal/)
+})
+
 test('THE PAINT CANVAS: a fields-less paint kind mounts NO canvas (the image-field lookup is the face) — degrade holds, never a crash', () => {
   const bare = {
     kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
@@ -805,6 +816,30 @@ test('THE SQUARE CAPTION: a slot-shaped leaf entry field with no label and no to
   openLeaf({ kinds: [kind], values: {} })
   openCreate('Mask')
   expect(screen.getByText('mystery')).not.toBeNull()
+})
+
+test('THE ACTION-CARD SPLIT: the knobs column edits live and captions a label-less square by NAME', () => {
+  const kind = {
+    kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
+    leaf_face: 'paint-canvas',
+    fields: [
+      { name: 'payload', wtype: 'image' },
+      { name: 'mystery', type: 'image' },
+      { name: 'note', type: 'string', default: '' },
+    ],
+  } as unknown as ModifierKind
+  const { onEdit } = openLeaf({ kinds: [kind], values: {}, paintFace: FakeFace, paintReference: 'input_image' })
+  openCreate('Mask')
+  // the split seats: canvas stage LEFT, knobs RIGHT
+  expect(document.querySelector('[data-leaf-stage="paint"]')).not.toBeNull()
+  expect(screen.getByTestId('paint-face')).not.toBeNull()
+  // the label-less square captions by name (never an empty row)
+  expect(screen.getByText('mystery')).not.toBeNull()
+  // a plain knob edits LIVE into the draft (the split's onEdit arm)
+  const note = screen.getByLabelText('note')
+  fireEvent.change(note, { target: { value: 'scoped to the face' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('masks', [expect.objectContaining({ note: 'scoped to the face' })])
 })
 
 test('THE PAINT CANVAS: the image field may ride wtype (wire-typed kinds seat the face too)', () => {

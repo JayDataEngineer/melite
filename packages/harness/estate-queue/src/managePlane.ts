@@ -353,7 +353,7 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
   try {
     rows = ctx.models.resolveCatalogArtifact(req.model, req.variant, req.quant, ctx.repoRoot);
   } catch (e) {
-    // THE CARD-OWNED FALLBACK (the mask-form SAM2 law, 2026-09-19 —
+    // THE CARD-OWNED FALLBACK (the mask SAM2 law, 2026-09-19 —
     // the operator: "declared, then auto provisioned"): model-less
     // tool cards (boarded: []) carry their own weight rows on the
     // card DECL (provisionsByFamily serves them under the CARD id).

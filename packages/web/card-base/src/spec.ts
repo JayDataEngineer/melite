@@ -229,7 +229,7 @@ export interface ModifierKind {
    *  rectangle on (absent host degrades to the four number
    *  inputs). */
   leaf_face?: 'paint-canvas' | 'bbox-canvas'
-  /** THE ARM-CONDITIONAL EXTENSION PACKS (the mask-form SAM2 law):
+  /** THE ARM-CONDITIONAL EXTENSION PACKS (the mask SAM2 law):
    *  pack ids this kind's arm needs live on the engine. Served
    *  verbatim; the compose door enforces them only when the kind's
    *  bag is non-empty (an unused arm never blocks a run). */

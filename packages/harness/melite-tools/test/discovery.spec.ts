@@ -229,7 +229,7 @@ describe('live door arms', () => {
   test('formsArm serves the live table (sort law pinned synthetically)', async () => {
     const table = (await formsArm()) as Record<string, Record<string, unknown>>
     assert.ok('tts' in table)
-    assert.ok('mask-form' in table, 'the mask surface serves (the studio retired at parity, stroke 75)')
+    assert.ok('mask' in table, 'the mask surface serves (the studio retired at parity, stroke 75)')
     assert.equal('mask-studio' in table, false, 'the studio row is GONE (CONTRACT D)')
     assert.equal(table['tts']!['plugin'], 'comfyui')
     assert.equal(typeof table['tts']!['order'], 'number')
@@ -248,7 +248,7 @@ describe('live door arms', () => {
 
   test('cardToolsArm serves the MODS beside params_schema (stroke 79 — the agent contract)', async () => {
     const tools = (await cardToolsArm()) as Array<Record<string, unknown>>
-    const mask = tools.find((t) => t['name'] === 'mask-form')!
+    const mask = tools.find((t) => t['name'] === 'mask')!
     // the same kinds the UI form-spec serves — kind + category +
     // field names; leaf_face never rides (agents compose values,
     // never faces)
@@ -304,10 +304,10 @@ describe('live door arms', () => {
     assert.equal('defaults' in spec, false)
   })
 
-  test('formSpecArm serves the card-only mask-form envelope (the studio retired at parity, stroke 75)', async () => {
-    const spec = (await formSpecSweep('mask-form')) as Record<string, unknown>
-    assert.equal(spec['form'], 'mask-form')
-    assert.equal(spec['service'], 'mask-form')
+  test('formSpecArm serves the card-only mask envelope (the studio retired at parity, stroke 75)', async () => {
+    const spec = (await formSpecSweep('mask')) as Record<string, unknown>
+    assert.equal(spec['form'], 'mask')
+    assert.equal(spec['service'], 'mask')
     assert.deepEqual(spec['variants'], [])
     // the card-declared kinds serve on the ONE modifiers channel
     // (stroke 78: the three-kind reshape — sam3/sam2/draw)
@@ -585,7 +585,7 @@ describe('live door arms', () => {
   test("formSpecArm serves the AGENT ENGINE doc from the declared contract (stroke 66 — the census rides LIVE)", async () => {
     const docs = new Map([['agent', () => agentFormDoc({
       mcps: [{ value: 'blender', label: 'blender' }],
-      skills: [{ value: 'card:mask-form', label: 'Mask Form' }],
+      skills: [{ value: 'card:mask', label: 'Mask Form' }],
     })]])
     const doc = await formSpecSweep('agent', docs)
     assert.ok(doc !== null, 'the engine id resolves')
@@ -596,7 +596,7 @@ describe('live door arms', () => {
     const mcps = kinds[0]!['fields'] as Array<{ options: Array<{ value: string }> }>
     assert.deepEqual(mcps[0]!.options, [{ value: 'blender', label: 'blender' }])
     const skills = kinds[1]!['fields'] as Array<{ options: Array<{ value: string }> }>
-    assert.deepEqual(skills[0]!.options, [{ value: 'card:mask-form', label: 'Mask Form' }])
+    assert.deepEqual(skills[0]!.options, [{ value: 'card:mask', label: 'Mask Form' }])
   })
 
   test('formSpecArm refuses unknown keys as before (the engine arm does not widen resolution)', async () => {

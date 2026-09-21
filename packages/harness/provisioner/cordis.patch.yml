@@ -104,7 +104,7 @@
       name: '@melite/3d-img-to-mesh'
 
     # mask-studio RETIRED at parity (stroke 75, CONTRACT D): the
-    # loader entry and the row are gone — mask-form owns the mask
+    # loader entry and the row are gone — mask owns the mask
     # surface; the package survives as the paint leaf-face carrier
     # (ui/), unmounted.
 

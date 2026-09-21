@@ -1,5 +1,5 @@
 // THE MOD-FACE CONTRACTS (stroke 79 — the seam-law unification;
-// REWORKED stroke 95 — the mask-form leaf rework, the operator's
+// REWORKED stroke 95 — the mask leaf rework, the operator's
 // design: "Inputs bar, then the Mods bar; the mods open a popup
 // with visual preview"): the leaf-face owner props live HERE, in
 // the shared contracts package, beside their siblings

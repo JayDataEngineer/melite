@@ -76,16 +76,16 @@ describe('web cards-tab (the tab face, keyless)', () => {
     assert.equal(el.textContent, 'h3-timeline', 'the card captions when no title (never an empty caption)')
   })
 
-  // STROKE 95 (the mask-form rework — two bars, everything mod-owned):
+  // STROKE 95 (the mask rework — two bars, everything mod-owned):
   // the reworked card still distills to the tab face carrying its bag
   // entries VERBATIM (the wire is the storage; the row never
   // re-derives or flattens the mods — that was the butchered shape
   // this rework killed).
-  it('distills the reworked mask-form card with its mod bags intact', () => {
+  it('distills the reworked mask card with its mod bags intact', () => {
     const stage: BenchStageRow = {
       engine: 'comfyui',
       id: 's_2',
-      card: 'mask-form',
+      card: 'mask',
       title: 'the cloak mask',
       params: {
         input_image: '/state/drafts/pic.png',
@@ -94,7 +94,7 @@ describe('web cards-tab (the tab face, keyless)', () => {
       },
     } as unknown as BenchStageRow
     const row = benchRow(stage)
-    assert.equal(row.kind, 'mask-form', 'the reworked card id serves')
+    assert.equal(row.kind, 'mask', 'the reworked card id serves')
     assert.equal(row.title, 'the cloak mask', 'the stage title captions')
     // the bags ride the row's params verbatim — the base card carries
     // ONLY input_image flat; every knob rides its entry

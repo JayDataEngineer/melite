@@ -674,7 +674,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
               .then((r) => r.ok),
             // THE PAINT FACE (embedded, stroke 95): the brush canvas
             // at the top of the mod leaf + the reference field
-            // (mask-form's input_image — the kind declaration gates
+            // (mask's input_image — the kind declaration gates
             // the canvas; other cards never see it).
             paintFace: PaintLeafCanvas,
             // THE BBOX FACE (stroke 78, embedded stroke 95): the

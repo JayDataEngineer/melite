@@ -237,8 +237,8 @@ export const inject: string[] = ['comfyui']
 
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
-    id: 'mask-form',
-    skeleton: 'mask-form',
+    id: 'mask',
+    skeleton: 'mask',
     boarded: [],
     tags: ['image', 'mask', 'edit', 'form'],
     requiresModel: false,
@@ -287,13 +287,13 @@ export function apply(ctx: Context): void {
       // bag entries through scalarOf).
       const doc = schema(p) as unknown as Record<string, unknown>
       if (typeof doc.input_image !== 'string' || !doc.input_image.trim()) {
-        throw new Error("required param 'input_image' missing on the mask-form card — the mask lane selects FROM an image")
+        throw new Error("required param 'input_image' missing on the mask card — the mask lane selects FROM an image")
       }
-      const sam3 = bagOf(doc, 'sam3', 'mask-form')
-      const sam2 = bagOf(doc, 'sam2', 'mask-form')
-      const draw = bagOf(doc, 'draw', 'mask-form')
+      const sam3 = bagOf(doc, 'sam3', 'mask')
+      const sam2 = bagOf(doc, 'sam2', 'mask')
+      const draw = bagOf(doc, 'draw', 'mask')
       if (sam3.length === 0 && sam2.length === 0 && draw.length === 0) {
-        throw new Error('no mask sources on the mask-form card — add at least one modifier (sam3, sam2, or draw)')
+        throw new Error('no mask sources on the mask card — add at least one modifier (sam3, sam2, or draw)')
       }
       if (draw.length > 0 && sam3.length === 0 && sam2.length === 0) {
         throw new Error('a draw stacks ONTO a mask — add a standalone source first (sam3 or sam2), then the draw')

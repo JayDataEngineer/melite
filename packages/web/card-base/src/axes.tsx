@@ -82,7 +82,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
     inMatrix: matrixSet.has(f.id),
   }))
   // THE FAMILY FACE MAP: a matrix route that IS a family route
-  // (route-id-as-model, the family-routed cards — sfx, mask-form)
+  // (route-id-as-model, the family-routed cards — sfx, mask)
   // renders the family's DECL label, version included; variant and
   // quant routes keep their own faces (the axes carry those).
   const familyFace = new Map<string, string>()

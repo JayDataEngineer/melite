@@ -89,7 +89,7 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     g.node('MaskComposite', { destination: mask, source: rectMask(scope), x: 0, y: 0, operation: 'multiply' }).out(0)
 
   // THE SAM2 IMPACT-PACK ARM (the operator's SAM2: YOLO proposes +
-  // SAM2 refines; the mask-form card declares the packs + weights,
+  // SAM2 refines; the mask card declares the packs + weights,
   // the compose door refuses without them — never a silent CLIP
   // leg). UltralyticsDetectorProvider (subpack, PINNED yolo model)
   // → BboxDetectorSEGS (image + the YOLO boxes + the card's labels)

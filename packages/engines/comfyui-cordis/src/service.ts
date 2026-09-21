@@ -60,7 +60,7 @@ function assertNoCheat(cardId: string, def: Pick<CardDefinition, 'schema' | 'sch
   }
 }
 
-/** THE ARM-CONDITIONAL EXTENSION GATE (the mask-form SAM2 law,
+/** THE ARM-CONDITIONAL EXTENSION GATE (the mask SAM2 law,
  *  2026-09-19 — the operator: "declared, then auto provisioned"):
  *  every declared kind whose `requires` names packs AND whose bag is
  *  non-empty in the merged params must find ≥1 of each pack's nodes
@@ -134,7 +134,7 @@ export interface DeclaredModifierKind {
    *  drags a selection on (absent host degrades to the four number
    *  inputs). Served verbatim like every declared row. */
   leaf_face?: 'paint-canvas' | 'bbox-canvas'
-  /** THE ARM-CONDITIONAL EXTENSION PACKS (the mask-form SAM2 law,
+  /** THE ARM-CONDITIONAL EXTENSION PACKS (the mask SAM2 law,
    *  2026-09-19 — the operator: "declared, then auto provisioned"):
    *  pack ids this KIND's arm needs live (impact-pack nodes for the
    *  SAM2 chain). The compose door enforces them ONLY when the

@@ -408,9 +408,9 @@ importers:
       '@melite/image-input-prep':
         specifier: workspace:*
         version: link:../../image/input-prep
-      '@melite/image-mask-form':
+      '@melite/image-mask':
         specifier: workspace:*
-        version: link:../../image/mask-form
+        version: link:../../image/mask
       '@melite/image-tagger':
         specifier: workspace:*
         version: link:../../image/tagger
@@ -1136,7 +1136,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/image/mask-form:
+  packages/image/mask:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -2326,6 +2326,10 @@ importers:
         version: 6.0.3
 
   packages/web/infer-gallery:
+    dependencies:
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.1

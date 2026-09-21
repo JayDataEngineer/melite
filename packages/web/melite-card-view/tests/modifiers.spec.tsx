@@ -278,12 +278,12 @@ test('removing a macro-stamped row commits the plain bag — no guard needed, on
 //    modal). Declared + hosted — never sniffed, never crashing
 //    host-less. ──────────────────────────────────────────────────
 
-/** The mask-form-shaped spec: an input_image card field + the
+/** The mask-shaped spec: an input_image card field + the
  *  declared paint kind (leaf_face on the row, payload wtype image —
  *  the served verbatim shape the lane proves). */
 const PAINT_SPEC = {
-  form: 'mask-form',
-  model: 'mask-form',
+  form: 'mask',
+  model: 'mask',
   schema: schemaEnvelope({
     input_image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', required: true, group: 'input' } } },
   }),

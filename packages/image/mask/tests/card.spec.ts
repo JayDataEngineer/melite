@@ -1,4 +1,4 @@
-// card.spec.ts — the mask-form card wall, REWORKED (stroke 95: the
+// card.spec.ts — the mask card wall, REWORKED (stroke 95: the
 // operator's design — Inputs bar + Mods bar, NOTHING else on the
 // card face; every knob a mask source owns rides its bag ENTRY;
 // the leaf popups carry the embedded canvases).
@@ -25,8 +25,8 @@ const DUMMY: ModelFacts = { id: "x", card: "x", defaults: {}, lane_inputs: {}, c
 
 let def: CardDefinition;
 beforeAll(async () => {
-  def = (await loadCardDefs()).get("mask-form")!;
-  assert.ok(def, "the composition root serves the mask-form card");
+  def = (await loadCardDefs()).get("mask")!;
+  assert.ok(def, "the composition root serves the mask card");
 });
 
 type Row = Record<string, unknown>;
@@ -34,7 +34,7 @@ type Kind = NonNullable<CardDefinition["mods"]>[number];
 const fieldNames = (k: Kind): string[] =>
   (((k as unknown as Row)["fields"] ?? []) as Array<Row>).map((f) => String(f["name"]));
 
-describe("the mask-form card declaration (stroke 95 — the two-bars law)", () => {
+describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
   it("the flat schema carries the INPUT ONLY (the base card is the Inputs bar + the Mods bar — nothing else)", () => {
     const parsed = def.schema({ input_image: "/x.png" }) as Row;
     assert.deepEqual(Object.keys(parsed).sort(), ["input_image"],
@@ -122,18 +122,18 @@ describe("the mask-form card declaration (stroke 95 — the two-bars law)", () =
   });
 });
 
-describe("the mask-form compose gate (the bag is the recipe)", () => {
+describe("the mask compose gate (the bag is the recipe)", () => {
   it("a missing input_image refuses (the lane selects FROM an image)", () => {
     assert.throws(
       () => def.compose({ }, DUMMY, new GraphBuilder(), "r1"),
-      /required param 'input_image' missing on the mask-form card/,
+      /required param 'input_image' missing on the mask card/,
     );
   });
 
   it("an empty recipe refuses (no mask sources)", () => {
     assert.throws(
       () => def.compose({ input_image: "/m/pic.png" }, DUMMY, new GraphBuilder(), "r1"),
-      /no mask sources on the mask-form card/,
+      /no mask sources on the mask card/,
     );
   });
 
@@ -151,7 +151,7 @@ describe("the mask-form compose gate (the bag is the recipe)", () => {
     );
     assert.throws(
       () => def.compose({ input_image: "/m/pic.png", sam3: ["person"] }, DUMMY, new GraphBuilder(), "r1"),
-      /entry 0 on the mask-form card must be an object/,
+      /entry 0 on the mask card must be an object/,
     );
   });
 
@@ -341,7 +341,7 @@ describe("the mask-form compose gate (the bag is the recipe)", () => {
 
 // ── the refuse-arm sweep (coverage: every loud arm fires once) ──
 
-describe("the mask-form compose gate (the refuse-arm sweep)", () => {
+describe("the mask compose gate (the refuse-arm sweep)", () => {
   it("a bbox with a null value reads UNSET (never a throw — null clears)", () => {
     const g = new GraphBuilder();
     def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "primary" }, { prompt: "x", bbox_x: 5, bbox_y: null }] }, DUMMY, g, "r_n");
@@ -371,7 +371,7 @@ describe("the mask-form compose gate (the refuse-arm sweep)", () => {
   });
 });
 
-describe("the mask-form compose gate (the empty-name and unset-bbox arms)", () => {
+describe("the mask compose gate (the empty-name and unset-bbox arms)", () => {
   it("an all-negative bbox on an EXPORT entry reads unset (the -1 law on the export path)", () => {
     const g = new GraphBuilder();
     def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "primary" }, { prompt: "x", bbox_x: -1, bbox_y: -1, bbox_w: -1, bbox_h: -1 }] }, DUMMY, g, "r_neg");
@@ -388,7 +388,7 @@ describe("the mask-form compose gate (the empty-name and unset-bbox arms)", () =
   });
 });
 
-describe("the mask-form compose gate (the named-entry arms)", () => {
+describe("the mask compose gate (the named-entry arms)", () => {
   it("a NAMED sam3 export and a NAMED draw ride their names verbatim", () => {
     const g = new GraphBuilder();
     def.compose({
@@ -406,7 +406,7 @@ describe("the mask-form compose gate (the named-entry arms)", () => {
 // goes around the declaration). Stroke 95: the bounds are the
 // ENTRY's own declared field rows — the popup's knobs cannot go
 // around the declaration any more than the flat form ever could.
-describe("the mask-form compose gate (the per-entry scalars cannot go around the declaration)", () => {
+describe("the mask compose gate (the per-entry scalars cannot go around the declaration)", () => {
   it("an out-of-bounds refine_iterations refuses loud (0–8 declared on the entry)", () => {
     assert.throws(
       () => def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person", refine_iterations: 99 }] }, DUMMY, new GraphBuilder(), "r_ri"),

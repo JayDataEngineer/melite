@@ -22,7 +22,7 @@ describe("the agent params contract (stroke 66 — anti-drift)", () => {
   });
 
   it("the mod kinds' entry fields are the SHARED constants (the form's grammar cannot drift from the wire's)", () => {
-    const census = { mcps: [{ value: "blender", label: "Blender" }], skills: [{ value: "card:mask-form", label: "Mask Form" }] };
+    const census = { mcps: [{ value: "blender", label: "Blender" }], skills: [{ value: "card:mask", label: "Mask Form" }] };
     const kinds = agentModKinds(census);
     assert.deepEqual(kinds.map((k) => k["param_key"]), ["mcps", "skills", "inputs"]);
     const mcps = kinds[0]!;
@@ -82,9 +82,9 @@ describe("the agent params contract (stroke 66 — anti-drift)", () => {
 
 describe("normalizeAgentStageParams (both grammars fold into one wire)", () => {
   it("canonical strings pass verbatim", () => {
-    const out = normalizeAgentStageParams({ task: "t", mcps: ["blender"], skills: ["card:mask-form"] }, "s", CAP);
+    const out = normalizeAgentStageParams({ task: "t", mcps: ["blender"], skills: ["card:mask"] }, "s", CAP);
     assert.deepEqual(out.mcps, ["blender"]);
-    assert.deepEqual(out.skills, ["card:mask-form"]);
+    assert.deepEqual(out.skills, ["card:mask"]);
     assert.deepEqual(out.inputs, []);
   });
 
@@ -92,11 +92,11 @@ describe("normalizeAgentStageParams (both grammars fold into one wire)", () => {
     const out = normalizeAgentStageParams({
       task: "t",
       mcps: [{ [MCP_ENTRY_FIELD]: "blender" }, "unity"],
-      skills: [{ [SKILL_ENTRY_FIELD]: "card:mask-form" }],
+      skills: [{ [SKILL_ENTRY_FIELD]: "card:mask" }],
       inputs: [{ name: "n", value: 7 }],
     }, "s", CAP);
     assert.deepEqual(out.mcps, ["blender", "unity"]);
-    assert.deepEqual(out.skills, ["card:mask-form"]);
+    assert.deepEqual(out.skills, ["card:mask"]);
     assert.deepEqual(out.inputs, [{ name: "n", value: 7 }]);
   });
 

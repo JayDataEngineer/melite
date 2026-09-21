@@ -520,18 +520,18 @@ describe("hProvisionModel", () => {
     }
   });
 
-  it("a catalog miss re-resolves against CARD-owned DECL rows (the mask-form SAM2 law)", async () => {
+  it("a catalog miss re-resolves against CARD-owned DECL rows (the mask SAM2 law)", async () => {
     const { CatalogMiss } = await import("@melite/comfyui-cordis");
     mkRoot();
     try {
-      fakeModels.poison = new CatalogMiss('model "mask-form" not found in catalog');
+      fakeModels.poison = new CatalogMiss('model "mask" not found in catalog');
       route(() => new Response("BYTES"));
-      const [c1, e1] = await manage({ action: "provision_model", model: "mask-form" });
+      const [c1, e1] = await manage({ action: "provision_model", model: "mask" });
       assert.equal(c1, 200);
       assert.match(e1.detail, /downloaded: sam2\.1_hiera_large\.pt, yolo11m\.pt/);
       assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "sams", "sam2.1_hiera_large.pt"), "utf8"), "BYTES");
       assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "ultralytics", "bbox", "yolo11m.pt"), "utf8"), "BYTES");
-      assert.equal((e1.data as { model: string }).model, "mask-form");
+      assert.equal((e1.data as { model: string }).model, "mask");
       // an unknown id stays a 404 (never a wrong install)
       fakeModels.poison = new CatalogMiss('model "ghost" not found in catalog');
       const [c2, e2] = await manage({ action: "provision_model", model: "ghost" });

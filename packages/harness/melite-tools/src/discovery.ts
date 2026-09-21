@@ -410,7 +410,7 @@ function specModifiers(
     // section renderer offers the brush verb only on a declared
     // face; never sniffed from the kind name.
     if (k.leaf_face !== undefined) entry.leaf_face = k.leaf_face
-    // THE ARM-CONDITIONAL EXTENSION PACKS (the mask-form SAM2 law):
+    // THE ARM-CONDITIONAL EXTENSION PACKS (the mask SAM2 law):
     // served verbatim — the compose door enforces them only when
     // the kind's bag is non-empty.
     if (k.requires !== undefined) entry.requires = k.requires

@@ -91,7 +91,7 @@ export interface ModifiersSectionProps {
   bboxFace?: BboxFaceComponent
   /** the card-level image field whose value is the leaf faces'
    *  reference — the brush paints OVER it, the rectangle selects
-   *  ON it (mask-form: 'input_image'). */
+   *  ON it (mask: 'input_image'). */
   paintReference?: string
   /** The host's media source (threaded from the constructor's wire)
    *  — the leaf's image inputs pick from the library like a card's. */
@@ -482,11 +482,21 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     // (the row's resolved facts stamp on save). FIELD kinds: the
     // kind's OWN fields through the constructor's atoms (image
     // fields get the square — the construction law).
+    //
+    // THE ACTION-CARD LAW (operator, 2026-10-08: "the form is too
+    // tall, and has no scroll… based on the action card package,
+    // instead of one long vertical stack"): the leaf popup rides the
+    // action card's own shape — BOUNDED (never taller than the
+    // viewport) and body-scrolling (the canvas seats at the top, the
+    // knobs scroll under it). Same grammar as CardDrill/.wireDialog:
+    // className lands on the modal card; max-height + overflow own
+    // the scroll.
     leaf !== null ? h(Modal, {
       open: true,
       onClose: () => { setLeaf(null) },
       title: (leaf.mode === 'create' ? 'Add ' : 'Edit ') + leaf.kind.label,
       closeLabel: 'Close',
+      className: css.modLeafModal,
     },
       h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) }),
     ) : null,
@@ -693,35 +703,65 @@ function ModLeaf(props: {
               })()
             : null,
         )
-      : h('div', { className: css.modLeafFields },
-          // THE EMBEDDED CANVAS (stroke 95): the visual preview at
-          // the TOP of the leaf — the face the kind declares, the
-          // reference image the card names. The canvas reports
-          // every committed change live into the draft; the leaf's
-          // own Add/Save/Cancel (below) own the commit chrome.
-          bboxCanvas && props.bboxFace !== undefined
-            ? h('div', { className: css.modField, 'data-leaf-canvas': 'bbox' },
-                h(props.bboxFace, {
-                  referenceUrl: props.paintReferenceValue,
-                  value: draftQuad(),
-                  onChange: writeQuad,
-                }))
-            : null,
-          paintField !== undefined && props.paintFace !== undefined
-            ? h('div', { className: css.modField, 'data-leaf-canvas': 'paint' },
-                h(props.paintFace, {
-                  referenceUrl: props.paintReferenceValue,
-                  value: typeof onDraft.draftParams[paintField.name] === 'string' ? onDraft.draftParams[paintField.name] as string : '',
-                  onChange: (dataUrl: string) => { onDraft.setDraftParams({ ...onDraft.draftParams, [paintField.name]: dataUrl }) },
-                }))
-            : null,
+      : // THE ACTION-CARD SPLIT (the operator's 2026-10-08 law: the
+        // leaf is "based on the action card package, instead of one
+        // long vertical stack" — the SAME grammar as CardDrill's
+        // params-left / preview-right): a face-bearing leaf seats
+        // the canvas LEFT and the knobs RIGHT; a faceless leaf keeps
+        // the single column (nothing to split around).
+        (bboxCanvas || paintField !== undefined)
+        ? h('div', { className: css.modLeafSplit },
+            h('div', { className: css.modLeafStage, 'data-leaf-stage': bboxCanvas ? 'bbox' : 'paint' },
+              bboxCanvas && props.bboxFace !== undefined
+                ? h('div', { className: css.modField, 'data-leaf-canvas': 'bbox' },
+                    h(props.bboxFace, {
+                      referenceUrl: props.paintReferenceValue,
+                      value: draftQuad(),
+                      onChange: writeQuad,
+                    }))
+                : null,
+              paintField !== undefined && props.paintFace !== undefined
+                ? h('div', { className: css.modField, 'data-leaf-canvas': 'paint' },
+                    h(props.paintFace, {
+                      referenceUrl: props.paintReferenceValue,
+                      value: typeof onDraft.draftParams[paintField.name] === 'string' ? onDraft.draftParams[paintField.name] as string : '',
+                      onChange: (dataUrl: string) => { onDraft.setDraftParams({ ...onDraft.draftParams, [paintField.name]: dataUrl }) },
+                    }))
+                : null,
+            ),
+            h('div', { className: css.modLeafFields },
+              leafFields.map((f) => h('div', { key: f.name },
+                (() => {
+                  // THE UNWRAPPED SQUARE (same law as the hybrid arm
+                  // above): a slot-shaped entry field is caption +
+                  // atom siblings, never label-wrapped — else the row
+                  // caption opens the OS file dialog through the
+                  // square's hidden input.
+                  const sq = own.square(f)
+                  const atom = h(SpecAtom, {
+                    f,
+                    value: onDraft.draftParams[f.name],
+                    onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
+                    ...(sq !== undefined ? { square: sq } : {}),
+                  })
+                  return sq !== undefined
+                    ? h('div', { className: css.modField },
+                        h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name),
+                        atom)
+                    : h('label', { className: css.modField },
+                        f.label ?? f.name,
+                        atom)
+                })(),
+              )),
+              own.wireMenu,
+            ))
+        : h('div', { className: css.modLeafFields },
+          // THE EMBEDDED CANVAS (stroke 95, the faceless-fallback
+          // shape): a canvas the kind declares but the host did not
+          // deliver can never mount — this arm renders the plain
+          // fields alone.
           leafFields.map((f) => h('div', { key: f.name },
             (() => {
-              // THE UNWRAPPED SQUARE (same law as the hybrid arm
-              // above): a slot-shaped entry field is caption + atom
-              // siblings, never label-wrapped — else the row caption
-              // opens the OS file dialog through the square's hidden
-              // input.
               const sq = own.square(f)
               const atom = h(SpecAtom, {
                 f,

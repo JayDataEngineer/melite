@@ -74,7 +74,7 @@ const CARDS: Array<{ pkg: string; genre: string; path: string }> = [
   // stroke): card + family both gone.
   { pkg: "input-prep", genre: "image", path: "../../../../packages/image/input-prep/src/card.ts" },
   // mask-studio RETIRED (stroke 75, CONTRACT D at parity): the
-  // card face is gone — mask-form owns the mask surface. The
+  // card face is gone — mask owns the mask surface. The
   // package survives demoted (ui/ = the paint leaf-face carrier).
   { pkg: "tagger", genre: "image", path: "../../../../packages/image/tagger/src/card.ts" },
   { pkg: "upscale-tools", genre: "image", path: "../../../../packages/image/upscale-tools/src/card.ts" },

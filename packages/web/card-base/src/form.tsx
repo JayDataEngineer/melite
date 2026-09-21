@@ -93,7 +93,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
    *  bbox-canvas kinds. Absent host = the four inputs hold. */
   bboxFace?: BboxFaceComponent
   /** the card-level image field feeding the brush reference
-   *  (mask-form: 'input_image'). Absent = no verb. */
+   *  (mask: 'input_image'). Absent = no verb. */
   paintReference?: string
   /** THE DOWNLOAD PROMPT's arm (stroke 18): a boarded-but-absent
    *  model prompts download; the host supplies the manage wire. See

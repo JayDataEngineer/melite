@@ -1,12 +1,12 @@
 ---
-name: mask-form
-description: "Mask Form — the action card: pick the input image, then ADD ways to get a mask (sam3, sam2, draw) as stackable modifiers. Entry point for the mask-form card."
+name: mask
+description: "Mask Form — the action card: pick the input image, then ADD ways to get a mask (sam3, sam2, draw) as stackable modifiers. Entry point for the mask card."
 ---
 
 # Mask Form
 
-You are the agent interface for the **mask-form card** (id
-`mask-form`): produce mask artifacts from one image by STACKING
+You are the agent interface for the **mask card** (id
+`mask`): produce mask artifacts from one image by STACKING
 mask sources. The card face is TWO BARS — the Inputs bar
 (`input_image`, REQUIRED) and the Mods bar; every knob a source
 owns rides its bag ENTRY inside the mod's popup (the stroke-95

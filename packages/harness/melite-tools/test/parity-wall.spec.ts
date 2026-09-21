@@ -23,7 +23,7 @@ describe("THE PARITY WALL (walked defaults ≡ served model_defaults, every card
         const walked = declaredDefaults(carrier, def.boarded);
         // STROKE 95 (the two-bars law): a card may own ZERO flat
         // knobs because every knob rides its MODS — each kind's bag
-        // entries carry the field defaults (mask-form: input_image
+        // entries carry the field defaults (mask: input_image
         // only on the flat form; sam_threshold/refine/dilation/…
         // live on the sam3/sam2/draw entries). Count them: a card
         // is knob-less only when BOTH planes are empty.

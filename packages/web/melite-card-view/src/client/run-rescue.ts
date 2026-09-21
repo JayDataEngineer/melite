@@ -74,7 +74,7 @@ export function familyOfStages(stages: Array<{ params?: Record<string, unknown> 
   return null
 }
 
-/** THE CARD-ID FALLBACK (the mask-form SAM2 law, 2026-09-19):
+/** THE CARD-ID FALLBACK (the mask SAM2 law, 2026-09-19):
  * model-less tool cards name no family — the stage's own card id
  * is the provision target (the manage door resolves card-owned
  * DECL rows under it). Null when no stage names a card. */

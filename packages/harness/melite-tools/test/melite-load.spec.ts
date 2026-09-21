@@ -269,11 +269,11 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
 test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)', () => {
   const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
   const parts = tool.output.render(
-    { name: 'mask-form', inference_type: 'card' },
+    { name: 'mask', inference_type: 'card' },
     {
-      name: 'mask-form', inference_type: 'card',
+      name: 'mask', inference_type: 'card',
       bundle: {
-        kind: 'card', name: 'mask-form',
+        kind: 'card', name: 'mask',
         signature: {
           params_schema: { properties: { input_image: {} }, required: ['input_image'] },
           modifiers: [

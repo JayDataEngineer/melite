@@ -215,6 +215,24 @@
  * never carries them; compose concats ahead of the caller's). */
 .modTileRecipe { border-style: dashed; cursor: default; }
 .modTileRecipe .modTileStrength::after { content: " · recipe"; }
+/* THE ACTION-CARD SHAPE (2026-10-08, the operator's "too tall, no
+ * scroll" verdict): the mod leaf popup rides the action card's own
+ * bounding grammar (CardDrill/.wireDialog): viewport-bounded, the
+ * modal card itself scrolls — the embedded canvas seats at the top,
+ * the knobs ride under it. No colors here (layout only — the color
+ * law stays with the leaf chrome). */
+.modLeafModal { width: min(760px, calc(100vw - 32px)); max-height: min(80vh, 760px); overflow-y: auto; }
+
+.modLeafModal { width: min(760px, calc(100vw - 32px)); max-height: min(80vh, 760px); overflow-y: auto; }
+
+/* THE ACTION-CARD SPLIT (CardDrill's grammar: preview LEFT, knobs
+ * RIGHT): the canvas column holds its own (the face sizes itself),
+ * the knobs column stays a single compact stack. Narrow viewports
+ * fall back to one column (the canvas rides on top). */
+.modLeafSplit { display: grid; grid-template-columns: minmax(0, 7fr) minmax(240px, 5fr); gap: 12px; align-items: start; }
+.modLeafStage { min-width: 0; }
+@media (max-width: 720px) { .modLeafSplit { grid-template-columns: minmax(0, 1fr); } }
+
 .modLeaf { display: flex; flex-direction: column; gap: 10px; min-width: 260px; }
 .modLeafFields { display: grid; gap: 8px; }
 .modLeafActions { display: flex; gap: 8px; }

@@ -28,7 +28,7 @@ export function RunRescue({ error, stages, onRun }: {
   const [done, setDone] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
   if (rescue === null) return null
-  // THE PROVISION TARGET (the mask-form SAM2 law): the model family
+  // THE PROVISION TARGET (the mask SAM2 law): the model family
   // first (the run shot a family); the stage's card id second
   // (model-less tool cards carry their own DECL rows under it).
   const family = familyOfStages(stages) ?? ''

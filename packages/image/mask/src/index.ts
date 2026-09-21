@@ -4,7 +4,7 @@
 // composed by the cardPackages SSOT).
 import type { Context } from '@deepseek-ai/cordis'
 
-export const name = '@melite/image-mask-form'
+export const name = '@melite/image-mask'
 
 export const inject: string[] = []
 

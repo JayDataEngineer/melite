@@ -1282,11 +1282,11 @@ test('THE QUERY RIDES THE SEAT LANE (stroke 79): GET /v1/load?inference_type=car
   apply(host as never, {})
   const r = await call(h.routes, '/v1', {
     method: 'GET',
-    url: 'http://localhost/v1/load?inference_type=card&name=mask-form',
+    url: 'http://localhost/v1/load?inference_type=card&name=mask',
   })
   assert.equal(r.status, 200)
-  assert.deepEqual(seen, [['card', 'mask-form']])
-  assert.deepEqual(r.body, { bundle: { kind: 'card', name: 'mask-form' } })
+  assert.deepEqual(seen, [['card', 'mask']])
+  assert.deepEqual(r.body, { bundle: { kind: 'card', name: 'mask' } })
 })
 
 // ── THE POSER ARMS (2026-09-16 — estate verbs, never a proxy) ─────

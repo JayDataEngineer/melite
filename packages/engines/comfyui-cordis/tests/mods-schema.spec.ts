@@ -12,7 +12,7 @@ const base = (over: Record<string, unknown>): DeclaredModifierKind =>
   ({ kind: "t", label: "T", param_key: "t", cardinality: "list", ...over }) as DeclaredModifierKind;
 
 describe("the declared mod-kind schema gate (registerCard's third door)", () => {
-  it("a healthy row passes clean (the mask-form shape)", () => {
+  it("a healthy row passes clean (the mask shape)", () => {
     validateDeclaredMods("c", [base({
       category: "standalone",
       fields: [
