@@ -68,6 +68,7 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
     name: 'melite_discover',
     description:
       'Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. '
+      + 'q matches names/titles/descriptions LITERALLY (a full user sentence matches nothing) — for a MODALITY ask (video, image, audio, 3d) search tags= first, q second. '
       + 'Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. "image,upscale") '
       + '+ optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; '
       + 'fall back to cards. COUNTS-FIRST: a large estate clamps to counts + the tag vocabulary + the first '
@@ -146,6 +147,12 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
         // exists — never the bench's staged working set. The line
         // says so, and names the bench's read door.
         const out: string[] = [`discover: ${nf} flows, ${nc} cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load`]
+        // THE EMPTY ANSWER TEACHES (2026-09-21, the blind-first-call
+        // audit: q is literal — a blind agent typing the user's
+        // sentence got a bare 0/0 and had to reinvent strategy).
+        if (flows.length === 0 && cards.length === 0) {
+          out.push('no match. q matches names/titles/descriptions LITERALLY — a full sentence rarely hits. Retry with tags= (video, image, audio, 3d, generate, edit) for the MODALITY, or lookup=all for the estate-wide first pass.')
+        }
         if (flows.length > 0) {
           out.push('flows:')
           for (const f of flows.slice(0, RENDER_CLAMP)) {
