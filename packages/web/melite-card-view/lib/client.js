@@ -8327,11 +8327,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*
 		*  - FIRST FRAME: the stream's opening doc (the subscribe generator
 		*    serves the zero state for a not-yet-born bench — the birth watch).
-		*  - NO FRAME SPAM: later items yield ONLY on doc change — rev
-		*    drift (an author move) or run-face movement at the same rev (a
-		*    run's progress/result/history landing through a rev-silent
-		*    telemetry write). A reconnect re-serving the identical doc is
-		*    the same rev AND the same stage bytes: no frame.
+		*  - NO FRAME SPAM: later items yield ONLY on rev drift (a reconnect
+		*    re-serves the same doc; same rev, no frame).
 		*  - THE VISIBILITY LAW (the silent-death cure): a carrier loss —
 		*    the wire dropped, the supervisor is reconnecting — surfaces as
 		*    ONE failure frame beside the last ok value, cleared by the next
@@ -8368,7 +8365,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const iterator = stream[Symbol.asyncIterator]();
 			let first = true;
 			let lastRev = null;
-			let lastFaces = null;
 			try {
 				for (;;) {
 					const step = iterator.next();
@@ -8388,10 +8384,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						first = false;
 					}
 					const value = readBench(item.value, sessionKey);
-					const faces = JSON.stringify(value.stages);
-					if (lastRev === value.rev && lastFaces === faces) continue;
+					if (lastRev === value.rev) continue;
 					lastRev = value.rev;
-					lastFaces = faces;
 					yield {
 						ok: true,
 						value
@@ -47133,8 +47127,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$5 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.ClEuBa_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_thumbFace{border:1px solid var(--dsw-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.ClEuBa_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_layerRow{flex:none;gap:6px;display:flex}.ClEuBa_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.ClEuBa_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.ClEuBa_reportCard{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.ClEuBa_reportHead{align-items:center;gap:6px;display:flex}.ClEuBa_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.ClEuBa_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.ClEuBa_reportChips{flex-wrap:wrap;gap:4px;display:flex}.ClEuBa_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.ClEuBa_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.ClEuBa_reportRow{justify-content:space-between;gap:12px;display:flex}.ClEuBa_reportKey{color:var(--dsw-alias-label-dimmed);flex:none;font-size:10px}.ClEuBa_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.ClEuBa_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
-		const tagId$5 = "@melite-plugin/dsh-card-view/preview.module.css@9a3a494d";
+		const css$5 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_thumbFace{border:1px solid var(--dsw-alias-border-l2);height:48px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;align-items:center;gap:6px;padding:0 10px;display:inline-flex}.ClEuBa_thumbFaceGlyph{flex:none;width:16px;height:16px}.ClEuBa_thumbFaceName{text-overflow:ellipsis;white-space:nowrap;max-width:120px;font-size:10px;overflow:hidden}.ClEuBa_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_layerRow{flex:none;gap:6px;display:flex}.ClEuBa_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.ClEuBa_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.ClEuBa_reportCard{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.ClEuBa_reportHead{align-items:center;gap:6px;display:flex}.ClEuBa_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.ClEuBa_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.ClEuBa_reportChips{flex-wrap:wrap;gap:4px;display:flex}.ClEuBa_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.ClEuBa_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.ClEuBa_reportRow{justify-content:space-between;gap:12px;display:flex}.ClEuBa_reportKey{color:var(--dsw-alias-label-dimmed);flex:none;font-size:10px}.ClEuBa_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.ClEuBa_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
+		const tagId$5 = "@melite-plugin/dsh-card-view/preview.module.css@7ef5c30a";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$5) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -47172,6 +47166,8 @@ void main() {
 			"stripLink": "ClEuBa_stripLink",
 			"thumb": "ClEuBa_thumb",
 			"thumbFace": "ClEuBa_thumbFace",
+			"thumbFaceGlyph": "ClEuBa_thumbFaceGlyph",
+			"thumbFaceName": "ClEuBa_thumbFaceName",
 			"thumbRow": "ClEuBa_thumbRow"
 		};
 		//#endregion
@@ -48974,7 +48970,7 @@ void main() {
 					setDraftStrength(strength !== void 0 ? String(strength) : "");
 					setDraftSteps(typeof entry["steps"] === "number" ? String(entry["steps"]) : "");
 				} else {
-					const params = {};
+					const params = { ...fieldDefaults(k) };
 					for (const f of k.fields ?? []) {
 						if (seated?.has(f.name) ?? false) continue;
 						if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
@@ -57160,28 +57156,27 @@ void main() {
 		*  broken-image glyph — no error, no name, nothing. The strip is
 		*  the sideways row; a dead entry shows its NAME and a missing
 		*  marker, never a silent void.
-		*  THE KIND FACE (the operator's catches, 2026-10-08): (1) audio
-		*  history tiles read 'gone' — an <img> decodes ONLY images, so a
-		*  non-image url seated in an <img> fires onError on mount and
-		*  every audio/video/mesh tile wore the FALSE dead face ("it says
-		*  gone instead historical view under the preview"). (2) the first
-		*  cut put the artifact NAME in the chip — "a long rectangle with
-		*  a file name" (music/SaveAudioAdvanced.0_music_00002.mp3)
-		*  instead of something compact. THE FACE: the thumb rides the
+		*  THE KIND FACE (the operator's catch, 2026-09-22: audio history
+		*  tiles read 'gone' — "it says gone instead historical view under
+		*  the preview… works for image cards, but not audio"): an <img>
+		*  decodes ONLY images — an audio (or video, or mesh) url seated in
+		*  an <img> fires onError in a real browser the moment it mounts,
+		*  so EVERY non-image tile flipped to the dead face: the Music
+		*  card's history said 'gone' for files that exist, the exact lie
+		*  the dead face exists to prevent. The thumb face rides the
 		*  owner's DECLARED kind (the primary-output law — the same kind
 		*  that picked this presenter): image decodes as itself (the dead
-		*  face stays its honesty); every other kind renders a COMPACT
-		*  48×48 glyph square — the image thumb row's own rhythm — with
-		*  the full artifact name on the TILE BUTTON's tooltip, never in
-		*  the face. No decode to fail, no false 'gone', no long box. */
+		*  face stays its honesty); every other kind renders a labeled
+		*  glyph tile — honest about what the entry IS, no decode to fail,
+		*  no false 'gone'. */
 		function HistoryThumb(props) {
 			const [dead, setDead] = (0, react.useState)(false);
 			if (props.kind !== "image") {
 				const Glyph = props.kind === "audio" ? AudioLines : props.kind === "video" ? Film : Box;
-				return (0, react.createElement)(Glyph, {
+				return (0, react.createElement)("span", {
 					className: preview_module_css_default.thumbFace,
 					"data-testid": `history-thumb-${props.kind}`
-				});
+				}, (0, react.createElement)(Glyph, { className: preview_module_css_default.thumbFaceGlyph }), (0, react.createElement)("span", { className: preview_module_css_default.thumbFaceName }, props.a.name));
 			}
 			if (dead) return (0, react.createElement)("span", {
 				className: cn(preview_module_css_default.thumb, preview_module_css_default.thumbDead),
