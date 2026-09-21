@@ -178,6 +178,31 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
       ...square.verbs,
     })
   }
+  // THE MULTI-SELECT CHIPS (the YOLO-classes law, 2026-10-08 — the
+  // operator's verdict: a detector-owned vocabulary is NEVER a
+  // freeform text box): a closed vocabulary with multi renders as
+  // toggle chips; the wire is a COMMA-JOINED string in the options'
+  // declared order (deterministic — Set order never leaks).
+  if (f.type === 'select' && f.multi === true && Array.isArray(f.options) && f.options.length > 0) {
+    const rows = f.options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o))
+    const held = new Set(String(value ?? '').split(',').map((w) => w.trim()).filter((w) => w !== ''))
+    return h('div', { className: css.specChips, role: 'group', 'aria-label': f.label,
+      ...(f.tooltip !== undefined && f.tooltip !== '' ? { title: f.tooltip } : {}) },
+      rows.map((row) => {
+        const on = held.has(row.value)
+        return h('button', {
+          type: 'button', key: row.value,
+          className: css.specChip + (on ? ' ' + css.specChipOn : ''),
+          'aria-pressed': on,
+          'data-chip': row.value,
+          onClick: () => {
+            const next = new Set(held)
+            if (on) { next.delete(row.value) } else { next.add(row.value) }
+            onEdit(f.name, rows.filter((r) => next.has(r.value)).map((r) => r.value).join(','))
+          },
+        }, titleCaseId(row.label))
+      }))
+  }
   if (f.type === 'select' && Array.isArray(f.options) && f.options.length > 0) {
     return h('select', {
       className: css.specSelect,

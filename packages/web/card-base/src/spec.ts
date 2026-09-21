@@ -112,6 +112,10 @@ export interface SpecField {
    *  (img-to-mesh resolution/bg_removal/samplers) or {value,label}
    *  rows. The atom normalizes — the ONE spelling rule. */
   options?: Array<string | { value: string; label: string }>
+  /** select-only: the closed vocabulary renders as TOGGLE CHIPS
+   *  (multi-pick); the wire stays a comma-joined string in the
+   *  options' declared order. The YOLO-classes law, 2026-10-08. */
+  multi?: boolean
   group?: string
   zone?: string
   required?: boolean

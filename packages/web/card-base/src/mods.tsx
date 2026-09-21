@@ -712,6 +712,15 @@ function ModLeaf(props: {
         (bboxCanvas || paintField !== undefined)
         ? h('div', { className: css.modLeafSplit },
             h('div', { className: css.modLeafStage, 'data-leaf-stage': bboxCanvas ? 'bbox' : 'paint' },
+              // THE FILTER SECTION CAPTION (the operator's framing,
+              // 2026-10-08: "a section to let you use bbox to filter
+              // optionally, then whatever for the SAM modes"): the
+              // box canvas IS the optional filter — no box drawn (or
+              // Clear box) runs the selection over the WHOLE image.
+              bboxCanvas && props.bboxFace !== undefined
+                ? h('div', { className: css.modStageCaption, 'data-stage-caption': 'filter' },
+                    'Box filter — optional (clear = whole image)')
+                : null,
               bboxCanvas && props.bboxFace !== undefined
                 ? h('div', { className: css.modField, 'data-leaf-canvas': 'bbox' },
                     h(props.bboxFace, {

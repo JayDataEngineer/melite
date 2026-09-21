@@ -122,6 +122,56 @@ test('SPEC ATOM: the square face — mirror wins, then the value; junk values sh
   expect(screen.getByText('stale-value')).not.toBeNull()
 })
 
+test('SPEC ATOM: the multi chips — a closed vocabulary toggles a SET; the wire stays a canonical comma string', () => {
+  // the YOLO-classes law (2026-10-08): a detector-owned vocabulary
+  // is NEVER a freeform text box — chips toggle, commas ride.
+  const onEdit = vi.fn()
+  const f = F({
+    name: 'labels', label: 'YOLO classes', type: 'select', multi: true,
+    options: ['person', { value: 'dog', label: 'dog' }, 'car'],
+    tooltip: 'Pick',
+  })
+  const view = render(h(SpecAtom, { f, value: 'dog, person,dog,', onEdit }))
+  const group = screen.getByRole('group', { name: 'YOLO classes' })
+  expect(group.getAttribute('title')).toBe('Pick')
+  expect(screen.getByText('Person').getAttribute('aria-pressed')).toBe('true')
+  // adding voices the SET in declaration order (never click order)
+  fireEvent.click(screen.getByText('Car'))
+  expect(onEdit).toHaveBeenCalledWith('labels', 'person,dog,car')
+  view.rerender(h(SpecAtom, { f, value: 'person,dog,car', onEdit }))
+  expect(screen.getByText('Car').getAttribute('aria-pressed')).toBe('true')
+  // removing voices the remainder; the last chip clears to EMPTY
+  // (the card's compose refuses it LOUD — the face never vetoes)
+  fireEvent.click(screen.getByText('Person'))
+  expect(onEdit).toHaveBeenCalledWith('labels', 'dog,car')
+  view.rerender(h(SpecAtom, { f, value: 'dog', onEdit }))
+  fireEvent.click(screen.getByText('Dog'))
+  expect(onEdit).toHaveBeenCalledWith('labels', '')
+  view.unmount()
+  // no tooltip, no held value: the group still names itself, the
+  // unset binds to no chip (never the painted-first lie)
+  const plain = render(h(SpecAtom, {
+    f: F({ name: 'labels', label: 'YOLO classes', type: 'select', multi: true, options: ['person', 'dog'] }),
+    value: undefined, onEdit,
+  }))
+  expect(screen.getByRole('group', { name: 'YOLO classes' }).getAttribute('title')).toBeNull()
+  expect(screen.getByText('Person').getAttribute('aria-pressed')).toBe('false')
+  plain.unmount()
+})
+
+test('SPEC ATOM: multi rides select WITH a vocabulary only — no-options and non-select fields degrade honestly', () => {
+  const onEdit = vi.fn()
+  const bare = render(h(SpecAtom, {
+    f: F({ name: 'labels', label: 'YOLO classes', type: 'select', multi: true }), value: 'person', onEdit,
+  }))
+  expect((screen.getByLabelText('YOLO classes') as HTMLInputElement).value).toBe('person')
+  bare.unmount()
+  render(h(SpecAtom, {
+    f: F({ name: 'note', label: 'Note', type: 'text', multi: true }), value: 'x', onEdit,
+  }))
+  expect((screen.getByLabelText('Note') as HTMLInputElement).value).toBe('x')
+})
+
 test('SPEC ATOM: select normalizes string + object rows; the value rides verbatim, the face title-cases', () => {
   const onEdit = vi.fn()
   render(h(SpecAtom, {

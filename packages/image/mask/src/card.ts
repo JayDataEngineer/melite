@@ -52,6 +52,43 @@ const PINS = {
   yolo: 'bbox/yolo11m.pt',
 }
 
+// THE YOLO VOCABULARY (the pin's own truth, the operator's
+// 2026-10-08 verdict: "why is SAM2 selection a FREEFORM TEXT BOX?
+// IN WHAT WORLD DOES THAT MAKE SENSE?"): the pinned yolo11m is
+// COCO-trained — these 80 classes are the detector's WHOLE world.
+// The labels field is a CLOSED multi-chips select over them (the
+// wire a comma-joined string, this order); compose refuses any
+// word outside the vocabulary LOUD (a typo would otherwise detect
+// nothing, silently).
+const YOLO_CLASSES = [
+  'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
+  'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
+  'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella',
+  'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite',
+  'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle',
+  'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich',
+  'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+  'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
+  'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book',
+  'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush',
+] as const
+
+/** Reads one entry's labels AGAINST the vocabulary: a comma-joined
+ *  set of COCO classes (this declaration's own order, deduped) —
+ *  empty or any unknown word refuses LOUD, naming the offender. */
+const labelsOf = (e: Record<string, unknown>, key: string): string => {
+  const raw = e['labels']
+  if (typeof raw !== 'string' || raw.trim() === '') {
+    throw new Error(`${key} needs 'labels' (pick YOLO classes — the chips) — got ${JSON.stringify(raw).slice(0, 40)}`)
+  }
+  const words = raw.split(',').map((w) => w.trim()).filter((w) => w !== '')
+  const unknown = words.filter((w) => !(YOLO_CLASSES as readonly string[]).includes(w))
+  if (unknown.length > 0) {
+    throw new Error(`${key}: 'labels' carries non-YOLO words ${JSON.stringify(unknown)} — the detector knows only the 80 COCO classes (person, car, dog, …)`)
+  }
+  return [...YOLO_CLASSES].filter((c) => words.includes(c)).join(',')
+}
+
 // THE SIMPLE FORM (the stroke-95 law: the card IS the two bars —
 // the input rail + the mods section; the flat schema carries the
 // INPUT ONLY). Every source knob — thresholds, instances, refine,
@@ -142,7 +179,7 @@ const MODS: readonly DeclaredModifierKind[] = [
     requires: ['comfyui-impact-pack', 'comfyui-impact-subpack'],
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam2', tooltip: "The saved mask's name (mask_<name>)." },
-      { name: 'labels', label: 'Labels', type: 'string', default: 'person', tooltip: 'The YOLO class word to segment (person, face, hand — the detector proposes, SAM2 refines).' },
+      { name: 'labels', label: 'YOLO classes', type: 'select', multi: true, options: YOLO_CLASSES.map((c) => ({ value: c, label: c })), default: 'person', tooltip: 'The COCO classes the YOLO detector proposes (Impact Pack) — SAM2 refines each box. Pick any set; the wire is the comma-joined list.' },
       { name: 'yolo_threshold', label: 'YOLO threshold', type: 'number', default: 0.5, min: 0.05, max: 0.95, step: 0.05, tooltip: 'This entry\'s YOLO box confidence. Lower catches more instances, noisier boxes.' },
       { name: 'sam_threshold', label: 'Mask threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'This selection\'s SAM2 mask confidence.' },
       { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: 0, max: 64, step: 1, tooltip: 'Grow this mask N pixels.' },
@@ -168,8 +205,8 @@ const MODS: readonly DeclaredModifierKind[] = [
 ]
 
 export const identity = {
-  label: 'Mask Form',
-  description: 'Simple mask form: pick the input, then ADD sources — sam3 (text selection, optional box), sam2 (YOLO proposes + SAM2 refines, optional box), draw (painted, stacks onto the rest). Each popup previews the image and carries its own knobs.',
+  label: 'Mask',
+  description: 'Simple mask: pick the input, then ADD sources — sam3 (text selection, optional box), sam2 (YOLO proposes + SAM2 refines, optional box), draw (painted, stacks onto the rest). Each popup previews the image and carries its own knobs.',
   genre: 'image',
   icon: 'mask',
   ability: 'tool',
@@ -369,13 +406,9 @@ export function apply(ctx: Context): void {
         }
       } else {
         // sam2 rides the YOLO + SAM2 arm (the detector proposes the
-        // labels word, SAM2 refines) — never the CLIP text lane.
-        const labels = primary.entry['labels']
-        if (typeof labels !== 'string' || labels === '') {
-          throw new Error(`sam2 entry 0 needs 'labels' (a YOLO class word — e.g. person) — got ${JSON.stringify(labels)}`)
-        }
+        // class set, SAM2 refines) — never the CLIP text lane.
         lane['primary_via_sam2'] = true
-        lane['primary_sam2_labels'] = labels
+        lane['primary_sam2_labels'] = labelsOf(primary.entry, 'sam2 entry 0')
         lane['yolo_threshold'] = num(whereOf(primary), primary.entry, 'sam2', 'yolo_threshold')
       }
 
@@ -419,12 +452,8 @@ export function apply(ctx: Context): void {
           exportKind.push('text')
         } else {
           tune['yolo_threshold'] = num(whereOf(src), src.entry, 'sam2', 'yolo_threshold')
-          const labels = src.entry['labels']
-          if (typeof labels !== 'string' || labels === '') {
-            throw new Error(`sam2 entry ${src.i} needs 'labels' (a YOLO class word — e.g. person) — got ${JSON.stringify(labels)}`)
-          }
           const bbox = bboxOf(src.entry, 'sam2')
-          exports.push([nameOf(src, `sam2_${src.i + 1}`), labels, bbox ?? undefined, tune])
+          exports.push([nameOf(src, `sam2_${src.i + 1}`), labelsOf(src.entry, `sam2 entry ${src.i}`), bbox ?? undefined, tune])
           exportKind.push('sam2')
         }
       }

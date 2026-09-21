@@ -221,7 +221,21 @@
  * modal card itself scrolls — the embedded canvas seats at the top,
  * the knobs ride under it. No colors here (layout only — the color
  * law stays with the leaf chrome). */
+/* THE MULTI-SELECT CHIPS (the YOLO-classes law): toggle pills over
+ * a detector-owned vocabulary — modTile's own token pattern (the
+ * color law: aliases with fallbacks, no literals). */
+.specChips { display: flex; flex-wrap: wrap; gap: 4px; }
+.specChip { font-size: 11px; line-height: 1.2; padding: 4px 8px; border: 1px solid var(--dsw-alias-border-l2, rgba(128,128,128,.3)); border-radius: 999px; background: var(--dsw-alias-bg-base, transparent); color: var(--dsw-alias-label-secondary, inherit); cursor: pointer; }
+.specChipOn { border-color: var(--dsw-alias-accent, rgba(128,128,128,.6)); background: var(--dsw-alias-bg-elevated, rgba(128,128,128,.12)); color: var(--dsw-alias-label-primary, inherit); font-weight: 600; }
+
 .modLeafModal { width: min(760px, calc(100vw - 32px)); max-height: min(80vh, 760px); overflow-y: auto; }
+
+/* THE MULTI-SELECT CHIPS (the YOLO-classes law): toggle pills over
+ * a detector-owned vocabulary — modTile's own token pattern (the
+ * color law: aliases with fallbacks, no literals). */
+.specChips { display: flex; flex-wrap: wrap; gap: 4px; }
+.specChip { font-size: 11px; line-height: 1.2; padding: 4px 8px; border: 1px solid var(--dsw-alias-border-l2, rgba(128,128,128,.3)); border-radius: 999px; background: var(--dsw-alias-bg-base, transparent); color: var(--dsw-alias-label-secondary, inherit); cursor: pointer; }
+.specChipOn { border-color: var(--dsw-alias-accent, rgba(128,128,128,.6)); background: var(--dsw-alias-bg-elevated, rgba(128,128,128,.12)); color: var(--dsw-alias-label-primary, inherit); font-weight: 600; }
 
 .modLeafModal { width: min(760px, calc(100vw - 32px)); max-height: min(80vh, 760px); overflow-y: auto; }
 
@@ -231,6 +245,7 @@
  * fall back to one column (the canvas rides on top). */
 .modLeafSplit { display: grid; grid-template-columns: minmax(0, 7fr) minmax(240px, 5fr); gap: 12px; align-items: start; }
 .modLeafStage { min-width: 0; }
+.modStageCaption { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
 @media (max-width: 720px) { .modLeafSplit { grid-template-columns: minmax(0, 1fr); } }
 
 .modLeaf { display: flex; flex-direction: column; gap: 10px; min-width: 260px; }

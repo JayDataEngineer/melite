@@ -43,6 +43,12 @@ const FieldRow = z.object({
   // when the canvas renders (the degrade law shows it otherwise).
   faceOwned: z.boolean(),
   options: z.array(z.object({ value: z.any(), label: z.string() })),
+  // MULTI-SELECT (the YOLO-classes law, operator 2026-10-08: "why
+  // is SAM2 selection a FREEFORM TEXT BOX?" — a closed vocabulary
+  // the detector owns renders as toggle chips, the wire a
+  // comma-joined string in the OPTIONS' declared order): select
+  // fields only; the strict gate refuses it elsewhere.
+  multi: z.boolean(),
 });
 
 const OptionRow = z.object({
@@ -106,6 +112,9 @@ function checkField(where: string, f: Record<string, unknown>): void {
   const opts = f["options"] as unknown[] | undefined;
   if (f["type"] === "select" && (opts === undefined || opts.length === 0)) {
     throw new Error(`${where}: field '${String(f["name"])}' is a select with no options — a select carries its vocabulary`);
+  }
+  if (f["multi"] === true && String(f["type"]) !== "select") {
+    throw new Error(`${where}: field '${String(f["name"])}' declares multi on type '${String(f["type"])}' — multi is the select chips face only`);
   }
 }
 

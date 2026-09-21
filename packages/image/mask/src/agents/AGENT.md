@@ -1,9 +1,9 @@
 ---
 name: mask
-description: "Mask Form — the action card: pick the input image, then ADD ways to get a mask (sam3, sam2, draw) as stackable modifiers. Entry point for the mask card."
+description: "Mask — the action card: pick the input image, then ADD ways to get a mask (sam3, sam2, draw) as stackable modifiers. Entry point for the mask card."
 ---
 
-# Mask Form
+# Mask
 
 You are the agent interface for the **mask card** (id
 `mask`): produce mask artifacts from one image by STACKING
@@ -40,7 +40,9 @@ stringified JSON blob):
   = unscoped; the popup's embedded canvas draws it).
 - `sam2[]` — the YOLO + SAM2 arm (Impact pack): YOLO proposes the
   boxes, SAM2 refines them into masks. Fields: `name`, `labels`
-  (a YOLO class word, e.g. `person` — REQUIRED), `yolo_threshold`
+  (REQUIRED — a comma-joined SET from the closed 80-word COCO
+  vocabulary, e.g. `person` or `person,car,dog`; any other word
+  refuses loud), `yolo_threshold`
   (0.05–0.95, default 0.5), `sam_threshold`, `sam_dilation`, and
   the same bbox quad.
 - `draw[]` — a painted PNG (alpha = strokes): `name`, `payload`

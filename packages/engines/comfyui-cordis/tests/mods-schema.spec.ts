@@ -19,8 +19,16 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
         { name: "threshold", label: "Threshold", type: "number", default: 0.35, min: 0.05, max: 0.95, step: 0.05 },
         { name: "name", label: "Name", type: "string", default: "sam3" },
         { name: "part", label: "Part", type: "select", default: "face", options: [{ value: "face", label: "Face" }] },
+        { name: "classes", label: "Classes", type: "select", default: "person", multi: true, options: [{ value: "person", label: "Person" }, { value: "dog", label: "Dog" }] },
       ],
     })]);
+  });
+
+  it("multi rides select fields only (a closed vocabulary's chips face)", () => {
+    assert.throws(
+      () => validateDeclaredMods("c", [base({ fields: [{ name: "n", label: "N", type: "number", default: 1, multi: true }] })]),
+      /declares multi on type 'number' — multi is the select chips face only/,
+    );
   });
 
   it("null and array defaults name their JS truth (the type-truth ternaries)", () => {
