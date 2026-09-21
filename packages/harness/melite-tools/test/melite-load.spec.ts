@@ -165,7 +165,7 @@ describe('melite_load render — the loaded line', () => {
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
       'loaded card c — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press\n'
-      + 'models: music-gen (MusicGen)\n'
+      + 'weights: 0/1 boarded checkpoints present on this machine (provisioning is the estate\'s business — compose the card)\n'
       + 'params: prompt*, seed (* required)\n'
       + 'skills: 1 — read one with skill_read: s1\n'
       + 'digest: abc123 (quote it to skip a reload)\n'
@@ -198,7 +198,7 @@ describe('melite_load render — the loaded line', () => {
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
       'loaded card c — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press\n'
-      + 'models: m1\n'
+      + 'weights: 0/1 boarded checkpoints present on this machine (provisioning is the estate\'s business — compose the card)\n'
       + 'params: prompt*, seed (* required)\n'
       + 'signature model: fam-x\n'
       + 'stages: s1:c1\n'

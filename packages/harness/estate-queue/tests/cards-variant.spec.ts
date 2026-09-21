@@ -165,3 +165,63 @@ describe("liftCardParams (the params stanza)", () => {
     expect(out).toEqual({ seed: 7, notes: "keep" });
   });
 });
+
+// THE ROUTE ENVELOPE (the skill-system rework wave 2, 2026-09-21 —
+// the 25-steps-into-turbo cure): a variant that owns a distilled
+// lane DECLARES its sampler envelope; a caller that hand-stamps a
+// steps/cfg outside it refuses LOUD at compose — the garbage
+// marriage never reaches the queue. Inside the envelope is agency;
+// outside is refusal.
+describe("THE ROUTE ENVELOPE (compose-side guard)", () => {
+  const turboEnv = { steps: [4, 8], cfg: [1, 2] };
+  const turboRow = row({
+    variants: [
+      { id: "base", group: "", cells: [{ quant: "fp16" }], resolver_defaults: { ckpt: "base.safetensors" } },
+      {
+        id: "turbo", route: "turbo-route", cells: [], resolver_defaults: { steps: 8, cfg: 1 },
+        sampler_envelope: turboEnv,
+      } as never,
+    ],
+  });
+  const sel = selectCardVariant("krea-2", turboRow, { variant: "turbo" }, "1");
+
+  it("carries the envelope on the SELECTION (the stamp gate reads it)", () => {
+    expect(sel.samplerEnvelope).toEqual(turboEnv);
+    expect(sel.variantRoute).toBe("turbo-route");
+  });
+
+  it("a stated steps OUTSIDE the envelope REFUSES naming route + marriage", () => {
+    try {
+      stampCardOverlay({ steps: 25, cfg: 4.5 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel);
+      throw new Error("no refusal rode");
+    } catch (e) {
+      expect(e).toBeInstanceOf(CardArmError);
+      const msg = String((e as Error).message);
+      expect(msg).toContain("turbo");
+      expect(msg).toContain("steps 25");
+      expect(msg).toContain("[4, 8]");
+      expect(msg).toContain("married to steps 8");
+    }
+  });
+
+  it("a stated steps/cfg INSIDE the envelope rides (agency preserved)", () => {
+    const out = stampCardOverlay({ steps: 6 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel);
+    expect(out["steps"]).toBe(6, "the caller's in-envelope value wins");
+  });
+
+  it("cfg walls on its own axis; absent statements never refuse", () => {
+    expect(() => stampCardOverlay({ cfg: 9 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel)).toThrow(CardArmError);
+    expect(() => stampCardOverlay({}, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel)).not.toThrow();
+  });
+
+  it("boundary values are IN (closed bounds); non-numeric junk never walls", () => {
+    expect(() => stampCardOverlay({ steps: 8, cfg: 1 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel)).not.toThrow();
+    expect(() => stampCardOverlay({ steps: 4 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel)).not.toThrow();
+    expect(() => stampCardOverlay({ steps: "later" }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel)).not.toThrow();
+  });
+
+  it("a variant with NO envelope never refuses (opt-in per route)", () => {
+    const bare = selectCardVariant("m", turboRow, { variant: "base" }, "1");
+    expect(() => stampCardOverlay({ steps: 25 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), bare)).not.toThrow();
+  });
+});

@@ -8,25 +8,27 @@ genre: image
 
 You compose IMAGE action cards. You never execute — the queue does.
 
+## THE CARD ABSTRACTION (the first law)
+
+THE CARD IS YOUR ONLY INTERFACE. Never the model: no model-family
+docs, no family ids in your calls, no checkpoint/sampler math. The
+card exposes semantic knobs (style, size, seed, preset recipes);
+the estate resolves family, weights and sampler marriages
+underneath. If you find yourself reasoning about checkpoints, you
+have left the contract — come back to the knobs.
+
 ## Laws
 
 1. ONE card per session. Compose, verify, done.
-2. prompt is required — never sample with empty conditioning.
-3. ONE param cascade: schema defaults < family defaults < ROUTE
-   resolver_defaults < values you set. A family's variant rail owns
-   its sampler marriages (steps/cfg) — never hand-stamp a number
-   that fights the route; pick the route, let it marry. Presets are
-   FAMILY Recipe rows — one-click macros that stamp declared
-   knobs/bags.
+2. prompt is required — continuous descriptive prose: subject,
+   action, environment, style suffix LAST. Keep style suffixes
+   IDENTICAL across a set; same seed + same suffix = same world
+   texture across a family of renders.
+3. NEVER state steps/cfg — the estate owns every sampler marriage
+   (a stated value outside a route's envelope refuses at compose,
+   and you have no business computing one). Pick a preset recipe
+   when the brief names a look; otherwise state nothing.
 4. input_image + lanpaint_mask switches the card to LanPaint inpaint.
-
-## The entrance (read before first compose)
-
-BEFORE composing a family you have not run this session:
-`skill_read model:<family>` — the family's entrance doc owns its
-variant rail, marriages, recipes and loras. Card docs teach card
-mechanics; FAMILY docs teach the lane. Never compose a family you
-have not read.
 
 ## Doors
 

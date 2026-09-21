@@ -16,12 +16,14 @@ TWO checkpoints, each owning its sampler marriage. Pick the route,
 let it marry; never hand-stamp steps/cfg against a distilled lane.
 
 - **turbo** (DEFAULT): the 8-step distilled checkpoint. Family
-  defaults ARE its marriage — steps 8, cfg 1, euler/normal. Compose
-  with NO steps/cfg stated; the rail resolves 8/1. A turbo run at
-  25 steps is a garbage run — refused thinking, not agency.
+  defaults ARE its marriage — steps 8, cfg 1, euler/normal; declared
+  envelope steps [4, 8] / cfg [1, 2]. Compose with NO steps/cfg
+  stated; the rail resolves 8/1. A stated value outside the envelope
+  REFUSES at compose — a turbo run at 25 steps is not agency.
 - **raw**: the 52-step base checkpoint the loras train on. Its route
-  marries steps 52, cfg 3.5 (resolver_defaults). Use it when a lora
-  demands its training base or the brief wants the full schedule.
+  marries steps 52, cfg 3.5 (resolver_defaults); declared envelope
+  steps [30, 60] / cfg [2, 6]. Use it when a lora demands its
+  training base or the brief wants the full schedule.
 
 ## The loras (raw-trained; fire on both routes via the bag)
 

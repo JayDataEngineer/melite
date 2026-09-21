@@ -80,6 +80,7 @@ export interface ModelVariantFacts {
   group: string
   route: string
   resolver_defaults: Record<string, unknown>
+  sampler_envelope?: { steps?: [number, number]; cfg?: [number, number] } | null
   defaults: Record<string, unknown>
   cells: VariantCellFacts[]
 }
@@ -185,6 +186,13 @@ function deriveRow(
       group: v.group as string,
       route: reAddr((v.route ?? '') as string),
       resolver_defaults: (v.resolver_defaults ?? {}) as Record<string, unknown>,
+      // THE ROUTE ENVELOPE (cardsVariant.envelopeRefusal reads it):
+      // a distilled lane declares the closed bounds its sampler
+      // marriage lives in — stated values outside refuse at compose.
+      sampler_envelope: ((v.sampler_envelope ?? null) as {
+        steps?: [number, number];
+        cfg?: [number, number];
+      } | null),
       defaults: (v.wire_defaults ?? {}) as Record<string, unknown>,
       cells: ((v.cells ?? []) as Array<Record<string, unknown>>).map((c) => ({
         quant: c.quant as string,

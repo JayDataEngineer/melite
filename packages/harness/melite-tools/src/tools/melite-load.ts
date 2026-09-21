@@ -131,9 +131,15 @@ export function meliteLoad(
           ? 'open with melite_flow'
           : 'compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press'
         const out: string[] = [`loaded ${str(b.kind) || '?'} ${str(b.name) || '?'} — ${next}`]
+        // THE CARD ABSTRACTION LAW (operator 2026-09-21): during
+        // inference the agent interfaces with the CARD, never the
+        // model — the card bundle NEVER names family ids. The hints
+        // ride as an operational count only; the model plane is
+        // estate-internal.
         const hints = Array.isArray(b.model_hints) ? b.model_hints : []
         if (hints.length > 0) {
-          out.push('models: ' + hints.map((h) => `${str(h?.id)}${str(h?.label) !== '' ? ' (' + str(h?.label) + ')' : ''}`).join(', '))
+          const present = hints.filter((h) => h?.present === true).length
+          out.push(`weights: ${present}/${hints.length} boarded checkpoints present on this machine (provisioning is the estate's business — compose the card)`)
         }
         const sig = b.signature
         if (sig !== null && sig !== undefined) {

@@ -41,6 +41,15 @@ describe("krea-2's entrance doc (the lane truth, drift-walled to the DECL)", () 
     }
   });
 
+  it("names BOTH ROUTE ENVELOPES — the compose-side guard's declared bounds", () => {
+    for (const v of KREA.variants.filter((r) => r.group === "Variant")) {
+      const env = (v as { sampler_envelope?: { steps?: number[]; cfg?: number[] } }).sampler_envelope;
+      assert.ok(env !== undefined, `variant ${v.id} declares an envelope`);
+      assert.ok(doc.includes(`[${env.steps?.join(", ")}]`), `the doc names ${v.id}'s steps envelope verbatim`);
+      assert.ok(doc.includes(`[${env.cfg?.join(", ")}]`), `the doc names ${v.id}'s cfg envelope verbatim`);
+    }
+  });
+
   it("carries the entrance LAW (read before compose; the rail owns the marriage)", () => {
     assert.ok(/never hand-stamp/i.test(doc), "the never-fight-the-rail law rides");
     assert.ok(/variant rail/i.test(doc));

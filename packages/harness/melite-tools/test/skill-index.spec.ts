@@ -34,10 +34,10 @@ describe('skill_index execute — the binding vocabulary', () => {
   test('the vocabulary rides verbatim with a count echo', async () => {
     const payload = {
       count: 7,
-      families: [{ id: 'krea-2', genre: 'image', skills: 1, entrance: 'model:krea-2' }],
+      families: [{ id: 'krea-2', genre: 'image', skills: 1, entrance: 'model:krea-2' }], // seat serves it; the tool DROPS it
       cards: [{ id: 'image-gen', genre: 'image', skills: 0, entrance: 'card:image-gen' }],
       flows: { count: 5, ids: ['flow:a'] },
-      note: 'skills bind to their owner',
+      note: 'skills bind to its owner',
     }
     const seen = mockRequest((_m, path) => {
       assert.equal(path, '/v1/skills')
@@ -45,8 +45,8 @@ describe('skill_index execute — the binding vocabulary', () => {
     })
     const tool = skillIndex(seen.request)
     const out = await tool.execute({}, exec) as Record<string, unknown>
-    assert.equal(out.count, 7)
-    assert.deepEqual(out.families, payload.families)
+    assert.equal(out.cards.length, 1)
+    assert.equal(JSON.stringify(out).includes('krea-2'), false, 'THE CARD ABSTRACTION: family rows never ride')
     assert.deepEqual(out.cards, payload.cards)
     assert.deepEqual(out.flows, payload.flows)
     assert.equal(out.error, undefined)
@@ -57,7 +57,6 @@ describe('skill_index execute — the binding vocabulary', () => {
     const tool = skillIndex(request)
     const out = await tool.execute({}, exec) as Record<string, unknown>
     assert.equal(out.count, 0)
-    assert.deepEqual(out.families, [])
     assert.deepEqual(out.cards, [])
   })
 
@@ -83,28 +82,28 @@ describe('skill_index render — the vocabulary, never rows', () => {
   const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
 
   test('the header counts the estate (0 on sparse values)', () => {
-    assert.equal(text({}), 'skill_index: 0 skills across 0 families · 0 cards · 0 flows — open an owner with melite_load; this index never lists skill rows')
+    assert.equal(text({}), 'skill_index: 0 skills across 0 cards · 0 flows — open a card with melite_load; this index never lists skill rows or model families')
   })
 
-  test('families + cards render with their ENTRANCE ids', () => {
+  test('cards render with their ENTRANCE ids; family rows NEVER render', () => {
     const out = text({
       count: 3,
       families: [
         { id: 'krea-2', genre: 'image', skills: 1, entrance: 'model:krea-2' },
         { id: 'music3', genre: 'audio', skills: 2, entrance: 'model:music3' },
-      ],
+      ], // served but DEAD at the render
       cards: [{ id: 'image-gen', genre: 'image', skills: 0, entrance: 'card:image-gen' }],
       flows: { count: 5, ids: [] },
     })
-    assert.ok(out.includes('skill_index: 3 skills across 2 families · 1 card · 5 flows'), 'the header counts bindings')
-    assert.ok(out.includes('  krea-2 (image) — entrance model:krea-2, 1 skill'), 'family lines carry the entrance')
-    assert.ok(out.includes('  music3 (audio) — entrance model:music3, 2 skills'), 'skill counts pluralize')
-    assert.ok(out.includes('  image-gen (image) — entrance card:image-gen, no skills'), 'card lines ride too')
+    assert.ok(out.includes('skill_index: 3 skills across 1 card · 5 flows'), 'the header counts cards + flows only')
+    assert.equal(out.includes('krea-2'), false, 'THE CARD ABSTRACTION: a family id never renders')
+    assert.equal(out.includes('model:music3'), false)
+    assert.ok(out.includes('  image-gen (image) — entrance card:image-gen, no skills'), 'card lines ride')
   })
 
   test('an entrance-less owner names no row id', () => {
     const out = text({ count: 1, families: [{ id: 'm3', genre: null, skills: 0, entrance: null }], cards: [], flows: { count: 0, ids: [] } })
-    assert.ok(out.includes('  m3 — no entrance doc'), 'a guide-only family is honest')
+    assert.equal(out.includes('m3'), false, 'family rows never render, entrance or not')
   })
 
   test('a refused scan renders REFUSED (the refusal is the honest answer)', () => {

@@ -58,6 +58,10 @@ export const DECL: ModelDecl = {
       "group": "Variant",
       "route": "krea-2",
       "order": 0,
+      "sampler_envelope": {
+        "steps": [4, 8],
+        "cfg": [1, 2]
+      },
       "resolver_defaults": {
         "model": "krea-2"
       },
@@ -84,6 +88,10 @@ export const DECL: ModelDecl = {
       "group": "Variant",
       "route": "krea-2-raw",
       "order": 1,
+      "sampler_envelope": {
+        "steps": [30, 60],
+        "cfg": [2, 6]
+      },
       "resolver_defaults": {
         "model": "krea-2-raw",
         "steps": 52,

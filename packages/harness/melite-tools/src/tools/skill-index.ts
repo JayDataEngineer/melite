@@ -26,7 +26,6 @@ const INDEX_TIMEOUT_MS = 15_000
  *  checks the execute return against it). */
 type SkillIndexResult = {
   count: number;
-  families: Record<string, JsonValue>[];
   cards: Record<string, JsonValue>[];
   flows: { count: number; ids?: JsonValue[] };
   error?: string;
@@ -65,12 +64,7 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
         type: 'object',
         additionalProperties: true,
         properties: {
-          count: { type: 'number', description: 'Total skill docs across families, cards and flows.', required: true },
-          families: {
-            type: 'array',
-            description: 'One row per model family: id/genre/skills/entrance (the AGENT.md row id, or null).',
-            required: true,
-          },
+          count: { type: 'number', description: 'Total skill docs across cards and flows.', required: true },
           cards: {
             type: 'array',
             description: 'One row per card: id/genre/skills/entrance (the AGENT.md row id, or null).',
@@ -88,7 +82,6 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
       render: (_args, value) => {
         const v = value as {
           count?: number;
-          families?: Array<{ id?: unknown; genre?: unknown; skills?: unknown; entrance?: unknown }>;
           cards?: Array<{ id?: unknown; genre?: unknown; skills?: unknown; entrance?: unknown }>;
           flows?: { count?: unknown };
           error?: string;
@@ -96,7 +89,9 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
         if (v && typeof v.error === 'string') return [{ type: 'text', text: 'skill_index REFUSED: ' + v.error }]
         // THE NO-DUMP LAW (render side): even if a legacy seat leaks
         // a flat `skills` array, it NEVER renders — the dump is dead.
-        const fams = Array.isArray(v?.families) ? v.families : []
+  // THE CARD ABSTRACTION LAW (operator 2026-09-21): the agent's
+        // tier-1 NEVER names the model plane — family rows are dropped
+        // here even when a seat serves them. Cards + flows only.
         const cards = Array.isArray(v?.cards) ? v.cards : []
         const flowCount = typeof v?.flows?.count === 'number' ? v.flows.count : 0
         const count = typeof v?.count === 'number' ? v.count : 0
@@ -113,12 +108,8 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
         }
         const cardsWord = cards.length === 1 ? 'card' : 'cards'
         const out: string[] = [
-          `skill_index: ${count} skills across ${fams.length} families · ${cards.length} ${cardsWord} · ${flowCount} flows — open an owner with melite_load; this index never lists skill rows`,
+          `skill_index: ${count} skills across ${cards.length} ${cardsWord} · ${flowCount} flows — open a card with melite_load; this index never lists skill rows or model families`,
         ]
-        for (const f of fams) {
-          const l = line(f)
-          if (l !== '') out.push(l)
-        }
         for (const c of cards) {
           const l = line(c)
           if (l !== '') out.push(l)
@@ -132,16 +123,13 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
       // A seat serving the LEGACY flat shape (a `skills` rows array)
       // contributes nothing — families/cards default empty and the
       // rows never ride (the wall pins the leak dead).
-      const fams = Array.isArray(res.families) ? res.families as Record<string, JsonValue>[] : []
       const cards = Array.isArray(res.cards) ? res.cards as Record<string, JsonValue>[] : []
       const flows = (res.flows !== null && typeof res.flows === 'object')
         ? (res.flows as { count?: unknown; ids?: JsonValue[] })
         : {}
       const flowCount = typeof flows.count === 'number' ? flows.count : 0
-      const count = typeof res.count === 'number'
-        ? res.count
-        : fams.length + cards.length + flowCount
-      return jsonClean({ count, families: fams, cards, flows: { count: flowCount, ids: flows.ids ?? [] } }) as SkillIndexResult
+      const count = cards.length + flowCount
+      return jsonClean({ count: cards.length + flowCount, cards, flows: { count: flowCount, ids: flows.ids ?? [] } }) as SkillIndexResult
     },
   });
   // Re-attach the unconditional presenter over defineTool's

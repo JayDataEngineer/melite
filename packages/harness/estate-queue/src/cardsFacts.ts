@@ -22,6 +22,13 @@ export interface VariantRow {
   readonly group: string;
   readonly route: string;
   readonly resolver_defaults: Record<string, unknown>;
+  /** THE ROUTE ENVELOPE (the compose-side guard): closed bounds a
+   *  caller-stated steps/cfg must live inside — the distilled-lane
+   *  marriage is declared, never negotiated. */
+  readonly sampler_envelope?: {
+    steps?: readonly [number, number];
+    cfg?: readonly [number, number];
+  } | null;
   readonly cells: VariantCellRow[];
 }
 

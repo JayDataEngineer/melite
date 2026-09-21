@@ -7,10 +7,37 @@ import { CARD_ENVELOPE_KEYS } from "./cardsRegistry.ts";
 
 // ── R1 variant/quant selection + route-lens stamp overlay ──────────
 
+/** One closed [min, max] bound on a stated sampler knob. */
+export type EnvelopeBound = readonly [number, number];
+
 export interface VariantSelection {
   readonly variantId: string;
+  readonly variantRoute: string;
   readonly quant: string;
   readonly resolverDefaults: Record<string, unknown>;
+  /** THE ROUTE ENVELOPE (the 25-steps-into-turbo cure): when the
+   *  selected variant declares one, a caller-STATED steps/cfg
+   *  outside its closed bounds refuses at the stamp gate — the
+   *  distilled lane's marriage is not agency territory. */
+  readonly samplerEnvelope: Readonly<Record<"steps" | "cfg", EnvelopeBound | undefined>> | null;
+}
+
+/** Normalize a facts variant's sampler_envelope declaration (the
+ *  DECL authors it as {steps?: [min,max], cfg?: [min,max]}); junk
+ *  shapes contribute nothing (never a crash). */
+function normalizeEnvelope(
+  raw: unknown,
+): VariantSelection["samplerEnvelope"] {
+  if (raw === null || typeof raw !== "object") return null;
+  const r = raw as { steps?: unknown; cfg?: unknown };
+  const bound = (v: unknown): EnvelopeBound | undefined => {
+    if (!Array.isArray(v) || v.length !== 2) return undefined;
+    const [a, b] = v as unknown[];
+    return typeof a === "number" && typeof b === "number" && b >= a ? [a, b] : undefined;
+  };
+  const steps = bound(r.steps);
+  const cfg = bound(r.cfg);
+  return steps === undefined && cfg === undefined ? null : { steps, cfg };
 }
 
 function knownVariantIds(row: ModelFactsRow): string[] {
@@ -85,8 +112,12 @@ export function selectCardVariant(
   }
   return {
     variantId: variant !== undefined ? variant.id : "",
+    variantRoute: variant !== undefined ? String(variant.route ?? "") : "",
     quant,
     resolverDefaults: variant !== undefined ? { ...(variant.resolver_defaults ?? {}) } : {},
+    samplerEnvelope: variant !== undefined
+      ? normalizeEnvelope((variant as { sampler_envelope?: unknown }).sampler_envelope)
+      : null,
   };
 }
 
@@ -98,12 +129,48 @@ export function selectCardVariant(
  *  them would refuse the str fields the row leaves open).
  *  variant/quant contract keys are CONSUMED (never ride compose —
  *  no card declares them). Returns the STAMPED body (a copy). */
+/** THE ROUTE ENVELOPE gate (the skill-system rework wave 2,
+ *  2026-09-21): a caller-STATED steps/cfg outside the selected
+ *  variant's closed envelope refuses LOUD at the stamp gate — the
+ *  distilled-lane marriage (turbo's 8-step/cfg-1) is declared, not
+ *  negotiated. Inside the envelope is caller agency; an unstated
+ *  knob never refuses (the rail's stamps own it); a variant with no
+ *  envelope declares nothing (opt-in per route). */
+export function envelopeRefusal(
+  body: Record<string, unknown>,
+  _decl: CardDeclRow,
+  sel: VariantSelection,
+): void {
+  if (sel.samplerEnvelope === null) return;
+  for (const knob of ["steps", "cfg"] as const) {
+    const bound = sel.samplerEnvelope[knob];
+    if (bound === undefined) continue;
+    const stated = body[knob];
+    if (typeof stated !== "number" || !Number.isFinite(stated)) continue;
+    const [lo, hi] = bound;
+    if (stated >= lo && stated <= hi) continue;
+    const married = sel.resolverDefaults[knob] ?? "";
+    throw new CardArmError(
+      400,
+      "card_compose: stated " + knob + " " + String(stated) +
+        " is OUTSIDE the route envelope for variant \"" + sel.variantId + "\"" +
+        (sel.variantRoute !== "" ? " (route " + sel.variantRoute + ")" : "") +
+        " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]" +
+        (married !== "" ? " and the lane is married to " + knob + " " + String(married) : "") +
+        ". The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route." +
+        " (Read the family lane: skill_read model:<family>.)",
+      "card_compose",
+    );
+  }
+}
+
 export function stampCardOverlay(
   body: Record<string, unknown>,
   famRow: ModelFactsRow,
   decl: CardDeclRow,
   sel: VariantSelection,
 ): Record<string, unknown> {
+  envelopeRefusal(body, decl, sel);
   const stamps: Record<string, unknown> = { ...(famRow.defaults ?? {}) };
   for (const [k, v] of Object.entries(sel.resolverDefaults)) stamps[k] = v;
   const names: Set<string> = new Set(decl.schemaNames);
