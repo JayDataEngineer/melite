@@ -23,7 +23,6 @@ import { family as mossSfx } from "@melite/models-moss-sfx";
 import { family as music3 } from "@melite/models-music3";
 import { family as yue2 } from "@melite/models-yue2";
 import { family as qwen3Tts } from "@melite/models-qwen3-tts";
-import { family as qwen3TtsBase } from "@melite/models-qwen3-tts-base";
 import { family as qwen3TtsVoiceDesign } from "@melite/models-qwen3-tts-voicedesign";
 import { family as anima } from "@melite/models-anima";
 import { family as autoDetect } from "@melite/models-auto-detect";
@@ -75,7 +74,6 @@ export const FAMILY_PLUGINS: Plugin[] = [
   music3,
   yue2,
   qwen3Tts,
-  qwen3TtsBase,
   qwen3TtsVoiceDesign,
   anima,
   autoDetect,

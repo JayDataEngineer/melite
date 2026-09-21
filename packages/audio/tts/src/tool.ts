@@ -21,7 +21,7 @@ import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools
 import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
-import { schema, identity, BOARDED } from './card.ts'
+import { schema, identity, BOARDED, VARIANT_ADDRESSES } from './card.ts'
 
 export const TOOL_NAME = 'tts'
 
@@ -34,8 +34,12 @@ export const buildTtsTool = (call: EstateCall): ToolDefinition =>
     // THE MODEL INPUT: the params walk synthesizes the model knob
     // from the boarded array (a CLOSED enum — the wrapper rejects
     // ''/unknown models at the seam); execute resolves the unstated
-    // default itself (the DSL plane carries no defaults).
-    parameters: emitParamsSpec(schema as never, BOARDED) as ParameterSchemaSpec,
+    // default itself (the DSL plane carries no defaults). Variant
+    // routes ride the same enum (agents pick no matrix variant —
+    // the Base variant's compose address is how the clone lane is
+    // named; the drafts door resolves route mids, krea-2-raw
+    // precedent).
+    parameters: emitParamsSpec(schema as never, [...BOARDED, ...VARIANT_ADDRESSES]) as ParameterSchemaSpec,
     defaultModel: BOARDED[0],
     previewField: 'text',
   })

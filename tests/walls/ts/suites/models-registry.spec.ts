@@ -22,8 +22,8 @@ import {
 } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 describe("the resurrected model registry (families/variants/cells/links)", () => {
-  it("carries the hierarchy: 50 registry models, 97 serving routes (ideogram retired 2026-09-17; fit + skin stroke 87; z-image fold stroke 46h; the qwen 2.1 pair — t2i + cached-reference edit — 2026-09-21; the qwen TTS split into 3 honest families — 2026-09-21; yue2 boarded on the music card — 2026-09-20)", (): void => {
-    assert.equal(registryIds().length, 50); // +1: yue2 (the music card's second family, 2026-09-20) // +2: qwen3-tts-base + qwen3-tts-voicedesign are families now, never variant routes
+  it("carries the hierarchy: 49 registry models, 97 serving routes (ideogram retired 2026-09-17; fit + skin stroke 87; z-image fold stroke 46h; the qwen 2.1 pair — t2i + cached-reference edit — 2026-09-21; the qwen TTS fold — Base is a variant route of the .6, never a third family — 2026-09-21; yue2 boarded on the music card — 2026-09-20)", (): void => {
+    assert.equal(registryIds().length, 49); // +1: yue2 (the music card's second family, 2026-09-20) // +1: qwen3-tts-voicedesign is a family now, never a variant route (qwen3-tts-base folded back into the .6 as the Base variant route)
     assert.equal(modelIds().length, 97); // +1: yue2, 2026-09-20 // +6: the qwen 2.1 pair (t2i + edit), 2026-09-21
     const comfy = modelIds().filter((id) => {
       const e = getModel(id).engine ?? "";
@@ -34,7 +34,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       const e = registryModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
     });
-    assert.equal(rcomfy.length, 46); // +1: yue2, 2026-09-20 // +2 the qwen TTS split (2026-09-21) // +2 the qwen 2.1 pair (2026-09-21) // ideogram gone (2026-09-17); fit + skin gone (stroke 87)
+    assert.equal(rcomfy.length, 45); // +1: yue2, 2026-09-20 // +1 the qwen TTS voicedesign family (2026-09-21; base folded back into the .6 as a variant) // +2 the qwen 2.1 pair (2026-09-21) // ideogram gone (2026-09-17); fit + skin gone (stroke 87)
   });
 
   it("serves 59 offered routes; the unoffered are excluded loud-side (ideogram retired 2026-09-17; fit + skin stroke 87; the qwen 2.1 pair 2026-09-21; yue2 2026-09-20)", (): void => {

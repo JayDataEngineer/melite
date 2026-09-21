@@ -1,12 +1,14 @@
-// families/audio/qwen3-tts — the 0.6B CustomVoice MODEL declaration
-// (2026-09-21 — the operator's README stroke: "there is no model
-// called Base; there is the .6B and the larger version; each model
-// supports different inputs"). Qwen3-TTS 12Hz 0.6B CustomVoice:
-// text-to-speech with 9 preset personas and instruct-text emotion
-// control; loads exported .qvoice embeddings through the qvoice mod.
-// Sibling families own their own packages (one family = one
-// package): @melite/models-qwen3-tts-base (the 0.6B cloner),
-// @melite/models-qwen3-tts-voicedesign (the 1.7B designer).
+// families/audio/qwen3-tts — the 0.6B MODEL declaration (the
+// operator's table: SIZES are models — this is the .6B; FLAVORS are
+// variants — CustomVoice + Base ride here as variant lanes).
+// Qwen3-TTS 12Hz 0.6B: CustomVoice synthesis (9 preset personas +
+// instruct-text style control + .qvoice embedding load through the
+// qvoice mod) and the Base 3-second voice clone from reference
+// audio + transcript. The old qwen3-tts-base FAMILY is dead — Base
+// is the 'qwen3-tts-base' variant ROUTE (old drafts keep resolving
+// to the clone lane; the lane branch reads the merged lane_inputs,
+// never the family id). Sibling family: models-qwen3-tts-
+// voicedesign (the 1.7B model).
 //
 // PLUGIN SHAPE (the discharge stroke): every family is a plugin
 // declaring itself through ctx.models.registerFamily inside
@@ -18,8 +20,8 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 export const DECL: ModelDecl = {
   "id": "qwen3-tts",
   "form": "form_tts",
-  "label": "Qwen3-TTS 0.6B CustomVoice",
-  "description": "Qwen3-TTS 12Hz 0.6B CustomVoice — text-to-speech with 9 preset personas and instruct-text emotion control; loads exported .qvoice embeddings",
+  "label": "Qwen3-TTS 0.6B",
+  "description": "Qwen3-TTS 12Hz 0.6B — the .6 checkpoint: CustomVoice synthesis with personas and style control, and the Base 3-second voice clone",
   "engine": "comfyui",
   "defaults": {
     "mode": "tts",
@@ -31,9 +33,9 @@ export const DECL: ModelDecl = {
   ],
   "variants": [
     {
-      "id": "standard",
+      "id": "customvoice",
       "label": "CustomVoice",
-      "description": "preset personas and instruct-text emotion control",
+      "description": "preset personas and instruct-text style control over the target timbre",
       "group": "Variant",
       "route": "qwen3-tts",
       "cells": [
@@ -41,6 +43,35 @@ export const DECL: ModelDecl = {
           "quant": "native",
           "label": "Native",
           "route": "qwen3-tts",
+        }
+      ]
+    },
+    {
+      "id": "base",
+      "label": "Base",
+      "description": "voice clone from a 3-second reference — no persona, no instruction control",
+      "group": "Variant",
+      "route": "qwen3-tts-base",
+      // THE CLONE INTERCEPT (the fold: the dead family's lane truth
+      // rides the variant — merged base ← variant at the derived
+      // read, byte-identical graphs): the clone checkpoint address
+      // + the clone lane key.
+      "lane_inputs": {
+        "model_path": "qwen3-tts",
+        "synth_lane": "clone",
+      },
+      // THE RE-POINT (krea-2-raw precedent): a variant pick
+      // resolves server-side to the route address; the NULL stamp
+      // unsets the inherited persona (the voicedesign meld).
+      "resolver_defaults": {
+        "model": "qwen3-tts-base",
+        "voice": null,
+      },
+      "cells": [
+        {
+          "quant": "native",
+          "label": "Native",
+          "route": "qwen3-tts-base",
         }
       ]
     },
@@ -93,8 +124,8 @@ export const DECL: ModelDecl = {
     "family": "qwen3_tts",
     "latent_node": "EmptySD3LatentImage",
     "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
-    "synth_lane": "speak",
     "sampling_shift": 0,
+    "synth_lane": "speak",
     "text_encoder": "",
     "texture_vae": "",
     "unet": null,

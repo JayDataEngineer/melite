@@ -242,7 +242,7 @@ describe('live door arms', () => {
     assert.deepEqual(tools.map((t) => t['name']), [...defs.keys()].sort())
     const tts = tools.find((t) => t['name'] === 'tts')!
     assert.equal(tts['model'], 'qwen3-tts')
-    assert.deepEqual(tts['families'], ['qwen3-tts', 'qwen3-tts-base', 'qwen3-tts-voicedesign'])
+    assert.deepEqual(tts['families'], ['qwen3-tts', 'qwen3-tts-voicedesign'])
     assert.ok(typeof tts['params_schema'] === 'object')
   })
 
@@ -682,7 +682,7 @@ describe('live door arms', () => {
     )
   })
 
-  test('THE THREE HONEST FACES (the README stroke 2026-09-21 — every boarded id names a family DECL, never a variant route)', async () => {
+  test('THE TWO CHECKPOINT FACES (the upstream table — Model names sizes: the .6 and the 1.7B; Base is a variant, never a third family)', async () => {
     const defs = await loadCardDefs()
     const svc = theService()
     const faces = (card: string, model: string): Array<Record<string, unknown>> => {
@@ -691,13 +691,13 @@ describe('live door arms', () => {
       return (specBody(svc, defs, { card, service: model, model })['families'] as Array<Record<string, unknown>>)
     }
     // the tts rail: three families, three checkpoint-honest faces —
-    // no 'Base' shorthand, no variant-route fiction (the variant
-    // scan died with the fiction: familyFace serves the DECL or the
-    // raw id, nothing in between)
+    // the operator's table: SIZES are models (the rail names
+    // checkpoints, never flavors), FLAVORS are variants (Base rides
+    // the .6's matrix, never a third family)
     const tts = faces('tts', 'qwen3-tts')
     assert.deepEqual(
       tts.map((f) => [f['id'], f['label']]),
-      [['qwen3-tts', 'Qwen3-TTS 0.6B CustomVoice'], ['qwen3-tts-base', 'Qwen3-TTS 0.6B Base'], ['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B VoiceDesign']],
+      [['qwen3-tts', 'Qwen3-TTS 0.6B'], ['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B']],
     )
     // true families keep their DECL faces (the 2026-09-16 family-face law, unmoved)
     const music = faces('music', 'music3')

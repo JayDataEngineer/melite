@@ -63,6 +63,10 @@ describe("the executor path (two doors, envelope law)", () => {
   it("an EXPLICIT model rides both doors and the canonical value", async () => {
     draftsBody = { draftId: "d_1" };
     startBody = { run_id: "r_1", status: "queued" };
+    // qwen3-tts-base is the Base VARIANT's route address, not a
+    // family — it rides because the tool enum offers variant
+    // addresses (the drafts door resolves route mids; the clone
+    // lane stays agent-reachable after the fold)
     const value = (await tool().execute({ ...GOOD_ARGS, model: "qwen3-tts-base" }, exec)) as Record<string, string>;
     const stage = (calls[3].body.stages as Array<Record<string, unknown>>)[0]!;
     assert.equal(stage.service, "qwen3-tts-base");
@@ -223,6 +227,10 @@ describe("presentCall prose (validated args only)", () => {
     assert.match(String(card.rawInput), new RegExp("model=" + DEFAULT_MODEL));
     const explicit = tool().presentCall?.({ ...GOOD_ARGS, model: "qwen3-tts-base"  }) as unknown as { rawInput?: unknown };
     assert.match(String(explicit?.rawInput), /model=qwen3-tts-base/);
+    // the Base variant's address rides the closed enum (agents name
+    // no matrix variant — the route is the clone lane's name)
+    const bigger = tool().presentCall?.({ ...GOOD_ARGS, model: "qwen3-tts-voicedesign"  }) as unknown as { rawInput?: unknown };
+    assert.match(String(bigger?.rawInput), /model=qwen3-tts-voicedesign/);
   });
 });
 
