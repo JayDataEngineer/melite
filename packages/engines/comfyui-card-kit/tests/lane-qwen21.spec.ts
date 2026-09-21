@@ -186,3 +186,59 @@ describe("the 2.1 edit lane — unstated solver arms (the || lane defaults)", ()
     assert.equal(sampler!.inputs.scheduler, "simple");
   });
 });
+
+describe("the 2.1 edit lane — the reference stack (upstream: the node opens image inputs as filled, up to 16)", () => {
+  const SOLVER = { width: 1024, height: 1024, seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" };
+  const encOf = (g: GraphBuilder) => {
+    const graph = graphOf(g) as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21");
+    assert.ok(enc, "the 2.1 encoder renders");
+    return { graph, enc: enc! };
+  };
+  it("reference_images ride the encoder's image_4+ slots in order, after the named slots", () => {
+    const g = new GraphBuilder({});
+    imageEdit(
+      { prompt: "stacked edit", negative_prompt: "", image1: "in.png", image2: "r2.png", image3: "", reference_images: ["s1.png", "s2.png"], ...SOLVER },
+      FACTS_21, g, "probestack",
+    );
+    const { graph, enc } = encOf(g);
+    const loadId = (file: string) => Object.keys(graph).find((id) => graph[id]?.class_type === "LoadImage" && graph[id]?.inputs.image === file);
+    assert.ok(enc.inputs["images.image_1"], "anchor on image_1");
+    assert.equal((enc.inputs["images.image_2"] as string[])[0], loadId("r2.png"), "the named second slot keeps image_2 (byte-stable)");
+    assert.equal(enc.inputs["images.image_3"], undefined, "blank image3 still contributes nothing");
+    assert.equal((enc.inputs["images.image_4"] as string[])[0], loadId("s1.png"), "first stack entry on image_4");
+    assert.equal((enc.inputs["images.image_5"] as string[])[0], loadId("s2.png"), "second stack entry on image_5");
+    assert.equal(Object.values(graph).filter((n) => n.class_type === "LoadImage").length, 4, "anchor + named + two stack entries load");
+  });
+  it("blank stack entries contribute no input (the blank() law)", () => {
+    const g = new GraphBuilder({});
+    imageEdit(
+      { prompt: "blank stack", image1: "in.png", reference_images: ["", "  ", "s3.png"], ...SOLVER },
+      FACTS_21, g, "probeblank",
+    );
+    const { enc } = encOf(g);
+    assert.ok(enc.inputs["images.image_4"], "the first stated entry rides image_4");
+    assert.equal(enc.inputs["images.image_5"], undefined, "blanks shift nothing after them");
+  });
+  it("THE CEILING: more than the node's 16 image inputs refuses field-named (agents bypass the form cap)", () => {
+    const g = new GraphBuilder({});
+    assert.throws(
+      () => imageEdit(
+        { prompt: "too many", image1: "in.png", image2: "r2.png", image3: "r3.png", reference_images: Array.from({ length: 14 }, (_, i) => `s${i}.png`), ...SOLVER },
+        FACTS_21, g, "probeceiling",
+      ),
+      (err: unknown): boolean =>
+        err instanceof Error && err.message.includes("'reference_images'") && err.message.includes("16"),
+    );
+  });
+  it("exactly 16 total composes (the boundary rides)", () => {
+    const g = new GraphBuilder({});
+    imageEdit(
+      { prompt: "full house", image1: "in.png", image2: "r2.png", image3: "r3.png", reference_images: Array.from({ length: 13 }, (_, i) => `s${i}.png`), ...SOLVER },
+      FACTS_21, g, "probefull",
+    );
+    const { enc } = encOf(g);
+    assert.ok(enc.inputs["images.image_16"], "the thirteenth stack entry rides image_16");
+    assert.equal(enc.inputs["images.image_17"], undefined, "nothing past the ceiling");
+  });
+});

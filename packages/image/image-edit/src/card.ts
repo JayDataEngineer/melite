@@ -19,12 +19,16 @@
 // decodeSave, stackLoras): image2/image3 ride the STOCK node's native optional
 // slots (comfy_extras nodes_qwen TextEncodeQwenImageEditPlus takes
 // image1/2/3) via conditional LoadImages — blank slots stay out of
-// the inputs entirely, so plain graphs are byte-stable. use_stock_
+// the inputs entirely, so plain graphs are byte-stable. On the 2.1
+// arm the reference_images STACK rides behind them (the encoder's
+// images.image_4+ autogrow slots, in array order — the node opens
+// inputs as filled, up to 16; the form's add-cell IS that UX). use_stock_
 // nodes rides inert both ways: this plane builds the stock graph and
 // nothing else (the stock-only verdict below), so true asks for
 // exactly what it gets and false's patches can never trigger (every
 // patch trigger refuses). Everything else that would change the
-// graph (reference_images slot mapping, double_reference's second
+// graph (the 2511 lane's reference_images slot mapping — the 2.1 arm
+// maps the stack, double_reference's second
 // encode, the lanpaint sampler + knobs, the outpaint pad chain, the
 // mask prep/region flow) REFUSES field-named instead of silently
 // plain-editing (the retired python MOD FIRING LAW, ported 1:1 —
@@ -56,12 +60,18 @@ export const schema = z.object({
   image1: z.string().role('path').description("Image 1").extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image', tooltip: 'The edit anchor — the image to edit.' }),
   image2: z.string().role('path').description("Image 2").extra('extra', { order: 0, group: "input", width: 1, zone: 'inputs', wtype: 'image' }),
   image3: z.string().role('path').description("Image 3").extra('extra', { order: 1, group: "input", width: 1, zone: 'inputs', wtype: 'image' }),
-  // reference_images is VALIDATION-ONLY (hidden, 2026-09-20 — the
-  // operator's catch: the field rendered a 0/8 picker the compose
-  // REFUSES the moment you fill it — a lying stack). The key stays
-  // declared so a draft carrying it still hits the loud
-  // 'reference_images fires' refusal at compose; it never renders.
-  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", hidden: true, tooltip: "Validation-only: the plain-edit lane has no slot mapping for multi-image lists — use Image 2 / Image 3.", wtype: 'image_list' }),
+  // reference_images is THE 2.1 STACK (2026-09-21 — the operator's
+  // catch: the 2.1 node opens image inputs as filled, up to 16, and
+  // the base form already renders exactly that UX — one square per
+  // entry plus the add-cell until the cap, i.e. progressive
+  // disclosure straight off the declaration). It rides the 2.1 lane
+  // ONLY (visible_when): the stock 2511 node takes image1/2/3 and
+  // nothing else, so a stated stack on 2511 still hits the loud
+  // 'reference_images fires' refusal at compose. max_stack 13 is the
+  // node's own ceiling in card arithmetic (1 anchor + Image 2/3 +
+  // 13 = 16); the lane refuses past it for callers that bypass the
+  // form (agents).
+  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", visible_when: 'model=qwen-img-edit-21', max_stack: 13, tooltip: "Reference stack — one square per entry, the add-cell opens the next until 13. The 2.1 lane splices them in order through the encoder's images.image_4+ slots (after Image 2/3). Hidden on 2511 — the stock node takes image1/2/3 only.", wtype: 'image_list' }),
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
   negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
   width: z.number().description("Width").extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
@@ -91,6 +101,7 @@ export const identity = {
   icon: 'edit',
   principles: [
     'image1 is required — the edit is anchored on it (the lanpaint flavor declares it; slots image1..image3, input_image is the retired alias)',
+    'on the 2.1 lane the Reference Images stack grows past Image 3 — one square per entry, the add-cell opens the next until 13 (anchor + Image 2/3 + 13 = the encoder node\u2019s own 16-input ceiling)',
     'Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0',
     'An input_mask alongside image1 switches the builder to the LanPaint inpaint sampler (LanPaint_KSamplerAdvanced — the masked region regenerates, the rest is preserved)',
     'Region Mode stays auto — crop_stitch/full_frame need chains this plane does not build',
@@ -124,8 +135,11 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // old system declared it (workflows pass resolved image lists
       // through it) but NEVER rendered it — no input_slots entry, no
       // slot component anywhere in the old tree, and the params flow
-      // excluded every non-params zone field. Declaration-only data;
-      // the form never shows it.
+      // excluded every non-params zone field. Declaration-only data
+      // on 2511 (the firing gate refuses a stated stack there); on
+      // the 2.1 lane it renders as the progressive stack and rides
+      // the params — still no flow edge (the flow graph carries the
+      // list inside the stage params, resolved at run).
       inputs: {
         prompt: 'text',
         image1: 'image',
@@ -151,7 +165,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       if (!doc.image1 || !(doc.image1 as string).trim()) {
         throw new Error("required param 'image1' missing on the image-edit card (the edit is anchored on it)")
       }
-      refuseImageEditFiring(doc)
+      refuseImageEditFiring(doc, model)
       imageEdit(doc, model, g, runId)
     },
     finalize: finalizeImageEdit,

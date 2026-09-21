@@ -191,7 +191,7 @@ describe("the image-edit compose gate", () => {
 describe("the lane-bespoke leaves (the model guard — the naming law's visibility half)", () => {
   it("THE FOUR LEAVES DECLARE THEIR FAMILY: width/height ride the 2.1 lane, use_stock_nodes/double_reference ride 2511 — never visible on the sibling", () => {
     // the carrier dance (same as formSchemas: schemaCarrier ?? schema)
-    const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string } } }> } };
+    const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string; max_stack?: number } } }> } };
     const json = carrier.toJSON();
     const root = Object.values(json.refs).find((n) => n.type === "object" && n.dict !== undefined);
     assert.ok(root, "the schema envelope serves");
@@ -210,6 +210,32 @@ describe("the lane-bespoke leaves (the model guard — the naming law's visibili
     assert.equal(leaf("prompt"), undefined, "the shared surface never carries a model guard");
     assert.equal(leaf("image1"), undefined, "the anchor is every edit lane's surface");
     assert.equal(leaf("seed"), undefined);
+    // THE REFERENCE STACK (2026-09-21 — the operator's catch: the 2.1
+    // node opens image inputs as filled, up to 16): the stack rides
+    // the 2.1 lane only, capped so anchor + Image 2/3 + stack can
+    // never pass the node's own ceiling (1 + 2 + 13 = 16).
+    assert.equal(leaf("reference_images"), "model=qwen-img-edit-21", "the stack declares its lane");
+    const refId = root!.dict!["reference_images"];
+    assert.equal(json.refs[refId]?.meta?.extra?.max_stack, 13, "the stack caps where the node ceiling lands");
+  });
+});
+
+describe("the reference stack composes on the 2.1 lane (and still refuses on 2511)", () => {
+  it("stated stack entries ride the encoder's image_4+ slots through the card's own compose door", () => {
+    const model21 = facts.models["qwen-img-edit-21"]!;
+    assert.ok(model21, "the qwen-img-edit-21 facts row serves");
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", image2: "/m/garment.png", reference_images: ["/m/pose.png", "/m/fabric.png"] }),
+      model21, g, "r_stack",
+    );
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21");
+    assert.ok(enc, "the 2.1 encoder renders through the card door");
+    assert.ok(enc!.inputs["images.image_1"], "anchor on image_1");
+    assert.ok(enc!.inputs["images.image_2"], "the named slot keeps image_2");
+    assert.ok(enc!.inputs["images.image_4"], "first stack entry on image_4");
+    assert.ok(enc!.inputs["images.image_5"], "second stack entry on image_5");
   });
 });
 

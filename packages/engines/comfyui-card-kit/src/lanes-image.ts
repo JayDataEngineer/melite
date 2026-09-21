@@ -110,8 +110,16 @@ export function finalizeImageEdit(graph: PromptGraph): PromptGraph {
 /** The firing gate (the MOD FIRING LAW, ported 1:1
  *  moved verbatim from the image-edit card): lane-promise values ride
  *  inert; anything that would change the graph refuses field-named
- *  INSTEAD of silently plain-editing. */
-export function refuseImageEditFiring(p: Record<string, unknown>): void {
+ *  INSTEAD of silently plain-editing.
+ *
+ *  THE SECOND SEAT (2026-09-21 — the reference stack): the gate reads
+ *  the LANE off the model (lane_inputs.text_encode_node, the branch
+ *  key — data, never a family-id switch). On the 2.1 arm the
+ *  reference_images stack RIDES (the encoder's autogrow slots); on
+ *  every other arm it fires exactly as before (the stock 2511 node
+ *  has no slot mapping). An absent model refuses (the old law —
+ *  direct lane callers pin it). */
+export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelFacts): void {
   const blank = (v: unknown): boolean =>
     v === undefined || v === null ||
     (typeof v === 'string' && !v.trim()) ||
@@ -121,7 +129,7 @@ export function refuseImageEditFiring(p: Record<string, unknown>): void {
       throw new Error(`'${key}' fires on the image-edit card (${why}) — the TS plane builds the stock plain-edit graph only; refusing instead of silently plain-editing`)
     }
   }
-  fire('reference_images', !blank(p.reference_images), 'multi-image lists need slot mapping the stock image1/2/3 node has no rule for')
+  fire('reference_images', !blank(p.reference_images) && model?.lane_inputs.text_encode_node !== 'TextEncodeQwenImage21', 'multi-image lists need slot mapping the stock image1/2/3 node has no rule for — the 2.1 lane splices the stack through the encoder autogrow slots')
   fire('double_reference', p.double_reference === true, 'the second encode needs nodes this plane does not build')
   // THE LANPAINT LAW (revived 2026-09-15 — the arm above builds it):
   // a stated region switches to the lanpaint sampler; forcing it
@@ -191,6 +199,23 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
     const images21: Record<string, OutputHandle> = { 'images.image_1': image }
     if (ref2) images21['images.image_2'] = ref2
     if (ref3) images21['images.image_3'] = ref3
+    // THE REFERENCE STACK (2026-09-21 — the operator's catch: the
+    // node opens image inputs as filled, up to 16): stated stack
+    // entries load in array order onto images.image_4+ (AFTER the
+    // named slots — existing graphs stay byte-stable); blanks
+    // contribute no input (the blank() law). The CEILING is the
+    // node's own (agents bypass the form's max_stack): anchor +
+    // named + stack past 16 refuses field-named, never drops quiet.
+    const stack = Array.isArray(p.reference_images)
+      ? (p.reference_images as unknown[]).filter((s) => typeof s === 'string' && s.trim())
+      : []
+    const named = 1 + (ref2 ? 1 : 0) + (ref3 ? 1 : 0)
+    if (named + stack.length > 16) {
+      throw new Error(`'reference_images' fires on the image-edit card (the 2.1 encoder opens at most 16 image inputs — anchor + named slots + stack count ${named + stack.length}; drop ${named + stack.length - 16}) — the TS plane maps every stated image to a slot, never drops one quietly`)
+    }
+    stack.forEach((s, i) => {
+      images21[`images.image_${4 + i}`] = g.node('LoadImage', { image: s, upload: 'image' }).out(0)
+    })
     const enc21 = g.node('TextEncodeQwenImage21', {
       clip, vae, prompt: p.prompt, negative_prompt: p.negative_prompt ?? '', resolution: 1024,
       ...images21,
