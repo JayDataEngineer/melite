@@ -421,10 +421,14 @@ function apply(c, config = {}) {
 						if (model.length === 0) return fail(400, { error: "form-spec: the model query parameter is required" });
 						const servers = [...seatedMcpServers(c)];
 						const skillCensus = () => {
-							return buildSkillIndex(disclosureRoot()).skills.map((r) => ({
-								value: r.id,
-								label: r.name
-							}));
+							const idx = buildSkillIndex(disclosureRoot());
+							return [...idx.families.flatMap((f) => f.entrance === null ? [] : [{
+								value: f.entrance,
+								label: f.id
+							}]), ...idx.cards.flatMap((c2) => c2.entrance === null ? [] : [{
+								value: c2.entrance,
+								label: c2.id
+							}])];
 						};
 						const mcpCensus = servers.map((v) => ({
 							value: v,

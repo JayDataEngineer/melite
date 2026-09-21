@@ -1548,7 +1548,10 @@ function meliteLoad(request, opts = {}) {
 				const next = opts.headless === true ? "open with melite_flow" : "compose it with melite_construct (add_stage) — the flow state is live in the user's cards tab; keep editing it there; runs start at the user's Run press";
 				const out = [`loaded ${str(b.kind) || "?"} ${str(b.name) || "?"} — ${next}`];
 				const hints = Array.isArray(b.model_hints) ? b.model_hints : [];
-				if (hints.length > 0) out.push("models: " + hints.map((h) => `${str(h?.id)}${str(h?.label) !== "" ? " (" + str(h?.label) + ")" : ""}`).join(", "));
+				if (hints.length > 0) {
+					const present = hints.filter((h) => h?.present === true).length;
+					out.push(`weights: ${present}/${hints.length} boarded checkpoints present on this machine (provisioning is the estate's business — compose the card)`);
+				}
 				const sig = b.signature;
 				if (sig !== null && sig !== void 0) {
 					const props = sig.params_schema?.properties;
@@ -1860,14 +1863,19 @@ function meliteView(ctx) {
 //#endregion
 //#region src/tools/skill-index.ts
 /**
-* skill_index - progressive disclosure TIER 1: the cheap skill index.
+* skill_index - THE BINDING VOCABULARY (the no-dump rework,
+* 2026-09-21).
 *
-* The gateway (GET /v1/skills) walks the catalog models' agents/ trees
-* (AGENT.md + agents/skills/*.md) plus the global skills/ lane docs and
-* returns one row per skill: id, name, one-line description, genre and
-* owning model when scoped. This is the SCAN; the BODY comes only via
-* skill_read on demand - that pairing is the whole point of progressive
-* disclosure: the agent never pays for docs it does not open.
+* This tool NEVER lists skill rows. The old flat dump was the core
+* breach of the progressive-disclosure architecture: an agent
+* scanning 63 rows picked a card-scoped generic prose skill over
+* the family's lane doc and ran a distilled turbo checkpoint at 25
+* steps — the index itself taught the wrong path. Skills bind to
+* their owner; disclosure of actual skills flows through the owning
+* surface (melite_load serves a card's/family's tier-1 skill
+* lines). This scan serves only the vocabulary: one row per FAMILY
+* and per CARD, each with its ENTRANCE doc id and skill count, plus
+* the flow count. To learn a skill id: open the owner.
 */
 const INDEX_TIMEOUT_MS = 15e3;
 function skillIndex(request) {
@@ -1880,7 +1888,7 @@ function skillIndex(request) {
 	};
 	const def = defineTool({
 		name: "skill_index",
-		description: "List gateway skills (progressive disclosure tier 1): id + name + one-line description per skill, with genre/model when the skill is model-scoped. Cheap scan. Then load ONLY the skill you need with skill_read. Use before generating with an unfamiliar model, when the user asks what this stack can do, or to find the lane recipe for a genre (image/audio/video/3D/text). No arguments.",
+		description: "Scan the skill vocabulary (binding counts, never skill rows): one line per model family and per card — each naming its ENTRANCE doc id and skill count — plus the flow count. To see actual skills, open the owner with melite_load (a card/family bundle carries its tier-1 skill lines); to read a body you already hold an id for, use skill_read. This index never lists skill rows — that flat dump taught agents wrong paths.",
 		parameters: {},
 		presentCall,
 		output: {
@@ -1890,12 +1898,18 @@ function skillIndex(request) {
 				properties: {
 					count: {
 						type: "number",
-						description: "Skills found.",
+						description: "Total skill docs across cards and flows.",
 						required: true
 					},
-					skills: {
+					cards: {
 						type: "array",
-						description: "Index rows: id/name/description (+genre/model when scoped).",
+						description: "One row per card: id/genre/skills/entrance (the AGENT.md row id, or null).",
+						required: true
+					},
+					flows: {
+						type: "object",
+						additionalProperties: true,
+						description: "Registry flow count + ids.",
 						required: true
 					},
 					error: {
@@ -1910,16 +1924,23 @@ function skillIndex(request) {
 					type: "text",
 					text: "skill_index REFUSED: " + v.error
 				}];
-				const RENDER_CLAMP = 40;
-				const rows = Array.isArray(v?.skills) ? v.skills : [];
-				const count = typeof v?.count === "number" ? v.count : rows.length;
-				const out = [`skill_index: ${count} skills — read one with skill_read`];
-				for (const r of rows.slice(0, RENDER_CLAMP)) {
+				const cards = Array.isArray(v?.cards) ? v.cards : [];
+				const flowCount = typeof v?.flows?.count === "number" ? v.flows.count : 0;
+				const count = typeof v?.count === "number" ? v.count : 0;
+				const line = (r) => {
 					const id = typeof r?.id === "string" ? r.id : "";
-					const name = typeof r?.name === "string" ? r.name : "";
-					if (id !== "") out.push(`  ${id}${name !== "" ? " — " + name : ""}`);
+					if (id === "") return "";
+					const genre = typeof r?.genre === "string" && r.genre !== "" ? ` (${r.genre})` : "";
+					const n = typeof r?.skills === "number" ? r.skills : 0;
+					const skills = n === 0 ? "no skills" : n === 1 ? "1 skill" : `${n} skills`;
+					return `  ${id}${genre} — ${typeof r?.entrance === "string" && r.entrance !== "" ? `entrance ${r.entrance}, ${skills}` : "no entrance doc"}`;
+				};
+				const cardsWord = cards.length === 1 ? "card" : "cards";
+				const out = [`skill_index: ${count} skills across ${cards.length} ${cardsWord} · ${flowCount} flows — open a card with melite_load; this index never lists skill rows or model families`];
+				for (const c of cards) {
+					const l = line(c);
+					if (l !== "") out.push(l);
 				}
-				if (count > RENDER_CLAMP) out.push(`  +${count - RENDER_CLAMP} more`);
 				return [{
 					type: "text",
 					text: out.join("\n")
@@ -1928,10 +1949,17 @@ function skillIndex(request) {
 		},
 		async execute(_args, exec) {
 			const res = await request("GET", "/v1/skills", void 0, exec.signal, INDEX_TIMEOUT_MS);
-			const rows = Array.isArray(res.skills) ? res.skills : [];
+			const cards = Array.isArray(res.cards) ? res.cards : [];
+			const flows = res.flows !== null && typeof res.flows === "object" ? res.flows : {};
+			const flowCount = typeof flows.count === "number" ? flows.count : 0;
+			cards.length + flowCount;
 			return jsonClean({
-				count: rows.length,
-				skills: rows
+				count: cards.length + flowCount,
+				cards,
+				flows: {
+					count: flowCount,
+					ids: flows.ids ?? []
+				}
 			});
 		}
 	});
