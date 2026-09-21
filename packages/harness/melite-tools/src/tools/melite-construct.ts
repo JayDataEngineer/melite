@@ -26,8 +26,9 @@
 //   validate     → compile the bench at the validate door (NO GPU)
 //
 // The stage ROW is the runner's shape ({id, engine, params, inputs,
-// outputs}) plus presentation extras the door tolerates and the
-// wire projection strips (card, provenance, runStatus, result).
+// outputs} + card for the kinds pass) plus presentation extras the
+// door tolerates and the wire projection strips (provenance,
+// runStatus, result).
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
@@ -164,8 +165,11 @@ async function withLastRun(
 }
 
 /** Project bench stage rows onto the flow_inline wire contract
- *  (extra=forbid at the start/validate doors: card, provenance,
- *  runStatus, result, title strip; engine defaults comfyui). */
+ *  (the doors forbid provenance/runStatus/result/title as extras —
+ *  they strip; `card` RIDES (STAGE_KEYS admit it) because the
+ *  kinds pass derives input kinds from the card's own flowKinds —
+ *  stripping it manufactured phantom "wired but untyped" refusals
+ *  on correctly-wired card stages; engine defaults comfyui). */
 export function projectStages(stages: unknown): Record<string, unknown>[] {
   if (!Array.isArray(stages)) return []
   return stages
@@ -180,6 +184,12 @@ export function projectStages(stages: unknown): Record<string, unknown>[] {
           ? s['inputs'] : {},
         outputs: typeof s['outputs'] === 'object' && s['outputs'] !== null && !Array.isArray(s['outputs'])
           ? s['outputs'] : { default: 'image' },
+      }
+      // card RIDES (see the docstring): the kinds pass derives
+      // wired-input kinds from the card's flowKinds — without it
+      // every wired card stage reads "untyped".
+      if (typeof s['card'] === 'string' && s['card'] !== '') {
+        row['card'] = s['card']
       }
       if (typeof s['expected'] === 'object' && s['expected'] !== null && !Array.isArray(s['expected'])) {
         row['expected'] = s['expected']
@@ -216,9 +226,10 @@ export function meliteConstruct(
       + 'always start here; a stage that has run carries last_run {run_id, status, artifacts} — view it with '
       + 'melite_view, chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE: refused on a non-empty bench unless '
       + 'overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, '
-      + 'inputs?} (inputs wire PRIOR STAGES, never files: {image1: {stage: "s_0", output: "default"}} — the queue '
-      + 'resolves the stage\'s latest output at run time; to chain the last generation, bind its stage, never hunt '
-      + 'its artifact on disk) | remove_stage {stage} | rewire {stage, input, from?} (from is {stage, output} | '
+      + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES, never files: inputs {image1: {stage: "s_0", output: "default"}} AND '
+      + 'params {image1: "$image1"} — the $spell consumes the channel, the queue resolves it at run time; to chain '
+      + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
+      + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | rewire {stage, input, from?} (from is {stage, output} | '
       + '{initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile '
       + 'check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with '
       + 'current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.',
@@ -240,6 +251,14 @@ export function meliteConstruct(
       inputs: {
         type: 'object', additionalProperties: true,
         description: 'add_stage: {input: {stage, output} | {initial}} wiring.',
+      },
+      expected: {
+        type: 'object', additionalProperties: true,
+        description: 'add_stage: hand-typed input kinds ({input: Kind}) — the override ONLY (kinds derive from the card\'s own ports; state what the card cannot know, e.g. initials, never a mirror to hand-copy).',
+      },
+      outputs: {
+        type: 'object', additionalProperties: true,
+        description: 'add_stage: custom output channels ({name: Kind}) — absent defaults to {default: "image"}.',
       },
       input: { type: 'string', description: 'rewire: the input name to bind.' },
       from: {
@@ -369,6 +388,12 @@ export function meliteConstruct(
               ...(a.engine !== undefined ? { engine: a.engine } : {}),
               ...(a.params !== undefined ? { params: a.params } : {}),
               ...(a.inputs !== undefined ? { inputs: a.inputs } : {}),
+              // expected/outputs ride when stated (the door admits
+              // both — ADD_KEYS; derivation covers card ports, the
+              // override covers what the card cannot know). Absent
+              // keys stay absent (the drops-absent law).
+              ...(a.expected !== undefined ? { expected: a.expected } : {}),
+              ...(a.outputs !== undefined ? { outputs: a.outputs } : {}),
               expect_rev: a.expect_rev,
             }, signal, 15000) as Record<string, unknown>
           return out({ rev: r.rev, stage: r.stage })

@@ -943,3 +943,19 @@ describe("compose (the controlnet wire resolution)", () => {
     );
   });
 });
+
+describe("requiresModel lift (the phantom model demand, 2026-09-21)", () => {
+  // Cards declare requiresModel inside flowKinds (the single
+  // declaration); the gates read the def top-level. The registrar
+  // lifts absent top-level from flowKinds — image-edit (flowKinds
+  // false) demanded a model on every wired flow stage until this.
+  it("flowKinds false with no top-level key composes model-less", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      boarded: [] as never,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
+    }));
+    const g = svc.compose("card1", null, {}, "r");
+    assert.ok("TestNode.0" in g, "the lift lands: null model composes");
+  });
+});

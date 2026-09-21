@@ -331,7 +331,18 @@ export class ComfyUIService extends Service {
     // door's validation (packs and flavors already gated; the card's
     // own declared kinds rode unvalidated until now).
     validateDeclaredMods(def.id, def.mods);
-    this.cards.set(def.id, def)
+    // THE REQUIRES-MODEL LIFT (2026-09-21, the phantom model
+    // demand): cards declare requiresModel inside flowKinds (the
+    // single declaration) while the gates (cardGate, compose's
+    // MODEL-LESS path) read the def top-level — an absent top-level
+    // lifted straight through, so image-edit (flowKinds false) read
+    // undefined and demanded a model every wired flow stage never
+    // needed. Top-level wins when stated; absent both defaults true
+    // (the documented default — unknown cards still hit the model
+    // gate first, the wall pins that order).
+    const requiresModel: boolean =
+      def.requiresModel ?? def.flowKinds?.requiresModel ?? true;
+    this.cards.set(def.id, { ...def, requiresModel })
     return () => { this.cards.delete(def.id) }
   }
 

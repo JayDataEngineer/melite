@@ -254,10 +254,13 @@ describe('melite_construct validate — compile, no GPU', () => {
     assert.equal(validate.timeoutMs, 20_000)
     // 2026-09-21: the tool supplies the flow id itself (the bench's
     // intent when legal, else 'bench') — the caller never spells one.
+    // card RIDES (the phantom-refusal cure): the kinds pass derives
+    // wired-input kinds from the card's flowKinds — the doors admit
+    // card (STAGE_KEYS), only provenance/runStatus/result/title strip.
     assert.deepEqual(validate.body, {
       flow_inline: {
         id: 'bench',
-        stages: [{ id: 'a', engine: 'comfyui', params: { p: 1 }, inputs: {}, outputs: { default: 'image' } }],
+        stages: [{ id: 'a', engine: 'comfyui', params: { p: 1 }, inputs: {}, outputs: { default: 'image' }, card: 'c' }],
       },
     })
   })
@@ -621,7 +624,7 @@ describe('projectStages — the wire projection', () => {
         {
           id: 'a', engine: 'custom', params: { p: 1 },
           inputs: { x: { stage: 's', output: 'o' } }, outputs: { default: 'video' },
-          expected: { x: 'text' },
+          expected: { x: 'text' }, card: 'c',
         },
         { id: 'b', engine: 'comfyui', params: {}, inputs: {}, outputs: { default: 'image' } },
         { id: '', engine: 'comfyui', params: {}, inputs: {}, outputs: { default: 'image' } },
@@ -712,5 +715,75 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
     })
     const out2 = await meliteConstruct(nodraft.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out2.stages, ROW.stages)
+  })
+})
+
+describe('melite_construct projectStages — card rides (the phantom-refusal cure)', () => {
+  // The kinds pass derives wired-input kinds from the card's own
+  // flowKinds — a projection that stripped `card` manufactured
+  // "wired but untyped" refusals on correctly-wired card stages.
+  // STAGE_KEYS admit card; only the true extras strip.
+  test('card survives, provenance/runStatus/result/title do not', async () => {
+    const { projectStages } = await import('../src/tools/melite-construct.ts')
+    const out = projectStages([{
+      id: 's_1', card: 'image-edit', engine: 'comfyui',
+      params: { image1: '$image1' }, inputs: { image1: { stage: 's_0', output: 'default' } },
+      provenance: 'x', runStatus: 'done', result: {}, title: 't',
+    }])
+    assert.equal(out.length, 1)
+    assert.equal(out[0]!.card, 'image-edit')
+    assert.deepEqual(out[0]!.inputs, { image1: { stage: 's_0', output: 'default' } })
+    for (const k of ['provenance', 'runStatus', 'result', 'title']) {
+      assert.ok(!(k in out[0]!), k + ' strips')
+    }
+  })
+
+  test('validate forwards card in flow_inline — derivation can fire', async () => {
+    const { request, seen } = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') {
+        return {
+          session: 'main', rev: 1, intent: 'bench',
+          stages: [{
+            id: 's_1', card: 'image-edit', engine: 'comfyui',
+            params: { image1: '$image1', prompt: 'suit' },
+            inputs: { image1: { stage: 's_0', output: 'default' } },
+          }],
+          log: [],
+        }
+      }
+      if (method === 'POST' && path === '/v1/flows/validate') return { ok: true }
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(request).execute({ verb: 'validate' }, exec()) as Record<string, unknown>
+    assert.equal(out.compiles, true)
+    const post = seen.find((r) => r.path === '/v1/flows/validate')
+    const stages = ((post!.body as Record<string, unknown>).flow_inline as Record<string, unknown>).stages as Array<Record<string, unknown>>
+    assert.equal(stages[0]!.card, 'image-edit')
+  })
+})
+
+describe('melite_construct add_stage — expected/outputs ride (the load workaround, retired)', () => {
+  // The door admits expected + outputs (ADD_KEYS) but the verb
+  // dropped them — chained benches had to route through load to
+  // hand-type kinds. Stated keys forward; absent keys stay absent.
+  test('stated expected/outputs forward verbatim', async () => {
+    const { seen, request } = mockRequest((method, path) => {
+      if (method === 'POST' && path === '/v1/bench/main/add_stage') return { rev: 7, stage: 's2' }
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const tool = meliteConstruct(request)
+    const out = await tool.execute(
+      {
+        verb: 'add_stage', card: 'c', expect_rev: 6,
+        params: { p: 1 }, inputs: { x: { stage: 's_0', output: 'default' } },
+        expected: { x: 'image' }, outputs: { default: 'image' },
+      },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.stage, 's2')
+    assert.deepEqual(seen[0]!.body, {
+      card: 'c', params: { p: 1 }, inputs: { x: { stage: 's_0', output: 'default' } },
+      expected: { x: 'image' }, outputs: { default: 'image' }, expect_rev: 6,
+    })
   })
 })
