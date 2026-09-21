@@ -689,7 +689,7 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
     }
   })
 
-  test('a failed runs call degrades to verbatim stages — the read never refuses for garnish', async () => {
+  test('a failed runs call degrades to verbatim stages with NO runs key — lookup-failed stays distinct', async () => {
     const { request } = mockRequest((method, path) => {
       if (method === 'GET' && path === '/v1/bench/main') return BENCH
       throw new Error('runs seat down')
@@ -697,24 +697,37 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
     const out = await meliteConstruct(request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.equal(out.ok, true)
     assert.deepEqual(out.stages, BENCH.stages)
+    assert.ok(!('runs' in out), 'no runs key when the lookup itself died')
   })
 
-  test('no draft match, no draft_id — stages ride without the key', async () => {
+  test('no draft match — explicit null + window facts (never-ran vs window-miss reads off the totals)', async () => {
     const norun = mockRequest((method, path) => {
       if (method === 'GET' && path === '/v1/bench/main') return BENCH
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { count: 1, runs: [RUNS.runs[2]] }
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { count: 1372, runs: [RUNS.runs[2]] }
       throw new Error('unmocked ' + method + ' ' + path)
     })
     const out = await meliteConstruct(norun.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     for (const s of out.stages as Array<Record<string, unknown>>) {
-      assert.ok(!('last_run' in s))
+      assert.equal(s.last_run, null)
     }
+    // total >> checked: the agent can see the window may have missed.
+    assert.deepEqual(out.runs, { checked: 1, total: 1372, matched: 0 })
     const nodraft = mockRequest((method, path) => {
       if (method === 'GET' && path === '/v1/bench/main') return ROW
       throw new Error('unmocked ' + method + ' ' + path)
     })
     const out2 = await meliteConstruct(nodraft.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out2.stages, ROW.stages)
+  })
+
+  test('a hit carries the window facts too', async () => {
+    const { request } = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return BENCH
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { count: 3, runs: RUNS.runs }
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.deepEqual(out.runs, { checked: 3, total: 3, matched: 2 })
   })
 })
 
@@ -785,5 +798,21 @@ describe('melite_construct add_stage — expected/outputs ride (the load workaro
       card: 'c', params: { p: 1 }, inputs: { x: { stage: 's_0', output: 'default' } },
       expected: { x: 'image' }, outputs: { default: 'image' }, expect_rev: 6,
     })
+  })
+
+  test('stated non-records refuse LOUD at the arg gate — never accept-and-ignore to the bench', async () => {
+    const { request } = mockRequest(() => {
+      throw new Error('must not reach the bench')
+    })
+    const tool = meliteConstruct(request)
+    // type:object in the schema refuses null/[] before execute —
+    // junk the bench's isRecord would shed silently never travels.
+    await assert.rejects(
+      tool.execute(
+        { verb: 'add_stage', card: 'c', expect_rev: 6, expected: null, outputs: [] },
+        exec(),
+      ),
+      (e: unknown) => e instanceof Error && /must be an object/.test(e.message),
+    )
   })
 })

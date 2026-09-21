@@ -486,7 +486,7 @@ describe("compose (the model-less path)", () => {
 
   it("bad params refuse before any graph", async () => {
     const svc = await boot();
-    svc.registerCard(card({ requiresModel: false, boarded: [] }));
+    svc.registerCard(card({ requiresModel: false, flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false }, boarded: [] }));
     assert.throws(
       () => svc.compose("card1", null, { bad: 1 }, "r"),
       (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-params" && /refused params/.test(e.message),
@@ -495,7 +495,7 @@ describe("compose (the model-less path)", () => {
 
   it("the extension gate: missing nodes refuse, live nodes pass, empty maps pass", async () => {
     const svc = await boot();
-    svc.registerCard(card({ requiresModel: false, boarded: [] as never, requires: ["pack-a"] }));
+    svc.registerCard(card({ requiresModel: false, flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false }, boarded: [] as never, requires: ["pack-a"] }));
     svc.setFacts(factsFor({}, { "pack-a": ["NodeA"] }));
     svc.setObjectInfoNodes(["Other"]);
     assert.throws(
@@ -514,6 +514,7 @@ describe("compose (the model-less path)", () => {
     const svc = await boot();
     svc.registerCard(card({
       requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
       boarded: [] as never,
       recipes: { fast: { label: "F", description: "d", params: { prompt: "fast" }, loras: [{ name: "r.safetensors" }] } },
       finalize: (g) => ({ ...g, "final": { class_type: "F", inputs: {} } }) as never,
@@ -532,7 +533,7 @@ describe("compose (the model-less path)", () => {
 
   it("a factless plane never gates (unmapped packs serve the empty map)", async () => {
     const svc = await boot();
-    svc.registerCard(card({ requiresModel: false, boarded: [] as never, requires: ["unmapped-pack"] }));
+    svc.registerCard(card({ requiresModel: false, flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false }, boarded: [] as never, requires: ["unmapped-pack"] }));
     svc.setObjectInfoNodes([]);
     const graph = svc.compose("card1", null, {}, "r");
     assert.ok("TestNode.0" in graph, "no facts, no gate, just the graph");
@@ -542,6 +543,7 @@ describe("compose (the model-less path)", () => {
     const svc = await boot();
     svc.registerCard(card({
       requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
       boarded: [] as never,
       mods: [
         { kind: "sam2", label: "SAM2", param_key: "sam2", cardinality: "list", requires: ["pack-sam"] },
@@ -567,7 +569,7 @@ describe("compose (the model-less path)", () => {
 
   it("a recipeless card ignores the recipe key", async () => {
     const svc = await boot();
-    svc.registerCard(card({ requiresModel: false, boarded: [] as never }));
+    svc.registerCard(card({ requiresModel: false, flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false }, boarded: [] as never }));
     svc.compose("card1", null, { recipe: "fast" }, "r");
     svc.compose("card1", null, undefined, "r2");
     svc.compose("card1", null, null, "r3");
@@ -957,5 +959,31 @@ describe("requiresModel lift (the phantom model demand, 2026-09-21)", () => {
     }));
     const g = svc.compose("card1", null, {}, "r");
     assert.ok("TestNode.0" in g, "the lift lands: null model composes");
+  });
+});
+
+describe("requiresModel conflict (one declaration, no contradictions)", () => {
+  // Both stated and disagreeing refuses LOUD at registration — a
+  // silent top-level-wins would let one face lie to the gates.
+  it("top-level true against flowKinds false refuses", async () => {
+    const svc = await boot();
+    assert.throws(
+      () => svc.registerCard(card({
+        requiresModel: true,
+        flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
+      })),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "requires-model-conflict",
+    );
+  });
+
+  it("agreeing pairs still register", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
+      boarded: [] as never,
+    }));
+    const g = svc.compose("card1", null, {}, "r");
+    assert.ok("TestNode.0" in g);
   });
 });

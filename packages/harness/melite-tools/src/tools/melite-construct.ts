@@ -119,27 +119,38 @@ async function readBench(
  *  touches a filesystem path). A stage that has run carries
  *  last_run {run_id, status, created_at, thumbnail, artifacts} —
  *  view it with melite_view, chain it with {stage, output}.
- *  Enrichment DEGRADES, never refuses: a failed runs call (seat
- *  absent, lane hiccup) or no draft match returns the stages
- *  verbatim — the bench read is the payload, the run is garnish.
- *  One window: the newest 100 global runs; a draft whose latest
- *  run is older resolves nothing (documented, not silent — the
- *  key is simply absent). */
+ *  last_run is the DRAFT's latest run, shared by every stage
+ *  (stages carry no timestamps — a stage added after the run
+ *  still advertises it; known limit, stated not silent).
+ *  No match carries last_run: null PLUS the window facts
+ *  (runs {checked, total, matched}) — never-ran reads off small
+ *  totals, window-miss off total >> checked. Enrichment DEGRADES,
+ *  never refuses: a failed runs call (seat absent, lane hiccup)
+ *  returns the stages verbatim with no runs key — lookup-failed
+ *  (key absent) vs no-match (null + facts) stay distinct.
+ *  One window: the newest 100 global runs. */
 async function withLastRun(
   request: EstateRequest, bench: Record<string, unknown>, signal: AbortSignal,
-): Promise<unknown> {
+): Promise<{ stages: unknown; runs: Record<string, unknown> | null }> {
   const stages: unknown = bench['stages']
-  if (!Array.isArray(stages) || stages.length === 0) return stages
+  const none = { stages, runs: null } as { stages: unknown; runs: Record<string, unknown> | null }
+  if (!Array.isArray(stages) || stages.length === 0) return none
   const draftId: unknown = bench['draft_id']
-  if (typeof draftId !== 'string' || draftId === '') return stages
-  let rows: unknown
+  if (typeof draftId !== 'string' || draftId === '') return none
+  let env: Record<string, unknown>
   try {
-    const r = await request('GET', '/v1/flows/runs?limit=100', undefined, signal, 15000) as Record<string, unknown>
-    rows = r['runs']
+    env = await request('GET', '/v1/flows/runs?limit=100', undefined, signal, 15000) as Record<string, unknown>
   } catch {
-    return stages
+    return none
   }
-  if (!Array.isArray(rows)) return stages
+  const rows: unknown = env['runs']
+  if (!Array.isArray(rows)) return none
+  const total: unknown = env['count']
+  const facts = (matched: number): Record<string, unknown> => ({
+    checked: rows.length,
+    total: typeof total === 'number' ? total : rows.length,
+    matched,
+  })
   const mine: Array<{ created: number; row: Record<string, unknown> }> = []
   for (const r of rows) {
     if (typeof r !== 'object' || r === null || Array.isArray(r)) continue
@@ -148,7 +159,15 @@ async function withLastRun(
     const created: unknown = rec['created_at']
     mine.push({ created: typeof created === 'number' ? created : 0, row: rec })
   }
-  if (mine.length === 0) return stages
+  if (mine.length === 0) {
+    return {
+      stages: stages.map((s): unknown => {
+        if (typeof s !== 'object' || s === null || Array.isArray(s)) return s
+        return { ...(s as Record<string, unknown>), last_run: null }
+      }),
+      runs: facts(0),
+    }
+  }
   mine.sort((a, b): number => b.created - a.created)
   const win: Record<string, unknown> = (mine[0] as { row: Record<string, unknown> }).row
   const lastRun: Record<string, unknown> = {
@@ -158,10 +177,20 @@ async function withLastRun(
     thumbnail: win['thumbnail'],
     artifacts: win['artifacts'],
   }
-  return stages.map((s): unknown => {
-    if (typeof s !== 'object' || s === null || Array.isArray(s)) return s
-    return { ...(s as Record<string, unknown>), last_run: lastRun }
-  })
+  return {
+    stages: stages.map((s): unknown => {
+      if (typeof s !== 'object' || s === null || Array.isArray(s)) return s
+      return { ...(s as Record<string, unknown>), last_run: lastRun }
+    }),
+    runs: facts(mine.length),
+  }
+}
+
+/** Record guard for verb args the doors admit as maps (expected,
+ *  outputs): plain objects only — null, arrays, and scalars would
+ *  die silently at the bench's isRecord, so the tool sheds them. */
+function isRecordArg(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
 /** Project bench stage rows onto the flow_inline wire contract
@@ -223,11 +252,12 @@ export function meliteConstruct(
         ? 'This never executes (melite_flow runs what is here; the user presses Run). '
         : 'You compose the flow and edit its state here, live with the user — runs start at the user\'s Run press, never yours. ')
       + 'Verbs: read (the state — '
-      + 'always start here; a stage that has run carries last_run {run_id, status, artifacts} — view it with '
-      + 'melite_view, chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE: refused on a non-empty bench unless '
+      + 'always start here; a stage that has run carries last_run {run_id, status, artifacts} — null + runs '
+      + '{checked, total, matched} when the draft has no run in the window; view a run_id with melite_view, '
+      + 'chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE: refused on a non-empty bench unless '
       + 'overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, '
-      + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES, never files: inputs {image1: {stage: "s_0", output: "default"}} AND '
-      + 'params {image1: "$image1"} — the $spell consumes the channel, the queue resolves it at run time; to chain '
+      + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card\'s declared ports, never files: '
+      + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell consumes the channel, the queue resolves it at run time; to chain '
       + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
       + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | rewire {stage, input, from?} (from is {stage, output} | '
       + '{initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile '
@@ -341,8 +371,10 @@ export function meliteConstruct(
       try {
         if (verb === 'read' || verb === '') {
           const b = await readBench(request, bench, signal)
+          const enriched = await withLastRun(request, b, signal)
           return out({
-            rev: b.rev, intent: b.intent, stages: await withLastRun(request, b, signal), log: b.log,
+            rev: b.rev, intent: b.intent, stages: enriched.stages, log: b.log,
+            ...(enriched.runs !== null ? { runs: enriched.runs } : {}),
             hint: 'mutate with expect_rev=' + String(b.rev),
           })
         }
@@ -388,12 +420,17 @@ export function meliteConstruct(
               ...(a.engine !== undefined ? { engine: a.engine } : {}),
               ...(a.params !== undefined ? { params: a.params } : {}),
               ...(a.inputs !== undefined ? { inputs: a.inputs } : {}),
-              // expected/outputs ride when stated (the door admits
-              // both — ADD_KEYS; derivation covers card ports, the
-              // override covers what the card cannot know). Absent
-              // keys stay absent (the drops-absent law).
-              ...(a.expected !== undefined ? { expected: a.expected } : {}),
-              ...(a.outputs !== undefined ? { outputs: a.outputs } : {}),
+              // expected/outputs ride when stated as RECORDS (the door
+              // admits both — ADD_KEYS; derivation covers card ports,
+              // the override covers what the card cannot know).
+              // Absent keys stay absent (the drops-absent law). The
+              // type:object arg gate refuses stated non-records LOUD
+              // before execute; the guard below holds the line if the
+              // schema ever loosens — the bench's isRecord would shed
+              // them silently, and accept-and-ignore is the one thing
+              // this verb never does (the F6 remnant, 2026-09-21).
+              ...(isRecordArg(a.expected) ? { expected: a.expected } : {}),
+              ...(isRecordArg(a.outputs) ? { outputs: a.outputs } : {}),
               expect_rev: a.expect_rev,
             }, signal, 15000) as Record<string, unknown>
           return out({ rev: r.rev, stage: r.stage })

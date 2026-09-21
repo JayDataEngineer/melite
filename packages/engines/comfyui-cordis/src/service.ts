@@ -337,11 +337,20 @@ export class ComfyUIService extends Service {
     // MODEL-LESS path) read the def top-level — an absent top-level
     // lifted straight through, so image-edit (flowKinds false) read
     // undefined and demanded a model every wired flow stage never
-    // needed. Top-level wins when stated; absent both defaults true
-    // (the documented default — unknown cards still hit the model
-    // gate first, the wall pins that order).
+    // needed. Both stated and contradictory refuses LOUD (a silent
+    // top-level-wins would let one face lie); absent both defaults
+    // true (the documented default — unknown cards still hit the
+    // model gate first, the wall pins that order).
+    const flowRequires: boolean | undefined = def.flowKinds?.requiresModel;
+    if (
+      def.requiresModel !== undefined && flowRequires !== undefined &&
+      def.requiresModel !== flowRequires
+    ) {
+      throw new ComposeRefusal('requires-model-conflict',
+        `card '${def.id}' declares requiresModel ${String(def.requiresModel)} top-level against flowKinds ${String(flowRequires)} — one declaration, no contradictions`);
+    }
     const requiresModel: boolean =
-      def.requiresModel ?? def.flowKinds?.requiresModel ?? true;
+      def.requiresModel ?? flowRequires ?? true;
     this.cards.set(def.id, { ...def, requiresModel })
     return () => { this.cards.delete(def.id) }
   }

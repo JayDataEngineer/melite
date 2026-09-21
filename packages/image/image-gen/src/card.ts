@@ -75,7 +75,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: 'image', order: 1 },
     flowKinds: {
-      inputs: { prompt: 'text', reference_image: 'image' },
+      // prompt only (2026-09-21, the phantom-port cure): the
+      // reference_image port rode here with no schema knob and no
+      // compose read — wiring it validated green then dropped
+      // silent at compose. A declared port the card cannot consume
+      // is a lie; when a reference-guided t2i lane lands, the knob
+      // and the read land with it.
+      inputs: { prompt: 'text' },
       outputs: { default: 'image' },
       requiresModel: true,
     },

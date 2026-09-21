@@ -1021,8 +1021,13 @@ describe('/v1 prefix discovery arms', () => {
     const g = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=image-gen' })
     assert.equal(g.status, 200)
     const gb = g.body as { inputs: Array<{ name: string; kind: string; required?: boolean }> }
-    const ref = gb.inputs.find((x) => x.name === 'reference_image')
-    assert.ok(ref !== undefined && ref.required !== true, 'non-required inputs omit the flag (reference_image)')
+    // image-gen's declared ports are prompt-only (2026-09-21, the
+    // phantom-port cure): reference_image rode flowKinds with no
+    // schema knob and no compose read — wiring it validated green
+    // then dropped silent. The edge no longer emits.
+    const prompt = gb.inputs.find((x) => x.name === 'prompt')
+    assert.ok(prompt !== undefined && prompt.kind === 'text', 'image-gen emits its declared port (prompt)')
+    assert.ok(!gb.inputs.some((x) => x.name === 'reference_image'), 'the phantom port no longer emits')
   })
 
   test('an unparseable url is a 500, never a crash', async () => {
