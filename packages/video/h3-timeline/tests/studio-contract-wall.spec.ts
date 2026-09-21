@@ -11,14 +11,18 @@
  * the TEST is the wall).
  */
 import { describe, expect, it } from "vitest"
-import { carrier, BOARDED } from "../src/card.ts"
+import { carrier, BOARDED, VARIANT_ADDRESSES } from "../src/card.ts"
 import { emitParamsSpec } from "@melite/comfyui-cordis/params-emit"
 import { serializeLayerA, hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
 import { CALL_KNOB_KEYS } from "../src/ui/studio/docModel.ts"
 
 /** The card's declared surface: the params schema's own names (the
- * same walk the freshness gate trusts). */
-const SURFACE = new Set(Object.keys(emitParamsSpec(carrier as never, BOARDED)))
+ * same walk the freshness gate trusts). The model knob rides the
+ * TOOL's enum (BOARDED + the folded lanes' variant addresses — one
+ * source of truth with tool.ts; a bare single-family board serves
+ * no picker, but the studio doc still writes the model id and the
+ * run door still consumes it). */
+const SURFACE = new Set(Object.keys(emitParamsSpec(carrier as never, [...BOARDED, ...VARIANT_ADDRESSES])))
 
 /** Non-knob carriers the card admits OUTSIDE the params schema — the
  * mod plane (params.loras, resolved against the family catalog at

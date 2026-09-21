@@ -23,7 +23,7 @@ import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools
 import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
-import { carrier, identity, BOARDED } from './card.ts'
+import { carrier, identity, BOARDED, VARIANT_ADDRESSES } from './card.ts'
 
 export const TOOL_NAME = 'h3_timeline'
 
@@ -36,9 +36,14 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition =>
     // THE MODEL INPUT: the params walk synthesizes the model knob
     // from the boarded array (a CLOSED enum — the wrapper rejects
     // ''/unknown models at the seam); execute resolves the unstated
-    // default itself (the DSL plane carries no defaults).
+    // default itself (the DSL plane carries no defaults). Variant
+    // routes ride the same enum (the TTS fold pattern): agents pick
+    // no matrix variant — the folded lanes' compose addresses (h3,
+    // h3-ref2va, h3-timeline-ref, h3-keyframe) keep the single-shot
+    // + keyframe lanes agent-reachable; the drafts door resolves
+    // route mids through the facts rows.
     parameters: {
-      ...emitParamsSpec(carrier as never, BOARDED),
+      ...emitParamsSpec(carrier as never, [...BOARDED, ...VARIANT_ADDRESSES]),
       calls: {
         type: 'json',
         required: true,

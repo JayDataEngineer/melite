@@ -93,6 +93,33 @@ compose):
   `tests/e2e/recipes-gpu.e2e.ts` (engine-gated) — compose the pill
   payload, assert the resolved wiring verbatim, run it live.
 
+## 1c. THE FOLD LAW (2026-09-21 — roadmap §8, the one-model
+consolidations; precedents: the qwen TTS fold, the H3 fold)
+
+A MODEL names a CHECKPOINT (a size/weights family); a VARIANT names
+a LANE (Base/CustomVoice/VoiceDesign; timeline/single-shot/
+keyframe). When two "families" serve one checkpoint's card, the
+fold is OWED — never board a lane flavor as its own model:
+
+- The surviving family keeps its id (drafts, skills, tool enums
+  address it); the dead families' packages, barrel rows, facts-row
+  authorship, and HMR rows die.
+- Every dead address survives as a VARIANT ROUTE on the survivor —
+  old drafts resolve migration-free (the drafts door resolves
+  route mids through the derived facts rows).
+- The dead family's `defaults` ride the folded variant's
+  `resolver_defaults` VERBATIM (the cascade merges model ← variant;
+  the derived view stays byte-identical). A lane the family
+  defaults don't fit carries its own stamps; a NULL stamp unsets.
+- The dead family's unique provisions JOIN the survivor's list
+  (the union; the lanes still load their own weights).
+- The card boards the ONE family; the dead addresses ride the
+  tool's closed enum via `VARIANT_ADDRESSES` (agents pick no
+  matrix variant — the route address IS how the lane is named).
+- Mods stay family-level (the bag serves every lane that fires
+  it); a lane a mod fires nothing on refuses LOUD in admission,
+  never silently skips (the TTS instruction-control law).
+
 ## 2. The barrel row (the load order)
 
 `packages/engines/comfyui-cordis/src/models/families/index.ts` — the

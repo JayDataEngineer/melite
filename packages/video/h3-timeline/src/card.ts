@@ -469,18 +469,20 @@ export const carrier = paramSchema
 
 // ONE MODEL (the operator's law, 2026-09-20 "we use ONE model" +
 // 2026-09-21 "HOW IS MINIMAX H3 AND H3 TIMELINE TWO DIFFERENT
-// MODELS?"): the sibling boardings below (h3, h3-keyframe — the
-// same minimax weights as sibling family packages) render as THREE
-// different "models" in the Model dropdown: a fake model switch,
-// the exact crime the route row died for. OWED (roadmap #41): the
-// three families consolidate into ONE (h3 + h3-keyframe variants
-// fold into h3-timeline cells; their facts rows and roster entries
-// die with them) — until then the boardings stand because the h3 /
-// h3-keyframe FACTS ROWS name this card as their only card (the
-// boot contract refuses a card-less facts row), and their DECL
-// variants route here. Un-boarding without the merge orphans them
-// at boot.
-export const BOARDED: string[] = ['h3-timeline', 'h3', 'h3-keyframe']
+// MODELS?" — LANDED, roadmap §8): the card boards ONE family. The
+// old h3 + h3-keyframe family packages are dead — their addresses
+// survive as VARIANT ROUTES on the h3-timeline family (fl2va → h3,
+// ref2va → h3-ref2va, timeline-ref2va → h3-timeline-ref, keyframe
+// → h3-keyframe), so old drafts resolve migration-free and the
+// facts rows re-derive through the merged family.
+export const BOARDED: string[] = ['h3-timeline']
+
+// THE VARIANT ROUTES (the TTS fold's VARIANT_ADDRESSES pattern):
+// agents pick no matrix variant — the tool's closed model enum
+// additionally offers the folded lanes' compose addresses so the
+// single-shot + keyframe lanes stay agent-reachable (the drafts
+// door resolves route mids through the facts rows).
+export const VARIANT_ADDRESSES: string[] = ['h3', 'h3-ref2va', 'h3-timeline-ref', 'h3-keyframe']
 
 export const identity = {
   label: 'H3 Timeline',

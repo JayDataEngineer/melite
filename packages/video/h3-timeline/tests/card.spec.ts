@@ -104,4 +104,14 @@ describe("the h3-timeline compose gate", () => {
     });
     assert.ok(["t4_chain", "t4r"].includes(String(chained.variant)), "chains derive a family");
   });
+
+  it("THE ONE-MODEL LAW (roadmap §8): the card boards ONE family; the dead families' addresses ride the tool enum as variant routes", async () => {
+    const { BOARDED, VARIANT_ADDRESSES } = await import("../src/card.ts");
+    assert.deepEqual(BOARDED, ["h3-timeline"], "one H3 row in the Model dropdown — the lanes are variants, never models");
+    assert.deepEqual(
+      [...VARIANT_ADDRESSES].sort(),
+      ["h3", "h3-keyframe", "h3-ref2va", "h3-timeline-ref"],
+      "every dead family address stays agent-reachable (old drafts + the tool's closed enum)",
+    );
+  });
 });

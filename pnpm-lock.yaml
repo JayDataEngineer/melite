@@ -453,12 +453,6 @@ importers:
       '@melite/models-gem_soma':
         specifier: workspace:*
         version: link:../../models/gem_soma
-      '@melite/models-h3':
-        specifier: workspace:*
-        version: link:../../models/h3
-      '@melite/models-h3-keyframe':
-        specifier: workspace:*
-        version: link:../../models/h3-keyframe
       '@melite/models-h3-timeline':
         specifier: workspace:*
         version: link:../../models/h3-timeline
@@ -1470,38 +1464,6 @@ importers:
         version: 5.9.3
 
   packages/models/gem_soma:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/h3:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/h3-keyframe:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2

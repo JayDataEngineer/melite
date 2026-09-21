@@ -1,7 +1,12 @@
-// families/video/h3-timeline.ts — the h3-timeline family declaration
-// (generated 2026-09-08 from the frozen registry + facts, then
-// hand-owned: this file IS the family's truth — a change here is a
-// family change, nothing else moves).
+// families/video/h3-timeline.ts — the ONE H3 family declaration
+// (the one-model law, roadmap §8: the operator's catch — "HOW IS
+// MINIMAX H3 AND H3 TIMELINE TWO DIFFERENT MODELS?"). ONE family
+// owns the whole surface: the multi-window timeline films, the
+// single-shot FL2VA/Ref2VA lanes, and the keyframe lane. The old
+// `h3` + `h3-keyframe` FAMILIES are dead — their addresses survive
+// as VARIANT ROUTES below (old drafts resolve migration-free; the
+// folded variants' resolver_defaults carry the dead families'
+// default stamps verbatim, so the derived views are byte-identical).
 //
 // PLUGIN SHAPE (the discharge stroke): every family is a plugin
 // declaring itself through ctx.models.registerFamily inside
@@ -13,8 +18,8 @@ import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 export const DECL: ModelDecl = {
   "id": "h3-timeline",
   "form": "form_video_director",
-  "label": "H3 Timeline (multi-window)",
-  "description": ">-",
+  "label": "MiniMax H3",
+  "description": "MiniMax H3 joint video + audio — one model, three lanes: multi-window timeline films, single-shot FL2VA/Ref2VA clips, and keyframe-anchored beats",
   "engine": "comfyui",
   "defaults": {
     "seed": 42
@@ -79,6 +84,7 @@ export const DECL: ModelDecl = {
     {
       "id": "h3",
       "label": "Standard",
+      "hint": "The multi-window timeline — hybrid FL2VA/Ref2VA windows, SLA sparse attention, the film path.",
       "group": "Variant",
       "route": "h3-timeline",
       "cells": [
@@ -89,6 +95,119 @@ export const DECL: ModelDecl = {
           "vram_peak_gb": 30,
         }
       ]
+    },
+    // THE FOLDED LANES (roadmap §8 — the dead h3 family's variants,
+    // reborn here): single-shot clips in one pass. The
+    // resolver_defaults carry the dead family's default stamps
+    // VERBATIM — the derived views for routes h3/h3-ref2va are
+    // byte-identical to the dead family's facts rows.
+    {
+      "id": "fl2va",
+      "label": "Single-Shot FL2VA",
+      "hint": "Text-to-video, first/last frame to video — one 124-frame pass, 30 steps. The h3 family's own address.",
+      "group": "Variant",
+      "route": "h3",
+      "order": 2,
+      "resolver_defaults": {
+        "width": 1344,
+        "height": 768,
+        "length": 124,
+        "steps": 30,
+        "shift_video": 12,
+        "shift_audio": 3
+      },
+      "cells": []
+    },
+    {
+      "id": "fl2va-turbo",
+      "label": "Single-Shot FL2VA ⚡ Turbo",
+      "hint": "FL2VA with the Turbo LoRA + 10-step fast pass — motion composition iteration before a final.",
+      "group": "Variant",
+      "route": "h3",
+      "order": 3,
+      "resolver_defaults": {
+        "width": 1344,
+        "height": 768,
+        "length": 124,
+        "steps": 30,
+        "shift_video": 12,
+        "shift_audio": 3
+      },
+      "cells": []
+    },
+    {
+      "id": "ref2va",
+      "label": "Single-Shot Ref2VA",
+      "hint": "Reference-based video (images, videos, audio as refs) — one pass, 30 steps.",
+      "group": "Variant",
+      "route": "h3-ref2va",
+      "order": 4,
+      "resolver_defaults": {
+        "width": 1344,
+        "height": 768,
+        "length": 124,
+        "steps": 30,
+        "shift_video": 12,
+        "shift_audio": 3
+      },
+      "cells": []
+    },
+    {
+      "id": "ref2va-turbo",
+      "label": "Single-Shot Ref2VA ⚡ Turbo",
+      "hint": "Ref2VA with the Turbo LoRA + 10-step fast pass for reference-based iteration.",
+      "group": "Variant",
+      "route": "h3-ref2va",
+      "order": 5,
+      "resolver_defaults": {
+        "width": 1344,
+        "height": 768,
+        "length": 124,
+        "steps": 30,
+        "shift_video": 12,
+        "shift_audio": 3
+      },
+      "cells": []
+    },
+    // THE FOLDED KEYFRAME LANE (the dead h3-keyframe family's
+    // variant): draft-geometry beats anchored on a first frame.
+    {
+      "id": "keyframe",
+      "label": "Keyframe",
+      "hint": "Keyframe-to-video — a beat anchored on its first-frame image at draft geometry (768×448, 12 steps).",
+      "group": "Variant",
+      "route": "h3-keyframe",
+      "order": 6,
+      "resolver_defaults": {
+        "width": 768,
+        "height": 448,
+        "length": 56,
+        "steps": 12
+      },
+      "cells": [
+        {
+          "quant": "native",
+          "label": "Native",
+          "route": "h3-keyframe",
+        }
+      ]
+    },
+    {
+      "id": "timeline-ref2va",
+      "label": "Timeline Ref2VA (Legacy)",
+      "hint": "Identity-locked multi-beat — reference images condition every window. Standard variant now handles this automatically.",
+      "group": "Variant",
+      "route": "h3-timeline-ref",
+      "order": 7,
+      "resolver_defaults": {
+        "width": 1344,
+        "height": 768,
+        "length": 124,
+        "steps": 30,
+        "shift_video": 12,
+        "shift_audio": 3
+      },
+      "cells": []
     },
     {
       "id": "default",
@@ -184,6 +303,34 @@ export const DECL: ModelDecl = {
       "url": "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
       "folder": "diffusion_models",
       "sha256": "a629cfea8d89a071b140c6e1935dc9a23e72de6badc18975a2bb9e6d1423d76d"
+    },
+    // THE FOLDED SINGLE-SHOT WEIGHTS (roadmap §8 — inherited from
+    // the dead h3 family verbatim: the fl2va/ref2va lanes load
+    // their own UNETs; the nvfp4 encoder + fp16 VAE are their
+    // alternates)
+    {
+      "name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "folder": "diffusion_models",
+      "sha256": "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a"
+    },
+    {
+      "name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "folder": "diffusion_models",
+      "sha256": "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779"
+    },
+    {
+      "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "folder": "text_encoders",
+      "sha256": "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6"
+    },
+    {
+      "name": "minimax_h3_video_vae_fp16.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors",
+      "folder": "vae",
+      "sha256": "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522"
     },
     {
       "name": "minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",

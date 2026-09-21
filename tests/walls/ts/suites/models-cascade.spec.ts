@@ -38,7 +38,7 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     assert.equal(svc.name, MODELS_SERVICE);
     // 45 since the form-seams stroke (ideogram retired with its
     // card 2026-09-17; fit + skin went at stroke 87)
-    assert.equal(svc.registryIds().length, 49) // +1: yue2 on the music card (2026-09-20) // +1: the qwen TTS voicedesign family (2026-09-21; base folded back into the .6 as the Base variant) // +2: the qwen 2.1 pair (2026-09-21), "every registered model through the service at boot");
+    assert.equal(svc.registryIds().length, 47) // +1: yue2 on the music card (2026-09-20) // +1: the qwen TTS voicedesign family (2026-09-21; base folded back into the .6 as the Base variant) // +2: the qwen 2.1 pair (2026-09-21) // -2: the H3 fold (h3 + h3-keyframe died into h3-timeline's variants; their routes survive), "every registered model through the service at boot");
     // 91 since stroke 87 (fit + skin retired — 89 + the z-image base
     // routes (with cause alongside — the variant landed without
     // its count updates)
