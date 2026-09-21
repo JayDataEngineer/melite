@@ -69,6 +69,11 @@ import queuePlugin, {
   loadProvider,
 } from "@melite/estate-queue";
 import { manageRemotePlugin } from "@melite/estate-manage";
+// THE SELECTION CATALOG (the skill rework's close): zero rows on an
+// empty bench; the bench's card+family craft carries on selection.
+import { appendFileSync } from "node:fs";
+import { benchPicks, benchFingerprint, selectionRows } from "./skillCatalog.ts";
+const trace = (m: string): void => { try { appendFileSync("/tmp/skill-catalog-trace.log", `${new Date().toISOString()} ${m}\n`); } catch { /* trace only */ } };
 import { runsRemotePlugin } from "@melite/estate-runs";
 // The runs media route (the /v1/assets face's DSH-native
 // replacement): run artifacts served same-origin from the queue
@@ -87,6 +92,113 @@ import modelsPlugin from "@melite/estate-models";
  *  dsh-base owns it in profiles (dshHomePath storages); wall and
  *  probe boots mount it themselves. The queue takes no row
  *  config: its state root is MELITE_STATE_ROOT else <cwd>/data/runs. */
+
+/** THE SELECTION CATALOG (the skill rework's close, 2026-09-21) —
+ *  THE CATALOG IS THE SELECTION, nothing else: a DSH skill provider
+ *  serving ZERO rows on an empty bench (discovery stays a paid tool
+ *  call — melite_discover bootstraps its own vocabulary) and exactly
+ *  the bench's card+family craft the moment a stage lands. The
+ *  remembered system, restored: the family's skills carry on
+ *  automatically.
+ *
+ *  THE SEAMS (each learned from a failed probe, each now verified):
+ *  - services resolve ONLY through inject (property reads throw);
+ *  - the plugin body must apply every boot — the estate-skills
+ *    service-constructor shape, never a bare apply;
+ *  - repeating timers ride the timer seat's timeout(cb, ms) with a
+ *    disposer — ctx.setInterval never fires here;
+ *  - a mid-session bench edit reaches the model ONLY through
+ *    control.invalidate() re-snapshotting the catalog into a
+ *    complete-replacement system-reminder. */
+class SkillCatalogService {
+  constructor(ctx: Context) {
+    trace("SELECTION CATALOG: service constructed");
+    let fingerprint: string | null = null;
+    const seat = (ctx as unknown as {
+      skills?: { registerProvider?: (create: (c: { invalidate: () => void }) => unknown) => unknown };
+    }).skills;
+    if (seat?.registerProvider === undefined) {
+      trace("SELECTION CATALOG: NO SKILLS SEAT (inject failed)");
+      return;
+    }
+    if (catalogRegistered) {
+      trace("SELECTION CATALOG: already registered — skipping duplicate");
+      return;
+    }
+    catalogRegistered = true;
+    try {
+      // capture the queue's stateRoot SYNCHRONOUSLY (apply's fiber is
+      // the only scope where an injected service read resolves; a
+      // read from list()'s later callback would throw and the seat
+      // would mark the provider skipped — snapshot incomplete, the
+      // reminder suppressed)
+      const stateRoot = (ctx as unknown as { queue?: { stateRoot: string } }).queue?.stateRoot ?? "";
+    seat.registerProvider((control: { invalidate: () => void }) => {
+      catalogControl = control;
+      trace("SELECTION CATALOG: provider registered");
+      return {
+        name: "melite",
+        async list() {
+          const rows = selectionRows(await benchPicks(), stateRoot);
+          trace(`SELECTION SNAPSHOT: ${rows.length} row(s) [${rows.map((r: { name: string }) => r.name).join(", ")}]`);
+          // complete: TRUE — the observation IS whole (the bench read
+          // finished; freshness rides the invalidate wire, not
+          // incompleteness). tool-skip suppresses the reminder on
+          // incomplete snapshots: if (!snapshot.complete) return.
+          return { candidates: rows, complete: true };
+        },
+      };
+    });
+    } catch (e) {
+      trace(`SELECTION CATALOG: registration refused (${String(e)}) — another instance owns the seat`);
+      return;
+    }
+    // THE INVALIDATE WIRE: poll the bench fingerprint on node's own
+    // timer (the timer seat's callbacks never fire from a dead
+    // constructor fiber — verified by probe); a change re-snapshots
+    // the catalog. The estate lives as long as the process, so the
+    // interval's lifetime IS the plugin's lifetime.
+    let ticked = false;
+    const tick = (): void => {
+      if (!ticked) {
+        ticked = true;
+        trace("SELECTION CATALOG: first poll tick");
+      }
+      void (async () => {
+        const next = await benchFingerprint();
+        if (fingerprint === null) {
+          fingerprint = next;
+          return;
+        }
+        if (next !== fingerprint) {
+          fingerprint = next;
+          trace("SELECTION CATALOG: bench changed → invalidated");
+          try {
+            catalogControl?.invalidate();
+          } catch {
+            // a disposed registration contributes nothing
+          }
+        }
+      })();
+    };
+    globalThis.setInterval(tick, 1500).unref();
+  }
+}
+
+// the invalidate handle + the once-guard (the headless app retries
+// plugin loads on a ~21s cadence — a duplicate provider name would
+// throw and crash-loop the estate; one registration per process)
+let catalogControl: { invalidate: () => void } | null = null;
+let catalogRegistered = false;
+
+const skillCatalogProvider = {
+  name: "melite-skill-catalog",
+  inject: ["skills", "queue", "timer"] as const,
+  apply(ctx: Context): void {
+    new SkillCatalogService(ctx);
+  },
+};
+
 const rows: readonly Plugin[] = [
   // The engines seat BEFORE every adapter + consumer (mount order
   // is load order — the adapters' inject gates on it).
@@ -342,6 +454,13 @@ const rows: readonly Plugin[] = [
   // The skills seat (REBUILD-16): the index + read over the
   // doc-tree walks — gates on the queue seat (the ledger seam).
   skillProvider,
+  // THE SELECTION CATALOG (the skill rework's close, 2026-09-21):
+  // the DSH skills-seat provider whose list() serves ZERO rows on
+  // an empty bench (discovery stays a paid tool call — discover
+  // bootstraps its own vocabulary) and exactly the bench's
+  // card+family craft the moment a stage lands. The remembered
+  // system, restored: the family's skills carry on automatically.
+  skillCatalogProvider,
   // The load seat (REBUILD-17): Melite load opens ONE card or
   // flow — the bundle (agents md + signature + skill lines).
   loadProvider,

@@ -156,6 +156,14 @@ export interface VariantRow {
   engine?: string;
   order?: number;
   resolver_defaults?: Record<string, unknown>;
+  /** The variant's ROUTE ENVELOPE (the skill rework, 2026-09-21):
+   *  closed steps/cfg bounds — out-of-envelope stated values refuse
+   *  LOUD at stampCardOverlay (envelopeRefusal names the variant,
+   *  route, envelope, marriage). Absent = no closed envelope.
+   *  Written [min, max] — envelopeRefusal validates the pair at
+   *  enforcement (this z's tuples loosen to arrays, so the pair
+   *  lives as a 2-number array on the wire). */
+  sampler_envelope?: { steps: number[]; cfg: number[] };
   /** The variant's LANE INPUT stamps (the intercept over the
    *  model's base lane_inputs — e.g. the base checkpoint's
    *  model_path; merged base ← variant at the derived read). */
@@ -174,6 +182,10 @@ export const VariantRow: z<VariantRow> = z.object({
   engine: z.string().default(""),
   order: z.number(),
   resolver_defaults: z.dict(z.any()).default({}),
+  sampler_envelope: z.object({
+    steps: z.array(z.number()),
+    cfg: z.array(z.number()),
+  }),
   lane_inputs: z.dict(z.any()).default({}),
   wire_defaults: z.union([z.dict(z.any()), z.const(null)]),
   cells: z.array(CellRow).default([]),
