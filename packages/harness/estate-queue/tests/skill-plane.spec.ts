@@ -290,6 +290,14 @@ describe("buildSkillIndex + findSkill", () => {
     // THE SELECTION LAW (operator 2026-09-21): an empty bench serves
     // NOTHING — the vocabulary door is melite_discover, never this
     // index. The full dump below was the last leak.
+    // ENV-PIN LAW (2026-10-08): "empty bench" = empty PIN home.
+    // Unpinned, the index reads the operator's real bench dir; the
+    // mtime-live guard only HIDES the flake (a GUI rewrite mid-run
+    // makes the real doc fresh and this reads it — it did).
+    const savedHome = process.env["DSH_HOME"];
+    const emptyHome = mkdtempSync(join(tmpdir(), "skill-plane-empty-"));
+    process.env["DSH_HOME"] = emptyHome;
+    try {
     const empty = buildSkillIndex(ROOT) as unknown as { count: number; cards: unknown[]; families: unknown[]; flows: { count: number } };
     assert.equal(empty.count, 0, "the empty bench lists nothing");
     assert.deepEqual(empty.cards, []);
@@ -327,6 +335,10 @@ describe("buildSkillIndex + findSkill", () => {
     const rendered = findSkill(ROOT, "flow:audio-native-tts");
     assert.ok(rendered !== null && rendered.bodyText !== null);
     assert.equal(findSkill(ROOT, "ghost"), null);
+    } finally {
+      if (savedHome === undefined) delete process.env["DSH_HOME"];
+      else process.env["DSH_HOME"] = savedHome;
+    }
   });
 
   it("envelope refusals rethrow; alien failures wrap", () => {

@@ -49,6 +49,14 @@ describe("SkillDirectoryService", () => {
     // THE SELECTION LAW (operator 2026-09-21): the catalog IS the
     // selection. Empty bench → zero rows (melite_discover is the
     // paid door); a benched card serves exactly its binding line.
+    // ENV-PIN LAW (2026-10-08): "empty bench" means an empty PIN
+    // home — unpinned, the seat reads the operator's REAL DSH_HOME
+    // and this assert flaked the moment a GUI bench session landed
+    // there. seedBench pins its own home for the seeded phase.
+    const savedHome = process.env["DSH_HOME"];
+    const emptyHome = mkdtempSync(join(tmpdir(), "skill-registry-empty-"));
+    process.env["DSH_HOME"] = emptyHome;
+    try {
     const empty = seat().index() as { count: number; families: unknown[]; cards: unknown[]; flows: { count: number; ids: string[] } };
     assert.equal((empty as { skills?: unknown }).skills, undefined);
     assert.equal(empty.count, 0, "an empty bench lists nothing");
@@ -61,6 +69,10 @@ describe("SkillDirectoryService", () => {
       assert.ok(!idx.cards.some((c) => c.id === "image-edit"), "unbenched cards never ride");
     } finally {
       restore();
+    }
+    } finally {
+      if (savedHome === undefined) delete process.env["DSH_HOME"];
+      else process.env["DSH_HOME"] = savedHome;
     }
   });
 

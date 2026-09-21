@@ -493,15 +493,61 @@ export function apply(c: CtxView, config: Config = {}): void {
       /** The estate lanes' error map (the false-death fix, 2026-10-08:
        *  a day-long hunt read every 502 as a dead runs seat — the
        *  502s were seat REFUSALS, wrong bodies and boot-settle races,
-       *  on a healthy lane). Coarse law, honest transport: a named
-       *  protocol refusal means the seat ANSWERED — a 400-class about
-       *  the caller's request, the stable code riding in the body;
-       *  502 stays for the absent-seat/transport voice. */
+       *  on a healthy lane). A named protocol refusal means the seat
+       *  ANSWERED — never the absent-seat 502 — and the failure's own
+       *  details ride in the body verbatim (loc, per-stage errors,
+       *  the manage envelope's action/status/data). The status is the
+       *  code's class, from the full thrown-code inventory (the
+       *  critique's M1: the first cut mapped everything to 400, which
+       *  relabeled engine-down refusals and storage faults as the
+       *  caller's fault — the same lie, opposite polarity):
+       *   - caller-fault validations → 400 (the runs/ compile family,
+       *     bench/bad-body, draft/bad-*, media/kind, gateway/bad-request)
+       *   - not-found → 404 (runs/unknown-run, runs/run-unknown,
+       *     bench/not-found, draft/not-found)
+       *   - bench/cas-conflict → 409 (the CAS race, carrying current_rev)
+       *   - manage/refused → the ENVELOPE's own status (details.status
+       *     rides from the manage plane; an engine-down 503 stays 503)
+       *   - infra faults → 502 (draft/store-failed, draft/cannot-persist,
+       *     media/no-seat, gateway/internal, gateway/cancelled)
+       *  An unmapped code defaults to 400: still a refusal (the seat
+       *  answered), the code in the body for discrimination. */
+      const REFUSAL_STATUS: Readonly<Record<string, number>> = {
+        'runs/unknown-run': 404,
+        'runs/run-unknown': 404,
+        'bench/not-found': 404,
+        'draft/not-found': 404,
+        'bench/cas-conflict': 409,
+        'draft/store-failed': 502,
+        'draft/cannot-persist': 502,
+        'media/no-seat': 502,
+        'gateway/internal': 502,
+        'gateway/cancelled': 502,
+      }
       const failEstate = (error: unknown): void => {
         const remote = remoteErrorOf(error)
         const message = error instanceof Error ? error.message : String(error)
         if (remote !== undefined) {
-          fail(400, { error: message, code: remote.code })
+          let status = REFUSAL_STATUS[remote.code] ?? 400
+          const details = (remote as { details?: unknown }).details
+          // details FIRST — ours win on a key collision (a details
+          // row carrying its own error/code never masks the protocol's)
+          const body: Record<string, unknown> = {}
+          if (typeof details === 'object' && details !== null) {
+            Object.assign(body, details as Record<string, unknown>)
+          }
+          body['error'] = message
+          body['code'] = remote.code
+          if (remote.code === 'manage/refused') {
+            // The envelope's own status IS the answer (validate-first
+            // endpoints refuse with 4xx voices; an engine-down maps
+            // 503). A missing/garbage status falls back to 400.
+            const envelopeStatus = (details as { status?: unknown } | undefined)?.status
+            if (typeof envelopeStatus === 'number' && Number.isInteger(envelopeStatus) && envelopeStatus >= 400 && envelopeStatus <= 599) {
+              status = envelopeStatus
+            }
+          }
+          fail(status, body)
           return
         }
         fail(502, { error: message })

@@ -152,26 +152,84 @@ describe('discovery rejection 500s', () => {
 })
 
 // The estate lanes' error classes (the false-death fix, 2026-10-08):
-// a NAMED protocol refusal (RemoteError — the seat ANSWERED) is a
-// 400-class about the caller's request with the stable code in the
-// body; only the absent-seat voice stays 502. Before the fix every
-// refusal rendered 502 and read as a dead runs seat on a healthy
-// lane.
+// a NAMED protocol refusal (RemoteError — the seat ANSWERED) is
+// never the absent-seat 502. Before the fix every refusal rendered
+// 502 and read as a dead runs seat on a healthy lane. The status is
+// the code's CLASS from the thrown-code inventory (REFUSAL_STATUS in
+// doors.ts), and the failure's own details ride in the body verbatim
+// — every case below constructs the RemoteError EXACTLY as the
+// throwing seat does (same code, same details keys), so a grep for
+// the producer of each pinned code finds it:
+//   runs/flow-compile  — runsValidateArms.ts (loc + per-stage errors)
+//   runs/unknown-run   — runsRegistry.ts status arm (runId)
+//   manage/refused     — manageRegistry.ts (action/status/data envelope)
 describe('estate lane error classes', () => {
-  test('a seat NAMED refusal answers 400 carrying the code', async () => {
+  test('POST validate refusal: 400, the code, and the details (loc + errors) ride verbatim', async () => {
     const routes = boot({
       runs: {
         validate: () => Promise.reject(new RemoteError(
-          'flow_compile/refused',
+          'runs/flow-compile',
           'flow body carries unknown keys ["flow"] — allowed: ["description","id","stages"]',
+          { loc: 'flow', errors: ['stages[0]: missing id'] },
         )),
       },
     })
     const { status, text } = await post(routes, '/v1/flows/validate', { flow: 'image-gen', stages: [] })
     assert.equal(status, 400)
-    const body = JSON.parse(text) as { error: string; code: string }
-    assert.equal(body.code, 'flow_compile/refused')
+    const body = JSON.parse(text) as { error: string; code: string; loc: string; errors: string[] }
+    assert.equal(body.code, 'runs/flow-compile')
     assert.ok(body.error.includes('unknown keys'), text)
+    assert.equal(body.loc, 'flow')
+    assert.deepEqual(body.errors, ['stages[0]: missing id'])
+  })
+
+  test('GET status refusal: unknown-run is a 404 carrying runId (not-found class)', async () => {
+    const routes = boot({
+      runs: {
+        status: () => Promise.reject(new RemoteError(
+          'runs/unknown-run',
+          'unknown run_id',
+          { runId: 'no-such-run' },
+        )),
+      },
+    })
+    const { status, text } = await get(routes, 'http://localhost/v1/flows/status/no-such-run')
+    assert.equal(status, 404)
+    const body = JSON.parse(text) as { code: string; runId: string }
+    assert.equal(body.code, 'runs/unknown-run')
+    assert.equal(body.runId, 'no-such-run')
+  })
+
+  test('manage/refused: the ENVELOPE\'s own status answers (engine-down 503 stays 503, action rides)', async () => {
+    const routes = boot({
+      manage: {
+        act: () => Promise.reject(new RemoteError(
+          'manage/refused',
+          'comfyui endpoint unreachable',
+          { action: 'restart', status: 503, data: { url: 'http://127.0.0.1:8188' } },
+        )),
+      },
+    })
+    const { status, text } = await post(routes, '/v1/manage', { action: 'restart' })
+    assert.equal(status, 503)
+    const body = JSON.parse(text) as { code: string; action: string; data: { url: string } }
+    assert.equal(body.code, 'manage/refused')
+    assert.equal(body.action, 'restart')
+    assert.equal(body.data.url, 'http://127.0.0.1:8188')
+  })
+
+  test('manage/refused with a garbage envelope status falls back to 400', async () => {
+    const routes = boot({
+      manage: {
+        act: () => Promise.reject(new RemoteError(
+          'manage/refused',
+          'refused',
+          { action: 'logs', status: 'nope' },
+        )),
+      },
+    })
+    const { status } = await post(routes, '/v1/manage', { action: 'logs' })
+    assert.equal(status, 400)
   })
 
   test('no seat at all stays the loud 502 (the seat-absent voice)', async () => {

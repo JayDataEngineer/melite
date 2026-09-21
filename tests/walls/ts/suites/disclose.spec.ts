@@ -181,6 +181,16 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   const root = mkdtempSync(join(tmpdir(), "disclose-wall-"));
   const ctx = new Context();
   process.env["MELITE_STATE_ROOT"] = root;
+  // ENV-PIN LAW (the false-death lesson, pinned 2026-10-08): the
+  // seat reads the LIVE BENCH from DSH_HOME — unpinned, the wall
+  // reads the OPERATOR's real home, and the "empty bench" assert
+  // below flaked the moment a real session landed there (a music
+  // stage benched on the GUI made this wall read count=2). An
+  // empty pin home IS the empty bench; the seeded phase re-pins.
+  const savedHome = process.env["DSH_HOME"];
+  const emptyHome = mkdtempSync(join(tmpdir(), "disclose-empty-home-"));
+  process.env["DSH_HOME"] = emptyHome;
+  try {
   await ctx.plugin(timerPlugin as never);
   await ctx.plugin(queuePlugin as never);
   await ctx.plugin(Storage as never);
@@ -236,7 +246,16 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   const laneDoc = (await request("GET", "/v1/skills/flow%3Afit-seat", undefined, sig)) as { id?: string };
   assert.equal(laneDoc.id, "flow:fit-seat", "lane serves the read");
   } finally {
-    delete process.env["DSH_HOME"];
+    if (savedHome === undefined) delete process.env["DSH_HOME"];
+    else process.env["DSH_HOME"] = savedHome;
+  }
+  } finally {
+    // restore what the ambient process carried (the env-pinning
+    // law's other edge: a bare delete leaks OUR empty pin into
+    // whatever runs next). The OUTER try covers the EMPTY phase —
+    // an assert throw there must not leak the pin either.
+    if (savedHome === undefined) delete process.env["DSH_HOME"];
+    else process.env["DSH_HOME"] = savedHome;
   }
 });
 

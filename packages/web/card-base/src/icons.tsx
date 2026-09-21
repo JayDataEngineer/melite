@@ -21,6 +21,11 @@ import type { CSSProperties, SVGProps } from "react"
 export interface IconProps extends SVGProps<SVGSVGElement> {
   className?: string
   style?: CSSProperties
+  /** data-testid rides the svg through ...rest (SVGProps' type map
+   * carries no data-* index — the history-thumb glyph face passes
+   * it; added 2026-10-08 when the preview face's usage outtyped
+   * the interface). */
+  "data-testid"?: string
 }
 
 function Svg({ className, style, children, ...rest }: IconProps & { children: React.ReactNode }) {
@@ -561,7 +566,7 @@ export function FileBox({ className, style, ...rest }: IconProps) {
   )
 }
 
-/** Lucide-faithful `audio-lines` (new 2026-09-22 — the history kind
+/** Lucide-faithful `audio-lines` (new 2026-10-08 — the history kind
  * face's audio glyph; no prior card copy existed to unify). */
 export function AudioLines({ className, style, ...rest }: IconProps) {
   return (
