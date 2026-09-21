@@ -51,6 +51,20 @@ describe("the clips upload door", () => {
     assert.ok(screen.getByText("2 clips on the Music row — drag to move, × to remove"))
   })
 
+  // ── THE LANE-COST HINT (roadmap §14): the 3-lane audio bus law
+  // states itself ON THE ROW, not only at compose — the loud
+  // refusal names every competitor AFTER the Run press; the hint
+  // names the budget BEFORE it.
+  it("the Music row states the 3-lane audio budget (the lane-cost hint)", () => {
+    const h = clips({})
+    const hint = screen.getByTestId("tl-clips-lane-hint")
+    assert.match(hint.textContent!, /3 audio lanes/i, "the budget is stated")
+    assert.match(hint.textContent!, /bed/i, "the bed is named as a lane spender")
+    assert.match(hint.textContent!, /dialogue/i, "dialogue clips are named as lane spenders")
+    assert.match(hint.textContent!, /ref/i, "refs close the competitor list")
+    h.els.unmount()
+  })
+
   it("files land at frame 0; the input resets; no files = no-op", () => {
     const { taken } = clips({})
     const btn = screen.getByTestId("tl-audio-upload")

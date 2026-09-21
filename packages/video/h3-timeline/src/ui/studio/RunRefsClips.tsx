@@ -47,6 +47,14 @@ export function RunRefsClips({
           ? `${layerA.audio_clips.length} clip${layerA.audio_clips.length === 1 ? "" : "s"} on the Music row — drag to move, × to remove`
           : "none — upload or drop a file on the Music row"}
       </span>
+      {/* THE LANE-COST HINT (roadmap §14): the 3-lane audio bus law
+          states itself HERE, not only at compose — the loud refusal
+          names every competitor AFTER the Run press; the hint names
+          the budget BEFORE it (bed + dialogue clips spend the same
+          3 lanes the per-call ref audios want). */}
+      <span className={s.clipsHint} data-testid="tl-clips-lane-hint">
+        3 audio lanes per window: bed + dialogue clips + ref audios share them — a full bus refuses at Run
+      </span>
       <input
         ref={audioUploadRef}
         type="file"

@@ -804,10 +804,32 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     assert.equal(ducks.length, 1, "one duck over the film audio");
     // the clip's FULL film span ducks (5.083s for 2s = 48 frames)
     assert.equal(ducks[0]![1].inputs.segments, "5.083:7.083");
-    assert.equal(ducks[0]![1].inputs.gain_db, -14);
+    assert.equal(ducks[0]![1].inputs.gain_db, -14, "the declared default rides when the knob is unset");
     // the mix chain rides OVER the ducked track
     const mix = ofClass(out, "MeliteAudioMix")[0]!;
     assert.deepEqual(mix[1].inputs.audio1, [ducks[0]![0], 0], "the mixes ride the ducked film audio");
+  });
+
+  it("duck depth is a KNOB (roadmap §14): duck_depth_db rides the node, the declared default −14 (never a pinned literal)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        audio_clips: [CLIP()],
+        duck_depth_db: -22,
+      }),
+      model, g, "run_duck_knob",
+    );
+    const ducks = ofClass(graphOf(g), "MeliteAudioDuck");
+    assert.equal(ducks.length, 1);
+    assert.equal(ducks[0]![1].inputs.gain_db, -22, "the knob's value rides the node verbatim");
+    // the knob is DECLARED on the schema (the studio-contract law: no
+    // UI fiction the door would drop)
+    const spec = def.schema({}) as Record<string, unknown>;
+    assert.ok(
+      Object.keys(spec).includes("duck_depth_db"),
+      "duck_depth_db normalizes through the schema door",
+    );
   });
 
   it("a MUSIC-ONLY clip (no window hears it) never ducks — but still overlays", () => {

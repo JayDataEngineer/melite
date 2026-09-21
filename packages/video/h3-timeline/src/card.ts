@@ -131,6 +131,11 @@ const paramSchema = z.object({
   // the legal AV duration).
   bed_audio: z.string().role('path').description("Audio bed (film-wide)").extra('extra', { order: null, wtype: 'file', tooltip: "One track across all windows — each generation carries its own slice as hidden <Audio 1> conditioning. ComfyUI cuts it." }),
   bed_start: z.number().description("Bed start (s)").min(0).step(0.01).default(0).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1, tooltip: "Where in the bed track the film's window 1 begins." }),
+  // DUCK DEPTH (roadmap §14, was a pinned −14 literal): how far the
+  // generated voice yields under a conditioned clip at its film
+  // span. −14dB is the natural mix-desk default; deeper for dense
+  // dialogue, shallower when the generated voice should hold.
+  duck_depth_db: z.number().description("Duck depth (dB)").min(-48).max(0).step(1).default(-14).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1, tooltip: "How far the generated voice ducks under a dialogue clip (−14 is the mix-desk default)." }),
   seed: z.number().description("Seed").step(1).default(42).extra('extra', { order: null, columns: 2, width: 1, tooltip: "Same seed across re-rolls = same world texture" }),
   width: z.number().description("Width").min(448).max(1344).step(64).default(1344).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1 }),
   height: z.number().description("Height").min(448).max(768).step(64).default(768).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1 }),
@@ -785,8 +790,12 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       .map((pl) => `${Math.round(pl.filmSec * 1000) / 1000}:${Math.round((pl.filmSec + pl.durSec) * 1000) / 1000}`)
     let filmAudio = f.audio
     if (duckSpans.length > 0) {
+      // the knob's declared default rides when unset (−14); the
+      // schema normalizes, the compose never pins a literal
+      const duckDb = typeof p.duck_depth_db === 'number' && Number.isFinite(p.duck_depth_db)
+        ? p.duck_depth_db : -14
       filmAudio = g.node('MeliteAudioDuck', {
-        audio: f.audio, segments: duckSpans.join(';'), gain_db: -14, ramp_ms: 20,
+        audio: f.audio, segments: duckSpans.join(';'), gain_db: duckDb, ramp_ms: 20,
       }).out(0)
     }
     for (const { clip, filmSec, durSec } of placements) {

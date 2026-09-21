@@ -476,6 +476,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 }
 .uploadAudio:hover { border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 60%, transparent); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent); }
 .clipsNote { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--dsw-alias-label-tertiary); }
+.clipsHint { font-size: 10px; color: var(--dsw-alias-label-tertiary); opacity: 0.85; }
 /* ── StudioPreview ──────────────────────────────────────── */
 .filmBox {
   display: flex;
