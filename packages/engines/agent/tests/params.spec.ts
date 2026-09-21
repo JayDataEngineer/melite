@@ -1,6 +1,6 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { agentParams, agentCardParams, agentModKinds, normalizeAgentStageParams, MCP_ENTRY_FIELD, SKILL_ENTRY_FIELD, type CensusRow } from "../src/params.ts";
+import { agentParams, agentCardParams, agentModKinds, normalizeAgentStageParams, MCP_ENTRY_FIELD, SKILL_ENTRY_FIELD, KNOWN_BRAINS, type CensusRow } from "../src/params.ts";
 import { agentFormDoc, agentCardFormDoc } from "../src/formDoc.ts";
 
 const CAP = 1000;
@@ -34,16 +34,34 @@ describe("the agent params contract (stroke 66 — anti-drift)", () => {
     assert.deepEqual((inputs["fields"] as Array<{ name: string }>).map((f) => f.name), ["name", "value"]);
   });
 
-  it("THE CARD FACE's law: agentCardParams is the contract MINUS the model field (a card field named 'model' is the estate's model key — never a brain route)", () => {
+  it("THE CARD FACE's law: agentCardParams is the contract MINUS the model field, PLUS the brain dropdown (a card field named 'model' is the estate's model key — never a brain route)", () => {
     const env = agentCardParams.toJSON() as unknown as { uid: number; refs: Record<string, { type: string; dict?: Record<string, number> }> };
     const root = env.refs[String(env.uid)]!;
     const dict = root.dict!;
-    // the full contract minus 'model' — the same shared field
-    // declarations, ONE difference by law (the boot route serves)
-    assert.deepEqual(Object.keys(dict).sort(), ["inputs", "max_turns", "mcps", "skills", "task"]);
+    // the full contract minus 'model' plus 'brain' — the same shared
+    // field declarations, TWO differences by law (the boot route
+    // serves a blank brain; the seam stamps the engine's model key)
+    assert.deepEqual(Object.keys(dict).sort(), ["brain", "inputs", "max_turns", "mcps", "skills", "task"]);
     assert.equal(env.refs[String(dict["task"])]!.type, "string");
     assert.equal(env.refs[String(dict["max_turns"])]!.type, "number");
     assert.equal(env.refs[String(dict["mcps"])]!.type, "array");
+  });
+
+  it("THE BRAIN DROPDOWN: 'brain' is a closed union over the known routes, blank-first (blank = the seated brain), served as a select", () => {
+    const env = agentCardParams.toJSON() as unknown as { uid: number; refs: Record<string, any> };
+    const dict = env.refs[String(env.uid)]!.dict!;
+    const brain = env.refs[String(dict["brain"])]!;
+    assert.equal(brain.type, "union");
+    assert.equal(brain.meta.default, "");
+    assert.equal(brain.meta.extra.wtype, "select");
+    assert.equal(brain.meta.extra.group, "brief");
+    const members = (brain.list as number[]).map((i) => env.refs[String(i)]!);
+    assert.deepEqual(members.map((m) => m.value), KNOWN_BRAINS.map((b) => b.value));
+    assert.deepEqual(members.map((m) => m.meta.description), KNOWN_BRAINS.map((b) => b.label));
+    // the engine contract has NO brain (engine stages field it
+    // `model` — the face's name never leaks engine-side)
+    const eenv = agentParams.toJSON() as unknown as { uid: number; refs: Record<string, { dict?: Record<string, number> }> };
+    assert.deepEqual(Object.keys(eenv.refs[String(eenv.uid)]!.dict!).sort(), ["inputs", "max_turns", "mcps", "model", "skills", "task"]);
   });
 
   it("THE GENERIC INPUT SQUARE: the inputs kind's value field is file-typed (the construction law builds THE ONE square — upload/drop/upstream pick)", () => {

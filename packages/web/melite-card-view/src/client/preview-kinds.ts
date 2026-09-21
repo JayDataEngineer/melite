@@ -103,3 +103,42 @@ export function previewArtifactsFor(row: Record<string, unknown>): Array<{ name:
   }
   return out
 }
+
+/** The stage row's REPORT harvest (ROADMAP 11e): the named
+ *  machine-readable verdicts a run writes beside its media — the
+ *  same object the agent loop gates on, rendered by the result
+ *  row's ONE default atom (card-base's ReportView, claimed by
+ *  kind). ONLY kind-'report' entries harvest; a degenerate value
+ *  (not an object) never renders — the contract's validator names
+ *  it at the writer, the reader just stays silent. */
+export function previewReportsFor(row: Record<string, unknown>): Array<{ name: string, report: {
+  kind: 'report'
+  status: 'pass' | 'fail' | 'warn'
+  title?: string
+  chips?: string[]
+  rows?: Record<string, string | number | boolean>
+} }> {
+  const result = typeof row['result'] === 'object' && row['result'] !== null ? row['result'] as Record<string, unknown> : {}
+  const raw = typeof result['reports'] === 'object' && result['reports'] !== null && !Array.isArray(result['reports'])
+    ? result['reports'] as Record<string, unknown> : {}
+  const out: Array<{ name: string, report: { kind: 'report', status: 'pass' | 'fail' | 'warn', title?: string, chips?: string[], rows?: Record<string, string | number | boolean> } }> = []
+  for (const [name, val] of Object.entries(raw)) {
+    if (typeof val !== 'object' || val === null || Array.isArray(val)) continue
+    const rep = val as Record<string, unknown>
+    if (rep['kind'] !== 'report') continue
+    if (rep['status'] !== 'pass' && rep['status'] !== 'fail' && rep['status'] !== 'warn') continue
+    out.push({
+      name,
+      report: {
+        kind: 'report',
+        status: rep['status'],
+        ...(typeof rep['title'] === 'string' && rep['title'] !== '' ? { title: rep['title'] } : {}),
+        ...(Array.isArray(rep['chips']) && rep['chips'].every((c) => typeof c === 'string' && c !== '') ? { chips: rep['chips'] as string[] } : {}),
+        ...(typeof rep['rows'] === 'object' && rep['rows'] !== null && !Array.isArray(rep['rows'])
+          && Object.values(rep['rows'] as Record<string, unknown>).every((v) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')
+          ? { rows: rep['rows'] as Record<string, string | number | boolean> } : {}),
+      },
+    })
+  }
+  return out
+}

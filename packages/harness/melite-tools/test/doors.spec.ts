@@ -305,6 +305,17 @@ describe('catalog route', () => {
     assert.match(schema, /task/, 'the brief is a schema field (the prompt spot)')
     assert.equal(schema.includes('"model"'), false, 'no model field on the card face (the boot route serves the spawn)')
     assert.deepEqual(doc['enhance_prompts'], { prompt: 'task', lyrics: '' })
+    // the Brain dropdown rides the served schema (a field named
+    // `model` would be the estate's model key — the face fields it
+    // `brain`, blank-first for the seated brain)
+    const senv = doc['schema'] as { uid: number; refs: Record<string, any> }
+    const sdict = senv.refs[String(senv.uid)]!.dict! as Record<string, number>
+    assert.ok(sdict['brain'] !== undefined, 'the card face carries the Brain dropdown')
+    assert.equal(sdict['model'], undefined, 'still no model field on the card face')
+    const sbrain = senv.refs[String(sdict['brain'])]!
+    assert.equal(sbrain.type, 'union')
+    assert.deepEqual((sbrain.list as number[]).map((i) => senv.refs[String(i)]!.value),
+      ['', 'opencode-go/muse-spark', 'opencode-go/muse-spark-1.3-contributor'])
     // the per-server direct-call form-spec still serves (the subagent
     // and flow-composed rows ride these)
     const spec = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp:blender' })

@@ -66,16 +66,29 @@ export async function runCardStage(
   // FLOW door (the subagent loop with the card's MCPs/Skills/Inputs
   // tiles and the Task brief). The params ride VERBATIM (bag entries
   // folded engine-side by the executor's own gate —
-  // normalizeAgentStageParams, never re-parsed client-side); an
-  // empty brief refuses loud AT THE PRESS, never a zombie run.
+  // normalizeAgentStageParams, never re-parsed client-side) EXCEPT
+  // the Brain stamp below; an empty brief refuses loud AT THE PRESS, never a zombie run.
   if (card === MCP_CARD) {
     const task = typeof params['task'] === 'string' ? params['task'].trim() : ''
     if (task === '') {
       return { refused: 'write the Task first — the subagent spawns with no brief otherwise' }
     }
+    // THE BRAIN TRANSLATION (operator 2026-09-21: a dropdown of
+    // known routes): the face fields it `brain` — a card field
+    // named `model` is the estate's model key, never a brain route
+    // — while the engine's own contract key IS `model`
+    // (normalizeAgentStageParams passes it to parseRoute, LOUD on
+    // a rotted row). The seam stamps it here: a picked brain rides
+    // as the engine's per-stage override, blank rides ABSENT and
+    // the lane's seated brain serves. `brain` itself never crosses
+    // (the engine's gate builds its own wire).
+    const brain = typeof params['brain'] === 'string' ? params['brain'].trim() : ''
+    const engineParams: Record<string, unknown> = { ...params }
+    if (brain !== '') engineParams['model'] = brain
+    delete engineParams['brain']
     return await startFlowInlineRun({
       flowId: 'mcp',
-      stages: [{ id: src.id, engine: 'agent', params, outputs: { default: 'text' } }],
+      stages: [{ id: src.id, engine: 'agent', params: engineParams, outputs: { default: 'text' } }],
       draftId,
     })
   }

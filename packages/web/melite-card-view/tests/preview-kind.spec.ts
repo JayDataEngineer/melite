@@ -3,7 +3,7 @@
 // form-spec's outputs.default), never a url sniff; the sniff stands
 // in only when the declaration is absent or non-previewable.
 import { expect, test } from 'vitest'
-import { paramsDiffKeys, previewKindFor, primaryKindFor } from '../src/client/CardsTab.tsx'
+import { paramsDiffKeys, previewKindFor, previewReportsFor, primaryKindFor } from '../src/client/CardsTab.tsx'
 import type { FormSpecDoc } from '@melite/card-base'
 
 const spec = (outputs?: Record<string, string>): FormSpecDoc =>
@@ -62,4 +62,59 @@ test('same params, no chip — and absent snapshots (pre-stroke archives) never 
 
 test('long diffs cap at four keys with an ellipsis (the compact chip)', () => {
   expect(paramsDiffKeys({ a: 1, b: 1, c: 1, d: 1, e: 1, f: 1 }, {})).toBe('a, b, c, d…')
+})
+
+// ── THE REPORT HARVEST (ROADMAP 11e, primitive ①) ──────────────────────
+// The named machine-readable verdicts a run writes beside its media
+// (kind 'report'): only lawful entries harvest — the reader stays
+// silent on degenerates (the contract's validator names them at the
+// WRITER; the reader just never renders a broken face).
+
+test('report harvest: lawful verdicts ride verbatim, keyed by name', () => {
+  const out = previewReportsFor({
+    result: {
+      run_id: 'run-rig',
+      reports: {
+        validate: { kind: 'report', status: 'pass', title: 'gate', chips: ['uv'], rows: { tris: 14980 } },
+        lint: { kind: 'report', status: 'warn' },
+      },
+    },
+  })
+  expect(out.length).toBe(2)
+  expect(out[0]!.name).toBe('validate')
+  expect(out[0]!.report).toEqual({ kind: 'report', status: 'pass', title: 'gate', chips: ['uv'], rows: { tris: 14980 } })
+  expect(out[1]!.name).toBe('lint')
+  expect(out[1]!.report).toEqual({ kind: 'report', status: 'warn' })
+})
+
+test('report harvest: wrong kind and bad status never render; a broken DISPLAY section strips, the entry stays', () => {
+  const out = previewReportsFor({
+    result: {
+      reports: {
+        wrong: { kind: 'table', status: 'pass' },
+        badstatus: { kind: 'report', status: 'ok' },
+        notobj: 7,
+        arr: ['x'],
+        badchips: { kind: 'report', status: 'pass', chips: ['ok', 3] },
+        badrows: { kind: 'report', status: 'pass', rows: { deep: { x: 1 } } },
+        badtitle: { kind: 'report', status: 'pass', title: '' },
+      },
+    },
+  })
+  // kind + status ARE the entry's identity (without them it is not a
+  // report); title/chips/rows are display sections — a broken one
+  // strips, the verdict itself still renders.
+  expect(out.length).toBe(3)
+  expect(out.map((e) => e.name)).toEqual(['badchips', 'badrows', 'badtitle'])
+  expect(out[0]!.report).toEqual({ kind: 'report', status: 'pass' })
+  expect(out[1]!.report).toEqual({ kind: 'report', status: 'pass' })
+  // '' title → omitted (the atom's name law takes over)
+  expect(out[2]!.report).toEqual({ kind: 'report', status: 'pass' })
+})
+
+test('report harvest: absent reports, non-object results — the empty list, never a crash', () => {
+  expect(previewReportsFor({})).toEqual([])
+  expect(previewReportsFor({ result: null })).toEqual([])
+  expect(previewReportsFor({ result: { reports: null } })).toEqual([])
+  expect(previewReportsFor({ result: { reports: ['x'] } })).toEqual([])
 })

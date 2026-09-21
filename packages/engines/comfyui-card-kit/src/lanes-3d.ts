@@ -438,6 +438,57 @@ export function transferRigArm(g: GraphBuilder, p: Record<string, unknown>): voi
   g.node('SaveRiggedModel', { rigged_path: outPath })
 }
 
+// ── the rig card's arms (ROADMAP card program P0) ───────────────────
+// "skeleton + weights on this GLB" — three real lanes over the
+// vendored packs, all path-based (no checkpoints):
+//  · auto   — KimodoExportFBX in its 'apply_weights' action (the
+//             dispatch is INPUT-driven: source_glb without npz_path
+//             → the SOMA-77 template's hand-painted LBS weights
+//             transfer onto the source mesh; file_format 'glb'; the
+//             node IS the output capture — it writes itself).
+//  · copy   — transferRigArm verbatim (KimodoTransferWeights +
+//             SaveRiggedModel): GPU KNN weight transfer from a
+//             rigged donor onto the clothed target.
+//  · species — RayCreatureRigBridge: bind a static mesh onto an
+//             anyCreature skeleton (armature + baked idles), the
+//             node writes itself.
+// The fourth lane (skintokens/TokenRig) stays OUT until the
+// external ComfyUI-SkinToken pack is vendored + verified — a lane
+// whose node cannot register is not a lane (LAW 2).
+
+/** The rig card's SOMA auto arm — one KimodoExportFBX (the node's
+ *  own action dispatch picks 'apply_weights' for a lone source_glb).
+ *  rigged_path is the node's required "connect or leave empty" slot
+ *  — an empty PrimitiveString rides (the dispatch never reads it on
+ *  this arm). decimation defaults OFF on this surface (the node's
+ *  own 0.2 default belongs to the export tail, not the rig hop). */
+export function rigSomaArm(p: Record<string, unknown>, g: GraphBuilder): void {
+  const source = g.node('PrimitiveString', { value: p.mesh_glb as string }).out()
+  const empty = g.node('PrimitiveString', { value: '' }).out()
+  g.node('KimodoExportFBX', {
+    rigged_path: empty,
+    source_glb: source,
+    file_format: 'glb',
+    preserve_texture: p.preserve_texture === true,
+    decimate_ratio: p.decimate_ratio as number,
+  })
+}
+
+/** The rig card's species arm — one RayCreatureRigBridge (bind a
+ *  static mesh onto an anyCreature template skeleton; the node
+ *  writes the bound GLB itself). */
+export function rigSpeciesArm(p: Record<string, unknown>, g: GraphBuilder): void {
+  const creature = g.node('PrimitiveString', { value: p.creature_glb as string }).out()
+  const mesh = g.node('PrimitiveString', { value: p.mesh_glb as string }).out()
+  g.node('RayCreatureRigBridge', {
+    creature_glb: creature,
+    mesh_glb: mesh,
+    height_ratio: p.height_ratio as number,
+    max_influences: p.max_influences as number,
+    strip_body: p.strip_body === true,
+  })
+}
+
 /** The lift arms' shared admission gates (—
  *  closed sets refuse HERE, never in the schema). */
 export function admitMeshLift(p: Record<string, unknown>, model: ModelFacts): void {

@@ -166,6 +166,76 @@
   border-color: var(--dsw-alias-brand-primary);
 }
 
+/* THE REPORT CARD (ROADMAP 11e): the default face of a result row's
+ * machine-readable verdicts — one card per named report, under the
+ * preview it belongs to. The dot is DSH's own StateDot (semantic
+ * states, never a hand-rolled color); the chips ride the layer
+ * chip's grain; the rows are a definition list (dt key left, dd
+ * value right — the machine-readable body in the estate's mono). */
+.reportCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-base);
+  text-align: left;
+}
+.reportHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.reportStatus {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--dsw-alias-label-secondary);
+}
+.reportTitle {
+  font-size: 11px;
+  color: var(--dsw-alias-label-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reportChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.reportChip {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.reportRows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+.reportRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.reportKey {
+  flex: none;
+  font-size: 10px;
+  color: var(--dsw-alias-label-dimmed);
+}
+.reportVal {
+  margin: 0;
+  font-family: var(--dsw-alias-font-mono);
+  font-size: 10px;
+  color: var(--dsw-alias-label-secondary);
+  overflow-wrap: anywhere;
+}
+
 /* THE MESH STAGE canvas — the raw-three viewport fills the preview
  * pane (the shell's preview column owns the overflow, hour-13).
  * THE 46vh CAP (the morph-tab stroke): the preview cell rides the

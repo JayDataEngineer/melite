@@ -56,7 +56,7 @@ export interface StageViewRenderSlot {
 export { CardsTab, resolveCardsAddress } from './cards-tab-body.tsx'
 export { loadFormsEdgeMeta } from './forms-edge-meta.ts'
 export { runCardStage, runBenchSequential } from './stage-run.ts'
-export { previewKindFor, primaryKindFor, paramsDiffKeys, previewArtifactsFor } from './preview-kinds.ts'
+export { previewKindFor, primaryKindFor, paramsDiffKeys, previewArtifactsFor, previewReportsFor } from './preview-kinds.ts'
 export { groupStagesByCard, benchRow } from './bench-row.ts'
 export type { CardRowLineTabRow } from './bench-row.ts'
 export type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'

@@ -44,9 +44,14 @@ export const UPLOAD_EXTS: readonly string[] = [
   ".webp",
 ];
 
-/** The data-URL mime table (the DATA-URL ARM's allowlist — image
- *  mimes only, each onto its UPLOAD_EXTS member; a mime outside
- *  this table is not a stageable map). */
+/** The data-URL mime table (the DATA-URL ARM's allowlist — the
+ * stageable mimes, each onto its UPLOAD_EXTS member; a mime outside
+ * this table is not a stageable artifact. Audio mimes joined
+ * 2026-09-21: the h3-timeline Music row stores its uploads as
+ * data:audio/* URLs in the doc, and the clips-stitch walk stages
+ * them exactly like the retired image conditioning maps — decode
+ * verbatim to tmp, upload, rewrite the graph input to the staged
+ * name). */
 export const DATA_URL_IMAGE_EXT: Record<string, string> = {
   "image/png": ".png",
   "image/jpeg": ".jpg",
@@ -55,6 +60,20 @@ export const DATA_URL_IMAGE_EXT: Record<string, string> = {
   "image/bmp": ".bmp",
   "image/avif": ".avif",
   "image/tiff": ".tiff",
+  "audio/wav": ".wav",
+  "audio/x-wav": ".wav",
+  "audio/wave": ".wav",
+  "audio/mpeg": ".mp3",
+  "audio/mp3": ".mp3",
+  "audio/mp4": ".m4a",
+  "audio/x-m4a": ".m4a",
+  "audio/aac": ".aac",
+  "audio/flac": ".flac",
+  "audio/x-flac": ".flac",
+  "audio/ogg": ".ogg",
+  "audio/webm": ".webm",
+  "audio/aiff": ".aiff",
+  "audio/x-aiff": ".aiff",
 };
 
 /** params['workflow'] + params['inject'] -> the final graph.

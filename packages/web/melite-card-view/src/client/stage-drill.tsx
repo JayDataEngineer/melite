@@ -18,11 +18,11 @@ import { paramFields, patchStageOutcome, patchStageParams, mediaUrl } from './dr
 import css from './card.module.css'
 import { StudioShell } from '@melite/card-base/shell'
 import { fetchMediaLibrary, uploadInputFile } from './cards-resource.ts'
-import { paramsDiffKeys, previewArtifactsFor, primaryKindFor } from './preview-kinds.ts'
+import { paramsDiffKeys, previewArtifactsFor, previewReportsFor, primaryKindFor } from './preview-kinds.ts'
 import { removeStageWire, ungroupStageWire } from './add-stage.ts'
 import type { CardsBenchValue, BenchStageRow } from './cards-resource.ts'
 import { freshStageRow } from './cards-resource.ts'
-import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/preview'
+import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/preview'
 import { CardZoomOverlay } from './zoom.tsx'
 import { loadFormsEdgeMeta } from './forms-edge-meta.ts'
 
@@ -751,6 +751,18 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
             onNavigate: (next) => { setDrillItem(next) },
           })
           : null,
+        // THE REPORT SECTION (ROADMAP 11e, the result row's claim):
+        // the run's machine-readable verdicts render under the
+        // preview they belong to — ONE default atom per named
+        // report (card-base's ReportView), claimed by kind. The
+        // agent loop gates on the same object this paints.
+        (() => {
+          const reports = previewReportsFor(stage as unknown as Record<string, unknown>)
+          return reports.length > 0
+            ? h('div', { className: css.reportList, 'data-testid': 'stage-reports' },
+                reports.map(({ name, report }) => h(ReportView, { key: name, name, report })))
+            : null
+        })(),
         // (THE FAILURE FACE MOVED TO THE FRAME (hour-26): the run's
         //  error text rides the webhook strip under the top bar —
         //  the outputs column keeps only the preview. The remove row

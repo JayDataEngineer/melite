@@ -562,15 +562,27 @@ function ModLeaf(props: {
             }),
           ),
           (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== scalarKeyOf(k) && !(hidden?.has(f.name) ?? false))
-            .map((f) => h('label', { key: f.name, className: css.modField },
-              h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name),
-              h(SpecAtom, {
+            .map((f) => {
+              // THE UNWRAPPED SQUARE (2026-09-21, the operator's
+              // "opens the full file system when I didn't click
+              // it"): the square carries a hidden file input, and a
+              // wrapping <label> forwards ANY row click to it — the
+              // OS dialog opens when the user only clicked the
+              // caption. Slot-shaped fields render the caption + atom
+              // as siblings in a div (the card face's specSlotCell
+              // law); scalars keep the label (click-to-focus stays).
+              const sq = own.square(f)
+              const atom = h(SpecAtom, {
                 f,
                 value: onDraft.draftParams[f.name] ?? f.default,
                 onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
-                square: own.square(f),
-              }),
-            )),
+                ...(sq !== undefined ? { square: sq } : {}),
+              })
+              const caption = h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name)
+              return sq !== undefined
+                ? h('div', { key: f.name, className: css.modField }, caption, atom)
+                : h('label', { key: f.name, className: css.modField }, caption, atom)
+            }),
           own.wireMenu,
         )
       : isOptionKind(k)
@@ -643,15 +655,27 @@ function ModLeaf(props: {
         )
       : h('div', { className: css.modLeafFields },
           leafFields.map((f) => h('div', { key: f.name },
-            h('label', { className: css.modField },
-              f.label ?? f.name,
-              h(SpecAtom, {
+            (() => {
+              // THE UNWRAPPED SQUARE (same law as the hybrid arm
+              // above): a slot-shaped entry field is caption + atom
+              // siblings, never label-wrapped — else the row caption
+              // opens the OS file dialog through the square's hidden
+              // input.
+              const sq = own.square(f)
+              const atom = h(SpecAtom, {
                 f,
                 value: onDraft.draftParams[f.name],
                 onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
-                square: own.square(f),
-              }),
-            ),
+                ...(sq !== undefined ? { square: sq } : {}),
+              })
+              return sq !== undefined
+                ? h('div', { className: css.modField },
+                    h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name),
+                    atom)
+                : h('label', { className: css.modField },
+                    f.label ?? f.name,
+                    atom)
+            })(),
             // THE PAINT VERB (paint-leaf-canvas.md): on a declared
             // face, each image field gains the brush beside the
             // square — the modal writes the same payload the

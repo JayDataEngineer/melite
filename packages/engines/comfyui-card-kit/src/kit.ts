@@ -59,6 +59,8 @@ export {
   finalizeMotion,
   motionLane,
   quadRemeshLane,
+  rigSomaArm,
+  rigSpeciesArm,
   trellisArm,
   pixalArm,
   transferRigArm,

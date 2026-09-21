@@ -819,3 +819,41 @@ test('THE LEAF PICK: an injected media source serves the library rows (the leaf 
     unbindEstateRemote()
   }
 })
+
+const HYBRID_IMG = {
+  kind: 'cnet', label: 'CNet', param_key: 'cnets', cardinality: 'multi',
+  entry: 'hybrid', option_key: 'type', scalar_key: 'strength',
+  options: [{ value: 'depth', label: 'Depth' }],
+  fields: [
+    { name: 'type', type: 'text', label: 'Type' },
+    { name: 'strength', type: 'number', label: 'Strength' },
+    { name: 'conditioning', type: 'image', label: 'Conditioning' },
+    { name: 'raw', type: 'image' },
+  ],
+} as unknown as ModifierKind
+
+test('THE UNWRAPPED SQUARE (field leaf): the image row is caption + atom siblings — a caption click never reaches the file input', () => {
+  openLeaf({ kinds: [MASK], values: {} })
+  openCreate('Mask')
+  const box = screen.getByRole('button', { name: 'Image source' })
+  const dialog = box.parentElement!.querySelector('input[type="file"]') as HTMLInputElement | null
+  expect(dialog).not.toBeNull()
+  expect(dialog!.closest('label')).toBeNull()
+  let fired = false
+  dialog!.addEventListener('click', () => { fired = true })
+  fireEvent.click(box.parentElement!.parentElement!)
+  expect(fired).toBe(false)
+  // the scalar sibling keeps its label (click-to-focus stays)
+  expect(screen.getByLabelText('Feather')).not.toBeNull()
+})
+
+test('THE UNWRAPPED SQUARE (hybrid leaf): the conditioning image is never label-wrapped either', () => {
+  openLeaf({ kinds: [HYBRID_IMG], values: {} })
+  openCreate('CNet')
+  const box = screen.getByRole('button', { name: 'Conditioning source' })
+  const dialog = box.parentElement!.querySelector('input[type="file"]') as HTMLInputElement | null
+  expect(dialog).not.toBeNull()
+  expect(dialog!.closest('label')).toBeNull()
+  // an unlabeled slot field captions from its name (never blank)
+  expect(screen.getByText('raw')).not.toBeNull()
+})

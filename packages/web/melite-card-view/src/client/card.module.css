@@ -135,6 +135,17 @@
   min-width: 0;
 }
 
+/* THE REPORT LIST (ROADMAP 11e): the result row's named verdicts,
+ * stacked under the preview — full column width (the atom's own
+ * card grain does the rest). */
+.reportList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
 .outputImg {
   border-radius: 8px;
   max-height: 46vh;

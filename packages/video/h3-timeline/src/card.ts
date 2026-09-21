@@ -561,6 +561,38 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // SaveVideo emits the film the timeline promised. The estate
   // reorders artifacts so the film leads; it never concats.
   let film: { images: OutputHandle, audio: OutputHandle } | undefined
+  // THE CLIPS-STITCH FILM CLOCK (2026-09-21): the Music row's mix
+  // places clips in FILM time — window k's audio starts at
+  // Σ(len_j − trim_j)/24s (the AudioConcat chain's own accounting:
+  // window 1 contributes whole, each join trims the PREVIOUS tail
+  // by the incoming window's overlap). docStart maps through the
+  // carry head (22f ≈ 0.92s for extend seams, 0 for cuts) into the
+  // window's film span — the same reconciliation the player's
+  // Davinci map does post-render, computed here at plan time.
+  const windowFilm: Array<{ docStart: number, carry: number, filmStartSec: number }> = []
+  let filmElapsedSec = 0
+  // THE CLIPS, PARSED ONCE (2026-09-21, the dialogue half): both
+  // consumers — the per-window CONDITIONING stamps (the model hears
+  // the dialogue: lip sync) and the final overlay mix (the audible
+  // authority) — read THIS list, one law for what a clip IS. A src
+  // without a numeric start_frame refuses loud (never a silent
+  // misplacement); a row without src is junk and skips.
+  const clips: Array<{ src: string, start: number, dur: number }> = []
+  for (const c of (Array.isArray(p.audio_clips) ? (p.audio_clips as Array<Record<string, unknown>>) : [])) {
+    if (c === null || typeof c !== 'object') continue
+    const src = typeof c.src === 'string' ? c.src.trim() : ''
+    if (src === '') continue
+    if (typeof c.start_frame !== 'number' || !Number.isFinite(c.start_frame)) {
+      throw new Error(
+        `audio_clips: a clip with src but no numeric start_frame — the Music row owns placement (re-add the clip)`,
+      )
+    }
+    const dur = typeof c.dur_frames === 'number' && Number.isFinite(c.dur_frames) && c.dur_frames > 0 ? c.dur_frames : 0
+    clips.push({ src, start: c.start_frame, dur })
+  }
+  // which clips CONDITION a window (and so duck the generated voice
+  // at their film spans): filled by the loop below
+  const conditioned = new Set<number>()
   // LORA STEPS APPLIED (operator correction, 2026-09-18): a distill
   // adapter is married to its step count — one lora for four steps,
   // another for eight — so the resolved bag rows carry `steps` and
@@ -611,8 +643,39 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     const sf = num(call.start_frame)
     const ef = num(call.end_frame)
 
+    // THE DIALOGUE CONDITIONING STAMP (2026-09-21, the second half):
+    // the window whose doc span a clip rides HEARS that clip — the
+    // model's lip-sync lane. The FIRST clip in row order wins the
+    // lane when several overlap one window (the authored primary
+    // speaker; the rest stay overlay-only). The slice is in
+    // GENERATION time: the window renders from (sf − carry) — the
+    // carry head — so a doc frame f sits (carry + f − sf)/24 into
+    // what the model hears. A clip with no dur (or a sub-0.1s
+    // overlap) cannot size a slice and stays overlay-only. Computed
+    // BEFORE the stanza: a stamped window is a REFERENCE window
+    // (t4r) — the audio lane only exists on that arm (the bed's own
+    // law: it too counts as a ref).
+    let dialogueStamp: { src: string, start_seconds: number, duration_seconds: number } | undefined
+    if (sf !== null && ef !== null && Number.isFinite(sf) && Number.isFinite(ef) && ef > sf) {
+      const carry = i > 0 ? overlap : 0
+      for (let ci = 0; ci < clips.length; ci++) {
+        const clip = clips[ci]!
+        if (clip.dur <= 0) continue
+        const a = Math.max(clip.start, sf)
+        const b = Math.min(clip.start + clip.dur, ef)
+        if (b - a < 2.4) continue // below the slice node's 0.1s floor
+        dialogueStamp = {
+          src: clip.src,
+          start_seconds: Math.max(0, (carry + (a - sf)) / 24),
+          duration_seconds: Math.round(((b - a) / 24) * 1000) / 1000,
+        }
+        conditioned.add(ci)
+        break // one dialogue lane per window — the first speaker owns it
+      }
+    }
+
     const stanza: Record<string, unknown> = { ...p, ...knobs, prompt: text, k }
-    stanza.variant = (guide !== '' || hasRefs) ? 't4r' : chainLike ? 't4_chain' : 't4_open'
+    stanza.variant = (guide !== '' || hasRefs || dialogueStamp !== undefined) ? 't4r' : chainLike ? 't4_chain' : 't4_open'
     // the distill's steps apply unless this call's knobs pinned steps
     if (knobs.steps === undefined && loraStepsApplied !== null) stanza.steps = loraStepsApplied
     if (hasRefs) stanza.refs = call.refs
@@ -647,6 +710,13 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     // the overlay walk refused junk and filled the declared default
     // 10, so this is a gated NUMBER (direct read, never a fence)
     bedElapsed += stanza.fps_seconds as number
+    // the clips-stitch clock advance (see the declaration above):
+    // THIS window starts at filmElapsedSec (recorded pre-advance),
+    // then contributes its own length minus the tail it will trim
+    // off the previous film when it joins (0 for the opener).
+    windowFilm.push({ docStart: sf ?? 0, carry: i > 0 ? overlap : 0, filmStartSec: filmElapsedSec })
+    filmElapsedSec += ((stanza.length as number) - (i > 0 ? overlap : 0)) / 24
+    if (dialogueStamp !== undefined) stanza.dialogue_slice = dialogueStamp
     const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w))
     prev = h
     if (film === undefined) {
@@ -683,8 +753,53 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // forEach always binds film; no defensive undefined arm)
   {
     const f = film as { images: OutputHandle, audio: OutputHandle }
+    // THE CLIPS-STITCH (2026-09-21 — the Music row's lost consumer
+    // restored; the original cc_stage_audio_clips/ffmpeg_concat amix,
+    // reborn IN-GRAPH per the engine law): positioned dialogue/music
+    // clips mix over the final cut at FILM time, seamless across
+    // window seams (the mix never sees the seams — it rides the
+    // accumulated film audio). Per clip: LoadAudio (the submit-time
+    // upload walk stages data: URLs and asset URLs to input-dir
+    // names) → MeliteAudioDelay (head silence to the film position,
+    // exact duration fit) → MeliteAudioMix chained over the film
+    // track (length_mode 'base' — a clip never extends the cut).
+    // NO clips = no nodes = a byte-identical graph.
+    const placements = clips.map((clip, ci) => {
+      const fFrame = clip.start
+      // owning window: the LAST whose docStart ≤ f (doc spans tile;
+      // a clip before the film's first doc frame clamps to 0s)
+      let owner = windowFilm[0]!
+      for (const w of windowFilm) if (fFrame >= w.docStart) owner = w
+      const filmSec = Math.max(0, owner.filmStartSec + (owner.carry + (fFrame - owner.docStart)) / 24)
+      const durSec = clip.dur > 0 ? clip.dur / 24 : 0
+      return { clip, ci, filmSec, durSec }
+    })
+    // THE DUCK FIRST: the film's generated voice yields (−14dB,
+    // 20ms ramps) during every clip that CONDITIONED a window —
+    // the doubling case. Music-only overlays ride clean (no duck:
+    // the bed and the clip sum like a mix desk, nothing doubles).
+    const duckSpans = placements
+      .filter((pl) => conditioned.has(pl.ci) && pl.durSec > 0)
+      .map((pl) => `${Math.round(pl.filmSec * 1000) / 1000}:${Math.round((pl.filmSec + pl.durSec) * 1000) / 1000}`)
+    let filmAudio = f.audio
+    if (duckSpans.length > 0) {
+      filmAudio = g.node('MeliteAudioDuck', {
+        audio: f.audio, segments: duckSpans.join(';'), gain_db: -14, ramp_ms: 20,
+      }).out(0)
+    }
+    for (const { clip, filmSec, durSec } of placements) {
+      const loaded = g.node('LoadAudio', { audio: clip.src }).out()
+      const placed = g.node('MeliteAudioDelay', {
+        audio: loaded,
+        delay_seconds: Math.round(filmSec * 1000) / 1000,
+        duration_seconds: durSec > 0 ? Math.round((filmSec + durSec) * 1000) / 1000 : 0,
+      }).out(0)
+      filmAudio = g.node('MeliteAudioMix', {
+        audio1: filmAudio, audio2: placed, length_mode: 'base',
+      }).out(0)
+    }
     const created = g.node('CreateVideo', {
-      images: f.images, audio: f.audio, fps: 24, bit_depth: 8,
+      images: f.images, audio: filmAudio, fps: 24, bit_depth: 8,
       // color_space: pin autofill "sRGB"
     })
     g.node('SaveVideo', {
@@ -969,6 +1084,45 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       // third user audio yields its lane to the cut (1 bed + 2 user
       // = the 3-lane budget — the bus law, never a silent fourth)
       for (let i = 0; i < 2; i++) r2vInputs[`ref_audios.ref_audio_${i + 1}`] = bout.out(15 + i)
+    }
+    // THE DIALOGUE LANE (2026-09-21, the second half): a clip the
+    // film loop stamped on THIS window conditions it — the model
+    // HEARS the dialogue (the lip-sync mechanism; the generated
+    // voice tracks it, the overlay stays the audible authority and
+    // the mix DUCKS the generated voice under the real clip at film
+    // time). THE BUS LAW, TOLD LOUD: 3 audio lanes total. Bed +
+    // dialogue + user refs must fit — an overflowing bus REFUSES
+    // naming every competitor, never a silent demotion.
+    {
+      const stamp = (p.dialogue_slice ?? null) as
+        { src: string, start_seconds: number, duration_seconds: number } | null
+      if (stamp !== null) {
+        const bedRides = bedAudio.trim() !== ''
+        const userN = refAudios.length
+        const demand = (bedRides ? 1 : 0) + 1 + userN
+        if (demand > 3) {
+          throw new Error(
+            `h3-timeline: the window's audio bus is full — dialogue ('${stamp.src.split('/').pop()?.slice(0, 40)}') needs a lane` +
+            ` beside ${bedRides ? 'the music bed (1) ' : ''}${userN} user ref audio${userN === 1 ? '' : 's'} (${userN})` +
+            ` — 3 lanes total; drop one (the bus is never a silent fourth)`,
+          )
+        }
+        const slice = g.node('MeliteAudioSlice', {
+          audio: stamp.src,
+          start_seconds: stamp.start_seconds,
+          duration_seconds: stamp.duration_seconds,
+        }).out(0)
+        if (bedRides) {
+          // bed(0) + dialogue(1) + the first user audio(2)
+          r2vInputs['ref_audios.ref_audio_1'] = slice
+          r2vInputs['ref_audios.ref_audio_2'] = bout.out(15)
+        } else {
+          // dialogue(0) + user audios(1-2)
+          r2vInputs['ref_audios.ref_audio_0'] = slice
+          r2vInputs['ref_audios.ref_audio_1'] = bout.out(15)
+          r2vInputs['ref_audios.ref_audio_2'] = bout.out(16)
+        }
+      }
     }
     const r2v = g.node('MiniMaxH3ReferenceToVideo', r2vInputs)
     // the never-selected opener branch (R2VBool true) — the
@@ -1395,6 +1549,20 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       if (film) {
         renderH3Film(p, g)
       } else {
+        // THE CLIPS-STITCH LAW (2026-09-21): the Music row's mix is a
+        // FILM-path consumer (it rides the accumulated film audio).
+        // On the frozen single-window shape it would be a silent
+        // skip — the crime class this estate refuses. Loud, with the
+        // fix in the message (the studio's own doc always carries
+        // calls; a second short call unlocks the film path).
+        const clips = (p.audio_clips ?? []) as unknown[]
+        if (clips.some((c) => c !== null && typeof c === 'object'
+          && typeof (c as Record<string, unknown>).src === 'string' && ((c as Record<string, unknown>).src as string).trim() !== '')) {
+          throw new Error(
+            'h3-timeline: audio clips ride the FILM path — this single-window doc has clips but no film to mix over ' +
+            '(add a second call to author a film, or clear the Music row)',
+          )
+        }
         // LORA STEPS APPLIED (2026-09-18): the single-window shape
         // honors the distill bag's steps the same way (no knob layer
         // here — the entry's steps IS the user's word).

@@ -98,3 +98,64 @@ test("degenerate shapes refuse with their own voices", () => {
     ["error: present but not a string"],
   );
 });
+
+test("REPORTS (ROADMAP 11e): a lawful verdict map rides clean beside its media", () => {
+  const row: unknown = {
+    run_id: "run-rig",
+    url: "/runs/run-rig/body.glb",
+    artifacts: { "body.glb": "/runs/run-rig/body.glb" },
+    reports: {
+      validate: {
+        kind: "report", status: "pass",
+        title: "game-ready gate",
+        chips: ["triangles", "materials", "uv"],
+        rows: { triangles: 14980, draw_calls: 3, skinned: true },
+      },
+    },
+  };
+  assert.deepEqual(benchResultDefects(row), []);
+});
+
+test("REPORTS: every unlawful entry is named in the door's voice (kind, status, title, chips, rows)", () => {
+  const defects = benchResultDefects({
+    run_id: "r",
+    reports: {
+      wrong: { kind: "table", status: "pass" },
+      badstatus: { kind: "report", status: "ok" },
+      badtitle: { kind: "report", status: "warn", title: "" },
+      badchips: { kind: "report", status: "fail", chips: ["ok", ""] },
+      badrows: { kind: "report", status: "pass", rows: { deep: { x: 1 } } },
+    },
+  });
+  assert.ok(defects.includes("reports.wrong: kind is not 'report' (the only entry kind)"));
+  assert.ok(defects.includes("reports.badstatus: status is not pass|fail|warn"));
+  assert.ok(defects.includes("reports.badtitle.title: present but not a non-empty string"));
+  assert.ok(defects.includes("reports.badchips.chips[1]: not a non-empty string"));
+  assert.ok(defects.includes("reports.badrows.rows.deep: not a string|number|boolean"));
+});
+
+test("REPORTS: the degenerate map is refused outright (not an object / entry not an object)", () => {
+  assert.deepEqual(
+    benchResultDefects({ run_id: "r", reports: "nope" }),
+    ["reports: not an object (the name→verdict map)"],
+  );
+  assert.deepEqual(
+    benchResultDefects({ run_id: "r", reports: { a: 7 } }),
+    ["reports.a: not an object (kind 'report' entry)"],
+  );
+});
+
+test("REPORTS: degenerate display sections are named (chips not an array / rows not an object)", () => {
+  assert.deepEqual(
+    benchResultDefects({ run_id: "r", reports: { a: { kind: "report", status: "pass", chips: "nope" } } }),
+    ["reports.a.chips: not an array"],
+  );
+  assert.deepEqual(
+    benchResultDefects({ run_id: "r", reports: { a: { kind: "report", status: "pass", rows: "nope" } } }),
+    ["reports.a.rows: not an object (the key-value body)"],
+  );
+  assert.deepEqual(
+    benchResultDefects({ run_id: "r", reports: { a: { kind: "report", status: "pass", rows: ["x"] } } }),
+    ["reports.a.rows: not an object (the key-value body)"],
+  );
+});

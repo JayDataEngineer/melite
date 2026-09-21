@@ -58,6 +58,24 @@ const taskField = z.string().role("free").description("Task")
     order: 1, group: "brief", width: 2, wtype: "textarea",
     tooltip: "The brief — what the subagent must get done. Concrete and checkable.",
   });
+/** THE KNOWN BRAINS (operator 2026-09-21: a dropdown of known
+ *  routes): the ledger-proven opencode routes, blank-first (blank
+ *  serves the lane's seated brain whatever it booted). Static BY
+ *  CHOICE — the estate runs no boot-time route enumeration, so a
+ *  live census is not on offer; and the executor's parseRoute
+ *  refuses a rotted row LOUD at Run (never a silent
+ *  substitution). */
+export const KNOWN_BRAINS = [
+  { value: "", label: "Lane brain (seated)" },
+  { value: "opencode-go/muse-spark", label: "Muse Spark" },
+  { value: "opencode-go/muse-spark-1.3-contributor", label: "Muse Spark 1.3" },
+] as const;
+const brainField = z.union(KNOWN_BRAINS.map((b) => z.const(b.value).description(b.label))).description("Brain")
+  .default("")
+  .extra("extra", {
+    order: 0, group: "brief", width: 2, wtype: "select",
+    tooltip: "The subagent's model — blank serves the lane's seated brain (MELITE_AGENT_ROUTE).",
+  });
 const modelField = z.string().role("free").description("Brain route")
   .extra("extra", {
     order: 2, group: "brief", width: 2,
@@ -95,13 +113,18 @@ export const agentParams = z.object({
 
 /** THE CARD FACE (the generic MCP card, operator 2026-09-21: "the
  * configuration is the MCP tools to provide, the inputs, and the
- * prompts" — agent selection rides the host, never a card field).
- * Same field declarations, one difference BY LAW: no `model` field
+ * prompts" — agent selection rides the host, never a card field;
+ * 2026-09-21: …plus the operator's Brain dropdown, a field named
+ * 'brain' — never 'model').
+ * Same field declarations, TWO differences BY LAW: no `model` field
  * — a card-stage field named 'model' is the estate's MODEL KEY (a
  * pick re-specs the doc), and a brain route is not a spec key; the
- * boot route (MELITE_AGENT_ROUTE) serves the spawn. The executor's
- * gate is normalizeAgentStageParams either way. */
+ * Brain dropdown (blank = the boot route MELITE_AGENT_ROUTE serves
+ * the spawn) stamps the engine's own `model` key at the run seam
+ * (stage-run translates — the face never speaks it). The
+ * executor's gate is normalizeAgentStageParams either way. */
 export const agentCardParams = z.object({
+  brain: brainField,
   task: taskField,
   mcps: mcpsField,
   skills: skillsField,

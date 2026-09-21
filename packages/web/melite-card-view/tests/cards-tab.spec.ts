@@ -423,4 +423,58 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     expect(String((blankBrief as { refused: string }).refused)).toMatch(/write the Task first/);
     expect(calls.filter((c) => c.method === "runs/start")).toEqual([]);
   });
+
+  // ── THE BRAIN TRANSLATION (2026-09-21, the operator's dropdown
+  //  of known routes): the face fields it `brain`, the engine's
+  //  contract key IS `model` — the seam stamps it. A picked brain
+  //  rides as the per-stage override; blank rides ABSENT (the
+  //  lane's seated brain serves); `brain` itself never crosses.
+  test("a picked Brain stamps the engine's model key and never crosses itself", async () => {
+    const { calls } = mountFakes({
+      startDocs: [{ run_id: "run-brain", status: "queued", queue_position: 0 }],
+    });
+    stubCatalogFetch({ cards: { mcp: { id: "mcp", label: "MCP", families: [] } } });
+    resetCardFamiliesCache();
+    const res = await runCardStage("bench-main", stage({
+      id: "s_3",
+      card: "mcp",
+      engine: "agent",
+      params: { task: "rig it", brain: "opencode-go/muse-spark-1.3-contributor", mcps: [] },
+    }));
+    expect(res).toEqual({ runId: "run-brain" });
+    const doc = (calls.find((c) => c.method === "runs/start")?.args["doc"] ?? {}) as Record<string, unknown>;
+    const params = ((doc["flow_inline"] as { stages: Array<{ params: Record<string, unknown> }> }).stages[0]!.params);
+    expect(params["model"]).toBe("opencode-go/muse-spark-1.3-contributor");
+    expect("brain" in params).toBe(false);
+  });
+
+  test("a blank Brain rides absent (the seated brain serves — never an empty override)", async () => {
+    const { calls } = mountFakes({
+      startDocs: [
+        { run_id: "run-seat-1", status: "queued", queue_position: 0 },
+        { run_id: "run-seat-2", status: "queued", queue_position: 0 },
+        { run_id: "run-seat-3", status: "queued", queue_position: 0 },
+      ],
+    });
+    stubCatalogFetch({ cards: { mcp: { id: "mcp", label: "MCP", families: [] } } });
+    resetCardFamiliesCache();
+    const ids = ["run-seat-1", "run-seat-2", "run-seat-3"];
+    let n = 0;
+    for (const brain of [undefined, "", "   "]) {
+      const params: Record<string, unknown> = { task: "rig it", mcps: [] };
+      if (brain !== undefined) params["brain"] = brain;
+      const res = await runCardStage("bench-main", stage({
+        id: "s_3", card: "mcp", engine: "agent", params,
+      }));
+      expect(res).toEqual({ runId: ids[n]! });
+      n += 1;
+    }
+    const docs = calls.filter((c) => c.method === "runs/start").map((c) => c.args["doc"] as Record<string, unknown>);
+    expect(docs.length).toBe(3);
+    for (const doc of docs) {
+      const params = ((doc["flow_inline"] as { stages: Array<{ params: Record<string, unknown> }> }).stages[0]!.params);
+      expect("model" in params).toBe(false);
+      expect("brain" in params).toBe(false);
+    }
+  });
 });

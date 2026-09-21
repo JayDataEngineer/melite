@@ -171,6 +171,46 @@ function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => 
     // the mount effect's catch ran (the fetch rejected) — the seat still renders
   });
 
+  test("THE REPORT CLAIM (ROADMAP 11e): a run's named verdicts render under the preview, one atom per report", async () => {
+    const stages: BenchStageRow[] = [{
+      id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "x" }, runStatus: "done",
+      result: {
+        run_id: "run-rig", url: "/a.png", artifacts: { "a.png": "/a.png" },
+        reports: {
+          validate: {
+            kind: "report", status: "pass", title: "game-ready gate",
+            chips: ["triangles", "uv"], rows: { triangles: 14980, skinned: true },
+          },
+          lint: { kind: "report", status: "warn" },
+        },
+      },
+    } as never];
+    mountBench(stages);
+    await openFirstTile();
+    const section = document.querySelector('[data-testid="stage-reports"]');
+    expect(section).not.toBeNull();
+    const cards = section!.querySelectorAll('[data-testid="report-card"]');
+    expect(cards.length).toBe(2);
+    // the full face: status word, title, chips, rows
+    expect(section!.textContent).toContain("game-ready gate");
+    expect(section!.textContent).toContain("PASS");
+    expect(section!.textContent).toContain("triangles");
+    expect(section!.textContent).toContain("14980");
+    // the untitled report renders its own name (the title law)
+    expect(section!.textContent).toContain("lint");
+    expect(section!.textContent).toContain("WARN");
+  });
+
+  test("no reports, no section — the outputs column stays the preview alone", async () => {
+    const stages: BenchStageRow[] = [{
+      id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "x" }, runStatus: "done",
+      result: { run_id: "run-1", url: "/a.png", artifacts: { "a.png": "/a.png" } },
+    } as never];
+    mountBench(stages);
+    await openFirstTile();
+    expect(document.querySelector('[data-testid="stage-reports"]')).toBeNull();
+  });
+
 function firstTile(): HTMLElement {
   const el = document.querySelector('button[class*="tileInner"]');
   if (el === null) throw new Error("tile button not found");

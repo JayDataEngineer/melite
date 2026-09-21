@@ -319,11 +319,22 @@ export interface LayerA {
    * default), so the card's selector is authoritative for the run. */
   model?: string
   audio_stem?: string
-  /** (Layer A NLE law, 2026-08-31) Positioned AUDIO CLIPS — the Music
-   * row as a DaVinci track: each clip starts at its own doc frame and
-   * runs its own length. src = an upstream artifact NAME or an
-   * uploaded data: URL. These MIX OVER the final cut at their
-   * positions (the stitch honors them). */
+  /** (Layer A NLE law, 2026-08-31; the stitch RESTORED 2026-09-21;
+   * the DIALOGUE HALF same day) Positioned AUDIO CLIPS — the Music
+   * row as a DaVinci track: each clip starts at its own doc frame
+   * and runs its own length. src = an upstream artifact NAME or an
+   * uploaded data: URL. Two planes, both real: (1) OVERLAY — the
+   * card's compose mixes each clip over the final cut at film time
+   * (LoadAudio → MeliteAudioDelay at the film position → chained
+   * MeliteAudioMix), seamless across window seams; (2) CONDITIONING
+   * — the window whose doc span a clip rides HEARS that clip (a
+   * generation-time MeliteAudioSlice in its ref_audios lane: the
+   * model's lip-sync mechanism; bed + dialogue + user refs must fit
+   * 3 lanes or the compose REFUSES loud), and the generated voice
+   * DUCKS (−14dB) under the real clip at its film span. Lip-sync
+   * FIDELITY is the model's own capability — the plumbing delivers
+   * the dialogue to its ears; a rendered window settles how tightly
+   * the mouth tracks. */
   audio_clips?: DocAudioClip[]
 }
 

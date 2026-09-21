@@ -17,6 +17,26 @@
  * (it is the primary POINTER, not a second key) — but the map's
  * VALUES are unique, always. */
 
+/** A machine-readable verdict an agent loop writes beside its media
+ *  (ROADMAP 11e — the rig→validate→fix loop's gate). INLINE DATA,
+ *  never a file: `reports` rides the result row beside `artifacts`,
+ *  each entry declaring its own kind — today exactly 'report'. The
+ *  agent loop reads the same object the result row renders; the
+ *  ONE-FILE-ONE-KEY law governs `artifacts` (urls) and never sees
+ *  this map. */
+export interface BenchReport {
+  /** the kind declaration — the claim key. Always 'report'. */
+  kind: 'report'
+  /** the gate's verdict. */
+  status: 'pass' | 'fail' | 'warn'
+  /** display title; omitted → the entry's own name renders. */
+  title?: string
+  /** short status chips (the check names that make up the verdict). */
+  chips?: string[]
+  /** the key-value body — the machine-readable rows. */
+  rows?: Record<string, string | number | boolean>
+}
+
 /** The bench row's result face — what a run writes onto the stage. */
 export interface BenchStageResult {
   /** The producing run's identity (stable across the run cycle:
@@ -26,6 +46,9 @@ export interface BenchStageResult {
   url?: string
   /** Named artifacts → urls. ONE FILE, ONE KEY (see the law above). */
   artifacts?: Record<string, string>
+  /** Named machine-readable verdicts (kind 'report') — INLINE, no
+   *  urls, never subject to the one-file-one-key law. */
+  reports?: Record<string, BenchReport>
   /** The flat url list (primary first) — consumers that don't key
    * by name (the h3 timeline's stitch-first list). */
   assetUrls?: string[]
@@ -68,6 +91,50 @@ export function benchResultDefects(row: unknown): string[] {
             'one-file-one-key: ' + url + ' rides ' + keys.length + ' keys (' + keys.join(', ') +
             ') — a file under two keys renders twice',
           )
+        }
+      }
+    }
+  }
+  if (r.reports !== undefined) {
+    if (typeof r.reports !== 'object' || r.reports === null || Array.isArray(r.reports)) {
+      defects.push('reports: not an object (the name→verdict map)')
+    } else {
+      for (const [k, v] of Object.entries(r.reports as Record<string, unknown>)) {
+        if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+          defects.push(`reports.${k}: not an object (kind 'report' entry)`)
+          continue
+        }
+        const rep = v as Record<string, unknown>
+        if (rep['kind'] !== 'report') {
+          defects.push(`reports.${k}: kind is not 'report' (the only entry kind)`)
+        }
+        if (rep['status'] !== 'pass' && rep['status'] !== 'fail' && rep['status'] !== 'warn') {
+          defects.push(`reports.${k}: status is not pass|fail|warn`)
+        }
+        if (rep['title'] !== undefined && (typeof rep['title'] !== 'string' || rep['title'] === '')) {
+          defects.push(`reports.${k}.title: present but not a non-empty string`)
+        }
+        if (rep['chips'] !== undefined) {
+          if (!Array.isArray(rep['chips'])) {
+            defects.push(`reports.${k}.chips: not an array`)
+          } else {
+            rep['chips'].forEach((c, i) => {
+              if (typeof c !== 'string' || c === '') {
+                defects.push(`reports.${k}.chips[${String(i)}]: not a non-empty string`)
+              }
+            })
+          }
+        }
+        if (rep['rows'] !== undefined) {
+          if (typeof rep['rows'] !== 'object' || rep['rows'] === null || Array.isArray(rep['rows'])) {
+            defects.push(`reports.${k}.rows: not an object (the key-value body)`)
+          } else {
+            for (const [rk, rv] of Object.entries(rep['rows'] as Record<string, unknown>)) {
+              if (typeof rv !== 'string' && typeof rv !== 'number' && typeof rv !== 'boolean') {
+                defects.push(`reports.${k}.rows.${rk}: not a string|number|boolean`)
+              }
+            }
+          }
         }
       }
     }
