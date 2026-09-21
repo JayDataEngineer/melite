@@ -1,7 +1,6 @@
-import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-CXGK770O.mjs";
+import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-B3Aywr1-.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
-import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
 import { buildImageEditTool } from "@melite/image-image-edit/tool";
 import { buildMotionTool } from "@melite/motion-motion/tool";
 import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
@@ -2180,7 +2179,6 @@ async function apply(ctx, config = {}) {
 	}
 	c.tools.register(buildMusicTool(call));
 	c.tools.register(buildTtsTool(call));
-	c.tools.register(buildVoiceLockTool(call));
 	c.tools.register(buildImageEditTool(call));
 	c.tools.register(buildMotionTool(call));
 	c.tools.register(buildH3TimelineTool(call));
