@@ -198,3 +198,32 @@ test('pre-fit pointer events drop SILENT (a held image keeps the view unfitted �
   expect(onChange).toHaveBeenCalledWith(null)
   vi.unstubAllGlobals()
 })
+
+test('a re-render with the SAME box never re-seeds (the key guard)', async () => {
+  stubContext()
+  const onChange = vi.fn()
+  const { rerender } = render(createElement(BboxLeafCanvas, {
+    referenceUrl: '', value: { x: 10, y: 20, width: 30, height: 40 }, onChange,
+  }))
+  await waitFor(() => { expect(screen.getByTestId('bbox-leaf-view').style.display).toBe('block') })
+  // a fresh object with the SAME contents: the seeded key matches, the
+  // re-seed returns early (a Clear stays cleared until the VALUE moves)
+  rerender(createElement(BboxLeafCanvas, {
+    referenceUrl: '', value: { x: 10, y: 20, width: 30, height: 40 }, onChange,
+  }))
+  await waitFor(() => { expect(screen.getByTestId('bbox-leaf-view')).toBeTruthy() })
+  expect(onChange).not.toHaveBeenCalled()
+})
+
+test('a bare up (no draw) and a bare click (0×0 drag) commit NOTHING', async () => {
+  stubContext()
+  const { onChange } = mountCanvas()
+  const view = await screen.findByTestId('bbox-leaf-view')
+  // an up with no active draw: the drawingRef guard
+  fireEvent.pointerUp(view)
+  expect(onChange).not.toHaveBeenCalled()
+  // a down + up with no move: 0×0 keeps the previous box (never commits)
+  fireEvent.pointerDown(view, { button: 0, clientX: 50, clientY: 50 })
+  fireEvent.pointerUp(view)
+  expect(onChange).not.toHaveBeenCalled()
+})

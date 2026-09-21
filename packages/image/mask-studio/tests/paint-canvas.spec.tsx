@@ -223,3 +223,80 @@ test('pre-fit pointer events degrade silent (a hung load keeps the view unfitted
   expect(onChange).toHaveBeenCalledWith('')
   vi.unstubAllGlobals()
 })
+
+test('a pointer-down before the fit degrades silent (toPoint guards the unfitted view)', async () => {
+  stubContext()
+  class HeldImage {
+    onload: (() => void) | null = null
+    set src(_v: string) { /* never fires — the load hangs */ }
+  }
+  vi.stubGlobal('Image', HeldImage as never)
+  const { onChange } = mountCanvas({ referenceUrl: 'http://x/hangs2.png' })
+  const view = await screen.findByTestId('paint-leaf-view')
+  fireEvent.pointerDown(view, { button: 0, clientX: 10, clientY: 10 })
+  fireEvent.pointerUp(view)
+  expect(onChange).not.toHaveBeenCalled()
+  vi.unstubAllGlobals()
+})
+
+test('a seeded payload with a context-less LAYER keeps the strokes unarmed (the seed degrade)', async () => {
+  stubContext()
+  fakeImages()
+  // the instance override lands before the async seed continues: the
+  // VIEW keeps its stubbed context, the hidden stroke layer degrades
+  const { container } = render(createElement(PaintLeafCanvas, {
+    referenceUrl: '', value: 'pay:400x400', onChange: () => {},
+  }))
+  const layer = container.querySelector('[data-testid="paint-leaf-layer"]') as HTMLCanvasElement
+  layer.getContext = () => null
+  await waitFor(() => { expect((screen.getByTestId('paint-leaf-layer') as HTMLCanvasElement).width).toBe(400) })
+  // the layer sized, but the strokes never armed (the hint stays cold)
+  expect(screen.getByText('drag on the image to paint the mask')).toBeTruthy()
+  vi.unstubAllGlobals()
+})
+
+test('a late size adopt preserves prior strokes (the first stroke on an unfitted layer)', async () => {
+  const ctx = stubContext()
+  fakeImages()
+  const { onChange } = mountCanvas({ referenceUrl: 'img:800x600' })
+  const view = await screen.findByTestId('paint-leaf-view')
+  await waitFor(() => { expect((view as HTMLCanvasElement).width).toBe(640) })
+  fireEvent.pointerDown(view, { button: 0, clientX: 50, clientY: 50 })
+  fireEvent.pointerUp(view)
+  expect(onChange).toHaveBeenCalledWith('data:image/png;base64,STROKE')
+  // the 300-wide prior drew back onto the adopted 800-wide layer
+  expect(ctx.drawImage).toHaveBeenCalled()
+  vi.unstubAllGlobals()
+})
+
+test('a zero-natural adopt empties the prior (the width-0 path, then a real size lands)', async () => {
+  stubContext()
+  fakeImages()
+  const onChange = vi.fn()
+  const { rerender } = render(createElement(PaintLeafCanvas, {
+    referenceUrl: 'img:0x600', value: '', onChange,
+  }))
+  await waitFor(() => { expect(screen.getByTestId('paint-leaf-view').style.display).toBe('block') })
+  const view = screen.getByTestId('paint-leaf-view')
+  // first stroke: adopt 300→0 (the 300-wide prior restores), commit
+  fireEvent.pointerDown(view, { button: 0, clientX: 10, clientY: 10 })
+  fireEvent.pointerUp(view)
+  expect(onChange).toHaveBeenCalledTimes(1)
+  // the reference grows: adopt 0→800 — prior width 0 → NO restore arm
+  rerender(createElement(PaintLeafCanvas, {
+    referenceUrl: 'img:800x600', value: '', onChange,
+  }))
+  await waitFor(() => { expect((view as HTMLCanvasElement).height).toBe(480) }, { timeout: 3000 })
+  fireEvent.pointerDown(view, { button: 0, clientX: 20, clientY: 20 })
+  fireEvent.pointerUp(view)
+  expect(onChange).toHaveBeenCalledTimes(2)
+  vi.unstubAllGlobals()
+})
+
+test('Clear without a 2d context still commits the empty payload (the degrade arm)', async () => {
+  const { onChange } = mountCanvas()
+  const view = await screen.findByTestId('paint-leaf-view')
+  expect((view as HTMLCanvasElement).getContext('2d')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+  expect(onChange).toHaveBeenCalledWith('')
+})

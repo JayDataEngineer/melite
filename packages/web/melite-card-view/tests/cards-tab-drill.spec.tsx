@@ -240,6 +240,11 @@ describe("the drill's unmount guards — late answers never touch a dead drill",
   test("closing mid-load drops both answers (no crash, no resurrection)", async () => {
     doors.formSpec = "deferred";
     doors.formsTable = "deferred";
+    // the edge-meta cache is MODULE state (one fetch per session): a
+    // warm cache from an earlier test would answer instantly and the
+    // deferred door would never arm — reset so THIS mount truly waits
+    // (and again after, so later walls refetch their own truth)
+    resetFormsEdgeMetaForTests();
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
     doors.formSpec = "deferred";
     doors.formsTable = "deferred";
@@ -257,6 +262,7 @@ describe("the drill's unmount guards — late answers never touch a dead drill",
     await new Promise((r) => setTimeout(r, 50));
     expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull();
     expect(firstTile()).toBeTruthy();
+    resetFormsEdgeMetaForTests();
   });
 });
 

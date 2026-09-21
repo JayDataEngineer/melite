@@ -781,6 +781,43 @@ test('THE BBOX CANVAS: host-less degrades — the four faceOwned inputs RENDER (
   faceless.unmount()
 })
 
+test('THE PAINT CANVAS: a fields-less paint kind mounts NO canvas (the image-field lookup is the face) — degrade holds, never a crash', () => {
+  const bare = {
+    kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
+    leaf_face: 'paint-canvas',
+  } as unknown as ModifierKind
+  const { onEdit } = openLeaf({ kinds: [bare], values: {}, paintFace: FakeFace, paintReference: 'input_image' })
+  openCreate('Mask')
+  expect(screen.queryByTestId('paint-face')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  // the entry mints (a bare defaults row) — no canvas, but Add still works
+  expect(onEdit).toHaveBeenCalledWith('masks', [{}])
+})
+
+test('THE SQUARE CAPTION: a slot-shaped leaf entry field with no label and no tooltip captions by NAME (never an empty row)', () => {
+  const kind = {
+    kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
+    fields: [
+      { name: 'image', type: 'image', label: 'Image' },
+      { name: 'mystery', type: 'image' },
+    ],
+  } as unknown as ModifierKind
+  openLeaf({ kinds: [kind], values: {} })
+  openCreate('Mask')
+  expect(screen.getByText('mystery')).not.toBeNull()
+})
+
+test('THE PAINT CANVAS: the image field may ride wtype (wire-typed kinds seat the face too)', () => {
+  const kind = {
+    kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
+    leaf_face: 'paint-canvas',
+    fields: [{ name: 'payload', wtype: 'image' }],
+  } as unknown as ModifierKind
+  openLeaf({ kinds: [kind], values: {}, paintFace: FakeFace, paintReference: 'input_image' })
+  openCreate('Mask')
+  expect(screen.getByTestId('paint-face')).not.toBeNull()
+})
+
 test('THE SEAM CONTRACTS LIVE IN @melite/contracts (stroke 79): the face props construct against the re-exports (type-only seams prove at compile; construction proves the wiring)', async () => {
   // the owner props ride the shared contracts package beside their
   // siblings (PreviewOwnerProps, StageViewOwnerProps); card-base
