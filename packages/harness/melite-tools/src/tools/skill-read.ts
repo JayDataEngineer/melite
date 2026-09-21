@@ -1,10 +1,10 @@
 /**
- * skill_read - progressive disclosure TIER 2: one skill's full body,
+ * melite_skill_read - progressive disclosure TIER 2: one skill's full body,
  * loaded ONLY when needed (GET /v1/skills/<id>). Every read is ledgered
  * gateway-side (skill.read in _ledger.jsonl), so which recipes the
  * agent actually used is auditable after the fact.
  *
- * Ids come from skill_index: global lane docs are bare stems
+ * Ids come from melite_skill_index: global lane docs are bare stems
  * ("run-recovery"), model card docs are "model:<id>", and per-model
  * skills are "model:<id>:<stem>".
  */
@@ -54,18 +54,18 @@ export function skillRead(request: EstateRequest): ToolDefinition {
   // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
   // never had as a raw registration.
   const def = defineTool({
-    name: 'skill_read',
+    name: 'melite_skill_read',
     description:
       'Load ONE skill document in full (progressive disclosure tier 2): markdown body plus its '
-      + 'name/description and genre/model when scoped. Discover ids first with skill_index. '
+      + 'name/description and genre/model when scoped. Discover ids first with melite_skill_index. '
       + 'Reads are recorded in the gateway ledger (skill.read) - the audit trail of which '
-      + 'recipes informed a generation. Args: id (from skill_index).',
+      + 'recipes informed a generation. Args: id (from melite_skill_index).',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper), per-property `required: true`.
     parameters: {
       id: {
         type: 'string',
-        description: 'Skill id from skill_index: "<stem>", "model:<id>" or "model:<id>:<stem>".',
+        description: 'Skill id from melite_skill_index: "<stem>", "model:<id>" or "model:<id>:<stem>".',
         required: true,
       },
     },
@@ -86,14 +86,14 @@ export function skillRead(request: EstateRequest): ToolDefinition {
         const a = (typeof args === "object" && args !== null ? args : {}) as { id?: string }
         const v = value as { id?: string; name?: string; content?: string; error?: string }
         if (v && typeof v.error === 'string' && v.error !== '') {
-          return [{ type: 'text', text: 'skill_read REFUSED: ' + v.error }]
+          return [{ type: 'text', text: 'melite_skill_read REFUSED: ' + v.error }]
         }
         // THE BODY RIDES (the render IS the model-facing tool response
         // — see melite-discover's render note): tier 2's whole purpose
         // is "load ONE skill document in full" so the agent writes
         // prompts from the craft it READS. A title-only line leaves
         // the agent having read nothing.
-        const head = 'skill_read ' + String(a.id ?? v.id ?? '?') + ': ' + String(v.name ?? 'loaded')
+        const head = 'melite_skill_read ' + String(a.id ?? v.id ?? '?') + ': ' + String(v.name ?? 'loaded')
         const body = typeof v.content === 'string' ? v.content : ''
         return [{ type: 'text', text: body !== '' ? head + '\n' + body : head + '\n(no body)' }]
       },
@@ -106,7 +106,7 @@ export function skillRead(request: EstateRequest): ToolDefinition {
       const a = args as { id?: unknown }
       const id = a.id as string
       if (id.length === 0) {
-        throw new Error('skill_read: "id" is required (a skill id string from skill_index)')
+        throw new Error('melite_skill_read: "id" is required (a skill id string from melite_skill_index)')
       }
       // Unknown ids arrive as RayGatewayError with the gateway's 404 body
       // VERBATIM - let it propagate; that IS the honest answer.

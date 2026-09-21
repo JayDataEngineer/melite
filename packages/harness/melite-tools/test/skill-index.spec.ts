@@ -1,4 +1,4 @@
-// skill-index.spec.ts — THE NO-DUMP LAW (2026-09-21): skill_index
+// skill-index.spec.ts — THE NO-DUMP LAW (2026-09-21): melite_skill_index
 // NEVER lists skill rows. The flat dump taught agents wrong paths
 // (an agent scanned 63 rows, read a card-scoped generic instead of
 // the family's lane doc, and ran a distilled turbo at 25 steps).
@@ -23,14 +23,14 @@ function mockRequest(handle: (method: string, path: string) => unknown): { reque
   return { request, calls }
 }
 
-describe('skill_index — the static face', () => {
+describe('melite_skill_index — the static face', () => {
   test('the scan has one static face', () => {
     const tool = skillIndex((async () => ({})) as EstateRequest)
     assert.deepEqual(tool.presentCall!(), { card: 'generic', title: 'Skill index', kind: 'search' })
   })
 })
 
-describe('skill_index execute — the binding vocabulary', () => {
+describe('melite_skill_index execute — the binding vocabulary', () => {
   test('the vocabulary rides verbatim with a count echo', async () => {
     const payload = {
       count: 7,
@@ -77,12 +77,12 @@ describe('skill_index execute — the binding vocabulary', () => {
   })
 })
 
-describe('skill_index render — the vocabulary, never rows', () => {
+describe('melite_skill_index render — the vocabulary, never rows', () => {
   const tool = skillIndex((async () => ({})) as EstateRequest)
   const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
 
   test('an empty selection lists NOTHING — the discover pointer only', () => {
-    assert.equal(text({}), 'skill_index: THE CATALOG IS THE SELECTION — nothing is listed while the bench is empty. Call melite_discover (the paid door) to find a card or flow; craft rows appear here only for what the bench holds.')
+    assert.equal(text({}), 'melite_skill_index: THE CATALOG IS THE SELECTION — nothing is listed while the bench is empty. Call melite_discover (the paid door) to find a card or flow; craft rows appear here only for what the bench holds.')
   })
 
   test('cards render with their ENTRANCE ids; family rows NEVER render', () => {
@@ -95,7 +95,7 @@ describe('skill_index render — the vocabulary, never rows', () => {
       cards: [{ id: 'image-gen', genre: 'image', skills: 0, entrance: 'card:image-gen' }],
       flows: { count: 5, ids: [] },
     })
-    assert.ok(out.includes('skill_index: 3 skills across 1 card · 5 flows'), 'the header counts cards + flows only')
+    assert.ok(out.includes('melite_skill_index: 3 skills across 1 card · 5 flows'), 'the header counts cards + flows only')
     assert.equal(out.includes('krea-2'), false, 'THE CARD ABSTRACTION: a family id never renders')
     assert.equal(out.includes('model:music3'), false)
     assert.ok(out.includes('  image-gen (image) — entrance card:image-gen, no skills'), 'card lines ride')
@@ -107,7 +107,7 @@ describe('skill_index render — the vocabulary, never rows', () => {
   })
 
   test('a refused scan renders REFUSED (the refusal is the honest answer)', () => {
-    assert.equal(text({ error: 'seat says no' }), 'skill_index REFUSED: seat says no')
+    assert.equal(text({ error: 'seat says no' }), 'melite_skill_index REFUSED: seat says no')
   })
 
   test('rows-shaped junk NEVER renders skill lines (no phantom entries)', () => {

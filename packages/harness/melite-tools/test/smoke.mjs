@@ -111,8 +111,8 @@ const main = async () => {
     ['melite_flow(empty: no composition)', lib.meliteFlow(request), {}, {}],
     ['comfy_manage(status)', lib.comfyManage(request), { action: 'status' }, {}],
     ['comfy_manage(provision loud-fail)', lib.comfyManage(request), { action: 'provision_model', model: '__smoke_no_such_model__' }, {}],
-    ['skill_index', lib.skillIndex(request), {}, {}],
-    ['skill_read', lib.skillRead(request), null, {}], // id filled from index
+    ['melite_skill_index', lib.skillIndex(request), {}, {}],
+    ['melite_skill_read', lib.skillRead(request), null, {}], // id filled from index
     ['ledger_tail', lib.ledgerTail(request), { limit: 3 }, {}],
     // --- the HEADLESS run doors (MELITE_HEADLESS=1 registration) —
     // run_status refusal proof: unknown run = named 404 riding the value.
@@ -121,8 +121,8 @@ const main = async () => {
 
   for (const [label, tool, args, _] of tools) {
     try {
-      if (label === 'skill_read') {
-        if (skillId === '') throw new Error('no skill id from skill_index')
+      if (label === 'melite_skill_read') {
+        if (skillId === '') throw new Error('no skill id from melite_skill_index')
         const r = await runTool(tool, { id: skillId }, label)
         note(label, typeof r.value?.body === 'string' || typeof r.text === 'string', 'body loaded')
         continue
@@ -168,7 +168,7 @@ const main = async () => {
         const b = r.value?.bundle ?? {}
         const sig = b.signature ?? {}
         note(label, b.name === 'image-upscale' && sig.name === 'image_upscale' && (b.stages?.length ?? 0) === 2, 'the prebuilt signature + stages')
-      } else if (label === 'skill_index') {
+      } else if (label === 'melite_skill_index') {
         const skills = r.value?.skills ?? []
         skillId = skills[0]?.id ?? ''
         note(label, skills.length > 0, skills.length + ' skills; first: ' + skillId)

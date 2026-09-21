@@ -23,13 +23,14 @@
  * via harnessEnhance.)
  *
  * BASE toolset (both interfaces): melite_discover, melite_construct,
- * melite_load, melite_view, comfy_manage, skill_index, skill_read,
+ * melite_load, melite_view, comfy_manage, melite_skill_index, melite_skill_read,
  * ledger_tail (+ melite_flow + run_status headless).
  * Card tools compose from their card packages (named imports above
  * — the fetch registrar retired with its last row).
  *
  * @module @melite/harness-tools
  */
+import { installExpansion, clearExpansion } from './expansion'
 import type { Context } from '@deepseek-ai/cordis'
 // THE CARD PACKAGES' TOOL FACES (M2′ + the registrar retirement,
 // 2026-09-09): a card tool is IMPORTED from its package — the
@@ -117,12 +118,27 @@ export interface Config {
   cardTools?: boolean
 }
 
+/** EAGER — the compose loop, the only melite schemas in a session's
+ * first request (progressive disclosure, operator 2026-10-08: three
+ * doors in context, the estate's deeper doors expand on first
+ * catalog touch — src/expansion.ts owns the law). */
+export const EAGER_TOOL_NAMES = [
+  'melite_discover', 'melite_load', 'melite_construct',
+] as const
+
+/** DEFERRED — seated by the first discover/load execute. The skill
+ * twins carry the melite_ prefix (operator 2026-10-08: they are OUR
+ * catalog's doors, not DSH core's skill machinery — the old
+ * unprefixed names invited exactly that conflation). */
+export const DEFERRED_TOOL_NAMES = [
+  'melite_view', 'comfy_manage', 'melite_skill_index', 'melite_skill_read', 'ledger_tail',
+] as const
+
 /** BASE tool names — both interfaces (discovery, compose, view,
  * management, audit). melite_view is the observe arm (viewing an
  * artifact is not a run press — the interface law holds). */
 export const BASE_TOOL_NAMES = [
-  'melite_discover', 'melite_construct', 'melite_load', 'melite_view',
-  'comfy_manage', 'skill_index', 'skill_read', 'ledger_tail',
+  ...EAGER_TOOL_NAMES, ...DEFERRED_TOOL_NAMES,
 ] as const
 
 /** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */
@@ -185,26 +201,45 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, request,
   )
 
-  // BASE (both interfaces): disclosure (flow preferred, card
-  // fallback), discovery, compose, management, audit. The compose
-  // face carries the interface flag (the INTERFACE LAW, 2026-09-13:
-  // its model-facing copy names the run door THIS mount owns — the
-  // browser hint points at the user's Run press, headless at
-  // melite_flow — never a phantom verb).
+  // BASE, EAGER (both interfaces): disclosure + the compose loop.
+  // The compose face carries the interface flag (the INTERFACE LAW,
+  // 2026-09-13: its model-facing copy names the run door THIS mount
+  // owns — the browser hint points at the user's Run press, headless
+  // at melite_flow — never a phantom verb).
   c.tools.register(meliteDiscover(request))
   c.tools.register(meliteConstruct(request, { headless }))
   c.tools.register(meliteLoad(request, { headless }))
-  // THE OBSERVE ARM (2026-09-14): view a run's image artifact — the
-  // attachment store commits it, the model sees it. BASE on purpose
-  // (browser sessions may look; runs still start at the user's
-  // press). Seats probe at call time: a store-less lane refuses
-  // loudly, never a phantom verb (the tool-fs inject law's spirit —
-  // core hosts always mount the store).
-  c.tools.register(meliteView(ctx))
-  c.tools.register(comfyManage(request))
-  c.tools.register(skillIndex(request))
-  c.tools.register(skillRead(request))
-  c.tools.register(ledgerTail(request))
+
+  // BASE, DEFERRED — seated on the FIRST catalog touch (any
+  // discover/load execute calls expandEstateDoors). Registrations
+  // outside apply's synchronous scope are NOT auto-tied to the
+  // plugin fiber, so the disposers are collected and flushed on
+  // unload (the c.effect cleanup below) — plugin lifetime either
+  // way. The observe arm stays a door, never a run press; seats
+  // probe at call time and refuse loudly on a store-less lane.
+  const deferredDisposers: Array<() => void> = []
+  c.effect(() => () => { for (const d of deferredDisposers.splice(0)) d() })
+  const seated = new Set<string>()
+  installExpansion(() => {
+    const doors: Array<[string, () => () => void]> = [
+      ['melite_view', () => c.tools.register(meliteView(ctx))],
+      ['comfy_manage', () => c.tools.register(comfyManage(request))],
+      ['melite_skill_index', () => c.tools.register(skillIndex(request))],
+      ['melite_skill_read', () => c.tools.register(skillRead(request))],
+      ['ledger_tail', () => c.tools.register(ledgerTail(request))],
+    ]
+    for (const [name, register] of doors) {
+      if (seated.has(name)) continue
+      const dispose = register()
+      seated.add(name)
+      deferredDisposers.push(dispose)
+    }
+    c.logger.info(
+      'melite-tools: estate doors SEATED on catalog touch (%d total) — the expansion law',
+      EAGER_TOOL_NAMES.length + seated.size,
+    )
+  })
+  c.effect(() => () => { clearExpansion() })
 
   // HEADLESS run doors — the delegated operator (QUEUE LANE LAW: the
   // queue's own registration door, models named explicitly, never a

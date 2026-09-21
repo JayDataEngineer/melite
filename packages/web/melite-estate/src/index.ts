@@ -94,7 +94,7 @@ import modelsPlugin from "@melite/estate-models";
 // (2026-09-21, the operator's boundary — VERBATIM: "STOP [REDACTED 2026-11-05] WITH
 // THE DEFAULT DSH SKILL SYSTEM. WHEN I TELL YOU TO REACH PAST TOOLS,
 // AND INJECT INTO DSH SKILLS? WHEN?" — never.) The melite surface is
-// TOOLS ONLY: melite_discover / melite_load / skill_read over the
+// TOOLS ONLY: melite_discover / melite_load / melite_skill_read over the
 // estate's own /v1/skills door. DSH core's skill seat — its session
 // catalog, its system-reminders, its providers — is NOT ours to
 // touch. The selection-catalog provider that once lived here (the

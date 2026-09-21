@@ -15,7 +15,7 @@ import { buildSkillIndex, hSkillRead } from "./skillPlane.ts";
 // dsh-skill package registers `super(ctx, "skills")`, and in any
 // dsh-base composition the core service OWNS the name — the tools'
 // ctx.get('skills') probe resolved to the core service and
-// `seats.skills.index is not a function` killed skill_index/skill_read
+// `seats.skills.index is not a function` killed melite_skill_index/melite_skill_read
 // in every real agent mount (the wall's bare composition had no core
 // row, so the collision was invisible there). Namespaced seat names
 // are the law for every estate service that could meet a core twin.

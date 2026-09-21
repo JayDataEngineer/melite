@@ -37,3 +37,53 @@ The card composes in a single process — the compose dispatcher validates, comp
 Set `context: runs/<prior_run_id>/h3_context` in the request body to continue from that run's ending (an artifact ref — the same law as image refs, kind=latent). Window 1 of the new card loads the prior run's final `h3_context/clip_N.safetensors`; the rest of the windows follow as normal.
 
 Combined with `seam_carry` inside the card, the seam stays invisible.
+
+## Worked examples (usage the schema cannot say)
+
+Schemas prove structure; these prove USE. Imitate the shape closest to your task.
+
+### 1. Multi-window film, seamless seams, continuous music
+
+Three scenes on the grid law (0→124→243→362 at 24fps), `seam_carry` riding both cuts, the ambient line held verbatim across every window with ONE new layer per scene — this is how the soundtrack stays one piece while the picture changes:
+
+```json
+{
+  "card": "h3-timeline",
+  "params": {
+    "seed": 42,
+    "width": 1344, "height": 768,
+    "calls": [
+      { "text": "Jungle at dawn. Mist through canopy, a monkey grooming on a low branch. Ambient: layered birdsong and distant water, steady.", "start_frame": 0, "end_frame": 124 },
+      { "text": "Same jungle, light gone amber. The monkey bolts along a branch — a hawk's shadow sweeps. Ambient: SAME birdsong bed verbatim + one new layer: wingbeats, close.", "start_frame": 124, "end_frame": 243, "transition": "seam_carry" },
+      { "text": "Night. Firelight. The monkey, safe, cracks a seed and eats. Ambient: SAME bed verbatim + new layer: crackle of fire, contented chewing.", "start_frame": 243, "end_frame": 362, "transition": "seam_carry" }
+    ]
+  }
+}
+```
+
+Laws shown, not told: spans share their boundary frame (124/124, 243/243); `seam_carry` on the LATER window; the ambient phrase copied WORD FOR WORD into each window's text with exactly one addition.
+
+### 2. The input rails (first frame, end anchor, references, audio bed)
+
+Every input the card accepts, one compose:
+
+```json
+{
+  "card": "h3-timeline",
+  "params": {
+    "seed": 7,
+    "image": "uploads/hero_pose.png",
+    "last_frame": "uploads/finale_frame.png",
+    "ref_images": ["uploads/monkey_ref_1.png", "uploads/monkey_ref_2.png"],
+    "ref_videos": ["uploads/motion_study.mp4"],
+    "ref_audios": ["uploads/true_monkey_call.wav"],
+    "bed_audio": "uploads/jungle_bed.wav",
+    "calls": [
+      { "text": "The hero monkey from the reference, exactly. Opens on the first-frame pose, ends reaching the last-frame pose. Call once with the reference monkey's true voice, then quiet.", "start_frame": 0, "end_frame": 124 }
+    ]
+  }
+}
+```
+
+When each rail earns its seat: `image` — the window must OPEN on a known frame (a character sheet, a prior still). `last_frame` — the shot must LAND somewhere specific. `ref_images` — identity fidelity across the film (max 8). `ref_videos` — motion the text cannot describe (max 3). `ref_audios` — a voice or instrument that must be REAL, not synthesized (max 3). `bed_audio` — one soundtrack under the WHOLE film, mixed under every window. Never stack rails you don't need — each one narrows the generation.
+

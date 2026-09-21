@@ -4,6 +4,7 @@
 // routes on). Thin door wrapper (estateRequest) — the SHAPE lives
 // in doors/disclose.ts; this file is the DSH ToolDefinition face
 // (input schema, presentCall, output schema/render, execute).
+import { expandEstateDoors } from '../expansion'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
@@ -68,7 +69,9 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
     name: 'melite_discover',
     description:
       'Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. '
-      + 'q matches names/titles/descriptions LITERALLY (a full user sentence matches nothing) — for a MODALITY ask (video, image, audio, 3d) search tags= first, q second. '
+      + 'THE EXPANSION LAW: the estate\u2019s deeper doors (melite_view, comfy_manage, melite_skill_index, melite_skill_read, ledger_tail) '
+      + 'seat themselves the first time you touch the catalog \u2014 they are never missing, only deferred. '
+      + 'q matches names/titles/descriptions LITERALLY (a full user sentence matches nothing) \u2014 for a MODALITY ask (video, image, audio, 3d) search tags= first, q second. '
       + 'Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. "image,upscale") '
       + '+ optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; '
       + 'fall back to cards. COUNTS-FIRST: a large estate clamps to counts + the tag vocabulary + the first '
@@ -177,6 +180,11 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
       },
     },
     async execute(args, exec) {
+    // THE EXPANSION LAW: the catalog was touched — seat the estate's
+    // deferred doors (view / manage / skill twins / ledger) for the
+    // NEXT request boundary. Idempotent; a no-op once seated.
+    expandEstateDoors()
+
       // defineTool input validation runs in the wrapper BEFORE the body
       // (invalid args throw ToolArgsError there) — args is always a
       // defined object here, so no nullish fallback exists to cover

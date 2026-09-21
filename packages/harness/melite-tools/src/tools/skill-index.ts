@@ -1,5 +1,5 @@
 /**
- * skill_index - THE BINDING VOCABULARY (the no-dump rework,
+ * melite_skill_index - THE BINDING VOCABULARY (the no-dump rework,
  * 2026-09-21).
  *
  * This tool NEVER lists skill rows. The old flat dump was the core
@@ -49,13 +49,13 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
   // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
   // never had as a raw registration.
   const def = defineTool({
-    name: 'skill_index',
+    name: 'melite_skill_index',
     description:
       'THE SELECTION LAW (operator 2026-09-21): this index serves the LIVE BENCH only — the cards composed '
       + 'this session and the families they name, one binding line each (entrance doc id + skill count). An '
       + 'EMPTY BENCH LISTS NOTHING: to find a card or flow call melite_discover (the paid door), never this '
       + 'index. To see actual skill lines, open the owner with melite_load; to read a body you already hold '
-      + 'an id for, use skill_read. This index never lists skill rows.',
+      + 'an id for, use melite_skill_read. This index never lists skill rows.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // — no arguments, so the map is empty.
     parameters: {},
@@ -87,7 +87,7 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
           flows?: { count?: unknown };
           error?: string;
         }
-        if (v && typeof v.error === 'string') return [{ type: 'text', text: 'skill_index REFUSED: ' + v.error }]
+        if (v && typeof v.error === 'string') return [{ type: 'text', text: 'melite_skill_index REFUSED: ' + v.error }]
         // THE NO-DUMP LAW (render side): even if a legacy seat leaks
         // a flat `skills` array, it NEVER renders — the dump is dead.
   // THE CARD ABSTRACTION LAW (operator 2026-09-21): the agent's
@@ -110,12 +110,12 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
         if (cards.length === 0 && flowCount === 0) {
           return [{
             type: 'text',
-            text: 'skill_index: THE CATALOG IS THE SELECTION — nothing is listed while the bench is empty. Call melite_discover (the paid door) to find a card or flow; craft rows appear here only for what the bench holds.',
+            text: 'melite_skill_index: THE CATALOG IS THE SELECTION — nothing is listed while the bench is empty. Call melite_discover (the paid door) to find a card or flow; craft rows appear here only for what the bench holds.',
           }]
         }
         const cardsWord = cards.length === 1 ? 'card' : 'cards'
         const out: string[] = [
-          `skill_index: ${count} skills across ${cards.length} ${cardsWord} · ${flowCount} flows — the bench's selection only; open a card with melite_load; this index never lists skill rows or model families`,
+          `melite_skill_index: ${count} skills across ${cards.length} ${cardsWord} · ${flowCount} flows — the bench's selection only; open a card with melite_load; this index never lists skill rows or model families`,
         ]
         for (const c of cards) {
           const l = line(c)

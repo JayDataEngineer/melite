@@ -2,9 +2,9 @@
 // the dead gateway's disclose.ts loader span (killed with the
 // gateway app) ports here — load opens ONE card or flow (agents
 // md + tool-call signature + tier-1 skill lines; bodies stay
-// behind skill_read). Division of enhance unchanged (operator law
+// behind melite_skill_read). Division of enhance unchanged (operator law
 // 2026-09-09): the agent holds the skill lines, reads bodies via
-// skill_read, writes the prompt itself.
+// melite_skill_read, writes the prompt itself.
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
 import { createHash } from "node:crypto";
@@ -150,7 +150,7 @@ export function bundleDigest(bundle: Record<string, unknown>): string {
 // ── end moved pures ──
 
 
-/** Tier-1 skill LINES for one card id (the skill_index truth —
+/** Tier-1 skill LINES for one card id (the melite_skill_index truth —
  *  wireSkill rows over the planes buckets, card-skill scope only;
  *  the card's AGENT.md rides full under agents, never as a line).
  *  Merged across engines, id-deduped; unknown cards line nothing
@@ -242,7 +242,7 @@ export function flowLeafDocs(repo: string, flowName: string): Array<{ path: stri
 }
 
 /** Resolve one skill ref (a card:/model:/flow: sid) to its tier-1
- *  line through the planes registry (the skill_index truth).
+ *  line through the planes registry (the melite_skill_index truth).
  *  Dangling refs line null — visible drift, never a refusal. */
 export function skillLineForRef(repo: string, ref: string): Record<string, unknown> {
   try {

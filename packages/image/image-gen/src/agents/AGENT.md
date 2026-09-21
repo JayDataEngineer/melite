@@ -49,6 +49,24 @@ the four options. The family rides `params.model` on the stage
 (that is a LOOK choice, not a checkpoint choice — law 3 stands:
 never steps/cfg, never weights).
 
+## Worked examples (usage the schema cannot say)
+
+One per look — the family rides `params.model`, everything else stays semantic. Imitate the one that matches the brief's words:
+
+```json
+{ "card": "image-gen", "params": { "model": "anima", "seed": 11, "prompt": "An anime-style monkey mid-leap between two rooftops, cherry blossoms swirling in its wake, dramatic golden-hour sky, crisp cel shading, clean line art, anime key visual style" } }
+```
+
+```json
+{ "card": "image-gen", "params": { "model": "z-image", "seed": 4, "prompt": "A macaque cradling a mango on a mossy stone, morning light through rainforest canopy, shallow depth of field, product photography, ultra realistic, natural skin texture" } }
+```
+
+```json
+{ "card": "image-gen", "params": { "model": "qwen-img-21", "seed": 4, "prompt": "A vintage travel poster of a monkey riding a scooter, bold headline text reading 'WILD RIDE', sunset palette, mid-century modern illustration" } }
+```
+
+What these SHOW beyond the schema: style words live INSIDE the prompt as a suffix (last clause), the look's vocabulary pairs with its family (cel shading → anima; natural skin texture → z-image; legible headline text → qwen-img-21), and `seed` is the ONLY number besides the family — a set that must share world texture repeats the same seed + same suffix verbatim. A look the brief didn't name gets asked about, never guessed.
+
 ## Doors
 
 - Compose: `melite_construct` — `add_stage` this card onto the shared

@@ -1497,7 +1497,7 @@ function meliteLoad(request, opts = {}) {
 	};
 	const def = defineTool({
 		name: "melite_load",
-		description: "Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), tier-1 skill lines for the underlying skills (bodies load via skill_read — write the prompts yourself from the craft you read), model hints on cards (the boarded families' DECL identity — id/label/description, each marked present:true|false: present means downloaded on this machine; absent-but-boarded models are OFFERED — prompt the user to download, or provision via comfy_manage provision_model) + pack hints (the card's declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), and a stable bundle digest — quote it and skip reload on a match.",
+		description: "Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), tier-1 skill lines for the underlying skills (bodies load via melite_skill_read — write the prompts yourself from the craft you read), model hints on cards (the boarded families' DECL identity — id/label/description, each marked present:true|false: present means downloaded on this machine; absent-but-boarded models are OFFERED — prompt the user to download, or provision via comfy_manage provision_model) + pack hints (the card's declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), and a stable bundle digest — quote it and skip reload on a match.",
 		parameters: {
 			name: {
 				type: "string",
@@ -1575,7 +1575,7 @@ function meliteLoad(request, opts = {}) {
 				const skills = Array.isArray(b.skills) ? b.skills : [];
 				if (skills.length > 0) {
 					const names = skills.slice(0, 8).map((s) => str(s?.id) !== "" ? str(s?.id) : str(s?.ref));
-					out.push(`skills: ${skills.length} — read one with skill_read: ${names.join(", ")}${skills.length > 8 ? " …" : ""}`);
+					out.push(`skills: ${skills.length} — read one with melite_skill_read: ${names.join(", ")}${skills.length > 8 ? " …" : ""}`);
 				}
 				const digest = str(b.digest);
 				if (digest !== "") out.push("digest: " + digest + " (quote it to skip a reload)");
@@ -1863,7 +1863,7 @@ function meliteView(ctx) {
 //#endregion
 //#region src/tools/skill-index.ts
 /**
-* skill_index - THE BINDING VOCABULARY (the no-dump rework,
+* melite_skill_index - THE BINDING VOCABULARY (the no-dump rework,
 * 2026-09-21).
 *
 * This tool NEVER lists skill rows. The old flat dump was the core
@@ -1887,8 +1887,8 @@ function skillIndex(request) {
 		};
 	};
 	const def = defineTool({
-		name: "skill_index",
-		description: "Scan the skill vocabulary (binding counts, never skill rows): one line per model family and per card — each naming its ENTRANCE doc id and skill count — plus the flow count. To see actual skills, open the owner with melite_load (a card/family bundle carries its tier-1 skill lines); to read a body you already hold an id for, use skill_read. This index never lists skill rows — that flat dump taught agents wrong paths.",
+		name: "melite_skill_index",
+		description: "Scan the skill vocabulary (binding counts, never skill rows): one line per model family and per card — each naming its ENTRANCE doc id and skill count — plus the flow count. To see actual skills, open the owner with melite_load (a card/family bundle carries its tier-1 skill lines); to read a body you already hold an id for, use melite_skill_read. This index never lists skill rows — that flat dump taught agents wrong paths.",
 		parameters: {},
 		presentCall,
 		output: {
@@ -1922,7 +1922,7 @@ function skillIndex(request) {
 				const v = value;
 				if (v && typeof v.error === "string") return [{
 					type: "text",
-					text: "skill_index REFUSED: " + v.error
+					text: "melite_skill_index REFUSED: " + v.error
 				}];
 				const cards = Array.isArray(v?.cards) ? v.cards : [];
 				const flowCount = typeof v?.flows?.count === "number" ? v.flows.count : 0;
@@ -1936,7 +1936,7 @@ function skillIndex(request) {
 					return `  ${id}${genre} — ${typeof r?.entrance === "string" && r.entrance !== "" ? `entrance ${r.entrance}, ${skills}` : "no entrance doc"}`;
 				};
 				const cardsWord = cards.length === 1 ? "card" : "cards";
-				const out = [`skill_index: ${count} skills across ${cards.length} ${cardsWord} · ${flowCount} flows — open a card with melite_load; this index never lists skill rows or model families`];
+				const out = [`melite_skill_index: ${count} skills across ${cards.length} ${cardsWord} · ${flowCount} flows — open a card with melite_load; this index never lists skill rows or model families`];
 				for (const c of cards) {
 					const l = line(c);
 					if (l !== "") out.push(l);
@@ -1969,12 +1969,12 @@ function skillIndex(request) {
 //#endregion
 //#region src/tools/skill-read.ts
 /**
-* skill_read - progressive disclosure TIER 2: one skill's full body,
+* melite_skill_read - progressive disclosure TIER 2: one skill's full body,
 * loaded ONLY when needed (GET /v1/skills/<id>). Every read is ledgered
 * gateway-side (skill.read in _ledger.jsonl), so which recipes the
 * agent actually used is auditable after the fact.
 *
-* Ids come from skill_index: global lane docs are bare stems
+* Ids come from melite_skill_index: global lane docs are bare stems
 * ("run-recovery"), model card docs are "model:<id>", and per-model
 * skills are "model:<id>:<stem>".
 */
@@ -1990,11 +1990,11 @@ function skillRead(request) {
 		};
 	};
 	const def = defineTool({
-		name: "skill_read",
-		description: "Load ONE skill document in full (progressive disclosure tier 2): markdown body plus its name/description and genre/model when scoped. Discover ids first with skill_index. Reads are recorded in the gateway ledger (skill.read) - the audit trail of which recipes informed a generation. Args: id (from skill_index).",
+		name: "melite_skill_read",
+		description: "Load ONE skill document in full (progressive disclosure tier 2): markdown body plus its name/description and genre/model when scoped. Discover ids first with melite_skill_index. Reads are recorded in the gateway ledger (skill.read) - the audit trail of which recipes informed a generation. Args: id (from melite_skill_index).",
 		parameters: { id: {
 			type: "string",
-			description: "Skill id from skill_index: \"<stem>\", \"model:<id>\" or \"model:<id>:<stem>\".",
+			description: "Skill id from melite_skill_index: \"<stem>\", \"model:<id>\" or \"model:<id>:<stem>\".",
 			required: true
 		} },
 		presentCall,
@@ -2031,9 +2031,9 @@ function skillRead(request) {
 				const v = value;
 				if (v && typeof v.error === "string" && v.error !== "") return [{
 					type: "text",
-					text: "skill_read REFUSED: " + v.error
+					text: "melite_skill_read REFUSED: " + v.error
 				}];
-				const head = "skill_read " + String(a.id ?? v.id ?? "?") + ": " + String(v.name ?? "loaded");
+				const head = "melite_skill_read " + String(a.id ?? v.id ?? "?") + ": " + String(v.name ?? "loaded");
 				const body = typeof v.content === "string" ? v.content : "";
 				return [{
 					type: "text",
@@ -2043,7 +2043,7 @@ function skillRead(request) {
 		},
 		async execute(args, exec) {
 			const id = args.id;
-			if (id.length === 0) throw new Error("skill_read: \"id\" is required (a skill id string from skill_index)");
+			if (id.length === 0) throw new Error("melite_skill_read: \"id\" is required (a skill id string from melite_skill_index)");
 			const res = await request("GET", "/v1/skills/" + encodeURIComponent(id), void 0, exec.signal, READ_TIMEOUT_MS);
 			return jsonClean({
 				id: res.id ?? id,
@@ -2085,7 +2085,7 @@ function ledgerTail(request) {
 	};
 	const def = defineTool({
 		name: "ledger_tail",
-		description: "Tail the gateway file ledger (append-only journal of runs, provisions, skill reads, server boots). Use to answer \"what happened / what ran / what downloaded\", to resume interrupted work after a restart, or to audit activity. Entries come back oldest -> newest within the tail; pair with skill_read \"run-recovery\" for the full recovery workflow. Args: limit (optional, default 50, max 500), event (optional prefix filter, e.g. \"run.\" or \"prov\").",
+		description: "Tail the gateway file ledger (append-only journal of runs, provisions, skill reads, server boots). Use to answer \"what happened / what ran / what downloaded\", to resume interrupted work after a restart, or to audit activity. Entries come back oldest -> newest within the tail; pair with melite_skill_read \"run-recovery\" for the full recovery workflow. Args: limit (optional, default 50, max 500), event (optional prefix filter, e.g. \"run.\" or \"prov\").",
 		parameters: {
 			limit: {
 				type: "number",
@@ -2167,8 +2167,8 @@ const BASE_TOOL_NAMES = [
 	"melite_load",
 	"melite_view",
 	"comfy_manage",
-	"skill_index",
-	"skill_read",
+	"melite_skill_index",
+	"melite_skill_read",
 	"ledger_tail"
 ];
 /** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */

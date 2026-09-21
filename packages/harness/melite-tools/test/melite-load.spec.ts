@@ -167,7 +167,7 @@ describe('melite_load render — the loaded line', () => {
       'loaded card c — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press\n'
       + 'weights: 0/1 boarded checkpoints present on this machine (provisioning is the estate\'s business — compose the card)\n'
       + 'params: prompt*, seed (* required)\n'
-      + 'skills: 1 — read one with skill_read: s1\n'
+      + 'skills: 1 — read one with melite_skill_read: s1\n'
       + 'digest: abc123 (quote it to skip a reload)\n'
       + 'agents md:\n'
       + 'craft doc',
@@ -202,7 +202,7 @@ describe('melite_load render — the loaded line', () => {
       + 'params: prompt*, seed (* required)\n'
       + 'signature model: fam-x\n'
       + 'stages: s1:c1\n'
-      + 'skills: 9 — read one with skill_read: a, r-only, b, c, d, e, f, g …\n'
+      + 'skills: 9 — read one with melite_skill_read: a, r-only, b, c, d, e, f, g …\n'
       + 'digest: abc123 (quote it to skip a reload)\n'
       + 'agents md:\n'
       + 'craft doc',

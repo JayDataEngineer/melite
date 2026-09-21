@@ -467,7 +467,7 @@ export function flowRows(repo: string): FlowRow[] {
   return out;
 }
 
-/** GET /v1/skills body (lane_disclosure.skill_index 633-649). The
+/** GET /v1/skills body (lane_disclosure.melite_skill_index 633-649). The
  *  SPAWN PLANE filter: `-spawn` scoped rows NEVER ride the index —
  *  they are the spawned subagent's private leaves (findSkill
  *  resolves them for stage-start injection; the constructor's

@@ -60,7 +60,7 @@ export function ledgerTail(request: EstateRequest): ToolDefinition {
       'Tail the gateway file ledger (append-only journal of runs, provisions, skill reads, server '
       + 'boots). Use to answer "what happened / what ran / what downloaded", to resume interrupted '
       + 'work after a restart, or to audit activity. Entries come back oldest -> newest within the '
-      + 'tail; pair with skill_read "run-recovery" for the full recovery workflow. '
+      + 'tail; pair with melite_skill_read "run-recovery" for the full recovery workflow. '
       + 'Args: limit (optional, default 50, max 500), event (optional prefix filter, e.g. "run." '
       + 'or "prov").',
     // ParameterSchemaSpec grammar: the map IS the implicit object root

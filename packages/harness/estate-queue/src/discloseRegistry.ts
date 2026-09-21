@@ -8,7 +8,7 @@
 // discover grants the progressive disclosure LINES (clamped summary
 // rows — the tier the agent routes on); load opens ONE card or
 // flow — that arm (agents md + tool-call signature + tier-1 skill
-// lines over the skill_index truth) is its own named stroke.
+// lines over the melite_skill_index truth) is its own named stroke.
 //
 // QUEUE LANE LAW: no fallbacks (unknown lookup refuses with the
 // door's voice), live derivation (flow rows from the registry at

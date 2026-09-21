@@ -5,7 +5,7 @@ calls, presets the operator picks, provisioning that mounts everything.
 
 | member | what it is |
 |---|---|
-| `dsh/melite-tools/` | the tool registry, TWO interfaces — BASE: `melite_discover`, `melite_construct`, `melite_load`, `comfy_manage`, `skill_index`/`skill_read`, `ledger_tail`; HEADLESS adds `melite_flow`/`run_status` (the queue run doors) |
+| `dsh/melite-tools/` | the tool registry, TWO interfaces — BASE: `melite_discover`, `melite_construct`, `melite_load`, `comfy_manage`, `melite_skill_index`/`melite_skill_read`, `ledger_tail`; HEADLESS adds `melite_flow`/`run_status` (the queue run doors) |
 | `dsh/provisioner/` | **the integrator** — mounts the whole media stack into a vanilla DSH (links BOTH families by package name) |
 | `dsh/install-profile.sh` | thin shim over the provisioner renderer (`infer-provision all`) |
 

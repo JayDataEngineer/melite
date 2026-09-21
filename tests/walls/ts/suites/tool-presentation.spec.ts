@@ -42,8 +42,8 @@ const ALL: Array<[string, ToolDefinition]> = [
   ["ledger_tail", ledgerTail(GW)],
   ["melite_load", meliteLoad(GW)],
   ["run_status", runStatus(GW)],
-  ["skill_index", skillIndex(GW)],
-  ["skill_read", skillRead(GW)],
+  ["melite_skill_index", skillIndex(GW)],
+  ["melite_skill_read", skillRead(GW)],
 ];
 
 const KINDS = new Set([
@@ -84,7 +84,7 @@ describe("presentCall disclosure composition", () => {
       /adhoc \(3 stages\)/,
     );
     assert.match(byName.get("run_status")!.presentCall!({ runId: "r42" })!.title, /r42/);
-    assert.match(byName.get("skill_read")!.presentCall!({ id: "s1" })!.title, /s1/);
+    assert.match(byName.get("melite_skill_read")!.presentCall!({ id: "s1" })!.title, /s1/);
     assert.match(
       byName.get("melite_construct")!.presentCall!({ verb: "add_stage", card: "image-gen" })!.title,
       /add_stage · image-gen/,

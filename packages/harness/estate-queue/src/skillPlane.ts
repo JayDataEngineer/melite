@@ -260,7 +260,7 @@ interface AgentBlock {
 /** The inline agent block (lane_disclosure._agent_block 780-793):
 
 /** Skill lookup across flow + model + card rows
- *  (lane_disclosure.skill_read 844-863). Flow rows may carry the
+ *  (lane_disclosure.melite_skill_read 844-863). Flow rows may carry the
  *  rendered registry text (bodyText) instead of a file path. */
 export function findSkill(
   repo: string,
@@ -299,7 +299,7 @@ export function hSkillRead(
     }
     // THE SPAWN PLANE DOOR LAW: `-spawn` scoped leaves are the
     // spawned subagent's private briefs — the HTTP read door
-    // (skill_read, the constructor's tool) refuses them by id; the
+    // (melite_skill_read, the constructor's tool) refuses them by id; the
     // spawn injection reads them through findSkill directly, never
     // through this door.
     if (found.row.scope.endsWith("-spawn")) {

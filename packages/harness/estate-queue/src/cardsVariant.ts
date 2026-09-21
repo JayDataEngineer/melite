@@ -158,7 +158,7 @@ export function envelopeRefusal(
         " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]" +
         (married !== "" ? " and the lane is married to " + knob + " " + String(married) : "") +
         ". The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route." +
-        " (Read the family lane: skill_read model:<family>.)",
+        " (Read the family lane: melite_skill_read model:<family>.)",
       "card_compose",
     );
   }

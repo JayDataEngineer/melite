@@ -92,7 +92,7 @@ beforeAll(async () => {
   // THE CORE-SKILLS DECOY (agent-trace audit, 2026-09-13): DSH
   // core's dsh-skill registers a service ALSO named "skills" in every
   // dsh-base composition — the tools' seat probe once read that name
-  // and skill_index died live ("seats.skills.index is not a function")
+  // and melite_skill_index died live ("seats.skills.index is not a function")
   // while this wall's bare composition stayed green. The decoy
   // reproduces the collision ON PURPOSE: if any probe touches
   // ctx.get('skills') again, the arms below fail loudly.
@@ -125,11 +125,22 @@ beforeAll(async () => {
 }, 60_000);
 
 describe("the melite tool faces answer over the live composition", () => {
-  it("every base + headless + card tool registers", () => {
+  it("every base + headless + card tool registers (deferred five seat on the catalog touch)", async () => {
+    // THE EXPANSION LAW (operator 2026-10-08): apply seats ONLY the
+    // eager trio; the deferred estate doors seat the first time
+    // discover or load executes. The touch below is this wall's own
+    // first catalog use — after it, every door must be present.
+    const deferred = ["melite_view", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
+    for (const name of tools.registered.map((d) => d.name)) {
+      if (deferred.includes(name)) {
+        assert.fail(`${name} seated at apply — the expansion law defers it to the first catalog touch`);
+      }
+    }
+    await drive("melite_discover", { lookup: "all" });
     const names = tools.registered.map((d) => d.name).sort();
     for (const want of [
       "melite_discover", "melite_construct", "melite_load", "comfy_manage",
-      "skill_index", "skill_read", "ledger_tail",
+      "melite_skill_index", "melite_skill_read", "ledger_tail",
       "melite_flow", "run_status",
       "music", "tts", // voice_lock died 2026-09-21 (design moved into the tts card's mods)
       "image_edit", "motion", "h3_timeline",
@@ -181,8 +192,8 @@ describe("the melite tool faces answer over the live composition", () => {
   // tool response"). dsh-tools buildSuccessResult feeds output.render
   // straight into the model-facing ToolResult.content — the envelope only
   // feeds the GUI. Counts-only renders starved the whole agent loop
-  // (melite_load needs a name "exactly as discovered"; skill_read needs
-  // an id "from skill_index"; the load follow-up needs params + model
+  // (melite_load needs a name "exactly as discovered"; melite_skill_read needs
+  // an id "from melite_skill_index"; the load follow-up needs params + model
   // ids). These arms pin the LINES, not the counts. ──────────────────
   it("melite_discover render NAMES real flows and cards from the envelope", async () => {
     const { envelope, lines } = await drive("melite_discover", { lookup: "all" });
@@ -196,7 +207,7 @@ describe("the melite tool faces answer over the live composition", () => {
       `a rendered line names the first card by id`);
   });
 
-  it("skill_index render CARRIES the entrance ids (skill_read demands one; the dump is dead)", async () => {
+  it("melite_skill_index render CARRIES the entrance ids (melite_skill_read demands one; the dump is dead)", async () => {
     // THE SELECTION LAW: the index serves the LIVE BENCH — seed one
     // (image-gen) or the render serves the empty-bench pointer.
     {
@@ -211,7 +222,7 @@ describe("the melite tool faces answer over the live composition", () => {
     }
     let out: { envelope: unknown; lines: string[] };
     try {
-      out = await drive("skill_index", {});
+      out = await drive("melite_skill_index", {});
     } finally {
       delete process.env["DSH_HOME"];
     }
@@ -224,9 +235,9 @@ describe("the melite tool faces answer over the live composition", () => {
       `the rendered lines carry an entrance id (want ${first} in: ${lines.join(" | ").slice(0, 200)}`);
   });
 
-  it("skill_read render CARRIES the body (tier 2's whole purpose)", async () => {
+  it("melite_skill_read render CARRIES the body (tier 2's whole purpose)", async () => {
     // the selection law: seed the bench (image-gen) so the index
-    // carries an entrance id for skill_read to open
+    // carries an entrance id for melite_skill_read to open
     {
       const { mkdirSync, writeFileSync } = await import("node:fs");
       const home = mkdtempSync(join(tmpdir(), "bench-home-"));
@@ -239,15 +250,15 @@ describe("the melite tool faces answer over the live composition", () => {
     }
     let idx: { envelope: unknown; lines: string[] };
     try {
-      idx = await drive("skill_index", {});
+      idx = await drive("melite_skill_index", {});
     } finally {
       delete process.env["DSH_HOME"];
     }
     const id = [...((idx.envelope as { families?: Array<{ entrance?: string }> }).families ?? []),
       ...((idx.envelope as { cards?: Array<{ entrance?: string }> }).cards ?? [])]
       .map((r) => r.entrance).find((e): e is string => typeof e === "string" && e !== "");
-    assert.ok(typeof id === "string", "an entrance id came from skill_index");
-    const { envelope, lines } = await drive("skill_read", { id });
+    assert.ok(typeof id === "string", "an entrance id came from melite_skill_index");
+    const { envelope, lines } = await drive("melite_skill_read", { id });
     const env = envelope as { content?: string; error?: string };
     const body = typeof env.content === "string" ? env.content : "";
     assert.ok(body.length > 0, `the envelope carries the body`);

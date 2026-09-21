@@ -10,7 +10,7 @@ profiles, and tools, one command each.
 | row | package | role |
 |---|---|---|
 | `infer-estate` | `@melite-plugin/melite-estate` | the estate row: card registry, runs registry + Typert remotes, disclose/manage/skills/load seats, serial queue |
-| `infer-tools` | `@melite-plugin/dsh-tools` | tool registry: `melite_discover`, `melite_load`, `melite_construct`, `comfy_manage`, `skill_index`, `skill_read`, `ledger_tail` (+ headless run doors `melite_flow`, `run_status`) |
+| `infer-tools` | `@melite-plugin/dsh-tools` | tool registry: `melite_discover`, `melite_load`, `melite_construct`, `comfy_manage`, `melite_skill_index`, `melite_skill_read`, `ledger_tail` (+ headless run doors `melite_flow`, `run_status`) |
 | `infer-card-view-host/client` | `@melite-plugin/dsh-card-view` | editable action cards in the conversation |
 | `infer-card-deck` | `@melite-plugin/dsh-card-deck` | sidebar deck: lanes, drafts, past cards |
 | `infer-gallery-host` | `@infer-media/dsh-gallery` | the runs gallery |

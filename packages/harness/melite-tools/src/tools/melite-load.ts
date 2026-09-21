@@ -2,10 +2,11 @@
 // card or flow discovered via melite_discover. Returns the bundle:
 // agents md + tool-call signature + tier-1 skill lines (+ model
 // hints on cards — the boarded families' DECL identity, data FOR
-// the card; prompt craft is the agent's own via skill_read, and
+// the card; prompt craft is the agent's own via melite_skill_read, and
 // LLM-powered enhance is the user's ✦ door, never this bundle).
-// Bodies stay behind skill_read; quote the bundle digest you hold
+// Bodies stay behind melite_skill_read; quote the bundle digest you hold
 // and skip reload on a match. Thin door wrapper (estateRequest).
+import { expandEstateDoors } from '../expansion'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
@@ -51,10 +52,10 @@ export function meliteLoad(
   const def = defineTool({
     name: 'melite_load',
     description:
-      'Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + '
+      'Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) +  THE EXPANSION LAW: the estate’s deeper doors (melite_view, comfy_manage, melite_skill_index, melite_skill_read, ledger_tail) seat themselves on this call — never missing, only deferred.'
       + 'inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: '
       + 'agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), '
-      + 'tier-1 skill lines for the underlying skills (bodies load via skill_read — write the prompts yourself from '
+      + 'tier-1 skill lines for the underlying skills (bodies load via melite_skill_read — write the prompts yourself from '
       + 'the craft you read), model hints on cards (the boarded families\' DECL identity — id/label/description, each marked present:true|false: present means downloaded on this machine; absent-but-boarded models are OFFERED — prompt the user to download, or provision via comfy_manage provision_model) + pack hints (the card\'s declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), '
       + 'and a stable bundle digest — quote it and skip reload on a match.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
@@ -181,8 +182,8 @@ export function meliteLoad(
           // `invalid skill name "card:image-gen:image-craft"` while the
           // melite plane served the very id 200. Every list-yielding
           // render names the tool that opens one entry; these ids open
-          // with skill_read, never the core skill tool.
-          out.push(`skills: ${skills.length} — read one with skill_read: ${names.join(', ')}${skills.length > 8 ? ' …' : ''}`)
+          // with melite_skill_read, never the core skill tool.
+          out.push(`skills: ${skills.length} — read one with melite_skill_read: ${names.join(', ')}${skills.length > 8 ? ' …' : ''}`)
         }
         const digest = str(b.digest)
         if (digest !== '') out.push('digest: ' + digest + ' (quote it to skip a reload)')
@@ -195,6 +196,11 @@ export function meliteLoad(
       },
     },
     async execute(args, exec): Promise<LoadResult> {
+    // THE EXPANSION LAW: the catalog was touched — seat the estate's
+    // deferred doors (view / manage / skill twins / ledger) for the
+    // NEXT request boundary. Idempotent; a no-op once seated.
+    expandEstateDoors()
+
       // defineTool input validation runs in the wrapper BEFORE the body
       // (invalid args throw ToolArgsError there) — args is always a
       // defined object here, so no nullish fallback exists to cover;

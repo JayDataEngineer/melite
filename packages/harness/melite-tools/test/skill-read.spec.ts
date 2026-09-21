@@ -1,4 +1,4 @@
-// skill_read walls (vitest, estate mocked — no gateway): the tier-2
+// melite_skill_read walls (vitest, estate mocked — no gateway): the tier-2
 // body loads exactly one id (empty ids throw before any fetch,
 // missing ids throw at the wrapper gate), sparse rows fall back to
 // the requested id + null echoes + empty content, and the render
@@ -23,7 +23,7 @@ function mockRequest(
 
 const exec = { signal: AbortSignal.timeout(2000) }
 
-describe('skill_read presentCall — the streaming tile', () => {
+describe('melite_skill_read presentCall — the streaming tile', () => {
   test('names the skill; junk renders generic (the re-attached presenter)', () => {
     const tool = skillRead((async () => ({})) as EstateRequest)
     assert.equal(tool.presentCall!({ id: 'run-recovery' } as never).title, 'Read skill run-recovery')
@@ -34,7 +34,7 @@ describe('skill_read presentCall — the streaming tile', () => {
   })
 })
 
-describe('skill_read execute — the tier-2 body', () => {
+describe('melite_skill_read execute — the tier-2 body', () => {
   test('a missing id throws at the wrapper gate (presence contract)', async () => {
     const seen = mockRequest(() => ({}))
     const tool = skillRead(seen.request)
@@ -73,7 +73,7 @@ describe('skill_read execute — the tier-2 body', () => {
   })
 })
 
-describe('skill_read render — the body rides (tier 2)', () => {
+describe('melite_skill_read render — the body rides (tier 2)', () => {
   const tool = skillRead((async () => ({})) as EstateRequest)
   const text = (a: unknown, v: unknown) =>
     (tool.output.render(a as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
@@ -81,20 +81,20 @@ describe('skill_read render — the body rides (tier 2)', () => {
   test('the body rides under the header (the agent reads the craft)', () => {
     assert.equal(
       text({ id: 'a' }, { id: 'a', name: 'N', content: 'write it thus' }),
-      'skill_read a: N\nwrite it thus',
+      'melite_skill_read a: N\nwrite it thus',
     )
   })
 
   test('the call id wins, then the value id, then ?; empty body says so', () => {
-    assert.equal(text({}, { id: 'b' }), 'skill_read b: loaded\n(no body)')
-    assert.equal(text({}, {}), 'skill_read ?: loaded\n(no body)')
-    assert.equal(text(null, { id: 'b', name: 'N', content: '' }), 'skill_read b: N\n(no body)')
+    assert.equal(text({}, { id: 'b' }), 'melite_skill_read b: loaded\n(no body)')
+    assert.equal(text({}, {}), 'melite_skill_read ?: loaded\n(no body)')
+    assert.equal(text(null, { id: 'b', name: 'N', content: '' }), 'melite_skill_read b: N\n(no body)')
   })
 
   test('a refused read renders REFUSED (the refusal is the honest answer)', () => {
     assert.equal(
       text({ id: 'run-recovery' }, { id: 'run-recovery', content: '', error: 'no such skill' }),
-      'skill_read REFUSED: no such skill',
+      'melite_skill_read REFUSED: no such skill',
     )
   })
 })
