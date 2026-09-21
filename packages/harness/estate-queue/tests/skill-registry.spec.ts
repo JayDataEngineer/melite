@@ -27,11 +27,15 @@ const seat = (): SkillDirectoryService => {
 };
 
 describe("SkillDirectoryService", () => {
-  it("indexes the repo", () => {
-    const idx = seat().index() as { count: number; skills: Array<{ id: string }> };
-    assert.equal(idx.count, idx.skills.length);
+  it("indexes the repo (the binding vocabulary — never skill rows)", () => {
+    const idx = seat().index() as { count: number; families: Array<{ id: string }>; cards: Array<{ id: string }>; flows: { count: number; ids: string[] } };
+    // THE NO-DUMP LAW: the index serves the vocabulary only; a skill
+    // id is learned from its owning surface (melite_load), never here.
+    assert.equal((idx as { skills?: unknown }).skills, undefined);
     assert.ok(idx.count > 11);
-    assert.ok(idx.skills.some((s) => s.id === "flow:audio-native-tts"));
+    assert.ok(idx.families.length > 5, "the family vocabulary serves");
+    assert.ok(idx.cards.length > 5, "the card vocabulary serves");
+    assert.ok(idx.flows.ids.includes("flow:audio-native-tts"), "flow ids ride the vocabulary");
   });
 
   it("reads serve docs; unknowns throw the door's voice", async () => {

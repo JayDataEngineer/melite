@@ -576,9 +576,21 @@ export function apply(c: CtxView, config: Config = {}): void {
             // (the seated MCP servers) and the skill index — LIVE,
             // never static.
             const servers = [...seatedMcpServers(c)]
+            // THE NO-DUMP LAW rides here too: the census NEVER lists
+            // skill rows. The spawn config's Skills box serves the
+            // BINDING VOCABULARY's entrance docs (model:<mid> /
+            // card:<cname>) — the rows an agent may reference when
+            // configuring a subagent; leaf skill ids are learned from
+            // the owning surface (melite_load), never enumerated.
             const skillCensus = () => {
-              const idx = buildSkillIndex(disclosureRoot()) as { skills: Array<{ id: string; name: string }> }
-              return idx.skills.map((r) => ({ value: r.id, label: r.name }))
+              const idx = buildSkillIndex(disclosureRoot()) as {
+                families: Array<{ id: string; entrance: string | null }>;
+                cards: Array<{ id: string; entrance: string | null }>;
+              }
+              return [
+                ...idx.families.flatMap((f) => f.entrance === null ? [] : [{ value: f.entrance, label: f.id }]),
+                ...idx.cards.flatMap((c2) => c2.entrance === null ? [] : [{ value: c2.entrance, label: c2.id }]),
+              ]
             }
             const mcpCensus = servers.map((v) => ({ value: v, label: v }))
             const engineDocs = new Map<string, () => Record<string, unknown>>([

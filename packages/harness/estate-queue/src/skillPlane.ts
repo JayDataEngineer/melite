@@ -147,21 +147,71 @@ export interface DocRow {
   readonly path: string;
 }
 
+/** THE BINDING-VOCABULARY INDEX (the no-dump rework, 2026-09-21).
+ *
+ *  The operator's law: WE NEVER LIST ALL THE SKILLS AT ONCE. The
+ *  flat row dump was the core breach — an agent scanning 63 rows
+ *  picked a card-scoped generic ("image-craft") over the family's
+ *  lane doc and ran a distilled turbo at 25 steps; the index ITSELF
+ *  taught the wrong path. Disclosure flows through the OWNING
+ *  SURFACE: melite_load serves a card's/family's tier-1 skill
+ *  lines; THIS door serves only the vocabulary — one row per
+ *  FAMILY and per CARD (skill counts + the entrance row id), plus
+ *  the flow count. A skill id is never listed here.
+ *
+ *  `entrance` is the owning surface's AGENT.md row id (model:<mid>
+ *  / card:<cname>) — null when the family ships only a GUIDE or the
+ *  card only skills (nothing to read first). */
+export interface BindingRow {
+  readonly id: string;
+  readonly genre: string | null;
+  readonly skills: number;
+  readonly entrance: string | null;
+}
+
 export function buildSkillIndex(repo: string): Record<string, unknown> {
   const engines: string[] = engineDirs(join(repo, "packages", "engines"));
-  const rows: Record<string, unknown>[] = [];
+  const families = new Map<string, { genre: string | null; skills: number; entrance: string | null }>();
+  const cards = new Map<string, { genre: string | null; skills: number; entrance: string | null }>();
+  let count = 0;
   try {
     for (const engine of engines) {
       for (const r of modelRows(engine)) {
         if (r.row.scope.endsWith("-spawn")) continue;
-        rows.push(wireSkill(r.row));
+        count += 1;
+        const mid = r.row.model;
+        if (mid === null) continue;
+        const cell = families.get(mid) ?? { genre: r.row.genre, skills: 0, entrance: null };
+        if (r.row.scope === "model-skill") cell.skills += 1;
+        if (r.row.scope === "model") cell.entrance = r.row.id;
+        families.set(mid, cell);
       }
       for (const r of cardRows(engine, repo).rows) {
         if (r.row.scope.endsWith("-spawn")) continue;
-        rows.push(wireSkill(r.row));
+        count += 1;
+        const cname = r.row.card;
+        if (cname === null) continue;
+        const cell = cards.get(cname) ?? { genre: r.row.genre, skills: 0, entrance: null };
+        if (r.row.scope === "card-skill") cell.skills += 1;
+        if (r.row.scope === "card") cell.entrance = r.row.id;
+        cards.set(cname, cell);
       }
     }
-    for (const fr of flowRows(repo)) rows.push(wireSkill(fr.row));
+    const flows = flowRows(repo);
+    count += flows.length;
+    const famRows: BindingRow[] = [...families.entries()]
+      .map(([id, c]) => ({ id, genre: c.genre, skills: c.skills, entrance: c.entrance }))
+      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const cardRowsOut: BindingRow[] = [...cards.entries()]
+      .map(([id, c]) => ({ id, genre: c.genre, skills: c.skills, entrance: c.entrance }))
+      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    return {
+      count,
+      families: famRows,
+      cards: cardRowsOut,
+      flows: { count: flows.length, ids: flows.map((f) => f.row.id) },
+      note: "skills bind to their owner — open a card or family with melite_load to see its tier-1 skill lines; this index never lists skill rows",
+    };
   } catch (e) {
     /* v8 ignore next -- the walks throw LaneWireError only (readDoc
        swallows I/O to null): the wrap never fires (2026-09-12) */
@@ -172,7 +222,6 @@ export function buildSkillIndex(repo: string): Record<string, unknown> {
     }
     throw e;
   }
-  return { count: rows.length, skills: rows };
 }
 
 interface AgentBlock {

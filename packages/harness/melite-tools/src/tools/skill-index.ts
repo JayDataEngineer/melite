@@ -1,12 +1,17 @@
 /**
- * skill_index - progressive disclosure TIER 1: the cheap skill index.
+ * skill_index - THE BINDING VOCABULARY (the no-dump rework,
+ * 2026-09-21).
  *
- * The gateway (GET /v1/skills) walks the catalog models' agents/ trees
- * (AGENT.md + agents/skills/*.md) plus the global skills/ lane docs and
- * returns one row per skill: id, name, one-line description, genre and
- * owning model when scoped. This is the SCAN; the BODY comes only via
- * skill_read on demand - that pairing is the whole point of progressive
- * disclosure: the agent never pays for docs it does not open.
+ * This tool NEVER lists skill rows. The old flat dump was the core
+ * breach of the progressive-disclosure architecture: an agent
+ * scanning 63 rows picked a card-scoped generic prose skill over
+ * the family's lane doc and ran a distilled turbo checkpoint at 25
+ * steps — the index itself taught the wrong path. Skills bind to
+ * their owner; disclosure of actual skills flows through the owning
+ * surface (melite_load serves a card's/family's tier-1 skill
+ * lines). This scan serves only the vocabulary: one row per FAMILY
+ * and per CARD, each with its ENTRANCE doc id and skill count, plus
+ * the flow count. To learn a skill id: open the owner.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
@@ -16,22 +21,16 @@ import { jsonClean } from '../json-clean.ts'
 
 const INDEX_TIMEOUT_MS = 15_000
 
-interface SkillRow {
-  id?: unknown
-  name?: unknown
-  description?: unknown
-  genre?: unknown
-  model?: unknown
-}
-
 /** Canonical result — the typed mirror of output.schema (the music
  *  card's CardResult pattern: defineTool infers from the schema and
  *  checks the execute return against it). */
 type SkillIndexResult = {
   count: number;
-  skills: Record<string, JsonValue>[];
+  families: Record<string, JsonValue>[];
+  cards: Record<string, JsonValue>[];
+  flows: { count: number; ids?: JsonValue[] };
   error?: string;
-} & Record<string, JsonValue>;
+} & Record<string, JsonValue>
 
 export function skillIndex(request: EstateRequest): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
@@ -53,11 +52,10 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
   const def = defineTool({
     name: 'skill_index',
     description:
-      'List gateway skills (progressive disclosure tier 1): id + name + one-line description per skill, '
-      + 'with genre/model when the skill is model-scoped. Cheap scan. Then load ONLY the skill you need '
-      + 'with skill_read. Use before generating with an unfamiliar model, when the user asks what this '
-      + 'stack can do, or to find the lane recipe for a genre (image/audio/video/3D/text). '
-      + 'No arguments.',
+      'Scan the skill vocabulary (binding counts, never skill rows): one line per model family and per card — '
+      + 'each naming its ENTRANCE doc id and skill count — plus the flow count. To see actual skills, open the owner '
+      + 'with melite_load (a card/family bundle carries its tier-1 skill lines); to read a body you already hold an '
+      + 'id for, use skill_read. This index never lists skill rows — that flat dump taught agents wrong paths.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // — no arguments, so the map is empty.
     parameters: {},
@@ -67,40 +65,83 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
         type: 'object',
         additionalProperties: true,
         properties: {
-          count: { type: 'number', description: 'Skills found.', required: true },
-          skills: {
+          count: { type: 'number', description: 'Total skill docs across families, cards and flows.', required: true },
+          families: {
             type: 'array',
-            description: 'Index rows: id/name/description (+genre/model when scoped).',
+            description: 'One row per model family: id/genre/skills/entrance (the AGENT.md row id, or null).',
+            required: true,
+          },
+          cards: {
+            type: 'array',
+            description: 'One row per card: id/genre/skills/entrance (the AGENT.md row id, or null).',
+            required: true,
+          },
+          flows: {
+            type: 'object',
+            additionalProperties: true,
+            description: 'Registry flow count + ids.',
             required: true,
           },
           error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
       },
       render: (_args, value) => {
-        const v = value as { count?: number; skills?: Array<{ id?: unknown; name?: unknown }>; error?: string }
-        if (v && typeof v.error === 'string') return [{ type: 'text', text: 'skill_index REFUSED: ' + v.error }]
-        // THE MODEL-FACING IDS (the render IS the tool response — see
-        // melite-discover's render note): a count alone starves
-        // routing, because skill_read demands an id "from
-        // skill_index". RENDER_CLAMP ids ride, the count above them.
-        const RENDER_CLAMP = 40
-        const rows = Array.isArray(v?.skills) ? v.skills : []
-        const count = typeof v?.count === 'number' ? v.count : rows.length
-        const out: string[] = [`skill_index: ${count} skills — read one with skill_read`]
-        for (const r of rows.slice(0, RENDER_CLAMP)) {
-          const id = typeof r?.id === 'string' ? r.id : ''
-          const name = typeof r?.name === 'string' ? r.name : ''
-          if (id !== '') out.push(`  ${id}${name !== '' ? ' — ' + name : ''}`)
+        const v = value as {
+          count?: number;
+          families?: Array<{ id?: unknown; genre?: unknown; skills?: unknown; entrance?: unknown }>;
+          cards?: Array<{ id?: unknown; genre?: unknown; skills?: unknown; entrance?: unknown }>;
+          flows?: { count?: unknown };
+          error?: string;
         }
-        if (count > RENDER_CLAMP) out.push(`  +${count - RENDER_CLAMP} more`)
+        if (v && typeof v.error === 'string') return [{ type: 'text', text: 'skill_index REFUSED: ' + v.error }]
+        // THE NO-DUMP LAW (render side): even if a legacy seat leaks
+        // a flat `skills` array, it NEVER renders — the dump is dead.
+        const fams = Array.isArray(v?.families) ? v.families : []
+        const cards = Array.isArray(v?.cards) ? v.cards : []
+        const flowCount = typeof v?.flows?.count === 'number' ? v.flows.count : 0
+        const count = typeof v?.count === 'number' ? v.count : 0
+        const line = (r: { id?: unknown; genre?: unknown; skills?: unknown; entrance?: unknown }): string => {
+          const id = typeof r?.id === 'string' ? r.id : ''
+          if (id === '') return ''
+          const genre = typeof r?.genre === 'string' && r.genre !== '' ? ` (${r.genre})` : ''
+          const n = typeof r?.skills === 'number' ? r.skills : 0
+          const skills = n === 0 ? 'no skills' : n === 1 ? '1 skill' : `${n} skills`
+          const entrance = typeof r?.entrance === 'string' && r.entrance !== ''
+            ? `entrance ${r.entrance}, ${skills}`
+            : 'no entrance doc'
+          return `  ${id}${genre} — ${entrance}`
+        }
+        const cardsWord = cards.length === 1 ? 'card' : 'cards'
+        const out: string[] = [
+          `skill_index: ${count} skills across ${fams.length} families · ${cards.length} ${cardsWord} · ${flowCount} flows — open an owner with melite_load; this index never lists skill rows`,
+        ]
+        for (const f of fams) {
+          const l = line(f)
+          if (l !== '') out.push(l)
+        }
+        for (const c of cards) {
+          const l = line(c)
+          if (l !== '') out.push(l)
+        }
         return [{ type: 'text', text: out.join('\n') }]
       },
     },
     async execute(_args, exec): Promise<SkillIndexResult> {
       const res = await request( 'GET', '/v1/skills', undefined, exec.signal, INDEX_TIMEOUT_MS,
-      ) as { skills?: SkillRow[] }
-      const rows = Array.isArray(res.skills) ? res.skills : []
-      return jsonClean({ count: rows.length, skills: rows }) as SkillIndexResult
+      ) as { families?: unknown; cards?: unknown; flows?: unknown; count?: unknown }
+      // A seat serving the LEGACY flat shape (a `skills` rows array)
+      // contributes nothing — families/cards default empty and the
+      // rows never ride (the wall pins the leak dead).
+      const fams = Array.isArray(res.families) ? res.families as Record<string, JsonValue>[] : []
+      const cards = Array.isArray(res.cards) ? res.cards as Record<string, JsonValue>[] : []
+      const flows = (res.flows !== null && typeof res.flows === 'object')
+        ? (res.flows as { count?: unknown; ids?: JsonValue[] })
+        : {}
+      const flowCount = typeof flows.count === 'number' ? flows.count : 0
+      const count = typeof res.count === 'number'
+        ? res.count
+        : fams.length + cards.length + flowCount
+      return jsonClean({ count, families: fams, cards, flows: { count: flowCount, ids: flows.ids ?? [] } }) as SkillIndexResult
     },
   });
   // Re-attach the unconditional presenter over defineTool's

@@ -192,13 +192,15 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   await ctx.plugin(skillProvider as never);
   const skills = ctx.get("meliteSkills", false) as { index(): { count?: number; skills?: Array<{ id: string }> }; read(id: string, signal: AbortSignal): { id: string; content?: string } };
   assert.ok(skills, "the skills seat is live");
-  // 1. the index: count + wire rows over BOTH planes (flows +
-  //    models + cards from the real doc tree).
-  const idx = skills.index();
+  // 1. THE INDEX (the no-dump law): the binding vocabulary only —
+  //    families + cards + flow ids; NEVER skill rows (a skill id is
+  //    learned from its owning surface, melite_load).
+  const idx = skills.index() as { count?: number; skills?: unknown; families?: Array<{ id: string }>; cards?: Array<{ id: string }>; flows?: { ids: string[] } };
   assert.ok(typeof idx.count === "number" && idx.count > 0, "non-empty index");
-  const ids = (idx.skills ?? []).map((r) => r.id);
-  assert.ok(ids.some((id) => id.startsWith("flow:")), "flow rows present");
-  assert.ok(ids.some((id) => id.startsWith("model:")), "model rows present");
+  assert.equal(idx.skills, undefined, "the flat dump is dead");
+  assert.ok((idx.families ?? []).length > 0, "family vocabulary present");
+  assert.ok((idx.cards ?? []).length > 0, "card vocabulary present");
+  assert.ok((idx.flows?.ids ?? []).some((id) => id.startsWith("flow:")), "flow ids present");
   // 2. a flow skill read answers the DOC (the registry render or
   //    the SKILL.md leaf).
   const sig = new AbortController().signal;

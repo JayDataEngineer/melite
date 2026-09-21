@@ -1058,12 +1058,21 @@ describe('/v1 prefix discovery arms', () => {
       [{ value: 'github', label: 'github' }],
       'the census reads the tools seat live (one server per mcp__<server>__* family)',
     )
-    const idx = buildSkillIndex(disclosureRoot()) as { skills: Array<{ id: string; name: string }> }
-    assert.ok(idx.skills.length > 0, 'the live index is non-empty')
+    const idx = buildSkillIndex(disclosureRoot()) as {
+      families: Array<{ id: string; entrance: string | null }>;
+      cards: Array<{ id: string; entrance: string | null }>;
+    }
+    // THE NO-DUMP LAW: the census serves the vocabulary's ENTRANCE
+    // docs (never leaf skill rows — those are the owner's to serve).
+    const entrances = [
+      ...idx.families.flatMap((f) => f.entrance === null ? [] : [{ value: f.entrance, label: f.id }]),
+      ...idx.cards.flatMap((c) => c.entrance === null ? [] : [{ value: c.entrance, label: c.id }]),
+    ]
+    assert.ok(entrances.length > 0, 'the live vocabulary is non-empty')
     assert.deepEqual(
       mods[1]!.fields![0]!.options,
-      idx.skills.map((s) => ({ value: s.id, label: s.name })),
-      'the doc serves the LIVE skill index, never a static list',
+      entrances,
+      'the doc serves the LIVE entrance vocabulary, never a static list and never leaf rows',
     )
   })
 

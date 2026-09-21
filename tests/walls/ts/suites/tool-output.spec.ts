@@ -192,19 +192,22 @@ describe("the melite tool faces answer over the live composition", () => {
       `a rendered line names the first card by id`);
   });
 
-  it("skill_index render CARRIES the ids (skill_read demands one)", async () => {
+  it("skill_index render CARRIES the entrance ids (skill_read demands one; the dump is dead)", async () => {
     const { envelope, lines } = await drive("skill_index", {});
-    const env = envelope as { skills?: Array<{ id?: string }>; error?: string };
-    const first = env.skills?.find((s) => typeof s.id === "string" && s.id !== "")?.id;
+    const env = envelope as { families?: Array<{ entrance?: string }>; cards?: Array<{ entrance?: string }>; skills?: Array<{ id?: string }>; error?: string };
+    assert.equal(env.skills, undefined, "the envelope never carries skill rows");
+    const first = [...(env.families ?? []), ...(env.cards ?? [])]
+      .map((r) => r.entrance).find((e): e is string => typeof e === "string" && e !== "");
     assert.ok(typeof first === "string" && lines.join("\n").includes(first),
-      `the rendered lines carry a real skill id (want ${first} in: ${lines.join(" | ").slice(0, 200)}`);
+      `the rendered lines carry an entrance id (want ${first} in: ${lines.join(" | ").slice(0, 200)}`);
   });
 
   it("skill_read render CARRIES the body (tier 2's whole purpose)", async () => {
     const idx = await drive("skill_index", {});
-    const id = (idx.envelope as { skills?: Array<{ id?: string }> }).skills
-      ?.find((s) => typeof s.id === "string" && s.id !== "")?.id;
-    assert.ok(typeof id === "string", "an id came from skill_index");
+    const id = [...((idx.envelope as { families?: Array<{ entrance?: string }> }).families ?? []),
+      ...((idx.envelope as { cards?: Array<{ entrance?: string }> }).cards ?? [])]
+      .map((r) => r.entrance).find((e): e is string => typeof e === "string" && e !== "");
+    assert.ok(typeof id === "string", "an entrance id came from skill_index");
     const { envelope, lines } = await drive("skill_read", { id });
     const env = envelope as { content?: string; error?: string };
     const body = typeof env.content === "string" ? env.content : "";

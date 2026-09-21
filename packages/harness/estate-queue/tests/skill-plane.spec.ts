@@ -178,9 +178,9 @@ describe("cardRows domains", () => {
     mkdirSync(join(ROOT, "flows"), { recursive: true });
     const walk = cardRows(join(E, "comfyui-cordis"), ROOT);
     assert.deepEqual([...walk.buckets.keys()], ["acard", "img-to-mesh", "img.foo"]);
-    const idx = buildSkillIndex(ROOT) as { count: number; skills: Array<{ id: string }> };
-    assert.ok(idx.skills.some((sk) => sk.id === "card:acard"));
-    assert.equal(idx.count, idx.skills.length);
+    const idx = buildSkillIndex(ROOT) as { cards: Array<{ id: string; skills: number }> };
+    const acard = idx.cards.find((c) => c.id === "acard");
+    assert.ok(acard !== undefined, "the card vocabulary carries acard");
   });
 });
 
@@ -203,14 +203,15 @@ describe("the spawn plane (subagent-only leaves — the operator's pin)", () => 
     w2("packages/engines/mcp/models/3d/blender/agents/AGENT.md", "# Blender\n");
     w2("packages/engines/mcp/models/3d/blender/agents/spawn/rigging/SKILL.md", "# Rigging\n");
     mkdirSync(join(ROOT, "flows"), { recursive: true });
-    // the constructor's index: public rows only — no spawn id anywhere
-    const idx = buildSkillIndex(ROOT) as { count: number; skills: Array<{ id: string; scope: string }> };
-    assert.ok(idx.skills.some((sk) => sk.id === "card:acard"));
-    assert.ok(idx.skills.some((sk) => sk.id === "card:acard:public-doc"));
-    assert.ok(idx.skills.some((sk) => sk.id === "model:blender"));
-    assert.equal(idx.skills.some((sk) => sk.id === "card:acard:private-doc"), false);
-    assert.equal(idx.skills.some((sk) => sk.id === "model:blender:rigging"), false);
-    assert.equal(idx.count, idx.skills.length);
+    // the constructor's index: the vocabulary counts PUBLIC skills
+    // only — a spawn leaf never inflates a count and never appears
+    const idx = buildSkillIndex(ROOT) as { count: number; families: Array<{ id: string; skills: number }>; cards: Array<{ id: string; skills: number }> };
+    const acard = idx.cards.find((c) => c.id === "acard");
+    assert.ok(acard !== undefined && acard.skills === 1, "only the public skill counts");
+    const blender = idx.families.find((f) => f.id === "blender");
+    assert.ok(blender !== undefined, "the model vocabulary carries blender");
+    assert.equal(JSON.stringify(idx).includes("private-doc"), false);
+    assert.equal(JSON.stringify(idx).includes("rigging"), false);
     // the spawn reader (findSkill): every spawn ref resolves
     const priv = findSkill(ROOT, "card:acard:private-doc");
     assert.ok(priv !== null && priv.row.scope === "card-spawn");
@@ -256,9 +257,28 @@ describe("flowRows", () => {
 describe("buildSkillIndex + findSkill", () => {
   it("indexes models + cards + flows; lookups hit every tier", () => {
     mkEstate();
-    const idx = buildSkillIndex(ROOT) as { count: number; skills: Array<{ id: string }> };
-    assert.equal(idx.count, idx.skills.length);
+    const idx = buildSkillIndex(ROOT) as unknown as {
+      count: number;
+      families: Array<{ id: string; skills: number; entrance: string | null }>;
+      cards: Array<{ id: string; skills: number; entrance: string | null }>;
+      flows: { count: number };
+    };
+    // THE NO-DUMP LAW: the index NEVER serves skill rows — only the
+    // binding vocabulary (families + cards + flow count). A skill id
+    // is learned from its OWNING surface (melite_load's tier-1 lines
+    // or the entrance row below), never from a flat list.
+    assert.equal((idx as { skills?: unknown }).skills, undefined,
+      "the index never lists skill rows — the flat dump taught agents wrong paths (2026-09-21)");
     assert.equal(idx.count, 12 + 8 + 7); // craft-loop (55) + agent-spawn (61) seated
+    const m1 = idx.families.find((f) => f.id === "m1");
+    assert.ok(m1 !== undefined, "the family vocabulary carries m1");
+    assert.equal(m1.skills, 4, "m1's model-skill count");
+    assert.equal(m1.entrance, "model:m1", "the entrance row id");
+    const m3 = idx.families.find((f) => f.id === "m3");
+    assert.ok(m3 !== undefined && m3.entrance === null, "a guide-only family names no entrance");
+    const c2 = idx.cards.find((c) => c.id === "c2");
+    assert.ok(c2 !== undefined && c2.skills === 1 && c2.entrance === "card:c2");
+    assert.ok(typeof idx.flows.count === "number");
     const card = findSkill(ROOT, "card:c1");
     assert.ok(card !== null && card.bodyText === null);
     assert.ok(card.path.endsWith("AGENT.md"));
@@ -345,15 +365,19 @@ describe("hSkillRead", () => {
 describe("wireSkill (real rows)", () => {
   it("drops nulls, keeps empties, maps steps", () => {
     mkEstate();
-    const idx = buildSkillIndex(ROOT) as { skills: Array<Record<string, unknown>> };
-    const flow = idx.skills.find((s) => s["id"] === "flow:audio-native-tts");
-    assert.ok(flow !== undefined);
+    const flowRow = findSkill(ROOT, "flow:audio-native-tts");
+    assert.ok(flowRow !== null);
+    const flow = wireSkill(flowRow.row);
     assert.deepEqual(flow["steps"], [{ id: "tts", type: "comfyui", plugin: "comfyui" }]);
     assert.equal(flow["step_count"], 1);
     assert.ok(!("genre" in flow) && !("card" in flow) && !("model" in flow));
-    const card = idx.skills.find((s) => s["id"] === "card:c1");
-    assert.ok(card !== undefined && card["card"] === "c1" && !("steps" in card));
-    const model = idx.skills.find((s) => s["id"] === "guide:m1");
+    const cardRow = findSkill(ROOT, "card:c1");
+    assert.ok(cardRow !== null);
+    const card = wireSkill(cardRow.row);
+    assert.ok(card["card"] === "c1" && !("steps" in card));
+    const modelRow = findSkill(ROOT, "guide:m1");
+    assert.ok(modelRow !== null);
+    const model = wireSkill(modelRow.row);
     assert.ok(model !== undefined && model["genre"] === "g1" && model["model"] === "m1");
     const bare = wireSkill({
       id: "x",
