@@ -168,6 +168,21 @@ class SkillCatalogService {
         const next = await benchFingerprint();
         if (fingerprint === null) {
           fingerprint = next;
+          // a NON-EMPTY first observation invalidates once: the
+          // estate re-applies on a ~21s cadence (fresh module
+          // instance each time) and a silent null-init lets a late
+          // instance absorb the bench delta while the seat's
+          // collect cache (complete:true) still holds the pre-compose
+          // catalog. Digest-identical invalidates are no-ops at the
+          // reminder layer, so this costs nothing when unchanged.
+          if (next !== "") {
+            trace("SELECTION CATALOG: first observation non-empty → invalidated");
+            try {
+              catalogControl?.invalidate();
+            } catch {
+              // a disposed registration contributes nothing
+            }
+          }
           return;
         }
         if (next !== fingerprint) {
