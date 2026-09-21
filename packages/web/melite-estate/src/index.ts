@@ -72,8 +72,6 @@ import { manageRemotePlugin } from "@melite/estate-manage";
 // THE SELECTION CATALOG (the skill rework's close): zero rows on an
 // empty bench; the bench's card+family craft carries on selection.
 import { appendFileSync } from "node:fs";
-import { benchPicks, benchFingerprint, selectionRows } from "./skillCatalog.ts";
-const trace = (m: string): void => { try { appendFileSync("/tmp/skill-catalog-trace.log", `${new Date().toISOString()} ${m}\n`); } catch { /* trace only */ } };
 import { runsRemotePlugin } from "@melite/estate-runs";
 // The runs media route (the /v1/assets face's DSH-native
 // replacement): run artifacts served same-origin from the queue
@@ -93,144 +91,16 @@ import modelsPlugin from "@melite/estate-models";
  *  probe boots mount it themselves. The queue takes no row
  *  config: its state root is MELITE_STATE_ROOT else <cwd>/data/runs. */
 
-/** THE SELECTION CATALOG (the skill rework's close, 2026-09-21) —
- *  THE CATALOG IS THE SELECTION, nothing else: a DSH skill provider
- *  serving ZERO rows on an empty bench (discovery stays a paid tool
- *  call — melite_discover bootstraps its own vocabulary) and exactly
- *  the bench's card+family craft the moment a stage lands. The
- *  remembered system, restored: the family's skills carry on
- *  automatically.
- *
- *  THE SEAMS (each learned from a failed probe, each now verified):
- *  - services resolve ONLY through inject (property reads throw);
- *  - the plugin body must apply every boot — the estate-skills
- *    service-constructor shape, never a bare apply;
- *  - repeating timers ride the timer seat's timeout(cb, ms) with a
- *    disposer — ctx.setInterval never fires here;
- *  - a mid-session bench edit reaches the model ONLY through
- *    control.invalidate() re-snapshotting the catalog into a
- *    complete-replacement system-reminder. */
-class SkillCatalogService {
-  constructor(ctx: Context) {
-    trace("SELECTION CATALOG: service constructed");
-    let fingerprint: string | null = null;
-    const seat = (ctx as unknown as {
-      skills?: { registerProvider?: (create: (c: { invalidate: () => void }) => unknown) => unknown };
-    }).skills;
-    if (seat?.registerProvider === undefined) {
-      trace("SELECTION CATALOG: NO SKILLS SEAT (inject failed)");
-      return;
-    }
-    if (catalogRegistered) {
-      trace("SELECTION CATALOG: already registered — skipping duplicate");
-      return;
-    }
-    catalogRegistered = true;
-    try {
-      // capture the queue's stateRoot SYNCHRONOUSLY (apply's fiber is
-      // the only scope where an injected service read resolves; a
-      // read from list()'s later callback would throw and the seat
-      // would mark the provider skipped — snapshot incomplete, the
-      // reminder suppressed)
-      const stateRoot = (ctx as unknown as { queue?: { stateRoot: string } }).queue?.stateRoot ?? "";
-    seat.registerProvider((control: { invalidate: () => void }) => {
-      catalogControl = control;
-      trace("SELECTION CATALOG: provider registered");
-      // the load door's index — refreshed on every list() (the rows
-      // ARE the definitions; content rides each row already)
-      const rowsByName = new Map<string, unknown>();
-      return {
-        name: "melite",
-        async list() {
-          const rows = selectionRows(await benchPicks(), stateRoot);
-          rowsByName.clear();
-          for (const r of rows) rowsByName.set(r.name, r);
-          trace(`SELECTION SNAPSHOT: ${rows.length} row(s) [${rows.map((r: { name: string }) => r.name).join(", ")}]`);
-          // complete: TRUE — the observation IS whole (the bench read
-          // finished; freshness rides the invalidate wire, not
-          // incompleteness). tool-skip suppresses the reminder on
-          // incomplete snapshots: if (!snapshot.complete) return.
-          return { candidates: rows, complete: true };
-        },
-        // THE LOAD DOOR (the crash fix, 2026-09-21): dsh-skill's get()
-        // calls provider.get(candidate, options) for every `skill`
-        // load — a provider without get threw
-        // "match.provider.get is not a function" and the agent burned
-        // its calls on recovery. The definition mirrors the candidate;
-        // a name mismatch invalidates the match by seat contract.
-        async get(candidate: unknown) {
-          const c = candidate as { name?: unknown };
-          const row = typeof c?.name === "string" ? rowsByName.get(c.name) : undefined;
-          if (row === undefined) return undefined;
-          trace(`SELECTION LOAD: ${String(c?.name)}`);
-          return row;
-        },
-      };
-    });
-    } catch (e) {
-      trace(`SELECTION CATALOG: registration refused (${String(e)}) — another instance owns the seat`);
-      return;
-    }
-    // THE INVALIDATE WIRE: poll the bench fingerprint on node's own
-    // timer (the timer seat's callbacks never fire from a dead
-    // constructor fiber — verified by probe); a change re-snapshots
-    // the catalog. The estate lives as long as the process, so the
-    // interval's lifetime IS the plugin's lifetime.
-    let ticked = false;
-    const tick = (): void => {
-      if (!ticked) {
-        ticked = true;
-        trace("SELECTION CATALOG: first poll tick");
-      }
-      void (async () => {
-        const next = await benchFingerprint();
-        if (fingerprint === null) {
-          fingerprint = next;
-          // a NON-EMPTY first observation invalidates once: the
-          // estate re-applies on a ~21s cadence (fresh module
-          // instance each time) and a silent null-init lets a late
-          // instance absorb the bench delta while the seat's
-          // collect cache (complete:true) still holds the pre-compose
-          // catalog. Digest-identical invalidates are no-ops at the
-          // reminder layer, so this costs nothing when unchanged.
-          if (next !== "") {
-            trace("SELECTION CATALOG: first observation non-empty → invalidated");
-            try {
-              catalogControl?.invalidate();
-            } catch {
-              // a disposed registration contributes nothing
-            }
-          }
-          return;
-        }
-        if (next !== fingerprint) {
-          fingerprint = next;
-          trace("SELECTION CATALOG: bench changed → invalidated");
-          try {
-            catalogControl?.invalidate();
-          } catch {
-            // a disposed registration contributes nothing
-          }
-        }
-      })();
-    };
-    globalThis.setInterval(tick, 1500).unref();
-  }
-}
-
-// the invalidate handle + the once-guard (the headless app retries
-// plugin loads on a ~21s cadence — a duplicate provider name would
-// throw and crash-loop the estate; one registration per process)
-let catalogControl: { invalidate: () => void } | null = null;
-let catalogRegistered = false;
-
-const skillCatalogProvider = {
-  name: "melite-skill-catalog",
-  inject: ["skills", "queue", "timer"] as const,
-  apply(ctx: Context): void {
-    new SkillCatalogService(ctx);
-  },
-};
+// (2026-09-21, the operator's boundary — VERBATIM: "STOP [REDACTED 2026-11-05] WITH
+// THE DEFAULT DSH SKILL SYSTEM. WHEN I TELL YOU TO REACH PAST TOOLS,
+// AND INJECT INTO DSH SKILLS? WHEN?" — never.) The melite surface is
+// TOOLS ONLY: melite_discover / melite_load / skill_read over the
+// estate's own /v1/skills door. DSH core's skill seat — its session
+// catalog, its system-reminders, its providers — is NOT ours to
+// touch. The selection-catalog provider that once lived here (the
+// registerProvider injection, the invalidate wire, the 1.5s bench
+// poll, the trace) is deleted; its "catalog follows the bench"
+// behavior belonged to a seat we were never given.
 
 const rows: readonly Plugin[] = [
   // The engines seat BEFORE every adapter + consumer (mount order
@@ -487,13 +357,6 @@ const rows: readonly Plugin[] = [
   // The skills seat (REBUILD-16): the index + read over the
   // doc-tree walks — gates on the queue seat (the ledger seam).
   skillProvider,
-  // THE SELECTION CATALOG (the skill rework's close, 2026-09-21):
-  // the DSH skills-seat provider whose list() serves ZERO rows on
-  // an empty bench (discovery stays a paid tool call — discover
-  // bootstraps its own vocabulary) and exactly the bench's
-  // card+family craft the moment a stage lands. The remembered
-  // system, restored: the family's skills carry on automatically.
-  skillCatalogProvider,
   // The load seat (REBUILD-17): Melite load opens ONE card or
   // flow — the bundle (agents md + signature + skill lines).
   loadProvider,
