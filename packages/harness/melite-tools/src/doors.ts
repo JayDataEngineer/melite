@@ -36,6 +36,10 @@ import {
   cardToolsArm,
 } from './discovery.ts'
 import { makeEstateRequest, type EstateMethod } from './estate.ts'
+// The protocol refusal discrimination (the false-death fix,
+// 2026-10-08): a seat's NAMED refusal is a 4xx answer about the
+// CALLER's request — never the seat-absent 502.
+import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 // The /poser door's outbound seam — cordis's own HTTP primitive +
 // engine base resolution (COMFYUI_URL / the endpoint config file):
 // the same seam every other Layer-A→B call resolves through.
@@ -486,6 +490,22 @@ export function apply(c: CtxView, config: Config = {}): void {
         res.writeHead(status, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(body)) })
         res.end(Buffer.from(body))
       }
+      /** The estate lanes' error map (the false-death fix, 2026-10-08:
+       *  a day-long hunt read every 502 as a dead runs seat — the
+       *  502s were seat REFUSALS, wrong bodies and boot-settle races,
+       *  on a healthy lane). Coarse law, honest transport: a named
+       *  protocol refusal means the seat ANSWERED — a 400-class about
+       *  the caller's request, the stable code riding in the body;
+       *  502 stays for the absent-seat/transport voice. */
+      const failEstate = (error: unknown): void => {
+        const remote = remoteErrorOf(error)
+        const message = error instanceof Error ? error.message : String(error)
+        if (remote !== undefined) {
+          fail(400, { error: message, code: remote.code })
+          return
+        }
+        fail(502, { error: message })
+      }
       // Discovery arms are GET; seat lanes carry both (bench patch
       // is POST, drafts GET).
       // CALLER-GONE LAW: bind to the RESPONSE's premature close
@@ -645,13 +665,13 @@ export function apply(c: CtxView, config: Config = {}): void {
             }
             request(method, pathWithQuery, body, signal, 120_000)
               .then((value) => ok(value))
-              .catch((error: unknown) => fail(502, { error: error instanceof Error ? error.message : String(error) }))
+              .catch(failEstate)
           }).catch((error: unknown) => fail(400, { error: `body read failed: ${error instanceof Error ? error.message : String(error)}` }))
           return
         }
         request(method, pathWithQuery, undefined, signal, 120_000)
           .then((value) => ok(value))
-          .catch((error: unknown) => fail(502, { error: error instanceof Error ? error.message : String(error) }))
+          .catch(failEstate)
       }
       return serve()
     },
