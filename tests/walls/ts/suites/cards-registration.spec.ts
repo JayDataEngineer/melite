@@ -1,7 +1,7 @@
 // cards-registration.spec.ts — the card-only packages' registration
 // contract (2026-09-11: the genre packages shipping card.ts with NO
 // tool.ts and NO test — anny, img-to-mesh, quad-remesh, sfx,
-// ideogram4, input-prep, tagger, upscale-tools, video-gen.
+// ideogram4, input-prep, tagger, upscale-tools.
 // Nothing pinned their registerCard rows: a renamed id,
 // a dropped skeleton, or a gutted identity would boot clean and
 // surface only as a missing card in the UI).
@@ -78,7 +78,9 @@ const CARDS: Array<{ pkg: string; genre: string; path: string }> = [
   // package survives demoted (ui/ = the paint leaf-face carrier).
   { pkg: "tagger", genre: "image", path: "../../../../packages/image/tagger/src/card.ts" },
   { pkg: "upscale-tools", genre: "image", path: "../../../../packages/image/upscale-tools/src/card.ts" },
-  { pkg: "video-gen", genre: "video", path: "../../../../packages/video/video-gen/src/card.ts" },
+  // video-gen RETIRED (2026-09-21, operator order — "the ONLY
+  // video gen I want is the timeline tool"): card face gone from
+  // cardPackages; h3-timeline owns the video door.
 ];
 
 describe("card-only packages register exactly one honest row", () => {
@@ -111,14 +113,14 @@ describe("card-only packages register exactly one honest row", () => {
     });
   }
 
-  it("eight cards on one seat: eight unique ids (one card, one plugin; the studio retired stroke 75, fit+skin stroke 87, ideogram4 the form-seams stroke)", async () => {
+  it("seven cards on one seat: seven unique ids (video-gen retired 2026-09-21; studio stroke 75, fit+skin stroke 87, ideogram4 form-seams)", async () => {
     const { ctx, seat } = fakeCtx();
     for (const card of CARDS) {
       const mod: CardModule = (await import(card.path)) as CardModule;
       mod.apply(ctx);
     }
-    assert.equal(seat.rows.length, 8);
+    assert.equal(seat.rows.length, 7);
     const ids: string[] = seat.rows.map((r) => r.id);
-    assert.equal(new Set(ids).size, 8, `ids unique (got ${JSON.stringify(ids)})`);
+    assert.equal(new Set(ids).size, 7, `ids unique (got ${JSON.stringify(ids)})`);
   });
 });

@@ -30,6 +30,25 @@ have left the contract — come back to the knobs.
    when the brief names a look; otherwise state nothing.
 4. input_image + lanpaint_mask switches the card to LanPaint inpaint.
 
+## THE LOOK PICKS THE FAMILY (the operator's law, 2026-09-21)
+
+Four looks are boarded, and they are NOT interchangeable — the
+brief's words pick one, or you ask. Never silently take the
+signature default when the brief names a look:
+
+- **z-image** — photoreal: photography, product shots, lifelike
+  faces, natural light.
+- **anima** — anime/illustration: 2D styles, manga, cel shading.
+- **krea-2** — painterly/illustrative render, the signature
+  default when the brief names NO look.
+- **qwen-img-21** — the text-render specialist: signs, posters,
+  legible typography in-image.
+
+Ambiguous ("make it cool")? ASK the user which look — one line,
+the four options. The family rides `params.model` on the stage
+(that is a LOOK choice, not a checkpoint choice — law 3 stands:
+never steps/cfg, never weights).
+
 ## Doors
 
 - Compose: `melite_construct` — `add_stage` this card onto the shared

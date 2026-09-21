@@ -219,7 +219,7 @@ export interface SegmentParams {
  samplingSteps: number
  /** CFG guidance scale (VACE: 3.0–7.0 typical) */
  guideScale: number
- /** VACE model id (catalog route key, e.g. wan-vace) */
+ /** Video model id (catalog route key; h3 is the only route) */
  model: string
 
  // ── VACE-specific ──────────────────────────────────────────────────────
@@ -452,7 +452,8 @@ export const DEFAULT_SEGMENT_PARAMS: SegmentParams = {
  // Sampling
  samplingSteps: 10, // Lightning default
  guideScale: 5.0, // VACE default CFG
- model: 'wan-vace', // the ONLY catalog route (Speed tier = variant toggle)
+ model: 'h3', // the ONLY video route (2026-09-21, operator order:
+              // wan-vace is gone; timeline studio is H3 only)
 
  // VACE-specific
  profile: 'fast',

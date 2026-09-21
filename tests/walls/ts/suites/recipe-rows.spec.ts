@@ -54,10 +54,8 @@ const RESOLVED: Readonly<Record<string, "stamps" | "scoped">> = {
   "kimodo": "stamps",           // ← motion
   "pixal3d": "stamps",          // ← img-to-mesh
   "qwen-img-edit-2511": "stamps", // ← image-edit
-  "scail2-animate": "stamps",   // ← video-gen
   "seedvr2_ema": "stamps",      // ← upscale-tools
   "trellis2-native": "stamps",  // ← img-to-mesh
-  "wan-vace": "stamps",         // ← video-gen
 };
 
 /** The card schema's declared scalars, from the LIVE envelope the
@@ -135,12 +133,12 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
       assert.ok(stamping.length > 0,
         `${id}: declares the Recipe group, its card (${caller}) renders the dropdown, and NO row stamps — author truthful rows (the 2026-09-18 retirement left zero exemptions)`);
     }
-    assert.ok(checked > 15, `the law reached the table (checked ${checked})`);
+    assert.ok(checked > 13, `the law reached the table (checked ${checked})`);
   });
 
-  it("DEBT RETIRED: the 17-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
+  it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
     await loadCardDefs();
-    assert.equal(Object.keys(RESOLVED).length, 17, "the census pins all 17 resolutions");
+    assert.equal(Object.keys(RESOLVED).length, 15, "the census pins all 15 resolutions (wan-vace + scail2-animate retired 2026-09-21)");
     for (const [id, how] of Object.entries(RESOLVED)) {
       const f = getModel(id);
       const groups = (f.variant_groups ?? []).map((g: unknown) => typeof g === "string" ? g : (g as { id?: string }).id);

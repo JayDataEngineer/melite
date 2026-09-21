@@ -53,7 +53,6 @@ import { DECL as declQwen3Tts, family as familyQwen3Tts } from '../../../models/
 import { DECL as declQwen3TtsVoiceDesign, family as familyQwen3TtsVoiceDesign } from '../../../models/qwen3-tts-voicedesign/src/index.ts'
 import { DECL as declQwenImgEdit2511, family as familyQwenImgEdit2511 } from '../../../models/qwen-img-edit-2511/src/index.ts'
 import { DECL as declRtxVsr, family as familyRtxVsr } from '../../../models/rtx-vsr/src/index.ts'
-import { DECL as declScail2Animate, family as familyScail2Animate } from '../../../models/scail2-animate/src/index.ts'
 import { DECL as declSeedvr2Ema, family as familySeedvr2Ema } from '../../../models/seedvr2_ema/src/index.ts'
 import { DECL as declSeeThrough, family as familySeeThrough } from '../../../models/see-through/src/index.ts'
 import { DECL as declSkintokens, family as familySkintokens } from '../../../models/skintokens/src/index.ts'
@@ -63,7 +62,6 @@ import { DECL as declStretchyRig, family as familyStretchyRig } from '../../../m
 import { DECL as declTransferRig, family as familyTransferRig } from '../../../models/transfer_rig/src/index.ts'
 import { DECL as declTrellis2Native, family as familyTrellis2Native } from '../../../models/trellis2-native/src/index.ts'
 import { DECL as declTrellisNative, family as familyTrellisNative } from '../../../models/trellis_native/src/index.ts'
-import { DECL as declWanVace, family as familyWanVace } from '../../../models/wan-vace/src/index.ts'
 import { DECL as declWd14, family as familyWd14 } from '../../../models/wd14/src/index.ts'
 import { DECL as declZImage, family as familyZImage } from '../../../models/z-image/src/index.ts'
 
@@ -99,7 +97,6 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'qwen3-tts-voicedesign', decl: declQwen3TtsVoiceDesign as never, family: familyQwen3TtsVoiceDesign as never },
   { id: 'qwen-img-edit-2511', decl: declQwenImgEdit2511 as never, family: familyQwenImgEdit2511 as never },
   { id: 'rtx-vsr', decl: declRtxVsr as never, family: familyRtxVsr as never },
-  { id: 'scail2-animate', decl: declScail2Animate as never, family: familyScail2Animate as never },
   { id: 'seedvr2_ema', decl: declSeedvr2Ema as never, family: familySeedvr2Ema as never },
   { id: 'see-through', decl: declSeeThrough as never, family: familySeeThrough as never },
   { id: 'skintokens', decl: declSkintokens as never, family: familySkintokens as never },
@@ -109,7 +106,6 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'transfer_rig', decl: declTransferRig as never, family: familyTransferRig as never },
   { id: 'trellis2-native', decl: declTrellis2Native as never, family: familyTrellis2Native as never },
   { id: 'trellis_native', decl: declTrellisNative as never, family: familyTrellisNative as never },
-  { id: 'wan-vace', decl: declWanVace as never, family: familyWanVace as never },
   { id: 'wd14', decl: declWd14 as never, family: familyWd14 as never },
   { id: 'z-image', decl: declZImage as never, family: familyZImage as never },
 ]

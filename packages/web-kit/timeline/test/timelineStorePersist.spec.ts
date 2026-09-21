@@ -331,7 +331,7 @@ describe("catalog-seeded model validation", () => {
   it("keeps a catalog-listed model, resets unknown + non-string ones", async () => {
     primeCatalog({
       families: {},
-      models: { "wan-vace": { name: "wan" } },
+      models: { "h3": { name: "h3" } },
       capabilities: null,
       engine_order: null,
       quant_order: null,
@@ -350,9 +350,9 @@ describe("catalog-seeded model validation", () => {
           },
         ],
       });
-    lsData.set(LS_KEY, mk("kept", "wan-vace"));
+    lsData.set(LS_KEY, mk("kept", "h3"));
     await S().initialize();
-    assert.equal((S().segments[0] as TimelineSegment).params.model, "wan-vace");
+    assert.equal((S().segments[0] as TimelineSegment).params.model, "h3");
     await cleanReset();
     lsData.set(LS_KEY, mk("dropped", "stale-route"));
     await S().initialize();
@@ -372,7 +372,7 @@ describe("catalog-seeded model validation", () => {
           {
             id: "m", order: 0, start: 0, duration: 5, prompt: "p", negativePrompt: "",
             thumbnailUrl: null, videoUrl: null, firstFrameB64: null, lastFrameB64: null,
-            params: { ...DEFAULT_SEGMENT_PARAMS, model: "wan-vace" },
+            params: { ...DEFAULT_SEGMENT_PARAMS, model: "stale-route" },
             trimStart: 0, sourceStepId: null, status: "empty", error: null,
             controlVideoUrl: null, lipSyncedVideoUrl: null, lipSyncPreferOriginal: false,
             promptBeats: [], keyframes: [],

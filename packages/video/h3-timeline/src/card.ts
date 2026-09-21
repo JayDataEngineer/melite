@@ -1441,7 +1441,9 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // all three families.
     // video_h3_open-cascade composing model 'h3' through this card.
     boarded: [...BOARDED],
-    tags: ['video', 'timeline', 'edit'],
+    // THE video door (2026-09-21, operator order — video-gen
+    // retired): a blind "make a video" must find THIS card first.
+    tags: ['video', 'generate', 'text-to-video', 'timeline', 'edit'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
     // discovery export — the card owns its sidebar, surface, and

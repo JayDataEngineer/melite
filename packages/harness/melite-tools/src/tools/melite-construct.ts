@@ -275,8 +275,14 @@ export function meliteConstruct(
           const b = await readBench(request, bench, signal)
           const stages = projectStages(b.stages)
           if (stages.length === 0) return out({ rev: b.rev, compiles: false, note: 'bench is empty' })
+          // THE TOOL DOES ITS OWN BOOKKEEPING (2026-09-21): the
+          // validate door demands a flow id — this arm supplies it
+          // itself (the bench's intent when legal, else 'bench').
+          // The caller never spells an incantation.
+          const intent: string = typeof b.intent === 'string' ? b.intent : ''
+          const flowId: string = /^[a-z_][a-z0-9_-]*$/.test(intent) && intent !== '' ? intent : 'bench'
           const r = await request( 'POST', '/v1/flows/validate',
-            { flow_inline: { stages } }, signal, 20000) as Record<string, unknown>
+            { flow_inline: { id: flowId, stages } }, signal, 20000) as Record<string, unknown>
           return out({ rev: b.rev, compiles: r['ok'] === true || r['valid'] === true, report: r })
         }
         if (verb === 'load') {
@@ -296,6 +302,11 @@ export function meliteConstruct(
           return out({ rev: r.rev, stage: r.stage, patched: r.patched })
         }
         if (verb === 'add_stage') {
+          // LOUD, never accept-and-ignore (2026-09-21): add_stage
+          // names no stage — ids are assigned (s_0, s_1, ...) and the
+          // answer carries the assigned id. A `stage` here was a
+          // silent no-op that burned a patch cycle downstream.
+          if (a.stage !== undefined) return out({ error: 'add_stage assigns its own stage id (s_0, s_1, ...) — the answer carries it; patch/remove_stage/rewire take {stage}. Drop the stage arg.' })
           const r = await request( 'POST', `/v1/bench/${bench}/add_stage`,
             {
               card: a.card,

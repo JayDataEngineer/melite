@@ -99,7 +99,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, await allBoardings(), new Set(modelIds()), allRouteViews());
     // every caller-owned pair is checked (27 boardings since
     // stroke 87 — fit + skin retired with their cards)
-    assert.ok(checked.length >= 26, `expected ≥26 checked pairs, got ${checked.length}`);
+    assert.ok(checked.length >= 24, `expected ≥24 checked pairs (wan-vace/scail2 retired 2026-09-21), got ${checked.length}`);
   });
 
   it("every non-empty COMFYUI card ref names a REGISTERED card (the amnesty is over)", async (): Promise<void> => {
@@ -173,7 +173,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         err instanceof ModelError && String(err.message).includes("qwen3-tts: default 'mode'"),
     );
     const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, boarded, served, allRouteViews());
-    assert.ok(checked.length >= 26, `expected 26 checked pairs, got ${checked.length}`);
+    assert.ok(checked.length >= 24, `expected 24 checked pairs (wan-vace/scail2 retired 2026-09-21), got ${checked.length}`);
   });
 
   it("every served owner is claimed (the catalog offers only runnable atoms)", async (): Promise<void> => {

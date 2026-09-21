@@ -365,7 +365,7 @@ export function familyLabel(routeKey: string, cat: Catalog = _cache ?? { familie
 
 /**
  * The family-declared media genre for a route key. Resolves model routes
- * AND raw family ids (``wan-vace``, ``detect``) — the catalog passthrough
+ * AND raw family ids (``detect``) — the catalog passthrough
  * emits ``genre:`` verbatim. Non-catalog services (trellis, kimodo, yaml
  * brick families) return undefined → callers fall back to their generic
  * badge. The schema-driven replacement for engine-name substring
@@ -421,7 +421,7 @@ export function familyTransformMatrix(
 
 /**
  * The family's declared video conditioning slots ([first_frame,
- * last_frame] for ltx/wan-vace, [reference, pose, mask] for scail2) —
+ * last_frame] for ltx) —
  * schema-driven input-wiring labels (no engine-name classifiers).
  */
 /**

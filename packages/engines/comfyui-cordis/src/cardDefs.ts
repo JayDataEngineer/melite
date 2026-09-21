@@ -89,7 +89,11 @@ export const cardPackages: string[] = [
     '@melite/image-mask-form/card',
     '@melite/image-tagger',
     '@melite/image-upscale-tools',
-    '@melite/video-video-gen',
+    // video-gen RETIRED (2026-09-21, operator order — "the ONLY
+    // video gen I want is the timeline tool"; "there is no wan-vace,
+    // there is only H3 in timeline studio"): card + wan-vace +
+    // scail2-animate families ALL gone. h3-timeline is the only
+    // video door.
     '@melite/audio-music',
     '@melite/audio-tts',
     '@melite/image-image-edit',

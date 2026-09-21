@@ -51,8 +51,6 @@ import { family as h3Timeline } from "@melite/models-h3-timeline";
 import { family as ltx23 } from "@melite/models-ltx-2-3";
 import { family as ltxDirectorDistilled } from "@melite/models-ltx-director-distilled";
 import { family as rtxVsr } from "@melite/models-rtx-vsr";
-import { family as scail2Animate } from "@melite/models-scail2-animate";
-import { family as wanVace } from "@melite/models-wan-vace";
 
 export const FAMILY_PLUGINS: Plugin[] = [
   anny,
@@ -100,6 +98,4 @@ export const FAMILY_PLUGINS: Plugin[] = [
   ltx23,
   ltxDirectorDistilled,
   rtxVsr,
-  scail2Animate,
-  wanVace,
 ];

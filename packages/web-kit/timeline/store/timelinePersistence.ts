@@ -207,7 +207,7 @@ export async function loadPersistedTimeline(): Promise<{
         clone.params.progressiveMode = D.progressiveMode
       }
       // Model membership — the catalog is the ONLY authority. Persisted
-      // legacy ids (wan-vace-lightning, wan-vace-base, …) are not catalog
+      // legacy ids (retired video routes, pre-catalog ids, …) are not catalog
       // routes: the director's model dropdown is catalog-driven
       // (familiesForForm), so anything outside the catalog resets to the
       // default. No hardcoded id lists, no legacy remap tables. (Before

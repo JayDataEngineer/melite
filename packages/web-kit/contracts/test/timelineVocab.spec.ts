@@ -58,11 +58,11 @@ describe("timeline constants", () => {
     assert.equal(FLF_MODES[1].id, "on");
   });
 
-  it("DEFAULT_SEGMENT_PARAMS holds the proven VACE defaults", () => {
+  it("DEFAULT_SEGMENT_PARAMS holds the proven defaults (h3 — the only video route)", () => {
     assert.equal(DEFAULT_SEGMENT_PARAMS.seed, 42);
     assert.equal(DEFAULT_SEGMENT_PARAMS.width, 640);
     assert.equal(DEFAULT_SEGMENT_PARAMS.height, 480);
-    assert.equal(DEFAULT_SEGMENT_PARAMS.model, "wan-vace");
+    assert.equal(DEFAULT_SEGMENT_PARAMS.model, "h3");
     assert.deepEqual(DEFAULT_SEGMENT_PARAMS.loras, []);
   });
 

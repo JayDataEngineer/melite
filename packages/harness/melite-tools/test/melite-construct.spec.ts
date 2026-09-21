@@ -252,8 +252,11 @@ describe('melite_construct validate — compile, no GPU', () => {
     assert.deepEqual(out.report, { ok: true })
     const validate = seen.find((c) => c.path === '/v1/flows/validate')!
     assert.equal(validate.timeoutMs, 20_000)
+    // 2026-09-21: the tool supplies the flow id itself (the bench's
+    // intent when legal, else 'bench') — the caller never spells one.
     assert.deepEqual(validate.body, {
       flow_inline: {
+        id: 'bench',
         stages: [{ id: 'a', engine: 'comfyui', params: { p: 1 }, inputs: {}, outputs: { default: 'image' } }],
       },
     })

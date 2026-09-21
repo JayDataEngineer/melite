@@ -43,10 +43,6 @@ export {
 } from './lanes-image.ts'
 export {
   VIDEO_NEGATIVE_FALLBACK,
-  VACE_LIGHTNING_LORA,
-  VIDEO_REQUIRED_PATHS,
-  wanVace,
-  scail2,
   H3_T4_STRIP,
   finalizeH3,
 } from './lanes-video.ts'
