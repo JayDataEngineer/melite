@@ -112,7 +112,7 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
           error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
       },
-      render: (_args, value) => {
+      render: (args, value) => {
         const v = value as {
           flows?: Array<{ name?: unknown; title?: unknown; stages?: unknown }>
           cards?: Array<{ id?: unknown; label?: unknown; tags?: unknown }>
@@ -127,9 +127,13 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
         // from output.render; the envelope only feeds the GUI). A
         // counts-only line starves routing: melite_load demands a name
         // "exactly as discovered", so the render MUST carry the lines.
-        // Counts-first stays: RENDER_CLAMP rows per plane, the counts
-        // and the clamp hint ride above them.
-        const RENDER_CLAMP = 8
+        // Counts-first stays — but detail=true HONESTLY lifts it here
+        // too (2026-09-21, the chatlog audit: the render once clamped
+        // to 8 rows while promising "detail=true lists every line" —
+        // the promise and the behavior disagreed and an agent burned
+        // calls hunting the hidden rows, guessing retired model names).
+        const wantsAll = (args as { detail?: unknown } | undefined)?.detail === true
+        const RENDER_CLAMP = wantsAll ? Number.POSITIVE_INFINITY : 8
         const flows = Array.isArray(v?.flows) ? v.flows : []
         const cards = Array.isArray(v?.cards) ? v.cards : []
         const nf = typeof v?.counts?.flows === 'number' ? v.counts.flows : flows.length
@@ -147,7 +151,7 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
           for (const f of flows.slice(0, RENDER_CLAMP)) {
             out.push(`  ${line(f?.name)} — ${line(f?.title)} (${num(f?.stages)} stages)`)
           }
-          if (nf > RENDER_CLAMP) out.push(`  +${nf - RENDER_CLAMP} more — detail=true lists every line`)
+          if (!wantsAll && nf > RENDER_CLAMP) out.push(`  +${nf - RENDER_CLAMP} more — detail=true lists every line`)
         }
         if (cards.length > 0) {
           out.push('cards:')
@@ -155,7 +159,7 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
             const tags = Array.isArray(c?.tags) ? c.tags.filter((t): t is string => typeof t === 'string') : []
             out.push(`  ${line(c?.id)} — ${line(c?.label)}${tags.length > 0 ? ` [${tags.join(',')}]` : ''}`)
           }
-          if (nc > RENDER_CLAMP) out.push(`  +${nc - RENDER_CLAMP} more — narrow with tags/q, or detail=true`)
+          if (!wantsAll && nc > RENDER_CLAMP) out.push(`  +${nc - RENDER_CLAMP} more — narrow with tags/q, or detail=true`)
         }
         if (Array.isArray(v?.tag_vocabulary)) {
           const vocab = v.tag_vocabulary.filter((t): t is string => typeof t === 'string')

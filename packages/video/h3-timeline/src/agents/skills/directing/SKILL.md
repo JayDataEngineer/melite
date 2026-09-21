@@ -90,19 +90,22 @@ latent chain IS the seam — the plan refuses the conflict).
 ## Rule 5 — the plan-and-repair loop (NEVER skip)
 
 1. Write the document.
-2. `plan_timeline(document)` — dry-run, no GPU. Read:
-   - `unfilled` — keyframe/call sources that resolve to nothing → wire
-     them or drop them (`ready: false` REFUSES the run);
-   - `notes` — snap reports (a 21-frame clip guide snaps to 5), forced
-     overflows (a call too long for any window), carry snaps;
-   - `windows` — the render plan (lengths, feeds, carry math).
-3. Repair the document; re-plan. Repeat until `ready: true`.
+2. Dry-run the document — no GPU. THE VERB DEPENDS ON YOUR FACE
+   (2026-09-21, the two-face law):
+   - **bench face (agent lanes)**: `melite_construct` `validate` —
+     it compiles the bench's stages (grid, wires, tiling) and
+     answers `compiles`. You have NO `plan_timeline` tool here;
+     never go hunting for one — validate IS your dry-run.
+   - **maker face (the studio lane)**: `plan_timeline(document)`
+     answers the richer report (`unfilled`, `notes`, `windows`).
+   When you have both, validate is the cheaper first pass.
+3. Repair the document; re-check. Repeat until it compiles clean.
 4. `melite_construct` lands the repaired document on the shared
    bench (live in the user's cards tab). THE USER'S RUN PRESS
    starts the render — never yours. Stay on the bench: refine as
    they ask; the run's own status surfaces on the card.
 
-A failed plan returns the compile-layer violation list — surface the
+A failed check returns the compile-layer violation list — surface the
 ACTUAL error to the user, never a summary.
 
 ## Rule 6 — iterate fast, finish slow (turbo LoRA + attention)
