@@ -270,7 +270,7 @@ export function mountPoseStage(
 
     // skeleton (display-only; kept-pose aware)
     skeleton.update(
-      p.showSkeleton && !p.editMode ? (p.editableJoints ?? p.soma77JointsFlat) : null,
+      p.layers.skeleton && !p.editMode ? (p.editableJoints ?? p.soma77JointsFlat) : null,
       p.frameIdx,
     )
 

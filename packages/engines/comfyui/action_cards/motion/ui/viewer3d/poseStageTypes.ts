@@ -1,4 +1,5 @@
 import * as THREE from "three"
+import type { StageLayers } from "@melite/card-base/preview"
 
 // ── Types ─────────────────────────────────────────────────────────────────
 export interface SkinMeshData {
@@ -67,11 +68,16 @@ export interface PoseStageProps {
   animate: boolean
   showBindPose: boolean
   opacity: number
-  wireframe: boolean
+  /** THE BASE'S LAYER VOCABULARY (primitive ② close-out): the pose
+   *  stage votes the SAME StageLayers every mesh stage votes —
+   *  Pick'd to the lanes this stage seats (wireframe + skeleton;
+   *  no weights lane here — the pose mesh is LBS-deformed from a
+   *  vertex stream, not a GLTF skin, and an absent flag is off by
+   *  the base's own law). */
+  layers: Pick<StageLayers, "wireframe" | "skeleton">
   color: string
   fps: number
   soma77JointsFlat: Float32Array | null
-  showSkeleton: boolean
   editMode: boolean
   editableJoints: Float32Array | null
   selectedJoint: number | null

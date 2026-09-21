@@ -373,7 +373,7 @@ export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
  *  law: NO @react-three in any client bundle). Re-exported here so
  *  the preview seam stays ONE subpath: import { GlbStagePreview }
  *  from '@melite/card-base/preview'. */
-export { GlbStagePreview, autoFitToHeight, applyWireframe, skeletonHelperFor, turntableTick, TURNTABLE_SPEED, type StageAsset, type StageLayers } from './glb-stage.tsx'
+export { GlbStagePreview, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED, type StageAsset, type StageLayers } from './glb-stage.tsx'
 export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.tsx'
 export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.tsx'
 export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.tsx'

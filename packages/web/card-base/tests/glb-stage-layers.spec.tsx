@@ -11,7 +11,7 @@ import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import * as THREE from 'three'
 
-import { applyWireframe, GlbStagePreview, skeletonHelperFor, TURNTABLE_SPEED, turntableTick } from '../src/glb-stage.tsx'
+import { applyWeightsHeat, applyWireframe, GlbStagePreview, heatColor, skeletonHelperFor, slotLabelOf, TURNTABLE_SPEED, turntableTick } from '../src/glb-stage.tsx'
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
@@ -95,9 +95,9 @@ test('THE CHIPS: onLayers + assets seats Shaded/Wireframe, votes ride the channe
   expect(wire.getAttribute('aria-pressed')).toBe('false')
   expect(skeleton.getAttribute('aria-pressed')).toBe('false')
   fireEvent.click(wire)
-  expect(onLayers).toHaveBeenCalledWith({ wireframe: true, skeleton: false })
+  expect(onLayers).toHaveBeenCalledWith({ wireframe: true, skeleton: false, weights: false })
   fireEvent.click(shaded)
-  expect(onLayers).toHaveBeenCalledWith({ wireframe: false, skeleton: false })
+  expect(onLayers).toHaveBeenCalledWith({ wireframe: false, skeleton: false, weights: false })
 })
 
 test('THE LAYER ARM: a seated wireframe flag presses the chip and walks the load without throwing', async () => {
@@ -170,10 +170,117 @@ test('THE OVERLAY VOTE: Skeleton flips its own flag and mode votes preserve it',
   expect(screen.getByRole('button', { name: 'Wireframe' }).getAttribute('aria-pressed')).toBe('true')
   // the overlay vote flips ONLY its flag (the mode rides along)
   fireEvent.click(skeleton)
-  expect(onLayers).toHaveBeenCalledWith({ wireframe: true, skeleton: false })
+  expect(onLayers).toHaveBeenCalledWith({ wireframe: true, skeleton: false, weights: false })
   // the mode votes preserve the overlay (never a silent layer drop)
   fireEvent.click(screen.getByRole('button', { name: 'Shaded' }))
-  expect(onLayers).toHaveBeenCalledWith({ wireframe: false, skeleton: true })
+  expect(onLayers).toHaveBeenCalledWith({ wireframe: false, skeleton: true, weights: false })
+})
+
+test('THE WEIGHTS VOTE: pressed reads the caller flag, votes flip only themselves, siblings preserve it', async () => {
+  stubGlbDoor()
+  const onLayers = vi.fn()
+  // THE CALLER-STATE LOOP (the real studio shape): every vote feeds
+  // back through `layers` — the stage is a pure function of its
+  // props, so a vote the caller never acknowledged NEVER compounds.
+  const seat = (layers: { wireframe: boolean; skeleton: boolean; weights?: boolean }, rerender: (ui: ReturnType<typeof h>) => void): void => {
+    rerender(h(GlbStagePreview, {
+      assets: [{ id: 'a', url: '/mesh-layer-w.glb' }], layers, onLayers,
+    }))
+  }
+  const { rerender } = render(h(GlbStagePreview, {
+    assets: [{ id: 'a', url: '/mesh-layer-w.glb' }],
+    layers: { wireframe: false, skeleton: true, weights: true },
+    onLayers,
+  }))
+  const weights = await screen.findByRole('button', { name: 'Weights' })
+  expect(weights.getAttribute('aria-pressed')).toBe('true')
+  expect(screen.getByRole('button', { name: 'Skeleton' }).getAttribute('aria-pressed')).toBe('true')
+  // the weights vote flips ONLY its own flag (sibling flags ride along)
+  fireEvent.click(weights)
+  expect(onLayers).toHaveBeenCalledWith({ wireframe: false, skeleton: true, weights: false })
+  // the caller seats the vote; every sibling vote carries it (never a drop)
+  seat({ wireframe: false, skeleton: true, weights: false }, rerender)
+  fireEvent.click(screen.getByRole('button', { name: 'Wireframe' }))
+  expect(onLayers).toHaveBeenCalledWith({ wireframe: true, skeleton: true, weights: false })
+  seat({ wireframe: true, skeleton: true, weights: false }, rerender)
+  fireEvent.click(screen.getByRole('button', { name: 'Skeleton' }))
+  expect(onLayers).toHaveBeenCalledWith({ wireframe: true, skeleton: false, weights: false })
+})
+
+test('heatColor: the 5-stop ramp — blue→cyan→green→yellow→red, clamped at both ends', () => {
+  const eq = (a: readonly number[], b: readonly number[]): void => {
+    for (let i = 0; i < 3; i++) expect(Math.abs(a[i]! - b[i]!)).toBeLessThan(1e-9)
+  }
+  eq(heatColor(0), [0, 0, 1])
+  eq(heatColor(0.25), [0, 1, 1])
+  eq(heatColor(0.5), [0, 1, 0])
+  eq(heatColor(0.75), [1, 1, 0])
+  eq(heatColor(1), [1, 0, 0])
+  // clamp: outside the domain reads as the stop it points past
+  eq(heatColor(-1), [0, 0, 1])
+  eq(heatColor(2), [1, 0, 0])
+  // mid-segment lerps (halfway blue→cyan)
+  eq(heatColor(0.125), [0, 0.5, 1])
+})
+
+/** A skinned test mesh: position (3 verts) + skinWeight (4 comps/vert). */
+function skinnedMesh(): { group: THREE.Group; geo: THREE.BufferGeometry; mat: THREE.MeshStandardMaterial } {
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]), 3))
+  // vert 0: bone A dominates (1.0 → red); vert 1: split 0.5/0.5 (mid ramp);
+  // vert 2: 0.25 across four (the floor → blue)
+  geo.setAttribute('skinWeight', new THREE.BufferAttribute(new Float32Array([
+    1, 0, 0, 0,
+    0.5, 0.5, 0, 0,
+    0.25, 0.25, 0.25, 0.25,
+  ]), 4))
+  const mat = new THREE.MeshStandardMaterial()
+  const group = new THREE.Group()
+  group.add(new THREE.Mesh(geo, mat))
+  return { group, geo, mat }
+}
+
+test('applyWeightsHeat: paints dominant-weight heat, restores originals, skips unskinned', () => {
+  const { group, geo, mat } = skinnedMesh()
+  const bare = new THREE.Group()
+  const bareMat = new THREE.MeshStandardMaterial()
+  bare.add(new THREE.Mesh(new THREE.BoxGeometry(), bareMat))
+  applyWeightsHeat(group, true)
+  expect(mat.vertexColors).toBe(true)
+  const colors = geo.getAttribute('color') as THREE.BufferAttribute
+  expect(colors).not.toBeUndefined()
+  // dominant weight per vert: 1 → red, 0.5 → green, 0.25 → blue
+  const c = (i: number): readonly number[] => [colors.getX(i), colors.getY(i), colors.getZ(i)]
+  for (let i = 0; i < 3; i++) {
+    const [r, g, b] = c(i)
+    expect(Math.abs(r - heatColor([1, 0.5, 0.25][i]!)[0])).toBeLessThan(1e-6)
+    expect(Math.abs(g - heatColor([1, 0.5, 0.25][i]!)[1])).toBeLessThan(1e-6)
+    expect(Math.abs(b - heatColor([1, 0.5, 0.25][i]!)[2])).toBeLessThan(1e-6)
+  }
+  // the unskinned neighbor never paints (no skinWeight — no lane)
+  applyWeightsHeat(bare, true)
+  expect(bareMat.vertexColors).toBe(false)
+  // OFF with no original color: ours deletes, the flag clears
+  applyWeightsHeat(group, false)
+  expect(geo.getAttribute('color')).toBeUndefined()
+  expect(mat.vertexColors).toBe(false)
+})
+
+test('applyWeightsHeat: a pre-existing color attribute is restored verbatim (identity, not a copy)', () => {
+  const { group, geo, mat } = skinnedMesh()
+  const original = new THREE.BufferAttribute(new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]), 3)
+  geo.setAttribute('color', original)
+  applyWeightsHeat(group, true)
+  expect(geo.getAttribute('color')).not.toBe(original) // ours, the heat
+  applyWeightsHeat(group, false)
+  expect(geo.getAttribute('color')).toBe(original) // the caller's, back
+  expect(mat.vertexColors).toBe(false)
+})
+
+test('slotLabelOf: a named slot reads its label; missing/blank read null (unlabeled seat)', () => {
+  expect(slotLabelOf({ id: 'a', url: '/a.glb', slot: 'source' })).toBe('source')
+  expect(slotLabelOf({ id: 'a', url: '/a.glb' })).toBeNull()
+  expect(slotLabelOf({ id: 'a', url: '/a.glb', slot: '' })).toBeNull()
 })
 
 test('TURNTABLE TICK: every group spins by speed×delta about its own Y (pure, additive)', () => {

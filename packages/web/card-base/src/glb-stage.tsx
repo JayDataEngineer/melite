@@ -25,7 +25,7 @@ import { createElement as h, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
-import { mountStage3D } from './stage3d.ts'
+import { mountStage3D, makeLabelSprite } from './stage3d.ts'
 import s from './preview.module.css'
 
 let draco: DRACOLoader | null = null
@@ -49,6 +49,9 @@ export interface StageAsset {
   url: string
   /** display name (chips / selection list) */
   name?: string
+  /** the comparison seat's label (N named slots: source/result,
+   *  body/garment, donor/target…). Omit for an unlabeled seat. */
+  slot?: string
   /** world position override; omit for the row layout */
   position?: readonly [number, number, number]
   /** rotation (Euler, radians) */
@@ -148,16 +151,20 @@ function tint(root: THREE.Object3D, on: boolean): void {
 }
 
 /** THE STAGE'S LAYER MODEL (primitive ②, first slice 2026-09-21,
- *  skeleton second): shaded vs wireframe + the skeleton overlay.
- *  CALLER state — studios persist layer choices exactly like
- *  selection: `layers` reads, `onLayers` writes. Omit both for the
- *  plain shaded stage (no chips, no new chrome); omit only
- *  `onLayers` for a read-only layer (no write channel, no chips).
- *  Shaded/Wireframe are the surface MODE; skeleton is an OVERLAY
- *  (it composes with either — weights joins it later). */
+ *  skeleton second, weights fourth): shaded vs wireframe + the
+ *  skeleton and weights overlays. CALLER state — studios persist
+ *  layer choices exactly like selection: `layers` reads, `onLayers`
+ *  writes. Omit both for the plain shaded stage (no chips, no new
+ *  chrome); omit only `onLayers` for a read-only layer (no write
+ *  channel, no chips). Shaded/Wireframe are the surface MODE;
+ *  skeleton and weights are OVERLAYS (they compose with either and
+ *  with each other). `weights` is OPTIONAL: absent = off, and a
+ *  stage that seats no weights lane (motion's pose stage) never
+ *  votes it — the base's other stages always vote it explicitly. */
 export interface StageLayers {
   wireframe: boolean
   skeleton: boolean
+  weights?: boolean
 }
 
 /** Flip the wireframe flag on every wireframe-capable material under
@@ -202,6 +209,84 @@ export function turntableTick(groups: readonly THREE.Object3D[], delta: number):
   for (const g of groups) g.rotation.y += d
 }
 
+/** ── THE WEIGHTS HEAT OVERLAY (primitive ②, fourth slice) ───────────
+ *
+ * Per-vertex skin-weight heat: a skinned mesh's dominant-bone weight
+ * (the max of its skinWeight components, ∈ [0.25,1] under 4
+ * influences) paints a blue→red ramp through vertex colors. Unskinned
+ * meshes are untouched (no skinWeight attribute — no lane, no paint).
+ * OFF restores each geometry's ORIGINAL color attribute (cached the
+ * first time we touch it — absent means we delete ours) and the
+ * material's vertexColors flag. Idempotent both ways. */
+
+/** The heat ramp — 5 stops (blue→cyan→green→yellow→red), t clamped.
+ *  Pure: the same ramp every stage paints, the wall pins the stops. */
+export function heatColor(t: number): [number, number, number] {
+  const x = Math.min(1, Math.max(0, t))
+  const stops: ReadonlyArray<readonly [number, number, number]> = [
+    [0, 0, 1], [0, 1, 1], [0, 1, 0], [1, 1, 0], [1, 0, 0],
+  ]
+  const s = x * (stops.length - 1)
+  const i = Math.min(stops.length - 2, Math.floor(s))
+  const f = s - i
+  const a = stops[i]!, b = stops[i + 1]!
+  return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]
+}
+
+const weightColorCache = new WeakMap<THREE.BufferGeometry, THREE.BufferAttribute | null>()
+
+export function applyWeightsHeat(root: THREE.Object3D, on: boolean): void {
+  root.traverse((o) => {
+    const mesh = o as THREE.Mesh
+    const geo = mesh.geometry as THREE.BufferGeometry | undefined
+    if (geo === undefined) return
+    const mat = mesh.material
+    if (mat === undefined || mat === null || Array.isArray(mat)) return
+    const sw = geo.getAttribute('skinWeight') as THREE.BufferAttribute | undefined
+    if (sw === undefined) return
+    const pos = geo.getAttribute('position')
+    if (pos === undefined) return
+    const sm = mat as THREE.MeshStandardMaterial
+    if (on) {
+      if (!weightColorCache.has(geo)) {
+        weightColorCache.set(geo, (geo.getAttribute('color') as THREE.BufferAttribute | undefined) ?? null)
+      }
+      const colors = new Float32Array(pos.count * 3)
+      const comps = Math.min(4, sw.itemSize)
+      for (let i = 0; i < pos.count; i++) {
+        let w = sw.getX(i)
+        for (let c = 1; c < comps; c++) {
+          const v = c === 1 ? sw.getY(i) : c === 2 ? sw.getZ(i) : sw.getW(i)
+          if (v > w) w = v
+        }
+        const [r, g, b] = heatColor(w)
+        colors[i * 3] = r; colors[i * 3 + 1] = g; colors[i * 3 + 2] = b
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+      sm.vertexColors = true
+      sm.needsUpdate = true
+    } else {
+      const orig = weightColorCache.get(geo)
+      if (orig === null) geo.deleteAttribute('color')
+      else if (orig !== undefined) geo.setAttribute('color', orig)
+      if (sm.vertexColors === true) {
+        sm.vertexColors = false
+        sm.needsUpdate = true
+      }
+    }
+  })
+}
+
+/** ── NAMED MESH SLOTS (primitive ②, third slice) ────────────────────
+ * A comparison seat: assets may declare a SLOT (`slot: 'source'` /
+ * `'result'`, body/garment, donor/target, LOD names) — the stage
+ * paints the slot's label above the asset (a billboard sprite, the
+ * stage3d makeLabelSprite). Unslotted assets seat unlabeled, as
+ * ever. Pure derivation, mount-side paint (the WebGL-exempt arm). */
+export function slotLabelOf(asset: StageAsset): string | null {
+  return typeof asset.slot === 'string' && asset.slot !== '' ? asset.slot : null
+}
+
 interface LoadedAsset { asset: StageAsset; group: THREE.Group }
 
 /** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
@@ -237,6 +322,7 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const sceneRef = useRef<{ setClickSink: (fn: (id: string | null) => void) => void } | null>(null)
   const skeletonHelpers = useRef<THREE.SkeletonHelper[]>([])
+  const slotLabels = useRef<THREE.Sprite[]>([])
   const [loaded, setLoaded] = useState<LoadedAsset[]>([])
   const [failed, setFailed] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
@@ -330,6 +416,21 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
       }
     }
     skeletonHelpers.current = helpers
+    // THE SLOT LABELS (primitive ②, third slice): one billboard
+    // sprite per SLOTTED group, seated above its bounding box — the
+    // comparison seat's own name (source/result, body/garment…).
+    // Unslotted groups seat unlabeled, as ever.
+    const labels: THREE.Sprite[] = []
+    for (const { asset, group } of loaded) {
+      const text = slotLabelOf(asset)
+      if (text === null) continue
+      const sprite = makeLabelSprite(text, '#1c1f26', 0.05)
+      const box = new THREE.Box3().setFromObject(group)
+      sprite.position.set(group.position.x, box.max.y + 0.06, 0)
+      mounted.scene.add(sprite)
+      labels.push(sprite)
+    }
+    slotLabels.current = labels
     // THE TURNTABLE (primitive ②, third slice): one tick per mount,
     // gated by the ref — the flag flips inside the running frame,
     // never by remounting the scene. The tick dies with the stage's
@@ -344,6 +445,13 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
         helper.dispose()
       }
       skeletonHelpers.current = []
+      for (const sprite of slotLabels.current) {
+        mounted.scene.remove(sprite)
+        const mat = sprite.material as THREE.SpriteMaterial
+        mat.map?.dispose()
+        mat.dispose()
+      }
+      slotLabels.current = []
       sceneRef.current = null
       mounted.dispose()
     }
@@ -368,6 +476,13 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
   useEffect(() => {
     for (const helper of skeletonHelpers.current) helper.visible = skeleton
   }, [loaded, skeleton])
+  // THE WEIGHTS FLAG (primitive ②, fourth slice): the heat overlay
+  // rides the loaded assets the same way — re-asserted when the load
+  // set moves (fresh geometries paint on the flag they arrive under).
+  const weights = layers?.weights === true
+  useEffect(() => {
+    for (const { group } of loaded) applyWeightsHeat(group, weights)
+  }, [loaded, weights])
   return h('div', { className: s.stagePreview, 'data-viewport': label ?? 'glb-stage' },
     assets.length === 0
       ? h('div', { className: s.empty }, emptyHint ?? 'Run the card to see the mesh')
@@ -381,18 +496,23 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
           h('button', {
             type: 'button', className: s.layerChip,
             'aria-pressed': !wireframe,
-            onClick: () => { onLayers({ wireframe: false, skeleton }) },
+            onClick: () => { onLayers({ wireframe: false, skeleton, weights }) },
           }, 'Shaded'),
           h('button', {
             type: 'button', className: s.layerChip,
             'aria-pressed': wireframe,
-            onClick: () => { onLayers({ wireframe: true, skeleton }) },
+            onClick: () => { onLayers({ wireframe: true, skeleton, weights }) },
           }, 'Wireframe'),
           h('button', {
             type: 'button', className: s.layerChip,
             'aria-pressed': skeleton,
-            onClick: () => { onLayers({ wireframe, skeleton: !skeleton }) },
-          }, 'Skeleton'))
+            onClick: () => { onLayers({ wireframe, skeleton: !skeleton, weights }) },
+          }, 'Skeleton'),
+          h('button', {
+            type: 'button', className: s.layerChip,
+            'aria-pressed': weights,
+            onClick: () => { onLayers({ wireframe, skeleton, weights: !weights }) },
+          }, 'Weights'))
       : null,
   )
 }

@@ -48,7 +48,7 @@ export function createSkinCarrier(liftGroup: THREE.Group) {
         this.mat.color.set(p.color)
         this.mat.opacity = opacity
         this.mat.transparent = opacity < 1.0
-        this.mat.wireframe = p.wireframe
+        this.mat.wireframe = p.layers.wireframe
       }
     },
     setData(deformedFlat: Float32Array | null): void {

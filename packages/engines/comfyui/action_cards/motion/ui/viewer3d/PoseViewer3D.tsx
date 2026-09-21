@@ -43,9 +43,15 @@ import {
   type ReferenceMeshSpec,
   type CameraFraming as Framing,
 } from "./poseStage"
+import type { StageLayers } from "@melite/card-base/preview"
 
 export type { CameraFraming, ReferenceMeshSpec, LightingOrb, JointMoveEvent } from "./poseStage"
 export { framedCameraPos }
+
+/** The layers default (the altSamples law's twin): a hoisted shared
+ *  OFF state — a per-render `= {}` default would give every omitting
+ *  render a NEW identity and re-sync the stage for nothing. */
+const NO_LAYERS: Pick<StageLayers, "wireframe" | "skeleton"> = { wireframe: false, skeleton: false }
 
 // ── Per-identity-model bind-mesh cache ───────────────────────────────────
 // (the fetch machinery lives in poseStage for the reference carrier; the
@@ -80,7 +86,12 @@ export interface PoseViewer3DProps {
   cameraFraming?: Framing
   height?: string
   opacity?: number
-  wireframe?: boolean
+  /** THE BASE'S LAYER VOCABULARY (primitive ② close-out): the same
+   *  StageLayers every mesh stage votes, Pick'd to this stage's
+   *  lanes (wireframe + skeleton). Replaces the old hand-rolled
+   *  `wireframe`/`showSkeleton` boolean pair — one vocabulary, the
+   *  base's. */
+  layers?: Pick<StageLayers, "wireframe" | "skeleton">
   color?: string
   fps?: number
   forceBindPose?: boolean
@@ -89,7 +100,6 @@ export interface PoseViewer3DProps {
    *  provided, skips the nested→flat conversion in the flatten memo — avoids
    *  11,550 small array allocations + GC pressure per generation. */
   soma77JointsFlat?: Float32Array | null
-  showSkeleton?: boolean
   // ── Edit mode (interactive skeleton manipulation) ──
   editMode?: boolean
   /** Editable joint positions for the current frame (77 × 3 Float32Array). */
@@ -186,13 +196,12 @@ function PoseViewer3DImpl({
   cameraFraming = "full",
   height = "100%",
   opacity = 1.0,
-  wireframe = false,
+  layers = NO_LAYERS,
   color = "#98bdf7",
   fps = 30,
   forceBindPose = false,
   soma77Joints = null,
   soma77JointsFlat: soma77JointsFlatProp = null,
-  showSkeleton = false,
   editMode = false,
   editableJoints = null,
   selectedJoint = null,
@@ -477,11 +486,10 @@ function PoseViewer3DImpl({
       animate,
       showBindPose,
       opacity,
-      wireframe,
+      layers,
       color,
       fps,
       soma77JointsFlat,
-      showSkeleton,
       editMode,
       editableJoints,
       selectedJoint,
