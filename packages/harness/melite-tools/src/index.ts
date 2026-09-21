@@ -30,7 +30,7 @@
  *
  * @module @melite/harness-tools
  */
-import { installExpansion, clearExpansion } from './expansion'
+import { installExpansion, clearExpansion } from './expansion.ts'
 import type { Context } from '@deepseek-ai/cordis'
 // THE CARD PACKAGES' TOOL FACES (M2′ + the registrar retirement,
 // 2026-09-09): a card tool is IMPORTED from its package — the

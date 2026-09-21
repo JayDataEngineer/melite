@@ -6,7 +6,7 @@
 // LLM-powered enhance is the user's ✦ door, never this bundle).
 // Bodies stay behind melite_skill_read; quote the bundle digest you hold
 // and skip reload on a match. Thin door wrapper (estateRequest).
-import { expandEstateDoors } from '../expansion'
+import { expandEstateDoors } from '../expansion.ts'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'

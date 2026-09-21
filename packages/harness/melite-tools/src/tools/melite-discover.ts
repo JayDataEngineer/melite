@@ -4,7 +4,7 @@
 // routes on). Thin door wrapper (estateRequest) — the SHAPE lives
 // in doors/disclose.ts; this file is the DSH ToolDefinition face
 // (input schema, presentCall, output schema/render, execute).
-import { expandEstateDoors } from '../expansion'
+import { expandEstateDoors } from '../expansion.ts'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
