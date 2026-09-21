@@ -14,6 +14,7 @@
 import { createElement as h, useState, useSyncExternalStore } from 'react'
 import { GlbStagePreview } from './glb-stage.tsx'
 import { PoserFigureStage } from './poser-figure.tsx'
+import { AudioLines, Box, Film } from './icons.tsx'
 import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
 import { cn } from './chrome.ts'
 import s from './preview.module.css'
@@ -178,9 +179,32 @@ function StaleBadge(props: { note?: string, onReturn: () => void }): ReturnType<
  *  artifact whose file left the disk rendered the browser's silent
  *  broken-image glyph — no error, no name, nothing. The strip is
  *  the sideways row; a dead entry shows its NAME and a missing
- *  marker, never a silent void. */
-function HistoryThumb(props: { a: PreviewArtifact }): ReturnType<typeof h> {
+ *  marker, never a silent void.
+ *  THE KIND FACE (the operator's catch, 2026-09-22: audio history
+ *  tiles read 'gone' — "it says gone instead historical view under
+ *  the preview… works for image cards, but not audio"): an <img>
+ *  decodes ONLY images — an audio (or video, or mesh) url seated in
+ *  an <img> fires onError in a real browser the moment it mounts,
+ *  so EVERY non-image tile flipped to the dead face: the Music
+ *  card's history said 'gone' for files that exist, the exact lie
+ *  the dead face exists to prevent. The thumb face rides the
+ *  owner's DECLARED kind (the primary-output law — the same kind
+ *  that picked this presenter): image decodes as itself (the dead
+ *  face stays its honesty); every other kind renders a labeled
+ *  glyph tile — honest about what the entry IS, no decode to fail,
+ *  no false 'gone'. */
+function HistoryThumb(props: { a: PreviewArtifact, kind: PreviewOwnerProps['kind'] }): ReturnType<typeof h> {
   const [dead, setDead] = useState(false)
+  if (props.kind !== 'image') {
+    const Glyph = props.kind === 'audio' ? AudioLines : props.kind === 'video' ? Film : Box
+    return h('span', {
+      className: s.thumbFace,
+      'data-testid': `history-thumb-${props.kind}`,
+    },
+      h(Glyph, { className: s.thumbFaceGlyph }),
+      h('span', { className: s.thumbFaceName }, props.a.name),
+    )
+  }
   if (dead) {
     return h('span', {
       className: cn(s.thumb, s.thumbDead),
@@ -222,7 +246,7 @@ function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, te
         // hit-testing). The thumb consumes its own click.
         onClick: (e: MouseEvent) => { e.stopPropagation(); promote(i) },
       },
-        entry.slice(0, 1).map((a, j) => h(HistoryThumb, { key: String(i) + '|' + String(j) + '|' + a.url, a }))))),
+        entry.slice(0, 1).map((a, j) => h(HistoryThumb, { key: String(i) + '|' + String(j) + '|' + a.url, a, kind: props.kind }))))),
   )
 }
 

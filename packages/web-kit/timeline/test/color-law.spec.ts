@@ -31,10 +31,13 @@ const GUARDED: Array<{ file: string, why: string, min?: number }> = [
   // content the engine reads, not chrome — outside the wall's law.
   { file: join(here, '../../../web/melite-card-view/src/client/card.module.css'), why: 'the card view skin' },
   // stroke 77: the retired studio's skin left with the editor — the
-  // paint leaf-face modal joins the guarded set in its place (token
+  // paint leaf-face joined the guarded set in its place (token
   // scrim/panel/checkerboard; stroke ink stays bitmap-white, the
-  // wall's canvas-data exemption).
-  { file: join(here, '../../../image/mask-studio/src/ui/PaintLeafModal.tsx'), why: 'the paint leaf modal' },
+  // wall's canvas-data exemption). Stroke 95: the modal became the
+  // EMBEDDED canvas — lean by design (the LEAF owns the panel
+  // chrome; the canvas carries only its checkerboard, border, and
+  // label tokens — hence min: 0, three real uses, never stuffed).
+  { file: join(here, '../../../image/mask-studio/src/ui/PaintLeafCanvas.tsx'), why: 'the embedded paint canvas', min: 0 },
   { file: join(here, '../../../engines/comfyui/action_cards/3d/body/ui/studio/BodyShapePanel.module.css'), why: 'the body studio skin' },
   { file: join(here, '../../../engines/comfyui/action_cards/3d/body/ui/studio/component.module.css'), why: 'the body studio chrome' },
   { file: join(here, '../../../engines/comfyui/action_cards/3d/body/ui/studio/MeshPreviewCanvas.module.css'), why: 'the body mesh preview skin', min: 0 },

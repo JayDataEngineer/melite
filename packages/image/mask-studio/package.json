@@ -5,8 +5,8 @@
   "description": "the mask-studio carrier, DEMOTED (CONTRACT D \u2014 the card retired at parity): ui/ survives as the leaf-face carrier (paint + bbox); the takeover client is gone",
   "exports": {
     "./package.json": "./package.json",
-    "./paint-leaf": "./src/ui/PaintLeafModal.tsx",
-    "./bbox-leaf": "./src/ui/BboxLeafModal.tsx"
+    "./paint-canvas": "./src/ui/PaintLeafCanvas.tsx",
+    "./bbox-canvas": "./src/ui/BboxLeafCanvas.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

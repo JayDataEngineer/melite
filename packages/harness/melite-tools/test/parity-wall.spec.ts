@@ -21,6 +21,17 @@ describe("THE PARITY WALL (walked defaults ≡ served model_defaults, every card
       it(`${id} / ${family}: the form-spec serves the door's declared defaults (family overrides layered)`, () => {
         const carrier = ((def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema) as never;
         const walked = declaredDefaults(carrier, def.boarded);
+        // STROKE 95 (the two-bars law): a card may own ZERO flat
+        // knobs because every knob rides its MODS — each kind's bag
+        // entries carry the field defaults (mask-form: input_image
+        // only on the flat form; sam_threshold/refine/dilation/…
+        // live on the sam3/sam2/draw entries). Count them: a card
+        // is knob-less only when BOTH planes are empty.
+        const modKnobs = (def.mods ?? []).flatMap((k) => (
+          (((k as { fields?: Array<{ name?: unknown; default?: unknown }> }).fields) ?? [])
+            .filter((f) => f.default !== undefined && f.default !== null)
+            .map((f) => `${String((k as { param_key?: unknown }).param_key)}.${String(f.name)}`)
+        ));
         // EXEMPT-BY-NATURE (named inline, never silently skipped):
         // input-prep — a pure staging tool whose ONLY declared knob
         // (source) is required with no default; every other key rides
@@ -28,7 +39,8 @@ describe("THE PARITY WALL (walked defaults ≡ served model_defaults, every card
         // is its honest truth (verified: no renderer floors).
         const exempt = id === 'input-prep';
         if (!exempt) {
-          assert.ok(Object.keys(walked).length > 0, `${id} declares no defaults at all — a knob-less card is a wall failure`);
+          assert.ok(Object.keys(walked).length > 0 || modKnobs.length > 0,
+            `${id} declares no defaults at all (neither flat nor mod-owned) — a knob-less card is a wall failure`);
         }
 
         // the serve layer (discovery's row, verbatim): walked under

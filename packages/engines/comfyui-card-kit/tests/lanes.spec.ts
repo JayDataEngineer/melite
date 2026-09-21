@@ -301,6 +301,70 @@ describe("maskT1 (the selection lane's arms)", () => {
     const detect = Object.values(dump(g)).find((n) => n.class_type === "SAM3_Detect")!;
     assert.equal(detect.inputs.refine_iterations, 2);
   });
+
+  // ── stroke 95: the per-entry tune (each export owns its knobs) ──
+
+  it("PER-ENTRY TUNE: a text export's tune threads ITS OWN detect (threshold + refine) and ITS OWN save (dilation)", () => {
+    const g = new GraphBuilder();
+    maskT1({
+      ...maskBase, primary_class: "person", sam_threshold: 0.7,
+      exports: [["spot", "the dog", undefined, { threshold: 0.95, refine: 4, dilation: 12 }]],
+      export_kind: ["text"],
+    }, MASK_PINS, g, "r_t1");
+    const row = dump(g);
+    const dets = Object.values(row).filter((n) => n.class_type === "SAM3_Detect");
+    assert.equal(dets.length, 2, "primary + the export");
+    // the primary's detect builds first; the export's detect is the second
+    const scoped = dets[1]!;
+    assert.equal(scoped.inputs.threshold, 0.95, "the export's own threshold — never the primary's 0.7");
+    assert.equal(scoped.inputs.refine_iterations, 4, "the export's own refine");
+    const grows = Object.values(row).filter((n) => n.class_type === "GrowMask") as Array<{ inputs: Record<string, unknown> }>;
+    assert.ok(grows.some((n) => n.inputs.expand === 12), "the export's own dilation reaches its save");
+  });
+
+  it("PER-ENTRY TUNE: an unstated tune arm falls back to the lane flat reads (never undefined)", () => {
+    const g = new GraphBuilder();
+    maskT1({
+      ...maskBase, primary_class: "person", sam_threshold: 0.71,
+      exports: [["spot", "the dog", undefined, { threshold: 0.9 }]],
+      export_kind: ["text"],
+    }, MASK_PINS, g, "r_t2");
+    const dets = Object.values(dump(g)).filter((n) => n.class_type === "SAM3_Detect");
+    const spot = dets[1]!;
+    assert.equal(spot.inputs.threshold, 0.9, "the stated arm rides");
+    assert.equal(spot.inputs.refine_iterations, 2, "the unstated refine falls back to the pin");
+  });
+
+  it("PER-ENTRY TUNE: a sam2 export's tune threads its detector (yolo_threshold + threshold)", () => {
+    const g = new GraphBuilder();
+    maskT1({
+      ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person",
+      exports: [["hands", "hand", undefined, { yolo_threshold: 0.2, threshold: 0.9, dilation: 5 }]],
+      export_kind: ["sam2"],
+    }, MASK_PINS, g, "r_t3");
+    const row = dump(g);
+    const dets = Object.values(row).filter((n) => n.class_type === "BboxDetectorSEGS");
+    const hands = dets.find((d) => d.inputs.labels === "hand")!;
+    assert.equal(hands.inputs.threshold, 0.2, "the export's own YOLO threshold");
+    const combs = Object.values(row).filter((n) => n.class_type === "SAMDetectorCombined");
+    assert.ok(combs.some((c) => c.inputs.threshold === 0.9), "the export's own SAM threshold");
+    assert.ok(combs.some((c) => c.inputs.dilation === 5), "the export's own dilation");
+  });
+
+  it("a malformed export tune refuses LOUD (never a coerced knob)", () => {
+    assert.throws(
+      () => maskT1({ ...maskBase, primary_class: "p", exports: [["x", "dog", undefined, 7]], export_kind: ["text"] }, MASK_PINS, new GraphBuilder(), "r_t4"),
+      /maskT1: an export tune must be an object/,
+    );
+    assert.throws(
+      () => maskT1({ ...maskBase, primary_class: "p", exports: [["x", "dog", undefined, { threshold: "high" }]], export_kind: ["text"] }, MASK_PINS, new GraphBuilder(), "r_t5"),
+      /maskT1: an export tune's 'threshold' must be a finite number/,
+    );
+    assert.throws(
+      () => maskT1({ ...maskBase, primary_class: "p", exports: [["x", "dog", undefined, { mystery: 1 }]], export_kind: ["text"] }, MASK_PINS, new GraphBuilder(), "r_t6"),
+      /maskT1: an export tune carries unknown key\(s\) mystery/,
+    );
+  });
 });
 
 // ── the tagger dispatch (four arms + the no-arm refusal) ──────────

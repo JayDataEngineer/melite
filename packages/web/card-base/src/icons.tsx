@@ -561,6 +561,21 @@ export function FileBox({ className, style, ...rest }: IconProps) {
   )
 }
 
+/** Lucide-faithful `audio-lines` (new 2026-09-22 — the history kind
+ * face's audio glyph; no prior card copy existed to unify). */
+export function AudioLines({ className, style, ...rest }: IconProps) {
+  return (
+    <Svg className={className} style={style} {...rest}>
+      <path d="M2 10v3" />
+      <path d="M6 6v11" />
+      <path d="M10 3v18" />
+      <path d="M14 8v7" />
+      <path d="M18 5v13" />
+      <path d="M22 10v3" />
+    </Svg>
+  )
+}
+
 export function Film({ className, style, ...rest }: IconProps) {
   return (
     <Svg className={className} style={style} {...rest}>

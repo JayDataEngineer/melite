@@ -11,8 +11,8 @@ import { fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm, type FormSpe
 import { titleCaseId } from '@melite/card-base/spec'
 import { postManageAction } from '@melite/card-base/wire'
 import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
-import { PaintLeafModal } from '@melite/image-mask-studio/paint-leaf'
-import { BboxLeafModal } from '@melite/image-mask-studio/bbox-leaf'
+import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
+import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
 import { cardLlmArg } from '@melite/catalog'
 import { paramFields, patchStageOutcome, patchStageParams, mediaUrl } from './draft.ts'
 import css from './card.module.css'
@@ -672,13 +672,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
               .then((r) => r.ok),
             onInstallPack: (id: string) => postManageAction('install_extension', { nodes: [id] })
               .then((r) => r.ok),
-            // THE PAINT FACE: the brush modal + the reference field
+            // THE PAINT FACE (embedded, stroke 95): the brush canvas
+            // at the top of the mod leaf + the reference field
             // (mask-form's input_image — the kind declaration gates
-            // the verb; other cards never see it).
-            paintFace: PaintLeafModal,
-            // THE BBOX FACE (stroke 78): the selection modal for
-            // bbox-canvas kinds (sam2/sam3) — same reference law.
-            bboxFace: BboxLeafModal,
+            // the canvas; other cards never see it).
+            paintFace: PaintLeafCanvas,
+            // THE BBOX FACE (stroke 78, embedded stroke 95): the
+            // selection canvas for bbox-canvas kinds (sam2/sam3) —
+            // same reference law.
+            bboxFace: BboxLeafCanvas,
             paintReference: 'input_image',
           })
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),

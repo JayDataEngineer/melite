@@ -96,6 +96,33 @@
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 4px;
 }
+/* THE KIND FACE (2026-09-22, the operator's catch: audio history
+   tiles read 'gone' — "it says gone instead historical view under
+   the preview"): an <img> decodes only images — a non-image
+   artifact seated in an <img> errors on mount in a real browser,
+   so every audio (and video, and mesh) tile wore the FALSE dead
+   face for files that exist. The kind face is a labeled glyph chip
+   at the thumb row's height: honest about what the entry IS,
+   nothing to decode, nothing to fail. */
+.thumbFace {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 48px;
+  padding: 0 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 4px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-base);
+}
+.thumbFaceGlyph { width: 16px; height: 16px; flex: none; }
+.thumbFaceName {
+  font-size: 10px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 /* THE OUTPUT HISTORY (stroke 40): the mini row under the hero is a
    titled section — the stage's previous unique outputs, newest
    first. Tiles are buttons (click promotes the entry to the hero). */

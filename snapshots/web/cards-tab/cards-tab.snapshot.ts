@@ -75,4 +75,33 @@ describe('web cards-tab (the tab face, keyless)', () => {
     assert.equal(el.getAttribute('data-kind'), 'h3-timeline')
     assert.equal(el.textContent, 'h3-timeline', 'the card captions when no title (never an empty caption)')
   })
+
+  // STROKE 95 (the mask-form rework — two bars, everything mod-owned):
+  // the reworked card still distills to the tab face carrying its bag
+  // entries VERBATIM (the wire is the storage; the row never
+  // re-derives or flattens the mods — that was the butchered shape
+  // this rework killed).
+  it('distills the reworked mask-form card with its mod bags intact', () => {
+    const stage: BenchStageRow = {
+      engine: 'comfyui',
+      id: 's_2',
+      card: 'mask-form',
+      title: 'the cloak mask',
+      params: {
+        input_image: '/state/drafts/pic.png',
+        sam3: [{ prompt: 'the red cloak' }, { name: 'dog', prompt: 'the dog', sam_threshold: 0.95 }],
+        draw: [{ payload: '/state/drafts/paint.png' }],
+      },
+    } as unknown as BenchStageRow
+    const row = benchRow(stage)
+    assert.equal(row.kind, 'mask-form', 'the reworked card id serves')
+    assert.equal(row.title, 'the cloak mask', 'the stage title captions')
+    // the bags ride the row's params verbatim — the base card carries
+    // ONLY input_image flat; every knob rides its entry
+    const params = stage.params as Record<string, unknown>
+    assert.deepEqual(Object.keys(params).sort(), ['draw', 'input_image', 'sam3'],
+      'the flat pollution is dead — input_image + the mod bags, nothing else')
+    assert.deepEqual((params['sam3'] as Array<Record<string, unknown>>)[1], { name: 'dog', prompt: 'the dog', sam_threshold: 0.95 },
+      'an entry owns its own tune (per-entry sam_threshold — never a flat scalar)')
+  })
 })

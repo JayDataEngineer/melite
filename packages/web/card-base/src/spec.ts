@@ -132,6 +132,12 @@ export interface SpecField {
   /** The declared layout verb (card-declared kind fields carry it
    *  verbatim — 'image' = the square; the paint verb rides it). */
   wtype?: string
+  /** FACE-OWNED (stroke 95, the embedded leaf): the kind's declared
+   *  canvas owns this field's VALUE (the bbox quad under a
+   *  bbox-canvas face) — the leaf hides it when the canvas
+   *  renders, and shows it when the host degrades (absent face =
+   *  the plain inputs hold). */
+  faceOwned?: boolean
   /** THE STACK CAP (the progressive input rail — the operator's law,
    * 2026-09-20: "a generic input row for input squares… adding one
    * causes it to add another available slot one at a time", the mods'
@@ -213,12 +219,15 @@ export interface ModifierKind {
    *  is undercooked"). The resolver applies it; every face mirrors
    *  the film. */
   marries?: Record<string, 'max'>
-  /** THE LEAF FACE (paint-leaf-canvas.md): 'paint-canvas' = the
-   *  payload image field offers the brush verb (the host's modal;
-   *  absent host degrades to the three-source square).
-   *  'bbox-canvas' (stroke 78) = the entry's bbox_x/y/w/h fields
-   *  offer the rectangle verb — the image preview the user drags a
-   *  selection on (absent host degrades to the four inputs). */
+  /** THE LEAF FACE (paint-leaf-canvas.md, embedded stroke 95):
+   *  'paint-canvas' = the kind's first image field gains the
+   *  EMBEDDED brush canvas at the top of the mod leaf popup (the
+   *  host-delivered component; absent host degrades to the
+   *  three-source square). 'bbox-canvas' (stroke 78) = the
+   *  entry's faceOwned bbox fields belong to the EMBEDDED
+   *  selection canvas — the reference image the user drags a
+   *  rectangle on (absent host degrades to the four number
+   *  inputs). */
   leaf_face?: 'paint-canvas' | 'bbox-canvas'
   /** THE ARM-CONDITIONAL EXTENSION PACKS (the mask-form SAM2 law):
    *  pack ids this kind's arm needs live on the engine. Served

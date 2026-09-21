@@ -48,8 +48,8 @@ import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
 // THE PAINT FACE (paint-leaf-canvas.md): the demoted studio's
 // brush modal, threaded into CardForm for leaf_face kinds — the
 // host delivers the face, card-base stays atom-generic.
-import { PaintLeafModal } from '@melite/image-mask-studio/paint-leaf'
-import { BboxLeafModal } from '@melite/image-mask-studio/bbox-leaf'
+import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
+import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
 import { cardLlmArg } from '@melite/catalog'
 import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-form.tsx'
 import { paramFields, patchStageOutcome, patchStageParams } from './draft.ts'

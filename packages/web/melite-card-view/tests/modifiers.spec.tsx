@@ -271,10 +271,12 @@ test('removing a macro-stamped row commits the plain bag — no guard needed, on
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'krea2_darkbrush', strength: 0.5 }])
 })
 
-// ── STROKE 76: THE PAINT LEAF FACE (docs/design/paint-leaf-canvas.md)
+// ── STROKE 95: THE EMBEDDED PAINT CANVAS (docs/design/paint-leaf-canvas.md)
 //    The `mask_paint` kind declares leaf_face; the host (CardsTab)
-//    delivers the brush modal. The verb is declared + hosted —
-//    never sniffed, never crashing host-less. ──────────────────────
+//    delivers the brush canvas — EMBEDDED at the top of the leaf
+//    popup (the visual preview, never a Paint button + nested
+//    modal). Declared + hosted — never sniffed, never crashing
+//    host-less. ──────────────────────────────────────────────────
 
 /** The mask-form-shaped spec: an input_image card field + the
  *  declared paint kind (leaf_face on the row, payload wtype image —
@@ -305,12 +307,11 @@ const PAINT_SPEC = {
   },
 } as never as import('../src/client/spec-form.tsx').FormSpecDoc
 
-/** The hosted face (the CardsTab role in miniature): opens with the
- *  reference + payload, saves a stroke PNG back into the draft. */
-function FakeFace(p: { referenceUrl: string; payloadUrl: string; onSave: (u: string) => void; onCancel: () => void }) {
-  return createElement('div', { 'data-testid': 'fake-paint-face', 'data-ref': p.referenceUrl, 'data-payload': p.payloadUrl },
-    createElement('button', { type: 'button', onClick: () => { p.onSave('data:image/png;base64,STROKE') } }, 'Fake save'),
-    createElement('button', { type: 'button', onClick: p.onCancel }, 'Fake cancel'),
+/** The hosted face (the CardsTab role in miniature): the embedded
+ *  canvas — seeds from the payload value, commits stroke PNGs. */
+function FakeFace(p: { referenceUrl: string; value: string; onChange: (u: string) => void }) {
+  return createElement('div', { 'data-testid': 'fake-paint-face', 'data-ref': p.referenceUrl, 'data-payload': p.value },
+    createElement('button', { type: 'button', onClick: () => { p.onChange('data:image/png;base64,STROKE') } }, 'Fake stroke'),
   )
 }
 
@@ -326,16 +327,16 @@ async function openPaintLeaf(values: SpecValues, extra?: Record<string, unknown>
   fireEvent.click(await screen.findByText('Paint', undefined, { timeout: 2000 }))
 }
 
-test('declared face + hosted face: the leaf offers Paint; the modal saves the stroke PNG into the entry', async () => {
+test('declared face + hosted face: the leaf embeds the canvas at the top; a stroke commits the PNG into the entry', async () => {
   const values: SpecValues = { input_image: 'http://x/in.png' }
   await openPaintLeaf(values, { paintFace: FakeFace, paintReference: 'input_image' })
-  // the verb rides beside the square on the payload field
-  fireEvent.click(await screen.findByRole('button', { name: 'Paint' }, undefined, { timeout: 2000 }))
-  const face = await screen.findByTestId('fake-paint-face')
+  // the canvas rides EMBEDDED — no Paint button, no nested modal
+  const face = await screen.findByTestId('fake-paint-face', undefined, { timeout: 2000 })
+  expect(screen.queryByRole('button', { name: 'Paint' })).toBeNull()
   // the reference is the card's input_image value (resolved, not the field name)
   expect(face.getAttribute('data-ref')).toBe('http://x/in.png')
-  fireEvent.click(screen.getByRole('button', { name: 'Fake save' }))
-  // Add commits the entry — the payload IS the modal's data URL
+  fireEvent.click(screen.getByRole('button', { name: 'Fake stroke' }))
+  // Add commits the entry — the payload IS the canvas's data URL
   fireEvent.click(screen.getByText('Add'))
   await waitFor(() => {
     const bag = values['mask_paint'] as Array<Record<string, unknown>>
@@ -352,12 +353,12 @@ test('CONTRACT A: declared kindFields ride verbatim — the section owns the ser
   expect(screen.getByLabelText('Detection threshold')).toBeTruthy()
 })
 
-test('declared face + NO hosted face: no verb — the square holds (graceful by design)', async () => {
+test('declared face + NO hosted face: no canvas — the square holds (graceful by design)', async () => {
   const values: SpecValues = { input_image: 'http://x/in.png' }
   await openPaintLeaf(values, { paintReference: 'input_image' })
   // the leaf opened with the three-source square and nothing else
   await screen.findByRole('button', { name: 'Paint payload source' }, undefined, { timeout: 2000 })
-  expect(screen.queryByRole('button', { name: 'Paint' })).toBeNull()
+  expect(screen.queryByTestId('fake-paint-face')).toBeNull()
 })
 
 test('undeclared kind + hosted face: no verb — the face is declared, never sniffed', async () => {
@@ -381,5 +382,5 @@ test('undeclared kind + hosted face: no verb — the face is declared, never sni
   fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
   fireEvent.click(await screen.findByText('Paint', undefined, { timeout: 2000 }))
   await screen.findByRole('button', { name: 'Paint payload source' }, undefined, { timeout: 2000 })
-  expect(screen.queryByRole('button', { name: 'Paint' })).toBeNull()
+  expect(screen.queryByTestId('fake-paint-face')).toBeNull()
 })

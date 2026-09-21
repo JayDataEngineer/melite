@@ -1,61 +1,83 @@
 ---
 name: mask-form
-description: "Mask Form — the action card: pick the input image, then ADD ways to get a mask (detect, subject, paint) as stackable modifiers. Entry point for the mask-form card."
+description: "Mask Form — the action card: pick the input image, then ADD ways to get a mask (sam3, sam2, draw) as stackable modifiers. Entry point for the mask-form card."
 ---
 
 # Mask Form
 
 You are the agent interface for the **mask-form card** (id
 `mask-form`): produce mask artifacts from one image by STACKING
-mask sources — the action-oriented face (the studio owns the
-canvas; this card owns the bag).
+mask sources. The card face is TWO BARS — the Inputs bar
+(`input_image`, REQUIRED) and the Mods bar; every knob a source
+owns rides its bag ENTRY inside the mod's popup (the stroke-95
+law: no parameter pollution on the base card).
 
-## The shape (three bags, one form)
+## The shape (three bags, one input)
 
-The flat form carries only what is not a mask source:
-`input_image` (REQUIRED — the image the mask selects FROM),
-`output_mode` (`segm` masks | `bbox` the drawn-box manifest),
-`refine_iterations`. The section scalars `sam_threshold` /
-`sam_dilation` ride the mod section's own rows.
+```json
+{
+  "input_image": "/state/drafts/pic.png",
+  "sam3":  [{ "prompt": "the red cloak" },
+            { "name": "dog", "prompt": "the dog", "sam_threshold": 0.95 }],
+  "sam2":  [{ "labels": "person" }],
+  "draw":  [{ "payload": "/state/drafts/paint.png" }]
+}
+```
 
 Every WAY TO GET A MASK is a modifier entry — compose them
 STRUCTURALLY (each entry its own object in its bag; NEVER a
 stringified JSON blob):
 
-```json
-{
-  "input_image": "/state/drafts/pic.png",
-  "mask_detect":  [{ "primary_class": "person" }],
-  "mask_subject": [{ "name": "hat", "prompt": "the red hat" }],
-  "mask_paint":   [{ "payload": "/state/drafts/paint.png" }],
-  "sam_threshold": 0.93,
-  "output_mode": "segm"
-}
-```
+- `sam3[]` — the SAM3 text selection. Fields: `name` (the export
+  name; blank falls back to `sam3_<i>`), `prompt` (what to
+  segment, in words), `via_rtdetr` (PRIMARY only — switch the
+  proposal lane to RT-DETR person boxes), `refine_iterations`
+  (0–8, default 2), `sam_threshold` (0.5–0.99, default 0.93),
+  `sam_dilation` (0–64 px, default 0), `detection_threshold`
+  (0.05–0.95, RT-DETR arm), `max_instances` (0–100, RT-DETR arm),
+  `export_boxes` (default true — draw this entry's RT-DETR boxes
+  on the manifest), and the bbox quad `bbox_x/y/w/h` (default -1
+  = unscoped; the popup's embedded canvas draws it).
+- `sam2[]` — the YOLO + SAM2 arm (Impact pack): YOLO proposes the
+  boxes, SAM2 refines them into masks. Fields: `name`, `labels`
+  (a YOLO class word, e.g. `person` — REQUIRED), `yolo_threshold`
+  (0.05–0.95, default 0.5), `sam_threshold`, `sam_dilation`, and
+  the same bbox quad.
+- `draw[]` — a painted PNG (alpha = strokes): `name`, `payload`
+  (REQUIRED — the PNG path). The interactive paint canvas rides
+  this leaf EMBEDDED in the popup.
 
-- `mask_detect[]` — `{ primary_class, via_rtdetr? }`: RT-DETR +
-  SAM3 class lock. The FIRST entry is the primary mask; further
-  entries become their own per-class exports. `via_rtdetr: true`
-  switches the proposal lane to person boxes (draws the manifest
-  under `output_mode: "bbox"`).
-- `mask_subject[]` — `{ name, prompt }`: the SAM3 text selection
-  (what to segment, in words). Each entry saves `mask_<name>`.
-- `mask_paint[]` — `{ name, payload }`: a painted PNG (alpha =
-  strokes). The first payload also UNIONS into the combined mask
-  when a detect primary exists.
-- Apply order = array order — drag on the bench, array in the
-  params. At least ONE source or compose refuses loud.
+## The laws (compose refuses LOUD)
+
+- The FIRST standalone entry (sam3 before sam2, bag order within)
+  is the PRIMARY: it anchors `mask_combined` and owns the primary
+  arm (`via_rtdetr` on sam3; the YOLO labels word on sam2).
+- Every later entry is its own named export carrying ITS OWN tune
+  (per-entry threshold/refine/dilation/yolo_threshold — never the
+  primary's).
+- `via_rtdetr` on a later entry refuses: the RT-DETR readback is
+  the primary's arm; give the entry a `prompt`.
+- `draw` stacks ONTO a standalone source (the ordered union chain
+  — one MaskComposite hop per payload, terminal
+  `mask_combined_union`); draw without a standalone source
+  refuses loud.
+- The primary's bbox quad scopes `mask_combined` (the rect scope);
+  an export's quad scopes its own detect. -1 everywhere = unscoped.
+- Missing `input_image`, empty bags, wrong-typed or out-of-bounds
+  knobs refuse loud (the popup's fields are the declaration — the
+  schema gates every hop).
 
 ## When to use this card
 
 - The user wants masks for an inpaint/outpaint flow and can NAME
-  the target (a class, a subject in words, a painted payload).
-- The user wants MULTIPLE masks from one image (stack sources).
-- The user asks for the box manifest instead of segmentations
-  (`output_mode: "bbox"`).
+  the target (a subject in words, a YOLO class, a painted
+  payload).
+- The user wants MULTIPLE masks from one image (stack sources,
+  each with its own tune).
+- The user wants the RT-DETR box manifest (`via_rtdetr` on the
+  primary; `export_boxes` per entry ORs the draw).
 
-The interactive paint canvas rides this card's `mask_paint` leaf
-(stroke-following); until it lands, paint entries take a payload
-PNG through the three-source square. The studio card RETIRED at
-parity (2026-09-16, CONTRACT D) — this card composes AND owns the
-mask surface.
+The interactive canvases ride the mod popups EMBEDDED (paint on
+`draw`, drag-rectangle on the standalone kinds — stroke 95). The
+studio card RETIRED at parity (2026-09-16, CONTRACT D) — this
+card composes AND owns the mask surface.

@@ -1,37 +1,43 @@
-// card.ts — the mask FORM card, RESHAPED (stroke 78, the operator's
-// mods-abstraction law): MASK as a SIMPLE form card whose entire
-// complexity lives in MODS. The flat form carries ONLY the lane
-// scalars (input_image + the SAM knobs); every WAY TO GET A MASK is
-// a card-declared mod kind — and every kind now declares its
-// CATEGORY (the stroke-78 law):
+// card.ts — the mask FORM card (the stroke-95 rework, the
+// operator's design: "Inputs bar, then the Mods bar for the
+// different ways we can mask. The mods would open up a popup with
+// visual preview"). THE BASE CARD IS TWO BARS AND NOTHING ELSE:
+// the Inputs rail (input_image — the declared signature seats it)
+// and the Modifiers bar (the add square + the tiles). Every knob
+// a mask source owns rides its bag ENTRY (the wire is the
+// storage); the mod leaf popup carries the EMBEDDED CANVAS (the
+// visual preview — drag a rectangle on sam3/sam2, brush strokes
+// on draw) with the entry's own fields under it. The stroke-78
+// shape (flat lane scalars + pack-level kindFields rows on the
+// card face) was the transfer debt — retired here.
+//
+// The card-declared mod kinds (the category law stands):
 //   sam3[] — standalone: SAM3 selection. A CLIP text prompt (what
 //            to segment), or RT-DETR person boxes refined by SAM3
-//            (via_rtdetr). Optional bbox — a drawn rectangle the
-//            selection locks to (the bbox-canvas leaf face: an
-//            image preview the user drags a selection on).
-//   sam2[] — standalone: the YOLO + SAM2 arm (the operator's SAM2:
-//            YOLO proposes boxes for the labels word, SAM2 refines
-//            them into masks). Optional bbox — a drawn rectangle
-//            the selection locks to (the bbox-canvas leaf face).
-//            Declares its packs (impact-pack + impact-subpack) and
-//            its weights (sam2 checkpoint + yolo) — declared, then
-//            auto provisioned.
+//            (via_rtdetr — the primary's own arm). The entry's
+//            optional bbox scopes its selection (the EMBEDDED
+//            bbox canvas — faceOwned fields, never raw inputs).
+//   sam2[] — standalone: the YOLO + SAM2 arm (YOLO proposes boxes
+//            for the labels word, SAM2 refines them into masks).
+//            Same embedded bbox canvas. Declares its packs
+//            (impact-pack + impact-subpack) and its weights —
+//            declared, then auto provisioned.
 //   draw[] — ORDERED: the painted payload (alpha = strokes). A
 //            draw STACKS — it receives the previous outputs and
-//            unions onto the combined mask (the ordered chain:
-//            each payload composites in bag order), modifying the
-//            mask call, never running its own inference. A draw
-//            without a standalone source refuses LOUD.
+//            unions onto the combined mask (the ordered chain),
+//            modifying the mask call, never running its own
+//            inference. The EMBEDDED paint canvas is the leaf's
+//            face (the payload square rides under it — the PNG is
+//            the contract either way). A draw without a standalone
+//            source refuses LOUD.
 // STANDALONE = applies to the same base image, provides its OWN
 // output (each entry is its own mask export; order is void).
 // ORDERED = stacks in bag order on the previous outputs. The FIRST
 // standalone entry is the primary (saves mask_combined — the union
-// anchor); every further entry is a per-name export. The paint face
-// is the demoted studio's canvas (stroke 76); the bbox face is new.
+// anchor); every further entry is a per-name export.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { maskT1 } from '@melite/comfyui-card-kit'
-import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
 
 // THE ACTION CARD OWNS ITS PINS (the studio's law, shared — the
@@ -46,19 +52,18 @@ const PINS = {
   yolo: 'bbox/yolo11m.pt',
 }
 
-// THE SIMPLE FORM (the operator's law: the card IS simple — the
-// complexity lives in mods): the input image + the SAM lane's own
-// knobs. Every source knob (thresholds, instances, the manifest,
-// RT-DETR, payloads, boxes) is mod-owned.
+// THE SIMPLE FORM (the stroke-95 law: the card IS the two bars —
+// the input rail + the mods section; the flat schema carries the
+// INPUT ONLY). Every source knob — thresholds, instances, refine,
+// dilation, the manifest — is mod-owned bag state.
 const schema = z.object({
   input_image: z.string().role('path').description('Input').extra('extra', { order: 1, group: 'input', width: 2, tooltip: 'The image every mask selects FROM.', wtype: 'image' }),
-  refine_iterations: z.number().description('Refine iterations').min(0).max(8).step(1).default(2).extra('extra', { order: 1, group: 'advanced', width: 1, tooltip: 'SAM3 refine rounds.' }),
-  sam_threshold: z.number().description('Mask threshold').min(0.5).max(1).step(0.01).default(0.93).extra('extra', { order: 2, group: 'advanced', width: 1, tooltip: 'SAM3 mask confidence (every source shares it).' }),
-  sam_dilation: z.number().description('Dilation').min(0).max(64).step(1).default(0).extra('extra', { order: 3, group: 'advanced', width: 1, tooltip: 'Grow every mask N pixels.' }),
 })
 
-// The optional bbox's four entry fields (the bbox-canvas leaf
-// writes them; -1 = unset, the selection runs unscoped).
+// The optional bbox's four entry fields (the EMBEDDED bbox canvas
+// writes them; -1 = unset, the selection runs unscoped — the four
+// are FACE-OWNED: the leaf hides them under the canvas and shows
+// them only when the host degrades to plain inputs).
 const BBOX_FIELDS = ([
   ['bbox_x', 'Box x', 'Left edge, image pixels.'],
   ['bbox_y', 'Box y', 'Top edge, image pixels.'],
@@ -71,7 +76,8 @@ const BBOX_FIELDS = ([
   default: -1,
   min: -1,
   step: 1,
-  tooltip: `${tooltip} (-1 = no box; use Draw box on the image.)`,
+  faceOwned: true,
+  tooltip: `${tooltip} (drawn on the image in the popup.)`,
 }))
 
 /** Reads an entry's bbox (null when unset; a PRESENT non-number
@@ -89,6 +95,8 @@ const bboxOf = (e: Record<string, unknown>, key: string): [number, number, numbe
 
 // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the one
 // features.modifiers channel) with their CATEGORIES (stroke 78).
+// The stroke-95 law: NO kindFields — every knob is an ENTRY field
+// (the popup owns it; the section renders tiles only).
 const MODS: readonly DeclaredModifierKind[] = [
   {
     kind: 'sam3',
@@ -97,19 +105,22 @@ const MODS: readonly DeclaredModifierKind[] = [
     category: 'standalone',
     cardinality: 'list',
     max_stack: 8,
-    // THE BBOX FACE (stroke 78): the selection preview — the Draw
-    // box verb fills the entry's four bbox fields.
+    // THE EMBEDDED BBOX CANVAS (stroke 95): the selection preview
+    // at the top of the leaf popup — the drawn rectangle fills the
+    // entry's four faceOwned bbox fields.
     leaf_face: 'bbox-canvas',
-    kindFields: [
-      // RT-DETR is SAM3's own arm (person boxes + the manifest)
-      { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.35, min: 0.05, max: 0.95, step: 0.05, tooltip: 'RT-DETR box confidence. Lower catches more instances, noisier boxes.' },
-      { name: 'max_instances', label: 'Max instances', type: 'number', default: 0, min: 0, max: 100, step: 1, tooltip: 'Cap detected instances (0 = no cap). Read the manifest first, then narrow.' },
-      { name: 'export_boxes', label: 'Export box manifest', type: 'boolean', default: true, tooltip: 'Draw RT-DETR boxes on the image — the instance manifest.' },
-    ],
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam3', tooltip: "The saved mask's name (mask_<name>)." },
       { name: 'prompt', label: 'Prompt', type: 'string', default: '', tooltip: 'The SAM3 CLIP text selection — what to segment (empty + RT-DETR = the person-box lane).' },
-      { name: 'via_rtdetr', label: 'Via RT-DETR boxes', type: 'boolean', default: false, tooltip: 'Propose person boxes with RT-DETR, refine with SAM3 (the box-manifest lane).' },
+      { name: 'via_rtdetr', label: 'Via RT-DETR boxes', type: 'boolean', default: false, tooltip: 'Propose person boxes with RT-DETR, refine with SAM3 (the box-manifest lane — the FIRST entry anchors it).' },
+      { name: 'refine_iterations', label: 'Refine iterations', type: 'number', default: 2, min: 0, max: 8, step: 1, tooltip: 'This selection\'s SAM3 refine rounds.' },
+      { name: 'sam_threshold', label: 'Mask threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'This selection\'s SAM3 mask confidence.' },
+      { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: 0, max: 64, step: 1, tooltip: 'Grow this mask N pixels.' },
+      // RT-DETR knobs — the entry's own arm (via RT-DETR boxes);
+      // the manifest reads the first entry that rides the lane.
+      { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.35, min: 0.05, max: 0.95, step: 0.05, tooltip: 'RT-DETR box confidence (this entry\'s Via-RT-DETR arm + the manifest). Lower catches more instances, noisier boxes.' },
+      { name: 'max_instances', label: 'Max instances', type: 'number', default: 0, min: 0, max: 100, step: 1, tooltip: 'Cap detected instances (0 = no cap). Read the manifest first, then narrow.' },
+      { name: 'export_boxes', label: 'Export box manifest', type: 'boolean', default: true, tooltip: 'Draw this entry\'s RT-DETR boxes on the manifest image — the instance readback.' },
       ...BBOX_FIELDS,
     ],
   },
@@ -120,6 +131,7 @@ const MODS: readonly DeclaredModifierKind[] = [
     category: 'standalone',
     cardinality: 'list',
     max_stack: 3,
+    // THE EMBEDDED BBOX CANVAS (stroke 95): same face as sam3.
     leaf_face: 'bbox-canvas',
     // THE DECLARED DEPENDENCIES (the operator's 2026-09-19 order —
     // "declared, then auto provisioned"): the SAM2 arm rides the
@@ -128,12 +140,12 @@ const MODS: readonly DeclaredModifierKind[] = [
     // (an unused sam2 bag never fires the gate), and RunRescue
     // offers the install through the manage seat.
     requires: ['comfyui-impact-pack', 'comfyui-impact-subpack'],
-    kindFields: [
-      { name: 'yolo_threshold', label: 'YOLO threshold', type: 'number', default: 0.5, min: 0.05, max: 0.95, step: 0.05, tooltip: 'YOLO box confidence. Lower catches more instances, noisier boxes.' },
-    ],
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam2', tooltip: "The saved mask's name (mask_<name>)." },
       { name: 'labels', label: 'Labels', type: 'string', default: 'person', tooltip: 'The YOLO class word to segment (person, face, hand — the detector proposes, SAM2 refines).' },
+      { name: 'yolo_threshold', label: 'YOLO threshold', type: 'number', default: 0.5, min: 0.05, max: 0.95, step: 0.05, tooltip: 'This entry\'s YOLO box confidence. Lower catches more instances, noisier boxes.' },
+      { name: 'sam_threshold', label: 'Mask threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'This selection\'s SAM2 mask confidence.' },
+      { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: 0, max: 64, step: 1, tooltip: 'Grow this mask N pixels.' },
       ...BBOX_FIELDS,
     ],
   },
@@ -144,19 +156,20 @@ const MODS: readonly DeclaredModifierKind[] = [
     category: 'ordered',
     cardinality: 'list',
     max_stack: 4,
-    // THE PAINT FACE (paint-leaf-canvas.md): the brush verb rides
-    // the payload field — the demoted studio's canvas, ported.
+    // THE EMBEDDED PAINT CANVAS (stroke 95): the brush rides at
+    // the top of the leaf popup — the payload field under it IS
+    // the contract (the PNG's alpha = strokes).
     leaf_face: 'paint-canvas',
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'draw', tooltip: "The saved mask's name (mask_<name>)." },
-      { name: 'payload', label: 'Paint payload', type: 'path', wtype: 'image', default: '', tooltip: 'The painted PNG (alpha channel = strokes).' },
+      { name: 'payload', label: 'Paint payload', type: 'path', wtype: 'image', default: '', tooltip: 'The painted PNG (alpha channel = strokes) — painted in the popup, or uploaded/dropped/picked here.' },
     ],
   },
 ]
 
 export const identity = {
   label: 'Mask Form',
-  description: 'Simple mask form: pick the input, then ADD sources — sam3 (text selection, optional box), sam2 (YOLO proposes + SAM2 refines, optional box), draw (painted, stacks onto the rest).',
+  description: 'Simple mask form: pick the input, then ADD sources — sam3 (text selection, optional box), sam2 (YOLO proposes + SAM2 refines, optional box), draw (painted, stacks onto the rest). Each popup previews the image and carries its own knobs.',
   genre: 'image',
   icon: 'mask',
   ability: 'tool',
@@ -177,6 +190,43 @@ const bagOf = (p: Record<string, unknown>, key: string, cardId: string): Array<R
     }
     return e as Record<string, unknown>
   })
+}
+
+/** One declared field row's validation-relevant face (the bounds
+ *  read FROM the declaration — single source of truth, never
+ *  re-typed at the read site). DefaultedField is the total face:
+ *  every field read through scalarOf declares a default — the
+ *  declaration is a file-const literal, so drift is a TYPECHECK
+ *  failure, never a runtime arm. */
+type DeclaredField = { name: string; label?: string; type?: unknown; min?: unknown; max?: unknown; default?: unknown }
+type DefaultedField = DeclaredField & { default: number | boolean | string }
+
+/** Reads one entry scalar AGAINST its declared field (the stroke-95
+ *  per-entry law): absent/null → the declared default; a value of
+ *  the wrong JS type or outside the declared bounds refuses LOUD
+ *  (naming the entry and the field — never a silent clamp). */
+const scalarOf = (where: string, entry: Record<string, unknown>, f: DefaultedField): number | boolean | string => {
+  const key = f.name
+  const v = entry[key]
+  if (v === undefined || v === null) {
+    return f.default
+  }
+  if (f.type === 'boolean') {
+    if (typeof v !== 'boolean') {
+      throw new Error(`${where}: '${key}' must be a boolean — got ${JSON.stringify(v).slice(0, 40)}`)
+    }
+    return v
+  }
+  if (typeof v !== 'number' || !Number.isFinite(v)) {
+    throw new Error(`${where}: '${key}' must be a number — got ${JSON.stringify(v).slice(0, 40)}`)
+  }
+  if (typeof f.min === 'number' && v < f.min) {
+    throw new Error(`${where}: '${key}' must be within ${String(f.min)}–${String(f.max)} — got ${String(v)}`)
+  }
+  if (typeof f.max === 'number' && v > f.max) {
+    throw new Error(`${where}: '${key}' must be within ${String(f.min)}–${String(f.max)} — got ${String(v)}`)
+  }
+  return v
 }
 
 // THE INJECT DECLARATION (the loader's law, cardDefs.ts L11-14):
@@ -224,21 +274,17 @@ export function apply(ctx: Context): void {
       requiresModel: false,
     },
     // THE MOD-OWNED NAMES ride admits (the compose door's explicit-
-    // params overlay — the bags + the section's kindFields scalars
-    // never touch the flat schema).
-    admits: ['sam3', 'sam2', 'draw', 'detection_threshold', 'max_instances', 'export_boxes', 'yolo_threshold'],
+    // params overlay — the three bags; every knob lives INSIDE a
+    // bag entry, never flat on the doc).
+    admits: ['sam3', 'sam2', 'draw'],
     mods: MODS,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
-      // THE SCHEMA GATE (the music/sfx/tts admission precedent —
-      // the card's own declaration validates the last hop into the
-      // engine): schemastery walk enforces declared types + bounds
-      // (refine_iterations is 0–8, sam_threshold 0.5–1, sam_dilation
-      // 0–64 — anything else refuses LOUD, never composes), fills
-      // defaults (2 / 0.93 / 0), admits the mod-owned names inert
-      // (the sam3/sam2/draw bags + the sam3 section scalars ride the
-      // walk verbatim). The composer's reads below are reads of the
-      // GATED doc.
+      // THE SCHEMA GATE (the music/sfx/tts admission precedent):
+      // the card's own declaration validates the last hop — here
+      // the input's presence (the lane scalars all live in the
+      // bags now; the composer's reads below are reads of GATED
+      // bag entries through scalarOf).
       const doc = schema(p) as unknown as Record<string, unknown>
       if (typeof doc.input_image !== 'string' || !doc.input_image.trim()) {
         throw new Error("required param 'input_image' missing on the mask-form card — the mask lane selects FROM an image")
@@ -253,49 +299,21 @@ export function apply(ctx: Context): void {
         throw new Error('a draw stacks ONTO a mask — add a standalone source first (sam3 or sam2), then the draw')
       }
 
-      // THE STANDALONE WALK: sources in bag order — the FIRST
-      // standalone entry is the primary (mask_combined, the union
-      // anchor); every entry after it is a per-name export.
-      // ENFORCEMENT (2026-09-19, the operator's order — nothing goes
-      // around the declared law): the mod-owned scalars ride `admits`
-      // (the flat schema passes them verbatim), so the sam3
-      // declaration's own kindFields bound them at compose — the
-      // bounds are READ FROM the declaration (single source of
-      // truth), never re-typed here.
-      {
-        // EVERY declared kindFields bag gates (sam3 today; any future
-        // mod's scalars join the law for free — no per-key re-typing).
-        for (const mod of MODS) {
-        for (const f of (mod.kindFields ?? []) as Array<{ name?: unknown; type?: unknown; min?: unknown; max?: unknown }>) {
-          const key = String(f.name)
-          const v = doc[key]
-          if (v === undefined || v === null) continue
-          if (f.type === 'boolean') {
-            if (typeof v !== 'boolean') {
-              throw new Error(`${key} must be a boolean — got ${JSON.stringify(v).slice(0, 40)}`)
-            }
-          } else {
-            if (typeof v !== 'number' || !Number.isFinite(v)) {
-              throw new Error(`${key} must be a number (${String(f.min)}–${String(f.max)}) — got ${JSON.stringify(v).slice(0, 40)}`)
-            }
-            if (v < (f.min as number) || v > (f.max as number)) {
-              throw new Error(`${key} must be within ${String(f.min)}–${String(f.max)} — got ${String(v)}`)
-            }
-          }
-        }
-        }
-      }
-      const lane: Record<string, unknown> = {
-        input_image: doc.input_image,
-        sam_threshold: doc.sam_threshold,
-        sam_dilation: doc.sam_dilation,
-        refine_iterations: doc.refine_iterations,
-        // RT-DETR knobs (sam3's kindFields) thread when committed
-        // (absent rides the kit fallbacks); the manifest defaults ON
-        detection_threshold: doc.detection_threshold,
-        max_instances: doc.max_instances,
-        export_boxes: doc.export_boxes !== false,
-      }
+      // THE DECLARED FIELDS, indexed (every read below validates
+      // against the declaration — the bounds are DATA, never
+      // re-typed per key). Total by construction: the kinds carry
+      // const-literal field rows, and every name read through
+      // num()/bool() exists on its kind (a drift is a typecheck
+      // failure — scalarOf remains the loud arm for WIRE data).
+      const fieldsOfKind = new Map(MODS.map((m) => [m.kind, m.fields! as DeclaredField[]]))
+      // (get() is total here by the same construction — num()/bool()
+      // only ever ask for 'sam3' | 'sam2', both const rows above)
+      const fieldOf = (kind: string, name: string): DefaultedField =>
+        fieldsOfKind.get(kind)!.find((f) => f.name === name) as DefaultedField
+      const num = (where: string, entry: Record<string, unknown>, kind: string, name: string): number =>
+        scalarOf(where, entry, fieldOf(kind, name)) as number
+      const bool = (where: string, entry: Record<string, unknown>, kind: string, name: string): boolean =>
+        scalarOf(where, entry, fieldOf(kind, name)) as boolean
 
       // the unified standalone source stream: [kind, index] in
       // cross-bag order (sam3's bag first — the declared MODS order)
@@ -306,24 +324,41 @@ export function apply(ctx: Context): void {
       ]
       const nameOf = (s: Src, fallback: string): string => {
         const n = s.entry['name']
-        return typeof n === 'string' && n !== '' ? n : fallback
+        if (n === undefined || n === null || n === '') return fallback
+        if (typeof n !== 'string') {
+          throw new Error(`${whereOf(s)}: 'name' must be a string — got ${JSON.stringify(n)}`)
+        }
+        return n
       }
+      const whereOf = (s: Src): string => `${s.kind} entry ${s.i}`
 
-      const exports: Array<[string, string, unknown?]> = []
-      const exportKind: string[] = []
-
-      // ── the primary (the first standalone source) ──
+      // ── the primary (the first standalone source): its own tune
+      // threads the lane's flat reads (the lane's primary arm);
+      // every source after it is a per-name export with a per-entry
+      // tune on its trip. ──
       const primary = sources[0]
+      // the primary anchors mask_combined (no named export of its
+      // own) — its name is still a DECLARED field: validate it loud
+      // (a wrong-typed name on any entry is a mistake, never a
+      // silent skip)
+      nameOf(primary, 'combined')
+      const lane: Record<string, unknown> = {
+        input_image: doc.input_image,
+        sam_threshold: num(whereOf(primary), primary.entry, primary.kind, 'sam_threshold'),
+        sam_dilation: num(whereOf(primary), primary.entry, primary.kind, 'sam_dilation'),
+      }
+      if (primary.kind === 'sam3') {
+        lane['refine_iterations'] = num(whereOf(primary), primary.entry, 'sam3', 'refine_iterations')
+      }
       // THE PRIMARY SCOPE (the first entry's drawn box — threads as
       // the lane's scope_bbox; every SELECTION primary honors it).
       const primaryBox = bboxOf(primary.entry, primary.kind)
       if (primaryBox) lane['scope_bbox'] = primaryBox
-      // YOLO knobs (sam2's kindFields) thread when committed
-      // (absent rides the lane fallback); the sam3 RT-DETR knobs
-      // ride above.
-      if (doc.yolo_threshold !== undefined) lane['yolo_threshold'] = doc.yolo_threshold
       if (primary.kind === 'sam3') {
-        if (primary.entry['via_rtdetr'] === true) {
+        // the RT-DETR knobs thread from the primary (its own arm)
+        lane['detection_threshold'] = num(whereOf(primary), primary.entry, 'sam3', 'detection_threshold')
+        lane['max_instances'] = num(whereOf(primary), primary.entry, 'sam3', 'max_instances')
+        if (bool(whereOf(primary), primary.entry, 'sam3', 'via_rtdetr')) {
           lane['primary_via_rtdetr'] = true
         } else {
           const prompt = primary.entry['prompt']
@@ -341,32 +376,57 @@ export function apply(ctx: Context): void {
         }
         lane['primary_via_sam2'] = true
         lane['primary_sam2_labels'] = labels
+        lane['yolo_threshold'] = num(whereOf(primary), primary.entry, 'sam2', 'yolo_threshold')
       }
 
-      // ── every source after the primary: its own export ──
+      // THE BOX MANIFEST (card-wide, OR-ed per entry — the declared
+      // default is ON): the RT-DETR readback draws when any sam3
+      // entry asks for it. A via_rtdetr entry does NOT force the
+      // draw (its boxes still feed the primary's own arm — the
+      // proposal lane fires through primary_via_rtdetr either way).
+      const manifestEntries = sam3.filter((e, i) => bool(`sam3 entry ${i}`, e, 'sam3', 'export_boxes') !== false)
+      if (manifestEntries.length > 0) lane['export_boxes'] = true
+      // the RT-DETR knobs thread from the sam3 PRIMARY alone (its own
+      // arm — via_rtdetr OR the manifest; set above). There is NO
+      // second owner: a sam2 primary implies ZERO sam3 entries (the
+      // sam3 bag sorts first in the source stream), and zero sam3
+      // entries means no manifest to own — the arm cannot exist.
+
+      // ── every source after the primary: its own export, carrying
+      // its own per-entry tune (the trip's 4th arm). ──
+      const exports: Array<[string, string, unknown?, unknown?]> = []
+      const exportKind: string[] = []
       for (let s = 1; s < sources.length; s++) {
         const src = sources[s]
+        const tune: Record<string, unknown> = {
+          threshold: num(whereOf(src), src.entry, src.kind, 'sam_threshold'),
+          dilation: num(whereOf(src), src.entry, src.kind, 'sam_dilation'),
+        }
         if (src.kind === 'sam3') {
+          tune['refine'] = num(whereOf(src), src.entry, 'sam3', 'refine_iterations')
+          // via_rtdetr is the PRIMARY's arm — a later entry asking
+          // for it is a mistake (its boxes would silently vanish):
+          // refuse LOUD, the entry owns a prompt instead.
+          if (bool(whereOf(src), src.entry, 'sam3', 'via_rtdetr') === true) {
+            throw new Error(`sam3 entry ${src.i}: 'via_rtdetr' is the primary's arm — the RT-DETR readback rides the first source; give this entry a 'prompt'`)
+          }
           const prompt = src.entry['prompt']
-          if (typeof prompt !== 'string') {
-            throw new Error(`sam3 entry ${src.i} needs a 'prompt' (a string) — got ${String(JSON.stringify(prompt)).slice(0, 40)}`)
+          if (typeof prompt !== 'string' || prompt === '') {
+            throw new Error(`sam3 entry ${src.i} needs a 'prompt' (a string — the RT-DETR box lane is the primary's own arm) — got ${String(JSON.stringify(prompt)).slice(0, 40)}`)
           }
           const bbox = bboxOf(src.entry, 'sam3')
-          exports.push([nameOf(src, `sam3_${src.i + 1}`), prompt, bbox ?? undefined])
+          exports.push([nameOf(src, `sam3_${src.i + 1}`), prompt, bbox ?? undefined, tune])
           exportKind.push('text')
         } else {
+          tune['yolo_threshold'] = num(whereOf(src), src.entry, 'sam2', 'yolo_threshold')
           const labels = src.entry['labels']
           if (typeof labels !== 'string' || labels === '') {
             throw new Error(`sam2 entry ${src.i} needs 'labels' (a YOLO class word — e.g. person) — got ${JSON.stringify(labels)}`)
           }
           const bbox = bboxOf(src.entry, 'sam2')
-          exports.push([nameOf(src, `sam2_${src.i + 1}`), labels, bbox ?? undefined])
+          exports.push([nameOf(src, `sam2_${src.i + 1}`), labels, bbox ?? undefined, tune])
           exportKind.push('sam2')
         }
-      }
-      if (exports.length > 0) {
-        lane['exports'] = exports
-        lane['export_kind'] = exportKind
       }
 
       // ── THE ORDERED DRAW STACK (bag order): each payload is its
@@ -375,11 +435,15 @@ export function apply(ctx: Context): void {
       // the previous outputs flow into the next). ──
       const paintMasks: string[] = []
       for (let i = 0; i < draw.length; i++) {
-        const payload = draw[i]['payload']
+        const payload = draw[i]!['payload']
         if (typeof payload !== 'string' || payload === '') {
           throw new Error(`draw entry ${i} needs a 'payload' — the painted PNG is the mask`)
         }
-        const name = typeof draw[i]['name'] === 'string' && (draw[i]['name'] as string) !== '' ? draw[i]['name'] as string : `draw_${i + 1}`
+        const dn = draw[i]!['name']
+        if (dn !== undefined && dn !== null && dn !== '' && typeof dn !== 'string') {
+          throw new Error(`draw entry ${i}: 'name' must be a string — got ${JSON.stringify(dn)}`)
+        }
+        const name = typeof dn === 'string' && dn !== '' ? dn : `draw_${i + 1}`
         exports.push([name, payload])
         exportKind.push('paint')
         paintMasks.push(payload)

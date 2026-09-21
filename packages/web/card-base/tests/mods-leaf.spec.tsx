@@ -3,7 +3,8 @@
 // 2): one modal edits one bag entry — OPTION (served row + seeded
 // strength), HYBRID (served row + stamped facts + verbatim fields),
 // FIELD (the kind's own atoms). Refusals stay LOUD; stale leaves
-// close without writing; the paint verb mounts the host face.
+// close without writing; the declared leaf faces EMBED at the top
+// of the leaf (stroke 95 — the popup carries the visual preview).
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
@@ -508,70 +509,60 @@ test('THE CLOSE: the labelled close drops the leaf without writing (never a stra
   expect(onEdit).not.toHaveBeenCalled()
 })
 
+// ── THE EMBEDDED PAINT CANVAS (stroke 95 — the operator's design:
+// the mod popup CARRIES the visual preview) ──
+
 function FakeFace(props: {
   referenceUrl: string
-  payloadUrl: string
-  onSave: (dataUrl: string) => void
-  onCancel: () => void
+  value: string
+  onChange: (dataUrl: string) => void
 }): ReturnType<typeof h> {
-  return h('div', {},
+  return h('div', { 'data-testid': 'paint-face' },
     h('span', { 'data-testid': 'face-ref' }, props.referenceUrl),
-    h('span', { 'data-testid': 'face-payload' }, props.payloadUrl),
-    h('button', { type: 'button', onClick: () => { props.onSave('data:image/png;base64,ZZ') } }, 'Face save'),
-    h('button', { type: 'button', onClick: props.onCancel }, 'Face cancel'),
+    h('span', { 'data-testid': 'face-value' }, props.value),
+    h('button', { type: 'button', onClick: () => { props.onChange('data:image/png;base64,ZZ') } }, 'Face stroke'),
+    h('button', { type: 'button', onClick: () => { props.onChange('') } }, 'Face clear'),
   )
 }
 
-test('THE PAINT VERB: the brush mounts the host face; its save writes the payload the square reads', () => {
+test('THE PAINT CANVAS: the face embeds ONCE at the top of the leaf (the FIRST image field is its field); a stroke writes the draft the square reads', () => {
   const { onEdit } = openLeaf({
     kinds: [MASK_PAINT], values: { input_image: 'ref-url' },
     paintFace: FakeFace, paintReference: 'input_image',
   })
   openCreate('Mask')
-  const paints = screen.getAllByRole('button', { name: 'Paint' })
-  expect(paints.length).toBe(2)
-  fireEvent.click(paints[0]!)
+  // ONE canvas, embedded — never a Paint button opening a second modal
+  expect(screen.getAllByTestId('paint-face').length).toBe(1)
+  expect(screen.queryByRole('button', { name: 'Paint' })).toBeNull()
   expect(screen.getByTestId('face-ref').textContent).toBe('ref-url')
-  fireEvent.click(screen.getByRole('button', { name: 'Face save' }))
-  expect(screen.queryByTestId('face-ref')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Face stroke' }))
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('masks', [{
     image: 'data:image/png;base64,ZZ', feather: 5,
   }])
 })
 
-test('THE PAINT VERB: cancel drops the face without seeding; host-less or faceless kinds offer no verb', () => {
-  const painted = openLeaf({
-    kinds: [MASK_PAINT], values: {},
-    paintFace: FakeFace, paintReference: 'input_image',
-  })
-  openCreate('Mask')
-  fireEvent.click(screen.getAllByRole('button', { name: 'Paint' })[0]!)
-  expect(screen.getByTestId('face-ref').textContent).toBe('')
-  fireEvent.click(screen.getByRole('button', { name: 'Face cancel' }))
-  expect(screen.queryByTestId('face-ref')).toBeNull()
-  painted.unmount()
-  const hostless = openLeaf({ kinds: [MASK_PAINT], values: {} })
-  openCreate('Mask')
-  expect(screen.queryByRole('button', { name: 'Paint' })).toBeNull()
-  hostless.unmount()
-  const faceless = openLeaf({ kinds: [MASK], values: {}, paintFace: FakeFace, paintReference: 'input_image' })
-  openCreate('Mask')
-  expect(screen.queryByRole('button', { name: 'Paint' })).toBeNull()
-  faceless.unmount()
-})
-
-test('THE PAINT VERB: editing a painted entry hands its payload to the face (paint-over seeds)', () => {
+test('THE PAINT CANVAS: editing a painted entry seeds the face with its payload (paint-over); a clear commits the empty payload', () => {
   const { onEdit } = openLeaf({
     kinds: [MASK_PAINT], values: { masks: [{ image: 'data:image/png;base64,OLD' }] },
     paintFace: FakeFace, paintReference: 'input_image',
   })
   openEditTile('masks-0')
-  fireEvent.click(screen.getAllByRole('button', { name: 'Paint' })[0]!)
-  expect(screen.getByTestId('face-payload').textContent).toBe('data:image/png;base64,OLD')
-  fireEvent.click(screen.getByRole('button', { name: 'Face save' }))
+  expect(screen.getByTestId('face-value').textContent).toBe('data:image/png;base64,OLD')
+  fireEvent.click(screen.getByRole('button', { name: 'Face clear' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-  expect(onEdit).toHaveBeenCalledWith('masks', [{ image: 'data:image/png;base64,ZZ' }])
+  expect(onEdit).toHaveBeenCalledWith('masks', [{ image: '' }])
+})
+
+test('THE PAINT CANVAS: host-less or faceless kinds render no canvas (the square holds — graceful degrade)', () => {
+  const hostless = openLeaf({ kinds: [MASK_PAINT], values: {} })
+  openCreate('Mask')
+  expect(screen.queryByTestId('paint-face')).toBeNull()
+  hostless.unmount()
+  const faceless = openLeaf({ kinds: [MASK], values: {}, paintFace: FakeFace, paintReference: 'input_image' })
+  openCreate('Mask')
+  expect(screen.queryByTestId('paint-face')).toBeNull()
+  faceless.unmount()
 })
 
 const CONTROL_NOFIELDS = {
@@ -705,7 +696,8 @@ test('THE LEAF SQUARE: dropping a file uploads through the door and the name lan
   }
 })
 
-// ── THE BBOX VERB (stroke 78 — the bbox-canvas leaf face) ──
+// ── THE EMBEDDED BBOX CANVAS (stroke 78's face, embedded stroke 95
+// — the selection preview INSIDE the leaf, never a Draw-box button) ──
 
 const SAM3_BOX = {
   kind: 'sam3', label: 'SAM3', param_key: 'sam3', cardinality: 'list',
@@ -713,33 +705,37 @@ const SAM3_BOX = {
   fields: [
     { name: 'name', type: 'string', label: 'Name', default: 'sam3' },
     { name: 'prompt', type: 'string', label: 'Prompt', default: '' },
-    { name: 'bbox_x', type: 'number', label: 'Box x', default: -1 },
-    { name: 'bbox_y', type: 'number', label: 'Box y', default: -1 },
-    { name: 'bbox_w', type: 'number', label: 'Box w', default: -1 },
-    { name: 'bbox_h', type: 'number', label: 'Box h', default: -1 },
+    { name: 'bbox_x', type: 'number', label: 'Box x', default: -1, faceOwned: true },
+    { name: 'bbox_y', type: 'number', label: 'Box y', default: -1, faceOwned: true },
+    { name: 'bbox_w', type: 'number', label: 'Box w', default: -1, faceOwned: true },
+    { name: 'bbox_h', type: 'number', label: 'Box h', default: -1, faceOwned: true },
   ],
 } as unknown as ModifierKind
 
-function FakeBboxFace(props: { referenceUrl: string; bbox: { x: number; y: number; width: number; height: number } | null; onSave: (b: { x: number; y: number; width: number; height: number }) => void; onCancel: () => void }) {
+function FakeBboxFace(props: { referenceUrl: string; value: { x: number; y: number; width: number; height: number } | null; onChange: (b: { x: number; y: number; width: number; height: number } | null) => void }) {
   return h('div', { 'data-testid': 'bbox-face' },
     h('span', { 'data-testid': 'bbox-ref' }, props.referenceUrl),
-    h('span', { 'data-testid': 'bbox-seed' }, props.bbox === null ? 'null' : `${props.bbox.x},${props.bbox.y},${props.bbox.width},${props.bbox.height}`),
-    h('button', { type: 'button', onClick: () => { props.onSave({ x: 12.6, y: 34.2, width: 120.9, height: 90.4 }) } }, 'Box save'),
-    h('button', { type: 'button', onClick: props.onCancel }, 'Box cancel'),
+    h('span', { 'data-testid': 'bbox-seed' }, props.value === null ? 'null' : `${props.value.x},${props.value.y},${props.value.width},${props.value.height}`),
+    h('button', { type: 'button', onClick: () => { props.onChange({ x: 12.6, y: 34.2, width: 120.9, height: 90.4 }) } }, 'Box commit'),
+    h('button', { type: 'button', onClick: () => { props.onChange(null) } }, 'Box clear'),
   )
 }
 
-test('THE BBOX VERB: the verb mounts the host face ONCE per entry; its save writes the four inputs (rounded)', () => {
+test('THE BBOX CANVAS: the face embeds at the top; its commit writes the four faceOwned fields (rounded) — never raw inputs under the canvas', () => {
   const { onEdit } = openLeaf({
     kinds: [SAM3_BOX], values: { input_image: 'ref-url' },
     bboxFace: FakeBboxFace, paintReference: 'input_image',
   })
   openCreate('SAM3')
-  fireEvent.click(screen.getByRole('button', { name: 'Draw box' }))
+  // ONE canvas, embedded — never a Draw box button
+  expect(screen.getAllByTestId('bbox-face').length).toBe(1)
+  expect(screen.queryByRole('button', { name: 'Draw box' })).toBeNull()
   expect(screen.getByTestId('bbox-ref').textContent).toBe('ref-url')
   expect(screen.getByTestId('bbox-seed').textContent).toBe('null')
-  fireEvent.click(screen.getByRole('button', { name: 'Box save' }))
-  expect(screen.queryByTestId('bbox-face')).toBeNull()
+  // the four faceOwned fields NEVER render while the canvas rides
+  expect(screen.queryByLabelText('Box x')).toBeNull()
+  expect(screen.queryByLabelText('Box h')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Box commit' }))
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('sam3', [{
     name: 'sam3', prompt: '',
@@ -747,42 +743,41 @@ test('THE BBOX VERB: the verb mounts the host face ONCE per entry; its save writ
   }])
 })
 
-test('THE BBOX VERB: editing a boxed entry seeds the face with the current rectangle', () => {
+test('THE BBOX CANVAS: editing a boxed entry seeds the face with the current rectangle', () => {
   openLeaf({
     kinds: [SAM3_BOX],
     values: { input_image: 'r', sam3: [{ name: 'a', prompt: 'p', bbox_x: 10, bbox_y: 20, bbox_w: 30, bbox_h: 40 }] },
     bboxFace: FakeBboxFace, paintReference: 'input_image',
   })
   openEditTile('sam3-0')
-  fireEvent.click(screen.getByRole('button', { name: 'Redraw box' }))
   expect(screen.getByTestId('bbox-seed').textContent).toBe('10,20,30,40')
 })
 
-test('THE BBOX VERB: cancel drops the face without seeding (never a stray write)', () => {
+test('THE BBOX CANVAS: a clear writes the four unset sentinels (-1 — the entry runs unscoped)', () => {
   const { onEdit } = openLeaf({
-    kinds: [SAM3_BOX], values: { input_image: 'ref-url' },
+    kinds: [SAM3_BOX],
+    values: { input_image: 'r', sam3: [{ name: 'a', prompt: 'p', bbox_x: 10, bbox_y: 20, bbox_w: 30, bbox_h: 40 }] },
     bboxFace: FakeBboxFace, paintReference: 'input_image',
   })
-  openCreate('SAM3')
-  fireEvent.click(screen.getByRole('button', { name: 'Draw box' }))
-  expect(screen.getByTestId('bbox-face')).not.toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Box cancel' }))
-  expect(screen.queryByTestId('bbox-face')).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  openEditTile('sam3-0')
+  fireEvent.click(screen.getByRole('button', { name: 'Box clear' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('sam3', [{
-    name: 'sam3', prompt: '',
+    name: 'a', prompt: 'p',
     bbox_x: -1, bbox_y: -1, bbox_w: -1, bbox_h: -1,
   }])
 })
 
-test('THE BBOX VERB: host-less or faceless kinds offer no verb (the four inputs hold)', () => {
+test('THE BBOX CANVAS: host-less degrades — the four faceOwned inputs RENDER (the plain inputs hold)', () => {
   const hostless = openLeaf({ kinds: [SAM3_BOX], values: {} })
   openCreate('SAM3')
-  expect(screen.queryByRole('button', { name: 'Draw box' })).toBeNull()
+  expect(screen.queryByTestId('bbox-face')).toBeNull()
+  expect(screen.getByLabelText('Box x')).not.toBeNull()
+  expect(screen.getByLabelText('Box h')).not.toBeNull()
   hostless.unmount()
   const faceless = openLeaf({ kinds: [MASK_PAINT], values: {}, bboxFace: FakeBboxFace, paintReference: 'input_image' })
   openCreate('Mask')
-  expect(screen.queryByRole('button', { name: 'Draw box' })).toBeNull()
+  expect(screen.queryByTestId('bbox-face')).toBeNull()
   faceless.unmount()
 })
 
@@ -791,8 +786,8 @@ test('THE SEAM CONTRACTS LIVE IN @melite/contracts (stroke 79): the face props c
   // siblings (PreviewOwnerProps, StageViewOwnerProps); card-base
   // re-exports for its component-level types and existing importers
   const mod = await import('../src/mods.tsx')
-  const a: mod.PaintFaceComponentProps = { referenceUrl: 'r', payloadUrl: 'p', onSave: () => {}, onCancel: () => {} }
-  const b: mod.BboxFaceComponentProps = { referenceUrl: 'r', bbox: null, onSave: () => {}, onCancel: () => {} }
+  const a: mod.PaintCanvasFaceProps = { referenceUrl: 'r', value: 'p', onChange: () => {} }
+  const b: mod.BboxCanvasFaceProps = { referenceUrl: 'r', value: null, onChange: () => {} }
   const paint: mod.PaintFaceComponent = (props) => { void props; return null as never }
   const box: mod.BboxFaceComponent = (props) => { void props; return null as never }
   paint(a); box(b)

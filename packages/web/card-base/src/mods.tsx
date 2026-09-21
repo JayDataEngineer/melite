@@ -45,21 +45,28 @@ import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
 import { coerceFieldEdit, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
 
-// THE FACE CONTRACTS (stroke 79 — the seam-law unification): the
-// owner props live in @melite/contracts (modifierFaces.ts) beside
-// their sibling seam contracts; re-exported here for the
-// component-level types below and every existing importer.
-export type { PaintFaceComponentProps, BboxFaceComponentProps } from '@melite/contracts'
-import type { BboxFaceComponentProps, PaintFaceComponentProps } from '@melite/contracts'
+// THE FACE CONTRACTS (stroke 79 — the seam-law unification;
+// REWORKED stroke 95 — the embedded leaf): the owner props live in
+// @melite/contracts (modifierFaces.ts) beside their sibling seam
+// contracts; re-exported here for the component-level types below
+// and every existing importer. A face is an EMBEDDED CANVAS — the
+// visual preview INSIDE the leaf popup (an image the user drags a
+// rectangle on / brushes strokes over), reporting every committed
+// change through onChange; the leaf's own Add/Save/Cancel own the
+// commit chrome. The retired modal-shaped verbs (a Paint / Draw
+// box button opening a SECOND modal over the leaf) died.
+export type { PaintCanvasFaceProps, BboxCanvasFaceProps } from '@melite/contracts'
+import type { BboxCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts'
 
-export type BboxFaceComponent = (props: BboxFaceComponentProps) => ReactElement
+export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement
 
-/** THE LEAF FACE (paint-leaf-canvas.md): the host's brush modal —
- *  a component, not an import (card-base stays atom-generic; the
- *  custom face is the CARD's UI, delivered by the client plane).
- *  Absent host = the verb never renders (the square is the
- *  contract; the degrade is graceful by design). */
-export type PaintFaceComponent = (props: PaintFaceComponentProps) => ReactElement
+/** THE PAINT FACE (paint-leaf-canvas.md, embedded stroke 95): the
+ *  host's brush canvas — a component, not an import (card-base
+ *  stays atom-generic; the custom face is the CARD's UI, delivered
+ *  by the client plane). Absent host = the canvas never renders
+ *  (the square is the contract; the degrade is graceful by
+ *  design). */
+export type PaintFaceComponent = (props: PaintCanvasFaceProps) => ReactElement
 
 export interface ModifiersSectionProps {
   kinds: ModifierKind[]
@@ -72,11 +79,14 @@ export interface ModifiersSectionProps {
   /** immediate persistence (the onSaveParams law) — optional: an
    *  add-drill without a stage commits through its values map. */
   onPatch?: (patch: Record<string, unknown>) => void
-  /** THE PAINT FACE (leaf_face kinds): the host's brush modal.
-   *  Together with paintReference — absent either = no verb. */
+  /** THE PAINT FACE (leaf_face kinds): the host's brush canvas —
+   *  EMBEDDED at the top of the leaf popup. Together with
+   *  paintReference — absent either = no canvas (the square
+   *  holds). */
   paintFace?: PaintFaceComponent
-  /** THE BBOX FACE (stroke 78): the host's selection modal, for
-   *  bbox-canvas kinds — shares paintReference (the card's ONE
+  /** THE BBOX FACE (stroke 78, embedded stroke 95): the host's
+   *  selection canvas for bbox-canvas kinds — EMBEDDED at the top
+   *  of the leaf popup; shares paintReference (the card's ONE
    *  image field is both faces' reference). */
   bboxFace?: BboxFaceComponent
   /** the card-level image field whose value is the leaf faces'
@@ -504,11 +514,12 @@ function ModLeaf(props: {
   onSave: () => void
   onDelete: () => void
   leafError: string | null
-  /** THE PAINT FACE (leaf_face kinds): the host modal + the card's
-   *  reference field value (absent host = no verb, graceful). */
+  /** THE PAINT FACE (leaf_face kinds): the host's brush canvas —
+   *  EMBEDDED at the top of the leaf (absent host = no canvas, the
+   *  square holds — graceful). */
   paintFace?: PaintFaceComponent
-  /** THE BBOX FACE (stroke 78): same law — absent host = the four
-   *  number inputs hold. */
+  /** THE BBOX FACE (stroke 78, embedded stroke 95): same law —
+   *  absent host = the four number inputs hold. */
   bboxFace?: BboxFaceComponent
   paintReferenceValue: string
   /** The host's media source — the leaf's image inputs pick from
@@ -518,7 +529,36 @@ function ModLeaf(props: {
   const { leaf, onDraft, onSave, onDelete, leafError } = props
   const k = leaf.kind
   const hidden = props.hideFields
-  const leafFields: SpecField[] = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false))
+  // THE EMBEDDED CANVAS (stroke 95 — the operator's design: the
+  // mod popup CARRIES the visual preview): a leaf_face kind with a
+  // host-delivered face renders the canvas at the TOP of the leaf.
+  // The bbox canvas owns the entry's four bbox_* fields (they are
+  // faceOwned — they never render as raw inputs when the canvas
+  // does); the paint canvas owns the kind's FIRST image field (the
+  // payload — the same field the three-source square writes).
+  // Absent host = no canvas (the degrade law: every field,
+  // faceOwned included, renders — the plain inputs hold).
+  const bboxCanvas = props.bboxFace !== undefined && k.leaf_face === 'bbox-canvas'
+  const paintField = props.paintFace !== undefined && k.leaf_face === 'paint-canvas'
+    ? (k.fields ?? []).find((f) => f.type === 'image' || f.wtype === 'image')
+    : undefined
+  const facePresent = bboxCanvas || paintField !== undefined
+  // reads the draft's quad (all four present, finite, ≥0 = set)
+  const draftQuad = (): { x: number; y: number; width: number; height: number } | null => {
+    const quad = [onDraft.draftParams['bbox_x'], onDraft.draftParams['bbox_y'], onDraft.draftParams['bbox_w'], onDraft.draftParams['bbox_h']]
+    return quad.every((v) => typeof v === 'number' && Number.isFinite(v) && (v as number) >= 0)
+      ? { x: quad[0] as number, y: quad[1] as number, width: quad[2] as number, height: quad[3] as number }
+      : null
+  }
+  // writes the draft's quad (null = the four ride their unset
+  // sentinel, -1 — the entry's declared default)
+  const writeQuad = (b: { x: number; y: number; width: number; height: number } | null): void => {
+    onDraft.setDraftParams(b === null
+      ? { ...onDraft.draftParams, bbox_x: -1, bbox_y: -1, bbox_w: -1, bbox_h: -1 }
+      : { ...onDraft.draftParams, bbox_x: Math.round(b.x), bbox_y: Math.round(b.y), bbox_w: Math.round(b.width), bbox_h: Math.round(b.height) })
+  }
+  const leafFields: SpecField[] = (k.fields ?? []).filter((f) =>
+    !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true))
   // the FIELD-kind leaf's own provider: the mod's image inputs get
   // the three verbs (upload/drop/pick) exactly like a card's
   const own = useSquareProvider(
@@ -654,6 +694,27 @@ function ModLeaf(props: {
             : null,
         )
       : h('div', { className: css.modLeafFields },
+          // THE EMBEDDED CANVAS (stroke 95): the visual preview at
+          // the TOP of the leaf — the face the kind declares, the
+          // reference image the card names. The canvas reports
+          // every committed change live into the draft; the leaf's
+          // own Add/Save/Cancel (below) own the commit chrome.
+          bboxCanvas && props.bboxFace !== undefined
+            ? h('div', { className: css.modField, 'data-leaf-canvas': 'bbox' },
+                h(props.bboxFace, {
+                  referenceUrl: props.paintReferenceValue,
+                  value: draftQuad(),
+                  onChange: writeQuad,
+                }))
+            : null,
+          paintField !== undefined && props.paintFace !== undefined
+            ? h('div', { className: css.modField, 'data-leaf-canvas': 'paint' },
+                h(props.paintFace, {
+                  referenceUrl: props.paintReferenceValue,
+                  value: typeof onDraft.draftParams[paintField.name] === 'string' ? onDraft.draftParams[paintField.name] as string : '',
+                  onChange: (dataUrl: string) => { onDraft.setDraftParams({ ...onDraft.draftParams, [paintField.name]: dataUrl }) },
+                }))
+            : null,
           leafFields.map((f) => h('div', { key: f.name },
             (() => {
               // THE UNWRAPPED SQUARE (same law as the hybrid arm
@@ -676,39 +737,7 @@ function ModLeaf(props: {
                     f.label ?? f.name,
                     atom)
             })(),
-            // THE PAINT VERB (paint-leaf-canvas.md): on a declared
-            // face, each image field gains the brush beside the
-            // square — the modal writes the same payload the
-            // square reads. Host-less = nothing renders (the
-            // square holds). The verb is the label's SIBLING, never
-            // nested inside it (a button in a label corrupts both
-            // accessible names — the wall caught it).
-            props.paintFace !== undefined && k.leaf_face === 'paint-canvas' && (f.type === 'image' || f.wtype === 'image')
-              ? h(PaintVerb, {
-                  Face: props.paintFace,
-                  referenceUrl: props.paintReferenceValue,
-                  payloadUrl: typeof onDraft.draftParams[f.name] === 'string' ? onDraft.draftParams[f.name] as string : '',
-                  onSaved: (dataUrl: string) => { onDraft.setDraftParams({ ...onDraft.draftParams, [f.name]: dataUrl }) },
-                })
-              : null,
           )),
-          // THE BBOX VERB (stroke 78): on a declared bbox-canvas face,
-          // ONE verb per entry (the rectangle is the entry's, not a
-          // field's) — it opens the preview, fills the four inputs.
-          props.bboxFace !== undefined && k.leaf_face === 'bbox-canvas'
-            ? h(BboxVerb, {
-                Face: props.bboxFace,
-                referenceUrl: props.paintReferenceValue,
-                draft: onDraft.draftParams,
-                onSaved: (bbox) => {
-                  onDraft.setDraftParams({
-                    ...onDraft.draftParams,
-                    bbox_x: Math.round(bbox.x), bbox_y: Math.round(bbox.y),
-                    bbox_w: Math.round(bbox.width), bbox_h: Math.round(bbox.height),
-                  })
-                },
-              })
-            : null,
           own.wireMenu,
         ),
     h('div', { className: css.modLeafActions },
@@ -717,56 +746,6 @@ function ModLeaf(props: {
         ? h(Button, { variant: 'ghost', onClick: onDelete }, 'Remove')
         : null,
     ),
-  )
-}
-
-/** THE PAINT VERB — the brush button + modal mount (the face
- *  component arrives from the host; this is the wiring only). */
-function PaintVerb(props: {
-  Face: PaintFaceComponent
-  referenceUrl: string
-  payloadUrl: string
-  onSaved: (dataUrl: string) => void
-}): ReturnType<typeof h> {
-  const [open, setOpen] = useState(false)
-  return h('div', { className: css.modField },
-    h(Button, { variant: 'ghost', onClick: () => { setOpen(true) } }, 'Paint'),
-    open
-      ? h(props.Face, {
-          referenceUrl: props.referenceUrl,
-          payloadUrl: props.payloadUrl,
-          onSave: (dataUrl: string) => { props.onSaved(dataUrl); setOpen(false) },
-          onCancel: () => { setOpen(false) },
-        })
-      : null,
-  )
-}
-
-/** THE BBOX VERB (stroke 78) — the selection button + modal mount:
- *  reads the entry's current rectangle (all four present and finite
- *  = set; anything else = null, a fresh draw), writes the four
- *  bbox_* inputs on save. Same delivery law as the paint verb. */
-function BboxVerb(props: {
-  Face: BboxFaceComponent
-  referenceUrl: string
-  draft: SpecValues
-  onSaved: (bbox: { x: number; y: number; width: number; height: number }) => void
-}): ReturnType<typeof h> {
-  const [open, setOpen] = useState(false)
-  const quad = [props.draft['bbox_x'], props.draft['bbox_y'], props.draft['bbox_w'], props.draft['bbox_h']]
-  const set = quad.length === 4 && quad.every((v) => typeof v === 'number' && Number.isFinite(v) && (v as number) >= 0)
-    ? { x: quad[0] as number, y: quad[1] as number, width: quad[2] as number, height: quad[3] as number }
-    : null
-  return h('div', { className: css.modField },
-    h(Button, { variant: 'ghost', onClick: () => { setOpen(true) } }, set === null ? 'Draw box' : 'Redraw box'),
-    open
-      ? h(props.Face, {
-          referenceUrl: props.referenceUrl,
-          bbox: set,
-          onSave: (bbox) => { props.onSaved(bbox); setOpen(false) },
-          onCancel: () => { setOpen(false) },
-        })
-      : null,
   )
 }
 

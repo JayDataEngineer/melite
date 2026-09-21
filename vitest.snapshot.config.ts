@@ -4,6 +4,7 @@ import {
   PROXY_SETUP,
   resolutionFacade,
   positiveIntFromEnv,
+  rootPath,
   standardDecoratorPlugin,
   vitestExecArgv,
 } from './vitest.shared.ts'
@@ -32,13 +33,38 @@ if (process.env.DSH_SNAPSHOT === 'record') {
 export default defineConfig({
   plugins: [standardDecoratorPlugin()],
   resolve: {
-    alias: { ...resolutionFacade() },
+    alias: {
+      ...resolutionFacade(),
+      // THE GATEWAY STAND-IN (mirrored from vitest.web.config.ts, whose
+      // comment names this exact scenario): a recorded session that
+      // imports the cards tab's client tree (snapshots/web/cards-tab)
+      // hits cards-resource.ts → '@deepseek-ai/dsh-api-gateway/client',
+      // a module-loader-format artifact that only executes inside the
+      // DSH web shell. Tests resolve the card-view tests' stand-in
+      // (RemoteStreamCarrierError); types still come from the real
+      // package's .d.ts at typecheck time.
+      '@deepseek-ai/dsh-api-gateway/client': rootPath('packages/web/melite-card-view/tests/fixtures/gateway-client.ts'),
+    },
   },
   test: {
     environment: 'node',
     pool: 'forks',
     execArgv: vitestExecArgv,
     setupFiles: [PROXY_SETUP],
+    css: false,
+    // THE PRIMITIVES INLINE (mirrored from the battery's dom project,
+    // vitest.config.ts): the recorded-session scripts walk the card
+    // view client, whose face carriers import
+    // @deepseek-ai/dsh-client-ui-primitives — a package whose entry
+    // side-imports StateDot.module.css. Un-inlined, plain node dies
+    // on the .css extension; inlined, vitest processes the package
+    // and `css: false` stubs the stylesheet (the same law the
+    // battery already runs under).
+    server: {
+      deps: {
+        inline: [/@deepseek-ai\/dsh-client-ui-primitives/],
+      },
+    },
     include: [
       // Repository-wide corpus ownership/storage gate (DSH names the
       // same file class first in their include).

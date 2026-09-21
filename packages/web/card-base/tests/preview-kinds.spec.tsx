@@ -161,6 +161,60 @@ test('THE AUDIO HISTORY LAW: promote swaps the whole set; the badge clears on a 
   expect(screen.queryByTestId('history-stale-badge')).toBeNull()
 })
 
+// ── THE KIND FACE (the operator's catch, 2026-09-22: "it says
+// 'gone' instead historical view under the preview… works for image
+// cards, but not audio") ─────────────────────────────────────────
+// An <img> decodes ONLY images: an audio (or video, or mesh) url
+// seated in an <img> fires onError the moment a real browser mounts
+// it — every non-image history tile flipped to the dead face and the
+// Music card's strip said 'gone' for files that exist. The kind face
+// renders a labeled glyph tile (the owner's DECLARED kind — the same
+// primary-output law that picked the presenter): no <img>, no
+// decode, no false 'gone' — the dead face stays an IMAGE-only
+// honesty (preview-history.spec walls it there).
+test('THE AUDIO KIND FACE: a track tile renders the labeled glyph face — never an <img> decode, never a false gone', () => {
+  const { container } = render(h(AudioStagePreview, audio({
+    history: [[{ name: 'old', url: '/runs/prev/old.mp3' }]],
+  })))
+  const block = container.querySelector('[data-testid="stage-output-history"]') as HTMLElement
+  // NO img seat exists to error — the false-'gone' path is dead by
+  // construction for non-image kinds
+  expect(block.querySelector('img')).toBeNull()
+  expect(block.textContent).not.toContain('gone')
+  const face = block.querySelector('[data-testid="history-thumb-audio"]') as HTMLElement
+  expect(face).not.toBeNull()
+  expect(face.querySelector('svg')).not.toBeNull()
+  expect(face.textContent).toContain('old')
+  // the tile still promotes its generation to the hero
+  fireEvent.click(block.querySelector('button') as HTMLElement)
+  expect(screen.getByTestId('stage-preview-audio-hero').getAttribute('src')).toBe('/runs/prev/old.mp3')
+})
+
+test('THE VIDEO KIND FACE: a film tile renders the glyph face (an mp4 in an <img> errors the same way an mp3 does)', () => {
+  const { container } = render(h(VideoStagePreview, video({
+    history: [[{ name: 'film', url: '/runs/prev/film.mp4' }]],
+  })))
+  const block = container.querySelector('[data-testid="stage-output-history"]') as HTMLElement
+  expect(block.querySelector('img')).toBeNull()
+  const face = block.querySelector('[data-testid="history-thumb-video"]') as HTMLElement
+  expect(face).not.toBeNull()
+  expect(face.querySelector('svg')).not.toBeNull()
+  expect(face.textContent).toContain('film')
+})
+
+test('THE MESH KIND FACE: a glb tile renders the glyph face like every non-image kind', () => {
+  const { container } = render(h(MeshStagePreview, {
+    ...video({ history: [[{ name: 'mesh', url: '/runs/prev/m.glb' }]] }),
+    kind: 'mesh',
+  }))
+  const block = container.querySelector('[data-testid="stage-output-history"]') as HTMLElement
+  expect(block.querySelector('img')).toBeNull()
+  const face = block.querySelector('[data-testid="history-thumb-mesh"]') as HTMLElement
+  expect(face).not.toBeNull()
+  expect(face.querySelector('svg')).not.toBeNull()
+  expect(face.textContent).toContain('mesh')
+})
+
 test('THE NAMELESS MESH ASSET: the stage seats it by index (never an empty asset id)', () => {
   const { container } = render(h(MeshStagePreview, {
     ...video({ artifacts: [{ name: '', url: '/runs/cur/m.glb' }], runStatus: 'completed' }),

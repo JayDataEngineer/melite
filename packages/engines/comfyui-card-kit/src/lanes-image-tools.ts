@@ -9,6 +9,12 @@ import { mintSeed } from './graph-helpers.ts'
 
 type BboxDict = { x: number; y: number; width: number; height: number }
 
+/** The per-export TUNE (stroke 95 — every knob a mask source owns
+ *  rides its bag entry; the card threads each export's own tune as
+ *  the trip's fourth arm). Absent arms ride the lane-flat values
+ *  (the primary's tune). */
+export type EntryTune = { threshold?: number; refine?: number; dilation?: number; yolo_threshold?: number }
+
 /** The mask_t1 block — the selection lane (detect → refine → save),
  *  moved verbatim from the mask-studio card; the input_image
  *  admission stays on the card. TWO selection families: the SAM3
@@ -46,12 +52,12 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   // carries it on every bboxes-less SAM3_Detect.
   const DEFAULT_BBOXES: BboxDict = { x: 0, y: 0, width: 512, height: 512 }
 
-  const detect = (conditioning?: OutputHandle, bboxes?: OutputHandle | BboxDict): OutputHandle => {
+  const detect = (conditioning?: OutputHandle, bboxes?: OutputHandle | BboxDict, tune?: EntryTune): OutputHandle => {
     const inputs: NodeInputs = {
       model: ckptNode().out(0),
       image: img(),
-      threshold: samThreshold,
-      refine_iterations: refineIterations,
+      threshold: tune?.threshold ?? samThreshold,
+      refine_iterations: tune?.refine ?? refineIterations,
       individual_masks: false,
     }
     if (conditioning) inputs.conditioning = conditioning
@@ -59,11 +65,11 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     return g.node('SAM3_Detect', inputs).out(0)     // (masks, bboxes) → masks
   }
 
-  const dilate = (mask: OutputHandle): OutputHandle =>
-    dilation ? g.node('GrowMask', { mask, expand: dilation, tapered_corners: true }).out(0) : mask
+  const dilate = (mask: OutputHandle, d?: number): OutputHandle =>
+    (d ?? dilation) ? g.node('GrowMask', { mask, expand: d ?? dilation, tapered_corners: true }).out(0) : mask
 
-  const save = (mask: OutputHandle, name: string): void => {
-    const m2i = g.node('MaskToImage', { mask: dilate(mask) })
+  const save = (mask: OutputHandle, name: string, d?: number): void => {
+    const m2i = g.node('MaskToImage', { mask: dilate(mask, d) })
     g.node('SaveImage', { images: m2i.out(0), filename_prefix: `${prefix}/${name}` })
   }
 
@@ -96,14 +102,14 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     (samH ??= g.node('SAMLoader', { model_name: li.sam2 as string, device_mode: 'AUTO' }).out(0))
   const yoloProvider = (): OutputHandle =>
     (yoloH ??= g.node('UltralyticsDetectorProvider', { model_name: li.yolo as string }).out(0))
-  const sam2detect = (labels: string, scope?: BboxDict): OutputHandle => {
+  const sam2detect = (labels: string, scope?: BboxDict, tune?: EntryTune): OutputHandle => {
     if (labels === '') {
       throw new Error('maskT1: a sam2 selection needs labels (a YOLO class word — the card refuses empty)')
     }
     const segs = g.node('BboxDetectorSEGS', {
       bbox_detector: yoloProvider(),
       image: img(),
-      threshold: ((p.yolo_threshold ?? 0.5) as number),
+      threshold: (tune?.yolo_threshold ?? (p.yolo_threshold as number | undefined) ?? 0.5),
       dilation: 10,
       crop_factor: 3.0,
       drop_size: 10,
@@ -114,8 +120,8 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
       segs,
       image: img(),
       detection_hint: 'center-1',
-      dilation,
-      threshold: samThreshold,
+      dilation: tune?.dilation ?? dilation,
+      threshold: tune?.threshold ?? samThreshold,
       bbox_expansion: 0,
       mask_hint_threshold: 0.7,
       mask_hint_use_negative: 'False',
@@ -176,9 +182,34 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   }
 
   // ── per-name exports ──
-  // the third arm (optional) = the per-entry bbox [x, y, w, h]
-  const exports = (p.exports as Array<[string, string, unknown?]>) ?? []
+  // the third arm (optional) = the per-entry bbox [x, y, w, h];
+  // the fourth arm (optional) = the per-entry TUNE (stroke 95 —
+  // every knob a mask source owns rides its bag entry): threshold
+  // / refine / dilation / yolo_threshold overrides for THIS
+  // export's selection. Malformed refuses LOUD (a drifted bag is
+  // drift, never a skip); absent arms ride the lane-flat values
+  // (the primary's tune — the card threads it flat).
+  const exports = (p.exports as Array<[string, string, unknown?, unknown?]>) ?? []
   const kinds = (p.export_kind as string[]) ?? []
+  const entryTune = (raw: unknown): EntryTune | undefined => {
+    if (raw === undefined || raw === null) return undefined
+    if (typeof raw !== 'object' || Array.isArray(raw)) {
+      throw new Error(`maskT1: an export tune must be an object (threshold/refine/dilation/yolo_threshold) — got ${JSON.stringify(raw).slice(0, 60)}`)
+    }
+    const t = raw as Record<string, unknown>
+    for (const key of ['threshold', 'refine', 'dilation', 'yolo_threshold']) {
+      const v = t[key]
+      if (v === undefined) continue
+      if (typeof v !== 'number' || !Number.isFinite(v)) {
+        throw new Error(`maskT1: an export tune's '${key}' must be a finite number — got ${JSON.stringify(v).slice(0, 40)}`)
+      }
+    }
+    const unknown = Object.keys(t).filter((k) => !['threshold', 'refine', 'dilation', 'yolo_threshold'].includes(k))
+    if (unknown.length > 0) {
+      throw new Error(`maskT1: an export tune carries unknown key(s) ${unknown.join(', ')} — the vocabulary is threshold/refine/dilation/yolo_threshold`)
+    }
+    return t as EntryTune
+  }
   // SCOPE VALIDATION (the lane's own gate — the card threads the
   // primary entry's box here; a malformed quad refuses LOUD, never
   // a silently unscoped primary).
@@ -240,16 +271,18 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     // the card-wide scope_bbox is the PRIMARY's box and never leaks
     // into an export (an export without its own box runs unscoped).
     const bboxes = entryBbox(trip[2])
+    // THE PER-ENTRY TUNE (stroke 95): the export's OWN fourth arm.
+    const tune = entryTune(trip[3])
     if (kind === 'sam2') {
       if (typeof payload !== 'string' || payload === '') {
         throw new Error(`maskT1: sam2 export '${name}' needs labels (a YOLO class word — the card refuses empty)`)
       }
-      const sel = sam2detect(payload, bboxes ? { x: bboxes.x, y: bboxes.y, width: bboxes.width, height: bboxes.height } : undefined)
-      save(sel, `mask_${name}`)
+      const sel = sam2detect(payload, bboxes ? { x: bboxes.x, y: bboxes.y, width: bboxes.width, height: bboxes.height } : undefined, tune)
+      save(sel, `mask_${name}`, tune?.dilation)
       continue
     }
-    const sel = detect(conditioning, bboxes)
-    save(sel, `mask_${name}`)
+    const sel = detect(conditioning, bboxes, tune)
+    save(sel, `mask_${name}`, tune?.dilation)
   }
 
   // THE ORDERED UNION CHAIN (stroke 78 — the ordered-draw law): a

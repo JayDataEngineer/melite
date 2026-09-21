@@ -38,6 +38,10 @@ const FieldRow = z.object({
   step: z.number(),
   tooltip: z.string(),
   wtype: z.string(),
+  // FACE-OWNED (stroke 95, the embedded leaf): the declared canvas
+  // owns this field's value (the bbox quad) — the leaf hides it
+  // when the canvas renders (the degrade law shows it otherwise).
+  faceOwned: z.boolean(),
   options: z.array(z.object({ value: z.any(), label: z.string() })),
 });
 
