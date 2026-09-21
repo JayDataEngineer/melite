@@ -1,0 +1,12 @@
+# snapshot.yml — keyless web scenario (DSH tier 7). This scenario owns
+# no local session fixture: it borrows the canonical session from
+# snapshots/session/hello and reads that owner's selected parent
+# generation read-only (the same law as web/hello). The cards-tab face
+# is a PURE function of bench rows (benchRow) — no host, no fetch; the
+# e2e studio lane (scripts/e2e-studio-lane.sh) owns the LIVE browser
+# surface. CI forces read-only DSH_SNAPSHOT=replay.
+profile: melite-test
+composition: engine-tier
+headerClass: v0
+recordingPolicy: replay
+borrows: session/hello

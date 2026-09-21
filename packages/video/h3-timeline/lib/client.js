@@ -1859,6 +1859,17 @@ window.__ModuleLoader__.load({
 			}
 			return true;
 		}
+		function transformVertex(vertexPosition, mvPosition, center, scale, sin, cos) {
+			_alignedPosition.subVectors(vertexPosition, center).addScalar(.5).multiply(scale);
+			if (sin !== void 0) {
+				_rotatedPosition.x = cos * _alignedPosition.x - sin * _alignedPosition.y;
+				_rotatedPosition.y = sin * _alignedPosition.x + cos * _alignedPosition.y;
+			} else _rotatedPosition.copy(_alignedPosition);
+			vertexPosition.copy(mvPosition);
+			vertexPosition.x += _rotatedPosition.x;
+			vertexPosition.y += _rotatedPosition.y;
+			vertexPosition.applyMatrix4(_viewWorldMatrix);
+		}
 		function checkIntersection$1(object, material, raycaster, ray, pA, pB, pC, point) {
 			let intersect;
 			if (material.side === 1) intersect = ray.intersectTriangle(pC, pB, pA, true, point);
@@ -2244,7 +2255,7 @@ window.__ModuleLoader__.load({
 			}
 			throw new Error(`Unknown texture type ${type}.`);
 		}
-		var MOUSE, TOUCH, AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, UnsignedInt101111Type, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, R11_EAC_Format, SIGNED_R11_EAC_Format, RG11_EAC_Format, SIGNED_RG11_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$3, _setConsoleFunction, ReversedDepthFuncs, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers, _object3DId, _v1$6, _q1, _m1$1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _moveEvent, WebXRController, _colorKeywords, _hslA, _hslB, Color, _color, Scene, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1$3, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray$4, _sphere, _position$3, Points, CubeTexture, DepthTexture, CubeDepthTexture, ExternalTexture, BoxGeometry, PlaneGeometry, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, RawShaderMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, MeshDistanceMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, _position$2, _quaternion$2, _scale$2, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, LoaderUtils, _errorMap, ImageBitmapLoader, fov, aspect, CubeCamera, ArrayCamera, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, Clock, Spherical, _vector$2, _boneMatrix, _matrixWorldInv, SkeletonHelper, GridHelper, Controls;
+		var MOUSE, TOUCH, AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, UnsignedInt101111Type, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, R11_EAC_Format, SIGNED_R11_EAC_Format, RG11_EAC_Format, SIGNED_RG11_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$3, _setConsoleFunction, ReversedDepthFuncs, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers, _object3DId, _v1$6, _q1, _m1$1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _moveEvent, WebXRController, _colorKeywords, _hslA, _hslB, Color, _color, Scene, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1$3, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, SpriteMaterial, _geometry, _intersectPoint, _worldScale, _mvPosition, _alignedPosition, _rotatedPosition, _viewWorldMatrix, _vA$1, _vB$1, _vC$1, _uvA, _uvB, _uvC, Sprite, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray$4, _sphere, _position$3, Points, CubeTexture, CanvasTexture, DepthTexture, CubeDepthTexture, ExternalTexture, BoxGeometry, PlaneGeometry, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, RawShaderMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, MeshDistanceMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, _position$2, _quaternion$2, _scale$2, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, LoaderUtils, _errorMap, ImageBitmapLoader, fov, aspect, CubeCamera, ArrayCamera, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, Clock, Spherical, _vector$2, _boneMatrix, _matrixWorldInv, SkeletonHelper, GridHelper, Controls;
 		var init_three_core = __esmMin((() => {
 			MOUSE = {
 				LEFT: 0,
@@ -14822,6 +14833,244 @@ window.__ModuleLoader__.load({
 					if (value === true) this.version++;
 				}
 			};
+			SpriteMaterial = class extends Material {
+				/**
+				* Constructs a new sprite material.
+				*
+				* @param {Object} [parameters] - An object with one or more properties
+				* defining the material's appearance. Any property of the material
+				* (including any property from inherited materials) can be passed
+				* in here. Color values can be passed any type of value accepted
+				* by {@link Color#set}.
+				*/
+				constructor(parameters) {
+					super();
+					/**
+					* This flag can be used for type testing.
+					*
+					* @type {boolean}
+					* @readonly
+					* @default true
+					*/
+					this.isSpriteMaterial = true;
+					this.type = "SpriteMaterial";
+					/**
+					* Color of the material.
+					*
+					* @type {Color}
+					* @default (1,1,1)
+					*/
+					this.color = new Color(16777215);
+					/**
+					* The color map. May optionally include an alpha channel, typically combined
+					* with {@link Material#transparent} or {@link Material#alphaTest}. The texture map
+					* color is modulated by the diffuse `color`.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.map = null;
+					/**
+					* The alpha map is a grayscale texture that controls the opacity across the
+					* surface (black: fully transparent; white: fully opaque).
+					*
+					* Only the color of the texture is used, ignoring the alpha channel if one
+					* exists. For RGB and RGBA textures, the renderer will use the green channel
+					* when sampling this texture due to the extra bit of precision provided for
+					* green in DXT-compressed and uncompressed RGB 565 formats. Luminance-only and
+					* luminance/alpha textures will also still work as expected.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.alphaMap = null;
+					/**
+					* The rotation of the sprite in radians.
+					*
+					* @type {number}
+					* @default 0
+					*/
+					this.rotation = 0;
+					/**
+					* Specifies whether size of the sprite is attenuated by the camera depth (perspective camera only).
+					*
+					* @type {boolean}
+					* @default true
+					*/
+					this.sizeAttenuation = true;
+					/**
+					* Overwritten since sprite materials are transparent
+					* by default.
+					*
+					* @type {boolean}
+					* @default true
+					*/
+					this.transparent = true;
+					/**
+					* Whether the material is affected by fog or not.
+					*
+					* @type {boolean}
+					* @default true
+					*/
+					this.fog = true;
+					this.setValues(parameters);
+				}
+				copy(source) {
+					super.copy(source);
+					this.color.copy(source.color);
+					this.map = source.map;
+					this.alphaMap = source.alphaMap;
+					this.rotation = source.rotation;
+					this.sizeAttenuation = source.sizeAttenuation;
+					this.fog = source.fog;
+					return this;
+				}
+			};
+			_intersectPoint = /*@__PURE__*/ new Vector3();
+			_worldScale = /*@__PURE__*/ new Vector3();
+			_mvPosition = /*@__PURE__*/ new Vector3();
+			_alignedPosition = /*@__PURE__*/ new Vector2();
+			_rotatedPosition = /*@__PURE__*/ new Vector2();
+			_viewWorldMatrix = /*@__PURE__*/ new Matrix4();
+			_vA$1 = /*@__PURE__*/ new Vector3();
+			_vB$1 = /*@__PURE__*/ new Vector3();
+			_vC$1 = /*@__PURE__*/ new Vector3();
+			_uvA = /*@__PURE__*/ new Vector2();
+			_uvB = /*@__PURE__*/ new Vector2();
+			_uvC = /*@__PURE__*/ new Vector2();
+			Sprite = class extends Object3D {
+				/**
+				* Constructs a new sprite.
+				*
+				* @param {(SpriteMaterial|SpriteNodeMaterial)} [material] - The sprite material.
+				*/
+				constructor(material = new SpriteMaterial()) {
+					super();
+					/**
+					* This flag can be used for type testing.
+					*
+					* @type {boolean}
+					* @readonly
+					* @default true
+					*/
+					this.isSprite = true;
+					this.type = "Sprite";
+					if (_geometry === void 0) {
+						_geometry = new BufferGeometry();
+						const float32Array = new Float32Array([
+							-.5,
+							-.5,
+							0,
+							0,
+							0,
+							.5,
+							-.5,
+							0,
+							1,
+							0,
+							.5,
+							.5,
+							0,
+							1,
+							1,
+							-.5,
+							.5,
+							0,
+							0,
+							1
+						]);
+						const interleavedBuffer = new InterleavedBuffer(float32Array, 5);
+						_geometry.setIndex([
+							0,
+							1,
+							2,
+							0,
+							2,
+							3
+						]);
+						_geometry.setAttribute("position", new InterleavedBufferAttribute(interleavedBuffer, 3, 0, false));
+						_geometry.setAttribute("uv", new InterleavedBufferAttribute(interleavedBuffer, 2, 3, false));
+					}
+					/**
+					* The sprite geometry.
+					*
+					* @type {BufferGeometry}
+					*/
+					this.geometry = _geometry;
+					/**
+					* The sprite material.
+					*
+					* @type {(SpriteMaterial|SpriteNodeMaterial)}
+					*/
+					this.material = material;
+					/**
+					* The sprite's anchor point, and the point around which the sprite rotates.
+					* A value of `(0.5, 0.5)` corresponds to the midpoint of the sprite. A value
+					* of `(0, 0)` corresponds to the lower left corner of the sprite.
+					*
+					* @type {Vector2}
+					* @default (0.5,0.5)
+					*/
+					this.center = new Vector2(.5, .5);
+					/**
+					* The number of instances of this sprite.
+					* Can only be used with {@link WebGPURenderer}.
+					*
+					* @type {number}
+					* @default 1
+					*/
+					this.count = 1;
+				}
+				/**
+				* Computes intersection points between a casted ray and this sprite.
+				*
+				* @param {Raycaster} raycaster - The raycaster.
+				* @param {Array<Object>} intersects - The target array that holds the intersection points.
+				*/
+				raycast(raycaster, intersects) {
+					if (raycaster.camera === null) error("Sprite: \"Raycaster.camera\" needs to be set in order to raycast against sprites.");
+					_worldScale.setFromMatrixScale(this.matrixWorld);
+					_viewWorldMatrix.copy(raycaster.camera.matrixWorld);
+					this.modelViewMatrix.multiplyMatrices(raycaster.camera.matrixWorldInverse, this.matrixWorld);
+					_mvPosition.setFromMatrixPosition(this.modelViewMatrix);
+					if (raycaster.camera.isPerspectiveCamera && this.material.sizeAttenuation === false) _worldScale.multiplyScalar(-_mvPosition.z);
+					const rotation = this.material.rotation;
+					let sin, cos;
+					if (rotation !== 0) {
+						cos = Math.cos(rotation);
+						sin = Math.sin(rotation);
+					}
+					const center = this.center;
+					transformVertex(_vA$1.set(-.5, -.5, 0), _mvPosition, center, _worldScale, sin, cos);
+					transformVertex(_vB$1.set(.5, -.5, 0), _mvPosition, center, _worldScale, sin, cos);
+					transformVertex(_vC$1.set(.5, .5, 0), _mvPosition, center, _worldScale, sin, cos);
+					_uvA.set(0, 0);
+					_uvB.set(1, 0);
+					_uvC.set(1, 1);
+					let intersect = raycaster.ray.intersectTriangle(_vA$1, _vB$1, _vC$1, false, _intersectPoint);
+					if (intersect === null) {
+						transformVertex(_vB$1.set(-.5, .5, 0), _mvPosition, center, _worldScale, sin, cos);
+						_uvB.set(0, 1);
+						intersect = raycaster.ray.intersectTriangle(_vA$1, _vC$1, _vB$1, false, _intersectPoint);
+						if (intersect === null) return;
+					}
+					const distance = raycaster.ray.origin.distanceTo(_intersectPoint);
+					if (distance < raycaster.near || distance > raycaster.far) return;
+					intersects.push({
+						distance,
+						point: _intersectPoint.clone(),
+						uv: Triangle.getInterpolation(_intersectPoint, _vA$1, _vB$1, _vC$1, _uvA, _uvB, _uvC, new Vector2()),
+						face: null,
+						object: this
+					});
+				}
+				copy(source, recursive) {
+					super.copy(source, recursive);
+					if (source.center !== void 0) this.center.copy(source.center);
+					this.material = source.material;
+					return this;
+				}
+			};
 			_vector$7 = /*@__PURE__*/ new Vector3();
 			_segCenter = /*@__PURE__*/ new Vector3();
 			_segDir = /*@__PURE__*/ new Vector3();
@@ -17379,6 +17628,33 @@ window.__ModuleLoader__.load({
 				}
 				set images(value) {
 					this.image = value;
+				}
+			};
+			CanvasTexture = class extends Texture {
+				/**
+				* Constructs a new texture.
+				*
+				* @param {HTMLCanvasElement} [canvas] - The HTML canvas element.
+				* @param {number} [mapping=Texture.DEFAULT_MAPPING] - The texture mapping.
+				* @param {number} [wrapS=ClampToEdgeWrapping] - The wrapS value.
+				* @param {number} [wrapT=ClampToEdgeWrapping] - The wrapT value.
+				* @param {number} [magFilter=LinearFilter] - The mag filter value.
+				* @param {number} [minFilter=LinearMipmapLinearFilter] - The min filter value.
+				* @param {number} [format=RGBAFormat] - The texture format.
+				* @param {number} [type=UnsignedByteType] - The texture type.
+				* @param {number} [anisotropy=Texture.DEFAULT_ANISOTROPY] - The anisotropy value.
+				*/
+				constructor(canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy) {
+					super(canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy);
+					/**
+					* This flag can be used for type testing.
+					*
+					* @type {boolean}
+					* @readonly
+					* @default true
+					*/
+					this.isCanvasTexture = true;
+					this.needsUpdate = true;
 				}
 			};
 			DepthTexture = class extends Texture {
@@ -38231,10 +38507,40 @@ void main() {
 				}
 			};
 		}
+		/** A billboard TEXT label — the drei <Billboard><Text/></Text> analogue:
+		*  canvas-drawn glyphs on a THREE.Sprite (sprites always face the camera,
+		*  which IS the billboard). worldHeight is the label's height in scene
+		*  units (drei Text's fontSize is world units too). */
+		function makeLabelSprite(text, color, worldHeight) {
+			const px = 96;
+			const c = document.createElement("canvas");
+			const ctx = c.getContext("2d");
+			if (ctx !== null) {
+				ctx.font = `600 ${px}px system-ui, sans-serif`;
+				const w = Math.ceil(ctx.measureText(text).width) + 32;
+				c.width = w;
+				c.height = 128;
+				ctx.font = `600 ${px}px system-ui, sans-serif`;
+				ctx.textAlign = "center";
+				ctx.textBaseline = "middle";
+				ctx.fillStyle = color;
+				ctx.fillText(text, w / 2, 64);
+			}
+			const tex = new CanvasTexture(c);
+			tex.minFilter = LinearFilter;
+			const mat = new SpriteMaterial({
+				map: tex,
+				transparent: true
+			});
+			const sprite = new Sprite(mat);
+			const aspect = c.width / c.height;
+			sprite.scale.set(worldHeight * aspect, worldHeight, 1);
+			return sprite;
+		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$3 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_layerRow{flex:none;gap:6px;display:flex}.ClEuBa_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.ClEuBa_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.ClEuBa_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
-		const tagId$3 = "@melite/video-h3-timeline/preview.module.css@a23bfa4";
+		const css$3 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_layerRow{flex:none;gap:6px;display:flex}.ClEuBa_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.ClEuBa_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.ClEuBa_reportCard{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.ClEuBa_reportHead{align-items:center;gap:6px;display:flex}.ClEuBa_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.ClEuBa_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.ClEuBa_reportChips{flex-wrap:wrap;gap:4px;display:flex}.ClEuBa_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.ClEuBa_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.ClEuBa_reportRow{justify-content:space-between;gap:12px;display:flex}.ClEuBa_reportKey{color:var(--dsw-alias-label-dimmed);flex:none;font-size:10px}.ClEuBa_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.ClEuBa_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
+		const tagId$3 = "@melite/video-h3-timeline/preview.module.css@eb0c2039";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -38255,6 +38561,16 @@ void main() {
 			"historyTitle": "ClEuBa_historyTitle",
 			"layerChip": "ClEuBa_layerChip",
 			"layerRow": "ClEuBa_layerRow",
+			"reportCard": "ClEuBa_reportCard",
+			"reportChip": "ClEuBa_reportChip",
+			"reportChips": "ClEuBa_reportChips",
+			"reportHead": "ClEuBa_reportHead",
+			"reportKey": "ClEuBa_reportKey",
+			"reportRow": "ClEuBa_reportRow",
+			"reportRows": "ClEuBa_reportRows",
+			"reportStatus": "ClEuBa_reportStatus",
+			"reportTitle": "ClEuBa_reportTitle",
+			"reportVal": "ClEuBa_reportVal",
 			"stageCanvas": "ClEuBa_stageCanvas",
 			"stagePreview": "ClEuBa_stagePreview",
 			"staleBadge": "ClEuBa_staleBadge",
@@ -38368,6 +38684,7 @@ void main() {
 				setClickSink: (fn) => {
 					clickSink = fn;
 				},
+				addTick: stage.addTick,
 				dispose: () => {
 					grid.geometry.dispose();
 					stage.dispose();
@@ -38405,14 +38722,130 @@ void main() {
 			if (bones.length === 0) return null;
 			return new SkeletonHelper(group);
 		}
+		/** THE TURNTABLE SPEED (radians/sec) — one revolution every ~12.5s,
+		*  the gentle review idle; fast enough to read as motion in a
+		*  glance, slow enough to inspect. */
+		const TURNTABLE_SPEED = .5;
+		/** One turntable frame: rotate every group about its OWN Y axis
+		*  (each spins in place — the row layout's positions stand). Pure —
+		*  the stage's tick seam calls it with the rAF delta; a 0 delta is
+		*  a no-op. Declared per-asset rotation rides along (the spin adds
+		*  to the current angle, never resets it). */
+		function turntableTick(groups, delta) {
+			if (delta === 0) return;
+			const d = TURNTABLE_SPEED * delta;
+			for (const g of groups) g.rotation.y += d;
+		}
+		/** ── THE WEIGHTS HEAT OVERLAY (primitive ②, fourth slice) ───────────
+		*
+		* Per-vertex skin-weight heat: a skinned mesh's dominant-bone weight
+		* (the max of its skinWeight components, ∈ [0.25,1] under 4
+		* influences) paints a blue→red ramp through vertex colors. Unskinned
+		* meshes are untouched (no skinWeight attribute — no lane, no paint).
+		* OFF restores each geometry's ORIGINAL color attribute (cached the
+		* first time we touch it — absent means we delete ours) and the
+		* material's vertexColors flag. Idempotent both ways. */
+		/** The heat ramp — 5 stops (blue→cyan→green→yellow→red), t clamped.
+		*  Pure: the same ramp every stage paints, the wall pins the stops. */
+		function heatColor(t) {
+			const x = Math.min(1, Math.max(0, t));
+			const stops = [
+				[
+					0,
+					0,
+					1
+				],
+				[
+					0,
+					1,
+					1
+				],
+				[
+					0,
+					1,
+					0
+				],
+				[
+					1,
+					1,
+					0
+				],
+				[
+					1,
+					0,
+					0
+				]
+			];
+			const s = x * (stops.length - 1);
+			const i = Math.min(stops.length - 2, Math.floor(s));
+			const f = s - i;
+			const a = stops[i], b = stops[i + 1];
+			return [
+				a[0] + (b[0] - a[0]) * f,
+				a[1] + (b[1] - a[1]) * f,
+				a[2] + (b[2] - a[2]) * f
+			];
+		}
+		const weightColorCache = /* @__PURE__ */ new WeakMap();
+		function applyWeightsHeat(root, on) {
+			root.traverse((o) => {
+				const mesh = o;
+				const geo = mesh.geometry;
+				if (geo === void 0) return;
+				const mat = mesh.material;
+				if (mat === void 0 || mat === null || Array.isArray(mat)) return;
+				const sw = geo.getAttribute("skinWeight");
+				if (sw === void 0) return;
+				const pos = geo.getAttribute("position");
+				if (pos === void 0) return;
+				const sm = mat;
+				if (on) {
+					if (!weightColorCache.has(geo)) weightColorCache.set(geo, geo.getAttribute("color") ?? null);
+					const colors = new Float32Array(pos.count * 3);
+					const comps = Math.min(4, sw.itemSize);
+					for (let i = 0; i < pos.count; i++) {
+						let w = sw.getX(i);
+						for (let c = 1; c < comps; c++) {
+							const v = c === 1 ? sw.getY(i) : c === 2 ? sw.getZ(i) : sw.getW(i);
+							if (v > w) w = v;
+						}
+						const [r, g, b] = heatColor(w);
+						colors[i * 3] = r;
+						colors[i * 3 + 1] = g;
+						colors[i * 3 + 2] = b;
+					}
+					geo.setAttribute("color", new BufferAttribute(colors, 3));
+					sm.vertexColors = true;
+					sm.needsUpdate = true;
+				} else {
+					const orig = weightColorCache.get(geo);
+					if (orig === null) geo.deleteAttribute("color");
+					else if (orig !== void 0) geo.setAttribute("color", orig);
+					if (sm.vertexColors === true) {
+						sm.vertexColors = false;
+						sm.needsUpdate = true;
+					}
+				}
+			});
+		}
+		/** ── NAMED MESH SLOTS (primitive ②, third slice) ────────────────────
+		* A comparison seat: assets may declare a SLOT (`slot: 'source'` /
+		* `'result'`, body/garment, donor/target, LOD names) — the stage
+		* paints the slot's label above the asset (a billboard sprite, the
+		* stage3d makeLabelSprite). Unslotted assets seat unlabeled, as
+		* ever. Pure derivation, mount-side paint (the WebGL-exempt arm). */
+		function slotLabelOf(asset) {
+			return typeof asset.slot === "string" && asset.slot !== "" ? asset.slot : null;
+		}
 		/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
 		*  row, click to select, per-asset load failures reported upward).
 		*  No assets → the honest empty state; the canvas mounts when the
 		*  first asset lands. */
-		function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label, layers, onLayers }) {
+		function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label, layers, onLayers, turntable }) {
 			const canvasRef = (0, react.useRef)(null);
 			const sceneRef = (0, react.useRef)(null);
 			const skeletonHelpers = (0, react.useRef)([]);
+			const slotLabels = (0, react.useRef)([]);
 			const [loaded, setLoaded] = (0, react.useState)([]);
 			const [failed, setFailed] = (0, react.useState)(null);
 			const [ready, setReady] = (0, react.useState)(false);
@@ -38421,6 +38854,10 @@ void main() {
 			const key = assets.map((a) => a.id + "@" + a.url).join("|");
 			const errRef = (0, react.useRef)(onAssetError);
 			errRef.current = onAssetError;
+			const groupsRef = (0, react.useRef)([]);
+			groupsRef.current = loaded.map((l) => l.group);
+			const turntableRef = (0, react.useRef)(turntable === true);
+			turntableRef.current = turntable === true;
 			(0, react.useEffect)(() => {
 				setLoaded([]);
 				setFailed(null);
@@ -38486,12 +38923,34 @@ void main() {
 					}
 				}
 				skeletonHelpers.current = helpers;
+				const labels = [];
+				for (const { asset, group } of loaded) {
+					const text = slotLabelOf(asset);
+					if (text === null) continue;
+					const sprite = makeLabelSprite(text, "#1c1f26", .05);
+					const box = new Box3().setFromObject(group);
+					sprite.position.set(group.position.x, box.max.y + .06, 0);
+					mounted.scene.add(sprite);
+					labels.push(sprite);
+				}
+				slotLabels.current = labels;
+				mounted.addTick((dt) => {
+					if (!turntableRef.current) return;
+					turntableTick(groupsRef.current, dt);
+				});
 				return () => {
 					for (const helper of skeletonHelpers.current) {
 						mounted.scene.remove(helper);
 						helper.dispose();
 					}
 					skeletonHelpers.current = [];
+					for (const sprite of slotLabels.current) {
+						mounted.scene.remove(sprite);
+						const mat = sprite.material;
+						mat.map?.dispose();
+						mat.dispose();
+					}
+					slotLabels.current = [];
 					sceneRef.current = null;
 					mounted.dispose();
 				};
@@ -38507,6 +38966,10 @@ void main() {
 			(0, react.useEffect)(() => {
 				for (const helper of skeletonHelpers.current) helper.visible = skeleton;
 			}, [loaded, skeleton]);
+			const weights = layers?.weights === true;
+			(0, react.useEffect)(() => {
+				for (const { group } of loaded) applyWeightsHeat(group, weights);
+			}, [loaded, weights]);
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-viewport": label ?? "glb-stage"
@@ -38525,7 +38988,8 @@ void main() {
 				onClick: () => {
 					onLayers({
 						wireframe: false,
-						skeleton
+						skeleton,
+						weights
 					});
 				}
 			}, "Shaded"), (0, react.createElement)("button", {
@@ -38535,7 +38999,8 @@ void main() {
 				onClick: () => {
 					onLayers({
 						wireframe: true,
-						skeleton
+						skeleton,
+						weights
 					});
 				}
 			}, "Wireframe"), (0, react.createElement)("button", {
@@ -38545,10 +39010,22 @@ void main() {
 				onClick: () => {
 					onLayers({
 						wireframe,
-						skeleton: !skeleton
+						skeleton: !skeleton,
+						weights
 					});
 				}
-			}, "Skeleton")) : null);
+			}, "Skeleton"), (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.layerChip,
+				"aria-pressed": weights,
+				onClick: () => {
+					onLayers({
+						wireframe,
+						skeleton,
+						weights: !weights
+					});
+				}
+			}, "Weights")) : null);
 		}
 		//#endregion
 		//#region ../../web/card-base/src/square.tsx
@@ -40258,7 +40735,8 @@ void main() {
 			const anyOrdered = kinds.some(isOrdered);
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.modSection,
-				"data-subcard-grid": "on"
+				"data-subcard-grid": "on",
+				"data-testid": "cb-mods-section"
 			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
 				key: k.param_key + ":kind",
 				className: card_module_css_default.modLeafFields
@@ -40405,20 +40883,28 @@ void main() {
 				onChange: (e) => {
 					onDraft.setDraftStrength(e.target.value);
 				}
-			})), (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== scalarKeyOf(k) && !(hidden?.has(f.name) ?? false)).map((f) => (0, react.createElement)("label", {
-				key: f.name,
-				className: card_module_css_default.modField
-			}, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), (0, react.createElement)(SpecAtom, {
-				f,
-				value: onDraft.draftParams[f.name] ?? f.default,
-				onEdit: (name, v) => {
-					onDraft.setDraftParams({
-						...onDraft.draftParams,
-						[name]: v
-					});
-				},
-				square: own.square(f)
-			}))), own.wireMenu) : isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
+			})), (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== scalarKeyOf(k) && !(hidden?.has(f.name) ?? false)).map((f) => {
+				const sq = own.square(f);
+				const atom = (0, react.createElement)(SpecAtom, {
+					f,
+					value: onDraft.draftParams[f.name] ?? f.default,
+					onEdit: (name, v) => {
+						onDraft.setDraftParams({
+							...onDraft.draftParams,
+							[name]: v
+						});
+					},
+					...sq !== void 0 ? { square: sq } : {}
+				});
+				const caption = (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name);
+				return sq !== void 0 ? (0, react.createElement)("div", {
+					key: f.name,
+					className: card_module_css_default.modField
+				}, caption, atom) : (0, react.createElement)("label", {
+					key: f.name,
+					className: card_module_css_default.modField
+				}, caption, atom);
+			}), own.wireMenu) : isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
 				className: card_module_css_default.modSelect,
 				value: onDraft.draftOption,
 				onChange: (e) => {
@@ -40454,17 +40940,21 @@ void main() {
 						onDraft.setDraftSteps(e.target.value);
 					}
 				}));
-			})() : null) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
-				f,
-				value: onDraft.draftParams[f.name],
-				onEdit: (name, v) => {
-					onDraft.setDraftParams({
-						...onDraft.draftParams,
-						[name]: v
-					});
-				},
-				square: own.square(f)
-			})), props.paintFace !== void 0 && k.leaf_face === "paint-canvas" && (f.type === "image" || f.wtype === "image") ? (0, react.createElement)(PaintVerb, {
+			})() : null) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (() => {
+				const sq = own.square(f);
+				const atom = (0, react.createElement)(SpecAtom, {
+					f,
+					value: onDraft.draftParams[f.name],
+					onEdit: (name, v) => {
+						onDraft.setDraftParams({
+							...onDraft.draftParams,
+							[name]: v
+						});
+					},
+					...sq !== void 0 ? { square: sq } : {}
+				});
+				return sq !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), atom) : (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, atom);
+			})(), props.paintFace !== void 0 && k.leaf_face === "paint-canvas" && (f.type === "image" || f.wtype === "image") ? (0, react.createElement)(PaintVerb, {
 				Face: props.paintFace,
 				referenceUrl: props.paintReferenceValue,
 				payloadUrl: typeof onDraft.draftParams[f.name] === "string" ? onDraft.draftParams[f.name] : "",
@@ -43004,8 +43494,12 @@ void main() {
 		* refs panel is GONE — refs are PER-CALL (a call's SourceRow group
 		* in CallCard); nothing at run level ever staged them. What remains
 		* is the legitimate Layer A NLE concept: the positioned AUDIO CLIPS
-		* bed (the Music row), which mixes over the final cut at the stitch
-		* and never conditions a window.
+		* bed (the Music row). THE DIALOGUE HALF (2026-09-21): a clip that
+		* spans a window CONDITIONS that window (the model hears it — the
+		* lip-sync lane, one of the 3 audio lanes; a full bus refuses loud
+		* at compose), mixes over the final cut at film time (the audible
+		* authority), and ducks the generated voice under the real clip.
+		* Music-only clips (no window overlap) overlay clean, no lane.
 		*/
 		/** Layer A rail: the audio-clips upload door (3189–3315, refs cut). */
 		function RunRefsClips({ layerA, takeAudioFile, audioUploadRef }) {
@@ -46024,6 +46518,29 @@ void main() {
 						seen.set(v, keys);
 					}
 					for (const [url, keys] of seen) if (keys.length > 1) defects.push("one-file-one-key: " + url + " rides " + keys.length + " keys (" + keys.join(", ") + ") — a file under two keys renders twice");
+				}
+			}
+			if (r.reports !== void 0) {
+				if (typeof r.reports !== "object" || r.reports === null || Array.isArray(r.reports)) defects.push("reports: not an object (the name→verdict map)");
+				else for (const [k, v] of Object.entries(r.reports)) {
+					if (typeof v !== "object" || v === null || Array.isArray(v)) {
+						defects.push(`reports.${k}: not an object (kind 'report' entry)`);
+						continue;
+					}
+					const rep = v;
+					if (rep["kind"] !== "report") defects.push(`reports.${k}: kind is not 'report' (the only entry kind)`);
+					if (rep["status"] !== "pass" && rep["status"] !== "fail" && rep["status"] !== "warn") defects.push(`reports.${k}: status is not pass|fail|warn`);
+					if (rep["title"] !== void 0 && (typeof rep["title"] !== "string" || rep["title"] === "")) defects.push(`reports.${k}.title: present but not a non-empty string`);
+					if (rep["chips"] !== void 0) {
+						if (!Array.isArray(rep["chips"])) defects.push(`reports.${k}.chips: not an array`);
+						else rep["chips"].forEach((c, i) => {
+							if (typeof c !== "string" || c === "") defects.push(`reports.${k}.chips[${String(i)}]: not a non-empty string`);
+						});
+					}
+					if (rep["rows"] !== void 0) {
+						if (typeof rep["rows"] !== "object" || rep["rows"] === null || Array.isArray(rep["rows"])) defects.push(`reports.${k}.rows: not an object (the key-value body)`);
+						else for (const [rk, rv] of Object.entries(rep["rows"])) if (typeof rv !== "string" && typeof rv !== "number" && typeof rv !== "boolean") defects.push(`reports.${k}.rows.${rk}: not a string|number|boolean`);
+					}
 				}
 			}
 			if (r.assetUrls !== void 0) {
@@ -50238,7 +50755,6 @@ void main() {
 						selected == null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
 							"data-testid": "tl-run-panel",
 							className: studio_module_css_default.runFold,
-							open: true,
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("summary", {
 								className: studio_module_css_default.runSummary,
 								children: [

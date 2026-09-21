@@ -343,7 +343,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
   const isOrdered = (k: ModifierKind): boolean => k.category !== 'standalone'
   const anyOrdered = kinds.some(isOrdered)
 
-  return h('section', { className: css.modSection, 'data-subcard-grid': 'on' },
+  return h('section', { className: css.modSection, 'data-subcard-grid': 'on', 'data-testid': 'cb-mods-section' },
     h('div', { className: css.modHead },
       h('span', { className: css.modTitle }, 'Modifiers'),
       h('span', { className: css.modHint },

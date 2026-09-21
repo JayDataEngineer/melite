@@ -36,6 +36,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:e2e:studio": "bash scripts/e2e-studio-lane.sh",
     "test:expected": "vitest run --config vitest.expected.config.ts",
     "test:expected:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.expected.config.ts",
     "test:bench": "vitest run --config vitest.bench.config.ts",

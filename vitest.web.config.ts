@@ -30,6 +30,13 @@ export default defineConfig({
       // deleted; one React per lane).
       react: rootPath('node_modules/.pnpm/react@19.2.8/node_modules/react'),
       'react-dom': rootPath('node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom'),
+      // the gateway's browser client face resolves to the card-view
+      // tests' stand-in (the root config's dom project carries the
+      // same row — the real artifact is module-loader format, it only
+      // executes inside the DSH web shell; the web lane needs it the
+      // moment a scenario imports the cards tab's client tree, e.g.
+      // snapshots/web/cards-tab).
+      '@deepseek-ai/dsh-api-gateway/client': rootPath('packages/web/melite-card-view/tests/fixtures/gateway-client.ts'),
       'react/jsx-runtime': rootPath('node_modules/.pnpm/react@19.2.8/node_modules/react/jsx-runtime'),
       anser: rootPath('node_modules/anser'),
       'shiki/core': rootPath('node_modules/shiki/dist/core.mjs'),

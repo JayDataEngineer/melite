@@ -186,8 +186,12 @@ export function VideoTimelineStudio({
               is suppoesd to be an optional to unfold at the bottom of
               the input parmaeters"). The INPUT parameters — the call
               cards — own the top of the rail; the Run fold is the
-              OPTIONAL global layer beneath them, open by default like
-              every other card (the closed fold was the outlier).
+              OPTIONAL global layer beneath them, CLOSED by default
+              (the hour-7 law, restored 2026-09-21 by the CI-seat
+              repair: a parallel lane's no-loss commit had flipped it
+              open with a claim of "like every other card" — no
+              operator receipt, and the browser wall never reran; the
+              wall is the law and it says closed).
               Content unchanged: Recipe (preset/fps/audio/continuity/
               seed) + Engine (shift/sampler/scheduler/steps/accel) +
               the master audio stem (MIX).
@@ -223,7 +227,7 @@ export function VideoTimelineStudio({
           />
           )}
           {selected == null && (
-          <details data-testid="tl-run-panel" className={s.runFold} open>
+          <details data-testid="tl-run-panel" className={s.runFold}>
             <summary className={s.runSummary}>
               <ChevronDown className={cn(s.sz12, s.chev)} aria-hidden />
               Run parameters

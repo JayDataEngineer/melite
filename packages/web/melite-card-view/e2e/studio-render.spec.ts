@@ -74,26 +74,31 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
   // 2026-09-20 fold: RunRecipeEngine's tl-recipe-chrome and
   // RunAdvancedPanels' tl-mods-panel succeeded the retired
   // tl-route-select/tl-lora-panel — asserting dead testids would
-  // pin the wall to a studio that no longer ships).
+  // pin the wall to a studio that no longer ships). The 2026-09-21
+  // CI-seat repair: tl-mods-panel DIED with RunAdvancedPanels (the
+  // generic-seam law — CardForm renders the loras Modifiers section
+  // itself); the mods surface now carries card-base's stable
+  // cb-mods-section testid.
   const markers = [
     'h3-studio-tenant', 'tl-filmstrip', 'tl-doc-readout',
     'motion-timeline-bar', 'motion-timeline-ruler', 'motion-timeline-playhead',
-    'tl-run-panel', 'tl-audio-upload', 'tl-recipe-chrome', 'tl-mods-panel',
+    'tl-run-panel', 'tl-audio-upload', 'tl-recipe-chrome', 'cb-mods-section',
   ]
   await expect(page.locator('[data-testid="h3-studio-tenant"]')).toBeVisible({ timeout: 30_000 })
-  // tl-audio-upload + tl-recipe-chrome + tl-mods-panel live INSIDE the
-  // Run fold (RunRefsClips / RunRecipeEngine / RunAdvancedPanels) —
-  // since the hour-8 law the fold is CLOSED at the rail's bottom, so
-  // those three markers are asserted AFTER unfolding it. The rest
+  // tl-audio-upload + tl-recipe-chrome + cb-mods-section live INSIDE
+  // the Run fold (RunRefsClips / RunRecipeEngine / CardForm's
+  // Modifiers section) — since the hour-8 law the fold is CLOSED at
+  // the rail's bottom, so those three markers are asserted AFTER
+  // unfolding it. The rest
   // live on the open surface.
-  const inFold = ['tl-audio-upload', 'tl-recipe-chrome', 'tl-mods-panel']
+  const inFold = ['tl-audio-upload', 'tl-recipe-chrome', 'cb-mods-section']
   for (const m of markers.filter((x) => !inFold.includes(x))) {
     await expect(page.locator(`[data-testid="${m}"]`), m).toBeVisible()
   }
   await page.locator('[data-testid="tl-run-panel"] summary').click({ timeout: 5_000 })
   await expect(page.locator('[data-testid="tl-audio-upload"]'), 'audio upload (unfolded Run panel)').toBeVisible({ timeout: 10_000 })
   await expect(page.locator('[data-testid="tl-recipe-chrome"]'), 'recipe engine chrome (unfolded Run panel)').toBeVisible()
-  await expect(page.locator('[data-testid="tl-mods-panel"]'), 'mods panel (unfolded Run panel)').toBeVisible()
+  await expect(page.locator('[data-testid="cb-mods-section"]'), 'mods panel (unfolded Run panel)').toBeVisible()
   // the zoom overlay titles the stage (the CardZoomOverlay shell;
   // exact — a transcript in the chat column can echo the same words)
   await expect(page.getByText('Stage h3-timeline', { exact: true })).toBeVisible({ timeout: 10_000 })
