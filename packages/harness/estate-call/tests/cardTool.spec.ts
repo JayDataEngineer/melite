@@ -143,7 +143,7 @@ describe("the card-tool builder", () => {
     const unwrapping = defineCardTool(call, {
       name: "h3", flow: "h3", label: "H3", description: "d",
       parameters: { calls: { type: "json", required: true } } as never,
-      defaultModel: "h3-timeline",
+      defaultModel: "h3", // the checkpoint id (survivor-id correction 2026-09-22)
       previewValue: (a) => `shots=${Array.isArray(a.calls) ? (a.calls as unknown[]).length : 0}`,
       prepare(params) {
         if (typeof params["calls"] === "string") {

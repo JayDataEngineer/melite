@@ -174,10 +174,32 @@ async function trySeats(
       session: 'default',
       intent,
       stages: [{ id: 's_0', engine: 'comfyui', params }],
+      // THE TOOL-BENCH OWNERSHIP LAW (2026-09-22, the maker jam):
+      // this lane is the SOLE writer of the 'default' scope — the
+      // wholesale replace of our own prior one-shot mint IS the
+      // owner-confirming overwrite the bench law (2026-09-15) wants
+      // said out loud. Omitting it wedged every render tool behind
+      // a bench/overwrite-required refusal no tool schema could
+      // utter (the end-to-end agent test, live receipt seq 4-7).
+      overwrite: true,
     }
     const cur = await seats.benchRemote.get('default', signal) as { rev?: unknown } | undefined
     if (cur !== undefined && typeof cur['rev'] === 'number') ensure['expect_rev'] = cur['rev']
-    const row = await seats.benchRemote.ensure(ensure, signal) as { draft_id?: unknown }
+    // CAS RETRY (one): a concurrent tool mint moved the rev between
+    // our read and our ensure — re-read, retry once. The replace is
+    // idempotent under ownership; any other refusal propagates loud.
+    const conflict = (e: unknown): boolean =>
+      typeof (e as { code?: unknown })?.code === 'string' &&
+      (e as { code: string }).code === 'bench/cas-conflict'
+    let row: { draft_id?: unknown }
+    try {
+      row = await seats.benchRemote.ensure(ensure, signal) as { draft_id?: unknown }
+    } catch (first: unknown) {
+      if (!conflict(first)) throw first
+      const fresh = await seats.benchRemote.get('default', signal) as { rev?: unknown } | undefined
+      if (fresh !== undefined && typeof fresh['rev'] === 'number') ensure['expect_rev'] = fresh['rev']
+      row = await seats.benchRemote.ensure(ensure, signal) as { draft_id?: unknown }
+    }
     if (row === undefined || typeof row['draft_id'] !== 'string') {
       throw new Error('card compose returned no draft_id — refusing to start cardless')
     }

@@ -1,4 +1,4 @@
-// @melite/models-h3-timeline/mods/loras.ts — THE H3 FAMILY'S LORAS
+// @melite/models-h3/mods/loras.ts — THE H3 FAMILY'S LORAS
 // FLAVOR (the mod plane, the operator's law 2026-09-12: "MOD SYSTEM
 // IS CORE. NEVER HARDCODED. The LORAS should not be on cards, the
 // MOD SYSTEM SHOULD"). THE CATALOG (operator, 2026-09-20: "LORAs
@@ -56,7 +56,7 @@ export const H3_LORA_ROWS = [
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerFlavor({
     pack: 'loras',
-    families: ['h3-timeline'],
+    families: ['h3'],
     rows: H3_LORA_ROWS,
   }))
 }

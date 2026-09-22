@@ -477,18 +477,23 @@ export const carrier = paramSchema
 // 2026-09-21 "HOW IS MINIMAX H3 AND H3 TIMELINE TWO DIFFERENT
 // MODELS?" — LANDED, roadmap §8): the card boards ONE family. The
 // old h3 + h3-keyframe family packages are dead — their addresses
-// survive as VARIANT ROUTES on the h3-timeline family (fl2va → h3,
-// ref2va → h3-ref2va, timeline-ref2va → h3-timeline-ref, keyframe
-// → h3-keyframe), so old drafts resolve migration-free and the
-// facts rows re-derive through the merged family.
-export const BOARDED: string[] = ['h3-timeline']
+// survive as VARIANT ROUTES on the h3 family (timeline →
+// h3-timeline — the pre-correction family address; fl2va →
+// h3-fl2va, ref2va → h3-ref2va, timeline-ref2va →
+// h3-timeline-ref, keyframe → h3-keyframe), so old drafts resolve
+// migration-free and the facts rows re-derive through the merged
+// family. THE SURVIVOR-ID CORRECTION (operator, 2026-09-22): the
+// family is the CHECKPOINT id `h3` — never a lane name (anima
+// isn't anima-generate); the card id `h3-timeline` (the usecase
+// surface) keeps its own name.
+export const BOARDED: string[] = ['h3']
 
 // THE VARIANT ROUTES (the TTS fold's VARIANT_ADDRESSES pattern):
 // agents pick no matrix variant — the tool's closed model enum
 // additionally offers the folded lanes' compose addresses so the
 // single-shot + keyframe lanes stay agent-reachable (the drafts
 // door resolves route mids through the facts rows).
-export const VARIANT_ADDRESSES: string[] = ['h3', 'h3-ref2va', 'h3-timeline-ref', 'h3-keyframe']
+export const VARIANT_ADDRESSES: string[] = ['h3-timeline', 'h3-fl2va', 'h3-ref2va', 'h3-timeline-ref', 'h3-keyframe']
 
 export const identity = {
   label: 'Generate Video',

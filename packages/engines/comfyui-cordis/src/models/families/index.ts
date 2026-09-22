@@ -47,7 +47,7 @@ import { family as latentsync } from "@melite/models-latentsync";
 import { family as seeThrough } from "@melite/models-see-through";
 import { family as stretchyRig } from "@melite/models-stretchy-rig";
 import { family as concat } from "@melite/models-concat";
-import { family as h3Timeline } from "@melite/models-h3-timeline";
+import { family as h3 } from "@melite/models-h3";
 import { family as ltx23 } from "@melite/models-ltx-2-3";
 import { family as ltxDirectorDistilled } from "@melite/models-ltx-director-distilled";
 import { family as rtxVsr } from "@melite/models-rtx-vsr";
@@ -92,7 +92,7 @@ export const FAMILY_PLUGINS: Plugin[] = [
   seeThrough,
   stretchyRig,
   concat,
-  h3Timeline,
+  h3,
   qwenImg21,
   qwenImgEdit21,
   ltx23,

@@ -47,20 +47,20 @@ describe('THE HOT DOOR (#39): the real drop-ins under hot/examples/', () => {
     expect(defs.size).toBeGreaterThan(10)
     const svc = theService()
     expect(svc.cardIds().length).toBeGreaterThan(10)
-    const before = svc.modRows('loras', 'h3-timeline')
+    const before = svc.modRows('loras', 'h3')
     expect(before.some((r) => r.id === 'h3_silu_temb_grid')).toBe(false)
     expect(before.some((r) => r.id === 'h3_pk_parasyte')).toBe(true)
 
     const ctx = await mount(applyRealMod)
     // THE MERGE: the drop-in's row rides WITH the family's own rows
-    const served = svc.modRows('loras', 'h3-timeline')
+    const served = svc.modRows('loras', 'h3')
     expect(served.some((r) => r.id === 'h3_silu_temb_grid')).toBe(true)
     expect(served.some((r) => r.id === 'h3_pk_parasyte')).toBe(true)
     // family rows keep their place (registration order, family first)
     expect(served.indexOf(before[0]!)).toBe(0)
 
     await ctx.fiber.dispose()
-    const after = svc.modRows('loras', 'h3-timeline')
+    const after = svc.modRows('loras', 'h3')
     expect(after.some((r) => r.id === 'h3_silu_temb_grid')).toBe(false)
     expect(after.some((r) => r.id === 'h3_pk_parasyte')).toBe(true)
   })

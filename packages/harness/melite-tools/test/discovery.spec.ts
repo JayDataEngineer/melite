@@ -535,9 +535,9 @@ describe('live door arms', () => {
     )
   })
 
-  test('specBody serves the preview claims verbatim (gap 4 — h3-timeline claims the bar; others serve nothing)', async () => {
+  test('specBody serves the preview claims verbatim (gap 4 — the h3 family claims the bar; others serve nothing)', async () => {
     const defs = await loadCardDefs()
-    const h3 = await formSpecSweep('h3-timeline')
+    const h3 = await formSpecSweep('h3') // the checkpoint id (survivor-id correction 2026-09-22; was h3-timeline)
     assert.ok(h3 !== null)
     assert.deepEqual(h3['preview'], { historyStrip: false }, 'the claim serves verbatim')
     const gen = await formSpecSweep('image-gen')
@@ -549,11 +549,11 @@ describe('live door arms', () => {
   // distill row's married step count serves in the option defaults —
   // boarding stamps {strength, steps} onto the entry. ──
   test('the h3 loras options serve their distill step counts (strength + steps in the defaults)', async () => {
-    const spec = (await formSpecSweep('h3-timeline')) as Record<string, unknown>
+    const spec = (await formSpecSweep('h3')) as Record<string, unknown>
     assert.ok(spec !== null)
     const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
     const lora = modifiers.find((m) => m['kind'] === 'lora')
-    assert.ok(lora !== undefined, 'the loras pack serves on h3-timeline')
+    assert.ok(lora !== undefined, 'the loras pack serves on the h3 family')
     // THE MARRIAGE DECLARATION (#36, the recipes rework): the kind
     // serves the knob marriage VERBATIM from the family DECL — the
     // client resolver mirrors compose (lora steps > steps row,

@@ -30,8 +30,8 @@ let model: ModelFacts;
 beforeAll(async () => {
   def = (await loadCardDefs()).get("h3-timeline")!;
   assert.ok(def, "the composition root serves the h3-timeline card");
-  model = facts.models["h3-timeline"]!;
-  assert.ok(model, "the h3-timeline family facts row serves");
+  model = facts.models["h3"]!;
+  assert.ok(model, "the h3 family facts row serves (survivor-id correction 2026-09-22: the checkpoint id, was h3-timeline)");
 });
 
 const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
@@ -129,11 +129,11 @@ describe("the h3-timeline compose gate", () => {
 
   it("THE ONE-MODEL LAW (roadmap §8): the card boards ONE family; the dead families' addresses ride the tool enum as variant routes", async () => {
     const { BOARDED, VARIANT_ADDRESSES } = await import("../src/card.ts");
-    assert.deepEqual(BOARDED, ["h3-timeline"], "one H3 row in the Model dropdown — the lanes are variants, never models");
+    assert.deepEqual(BOARDED, ["h3"], "one H3 row in the Model dropdown — the checkpoint id, never a lane (survivor-id correction 2026-09-22: anima isn't anima-generate)");
     assert.deepEqual(
       [...VARIANT_ADDRESSES].sort(),
-      ["h3", "h3-keyframe", "h3-ref2va", "h3-timeline-ref"],
-      "every dead family address stays agent-reachable (old drafts + the tool's closed enum)",
+      ["h3-fl2va", "h3-keyframe", "h3-ref2va", "h3-timeline", "h3-timeline-ref"],
+      "every historical address stays agent-reachable (the pre-correction family id h3-timeline rides as the timeline lane's route; h3-fl2va replaces the dead-family route h3)",
     );
   });
 });

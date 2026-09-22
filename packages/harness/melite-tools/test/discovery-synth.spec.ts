@@ -559,7 +559,7 @@ describe('the catalog-fed select stamp (2026-09-21, the freeform-lie kill)', () 
 
   test('stamps options from the pack\'s LIVE rows — the empty arm first for a clearable default', () => {
     const e = env()
-    stampOptionsFrom(e, rowsSvc([{ id: 'h3_taomate_3step' }, { id: 'h3_lightx2v_turbo' }]), 'h3-timeline')
+    stampOptionsFrom(e, rowsSvc([{ id: 'h3_taomate_3step' }, { id: 'h3_lightx2v_turbo' }]), 'h3')
     const node = (e.refs as Record<string, { meta: { extra: Record<string, unknown> } }>)['1']
     assert.deepEqual(node.meta.extra.options, [
       { value: '', label: '— none —' },
@@ -573,18 +573,18 @@ describe('the catalog-fed select stamp (2026-09-21, the freeform-lie kill)', () 
     const e = env()
     const node1 = (e.refs as Record<string, { meta: { default: string; extra: Record<string, unknown> } }>)['1']
     node1.meta.default = 'h3_taomate_3step'
-    stampOptionsFrom(e, rowsSvc([{ id: 'h3_taomate_3step' }]), 'h3-timeline')
+    stampOptionsFrom(e, rowsSvc([{ id: 'h3_taomate_3step' }]), 'h3')
     assert.deepEqual(node1.meta.extra.options, [{ value: 'h3_taomate_3step', label: 'h3_taomate_3step' }])
     const e2 = env()
     const throwing = { modCatalog: () => { throw new Error('no pack') } } as never
-    stampOptionsFrom(e2, throwing, 'h3-timeline')
+    stampOptionsFrom(e2, throwing, 'h3')
     const node2 = (e2.refs as Record<string, { meta: { extra: Record<string, unknown> } }>)['1']
     assert.deepEqual(node2.meta.extra.options, [{ value: '', label: '— none —' }], 'visible and honest, never a throw')
   })
 
   test('ordinary fields are untouched; a null-ish envelope is a no-op (never a throw)', () => {
     const e = env()
-    stampOptionsFrom(e, rowsSvc([{ id: 'x' }]), 'h3-timeline')
+    stampOptionsFrom(e, rowsSvc([{ id: 'x' }]), 'h3')
     const prompt = (e.refs as Record<string, { meta: { extra: Record<string, unknown> } }>)['2']
     assert.deepEqual(prompt.meta.extra, {}, "a field without the hint never gains options")
     stampOptionsFrom(null, rowsSvc([]), 'x')

@@ -1506,8 +1506,16 @@ describe('the /v1 poser arms (estate verbs, never a proxy)', () => {
     const arrOut = await arrRes.done
     assert.equal(arrOut.status, 200)
     const second = http.createServer((q, a) => { a.writeHead(200, { 'content-type': 'application/json' }); a.end('') })
-    await new Promise<void>((r) => { second.listen(upstreamPort + 1, '127.0.0.1', () => r()) })
-    process.env.COMFYUI_URL = 'http://127.0.0.1:' + String(upstreamPort + 1)
+    // listen(0): an OS-assigned ephemeral port, never a guess. The
+    // prior `upstreamPort + 1` collided with the kernel's sequential
+    // ephemeral allocation (listen 'error' with no handler = the
+    // uncaught EADDRINUSE + an await that never settles = the 5s
+    // hang; both battery runs flaked on it).
+    const secondPort = await new Promise<number>((resolve, reject) => {
+      second.once('error', reject)
+      second.listen(0, '127.0.0.1', () => { resolve((second.address() as { port: number }).port) })
+    })
+    process.env.COMFYUI_URL = 'http://127.0.0.1:' + String(secondPort)
     const h2 = boot({})
     const empty = await call(h2.routes, '/v1', { url: 'http://localhost/v1/poser/presets' })
     assert.equal(empty.status, 200)

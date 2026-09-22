@@ -171,7 +171,7 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
   // ships inside the package and composes here.
   const packagedFlavors: [string, string][] = [
     ['@melite/models-krea-2/mods/loras', 'krea-2 loras'],
-    ['@melite/models-h3-timeline/mods/loras', 'h3-timeline loras'],
+    ['@melite/models-h3/mods/loras', 'h3 loras'],
     ['@melite/models-z-image/mods/loras', 'z-image loras'],
     ['@melite/models-z-image/mods/controlnet', 'z-image controlnet'],
     ['@melite/models-z-image/mods/ip_adapter', 'z-image ip_adapter'],

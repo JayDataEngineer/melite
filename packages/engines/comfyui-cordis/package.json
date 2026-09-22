@@ -60,7 +60,6 @@
     "@melite/models-florence2": "workspace:*",
     "@melite/models-flux-fill-dev": "workspace:*",
     "@melite/models-gem_soma": "workspace:*",
-    "@melite/models-h3-timeline": "workspace:*",
     "@melite/models-input": "workspace:*",
     "@melite/models-joycaption": "workspace:*",
     "@melite/models-joytag": "workspace:*",
@@ -97,7 +96,8 @@
     "@melite/video-h3-timeline": "workspace:*",
     "@stable-canvas/comfyui-client": "^1.5.9",
     "lucide-react": "*",
-    "react": "*"
+    "react": "*",
+    "@melite/models-h3": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

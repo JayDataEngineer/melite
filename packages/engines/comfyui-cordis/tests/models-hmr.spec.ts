@@ -34,7 +34,7 @@ import { DECL as declDwpose, family as familyDwpose } from '../../../models/dwpo
 import { DECL as declFlorence2, family as familyFlorence2 } from '../../../models/florence2/src/index.ts'
 import { DECL as declFluxFillDev, family as familyFluxFillDev } from '../../../models/flux-fill-dev/src/index.ts'
 import { DECL as declGemSoma, family as familyGemSoma } from '../../../models/gem_soma/src/index.ts'
-import { DECL as declH3Timeline, family as familyH3Timeline } from '../../../models/h3-timeline/src/index.ts'
+import { DECL as declH3, family as familyH3 } from '../../../models/h3/src/index.ts'
 import { DECL as declInput, family as familyInput } from '../../../models/input/src/index.ts'
 import { DECL as declJoycaption, family as familyJoycaption } from '../../../models/joycaption/src/index.ts'
 import { DECL as declJoytag, family as familyJoytag } from '../../../models/joytag/src/index.ts'
@@ -78,7 +78,7 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'florence2', decl: declFlorence2 as never, family: familyFlorence2 as never },
   { id: 'flux-fill-dev', decl: declFluxFillDev as never, family: familyFluxFillDev as never },
   { id: 'gem_soma', decl: declGemSoma as never, family: familyGemSoma as never },
-  { id: 'h3-timeline', decl: declH3Timeline as never, family: familyH3Timeline as never },
+  { id: 'h3', decl: declH3 as never, family: familyH3 as never }, // survivor-id correction 2026-09-22
   { id: 'input', decl: declInput as never, family: familyInput as never },
   { id: 'joycaption', decl: declJoycaption as never, family: familyJoycaption as never },
   { id: 'joytag', decl: declJoytag as never, family: familyJoytag as never },

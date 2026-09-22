@@ -42,7 +42,7 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     // 91 since stroke 87 (fit + skin retired — 89 + the z-image base
     // routes (with cause alongside — the variant landed without
     // its count updates)
-    assert.equal(svc.modelIds().length, 95) // +1: yue2 on the music card (2026-09-20) // +6: the qwen 2.1 pair (2026-09-21), "every flat id still serves (routes over the registry)"); // 90 since the form-seams stroke (ideogram retired)
+    assert.equal(svc.modelIds().length, 96) // +1: yue2 on the music card (2026-09-20) // +6: the qwen 2.1 pair (2026-09-21) // +1: the survivor-id correction (2026-09-22 — the h3 family id serves as its own address; the family renames h3-timeline → h3 in place), "every flat id still serves (routes over the registry)"); // 90 since the form-seams stroke (ideogram retired)
   });
 
   it("registerFamily refuses duplicates LOUD (one owner per id)", (): void => {

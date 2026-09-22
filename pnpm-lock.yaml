@@ -453,9 +453,9 @@ importers:
       '@melite/models-gem_soma':
         specifier: workspace:*
         version: link:../../models/gem_soma
-      '@melite/models-h3-timeline':
+      '@melite/models-h3':
         specifier: workspace:*
-        version: link:../../models/h3-timeline
+        version: link:../../models/h3
       '@melite/models-input':
         specifier: workspace:*
         version: link:../../models/input

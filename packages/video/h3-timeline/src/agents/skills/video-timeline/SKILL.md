@@ -13,7 +13,7 @@ the user wants a VIDEO WITH SHOTS/CUTS/BEATS.
 
 The h3-timeline card is a SIMPLE card. The compose tool call carries:
 
-- **model**: `"h3-timeline"`
+- **model**: `"h3"` (the checkpoint id — the family; the pre-correction id `h3-timeline` still resolves to this same timeline lane)
 - **params.calls[]**: one entry per shot — at minimum `text`, `start_frame`, `end_frame`
 - (THE BED IS GONE, 2026-09-22 — no `bed_audio` param exists: film
   music rides the MUSIC lane's clips below)
@@ -88,7 +88,7 @@ Rules (enforced — tool errors, not advice):
 A continuation card opens from a prior run's ending:
 
 ```
-{model: "h3-timeline", params: {context: "runs/<prior-run>/h3_context", ...}}
+{model: "h3", params: {context: "runs/<prior-run>/h3_context", ...}}
 ```
 
 Continuation requires `params.identity` — a continuation has no image

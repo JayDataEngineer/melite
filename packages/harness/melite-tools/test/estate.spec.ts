@@ -122,10 +122,42 @@ describe('card compose lane (POST /v1/flows/drafts)', () => {
     const out = await r('POST', '/v1/flows/drafts', { prompt, params: { seed: 1 } }, SIG, 1000)
     assert.deepEqual(out, { draftId: 'd9' })
     assert.equal(ensured['session'], 'default')
+    // THE TOOL-BENCH OWNERSHIP LAW (2026-09-22): the lane is the
+    // sole writer of 'default' — it SAYS its own wholesale replace.
+    // Without this pin the omit-regression wedges every render tool
+    // behind bench/overwrite-required (the maker jam, live receipt).
+    assert.equal(ensured['overwrite'], true)
     assert.equal((ensured['intent'] as string).length, 78) // 77 + …
     assert.ok((ensured['intent'] as string).endsWith('…'))
     assert.deepEqual((ensured['stages'] as Array<{ params: unknown }>)[0].params, { seed: 1, prompt })
     assert.equal(ensured['expect_rev'], 3)
+  })
+
+  test('THE MAKER JAM (2026-09-22): a non-empty default bench never wedges a tool mint — the lane owns the scope and says overwrite', async () => {
+    let calls = 0
+    const ensured: Array<Record<string, unknown>> = []
+    const r = req({
+      benchRemote: {
+        get: async () => ({ rev: calls === 0 ? 4 : 5 }),
+        ensure: async (doc: Record<string, unknown>) => {
+          calls += 1
+          ensured.push(doc)
+          if (calls === 1) {
+            // the first mint races a sibling (rev moved) — the lane
+            // retries once with the fresh rev
+            const e = new Error('bench moved: rev is 5, caller held 4') as Error & { code?: string }
+            e.code = 'bench/cas-conflict'
+            throw e
+          }
+          return { draft_id: 'd-racy' }
+        },
+      },
+    })
+    const out = await r('POST', '/v1/flows/drafts', { prompt: 'second try' }, SIG, 1000)
+    assert.deepEqual(out, { draftId: 'd-racy' })
+    assert.equal(calls, 2, 'one conflict + one retry, never a wedged refusal')
+    assert.equal(ensured[0]!['overwrite'], true)
+    assert.equal(ensured[1]!['expect_rev'], 5, 'the retry carries the fresh rev')
   })
 
   test('intent falls back to intent, then card; short prompts ride whole', async () => {

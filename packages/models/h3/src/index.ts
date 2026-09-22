@@ -1,12 +1,21 @@
-// families/video/h3-timeline.ts — the ONE H3 family declaration
+// families/video/h3.ts — the ONE H3 family declaration
 // (the one-model law, roadmap §8: the operator's catch — "HOW IS
 // MINIMAX H3 AND H3 TIMELINE TWO DIFFERENT MODELS?"). ONE family
 // owns the whole surface: the multi-window timeline films, the
-// single-shot FL2VA/Ref2VA lanes, and the keyframe lane. The old
-// `h3` + `h3-keyframe` FAMILIES are dead — their addresses survive
-// as VARIANT ROUTES below (old drafts resolve migration-free; the
-// folded variants' resolver_defaults carry the dead families'
-// default stamps verbatim, so the derived views are byte-identical).
+// single-shot FL2VA/Ref2VA lanes, and the keyframe lane.
+//
+// THE SURVIVOR-ID CORRECTION (operator, 2026-09-22: "every folder
+// in models IS the upstream model — anima isn't anima-generate"):
+// the original fold kept the WRONG survivor id — `h3-timeline`, a
+// lane name. A MODEL names a CHECKPOINT; a VARIANT names a LANE
+// (the fold law's own first sentence). The family is `h3`; the old
+// family address survives as the timeline lane's route
+// (`h3-timeline` — drafts, skills, tool enums resolve
+// migration-free), and the single-shot lane takes the explicit
+// route `h3-fl2va` (the pre-correction route `h3` now names the
+// family itself: the ONE deliberate behavior shift — a dead-era
+// draft addressing `h3` resolves to the family default, the
+// timeline lane; ledgered in CONFORMANCE_LEDGER).
 //
 // PLUGIN SHAPE (the discharge stroke): every family is a plugin
 // declaring itself through ctx.models.registerFamily inside
@@ -16,7 +25,7 @@ import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
-  "id": "h3-timeline",
+  "id": "h3",
   "form": "form_video_director",
   "label": "MiniMax H3",
   "description": "MiniMax H3 joint video + audio — one model, three lanes: multi-window timeline films, single-shot FL2VA/Ref2VA clips, and keyframe-anchored beats",
@@ -82,7 +91,7 @@ export const DECL: ModelDecl = {
   "genre": "video",
   "variants": [
     {
-      "id": "h3",
+      "id": "timeline",
       "label": "Standard",
       "hint": "The multi-window timeline — hybrid FL2VA/Ref2VA windows, SLA sparse attention, the film path.",
       "group": "Variant",
@@ -99,14 +108,14 @@ export const DECL: ModelDecl = {
     // THE FOLDED LANES (roadmap §8 — the dead h3 family's variants,
     // reborn here): single-shot clips in one pass. The
     // resolver_defaults carry the dead family's default stamps
-    // VERBATIM — the derived views for routes h3/h3-ref2va are
+    // VERBATIM — the derived views for routes h3-fl2va/h3-ref2va are
     // byte-identical to the dead family's facts rows.
     {
       "id": "fl2va",
       "label": "Single-Shot FL2VA",
-      "hint": "Text-to-video, first/last frame to video — one 124-frame pass, 30 steps. The h3 family's own address.",
+      "hint": "Text-to-video, first/last frame to video — one 124-frame pass, 30 steps. The single-shot lane's explicit address (the family id is h3).",
       "group": "Variant",
-      "route": "h3",
+      "route": "h3-fl2va",
       "order": 2,
       "resolver_defaults": {
         "width": 1344,
@@ -123,7 +132,7 @@ export const DECL: ModelDecl = {
       "label": "Single-Shot FL2VA ⚡ Turbo",
       "hint": "FL2VA with the Turbo LoRA + 10-step fast pass — motion composition iteration before a final.",
       "group": "Variant",
-      "route": "h3",
+      "route": "h3-fl2va",
       "order": 3,
       "resolver_defaults": {
         "width": 1344,
@@ -214,6 +223,12 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "group": "Recipe",
+      // THE FAMILY SELF-ADDRESS (survivor-id correction, 2026-09-22):
+      // the checkpoint id `h3` resolves through THIS row — the family
+      // default claims the address (a variant route, the catalog's
+      // owning-atom vocabulary). Pre-correction, `h3` named the dead
+      // single-shot family; those drafts now land the family default.
+      "route": "h3",
       "cells": [],
     },
     // RULE A — THE RECIPE LAW (operator, 2026-09-18: "All Cards must
@@ -434,7 +449,7 @@ export const DECL: ModelDecl = {
 };
 
 export const family: Plugin = {
-  name: "family-h3-timeline",
+  name: "family-h3",
   inject: ["models"],
   apply(ctx): void {
     ctx.effect(() => ctx.models.registerFamily(DECL));

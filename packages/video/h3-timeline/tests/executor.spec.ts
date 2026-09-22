@@ -15,7 +15,7 @@ import * as pkg from "../src/index.ts";
 import * as cardFace from "../src/card.ts";
 import { TOOL_NAME, buildH3TimelineTool as FACE } from "../src/tool.ts";
 
-const DEFAULT_MODEL = "h3-timeline";
+const DEFAULT_MODEL = "h3"; // the boarded family — the checkpoint id (survivor-id correction 2026-09-22; was h3-timeline)
 const GOOD_ARGS = { prompt: "walks forward, then turns", calls: [{ text: "walks", start_frame: 0, end_frame: 56 }] };
 
 const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
