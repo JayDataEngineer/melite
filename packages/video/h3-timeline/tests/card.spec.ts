@@ -127,6 +127,49 @@ describe("the h3-timeline compose gate", () => {
     assert.ok(["t4_chain", "t4r"].includes(String(chained.variant)), "chains derive a family");
   });
 
+  it("THE DISK-STITCH VALVE (agent-debt F-6c, 2026-09-22, the operator's \"dump to tmp file\"): a multi-window film with NO positioned clips emits windows only — no film node, no accumulation (each window frees after its own SaveVideo; the estate's filmMux owns the film from disk); clips or a single window keep the in-graph stitch", () => {
+    const nodeRows = (params: Record<string, unknown>) => {
+      const g = new GraphBuilder();
+      def.compose(def.schema(params), model, g, "run_valve");
+      return Object.entries(g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>);
+    };
+    const savePrefixes = (rows: [string, { class_type: string; inputs: Record<string, unknown> }][]) =>
+      rows.filter(([, n]) => n.class_type === "SaveVideo").map(([, n]) => String(n.inputs["filename_prefix"]));
+    const windowsDoc = {
+      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      length: 124,
+    };
+    // 1. the valve OPEN: no audio_clips → no film SaveVideo, no
+    //    accumulation, windows still save
+    const openRows = nodeRows(windowsDoc);
+    assert.ok(!savePrefixes(openRows).includes("h3_t4_film"), "no film file — the estate mux leads from the window files");
+    assert.deepEqual(
+      savePrefixes(openRows).filter((p) => p.startsWith("h3_t4_w")).sort(),
+      ["h3_t4_w1", "h3_t4_w2"],
+      "both windows save their own files",
+    );
+    assert.ok(
+      !openRows.some(([, n]) => n.class_type === "MiniMaxH3FiniteSegmentFinalize" && "accumulated_images" in n.inputs),
+      "no accumulation node — nothing holds window 1's tensors while window 2 samples (a per-window finalize without accumulated_images may remain — that one is window-local)",
+    );
+    // 2. the valve CLOSED: positioned clips → the film-level mix rides
+    //    in-graph (film SaveVideo + accumulation back)
+    const closedRows = nodeRows({
+      ...windowsDoc,
+      audio_clips: [{ src: "/assets/line.flac", start_frame: 10, dur_frames: 40, text: "hello" }],
+    });
+    assert.ok(savePrefixes(closedRows).includes("h3_t4_film"), "a positioned clip keeps the in-graph film stitch");
+    assert.ok(
+      closedRows.some(([, n]) => n.class_type === "MiniMaxH3FiniteSegmentFinalize" && "accumulated_images" in n.inputs),
+      "the film accumulation composes for the film-level mix",
+    );
+    // 3. single window: the compose dispatch (card.ts: the film arm
+    //    requires >1 calls) routes it to the frozen window shape —
+    //    one artifact (h3_t4_w1), never a mux of one, never a film file
+    const singleRows = nodeRows({ calls: [SHOT()], length: 56 });
+    assert.deepEqual(savePrefixes(singleRows), ["h3_t4_w1"], "a single-window doc saves exactly one window file — the film arm is multi-call");
+  });
+
   it("THE ONE-MODEL LAW (roadmap §8): the card boards ONE family; the dead families' addresses ride the tool enum as variant routes", async () => {
     const { BOARDED, VARIANT_ADDRESSES } = await import("../src/card.ts");
     assert.deepEqual(BOARDED, ["h3"], "one H3 row in the Model dropdown — the checkpoint id, never a lane (survivor-id correction 2026-09-22: anima isn't anima-generate)");

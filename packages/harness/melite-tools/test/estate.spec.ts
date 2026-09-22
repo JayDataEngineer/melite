@@ -35,10 +35,28 @@ describe('transport law', () => {
     assert.equal(touched, false)
   })
 
-  test('an unknown lane refuses naming the migration', async () => {
+  test('an unknown lane refuses naming the F-8 actionable parts (family, absence, exit — never archaeology)', async () => {
     const msg = await throwsMsg(() => req({})('GET', '/nope', undefined, SIG, 1000))
-    assert.ok(msg.includes('no remote serves GET /nope'))
-    assert.ok(msg.includes('migrate to a named Typert remote'))
+    assert.ok(msg.includes('no seat on this lane serves GET /nope'))
+    assert.ok(msg.includes('ABSENCE, not a broken registry'), msg)
+    assert.ok(msg.includes('MELITE_STATE_ROOT'), msg)
+    assert.ok(msg.includes('melite_construct'), msg)
+  })
+
+  test('the seatless refusal names the family the path needs (and probes ONLY that family — an eager all-seat sweep instantiates defined-but-unloaded services)', async () => {
+    const live = { disclose: { discover: () => ({}) } }
+    const msg = await throwsMsg(() => req(live)('POST', '/v1/flows/start', undefined, SIG, 1000))
+    assert.ok(msg.includes('the live-run registry (the runs seat) is not mounted'), msg)
+    assert.ok(msg.includes('No seat of that family is mounted'), msg)
+    // path-scoped probing: disclose lives but is NOT named for a flows path
+    assert.ok(!msg.includes('Live seats here: disclose'), msg)
+  })
+
+  test('a partial family voices its live members', async () => {
+    const live = { draftsRemote: { list: async () => ({ count: 0, drafts: [] }) } }
+    const msg = await throwsMsg(() => req(live)('POST', '/v1/bench/ensure', { a: 1 }, SIG, 1000))
+    assert.ok(msg.includes('bench plane'), msg)
+    assert.ok(msg.includes('Live seats here: draftsRemote'), msg)
   })
 
   test('a seat value rides verbatim', async () => {
@@ -70,7 +88,7 @@ describe('drafts lanes', () => {
     assert.deepEqual(await r('GET', '/v1/flows/drafts', undefined, SIG, 1000), { count: 0, drafts: [] })
     assert.equal(seen[0], SIG)
     const msg = await throwsMsg(() => req({})('GET', '/v1/flows/drafts', undefined, SIG, 1000))
-    assert.ok(msg.includes('no remote serves GET /v1/flows/drafts'))
+    assert.ok(msg.includes('no seat on this lane serves GET /v1/flows/drafts'))
   })
 
   test('GET one decodes the id; seatless refuses', async () => {
@@ -223,7 +241,7 @@ describe('card compose lane (POST /v1/flows/drafts)', () => {
       assert.ok(msg.includes('card compose needs a JSON body'))
     }
     const msg = await throwsMsg(() => req({})('POST', '/v1/flows/drafts', {}, SIG, 1000))
-    assert.ok(msg.includes('no remote serves POST /v1/flows/drafts'))
+    assert.ok(msg.includes('no seat on this lane serves POST /v1/flows/drafts'))
   })
 })
 
@@ -276,7 +294,7 @@ describe('bench lanes', () => {
     const msg = await throwsMsg(() => r('POST', '/v1/bench/s/undo', 'nope', SIG, 1000))
     assert.ok(msg.includes('bench undo needs a JSON body'))
     const fall = await throwsMsg(() => r('POST', '/v1/bench/s/frobnicate', { a: 1 }, SIG, 1000))
-    assert.ok(fall.includes('no remote serves POST /v1/bench/s/frobnicate'))
+    assert.ok(fall.includes('no seat on this lane serves POST /v1/bench/s/frobnicate'))
     await assert.rejects(req({})('POST', '/v1/bench/s/patch', { a: 1 }, SIG, 1000))
   })
 })
@@ -338,7 +356,7 @@ describe('runs plane lanes', () => {
     assert.deepEqual(await r('GET', '/v1/flows/runs?limit=a%20b', undefined, SIG, 1000), ['a b'])
     assert.deepEqual(seen, ['200', '50', 'a b'])
     const msg = await throwsMsg(() => r('GET', '/v1/flows/runs/', undefined, SIG, 1000))
-    assert.ok(msg.includes('no remote serves GET /v1/flows/runs/'))
+    assert.ok(msg.includes('no seat on this lane serves GET /v1/flows/runs/'))
     await assert.rejects(req({})('GET', '/v1/flows/runs', undefined, SIG, 1000))
   })
 })

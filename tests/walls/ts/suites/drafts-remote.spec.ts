@@ -406,7 +406,7 @@ test("the tools' lane grammar rides the seats end-to-end (glue)", async () => {
     (error: unknown): string =>
       error instanceof Error ? error.message : String(error),
   );
-  assert.match(loud!, /no remote serves POST \/v1\/flows\/start/);
+  assert.match(loud!, /no seat on this lane serves POST \/v1\/flows\/start/);
 });
 
 // ── drafts/patch — the stage patch door (2026-09-11 rebirth) ──────

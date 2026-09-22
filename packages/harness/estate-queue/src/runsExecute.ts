@@ -16,16 +16,25 @@ type EngineCtx = Parameters<typeof _ncu>[0];
  *  stage gallery leads with engine completion order — a card that
  *  saves secondary same-kind artifacts (the mask card's manifest
  *  photo beside mask_combined) declares its product stem on the
- *  DECL (primaryFile) and the match moves first. Basename match:
- *  exact stem, stem + "_" + the engine counter, or stem +
- *  extension. No match (or no stem) = engine order, never a
- *  reorder into nothing. Pure (the film-mux walls pin the
- *  precedent: presentation order is the harness's only job). */
+ *  DECL (primaryFile) and the match moves first. The name may carry
+ *  a HARVEST PREFIX (the live seam-proof's catch, 2026-10-09: a
+ *  subfoldered save prefix makes fetchOutputs save
+ *  `SaveImage.1_mask_combined_00001_.png` — the stem is a bounded
+ *  TOKEN, never a basename prefix). Token rule: start-or-underscore
+ *  before the stem; after it — end, "." + extension, or "_" + DIGITS
+ *  (the engine counter; a longer stem-sharing name like
+ *  mask_combined_union is a different product, never the hero). No
+ *  match (or no stem) = engine order, never a reorder into nothing.
+ *  Pure (the film-mux walls pin the precedent: presentation order is
+ *  the harness's only job). */
 export function declaredPrimaryFirst(names: string[], stem: string | undefined): string[] {
   if (stem === undefined || stem === "") return names;
+  const token: RegExp = new RegExp(
+    "(^|_)" + stem.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(_[0-9]|\\.|$)",
+  );
   const hero = names.find((n): boolean => {
     const base = n.slice(n.lastIndexOf("/") + 1);
-    return base === stem || base.startsWith(stem + "_") || base.startsWith(stem + ".");
+    return token.test(base);
   });
   if (hero === undefined) return names;
   return [hero, ...names.filter((n): boolean => n !== hero)];

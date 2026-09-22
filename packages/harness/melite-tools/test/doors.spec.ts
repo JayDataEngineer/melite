@@ -1168,7 +1168,7 @@ describe('/v1 prefix seat lanes', () => {
     assert.deepEqual(ok.body, ['a'])
     const bad = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/manage' })
     assert.equal(bad.status, 502)
-    assert.ok(String((bad.body as { error: string }).error).includes('no remote serves'))
+    assert.ok(String((bad.body as { error: string }).error).includes('no seat on this lane serves'))
   })
 
   test('non-JSON POST bodies 400; read failures 400; seat failures 502', async () => {

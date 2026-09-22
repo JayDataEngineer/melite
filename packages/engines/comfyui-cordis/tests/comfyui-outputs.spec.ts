@@ -176,6 +176,19 @@ describe("publishOutputChannels (the declared-channel law)", () => {
     const out = publishOutputChannels({ hero: "image" }, ["/r/A.PNG"]);
     expect(out).toEqual({ hero: "/r/A.PNG" });
   });
+  it("THE MASK CHANNEL (stroke-103 debt): a declared 'seg' channel publishes mask PNGs — before the row existed the channel was skipped SILENTLY and mask runs surfaced zero outputs", () => {
+    const out = publishOutputChannels(
+      { default: "seg" },
+      ["/r/mask/mask_figure_1_00001_.png", "/r/mask/mask_combined_00001_.png"],
+    );
+    expect(out).toEqual({ default: "/r/mask/mask_figure_1_00001_.png" }, "first unmatched artifact wins — the seg row exists now");
+    // an image channel and a seg channel in one stage split by declaration order, claimed across
+    const both = publishOutputChannels(
+      { hero: "seg", preview: "image" },
+      ["/r/mask_combined_00001_.png", "/r/render.png"],
+    );
+    expect(both).toEqual({ hero: "/r/mask_combined_00001_.png", preview: "/r/render.png" });
+  });
 });
 
 describe("mapHistoryEntry (the verdict)", () => {
@@ -189,14 +202,37 @@ describe("mapHistoryEntry (the verdict)", () => {
     expect(mapHistoryEntry({ status: ["x"] })).toEqual({ kind: "pending" });
     expect(mapHistoryEntry({})).toEqual({ kind: "pending" });
   });
-  it("error status with an execution_error message voices it", () => {
+  it("error status with an execution_error message voices the CAUSE first (F-1: node_id alone starved the 400-char budget; the agent never saw WHY)", () => {
     const v = mapHistoryEntry({
       status: {
         status_str: "error",
-        messages: [["execution_error", { node: 7, reason: "oom" }], ["noise", 1]],
+        messages: [[
+          "execution_error",
+          {
+            node_id: "h3-film::window2_SamplerCustomAdvanced.1",
+            node_type: "SamplerCustomAdvanced",
+            executed: ["a", "b", "c", "d", "e", "f", "g", "h"],
+            exception_type: "torch.cuda.OutOfMemoryError",
+            exception_message: "CUDA out of memory. Tried to allocate 2.50 GiB.",
+            traceback: "frame1\nframe2\nframe3",
+          },
+        ], ["noise", 1]],
       },
     });
-    expect(v).toEqual({ kind: "failed", detail: JSON.stringify({ node: 7, reason: "oom" }).slice(0, 400) });
+    expect(v.kind).toBe("failed");
+    const detail = (v as { detail: string }).detail;
+    expect(detail).toContain("torch.cuda.OutOfMemoryError");
+    expect(detail).toContain("CUDA out of memory. Tried to allocate 2.50 GiB.");
+    expect(detail).toContain("h3-film::window2_SamplerCustomAdvanced.1");
+    expect(detail).toContain("8 nodes executed before the failure");
+    expect(detail).toContain("frame3"); // the traceback tail (raise site) rides
+    expect(detail.indexOf("torch.cuda")).toBeLessThan(detail.indexOf("nodes executed")); // cause BEFORE bookkeeping
+  });
+  it("an execution_error without exception fields still names the node", () => {
+    const v = mapHistoryEntry({
+      status: { status_str: "error", messages: [["execution_error", { node: 7, reason: "oom" }], ["noise", 1]] },
+    });
+    expect(v).toEqual({ kind: "failed", detail: "execution failed @ 7 (?)" });
   });
   it("non-array message rows ride the whole-rec voice too", () => {
     const v = mapHistoryEntry({
@@ -217,7 +253,8 @@ describe("mapHistoryEntry (the verdict)", () => {
 });
 
 describe("CHANNEL_EXTS table", () => {
-  it("the four file kinds carry their extensions", () => {
-    expect(Object.keys(CHANNEL_EXTS).sort()).toEqual(["audio", "image", "mesh", "video"]);
+  it("the five file kinds carry their extensions (seg = the mask channel, stroke-103 debt)", () => {
+    expect(Object.keys(CHANNEL_EXTS).sort()).toEqual(["audio", "image", "mesh", "seg", "video"]);
+    expect(CHANNEL_EXTS.seg).toEqual([".png"], "masks are SaveImage PNGs");
   });
 });

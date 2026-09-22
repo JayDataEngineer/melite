@@ -127,7 +127,7 @@ test("the tools' lane grammar serves /v1/discover from the seat", async () => {
   const bareRequest = makeEstateRequest(bare);
   await assert.rejects(
     bareRequest("GET", "/v1/discover", undefined, new AbortController().signal),
-    /no remote serves GET \/v1\/discover/,
+    /no seat on this lane serves GET \/v1\/discover/,
   );
 });
 

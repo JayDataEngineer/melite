@@ -12,8 +12,10 @@ Arrangement (instrumentation timeline, bpm, key).
 Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).
 Compose via `melite_construct` `add_stage` onto the shared bench — the run
 starts at the user's Run press.
-Iterate ONLY on `preset: draft_short`;
-render `final_long` once the caption is locked. Variations = same caption, new seeds.
+Iterate ONLY at **`duration: 30`**; render the final at `duration: 90–120`
+once the caption is locked (no `preset` knob exists — duration is the
+draft/final lever; the caption itself rides `params.prompt`).
+Variations = same caption, new seeds.
 
 ## Gotcha
 The status endpoint may list NO artifacts while the FLAC lands in the run dir -

@@ -162,11 +162,16 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     assert.ok(patched, "window 2's guider carries the drift-controlled model");
   });
 
-  it("the seam's overlap leaves the window's own clip (finalize) and the film joins soft", () => {
+  it("the seam's overlap leaves the window's own clip (finalize); with clips the film joins soft in-graph", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        // a positioned clip closes the DISK-STITCH VALVE (F-6c): the
+        // film-level mix owns the join, so the seam machinery composes.
+        // (A clips-free doc takes the disk path — no join nodes at all —
+        // pinned in card.spec.ts's valve test.)
+        audio_clips: [{ src: "/a/line.flac", start_frame: 10, dur_frames: 40, text: "words" }],
       }),
       model, g, "run_seam_dedup",
     );
@@ -181,7 +186,7 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     // finalize (video) + the soft audio join (tail yields, incoming head owns)
     assert.equal(ofClass(out, "MiniMaxH3FilmConcat").length, 0, "the old concat is forgotten");
     const acc = ofClass(out, "MiniMaxH3FiniteSegmentFinalize").filter(([id]) => !id.startsWith("window"));
-    assert.equal(acc.length, 1, "the film accumulates at the prompt's top level");
+    assert.equal(acc.length, 1, "the film accumulates at the prompt's top level (valve closed: clips ride)");
     assert.equal(acc[0]![1].inputs.overlap_frames, 0, "video dedup already happened in-window");
     const tail = ofClass(out, "MiniMaxH3FiniteAudioTrimTail");
     assert.equal(tail.length, 1, "the previous film audio yields its overlap");
@@ -215,11 +220,13 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     const out = graphOf(g);
     assert.equal(ofClass(out, "MiniMaxH3FiniteLatentContinuation").length, 0, "a cut carries nothing");
     assert.equal(scoped(out, "window2_", "MiniMaxH3FiniteSegmentFinalize").length, 0, "nothing to dedup");
-    // the film still joins — video accumulates, audio butts whole
+    // THE DISK-STITCH VALVE (F-6c, 2026-09-22): clips-free → the film
+    // joins on DISK (the estate mux butts the window files whole) —
+    // no accumulation, no in-graph audio join, nothing resident
     const acc = ofClass(out, "MiniMaxH3FiniteSegmentFinalize").filter(([id]) => !id.startsWith("window"));
-    assert.equal(acc.length, 1, "the film accumulates both windows");
+    assert.equal(acc.length, 0, "the film does not accumulate in-graph — the estate mux owns the butt");
     assert.equal(ofClass(out, "MiniMaxH3FiniteAudioTrimTail").length, 0, "no tail yields at a true cut");
-    assert.equal(ofClass(out, "AudioConcat").length, 1, "the audio joins whole");
+    assert.equal(ofClass(out, "AudioConcat").length, 0, "the audio joins on disk (concat demuxer), not in-graph");
   });
 });
 
@@ -267,8 +274,12 @@ describe("the film's per-window stanza (guides, refs, lora steps, length pins)",
     const g = new GraphBuilder();
     def.compose(gated, model, g, "run_null_length");
     const out = graphOf(g);
+    // the disk-stitch valve (F-6c): clips-free chains have no film
+    // node — but the per-window stanza STILL renders its own span
+    // (each window's r2v length below IS the evidence the spans own
+    // the film; the estate mux owns the join from the window files)
     const acc = ofClass(out, "MiniMaxH3FiniteSegmentFinalize").filter(([id]) => !id.startsWith("window"));
-    assert.equal(acc.length, 1, "the film accumulates (per-window stanza lengths come from each call's span)");
+    assert.equal(acc.length, 0, "no in-graph accumulation for a clips-free chain (disk stitch)");
     const r2v1 = scoped(out, "window1_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.length;
     const r2v2 = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.length;
     assert.notEqual(r2v2, 56, "window 2 never renders the inert doc-level default");

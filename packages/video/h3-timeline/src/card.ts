@@ -570,6 +570,25 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // SaveVideo emits the film the timeline promised. The estate
   // reorders artifacts so the film leads; it never concats.
   let film: { images: OutputHandle, audio: OutputHandle } | undefined
+  // THE DISK-STITCH VALVE (agent-debt F-6c, 2026-09-22 — the
+  // operator's "dump to tmp file" instinct): the in-graph film
+  // accumulation keeps EVERY window's images/audio tensors resident
+  // until the final CreateVideo (the last window samples under the
+  // whole film's backlog — the OOM signature). When NO positioned
+  // audio_clips ride (nothing mixes at film time — the windows' own
+  // generated tracks ARE the film's audio) the film node is pure
+  // temporal concat + remux, which the estate's filmMux already
+  // does from DISK (ffmpeg concat demuxer over the windows' own
+  // SaveVideo files, `filmMuxPlan` stitch:null → unconditional
+  // concat, film_video_mux.mp4 leads the stage). Skip the
+  // accumulation + CreateVideo entirely: each window frees after its
+  // own SaveVideo, the last window samples on a clean card. Films
+  // WITH positioned clips keep the in-graph stitch (the film-level
+  // mix + duck bus has no disk-side arm yet — the amix extension is
+  // the roadmap stroke). Single-call docs never reach renderH3Film
+  // (the compose dispatch routes them to the frozen window shape —
+  // one h3_t4_w1 artifact); the `|| calls.length === 1` term in the
+  // valve below guards that invariant should the dispatch widen.
   // THE CLIPS-STITCH CLOCK (2026-09-21, corrected twice 2026-09-22):
   // clip.start is DOC-anchored (call-span coordinates — the stamp,
   // the studio lanes, and the tool face all speak doc). Each extend
@@ -629,6 +648,8 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     const cls = (clsRaw !== '' ? clsRaw : text !== '' ? 'dialogue' : 'music') as 'dialogue' | 'sfx' | 'music'
     clips.push({ src, start: c.start_frame, dur, text, cls })
   }
+  // the valve's gate (the comment block sits at `film` above):
+  const stitchInGraph = clips.length > 0 || calls.length === 1
   // which clips CONDITION a window (and so duck the generated voice
   // at their film spans): filled by the loop below
   const conditioned = new Set<number>()
@@ -812,6 +833,12 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     if (stamps.music !== undefined) stanza.music_slice = stamps.music
     const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w))
     prev = h
+    if (!stitchInGraph) {
+      // the disk-stitch valve: windows only — no accumulation nodes,
+      // nothing holds a prior window's tensors; the estate's filmMux
+      // owns the film from the windows' own files.
+      return
+    }
     if (film === undefined) {
       film = { images: h.filmImages, audio: h.filmAudio }
     } else {
@@ -842,9 +869,11 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       film = { images: acc.out(1), audio: join.out(0) }
     }
   })
-  // (calls.length >= 1 — the shot laws refuse the empty doc, so the
-  // forEach always binds film; no defensive undefined arm)
-  {
+  // (the film tail runs only under the valve — with clips to mix at
+  // film time or a single window; a windows-only multi-window film
+  // has NO film node: `film` stays undefined and the estate's
+  // filmMux leads with film_video_mux.mp4)
+  if (stitchInGraph) {
     const f = film as { images: OutputHandle, audio: OutputHandle }
     // THE CLIPS-STITCH (2026-09-21 — the Music row's lost consumer
     // restored; the original cc_stage_audio_clips/ffmpeg_concat amix,

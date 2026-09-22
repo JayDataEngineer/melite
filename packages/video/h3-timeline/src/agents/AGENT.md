@@ -19,6 +19,19 @@ The card composes through `melite_construct` `add_stage` (card `h3-timeline`, yo
 5. For timelines: describe a first frame. Then what it becomes at the end of that frame, and the sound that goes with it — per-window. Same seed across a shot's re-rolls keeps the world texture.
 6. Don't speak sampler knobs as overrides unless needed — the card clones occlusion switches from the knob map SSOT, the right values come from the model's `card_knobs` tuple (rows in `model.py`; the on-disk `card_knobs.yaml` is extinct — `python/melite_models/knobmap.py` docstring: "zero copies on disk").
 7. Validation errors name the call and the fix — read it, apply it, resubmit.
+8. **RESOURCE PRE-FLIGHT before any film run** (agent-debt F-6,
+   2026-09-22, cause confirmed by the kernel OOM killer at 16:17: the
+   engine had been up 43 HOURS at 43.3G RSS + 26.1G swap when it
+   died mid-film): check `free -g`, the GPU, AND THE ENGINE'S AGE
+   (`comfy_manage` status / `ps -o etime` on the engine process).
+   An engine up for days has accumulated every cached node output
+   since boot — restart it BEFORE a big film (`comfy_manage`
+   restart; sanctioned, cheaper than failing mid-film). Under ~6 Gi
+   free host or ~90% VRAM: shorten windows, drop windows, or WAIT.
+   If a run fails at a late window with a memory signature: the
+   retry with IDENTICAL params/seed is cheap (W1/W2 come from the
+   node cache) — and restart + rerun is the sanctioned recovery,
+   deterministic.
 
 ## Doors
 
@@ -86,6 +99,14 @@ Every input the card accepts, one compose:
 ```
 
 When each rail earns its seat: `image` — the window must OPEN on a known frame (a character sheet, a prior still). `last_frame` — the shot must LAND somewhere specific. `ref_images` — identity fidelity across the film (max 8). `ref_videos` — motion the text cannot describe (max 3). `ref_audios` — a voice or instrument that must be REAL, not synthesized (max 3). Never stack rails you don't need — each one narrows the generation.
+
+**THE IDENTITY LAW** (agent-debt F-2, 2026-09-22 — a skill once
+claimed a `params.identity` knob and the admission refused it at the
+worst moment): there is NO identity param. Character identity rides
+(a) the per-call texts — every window showing a character names the
+character slot in prose (`<Picture 1>`/`<Picture 2>` + the full
+description) — and (b) `ref_images` (the sheets). A window with
+neither drifts.
 
 ### 2b. THE AUDIO LAYERS + THE DIALOGUE LAW (the lip-sync recipe)
 

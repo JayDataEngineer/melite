@@ -32,7 +32,14 @@ The h3-timeline card is a SIMPLE card. The compose tool call carries:
   -14dB, music ducks under dialogue+sfx. THE DOOR GUARD: a
   dialogue/sfx-stamped window mutes ref audios (the pin owns that
   window's audio conditioning).
-- **params.identity** (optional but REQUIRED for multi-window films, REQUIRED for continuation)
+- **IDENTITY RIDES TEXTS + REFS — there is NO `params.identity`** (the
+  admission refuses it LOUD; agent-debt F-2, 2026-09-22: this skill
+  once claimed it REQUIRED): character identity across the film lives
+  in (a) the per-call texts — every window that shows a character
+  names the character sheet slot in prose (`<Picture 1>` / `<Picture 2>`
+  with the full description) — and (b) `ref_images` conditioning (the
+  character sheets themselves, max 8). A window with no image rail and
+  no named slot drifts.
 - **params.context** (optional): a LATENT artifact ref to chain from (e.g. `runs/<prior-run>/h3_context`)
 - **params.seed** / **params.fps** / **params.width** / **params.height** (optional — omit to use defaults)
 - **params.lora_name** / **params.lora_strength** (optional): a lora on the ComfyUI loras mount riding entry[0] of the stack (`h3/<file>.safetensors`, strength default 0.5). The lane's turbo row always rides behind it — declared lane data, not card code.
@@ -91,8 +98,9 @@ A continuation card opens from a prior run's ending:
 {model: "h3", params: {context: "runs/<prior-run>/h3_context", ...}}
 ```
 
-Continuation requires `params.identity` — a continuation has no image
-input on its first window; identity is the only text that survives the seam.
+A continuation chains through the `context` latent — identity across
+the seam rides the per-call texts (name the character slots in every
+window's prose, as above); there is no identity param to lean on.
 
 The compose dispatcher resolves `context` through the shared artifact primitive (compose/artifact, kind=latent) against the output mount:
 the prior run must have `h3_context/clip_*.safetensors` present; the

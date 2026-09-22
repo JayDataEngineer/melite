@@ -129,6 +129,12 @@ export const CHANNEL_EXTS: Record<string, readonly string[]> = {
   image: [".png", ".jpg", ".jpeg", ".webp"],
   video: [".mp4", ".webm", ".mov", ".avi", ".mkv"],
   audio: [".wav", ".mp3", ".ogg", ".flac"],
+  // THE MASK CHANNEL (the stroke-103 debt): the mask card declares
+  // outputs { default: 'seg' } — with no row here, publishOutputChannels
+  // skipped the channel SILENTLY (line's `if (!exts) continue`): every
+  // mask run published zero outputs to the card face. Masks are
+  // SaveImage PNGs.
+  seg: [".png"],
 };
 
 /** Harvested paths -> {channel: path} for the FILE-kind channels
@@ -163,6 +169,37 @@ export type HistoryVerdict =
   | { kind: "failed"; detail: string }
   | { kind: "completed" };
 
+/** THE AGENT-READABLE EXECUTION ERROR (agent-debt F-1, 2026-09-22:
+ * the maker-test film run failed twice at the same sampler node and
+ * the error voice carried node_id + the executed list ONLY — the raw
+ * JSON sliced at 400 chars spent its whole budget before the
+ * exception. The agent saw WHICH node died, never WHY, and guessed
+ * its retry strategy blind). ComfyUI's execution_error payload
+ * carries the cause: exception_type, exception_message, traceback.
+ * Voice the cause FIRST (type: message), then the node, then the
+ * traceback's deepest frames — the tail holds the raise site
+ * (allocation sizes, shape mismatches); the executed list compresses
+ * to a count. */
+function voiceExecutionError(e: EngineJson): string {
+  if (typeof e !== "object" || e === null || Array.isArray(e)) {
+    return JSON.stringify(e).slice(0, 400);
+  }
+  const r = e as Record<string, EngineJson>;
+  const type = typeof r["exception_type"] === "string" ? r["exception_type"] : "";
+  const message = typeof r["exception_message"] === "string" ? r["exception_message"] : "";
+  const rawNode = r["node_id"] ?? r["node"];
+  const nodeId = typeof rawNode === "string" ? rawNode : typeof rawNode === "number" ? String(rawNode) : "?";
+  const nodeType = typeof r["node_type"] === "string" ? r["node_type"] : "?";
+  const executed = Array.isArray(r["executed"]) ? (r["executed"] as EngineJson[]).length : 0;
+  const rawTb = typeof r["traceback"] === "string" ? r["traceback"] : "";
+  const tbTail = rawTb.length > 600 ? "…" + rawTb.slice(-600) : rawTb;
+  const head = type !== "" || message !== ""
+    ? `${type !== "" ? type : "ExecutionError"}${message !== "" ? `: ${message}` : ""} @ ${nodeId} (${nodeType}${executed > 0 ? `, ${executed} nodes executed before the failure` : ""})`
+    : `execution failed @ ${nodeId} (${nodeType})`;
+  const out = tbTail !== "" ? `${head} — traceback tail: ${tbTail}` : head;
+  return out.length > 2000 ? out.slice(0, 2000) + "…" : out;
+}
+
 /** Map one history entry to its verdict — the read half of the
  *  poll loop (native 394-408 / mergegraph 350-363, minus the WS
  *  execution_error arm which has no tap here). */
@@ -185,7 +222,7 @@ export function mapHistoryEntry(
           m.length > 1 &&
           m[0] === "execution_error"
         ) {
-          detail = JSON.stringify(m[1] as EngineJson).slice(0, 400);
+          detail = voiceExecutionError(m[1] as EngineJson);
           break;
         }
       }

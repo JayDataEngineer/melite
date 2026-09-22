@@ -525,11 +525,23 @@ export class RunsRuntimeService extends Service {
     signal.throwIfAborted();
     const run: RunRecord | undefined = this.liveRun(runId);
     if (run === undefined) {
-      throw new RemoteError(
-        "runs/unknown-run",
-        "unknown run_id",
-        { runId },
-      );
+      // THE DISK FALLBACK (agent-debt F-5, 2026-09-22): the maker-test
+      // lane answered "? — 0/0 stage(s)" / runs/unknown-run for runs
+      // whose on-disk _flow.json held status completed + full stage
+      // and artifact rows — the live map is the queue's cache, disk
+      // is the durable record. A status read crossing a registry
+      // reload (or a husk in-memory row) must still answer the truth
+      // the run tree holds. Never fabricated: no disk row → the same
+      // runs/unknown-run refusal as before.
+      const disk: Record<string, unknown> | undefined = this.diskRunRow(runId);
+      if (disk === undefined) {
+        throw new RemoteError(
+          "runs/unknown-run",
+          "unknown run_id",
+          { runId },
+        );
+      }
+      return { ...disk, from_disk: true, queue_position: 0 };
     }
     const payload: Record<string, unknown> = {
       run_id: run.runId,
@@ -555,6 +567,24 @@ export class RunsRuntimeService extends Service {
       error: run.error,
       queue_position: this.core.queuePosition(run.runId),
     };
+    // THE TERMINAL-HUSK RECOVERY (F-5's second face): a live row that
+    // is terminal (completed/failed) yet carries NO stages and NO
+    // artifacts is the husk signature — the queue settled the record
+    // before the executor's rows landed (or a reload raced). Disk
+    // holds the rich row; serve it (marked). A genuinely-empty run
+    // (queued/running with nothing yet, or truly bare) stays live —
+    // only the terminal+empty+disk-richer triple defers.
+    if (
+      (run.status === "completed" || run.status === "failed") &&
+      run.stages.length === 0 && run.artifacts.length === 0
+    ) {
+      const disk: Record<string, unknown> | undefined = this.diskRunRow(runId);
+      const diskStages = Array.isArray(disk?.["stages"]) ? (disk?.["stages"] as unknown[]).length : 0;
+      const diskArts = Array.isArray(disk?.["artifacts"]) ? (disk?.["artifacts"] as unknown[]).length : 0;
+      if (disk !== undefined && (diskStages > 0 || diskArts > 0)) {
+        return { ...disk, from_disk: true, queue_position: payload["queue_position"] };
+      }
+    }
     if (includeLog) payload["log_tail"] = runLogTail(payload as never);
     return payload;
   }
@@ -595,8 +625,29 @@ export class RunsRuntimeService extends Service {
   }
 
   /** The live map (the queue seat's core registry — rich rows). */
-  private liveRun(runId: string): RunRecord | undefined {
+  private liveRun(runId: RunRecord["runId"]): RunRecord | undefined {
     return (this.core.runs as Map<string, RunRecord>).get(runId);
+  }
+
+  /** The durable record under the run tree (F-5's fallback read):
+   *  the on-disk _flow.json for a run — the SAME file the maker
+   *  verified byte-by-byte while status answered husks. Both
+   *  out-roots are probed (production first, then test) since the
+   *  fallback may not know the row's testFlag. Unparseable/absent →
+   *  undefined — never a fabricated row. */
+  private diskRunRow(runId: string): Record<string, unknown> | undefined {
+    const root = this.ctx.queue.stateRoot;
+    for (const dir of [join(root, "output", runId), join(root, "test-output", runId)]) {
+      try {
+        const doc: unknown = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8"));
+        if (typeof doc === "object" && doc !== null && !Array.isArray(doc)) {
+          return doc as Record<string, unknown>;
+        }
+      } catch {
+        /* absent/unreadable in this root — try the next */
+      }
+    }
+    return undefined;
   }
 
   /** The envelope walk with the AWAITED draft probe (door order

@@ -104,7 +104,7 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   sampler: SAMPLERS.description("Sampler").extra('extra', samplingExtra('sampler')),
   scheduler: SCHEDULERS.description("Scheduler").extra('extra', samplingExtra('scheduler')),
   use_stock_nodes: z.boolean().description("Use Stock Nodes").default(false).extra('extra', { order: 1, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' }),
-  double_reference: z.boolean().description("Double Reference").default(false).extra('extra', { order: 2, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable.", zone: 'params' }),
+  double_reference: z.boolean().description("Double Reference").default(false).extra('extra', { order: 2, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' }),
 })
 
 // THE BOARDING (2026-09-21, the naming law): the card names its

@@ -46,4 +46,34 @@ describe("declaredPrimaryFirst (the declared hero)", () => {
     );
     assert.equal(out[0], "mask/mask_combined_00001_.png", "mask_figure_2 starts with mask_ but not mask_combined_");
   });
+
+  it("THE AUDIT'S G8: a stem-sharing LONGER name (the union) never steals the hero — the counter must be digits", () => {
+    const out = declaredPrimaryFirst(
+      ["mask/mask_combined_union_00001_.png", "mask/mask_figure_1_00001_.png", "mask/mask_combined_00001_.png"],
+      "mask_combined",
+    );
+    assert.equal(out[0], "mask/mask_combined_00001_.png", "mask_combined_union shares the stem but the char after 'mask_combined_' is 'u', not a digit — the exact product stays the hero even ordered LAST");
+    assert.equal(out[1], "mask/mask_combined_union_00001_.png", "the union rides beside, never above");
+    // and the digit rule still catches the engine counter shape
+    const digits = declaredPrimaryFirst(["a.png", "mask/mask_combined_00002_.png"], "mask_combined");
+    assert.equal(digits[0], "mask/mask_combined_00002_.png", "stem + digit counter still matches");
+  });
+
+  it("THE LIVE SEAM-PROOF'S CATCH (2026-10-09): HARVEST-PREFIXED names — a subfoldered save prefix makes the artifact 'SaveImage.1_mask_combined_00001_.png' — the stem is a bounded TOKEN, never a basename prefix", () => {
+    const names = [
+      "SaveImage.0_instance_00001_.png",
+      "SaveImage.0_instance_00002_.png",
+      "SaveImage.1_mask_combined_00001_.png",
+    ];
+    const out = declaredPrimaryFirst(names, "mask_combined");
+    assert.equal(out[0], "SaveImage.1_mask_combined_00001_.png", "the productId leads even from behind a nodeId harvest prefix — engine order alone put the crops first (the defect the seam-proof caught live)");
+    // the union stays rejected in the prefixed shape too
+    const union = declaredPrimaryFirst(
+      ["SaveImage.2_mask_combined_union_00001_.png", "SaveImage.1_mask_combined_00001_.png"],
+      "mask_combined",
+    );
+    assert.equal(union[0], "SaveImage.1_mask_combined_00001_.png", "prefixed union never steals");
+    // stem as a bare token still matches (no prefix, no counter)
+    assert.equal(declaredPrimaryFirst(["x.png", "mask_combined.png"], "mask_combined")[0], "mask_combined.png", "bare stem + ext");
+  });
 });

@@ -352,15 +352,57 @@ async function trySeats(
   return undefined
 }
 
+/** Which seat FAMILY a path needs (agent-debt F-8, 2026-09-22 —
+ * coarse by design: the matcher above is the truth; this only names
+ * the family for the seatless refusal so the error says what to look
+ * at instead of developer archaeology). probeNames are the ONLY
+ * names the refusal may ctx.get — exactly the ones the matcher
+ * itself would have probed for this path: an EAGER sweep of all
+ * seat names INSTANTIATES defined-but-unloaded services on a cordis
+ * context (constructors with side effects — the hang, live proof
+ * 2026-09-22: the manage-seat wall took 51.8s dialing). */
+export function seatFamilyForPath(path: string): { family: string; probeNames: string[] } {
+  if (path.startsWith('/v1/flows/drafts') || path.startsWith('/v1/bench/')) {
+    return { family: 'bench plane (draftsRemote/benchRemote seats)', probeNames: ['draftsRemote', 'benchRemote'] }
+  }
+  if (path.startsWith('/v1/flows/')) return { family: 'live-run registry (the runs seat)', probeNames: ['runs'] }
+  if (path.startsWith('/v1/discover')) return { family: 'disclose', probeNames: ['disclose'] }
+  if (path.startsWith('/v1/manage')) return { family: 'manage', probeNames: ['manage'] }
+  if (path.startsWith('/v1/skills')) return { family: 'meliteSkills', probeNames: ['meliteSkills'] }
+  if (path.startsWith('/v1/load')) return { family: 'load', probeNames: ['load'] }
+  if (path.startsWith('/v1/ledger')) return { family: 'queue', probeNames: ['queue'] }
+  return { family: 'unknown', probeNames: [] }
+}
+
 /** Build the tools' request: seats only, in-process. A lane with no
- *  seat is a hard error (the gateway that used to absorb it is
- *  dead) — the caller migrates to a named remote. */
+ *  seat for the path is a hard error — but the error must be an
+ *  AGENT-USABLE refusal (F-8): name the family the path needs, the
+ *  seats that ARE live, the pin that mounts the queue plane, and the
+ *  chat-lane exit. The old voice ("the gateway lane fallback died
+ *  2026-09-10 — migrate to a named Typert remote") read as a broken
+ *  registry and sent an agent hunting doors for an hour. */
 export function makeEstateRequest(ctx: unknown): EstateRequest {
   return async (method, path, body, execSignal): Promise<unknown> => {
     const viaSeats = await trySeats(ctx, method, path, body, execSignal)
     if (viaSeats !== undefined) return viaSeats
+    const { family, probeNames } = seatFamilyForPath(path)
+    const probe = ctx as { get(name: string): unknown }
+    const live: string[] = []
+    for (const n of probeNames) {
+      try {
+        if (probe.get(n) !== undefined) live.push(n)
+      } catch {
+        /* a throwing probe reads as absent — absence is the only story */
+      }
+    }
+    const liveVoice: string = live.length > 0
+      ? `Live seats here: ${live.join(', ')}.`
+      : `No seat of that family is mounted on this lane (ABSENCE, not a broken registry; nothing crashed).`
     throw new Error(
-      `no remote serves ${method} ${path} (the gateway lane fallback died 2026-09-10 — migrate to a named Typert remote)`,
+      `no seat on this lane serves ${method} ${path} — the ${family} is not mounted. `
+        + `${liveVoice} `
+        + `The queue-plane seats mount when the estate state root is pinned (MELITE_STATE_ROOT / repoRoot config). `
+        + `On a chat lane, compose via melite_construct onto the shared bench instead of the raw flow doors.`,
     )
   }
 }

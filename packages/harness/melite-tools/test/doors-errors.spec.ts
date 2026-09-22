@@ -272,6 +272,6 @@ describe('estate lane error classes', () => {
     const routes = boot({})
     const { status, text } = await post(routes, '/v1/flows/validate', { id: 'x', stages: [] })
     assert.equal(status, 502)
-    assert.ok(text.includes('no remote serves'), text)
+    assert.ok(text.includes('no seat on this lane serves'), text)
   })
 })

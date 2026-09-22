@@ -348,6 +348,55 @@ describe("status + stop", () => {
     assert.match(String(logged["log_tail"]), /run: queued/);
   });
 
+  it("THE DISK FALLBACK (agent-debt F-5): a run unknown to memory answers from its on-disk _flow.json, marked from_disk — never fabricated", async () => {
+    // The maker-test lane: status answered runs/unknown-run (or
+    // "? — 0/0 stage(s)" husks) for runs whose _flow.json on disk
+    // held status completed + full rows. The live map is the queue's
+    // cache; the run tree is the durable record.
+    const s = seat();
+    const runId = "run-f5disk123456-00000001";
+    const dir = join(s.state, "output", runId);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      run_id: runId, status: "completed", draft_id: "d1",
+      stages: [{ id: "s1", status: "completed" }],
+      skipped_stages: [], artifacts: ["run.png"], error: "",
+    }));
+    const got = await s.svc.status(runId, sig());
+    assert.equal(got["status"], "completed");
+    assert.equal(got["from_disk"], true);
+    assert.deepEqual(got["stages"], [{ id: "s1", status: "completed" }]);
+    assert.deepEqual(got["artifacts"], ["run.png"]);
+  });
+
+  it("a terminal husk in memory defers to a richer disk row; a queued-empty row stays live; unknown with no disk still refuses", async () => {
+    const s = seat();
+    // THE HUSK: completed in memory yet zero stages + zero artifacts
+    // — the queue settled before the executor's rows landed. Disk
+    // holds the rich row; status serves it (marked).
+    const huskId = "run-f5husk123456-00000002";
+    const dir = join(s.state, "output", huskId);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      run_id: huskId, status: "completed", draft_id: "d1",
+      stages: [{ id: "s1", status: "completed" }], skipped_stages: [],
+      artifacts: ["film.mp4"], error: "",
+    }));
+    live(s, { runId: huskId, status: "completed", dir } as Partial<RunRecord>);
+    const got = await s.svc.status(huskId, sig());
+    assert.equal(got["from_disk"], true);
+    assert.equal((got["stages"] as unknown[]).length, 1);
+
+    // A genuinely-empty QUEUED row is legitimate (nothing yet) — stays live.
+    const q = live(s, { runId: "run-f5queued1234-00000003" } as Partial<RunRecord>);
+    const liveAns = await s.svc.status(q, sig());
+    assert.equal(liveAns["from_disk"], undefined);
+    assert.equal(liveAns["status"], "queued");
+
+    // Unknown + no disk row → the door's refusal, unchanged.
+    assert.equal((await remote(() => s.svc.status("run-f5none123456-00000004", sig()))).code, "runs/unknown-run");
+  });
+
   it("status rewrites absolute artifact paths to route-relative (never a leading /)", async () => {
     // Stroke-82 fix (e): the executor harvests ABSOLUTE disk paths
     // into run.artifacts — serving them raw hands the browser

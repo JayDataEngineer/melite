@@ -336,7 +336,7 @@ test("the tools' runs lane grammar rides the seat end-to-end (the un-kill)", asy
   const bare = makeEstateRequest(new BareCtx());
   await assert.rejects(
     () => bare("POST", "/v1/flows/start", inlineBody("d_ok"), sig, 15000),
-    /no remote serves POST \/v1\/flows\/start/,
+    /no seat on this lane serves POST \/v1\/flows\/start/,
   );
   await fiber.dispose();
   void root;
