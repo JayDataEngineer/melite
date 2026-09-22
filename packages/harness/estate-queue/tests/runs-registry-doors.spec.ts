@@ -335,6 +335,11 @@ describe("status + stop", () => {
     await assert.rejects(s.svc.status("run-x", dead()));
     await assert.rejects(s.svc.stop("run-x", dead()));
     assert.equal((await remote(() => s.svc.status("run-x", sig()))).code, "runs/unknown-run");
+    // §23 NAME-THE-ROOT: the miss names the tree it searched (a
+    // two-roots box stays debuggable — the operator sees WHICH root
+    // answered, never a bare unknown)
+    const miss = await remote(() => s.svc.status("run-x", sig()));
+    assert.ok(miss.message.includes('(searched ' + s.state + ')'), miss.message);
     assert.equal((await remote(() => s.svc.stop("run-x", sig()))).code, "runs/run-unknown");
   });
 

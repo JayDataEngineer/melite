@@ -28,7 +28,10 @@
  * a substring FILTER over names the walk already produced.
  */
 import { basename, extname, join } from 'node:path'
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
@@ -93,6 +96,75 @@ export interface ViewedImageValue {
     name?: string
     originalDimensions?: { width: number, height: number }
   }
+  /** THE FILM ARM (§24): when the run holds a film instead of
+   *  images, the viewed image IS the contact sheet and this row
+   *  carries the film's own summary (ffprobe verdict, byte-cheap
+   *  flags). Absent on the image path. */
+  film?: {
+    file: string
+    duration_s?: number
+    size_bytes?: number
+    streams: Array<{ codec: string, width?: number, height?: number, fps?: string, frames?: number }>
+    sheet_of: number
+  }
+}
+
+/** A probed film stream (ffprobe's row, narrowed). */
+export interface FilmStreamSummary {
+  codec: string
+  width?: number
+  height?: number
+  fps?: string
+  frames?: number
+}
+
+/** THE FILM PROBE (§24, the byte-cheap flags the skill prescribes):
+ *  format duration/size + per-stream codec/geometry/rate/count —
+ *  never a decode, never a full stream dump. Pure: static strings
+ *  pin every arm (the binary only delivers the text). */
+export function parseProbeSummary(jsonText: string): { duration_s?: number, size_bytes?: number, streams: FilmStreamSummary[] } {
+  let doc: unknown
+  try {
+    doc = JSON.parse(jsonText) as unknown
+  } catch {
+    throw new Error('the film probe returned unparsable output — the file may be truncated or corrupt')
+  }
+  if (typeof doc !== 'object' || doc === null) {
+    throw new Error('the film probe returned unparsable output — the file may be truncated or corrupt')
+  }
+  const rec = doc as Record<string, unknown>
+  const format = (typeof rec['format'] === 'object' && rec['format'] !== null ? rec['format'] : {}) as Record<string, unknown>
+  const streamsRaw = Array.isArray(rec['streams']) ? rec['streams'] as unknown[] : []
+  const streams: FilmStreamSummary[] = []
+  for (const raw of streamsRaw) {
+    if (typeof raw !== 'object' || raw === null) continue
+    const s = raw as Record<string, unknown>
+    if (typeof s['codec_name'] !== 'string') continue
+    const row: FilmStreamSummary = { codec: s['codec_name'] as string }
+    if (typeof s['width'] === 'number') row.width = s['width'] as number
+    if (typeof s['height'] === 'number') row.height = s['height'] as number
+    if (typeof s['r_frame_rate'] === 'string') row.fps = s['r_frame_rate'] as string
+    if (typeof s['nb_frames'] === 'string' && s['nb_frames'] !== '' && Number.isFinite(Number(s['nb_frames']))) row.frames = Number(s['nb_frames'])
+    streams.push(row)
+  }
+  if (streams.length === 0) {
+    throw new Error('the film probe found no streams — the file may be truncated or corrupt')
+  }
+  const out: { duration_s?: number, size_bytes?: number, streams: FilmStreamSummary[] } = { streams }
+  if (typeof format['duration'] === 'string' && Number.isFinite(Number(format['duration']))) out.duration_s = Number(format['duration'])
+  if (typeof format['size'] === 'string' && Number.isFinite(Number(format['size']))) out.size_bytes = Number(format['size'])
+  return out
+}
+
+/** Contact-sheet plan: four timestamps across the film's span (a
+ *  beginning, two middles, near the end — the observe arm wants the
+ *  arc, not four copies of frame one). Duration unknown (a probe
+ *  without a format row) → one early frame, never a blind seek past
+ *  the end. Pure. */
+export function sheetPlan(duration_s: number | undefined): number[] {
+  if (duration_s === undefined || !Number.isFinite(duration_s) || duration_s <= 0) return [0.5]
+  const at = (f: number): number => Math.round(duration_s * f * 100) / 100
+  return [at(0.1), at(0.4), at(0.7), at(0.95)]
 }
 
 /** Re-brand the structured outcome into the durable reference an
@@ -109,6 +181,126 @@ export function imageRefFromValue(image: ViewedImageValue['image']): ImageAttach
   }
 }
 
+/** The process seam the film arm exercises (ffprobe + ffmpeg).
+ *  Production runs the estate's own binaries; tests pin every arm
+ *  with fakes and prove the success path once against the real
+ *  binaries on the committed fixture. */
+export type FilmProc = (bin: string, args: string[], signal: AbortSignal) => Promise<{ stdout: string }>
+const execFileAsync = promisify(execFile)
+/** Default proc: the estate's ffmpeg/ffprobe, 30s each (a probe is
+ *  milliseconds; four frame seeks + a tile are seconds) — a hung
+ *  binary never wedges the observe arm past the run's own budget. */
+export const defaultFilmProc: FilmProc = async (bin, args, signal) => {
+  const out = await execFileAsync(bin, args, { timeout: 30_000, maxBuffer: 8 << 20, signal })
+  return { stdout: out.stdout }
+}
+
+/** View a film artifact: ffprobe summary + a contact sheet committed
+ *  as the viewed image (the §24 gate — one view artifact, stream
+ *  summary + frames the model can SEE). Containment rides the walk's
+ *  own row (absPath built from runId + name, never caller text); the
+ *  sheet lands in os.tmpdir (never the run tree — a view must not
+ *  mint provenance). */
+export async function viewFilmArtifact(
+  seat: QueueSeatSeam,
+  runId: string,
+  artifact: string,
+  exec: ViewExec,
+  ctx: { get(name: string): unknown },
+  attachments: AttachmentsSeam,
+  proc: FilmProc = defaultFilmProc,
+): Promise<ViewedImageValue> {
+  const { items } = await listMedia(seat.stateRoot, 'video')
+  const own = items.filter((i) => i.runId === runId)
+  if (own.length === 0) {
+    // §23 NAME-THE-ROOT: the miss names the searched tree (same
+    // law as the registry's unknown-run — a two-roots box stays
+    // debuggable). The prefix keeps the old walls green.
+    throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film — the run holds no video artifacts either) (searched ' + seat.stateRoot + ')')
+  }
+  const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own
+  if (picked.length === 0) {
+    throw new Error('run "' + runId + '" has no film artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' (searched ' + seat.stateRoot + ')')
+  }
+  const row = picked[0]!
+  await assertImageCapableRoute(ctx, exec, runId)
+  const absPath = join(seat.stateRoot, 'output', row.runId, row.name)
+  let probe: { duration_s?: number, size_bytes?: number, streams: FilmStreamSummary[] }
+  try {
+    const { stdout } = await proc('ffprobe', [
+      '-v', 'error',
+      '-show_entries', 'format=duration,size:stream=codec_name,width,height,r_frame_rate,nb_frames',
+      '-of', 'json', absPath,
+    ], exec.signal)
+    probe = parseProbeSummary(stdout)
+  } catch (error) {
+    if (error instanceof Error && (error as { code?: unknown }).code === 'ENOENT') {
+      throw new Error('cannot view the film "' + row.name + '": ffprobe is not installed on the estate host — images remain viewable', { cause: error })
+    }
+    throw new Error('cannot view the film "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error })
+  }
+  const stamps = sheetPlan(probe.duration_s)
+  const work = await mkdtemp(join(tmpdir(), 'melite-view-'))
+  try {
+    const frames: string[] = []
+    try {
+      let n = 0
+      for (const t of stamps) {
+        const out = join(work, 'frame-' + String(n) + '.png')
+        await proc('ffmpeg', ['-v', 'error', '-ss', String(t), '-i', absPath, '-frames:v', '1', '-vf', 'scale=320:-1', '-y', out], exec.signal)
+        frames.push(out)
+        n++
+      }
+      const sheet = join(work, 'sheet.png')
+      if (frames.length === 1) {
+        await proc('ffmpeg', ['-v', 'error', '-i', frames[0]!, '-y', sheet], exec.signal)
+      } else {
+        const inputs: string[] = []
+        for (const f of frames) inputs.push('-i', f)
+        const pairs: string[] = []
+        for (let i = 0; i + 1 < frames.length; i += 2) pairs.push('[' + String(i) + ':v][' + String(i + 1) + ':v]hstack=inputs=2[r' + String(i) + ']')
+        const stacked = pairs.map((_, i) => '[r' + String(i * 2) + ']').join('') + 'vstack=inputs=' + String(pairs.length)
+        await proc('ffmpeg', ['-v', 'error', ...inputs, '-filter_complex', pairs.join(';') + ';' + stacked, '-y', sheet], exec.signal)
+      }
+    } catch (error) {
+      throw new Error('cannot view the film "' + row.name + '": the contact sheet could not be built (' + (error instanceof Error ? error.message : String(error)) + ')', { cause: error })
+    }
+    const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes)
+    const data = await readFile(join(work, 'sheet.png'), { signal: exec.signal })
+    if (data.byteLength > byteCap) {
+      throw new Error('cannot view the film "' + row.name + '": its contact sheet exceeds the ' + String(byteCap) + '-byte image cap')
+    }
+    let ref: ImageAttachmentRef
+    try {
+      ref = await attachments.saveImage({ data, mediaType: 'image/png', name: basename(row.name, extname(row.name)) + '-sheet.png' })
+    } catch (error) {
+      throw new Error('cannot commit the film contact sheet for "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error })
+    }
+    return {
+      runId: row.runId,
+      url: row.url,
+      image: {
+        attachmentId: ref.attachmentId,
+        mediaType: ref.mediaType,
+        bytes: ref.bytes,
+        width: ref.width,
+        height: ref.height,
+        ...(ref.name === undefined ? {} : { name: ref.name }),
+        ...(ref.originalDimensions === undefined ? {} : { originalDimensions: { ...ref.originalDimensions } }),
+      },
+      film: {
+        file: row.name,
+        ...(probe.duration_s === undefined ? {} : { duration_s: probe.duration_s }),
+        ...(probe.size_bytes === undefined ? {} : { size_bytes: probe.size_bytes }),
+        streams: probe.streams.map((s) => ({ codec: s.codec, ...(s.width === undefined ? {} : { width: s.width }), ...(s.height === undefined ? {} : { height: s.height }), ...(s.fps === undefined ? {} : { fps: s.fps }), ...(s.frames === undefined ? {} : { frames: s.frames }) })),
+        sheet_of: stamps.length,
+      },
+    }
+  } finally {
+    await rm(work, { recursive: true, force: true })
+  }
+}
+/** FILM-ARM-INSERT — replaced below. */
 /** The structural exec view the route gate reads (the types.ts
  * ToolExec adaptation, widened for THIS tool's need — the gate walks
  * exec.agent; contravariance-safe: a body accepting this accepts any
@@ -161,8 +353,24 @@ export async function assertImageCapableRoute(
 }
 
 /** The render: one text summary + the image block (read_image's
- * imageReadContent pairing, run-scoped). */
+ * imageReadContent pairing, run-scoped). A film value's text leads
+ * with the probe verdict (duration, streams, frame count) — the
+ * image block IS the contact sheet. */
 function viewedContent(value: ViewedImageValue): ContentBlock[] {
+  if (value.film !== undefined) {
+    const f = value.film
+    const streams = f.streams.map((s) =>
+      s.codec + (s.width !== undefined && s.height !== undefined ? ' ' + String(s.width) + 'x' + String(s.height) : '')
+      + (s.fps !== undefined ? ' @' + s.fps : '') + (s.frames !== undefined ? ' ' + String(s.frames) + 'f' : '')).join(' + ')
+    return [
+      { type: 'text', text: 'melite_view film: ' + value.url + ' (' + f.file
+        + (f.duration_s !== undefined ? ', ' + String(f.duration_s) + 's' : '')
+        + (f.size_bytes !== undefined ? ', ' + String(f.size_bytes) + ' bytes' : '')
+        + ', streams: ' + streams + '; contact sheet of ' + String(f.sheet_of)
+        + ': ' + value.image.mediaType + ' ' + String(value.image.width) + 'x' + String(value.image.height) + ')' },
+      { type: 'image', attachment: imageRefFromValue(value.image) },
+    ]
+  }
   return [
     { type: 'text', text: 'melite_view: ' + value.url + ' (' + value.image.mediaType + ', ' + String(value.image.width) + 'x' + String(value.image.height) + ', ' + String(value.image.bytes) + ' bytes)' },
     { type: 'image', attachment: imageRefFromValue(value.image) },
@@ -187,7 +395,9 @@ export function meliteView(ctx: Context): ToolDefinition {
     name: 'melite_view',
     description:
       'View one image artifact from a finished (or running) estate run — the model receives the image itself, '
-      + 'never a description of it. This is the observe arm of the act/observe/decide loop: after a run lands, '
+      + 'never a description of it. When the run holds no images but holds a film, the observe arm serves the film instead: '
+      + 'an ffprobe stream summary (duration, codecs, frame count) plus a contact-sheet image of frames across its span. '
+      + 'This is the observe arm of the act/observe/decide loop: after a run lands, '
       + 'VIEW it before deciding the next step (never claim a match without viewing). '
       + 'Args: run_id (required, the run directory under the runs tree), artifact (optional substring — when a run '
       + 'produced several images, name the one to view; default is the newest). Requires the current model to accept image input.',
@@ -214,8 +424,13 @@ export function meliteView(ctx: Context): ToolDefinition {
           image: {
             type: 'object',
             additionalProperties: true,
-            description: 'The durable attachment metadata (attachmentId, mediaType, bytes, width, height).',
+            description: 'The durable attachment metadata (attachmentId, mediaType, bytes, width, height). On the film path this IS the contact sheet.',
             required: true,
+          },
+          film: {
+            type: 'object',
+            additionalProperties: true,
+            description: 'Present only on the film path: the ffprobe summary (file, duration_s, size_bytes, streams with codec/geometry/fps/frames) plus sheet_of (frames tiled).',
           },
         },
       },
@@ -251,7 +466,12 @@ export function meliteView(ctx: Context): ToolDefinition {
       const { items } = await listMedia(seat.stateRoot, 'image')
       const own = items.filter((i) => i.runId === runId)
       if (own.length === 0) {
-        throw new Error('run "' + runId + '" produced no image artifacts (or the run id is unknown)')
+        // THE FILM ARM (§24): a film run holds no images — observe
+        // it through its own artifact (ffprobe summary + a contact
+        // sheet the model can SEE). The no-film voice keeps the old
+        // prefix (the walls pin it); the value carries the film row.
+        const filmed = await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments)
+        return filmed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
       }
       const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own
       if (picked.length === 0) {

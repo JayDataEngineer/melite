@@ -24,7 +24,7 @@ import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import type { EstateRequest } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
-import { DEFAULT_BENCH } from './melite-construct.ts'
+import { benchKeyOfExec } from './melite-construct.ts'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import { boardedMap, resolveSpecKey } from '../discovery.ts'
 
@@ -227,7 +227,8 @@ async function loadBench(
   // Read the row first; a live bench's rev rides as expect_rev, a
   // missing bench births (no expect_rev — the birth arm).
   // body.session is set by all three internal call sites (runSingle /
-  // runTemplate / runAdHoc each pass session: DEFAULT_BENCH) — the cast
+  // runTemplate / runAdHoc each pass the one-bench-law session —
+  // execute's bench, the caller's conversation bench) — the cast
   // rides that call-site proof instead of a dead 'default' fallback
   // (2026-09-12).
   const session: string = body['session'] as string
@@ -278,13 +279,13 @@ async function loadBench(
  *  rows, one refusal or failed terminal STOPS the pass. */
 async function runBench(
   request: EstateRequest,
-  a: { test?: boolean },
+  a: { test?: boolean; bench: string },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
-  const empty = { mode: 'bench', target: `bench-${DEFAULT_BENCH}`, error: 'the bench is empty — construct stages first (melite_construct)' }
+  const empty = { mode: 'bench', target: `bench-${a.bench}`, error: 'the bench is empty — construct stages first (melite_construct)' }
   let b: Record<string, unknown>
   try {
-    b = await request( 'GET', `/v1/bench/${DEFAULT_BENCH}`, undefined, signal, 15_000) as Record<string, unknown>
+    b = await request( 'GET', `/v1/bench/${a.bench}`, undefined, signal, 15_000) as Record<string, unknown>
   } catch (e) {
     // The bench remote classifies the empty bench as bench/not-found
     // (the HTTP 404 died with the door).
@@ -296,8 +297,8 @@ async function runBench(
         typeof s === 'object' && s !== null && typeof (s as Record<string, unknown>)['id'] === 'string')
     : []
   if (rows.length === 0) return empty
-  const draftId = typeof b['draft_id'] === 'string' ? b['draft_id'] as string : `bench-${DEFAULT_BENCH}`
-  const target = `bench-${DEFAULT_BENCH} @ rev ${String(b['rev'] ?? '?')}`
+  const draftId = typeof b['draft_id'] === 'string' ? b['draft_id'] as string : `bench-${a.bench}`
+  const target = `bench-${a.bench} @ rev ${String(b['rev'] ?? '?')}`
   const pass: Array<Record<string, unknown>> = []
   for (const row of rows) {
     const stageId = row['id'] as string
@@ -320,7 +321,7 @@ async function runBench(
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, error: started['error'], pass }
     }
     const runId = started['run_id'] as string
-    const outcome = await observeAndAttribute(request, stageId, runId, signal)
+    const outcome = await observeAndAttribute(request, a.bench, stageId, runId, signal)
     pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
       ...(outcome.url !== '' ? { url: outcome.url } : {}) })
     if (outcome.status !== 'done') {
@@ -351,6 +352,7 @@ function sleepAbort(ms: number, signal: AbortSignal): Promise<void> {
  *  mirrored). */
 async function observeAndAttribute(
   request: EstateRequest,
+  bench: string,
   stageId: string,
   runId: string,
   signal: AbortSignal,
@@ -384,7 +386,7 @@ async function observeAndAttribute(
       if (url !== '') result['url'] = url
       const terminal = status === 'completed' ? 'done' : status
       try {
-        await request( 'POST', `/v1/bench/${DEFAULT_BENCH}/patch`,
+        await request( 'POST', `/v1/bench/${bench}/patch`,
           { stage: stageId, runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS)
       } catch { /* bookkeeping — the next run rewrites the row */ }
       return { status: terminal, url }
@@ -393,7 +395,7 @@ async function observeAndAttribute(
     if (live !== lastLive) {
       lastLive = live
       try {
-        await request( 'POST', `/v1/bench/${DEFAULT_BENCH}/patch`,
+        await request( 'POST', `/v1/bench/${bench}/patch`,
           { stage: stageId, runStatus: live, result: { run_id: runId } }, signal, DRAFT_TIMEOUT_MS)
       } catch { /* bookkeeping */ }
     }
@@ -410,7 +412,7 @@ async function runSingle(
   // (2026-09-12). model normalizes at the caller (missing → ''), so the
   // !model guard below stays reachable ('' rides it — melite-load's
   // `if (!name)` precedent).
-  a: { card: string; model: string; prompt?: string; params: Record<string, unknown>; test?: boolean },
+  a: { card: string; model: string; prompt?: string; params: Record<string, unknown>; test?: boolean; bench: string },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const card = a.card
@@ -442,7 +444,7 @@ async function runSingle(
   let draftId: string
   try {
     draftId = await loadBench(request, {
-      session: DEFAULT_BENCH,
+      session: a.bench,
       intent,
       stages: [{
         id: 's_0',
@@ -465,7 +467,7 @@ async function runTemplate(
   // hasFlow gate (execute, the sole caller): flow is a non-empty string
   // and params always an object here — no fallbacks exist to cover
   // (2026-09-12).
-  a: { flow: string; params: Record<string, unknown>; test?: boolean },
+  a: { flow: string; params: Record<string, unknown>; test?: boolean; bench: string },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const flow = a.flow
@@ -478,7 +480,7 @@ async function runTemplate(
     // (the {flow} start arm expands the graph server-side; the run
     // registry snapshots it). One marker row keeps the doc honest.
     draftId = await loadBench(request, {
-      session: DEFAULT_BENCH,
+      session: a.bench,
       intent: flow,
       stages: [{ id: 's_0', engine: 'comfyui', ref_flow: flow, params: {} }],
     }, signal)
@@ -498,7 +500,7 @@ async function runTemplate(
  *  validate (no GPU on a bad wire), then draft + {flow_inline}. */
 async function runAdHoc(
   request: EstateRequest,
-  a: { stages?: unknown; connects?: unknown; id?: unknown; description?: unknown; test?: boolean },
+  a: { stages?: unknown; connects?: unknown; id?: unknown; description?: unknown; test?: boolean; bench: string },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const rawStages = a.stages
@@ -538,7 +540,7 @@ async function runAdHoc(
   let draftId: string
   try {
     draftId = await loadBench(request, {
-      session: DEFAULT_BENCH,
+      session: a.bench,
       intent: flowId,
       stages: folded,
     }, signal)
@@ -723,13 +725,20 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       if (modes > 1) {
         return jsonClean({ error: 'exactly one composition per call: bench | card | flow | stages — never combined' }) as FlowResult;
       }
+      // THE ONE-BENCH LAW (§22, 2026-09-22): flow lands on the
+      // CALLER's conversation bench (benchKeyOfExec — the agent's own
+      // session), never the hardcoded main — construct binds the same
+      // key, so the composed tiles and the executed pipeline are one
+      // bench. Unattributed seats (no agent id) fall back to main,
+      // exactly like construct's benchKeyOf fallback.
+      const bench = benchKeyOfExec(exec as { agent?: { id?: unknown } })
       try {
         if (hasBench) {
-          return jsonClean(await runBench(request, { test }, exec.signal)) as FlowResult;
+          return jsonClean(await runBench(request, { test, bench }, exec.signal)) as FlowResult;
         }
         if (hasFlow) {
           return jsonClean(await runTemplate(request, {
-            flow: a.flow as string, params: bag, test,
+            flow: a.flow as string, params: bag, test, bench,
           }, exec.signal)) as FlowResult;
         }
         if (hasCard) {
@@ -737,7 +746,7 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
             card: a.card as string,
             model: typeof a.model === 'string' ? a.model : '',
             prompt: typeof a.prompt === 'string' ? a.prompt : undefined,
-            params: bag, test,
+            params: bag, test, bench,
           }, exec.signal)) as FlowResult;
         }
         return jsonClean(await runAdHoc(request, {
@@ -745,7 +754,7 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
           connects: a.connects,
           id: a.id,
           description: typeof a.description === 'string' ? a.description : undefined,
-          test,
+          test, bench,
         }, exec.signal)) as FlowResult;
       } catch (e) {
         const re = remoteErrorOf(e)
@@ -761,7 +770,7 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
           // mapping was dead here and mislabeled bench failures as
           // adhoc/pipeline — the refusal rides bench's own mode/target
           // (a real mislabel, fixed minimally).
-          return jsonClean<FlowResult>({ error: re.message || 'remote refused', mode: 'bench', target: `bench-${DEFAULT_BENCH}` });
+          return jsonClean<FlowResult>({ error: re.message || 'remote refused', mode: 'bench', target: `bench-${bench}` });
         }
         throw e;
       }

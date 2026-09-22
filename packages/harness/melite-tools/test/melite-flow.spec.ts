@@ -266,6 +266,68 @@ describe('melite_flow card — the live allowlist', () => {
   })
 })
 
+describe('melite_flow bench — THE ONE-BENCH LAW (§22)', () => {
+  // the card-mode recipe, self-contained (the card describe owns its
+  // own scoped copy — this wall must not reach into it)
+  const TOOLS = [
+    { model: 'new-model-1', stage_title: 'New', params_schema: null },
+    { model: 'music3', stage_title: 'Music', params_schema: null },
+  ]
+  const CATALOG = { models: { 'new-model-1': { family: 'krea' } }, families: { krea: { label: 'Krea 2' } } }
+  const cardMocks = () => mockFetch([okBenchWith('d9'),
+    (u) => (u.endsWith('/v1/card-tools')
+      ? { status: 200, body: TOOLS } : undefined),
+    (u) => (u.endsWith('/v1/model-catalog')
+      ? { status: 200, body: CATALOG } : undefined),
+    (u) => (u.includes('validate?model=')
+      ? { status: 200, body: { runnable: true } } : undefined),
+    okDraftThenStart('d9', 'r9'),
+  ])
+  test('card mode lands on the caller conversation bench, never hardcoded main', async () => {
+    const seen = cardMocks()
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute(
+      { card: 'image-gen', model: 'new-model-1', prompt: 'hi' },
+      { signal: AbortSignal.timeout(2000), agent: { id: 'sess-1' } } as never,
+    ) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    // the CAS read AND the ensure both ride the conversation key —
+    // the same key melite_construct binds for this agent (construct's
+    // benchKeyOfExec parity: the composed tiles and the executed
+    // pipeline are one bench)
+    const get = seen.calls.find((c) => /^\/v1\/bench\/[^/?]+$/.test(c.url))
+    assert.equal(get!.url, '/v1/bench/sess-1')
+    const ensure = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
+    assert.equal(ensure.session, 'sess-1')
+  })
+
+  test('an unattributed seat (no agent id) falls back to main — construct parity', async () => {
+    const seen = cardMocks()
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute(
+      { card: 'image-gen', model: 'new-model-1', prompt: 'hi' },
+      { signal: AbortSignal.timeout(2000) },
+    ) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    const get = seen.calls.find((c) => /^\/v1\/bench\/[^/?]+$/.test(c.url))
+    assert.equal(get!.url, '/v1/bench/main')
+  })
+
+  test('bench mode reads the caller conversation bench (run owed to the same tiles)', async () => {
+    const seen = mockFetch([okBenchWith('d_bench')])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute(
+      { bench: true },
+      { signal: AbortSignal.timeout(2000), agent: { id: 'sess-1' } } as never,
+    ) as Record<string, unknown>
+    // the fixture bench is empty — the refusal still proves WHICH
+    // bench was read (the conversation's, not main's)
+    assert.ok(typeof out.error === 'string' && out.error.includes('empty'))
+    assert.equal(seen.calls[0].url, '/v1/bench/sess-1')
+    assert.equal(out.target, 'bench-sess-1')
+  })
+})
+
 describe('melite_flow L4 — the test flag rides every mode', () => {
   test('template: test:false default, flow explicitly named, draft minted', async () => {
     const seen = mockFetch([okBenchWith('draft-headless-1'), okDraftThenStart('draft-headless-1', 'r0')])

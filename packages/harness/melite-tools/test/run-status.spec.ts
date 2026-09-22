@@ -186,6 +186,59 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
     const settled = await Promise.race([guard, vi.advanceTimersByTimeAsync(6000).then(() => new Promise(() => {}))])
     assert.ok(settled instanceof Error || settled === undefined)
   })
+
+  test('a bare abort (no reason) falls back to the generic error (the ?? arm)', async () => {
+    fakeClock()
+    const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
+    const tool = runStatus(seen.request)
+    const ac = new AbortController()
+    ac.abort()   // reason undefined — the sleep rejects with 'aborted'
+    await assert.rejects(
+      tool.execute({ runId: 'r', wait_s: 30 }, { signal: ac.signal }),
+      /aborted/,
+    )
+    assert.equal(seen.calls.length, 1)
+  })
+
+  test('a non-conforming signal with undefined reason still rejects loud (the ?? fallback)', async () => {
+    fakeClock()
+    const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
+    const tool = runStatus(seen.request)
+    // aborted on entry with reason undefined (a stub, never a real
+    // AbortSignal whose default reason is truthy) — the fallback
+    // Error('aborted') is the rejection, never a silent hang
+    const stub = { aborted: true, reason: undefined } as never
+    await assert.rejects(tool.execute({ runId: 'r', wait_s: 30 }, { signal: stub }), /aborted/)
+    assert.equal(seen.calls.length, 1)
+  })
+
+  test('an ALREADY-aborted signal rejects before the first fetch (the sleep pre-check arm)', async () => {
+    fakeClock()
+    const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
+    const tool = runStatus(seen.request)
+    const ac = new AbortController()
+    ac.abort(new Error('late arrival'))
+    // wait_s>0 forces the loop; the signal is dead on entry — the
+    // sleep's pre-abort arm rejects without a second fetch.
+    await assert.rejects(
+      tool.execute({ runId: 'r', wait_s: 30 }, { signal: ac.signal }),
+      /late arrival/,
+    )
+    assert.equal(seen.calls.length, 1)   // the one pre-sleep fetch only
+  })
+
+  test('a live-plan row projects verbatim (planned_stages/card/run_age_s true paths)', async () => {
+    const seen = mockRequest(() => ({
+      run_id: 'r', status: 'running',
+      planned_stages: [{ id: 'h3-film', engine: 'comfyui' }],
+      card: 'h3-timeline', run_age_s: 42,
+    }))
+    const tool = runStatus(seen.request)
+    const out = await tool.execute({ runId: 'r' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    assert.deepEqual(out.planned_stages, [{ id: 'h3-film', engine: 'comfyui' }])
+    assert.equal(out.card, 'h3-timeline')
+    assert.equal(out.run_age_s, 42)
+  })
 })
 
 describe('coerceArgs — the numeric-string valve (fix 3)', () => {
@@ -199,6 +252,18 @@ describe('coerceArgs — the numeric-string valve (fix 3)', () => {
     assert.equal(bad.wait_s, 'soon')
     const empty = coerceArgs(props, { wait_s: '' }) as Record<string, unknown>
     assert.equal(empty.wait_s, '')
+    // a boolean slot given a non-'true'/'false' string rides verbatim
+    // (the || else arm) — the gate still owns it
+    const boolGarbage = coerceArgs(props, { deep: 'yes' }) as Record<string, unknown>
+    assert.equal(boolGarbage.deep, 'yes')
+    const boolFalse = coerceArgs(props, { deep: 'false' }) as Record<string, unknown>
+    assert.equal(boolFalse.deep, false)
+  })
+  test('withArgCoercion passes through defs it cannot wrap (the early-return arm)', () => {
+    const bare = { name: 'x' }
+    assert.equal(withArgCoercion(bare as never), bare)
+    const noExecute = { parameters: { properties: { wait_s: { type: 'number' } } } }
+    assert.equal(withArgCoercion(noExecute as never), noExecute)
   })
   test('non-objects and schema-less defs ride untouched', () => {
     const obj = { a: '1' }
@@ -238,6 +303,24 @@ describe('run_status render — the human line', () => {
     assert.equal(
       text({ run_id: 'r2', status: 'queued', stages: [], queue_position: 0 }),
       'run r2 queued — 0/0 stage(s)',
+    )
+    // plan WITHOUT card/age: the cond-expr else arms (no parens, no age suffix)
+    assert.equal(
+      text({ run_id: 'r3', status: 'running', stages: [], planned_stages: [{ id: 'h3-film' }] }),
+      'run r3 running — 0/0 stage(s) · plan: 1 stage(s)',
+    )
+  })
+
+  test('the wait receipts render: expiry asks for another wait, waited_s proves absorption (Fix 5)', () => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    assert.equal(
+      text({ run_id: 'r', status: 'running', stages: [], wait_expired: true, wait_budget_s: 300 }),
+      'run r running — 0/0 stage(s) · wait expired (budget spent, not terminal — wait again)',
+    )
+    assert.equal(
+      text({ run_id: 'r', status: 'completed', stages: [{ status: 'completed' }], waited_s: 5 }),
+      'run r completed — 1/1 stage(s) · waited 5s',
     )
   })
 })

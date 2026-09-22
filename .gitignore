@@ -33,6 +33,9 @@ productions/
 *.wav
 *.mp3
 *.flac
+# ...except the byte-small committed test fixtures the walls prove
+# binaries against (the §24 film arm's 2s fixture, etc.)
+!packages/harness/melite-tools/test/fixtures/*.mp4
 *.jpg
 *.jpeg
 *.png

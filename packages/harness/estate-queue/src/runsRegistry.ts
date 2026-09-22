@@ -534,9 +534,14 @@ export class RunsRuntimeService extends Service {
       // runs/unknown-run refusal as before.
       const disk: Record<string, unknown> | undefined = this.diskRunRow(runId);
       if (disk === undefined) {
+        // §23 NAME-THE-ROOT (2026-09-22, attempt006's two-roots
+        // lesson): a miss names the tree it searched — the
+        // operator sees WHICH root answered, never a bare unknown.
+        // No branch: the queue seat owns stateRoot on every boot
+        // (the service refuses root-less — the constructor's law).
         throw new RemoteError(
           "runs/unknown-run",
-          "unknown run_id",
+          "unknown run_id \"" + runId + "\" (searched " + this.ctx.queue.stateRoot + ")",
           { runId },
         );
       }

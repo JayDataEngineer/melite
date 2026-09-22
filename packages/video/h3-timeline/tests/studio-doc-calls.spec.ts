@@ -337,7 +337,11 @@ describe("hasKnobs / callsToPrompts / keyframesToLanes", () => {
     assert.equal(ps[0]!.refImages, 3)
     assert.equal(ps[0]!.seam, "extend")
     assert.equal(ps[1]!.refImages, 0)
-    assert.equal(ps[1]!.seam, "cut")
+    // ABSENT = EXTEND (operator catch d, ledger xiv: only an explicit
+    // "cut" reads as a cut — the glyph never disagrees with the card's
+    // spanOverlap law). This arm held the pre-catch "cut" and failed
+    // at HEAD until the catch reached it.
+    assert.equal(ps[1]!.seam, "extend")
     assert.ok(ps[1]!.text.includes("C2"))
   })
 
