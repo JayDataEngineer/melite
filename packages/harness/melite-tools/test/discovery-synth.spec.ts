@@ -172,6 +172,10 @@ describe('formSpecArm synthetic boarding', () => {
     assert.equal(tools.length, 1)
     assert.equal(tools[0]!['model'], 'bare')
     assert.deepEqual(tools[0]!['families'], ['bare'])
+    // F-7: mocked defs ride the same emit — the stamp is on the
+    // face, never on the def
+    assert.equal(typeof tools[0]!['face_stamp'], 'string')
+    assert.ok((tools[0]!['face_stamp'] as string).length > 0)
   })
 })
 

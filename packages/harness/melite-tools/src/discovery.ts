@@ -36,6 +36,7 @@ import type {
   ModelDecl,
 } from '@melite/comfyui-cordis'
 import { agentFormDoc } from '@melite/engine-agent'
+import { faceStamp } from './faceStamp.ts'
 
 /** The boarded map (family -> the card that boards it, first-seen).
  *  Exported for the flow tool's bench pass (the card-id alias
@@ -799,6 +800,12 @@ export async function cardToolsArm(): Promise<unknown[]> {
       families: fams,
       params_schema: schema,
       ...(mods.length > 0 ? { modifiers: mods } : {}),
+      // F-7 (the stale-face drill): the serving process's tree
+      // version rides every face — an agent compares it against
+      // the disk HEAD and a stale module is visible, never silent.
+      // `version` stays the frozen protocol number (not mine to
+      // redesign); the stamp is its own key.
+      face_stamp: faceStamp(),
     })
   }
   return out

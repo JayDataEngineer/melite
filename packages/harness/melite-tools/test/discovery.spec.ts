@@ -265,6 +265,26 @@ describe('live door arms', () => {
     assert.equal('modifiers' in tts, false)
   })
 
+  test('cardToolsArm stamps every face with the serving tree version (F-7)', async () => {
+    const tools = (await cardToolsArm()) as Array<Record<string, unknown>>
+    assert.ok(tools.length > 0)
+    for (const t of tools) {
+      assert.equal(typeof t['face_stamp'], 'string', `${t['name']} carries the stamp`)
+      assert.ok((t['face_stamp'] as string).length > 0, `${t['name']} never stamps empty`)
+    }
+  })
+
+  test('the stamp IS the disk HEAD — a stale module fails this (F-7 mismatch drill)', async () => {
+    const { execFileSync } = await import('node:child_process')
+    const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
+    const head = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim()
+    const porcelain = execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim()
+    const want = porcelain !== '' ? `${head}+dirty` : head
+    const tools = (await cardToolsArm()) as Array<Record<string, unknown>>
+    const h3 = tools.find((t) => t['name'] === 'h3-timeline')!
+    assert.equal(h3['face_stamp'], want, 'the served face names the tree it was emitted from')
+  })
+
   test('formSpecArm serves the tts envelope for its default family', async () => {
     const spec = (await formSpecSweep('tts')) as Record<string, unknown>
     assert.equal(spec['form'], 'tts')
