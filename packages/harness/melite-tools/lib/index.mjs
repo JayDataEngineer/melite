@@ -1,4 +1,4 @@
-import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-B3Aywr1-.mjs";
+import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-BXtUzI8f.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildImageEditTool } from "@melite/image-image-edit/tool";
@@ -8,9 +8,54 @@ import { defineTool } from "@deepseek-ai/dsh-tools";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { basename, extname, join } from "node:path";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { AttachmentError, AttachmentId } from "@deepseek-ai/dsh-attachment";
 import { listMedia } from "@melite/estate-media";
+//#region src/expansion.ts
+/**
+* THE EXPANSION SEAT (progressive disclosure, operator 2026-10-08 —
+* the Tool Search Tool law over our own toolset).
+*
+* The eager trio (discover / load / construct) is the whole melite
+* schema surface in a session's FIRST request. The deferred estate
+* doors — view, model upkeep, the skill twins, the ledger — seat
+* themselves the moment the catalog is touched (any discover or
+* load execute), so a chat that never touches media never pays
+* their tokens.
+*
+* WHY THIS IS LEGAL AT ALL: DSH's EpochHeader carries the assembled
+* tool schemas PER REQUEST and appends a `change` snapshot when the
+* set changes (session.md, the request-envelope contract) —
+* mid-session registration is native, the next model call simply
+* sees the seated doors. No DSH core surface is touched: this is
+* our own registry membership, our own tools.
+*
+* The registrar is set once per plugin mount by apply(); the eager
+* builders call {@link expandEstateDoors} at execute entry. A small
+* module of its own so the builders never import index.ts (no
+* cycle: index -> builders -> expansion <- index).
+*/
+/** Set by apply() — seats the deferred doors (idempotent). Null on
+* an unmounted plugin; the call is then a no-op. */
+let seatDeferred = null;
+/** apply() installs the registrar here. */
+function installExpansion(registrar) {
+	seatDeferred = registrar;
+}
+/** Plugin-unload arm: the deferred registrations' disposers are
+* plugin-lifetime — apply collects them and hands the flush here. */
+function clearExpansion() {
+	seatDeferred = null;
+}
+/** Seat the deferred estate doors (idempotent, safe to call from
+* any execute arm, any number of times). */
+function expandEstateDoors() {
+	seatDeferred?.();
+}
+//#endregion
 //#region src/json-clean.ts
 /**
 * Deep JSON-normalization for tool results.
@@ -68,6 +113,33 @@ function clean(value, seen) {
 * Registered ONLY in headless mounts (MELITE_HEADLESS=1).
 */
 const TIMEOUT_MS$3 = 15e3;
+const WAIT_MAX_S = 300;
+const WAIT_POLL_S = 5;
+/** Abortable sleep — resolves after ms, rejects immediately when
+* the caller's signal aborts (a cancelled wait never lingers). */
+function sleepAbortable(ms, signal) {
+	return new Promise((resolve, reject) => {
+		const t = setTimeout(() => {
+			signal.removeEventListener("abort", onAbort);
+			resolve();
+		}, ms);
+		function onAbort() {
+			clearTimeout(t);
+			reject(signal.reason ?? /* @__PURE__ */ new Error("aborted"));
+		}
+		if (signal.aborted) {
+			onAbort();
+			return;
+		}
+		signal.addEventListener("abort", onAbort, { once: true });
+	});
+}
+const TERMINAL = /* @__PURE__ */ new Set([
+	"completed",
+	"error",
+	"stopped",
+	"failed"
+]);
 function runStatus(request) {
 	const presentCall = (args) => {
 		const a = typeof args === "object" && args !== null ? args : {};
@@ -81,11 +153,18 @@ function runStatus(request) {
 	const def = defineTool({
 		name: "run_status",
 		description: "Poll a queue run: status (queued|running|completed|error|stopped|failed), per-stage progress, artifacts (landed bytes with paths) and the EXACT error string on failure. Args: runId (from melite_flow). Includes queue_position while waiting on the serial GPU lane. Read-only — the stop door is operator-ordered.",
-		parameters: { runId: {
-			type: "string",
-			description: "The run id returned by melite_flow.",
-			required: true
-		} },
+		parameters: {
+			runId: {
+				type: "string",
+				description: "The run id returned by melite_flow.",
+				required: true
+			},
+			wait_s: {
+				type: "number",
+				description: "Long-poll budget in seconds (0-300, default 0 = single read; clamped at execute). The tool re-fetches internally every 5s until the run is terminal — ONE result row instead of a sleep-and-repoll turn loop (efficiency review fix 5). On budget expiry the row carries wait_expired: true."
+			}
+		},
+		timeoutMs: 32e4,
 		presentCall,
 		output: {
 			schema: {
@@ -112,6 +191,26 @@ function runStatus(request) {
 					queue_position: {
 						type: "number",
 						description: "0 = active; >0 = waiting in the FIFO."
+					},
+					planned_stages: {
+						type: "array",
+						description: "The registered plan (id/engine per stage) — present when a live row has no stage rows yet."
+					},
+					card: {
+						type: "string",
+						description: "The card (or pipeline) the run was born from."
+					},
+					run_age_s: {
+						type: "number",
+						description: "Seconds since registration — the heartbeat for long renders."
+					},
+					wait_expired: {
+						type: "boolean",
+						description: "True when wait_s expired before the run reached a terminal state — wait again."
+					},
+					waited_s: {
+						type: "number",
+						description: "Seconds actually waited when the run reached terminal inside the budget."
 					}
 				}
 			},
@@ -126,37 +225,59 @@ function runStatus(request) {
 				const done = stages.filter((s) => s && s.status === "completed").length;
 				const total = stages.length;
 				const pos = typeof v.queue_position === "number" && v.queue_position > 0 ? " (queue #" + v.queue_position + ")" : "";
+				const plan = total === 0 && Array.isArray(v.planned_stages) && v.planned_stages.length > 0 ? " · plan: " + v.planned_stages.length + " stage(s)" + (typeof v.card === "string" && v.card ? " (" + v.card + ")" : "") + (typeof v.run_age_s === "number" ? " · age " + v.run_age_s + "s" : "") : "";
 				return [{
 					type: "text",
-					text: "run " + String(v.run_id ?? "?") + " " + String(v.status ?? "?") + pos + " — " + done + "/" + total + " stage(s)" + (artifacts.length ? " · " + artifacts.length + " artifact(s)" : "")
+					text: "run " + String(v.run_id ?? "?") + " " + String(v.status ?? "?") + pos + " — " + done + "/" + total + " stage(s)" + plan + (artifacts.length ? " · " + artifacts.length + " artifact(s)" : "") + (v.wait_expired ? " · wait expired (budget spent, not terminal — wait again)" : "") + (typeof v.waited_s === "number" ? " · waited " + v.waited_s + "s" : "")
 				}];
 			}
 		},
 		async execute(args, exec) {
-			const runId = args.runId;
+			const a = args;
+			const runId = a.runId;
 			if (!runId) return jsonClean({ error: "runId is required" });
+			const waitRaw = typeof a.wait_s === "number" ? a.wait_s : Number(a.wait_s);
+			const waitS = Number.isFinite(waitRaw) ? Math.min(Math.max(waitRaw, 0), WAIT_MAX_S) : 0;
+			const deadline = Date.now() + waitS * 1e3;
 			let res;
-			try {
-				res = await request("GET", "/v1/flows/status/" + encodeURIComponent(runId), void 0, exec.signal, TIMEOUT_MS$3);
-			} catch (e) {
-				const re = remoteErrorOf(e);
-				if (re !== null && re !== void 0) return jsonClean({
-					run_id: runId,
-					error: `${re.code}: ${re.message}`
-				});
-				throw e;
+			let waitExpired = false;
+			for (;;) {
+				try {
+					res = await request("GET", "/v1/flows/status/" + encodeURIComponent(runId), void 0, exec.signal, TIMEOUT_MS$3);
+				} catch (e) {
+					const re = remoteErrorOf(e);
+					if (re !== null && re !== void 0) return jsonClean({
+						run_id: runId,
+						error: `${re.code}: ${re.message}`
+					});
+					throw e;
+				}
+				const status = typeof res?.["status"] === "string" ? res["status"] : "";
+				if (TERMINAL.has(status)) break;
+				if (Date.now() >= deadline) {
+					waitExpired = waitS > 0;
+					break;
+				}
+				await sleepAbortable(WAIT_POLL_S * 1e3, exec.signal);
 			}
 			if (res && typeof res.error === "string") return jsonClean({
 				run_id: runId,
 				error: res.error
 			});
 			return jsonClean({
+				...waitExpired ? {
+					wait_expired: true,
+					wait_budget_s: waitS
+				} : waitS > 0 ? { waited_s: Math.round(waitS - Math.max(0, deadline - Date.now()) / 1e3) } : {},
 				run_id: typeof res.run_id === "string" ? res.run_id : runId,
 				status: typeof res.status === "string" ? res.status : "unknown",
 				stages: Array.isArray(res.stages) ? res.stages : [],
 				artifacts: Array.isArray(res.artifacts) ? res.artifacts : [],
 				error: void 0,
-				queue_position: typeof res.queue_position === "number" ? res.queue_position : 0
+				queue_position: typeof res.queue_position === "number" ? res.queue_position : 0,
+				planned_stages: Array.isArray(res.planned_stages) ? res.planned_stages : void 0,
+				card: typeof res.card === "string" ? res.card : void 0,
+				run_age_s: typeof res.run_age_s === "number" ? res.run_age_s : void 0
 			});
 		}
 	});
@@ -216,9 +337,99 @@ async function readBench(request, bench, signal) {
 		throw e;
 	}
 }
+/** Enrich bench stages with the draft's latest run (the lookup
+*  the agent cannot do itself: runs are born from drafts — the
+*  start door refuses cardless runs — so the bench's draft_id
+*  joins to /v1/flows/runs rows server-side; the agent never
+*  touches a filesystem path). A stage that has run carries
+*  last_run {run_id, status, created_at, thumbnail, artifacts} —
+*  view it with melite_view, chain it with {stage, output}.
+*  last_run is the DRAFT's latest run, shared by every stage
+*  (stages carry no timestamps — a stage added after the run
+*  still advertises it; known limit, stated not silent).
+*  No match carries last_run: null PLUS the window facts
+*  (runs {checked, total, matched}) — never-ran reads off small
+*  totals, window-miss off total >> checked. Enrichment DEGRADES,
+*  never refuses: a failed runs call (seat absent, lane hiccup)
+*  returns the stages verbatim with no runs key — lookup-failed
+*  (key absent) vs no-match (null + facts) stay distinct.
+*  One window: the newest 100 global runs. */
+async function withLastRun(request, bench, signal) {
+	const stages = bench["stages"];
+	const none = {
+		stages,
+		runs: null
+	};
+	if (!Array.isArray(stages) || stages.length === 0) return none;
+	const draftId = bench["draft_id"];
+	if (typeof draftId !== "string" || draftId === "") return none;
+	let env;
+	try {
+		env = await request("GET", "/v1/flows/runs?limit=100", void 0, signal, 15e3);
+	} catch {
+		return none;
+	}
+	const rows = env["runs"];
+	if (!Array.isArray(rows)) return none;
+	const total = env["count"];
+	const facts = (matched) => ({
+		checked: rows.length,
+		total: typeof total === "number" ? total : rows.length,
+		matched
+	});
+	const mine = [];
+	for (const r of rows) {
+		if (typeof r !== "object" || r === null || Array.isArray(r)) continue;
+		const rec = r;
+		if (rec["draft_id"] !== draftId) continue;
+		const created = rec["created_at"];
+		mine.push({
+			created: typeof created === "number" ? created : 0,
+			row: rec
+		});
+	}
+	if (mine.length === 0) return {
+		stages: stages.map((s) => {
+			if (typeof s !== "object" || s === null || Array.isArray(s)) return s;
+			return {
+				...s,
+				last_run: null
+			};
+		}),
+		runs: facts(0)
+	};
+	mine.sort((a, b) => b.created - a.created);
+	const win = mine[0].row;
+	const lastRun = {
+		run_id: win["run_id"],
+		status: win["status"],
+		created_at: win["created_at"],
+		thumbnail: win["thumbnail"],
+		artifacts: win["artifacts"]
+	};
+	return {
+		stages: stages.map((s) => {
+			if (typeof s !== "object" || s === null || Array.isArray(s)) return s;
+			return {
+				...s,
+				last_run: lastRun
+			};
+		}),
+		runs: facts(mine.length)
+	};
+}
+/** Record guard for verb args the doors admit as maps (expected,
+*  outputs): plain objects only — null, arrays, and scalars would
+*  die silently at the bench's isRecord, so the tool sheds them. */
+function isRecordArg(v) {
+	return typeof v === "object" && v !== null && !Array.isArray(v);
+}
 /** Project bench stage rows onto the flow_inline wire contract
-*  (extra=forbid at the start/validate doors: card, provenance,
-*  runStatus, result, title strip; engine defaults comfyui). */
+*  (the doors forbid provenance/runStatus/result/title as extras —
+*  they strip; `card` RIDES (STAGE_KEYS admit it) because the
+*  kinds pass derives input kinds from the card's own flowKinds —
+*  stripping it manufactured phantom "wired but untyped" refusals
+*  on correctly-wired card stages; engine defaults comfyui). */
 function projectStages(stages) {
 	if (!Array.isArray(stages)) return [];
 	return stages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s)).map((s) => {
@@ -229,6 +440,7 @@ function projectStages(stages) {
 			inputs: typeof s["inputs"] === "object" && s["inputs"] !== null && !Array.isArray(s["inputs"]) ? s["inputs"] : {},
 			outputs: typeof s["outputs"] === "object" && s["outputs"] !== null && !Array.isArray(s["outputs"]) ? s["outputs"] : { default: "image" }
 		};
+		if (typeof s["card"] === "string" && s["card"] !== "") row["card"] = s["card"];
 		if (typeof s["expected"] === "object" && s["expected"] !== null && !Array.isArray(s["expected"])) row["expected"] = s["expected"];
 		return row;
 	});
@@ -246,7 +458,7 @@ function meliteConstruct(request, opts = {}) {
 	};
 	const def = defineTool({
 		name: "melite_construct",
-		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. " + (opts.headless === true ? "This never executes (melite_flow runs what is here; the user presses Run). " : "You compose the flow and edit its state here, live with the user — runs start at the user's Run press, never yours. ") + "Verbs: read (the state — always start here) | load (replace stages wholesale — DESTRUCTIVE: refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
+		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. " + (opts.headless === true ? "This never executes (melite_flow runs what is here; the user presses Run). " : "You compose the flow and edit its state here, live with the user — runs start at the user's Run press, never yours. ") + "Verbs: read (the state — always start here; a stage that has run carries last_run {run_id, status, artifacts} — null + runs {checked, total, matched} when the draft has no run in the window; view a run_id with melite_view, chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE: refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card's declared ports, never files: inputs {image1: {stage: \"s_0\", output: \"default\"}} AND params {image1: \"$image1\"} — the $spell consumes the channel, the queue resolves it at run time; to chain the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card's ports — state expected only to override, outputs only for custom channels) | remove_stage {stage} | rewire {stage, input, from?} (from is {stage, output} | {initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
 		parameters: {
 			verb: {
 				type: "string",
@@ -273,6 +485,16 @@ function meliteConstruct(request, opts = {}) {
 				type: "object",
 				additionalProperties: true,
 				description: "add_stage: {input: {stage, output} | {initial}} wiring."
+			},
+			expected: {
+				type: "object",
+				additionalProperties: true,
+				description: "add_stage: hand-typed input kinds ({input: Kind}) — the override ONLY (kinds derive from the card's own ports; state what the card cannot know, e.g. initials, never a mirror to hand-copy)."
+			},
+			outputs: {
+				type: "object",
+				additionalProperties: true,
+				description: "add_stage: custom output channels ({name: Kind}) — absent defaults to {default: \"image\"}."
 			},
 			input: {
 				type: "string",
@@ -385,11 +607,13 @@ function meliteConstruct(request, opts = {}) {
 			try {
 				if (verb === "read" || verb === "") {
 					const b = await readBench(request, bench, signal);
+					const enriched = await withLastRun(request, b, signal);
 					return out({
 						rev: b.rev,
 						intent: b.intent,
-						stages: b.stages,
+						stages: enriched.stages,
 						log: b.log,
+						...enriched.runs !== null ? { runs: enriched.runs } : {},
 						hint: "mutate with expect_rev=" + String(b.rev)
 					});
 				}
@@ -401,7 +625,11 @@ function meliteConstruct(request, opts = {}) {
 						compiles: false,
 						note: "bench is empty"
 					});
-					const r = await request("POST", "/v1/flows/validate", { flow_inline: { stages } }, signal, 2e4);
+					const intent = typeof b.intent === "string" ? b.intent : "";
+					const r = await request("POST", "/v1/flows/validate", { flow_inline: {
+						id: /^[a-z_][a-z0-9_-]*$/.test(intent) && intent !== "" ? intent : "bench",
+						stages
+					} }, signal, 2e4);
 					return out({
 						rev: b.rev,
 						compiles: r["ok"] === true || r["valid"] === true,
@@ -434,11 +662,14 @@ function meliteConstruct(request, opts = {}) {
 					});
 				}
 				if (verb === "add_stage") {
+					if (a.stage !== void 0) return out({ error: "add_stage assigns its own stage id (s_0, s_1, ...) — the answer carries it; patch/remove_stage/rewire take {stage}. Drop the stage arg." });
 					const r = await request("POST", `/v1/bench/${bench}/add_stage`, {
 						card: a.card,
 						...a.engine !== void 0 ? { engine: a.engine } : {},
 						...a.params !== void 0 ? { params: a.params } : {},
 						...a.inputs !== void 0 ? { inputs: a.inputs } : {},
+						...isRecordArg(a.expected) ? { expected: a.expected } : {},
+						...isRecordArg(a.outputs) ? { outputs: a.outputs } : {},
 						expect_rev: a.expect_rev
 					}, signal, 15e3);
 					return out({
@@ -631,20 +862,20 @@ async function loadBench(request, body, signal) {
 async function runBench(request, a, signal) {
 	const empty = {
 		mode: "bench",
-		target: `bench-${DEFAULT_BENCH}`,
+		target: `bench-${a.bench}`,
 		error: "the bench is empty — construct stages first (melite_construct)"
 	};
 	let b;
 	try {
-		b = await request("GET", `/v1/bench/${DEFAULT_BENCH}`, void 0, signal, 15e3);
+		b = await request("GET", `/v1/bench/${a.bench}`, void 0, signal, 15e3);
 	} catch (e) {
 		if (remoteErrorOf(e)?.code === "bench/not-found") return empty;
 		throw e;
 	}
 	const rows = Array.isArray(b["stages"]) ? b["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
 	if (rows.length === 0) return empty;
-	const draftId = typeof b["draft_id"] === "string" ? b["draft_id"] : `bench-${DEFAULT_BENCH}`;
-	const target = `bench-${DEFAULT_BENCH} @ rev ${String(b["rev"] ?? "?")}`;
+	const draftId = typeof b["draft_id"] === "string" ? b["draft_id"] : `bench-${a.bench}`;
+	const target = `bench-${a.bench} @ rev ${String(b["rev"] ?? "?")}`;
 	const pass = [];
 	for (const row of rows) {
 		const stageId = row["id"];
@@ -684,7 +915,7 @@ async function runBench(request, a, signal) {
 			pass
 		};
 		const runId = started["run_id"];
-		const outcome = await observeAndAttribute(request, stageId, runId, signal);
+		const outcome = await observeAndAttribute(request, a.bench, stageId, runId, signal);
 		pass.push({
 			stage: stageId,
 			card,
@@ -731,7 +962,7 @@ function sleepAbort(ms, signal) {
 *  prefix /melite-media/runs/<runId>/, urls that carry a scheme or
 *  lead with / pass verbatim (the ONE rewrite — the run-wire law,
 *  mirrored). */
-async function observeAndAttribute(request, stageId, runId, signal) {
+async function observeAndAttribute(request, bench, stageId, runId, signal) {
 	let lastLive = "";
 	for (;;) {
 		signal.throwIfAborted();
@@ -757,7 +988,7 @@ async function observeAndAttribute(request, stageId, runId, signal) {
 			if (url !== "") result["url"] = url;
 			const terminal = status === "completed" ? "done" : status;
 			try {
-				await request("POST", `/v1/bench/${DEFAULT_BENCH}/patch`, {
+				await request("POST", `/v1/bench/${bench}/patch`, {
 					stage: stageId,
 					runStatus: terminal,
 					result
@@ -772,7 +1003,7 @@ async function observeAndAttribute(request, stageId, runId, signal) {
 		if (live !== lastLive) {
 			lastLive = live;
 			try {
-				await request("POST", `/v1/bench/${DEFAULT_BENCH}/patch`, {
+				await request("POST", `/v1/bench/${bench}/patch`, {
 					stage: stageId,
 					runStatus: live,
 					result: { run_id: runId }
@@ -798,7 +1029,7 @@ async function runSingle(request, a, signal) {
 	let draftId;
 	try {
 		draftId = await loadBench(request, {
-			session: DEFAULT_BENCH,
+			session: a.bench,
 			intent,
 			stages: [{
 				id: "s_0",
@@ -846,7 +1077,7 @@ async function runTemplate(request, a, signal) {
 	let draftId;
 	try {
 		draftId = await loadBench(request, {
-			session: DEFAULT_BENCH,
+			session: a.bench,
 			intent: flow,
 			stages: [{
 				id: "s_0",
@@ -928,7 +1159,7 @@ async function runAdHoc(request, a, signal) {
 	let draftId;
 	try {
 		draftId = await loadBench(request, {
-			session: DEFAULT_BENCH,
+			session: a.bench,
 			intent: flowId,
 			stages: folded
 		}, signal);
@@ -1096,33 +1327,40 @@ function meliteFlow(request) {
 			].filter(Boolean).length;
 			if (modes === 0) return jsonClean({ error: "one composition is required: bench (run what is there) | card (+model) | flow | stages (cards drafted on the fly)" });
 			if (modes > 1) return jsonClean({ error: "exactly one composition per call: bench | card | flow | stages — never combined" });
+			const bench = benchKeyOfExec(exec);
 			try {
-				if (hasBench) return jsonClean(await runBench(request, { test }, exec.signal));
+				if (hasBench) return jsonClean(await runBench(request, {
+					test,
+					bench
+				}, exec.signal));
 				if (hasFlow) return jsonClean(await runTemplate(request, {
 					flow: a.flow,
 					params: bag,
-					test
+					test,
+					bench
 				}, exec.signal));
 				if (hasCard) return jsonClean(await runSingle(request, {
 					card: a.card,
 					model: typeof a.model === "string" ? a.model : "",
 					prompt: typeof a.prompt === "string" ? a.prompt : void 0,
 					params: bag,
-					test
+					test,
+					bench
 				}, exec.signal));
 				return jsonClean(await runAdHoc(request, {
 					stages: a.stages,
 					connects: a.connects,
 					id: a.id,
 					description: typeof a.description === "string" ? a.description : void 0,
-					test
+					test,
+					bench
 				}, exec.signal));
 			} catch (e) {
 				const re = remoteErrorOf(e);
 				if (re !== null && re !== void 0) return jsonClean({
 					error: re.message || "remote refused",
 					mode: "bench",
-					target: `bench-${DEFAULT_BENCH}`
+					target: `bench-${bench}`
 				});
 				throw e;
 			}
@@ -1357,7 +1595,7 @@ function meliteDiscover(request) {
 	};
 	const def = defineTool({
 		name: "melite_discover",
-		description: "Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. \"image,upscale\") + optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; fall back to cards. COUNTS-FIRST: a large estate clamps to counts + the tag vocabulary + the first rows; detail=true for every line. Open a line with melite_load (agents md + signature + skill lines).",
+		description: "Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. THE EXPANSION LAW: the estate’s deeper doors (melite_view, comfy_manage, melite_skill_index, melite_skill_read, ledger_tail) seat themselves the first time you touch the catalog — they are never missing, only deferred. q matches names/titles/descriptions LITERALLY (a full user sentence matches nothing) — for a MODALITY ask (video, image, audio, 3d) search tags= first, q second. Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. \"image,upscale\") + optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; fall back to cards. COUNTS-FIRST: a large estate clamps to counts + the tag vocabulary + the first rows; detail=true for every line. Open a line with melite_load (agents md + signature + skill lines).",
 		parameters: {
 			lookup: {
 				type: "string",
@@ -1404,13 +1642,14 @@ function meliteDiscover(request) {
 					}
 				}
 			},
-			render: (_args, value) => {
+			render: (args, value) => {
 				const v = value;
 				if (v && typeof v.error === "string") return [{
 					type: "text",
 					text: "melite_discover REFUSED: " + v.error
 				}];
-				const RENDER_CLAMP = 8;
+				const wantsAll = args?.detail === true;
+				const RENDER_CLAMP = wantsAll ? Number.POSITIVE_INFINITY : 8;
 				const flows = Array.isArray(v?.flows) ? v.flows : [];
 				const cards = Array.isArray(v?.cards) ? v.cards : [];
 				const nf = typeof v?.counts?.flows === "number" ? v.counts.flows : flows.length;
@@ -1418,10 +1657,11 @@ function meliteDiscover(request) {
 				const line = (x) => typeof x === "string" ? x : "";
 				const num = (x) => typeof x === "number" ? String(x) : "?";
 				const out = [`discover: ${nf} flows, ${nc} cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load`];
+				if (flows.length === 0 && cards.length === 0) out.push("no match. q matches names/titles/descriptions LITERALLY — a full sentence rarely hits. Retry with tags= (video, image, audio, 3d, generate, edit) for the MODALITY, or lookup=all for the estate-wide first pass.");
 				if (flows.length > 0) {
 					out.push("flows:");
 					for (const f of flows.slice(0, RENDER_CLAMP)) out.push(`  ${line(f?.name)} — ${line(f?.title)} (${num(f?.stages)} stages)`);
-					if (nf > RENDER_CLAMP) out.push(`  +${nf - RENDER_CLAMP} more — detail=true lists every line`);
+					if (!wantsAll && nf > RENDER_CLAMP) out.push(`  +${nf - RENDER_CLAMP} more — detail=true lists every line`);
 				}
 				if (cards.length > 0) {
 					out.push("cards:");
@@ -1429,7 +1669,7 @@ function meliteDiscover(request) {
 						const tags = Array.isArray(c?.tags) ? c.tags.filter((t) => typeof t === "string") : [];
 						out.push(`  ${line(c?.id)} — ${line(c?.label)}${tags.length > 0 ? ` [${tags.join(",")}]` : ""}`);
 					}
-					if (nc > RENDER_CLAMP) out.push(`  +${nc - RENDER_CLAMP} more — narrow with tags/q, or detail=true`);
+					if (!wantsAll && nc > RENDER_CLAMP) out.push(`  +${nc - RENDER_CLAMP} more — narrow with tags/q, or detail=true`);
 				}
 				if (Array.isArray(v?.tag_vocabulary)) {
 					const vocab = v.tag_vocabulary.filter((t) => typeof t === "string");
@@ -1443,6 +1683,7 @@ function meliteDiscover(request) {
 			}
 		},
 		async execute(args, exec) {
+			expandEstateDoors();
 			const a = args;
 			const params = new URLSearchParams();
 			const lookup = typeof a.lookup === "string" && a.lookup !== "" ? a.lookup : "all";
@@ -1497,7 +1738,7 @@ function meliteLoad(request, opts = {}) {
 	};
 	const def = defineTool({
 		name: "melite_load",
-		description: "Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), tier-1 skill lines for the underlying skills (bodies load via melite_skill_read — write the prompts yourself from the craft you read), model hints on cards (the boarded families' DECL identity — id/label/description, each marked present:true|false: present means downloaded on this machine; absent-but-boarded models are OFFERED — prompt the user to download, or provision via comfy_manage provision_model) + pack hints (the card's declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), and a stable bundle digest — quote it and skip reload on a match.",
+		description: "Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) +  THE EXPANSION LAW: the estate’s deeper doors (melite_view, comfy_manage, melite_skill_index, melite_skill_read, ledger_tail) seat themselves on this call — never missing, only deferred.inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), tier-1 skill lines for the underlying skills (bodies load via melite_skill_read — write the prompts yourself from the craft you read), model hints on cards (the boarded families' DECL identity — id/label/description, each marked present:true|false: present means downloaded on this machine; absent-but-boarded models are OFFERED — prompt the user to download, or provision via comfy_manage provision_model) + pack hints (the card's declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), and a stable bundle digest — quote it and skip reload on a match.",
 		parameters: {
 			name: {
 				type: "string",
@@ -1591,6 +1832,7 @@ function meliteLoad(request, opts = {}) {
 			}
 		},
 		async execute(args, exec) {
+			expandEstateDoors();
 			const a = args;
 			const name = a.name;
 			const inferenceType = a.inference_type;
@@ -1704,6 +1946,54 @@ function sniffImageMediaType(data) {
 function imageMediaTypeForPath(filePath) {
 	return IMAGE_EXTENSIONS[extname(filePath).toLowerCase()];
 }
+/** THE FILM PROBE (§24, the byte-cheap flags the skill prescribes):
+*  format duration/size + per-stream codec/geometry/rate/count —
+*  never a decode, never a full stream dump. Pure: static strings
+*  pin every arm (the binary only delivers the text). */
+function parseProbeSummary(jsonText) {
+	let doc;
+	try {
+		doc = JSON.parse(jsonText);
+	} catch {
+		throw new Error("the film probe returned unparsable output — the file may be truncated or corrupt");
+	}
+	if (typeof doc !== "object" || doc === null) throw new Error("the film probe returned unparsable output — the file may be truncated or corrupt");
+	const rec = doc;
+	const format = typeof rec["format"] === "object" && rec["format"] !== null ? rec["format"] : {};
+	const streamsRaw = Array.isArray(rec["streams"]) ? rec["streams"] : [];
+	const streams = [];
+	for (const raw of streamsRaw) {
+		if (typeof raw !== "object" || raw === null) continue;
+		const s = raw;
+		if (typeof s["codec_name"] !== "string") continue;
+		const row = { codec: s["codec_name"] };
+		if (typeof s["width"] === "number") row.width = s["width"];
+		if (typeof s["height"] === "number") row.height = s["height"];
+		if (typeof s["r_frame_rate"] === "string") row.fps = s["r_frame_rate"];
+		if (typeof s["nb_frames"] === "string" && s["nb_frames"] !== "" && Number.isFinite(Number(s["nb_frames"]))) row.frames = Number(s["nb_frames"]);
+		streams.push(row);
+	}
+	if (streams.length === 0) throw new Error("the film probe found no streams — the file may be truncated or corrupt");
+	const out = { streams };
+	if (typeof format["duration"] === "string" && Number.isFinite(Number(format["duration"]))) out.duration_s = Number(format["duration"]);
+	if (typeof format["size"] === "string" && Number.isFinite(Number(format["size"]))) out.size_bytes = Number(format["size"]);
+	return out;
+}
+/** Contact-sheet plan: four timestamps across the film's span (a
+*  beginning, two middles, near the end — the observe arm wants the
+*  arc, not four copies of frame one). Duration unknown (a probe
+*  without a format row) → one early frame, never a blind seek past
+*  the end. Pure. */
+function sheetPlan(duration_s) {
+	if (duration_s === void 0 || !Number.isFinite(duration_s) || duration_s <= 0) return [.5];
+	const at = (f) => Math.round(duration_s * f * 100) / 100;
+	return [
+		at(.1),
+		at(.4),
+		at(.7),
+		at(.95)
+	];
+}
 /** Re-brand the structured outcome into the durable reference an
 * ImageBlock carries (read_image's imageRefFromValue, copied). */
 function imageRefFromValue(image) {
@@ -1716,6 +2006,147 @@ function imageRefFromValue(image) {
 		...image.name === void 0 ? {} : { name: image.name },
 		...image.originalDimensions === void 0 ? {} : { originalDimensions: { ...image.originalDimensions } }
 	};
+}
+const execFileAsync = promisify(execFile);
+/** Default proc: the estate's ffmpeg/ffprobe, 30s each (a probe is
+*  milliseconds; four frame seeks + a tile are seconds) — a hung
+*  binary never wedges the observe arm past the run's own budget. */
+const defaultFilmProc = async (bin, args, signal) => {
+	return { stdout: (await execFileAsync(bin, args, {
+		timeout: 3e4,
+		maxBuffer: 8 << 20,
+		signal
+	})).stdout };
+};
+/** View a film artifact: ffprobe summary + a contact sheet committed
+*  as the viewed image (the §24 gate — one view artifact, stream
+*  summary + frames the model can SEE). Containment rides the walk's
+*  own row (absPath built from runId + name, never caller text); the
+*  sheet lands in os.tmpdir (never the run tree — a view must not
+*  mint provenance). */
+async function viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments, proc = defaultFilmProc) {
+	const { items } = await listMedia(seat.stateRoot, "video");
+	const own = items.filter((i) => i.runId === runId);
+	if (own.length === 0) throw new Error("run \"" + runId + "\" produced no image artifacts (and no viewable film — the run holds no video artifacts either) (searched " + seat.stateRoot + ")");
+	const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
+	if (picked.length === 0) throw new Error("run \"" + runId + "\" has no film artifact containing \"" + artifact + "\" — the run holds: " + own.slice(0, 8).map((i) => i.name).join(", ") + " (searched " + seat.stateRoot + ")");
+	const row = picked[0];
+	await assertImageCapableRoute(ctx, exec, runId);
+	const absPath = join(seat.stateRoot, "output", row.runId, row.name);
+	let probe;
+	try {
+		const { stdout } = await proc("ffprobe", [
+			"-v",
+			"error",
+			"-show_entries",
+			"format=duration,size:stream=codec_name,width,height,r_frame_rate,nb_frames",
+			"-of",
+			"json",
+			absPath
+		], exec.signal);
+		probe = parseProbeSummary(stdout);
+	} catch (error) {
+		if (error instanceof Error && error.code === "ENOENT") throw new Error("cannot view the film \"" + row.name + "\": ffprobe is not installed on the estate host — images remain viewable", { cause: error });
+		throw new Error("cannot view the film \"" + row.name + "\": " + (error instanceof Error ? error.message : String(error)), { cause: error });
+	}
+	const stamps = sheetPlan(probe.duration_s);
+	const work = await mkdtemp(join(tmpdir(), "melite-view-"));
+	try {
+		const frames = [];
+		try {
+			let n = 0;
+			for (const t of stamps) {
+				const out = join(work, "frame-" + String(n) + ".png");
+				await proc("ffmpeg", [
+					"-v",
+					"error",
+					"-ss",
+					String(t),
+					"-i",
+					absPath,
+					"-frames:v",
+					"1",
+					"-vf",
+					"scale=320:-1",
+					"-y",
+					out
+				], exec.signal);
+				frames.push(out);
+				n++;
+			}
+			const sheet = join(work, "sheet.png");
+			if (frames.length === 1) await proc("ffmpeg", [
+				"-v",
+				"error",
+				"-i",
+				frames[0],
+				"-y",
+				sheet
+			], exec.signal);
+			else {
+				const inputs = [];
+				for (const f of frames) inputs.push("-i", f);
+				const pairs = [];
+				for (let i = 0; i + 1 < frames.length; i += 2) pairs.push("[" + String(i) + ":v][" + String(i + 1) + ":v]hstack=inputs=2[r" + String(i) + "]");
+				const stacked = pairs.map((_, i) => "[r" + String(i * 2) + "]").join("") + "vstack=inputs=" + String(pairs.length);
+				await proc("ffmpeg", [
+					"-v",
+					"error",
+					...inputs,
+					"-filter_complex",
+					pairs.join(";") + ";" + stacked,
+					"-y",
+					sheet
+				], exec.signal);
+			}
+		} catch (error) {
+			throw new Error("cannot view the film \"" + row.name + "\": the contact sheet could not be built (" + (error instanceof Error ? error.message : String(error)) + ")", { cause: error });
+		}
+		const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes);
+		const data = await readFile(join(work, "sheet.png"), { signal: exec.signal });
+		if (data.byteLength > byteCap) throw new Error("cannot view the film \"" + row.name + "\": its contact sheet exceeds the " + String(byteCap) + "-byte image cap");
+		let ref;
+		try {
+			ref = await attachments.saveImage({
+				data,
+				mediaType: "image/png",
+				name: basename(row.name, extname(row.name)) + "-sheet.png"
+			});
+		} catch (error) {
+			throw new Error("cannot commit the film contact sheet for \"" + row.name + "\": " + (error instanceof Error ? error.message : String(error)), { cause: error });
+		}
+		return {
+			runId: row.runId,
+			url: row.url,
+			image: {
+				attachmentId: ref.attachmentId,
+				mediaType: ref.mediaType,
+				bytes: ref.bytes,
+				width: ref.width,
+				height: ref.height,
+				...ref.name === void 0 ? {} : { name: ref.name },
+				...ref.originalDimensions === void 0 ? {} : { originalDimensions: { ...ref.originalDimensions } }
+			},
+			film: {
+				file: row.name,
+				...probe.duration_s === void 0 ? {} : { duration_s: probe.duration_s },
+				...probe.size_bytes === void 0 ? {} : { size_bytes: probe.size_bytes },
+				streams: probe.streams.map((s) => ({
+					codec: s.codec,
+					...s.width === void 0 ? {} : { width: s.width },
+					...s.height === void 0 ? {} : { height: s.height },
+					...s.fps === void 0 ? {} : { fps: s.fps },
+					...s.frames === void 0 ? {} : { frames: s.frames }
+				})),
+				sheet_of: stamps.length
+			}
+		};
+	} finally {
+		await rm(work, {
+			recursive: true,
+			force: true
+		});
+	}
 }
 /** Enforce the strict image-capability gate for the calling route
 * (read_image's assertImageCapableRoute, copied): the session's
@@ -1732,8 +2163,21 @@ async function assertImageCapableRoute(ctx, exec, requestedRun) {
 	if (active.inputModalities === void 0 || !active.inputModalities.includes("image")) throw new Error(`cannot view run "${requestedRun}": model "${model}" does not declare image input; switch to an image-capable model to view artifacts`);
 }
 /** The render: one text summary + the image block (read_image's
-* imageReadContent pairing, run-scoped). */
+* imageReadContent pairing, run-scoped). A film value's text leads
+* with the probe verdict (duration, streams, frame count) — the
+* image block IS the contact sheet. */
 function viewedContent(value) {
+	if (value.film !== void 0) {
+		const f = value.film;
+		const streams = f.streams.map((s) => s.codec + (s.width !== void 0 && s.height !== void 0 ? " " + String(s.width) + "x" + String(s.height) : "") + (s.fps !== void 0 ? " @" + s.fps : "") + (s.frames !== void 0 ? " " + String(s.frames) + "f" : "")).join(" + ");
+		return [{
+			type: "text",
+			text: "melite_view film: " + value.url + " (" + f.file + (f.duration_s !== void 0 ? ", " + String(f.duration_s) + "s" : "") + (f.size_bytes !== void 0 ? ", " + String(f.size_bytes) + " bytes" : "") + ", streams: " + streams + "; contact sheet of " + String(f.sheet_of) + ": " + value.image.mediaType + " " + String(value.image.width) + "x" + String(value.image.height) + ")"
+		}, {
+			type: "image",
+			attachment: imageRefFromValue(value.image)
+		}];
+	}
 	return [{
 		type: "text",
 		text: "melite_view: " + value.url + " (" + value.image.mediaType + ", " + String(value.image.width) + "x" + String(value.image.height) + ", " + String(value.image.bytes) + " bytes)"
@@ -1761,7 +2205,7 @@ function meliteView(ctx) {
 	};
 	const def = defineTool({
 		name: "melite_view",
-		description: "View one image artifact from a finished (or running) estate run — the model receives the image itself, never a description of it. This is the observe arm of the act/observe/decide loop: after a run lands, VIEW it before deciding the next step (never claim a match without viewing). Args: run_id (required, the run directory under the runs tree), artifact (optional substring — when a run produced several images, name the one to view; default is the newest). Requires the current model to accept image input.",
+		description: "View one image artifact from a finished (or running) estate run — the model receives the image itself, never a description of it. When the run holds no images but holds a film, the observe arm serves the film instead: an ffprobe stream summary (duration, codecs, frame count) plus a contact-sheet image of frames across its span. This is the observe arm of the act/observe/decide loop: after a run lands, VIEW it before deciding the next step (never claim a match without viewing). Args: run_id (required, the run directory under the runs tree), artifact (optional substring — when a run produced several images, name the one to view; default is the newest). Requires the current model to accept image input.",
 		parameters: {
 			run_id: {
 				type: "string",
@@ -1792,8 +2236,13 @@ function meliteView(ctx) {
 					image: {
 						type: "object",
 						additionalProperties: true,
-						description: "The durable attachment metadata (attachmentId, mediaType, bytes, width, height).",
+						description: "The durable attachment metadata (attachmentId, mediaType, bytes, width, height). On the film path this IS the contact sheet.",
 						required: true
+					},
+					film: {
+						type: "object",
+						additionalProperties: true,
+						description: "Present only on the film path: the ffprobe summary (file, duration_s, size_bytes, streams with codec/geometry/fps/frames) plus sheet_of (frames tiled)."
 					}
 				}
 			},
@@ -1813,7 +2262,7 @@ function meliteView(ctx) {
 			if (seat === void 0) throw new Error("cannot view run \"" + runId + "\": the queue seat owns the runs tree root — mount @melite-plugin/melite-estate");
 			const { items } = await listMedia(seat.stateRoot, "image");
 			const own = items.filter((i) => i.runId === runId);
-			if (own.length === 0) throw new Error("run \"" + runId + "\" produced no image artifacts (or the run id is unknown)");
+			if (own.length === 0) return await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments);
 			const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
 			if (picked.length === 0) throw new Error("run \"" + runId + "\" has no image artifact containing \"" + artifact + "\" — the run holds: " + own.slice(0, 8).map((i) => i.name).join(", "));
 			const row = picked[0];
@@ -1888,7 +2337,7 @@ function skillIndex(request) {
 	};
 	const def = defineTool({
 		name: "melite_skill_index",
-		description: "Scan the skill vocabulary (binding counts, never skill rows): one line per model family and per card — each naming its ENTRANCE doc id and skill count — plus the flow count. To see actual skills, open the owner with melite_load (a card/family bundle carries its tier-1 skill lines); to read a body you already hold an id for, use melite_skill_read. This index never lists skill rows — that flat dump taught agents wrong paths.",
+		description: "THE SELECTION LAW (operator 2026-09-21): this index serves the LIVE BENCH only — the cards composed this session and the families they name, one binding line each (entrance doc id + skill count). An EMPTY BENCH LISTS NOTHING: to find a card or flow call melite_discover (the paid door), never this index. To see actual skill lines, open the owner with melite_load; to read a body you already hold an id for, use melite_skill_read. This index never lists skill rows.",
 		parameters: {},
 		presentCall,
 		output: {
@@ -1935,8 +2384,12 @@ function skillIndex(request) {
 					const skills = n === 0 ? "no skills" : n === 1 ? "1 skill" : `${n} skills`;
 					return `  ${id}${genre} — ${typeof r?.entrance === "string" && r.entrance !== "" ? `entrance ${r.entrance}, ${skills}` : "no entrance doc"}`;
 				};
+				if (cards.length === 0 && flowCount === 0) return [{
+					type: "text",
+					text: "melite_skill_index: THE CATALOG IS THE SELECTION — nothing is listed while the bench is empty. Call melite_discover (the paid door) to find a card or flow; craft rows appear here only for what the bench holds."
+				}];
 				const cardsWord = cards.length === 1 ? "card" : "cards";
-				const out = [`melite_skill_index: ${count} skills across ${cards.length} ${cardsWord} · ${flowCount} flows — open a card with melite_load; this index never lists skill rows or model families`];
+				const out = [`melite_skill_index: ${count} skills across ${cards.length} ${cardsWord} · ${flowCount} flows — the bench's selection only; open a card with melite_load; this index never lists skill rows or model families`];
 				for (const c of cards) {
 					const l = line(c);
 					if (l !== "") out.push(l);
@@ -2149,7 +2602,69 @@ function ledgerTail(request) {
 	return def;
 }
 //#endregion
+//#region src/tools/arg-coerce.ts
+/** Coerce one flat args object against a compiled parameter schema's
+* properties. Never throws, never drops keys — a value that is not a
+* clean numeric string stays verbatim for the gate to refuse. */
+function coerceArgs(props, args) {
+	if (props === void 0 || typeof args !== "object" || args === null || Array.isArray(args)) return args;
+	const out = { ...args };
+	for (const [key, spec] of Object.entries(props)) {
+		const v = out[key];
+		if (v === void 0 || v === null) continue;
+		const t = spec?.type;
+		if (t === "number" && typeof v === "string") {
+			const n = Number(v);
+			if (v.trim() !== "" && Number.isFinite(n)) out[key] = n;
+		} else if (t === "boolean" && (v === "true" || v === "false")) out[key] = v === "true";
+	}
+	return out;
+}
+/** Wrap a built tool def: coerce numeric-string/boolean-string args
+* per the def's own compiled schema, then run the original execute
+* (which still validates everything else). The def is mutated in
+* place and returned — one spelling at the registration site. */
+function withArgCoercion(def) {
+	const props = def.parameters?.properties;
+	const orig = def.execute;
+	if (props === void 0 || typeof orig !== "function") return def;
+	def.execute = (args, exec) => orig(coerceArgs(props, args), exec);
+	return def;
+}
+//#endregion
 //#region src/index.ts
+/**
+* `@melite/harness-tools` — the estate's DSH tool surface.
+*
+* TWO INTERFACES, ONE PLUGIN (the interface law):
+*
+*   BROWSER (default — no env): compose-only. The agent discovers,
+*   loads lanes, reads skills, authors cards on the bench
+*   (melite_construct) and NEVER executes — the run door is the
+*   USER's Run press on the card. This keeps the old contract
+*   (agent/prompts/BASE_PROMPT.md): "It composes; it never
+*   executes."
+*
+*   HEADLESS (MELITE_HEADLESS=1 — the one-shot/agent mounts): the
+*   DELEGATED OPERATOR. Same queue, same doors, plus the ONE
+*   execution verb melite_flow (a card or a flow tool call — single,
+*   template, or stages drafted on the fly), with run_status as the
+*   monitor. Both ride the queue's registration door — never a
+*   bypass, never a hand-assembled graph (QUEUE LANE LAW).
+*
+* AD HOC TOOLS (MELITE_ADHOC="..."): registered ONLY when a session
+* names them. (Empty since the disclosure stroke: enhance_prompt
+* died as a tool — the editor ✦ door below keeps the user surface
+* via harnessEnhance.)
+*
+* BASE toolset (both interfaces): melite_discover, melite_construct,
+* melite_load, melite_view, comfy_manage, melite_skill_index, melite_skill_read,
+* ledger_tail (+ melite_flow + run_status headless).
+* Card tools compose from their card packages (named imports above
+* — the fetch registrar retired with its last row).
+*
+* @module @melite/harness-tools
+*/
 /** Cordis plugin name used by loader diagnostics. */
 const name = "melite-tools";
 /**
@@ -2158,19 +2673,30 @@ const name = "melite-tools";
 * without one.
 */
 const inject = ["tools"];
-/** BASE tool names — both interfaces (discovery, compose, view,
-* management, audit). melite_view is the observe arm (viewing an
-* artifact is not a run press — the interface law holds). */
-const BASE_TOOL_NAMES = [
+/** EAGER — the compose loop, the only melite schemas in a session's
+* first request (progressive disclosure, operator 2026-10-08: three
+* doors in context, the estate's deeper doors expand on first
+* catalog touch — src/expansion.ts owns the law). */
+const EAGER_TOOL_NAMES = [
 	"melite_discover",
-	"melite_construct",
 	"melite_load",
+	"melite_construct"
+];
+/** DEFERRED — seated by the first discover/load execute. The skill
+* twins carry the melite_ prefix (operator 2026-10-08: they are OUR
+* catalog's doors, not DSH core's skill machinery — the old
+* unprefixed names invited exactly that conflation). */
+const DEFERRED_TOOL_NAMES = [
 	"melite_view",
 	"comfy_manage",
 	"melite_skill_index",
 	"melite_skill_read",
 	"ledger_tail"
 ];
+/** BASE tool names — both interfaces (discovery, compose, view,
+* management, audit). melite_view is the observe arm (viewing an
+* artifact is not a run press — the interface law holds). */
+const BASE_TOOL_NAMES = [...EAGER_TOOL_NAMES, ...DEFERRED_TOOL_NAMES];
 /** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */
 const HEADLESS_TOOL_NAMES = ["melite_flow", "run_status"];
 /** AD HOC names (MELITE_ADHOC) — never in a base toolset.
@@ -2192,24 +2718,46 @@ async function apply(ctx, config = {}) {
 	const adhocEnv = (process.env.MELITE_ADHOC || "").split(",").map((s) => s.trim()).filter(Boolean);
 	const adhocCfg = Array.isArray(config.adhocTools) ? config.adhocTools.map((s) => s.trim()).filter(Boolean) : typeof config.adhocTools === "string" ? config.adhocTools.split(",").map((s) => s.trim()).filter(Boolean) : [];
 	const adhoc = adhocEnv.length ? adhocEnv : adhocCfg;
+	const cardTools = process.env.MELITE_CARD_TOOLS === "1" || config.cardTools === true;
 	c.logger.info("melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s", headless ? "HEADLESS" : "BROWSER", BASE_TOOL_NAMES.length, headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, request);
 	c.tools.register(meliteDiscover(request));
 	c.tools.register(meliteConstruct(request, { headless }));
 	c.tools.register(meliteLoad(request, { headless }));
-	c.tools.register(meliteView(ctx));
-	c.tools.register(comfyManage(request));
-	c.tools.register(skillIndex(request));
-	c.tools.register(skillRead(request));
-	c.tools.register(ledgerTail(request));
+	const deferredDisposers = [];
+	c.effect(() => () => {
+		for (const d of deferredDisposers.splice(0)) d();
+	});
+	const seated = /* @__PURE__ */ new Set();
+	installExpansion(() => {
+		const doors = [
+			["melite_view", () => c.tools.register(meliteView(ctx))],
+			["comfy_manage", () => c.tools.register(comfyManage(request))],
+			["melite_skill_index", () => c.tools.register(skillIndex(request))],
+			["melite_skill_read", () => c.tools.register(skillRead(request))],
+			["ledger_tail", () => c.tools.register(ledgerTail(request))]
+		];
+		for (const [name, register] of doors) {
+			if (seated.has(name)) continue;
+			const dispose = register();
+			seated.add(name);
+			deferredDisposers.push(dispose);
+		}
+		c.logger.info("melite-tools: estate doors SEATED on catalog touch (%d total) — the expansion law", EAGER_TOOL_NAMES.length + seated.size);
+	});
+	c.effect(() => () => {
+		clearExpansion();
+	});
 	if (headless) {
-		c.tools.register(meliteFlow(request));
-		c.tools.register(runStatus(request));
+		c.tools.register(withArgCoercion(meliteFlow(request)));
+		c.tools.register(withArgCoercion(runStatus(request)));
 	}
-	c.tools.register(buildMusicTool(call));
-	c.tools.register(buildTtsTool(call));
-	c.tools.register(buildImageEditTool(call));
-	c.tools.register(buildMotionTool(call));
-	c.tools.register(buildH3TimelineTool(call));
+	if (cardTools) {
+		c.tools.register(buildMusicTool(call));
+		c.tools.register(buildTtsTool(call));
+		c.tools.register(buildImageEditTool(call));
+		c.tools.register(buildMotionTool(call));
+		c.tools.register(buildH3TimelineTool(call));
+	} else c.logger.info("melite-tools: card tool faces GATED OFF (cardTools=false) — the agent law: discover/load/compose only");
 }
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_BENCH, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, meliteView, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_BENCH, DEFERRED_TOOL_NAMES, EAGER_TOOL_NAMES, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, meliteView, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

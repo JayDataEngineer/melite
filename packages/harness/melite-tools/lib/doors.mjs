@@ -1,4 +1,5 @@
-import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-B3Aywr1-.mjs";
+import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-BXtUzI8f.mjs";
+import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { resolveEngineBaseUrl, sdkClient } from "@melite/comfyui-cordis";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
 import { agentCardFormDoc, agentFormDoc } from "@melite/engine-agent";
@@ -344,6 +345,85 @@ function apply(c, config = {}) {
 				});
 				res.end(Buffer.from(body));
 			};
+			/** The estate lanes' error map (the false-death fix, 2026-10-08,
+			*  corrected twice — the second critique caught bench/
+			*  store-failed defaulting to 400 and ~20 codes classified
+			*  only by silence): a day-long hunt read every 502 as a dead
+			*  runs seat — the 502s were seat REFUSALS, wrong bodies and
+			*  boot-settle races, on a healthy lane. A named protocol
+			*  refusal means the seat ANSWERED — never the absent-seat
+			*  502 — and the failure's own details ride in the body
+			*  verbatim (loc, per-stage errors, the manage envelope's
+			*  action/status/data). THE COMPLETE CLASS INVENTORY — every
+			*  code declared by the protocol's seats is named below, none
+			*  rides the default silently:
+			*   - 400 caller-fault — body/shape/refusal voices: the runs/
+			*     family (bad-envelope, draft-required, draft-malformed,
+			*     draft-unknown, invalid-request, preview-scope,
+			*     flow-compile, workflow-pin, card-compose) — ALL raised
+			*     from CardArmError(400) voices; lane-input-missing (the
+			*     named asset has no store copy — the request is
+			*     unexecutable as sent; the body carries the fetch URL);
+			*     bench bad-body/bad-wire/self-wire/dead-wire (shape
+			*     refusals); draft bad-id/bad-patch/bad-stage-id/
+			*     patch-unknown-keys; media/kind; gateway/bad-request.
+			*   - 404 not-found — runs/unknown-run, runs/run-unknown,
+			*     bench/not-found, bench/stage-not-found,
+			*     bench/wire-stage-not-found (a named thing absent),
+			*     bench/nothing-to-undo (no live action matches the walk),
+			*     draft/not-found.
+			*   - 409 conflict — bench/cas-conflict (carries current_rev),
+			*     bench/overwrite-required (the load's own overwrite law),
+			*     bench/duplicate-stage.
+			*   - 502 infra — the storage layer refused while the call was
+			*     valid: bench/store-failed, draft/store-failed,
+			*     draft/cannot-persist, media/no-seat, gateway/internal,
+			*     gateway/cancelled.
+			*   - manage/refused → the ENVELOPE's own details.status
+			*     (the manage plane always sets one; a missing/garbage
+			*     status is the SEAT's bug, not the caller's request —
+			*     500, never 400).
+			*  A code NOT in the table defaults to 400 — the honest class
+			*  for an unknown future refusal (the seat answered; the body
+			*  carries the code for discrimination), and every code the
+			*  protocol declares today IS in the table. */
+			const REFUSAL_STATUS = {
+				"runs/unknown-run": 404,
+				"runs/run-unknown": 404,
+				"bench/not-found": 404,
+				"bench/stage-not-found": 404,
+				"bench/wire-stage-not-found": 404,
+				"bench/nothing-to-undo": 404,
+				"draft/not-found": 404,
+				"bench/cas-conflict": 409,
+				"bench/overwrite-required": 409,
+				"bench/duplicate-stage": 409,
+				"bench/store-failed": 502,
+				"draft/store-failed": 502,
+				"draft/cannot-persist": 502,
+				"media/no-seat": 502,
+				"gateway/internal": 502,
+				"gateway/cancelled": 502
+			};
+			const failEstate = (error) => {
+				const remote = remoteErrorOf(error);
+				const message = error instanceof Error ? error.message : String(error);
+				if (remote !== void 0) {
+					let status = REFUSAL_STATUS[remote.code] ?? 400;
+					const details = remote.details;
+					const body = {};
+					if (typeof details === "object" && details !== null) Object.assign(body, details);
+					body["error"] = message;
+					body["code"] = remote.code;
+					if (remote.code === "manage/refused") {
+						const envelopeStatus = details?.status;
+						status = typeof envelopeStatus === "number" && Number.isInteger(envelopeStatus) && envelopeStatus >= 400 && envelopeStatus <= 599 ? envelopeStatus : 500;
+					}
+					fail(status, body);
+					return;
+				}
+				fail(502, { error: message });
+			};
 			const callerGone = new AbortController();
 			res.on("close", () => {
 				if (!res.writableEnded) callerGone.abort();
@@ -466,11 +546,11 @@ function apply(c, config = {}) {
 						} catch {
 							return fail(400, { error: "body must be JSON" });
 						}
-						request(method, pathWithQuery, body, signal, 12e4).then((value) => ok(value)).catch((error) => fail(502, { error: error instanceof Error ? error.message : String(error) }));
+						request(method, pathWithQuery, body, signal, 12e4).then((value) => ok(value)).catch(failEstate);
 					}).catch((error) => fail(400, { error: `body read failed: ${error instanceof Error ? error.message : String(error)}` }));
 					return;
 				}
-				request(method, pathWithQuery, void 0, signal, 12e4).then((value) => ok(value)).catch((error) => fail(502, { error: error instanceof Error ? error.message : String(error) }));
+				request(method, pathWithQuery, void 0, signal, 12e4).then((value) => ok(value)).catch(failEstate);
 			};
 			return serve();
 		}

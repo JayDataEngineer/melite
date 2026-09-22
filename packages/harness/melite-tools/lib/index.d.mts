@@ -1137,8 +1137,12 @@ declare abstract class Service<out T = never> {
 type EstateMethod = 'GET' | 'POST' | 'PATCH';
 type EstateRequest = (method: EstateMethod, path: string, body: unknown, execSignal: AbortSignal, timeoutMs: number) => Promise<unknown>;
 /** Build the tools' request: seats only, in-process. A lane with no
- *  seat is a hard error (the gateway that used to absorb it is
- *  dead) — the caller migrates to a named remote. */
+ *  seat for the path is a hard error — but the error must be an
+ *  AGENT-USABLE refusal (F-8): name the family the path needs, the
+ *  seats that ARE live, the pin that mounts the queue plane, and the
+ *  chat-lane exit. The old voice ("the gateway lane fallback died
+ *  2026-09-10 — migrate to a named Typert remote") read as a broken
+ *  registry and sent an agent hunting doors for an hour. */
 declare function makeEstateRequest(ctx: unknown): EstateRequest;
 //#endregion
 //#region src/tools/run-status.d.ts
@@ -1218,11 +1222,30 @@ interface Config {
   /** AD HOC tool names, never in a base toolset ('enhance_prompt').
    *  Accepts a single string or a list. */
   adhocTools?: string | string[];
+  /** CARD TOOL FACES (music/tts/image_edit/motion/h3_timeline):
+   *  DEFAULT FALSE — the operator's card-abstraction law
+   *  (2026-09-21): an agent lane's toolset is discover/load/
+   *  construct only; the engine faces never sit in the agent's
+   *  toolset at turn one ("make a video" reached straight for
+   *  h3_timeline before any discovery — the whole krea-2-turbo
+   *  failure mode one lane over). Maker/studio faces (the web
+   *  profile) opt in explicitly. Env: MELITE_CARD_TOOLS=1. */
+  cardTools?: boolean;
 }
+/** EAGER — the compose loop, the only melite schemas in a session's
+ * first request (progressive disclosure, operator 2026-10-08: three
+ * doors in context, the estate's deeper doors expand on first
+ * catalog touch — src/expansion.ts owns the law). */
+declare const EAGER_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct"];
+/** DEFERRED — seated by the first discover/load execute. The skill
+ * twins carry the melite_ prefix (operator 2026-10-08: they are OUR
+ * catalog's doors, not DSH core's skill machinery — the old
+ * unprefixed names invited exactly that conflation). */
+declare const DEFERRED_TOOL_NAMES: readonly ["melite_view", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
 /** BASE tool names — both interfaces (discovery, compose, view,
  * management, audit). melite_view is the observe arm (viewing an
  * artifact is not a run press — the interface law holds). */
-declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_construct", "melite_load", "melite_view", "comfy_manage", "skill_index", "skill_read", "ledger_tail"];
+declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
 /** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */
 declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
 /** AD HOC names (MELITE_ADHOC) — never in a base toolset.
@@ -1230,8 +1253,8 @@ declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
  *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
 declare const ADHOC_TOOL_NAMES: readonly [];
 /** Every tool name this plugin can own (registration log + smoke filter). */
-declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_construct", "melite_load", "melite_view", "comfy_manage", "skill_index", "skill_read", "ledger_tail", "melite_flow", "run_status"];
+declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail", "melite_flow", "run_status"];
 /** Register the Melite tools against the live estate gateway. */
 declare function apply(ctx: Context, config?: Config): Promise<void>;
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, type EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, meliteView, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, DEFERRED_TOOL_NAMES, EAGER_TOOL_NAMES, type EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, meliteView, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

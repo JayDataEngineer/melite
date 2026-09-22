@@ -65,11 +65,21 @@ async function trySeats(ctx, method, path, body, signal) {
 				id: "s_0",
 				engine: "comfyui",
 				params
-			}]
+			}],
+			overwrite: true
 		};
 		const cur = await seats.benchRemote.get("default", signal);
 		if (cur !== void 0 && typeof cur["rev"] === "number") ensure["expect_rev"] = cur["rev"];
-		const row = await seats.benchRemote.ensure(ensure, signal);
+		const conflict = (e) => typeof e?.code === "string" && e.code === "bench/cas-conflict";
+		let row;
+		try {
+			row = await seats.benchRemote.ensure(ensure, signal);
+		} catch (first) {
+			if (!conflict(first)) throw first;
+			const fresh = await seats.benchRemote.get("default", signal);
+			if (fresh !== void 0 && typeof fresh["rev"] === "number") ensure["expect_rev"] = fresh["rev"];
+			row = await seats.benchRemote.ensure(ensure, signal);
+		}
 		if (row === void 0 || typeof row["draft_id"] !== "string") throw new Error("card compose returned no draft_id — refusing to start cardless");
 		return { draftId: row["draft_id"] };
 	}
@@ -168,14 +178,68 @@ async function trySeats(ctx, method, path, body, signal) {
 		return seats.queue.ledger(qs.get("limit") ?? "50", qs.get("event") ?? "");
 	}
 }
+/** Which seat FAMILY a path needs (agent-debt F-8, 2026-09-22 —
+* coarse by design: the matcher above is the truth; this only names
+* the family for the seatless refusal so the error says what to look
+* at instead of developer archaeology). probeNames are the ONLY
+* names the refusal may ctx.get — exactly the ones the matcher
+* itself would have probed for this path: an EAGER sweep of all
+* seat names INSTANTIATES defined-but-unloaded services on a cordis
+* context (constructors with side effects — the hang, live proof
+* 2026-09-22: the manage-seat wall took 51.8s dialing). */
+function seatFamilyForPath(path) {
+	if (path.startsWith("/v1/flows/drafts") || path.startsWith("/v1/bench/")) return {
+		family: "bench plane (draftsRemote/benchRemote seats)",
+		probeNames: ["draftsRemote", "benchRemote"]
+	};
+	if (path.startsWith("/v1/flows/")) return {
+		family: "live-run registry (the runs seat)",
+		probeNames: ["runs"]
+	};
+	if (path.startsWith("/v1/discover")) return {
+		family: "disclose",
+		probeNames: ["disclose"]
+	};
+	if (path.startsWith("/v1/manage")) return {
+		family: "manage",
+		probeNames: ["manage"]
+	};
+	if (path.startsWith("/v1/skills")) return {
+		family: "meliteSkills",
+		probeNames: ["meliteSkills"]
+	};
+	if (path.startsWith("/v1/load")) return {
+		family: "load",
+		probeNames: ["load"]
+	};
+	if (path.startsWith("/v1/ledger")) return {
+		family: "queue",
+		probeNames: ["queue"]
+	};
+	return {
+		family: "unknown",
+		probeNames: []
+	};
+}
 /** Build the tools' request: seats only, in-process. A lane with no
-*  seat is a hard error (the gateway that used to absorb it is
-*  dead) — the caller migrates to a named remote. */
+*  seat for the path is a hard error — but the error must be an
+*  AGENT-USABLE refusal (F-8): name the family the path needs, the
+*  seats that ARE live, the pin that mounts the queue plane, and the
+*  chat-lane exit. The old voice ("the gateway lane fallback died
+*  2026-09-10 — migrate to a named Typert remote") read as a broken
+*  registry and sent an agent hunting doors for an hour. */
 function makeEstateRequest(ctx) {
 	return async (method, path, body, execSignal) => {
 		const viaSeats = await trySeats(ctx, method, path, body, execSignal);
 		if (viaSeats !== void 0) return viaSeats;
-		throw new Error(`no remote serves ${method} ${path} (the gateway lane fallback died 2026-09-10 — migrate to a named Typert remote)`);
+		const { family, probeNames } = seatFamilyForPath(path);
+		const probe = ctx;
+		const live = [];
+		for (const n of probeNames) try {
+			if (probe.get(n) !== void 0) live.push(n);
+		} catch {}
+		const liveVoice = live.length > 0 ? `Live seats here: ${live.join(", ")}.` : `No seat of that family is mounted on this lane (ABSENCE, not a broken registry; nothing crashed).`;
+		throw new Error(`no seat on this lane serves ${method} ${path} — the ${family} is not mounted. ${liveVoice} The queue-plane seats mount when the estate state root is pinned (MELITE_STATE_ROOT / repoRoot config). On a chat lane, compose via melite_construct onto the shared bench instead of the raw flow doors.`);
 	};
 }
 //#endregion
@@ -446,6 +510,7 @@ function specModifiers(svc, card, key, decl, def, enveloped) {
 		if (k.kindFields !== void 0) entry.kindFields = k.kindFields;
 		if (k.options !== void 0) entry.options = k.options;
 		if (k.leaf_face !== void 0) entry.leaf_face = k.leaf_face;
+		if (k.section !== void 0) entry.section = k.section;
 		if (k.requires !== void 0) entry.requires = k.requires;
 		out.push(entry);
 	}
