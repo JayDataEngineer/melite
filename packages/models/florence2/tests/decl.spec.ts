@@ -25,4 +25,53 @@ describe("the florence2 model plugin (the whole model, one package)", () => {
     const ids = DECL.variants.map((v) => v.id);
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
   });
+
+  it("THE WEIGHTS RAIL: one variant per live loader model name, PromptGen-v2.0 large first", () => {
+    // live-pinned 2026-09-22 off DownloadAndLoadFlorence2Model's
+    // object_info combo. Fourteen, no more, no less. Ids are
+    // DECL-charset slugs (the variant-id law /^[a-z0-9_-]+$/);
+    // labels + resolver stamps carry the verbatim upstream names.
+    const LIVE: Array<[string, string]> = [
+      ["miaoshouai-florence-2-large-promptgen-v2-0", "MiaoshouAI/Florence-2-large-PromptGen-v2.0"],
+      ["miaoshouai-florence-2-base-promptgen-v2-0", "MiaoshouAI/Florence-2-base-PromptGen-v2.0"],
+      ["miaoshouai-florence-2-large-promptgen-v1-5", "MiaoshouAI/Florence-2-large-PromptGen-v1.5"],
+      ["miaoshouai-florence-2-base-promptgen-v1-5", "MiaoshouAI/Florence-2-base-PromptGen-v1.5"],
+      ["microsoft-florence-2-large", "microsoft/Florence-2-large"],
+      ["microsoft-florence-2-base", "microsoft/Florence-2-base"],
+      ["microsoft-florence-2-large-ft", "microsoft/Florence-2-large-ft"],
+      ["microsoft-florence-2-base-ft", "microsoft/Florence-2-base-ft"],
+      ["huggingfacem4-florence-2-docvqa", "HuggingFaceM4/Florence-2-DocVQA"],
+      ["thwri-cogflorence-2-1-large", "thwri/CogFlorence-2.1-Large"],
+      ["thwri-cogflorence-2-2-large", "thwri/CogFlorence-2.2-Large"],
+      ["gokaygokay-florence-2-sd3-captioner", "gokaygokay/Florence-2-SD3-Captioner"],
+      ["gokaygokay-florence-2-flux-large", "gokaygokay/Florence-2-Flux-Large"],
+      ["pjmixers-images-florence-2-base-castollux-v0-5", "PJMixers-Images/Florence-2-base-Castollux-v0.5"],
+    ];
+    assert.deepEqual(
+      DECL.variants.map((v) => v.id), LIVE.map(([id]) => id),
+      "the rail offers exactly the live closed set, the family default first",
+    );
+    DECL.variants.forEach((v, i) => {
+      assert.equal(v.label, LIVE[i]![1], `variant ${v.id} labels the verbatim upstream name`);
+      assert.deepEqual(
+        (v as { resolver_defaults?: unknown }).resolver_defaults, { checkpoint: LIVE[i]![1] },
+        `variant ${v.id} stamps the verbatim name`,
+      );
+    });
+    assert.equal(
+      (DECL.defaults as Record<string, unknown>)["checkpoint"], "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
+      "the family default backstops bare bodies",
+    );
+  });
+
+  it("group ids match the row groups case-EXACT (a lowercase drift doubles the rail's axes)", () => {
+    // 2026-09-22: variant_groups ids were 'variant'/'quant' while
+    // rows ride group 'Variant' — axisGroups unions both, the client
+    // rendered TWO Variant selects sharing one value key, the empty
+    // one refusing the held pick as itself ("invalid variant").
+    const ids = new Set((DECL.variant_groups ?? []).map((g) => g.id));
+    for (const v of DECL.variants) {
+      assert.ok(ids.has(v.group), `row group '${v.group}' names a declared variant_groups id (case-exact)`);
+    }
+  });
 });

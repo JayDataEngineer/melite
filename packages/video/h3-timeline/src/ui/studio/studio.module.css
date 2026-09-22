@@ -19,7 +19,6 @@
  * precedent — they are semantic data colors, not theme. */
 
 /* ── generic helpers ────────────────────────────────────── */
-.hiddenInput { display: none; }
 .tabular { font-variant-numeric: tabular-nums; }
 .nowrap { white-space: nowrap; }
 .sz10 { width: 10px; height: 10px; }
@@ -63,23 +62,40 @@ details[open] > summary .chev { transform: rotate(180deg); }
    seams as declared: rail LEFT (own column, scrolls), center RIGHT
    (the viewport), bottom UNDER BOTH (full width, row 2).
    minmax(0,1fr) keeps each pane scrollable, never squashed. */
-.shell > *:first-child { grid-column: 1; grid-row: 1; }
-/* THE PREVIEW SCROLLS (the operator's hour-8: "the video preive must
- * SCROLL"): the center pane owns its overflow — the filmstrip grows
- * with rendered windows and scrolls inside its pane, never pushes
- * the timeline out of the card. */
-.shell > *:nth-child(2) { grid-column: 2; grid-row: 1; overflow-y: auto; min-height: 0; }
-/* THE TIMELINE NEVER CUTS OFF (hour-8: "the timeline GETS CUT OFF
- * from the main view"): the bottom row is BOUNDED — it caps at a
- * fraction of the shell's height and scrolls internally; the card's
- * overflow:hidden can no longer clip it past the fold. */
-.shell > *:nth-child(3) {
+/* THE SLOT HOOK LAW (2026-09-22, the third scrollbar round): the
+ * tenant styles the shell THROUGH the studioRoot class it hands
+ * StudioShell (component.tsx: cn(s.studioRoot)) — a `.shell`
+ * selector in THIS file compiles to a tenant-hashed class NO
+ * element ever carries (the shell div wears card-base's hashed
+ * `.shell` + our studioRoot), so every `.shell > …` rule here was
+ * dead code: the fit law and the natural-height strip NEVER
+ * applied, and the base layer alone decided. The doubled class
+ * (.studioRoot.studioRoot) outspecifies the base module's rules,
+ * so import order can never flip the tenant's law off. */
+.studioRoot.studioRoot > *:first-child { grid-column: 1; grid-row: 1; }
+/* THE PREVIEW FITS (2026-09-22, operator: "THE VIDEO SHOULD BE 'FIT'
+ * NOT 'SCROLL'" — supersedes the hour-8 scroll verdict): the center
+ * pane is a flex column with overflow HIDDEN — the filmBox flexes to
+ * the pane, the heroRow flexes inside it, and the <video> itself is
+ * object-fit: contain in a bounded box (.player below). The film
+ * scales DOWN to the pane, letterboxed; nothing wheels. (Why the
+ * scroll existed: the pane was a plain block cell, .filmBox's flex:1
+ * was inert, and the video rendered at natural aspect height —
+ * taller than the pane — so overflow-y: auto became a scrollbar.) */
+.studioRoot.studioRoot > *:nth-child(2) { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+/* THE TIMELINE NEVER SCROLLS (2026-09-22, the operator: "I DON'T
+ * WANT A VERTICAL SCROLL WHEEL ON THE TIMELINE INPUT BAR"): the
+ * bottom row sizes to its content — the shell grid's row 2 is AUTO,
+ * so the strip owns its natural height and NO inner scrollbar ever
+ * appears. (Supersedes the hour-8 bounded-cap law: the D-M-E lanes
+ * outgrew min(42%, 380px) and the cap turned into the hated wheel;
+ * the center pane above keeps its own scroll, so the fold is safe.) */
+.studioRoot.studioRoot > *:nth-child(3) {
   grid-column: 1 / -1;
   grid-row: 2;
   min-height: 0;
-  min-height: 168px;
-  max-height: min(42%, 380px);
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
 }
 /* ── tenant root + rail (component.tsx) ─────────────────── */
 .studioRoot {
@@ -463,18 +479,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .times { color: var(--dsw-alias-label-tertiary); }
 .clipsRow { display: flex; align-items: center; gap: 8px; }
 .clipsTitle { flex: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
-.uploadAudio {
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 30%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 500;
-  color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-.uploadAudio:hover { border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 60%, transparent); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent); }
 .clipsNote { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--dsw-alias-label-tertiary); }
 .clipsHint { font-size: 10px; color: var(--dsw-alias-label-tertiary); opacity: 0.85; }
 /* ── StudioPreview ──────────────────────────────────────── */
@@ -505,6 +509,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .heroRow { display: flex; min-height: 0; flex: 1; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
 .finalCut {
   display: flex;
+  box-sizing: border-box; /* height:100% + padding 6 + border 2 spilled 14px into heroRow (overflow-x:auto computes y to auto → the wheel); border-box fits exactly */
   height: 100%;
   min-width: 0;
   flex: 1;
@@ -516,7 +521,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   padding: 6px;
   box-shadow: 0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);
 }
-.player { min-height: 0; width: 100%; flex: 1; border-radius: 6px; background: color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent); }
+.player { min-height: 0; width: 100%; height: 100%; flex: 1; object-fit: contain; border-radius: 6px; background: color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent); }
 .cutBar { display: flex; align-items: center; gap: 4px; padding: 0 2px; }
 .cutIcon { width: 12px; height: 12px; flex: none; color: var(--dsw-alias-brand-primary); }
 .cutTitle { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-secondary); }
@@ -525,6 +530,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .cutOpen:hover { text-decoration: underline; }
 .winTile {
   display: flex;
+  box-sizing: border-box; /* same law as .finalCut: 100% + padding must include the padding */
   height: 100%;
   width: 9rem;
   flex: none;
@@ -540,3 +546,27 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .winVid { min-height: 0; width: 100%; flex: 1; border-radius: 6px; background: color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent); object-fit: cover; }
 .winName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-secondary); }
 .emptyGlyph { width: 20px; height: 20px; color: var(--dsw-alias-label-tertiary); }
+
+/* ── THE LANE INSPECTOR (2026-09-22, D-M-E): every clip's lane +
+   words/event text — the authored half of the audio-lane law. */
+.laneInspector { display: flex; flex-direction: column; gap: 4px; padding: 6px 0 2px; border-top: 1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent); }
+.laneRow { display: flex; align-items: center; gap: 6px; }
+.laneName { flex: none; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--dsw-alias-label-secondary); }
+.laneSelect { flex: none; font-size: 10px; padding: 1px 4px; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent); background: transparent; color: var(--dsw-alias-label-primary); }
+.laneText { flex: 1; min-width: 120px; font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent); background: transparent; color: var(--dsw-alias-label-primary); }
+.laneDelete { flex: none; border: none; background: transparent; color: var(--dsw-alias-label-tertiary); cursor: pointer; font-size: 12px; padding: 0 4px; }
+.laneDelete:hover { color: var(--dsw-alias-state-danger-primary); }
+
+/* THE BLOCKER BANNER (2026-09-22): the lane lock is VISIBLE — one
+   warning strip above the bar while reference audio holds the lanes. */
+.blockerWrap { display: block; }
+.laneBlocker {
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);
+  color: var(--dsw-alias-label-primary);
+  font-size: 11px;
+  line-height: 1.45;
+}

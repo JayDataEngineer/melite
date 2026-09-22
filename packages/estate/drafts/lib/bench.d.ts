@@ -137,8 +137,15 @@ export interface BenchPatchRow {
     readonly stage: string;
     readonly patched: readonly string[];
 }
-/** patch — params merge with CAS + log (result/runStatus ride too:
- *  run-status writes from the tab land here, authored "user"). */
+/** patch — params merge with CAS + log. THE ONE OUTCOME DOOR
+ *  (the telemetry law's other half, 2026-10-08): run outcomes ride
+ *  drafts/patch — the archive's door, the poll's door. This verb
+ *  authors PARAMS only (the construct tool's patch grammar is
+ *  {stage, params}; the tab's outcome observer writes through the
+ *  drafts door). The old result/runStatus arms wrote ARCHIVE-LESS —
+ *  a landing here destroyed the previous result with no supersede —
+ *  under the old every-write-bumps law, so every outcome here also
+ *  ticked the rev. Outcomes refuse with the redirect voice. */
 export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchPatchRow>;
 /** The stage row: the arm's answer (stage id + rev). */
 export interface BenchStageRow {

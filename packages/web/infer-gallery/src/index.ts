@@ -32,6 +32,8 @@
  * lifecycle; the routes never throw.
  */
 import type { Context } from '@deepseek-ai/cordis'
+import { contentTypeForArtifact } from '@melite/contracts/mediaKinds'
+import { parseRangeHeader } from '@melite/contracts/mediaRange'
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from '@deepseek-ai/dsh-host-webserver'
 
@@ -259,24 +261,72 @@ export function apply(ctx: Context, config: Config = {}): void {
         fail(res, 400, 'forbidden_path', { message: 'artifact route only serves run-relative names (run-<id>/<file>)', path: target })
         return
       }
+      // THE RANGE LAW (the audio-seek stroke, 2026-10-08): native
+      // media elements seek by asking `Range: bytes=…` — answering
+      // whole-file 200s left the playhead stuck at the buffer edge.
+      // The parse is the LEAF's one spelling (parseRangeHeader) and
+      // the content-type is the vocab leaf's MIME table (this route
+      // had already drifted: mp4 answered video/webm, audio answered
+      // octet-stream). Cross-host relays the ask upstream and passes
+      // the upstream's range answer through untouched.
+      const rangeAsk = req.headers?.range
       try {
         if (gatewayUrl !== '') {
           // Cross-host: the owning DSH's asset tree (the /v1/assets
           // prefix rides only in this posture — the in-tree rows are
           // run-relative by the REBUILD-6 divergence law).
-          const response = await fetch(`${gatewayUrl}/v1/assets/runs/${target}`, { signal: AbortSignal.timeout(timeoutMs) })
+          const response = await fetch(`${gatewayUrl}/v1/assets/runs/${target}`, {
+            signal: AbortSignal.timeout(timeoutMs),
+            headers: rangeAsk !== undefined ? { range: rangeAsk } : {},
+          })
+          if (response.status === 416) {
+            // THE UNSATISFIABLE VERDICT passes through (the relay
+            // law's loud arm): the player that asked past EOF learns
+            // the file's true window from the upstream's content-range
+            // — never a gateway_error that reads as a dead file.
+            const unsatisfiable: Record<string, string> = {
+              'content-type': 'application/json',
+              'cache-control': 'no-store',
+              'accept-ranges': 'bytes',
+            }
+            const upstreamWindow = response.headers.get('content-range')
+            if (upstreamWindow !== null) unsatisfiable['content-range'] = upstreamWindow
+            res.writeHead(416, unsatisfiable)
+            res.end('{"error":"infer-gallery/range-not-satisfiable"}')
+            return
+          }
+          if (response.ok && req.method === 'HEAD' && response.body === null) {
+            // HEAD answers carry no body by definition — relay the
+            // upstream's metadata with an empty body (a bodiless GET
+            // below is still a broken upstream, refused loud).
+            const heads: Record<string, string> = {
+              'content-type': response.headers.get('content-type') ?? contentTypeForArtifact(target),
+              'content-length': response.headers.get('content-length') ?? '0',
+              'cache-control': 'no-store',
+            }
+            const upstreamRange = response.headers.get('content-range')
+            if (upstreamRange !== null) heads['content-range'] = upstreamRange
+            if (response.headers.get('accept-ranges') !== null) heads['accept-ranges'] = 'bytes'
+            res.writeHead(response.status, heads)
+            res.end()
+            return
+          }
           if (!response.ok || response.body === null) {
             fail(res, response.status, 'gateway_error', { upstream: `${gatewayUrl}/v1/assets/runs/${target}` })
             return
           }
           const buffer = Buffer.from(await response.arrayBuffer())
-          res.writeHead(response.status, {
-            'content-type': response.headers.get('content-type') ?? 'application/octet-stream',
+          const heads: Record<string, string> = {
+            'content-type': response.headers.get('content-type') ?? contentTypeForArtifact(target),
             'cache-control': 'no-store',
             // explicit length: remote proxies (tailscale serve) mishandle chunked
             // framing on lossy links — a known length lets them buffer instead.
             'content-length': String(buffer.byteLength),
-          })
+          }
+          const upstreamRange = response.headers.get('content-range')
+          if (upstreamRange !== null) heads['content-range'] = upstreamRange
+          if (response.headers.get('accept-ranges') !== null) heads['accept-ranges'] = 'bytes'
+          res.writeHead(response.status, heads)
           res.end(buffer)
           return
         }
@@ -293,10 +343,51 @@ export function apply(ctx: Context, config: Config = {}): void {
           fail(res, 400, 'forbidden_path', { message: 'artifact escapes the runs tree', path: target })
           return
         }
+        const type = contentTypeForArtifact(target)
+        if (req.method === 'HEAD') {
+          // HEAD asks for metadata, never bytes — stat the size and
+          // answer empty (the media route's own law; reading the whole
+          // file to discard it wastes a full decode per probe).
+          const stat = await fs.stat(full)
+          res.writeHead(200, {
+            'content-type': type,
+            'cache-control': 'no-store',
+            'content-length': String(stat.size),
+            'accept-ranges': 'bytes',
+          })
+          res.end()
+          return
+        }
         const file = await fs.readFile(full)
-        const ext = target.slice(target.lastIndexOf('.') + 1).toLowerCase()
-        const type = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'webp' ? 'image/webp' : ext === 'mp4' || ext === 'webm' ? 'video/webm' : 'application/octet-stream'
-        res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store', 'content-length': String(file.byteLength) })
+        const range = parseRangeHeader(rangeAsk, file.byteLength)
+        if (range === 'unsatisfiable') {
+          res.writeHead(416, {
+            'content-type': 'application/json',
+            'content-range': `bytes */${String(file.byteLength)}`,
+            'accept-ranges': 'bytes',
+            'cache-control': 'no-store',
+          })
+          res.end('{"error":"infer-gallery/range-not-satisfiable"}')
+          return
+        }
+        if (range !== null) {
+          const slice = file.subarray(range.start, range.end + 1)
+          res.writeHead(206, {
+            'content-type': type,
+            'cache-control': 'no-store',
+            'content-length': String(slice.byteLength),
+            'content-range': `bytes ${String(range.start)}-${String(range.end)}/${String(file.byteLength)}`,
+            'accept-ranges': 'bytes',
+          })
+          res.end(slice)
+          return
+        }
+        res.writeHead(200, {
+          'content-type': type,
+          'cache-control': 'no-store',
+          'content-length': String(file.byteLength),
+          'accept-ranges': 'bytes',
+        })
         res.end(file)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)

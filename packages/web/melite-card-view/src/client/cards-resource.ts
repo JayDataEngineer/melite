@@ -961,9 +961,11 @@ export function openCardsResource(
       // THE BENCH TAIL (live co-presence, 2026-09-12 → the mux swap
       // 2026-09-15): the bench is ONE shared doc — the agent
       // (construct verbs, bench-mode passes) and out-of-band sessions
-      // write it too, and every write bumps the rev. bench/subscribe
+      // write it too — author writes bump the rev, run-face writes
+      // ride it silently (the telemetry law). bench/subscribe
       // pushes a fresh doc per write over the same-origin mux; the
-      // tail yields on rev drift with reconnect supervision. THE
+      // tail yields on doc change (rev drift, or run-face movement
+      // at the same rev) with reconnect supervision. THE
       // POLL IS DEAD. (No second remote-undefined arm here: the
       // unmounted face above dominates — remote is a const parameter.)
       if (benchNs === undefined) {
@@ -1064,8 +1066,11 @@ async function* pollRunFrames(
  *
  *  - FIRST FRAME: the stream's opening doc (the subscribe generator
  *    serves the zero state for a not-yet-born bench — the birth watch).
- *  - NO FRAME SPAM: later items yield ONLY on rev drift (a reconnect
- *    re-serves the same doc; same rev, no frame).
+ *  - NO FRAME SPAM: later items yield ONLY on doc change — rev
+ *    drift (an author move) or run-face movement at the same rev (a
+ *    run's progress/result/history landing through a rev-silent
+ *    telemetry write). A reconnect re-serving the identical doc is
+ *    the same rev AND the same stage bytes: no frame.
  *  - THE VISIBILITY LAW (the silent-death cure): a carrier loss —
  *    the wire dropped, the supervisor is reconnecting — surfaces as
  *    ONE failure frame beside the last ok value, cleared by the next
@@ -1108,6 +1113,7 @@ async function* streamBenchFrames(
   const iterator = stream[Symbol.asyncIterator]()
   let first = true
   let lastRev: number | null = null
+  let lastFaces: string | null = null
   try {
     for (;;) {
       const step = iterator.next()
@@ -1137,8 +1143,21 @@ async function* streamBenchFrames(
         first = false
       }
       const value = readBench(item.value, sessionKey)
-      if (lastRev === value.rev) continue // same-doc reconnect: no frame
+      // THE DOC-CHANGE GATE (the telemetry law, 2026-10-08 — rev is
+      // AUTHORSHIP now, not change): a same-rev frame still yields
+      // when the RUN FACES moved — a foreign-started run's progress,
+      // landed result, or archived history rides a write that never
+      // touches the rev, and a passive tab (no local observer armed)
+      // would otherwise never see it: no frame, no re-render, and
+      // the phantom reconcile never arms for the foreign run. The
+      // dedup key is rev + the stages' own bytes (stable through the
+      // JSON round-trip, so a reconnect re-serving the identical doc
+      // stays quiet); author moves always drift the rev, so no
+      // rendered field can move unseen either way.
+      const faces = JSON.stringify(value.stages)
+      if (lastRev === value.rev && lastFaces === faces) continue // same-doc reconnect: no frame
       lastRev = value.rev
+      lastFaces = faces
       yield { ok: true, value }
     }
   } catch (e) {

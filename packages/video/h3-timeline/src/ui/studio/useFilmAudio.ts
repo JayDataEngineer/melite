@@ -139,13 +139,13 @@ export function useFilmAudio(args: {
   /** Add a clip: probe its duration (Audio metadata), land it at the
    * frame. dur fallback 4s worth of frames — VISIBLE, then correctable
    * by the probe's completion. */
-  const addAudioClip = useCallback((name: string, src: string, startFrame: number) => {
+  const addAudioClip = useCallback((name: string, src: string, startFrame: number, cls?: "dialogue" | "sfx" | "music") => {
     const id = `aclip-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
     // (fps is always >0 post-hydration — the num() proof — no `|| 24`.)
     const f = layerA.fps
     setLayerAKey("audio_clips", [
       ...(layerA.audio_clips ?? []),
-      { id, name, src, start_frame: Math.max(0, Math.round(startFrame)), dur_frames: Math.round(4 * f) },
+      { id, name, src, start_frame: Math.max(0, Math.round(startFrame)), dur_frames: Math.round(4 * f), ...(cls ? { class: cls } : {}) },
     ])
     const url = src.startsWith("data:") ? src : null
     const probe = new Audio()
@@ -184,13 +184,22 @@ export function useFilmAudio(args: {
     }))
   }, [])
 
+  /** Patch a clip's lane/text (the inspector's pen): only the
+   * authored fields move — placement/duration own their own doors. */
+  const updateAudioClip = useCallback((clipId: string, patch: { class?: "dialogue" | "sfx" | "music", text?: string }) => {
+    setLayerA((prev) => (prev.audio_clips?.some((c) => c.id === clipId)) ? {
+      ...prev,
+      audio_clips: prev.audio_clips!.map((c) => c.id === clipId ? { ...c, ...patch } : c),
+    } : prev)
+  }, [])
+
   /** OS file → clip: audio only, 30 MB cap — a rejection is the file
    * input's accept + this guard (never a silent bad write). */
-  const takeAudioFile = useCallback((file: File, startFrame: number) => {
+  const takeAudioFile = useCallback((file: File, startFrame: number, cls?: "dialogue" | "sfx" | "music") => {
     if (!file.type.startsWith("audio/")) return
     if (file.size > 30 * 1024 * 1024) return
     readAsDataURL(file).then((dataUrl) => {
-      addAudioClip(file.name, dataUrl, startFrame)
+      addAudioClip(file.name, dataUrl, startFrame, cls)
     }).catch(() => { /* unreadable — no clip */ })
   }, [addAudioClip])
 
@@ -202,7 +211,6 @@ export function useFilmAudio(args: {
   // rode the render) plays from the FilmPlayer element itself — the
   // mixer only layers the Music row OVER it. ─────────────────────────
   const clipElsRef = useRef<Map<string, HTMLAudioElement>>(new Map())
-  const audioUploadRef = useRef<HTMLInputElement | null>(null)
   // element lifecycle: create per clip, drop the removed
   useEffect(() => {
     const live = clipElsRef.current
@@ -250,7 +258,7 @@ export function useFilmAudio(args: {
   return {
     filmMap, filmFromDoc, docFromFilm,
     artifactIndex, refArtifacts, audioSrcUrl,
-    addAudioClip, moveAudioClip, deleteAudioClip, takeAudioFile,
-    clipElsRef, audioUploadRef,
+    addAudioClip, moveAudioClip, deleteAudioClip, updateAudioClip, takeAudioFile,
+    clipElsRef,
   }
 }

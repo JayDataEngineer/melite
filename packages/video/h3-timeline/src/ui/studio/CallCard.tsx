@@ -36,7 +36,7 @@ export const deliveredFrames = (c: DocCall, i: number): number => {
  *  clear. The wire form is the comma string (the card's wireList
  *  law — trimmed entries, empties absent). */
 function RefsBucket({
-  label, kind, accept, cap, value, artifacts, onChange,
+  label, kind, accept, cap, value, artifacts, onChange, disabled, disabledHint,
 }: {
   label: string
   kind: "image" | "video" | "audio"
@@ -48,6 +48,11 @@ function RefsBucket({
   /** Bundle cap (3 videos, 3 audios — the image lane owns the 9-slot
    * image bus: slot 1 anchor + slots 2-9 refs). */
   cap: number
+  /** THE DOOR GUARD, UX arm (2026-09-22): true grays the bucket — a
+   * pinned window owns its audio conditioning and the normal input
+   * stands down for THIS window (the compose owns the real wall). */
+  disabled?: boolean
+  disabledHint?: string
   value: string | undefined
   artifacts: Array<{ name: string; url: string }>
   onChange: (next: string) => void
@@ -68,20 +73,27 @@ function RefsBucket({
     return byUrl !== undefined ? byUrl.id : v
   }
   return (
-    <div className={s.refRow} data-testid="tl-call-ref-bucket">
+    <div
+      className={s.refRow}
+      data-testid="tl-call-ref-bucket"
+      data-disabled={disabled ? "true" : undefined}
+      title={disabled ? (disabledHint ?? "pinned window — this input stands down") : undefined}
+    >
       <SectionLabel
         tail={
           <span
-            className={over ? s.refCountOver : undefined}
-            title={over ? `${chips.length} claimed — the bus holds ${cap}` : `${chips.length} of ${cap}`}
+            className={over ? s.refCountOver : disabled ? s.refCountOver : undefined}
+            title={disabled
+              ? (disabledHint ?? "pinned window — this input stands down")
+              : over ? `${chips.length} claimed — the bus holds ${cap}` : `${chips.length} of ${cap}`}
           >
-            {chips.length}/{cap}{over ? " over cap" : ""}
+            {chips.length}/{cap}{over ? " over cap" : ""}{disabled ? " · pinned" : ""}
           </span>
         }
       >
         {label}
       </SectionLabel>
-      <div className={s.chips}>
+      <div className={s.chips} style={disabled ? { opacity: 0.45, pointerEvents: "none" } : undefined}>
         {chips.map((chip, ci) => (
           <SourceRow
             key={`${chip}-${ci}`}
@@ -139,6 +151,8 @@ export function CallCard({
     enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo,
     setCallSpan, setCallGuide, setCallTransition,
     setCallRefs, setCallKnob,
+    voicePinnedCalls,
+    audioClipsPresent,
   } = deps
   // Focused mode: only the SELECTED call's card renders — the
   // rail is that call's editor (the others are one click away
@@ -350,6 +364,10 @@ export function CallCard({
           value={c.refs?.audios}
           artifacts={refArtifacts}
           onChange={(v) => setCallRefs(i, "audios", v)}
+          disabled={audioClipsPresent || (voicePinnedCalls?.has(i) ?? false)}
+          disabledHint={audioClipsPresent
+            ? "THE BLOCKER: the timeline carries audio clips — the clips own the model's audio inputs; clear the D-M-E lanes to use reference audio"
+            : "a dialogue/sfx clip pins this window — the pin owns its audio conditioning (remove the clip or move it to hear this input again)"}
         />
         {/* THE SEAM — the call's join (carried vs cut; the carry
             itself is automatic — drift control, never authored). LAST

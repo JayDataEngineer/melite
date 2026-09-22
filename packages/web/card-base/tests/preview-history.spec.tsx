@@ -497,4 +497,26 @@ test('THE HERO CAP LAW (operator 2026-09-21: "too many history items → the lar
   expect(strip).toContain('overscroll-behavior: contain') // ISOLATED: wheels over history never chain into the card's scroll
   const row = css.slice(css.indexOf('.thumbRow {'), css.indexOf('}', css.indexOf('.thumbRow {') + 200))
   expect(row).toContain('flex-wrap: wrap') // WRAPPED: many tiles stack rows — the vertical wheel scrolls them (lane probe 2026-09-21: single unwrapped row, sh==ch, unscrollable)
+  // THE AUDIO HERO CENTERING (operator 2026-10-08: "the audio
+  // preview should be centered in the view, it's tied to the
+  // bottom"): a grown <audio> paints its controls at the BOTTOM of
+  // the flexed box — the player keeps its natural strip height and
+  // AUTO MAIN-AXIS MARGINS center it (never flex-growth, never
+  // align-self — a column's cross axis is horizontal, that
+  // mis-centering was the 'tied to the bottom' bug).
+  const audio = css.slice(css.indexOf('.heroAudio {'), css.indexOf('}', css.indexOf('.heroAudio {')))
+  expect(audio).toContain('margin: auto 0')
+  expect(audio).toContain('flex: 0 0 auto')
+  expect(audio).not.toContain('flex: 1 1 0%') // GROWTH is the bottom-tying tool — banned on the audio hero
+  // THE COMPACT KIND FACE (operator 2026-10-08: "a long rectangle
+  // with a file name, instead of something nice and compact"): the
+  // non-image tile is a 48×48 SQUARE — the image thumb row's own
+  // rhythm. content-box math: 16 glyph + 15×2 padding + 1×2 border
+  // = 48; no name text rides the face (the tooltip owns it).
+  const face = css.slice(css.indexOf('.thumbFace {'), css.indexOf('}', css.indexOf('.thumbFace {') + 400))
+  expect(face).toContain('box-sizing: content-box') // PINNED: a host border-box global never collapses the square to 16px
+  expect(face).toContain('width: 16px')
+  expect(face).toContain('height: 16px')
+  expect(face).toContain('padding: 15px')
+  expect(face).not.toContain('font-size') // no text in the face — never a long rectangle
 })

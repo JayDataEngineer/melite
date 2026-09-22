@@ -13,15 +13,16 @@ type BboxDict = { x: number; y: number; width: number; height: number }
  *  rides its bag entry; the card threads each export's own tune as
  *  the trip's fourth arm). Absent arms ride the lane-flat values
  *  (the primary's tune). */
-export type EntryTune = { threshold?: number; refine?: number; dilation?: number; yolo_threshold?: number }
+export type EntryTune = { threshold?: number; refine?: number; dilation?: number; detection_threshold?: number }
 
 /** The mask_t1 block — the selection lane (detect → refine → save),
  *  moved verbatim from the mask-studio card; the input_image
  *  admission stays on the card. TWO selection families: the SAM3
  *  CLIP/RT-DETR leg (checkpoint + unet pins) and the SAM2
- *  impact-pack arm (sam2 + yolo pins — YOLO proposes, SAM2
- *  refines). */
-export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; unet: string; sam2: string; yolo: string; segm: string }, g: GraphBuilder, runId: string): void {
+ *  impact-pack arm (sam2 + the pack's own specialized detectors —
+ *  person on segm, face/hand on their bbox models — the detector
+ *  proposes, SAM2 refines). */
+export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; unet: string; sam2: string; segm: string; face: string; hand: string }, g: GraphBuilder, runId: string): void {
   const li = pins          // the ACTION CARD owns its pins (no model row — mask-studio is a tool, not weights)
   const prefix = `${runId}/mask`        // the arm's "%s/mask" % run_id
   const samThreshold = p.sam_threshold as number
@@ -46,12 +47,6 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   const clipCond = (text: string): OutputHandle =>
     g.node('CLIPTextEncode', { text, clip: ckptNode().out(1) }).out(0)
 
-  // the pin's declared default for SAM3_Detect.bboxes (socketless,
-  // forceInput): comfy-script autofills it whenever the caller passes
-  // no bboxes, and it is not stripped — the served shape
-  // carries it on every bboxes-less SAM3_Detect.
-  const DEFAULT_BBOXES: BboxDict = { x: 0, y: 0, width: 512, height: 512 }
-
   const detect = (conditioning?: OutputHandle, bboxes?: OutputHandle | BboxDict, tune?: EntryTune): OutputHandle => {
     const inputs: NodeInputs = {
       model: ckptNode().out(0),
@@ -61,7 +56,15 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
       individual_masks: false,
     }
     if (conditioning) inputs.conditioning = conditioning
-    inputs.bboxes = bboxes ?? DEFAULT_BBOXES
+    // NO DEFAULT HINT (the red-box hunt's third bug, 2026-10-08):
+    // the old DEFAULT_BBOXES autofilled {0,0,512,512} on every
+    // unscoped detection — a top-left QUARTER "hint" on any image
+    // larger than 512, silently blinding the selection everywhere
+    // else (an empty mask on a 1024px input, proven live).
+    // Unscoped = bboxes rides ABSENT = search the WHOLE image; the
+    // drawn Region scope (and RT-DETR's own boxes) still thread as
+    // the explicit hint when they exist.
+    if (bboxes !== undefined) inputs.bboxes = bboxes
     return g.node('SAM3_Detect', inputs).out(0)     // (masks, bboxes) → masks
   }
 
@@ -88,48 +91,67 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   const scopeMask = (mask: OutputHandle, scope: BboxDict): OutputHandle =>
     g.node('MaskComposite', { destination: mask, source: rectMask(scope), x: 0, y: 0, operation: 'multiply' }).out(0)
 
-  // THE SAM2 IMPACT-PACK ARM (the operator's SAM2: YOLO proposes +
-  // SAM2 refines; the mask card declares the packs + weights,
-  // the compose door refuses without them — never a silent CLIP
-  // leg). UltralyticsDetectorProvider (subpack, PINNED yolo model)
-  // → BboxDetectorSEGS (image + the YOLO boxes + the card's labels)
-  // → SEGS → SAMDetectorCombined (PINNED sam2 model, center-1 —
-  // the pack's own best-practice default) → MASK. The drawn box
-  // scopes after (the rect scope above).
+  // THE SAM2 IMPACT-PACK ARM (the operator's SAM2: the detector
+  // proposes + SAM2 refines; the mask card declares the packs +
+  // weights, the compose door refuses without them — never a
+  // silent CLIP leg). UltralyticsDetectorProvider (subpack, the
+  // card's PINNED detector model: segm/person for person,
+  // bbox/face + bbox/hand for face/hand) → SegmDetectorSEGS or
+  // BboxDetectorSEGS (image + the detector boxes + the card's
+  // labels) → SEGS → SAMDetectorCombined (PINNED sam2 model,
+  // center-1 — the pack's own best-practice default) → MASK. The
+  // drawn box scopes after (the rect scope above).
   let samH: OutputHandle | null = null
-  let yoloH: OutputHandle | null = null
   let segmH: OutputHandle | null = null
+  let faceH: OutputHandle | null = null
+  let handH: OutputHandle | null = null
   const samLoader = (): OutputHandle =>
     (samH ??= g.node('SAMLoader', { model_name: li.sam2 as string, device_mode: 'AUTO' }).out(0))
-  const yoloProvider = (): OutputHandle =>
-    (yoloH ??= g.node('UltralyticsDetectorProvider', { model_name: li.yolo as string }).out(0))
   // THE SEGM PROVIDER (the Impact Pack gap audit, 2026-10-08): the
   // pack's own detailer-pipe-test wires SegmDetectorSEGS — a
   // segmentation detector whose boxes come from CLASS-PIXEL masks
   // (tighter crops, no center-point guess). The pin rides the
-  // card's PINS row (person_yolov8m-seg.pt, the model already on
-  // disk in models/ultralytics/segm/).
+  // card's PINS row (segm/person_yolov8m-seg.pt — ABSENT until
+  // 2026-10-09, downloaded + provision-declared that night).
   const segmProvider = (): OutputHandle =>
-    (segmH ??= g.node('UltralyticsDetectorProvider', { model_name: li.segm as string }).out(0))
-  const sam2detect = (labels: string, scope?: BboxDict, tune?: EntryTune): OutputHandle => {
+    // SLOT 1 (proven live 2026-10-09: slot 0 is BBOX_DETECTOR —
+    // wiring it into SegmDetectorSEGS.segm_detector 400s the run
+    // with return_type_mismatch; the provider's own output list
+    // is ["BBOX_DETECTOR", "SEGM_DETECTOR"]).
+    (segmH ??= g.node('UltralyticsDetectorProvider', { model_name: li.segm as string }).out(1))
+  const faceProvider = (): OutputHandle =>
+    (faceH ??= g.node('UltralyticsDetectorProvider', { model_name: li.face as string }).out(0))
+  const handProvider = (): OutputHandle =>
+    (handH ??= g.node('UltralyticsDetectorProvider', { model_name: li.hand as string }).out(0))
+  // ONE DETECTOR FAMILY PER ENTRY (the operator's 2026-10-09 order:
+  // "ONLY the ones shown in the Impact Pack examples" — person,
+  // face, hand, each on the pack's OWN specialized detector, exactly
+  // as detailer-pipe-test.json wires them). A mixed set (person +
+  // face) cannot share one detector call — split it across two sam2
+  // entries, each with its own export. Refuses LOUD, never a
+  // half-detected entry.
+  const sam2detect = (labels: string, scope?: BboxDict, tune?: EntryTune): { mask: OutputHandle, segs: OutputHandle } => {
     if (labels === '') {
-      throw new Error('maskT1: a sam2 selection needs labels (a YOLO class word — the card refuses empty)')
+      throw new Error('maskT1: a sam2 selection needs labels (a detector class word — the card refuses empty)')
     }
-    // THE SEGM AUTO-LANE (the gap audit's #2): a person-only
-    // selection rides the segmentation detector — its boxes derive
-    // from class pixels (the pinned segm model's whole vocabulary
-    // is ['person']). Any other class set rides the bbox detector.
+    const words = labels.split(',').map((w) => w.trim()).filter((w) => w !== '')
+    const fams = new Set(words.map((w) => w === 'person' ? 'segm' : 'bbox'))
+    if (fams.size > 1) {
+      throw new Error(`maskT1: one detector per sam2 entry — '${labels}' mixes detector families (person rides segm, face/hand ride bbox). Split it across two sam2 entries.`)
+    }
+    const segmLane = words[0] === 'person'
     // (ImpactSimpleDetectorSEGS was AUDITED and REJECTED for this
     // lane: it carries NO labels input — the class filter, the
     // operator's core demand, cannot ride it. The pack's own
     // labels-filtering test workflow (detailer-pipe-test.json)
     // wires BboxDetectorSEGS + SAMDetectorCombined exactly as
     // this lane does.)
-    const personOnly = labels === 'person'
-    const segs = g.node(personOnly ? 'SegmDetectorSEGS' : 'BboxDetectorSEGS', {
-      [personOnly ? 'segm_detector' : 'bbox_detector']: personOnly ? segmProvider() : yoloProvider(),
+    const provider = segmLane ? segmProvider()
+      : words[0] === 'face' ? faceProvider() : handProvider()
+    const segs = g.node(segmLane ? 'SegmDetectorSEGS' : 'BboxDetectorSEGS', {
+      [segmLane ? 'segm_detector' : 'bbox_detector']: provider,
       image: img(),
-      threshold: (tune?.yolo_threshold ?? (p.yolo_threshold as number | undefined) ?? 0.5),
+      threshold: (tune?.detection_threshold ?? (p.detection_threshold as number | undefined) ?? 0.5),
       dilation: 10,
       crop_factor: 3.0,
       drop_size: 10,
@@ -156,10 +178,12 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
       mask_hint_threshold: 0.7,
       mask_hint_use_negative: 'False',
     }).out(0)
-    return scope ? scopeMask(refined, scope) : refined
+    const mask = scope ? scopeMask(refined, scope) : refined
+    return { mask, segs }
   }
 
   let primaryMask: OutputHandle | null = null
+  let primarySegs: OutputHandle | null = null
 
   // THE PRIMARY SCOPE (the first standalone entry's drawn box —
   // the card threads it as scope_bbox; absent = unscoped). Every
@@ -191,14 +215,38 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     if (primaryScope) primaryMask = scopeMask(primaryMask, primaryScope)
     save(primaryMask, 'mask_combined')
   } else if (viaSam2) {
-    primaryMask = sam2detect(primarySam2Labels ?? 'all', primaryScope)
+    const det = sam2detect(primarySam2Labels ?? 'all', primaryScope)
+    primaryMask = det.mask
+    primarySegs = det.segs
     save(primaryMask, 'mask_combined')
+    // THE FIGURE MASKS (the operator's 2026-10-09 order: "how is it
+    // going to select figure one or figure two"): the pack's own
+    // ImpactSEGSPicker takes the primary detection's SEGS + a
+    // 1-based pick ("2" = the second detected instance) and each
+    // figure saves its own refined mask (mask_figure_<n>) — the
+    // agent selects a figure by composing with figures: [2], no
+    // manual box anywhere. The per-instance image crops
+    // (run/instance) are the visual index into the same numbering.
+    const figs = p.sam2_figures as number[] | undefined
+    if (figs !== undefined) {
+      if (!Array.isArray(figs) || figs.some((n) => !Number.isInteger(n) || (n as number) < 1)) {
+        throw new Error(`maskT1: sam2_figures must be 1-based instance numbers — got ${JSON.stringify(figs).slice(0, 60)}`)
+      }
+      for (const n of [...new Set(figs)]) {
+        const picked = g.node('ImpactSEGSPicker', { picks: String(n), segs: primarySegs }).out(0)
+        const figMask = g.node('SegsToCombinedMask', { segs: picked }).out(0)
+        save(primaryScope ? scopeMask(figMask, primaryScope) : figMask, `mask_figure_${n}`)
+      }
+    }
   } else if (primaryClass) {
-    primaryMask = detect(clipCond(primaryClass))
+    // the drawn Region threads as the detect HINT too (the wall
+    // caught it: exports threaded theirs, the primary did not —
+    // the hint narrows the search, the multiply guarantees bounds)
+    primaryMask = detect(clipCond(primaryClass), primaryScope)
     if (primaryScope) primaryMask = scopeMask(primaryMask, primaryScope)
     save(primaryMask, 'mask_combined')
   } else if (primaryPrompt) {
-    primaryMask = detect(clipCond(primaryPrompt))
+    primaryMask = detect(clipCond(primaryPrompt), primaryScope)
     if (primaryScope) primaryMask = scopeMask(primaryMask, primaryScope)
     save(primaryMask, 'mask_combined')
   } else if (p.primary_is_paint as boolean) {
@@ -215,7 +263,7 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   // the third arm (optional) = the per-entry bbox [x, y, w, h];
   // the fourth arm (optional) = the per-entry TUNE (stroke 95 —
   // every knob a mask source owns rides its bag entry): threshold
-  // / refine / dilation / yolo_threshold overrides for THIS
+  // / refine / dilation / detection_threshold overrides for THIS
   // export's selection. Malformed refuses LOUD (a drifted bag is
   // drift, never a skip); absent arms ride the lane-flat values
   // (the primary's tune — the card threads it flat).
@@ -224,19 +272,19 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   const entryTune = (raw: unknown): EntryTune | undefined => {
     if (raw === undefined || raw === null) return undefined
     if (typeof raw !== 'object' || Array.isArray(raw)) {
-      throw new Error(`maskT1: an export tune must be an object (threshold/refine/dilation/yolo_threshold) — got ${JSON.stringify(raw).slice(0, 60)}`)
+      throw new Error(`maskT1: an export tune must be an object (threshold/refine/dilation/detection_threshold) — got ${JSON.stringify(raw).slice(0, 60)}`)
     }
     const t = raw as Record<string, unknown>
-    for (const key of ['threshold', 'refine', 'dilation', 'yolo_threshold']) {
+    for (const key of ['threshold', 'refine', 'dilation', 'detection_threshold']) {
       const v = t[key]
       if (v === undefined) continue
       if (typeof v !== 'number' || !Number.isFinite(v)) {
         throw new Error(`maskT1: an export tune's '${key}' must be a finite number — got ${JSON.stringify(v).slice(0, 40)}`)
       }
     }
-    const unknown = Object.keys(t).filter((k) => !['threshold', 'refine', 'dilation', 'yolo_threshold'].includes(k))
+    const unknown = Object.keys(t).filter((k) => !['threshold', 'refine', 'dilation', 'detection_threshold'].includes(k))
     if (unknown.length > 0) {
-      throw new Error(`maskT1: an export tune carries unknown key(s) ${unknown.join(', ')} — the vocabulary is threshold/refine/dilation/yolo_threshold`)
+      throw new Error(`maskT1: an export tune carries unknown key(s) ${unknown.join(', ')} — the vocabulary is threshold/refine/dilation/detection_threshold`)
     }
     return t as EntryTune
   }
@@ -293,8 +341,8 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     if (kind !== 'sam2' && payload) {
       // the text lane rides EVEN under scope (boxes to segment within
       // + the vocabulary) — a scope never silently drops the prompt.
-      // sam2 exports skip it (their payload is the YOLO labels word
-      // — the detector proposes, SAM2 refines, never CLIP).
+      // sam2 exports skip it (their payload is the detector labels
+      // word — the detector proposes, SAM2 refines, never CLIP).
       conditioning = clipCond(payload)
     }
     // THE PER-ENTRY BOX (stroke 78): the export's OWN third arm —
@@ -305,10 +353,10 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     const tune = entryTune(trip[3])
     if (kind === 'sam2') {
       if (typeof payload !== 'string' || payload === '') {
-        throw new Error(`maskT1: sam2 export '${name}' needs labels (a YOLO class word — the card refuses empty)`)
+        throw new Error(`maskT1: sam2 export '${name}' needs labels (a detector class word — the card refuses empty)`)
       }
       const sel = sam2detect(payload, bboxes ? { x: bboxes.x, y: bboxes.y, width: bboxes.width, height: bboxes.height } : undefined, tune)
-      save(sel, `mask_${name}`, tune?.dilation)
+      save(sel.mask, `mask_${name}`, tune?.dilation)
       continue
     }
     const sel = detect(conditioning, bboxes, tune)
@@ -439,8 +487,35 @@ export function inputPrepLane(p: Record<string, unknown>, g: GraphBuilder, runId
 // card schemas reference them (leaf keys/defaults stay
 // card-declared, wall-verified).
 
-/** Pin autofills the lane strips post-walk (moved
- *  verbatim from the tagger card). */
+/** THE 512-HINT STRIP (the red-box hunt's third bug, 2026-10-08):
+ *  SAM3_Detect's node definition declares a bboxes DEFAULT of
+ *  {0,0,512,512} (a widget seed for the UI), and the GraphBuilder
+ *  autofills it onto every detect that passes no hint — a latent
+ *  quarter-blind hazard on any image larger than 512px (audit
+ *  2026-10-09: the observed empty mask was the 0.93 threshold, NOT
+ *  this hint — 0.93 → 0.00% with and without it, 0.5 → 6.5%; the
+ *  strip is correct hardening all the same). The engine's node
+ *  default is Layer B truth — never edited — so the strip lives
+ *  HERE: delete bboxes ONLY when it still equals the autofilled
+ *  default verbatim. Non-default quads and link handles (RT-DETR's
+ *  own boxes) survive untouched. KNOWN EDGE: a region drawn
+ *  EXACTLY (0,0,512,512) loses its hint at runtime — benign,
+ *  because the scopeMask multiply still bounds the mask to the
+ *  drawn box, independent of the hint. */
+export function finalizeMask(graph: PromptGraph): PromptGraph {
+  for (const node of Object.values(graph)) {
+    if (node.class_type !== 'SAM3_Detect') continue
+    const b = node.inputs['bboxes']
+    if (b !== null && typeof b === 'object' && !Array.isArray(b)) {
+      const d = b as Record<string, unknown>
+      if (d['x'] === 0 && d['y'] === 0 && d['width'] === 512 && d['height'] === 512) {
+        delete node.inputs['bboxes']
+      }
+    }
+  }
+  return graph
+}
+
 export const TAGGER_STRIP: StripTable = {
   LoadImage: ['upload'],
   DownloadAndLoadFlorence2Model: ['convert_to_safetensors'],
@@ -502,6 +577,12 @@ export const TAGGER_EXTRA_OPTIONS = [
   'Your response will be used by a text-to-image model, so avoid useless meta phrases like “This image shows…”, "You are looking at...", etc.',
 ]
 
+// ── NO tagger checkpoint vocabs live here (the weights law,
+// 2026-09-22): the closed sets are the families' own variant rows
+// (wd14/florence2 DECLs — resolver_defaults stamp the pick), the
+// schema declares no weights knob. A vocabulary() here would be a
+// second picker around the variant rail — do not re-add one.
+
 /** The SaveText tail (every arm's consensus — moved verbatim from
  *  the tagger card). */
 function taggerSaveText(g: GraphBuilder, text: OutputHandle, prefix: string): void {
@@ -538,7 +619,9 @@ function joytagArm(p: Record<string, unknown>, g: GraphBuilder, img: string, pre
 }
 
 /** florence2_t1 — the Florence-2 captioner (moved verbatim from the
- *  tagger card). */
+ *  tagger card). The weights arrive on the SHARED `checkpoint` key —
+ *  stamped by the variant rail (resolver_defaults) or the family
+ *  default, admitted by the card, never a schema knob. */
 function florence2Arm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string): void {
   const src = g.node('LoadImage', { image: img })
   const fl2 = g.node('DownloadAndLoadFlorence2Model', {
@@ -556,7 +639,9 @@ function florence2Arm(p: Record<string, unknown>, g: GraphBuilder, img: string, 
 }
 
 /** joycaption_t1 — the JoyCaption VLM (moved verbatim from the
- *  tagger card). */
+ *  tagger card). Same shared `checkpoint` key — the family default
+ *  stamps beta-one; custom repo ids / local paths ride explicit
+ *  params (API/bare bodies), upstream takes free text. */
 function joycaptionArm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string): void {
   const src = g.node('LoadImage', { image: img })
   const predictor = g.node('JJC_DownloadAndLoadJoyCaptionModel', {

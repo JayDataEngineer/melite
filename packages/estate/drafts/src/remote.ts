@@ -454,6 +454,18 @@ export class DraftsRemoteService extends TypertRemoteService {
         { unknown },
       );
     }
+    // THE EMPTY BODY (the telemetry law's edge, 2026-10-08): {} is
+    // vacuously "telemetry" (every() on no keys) — without this arm
+    // it would persist an unchanged doc and wake the stream for
+    // nothing. An empty patch is a caller bug: refuse with the
+    // door's own voice, like the bench verb refuses its own.
+    if (Object.keys(patch).length === 0) {
+      throw new RemoteError(
+        "draft/bad-patch",
+        "patch is empty (nothing to patch)",
+        {},
+      );
+    }
     let drafts: Domain<DraftsDomainSpec>;
     try {
       drafts = await openDraftsDomain(this.ctx);
@@ -483,14 +495,34 @@ export class DraftsRemoteService extends TypertRemoteService {
     if (stage === null) {
       return { draftId, stageId, delivered: false, reason: "stage not found" };
     }
-    // THE CAS WALK (the layered-params law): the patch door is a
+    // THE TELEMETRY LAW (operator 2026-10-08: "rev keeps ticking *up*
+    // even when I am just generating a song"): a patch body whose
+    // keys are ALL run telemetry (result and/or runStatus — never
+    // params/inputs/inputOutputs) is a RUN FACE, not an author move.
+    // The outcome observer writes one such body per poll state —
+    // run start, EVERY progress frame, terminal — and under the
+    // every-write-bumps law the bench's CAS rev ticked for the whole
+    // generation (held expect_revs went stale mid-run; the undo log
+    // filled with no-op 'patch' entries that consumed undo targets
+    // restoring params_before:{} — telemetry was never authorship).
+    // Telemetry now writes the stage row (result/runStatus + the
+    // derived history archive) and fires the doc-write notify, but
+    // does NOT fence, does NOT bump bench.rev, does NOT append to
+    // the bench log — last-write-wins is the poll's own semantics,
+    // and the rebase dance the client kept performing was this
+    // fence's disease, not its cure. Any body carrying an author key
+    // (params | inputs | inputOutputs) walks the full law unchanged.
+    const bench = benchBlockOf(doc);
+    const telemetry: boolean = Object.keys(patch).every(
+      (k: string): boolean => k === "result" || k === "runStatus",
+    );
+    // THE CAS WALK (the layered-params law): an AUTHOR patch is a
     // bench author and joins the revision law every other author
     // walks — fence on expectRev BEFORE any mutation (the record is
     // the domain's cached object; a refusal must leave no trace),
     // then bump and log below. A bench that moved under the caller
     // refuses loud, never merges under it.
-    const bench = benchBlockOf(doc);
-    if (expectRev !== null && bench.rev !== expectRev) {
+    if (!telemetry && expectRev !== null && bench.rev !== expectRev) {
       throw new RemoteError(
         "bench/cas-conflict",
         `bench moved under the patch (expect_rev ${expectRev}, current ${bench.rev}) — re-read and re-apply`,
@@ -589,16 +621,24 @@ export class DraftsRemoteService extends TypertRemoteService {
     for (const key of ["inputs", "inputOutputs"] as const) {
       if (key in patch) stage[key] = patch[key];
     }
-    const rev = bench.rev + 1;
-    const log = [...bench.log, {
-      rev,
-      at: Math.floor(Date.now() / 1000),
-      author: "user",
-      kind: "patch",
-      stage: stageId,
-      summary: Object.keys(patch).sort().join(","),
-    }] as BenchBlock["log"];
-    doc["bench"] = { rev, log };
+    // THE BUMP (author patches only — the telemetry law above): the
+    // rev advances and the log carries the entry; a telemetry write
+    // persists the row WITHOUT touching the bench block (no bump, no
+    // log — the answer serves the CURRENT rev so a caller that treats
+    // it as the next CAS handle stays honest).
+    let rev = bench.rev;
+    if (!telemetry) {
+      rev = bench.rev + 1;
+      const log = [...bench.log, {
+        rev,
+        at: Math.floor(Date.now() / 1000),
+        author: "user",
+        kind: "patch",
+        stage: stageId,
+        summary: Object.keys(patch).sort().join(","),
+      }] as BenchBlock["log"];
+      doc["bench"] = { rev, log };
+    }
     try {
       await drafts.table("docs").put(draftId, {
         updated_at: Math.floor(Date.now() / 1000),

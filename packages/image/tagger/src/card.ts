@@ -27,9 +27,20 @@ declare module '@melite/comfyui-cordis/service' {
 // (wd14→exclude_tags, joytag→add_tag/remove_tag,
 // joycaption→extra_option). Bare z.string() is the image-gen prompt
 // precedent (optional at parse, refused loud at compose).
+// THE WEIGHTS LAW (2026-09-22 — the variant rail owns the
+// checkpoint; the schema declares NO weights knob): Model/Variant/
+// Quant is the ONE picker — the validate layer stamps the selected
+// variant's resolver_defaults into the body (stampCardOverlay,
+// absent-keys-only), the compose door overlays the family default,
+// the lane reads p.checkpoint. The key rides `admits` below (the
+// input-prep crop/media_type/scale precedent: admitted route stamps,
+// never rendered). A card-level checkpoint knob — select or text —
+// is a second picker around the card system and is forbidden here.
+// JoyCaption's upstream takes any repo id or local path, so its
+// family keeps ONE Standard variant on the family default; custom
+// paths ride explicit params (API/bare bodies).
 const schema = z.object({
   input_image: z.string().role('path').description("Input image").extra('extra', { order: 0, group: "input", width: 1, tooltip: "The image to invert. Absolute mount path or artifact ref.", required: true, wtype: 'image', }),
-  checkpoint: z.string().description("Checkpoint").default("wd-v1-4-moat-tagger-v2").extra('extra', { order: 0, group: "tagger", width: 1, tooltip: "The WD14 weights name (auto-downloaded on first run)." }),
   threshold: z.number().description("Threshold").min(0).max(1).step(0.05).default(0.35).extra('extra', { order: 1, group: "tagger", width: 1, tooltip: "General-tag confidence floor." }),
   character_threshold: z.number().description("Character threshold").min(0).max(1).step(0.05).default(0.85).extra('extra', { order: 2, group: "tagger", width: 1, tooltip: "Character-tag confidence floor — keep high." }),
   exclude_tags: z.string().description("Exclude tags").extra('extra', { order: 3, group: "tagger", width: 1, tooltip: "Comma-separated tags to prune from the output." }),
@@ -100,6 +111,10 @@ export function apply(ctx: Context): void {
       joycaption: ['joycaption_comfyui'],
     },
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    // checkpoint rides admits (the service's admission-extras law):
+    // the variant rail's route stamp, admitted but never rendered —
+    // no form field, no second picker.
+    admits: ['checkpoint'],
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the

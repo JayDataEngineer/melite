@@ -249,3 +249,21 @@ describe("identity refs + knob fold", () => {
     assert.deepEqual(calls.prevs, [])
   })
 })
+
+describe("THE BLOCKER (2026-09-22): clips and reference audio are mutually exclusive", () => {
+  it("any D-M-E clip present → the Ref audios bucket is disabled on EVERY call, with the law as the hint", () => {
+    const d = deps({ audioClipsPresent: true }).d
+    const h = render(<CallCard c={BASE} i={0} deps={d} />)
+    const bucket = h.container.querySelector('[data-disabled="true"]')
+    assert.ok(bucket, "the bucket stands down")
+    assert.match(bucket.getAttribute("title") ?? "", /clips own the model's audio inputs/, "the hint states the blocker")
+    h.unmount()
+  })
+
+  it("no clips → the bucket is live (the lock lifts when the lanes clear)", () => {
+    const d = deps({ audioClipsPresent: false }).d
+    const h = render(<CallCard c={BASE} i={0} deps={d} />)
+    assert.ok(!h.container.querySelector('[data-disabled="true"]'), "bucket live")
+    h.unmount()
+  })
+})

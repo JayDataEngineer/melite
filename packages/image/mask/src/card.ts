@@ -17,7 +17,7 @@
 //            (via_rtdetr — the primary's own arm). The entry's
 //            optional REGION scopes its search (the EMBEDDED
 //            region canvas — faceOwned fields, never raw inputs).
-//   sam2[] — standalone: the YOLO + SAM2 arm (Impact pack,
+//   sam2[] — standalone: the detector + SAM2 arm (Impact pack,
 //            AUTOMATED: the detector proposes boxes for the
 //            labels classes, SAM2 refines them into masks — a
 //            hand-drawn box has no node on this chain). Declares
@@ -38,66 +38,112 @@
 // anchor); every further entry is a per-name export.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { maskT1 } from '@melite/comfyui-card-kit'
+import { finalizeMask, maskT1 } from '@melite/comfyui-card-kit'
 import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
 
 // THE ACTION CARD OWNS ITS PINS (the studio's law, shared — the
-// same weights, the same lane). sam2 + yolo are the SAM2
-// impact-pack arm's pins (the card DECLARES them as provisions
-// below — declared, then auto provisioned, the operator's
-// 2026-09-19 order).
-// SIBLING DETECTORS ON DISK (2026-10-08, the live provider's own
-// list): face_yolov8m.pt (vocabulary: ['face']) and
-// hand_yolov8s.pt (['hand']) — separate PINNED models, NOT COCO
-// classes; the old "person, face, hand" tooltip conflated three
-// models into one labels field. Exposing the detector pick (with
-// a per-detector vocabulary) is OWED work, not built here.
+// same weights, the same lane). sam2 + the three Impact detectors
+// (segm/person, bbox/face, bbox/hand) are the SAM2 impact-pack
+// arm's pins (the card DECLARES them as provisions below —
+// declared, then auto provisioned, the operator's 2026-09-19
+// order). BUILT 2026-10-09 (the old "OWED, not built here" note):
+// the labels vocabulary IS the per-detector pick — person rides
+// segm, face/hand ride their own bbox models, one detector family
+// per entry.
 const PINS = {
   checkpoint: 'sam3.1_multiplex_fp16.safetensors',
   unet: 'rt_detr_v4-x-hgnet_fp32.safetensors',
   sam2: 'sam2.1_hiera_large.pt',
-  yolo: 'bbox/yolo11m.pt',
   // THE SEGM PIN (the gap audit's #2): the segmentation detector —
-  // person-only, class-pixel boxes. On disk: models/ultralytics/
-  // segm/person_yolov8m-seg.pt (the provider lists it live).
+  // person-only, class-pixel boxes. ABSENT until 2026-10-09
+  // (downloaded + provision-declared that night).
   segm: 'segm/person_yolov8m-seg.pt',
+  // THE FACE + HAND PINS (the operator's 2026-10-09 order: ONLY
+  // the Impact Pack examples' detectors): the pack's own
+  // specialized bbox models, exactly as detailer-pipe-test.json
+  // wires them (face_yolov8m + hand nano, both on disk).
+  face: 'bbox/face_yolov8m.pt',
+  hand: 'bbox/hand_yolov8n.pt',
 }
 
-// THE YOLO VOCABULARY (the pin's own truth, the operator's
-// 2026-10-08 verdict: "why is SAM2 selection a FREEFORM TEXT BOX?
-// IN WHAT WORLD DOES THAT MAKE SENSE?"): the pinned yolo11m is
-// COCO-trained — these 80 classes are the detector's WHOLE world.
-// The labels field is a CLOSED multi-chips select over them (the
-// wire a comma-joined string, this order); compose refuses any
-// word outside the vocabulary LOUD (a typo would otherwise detect
-// nothing, silently).
-const YOLO_CLASSES = [
-  'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
-  'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
-  'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella',
-  'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite',
-  'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle',
-  'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich',
-  'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-  'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
-  'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book',
-  'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush',
-] as const
+// THE IMPACT VOCABULARY (the operator's 2026-10-09 order: "I DON'T
+// WANT 100+ YOLO CLASSES, I ONLY WANT THE ONES SHOWN IN THE IMPACT
+// PACK EXAMPLES"): person, face, hand — the pack's own three
+// specialized detectors, each on its own model (segm for person,
+// bbox for face/hand). The old 80-class COCO dropdown died here:
+// yolo11m is unpinned (its generality is NOT this card). The labels
+// field is a CLOSED multi-chips select over the three (the wire a
+// comma-joined string, this order); compose refuses any other word
+// LOUD (a typo would otherwise detect nothing, silently). ONE
+// detector family per entry (person rides segm, face/hand ride
+// bbox) — a mixed set refuses LOUD in the lane; split it across
+// two sam2 entries.
+const IMPACT_CLASSES = ['person', 'face', 'hand'] as const
 
 /** Reads one entry's labels AGAINST the vocabulary: a comma-joined
- *  set of COCO classes (this declaration's own order, deduped) —
+ *  set of Impact classes (this declaration's own order, deduped) —
  *  empty or any unknown word refuses LOUD, naming the offender. */
 const labelsOf = (e: Record<string, unknown>, key: string): string => {
   const raw = e['labels']
   if (typeof raw !== 'string' || raw.trim() === '') {
-    throw new Error(`${key} needs 'labels' (pick YOLO classes — the chips) — got ${JSON.stringify(raw).slice(0, 40)}`)
+    throw new Error(`${key} needs 'labels' (pick detector classes — the chips) — got ${JSON.stringify(raw).slice(0, 40)}`)
   }
   const words = raw.split(',').map((w) => w.trim()).filter((w) => w !== '')
-  const unknown = words.filter((w) => !(YOLO_CLASSES as readonly string[]).includes(w))
+  const unknown = words.filter((w) => !(IMPACT_CLASSES as readonly string[]).includes(w))
   if (unknown.length > 0) {
-    throw new Error(`${key}: 'labels' carries non-YOLO words ${JSON.stringify(unknown)} — the detector knows only the 80 COCO classes (person, car, dog, …)`)
+    throw new Error(`${key}: 'labels' carries non-detector words ${JSON.stringify(unknown)} — the card knows only person, face, hand (the Impact Pack examples' detectors)`)
   }
-  return [...YOLO_CLASSES].filter((c) => words.includes(c)).join(',')
+  return [...IMPACT_CLASSES].filter((c) => words.includes(c)).join(',')
+}
+
+/** THE ARM WEIGHTS (the silent-truncation law, 2026-10-09): which
+ *  provision rows THIS merged params set touches. A sam3 bag names
+ *  the SAM3 checkpoint; each sam2 entry names sam2 + its labels'
+ *  detectors (person→segm, face/hand→bbox — the lane's own
+ *  routing, restated as names). TOLERANT parse (lowercase split,
+ *  unknown words ignored): compose's vocab wall owns garbage —
+ *  the gate never fires before it. Empty bags name nothing. */
+const armWeights = (merged: Record<string, unknown>): readonly string[] => {
+  const out = new Set<string>()
+  const sam3 = merged['sam3']
+  if (Array.isArray(sam3) && sam3.length > 0) out.add('sam3.1_multiplex_fp16.safetensors')
+  const sam2 = merged['sam2']
+  if (Array.isArray(sam2) && sam2.length > 0) {
+    out.add('sam2.1_hiera_large.pt')
+    for (const e of sam2) {
+      const labels = typeof (e as Record<string, unknown>)['labels'] === 'string'
+        ? String((e as Record<string, unknown>)['labels']).toLowerCase().split(',').map((w) => w.trim())
+        : []
+      if (labels.includes('person')) out.add('person_yolov8m-seg.pt')
+      if (labels.includes('face')) out.add('face_yolov8m.pt')
+      if (labels.includes('hand')) out.add('hand_yolov8n.pt')
+    }
+  }
+  return [...out]
+}
+
+/** Reads the primary sam2 entry's figure picks: a comma-joined
+ *  list of 1-based instance numbers ("1,2" = figure one AND figure
+ *  two — the per-instance image crops show the numbering). Empty =
+ *  no figure masks. Anything else refuses LOUD. Figures ride the
+ *  PRIMARY entry only (the detection they pick from is the
+ *  primary's) — a later entry carrying figures is a mistake. */
+const figuresOf = (e: Record<string, unknown>, key: string, primary: boolean): number[] | undefined => {
+  const raw = e['figures']
+  if (raw === undefined || raw === null || (typeof raw === 'string' && raw.trim() === '')) return undefined
+  if (!primary) {
+    throw new Error(`${key}: 'figures' rides the primary sam2 entry — the detection the figures pick from is the first source's; move the picks there`)
+  }
+  if (typeof raw !== 'string') {
+    throw new Error(`${key}: 'figures' must be a comma-joined list of 1-based instance numbers ("1,2") — got ${JSON.stringify(raw).slice(0, 40)}`)
+  }
+  const nums = raw.split(',').map((w) => w.trim()).filter((w) => w !== '')
+  if (nums.length === 0) return undefined
+  const bad = nums.filter((w) => !/^[1-9][0-9]*$/.test(w))
+  if (bad.length > 0) {
+    throw new Error(`${key}: 'figures' carries non-instance words ${JSON.stringify(bad)} — 1-based instance numbers only ("1,2")`)
+  }
+  return [...new Set(nums.map(Number))]
 }
 
 // THE SIMPLE FORM (the stroke-95 law: the card IS the two bars —
@@ -168,7 +214,12 @@ const MODS: readonly DeclaredModifierKind[] = [
       { name: 'prompt', label: 'Prompt', type: 'string', default: '', tooltip: 'The SAM3 CLIP text selection — what to segment (empty + RT-DETR = the person-box lane).' },
       { name: 'via_rtdetr', label: 'Via RT-DETR boxes', type: 'boolean', default: false, tooltip: 'Propose person boxes with RT-DETR, refine with SAM3 (the box-manifest lane — the FIRST entry anchors it).' },
       { name: 'refine_iterations', label: 'Refine iterations', type: 'number', default: 2, min: 0, max: 8, step: 1, tooltip: 'This selection\'s SAM3 refine rounds.' },
-      { name: 'sam_threshold', label: 'Mask threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'This selection\'s SAM3 mask confidence.' },
+      // THE SAM3 THRESHOLD DEFAULT (the red-box hunt's fourth bug):
+      // 0.93 was SAM2's mask confidence — on SAM3's TEXT selection
+      // it scores nothing (an empty mask, proven live: 0.93 → 0.0%
+      // lit, the node's own 0.5 → a real 6.5% clothes region). The
+      // node's own default rides; the knob stays (lower = looser).
+      { name: 'sam_threshold', label: 'Mask threshold', type: 'number', default: 0.5, min: 0.05, max: 1, step: 0.01, tooltip: 'This selection\'s SAM3 mask confidence (0.5 = the node\'s own default; raise to tighten, lower to loosen).' },
       { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: 0, max: 64, step: 1, tooltip: 'Grow this mask N pixels.' },
       // RT-DETR knobs — the entry's own arm (via RT-DETR boxes);
       // the manifest reads the first entry that rides the lane.
@@ -192,18 +243,19 @@ const MODS: readonly DeclaredModifierKind[] = [
     // IN BOTH"): same shape as sam3 — the embedded IMAGE PREVIEW
     // (the Region canvas: the preview first, an optional search
     // scope second), the same threshold/dilation stack, the twin
-    // section caption. ONE difference: the selector is the YOLO
-    // class DROPDOWN (the closed COCO-80) where sam3's is FREETEXT.
+    // section caption. ONE difference: the selector is the
+    // detector class DROPDOWN (person/face/hand — the Impact Pack
+    // examples' own detectors) where sam3's is FREETEXT.
     // The boxes stay the detector's own ("BBOX IS NOT MANUAL, IT IS
     // AUTOMATED") — the canvas previews and scopes, it never
     // proposes a box.
     leaf_face: 'bbox-canvas',
     // THE DECLARED DEPENDENCIES (the operator's 2026-09-19 order —
     // "declared, then auto provisioned"): the SAM2 arm rides the
-    // impact-pack chain (YOLO proposes, SAM2 refines), so the kind
-    // declares BOTH packs — the compose door refuses without them
-    // (an unused sam2 bag never fires the gate), and RunRescue
-    // offers the install through the manage seat.
+    // impact-pack chain (the detector proposes, SAM2 refines), so
+    // the kind declares BOTH packs — the compose door refuses
+    // without them (an unused sam2 bag never fires the gate), and
+    // RunRescue offers the install through the manage seat.
     requires: ['comfyui-impact-pack', 'comfyui-impact-subpack'],
     // THE SECTION CAPTION — the twin of sam3's, only the selector
     // word differs (dropdown vs freetext): the class DROPDOWN picks
@@ -211,8 +263,9 @@ const MODS: readonly DeclaredModifierKind[] = [
     section: 'Bbox filter — the class dropdown picks the targets (automated); the Region canvas below only scopes the search',
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam2', tooltip: "The saved mask's name (mask_<name>)." },
-      { name: 'labels', label: 'YOLO classes', type: 'select', multi: true, options: YOLO_CLASSES.map((c) => ({ value: c, label: c })), default: 'person', tooltip: 'The automated box filter: YOLO (Impact Pack) proposes boxes for exactly these COCO classes, SAM2 refines each one. Pick any set; the wire is the comma-joined list.' },
-      { name: 'yolo_threshold', label: 'Detection threshold', type: 'number', default: 0.5, min: 0.05, max: 0.95, step: 0.05, tooltip: 'This entry\'s YOLO box confidence. Lower catches more instances, noisier boxes.' },
+      { name: 'labels', label: 'Detection class', type: 'select', multi: true, options: IMPACT_CLASSES.map((c) => ({ value: c, label: c })), default: 'person', tooltip: 'The automated box filter: the Impact detector proposes a box for EVERY instance of these classes (no drawing), SAM2 refines each one. person rides the segm detector, face/hand ride their own bbox detectors — one family per entry.' },
+      { name: 'figures', label: 'Figure masks', type: 'string', default: '', tooltip: 'Save one mask per picked instance ("1,2" = figure one AND figure two as mask_figure_1/mask_figure_2) — how the agent selects an instance. The per-instance crops show the numbering. Primary entry only; empty = no figure masks.' },
+      { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.5, min: 0.05, max: 0.95, step: 0.05, tooltip: 'This entry\'s detector box confidence. Lower catches more instances, noisier boxes.' },
       { name: 'sam_threshold', label: 'Mask threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'This selection\'s SAM2 mask confidence.' },
       { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: 0, max: 64, step: 1, tooltip: 'Grow this mask N pixels.' },
       ...BBOX_FIELDS,
@@ -238,7 +291,7 @@ const MODS: readonly DeclaredModifierKind[] = [
 
 export const identity = {
   label: 'Mask',
-  description: 'Simple mask: pick the input, then ADD sources — sam2 and sam3 are THE SAME card shape (image preview + thresholds + optional Region scope); the ONLY difference is the selector: sam2 a YOLO class dropdown (closed COCO-80, automated boxes), sam3 freetext. draw paints onto the rest.',
+  description: 'Simple mask: pick the input, then ADD sources — sam2 and sam3 are THE SAME card shape (image preview + thresholds + optional Region scope); the ONLY difference is the selector: sam2 a detector class dropdown (person/face/hand — the Impact Pack examples own detectors, automated boxes), sam3 freetext. draw paints onto the rest.',
   genre: 'image',
   icon: 'mask',
   ability: 'tool',
@@ -313,13 +366,28 @@ export function apply(ctx: Context): void {
     requiresModel: false,
     identity,
     // THE DECLARED WEIGHTS (the operator's 2026-09-19 order —
-    // "declared, then auto provisioned"): the SAM2 arm's two weight
+    // "declared, then auto provisioned"): the SAM2 arm's weight
     // files — the sam2 checkpoint (SAMLoader reads models/sams/)
-    // and the YOLO detector (the subpack provider reads
-    // models/ultralytics/bbox/). Hashes minted by direct download
-    // 2026-09-19 (the supply-chain law: a declared hash is a
-    // VERIFIED hash, never copied from a README).
+    // and the Impact Pack's OWN specialized detectors (the
+    // subpack provider reads models/ultralytics/<segm|bbox/>):
+    // person/face/hand, exactly as detailer-pipe-test.json wires
+    // them. Hashes minted by direct download (the supply-chain
+    // law: a declared hash is a VERIFIED hash, never copied from
+    // a README).
     provisions: [
+      {
+        // THE SAM3 CHECKPOINT (the red-box hunt, 2026-10-08: the
+        // PIN existed since stroke ~40 but the weight was NEVER
+        // fetched — the engine silently dropped the whole mask arm
+        // and reported success with only the RT-DETR person-box
+        // manifest). The official ComfyUI conversion; hash minted
+        // by direct download (the supply-chain law).
+        name: 'sam3.1_multiplex_fp16.safetensors',
+        url: 'https://huggingface.co/Comfy-Org/sam3.1/resolve/main/checkpoints/sam3.1_multiplex_fp16.safetensors',
+        folder: 'checkpoints',
+        sha256: '9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03',
+        size_bytes: 1745546848,
+      },
       {
         name: 'sam2.1_hiera_large.pt',
         url: 'https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt',
@@ -328,11 +396,33 @@ export function apply(ctx: Context): void {
         size_bytes: 898083611,
       },
       {
-        name: 'yolo11m.pt',
-        url: 'https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11m.pt',
+        // THE SEGM DETECTOR (the person vocabulary — class-pixel
+        // boxes, the auto-bbox the operator demanded). Hash minted
+        // by direct download 2026-10-09 (the supply-chain law).
+        name: 'person_yolov8m-seg.pt',
+        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/person_yolov8m-seg.pt',
+        folder: 'ultralytics/segm',
+        sha256: 'c8ab26f517173b1fe8342d336a09f443eb61cb08dcbfc78d53fff4c2547ae81e',
+        size_bytes: 54827683,
+      },
+      {
+        // THE FACE DETECTOR (the pack's own test-workflow model).
+        // Hash minted by direct download 2026-09-19.
+        name: 'face_yolov8m.pt',
+        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8m.pt',
         folder: 'ultralytics/bbox',
-        sha256: 'd5ffc1a674953a08e11a8d21e022781b1b23a19b730afc309290bd9fb5305b95',
-        size_bytes: 40684120,
+        sha256: '717923c19b3f4bbf5250b728f1fa6b2cb72a33aed1d236ea9caf0e21ad943e5f',
+        size_bytes: 52026019,
+      },
+      {
+        // THE HAND DETECTOR (nano variant of the pack's hand
+        // model — the file on disk). Hash minted by direct
+        // download 2026-09-19.
+        name: 'hand_yolov8n.pt',
+        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/hand_yolov8n.pt',
+        folder: 'ultralytics/bbox',
+        sha256: '3991202eb69e9ddcb3b9ba80cdeb41e734ffaf844403d6c9f47d515cd88c6f29',
+        size_bytes: 6237883,
       },
     ],
     sidebar: { key: 'image', order: 9 },
@@ -346,6 +436,16 @@ export function apply(ctx: Context): void {
     // params overlay — the three bags; every knob lives INSIDE a
     // bag entry, never flat on the doc).
     admits: ['sam3', 'sam2', 'draw'],
+    // THE DECLARED HERO (the history/preview defect, 2026-10-09:
+    // the gallery led with whatever the engine finished first —
+    // usually the manifest photo, not the mask): mask_combined
+    // leads, the manifest/crops/figures follow.
+    primaryFile: 'mask_combined',
+    // THE ARM WEIGHTS (the silent-truncation law, 2026-10-09):
+    // the compose door checks the touched provision rows against
+    // the models tree BEFORE composing — an absent weight refuses
+    // loud with its fetch URL, never a silent downstream death.
+    armWeights,
     mods: MODS,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
@@ -435,7 +535,7 @@ export function apply(ctx: Context): void {
       }
       // THE PRIMARY SCOPE (the first entry's drawn REGION — the
       // unified card's shared face; threads as the lane's
-      // scope_bbox. sam2's region scopes the YOLO search exactly
+      // scope_bbox. sam2's region scopes the detector search exactly
       // like sam3's scopes the text selection).
       const primaryBox = primary.kind === 'sam3' || primary.kind === 'sam2'
         ? bboxOf(primary.entry, primary.kind)
@@ -455,11 +555,13 @@ export function apply(ctx: Context): void {
           lane['primary_prompt'] = prompt
         }
       } else {
-        // sam2 rides the YOLO + SAM2 arm (the detector proposes the
-        // class set, SAM2 refines) — never the CLIP text lane.
+        // sam2 rides the detector + SAM2 arm (the detector proposes
+        // the class set, SAM2 refines) — never the CLIP text lane.
         lane['primary_via_sam2'] = true
         lane['primary_sam2_labels'] = labelsOf(primary.entry, 'sam2 entry 0')
-        lane['yolo_threshold'] = num(whereOf(primary), primary.entry, 'sam2', 'yolo_threshold')
+        lane['detection_threshold'] = num(whereOf(primary), primary.entry, 'sam2', 'detection_threshold')
+        const figs = figuresOf(primary.entry, 'sam2 entry 0', true)
+        if (figs !== undefined) lane['sam2_figures'] = figs
       }
 
       // THE BOX MANIFEST (card-wide, OR-ed per entry — the declared
@@ -501,7 +603,10 @@ export function apply(ctx: Context): void {
           exports.push([nameOf(src, `sam3_${src.i + 1}`), prompt, bbox ?? undefined, tune])
           exportKind.push('text')
         } else {
-          tune['yolo_threshold'] = num(whereOf(src), src.entry, 'sam2', 'yolo_threshold')
+          tune['detection_threshold'] = num(whereOf(src), src.entry, 'sam2', 'detection_threshold')
+          // figures ride the PRIMARY entry (the detection they pick
+          // from is the first source's) — refuses LOUD here.
+          figuresOf(src.entry, `sam2 entry ${src.i}`, false)
           // the unified card: sam2's region rides its export exactly
           // like sam3's (the shared canvas's scope quad).
           exports.push([nameOf(src, `sam2_${src.i + 1}`), labelsOf(src.entry, `sam2 entry ${src.i}`), bboxOf(src.entry, 'sam2') ?? undefined, tune])
@@ -536,5 +641,9 @@ export function apply(ctx: Context): void {
 
       maskT1(lane, PINS, g, runId)
     },
+    // THE 512-HINT STRIP (the red-box hunt): kills the autofilled
+    // {0,0,512,512} bboxes default on unscoped SAM3 detects (an
+    // empty mask on any image larger than 512px, proven live).
+    finalize: finalizeMask,
   }))
 }

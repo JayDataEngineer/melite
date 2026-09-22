@@ -548,15 +548,73 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     assert.equal((doc["bench"] as Record<string, unknown>)["rev"], 3);
   });
 
-  test("a runStatus-only patch lands the status and bumps rev", async () => {
+  test("an empty patch body refuses draft/bad-patch (vacuous telemetry is a caller bug, never a write)", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, { session: "empty", stages: [{ id: "s_0" }] });
+    const svc = new DraftsRemoteService(ctx);
+    const refusal = await codeOf(svc.patch("bench-empty", "s_0", {}, null, sig));
+    assert.match(refusal, /^draft\/bad-patch\|patch is empty/);
+    const doc = await svc.get("bench-empty", sig);
+    assert.equal((doc["bench"] as Record<string, unknown>)["rev"], 0);
+  });
+
+  test("THE TELEMETRY LAW: a runStatus-only patch lands the status and NEVER bumps rev nor logs (operator 2026-10-08: rev kept ticking while merely generating)", async () => {
     const { ctx, domain } = await bootCtx();
     await ensureBench(domain, { session: "rs", stages: [{ id: "s_0" }] });
     const svc = new DraftsRemoteService(ctx);
     const answer = await svc.patch("bench-rs", "s_0", { runStatus: "running" }, null, sig);
     assert.deepEqual(answer.patched, ["runStatus"]);
-    assert.equal(answer.rev, 1);
+    assert.equal(answer.rev, 0, "telemetry serves the CURRENT rev — the CAS handle never moved");
     const doc = await svc.get("bench-rs", sig);
     assert.equal((doc["stages"] as Array<Record<string, unknown>>)[0]?.["runStatus"], "running");
+    const bench = doc["bench"] as { rev: number; log: unknown[] };
+    assert.equal(bench.rev, 0, "a run face is not an author move");
+    assert.deepEqual(bench.log, [], "the undo log collects actions — telemetry is not one");
+  });
+
+  test("the whole generation never moves the rev: run start + EVERY progress frame + terminal all land silent", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, { session: "gen", stages: [{ id: "s_0" }] });
+    const svc = new DraftsRemoteService(ctx);
+    // run start, two progress frames, terminal — the poll's own cadence
+    await svc.patch("bench-gen", "s_0", { runStatus: "running", result: { run_id: "r1" } }, null, sig);
+    await svc.patch("bench-gen", "s_0", { result: { run_id: "r1", progress: 0.25 } }, null, sig);
+    await svc.patch("bench-gen", "s_0", { result: { run_id: "r1", progress: 0.9 } }, null, sig);
+    await svc.patch("bench-gen", "s_0", { runStatus: "completed", result: { run_id: "r1", url: "/song.mp3" } }, null, sig);
+    const doc = await svc.get("bench-gen", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.equal(stage["runStatus"], "completed");
+    assert.deepEqual(stage["result"], { run_id: "r1", url: "/song.mp3" });
+    assert.deepEqual(stage["history"], [{ run_id: "r1", url: "/song.mp3" }], "the landed gen still enters the trail — the archive rides telemetry writes");
+    const bench = doc["bench"] as { rev: number; log: unknown[] };
+    assert.equal(bench.rev, 0, "four poll states, zero author moves");
+    assert.deepEqual(bench.log, []);
+  });
+
+  test("telemetry with a STALE expect_rev lands anyway (the fence is authorship's, not the poll's)", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, { session: "stale", stages: [{ id: "s_0" }] });
+    const svc = new DraftsRemoteService(ctx);
+    const answer = await svc.patch("bench-stale", "s_0", { runStatus: "running" }, 999, sig);
+    assert.equal(answer.delivered, true);
+    const doc = await svc.get("bench-stale", sig);
+    assert.equal((doc["stages"] as Array<Record<string, unknown>>)[0]?.["runStatus"], "running");
+    assert.equal((doc["bench"] as Record<string, unknown>)["rev"], 0);
+  });
+
+  test("one author key in the body restores the full law: mixed params+runStatus fences, bumps, and logs", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, { session: "mix", stages: [{ id: "s_0" }] });
+    const svc = new DraftsRemoteService(ctx);
+    const stale = await errOf(svc.patch("bench-mix", "s_0", { params: { seed: 7 }, runStatus: "running" }, 999, sig));
+    assert.equal(stale.code, "bench/cas-conflict");
+    const answer = await svc.patch("bench-mix", "s_0", { params: { seed: 7 }, runStatus: "running" }, null, sig);
+    assert.equal(answer.rev, 1, "the params key makes the body an author move — rev walks");
+    const doc = await svc.get("bench-mix", sig);
+    const bench = doc["bench"] as { rev: number; log: Array<Record<string, unknown>> };
+    assert.equal(bench.log.length, 1);
+    assert.equal(bench.log[0]?.["kind"], "patch");
+    assert.equal(bench.log[0]?.["summary"], "params,runStatus");
   });
 
   test("a params patch against a non-object stored params starts from empty", async () => {
@@ -901,6 +959,17 @@ describe("bench/get + bench/ensure over the remote", () => {
       created: true,
     });
   });
+
+  test("a non-object ensure body refuses bench/bad-body at the service door", async () => {
+    const { ctx } = await bootCtx();
+    const svc = new BenchRemoteService(ctx);
+    // the wire is honest JSON all the way down — a junk body (string,
+    // array, null) meets the door's own voice, never a type accident
+    for (const junk of ["x", [1], null] as never[]) {
+      const refusal = await codeOf(svc.ensure(junk, sig));
+      assert.match(refusal, /^bench\/bad-body\|body must be a JSON object/);
+    }
+  });
 });
 
 // ── BenchRemoteService: the mutating verbs (live rows) ─────────────
@@ -1216,6 +1285,9 @@ test("the stage memory law: load rebuilds the bench but a same-id stage KEEPS it
     result: { run_id: "run-a", url: "/runs/run-a/out.png" },
     runStatus: "done",
   }, 0, sig);
+  // THE TELEMETRY LAW (2026-10-08): the second write is result+
+  // runStatus ONLY — a run face, no author key — so the rev the
+  // first (author) write advanced to is STILL the current one.
   await drafts.patch("bench-mem", "s_0", {
     result: { run_id: "run-b", url: "/runs/run-b/out.png" },
     runStatus: "done",
@@ -1244,9 +1316,10 @@ test("the stage memory law: load rebuilds the bench but a same-id stage KEEPS it
   assert.equal(fresh["history"], undefined);
   // THE NON-CLOBBER ARM: an incoming row that CARRIES its own
   // memory keeps it (the carry fills gaps, never overwrites) —
-  // and a prev row with NO history contributes none.
+  // and a prev row with NO history contributes none. (expect_rev
+  // rides the CURRENT rev — the load above walked it once.)
   const landed2 = await bench.ensure({
-    session: "mem", overwrite: true, expect_rev: 3,
+    session: "mem", overwrite: true, expect_rev: after.rev,
     stages: [
       { id: "s_0", card: "image-gen", result: { run_id: "run-x" } },
       { id: "s_histless", card: "image-gen", result: { run_id: "run-y", url: "/runs/run-y/o.png" } },

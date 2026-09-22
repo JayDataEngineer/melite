@@ -125,44 +125,78 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     ]);
   });
 
-  it("sam2's entry owns its own arm (labels + YOLO threshold + the shared tune)", () => {
+  it("sam2's entry owns its own arm (labels + detector threshold + figures + the shared tune)", () => {
     const sam2 = (def.mods ?? []).find((k) => k.kind === "sam2")!;
     const names = fieldNames(sam2);
-    assert.ok(names.includes("labels"), "sam2 selects by the closed YOLO-classes chips (never a freeform word, never the retired parts vocabulary)");
+    assert.ok(names.includes("labels"), "sam2 selects by the closed detector-classes chips (never a freeform word, never the retired parts vocabulary)");
     assert.ok(!names.includes("part"), "the parts vocabulary is gone — the detector proposes, SAM2 refines");
     assert.deepEqual(names, [
-      "name", "labels", "yolo_threshold", "sam_threshold", "sam_dilation",
+      "name", "labels", "figures", "detection_threshold", "sam_threshold", "sam_dilation",
       "bbox_x", "bbox_y", "bbox_w", "bbox_h",
     ]);
     assert.deepEqual([...sam2.requires ?? []], ["comfyui-impact-pack", "comfyui-impact-subpack"],
-      "sam2 declares BOTH packs (the pack owns SAM/BBOX nodes; the subpack owns the YOLO provider)");
+      "sam2 declares BOTH packs (the pack owns SAM/BBOX nodes; the subpack owns the detector provider)");
   });
 
-  it("labels is the closed 80-word COCO select (chips, never freeform)", () => {
+  it("labels is the closed 3-word Impact select (chips, never freeform — the operator's 2026-10-09 order)", () => {
     const sam2 = (def.mods ?? []).find((k) => k.kind === "sam2")!;
     const labels = ((((sam2 as unknown as Row)["fields"] ?? []) as Array<Row>).find((f) => f["name"] === "labels") ?? {}) as Row;
-    assert.equal(labels["label"], "YOLO classes", "the caption names the detector, not the freeform 'Labels'");
+    assert.equal(labels["label"], "Detection class", "the caption names the detector vocab, not YOLO");
     assert.equal(labels["type"], "select", "a detector-owned vocabulary is a select");
     assert.equal(labels["multi"], true, "a plural class filter picks a SET (chips)");
-    assert.equal(labels["default"], "person", "the single-class default survives the face change");
+    assert.equal(labels["default"], "person", "the single-class default survives the trim");
     const options = (labels["options"] ?? []) as Array<Row>;
     const values = options.map((o) => String(o["value"]));
-    assert.equal(options.length, 80, "COCO has 80 classes (the pinned yolo11m's whole world)");
-    assert.ok(values.includes("person") && values.includes("car") && values.includes("dog"), "the working classes ride");
-    assert.ok(!values.includes("face") && !values.includes("hand"), "a non-COCO word is not offered (the old tooltips lied)");
+    assert.deepEqual(values, ["person", "face", "hand"], "ONLY the Impact Pack examples' detectors (yolo11m's 80 COCO died here)");
+    assert.ok(!values.includes("dog") && !values.includes("car"), "a non-Impact word is not offered");
   });
 
-  it("a comma-joined class set composes in declaration order (deduped, verbatim into the YOLO node)", () => {
+  it("a comma-joined class set composes in declaration order (deduped, verbatim into the detector node)", () => {
+    // single detector family (face+hand ride bbox) — a mixed set
+    // refuses in the lane, so the order wall lives on one family.
     const g = new GraphBuilder();
-    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "dog, person,car,person" }] }, DUMMY, g, "run_multi");
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "hand,face,hand" }] }, DUMMY, g, "run_multi");
     const det = Object.values(g.toJSON()).find((n: Row) => n["class_type"] === "BboxDetectorSEGS") as { inputs: Record<string, unknown> };
-    assert.equal(det.inputs.labels, "person,car,dog", "the wire is canonical — declaration order, no duplicates, no Set-order leak");
+    assert.equal(det.inputs.labels, "face,hand", "the wire is canonical — declaration order, no duplicates, no Set-order leak");
   });
 
-  it("a non-YOLO word refuses LOUD and names the offender (never a silent empty detection)", () => {
+  it("a mixed-family set refuses LOUD (one detector per entry — split across two sam2 entries)", () => {
     assert.throws(
-      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person,face" }] }, DUMMY, new GraphBuilder(), "r_bad"),
-      /sam2 entry 0: 'labels' carries non-YOLO words \["face"\]/,
+      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person,face" }] }, DUMMY, new GraphBuilder(), "r_mix"),
+      /maskT1: one detector per sam2 entry/,
+    );
+  });
+
+  it("figures thread from the primary entry (the agent's figure-one/figure-two pick)", () => {
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", figures: "1,2" }] }, DUMMY, g, "run_fig");
+    const nodes = Object.values(g.toJSON()) as Row[];
+    const picks = nodes.filter((n) => n["class_type"] === "ImpactSEGSPicker");
+    assert.equal(picks.length, 2, "one picker per picked figure");
+    assert.deepEqual(picks.map((p) => (p["inputs"] as Row)["picks"]).sort(), ["1", "2"], "the picks ride verbatim");
+    const figSaves = nodes.filter((n) => n["class_type"] === "SaveImage"
+      && String((n["inputs"] as Row)["filename_prefix"]).includes("mask_figure_"));
+    assert.equal(figSaves.length, 2, "each figure saves its own mask_figure_<n>");
+  });
+
+  it("figures on a later entry refuse LOUD (the detection they pick from is the primary's)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }, { labels: "face", figures: "2" }] }, DUMMY, new GraphBuilder(), "r_fig"),
+      /'figures' rides the primary sam2 entry/,
+    );
+  });
+
+  it("a garbage figures string refuses LOUD (1-based numbers, never a silent no-pick)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", figures: "0,abc" }] }, DUMMY, new GraphBuilder(), "r_fig2"),
+      /'figures' carries non-instance words/,
+    );
+  });
+
+  it("a non-Impact word refuses LOUD and names the offender (never a silent empty detection)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person,dog" }] }, DUMMY, new GraphBuilder(), "r_bad"),
+      /sam2 entry 0: 'labels' carries non-detector words \["dog"\]/,
     );
   });
 
@@ -171,18 +205,48 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.deepEqual(fieldNames(draw), ["name", "payload"]);
   });
 
-  it("sam2 declares its weights (declared, then auto provisioned — the operator's 2026-09-19 order)", () => {
+  it("the card declares its weights (declared, then auto provisioned — the operator's 2026-09-19 order; the SAM3 checkpoint joined 2026-10-08, the red-box hunt: the pin had no weight for weeks and the engine truncated the mask arm in silence; the segm/face/hand detectors joined 2026-10-09, the Impact trim: person/face/hand replace yolo11m's 80 COCO)", () => {
     const rows = def.provisions ?? [];
-    assert.equal(rows.length, 2, "the SAM2 arm's two weight files");
+    assert.equal(rows.length, 5, "the card's five weight files");
+    const sam3 = rows.find((r) => r.name === "sam3.1_multiplex_fp16.safetensors")!;
+    assert.ok(sam3, "the sam3 checkpoint rides (the red-box hunt's missing weight)");
+    assert.equal(sam3.folder, "checkpoints", "CheckpointLoaderSimple reads models/checkpoints/");
+    assert.match(sam3.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted by direct download)");
+    assert.ok((sam3.size_bytes ?? 0) > 0 && sam3.url.startsWith("https://"), "the URL + size ride");
     const sam2 = rows.find((r) => r.name === "sam2.1_hiera_large.pt")!;
     assert.ok(sam2, "the sam2 checkpoint rides");
     assert.equal(sam2.folder, "sams", "SAMLoader reads models/sams/");
     assert.match(sam2.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted by direct download)");
     assert.ok((sam2.size_bytes ?? 0) > 0 && sam2.url.startsWith("https://"), "the URL + size ride");
-    const yolo = rows.find((r) => r.name === "yolo11m.pt")!;
-    assert.ok(yolo, "the YOLO detector rides");
-    assert.equal(yolo.folder, "ultralytics/bbox", "the subpack provider reads models/ultralytics/bbox/");
-    assert.match(yolo.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted by direct download)");
+    const segm = rows.find((r) => r.name === "person_yolov8m-seg.pt")!;
+    assert.ok(segm, "the person segm detector rides (the auto-bbox's missing weight, fetched 2026-10-09)");
+    assert.equal(segm.folder, "ultralytics/segm", "the subpack provider reads models/ultralytics/segm/");
+    assert.match(segm.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted by direct download)");
+    const face = rows.find((r) => r.name === "face_yolov8m.pt")!;
+    assert.ok(face, "the face detector rides (the pack's own test-workflow model)");
+    assert.equal(face.folder, "ultralytics/bbox", "the subpack provider reads models/ultralytics/bbox/");
+    assert.match(face.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted from disk)");
+    const hand = rows.find((r) => r.name === "hand_yolov8n.pt")!;
+    assert.ok(hand, "the hand detector rides");
+    assert.equal(hand.folder, "ultralytics/bbox", "the subpack provider reads models/ultralytics/bbox/");
+    assert.match(hand.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted from disk)");
+    assert.ok(!rows.some((r) => r.name === "yolo11m.pt"), "yolo11m is unpinned (its 80 COCO generality is NOT this card)");
+  });
+
+  it("THE DECLARED HERO (the history/preview defect, 2026-10-09: the gallery led with engine completion order — usually the manifest photo, not the mask)", () => {
+    assert.equal(def.primaryFile, "mask_combined", "mask_combined leads the stage gallery; the manifest/crops/figures follow");
+  });
+
+  it("THE ARM WEIGHTS (the silent-truncation law, 2026-10-09): the run's touched provision rows — an unused arm names nothing", () => {
+    const names = (merged: Record<string, unknown>): string[] => [...(def.armWeights!(merged))].sort();
+    assert.deepEqual(names({}), [], "an empty run touches no weights");
+    assert.deepEqual(names({ sam3: [{ prompt: "the cloak" }] }), ["sam3.1_multiplex_fp16.safetensors"], "a sam3 bag names the SAM3 checkpoint");
+    assert.deepEqual(names({ sam2: [{ labels: "person" }] }),
+      ["person_yolov8m-seg.pt", "sam2.1_hiera_large.pt"], "a person-only run never names the face/hand detectors");
+    assert.deepEqual(names({ sam2: [{ labels: "face" }, { labels: "hand" }] }),
+      ["face_yolov8m.pt", "hand_yolov8n.pt", "sam2.1_hiera_large.pt"], "face/hand entries name their own bbox detectors, never the segm one");
+    assert.deepEqual(names({ sam2: [{ labels: "person", figures: "1,2" }] }),
+      ["person_yolov8m-seg.pt", "sam2.1_hiera_large.pt"], "figures add no weights (they pick from the primary's own SEGS)");
   });
 });
 
@@ -249,7 +313,7 @@ describe("the mask compose gate (the bag is the recipe)", () => {
     const g = new GraphBuilder();
     def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person" }] }, DUMMY, g, "run_t2");
     const detect = Object.values(g.toJSON()).find((n: Row) => n["class_type"] === "SAM3_Detect") as { inputs?: Record<string, unknown> };
-    assert.equal(detect!["inputs"]!["threshold"], 0.93, "the declared default 0.93 — never undefined");
+    assert.equal(detect!["inputs"]!["threshold"], 0.5, "the declared default 0.5 (the node's own — 0.93 starved the text selection to an empty mask, proven live)");
     assert.equal(detect!["inputs"]!["refine_iterations"], 2, "the declared default 2 — never undefined");
   });
 
@@ -302,28 +366,29 @@ describe("the mask compose gate (the bag is the recipe)", () => {
     assert.ok(Object.values(row).some((n: Row) => n["class_type"] === "RTDETR_detect"), "the proposal lane fires for the primary's arm");
   });
 
-  it("the sam2 YOLO + SAM2 arm: the Impact YOLO proposes the closed class set, SAM2 refines; empty labels refuse LOUD", () => {
+  it("the sam2 detector + SAM2 arm: the Impact detector proposes the closed class set, SAM2 refines; empty labels refuse LOUD", () => {
     const g = new GraphBuilder();
-    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }, { labels: "dog" }] }, DUMMY, g, "run_p");
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }, { labels: "face" }] }, DUMMY, g, "run_p");
     const row = g.toJSON();
     const json = JSON.stringify(row);
-    assert.ok(json.includes("UltralyticsDetectorProvider"), "the YOLO provider rides (the subpack node)");
-    assert.ok(json.includes("BboxDetectorSEGS"), "the YOLO boxes become SEGS");
+    assert.ok(json.includes("UltralyticsDetectorProvider"), "the detector provider rides (the subpack node)");
+    assert.ok(json.includes("BboxDetectorSEGS"), "the face boxes become SEGS");
+    assert.ok(json.includes("SegmDetectorSEGS"), "the person pixels become SEGS");
     assert.ok(json.includes("SAMLoader"), "the sam2 model loads (the pack node)");
     assert.ok(json.includes("SAMDetectorCombined"), "SAM2 refines the SEGS");
     assert.ok(!json.includes("CLIPTextEncode"), "the sam2 arm never touches the CLIP text lane (no sam3 entries — no manifest)");
-    assert.ok(json.includes("person") && json.includes("dog"), "the closed-vocabulary words ride");
-    assert.ok(!json.includes("face"), "a non-COCO word never rides (the vocabulary is the detector's whole world)");
+    assert.ok(json.includes("person") && json.includes("face"), "the closed-vocabulary words ride");
+    assert.ok(!json.includes("dog"), "a non-Impact word never rides (the vocabulary is the three detectors)");
     assert.ok(json.includes("mask_combined"), "the first standalone source anchors mask_combined");
     assert.throws(
       () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "" }] }, DUMMY, new GraphBuilder(), "r1"),
-      /sam2 entry 0 needs 'labels' \(pick YOLO classes/,
+      /sam2 entry 0 needs 'labels' \(pick detector classes/,
     );
   });
 
-  it("the sam2 entry's OWN yolo_threshold threads its detector verbatim (the bbox lane pins on a non-person class)", () => {
+  it("the sam2 entry's OWN detection_threshold threads its detector verbatim (the bbox lane pins on a non-person class)", () => {
     const g = new GraphBuilder();
-    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "dog", yolo_threshold: 0.35 }] }, DUMMY, g, "run_yt");
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "face", detection_threshold: 0.35 }] }, DUMMY, g, "run_yt");
     const det = Object.values(g.toJSON()).find((n: Row) => n["class_type"] === "BboxDetectorSEGS") as { inputs: Record<string, unknown> };
     assert.equal(det.inputs.threshold, 0.35, "the entry's own arm scalar rides");
   });
@@ -339,10 +404,49 @@ describe("the mask compose gate (the bag is the recipe)", () => {
     const providers = Object.values(json).filter((n: Row) => n["class_type"] === "UltralyticsDetectorProvider") as Array<{ inputs: Record<string, unknown> }>;
     assert.ok(providers.some((n) => String(n.inputs["model_name"]).includes("person_yolov8m-seg")),
       "the SEGMENTATION model is wired (person_yolov8m-seg.pt)");
-    assert.ok(!providers.some((n) => String(n.inputs["model_name"]).includes("yolo11m")),
-      "the providers are lazy — a person-only compose never fires the bbox model (the dog wall above pins that lane)");
+    assert.ok(!providers.some((n) => String(n.inputs["model_name"]).includes("face_yolov8m")),
+      "the providers are lazy — a person-only compose never fires the face model (the hand wall below pins that lane)");
     assert.ok(!Object.values(json).some((n: Row) => n["class_type"] === "BboxDetectorSEGS"),
       "a person-only selection never rides the box detector");
+  });
+
+  it("THE FACE/HAND BBOX LANES (the Impact trim): a face-only selection rides BboxDetectorSEGS with the pinned face model — the pack's own detailer-pipe-test shape", () => {
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "face" }] }, DUMMY, g, "run_face");
+    const json = g.toJSON();
+    const faceDet = Object.values(json).find((n: Row) => n["class_type"] === "BboxDetectorSEGS") as { inputs: Record<string, unknown> } | undefined;
+    assert.ok(faceDet, "the face-only selection routes BboxDetectorSEGS");
+    const providers = Object.values(json).filter((n: Row) => n["class_type"] === "UltralyticsDetectorProvider") as Array<{ inputs: Record<string, unknown> }>;
+    assert.ok(providers.some((n) => String(n.inputs["model_name"]).includes("face_yolov8m")),
+      "the FACE model is wired (bbox/face_yolov8m.pt)");
+    assert.ok(!Object.values(json).some((n: Row) => n["class_type"] === "SegmDetectorSEGS"),
+      "a face-only selection never rides the segmentation detector");
+    const g2 = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "hand" }] }, DUMMY, g2, "run_hand");
+    const providers2 = Object.values(g2.toJSON()).filter((n: Row) => n["class_type"] === "UltralyticsDetectorProvider") as Array<{ inputs: Record<string, unknown> }>;
+    assert.ok(providers2.some((n) => String(n.inputs["model_name"]).includes("hand_yolov8n")),
+      "the HAND model is wired (bbox/hand_yolov8n.pt)");
+  });
+
+  it("THE 512-HINT STRIP (the red-box hunt's third bug): the runtime finalize kills the autofilled default-equal bboxes — a latent quarter-blind hazard, NOT the observed empty mask (that was the 0.93 threshold: 0.93 → 0.00% with and without the hint, 0.5 → 6.5%)", () => {
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "the cloak" }] }, DUMMY, g, "run_q1");
+    const unscoped = Object.values(g.toJSON()).find((n: Row) => n["class_type"] === "SAM3_Detect") as { inputs: Record<string, unknown> } | undefined;
+    assert.ok(unscoped, "the detect rides");
+    assert.ok(!("bboxes" in (unscoped!.inputs ?? {})), "no hint on an unscoped detect — the whole image is the search");
+    // the drawn region quad threads as the hint at compose time...
+    const g2 = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "the cloak", bbox_x: 0, bbox_y: 0, bbox_w: 512, bbox_h: 512 }] }, DUMMY, g2, "run_q2");
+    const scoped = Object.values(g2.toJSON()).find((n: Row) => n["class_type"] === "SAM3_Detect") as { inputs: Record<string, unknown> } | undefined;
+    assert.ok(scoped, "the scoped detect rides");
+    assert.deepEqual(scoped!.inputs["bboxes"], { x: 0, y: 0, width: 512, height: 512 }, "the lane threads the drawn Region as the hint");
+    // ...and the runtime finalize strips it whenever it equals the autofilled default verbatim.
+    // HONEST EDGE (audit 2026-10-09): a region drawn EXACTLY (0,0,512,512) loses its hint at runtime — benign, because the scopeMask multiply still bounds the mask to the drawn box, independent of the hint.
+    const fin = def.finalize!(g2.toJSON());
+    const scopedFin = Object.values(fin).find((n: Row) => n["class_type"] === "SAM3_Detect") as { inputs: Record<string, unknown> } | undefined;
+    assert.ok(!("bboxes" in (scopedFin!.inputs ?? {})), "the default-equal dict dies in finalize even when drawn — only non-default quads and links survive (see the finalizeMask unit wall)");
+    const mult = Object.values(fin).find((n: Row) => n["class_type"] === "MaskComposite" && (n["inputs"] as { operation?: string })["operation"] === "multiply");
+    assert.ok(mult, "the scope still bounds via the mask multiply — the stripped hint loses nothing");
   });
 
   it("THE PER-INSTANCE CROPS (the gap audit's #3/#4 export half): every detector entry saves one crop per detected instance", () => {
@@ -358,7 +462,7 @@ describe("the mask compose gate (the bag is the recipe)", () => {
 
   it("a LATER sam2 entry's yolo threshold threads ITS export's detector (per-export tune)", () => {
     const g = new GraphBuilder();
-    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "cat" }, { labels: "dog", yolo_threshold: 0.2 }] }, DUMMY, g, "run_yt2");
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "face" }, { labels: "hand", detection_threshold: 0.2 }] }, DUMMY, g, "run_yt2");
     const dets = Object.values(g.toJSON()).filter((n: Row) => n["class_type"] === "BboxDetectorSEGS") as Array<{ inputs: Record<string, unknown> }>;
     assert.equal(dets.length, 2, "primary + export detectors");
     assert.ok(dets.some((n) => n.inputs.threshold === 0.2), "the export's own yolo threshold reaches its detector");
@@ -378,7 +482,7 @@ describe("the mask compose gate (the bag is the recipe)", () => {
 
   it("sam3-before-sam2 is the primary order (the first standalone source anchors combined)", () => {
     const g = new GraphBuilder();
-    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "dog" }], sam3: [{ prompt: "the cloak" }] }, DUMMY, g, "run_o");
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "face" }], sam3: [{ prompt: "the cloak" }] }, DUMMY, g, "run_o");
     const json = JSON.stringify(g.toJSON());
     assert.ok(json.includes("mask_combined"), "combined saves");
     assert.ok(json.includes("the cloak"), "sam3 (declared first) is the primary");
@@ -447,7 +551,7 @@ describe("the mask compose gate (the refuse-arm sweep)", () => {
   it("empty labels on the sam2 PRIMARY refuse (the labelsOf arm)", () => {
     assert.throws(
       () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: 7 }] }, DUMMY, new GraphBuilder(), "r1"),
-      /sam2 entry 0 needs 'labels' \(pick YOLO classes.*got 7/,
+      /sam2 entry 0 needs 'labels' \(pick detector classes.*got 7/,
     );
   });
 
@@ -461,7 +565,7 @@ describe("the mask compose gate (the refuse-arm sweep)", () => {
   it("empty labels on a LATER sam2 entry refuse (the export labelsOf arm)", () => {
     assert.throws(
       () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }, { labels: 7 }] }, DUMMY, new GraphBuilder(), "r1"),
-      /sam2 entry 1 needs 'labels' \(pick YOLO classes.*got 7/,
+      /sam2 entry 1 needs 'labels' \(pick detector classes.*got 7/,
     );
   });
 });
@@ -537,10 +641,10 @@ describe("the mask compose gate (the per-entry scalars cannot go around the decl
     );
   });
 
-  it("an out-of-bounds yolo_threshold refuses loud (0.05–0.95 declared on sam2's entry)", () => {
+  it("an out-of-bounds detection_threshold refuses loud (0.05–0.95 declared on sam2's entry)", () => {
     assert.throws(
-      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", yolo_threshold: 99 }] }, DUMMY, new GraphBuilder(), "r_yt"),
-      /yolo_threshold/,
+      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", detection_threshold: 99 }] }, DUMMY, new GraphBuilder(), "r_yt"),
+      /detection_threshold/,
     );
   });
 
@@ -580,7 +684,7 @@ describe("the mask compose gate (the per-entry scalars cannot go around the decl
 
   it("a sam2 export's out-of-bounds sam_threshold refuses loud (the per-entry tune is gated too)", () => {
     assert.throws(
-      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }, { labels: "dog", sam_threshold: 2 }] }, DUMMY, new GraphBuilder(), "r_ex"),
+      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }, { labels: "face", sam_threshold: 2 }] }, DUMMY, new GraphBuilder(), "r_ex"),
       /sam2 entry 1.*sam_threshold/,
     );
   });

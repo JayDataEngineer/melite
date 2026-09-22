@@ -96,6 +96,26 @@ describe("submitPrompt (the receipt law)", () => {
     await expect(submitPrompt(fakeClient({ queuePrompt: async () => ({ prompt_id: 7 }) }), {}))
       .rejects.toThrow(ComfyError);
   });
+  it("THE SILENT-TRUNCATION REFUSAL (the red-box hunt, 2026-10-08): a 200 answer carrying node_errors REFUSES LOUD — the node, its message, and the outputs that would have silently vanished — never a success with half the artifacts", async () => {
+    const dropped = {
+      queuePrompt: async () => ({
+        prompt_id: "p-2",
+        node_errors: {
+          "CheckpointLoaderSimple.0": {
+            errors: [{ type: "value_not_in_list", message: "Value not in list", details: "ckpt_name: 'sam3.1_multiplex_fp16.safetensors' not in […]" }],
+            dependent_outputs: ["SaveImage.0"],
+            class_type: "CheckpointLoaderSimple",
+          },
+        },
+      }),
+    };
+    await expect(submitPrompt(fakeClient(dropped), {}))
+      .rejects.toThrow(/TRUNCATED graph.*CheckpointLoaderSimple\.0: Value not in list.*silently dropped outputs: SaveImage\.0/s);
+  });
+  it("an EMPTY node_errors object rides clean (the refusal fires only on dropped nodes)", async () => {
+    const r = await submitPrompt(fakeClient({ queuePrompt: async () => ({ prompt_id: "p-3", node_errors: {} }) }), {});
+    expect(r.promptId).toBe("p-3");
+  });
 });
 
 describe("waitTerminal (verdict order + the loop)", () => {

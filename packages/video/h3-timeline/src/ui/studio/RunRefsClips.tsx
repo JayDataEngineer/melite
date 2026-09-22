@@ -13,61 +13,89 @@
  * authority), and ducks the generated voice under the real clip.
  * Music-only clips (no window overlap) overlay clean, no lane.
  */
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import s from "./studio.module.css"
 import type { LayerA } from "./docModel"
 
-/** Layer A rail: the audio-clips upload door (3189–3315, refs cut). */
+/** Layer A rail: the audio-clips upload door (3189–3315, refs cut) +
+ * THE LANE INSPECTOR (2026-09-22): every clip's lane and words/event
+ * text — the authored half of the D-M-E law (the text is what tells
+ * the model WHAT the audio is; the pin is the other half). */
 export function RunRefsClips({
-  layerA, takeAudioFile, audioUploadRef,
+  layerA, updateAudioClip, deleteAudioClip,
 }: {
   layerA: LayerA
-  takeAudioFile: (file: File, startFrame: number) => void
-  audioUploadRef: { current: HTMLInputElement | null }
+  updateAudioClip: (clipId: string, patch: { class?: "dialogue" | "sfx" | "music", text?: string }) => void
+  deleteAudioClip: (clipId: string) => void
 }) {
   return (
     <>
-    {/* (Layer A NLE) the UPLOAD door: audio files land as clips
-        on the Music row at frame 0 (drag them anywhere after);
-        OS-dropping a file onto the row lands it AT the drop. */}
+    {/* (2026-09-22, the lane-picker law) the bespoke UPLOAD BUTTON is
+        DEAD — the add door is the ⤴ beside each lane title in the
+        timeline gutter below (the generic From flow / From media /
+        From file grammar). This row keeps the count + the guard hint. */}
     <div className={s.clipsRow}>
       <span className={s.clipsTitle}>
         Clips
       </span>
-      <Button
-        type="button"
-        data-testid="tl-audio-upload"
-        onClick={() => audioUploadRef.current?.click()}
-        className={s.uploadAudio}
-      >
-        ⤴ Upload audio
-      </Button>
       <span className={s.clipsNote}>
         {layerA.audio_clips?.length
-          ? `${layerA.audio_clips.length} clip${layerA.audio_clips.length === 1 ? "" : "s"} on the Music row — drag to move, × to remove`
-          : "none — upload or drop a file on the Music row"}
+          ? `${layerA.audio_clips.length} clip${layerA.audio_clips.length === 1 ? "" : "s"} on the audio lanes — drag to move, × to remove`
+          : "none — add from a lane's ⤴ in the timeline, or drop a file on any lane"}
       </span>
-      {/* THE LANE-COST HINT (roadmap §14): the 3-lane audio bus law
-          states itself HERE, not only at compose — the loud refusal
-          names every competitor AFTER the Run press; the hint names
-          the budget BEFORE it (bed + dialogue clips spend the same
-          3 lanes the per-call ref audios want). */}
+      {/* THE DOOR-GUARD HINT (2026-09-22, the operator's overlap
+          law): clips PIN their windows — and a pinned window's
+          normal audio inputs stand down (music pin ⇒ no bed slice
+          there; dialogue/sfx pin ⇒ ref audios mute there). The hint
+          states the guard BEFORE the Run press; the compose owns the
+          wall regardless of the UI. */}
       <span className={s.clipsHint} data-testid="tl-clips-lane-hint">
-        3 audio lanes per window: bed + dialogue clips + ref audios share them — a full bus refuses at Run
+        pinned windows own their audio: music clip ⇒ no bed there · dialogue/sfx clip ⇒ ref audios mute there — no accidental overlap
       </span>
-      <input
-        ref={audioUploadRef}
-        type="file"
-        accept="audio/*"
-        multiple
-        className={s.hiddenInput}
-        onChange={(e) => {
-          const fs = Array.from(e.target.files ?? [])
-          fs.forEach((f) => takeAudioFile(f, 0))
-          e.target.value = ""   // same-file re-pick works
-        }}
-      />
     </div>
+    {(layerA.audio_clips?.length ?? 0) > 0 && (
+      <div className={s.laneInspector} data-testid="tl-lane-inspector">
+        <span className={s.clipsTitle}>Lanes — words &amp; events</span>
+        {(layerA.audio_clips ?? []).map((c) => {
+          const cls = c.class ?? (c.text ? "dialogue" : "music")
+          return (
+            <div key={c.id} className={s.laneRow} data-testid="tl-lane-row" data-clip={c.name} data-lane={cls}>
+              <span className={s.laneName} title={c.src}>{c.name}</span>
+              <select
+                className={s.laneSelect}
+                data-testid="tl-lane-class"
+                value={cls}
+                onChange={(e) => updateAudioClip(c.id, { class: e.target.value as "dialogue" | "sfx" | "music" })}
+              >
+                <option value="dialogue">Dialogue</option>
+                <option value="music">Music</option>
+                <option value="sfx">SFX</option>
+              </select>
+              <input
+                className={s.laneText}
+                data-testid="tl-lane-text"
+                type="text"
+                placeholder={cls === "dialogue"
+                  ? "the exact spoken words (verbatim, unabridged — they move the mouth)"
+                  : cls === "sfx"
+                    ? "the event the soundscape times (e.g. a sudden explosion rocks the room)"
+                    : "music description (rides non_diegetic_music)"}
+                value={c.text ?? ""}
+                onChange={(e) => updateAudioClip(c.id, { text: e.target.value })}
+              />
+              <button
+                type="button"
+                className={s.laneDelete}
+                data-testid="tl-lane-delete"
+                title="remove the clip"
+                onClick={() => deleteAudioClip(c.id)}
+              >
+                ×
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    )}
     </>
   )
 }

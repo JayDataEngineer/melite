@@ -2,7 +2,7 @@
 // cardsRegistry.ts, the god-file cut): param preparation (steps
 // 2-6) and the in-process compose (steps 7-9). Explicit seat
 // deps; no Service state beyond the accessors the seat passes.
-import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal } from "@melite/comfyui-cordis";
+import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent } from "@melite/comfyui-cordis";
 import { EngineContext, composeModPlane, loadFacts, liveObjectInfo, theService } from "@melite/comfyui-cordis";
 import type { FactsReads } from "@melite/comfyui-cordis";
 import type { PreparedCard } from "./cardsRegistry.ts";
@@ -86,6 +86,13 @@ export async function composeOnce(
     await composeModPlane(ctx);
     ctx.comfyui.setFacts(loadFacts(factsPath(), deps.readsSync()));
     ctx.comfyui.setObjectInfo(oi);
+    // THE ARM-WEIGHT READER (the silent-truncation law, 2026-10-09):
+    // the compose door checks the run's touched provision rows
+    // against the models tree BEFORE composing — the module-level
+    // presence read (runtime tree + the endpoint mount leg, the
+    // manage door's own spelling). An absent weight refuses loud
+    // with its fetch URL, never a silent downstream death.
+    ctx.comfyui.setWeightPresent((relativePath, name) => checkModelPresent(relativePath, name) !== null);
     // THE NESTED STANZA UNWRAP (cli.ts:82-91): a `params` dict key in
     // the incoming params IS the stanza; siblings merge over it.
     const lifted: Record<string, unknown> = liftStanza(params);

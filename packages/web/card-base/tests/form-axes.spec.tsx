@@ -229,6 +229,31 @@ test('AXES: variant + quant selects compose down the chain; the pick writes the 
   expect(onSet).toHaveBeenCalledWith('quant', 'q-fp8')
 })
 
+test('PAIR: Model and Variant ride ONE row (never stacked on different rows)', () => {
+  // the pass-along law, enforced: the auto-fit grid stacks the axes
+  // in narrow panels — the dedicated pair seats Model + Variant side
+  // by side at any width.
+  const { container } = axes({})
+  const pair = container.querySelector('[data-axes-pair="Model+Variant"]')
+  expect(pair).not.toBeNull()
+  const model = screen.getByLabelText('Model') as HTMLSelectElement
+  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
+  expect(pair!.contains(model)).toBe(true)
+  expect(pair!.contains(variant)).toBe(true)
+})
+
+test('PAIR: no Variant axis, no pair (the Model rides alone, exactly as before)', () => {
+  const spec = {
+    ...doc(),
+    features: { variant_groups: { Quant: { label: 'Quant' } } },
+    variants: (doc().variants ?? []).filter((v) => v.group !== 'Variant'),
+  } as unknown as FormSpecDoc
+  const { container } = axes({ spec })
+  expect(container.querySelector('[data-axes-pair]')).toBeNull()
+  expect(screen.getByLabelText('Model')).not.toBeNull()
+  expect(screen.getByLabelText('Quant')).not.toBeNull()
+})
+
 test('AXES: a held stranger on an axis renders AS ITSELF, refused (the lane proof, held)', () => {
   axes({ value: { variant: 'nope' } })
   const variant = screen.getByLabelText('Variant') as HTMLSelectElement

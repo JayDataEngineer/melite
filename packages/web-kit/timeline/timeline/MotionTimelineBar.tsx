@@ -216,6 +216,11 @@ export interface MotionTimelineBarProps {
   onAudioClipDelete?: (layerId: string, clipId: string) => void
   /** Detach a wired layer (its × in the gutter). */
   onAudioDetach?: (layerId: string) => void
+  /** (2026-09-22, the D-M-E card law) render audio clips as SMALL CALL
+   * CARDS — gradient fill, accent left edge, glyph + name + span, 44px
+   * lanes — instead of the 26px blocks. Opt-in; absent → byte-identical
+   * blocks (the motion tenant never changes). */
+  audioClipCards?: boolean
   /** ── STYLING SEAM (2026-09-07, the shadcn rule): the bar is a
    *  shared component and takes className/style like every other
    *  primitive — the tenant's shell (border, rounding) rides the
@@ -244,6 +249,19 @@ export interface AudioLayer {
   label: string
   /** The wired artifact NAME (null/"" = unwired — the dashed drop row). */
   stem?: string | null
+  /** (2026-09-22, the D-M-E card law) per-lane accent — any CSS color;
+   * tints the gutter glyph and, in cards mode, the clip's gradient +
+   * left edge. Absent → the current neutral look, byte-identical. */
+  accent?: string
+  /** (2026-09-22) the lane's glyph: music (default) | mic | zap. */
+  icon?: "music" | "mic" | "zap"
+  /** (2026-09-22, the lane-picker law) the lane's ADD door — when
+   *  present the gutter head renders an upload affordance beside the
+   *  label; the click hands the BUTTON ELEMENT back (the anchor the
+   *  host's source-picker menu pins to — the estate's one From flow /
+   *  From media / From file grammar). Absent → no affordance,
+   *  byte-identical. */
+  onUpload?: (anchor: HTMLElement) => void
   /** (Layer A NLE law, 2026-08-31) Positioned CLIPS — the DaVinci track:
    *  each clip starts at its own frame and runs its own length (across
    *  calls, under half a call, wherever). Present + non-empty → the row
@@ -267,7 +285,7 @@ export interface AudioClipView {
 /** Re-export surface: every symbol moved into a seam file stays
  *  importable from this path — the public API never moves. */
 export {
-  AUDIO_H, BEATS_H, clamp, DRAG_ARM_PX, fmtTimecode, GUTTER_W,
+  AUDIO_CARDS_H, AUDIO_H, BEATS_H, clamp, DRAG_ARM_PX, fmtTimecode, GUTTER_W,
   LANE_H, MAX_PPF, PROMPTS_H, rgb, RULER_H, ZOOM_STEP,
 } from "./MotionTimelineBarLayout"
 export { buildTicks, useTimelineScale } from "./MotionTimelineBarScale"
@@ -319,6 +337,7 @@ export function MotionTimelineBar({
   onAudioClipMove,
   onAudioClipDelete,
   onAudioDetach,
+  audioClipCards = false,
   className,
   style,
   theme,
@@ -349,7 +368,7 @@ export function MotionTimelineBar({
         scale={scale} scrollRef={scrollRef} frameIdx={frameIdx}
         promptsHeight={promptsHeight} promptsLabel={promptsLabel}
         beats={beats} beatsLabel={beatsLabel} beatsHeight={beatsHeight}
-        audioLayers={audioLayers} onAudioDetach={onAudioDetach} tracks={tracks}
+        audioLayers={audioLayers} onAudioDetach={onAudioDetach} tracks={tracks} audioClipCards={audioClipCards}
       />
       <TimelineContent
         scrollRef={scrollRef} contentW={scale.contentW}
@@ -373,7 +392,7 @@ export function MotionTimelineBar({
           />
         )}
         <TimelineAudioLanes
-          audioLayers={audioLayers} prompts={prompts} fps={fps}
+          audioLayers={audioLayers} prompts={prompts} fps={fps} audioClipCards={audioClipCards}
           frameToPx={scale.frameToPx} xToFrame={scale.xToFrame} startDrag={drag.startDrag}
           onAudioDrop={onAudioDrop} onAudioDropAt={onAudioDropAt} onAudioFileDrop={onAudioFileDrop}
           onAudioClipMove={onAudioClipMove} onAudioClipDelete={onAudioClipDelete}

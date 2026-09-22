@@ -104,8 +104,12 @@ function fakeRes(): { res: ServerResponse; seen: Seen } {
   return { res: res as unknown as ServerResponse, seen };
 }
 
-function fakeReq(method: string, url?: string): IncomingMessage {
-  const req = url === undefined ? { method } : { method, url };
+function fakeReq(
+  method: string,
+  url?: string,
+  headers: Record<string, string> = {},
+): IncomingMessage {
+  const req = url === undefined ? { method, headers } : { method, url, headers };
   return req as unknown as IncomingMessage;
 }
 
@@ -113,9 +117,10 @@ async function drive(
   handler: Handler,
   method: string,
   url?: string,
+  headers: Record<string, string> = {},
 ): Promise<Seen> {
   const { res, seen } = fakeRes();
-  await handler(fakeReq(method, url), res);
+  await handler(fakeReq(method, url, headers), res);
   return seen;
 }
 
@@ -338,6 +343,7 @@ describe("the byte route serves", () => {
     assert.deepEqual(seen.headers, {
       "content-type": "image/png",
       "content-length": "10",
+      "accept-ranges": "bytes",
       "cache-control": "no-store",
     });
     assert.deepEqual(seen.body, Buffer.alloc(0));
@@ -358,6 +364,7 @@ describe("the byte route serves", () => {
     assert.deepEqual(seen.headers, {
       "content-type": "image/png",
       "content-length": "5",
+      "accept-ranges": "bytes",
       "cache-control": "no-store",
     });
     assert.deepEqual(seen.body, bytes);
@@ -376,6 +383,7 @@ describe("the byte route serves", () => {
     assert.deepEqual(seen.headers, {
       "content-type": "video/mp4",
       "content-length": "3",
+      "accept-ranges": "bytes",
       "cache-control": "no-store",
     });
     assert.deepEqual(seen.body, Buffer.from("VID"));
@@ -394,9 +402,24 @@ describe("the byte route serves", () => {
     assert.deepEqual(seen.headers, {
       "content-type": "application/octet-stream",
       "content-length": "2",
+      "accept-ranges": "bytes",
       "cache-control": "no-store",
     });
     assert.deepEqual(seen.body, Buffer.from("ZZ"));
+  });
+
+  test("GET serves svg as octet-stream — never inline executable (the svg law: same-origin script vector)", async () => {
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "diagram.svg": "<svg></svg>" });
+    const { handler } = await mountWeb(root);
+    const seen = await drive(
+      handler,
+      "GET",
+      `${MEDIA_PREFIX}/run-aaa1-x/diagram.svg`,
+    );
+    assert.equal(seen.status, 200);
+    assert.equal(seen.headers["content-type"], "application/octet-stream");
+    assert.deepEqual(seen.body, Buffer.from("<svg></svg>"));
   });
 
   test("GET serves extensionless names as octet-stream", async () => {
@@ -408,6 +431,7 @@ describe("the byte route serves", () => {
     assert.deepEqual(seen.headers, {
       "content-type": "application/octet-stream",
       "content-length": "2",
+      "accept-ranges": "bytes",
       "cache-control": "no-store",
     });
     assert.deepEqual(seen.body, Buffer.from("NE"));
@@ -431,6 +455,127 @@ describe("the byte route serves", () => {
       assert.equal(res.headers.get("content-type"), "image/png");
       assert.equal(res.headers.get("content-length"), "5");
       assert.deepEqual(Buffer.from(await res.arrayBuffer()), bytes);
+    } finally {
+      await new Promise<void>((r) => server.close(() => r()));
+    }
+  });
+});
+
+describe("the range law (the audio-seek stroke): 206 slices, the loud 416, the ignored ask", () => {
+  // 10 bytes 0..9 — the canonical window every arm slices against
+  const URL = `${MEDIA_PREFIX}/run-aaa1-x/track.mp3`;
+
+  test("a bounded window answers 206 with exactly the asked slice", async () => {
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "track.mp3": "0123456789" });
+    const { handler } = await mountWeb(root);
+    const seen = await drive(handler, "GET", URL, { range: "bytes=2-5" });
+    assert.equal(seen.status, 206);
+    assert.deepEqual(seen.headers, {
+      "content-type": "audio/mpeg",
+      "content-length": "4",
+      "content-range": "bytes 2-5/10",
+      "accept-ranges": "bytes",
+      "cache-control": "no-store",
+    });
+    assert.deepEqual(seen.body, Buffer.from("2345"));
+    assert.equal(seen.ended, true);
+  });
+
+  test("an open end runs to EOF; a suffix serves the tail", async () => {
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "track.mp3": "0123456789" });
+    const { handler } = await mountWeb(root);
+    const open = await drive(handler, "GET", URL, { range: "bytes=6-" });
+    assert.equal(open.status, 206);
+    assert.deepEqual(open.body, Buffer.from("6789"));
+    assert.deepEqual(open.headers["content-range"], "bytes 6-9/10");
+    const tail = await drive(handler, "GET", URL, { range: "bytes=-3" });
+    assert.equal(tail.status, 206);
+    assert.deepEqual(tail.body, Buffer.from("789"));
+    assert.deepEqual(tail.headers["content-range"], "bytes 7-9/10");
+  });
+
+  test("an end past EOF clamps to the last byte", async () => {
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "track.mp3": "0123456789" });
+    const { handler } = await mountWeb(root);
+    const seen = await drive(handler, "GET", URL, { range: "bytes=8-999" });
+    assert.equal(seen.status, 206);
+    assert.deepEqual(seen.body, Buffer.from("89"));
+    assert.deepEqual(seen.headers["content-range"], "bytes 8-9/10");
+    assert.deepEqual(seen.headers["content-length"], "2");
+  });
+
+  test("a start at/past EOF is the loud 416 naming the size", async () => {
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "track.mp3": "0123456789" });
+    const { handler } = await mountWeb(root);
+    for (const ask of ["bytes=10-", "bytes=99-200", "bytes=-0"]) {
+      const seen = await drive(handler, "GET", URL, { range: ask });
+      assert.equal(seen.status, 416, ask);
+      assert.deepEqual(seen.headers["content-range"], "bytes */10", ask);
+      assert.deepEqual(seen.headers["accept-ranges"], "bytes", ask);
+      assert.equal(seen.ended, true, ask);
+    }
+  });
+
+  test("ignorable asks serve the full 200 (malformed, multi-range, inverted)", async () => {
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "track.mp3": "0123456789" });
+    const { handler } = await mountWeb(root);
+    for (const ask of ["bytes=abc", "bytes=0-1,3-4", "bytes=5-2", "chunks=0-4"]) {
+      const seen = await drive(handler, "GET", URL, { range: ask });
+      assert.equal(seen.status, 200, ask);
+      assert.deepEqual(seen.body, Buffer.from("0123456789"), ask);
+      assert.deepEqual(seen.headers["content-length"], "10", ask);
+    }
+  });
+
+  test("HEAD ignores a Range: the metadata answer stays full-length", async () => {
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "track.mp3": "0123456789" });
+    const { handler } = await mountWeb(root);
+    const seen = await drive(handler, "HEAD", URL, { range: "bytes=2-5" });
+    assert.equal(seen.status, 200);
+    assert.deepEqual(seen.headers["content-length"], "10");
+    assert.deepEqual(seen.body, Buffer.alloc(0));
+  });
+
+  test("a slice of an audio file carries the audio content type (the playable seek)", async () => {
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "voice.wav": "0123456789" });
+    const { handler } = await mountWeb(root);
+    const seen = await drive(
+      handler,
+      "GET",
+      `${MEDIA_PREFIX}/run-aaa1-x/voice.wav`,
+      { range: "bytes=0-3" },
+    );
+    assert.equal(seen.status, 206);
+    assert.deepEqual(seen.headers["content-type"], "audio/wav");
+    assert.deepEqual(seen.body, Buffer.from("0123"));
+  });
+
+  test("real HTTP: a fetch carrying Range answers 206 with the slice bytes", async () => {
+    const root = mintRoot();
+    const bytes = Buffer.from("0123456789");
+    seedRun(root, "run-aaa1-x", { "track.mp3": bytes });
+    const { handler } = await mountWeb(root);
+    const server = createServer((req, res) => {
+      void handler(req, res);
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
+    try {
+      const port = (server.address() as AddressInfo).port;
+      const res = await fetch(
+        `http://127.0.0.1:${String(port)}${MEDIA_PREFIX}/run-aaa1-x/track.mp3`,
+        { headers: { range: "bytes=2-5" } },
+      );
+      assert.equal(res.status, 206);
+      assert.equal(res.headers.get("content-range"), "bytes 2-5/10");
+      assert.equal(res.headers.get("accept-ranges"), "bytes");
+      assert.deepEqual(Buffer.from(await res.arrayBuffer()), Buffer.from("2345"));
     } finally {
       await new Promise<void>((r) => server.close(() => r()));
     }
@@ -818,6 +963,12 @@ describe("stroke-82 walls: the content-type table + query", () => {
       ["f.webp", "image/webp"],
       ["f.gif", "image/gif"],
       ["f.webm", "video/webm"],
+      ["f.mp3", "audio/mpeg"],
+      ["f.wav", "audio/wav"],
+      ["f.flac", "audio/flac"],
+      ["f.ogg", "audio/ogg"],
+      ["f.m4a", "audio/mp4"],
+      ["f.aac", "audio/aac"],
       ["f.json", "application/json; charset=utf-8"],
       ["f.txt", "text/plain; charset=utf-8"],
     ];

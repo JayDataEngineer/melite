@@ -23,6 +23,12 @@ export const DECL: ModelDecl = {
     "extra_option": ""
   },
   "genre": "image",
+  // ONE Standard variant, deliberately (the freeform upstream):
+  // JJC_DownloadAndLoadJoyCaptionModel takes ANY repo id or local
+  // path (unbounded — no closed set to enumerate as variants), so
+  // the family default stamps beta-one and custom paths ride
+  // explicit params. A variant per checkpoint here would be a lie
+  // of closedness.
   "variants": [
     {
       "id": "standard",

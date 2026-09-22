@@ -158,10 +158,45 @@ export function useDerivedView(args: {
         start_frame: g0,
         dur_frames: Math.max(1, g1 - g0),
         gain: c.gain,
+        class: c.class,
+        text: c.text,
       }
     }),
     [layerA.audio_clips, filmFromDoc],
   )
+
+  /** THE PIN MAP (2026-09-22, the door-guard UX arm): which calls'
+   * spans carry a dialogue/sfx clip — those windows PIN, and the
+   * pinned window's normal audio doors stand down (the CallCard
+   * grays the Ref audios bucket; the compose owns the real wall —
+   * this is the BEFORE-the-Run hint, doc-space overlap mirroring
+   * the stamp law's doc-span arm). */
+  const voicePinnedCalls = useMemo(() => {
+    const set = new Set<number>()
+    calls.forEach((call, i) => {
+      const sf = call.start_frame, ef = call.end_frame
+      for (const c of layerA.audio_clips ?? []) {
+        const cls = c.class ?? (c.text ? "dialogue" : "music")
+        if (cls !== "dialogue" && cls !== "sfx") continue
+        if ((c.dur_frames ?? 0) <= 0) continue
+        if (c.start_frame < ef && c.start_frame + c.dur_frames > sf) { set.add(i); break }
+      }
+    })
+    return set
+  }, [calls, layerA.audio_clips])
+
+  /** THE BLOCKER (2026-09-22, the operator's lane-collision law):
+   * the D-M-E clips and the normal audio inputs are MUTUALLY EXCLUSIVE
+   * at authoring time — reference audio wired on ANY call locks the
+   * lanes (no adds on ANY lane); ANY clip present locks the Ref audios
+   * buckets on EVERY call. Doc-level, both directions, blunt on
+   * purpose: the compose door guard stays only as the silent backstop
+   * for docs that already carry both (it strips, never crashes). */
+  const refAudiosPresent = useMemo(
+    () => calls.some((c) => !!(c.refs?.audios ?? "").trim()),
+    [calls],
+  )
+  const audioClipsPresent = (layerA.audio_clips?.length ?? 0) > 0
 
   /** Window render → call clip (previews INSIDE the bar clips): window
    * index ↔ call index 1:1 (best effort — a forced mid-call split
@@ -183,5 +218,6 @@ export function useDerivedView(args: {
     sourceOptions, linkGroups, filmstrip, prompts, lanes,
     filmDurSec, setFilmDurSec, barTotal,
     barPrompts, barLanes, barAudioClips, callPreviews, selectedBarId,
+    voicePinnedCalls, refAudiosPresent, audioClipsPresent,
   }
 }

@@ -223,6 +223,8 @@ export function VideoTimelineStudio({
               setCallSpan: mut.setCallSpan, setCallGuide: mut.setCallGuide,
               setCallTransition: mut.setCallTransition,
               setCallRefs: mut.setCallRefs, setCallKnob: mut.setCallKnob,
+              voicePinnedCalls: derived.voicePinnedCalls,
+              audioClipsPresent: derived.audioClipsPresent,
             }}
           />
           )}
@@ -249,8 +251,8 @@ export function VideoTimelineStudio({
            * Modifiers the operator caught). */}
           <RunRefsClips
             layerA={layerA}
-            takeAudioFile={audio.takeAudioFile}
-            audioUploadRef={audio.audioUploadRef}
+            updateAudioClip={audio.updateAudioClip}
+            deleteAudioClip={audio.deleteAudioClip}
           />
             </div>
           </details>
@@ -279,6 +281,8 @@ export function VideoTimelineStudio({
               setCallSpan: mut.setCallSpan, setCallGuide: mut.setCallGuide,
               setCallTransition: mut.setCallTransition,
               setCallRefs: mut.setCallRefs, setCallKnob: mut.setCallKnob,
+              voicePinnedCalls: derived.voicePinnedCalls,
+              audioClipsPresent: derived.audioClipsPresent,
             }}
           />
           )}
@@ -341,10 +345,12 @@ export function VideoTimelineStudio({
             addCallAt={mut.addCallAt}
             handleTimelineSelect={view.handleTimelineSelect}
             layerA={layerA}
+            refAudiosBlocked={derived.refAudiosPresent}
             addAudioClip={audio.addAudioClip}
             takeAudioFile={audio.takeAudioFile}
             moveAudioClip={audio.moveAudioClip}
             deleteAudioClip={audio.deleteAudioClip}
+            updateAudioClip={audio.updateAudioClip}
             setLayerAKey={fx.setLayerAKey}
             artifactIndex={audio.artifactIndex}
             docFromFilm={audio.docFromFilm}

@@ -1,6 +1,6 @@
 ---
 name: video-timeline
-description: "Author multi-shot video on the h3-timeline card — the calls document (text, guides, per-call knobs, the audio_stem bed) and the compose→queue→fix loop."
+description: "Author multi-shot video on the h3-timeline card — the calls document (text, guides, per-call knobs, the audio_clips D-M-E lanes) and the compose→queue→fix loop."
 ---
 
 # Skill: authoring multi-shot video (the h3-timeline card)
@@ -15,12 +15,28 @@ The h3-timeline card is a SIMPLE card. The compose tool call carries:
 
 - **model**: `"h3-timeline"`
 - **params.calls[]**: one entry per shot — at minimum `text`, `start_frame`, `end_frame`
-- **params.audio_stem** (optional): bed audio file or `{file: "path"}`
+- (THE BED IS GONE, 2026-09-22 — no `bed_audio` param exists: film
+  music rides the MUSIC lane's clips below)
+- **params.audio_clips** (optional): the D-M-E rows on the film
+  timeline — `[{ id, name, src, start_frame, dur_frames, class?, text }]`.
+  `class` = dialogue | sfx | music (auto when omitted: text ->
+  dialogue, else music). All three go INTO the model (its 3 audio
+  inputs, one per class — it hears voice, blast, score and times the
+  picture to them). dialogue `text` = the exact spoken words
+  (verbatim from the take): they ride the owning window's prompt as a
+  timed <d> tag and drive the mouth. sfx `text` = the timed event
+  (overall_soundscape at its onset — the model times the visual to
+  the blast). music `text` = the description (non_diegetic_music).
+  Crossing a seam continues the clip across both windows; one lane
+  per class per window; conditioned clips duck the generated voice
+  -14dB, music ducks under dialogue+sfx. THE DOOR GUARD: a
+  dialogue/sfx-stamped window mutes ref audios (the pin owns that
+  window's audio conditioning).
 - **params.identity** (optional but REQUIRED for multi-window films, REQUIRED for continuation)
 - **params.context** (optional): a LATENT artifact ref to chain from (e.g. `runs/<prior-run>/h3_context`)
 - **params.seed** / **params.fps** / **params.width** / **params.height** (optional — omit to use defaults)
 - **params.lora_name** / **params.lora_strength** (optional): a lora on the ComfyUI loras mount riding entry[0] of the stack (`h3/<file>.safetensors`, strength default 0.5). The lane's turbo row always rides behind it — declared lane data, not card code.
-- Per-call: `seam_carry`, `image`, `knobs`
+- Per-call: `image`, `knobs`, `transition`
 
 ONE card composes ALL windows. One tool call. One queue submission. No per-shot scheduling.
 
@@ -43,28 +59,29 @@ Guidelines:
 - Repeat the ambient soundscape verbatim across windows; add one new layer per window where the story needs it.
 - Same seed across a shot's re-renders keeps the world texture.
 
-## SEAM LAW
+## SEAM LAW (reworked 2026-09-22 — the old carry knob is DEAD)
 
-Every window boundary is a seam. One real knob controls it:
-`calls[i].seam_carry` — in latent slots per seam:
+Every window boundary is a seam, and the seam is AUTOMATIC — never
+user-authored lane physics. One knob remains:
 
-- **seam_carry: 6** (default — omit and 6 rides): the prior window's
-  audio-video latent tail carries into the next window (exact-carry
-  mask, zero VAE round-trip). ~0.8s of motion continuity at the join;
-  the carried head is re-rendered then trimmed, so the timeline length
-  stays exact. Motion, scene, and audio stay continuous.
-- **seam_carry: 0 = HARD CUT**: the window renders standalone (no
-  chain, nothing carries). For scene changes, time jumps, deliberate
-  contrast. Windows 2–4 only.
-- **Higher (up to 64)**: more carried context — 15 ≈ 2s. Stronger
-  motion lock for long pans/extended action.
+- **transition: "extend"** (default): the prior window's audio-video
+  latent tail carries into the next window via drift-control
+  continuation at a FIXED 22-frame overlap — motion, scene, and audio
+  stay continuous, the timeline length stays exact (sum of spans minus
+  the overlaps). Nothing to tune; omit it.
+- **transition: "cut"** = HARD CUT: the window renders standalone (no
+  continuation, nothing carries). For scene changes, time jumps,
+  deliberate contrast. Windows 2+ only.
 
 Rules (enforced — tool errors, not advice):
-- seam_carry on calls[0] → 400: window 1 has no predecessor.
-- Each call's span must be 48–192 frames; outside → 400 naming the call.
-- A hard cut can pin an explicit `last_frame` on the PREVIOUS call —
-  the cut lands on that exact image. (Implementation pending; the extension
-  h3-motion-context v0.3+ preserves last_frame anchors through the chain.)
+- Calls must tile the timeline exactly: start_frame of one =
+  end_frame of the previous, frame 0 first; every call carries its
+  own text.
+- Window lengths snap to the 17k+5 grid (56/90/124/.../362 frames);
+  the card sizes each window from its span — write the span you mean.
+- A dialogue line crossing a seam CONTINUES (same line, no restart) —
+  place the audio_clips row across the boundary and the card stamps
+  both windows.
 
 ## Continuation (chaining runs)
 
@@ -83,7 +100,7 @@ dispatcher rejects silently with, typically, a 404 (no context → nothing
 to chain from). The chain windows then load the prior run's Motion Context
 seamlessly.
 
-Combined with `seam_carry` seams inside a run, the fabric is continuous
+Combined with the automatic seams inside a run, the fabric is continuous
 across runs. Series recipe: each subsequent film sets `context` to the prior run's strip ref
 previous run's id.
 

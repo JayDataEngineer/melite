@@ -33,24 +33,45 @@ test("patch refuses non-string stages, non-record params, and empty bodies", asy
   );
 });
 
-test("patch serves result-only and runStatus-only writes, and records before-values on overwrite", async () => {
+test("patch refuses run outcomes with the redirect voice — the drafts door owns results (the telemetry law's other half, 2026-10-08)", async () => {
   const drafts = await boot();
   await ensureBench(drafts, {
     session: "s",
     stages: [{ id: "a", params: { steps: 4 } }],
   });
-  const resultOnly = await patchBench(drafts, "s", {
-    stage: "a", result: { url: "x.png" }, expect_rev: 0,
+  // result-only, runStatus-only, and mixed bodies all refuse — the
+  // bench verb's old arms wrote archive-less (a landing destroyed
+  // the previous result with no supersede) under the old
+  // every-write-bumps law; outcomes ride drafts/patch now
+  for (const body of [
+    { stage: "a", result: { url: "x.png" }, expect_rev: 0 },
+    { stage: "a", runStatus: "done", expect_rev: 0 },
+    { stage: "a", params: { steps: 8 }, result: { url: "x.png" }, expect_rev: 0 },
+  ]) {
+    assert.match(
+      await codeOf(patchBench(drafts, "s", body)),
+      /^bench\/bad-body\|run outcomes ride the drafts\/patch door/,
+    );
+  }
+  // the refusal leaves no trace: no bump, no log, params untouched
+  const doc = getBench(drafts, "s");
+  assert.equal(doc.rev, 0);
+  assert.deepEqual(doc.log, []);
+  const st = (doc.stages as Array<{ params: Record<string, unknown>; result?: unknown; runStatus?: unknown }>).find((x) => x.id === "a")!;
+  assert.deepEqual(st.params, { steps: 4 });
+  assert.equal(st.result, undefined);
+  assert.equal(st.runStatus, undefined);
+});
+
+test("patch records before-values on params overwrite", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, {
+    session: "s",
+    stages: [{ id: "a", params: { steps: 4 } }],
   });
-  assert.equal(resultOnly.rev, 1);
-  assert.deepEqual(resultOnly.patched, []);
-  const statusOnly = await patchBench(drafts, "s", {
-    stage: "a", runStatus: "done", expect_rev: 1,
-  });
-  assert.equal(statusOnly.rev, 2);
   // Overwrite of an existing param key: before rides the inverse.
   const overwritten = await patchBench(drafts, "s", {
-    stage: "a", params: { steps: 8 }, expect_rev: 2,
+    stage: "a", params: { steps: 8 }, expect_rev: 0,
   });
   assert.deepEqual(overwritten.patched, ["steps"]);
   const doc = getBench(drafts, "s");

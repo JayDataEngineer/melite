@@ -14,6 +14,10 @@ export const RULER_H = 28
 export const PROMPTS_H = 36
 export const BEATS_H = 26
 export const AUDIO_H = 26
+/** (2026-09-22, the D-M-E card law) the CARD lane height — audio clips
+ * rendered as small call cards (the operator: "smaller versions of how
+ * cards look"); opt-in per tenant, blocks stay 26. */
+export const AUDIO_CARDS_H = 44
 export const LANE_H = 24
 /** Label gutter width. (audit F5, 2026-09-02: 88 → 112 — the pinned
  * header row now carries the timecode positioning indicator beside the

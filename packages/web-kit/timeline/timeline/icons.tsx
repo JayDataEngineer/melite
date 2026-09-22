@@ -2,7 +2,8 @@
  * timeline/icons — hand-authored inline-SVG glyphs replacing the old icon
  * package (DSH-pure UI law: no icon dep in this package).
  *
- * Same export names (Film, Image, ListMusic, Music, X, ZoomIn, ZoomOut),
+ * Same export names (Film, Image, ListMusic, Mic, Music, X, Zap, ZoomIn,
+ * ZoomOut),
  * same 24x24 stroke vocabulary (stroke="currentColor", strokeWidth 2,
  * fill none, round caps/joins), same path data as the lucide icons they
  * replace (icon set v1.39.0, ISC). The `lucide lucide-<name>` classes are
@@ -77,6 +78,18 @@ export function Music({ className, ...rest }: IconProps) {
   )
 }
 
+/** (2026-09-22, the lane-picker law) the gutter's add-door glyph —
+ *  same stroke vocabulary, lucide upload path data. */
+export function Upload({ className, ...rest }: IconProps) {
+  return (
+    <svg {...base("upload", className)} {...rest}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="m17 8-5-5-5 5" />
+      <path d="M12 3v12" />
+    </svg>
+  )
+}
+
 export function X({ className, ...rest }: IconProps) {
   return (
     <svg {...base("x", className)} {...rest}>
@@ -93,6 +106,24 @@ export function ZoomIn({ className, ...rest }: IconProps) {
       <line x1="21" x2="16.65" y1="21" y2="16.65" />
       <line x1="11" x2="11" y1="8" y2="14" />
       <line x1="8" x2="14" y1="11" y2="11" />
+    </svg>
+  )
+}
+
+export function Mic({ className, ...rest }: IconProps) {
+  return (
+    <svg {...base("mic", className)} {...rest}>
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" x2="12" y1="19" y2="22" />
+    </svg>
+  )
+}
+
+export function Zap({ className, ...rest }: IconProps) {
+  return (
+    <svg {...base("zap", className)} {...rest}>
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   )
 }

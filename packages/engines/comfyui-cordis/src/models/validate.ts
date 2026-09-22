@@ -89,6 +89,15 @@ export function validateRegistryAgainstCards(
    *  plane) — a boarded route validates against its resolved
    *  view; registry decls always win on id collision. */
   routeViews?: ReadonlyMap<string, ModelDecl>,
+  /** THE ADMISSION LAW (2026-09-22, the tagger weights rail): card
+   *  id → the keys its def ADMITS (CardDefinition.admits —
+   *  route-stamped by the variant rail, never rendered as form
+   *  fields). A family default naming an admitted key is legal
+   *  truth: the rail stamps it into the body, the compose door
+   *  overlays it, the field need not exist on the surface. Without
+   *  this the wd14 default 'checkpoint' refuses the boot against a
+   *  card whose whole weights law is "no second picker". */
+  cardAdmits?: ReadonlyMap<string, readonly string[]>,
 ): Array<[string, string]> {
   const truth = new Set(engineTruth);
   const checked: Array<[string, string]> = [];
@@ -126,8 +135,10 @@ export function validateRegistryAgainstCards(
       if (decl === undefined) continue;
       if (decl.engine !== undefined && decl.engine !== "" && decl.engine !== "comfyui") continue;
       checked.push([mid, cardId]);
+      const admitted = cardAdmits?.get(cardId);
       for (const [key, val] of Object.entries(decl.defaults ?? {})) {
         if (truth.has(key)) continue;
+        if (admitted !== undefined && admitted.includes(key)) continue;
         const domain: FieldDomain | undefined = domains.get(key);
         if (domain === undefined) {
           throw new ModelError(

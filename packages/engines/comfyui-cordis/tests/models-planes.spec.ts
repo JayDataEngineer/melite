@@ -41,6 +41,25 @@ describe("validateRegistryAgainstCards (the boardings edge)", () => {
     );
   });
 
+  it("AN ADMITTED DEFAULT KEY IS LEGAL TRUTH (2026-09-22, the tagger weights rail: the variant rail stamps, the surface never renders)", () => {
+    const d = decl();
+    const withCheckpoint = { ...d, defaults: { ...(d.defaults ?? {}), checkpoint: "wd-v1-4-moat-tagger-v2" } } as typeof d;
+    // no admits → the refusal stands (drift is still drift)
+    assert.throws(
+      () => validateRegistryAgainstCards(
+        [withCheckpoint], cards, [], new Map([["image-gen", [d.id]]]),
+      ),
+      /names no field/,
+    );
+    // the card admits the route-stamped key → the default passes
+    const out = validateRegistryAgainstCards(
+      [withCheckpoint], cards, [], new Map([["image-gen", [d.id]]]),
+      undefined, undefined,
+      new Map([["image-gen", ["checkpoint"]]]),
+    );
+    assert.deepEqual(out, [[d.id, "image-gen"]], "the admitted default validates");
+  });
+
   it("a caller may board a served route id (servedIds admits it)", () => {
     const out = validateRegistryAgainstCards(
       [decl()], cards, [],

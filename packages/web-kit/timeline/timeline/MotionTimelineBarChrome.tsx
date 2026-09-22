@@ -5,10 +5,10 @@
  * click-away deselect, the ruler, the playhead. Lane bodies live in
  * MotionTimelineBarLanes.
  */
-import { Film, ListMusic, Music, X, ZoomIn, ZoomOut } from "./icons"
+import { Film, ListMusic, Mic, Music, Upload, X, Zap, ZoomIn, ZoomOut } from "./icons"
 import { clsx as cn } from "clsx"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { AUDIO_H, GUTTER_W, LANE_H, RULER_H, ZOOM_STEP, fmtTimecode, rgb } from "./MotionTimelineBarLayout"
+import { AUDIO_CARDS_H, AUDIO_H, GUTTER_W, LANE_H, RULER_H, ZOOM_STEP, fmtTimecode, rgb } from "./MotionTimelineBarLayout"
 import { Tip } from "./tip"
 import css from "./timeline.module.css"
 import type * as React from "react"
@@ -37,6 +37,8 @@ export interface TimelineGutterProps {
   beatsHeight: number
   audioLayers?: AudioLayer[]
   onAudioDetach?: (layerId: string) => void
+  /** (2026-09-22, the D-M-E card law) cards-mode heads match the lanes. */
+  audioClipCards?: boolean
   tracks: TimelineTrack[]
 }
 
@@ -45,7 +47,7 @@ export interface TimelineGutterProps {
 export function TimelineGutter(props: TimelineGutterProps) {
   const {
     scale, scrollRef, frameIdx, promptsHeight, promptsLabel,
-    beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks,
+    beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards,
   } = props
   const {
     zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf,
@@ -112,17 +114,40 @@ export function TimelineGutter(props: TimelineGutterProps) {
             <span className={css.gutterLabel}>{beatsLabel}</span>
           </div>
         )}
-        {audioLayers?.map((L) => (
+        {audioLayers?.map((L) => {
+          // (2026-09-22, the D-M-E card law) the lane's OWN glyph +
+          // accent — dialogue a mic, sfx a bolt, music the note; the
+          // accent tints the glyph so the gutter reads like the clips.
+          const Glyph = L.icon === "mic" ? Mic : L.icon === "zap" ? Zap : Music
+          return (
           <div
             key={L.id}
             className={css.audioHead}
-            style={{ height: AUDIO_H }}
+            data-audio-icon={L.icon ?? "music"}
+            style={{
+              height: audioClipCards ? AUDIO_CARDS_H : AUDIO_H,
+              ...(L.accent ? { color: L.accent } : {}),
+            }}
             title={L.stem
               ? `${L.stem} — one bed under every cut; each window hears its own slice in time`
               : "drop an audio / music track — sliced to each window in time"}
           >
-            <Music aria-hidden />
+            <Glyph aria-hidden />
             <span className={css.gutterLabelDim}>{L.label}</span>
+            {/* (2026-09-22, the lane-picker law) the add door beside the
+                title — the host opens its source picker (From flow /
+                From media / From file) anchored at THIS button. */}
+            {L.onUpload && (
+              <Button variant="ghost" size="sm"
+                data-audio-upload={L.id}
+                aria-label={`Add ${L.label} clip`}
+                title={`Add a ${L.label} clip — from flow, from media, or from file`}
+                className={css.uploadBtn}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => { L.onUpload?.(e.currentTarget) }}
+              >
+                <Upload aria-hidden />
+              </Button>
+            )}
             {/* (2026-09-02) detach shows for CLIPS too — the NLE Music
                 row's clips are the primary content now; a clips-only
                 layer had no way to clear the whole row at once. */}
@@ -136,7 +161,8 @@ export function TimelineGutter(props: TimelineGutterProps) {
               </Button>
             )}
           </div>
-        ))}
+          )
+        })}
         {tracks.map((t) => (
           <div
             key={t.uuid}

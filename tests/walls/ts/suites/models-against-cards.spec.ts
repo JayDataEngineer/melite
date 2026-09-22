@@ -56,6 +56,20 @@ async function allBoardings(): Promise<Map<string, readonly string[]>> {
   return out;
 }
 
+/** THE ADMISSION LAW (2026-09-22, ledger vii): CardDefinition.admits
+ *  keys are legal defaults targets — the boot validator's 7th arg.
+ *  Route-stamped by the variant rail, never rendered. */
+async function allAdmits(): Promise<Map<string, readonly string[]>> {
+  await loadCardDefs();
+  const svc = theService();
+  const out = new Map<string, readonly string[]>();
+  for (const id of svc.cardIds()) {
+    const admits = (svc.getCardDef(id) as { admits?: readonly string[] } | undefined)?.admits;
+    if (admits !== undefined) out.set(id, admits);
+  }
+  return out;
+}
+
 /** comfyui compose's engine truth (ENGINE_TRUTH_KEYS @ 034e1f97,
  *  compose/__init__.py line 76 — "the audio lanes' default mode
  *  (tts/design) rides defaults and the renderer reads it as data"). */
@@ -96,9 +110,11 @@ async function tableWith(
 describe("models against cards (the cross-validation, resurrected)", () => {
   it("every model default lives inside its owning card's field domains", async (): Promise<void> => {
     const cards = await cardTable();
-    const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, await allBoardings(), new Set(modelIds()), allRouteViews());
+    const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, await allBoardings(), new Set(modelIds()), allRouteViews(), await allAdmits());
     // every caller-owned pair is checked (27 boardings since
-    // stroke 87 — fit + skin retired with their cards)
+    // stroke 87 — fit + skin retired with their cards). The
+    // admission map rides 7th (wd14's checkpoint default is legal
+    // on the tagger card — the weights law, 2026-09-22).
     assert.ok(checked.length >= 24, `expected ≥24 checked pairs (wan-vace/scail2 retired 2026-09-21), got ${checked.length}`);
   });
 
@@ -167,12 +183,19 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     const cards = await cardTable();
     const boarded = await allBoardings();
     const served = new Set(modelIds());
+    // admits rides here TOO — computed first (assert.throws is sync);
+    // the arm isolates the ENGINE-TRUTH variable (wd14's admitted
+    // checkpoint must not mask the qwen3-tts refusal this test names)
+    const admits = await allAdmits()
     assert.throws(
-      () => validateRegistryAgainstCards(allDecls(), cards, [], boarded, served),
+      // admits rides here TOO — the arm isolates the ENGINE-TRUTH
+      // variable (wd14's admitted checkpoint must not mask the
+      // qwen3-tts refusal this test names)
+      () => validateRegistryAgainstCards(allDecls(), cards, [], boarded, served, new Map(), admits),
       (err: unknown): boolean =>
         err instanceof ModelError && String(err.message).includes("qwen3-tts: default 'mode'"),
     );
-    const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, boarded, served, allRouteViews());
+    const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, boarded, served, allRouteViews(), await allAdmits());
     assert.ok(checked.length >= 24, `expected 24 checked pairs (wan-vace/scail2 retired 2026-09-21), got ${checked.length}`);
   });
 

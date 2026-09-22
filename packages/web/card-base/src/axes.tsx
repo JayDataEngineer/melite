@@ -156,48 +156,102 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
       active[g] = byRoute ?? (rows.length > 0 ? rows[0].id : '')
     }
   }
-  return h('section', { className: `${css.specGroup} ${css.modelAxes}`, 'data-model-axes': '1' },
-    h('h4', { className: css.specGroupTitle }, 'Model'),
-    // NO KEY SPAN (the double-Model catch): the section head already
-    // names the zone — a second visible "Model" above the picker is
-    // the same word twice. The select keeps aria-label="Model" (the
-    // axes walls query it; screen readers keep the name).
-    h('label', { className: css.specField },
+  // THE MODEL FIELD (no key span — the double-Model catch: the
+  // section head already names the zone, a second visible "Model"
+  // above the picker is the same word twice; the select keeps
+  // aria-label="Model"). The aria-hidden spacer seats the picker's
+  // geometry on the pair row (Variant's key line is 20px — a
+  // span-less Model would top-hang 26px above its sibling's
+  // select; geometry, never a second visible word).
+  const modelField = h('label', { className: css.specField },
+    h('span', { className: css.specFieldKey, 'aria-hidden': 'true' }),
+    h('select', {
+      className: css.specSelect,
+      'aria-label': 'Model',
+      ...(refusedModel !== undefined ? { 'data-refused': 'model' } : {}),
+      value: shownModel,
+      // THE STALE-VARIANT CURE (operator 2026-09-14): a model
+      // switch re-seeds EVERY axis (variant/quant/…) to the new
+      // family's rows — keeping turbo while pointing at anima is
+      // a compose refusal, never a carried-over default.
+      onChange: (e: unknown) => {
+        const m = (e as { target: { value: string } }).target.value
+        const patch = modelSwitchPatch(spec, m)
+        for (const [k, v] of Object.entries(patch)) onSet(k, v)
+      },
+    },
+      // the refused model renders AS ITSELF — the run will shoot
+      // it and the engine will refuse; the visual says the same
+      // (neutral mark — the error, not a scream)
+      refusedModel !== undefined
+        ? h('option', { key: refusedModel, value: refusedModel },
+            titleCaseId(refusedModel) + ' — not an offered model of this card')
+        : null,
+      // boarded families: pickable — offered is offered (stroke
+      // 18); absent ones carry the machine truth in the label and
+      // the download prompt below (never dropped, never blocked).
+      // IDs ONLY (stroke 19): the DECL label is prose describing a
+      // variant+quant config — never a model option's face.
+      familyRows.map((f) => f.inMatrix ? null : h('option', {
+        key: 'fam-' + f.id, value: f.id,
+        // THE FAMILY FACE (operator, 2026-09-16): the DECL label
+        // carries the version ("MOSS-SFX v2") — an id-only face is
+        // ambiguous between versions; titleCaseId stays the
+        // label-less fallback.
+      }, (f.label ?? titleCaseId(f.id)) + (f.present ? '' : ' — not downloaded on this machine'))),
+      models.map((m) => h('option', { key: m, value: m }, familyFace.get(m) ?? titleCaseId(m)))));
+  // ONE AXIS' FIELD (the groups.map body, extracted so the pair
+  // row seats the Variant axis beside the Model — one function,
+  // two seats, no second implementation).
+  const axisField = (g: string): ReturnType<typeof h> | null => {
+    const rows = rowsOf(g, active)
+    const heldRaw = value[axisKey(g)]
+    const heldId = typeof heldRaw === 'string' && heldRaw !== '' ? heldRaw : undefined
+    const refusedId = heldId !== undefined && !rows.some((r) => r.id === heldId) ? heldId : undefined
+    if (rows.length === 0 && refusedId === undefined) return null
+    const label = contract[g]?.label ?? titleCaseId(g)
+    return h('label', { key: g, className: css.specField },
+      h('span', { className: css.specFieldKey }, label),
       h('select', {
         className: css.specSelect,
-        'aria-label': 'Model',
-        ...(refusedModel !== undefined ? { 'data-refused': 'model' } : {}),
-        value: shownModel,
-        // THE STALE-VARIANT CURE (operator 2026-09-14): a model
-        // switch re-seeds EVERY axis (variant/quant/…) to the new
-        // family's rows — keeping turbo while pointing at anima is
-        // a compose refusal, never a carried-over default.
+        'aria-label': label,
+        'data-axis': g,
+        ...(refusedId !== undefined ? { 'data-refused': g } : {}),
+        // NO ?? '' (the assigned-every-path proof): the loop above
+        // writes active[g] on ALL three arms (grounded / refused /
+        // seeded) for every group before this map runs — the right
+        // side could never fire.
+        value: active[g]!,
         onChange: (e: unknown) => {
-          const m = (e as { target: { value: string } }).target.value
-          const patch = modelSwitchPatch(spec, m)
-          for (const [k, v] of Object.entries(patch)) onSet(k, v)
+          const id = (e as { target: { value: string } }).target.value
+          const row = rows.find((v) => v.id === id)
+          if (row !== undefined) pick(row)
         },
       },
-        // the refused model renders AS ITSELF — the run will shoot
-        // it and the engine will refuse; the visual says the same
-        // (neutral mark — the error, not a scream)
-        refusedModel !== undefined
-          ? h('option', { key: refusedModel, value: refusedModel },
-              titleCaseId(refusedModel) + ' — not an offered model of this card')
+        // the refused coord renders AS ITSELF (never another
+        // family's row face) — the run refuses it, so does the
+        // visual; the grounded rows stay one pick away as repair
+        refusedId !== undefined
+          ? h('option', { key: refusedId, value: refusedId },
+              titleCaseId(refusedId) + ' — invalid ' + label.toLowerCase() + ' for ' + titleCaseId(heldModel ?? shownModel))
           : null,
-        // boarded families: pickable — offered is offered (stroke
-        // 18); absent ones carry the machine truth in the label and
-        // the download prompt below (never dropped, never blocked).
-        // IDs ONLY (stroke 19): the DECL label is prose describing a
-        // variant+quant config — never a model option's face.
-        familyRows.map((f) => f.inMatrix ? null : h('option', {
-          key: 'fam-' + f.id, value: f.id,
-          // THE FAMILY FACE (operator, 2026-09-16): the DECL label
-          // carries the version ("MOSS-SFX v2") — an id-only face is
-          // ambiguous between versions; titleCaseId stays the
-          // label-less fallback.
-        }, (f.label ?? titleCaseId(f.id)) + (f.present ? '' : ' — not downloaded on this machine'))),
-        models.map((m) => h('option', { key: m, value: m }, familyFace.get(m) ?? titleCaseId(m)))),
+        rows.map((v) => h('option', { key: v.id, value: v.id },
+          titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
+  }
+  // THE MODEL+VARIANT PAIR (the pass-along law, enforced): Model
+  // and Variant ride ONE row — a dedicated 1fr 1fr pair that never
+  // wraps (the auto-fit grid below stacks them in narrow panels).
+  // Remaining axes (Quant, …) keep the grid's flow underneath. No
+  // Variant axis, or one rendering nothing → the Model rides alone,
+  // exactly as before.
+  const variantAxis = groups.includes('Variant') ? 'Variant' : undefined
+  const variantField = variantAxis !== undefined ? axisField(variantAxis) : null
+  const restGroups = variantAxis !== undefined ? groups.filter((g) => g !== variantAxis) : groups
+  return h('section', { className: `${css.specGroup} ${css.modelAxes}`, 'data-model-axes': '1' },
+    h('h4', { className: css.specGroupTitle }, 'Model'),
+    variantField !== null
+      ? h('div', { className: css.axesPair, 'data-axes-pair': 'Model+Variant' }, modelField, variantField)
+      : modelField,
     // THE DOWNLOAD PROMPT (stroke 18): the held model is boarded
     // but its weights are not on the machine — ask the user, never
     // block the pick. The button is the gesture; the manage door
@@ -220,42 +274,9 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
             : dlState === 'busy' ? 'Requesting…'
             : dlState === 'queued' ? 'Download queued ✓ (run when it lands)'
             : 'Download request failed — retry from the assets tab'))
-      : null),
-    groups.map((g) => {
-      const rows = rowsOf(g, active)
-      const heldRaw = value[axisKey(g)]
-      const heldId = typeof heldRaw === 'string' && heldRaw !== '' ? heldRaw : undefined
-      const refusedId = heldId !== undefined && !rows.some((r) => r.id === heldId) ? heldId : undefined
-      if (rows.length === 0 && refusedId === undefined) return null
-      const label = contract[g]?.label ?? titleCaseId(g)
-      return h('label', { key: g, className: css.specField },
-        h('span', { className: css.specFieldKey }, label),
-        h('select', {
-          className: css.specSelect,
-          'aria-label': label,
-          'data-axis': g,
-          ...(refusedId !== undefined ? { 'data-refused': g } : {}),
-          // NO ?? '' (the assigned-every-path proof): the loop above
-          // writes active[g] on ALL three arms (grounded / refused /
-          // seeded) for every group before this map runs — the right
-          // side could never fire.
-          value: active[g]!,
-          onChange: (e: unknown) => {
-            const id = (e as { target: { value: string } }).target.value
-            const row = rows.find((v) => v.id === id)
-            if (row !== undefined) pick(row)
-          },
-        },
-          // the refused coord renders AS ITSELF (never another
-          // family's row face) — the run refuses it, so does the
-          // visual; the grounded rows stay one pick away as repair
-          refusedId !== undefined
-            ? h('option', { key: refusedId, value: refusedId },
-                titleCaseId(refusedId) + ' — invalid ' + label.toLowerCase() + ' for ' + titleCaseId(heldModel ?? shownModel))
-            : null,
-          rows.map((v) => h('option', { key: v.id, value: v.id },
-            titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
-    }),
+      : null,
+    // the axes below the pair (Quant, …) keep the grid's flow.
+    restGroups.map((g) => axisField(g)),
     h(RecipePills, { spec, onSet, values: value }),
   )
 }

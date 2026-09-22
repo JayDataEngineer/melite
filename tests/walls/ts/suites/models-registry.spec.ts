@@ -124,7 +124,11 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 44 since stroke 90 (anny's Standard/Native row was template
     // chrome — the family serves ONE identity_model through ONE
     // route; the variant matrix was noise the operator named)
-    assert.equal(variants, 48); // -1: wan-vace's Speed tier variant died with its family (2026-09-21) // +1: yue2 standard (int8 convrot), 2026-09-20 // +4: the qwen 2.1 pair's quant tiers, 2026-09-21
-    assert.equal(cells, 56); // +1: yue2's int8 cell, 2026-09-20 // +4: the qwen 2.1 pair's quant cells, 2026-09-21
+    // 71 since 2026-09-22: the uncommitted tree had grown +23 past
+    // the stale 48 (the multimodal boardings — joycaption, florence2,
+    // wd14, the tagger lanes, z-image, the qwen edit pairs — landed
+    // without their wall bump; the pre-commit hook caught the drift)
+    assert.equal(variants, 71);
+    assert.equal(cells, 79);
   });
 });

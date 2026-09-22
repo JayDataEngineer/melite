@@ -21,20 +21,117 @@ export const DECL: ModelDecl = {
     "caption_task": "more_detailed_caption"
   },
   "genre": "image",
+  // THE WEIGHTS RAIL (2026-09-22 — same law as wd14): one variant
+  // per live DownloadAndLoadFlorence2Model `model` name
+  // (live-pinned off the engine's object_info); PromptGen-v2.0
+  // large rides FIRST (the family default). vram_peak_gb rides
+  // ONLY the default's cell (the family's measured figure);
+  // unmeasured checkpoints omit it.
   "variants": [
     {
-      "id": "standard",
-      "label": "Standard",
+      "id": "miaoshouai-florence-2-large-promptgen-v2-0",
+      "label": "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
       "group": "Variant",
       "route": "florence2",
+      "resolver_defaults": { "checkpoint": "MiaoshouAI/Florence-2-large-PromptGen-v2.0" },
       "cells": [
         {
           "quant": "f32",
           "label": "F32",
-          "route": "florence2",
           "vram_peak_gb": 6,
         }
       ]
+    },
+    {
+      "id": "miaoshouai-florence-2-base-promptgen-v2-0",
+      "label": "MiaoshouAI/Florence-2-base-PromptGen-v2.0",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "MiaoshouAI/Florence-2-base-PromptGen-v2.0" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "miaoshouai-florence-2-large-promptgen-v1-5",
+      "label": "MiaoshouAI/Florence-2-large-PromptGen-v1.5",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "MiaoshouAI/Florence-2-large-PromptGen-v1.5" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "miaoshouai-florence-2-base-promptgen-v1-5",
+      "label": "MiaoshouAI/Florence-2-base-PromptGen-v1.5",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "MiaoshouAI/Florence-2-base-PromptGen-v1.5" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "microsoft-florence-2-large",
+      "label": "microsoft/Florence-2-large",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "microsoft/Florence-2-large" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "microsoft-florence-2-base",
+      "label": "microsoft/Florence-2-base",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "microsoft/Florence-2-base" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "microsoft-florence-2-large-ft",
+      "label": "microsoft/Florence-2-large-ft",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "microsoft/Florence-2-large-ft" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "microsoft-florence-2-base-ft",
+      "label": "microsoft/Florence-2-base-ft",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "microsoft/Florence-2-base-ft" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "huggingfacem4-florence-2-docvqa",
+      "label": "HuggingFaceM4/Florence-2-DocVQA",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "HuggingFaceM4/Florence-2-DocVQA" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "thwri-cogflorence-2-1-large",
+      "label": "thwri/CogFlorence-2.1-Large",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "thwri/CogFlorence-2.1-Large" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "thwri-cogflorence-2-2-large",
+      "label": "thwri/CogFlorence-2.2-Large",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "thwri/CogFlorence-2.2-Large" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "gokaygokay-florence-2-sd3-captioner",
+      "label": "gokaygokay/Florence-2-SD3-Captioner",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "gokaygokay/Florence-2-SD3-Captioner" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "gokaygokay-florence-2-flux-large",
+      "label": "gokaygokay/Florence-2-Flux-Large",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "gokaygokay/Florence-2-Flux-Large" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
+    },
+    {
+      "id": "pjmixers-images-florence-2-base-castollux-v0-5",
+      "label": "PJMixers-Images/Florence-2-base-Castollux-v0.5",
+      "group": "Variant",
+      "resolver_defaults": { "checkpoint": "PJMixers-Images/Florence-2-base-Castollux-v0.5" },
+      "cells": [{ "quant": "f32", "label": "F32" }],
     }
   ],
   "variant_groups": [

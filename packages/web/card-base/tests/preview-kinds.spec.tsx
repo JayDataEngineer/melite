@@ -161,18 +161,20 @@ test('THE AUDIO HISTORY LAW: promote swaps the whole set; the badge clears on a 
   expect(screen.queryByTestId('history-stale-badge')).toBeNull()
 })
 
-// ── THE KIND FACE (the operator's catch, 2026-09-22: "it says
+// ── THE KIND FACE (the operator's catches, 2026-10-08: "it says
 // 'gone' instead historical view under the preview… works for image
-// cards, but not audio") ─────────────────────────────────────────
+// cards, but not audio"; then "a long rectangle with a file name,
+// instead of something nice and compact") ──────────────────────
 // An <img> decodes ONLY images: an audio (or video, or mesh) url
 // seated in an <img> fires onError the moment a real browser mounts
 // it — every non-image history tile flipped to the dead face and the
 // Music card's strip said 'gone' for files that exist. The kind face
-// renders a labeled glyph tile (the owner's DECLARED kind — the same
-// primary-output law that picked the presenter): no <img>, no
-// decode, no false 'gone' — the dead face stays an IMAGE-only
-// honesty (preview-history.spec walls it there).
-test('THE AUDIO KIND FACE: a track tile renders the labeled glyph face — never an <img> decode, never a false gone', () => {
+// renders a COMPACT 48×48 glyph square (the image thumb row's own
+// rhythm — the name-in-chip cut painted "a long rectangle with a
+// file name"); the full artifact name rides the TILE BUTTON's
+// tooltip, never the face. The dead face stays an IMAGE-only honesty
+// (preview-history.spec walls it there).
+test('THE AUDIO KIND FACE: a track tile renders the compact glyph square — never an <img> decode, never a false gone', () => {
   const { container } = render(h(AudioStagePreview, audio({
     history: [[{ name: 'old', url: '/runs/prev/old.mp3' }]],
   })))
@@ -181,12 +183,16 @@ test('THE AUDIO KIND FACE: a track tile renders the labeled glyph face — never
   // construction for non-image kinds
   expect(block.querySelector('img')).toBeNull()
   expect(block.textContent).not.toContain('gone')
-  const face = block.querySelector('[data-testid="history-thumb-audio"]') as HTMLElement
+  // the face IS the glyph (svg), carries NO file name — compact,
+  // never a long rectangle; the name rides the tile's tooltip
+  const face = block.querySelector('[data-testid="history-thumb-audio"]') as SVGElement
   expect(face).not.toBeNull()
-  expect(face.querySelector('svg')).not.toBeNull()
-  expect(face.textContent).toContain('old')
+  expect(face.tagName.toLowerCase()).toBe('svg')
+  expect(face.textContent).toBe('')
+  const tile = block.querySelector('button') as HTMLElement
+  expect(tile.getAttribute('title')).toContain('old')
   // the tile still promotes its generation to the hero
-  fireEvent.click(block.querySelector('button') as HTMLElement)
+  fireEvent.click(tile)
   expect(screen.getByTestId('stage-preview-audio-hero').getAttribute('src')).toBe('/runs/prev/old.mp3')
 })
 
@@ -196,10 +202,9 @@ test('THE VIDEO KIND FACE: a film tile renders the glyph face (an mp4 in an <img
   })))
   const block = container.querySelector('[data-testid="stage-output-history"]') as HTMLElement
   expect(block.querySelector('img')).toBeNull()
-  const face = block.querySelector('[data-testid="history-thumb-video"]') as HTMLElement
-  expect(face).not.toBeNull()
-  expect(face.querySelector('svg')).not.toBeNull()
-  expect(face.textContent).toContain('film')
+  const face = block.querySelector('[data-testid="history-thumb-video"]') as SVGElement
+  expect(face.tagName.toLowerCase()).toBe('svg')
+  expect(face.textContent).toBe('')
 })
 
 test('THE MESH KIND FACE: a glb tile renders the glyph face like every non-image kind', () => {
@@ -209,10 +214,9 @@ test('THE MESH KIND FACE: a glb tile renders the glyph face like every non-image
   }))
   const block = container.querySelector('[data-testid="stage-output-history"]') as HTMLElement
   expect(block.querySelector('img')).toBeNull()
-  const face = block.querySelector('[data-testid="history-thumb-mesh"]') as HTMLElement
-  expect(face).not.toBeNull()
-  expect(face.querySelector('svg')).not.toBeNull()
-  expect(face.textContent).toContain('mesh')
+  const face = block.querySelector('[data-testid="history-thumb-mesh"]') as SVGElement
+  expect(face.tagName.toLowerCase()).toBe('svg')
+  expect(face.textContent).toBe('')
 })
 
 test('THE NAMELESS MESH ASSET: the stage seats it by index (never an empty asset id)', () => {

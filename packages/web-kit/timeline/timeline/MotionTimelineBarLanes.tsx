@@ -4,11 +4,11 @@
  * tracks, keyframe lanes. Chrome (gutter/ruler/playhead) lives in
  * MotionTimelineBarChrome.
  */
-import { Image, Music, X } from "./icons"
+import { Image, Mic, Music, X, Zap } from "./icons"
 import { clsx as cn } from "clsx"
 import { ASSET_DRAG_MIME } from "./dragMime"
 import { PROMPT_COLORS } from "./viser-timeline/styles"
-import { AUDIO_H, LANE_H, rgb } from "./MotionTimelineBarLayout"
+import { AUDIO_CARDS_H, AUDIO_H, LANE_H, rgb } from "./MotionTimelineBarLayout"
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
 import { Tip } from "./tip"
 import css from "./timeline.module.css"
@@ -407,6 +407,9 @@ export interface TimelineAudioLanesProps {
   audioLayers?: AudioLayer[]
   prompts: TimelinePrompt[]
   fps: number
+  /** (2026-09-22, the D-M-E card law) clips as SMALL CALL CARDS —
+   * gradient + accent edge + glyph, 44px lanes. Absent → blocks. */
+  audioClipCards?: boolean
   frameToPx: (f: number) => number
   xToFrame: (clientX: number) => number | null
   startDrag: (e: React.PointerEvent, d: Drag) => void
@@ -420,21 +423,26 @@ export interface TimelineAudioLanesProps {
 /** Native audio tracks, same scroll + scale (bar line 1316). */
 export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
   const {
-    audioLayers, prompts, fps, frameToPx, xToFrame, startDrag,
+    audioLayers, prompts, fps, frameToPx, xToFrame, startDrag, audioClipCards,
     onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete,
   } = props
   return (
     <>
       {audioLayers?.map((L) => {
         const clips = L.clips ?? []
+        // (2026-09-22, the D-M-E card law) the lane's glyph + accent
+        // ride its clips: dialogue a mic, sfx a bolt, music the note.
+        const Glyph = L.icon === "mic" ? Mic : L.icon === "zap" ? Zap : Music
+        const accent = L.accent
         return (
         <div
           key={L.id}
           data-audio-layer={L.id}
           data-wired={L.stem ? "true" : "false"}
           data-clips={clips.length ? "true" : "false"}
+          data-lane-cards={audioClipCards ? "true" : "false"}
           className={css.audioLane}
-          style={{ height: AUDIO_H, background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)" }}
+          style={{ height: audioClipCards ? AUDIO_CARDS_H : AUDIO_H, background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)" }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault()
@@ -466,11 +474,18 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
                 <div
                   key={c.id}
                   data-audio-clip={c.id}
+                  data-card={audioClipCards ? "true" : undefined}
                   title={`${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`}
-                  className={css.audioClip}
+                  className={cn(css.audioClip, audioClipCards && css.audioCard)}
                   style={{
                     left: frameToPx(c.start_frame),
                     width: `max(6px, ${frameToPx(Math.max(1, c.dur_frames))}px)`,
+                    ...(audioClipCards && accent ? {
+                      background: `linear-gradient(135deg, color-mix(in srgb, ${accent} 32%, transparent), color-mix(in srgb, ${accent} 10%, transparent))`,
+                      borderColor: `color-mix(in srgb, ${accent} 45%, transparent)`,
+                      borderLeftColor: accent,
+                      borderLeftWidth: 3,
+                    } : {}),
                   }}
                   onPointerDown={(e) => {
                     if (!onAudioClipMove) return
@@ -485,6 +500,17 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
                     })
                   }}
                 >
+                  {/* (cards) the lane's glyph — a small card reads by
+                      its class, not just its seat */}
+                  {audioClipCards && (
+                    <span
+                      aria-hidden
+                      className={css.audioCardIcon}
+                      style={accent ? { color: accent } : undefined}
+                    >
+                      <Glyph />
+                    </span>
+                  )}
                   {/* gain fill — the block's inner bar (unity = full) */}
                   {c.gain != null && (
                     <span

@@ -25,4 +25,13 @@ describe("the joycaption model plugin (the whole model, one package)", () => {
     const ids = DECL.variants.map((v) => v.id);
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
   });
+
+  it("ONE Standard variant on the shared checkpoint key (the freeform upstream is not enumerated)", () => {
+    assert.equal(DECL.variants.length, 1, "no closed set to enumerate — one variant only");
+    assert.equal(DECL.variants[0]!.id, "standard");
+    assert.equal(
+      (DECL.defaults as Record<string, unknown>)["checkpoint"], "fancyfeast/llama-joycaption-beta-one-hf-llava",
+      "the family default stamps beta-one on the shared key",
+    );
+  });
 });

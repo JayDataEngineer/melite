@@ -41,6 +41,32 @@ export async function submitPrompt(
     prompt: graph,
     workflow: null,
   }) as Record<string, unknown>;
+  // THE SILENT-TRUNCATION REFUSAL (2026-10-08, the operator's
+  // "it gave me a red box instead of a mask" hunt): ComfyUI
+  // answers 200 with node_errors populated and EXECUTES ONLY THE
+  // VALID SUBGRAPH (a missing checkpoint drops its whole dependent
+  // chain; the run then reports success with half the artifacts —
+  // the mask arm vanished exactly this way for weeks). The queue
+  // answer's own verdict rides here: ANY dropped node REFUSES the
+  // run LOUD, naming the node, its first message, and the outputs
+  // that would have silently vanished.
+  const nodeErrors = res["node_errors"];
+  if (nodeErrors !== null && typeof nodeErrors === "object" &&
+      Object.keys(nodeErrors as Record<string, unknown>).length > 0) {
+    const lines: string[] = [];
+    for (const [nodeId, row] of Object.entries(nodeErrors as Record<string, Record<string, unknown>>)) {
+      const first = Array.isArray(row["errors"]) && row["errors"].length > 0
+        ? String((row["errors"] as Array<Record<string, unknown>>)[0]?.["message"] ?? "")
+        : "validation error";
+      const deps = Array.isArray(row["dependent_outputs"]) && row["dependent_outputs"].length > 0
+        ? ` (silently dropped outputs: ${(row["dependent_outputs"] as string[]).join(", ")})`
+        : "";
+      lines.push(`${nodeId}: ${first}${deps}`);
+    }
+    throw new ComfyError(
+      `the engine refused ${lines.length} node(s) at validation — the run would execute a TRUNCATED graph, never a silent half-result: ${lines.join("; ")}`,
+    );
+  }
   const id: unknown = res["prompt_id"];
   if (typeof id !== "string" || id === "") {
     throw new ComfyError("POST /prompt returned no prompt_id");

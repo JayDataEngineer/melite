@@ -121,16 +121,11 @@ const paramSchema = z.object({
   ref_images: z.array(z.string().role('path')).description("Reference images").max(8).extra('extra', { order: null, wtype: 'image_list', max_stack: 8, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." }),
   ref_videos: z.array(z.string().role('path')).description("Reference videos").max(3).extra('extra', { order: null, wtype: 'image_list', media: 'video', max_stack: 3, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." }),
   ref_audios: z.array(z.string().role('path')).description("Reference audios").max(3).extra('extra', { order: null, wtype: 'image_list', media: 'audio', max_stack: 3, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." }),
-  // THE AUDIO BED (the convenience layer): ONE track spread across
-  // the film's windows — each window's generation carries its own
-  // CUT of the bed (start = bed_start + the window's timeline
-  // offset, duration = the window's length at 24fps) injected as
-  // the behind-the-scenes <Audio 1> conditioning; user ref_audios
-  // shift to <Audio 2-3>. ComfyUI does the cuts (the Layer C
-  // MeliteAudioSlice node — sample-grain slicing + silence pad to
-  // the legal AV duration).
-  bed_audio: z.string().role('path').description("Audio bed (film-wide)").extra('extra', { order: null, wtype: 'file', tooltip: "One track across all windows — each generation carries its own slice as hidden <Audio 1> conditioning. ComfyUI cuts it." }),
-  bed_start: z.number().description("Bed start (s)").min(0).step(0.01).default(0).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1, tooltip: "Where in the bed track the film's window 1 begins." }),
+  // (THE BED IS GONE — operator 2026-09-22: "We have Audio Bed
+  // input. We don't use that, that is a bug that is there." Film
+  // music rides the D-M-E lanes' MUSIC clips, pinned per window;
+  // reference timbre rides ref_audios. No film-wide bed, no cuts,
+  // no MeliteAudioSlice in the graph.)
   // DUCK DEPTH (roadmap §14, was a pinned −14 literal): how far the
   // generated voice yields under a conditioned clip at its film
   // span. −14dB is the natural mix-desk default; deeper for dense
@@ -152,8 +147,15 @@ const paramSchema = z.object({
   // schema() so the body computes the family's frame budget.
   length: z.number().description("Frames").min(22).max(362).step(17).default(56).extra('extra', { order: null, columns: 2, width: 1, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
   steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', samplingExtra('steps', { tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
-  sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
-  sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, visible_when: "sharpen_enabled=true", tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
+  // THE SECOND-PASS MASTER (2026-09-22, operator: "Second Pass also
+  // needs an on/off switch, it is very unclear if it is on or off"):
+  // one boolean heads the tab. Off (default) = the whole post chain
+  // is inert: the leaves hide AND the compose gates hard (sharpen,
+  // interp, VSR, refine all read the master FIRST — a legacy doc
+  // with leaves set but no master renders the plain pass).
+  second_pass_enabled: z.boolean().description("Second pass").default(false).extra('extra', { order: null, group: 'second_pass', wtype: 'boolean', tooltip: "Master switch for the entire post chain — FSR sharpening, FILM interpolation, SeedVR2 super-res, and the refine lora. Off (default) = the film lands straight from the sampler. On = the pass controls below arm." }),
+  sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
+  sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true", tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
   // interpolate_enabled: HONEST DEFAULT (hour 20): the card's
   // `bool = False` — `default(false)`, not the "false"-as-boolean
   // cast-lie. An absent key now fills the boolean NATIVELY (no
@@ -163,7 +165,7 @@ const paramSchema = z.object({
   // coerceWireBoolean below — because schemastery field transforms
   // classify as type 'json' in the served taxonomy (the
   // knob-freshness wall pins the honest 'boolean').
-  interpolate_enabled: z.boolean().description("FILM Interpolation").default(false).extra('extra', { order: null, wtype: 'boolean', tooltip: "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time." }),
+  interpolate_enabled: z.boolean().description("FILM Interpolation").default(false).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'boolean', tooltip: "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time." }),
   // ── THE ENGINE TRUTH ROWS (2026-09-17, the Layer A/B law stroke):
   // every key the compose READS rides the declared surface at its
   // exact wire name — the studio's historical spellings
@@ -209,9 +211,9 @@ const paramSchema = z.object({
   // refine_lora picks the instrument; strength/steps default from
   // THE ROW (no silent overrides); the pass rides the doc's own
   // sampler/scheduler.
-  refine_lora: z.string().description("Refine lora").default("").extra('extra', { order: null, wtype: 'select', optionsFrom: 'loras', tooltip: "Catalog id of a refiner lora (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row. LORAS ARE ONLY MODS — the pick serves from the loras flavor rows, never a hand-spelled id (the compose door refuses unknown ids loud)." }),
-  refine_strength: z.number().description("Refine strength").min(0).max(2).step(0.05).extra('extra', { order: null, wtype: 'number', tooltip: "Override the refiner row's strength. Rides only when refine_lora is set." }),
-  refine_steps: z.number().description("Refine steps").min(1).max(10).step(1).extra('extra', { order: null, wtype: 'number', tooltip: "Override the refiner row's step count (taomate: 3). Rides only when refine_lora is set." }),
+  refine_lora: z.string().description("Refine lora").default("").extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'select', optionsFrom: 'loras', tooltip: "Catalog id of a refiner lora (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row. LORAS ARE ONLY MODS — the pick serves from the loras flavor rows, never a hand-spelled id (the compose door refuses unknown ids loud)." }),
+  refine_strength: z.number().description("Refine strength").min(0).max(2).step(0.05).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's strength. Rides only when refine_lora is set." }),
+  refine_steps: z.number().description("Refine steps").min(1).max(10).step(1).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's step count (taomate: 3). Rides only when refine_lora is set." }),
   // ── THE ATTENTION BACKEND (roadmap item 3; the h3_attention
   // "sage/sol" folklore was FICTION — no such knob, and the engine
   // enumerates only 'pytorch attention' on ModelAttentionBackend;
@@ -220,11 +222,11 @@ const paramSchema = z.object({
   // estate-proven literal (plaguekind's template value, silicon
   // receipts on the t4 arm); 'pytorch attention' is the engine's
   // own enumeration. Values the engine refuses are NOT offered.
-  attention_backend: vocabulary(["comfy kitchen attention", "pytorch attention"]).description("Attention backend").default("comfy kitchen attention").extra('extra', { order: null, wtype: 'select', tooltip: "The non-SLA arm's ModelAttentionBackend — used when the SLA sparse attention switch (Sla group) is OFF. ck-kitchen is the estate-proven default; pytorch is the engine's enumerated literal." }),
-  interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
-  interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." }),
-  sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', { order: null, tooltip: "Upscale the final film through SeedVR2 before saving." }),
-  sr_resolution: z.number().description("Super-Res target").min(720).max(2160).step(360).default(1080).extra('extra', { order: null, visible_when: "sr_switch=true", wtype: 'number', tooltip: "The SeedVR2 output height in px." }),
+  attention_backend: vocabulary(["comfy kitchen attention", "pytorch attention"]).description("Attention backend").default("comfy kitchen attention").extra('extra', { order: null, group: 'sampling', wtype: 'select', tooltip: "The non-SLA arm's ModelAttentionBackend — used when the SLA sparse attention switch (Sla group) is OFF. ck-kitchen is the estate-proven default; pytorch is the engine's enumerated literal." }),
+  interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
+  interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." }),
+  sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", tooltip: "Upscale the final film through SeedVR2 before saving." }),
+  sr_resolution: z.number().description("Super-Res target").min(720).max(2160).step(360).default(1080).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'number', tooltip: "The SeedVR2 output height in px." }),
   // CLOSED FILE SURFACE (the operator's dropdown law — a free-text
   // weights row is a guess box): the two SeedVR2 DiT files the estate
   // actually runs (both proven in shipped _flow.json receipts: the fp16
@@ -232,12 +234,12 @@ const paramSchema = z.object({
   // dropdown AND the membership refusal (an off-set value fails at the
   // schema door, never as a ComfyUI 400). Gated behind sr_switch like
   // every other post leaf.
-  sr_model: vocabulary(["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]).description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', { order: null, visible_when: "sr_switch=true", wtype: 'select', tooltip: "SeedVR2 weights (models/upscale_models/): fp16 3B default, fp8_e4m3fn 3B leaner." }),
+  sr_model: vocabulary(["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]).description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'select', tooltip: "SeedVR2 weights (models/upscale_models/): fp16 3B default, fp8_e4m3fn 3B leaner." }),
   // the R2V COMBO size mode — the literals OR a concrete WxH dimension
   // ("704x1280" rides in real runs; a number or a typo refuses LOUD at
   // the gate now, not as a ComfyUI 400). The select face serves the
   // two literals; WxH stays reachable by patch, exactly as before.
-  ref_image_size: z.union([z.const("match"), z.const("max"), z.string().pattern(/^\d+x\d+$/).description("WxH")]).description("Ref size").default("match").extra('extra', { order: null, wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor, take the max edge, or an explicit WxH." }),
+  ref_image_size: z.union([z.const("match"), z.const("max"), z.string().pattern(/^\d+x\d+$/).description("WxH")]).description("Ref size").default("match").extra('extra', { order: null, group: 'sampling', wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor, take the max edge, or an explicit WxH." }),
   // NO SILENT RESOLUTION LAW (2026-09-20, the operator's order):
   // one truth, one owner. shift_video is a NUMBER, default 8, served
   // and walked identically. The old z.const(null) arm — the
@@ -275,10 +277,10 @@ const paramSchema = z.object({
   // change a run that never sets them). VISIBILITY rides the
   // declaration's own visible_when grammar (&-ANDed guards, |-SET
   // values) — no hand-rolled predicates anywhere.
-  sharpen_method: vocabulary(["rcas", "adaptive_usm", "high_pass", "deconvolution"]).description("Sharpen Method").extra('extra', { order: null, visible_when: "sharpen_enabled=true", wtype: 'select' }),
-  sharpen_radius: z.number().description("Sharpen Radius").min(0.5).max(5).step(0.5).extra('extra', { order: null, visible_when: "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass|deconvolution", wtype: 'number', tooltip: "adaptive_usm / high_pass / deconvolution only." }),
-  sharpen_threshold: z.number().description("Sharpen Noise Gate").min(0).max(1).step(0.05).extra('extra', { order: null, visible_when: "sharpen_enabled=true&sharpen_method=adaptive_usm", wtype: 'number', tooltip: "adaptive_usm only." }),
-  sharpen_iterations: z.number().description("Sharpen Iterations").min(1).max(100).step(1).extra('extra', { order: null, visible_when: "sharpen_enabled=true&sharpen_method=deconvolution", wtype: 'number', tooltip: "deconvolution only." }),
+  sharpen_method: vocabulary(["rcas", "adaptive_usm", "high_pass", "deconvolution"]).description("Sharpen Method").extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true", wtype: 'select' }),
+  sharpen_radius: z.number().description("Sharpen Radius").min(0.5).max(5).step(0.5).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass|deconvolution", wtype: 'number', tooltip: "adaptive_usm / high_pass / deconvolution only." }),
+  sharpen_threshold: z.number().description("Sharpen Noise Gate").min(0).max(1).step(0.05).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=adaptive_usm", wtype: 'number', tooltip: "adaptive_usm only." }),
+  sharpen_iterations: z.number().description("Sharpen Iterations").min(1).max(100).step(1).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=deconvolution", wtype: 'number', tooltip: "deconvolution only." }),
   // NOTE: the calls[] SHOTS surface is deliberately NOT a carrier
   // knob — the carrier feeds the studio's frozen form-spec (the
   // studio owns its own shots editor, ui/studio/docModel) and the
@@ -298,7 +300,7 @@ const paramSchema = z.object({
   // default-less blank row on the form is a lie.
   k: z.number().description("Window index (film vocabulary)").step(1).extra('extra', { hidden: true }),
   noise_seed: z.number().description("Per-window noise seed").step(1).extra('extra', { hidden: true }),
-  fps_seconds: z.number().description("Clip seconds (fps rail)").min(1).max(60).default(10).extra('extra', { order: null, wtype: 'number', tooltip: "The clip's duration in seconds (the fps rail's duration primitive); the audio-bed slicer follows it." }),
+  fps_seconds: z.number().description("Clip seconds (fps rail)").min(1).max(60).default(10).extra('extra', { order: null, wtype: 'number', tooltip: "The clip's duration in seconds (the fps rail's duration primitive)." }),
   // THE LEGACY ALIASES (renderer-era spellings of the mod switches)
   // — gate-admitted for old drafts, never user surface: the MODS
   // own the switches (the operator's law), one face each.
@@ -408,7 +410,6 @@ export function schema(v: unknown): Record<string, unknown> {
       // derivation owns it first
       || wireList(raw.ref_images).length + wireList(raw.ref_videos).length + wireList(raw.ref_audios).length > 0
       || (typeof raw.last_frame === 'string' && raw.last_frame.trim() !== '')
-      || (typeof raw.bed_audio === 'string' && raw.bed_audio.trim() !== '')
     variant = calls.length > 1 ? 't4_chain' : hasGuide ? 't4r' : 't4_open'
     out.variant = variant
   }
@@ -549,10 +550,6 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
   let prev: WindowHandles | undefined
-  // BED ELAPSED (the audio-bed cut law's accumulator): where in the
-  // bed track the NEXT window's slice begins — advanced by each
-  // stanza's own duration as it renders.
-  let bedElapsed = 0
   // THE FILM RAIL (the operator's call, 2026-09-17: the film is media
   // composition — the ENGINE'S job, never a harness-side ffmpeg).
   // THE SEAM (2026-09-20, the operator's order: forget the
@@ -568,15 +565,19 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // SaveVideo emits the film the timeline promised. The estate
   // reorders artifacts so the film leads; it never concats.
   let film: { images: OutputHandle, audio: OutputHandle } | undefined
-  // THE CLIPS-STITCH FILM CLOCK (2026-09-21): the Music row's mix
-  // places clips in FILM time — window k's audio starts at
-  // Σ(len_j − trim_j)/24s (the AudioConcat chain's own accounting:
-  // window 1 contributes whole, each join trims the PREVIOUS tail
-  // by the incoming window's overlap). docStart maps through the
-  // carry head (22f ≈ 0.92s for extend seams, 0 for cuts) into the
-  // window's film span — the same reconciliation the player's
-  // Davinci map does post-render, computed here at plan time.
-  const windowFilm: Array<{ docStart: number, carry: number, filmStartSec: number }> = []
+  // THE CLIPS-STITCH CLOCK (2026-09-21, corrected twice 2026-09-22):
+  // clip.start is DOC-anchored (call-span coordinates — the stamp,
+  // the studio lanes, and the tool face all speak doc). Each extend
+  // join trims 22f off the film, so the film seat of doc frame f in
+  // window k is filmStart_k + (f − docStart_k) — the owner map WITH
+  // NO carry term. First correction (start/24) was right for
+  // windows 1–2 but late by 22f per extra extend seam (adversarial
+  // review: 3-window repro, pin w3 f28 vs overlay 5.417s for doc
+  // 130 whose seat is 4.5s). The carry-math ORIGINAL double-counted
+  // the other way (+22f on window 2+). This map is the fixed point:
+  // identical numbers to start/24 for windows 1–2 (all proof
+  // renders + walls agree), true seats for 3+.
+  const windowFilm: Array<{ docStart: number, filmStartSec: number }> = []
   let filmElapsedSec = 0
   // THE CLIPS, PARSED ONCE (2026-09-21, the dialogue half): both
   // consumers — the per-window CONDITIONING stamps (the model hears
@@ -584,18 +585,44 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // authority) — read THIS list, one law for what a clip IS. A src
   // without a numeric start_frame refuses loud (never a silent
   // misplacement); a row without src is junk and skips.
-  const clips: Array<{ src: string, start: number, dur: number }> = []
+  // THE THREE AUDIO LANES (2026-09-22, the operator's D-M-E law): a
+  // clip rides one CLASS — dialogue | sfx | music — one H3 audio
+  // input each. Every class runs the SAME machinery (stamp → pin →
+  // prompt field → overlay); only the prompt field and the duck
+  // relationships differ. Default: a text-carrying row is dialogue
+  // (the words law), a textless row is music (the historical
+  // Music-row behavior, byte-identical for existing docs).
+  const clips: Array<{ src: string, start: number, dur: number, text: string, cls: 'dialogue' | 'sfx' | 'music' }> = []
   for (const c of (Array.isArray(p.audio_clips) ? (p.audio_clips as Array<Record<string, unknown>>) : [])) {
     if (c === null || typeof c !== 'object') continue
     const src = typeof c.src === 'string' ? c.src.trim() : ''
     if (src === '') continue
     if (typeof c.start_frame !== 'number' || !Number.isFinite(c.start_frame)) {
       throw new Error(
-        `audio_clips: a clip with src but no numeric start_frame — the Music row owns placement (re-add the clip)`,
+        `audio_clips: a clip with src but no numeric start_frame — the audio lanes own placement (re-add the clip)`,
       )
     }
     const dur = typeof c.dur_frames === 'number' && Number.isFinite(c.dur_frames) && c.dur_frames > 0 ? c.dur_frames : 0
-    clips.push({ src, start: c.start_frame, dur })
+    // THE TRANSCRIPT (2026-09-22, the upstream guide's dialogue law):
+    // an optional text rides the clip — for dialogue, the WORDS the
+    // model must speak. The guide is explicit: dialogue rides the
+    // PROMPT in <d>[language] exact words.</d> tags (untranslated,
+    // unrewritten); the audio ref supplies the voice, the prompt
+    // supplies the words, and the mouth follows the prompt's tag —
+    // an audio-only conditioning leaves the lips idle (measured,
+    // twice). For sfx the text is the EVENT description the
+    // soundscape field times ("a sudden explosion rocks the room");
+    // for music it rides non_diegetic_music. In every class the
+    // text is what tells the model WHAT the audio is.
+    const text = typeof c.text === 'string' ? c.text.trim() : ''
+    const clsRaw = typeof c.class === 'string' ? c.class.trim().toLowerCase() : ''
+    if (clsRaw !== '' && clsRaw !== 'dialogue' && clsRaw !== 'sfx' && clsRaw !== 'music') {
+      throw new Error(
+        `audio_clips: unknown class "${clsRaw}" — dialogue | sfx | music (omit for auto: text → dialogue, else music)`,
+      )
+    }
+    const cls = (clsRaw !== '' ? clsRaw : text !== '' ? 'dialogue' : 'music') as 'dialogue' | 'sfx' | 'music'
+    clips.push({ src, start: c.start_frame, dur, text, cls })
   }
   // which clips CONDITION a window (and so duck the generated voice
   // at their film spans): filled by the loop below
@@ -622,7 +649,7 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     // beats — prompt segments WITHIN the call)". The film-level prompt
     // is the single-window shape's text face (lifted there by the
     // single-call mapping) — NEVER a per-call substitute.
-    const text = typeof call.text === 'string' ? call.text.trim() : ''
+    let text = typeof call.text === 'string' ? call.text.trim() : ''
     if (text === '') {
       throw new Error(
         `calls[${i}]: a call needs its own text — the film-level prompt is not a fallback (write the shot's text on the call)`,
@@ -644,86 +671,140 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     // card's own params) implies t4r by the same law.
     const rb = (call.refs ?? {}) as Record<string, unknown>
     const declaredRefCount = wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length
-      + (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '' ? 1 : 0)
     const hasRefs = declaredRefCount + wireList(rb.images).length + wireList(rb.videos).length + wireList(rb.audios).length > 0
     const chainLike = i > 0 && overlap > 0
     const sf = num(call.start_frame)
     const ef = num(call.end_frame)
 
-    // THE DIALOGUE CONDITIONING STAMP (2026-09-21, the second half):
-    // the window whose doc span a clip rides HEARS that clip — the
-    // model's lip-sync lane. The FIRST clip in row order wins the
-    // lane when several overlap one window (the authored primary
-    // speaker; the rest stay overlay-only). The slice is in
-    // GENERATION time: the window renders from (sf − carry) — the
-    // carry head — so a doc frame f sits (carry + f − sf)/24 into
-    // what the model hears. A clip with no dur (or a sub-0.1s
-    // overlap) cannot size a slice and stays overlay-only. Computed
-    // BEFORE the stanza: a stamped window is a REFERENCE window
-    // (t4r) — the audio lane only exists on that arm (the bed's own
-    // law: it too counts as a ref).
-    let dialogueStamp: { src: string, start_seconds: number, duration_seconds: number } | undefined
+    // THE AUDIO CONDITIONING STAMPS (2026-09-21, generalized
+    // 2026-09-22 to the D-M-E lanes): every window whose generation
+    // span a clip rides HEARS that clip — one lane per CLASS, the
+    // FIRST clip in row order winning its class's lane when several
+    // of one class overlap one window (the authored primary). A clip
+    // with no dur (or a sub-0.1s overlap) cannot size a slice and
+    // stays overlay-only. Computed BEFORE the stanza: a stamped
+    // window is a REFERENCE window (t4r) — the audio lanes only
+    // exist on that arm (the bed's own law: it too counts as a ref).
+    // THE STAMP (corrected 2026-09-22 while composing the
+    // proof film — the first cut sliced the source AT the timeline
+    // offset, so a clip starting mid-window conditioned the WRONG
+    // PART of the audio, immediately: window 1 of a seam-spanning
+    // dialogue heard the line's TAIL). The true law: the window's
+    // generation render starts at doc frame sf − carry (the carry
+    // head included — the model hears the whole generation span);
+    // the clip sounds at generation offset (clip.start − genStart)
+    // from its own source offset (genStart − clip.start). The
+    // stamp therefore carries BOTH: the SOURCE segment to slice
+    // [slice_start, +slice_dur) and the head silence (delay) that
+    // places it — the builder chains Slice → the pin at
+    // frame_idx = delay×24, fitted to the window's own generation
+    // length. ONE delay number feeds BOTH the pin and the prompt
+    // tag's clock — they cannot disagree.
+    type Stamp = { src: string, slice_start_seconds: number, slice_duration_seconds: number, delay_seconds: number, text: string }
+    const stamps: { dialogue?: Stamp, sfx?: Stamp, music?: Stamp } = {}
     if (sf !== null && ef !== null && Number.isFinite(sf) && Number.isFinite(ef) && ef > sf) {
       const carry = i > 0 ? overlap : 0
+      const genStart = sf - carry
       for (let ci = 0; ci < clips.length; ci++) {
         const clip = clips[ci]!
         if (clip.dur <= 0) continue
-        const a = Math.max(clip.start, sf)
-        const b = Math.min(clip.start + clip.dur, ef)
-        if (b - a < 2.4) continue // below the slice node's 0.1s floor
-        dialogueStamp = {
+        if (stamps[clip.cls] !== undefined) continue // one lane per class per window
+        const lo = Math.max(clip.start, genStart)
+        const hi = Math.min(clip.start + clip.dur, ef)
+        if (hi - lo < 2.4) continue // below the slice node's 0.1s floor
+        const ms = (frames: number): number => Math.round((frames / 24) * 1000) / 1000
+        stamps[clip.cls] = {
           src: clip.src,
-          start_seconds: Math.max(0, (carry + (a - sf)) / 24),
-          duration_seconds: Math.round(((b - a) / 24) * 1000) / 1000,
+          slice_start_seconds: ms(Math.max(0, genStart - clip.start)),
+          slice_duration_seconds: ms(hi - lo),
+          delay_seconds: ms(Math.max(0, clip.start - genStart)),
+          text: clip.text,
         }
         conditioned.add(ci)
-        break // one dialogue lane per window — the first speaker owns it
       }
     }
 
+    // THE PROMPT FIELDS (the guide's law, one per lane): dialogue
+    // rides <d> tags — the exact words at the stamp's LOCAL time
+    // (MM:SS.mmm, the window's own clock), never translated or
+    // rewritten; this is the half the audio-only conditioning
+    // lacked: the audio pins the voice, the tag moves the mouth.
+    // SFX rides the soundscape field at its onset time (the model
+    // HEARS the blast and times the visual to it); music rides
+    // non_diegetic_music. Same delay number, same clock.
+    const stampClock = (t: number): string => {
+      const mm = String(Math.floor(t / 60)).padStart(2, '0')
+      const ss = String(Math.floor(t % 60)).padStart(2, '0')
+      const mmm = String(Math.round((t % 1) * 1000)).padStart(3, '0')
+      return `${mm}:${ss}.${mmm}`
+    }
+    if (stamps.dialogue !== undefined && stamps.dialogue.text !== '') {
+      const t = stampClock(stamps.dialogue.delay_seconds)
+      text = text.replace(/\s+$/, '') +
+        `\n\noverall_soundscape:\nAt ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nShe says: <d>[English] ${stamps.dialogue.text}</d>`
+    }
+    if (stamps.sfx !== undefined && stamps.sfx.text !== '') {
+      text = text.replace(/\s+$/, '') +
+        `\n\noverall_soundscape:\nAt ${stampClock(stamps.sfx.delay_seconds)}, ${stamps.sfx.text}`
+    }
+    if (stamps.music !== undefined && stamps.music.text !== '') {
+      text = text.replace(/\s+$/, '') +
+        `\n\nnon_diegetic_music:\n${stamps.music.text}`
+    }
     const stanza: Record<string, unknown> = { ...p, ...knobs, prompt: text, k }
-    stanza.variant = (guide !== '' || hasRefs || dialogueStamp !== undefined) ? 't4r' : chainLike ? 't4_chain' : 't4_open'
+    const anyStamp = stamps.dialogue !== undefined || stamps.sfx !== undefined || stamps.music !== undefined
+    stanza.variant = (guide !== '' || hasRefs || anyStamp) ? 't4r' : chainLike ? 't4_chain' : 't4_open'
     // the distill's steps apply unless this call's knobs pinned steps
     if (knobs.steps === undefined && loraStepsApplied !== null) stanza.steps = loraStepsApplied
-    if (hasRefs) stanza.refs = call.refs
+    // THE DOOR GUARD, voice arm: a dialogue/sfx-pinned window mutes
+    // the user ref audios (film-level and per-call) — the pins own
+    // that window's audio conditioning; the ref doors reopen on
+    // unstamped windows.
+    const voicePinned = stamps.dialogue !== undefined || stamps.sfx !== undefined
+    if (voicePinned) delete stanza.ref_audios
+    if (hasRefs) stanza.refs = voicePinned && Array.isArray((call.refs as Record<string, unknown> | undefined)?.audios)
+      ? { ...(call.refs as Record<string, unknown>), audios: undefined }
+      : call.refs
     if (guide !== '') stanza.image = guide
     else delete stanza.image
     // per-window length: the span rider law, unless the call's knobs pin one
     if (sf !== null && ef !== null && ef > sf && knobs.length === undefined) {
       const kk = Math.round((ef - sf - 22) / 17)
       stanza.length = Math.min(362, Math.max(22, 22 + 17 * kk))
+      // THE TWO CLOCKS LAW (fixed 2026-09-22 — the 20-second proof
+      // film): the window's VIDEO length derives from fps_seconds
+      // (the builder's ComfyMathExpression reads it; the length
+      // param alone only feeds the film clock's accounting). A doc
+      // whose spans disagree with the stale fps_seconds renders
+      // uniform 10s windows while the clock books doc spans — the
+      // film clock and the render MUST state the same window.
+      if (knobs.fps_seconds === undefined) {
+        stanza.fps_seconds = Math.round(((stanza.length as number) / 24) * 1000) / 1000
+      }
     }
     if (i > 0) {
       stanza.__iteration = k - 1
       stanza.__overlap = overlap
     }
     if (prev !== undefined) stanza.__prev = prev
-    // THE AUDIO BED CUT LAW (the convenience layer): the film's
-    // windows carry their OWN slice of the bed — window 1 starts at
-    // bed_start, window k starts where window k-1's slice ended
-    // (each stanza's own fps_seconds is its duration; uniform
-    // windows are the film's default posture). Stamped BEFORE the
-    // bed is stripped from the stanza by per-call knob overrides —
-    // a call's knobs may kill the bed for that window alone.
-    if (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '') {
-      // bed_start is a declared knob with a walk-filled default (the
-      // door fills 0 before compose) — the cast reads the walked
-      // value, never a pre-walk fence
-      stanza.bed_window_start = (p.bed_start as number) + bedElapsed
-    }
+    // THE DOOR GUARD (2026-09-22, the operator's overlap law; the
+    // bed arm retired with the bed the same day): a pinned window
+    // owns its audio conditioning — the normal inputs stand down for
+    // THAT window so nothing double-feeds the same generation. The
+    // dialogue/sfx arm strips the user's ref_audios on stamped
+    // windows (the pins own those lanes); the music arm has nothing
+    // left to guard since the bed left. Per-window, never film-wide.
     assertOverlayGated(stanza, `h3-timeline window ${k} knobs`)
-    // advance the bed clock by THIS stanza's own duration (knobs may
-    // pin a per-window fps_seconds; the bed follows it) — POST-GATE:
-    // the overlay walk refused junk and filled the declared default
-    // 10, so this is a gated NUMBER (direct read, never a fence)
-    bedElapsed += stanza.fps_seconds as number
-    // the clips-stitch clock advance (see the declaration above):
-    // THIS window starts at filmElapsedSec (recorded pre-advance),
-    // then contributes its own length minus the tail it will trim
-    // off the previous film when it joins (0 for the opener).
-    windowFilm.push({ docStart: sf ?? 0, carry: i > 0 ? overlap : 0, filmStartSec: filmElapsedSec })
-    filmElapsedSec += ((stanza.length as number) - (i > 0 ? overlap : 0)) / 24
-    if (dialogueStamp !== undefined) stanza.dialogue_slice = dialogueStamp
+    // the clips-stitch advance: THIS window's doc span starts at
+    // sf and its content starts at filmElapsedSec (each join trims
+    // the previous tail by the incoming overlap — the film lags doc
+    // by one carry per extend seam; NO carry term rides, the trim is
+    // already inside filmElapsedSec).
+    windowFilm.push({ docStart: sf ?? 0, filmStartSec: filmElapsedSec })
+    filmElapsedSec += ((stanza.length as number) - (k > 1 ? overlap : 0)) / 24
+    if (stamps.dialogue !== undefined) stanza.dialogue_slice = stamps.dialogue
+    if (stamps.sfx !== undefined) stanza.sfx_slice = stamps.sfx
+    if (stamps.music !== undefined) stanza.music_slice = stamps.music
     const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w))
     prev = h
     if (film === undefined) {
@@ -772,33 +853,55 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     // track (length_mode 'base' — a clip never extends the cut).
     // NO clips = no nodes = a byte-identical graph.
     const placements = clips.map((clip, ci) => {
+      // clip.start is DOC-anchored (call-span coordinates — the
+      // stamp, the studio lanes, and the tool face all speak doc).
+      // The film seat of doc frame f owned by window w is
+      // w.filmStartSec + (f − w.docStart)/24 — the owner map with
+      // NO carry term (the trim already lives inside filmStartSec).
+      // Two measured wrongs bound this: the ORIGINAL added carry
+      // (+22f late on window 2+, proof run-77df); the first
+      // correction dropped the whole map (start/24 — right for
+      // windows 1–2, 22f late per EXTRA extend seam, adversarial
+      // 3-window repro). The STAMP side keeps its own clock (delay
+      // = start − genStart feeds the pin + the tag) — proven true,
+      // do not touch it.
       const fFrame = clip.start
       // owning window: the LAST whose docStart ≤ f (doc spans tile;
       // a clip before the film's first doc frame clamps to 0s)
       let owner = windowFilm[0]!
       for (const w of windowFilm) if (fFrame >= w.docStart) owner = w
-      const filmSec = Math.max(0, owner.filmStartSec + (owner.carry + (fFrame - owner.docStart)) / 24)
+      const filmSec = Math.max(0, owner.filmStartSec + (fFrame - owner.docStart) / 24)
       const durSec = clip.dur > 0 ? clip.dur / 24 : 0
       return { clip, ci, filmSec, durSec }
     })
-    // THE DUCK FIRST: the film's generated voice yields (−14dB,
-    // 20ms ramps) during every clip that CONDITIONED a window —
-    // the doubling case. Music-only overlays ride clean (no duck:
-    // the bed and the clip sum like a mix desk, nothing doubles).
-    const duckSpans = placements
-      .filter((pl) => conditioned.has(pl.ci) && pl.durSec > 0)
-      .map((pl) => `${Math.round(pl.filmSec * 1000) / 1000}:${Math.round((pl.filmSec + pl.durSec) * 1000) / 1000}`)
+    // THE DUCK MATRIX (D-M-E, 2026-09-22): the film's generated
+    // audio yields (duck_depth_db, 20ms ramps) during every clip
+    // that CONDITIONED a window — the doubling case (the model
+    // reproduces what it hears pinned: voice, blast, score). The
+    // MUSIC-class placements duck under the dialogue and sfx spans
+    // (the score yields to speech and impacts); dialogue and sfx
+    // ride at unity — an explosion bows to no whisper.
+    const span = (pl: { filmSec: number, durSec: number }): string =>
+      `${Math.round(pl.filmSec * 1000) / 1000}:${Math.round((pl.filmSec + pl.durSec) * 1000) / 1000}`
+    const stampedPlacements = placements.filter((pl) => conditioned.has(pl.ci) && pl.durSec > 0)
+    const duckSpans = stampedPlacements.map(span)
+    const musicDuckSpans = stampedPlacements
+      .filter((pl) => pl.clip.cls !== 'music')
+      .map(span)
+    const duckDb = typeof p.duck_depth_db === 'number' && Number.isFinite(p.duck_depth_db)
+      ? p.duck_depth_db : -14
     let filmAudio = f.audio
     if (duckSpans.length > 0) {
-      // the knob's declared default rides when unset (−14); the
-      // schema normalizes, the compose never pins a literal
-      const duckDb = typeof p.duck_depth_db === 'number' && Number.isFinite(p.duck_depth_db)
-        ? p.duck_depth_db : -14
       filmAudio = g.node('MeliteAudioDuck', {
         audio: f.audio, segments: duckSpans.join(';'), gain_db: duckDb, ramp_ms: 20,
       }).out(0)
     }
+    // music-class placements pre-mix and duck BEFORE joining the
+    // film track (their own sub-bus); dialogue/sfx place straight
+    // onto the film track at unity.
+    let musicBus: OutputHandle | undefined
     for (const { clip, filmSec, durSec } of placements) {
+      if (clip.cls === 'music') continue
       const loaded = g.node('LoadAudio', { audio: clip.src }).out()
       const placed = g.node('MeliteAudioDelay', {
         audio: loaded,
@@ -807,6 +910,28 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       }).out(0)
       filmAudio = g.node('MeliteAudioMix', {
         audio1: filmAudio, audio2: placed, length_mode: 'base',
+      }).out(0)
+    }
+    for (const { clip, filmSec, durSec } of placements) {
+      if (clip.cls !== 'music') continue
+      const loaded = g.node('LoadAudio', { audio: clip.src }).out()
+      const placed = g.node('MeliteAudioDelay', {
+        audio: loaded,
+        delay_seconds: Math.round(filmSec * 1000) / 1000,
+        duration_seconds: durSec > 0 ? Math.round((filmSec + durSec) * 1000) / 1000 : 0,
+      }).out(0)
+      musicBus = musicBus === undefined ? placed : g.node('MeliteAudioMix', {
+        audio1: musicBus, audio2: placed, length_mode: 'base',
+      }).out(0)
+    }
+    if (musicBus !== undefined) {
+      if (musicDuckSpans.length > 0) {
+        musicBus = g.node('MeliteAudioDuck', {
+          audio: musicBus, segments: musicDuckSpans.join(';'), gain_db: duckDb, ramp_ms: 20,
+        }).out(0)
+      }
+      filmAudio = g.node('MeliteAudioMix', {
+        audio1: filmAudio, audio2: musicBus, length_mode: 'base',
       }).out(0)
     }
     const created = g.node('CreateVideo', {
@@ -852,7 +977,6 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   // implies t4r by the same law.
   const rb0 = (p.refs ?? {}) as Record<string, unknown>
   const declaredCount = wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length
-    + (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '' ? 1 : 0)
   const hasRefs = declaredCount + wireList(rb0.images).length + wireList(rb0.videos).length + wireList(rb0.audios).length > 0
   if (hasRefs && p.variant !== 't4r') p = { ...p, variant: 't4r' }
   const family = p.variant as Family
@@ -1073,66 +1197,64 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       r2vInputs[`ref_video_audios.ref_video_audio_${i}`] = bout.out(10 + 2 * i)
       r2vInputs[`ref_audios.ref_audio_${i}`] = bout.out(15 + i)
     }
-    // THE AUDIO BED (the convenience layer): ONE track spread across
-    // the film — THIS window carries its own CUT (start = the film
-    // loop's bed_window_start stamp, duration = the window's own
-    // fps_seconds) injected as the hidden <Audio 1> conditioning;
-    // the user's ref audios shift behind it (Audio 2-3). The cut is
-    // ComfyUI's (the Layer C MeliteAudioSlice node — sample-grain
-    // slicing, silence-pad to the legal duration).
-    const bedAudio = (p.bed_audio ?? '') as string
-    if (bedAudio.trim() !== '') {
-      const slice = g.node('MeliteAudioSlice', {
-        audio: bedAudio,
-        // bed_window_start is stamped by the film loop for every
-        // bed-carrying stanza (the stamp ⟺ this block) — the cast
-        // reads it, never a fence
-        start_seconds: p.bed_window_start as number,
-        duration_seconds: p.fps_seconds as number,
-      }).out(0)
-      r2vInputs['ref_audios.ref_audio_0'] = slice
-      // the user's audios shift behind the bed (Audio 2-3); the
-      // third user audio yields its lane to the cut (1 bed + 2 user
-      // = the 3-lane budget — the bus law, never a silent fourth)
-      for (let i = 0; i < 2; i++) r2vInputs[`ref_audios.ref_audio_${i + 1}`] = bout.out(15 + i)
-    }
+    // (THE BED IS GONE, 2026-09-22: the user's three ref_audios ride
+    // their natural lanes above — no slice, no shift, no fourth
+    // anything.)
+    let dialogueAudio: OutputHandle | undefined
+    let dialogueFrameIdx = 0
+    let sfxAudio: OutputHandle | undefined
+    let sfxFrameIdx = 0
+    let musicAudio: OutputHandle | undefined
+    let musicFrameIdx = 0
     // THE DIALOGUE LANE (2026-09-21, the second half): a clip the
     // film loop stamped on THIS window conditions it — the model
     // HEARS the dialogue (the lip-sync mechanism; the generated
     // voice tracks it, the overlay stays the audible authority and
     // the mix DUCKS the generated voice under the real clip at film
     // time). THE BUS LAW, TOLD LOUD: 3 audio lanes total. Bed +
-    // dialogue + user refs must fit — an overflowing bus REFUSES
-    // naming every competitor, never a silent demotion.
+    // THE PINNED DIALOGUE GUIDE (rewired 2026-09-22 after the
+    // operator caught the dead lane): the bare ref_audios lane is a
+    // soft prior this checkpoint ignores — measured zero correlation
+    // on two rendered films. The PINNING lane is MiniMaxH3AddGuide
+    // with an audio-only keyframe: the clip's true source segment is
+    // anchored INTO the model's own timeline at its generation-frame
+    // index (the audio latent rides pinned rows; the video around it
+    // generates to match — the inpainting-grade prior). Dialogue no
+    // longer consumes a ref lane: bed + user audios keep the full
+    // 3-lane budget, and the guide is the dialogue's one owner.
     {
-      const stamp = (p.dialogue_slice ?? null) as
-        { src: string, start_seconds: number, duration_seconds: number } | null
+      // THE D-M-E LANES (2026-09-22): one stamp per class — the
+      // same slice law, the same pin law, three prompt fields. The
+      // dialogue stamp keeps the measured shape (walls ride it);
+      // sfx/music stamps are the same machinery on their lanes.
+      type StampShape = { src: string, slice_start_seconds: number, slice_duration_seconds: number, delay_seconds: number, text?: string }
+      const read = (key: string): StampShape | null => (p[key] ?? null) as StampShape | null
+      const stamp = read('dialogue_slice')
       if (stamp !== null) {
-        const bedRides = bedAudio.trim() !== ''
-        const userN = refAudios.length
-        const demand = (bedRides ? 1 : 0) + 1 + userN
-        if (demand > 3) {
-          throw new Error(
-            `h3-timeline: the window's audio bus is full — dialogue ('${stamp.src.split('/').pop()?.slice(0, 40)}') needs a lane` +
-            ` beside ${bedRides ? 'the music bed (1) ' : ''}${userN} user ref audio${userN === 1 ? '' : 's'} (${userN})` +
-            ` — 3 lanes total; drop one (the bus is never a silent fourth)`,
-          )
-        }
-        const slice = g.node('MeliteAudioSlice', {
+        dialogueAudio = g.node('MeliteAudioSlice', {
           audio: stamp.src,
-          start_seconds: stamp.start_seconds,
-          duration_seconds: stamp.duration_seconds,
+          start_seconds: stamp.slice_start_seconds,
+          duration_seconds: stamp.slice_duration_seconds,
         }).out(0)
-        if (bedRides) {
-          // bed(0) + dialogue(1) + the first user audio(2)
-          r2vInputs['ref_audios.ref_audio_1'] = slice
-          r2vInputs['ref_audios.ref_audio_2'] = bout.out(15)
-        } else {
-          // dialogue(0) + user audios(1-2)
-          r2vInputs['ref_audios.ref_audio_0'] = slice
-          r2vInputs['ref_audios.ref_audio_1'] = bout.out(15)
-          r2vInputs['ref_audios.ref_audio_2'] = bout.out(16)
-        }
+        dialogueFrameIdx = Math.round(stamp.delay_seconds * 24)
+      }
+      const sfxStamp = read('sfx_slice')
+      if (sfxStamp !== null) {
+        sfxAudio = g.node('MeliteAudioSlice', {
+          audio: sfxStamp.src,
+          start_seconds: sfxStamp.slice_start_seconds,
+          duration_seconds: sfxStamp.slice_duration_seconds,
+        }).out(0)
+        sfxFrameIdx = Math.round(sfxStamp.delay_seconds * 24)
+      }
+      const musicStamp = read('music_slice')
+      if (musicStamp !== null) {
+        musicAudio = g.node('MeliteAudioSlice', {
+          audio: musicStamp.src,
+          start_seconds: musicStamp.slice_start_seconds,
+          duration_seconds: musicStamp.slice_duration_seconds,
+        }).out(0)
+        musicFrameIdx = Math.round(musicStamp.delay_seconds * 24)
       }
     }
     const r2v = g.node('MiniMaxH3ReferenceToVideo', r2vInputs)
@@ -1147,6 +1269,34 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     cond = g.node('ComfySwitchNode', { switch: r2vBool, on_true: r2v.out(0), on_false: i2v.out(0) }).out()
     latent = g.node('ComfySwitchNode', { switch: r2vBool, on_true: r2v.out(1), on_false: i2v.out(1) }).out()
     fpsInput = fpsNode
+    // THE AUDIO-ONLY KEYFRAMES (2026-09-22, D-M-E): each lane pins
+    // its slice into the window's own AV latent at its generation-
+    // frame index — the model generates the video (and its own
+    // sound) around the pinned audio instead of merely glancing at
+    // a soft reference. Guides CHAIN (positive flows through): the
+    // dialogue pin lands first (the measured law), then sfx (the
+    // model times the blast to the heard transient), then music.
+    if (dialogueAudio !== undefined) {
+      cond = g.node('MiniMaxH3AddGuide', {
+        positive: cond, latent,
+        frame_idx: dialogueFrameIdx,
+        audio_vae: vaeAudio, audio: dialogueAudio,
+      }).out(0)
+    }
+    if (sfxAudio !== undefined) {
+      cond = g.node('MiniMaxH3AddGuide', {
+        positive: cond, latent,
+        frame_idx: sfxFrameIdx,
+        audio_vae: vaeAudio, audio: sfxAudio,
+      }).out(0)
+    }
+    if (musicAudio !== undefined) {
+      cond = g.node('MiniMaxH3AddGuide', {
+        positive: cond, latent,
+        frame_idx: musicFrameIdx,
+        audio_vae: vaeAudio, audio: musicAudio,
+      }).out(0)
+    }
   } else {
     // t4 families: chunked chain rides lora, switch picks SLA-direct
     // vs ModelAttentionBackend. The pin autofills the builder adds
@@ -1239,7 +1389,17 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   // PATCHED — the guider rebinds to it and the sampler's target is
   // the MASKED latent. A 'cut' call (overlap 0) and every opener
   // never mount this block: a true fresh window.
-  if (isChain) {
+  // THE FAMILY-AGNOSTIC SEAM (fixed 2026-09-22): the gate was
+  // t4_chain-only, and the dialogue stamp routes stamped windows to
+  // t4r — a stamped film silently lost the continuation AND the
+  // carried-head trim (two independent windows hard-concatenated:
+  // the broken seam the operator caught on the proof film). The
+  // continuation is latent-level (wraps the sampler's model and
+  // conditioning — family-agnostic); the trim is decode-level.
+  // Every film window k>=2 chains, t4r included. THE WALL: a
+  // stamped window with no Continuation node is a broken seam —
+  // card-gap pins it ("the stamped seam wall").
+  if (isChain || isT4r) {
     const prev = p.__prev as WindowHandles | undefined
     /* v8 ignore next 1 -- the film loop stamps __iteration on every window k≥2 before the render (the seam block mounts only when it did) */
     const iteration = (p.__iteration as number) ?? 0
@@ -1274,7 +1434,12 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   // The TaoMate refiner thread's mechanics: pass A full, pass B
   // closes. The rider sits UPSTREAM of decode AND of the film's
   // seam handles — the chained texture is the refined one.
-  const refine = p.refine as { name: string, strength: number, steps: number } | undefined
+  // THE MASTER GATE (2026-09-22): second_pass_enabled === true is
+  // the only door to the whole post chain — sharpen, interp, VSR,
+  // refine each AND it with their own switch (legacy docs with
+  // leaves set but no master render the plain pass, byte-stable).
+  const secondPassOn = p.second_pass_enabled === true
+  const refine = secondPassOn ? (p.refine as { name: string, strength: number, steps: number } | undefined) : undefined
   if (refine !== undefined) {
     const refineModel = g.node('LTX_lora_loader', {
       model: sigmaModel, mode: 'minimax',
@@ -1302,7 +1467,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   // `delivered` fills at the save branches (both families save)
   let delivered: { images: OutputHandle, audio: OutputHandle } | null = null
   const rawHandles: WindowHandles = { latOut, vdec, vadec, filmImages: latOut, filmAudio: latOut }
-  if (isChain) {
+  if (isChain || isT4r) {
     const prev = p.__prev as WindowHandles | undefined
     /* v8 ignore next 1 -- the film loop stamps __overlap on every window k≥2 before the render (the block mounts only when it did) */
     const overlap = (p.__overlap as number) ?? 0
@@ -1361,7 +1526,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // (declared default false). The legacy interp_switch alias is
     // retired — post-declaration the walk materializes the primary,
     // so the alias arm was unreachable dead law.
-    const interpSwOn = p.interpolate_enabled as boolean
+    const interpSwOn = secondPassOn && (p.interpolate_enabled as boolean)
     const interpSw = g.node('ComfySwitchNode', {
       switch: interpSwOn, on_true: interp, on_false: vdec,
     }).out()
@@ -1378,7 +1543,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       max_resolution: 0, batch_size: 5, uniform_batch_size: false,
       color_correction: 'lab',
     }).out()
-    const srSwOn = p.sr_switch as boolean
+    const srSwOn = secondPassOn && (p.sr_switch as boolean)
     const srSw = g.node('ComfySwitchNode', {
       switch: srSwOn, on_true: sr, on_false: interpSw,
     }).out()
@@ -1386,7 +1551,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // Renderer alias second (sharpen_* leaves above build the method).
     const sharpened = g.node('ImageSharpenKJ', { image: srSw, method }).out()
     const sharpSw = g.node('ComfySwitchNode', {
-      switch: p.sharpen_enabled as boolean, on_true: sharpened, on_false: srSw,
+      switch: secondPassOn && (p.sharpen_enabled as boolean), on_true: sharpened, on_false: srSw,
     }).out()
     // fps compensation (V9, 2026-09-15): upstream wires
     // CreateVideo.fps = base × interp multiplier (his Enhancements:
@@ -1394,7 +1559,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // it every interp-on window plays at HALF speed — the frames
     // double, the fps doesn't. Byte-stable at defaults (interp off →
     // the served literal 24).
-    const interpOn = p.interpolate_enabled as boolean
+    const interpOn = secondPassOn && (p.interpolate_enabled as boolean)
     const interpMult = p.interp_multiplier as number
     const created = g.node('CreateVideo', {
       images: sharpSw, audio: vadec, fps: interpOn ? 24 * interpMult : 24, bit_depth: 8,
@@ -1457,7 +1622,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // THE RAIL (the operator's law, 2026-09-20): first frame +
       // last frame + audio bed — one shared rail; the kinds are the
       // SLOT kinds (the rail seats image/file slots, never names)
-      inputs: { image: 'image', last_frame: 'image', bed_audio: 'file' },
+      inputs: { image: 'image', last_frame: 'image' },
       outputs: { default: 'video' },
       requiresModel: false,
     },
@@ -1529,12 +1694,6 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         }
       }
       assertOverlayGated(p, 'h3-timeline single-call lift')
-      // THE BED'S SINGLE-WINDOW STAMP (the film loop stamps every
-      // window; a one-call doc never rides the loop — window 1
-      // starts at the bed origin here, by the same law)
-      if (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '' && p.bed_window_start === undefined) {
-        p.bed_window_start = p.bed_start as number
-      }
       const guideImage = (p.image ?? p.image_name ?? '') as string
       if (p.variant === 't4r' && !guideImage) {
         // (refs-implied t4r windows carry no anchor — the bundle IS
@@ -1545,7 +1704,6 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         const refsCarry = wireList(rbRef.images).length + wireList(rbRef.videos).length + wireList(rbRef.audios).length
           + wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length > 0
           || (typeof p.last_frame === 'string' && p.last_frame.trim() !== '')
-          || (typeof p.bed_audio === 'string' && p.bed_audio.trim() !== '')
         if (!refsCarry) {
           throw new Error(
             'h3_window(t4r): image-anchored window without a staged guide image — ' +

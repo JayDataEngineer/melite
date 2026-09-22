@@ -93,12 +93,16 @@ describe("the drafts/patch door: the output history archive", () => {
   test("THE PARAMS SNAPSHOT (output-component stroke): the archive entry carries the params that MADE the run — captured at landing, immune to later edits", async () => {
     const { svc, drafts } = await bootRemote();
     await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
-    // run A lands under params {seed: 1}
+    // run A lands under params {seed: 1} (the params write is the
+    // author move, rev 0→1; the landing below it is TELEMETRY —
+    // result+runStatus only — and never advances the rev)
     await svc.patch("bench-main", "s_0", { params: { seed: 1 } }, 0, sig);
     await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "a", url: "/runs/a/out.png" } }, 1, sig);
-    // the operator edits params to {seed: 2}, then re-runs
-    await svc.patch("bench-main", "s_0", { params: { seed: 2 } }, 2, sig);
-    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "b", url: "/runs/b/out.png" } }, 3, sig);
+    // the operator edits params to {seed: 2} (rev 1→2 — the CAS
+    // handle moved exactly once per AUTHOR move, telemetry aside),
+    // then re-runs
+    await svc.patch("bench-main", "s_0", { params: { seed: 2 } }, 1, sig);
+    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "b", url: "/runs/b/out.png" } }, 2, sig);
     const hist = await historyOf(svc);
     expect(hist.length).toBe(2);
     // EVERY archived generation is tagged with ITS OWN params, not

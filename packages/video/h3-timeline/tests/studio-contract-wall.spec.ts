@@ -35,6 +35,7 @@ const LAYER_A_ALL_KEYS: string[] = [
   "seed", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
   "sampler_name", "sched_name",
   "refine_lora", "refine_strength", "refine_steps",
+  "second_pass_enabled",
   "attention_backend",
   "sla_enabled",
   "sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps",
@@ -66,7 +67,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
       if (key === "loras") populated.loras = [{ id: "x", strength: 0.5 }]
       else if (key === "audio_clips") populated.audio_clips = [{ id: "a", name: "a", src: "data:audio/x", start_frame: 0, dur_frames: 24 }]
       else if (key === "seed") populated.seed = 7
-      else if (key === "sharpen_enabled" || key === "interpolate_enabled" || key === "sr_switch") populated[key] = true
+      else if (key === "sharpen_enabled" || key === "interpolate_enabled" || key === "sr_switch" || key === "second_pass_enabled") populated[key] = true
       // the SLA master switch rides the wire ONLY as false (absent =
       // on); populate the override so the emitted vocabulary pins it
       else if (key === "sla_enabled") populated[key] = false

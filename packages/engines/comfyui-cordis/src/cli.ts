@@ -5,6 +5,7 @@
 import { Context } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
 import { composeCards, composeModPlane } from './cardDefs.ts'
+import { checkModelPresent } from './catalog.ts'
 import { loadFacts } from '@melite/comfyui-card-kit/facts'
 import { liveObjectInfo } from './comfyui-transport.ts'
 import { resolveEngineBaseUrl } from './comfyui-config.ts'
@@ -79,6 +80,11 @@ async function main(): Promise<void> {
   // the comfy-script autofill defaults. Fetched from the engine
   // (endpoint config — QUEUE LANE LAW: no default host, no pin).
   ctx.comfyui.setObjectInfo(await liveObjectInfo(resolveEngineBaseUrl()))
+  // THE ARM-WEIGHT READER (the silent-truncation law, 2026-10-09):
+  // the same models-tree presence read the harness seats — the
+  // CLI composes under the identical gate, never fail-open by
+  // accident.
+  ctx.comfyui.setWeightPresent((relativePath, name) => checkModelPresent(relativePath, name) !== null)
 
   // ── THE NESTED STANZA UNWRAP (lift:
   // card_compose_body rides the editor wire's own `params` key

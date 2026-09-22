@@ -45,6 +45,14 @@ export interface CallCardDeps {
   setCallTransition: (i: number, t: "extend" | "cut") => void
   setCallRefs: (i: number, key: keyof CallRefs, value: string) => void
   setCallKnob: (i: number, key: string, value: number | string | boolean | undefined) => void
+  /** THE PIN MAP (door-guard UX arm): call indexes whose windows
+   * carry a dialogue/sfx clip — their Ref audios bucket grays out
+   * (the pinned window owns its audio conditioning). */
+  voicePinnedCalls?: Set<number>
+  /** THE BLOCKER (2026-09-22): any D-M-E clip present → the Ref
+   * audios bucket grays out on EVERY call (the timeline owns the
+   * model's audio inputs while it carries clips). */
+  audioClipsPresent?: boolean
 }
 
 /** Layer B rail: compact call rows ⇄ focused call editor + legacy

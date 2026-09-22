@@ -41,12 +41,21 @@
   scrollbar-gutter: stable;
 }
 .shell > *:nth-child(2) { grid-column: 2; grid-row: 1; overflow-y: auto; min-height: 0; }
+/* THE BOTTOM ROW NEVER WHEELS (2026-09-22, operator: "I DON'T WANT
+ * A VERTICAL SCROLL WHEEL ON THE TIMELINE INPUT BAR" — re-caught
+ * after the tenant fix: THIS base rule was the surviving cap; a
+ * tenant override that omits max-height inherits it, and the wheel
+ * came back). The row sizes to its content: the shell grid's row 2
+ * is AUTO, min-height: 0 / max-height: none kill both floors and
+ * caps, overflow: visible so nothing inner-scrolls either. The
+ * center pane above owns the fit; the fold is the card's scroll,
+ * never the strip's. (Supersedes the hour-8 bounded-cap law.) */
 .shell > *:nth-child(3) {
   grid-column: 1 / -1;
   grid-row: 2;
-  min-height: 168px;
-  max-height: min(42%, 380px);
-  overflow-y: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
 }
 
 .errorLine {

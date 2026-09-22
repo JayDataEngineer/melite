@@ -69,11 +69,11 @@ function fakeRes(): { saw: Saw; res: unknown } {
   return { saw, res }
 }
 
-async function hit(ctx: Ctx, path: string, url?: string): Promise<Saw> {
+async function hit(ctx: Ctx, path: string, url?: string, headers: Record<string, string> = {}): Promise<Saw> {
   const route = ctx.routes.find((r) => r.path === path)
   if (route === undefined) throw new Error('no route for ' + path)
   const { saw, res } = fakeRes()
-  await route.handler({ url: url ?? path }, res)
+  await route.handler({ url: url ?? path, headers }, res)
   return saw
 }
 
@@ -323,18 +323,73 @@ describe('GET /infer-gallery/artifact', () => {
       ['b.jpg', 'image/jpeg'],
       ['c.jpeg', 'image/jpeg'],
       ['d.webp', 'image/webp'],
-      ['e.mp4', 'video/webm'],
+      // the drift fix (the audio-seek stroke): mp4 answered
+      // video/webm, audio extensions answered octet-stream — one
+      // MIME table in the vocab leaf now serves every route
+      ['e.mp4', 'video/mp4'],
       ['f.webm', 'video/webm'],
       ['g.bin', 'application/octet-stream'],
+      ['h.mp3', 'audio/mpeg'],
+      ['i.wav', 'audio/wav'],
+      ['j.flac', 'audio/flac'],
+      ['k.ogg', 'audio/ogg'],
+      ['l.m4a', 'audio/mp4'],
+      ['m.aac', 'audio/aac'],
+      ['n.glb', 'model/gltf-binary'],
+      // the svg law (the adversarial round): svg is absent from the
+      // shared table — a download, never inline executable
+      ['o.svg', 'application/octet-stream'],
     ]
     for (const [file, mime] of cases) writeArtifact(`${RUN}/gen/${file}`, new Uint8Array([1, 2, 3]))
     const ctx = mount({ flowDir })
     for (const [file, mime] of cases) {
       const saw = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/${file}`)}`)
-      expect(saw.status).toBe(200)
-      expect(saw.headers['content-type']).toBe(mime)
+      expect(saw.status, file).toBe(200)
+      expect(saw.headers['content-type'], file).toBe(mime)
+      expect(saw.headers['accept-ranges'], file).toBe('bytes')
       expect(saw.body).toEqual(Buffer.from([1, 2, 3]))
     }
+  })
+
+  it('serves the range law: 206 slices, the loud 416, the ignored ask (the audio-seek stroke)', async () => {
+    // 10 bytes 0..9 — the canonical window
+    writeArtifact(`${RUN}/gen/track.mp3`, Buffer.from('0123456789'))
+    const ctx = mount({ flowDir })
+    const url = `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/track.mp3`)}`
+    const mid = await hit(ctx, '/infer-gallery/artifact', url, { range: 'bytes=2-5' })
+    expect(mid.status).toBe(206)
+    expect(mid.headers['content-type']).toBe('audio/mpeg')
+    expect(mid.headers['content-range']).toBe('bytes 2-5/10')
+    expect(mid.headers['accept-ranges']).toBe('bytes')
+    expect(mid.headers['content-length']).toBe('4')
+    expect(mid.body).toEqual(Buffer.from('2345'))
+    const open = await hit(ctx, '/infer-gallery/artifact', url, { range: 'bytes=6-' })
+    expect(open.body).toEqual(Buffer.from('6789'))
+    const tail = await hit(ctx, '/infer-gallery/artifact', url, { range: 'bytes=-3' })
+    expect(tail.body).toEqual(Buffer.from('789'))
+    for (const ask of ['bytes=10-', 'bytes=99-200', 'bytes=-0']) {
+      const saw = await hit(ctx, '/infer-gallery/artifact', url, { range: ask })
+      expect(saw.status, ask).toBe(416)
+      expect(saw.headers['content-range'], ask).toBe('bytes */10')
+    }
+    for (const ask of ['bytes=abc', 'bytes=0-1,3-4', 'bytes=5-2']) {
+      const saw = await hit(ctx, '/infer-gallery/artifact', url, { range: ask })
+      expect(saw.status, ask).toBe(200)
+      expect(saw.body, ask).toEqual(Buffer.from('0123456789'))
+    }
+  })
+
+  it('cross-host relays a Range ask and passes the upstream range answer through', async () => {
+    stubFetch(() => Promise.resolve(new Response(Buffer.from('2345'), {
+      status: 206,
+      headers: { 'content-type': 'audio/mpeg', 'content-range': 'bytes 2-5/10', 'accept-ranges': 'bytes' },
+    })))
+    const ctx = mount({ gatewayUrl: 'https://owner.example', flowDir })
+    const saw = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/track.mp3`)}`, { range: 'bytes=2-5' })
+    expect(saw.status).toBe(206)
+    expect(saw.headers['content-range']).toBe('bytes 2-5/10')
+    expect(saw.headers['accept-ranges']).toBe('bytes')
+    expect(saw.body).toEqual(Buffer.from('2345'))
   })
 
   it('a missing file answers 502', async () => {
@@ -342,6 +397,49 @@ describe('GET /infer-gallery/artifact', () => {
     const missing = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gone.png`)}`)
     expect(missing.status).toBe(502)
     expect((json(missing) as { error: string }).error).toBe('artifact_unreadable')
+  })
+
+  it('cross-host passes an upstream 416 through with its window (never a gateway_error)', async () => {
+    stubFetch(() => Promise.resolve(new Response('past eof', {
+      status: 416,
+      headers: { 'content-range': 'bytes */10' },
+    })))
+    const ctx = mount({ gatewayUrl: 'https://owner.example', flowDir })
+    const saw = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/track.mp3`)}`, { range: 'bytes=99-200' })
+    expect(saw.status).toBe(416)
+    expect(saw.headers['content-range']).toBe('bytes */10')
+    expect(saw.headers['accept-ranges']).toBe('bytes')
+    expect((json(saw) as { error: string }).error).toBe('infer-gallery/range-not-satisfiable')
+  })
+
+  it('cross-host HEAD relays the upstream metadata with an empty body (a bodiless GET is still refused)', async () => {
+    stubFetch(() => Promise.resolve(new Response(null, {
+      status: 200,
+      headers: { 'content-type': 'audio/mpeg', 'content-length': '3540830', 'accept-ranges': 'bytes' },
+    })))
+    const ctx = mount({ gatewayUrl: 'https://owner.example', flowDir })
+    const route = ctx.routes.find((r) => r.path === '/infer-gallery/artifact')
+    const url = `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/track.mp3`)}`
+    const { saw, res } = fakeRes()
+    await route!.handler({ url, headers: {}, method: 'HEAD' }, res)
+    expect(saw.status).toBe(200)
+    expect(saw.headers['content-type']).toBe('audio/mpeg')
+    expect(saw.headers['content-length']).toBe('3540830')
+    expect(saw.body.byteLength).toBe(0)
+  })
+
+  it('in-tree HEAD answers metadata only: the size rides, no byte ships (the media route law)', async () => {
+    writeArtifact(`${RUN}/gen/track.mp3`, Buffer.from('0123456789'))
+    const ctx = mount({ flowDir })
+    const route = ctx.routes.find((r) => r.path === '/infer-gallery/artifact')
+    const url = `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/track.mp3`)}`
+    const { saw, res } = fakeRes()
+    await route!.handler({ url, headers: { range: 'bytes=2-5' }, method: 'HEAD' }, res)
+    expect(saw.status).toBe(200) // HEAD ignores Range: full metadata, never a slice
+    expect(saw.headers['content-type']).toBe('audio/mpeg')
+    expect(saw.headers['content-length']).toBe('10')
+    expect(saw.headers['accept-ranges']).toBe('bytes')
+    expect(saw.body.byteLength).toBe(0)
   })
 
   it('cross-host streams the owning asset tree (content-type falls back honestly)', async () => {

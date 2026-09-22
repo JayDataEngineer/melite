@@ -731,7 +731,7 @@ const SAM2_DETECT = {
   section: 'Bbox filter — YOLO proposes the boxes (automated): pick classes, tune confidence',
   fields: [
     { name: 'labels', type: 'string', label: 'YOLO classes', default: 'person' },
-    { name: 'yolo_threshold', type: 'number', label: 'YOLO threshold', default: 0.5 },
+    { name: 'detection_threshold', type: 'number', label: 'Detection threshold', default: 0.5 },
   ],
 } as unknown as ModifierKind
 

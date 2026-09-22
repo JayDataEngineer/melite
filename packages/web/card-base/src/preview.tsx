@@ -180,30 +180,31 @@ function StaleBadge(props: { note?: string, onReturn: () => void }): ReturnType<
  *  broken-image glyph — no error, no name, nothing. The strip is
  *  the sideways row; a dead entry shows its NAME and a missing
  *  marker, never a silent void.
- *  THE KIND FACE (the operator's catch, 2026-09-22: audio history
- *  tiles read 'gone' — "it says gone instead historical view under
- *  the preview… works for image cards, but not audio"): an <img>
- *  decodes ONLY images — an audio (or video, or mesh) url seated in
- *  an <img> fires onError in a real browser the moment it mounts,
- *  so EVERY non-image tile flipped to the dead face: the Music
- *  card's history said 'gone' for files that exist, the exact lie
- *  the dead face exists to prevent. The thumb face rides the
+ *  THE KIND FACE (the operator's catches, 2026-10-08): (1) audio
+ *  history tiles read 'gone' — an <img> decodes ONLY images, so a
+ *  non-image url seated in an <img> fires onError on mount and
+ *  every audio/video/mesh tile wore the FALSE dead face ("it says
+ *  gone instead historical view under the preview"). (2) the first
+ *  cut put the artifact NAME in the chip — "a long rectangle with
+ *  a file name" (music/SaveAudioAdvanced.0_music_00002.mp3)
+ *  instead of something compact. THE FACE: the thumb rides the
  *  owner's DECLARED kind (the primary-output law — the same kind
  *  that picked this presenter): image decodes as itself (the dead
- *  face stays its honesty); every other kind renders a labeled
- *  glyph tile — honest about what the entry IS, no decode to fail,
- *  no false 'gone'. */
+ *  face stays its honesty); every other kind renders a COMPACT
+ *  48×48 glyph square — the image thumb row's own rhythm — with
+ *  the full artifact name on the TILE BUTTON's tooltip, never in
+ *  the face. No decode to fail, no false 'gone', no long box. */
 function HistoryThumb(props: { a: PreviewArtifact, kind: PreviewOwnerProps['kind'] }): ReturnType<typeof h> {
   const [dead, setDead] = useState(false)
   if (props.kind !== 'image') {
     const Glyph = props.kind === 'audio' ? AudioLines : props.kind === 'video' ? Film : Box
-    return h('span', {
+    // the glyph carries the face; the TILE button's title (the
+    // entry's artifact names — HistoryStrip) is the name + the
+    // accessible label (the icon set's aria-hidden law holds)
+    return h(Glyph, {
       className: s.thumbFace,
       'data-testid': `history-thumb-${props.kind}`,
-    },
-      h(Glyph, { className: s.thumbFaceGlyph }),
-      h('span', { className: s.thumbFaceName }, props.a.name),
-    )
+    })
   }
   if (dead) {
     return h('span', {

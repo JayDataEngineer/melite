@@ -214,8 +214,12 @@ export const SCHEDULER_OPTIONS = [
   "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform",
 ]
 
-/** One Layer A audio clip (the Music row's NLE block): position in DOC
- * frames, length in doc frames, gain linear (1 = unity). */
+/** One Layer A audio clip (the audio lanes' NLE block): position in
+ * DOC frames, length in doc frames, gain linear (1 = unity).
+ * THE THREE LANES (2026-09-22, D-M-E): a clip rides one class —
+ * dialogue | sfx | music — one H3 audio input each; every class
+ * runs the same stamp → pin → prompt-field → overlay machinery.
+ * Default (class absent): text present → dialogue, else music. */
 export interface DocAudioClip {
   id: string
   /** Display name (the artifact name or the uploaded filename). */
@@ -226,6 +230,12 @@ export interface DocAudioClip {
   dur_frames: number
   /** 0..2 linear gain; absent = unity. */
   gain?: number
+  /** The lane: dialogue | sfx | music; absent = auto (text → dialogue, else music). */
+  class?: "dialogue" | "sfx" | "music"
+  /** The WORDS (dialogue — exact, unabridged, matching the take) or
+   * the EVENT description (sfx — what the soundscape times) or the
+   * music description; absent = the clip overlays without conditioning. */
+  text?: string
 }
 
 /**

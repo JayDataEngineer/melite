@@ -188,6 +188,12 @@ export async function patchStageOutcome(
   // images piled up on disk while the drill said "No render yet".
   // Now the write carries a rev (the caller's, else a fresh read)
   // and rebases once on conflict; a final failure throws LOUD.
+  // (THE TELEMETRY LAW, 2026-10-08 — the door now treats
+  // result/runStatus-only bodies as RUN FACES: they land without
+  // fencing, bumping, or logging, so the bench rev no longer ticks
+  // with every progress frame. The rev this helper still fetches
+  // and sends is harmless currency — the door simply doesn't spend
+  // it on telemetry.)
   await patchWithRebase(draftId, stageId, outcome, expectRev)
 }
 

@@ -3,7 +3,7 @@
 // path — the per-stage loop, per-stage harvest + result_outputs,
 // the stop-gated terminal mapping. Explicit deps, no Service state.
 import type { Context } from "@deepseek-ai/cordis";
-import { executeFlow, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
+import { executeFlow, loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
 import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
 import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
 import { errText, runRel, type RunRecord, type StageRow } from "./runsTypes.ts";
@@ -11,6 +11,25 @@ import { engineFilmName, filmMuxPlan, muxWindows, probeDurationSec, shouldMuxWin
 import { join } from "node:path";
 import { needComfyUI as _ncu } from "@melite/comfyui-cordis";
 type EngineCtx = Parameters<typeof _ncu>[0];
+
+/** THE DECLARED HERO (the mask hero defect, 2026-10-09): the
+ *  stage gallery leads with engine completion order — a card that
+ *  saves secondary same-kind artifacts (the mask card's manifest
+ *  photo beside mask_combined) declares its product stem on the
+ *  DECL (primaryFile) and the match moves first. Basename match:
+ *  exact stem, stem + "_" + the engine counter, or stem +
+ *  extension. No match (or no stem) = engine order, never a
+ *  reorder into nothing. Pure (the film-mux walls pin the
+ *  precedent: presentation order is the harness's only job). */
+export function declaredPrimaryFirst(names: string[], stem: string | undefined): string[] {
+  if (stem === undefined || stem === "") return names;
+  const hero = names.find((n): boolean => {
+    const base = n.slice(n.lastIndexOf("/") + 1);
+    return base === stem || base.startsWith(stem + "_") || base.startsWith(stem + ".");
+  });
+  if (hero === undefined) return names;
+  return [hero, ...names.filter((n): boolean => n !== hero)];
+}
 
 export type SettleFn = (run: RunRecord) => void;
 
@@ -191,6 +210,18 @@ export type SettleFn = (run: RunRecord) => void;
           if (engineFilm !== null) {
             names = [engineFilm, ...names.filter((n): boolean => n !== engineFilm)];
           }
+          // THE DECLARED PRIMARY LEADS (the mask hero defect,
+          // 2026-10-09): the run's card declares its product stem
+          // (mask: 'mask_combined') — the match moves first so the
+          // history/preview hero is the product, not whichever
+          // same-kind artifact the engine finished first. Inline
+          // flows (no cardId) and undeclared cards keep engine
+          // order; loadCardDefs is module-cached (the manage door
+          // reads the same table).
+          const stem = run.cardId !== undefined
+            ? (await loadCardDefs()).get(run.cardId)?.primaryFile
+            : undefined;
+          names = declaredPrimaryFirst(names, stem);
           const plan = filmMuxPlan(names);
           if (plan !== null) {
             if (plan.stitch === null) {

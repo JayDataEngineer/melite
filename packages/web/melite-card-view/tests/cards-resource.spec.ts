@@ -1,9 +1,10 @@
 // cards-resource.spec.ts — THE PROVIDER STREAM's own laws (2026-09-12,
 // live co-presence: "fix the [REDACTED 2026-11-05] gaps"). The bench resource is an
-// AsyncIterable: the initial snapshot frame, then a fresh frame ONLY
-// when the shared doc's rev moves (an out-of-band write — the agent's
-// construct verbs, a bench-mode pass — lands in every OPEN consumer
-// with no view-level watchers). The run resource streams its status
+// AsyncIterable: the initial snapshot frame, then a fresh frame on
+// DOC CHANGE — rev drift (an out-of-band author write lands in every
+// OPEN consumer with no view-level watchers) or run-face movement at
+// the same rev (a rev-silent telemetry write — the foreign run's
+// progress/result/history still lands). The run resource streams its status
 // until terminal (pollRunFrames' law, already pinned in the run-wire
 // package; here the bench tail gets its own pins).
 import { describe, expect, test, vi, afterEach } from 'vitest'
@@ -374,6 +375,50 @@ describe('the bench resource stream (live co-presence, the mux tail)', () => {
     expect(second.ok).toBe(true)
     expect(second.value.rev).toBe(8)
     expect(second.value.stages.map((s) => s.title)).toEqual(['hero frame', 'agent row'])
+  })
+
+  test('a same-rev telemetry write yields a fresh frame: the foreign run lands in every open consumer (the telemetry law, 2026-10-08)', async () => {
+    // the channel: the snapshot (rev 7, one idle row), then a
+    // REV-SILENT run-face write at the SAME rev — run start,
+    // progress, and the archived terminal, exactly as the drafts
+    // door persists them (no rev bump, no log entry). The tab never
+    // touched the wire and armed no observer: the frame IS the
+    // passive view (and the phantom reconcile's trigger).
+    const idle: Record<string, unknown> = {
+      draft_id: 'bench-main', rev: 7,
+      stages: [{ id: 's_0', card: 'music', title: 'song', engine: 'comfyui', params: {}, runStatus: 'idle' }],
+      log: [],
+    }
+    const landed: Record<string, unknown> = {
+      draft_id: 'bench-main', rev: 7,
+      stages: [{
+        id: 's_0', card: 'music', title: 'song', engine: 'comfyui', params: {},
+        runStatus: 'completed',
+        result: { run_id: 'r1', url: '/runs/r1/song.mp3' },
+        history: [{ run_id: 'r1', url: '/runs/r1/song.mp3' }],
+      }],
+      log: [],
+    }
+    const bench = fakeRemote()
+    bench.push('main', idle)
+    const controller = new AbortController()
+    const frames: unknown[] = []
+    const done = (async (): Promise<void> => {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal }, bench.remote, bench.remote.bench)) {
+        frames.push(frame)
+        if (frames.length === 2) controller.abort()
+      }
+    })()
+    await until(() => frames.length === 1)
+    bench.push('main', landed) // same rev, moved faces
+    await done
+    expect(frames.length).toBe(2)
+    const second = frames[1] as { ok: boolean; value: { rev: number; stages: Array<{ runStatus?: string; result?: { url?: string }; history?: Array<{ url?: string }> }> } }
+    expect(second.ok).toBe(true)
+    expect(second.value.rev).toBe(7) // the rev never moved — the FACES carried the frame
+    expect(second.value.stages[0]?.runStatus).toBe('completed')
+    expect(second.value.stages[0]?.result?.url).toBe('/runs/r1/song.mp3')
+    expect(second.value.stages[0]?.history?.[0]?.url).toBe('/runs/r1/song.mp3')
   })
 
   test('no rev drift, no frame: the tail is quiet on a still bench (a reconnect re-serves the same doc)', async () => {

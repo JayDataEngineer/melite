@@ -510,6 +510,47 @@ describe("compose (the model-less path)", () => {
     svc.compose("card1", null, {}, "r3");
   });
 
+  it("the arm-weight gate: an absent weight refuses loud with its fetch URL; a present one composes; no reader = fail-open", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
+      boarded: [] as never,
+      provisions: [{ name: "w.bin", url: "http://w/w.bin", folder: "checkpoints" }],
+      armWeights: () => ["w.bin"],
+    }));
+    // no reader armed (the walls-and-fixtures degrade) = fail-open
+    svc.compose("card1", null, {}, "r0");
+    svc.setWeightPresent(() => false);
+    assert.throws(
+      () => svc.compose("card1", null, {}, "r1"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-weight"
+        && /needs weight 'checkpoints\/w\.bin'/.test(e.message)
+        && /http:\/\/w\/w\.bin/.test(e.message)
+        && /provision_model model=card1/.test(e.message),
+    );
+    svc.setWeightPresent((rel, name) => rel === "models/checkpoints" && name === "w.bin");
+    svc.compose("card1", null, {}, "r2");
+    svc.setWeightPresent(null);
+    svc.compose("card1", null, {}, "r3");
+  });
+
+  it("the arm-weight gate: a named-but-undeclared row is a declaration bug (refused, never skipped)", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
+      boarded: [] as never,
+      provisions: [],
+      armWeights: () => ["ghost.bin"],
+    }));
+    svc.setWeightPresent(() => true);
+    assert.throws(
+      () => svc.compose("card1", null, {}, "r1"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-weight" && /no such provision row declared/.test(e.message),
+    );
+  });
+
   it("the model-less happy path composes + finalizes; recipes overlay", async () => {
     const svc = await boot();
     svc.registerCard(card({

@@ -34,9 +34,9 @@ const fakeClient = (over: Record<string, unknown> = {}): Client =>
   ({
     fetchApi: async (_url: string, init: RequestInit) => {
       const fd = init.body as FormData;
-      const blob = fd.get("image") as Blob;
-      uploads.push({ name: "blob", type: blob.type });
-      return new Response(JSON.stringify({ name: "staged-" + uploads.length + ".bin" }), { status: 200 });
+      const blob = fd.get("image") as Blob & { name?: string };
+      uploads.push({ name: blob.name ?? "blob", type: blob.type });
+      return new Response(JSON.stringify({ name: blob.name ?? "staged-" + uploads.length + ".bin" }), { status: 200 });
     },
     ...over,
   }) as unknown as Client;
@@ -85,9 +85,26 @@ describe("uploadFile (the ctype table + the receipt)", () => {
       const p = join(DIR, name);
       writeFileSync(p, "x");
       const out = await uploadFile(fakeClient(), p);
-      expect(out.name).toMatch(/^staged-/);
+      expect(out.name).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
       expect(uploads.at(-1)?.type).toBe(mime);
     }
+  });
+  it("THE STALE-TAKE WALL: the staged name is content-addressed — same bytes idempotent, a different take gets a different name", async () => {
+    // two files, same basename, different bytes (two runs' TTS of the
+    // same line) — the bare-basename law served whichever landed
+    // first; the content-address law keeps them apart
+    const take1 = join(DIR, "line-take.flac");
+    const take2 = join(DIR, "line-take-2.flac");
+    writeFileSync(take1, "take-one-bytes");
+    writeFileSync(take2, "take-two-bytes-different-length");
+    const c = fakeClient();
+    const a = await uploadFile(c, take1);
+    const b = await uploadFile(c, take2);
+    const again = await uploadFile(c, take1);
+    expect(a.name).toMatch(/^line-take_[0-9a-f]{12}\.flac$/);
+    expect(b.name).toMatch(/^line-take-2_[0-9a-f]{12}\.flac$/);
+    expect(a.name).not.toBe(b.name);
+    expect(again.name).toBe(a.name);
   });
   it("a server answer without a name refuses", async () => {
     const bad = { fetchApi: async () => new Response("{}", { status: 200 }) } as unknown as Client;
@@ -109,8 +126,8 @@ describe("uploadReferenced (the staging walk)", () => {
     const { graph, uploaded } = await uploadReferenced(fakeClient(), {
       n: { class_type: "LoadImage", inputs: { image: url } },
     });
-    expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/^staged-/);
-    expect(uploaded[url]).toMatch(/^staged-/);
+    expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
+    expect(uploaded[url]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
   });
   it("non-image and empty-payload data URLs ride untouched", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {
@@ -129,7 +146,7 @@ describe("uploadReferenced (the staging walk)", () => {
       const { graph } = await uploadReferenced(fakeClient(), {
         n: { class_type: "LoadImage", inputs: { image: "https://up/run-1/out.png" } },
       });
-      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/^staged-/);
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     } finally {
       vi.unstubAllGlobals();
     }
@@ -156,7 +173,7 @@ describe("uploadReferenced (the staging walk)", () => {
       const { graph } = await uploadReferenced(fakeClient(), {
         n: { class_type: "LoadImage", inputs: { image: prefix + "run-1/local.png" } },
       }, { runsRoot: ROOT });
-      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/^staged-/);
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     }
   });
   it("an estate URL without a runs root refuses", async () => {
@@ -179,7 +196,7 @@ describe("uploadReferenced (the staging walk)", () => {
       hit: { class_type: "X", inputs: { v: "run-1/local.png" } },
       miss: { class_type: "X", inputs: { v: "run-9/none.png" } },
     }, { runsRoot: ROOT });
-    expect((graph["hit"] as { inputs: { v: string } }).inputs["v"]).toMatch(/^staged-/);
+    expect((graph["hit"] as { inputs: { v: string } }).inputs["v"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     expect((graph["miss"] as { inputs: { v: string } }).inputs["v"]).toBe("run-9/none.png");
   });
   it("absolute and cwd-relative files stage; misses ride", async () => {
@@ -188,8 +205,8 @@ describe("uploadReferenced (the staging walk)", () => {
       rel: { class_type: "X", inputs: { v: "cwd-rel.webp" } },
       miss: { class_type: "X", inputs: { v: "not-there.png" } },
     }, undefined);
-    expect((graph["abs"] as { inputs: { v: string } }).inputs["v"]).toMatch(/^staged-/);
-    expect((graph["rel"] as { inputs: { v: string } }).inputs["v"]).toMatch(/^staged-/);
+    expect((graph["abs"] as { inputs: { v: string } }).inputs["v"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
+    expect((graph["rel"] as { inputs: { v: string } }).inputs["v"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     expect((graph["miss"] as { inputs: { v: string } }).inputs["v"]).toBe("not-there.png");
   });
   it("the VHS video exemption rides the file path untouched", async () => {
@@ -202,7 +219,7 @@ describe("uploadReferenced (the staging walk)", () => {
     });
     const v = graph["vhs"] as { inputs: Record<string, string> };
     expect(v.inputs["video"]).toBe("/abs/should/not/stage.mp4");
-    expect(v.inputs["other"]).toMatch(/^staged-/);
+    expect(v.inputs["other"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     expect((graph["vhs2"] as { inputs: Record<string, string> }).inputs["video"]).toBe("keep.webp");
   });
   it("objects descend, arrays walk, non-strings ride", async () => {
@@ -211,8 +228,8 @@ describe("uploadReferenced (the staging walk)", () => {
       scalar: 7,
     });
     const n = graph["n"] as { inputs: Record<string, unknown> };
-    expect((n.inputs["nested"] as { deep: string }).deep).toMatch(/^staged-/);
-    expect((n.inputs["arr"] as unknown[])[0]).toMatch(/^staged-/);
+    expect((n.inputs["nested"] as { deep: string }).deep).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
+    expect((n.inputs["arr"] as unknown[])[0]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     expect((n.inputs["arr"] as unknown[])[1]).toBe(5);
     expect(graph["scalar"]).toBe(7);
   });

@@ -25,4 +25,48 @@ describe("the wd14 model plugin (the whole model, one package)", () => {
     const ids = DECL.variants.map((v) => v.id);
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
   });
+
+  it("THE WEIGHTS RAIL: one variant per live WD14Tagger|pysssss model name, moat first", () => {
+    // live-pinned 2026-09-22 off the engine's object_info — the node
+    // refuses unknown names at queue time, the rail refuses them at
+    // selection time (unknown variant id). Eleven, no more, no less.
+    const LIVE = [
+      "wd-v1-4-moat-tagger-v2",
+      "wd-v1-4-convnext-tagger-v2",
+      "wd-v1-4-convnextv2-tagger-v2",
+      "wd-v1-4-vit-tagger-v2",
+      "wd-v1-4-swinv2-tagger-v2",
+      "wd-v1-4-convnext-tagger",
+      "wd-v1-4-vit-tagger",
+      "wd-convnext-tagger-v3",
+      "wd-swinv2-tagger-v3",
+      "wd-vit-tagger-v3",
+      "wd-eva02-large-tagger-v3",
+    ];
+    assert.deepEqual(
+      DECL.variants.map((v) => v.id), LIVE,
+      "the rail offers exactly the live closed set, moat first (the family default)",
+    );
+    for (const v of DECL.variants) {
+      assert.equal(v.group, "Variant", "weights variants ride the Variant picker, never Recipe");
+      assert.deepEqual(
+        (v as { resolver_defaults?: unknown }).resolver_defaults, { checkpoint: v.id },
+        `variant ${v.id} stamps its own name (the stamp overlay injects it absent-keys-only)`,
+      );
+      const cells = v.cells ?? [];
+      assert.equal(cells.length, 1, "one quant cell per weights variant");
+      assert.equal(cells[0]!.quant, "f32", "the ONNX lane is F32");
+    }
+    assert.equal(
+      (DECL.defaults as Record<string, unknown>)["checkpoint"], "wd-v1-4-moat-tagger-v2",
+      "the family default backstops bare bodies on moat",
+    );
+  });
+
+  it("group ids match the row groups case-EXACT (a lowercase drift doubles the rail's axes)", () => {
+    const ids = new Set((DECL.variant_groups ?? []).map((g) => g.id));
+    for (const v of DECL.variants) {
+      assert.ok(ids.has(v.group), `row group '${v.group}' names a declared variant_groups id (case-exact)`);
+    }
+  });
 });

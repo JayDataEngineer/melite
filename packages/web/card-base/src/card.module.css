@@ -27,6 +27,19 @@
  * operator's lane report: "nothing is placed under the MODEL intro
  * title area, it takes up two vertical slots"). */
 .modelAxes .specGroupTitle { grid-column: 1 / -1; margin-bottom: 0; }
+/* THE MODEL+VARIANT PAIR (the pass-along law, enforced): Model and
+ * Variant ride ONE row — a dedicated 1fr 1fr pair that NEVER wraps
+ * (the auto-fit grid above stacks them in narrow panels). minmax(0)
+ * both halves so long option faces shrink instead of forcing the
+ * row wider than the panel. */
+.axesPair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  grid-column: 1 / -1;
+  align-items: start;
+}
+.axesPair > * { min-width: 0; }
 .specGroupTitle {
   color: var(--dsw-alias-label-secondary, #61666b);
   font-size: 11px;
@@ -534,7 +547,13 @@
   gap: 6px;
   text-align: center;
 }
-.emptyPane { height: 100%; width: 100%; padding: 24px 0; }
+/* THE THIRD APPEARANCE of the hour-9 law (2026-09-22, the
+ * preview-pane wheel): height:100% + vertical padding under
+ * content-box sizing spills the box (100% of the parent's content
+ * height + 48px), and inside a flex row with overflow-x:auto the
+ * spill computes overflow-y to AUTO — a vertical scrollbar on an
+ * EMPTY pane. border-box: 100% includes the padding. */
+.emptyPane { box-sizing: border-box; height: 100%; width: 100%; padding: 24px 0; }
 .emptyOverlay { position: absolute; inset: 0; padding: 24px; pointer-events: none; }
 .emptyTitle { font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-secondary); margin: 0; }
 .emptyHint { font-size: 10px; line-height: 1.6; color: var(--dsw-alias-label-tertiary); max-width: 25rem; margin: 0; }

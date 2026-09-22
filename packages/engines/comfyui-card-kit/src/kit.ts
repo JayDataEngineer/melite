@@ -70,6 +70,7 @@ export {
   inputPrepLane,
   TAGGER_STRIP,
   finalizeTagger,
+  finalizeMask,
   TAGGER_CAPTION_TASKS,
   TAGGER_CAPTION_TYPES,
   TAGGER_CAPTION_LENGTHS,

@@ -3,7 +3,8 @@
 // conditioning, two different mechanics, one progressive rail).
 // The schema OWNS the wire form (typed arrays, door-enforced);
 // compose shelves them onto the 9-slot image bus (anchor 1,
-// last_frame 2, refs 3..9) and cuts the audio bed per window.
+// last_frame 2, refs 3..9). The bed is GONE (2026-09-22): the D-M-E
+// lanes own film audio.
 // Every arm below refuses loud or composes provably — never silent.
 import { beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
@@ -89,8 +90,35 @@ describe("the input surface: the schema owns the wire form", () => {
     );
   });
 
-  it("refuses a negative bed start (time never runs backward)", () => {
-    assert.throws(() => def.schema({ bed_start: -1 }), /bed_start/);
+  it("THE SECOND PASS RIDES ITS OWN TAB (2026-09-22, the operator: \"Second pass looks forced, and it's under general???\")", () => {
+    const fields = fieldsOfEnvelope(
+      ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
+    );
+    const secondPass = fields.filter((f) => f.group === "second_pass").map((f) => f.name);
+    assert.deepEqual([...secondPass].sort(), [
+      "second_pass_enabled",
+      "interpolate_enabled", "interp_model", "interp_multiplier",
+      "refine_lora", "refine_strength", "refine_steps",
+      "sharpen_enabled", "sharpen_strength", "sharpen_method", "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
+      "sr_switch", "sr_resolution", "sr_model",
+    ].sort(), "every post-pass field rides the second_pass group");
+    // the attention arm + the ref conditioning knob ride SAMPLING —
+    // they shape the generation pass, not a second pass
+    assert.equal(fields.find((f) => f.name === "attention_backend")?.group, "sampling");
+    assert.equal(fields.find((f) => f.name === "ref_image_size")?.group, "sampling");
+    // General keeps only the identity + geometry cluster
+    const general = fields.filter((f) => !f.group).map((f) => f.name);
+    for (const stray of ["sharpen_enabled", "interpolate_enabled", "sr_switch", "refine_lora", "attention_backend"]) {
+      assert.ok(!general.includes(stray), `${stray} is not a General straggler`);
+    }
+  });
+
+  it("THE BED IS GONE (2026-09-22): bed fields are not on the surface — the D-M-E lanes own film audio", () => {
+    const fields = fieldsOfEnvelope(
+      ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
+    );
+    assert.ok(!fields.some((f) => f.name === "bed_audio" || f.name === "bed_start"),
+      "no bed fields on the declared surface");
   });
 
   it("accepts the full declared surface; the bed starts at 0 by default", () => {
@@ -99,9 +127,7 @@ describe("the input surface: the schema owns the wire form", () => {
       ref_images: ["/m/a.png", "/m/b.png"],
       ref_videos: ["/m/v.mp4"],
       ref_audios: ["/m/s.wav"],
-      bed_audio: "/m/bed.wav",
     }) as Record<string, unknown>;
-    assert.equal(walked.bed_start, 0, "the walk fills the bed origin");
     assert.deepEqual(walked.ref_images, ["/m/a.png", "/m/b.png"], "arrays ride verbatim");
   });
 });
@@ -144,11 +170,10 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     }
   });
 
-  it("the conditioning bus + bed project at their declared slot shapes", () => {
+  it("the conditioning bus projects at its declared slot shapes", () => {
     assert.equal(typeOf("ref_images"), "image_list");
     assert.equal(typeOf("ref_videos"), "image_list");
     assert.equal(typeOf("ref_audios"), "image_list");
-    assert.equal(typeOf("bed_audio"), "file");
   });
 
   it("the refine lora pick is a CATALOG-FED SELECT — the freeform lora id is dead (LORAS ARE ONLY MODS)", () => {
@@ -198,11 +223,11 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     }
     // THE GRID LAW (2026-09-21, "WHY IS WIDTH AND HEIGHT ON
     // DIFFERENT VERTICAL ROWS?"): the General group declares its
-    // grid — Bed start + Seed share a row, Width + Height share a
+    // grid — Seed rides the grid, Width + Height share a
     // row, Frames rides the grid. A stacked General face is the
     // 1:1 lie the operator caught (the component was CardForm; the
     // DECLARATIONS never carried the grid).
-    for (const gridded of ["bed_start", "seed", "width", "height", "length"]) {
+    for (const gridded of ["seed", "width", "height", "length"]) {
       assert.equal(fields.find((f) => f.name === gridded)?.columns, 2, `${gridded} declares the 2-col grid`);
     }
     // THE STAR IS DEAD (2026-09-21): the film-level prompt was
@@ -226,12 +251,8 @@ describe("the input surface: variant derivation owns the lane first", () => {
     assert.equal(def.schema({ last_frame: "/m/end.png" }).variant, "t4r");
   });
 
-  it("the bed alone implies t4r (it rides the r2v audio lane)", () => {
-    assert.equal(def.schema({ bed_audio: "/m/bed.wav" }).variant, "t4r");
-  });
-
   it("empty strings imply nothing (whitespace is absent, never a lane)", () => {
-    assert.equal(def.schema({ last_frame: "  ", bed_audio: "" }).variant, "t4_open");
+    assert.equal(def.schema({ last_frame: "  " }).variant, "t4_open");
   });
 });
 
@@ -292,85 +313,22 @@ describe("the input surface: the 9-slot bus shelves the FL2VA pair first", () =>
   });
 });
 
-describe("the input surface: the audio bed cuts per window", () => {
-  it("a bed-only film wires MeliteAudioSlice as the hidden <Audio 1>", () => {
-    const out = graphOf({ bed_audio: "/m/bed.wav", calls: [SHOT()] }, "run_bed");
-    const sliceId = Object.keys(out).find((k) => out[k].class_type === "MeliteAudioSlice");
-    assert.ok(sliceId, "the cut node composes");
-    assert.equal(out[sliceId].inputs["audio"], "/m/bed.wav");
-    assert.equal(out[sliceId].inputs["start_seconds"], 0, "window 1 starts at the bed origin");
-    assert.equal(out[sliceId].inputs["duration_seconds"], 10.0, "the window's own duration");
-    const r2vId = Object.keys(out).find((k) => out[k].class_type === "MiniMaxH3ReferenceToVideo");
-    assert.ok(r2vId, "the bed rides the r2v lane");
-    assert.deepEqual(
-      out[r2vId].inputs["ref_audios.ref_audio_0"], [sliceId, 0],
-      "the cut is the behind-the-scenes <Audio 1>",
-    );
-  });
-
-  it("window k starts where window k-1 ended (each stanza's own duration)", () => {
+describe("THE BED IS GONE (2026-09-22, the operator: \"that is a bug that is there\")", () => {
+  it("a doc composes with NO cut node and the user audios on their natural lanes", () => {
     const out = graphOf({
-      bed_audio: "/m/bed.wav",
-      calls: [SHOT(), SHOT({ text: "then", start_frame: 56, end_frame: 124, knobs: { fps_seconds: 5 } })],
-    }, "run_bedfilm");
-    const slices = Object.keys(out).filter((k) => out[k].class_type === "MeliteAudioSlice");
-    assert.equal(slices.length, 2, "every window carries its own cut");
-    const starts = slices.map((k) => out[k].inputs["start_seconds"] as number).sort((x, y) => x - y);
-    assert.deepEqual(starts, [0, 10], "window 2 starts after window 1's 10s");
-    const durs = slices.map((k) => out[k].inputs["duration_seconds"] as number).sort((x, y) => x - y);
-    assert.deepEqual(durs, [5, 10], "each cut spans its own window");
-  });
-
-  it("bed_start offsets the whole film (the origin is declarable)", () => {
-    const out = graphOf({ bed_audio: "/m/bed.wav", bed_start: 30, calls: [SHOT()] }, "run_bedoff");
-    const sliceId = Object.keys(out).find((k) => out[k].class_type === "MeliteAudioSlice");
-    assert.ok(sliceId);
-    assert.equal(out[sliceId].inputs["start_seconds"], 30);
-  });
-
-  it("user ref audios shift behind the bed (<Audio 2-3>, never clobbered)", () => {
-    const out = graphOf({
-      bed_audio: "/m/bed.wav",
-      ref_audios: ["/m/u1.wav", "/m/u2.wav"],
+      ref_audios: ["/m/u1.wav", "/m/u2.wav", "/m/u3.wav"],
       calls: [SHOT()],
-    }, "run_bedshift");
+    }, "run_nobed");
+    assert.ok(
+      !Object.values(out).some((n) => n.class_type === "MeliteAudioSlice"),
+      "the slicer is gone from the graph — film music rides the D-M-E lanes",
+    );
     const r2vId = Object.keys(out).find((k) => out[k].class_type === "MiniMaxH3ReferenceToVideo");
-    assert.ok(r2vId);
-    const sliceId = Object.keys(out).find((k) => out[k].class_type === "MeliteAudioSlice");
-    assert.ok(sliceId);
-    assert.deepEqual(out[r2vId].inputs["ref_audios.ref_audio_0"], [sliceId, 0]);
+    assert.ok(r2vId, "the r2v lane composes");
     const bundleOutId = Object.keys(out).find((k) => out[k].class_type === "PlagueKindBundleOut");
     assert.ok(bundleOutId, "the bundle out carries the audio lanes");
-    assert.deepEqual(out[r2vId].inputs["ref_audios.ref_audio_1"], [bundleOutId, 15]);
-    assert.deepEqual(out[r2vId].inputs["ref_audios.ref_audio_2"], [bundleOutId, 16]);
-  });
-
-  it("an empty bed string behaves as no bed (whitespace never wires a node)", () => {
-    const out = graphOf({ bed_audio: "  ", calls: [SHOT()] }, "run_nobed");
-    assert.ok(
-      !Object.values(out).some((n) => n.class_type === "MeliteAudioSlice"),
-      "no cut node without a track",
-    );
-  });
-
-  it("a whitespace bed beside real refs composes refs-only (the guard reads the trim, never the presence)", () => {
-    const out = graphOf({ ref_images: ["/m/a.png"], bed_audio: "  ", calls: [SHOT()] }, "run_bedblank");
-    assert.ok(
-      !Object.values(out).some((n) => n.class_type === "MeliteAudioSlice"),
-      "whitespace is absent even on the r2v lane",
-    );
-    const b = bundleIn(out);
-    assert.equal(loaderFor(out, b, "input_2"), "/m/a.png", "the refs still ride");
-  });
-
-  it("whitespace-only inputs never stage a guideless window (the guard still demands a real anchor)", () => {
-    assert.throws(
-      () => graphOf({ variant: "t4r", last_frame: "  ", calls: [SHOT()] }, "run_blanklast"),
-      /staged guide image/,
-    );
-    assert.throws(
-      () => graphOf({ variant: "t4r", bed_audio: "  ", calls: [SHOT()] }, "run_blankbed"),
-      /staged guide image/,
-    );
+    assert.deepEqual(out[r2vId].inputs["ref_audios.ref_audio_0"], [bundleOutId, 15], "<Audio 1> is the user's");
+    assert.deepEqual(out[r2vId].inputs["ref_audios.ref_audio_1"], [bundleOutId, 16], "<Audio 2> is the user's");
+    assert.deepEqual(out[r2vId].inputs["ref_audios.ref_audio_2"], [bundleOutId, 17], "<Audio 3> is the user's — no shift, no clobber");
   });
 });

@@ -13,7 +13,7 @@ import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { GraphBuilder } from "../src/graph.ts";
 import {
-  finalizeImageEdit, finalizeTagger,
+  finalizeImageEdit, finalizeTagger, finalizeMask,
  inputPrepLane, maskT1, taggerLane,
   annyLane,
   admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
@@ -43,7 +43,7 @@ const classes = (row: Record<string, { class_type: string }>): string[] =>
 beforeAll(() => { assert.ok(Object.keys(facts.models).length > 0, "the facts file serves"); });
 
 // ── the mask lane (RT-DETR proposals, exports, unions, manifests) ──
-const MASK_PINS = { checkpoint: "sam3_pin.pth", unet: "rtdetr_pin.pth", sam2: "sam2_pin.pt", yolo: "bbox/yolo_pin.pt", segm: "segm/person_pin.pt" };
+const MASK_PINS = { checkpoint: "sam3_pin.pth", unet: "rtdetr_pin.pth", sam2: "sam2_pin.pt", segm: "segm/person_pin.pt", face: "bbox/face_pin.pt", hand: "bbox/hand_pin.pt" };
 const maskBase = {
   input_image: "/m/p.png", sam_threshold: 0.93, sam_dilation: 0,
   export_boxes: false, primary_via_rtdetr: false,
@@ -101,26 +101,33 @@ describe("maskT1 (the selection lane's arms)", () => {
     assert.ok(!names.some((n) => n.endsWith("mask_extra")), "zip stops at the shorter row");
     const detect = Object.values(row).filter((n) => n.class_type === "SAM3_Detect");
     assert.equal(detect.length, 2, "the primary + the TEXT export detect (paint rides the mask, never detects)");
-    const scoped = detect.find((d) => (d.inputs.bboxes as { x?: number }).x === 8);
-    assert.equal(scoped, undefined, "no export inherits the primary's box (the primary's scope multiplies the anchor, never the exports)");
+    // the primary (SAM3_Detect.0, emitted first) now threads its OWN
+    // scope as the detect hint (the 512-hunt threading); the wall's
+    // law narrows to its exact meaning: the EXPORT never inherits it
+    const primary = row["SAM3_Detect.0"] as { inputs: Record<string, unknown> } | undefined;
+    const exportDet = row["SAM3_Detect.1"] as { inputs: Record<string, unknown> } | undefined;
+    assert.ok(primary, "the primary detect rides");
+    assert.ok(exportDet, "the text export detect rides");
+    assert.equal((primary.inputs.bboxes as { x?: number } | undefined)?.x, 8, "the primary's OWN hint threads (the 512-hunt law)");
+    assert.equal((exportDet.inputs.bboxes as { x?: number } | undefined)?.x, undefined, "no export inherits the primary's box (the primary's scope multiplies the anchor, never the exports)");
     const mult = Object.values(row).find((n) => n.class_type === "MaskComposite" && (n.inputs as { operation?: string }).operation === "multiply");
     assert.ok(mult, "the primary's box scopes mask_combined (the rect scope)");
   });
 
-  it("the SAM2 impact-pack arm: YOLO proposes, SAM2 refines, the pins ride (the operator's SAM2)", () => {
+  it("the SAM2 impact-pack arm: the detector proposes, SAM2 refines, the pins ride (the operator's SAM2)", () => {
     const g = new GraphBuilder();
     maskT1({
-      ...maskBase, primary_via_sam2: true, primary_sam2_labels: "dog,horse", yolo_threshold: 0.6,
+      ...maskBase, primary_via_sam2: true, primary_sam2_labels: "face,hand", detection_threshold: 0.6,
     }, MASK_PINS, g, "r_sam2");
     const row = dump(g);
     assert.deepEqual(classes(row).filter((c) => ["UltralyticsDetectorProvider", "BboxDetectorSEGS", "SAMLoader", "SAMDetectorCombined"].includes(c)).sort(),
       ["BboxDetectorSEGS", "SAMDetectorCombined", "SAMLoader", "UltralyticsDetectorProvider"], "the full impact chain rides");
     assert.ok(!classes(row).includes("CLIPTextEncode"), "the sam2 arm never touches the CLIP text lane");
-    const yolo = Object.values(row).find((n) => n.class_type === "UltralyticsDetectorProvider")!;
-    assert.equal(yolo.inputs.model_name, "bbox/yolo_pin.pt", "the card's YOLO pin rides (never a caller string)");
+    const face = Object.values(row).find((n) => n.class_type === "UltralyticsDetectorProvider")!;
+    assert.equal(face.inputs.model_name, "bbox/face_pin.pt", "the card's FACE pin rides (never a caller string)");
     const det = Object.values(row).find((n) => n.class_type === "BboxDetectorSEGS")!;
-    assert.equal(det.inputs.labels, "dog,horse", "the labels set rides");
-    assert.equal(det.inputs.threshold, 0.6, "the YOLO threshold rides verbatim");
+    assert.equal(det.inputs.labels, "face,hand", "the labels set rides");
+    assert.equal(det.inputs.threshold, 0.6, "the detection threshold rides verbatim");
     const sam = Object.values(row).find((n) => n.class_type === "SAMLoader")!;
     assert.equal(sam.inputs.model_name, "sam2_pin.pt", "the card's SAM2 pin rides (never a caller string)");
     const comb = Object.values(row).find((n) => n.class_type === "SAMDetectorCombined")!;
@@ -143,10 +150,29 @@ describe("maskT1 (the selection lane's arms)", () => {
     assert.ok(cropSave, "the per-instance crops save under the run dir");
 
     const g2 = new GraphBuilder();
-    maskT1({ ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person,dog" }, MASK_PINS, g2, "r_segm2");
-    const row2 = dump(g2);
-    assert.ok(Object.values(row2).some((n) => n.class_type === "BboxDetectorSEGS"), "a mixed class set rides the BBOX detector (the segm vocabulary is person-only)");
-    assert.ok(!Object.values(row2).some((n) => n.class_type === "SegmDetectorSEGS"), "no segm detector on the mixed set");
+    assert.throws(
+      () => maskT1({ ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person,face" }, MASK_PINS, g2, "r_segm2"),
+      /one detector per sam2 entry/,
+      "a mixed-family set refuses LOUD (person rides segm, face rides bbox — split across two entries)",
+    );
+  });
+
+  it("THE FIGURE MASKS (the operator's 2026-10-09 order): sam2_figures picks primary instances through the pack's own ImpactSEGSPicker", () => {
+    const g = new GraphBuilder();
+    maskT1({ ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person", sam2_figures: [2] }, MASK_PINS, g, "r_fig");
+    const row = dump(g);
+    const pick = Object.values(row).find((n) => n.class_type === "ImpactSEGSPicker")!;
+    assert.equal(pick.inputs.picks, "2", "the figure number rides the picker's picks verbatim");
+    assert.ok(Object.values(row).some((n) => n.class_type === "SegsToCombinedMask"), "the picked SEGS becomes a mask");
+    const saves = Object.values(row).filter((n) => n.class_type === "SaveImage");
+    assert.ok(saves.some((s) => String(s.inputs.filename_prefix).endsWith("mask_figure_2")), "figure two saves its own mask_figure_2");
+  });
+
+  it("a garbage sam2_figures refuses LOUD (1-based numbers, never a silent no-pick)", () => {
+    assert.throws(
+      () => maskT1({ ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person", sam2_figures: [0] }, MASK_PINS, new GraphBuilder(), "r_figx"),
+      /sam2_figures must be 1-based/,
+    );
   });
 
   it("the sam2 export arm: labels + its OWN box (the primary's box never leaks)", () => {
@@ -164,7 +190,7 @@ describe("maskT1 (the selection lane's arms)", () => {
     assert.equal(mults.length, 2, "the primary's box AND the export's own box each scope once (never cross-applied)");
   });
 
-  it("an empty sam2 labels word refuses LOUD (never an empty YOLO selection)", () => {
+  it("an empty sam2 labels word refuses LOUD (never an empty detector selection)", () => {
     const g = new GraphBuilder();
     assert.throws(
       () => maskT1({ ...maskBase, primary_via_sam2: true, primary_sam2_labels: "" }, MASK_PINS, g, "r_sam2x"),
@@ -172,11 +198,11 @@ describe("maskT1 (the selection lane's arms)", () => {
     );
   });
 
-  it("an unstated sam2 labels word falls back to 'all' (the lane's YOLO fallback — never undefined)", () => {
+  it("an unstated sam2 labels word falls back to 'all' (the lane's detector fallback — never undefined)", () => {
     const g = new GraphBuilder();
     maskT1({ ...maskBase, primary_via_sam2: true }, MASK_PINS, g, "r_sam2a");
     const det = Object.values(dump(g)).find((n) => n.class_type === "BboxDetectorSEGS")!;
-    assert.equal(det.inputs.labels, "all", "the detector reads 'all' (every class) when the caller states no word");
+    assert.equal(det.inputs.labels, "all", "the detector reads 'all' when the caller states no word (the card never sends this — labelsOf refuses empty first)");
   });
 
   it("a scoped RTDETR primary multiplies the proposal (the primary's box scopes combined)", () => {
@@ -268,7 +294,7 @@ describe("maskT1 (the selection lane's arms)", () => {
       exports: [["spot", "the dog", [12, 34, 120, 90]]], export_kind: ["text"],
     }, MASK_PINS, g, "r5h");
     const detect = Object.values(dump(g)).filter((n) => n.class_type === "SAM3_Detect");
-    const scoped = detect.find((d) => (d.inputs.bboxes as { x?: number }).x === 12);
+    const scoped = detect.find((d) => (d.inputs.bboxes as { x?: number } | undefined)?.x === 12);
     assert.ok(scoped, "the per-entry bbox reaches the detect");
     assert.deepEqual(scoped!.inputs.bboxes, { x: 12, y: 34, width: 120, height: 90 });
   });
@@ -355,17 +381,17 @@ describe("maskT1 (the selection lane's arms)", () => {
     assert.equal(spot.inputs.refine_iterations, 2, "the unstated refine falls back to the pin");
   });
 
-  it("PER-ENTRY TUNE: a sam2 export's tune threads its detector (yolo_threshold + threshold)", () => {
+  it("PER-ENTRY TUNE: a sam2 export's tune threads its detector (detection_threshold + threshold)", () => {
     const g = new GraphBuilder();
     maskT1({
       ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person",
-      exports: [["hands", "hand", undefined, { yolo_threshold: 0.2, threshold: 0.9, dilation: 5 }]],
+      exports: [["hands", "hand", undefined, { detection_threshold: 0.2, threshold: 0.9, dilation: 5 }]],
       export_kind: ["sam2"],
     }, MASK_PINS, g, "r_t3");
     const row = dump(g);
     const dets = Object.values(row).filter((n) => n.class_type === "BboxDetectorSEGS");
     const hands = dets.find((d) => d.inputs.labels === "hand")!;
-    assert.equal(hands.inputs.threshold, 0.2, "the export's own YOLO threshold");
+    assert.equal(hands.inputs.threshold, 0.2, "the export's own detection threshold reaches its detector");
     const combs = Object.values(row).filter((n) => n.class_type === "SAMDetectorCombined");
     assert.ok(combs.some((c) => c.inputs.threshold === 0.9), "the export's own SAM threshold");
     assert.ok(combs.some((c) => c.inputs.dilation === 5), "the export's own dilation");
@@ -389,19 +415,25 @@ describe("maskT1 (the selection lane's arms)", () => {
 
 // ── the tagger dispatch (four arms + the no-arm refusal) ──────────
 describe("taggerLane (the four-family dispatch)", () => {
-  const arms: Array<[string, RegExp]> = [
-    ["wd14", /WD14Tagger\|pysssss/],
-    ["joytag", /CXH_JoyTag/],
-    ["florence2", /DownloadAndLoadFlorence2Model/],
-    ["joycaption", /JJC_JoyCaption/],
+  const arms: Array<[string, RegExp, Record<string, unknown>, string, string]> = [
+    // family, node, arm params, loader class, expected model wire value
+    ["wd14", /WD14Tagger\|pysssss/, { input_image: "/m/p.png", checkpoint: "c", threshold: 0.35 }, "WD14Tagger|pysssss", "c"],
+    ["joytag", /CXH_JoyTag/, { input_image: "/m/p.png", threshold: 0.2 }, "CXH_JoyTag", ""],
+    ["florence2", /DownloadAndLoadFlorence2Model/, { input_image: "/m/p.png", checkpoint: "f" }, "DownloadAndLoadFlorence2Model", "f"],
+    ["joycaption", /JJC_JoyCaption/, { input_image: "/m/p.png", checkpoint: "j" }, "JJC_DownloadAndLoadJoyCaptionModel", "j"],
   ];
-  for (const [family, node] of arms) {
+  for (const [family, node, params, loader, wired] of arms) {
     it(`the ${family} arm rides its family node`, () => {
       const model = facts.models[family]!;
       assert.ok(model, `the ${family} facts row serves`);
       const g = new GraphBuilder();
-      taggerLane({ input_image: "/m/p.png", checkpoint: "c", threshold: 0.35 }, model, g, "run_1");
-      assert.ok(classes(dump(g)).some((c) => node.test(c)), `the ${family} node rides`);
+      taggerLane(params, model, g, "run_1");
+      const row = dump(g);
+      assert.ok(classes(row).some((c) => node.test(c)), `the ${family} node rides`);
+      if (wired !== "") {
+        const loaderNode = Object.values(row).find((n) => n.class_type === loader)!;
+        assert.equal(loaderNode.inputs.model, wired, `the ${family} arm wires the rail-stamped checkpoint`);
+      }
     });
   }
 
@@ -485,6 +517,22 @@ describe("the finalize strips", () => {
     const out2 = finalizeTagger(empty);
     assert.ok(!("upload" in out2.D.inputs), "the tagger strip drops the empty upload");
 
+  });
+
+  it("finalizeMask strips ONLY the autofilled quarter-hint (the red-box hunt)", () => {
+    const g = {
+      A: { class_type: "SAM3_Detect", inputs: { threshold: 0.5, bboxes: { x: 0, y: 0, width: 512, height: 512 } } },
+      B: { class_type: "SAM3_Detect", inputs: { threshold: 0.5, bboxes: { x: 8, y: 9, width: 64, height: 64 } } },
+      C: { class_type: "SAM3_Detect", inputs: { threshold: 0.5, bboxes: ["RTDETR_detect.0", 0] } },
+      D: { class_type: "SAM3_Detect", inputs: { threshold: 0.5 } },
+      E: { class_type: "KSampler", inputs: { seed: 1 } },
+    } as never;
+    const out = finalizeMask(g);
+    assert.ok(!("bboxes" in out.A.inputs), "the default-equal quarter-hint dies — the whole image is the search");
+    assert.deepEqual(out.B.inputs.bboxes, { x: 8, y: 9, width: 64, height: 64 }, "a drawn Region quad survives");
+    assert.deepEqual(out.C.inputs.bboxes, ["RTDETR_detect.0", 0], "RT-DETR's own boxes (a link) survive");
+    assert.ok(!("bboxes" in out.D.inputs), "an already-hintless detect is untouched");
+    assert.equal(out.E.inputs.seed, 1, "non-SAM3 nodes are untouched");
   });
 });
 

@@ -17,13 +17,22 @@ ONE nested JSON `document`; the card does the rest — compile → windows
   "fps": 24,
   "width": 768, "height": 448,
   "max_window_seconds": 5.5,
-  "audio_stem": "music.mp3",
   "transition": "extend",
   "calls": [
     {"text": "a slow drone push over the foggy pines at dawn",
      "start_frame": 0, "end_frame": 120, "image": "kf_a.png"},
     {"text": "the camera continues the descent toward the still lake",
-     "start_frame": 120, "end_frame": 240, "audio": "line_01.wav"}
+     "start_frame": 120, "end_frame": 240}
+  ],
+  "audio_clips": [
+    {"id": "l1", "name": "line_01.flac", "src": "/v1/assets/runs/run-tts1/tts/SaveAudio.0.flac",
+     "start_frame": 124, "dur_frames": 82, "text": "We should not be here after dark."},
+    {"id": "s1", "name": "boom.flac", "src": "/v1/assets/runs/run-sfx/sfx/boom.flac",
+     "start_frame": 60, "dur_frames": 30, "class": "sfx",
+     "text": "a sudden explosion rocks the room"},
+    {"id": "m1", "name": "score.flac", "src": "/v1/assets/runs/run-m/music/score.flac",
+     "start_frame": 0, "dur_frames": 240, "class": "music",
+     "text": "a low synth pad, warm and slow"}
   ],
   "keyframes": [
     {"frame": 240, "kind": "image", "source": "kf_b.png"}
@@ -48,9 +57,12 @@ card afterward if they disagree.
 - The FIRST still → call 0's `image` (the opening frame).
 - A still mid-sequence → a `keyframes` entry at the seam frame (it
   becomes that window's first frame).
-- Dialogue audio → the OWNING call's `audio` (in-point at the call's
-  start; anchor the call where the speech begins).
-- Music (one long track) → the doc-level `audio_stem`, NEVER per-call.
+- Dialogue audio → an `audio_clips` row (film-time placement —
+  NEVER a call field; calls have no audio). Anchor the row's
+  `start_frame` where the speech begins.
+- Music → an `audio_clips` row with `class: "music"` (film-time
+  placement, per window — the bed param is GONE, 2026-09-22; long
+  scores ride one long music clip spanning the film).
 
 ## Rule 2 — write ~5s calls (H3 attention is non-linear)
 
@@ -79,13 +91,31 @@ latent chain IS the seam — the plan refuses the conflict).
 
 ## Rule 4 — audio
 
-- `audio_stem` (music): sliced per window IN TIME — the bed never
-  restarts at a cut. Align shot boundaries to musical beats when you
-  know the track.
-- Dialogue: per-call `audio` at the speech onset; write that call's
-  text to MATCH what is being said (you can hear the WAV).
-- The stem is mixed UNDER the windows' own audio — global music +
-  local dialog/SFX.
+- Music: an `audio_clips` row with `class: "music"` — one long clip
+  can span the whole film (it conditions every window it crosses).
+  Align shot boundaries to musical beats when you know the track.
+- Dialogue: an `audio_clips` row in the calls' frame coordinates (doc time — the card seats it on the film), and its `text` field
+  MUST carry the exact spoken words ( unabridged, matching the audio
+  take verbatim — generate the line first, then copy its text into
+  the row). The words ride the owning window's prompt as a timed
+  <d> dialogue tag and move the mouth; the audio supplies the voice.
+  A row crossing a seam continues across both windows (same line,
+  no restart). One dialogue lane per window: two lines in ONE window
+  — only the first conditions lips, the second is overlay-only
+  (give each line its own window).
+- Every conditioned clip ducks the generated voice -14dB under it at
+  film time; the clean source overlays verbatim on top.
+- THE THREE CLASSES (`class`: dialogue | sfx | music; auto when
+  omitted — text -> dialogue, else music). All three go INTO the
+  model (its 3 audio inputs, one per class): dialogue's `text` = the
+  exact words (the <d> tag moves the mouth); sfx's `text` = the
+  timed event (rides overall_soundscape at its onset — the model
+  hears the blast and times the visual to it); music's `text` = the
+  description (rides non_diegetic_music). Music ducks under
+  dialogue+sfx; one lane per class per window.
+- THE DOOR GUARD: a dialogue/sfx-stamped window mutes ref audios —
+  the pinned window owns its audio conditioning, no accidental
+  overlap.
 
 ## Rule 5 — the plan-and-repair loop (NEVER skip)
 

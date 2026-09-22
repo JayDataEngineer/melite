@@ -83,10 +83,32 @@ describe("the h3-timeline compose gate", () => {
     assert.ok(Object.keys(out).length > 0, "the chain composes");
   });
 
+  it("THE SECOND-PASS MASTER (2026-09-22, operator: \"it is very unclear if it is on or off\"): off renders the plain pass even when leaves are set; on arms the chain", () => {
+    const leaves = { sharpen_enabled: true, interpolate_enabled: true, sr_switch: true } as Record<string, unknown>;
+    const switchesOf = (master: boolean) => {
+      const g = new GraphBuilder();
+      def.compose(def.schema({ calls: [SHOT()], length: 56, second_pass_enabled: master, ...leaves }), model, g, `run_master_${master}`);
+      const out = Object.entries(g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>)
+        .filter(([, n]) => n.class_type === "ComfySwitchNode") as [string, { class_type: string; inputs: Record<string, unknown> }][];
+      return new Map(out.map(([id, n]) => [id, n.inputs["switch"] === true]));
+    };
+    const off = switchesOf(false);
+    const on = switchesOf(true);
+    // the master flips EXACTLY the post trio (sharpen/interp/VSR) —
+    // every other switch (the r2vBool lane pick, etc.) is untouched
+    const flipped = [...off.keys()].filter((id) => off.get(id) === false && on.get(id) === true);
+    assert.equal(flipped.length, 3, "master on arms exactly the three post switches");
+    for (const id of off.keys()) {
+      if (!flipped.includes(id)) assert.equal(on.get(id), off.get(id), `non-post switch ${id} is master-blind`);
+    }
+    // master off: legacy leaves cannot force a pass
+    for (const id of flipped) assert.equal(off.get(id), false, "master off routes the plain path for every post switch");
+  });
+
   it("explicitly-set sharpen leaves ride; absent leaves never patch", () => {
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ calls: [SHOT()], length: 56, sharpen_enabled: true, sharpen_strength: 0.3 }),
+      def.schema({ calls: [SHOT()], length: 56, second_pass_enabled: true, sharpen_enabled: true, sharpen_strength: 0.3 }),
       model, g, "run_sharp",
     );
     const out = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;

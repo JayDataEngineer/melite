@@ -589,8 +589,16 @@ test("unbooted storage: every open-wrapping arm refuses draft/store-failed|bench
   assert.equal(await draftCode(ctx.draftsRemote.remoteExportList(sig)), "draft/store-failed");
   assert.equal(await draftCode(ctx.draftsRemote.remoteExportGet("d_new", sig)), "draft/store-failed");
   assert.equal(
-    await draftCode(ctx.draftsRemote.remoteExportPatch("d_new", "s_0", {}, null, sig)),
+    await draftCode(ctx.draftsRemote.remoteExportPatch("d_new", "s_0", { runStatus: "running" }, null, sig)),
     "draft/store-failed",
+  );
+  // validation precedes storage (the telemetry law's edge,
+  // 2026-10-08): an EMPTY body is shape-invalid and refuses
+  // draft/bad-patch without ever reaching the open — the arm's
+  // wrap is intact, there is simply no open to wrap
+  assert.equal(
+    await draftCode(ctx.draftsRemote.remoteExportPatch("d_new", "s_0", {}, null, sig)),
+    "draft/bad-patch",
   );
   assert.equal(await draftCode(ctx.benchRemote.remoteExportGet("s1", sig)), "bench/store-failed");
   assert.equal(

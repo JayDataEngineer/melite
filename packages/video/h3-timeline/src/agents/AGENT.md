@@ -36,7 +36,8 @@ The card composes in a single process — the compose dispatcher validates, comp
 
 Set `context: runs/<prior_run_id>/h3_context` in the request body to continue from that run's ending (an artifact ref — the same law as image refs, kind=latent). Window 1 of the new card loads the prior run's final `h3_context/clip_N.safetensors`; the rest of the windows follow as normal.
 
-Combined with `seam_carry` inside the card, the seam stays invisible.
+The seam between windows is AUTOMATIC (drift-control carry at a fixed
+22-frame overlap — no knob); the seam stays invisible.
 
 ## Worked examples (usage the schema cannot say)
 
@@ -44,7 +45,7 @@ Schemas prove structure; these prove USE. Imitate the shape closest to your task
 
 ### 1. Multi-window film, seamless seams, continuous music
 
-Three scenes on the grid law (0→124→243→362 at 24fps), `seam_carry` riding both cuts, the ambient line held verbatim across every window with ONE new layer per scene — this is how the soundtrack stays one piece while the picture changes:
+Three scenes on the grid law (0→124→243→362 at 24fps), the automatic 22-frame seam riding both cuts, the ambient line held verbatim across every window with ONE new layer per scene — this is how the soundtrack stays one piece while the picture changes:
 
 ```json
 {
@@ -54,16 +55,16 @@ Three scenes on the grid law (0→124→243→362 at 24fps), `seam_carry` riding
     "width": 1344, "height": 768,
     "calls": [
       { "text": "Jungle at dawn. Mist through canopy, a monkey grooming on a low branch. Ambient: layered birdsong and distant water, steady.", "start_frame": 0, "end_frame": 124 },
-      { "text": "Same jungle, light gone amber. The monkey bolts along a branch — a hawk's shadow sweeps. Ambient: SAME birdsong bed verbatim + one new layer: wingbeats, close.", "start_frame": 124, "end_frame": 243, "transition": "seam_carry" },
-      { "text": "Night. Firelight. The monkey, safe, cracks a seed and eats. Ambient: SAME bed verbatim + new layer: crackle of fire, contented chewing.", "start_frame": 243, "end_frame": 362, "transition": "seam_carry" }
+      { "text": "Same jungle, light gone amber. The monkey bolts along a branch — a hawk's shadow sweeps. Ambient: SAME birdsong bed verbatim + one new layer: wingbeats, close.", "start_frame": 124, "end_frame": 243 },
+      { "text": "Night. Firelight. The monkey, safe, cracks a seed and eats. Ambient: SAME bed verbatim + new layer: crackle of fire, contented chewing.", "start_frame": 243, "end_frame": 362 }
     ]
   }
 }
 ```
 
-Laws shown, not told: spans share their boundary frame (124/124, 243/243); `seam_carry` on the LATER window; the ambient phrase copied WORD FOR WORD into each window's text with exactly one addition.
+Laws shown, not told: spans share their boundary frame (124/124, 243/243); the seam carries automatically (omit transition — "cut" only for a deliberate hard cut); the ambient phrase copied WORD FOR WORD into each window's text with exactly one addition.
 
-### 2. The input rails (first frame, end anchor, references, audio bed)
+### 2. The input rails (first frame, end anchor, references)
 
 Every input the card accepts, one compose:
 
@@ -77,7 +78,6 @@ Every input the card accepts, one compose:
     "ref_images": ["uploads/monkey_ref_1.png", "uploads/monkey_ref_2.png"],
     "ref_videos": ["uploads/motion_study.mp4"],
     "ref_audios": ["uploads/true_monkey_call.wav"],
-    "bed_audio": "uploads/jungle_bed.wav",
     "calls": [
       { "text": "The hero monkey from the reference, exactly. Opens on the first-frame pose, ends reaching the last-frame pose. Call once with the reference monkey's true voice, then quiet.", "start_frame": 0, "end_frame": 124 }
     ]
@@ -85,5 +85,69 @@ Every input the card accepts, one compose:
 }
 ```
 
-When each rail earns its seat: `image` — the window must OPEN on a known frame (a character sheet, a prior still). `last_frame` — the shot must LAND somewhere specific. `ref_images` — identity fidelity across the film (max 8). `ref_videos` — motion the text cannot describe (max 3). `ref_audios` — a voice or instrument that must be REAL, not synthesized (max 3). `bed_audio` — one soundtrack under the WHOLE film, mixed under every window. Never stack rails you don't need — each one narrows the generation.
+When each rail earns its seat: `image` — the window must OPEN on a known frame (a character sheet, a prior still). `last_frame` — the shot must LAND somewhere specific. `ref_images` — identity fidelity across the film (max 8). `ref_videos` — motion the text cannot describe (max 3). `ref_audios` — a voice or instrument that must be REAL, not synthesized (max 3). Never stack rails you don't need — each one narrows the generation.
+
+### 2b. THE AUDIO LAYERS + THE DIALOGUE LAW (the lip-sync recipe)
+
+Spoken lines are audio_clips rows on the film timeline — NEVER call
+fields (calls have no audio) and never freeform prompt words alone:
+
+```json
+"audio_clips": [
+  { "id": "l1", "name": "serena-line.flac",
+    "src": "/v1/assets/runs/run-<tts>/tts/SaveAudio.0_tts_00001.flac",
+    "start_frame": 12, "dur_frames": 91,
+    "text": "I told you I would finish it before dawn." }
+]
+```
+
+THE LAW, in order:
+1. **Generate the line first** (the tts card), then reference its
+   artifact URL as the row's `src` — and copy its words into `text`
+   EXACTLY (unabridged, verbatim). The words ride the owning window's
+   prompt as a timed `<d>` dialogue tag: audio refs supply the voice,
+   THE WORDS MOVE THE MOUTH. A textless row conditions nothing — the
+   lips stay idle.
+2. `start_frame`/`dur_frames` place the row in the calls' frame coordinates (doc time — the card seats it on the film, reconciling seam trims). A row
+   crossing a window seam CONTINUES the same line across both
+   windows (measured: the take rides one continuous placement).
+3. **One lane per CLASS per window** — the first row owning a window
+   conditions it. Two lines inside ONE window: the second rides
+   overlay-only (audible, no lip sync). Give each line its own window.
+4. Clips require a FILM: two or more calls (a single-window doc with
+   clips refuses loud).
+5. At film time the generated voice DUCKS -14dB under every
+   conditioned row (auto-cut), and the clean take overlays verbatim.
+6. Keep the speaker ON-SCREEN in the owning call's text ("she looks
+   up and speaks to camera") — lips only animate a visible mouth.
+
+THE THREE CLASSES (`class`: dialogue | sfx | music; omit for auto —
+text -> dialogue, else music). All three go INTO the model — the
+model has 3 audio inputs, one per class, so it hears the voice, the
+blast, and the score and times the picture to them. Same machinery
+for every class (stamp -> pin -> prompt field -> pristine overlay);
+only the prompt field and the duck relationships differ:
+
+- **dialogue**: `text` = the exact spoken words (the `<d>` tag —
+  THE WORDS MOVE THE MOUTH).
+- **sfx**: `text` = the timed event — rides `overall_soundscape` as
+  `At MM:SS.mmm, <event>` at the clip's onset. The model hears the
+  blast pinned and times the visual transient to it.
+- **music**: `text` = the description — rides `non_diegetic_music`.
+  Diegetic performance (an on-screen guitar) is music-class
+  conditioning too.
+
+THE DUCK MATRIX: the generated track ducks under EVERY conditioned
+span (the model reproduces what it hears pinned — voice, blast,
+score — so the clean source overlays on top). Music placements
+pre-mix into their own bus which ducks under dialogue+sfx spans;
+dialogue/sfx place at unity.
+
+THE DOOR GUARD (no accidental overlap): a pinned window's NORMAL
+audio inputs stand down for THAT window — a dialogue/sfx-stamped
+window mutes ref_audios (the film-level list and the call's refs
+both). The timeline lanes and the input boxes never double-feed one
+generation. THE BED IS GONE (2026-09-22): there is no film-wide bed
+param — film music rides the D-M-E lanes' MUSIC clips, per window,
+pinned.
 

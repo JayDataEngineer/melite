@@ -11,6 +11,7 @@ import type { PromptGraph, JsonValue } from '@melite/comfyui-card-kit/graph'
 import { assertControlNetSchedule } from '@melite/comfyui-card-kit/guard'
 import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { ProvisionRow } from './models/families/contract.ts'
+import { provisionDest } from './catalog.ts'
 import { validateFields, validateVerb, resolveControlNetEntry } from "./serviceMods.ts";
 import { unwalkedParams, declaredDefaults as declaredDefaultsFor } from "./no-cheat.ts";
 // the mod/verb plane re-exports through the service door (one surface)
@@ -100,6 +101,34 @@ function assertModRequires(
  */
 export const cardWireName = (id: string): string =>
   id.replace(/-/g, "_") + "_card";
+
+/** THE ARM WEIGHT GATE (the silent-truncation law, 2026-10-09):
+ *  the card's armWeights names the provision rows this run touches;
+ *  each must be present on the models tree — else the missing-weight
+ *  refusal (the file + its declared fetch URL + the provision_model
+ *  rescue, so RunRescue parses and offers the fetch). Card-agnostic:
+ *  both compose paths, every card. Fail-open (reader null = the
+ *  pin-sweep's absent-pin degrade: walls and fixtures compose
+ *  without a tree). A named-but-undeclared row is a declaration
+ *  bug — refused loud, never skipped. */
+function assertArmWeights(
+  cardId: string,
+  def: Pick<CardDefinition, 'armWeights' | 'provisions'>,
+  merged: Record<string, unknown>,
+  weightPresent: ((relativePath: string, name: string) => boolean) | null,
+): void {
+  if (weightPresent === null || def.armWeights === undefined) return
+  const names = def.armWeights(merged)
+  for (const name of names) {
+    const row = def.provisions?.find((r) => r.name === name)
+    if (row === undefined) {
+      throw new ComposeRefusal('missing-weight', `card '${cardId}' armWeights names '${name}' — no such provision row declared (the declaration is broken; fix the card, never the gate)`)
+    }
+    if (!weightPresent(provisionDest(row.folder), row.name)) {
+      throw new ComposeRefusal('missing-weight', `card '${cardId}' needs weight '${row.folder}/${row.name}' — absent on the models tree; fetch ${row.url} (provision_model model=${cardId})`)
+    }
+  }
+}
 
 /** One card-declared modifier kind (the declarer face of the served
  *  ModifierKind — structural, the JSON wire shape). `entry` follows
@@ -251,6 +280,19 @@ export interface CardDefinition {
    *  HERE (same row shape as the family DECL provisions). Family
    *  weights stay on the DECL; card tools carry their own. */
   provisions?: ProvisionRow[]
+  /** THE ARM WEIGHTS (the silent-truncation law, 2026-10-09): a
+   *  family-less card's pins skip the family presence gate — an
+   *  absent weight used to die downstream in silence (the mask
+   *  arm truncated with no voice). The card names, per RUN, which
+   *  of its provision rows this merged params set actually touches
+   *  (the mask card: sam2 bag labels → the sam2 row + the selected
+   *  detectors' rows; an unused arm names nothing — an unused arm
+   *  never blocks a run). The compose door checks each named row
+   *  against the injected presence reader and refuses LOUD with
+   *  the missing file + its declared fetch URL. A function like
+   *  schema/compose (never serialized — the snapshot serves
+   *  derived rows). Absent = no weight gate. */
+  armWeights?: (merged: Record<string, unknown>) => readonly string[]
   /** THE UNIVERSAL-SIDEBAR TRIO (sidebar_order /
    *  sidebar / sidebar_hidden half, 2026-09-10): the /v1/forms arm
    *  derives its order/plugin/sidebar_key/hidden row from the CARD,
@@ -284,6 +326,17 @@ export interface CardDefinition {
     outputs: Record<string, string>
     requiresModel: boolean
   }
+  /** THE DECLARED HERO (the mask hero defect, 2026-10-09): the
+   *  artifact filename STEM that leads the stage gallery (the
+   *  history/preview hero is gallery[0] — engine completion order,
+   *  which a card saving secondary same-kind artifacts cannot
+   *  control). A card whose engine saves more than its product
+   *  (the mask card's manifest/crops beside mask_combined)
+   *  declares the product's stem here; the harness moves the
+   *  matching artifact first (exact stem, stem + "_" counter, or
+   *  stem + extension). Generic mechanism, card-owned data — the
+   *  engine-film lead is the precedent. Absent = engine order. */
+  primaryFile?: string
 }
 
 declare module '@deepseek-ai/cordis' {
@@ -300,6 +353,9 @@ export class ComfyUIService extends Service {
   private facts: FactsFile | null = null
   /** Live object_info node names — set before compose to arm the gate. */
   private objectInfoNodes: Set<string> | null = null
+  /** Models-tree presence reader — set before compose to arm the
+   *  arm-weight gate (mirrors objectInfoNodes: null = fail-open). */
+  private weightPresent: ((relativePath: string, name: string) => boolean) | null = null
   /** Autofill defaults map (class → input → default), derived
    *  from the live node-definitions doc — comfy-script behavior. */
   private pinDefaults: Record<string, Record<string, JsonValue>> = {}
@@ -583,6 +639,14 @@ export class ComfyUIService extends Service {
     this.objectInfoNodes = nodes ? new Set(nodes) : null
   }
 
+  /** THE WEIGHT PRESENCE READER (the silent-truncation law,
+   *  2026-10-09): arms the arm-weight gate. The harness seats the
+   *  models-tree reader here before compose (null = fail-open for
+   *  walls and fixtures, the absent-pin degrade). */
+  setWeightPresent(fn: ((relativePath: string, name: string) => boolean) | null): void {
+    this.weightPresent = fn
+  }
+
   /** THE PACK PRESENCE READ (the no-silent-drop law's extension
    *  half, hour 26 stroke 18): the EXTENSION-LAW gate's own check as
    *  a READ for the serving surfaces (the spec's packs block, the
@@ -623,6 +687,7 @@ export class ComfyUIService extends Service {
       }
       assertNoCheat(cardId, def, merged, params)
       assertModRequires(cardId, def, merged, this.objectInfoNodes, this.facts?.extension_node_types ?? {})
+      assertArmWeights(cardId, def, merged, this.weightPresent)
       const packs = def.requires
       if (packs?.length && this.objectInfoNodes) {
         const extMap = this.facts?.extension_node_types ?? {}
@@ -760,6 +825,7 @@ export class ComfyUIService extends Service {
     // arm-conditional kind gate rides alongside (bags present in the
     // merged params only — an unused arm never blocks a run).
     assertModRequires(cardId, def, merged, this.objectInfoNodes, this.facts.extension_node_types ?? {})
+    assertArmWeights(cardId, def, merged, this.weightPresent)
     const packs = def.requiresByFamily?.[modelId] ?? def.requires
     if (packs?.length && this.objectInfoNodes) {
       const extMap = this.facts.extension_node_types ?? {}

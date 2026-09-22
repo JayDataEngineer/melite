@@ -42,3 +42,45 @@ export function mediaVocab(): MediaVocab {
     maxListedImages: 3,
   };
 }
+
+/** The MIME table for artifact SERVING (the audio-seek stroke,
+ *  2026-10-08): ONE spelling of extension → content-type shared by
+ *  every route that serves run artifact bytes (the estate media
+ *  route + the gallery artifact route — the gallery's inline
+ *  ternary had already drifted: mp4 answered video/webm, audio
+ *  answered octet-stream, and no player seeks what it is barely
+ *  willing to name). Unknown extensions answer octet-stream.
+ *
+ *  svg is DELIBERATELY ABSENT: an inline image/svg+xml answer is a
+ *  same-origin script execution vector — svg artifacts serve as
+ *  octet-stream (a download), never an executable document. */
+const MIME_BY_EXT: Readonly<Record<string, string>> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+  bmp: "image/bmp",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mkv: "video/x-matroska",
+  mov: "video/quicktime",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  flac: "audio/flac",
+  ogg: "audio/ogg",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  glb: "model/gltf-binary",
+  gltf: "model/gltf+json",
+  json: "application/json; charset=utf-8",
+  txt: "text/plain; charset=utf-8",
+};
+
+/** The content-type one artifact answer carries: the extension's
+ *  mapped media type, octet-stream for everything unknown. */
+export function contentTypeForArtifact(name: string): string {
+  const dot = name.lastIndexOf(".");
+  const ext = dot < 0 ? "" : name.slice(dot + 1).toLowerCase();
+  return MIME_BY_EXT[ext] ?? "application/octet-stream";
+}

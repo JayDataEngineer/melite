@@ -153,6 +153,30 @@
   width: 10px;
   height: 10px;
 }
+/* (2026-09-22, the lane-picker law) the gutter's add door — hugging
+ * the lane title (the detach keeps margin-left:auto: right edge). */
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  flex: none;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+.uploadBtn:hover {
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);
+  color: var(--dsw-alias-label-primary);
+}
+.uploadBtn svg {
+  width: 10px;
+  height: 10px;
+}
 
 .laneRow {
   display: flex;
@@ -628,6 +652,42 @@
 }
 .audioClip:active {
   cursor: grabbing;
+}
+
+/* ── (2026-09-22, the D-M-E card law) audio clips as SMALL CALL CARDS
+   — the operator: "smaller versions of how cards look". Opt-in via the
+   bar's audioClipCards prop; the block look above stays the default
+   (byte-identical for every existing tenant). The accent gradient +
+   left edge ride inline styles from the layer's accent. */
+.audioCard {
+  top: 3px;
+  bottom: 3px;
+  border-radius: 6px;
+}
+.audioCardIcon {
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  pointer-events: none;
+}
+.audioCardIcon svg {
+  width: 13px;
+  height: 13px;
+}
+.audioCard .audioClipLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  left: 23px;
+  right: 4px;
+  font-size: 10px;
+}
+.audioCard .audioTime {
+  margin-left: 0;
 }
 .gainFill {
   position: absolute;

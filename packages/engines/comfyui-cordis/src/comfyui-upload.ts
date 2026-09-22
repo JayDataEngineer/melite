@@ -4,6 +4,7 @@
 import { randomBytes } from "node:crypto";
 import { readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { createHash } from "node:crypto";
 import { basename, join } from "node:path";
 import type { Client } from "@stable-canvas/comfyui-client";
 import { ComfyError } from "./comfyui-types.ts";
@@ -149,12 +150,27 @@ export async function uploadFile(
   else if (lower.endsWith(".mp4")) ctype = "video/mp4";
   else if (lower.endsWith(".wav")) ctype = "audio/wav";
   else if (lower.endsWith(".mp3")) ctype = "audio/mpeg";
+  else if (lower.endsWith(".flac")) ctype = "audio/flac";
   else if (lower.endsWith(".glb")) ctype = "model/gltf-binary";
+  // THE CONTENT-ADDRESS LAW (2026-09-22 — the stale-take bug): the
+  // staged name carries a hash of the BYTES, not the bare basename.
+  // ComfyUI's upload endpoint skips the write when the name already
+  // exists and echoes the name back — so two different takes sharing
+  // a basename (two runs' SaveAudio.0_tts_00001.flac) silently served
+  // whichever bytes landed first, and every later graph spoke the
+  // wrong take (measured: same size, same duration, different render,
+  // waveform correlation +0.059). With the hash in the name, name
+  // implies content: same bytes stage idempotently, a different take
+  // gets its own file, and no re-run can ever hear a stale voice.
+  const h = createHash("sha1").update(data).digest("hex").slice(0, 12);
+  const base = basename(path);
+  const dot = base.lastIndexOf(".");
+  const staged = dot > 0 ? base.slice(0, dot) + "_" + h + base.slice(dot) : base + "_" + h;
   const fd: FormData = new FormData();
   fd.append(
     "image",
     new Blob([new Uint8Array(data)], { type: ctype }),
-    basename(path),
+    staged,
   );
   const resp = await client.fetchApi("/upload/image", {
     method: "POST",

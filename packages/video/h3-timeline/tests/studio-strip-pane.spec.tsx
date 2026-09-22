@@ -37,6 +37,7 @@ function strip(over?: Record<string, unknown>) {
   const els = render(
     <StudioStripPane
       calls={[{ n: 1 }, { n: 2 }] as never}
+      refAudiosBlocked={false}
       totalFrames={168}
       fps={24}
       seconds="7.0"
@@ -66,6 +67,7 @@ function strip(over?: Record<string, unknown>) {
       takeAudioFile={(f, at) => { rec.taken.push([f.name, at]) }}
       moveAudioClip={(id, f) => { rec.movedClip.push([id, f]) }}
       deleteAudioClip={(id) => { rec.delClip.push([id]) }}
+      updateAudioClip={() => {}}
       setLayerAKey={(k, v) => { rec.keys.push([k, v]) }}
       artifactIndex={{ byUrl: new Map([["https://u/song.mp3", "song.mp3"]]) }}
       // a CONSTANT map proves every door applies it (pass-through
@@ -82,6 +84,70 @@ function drag(el: Element, fromX: number, toX: number) {
   fireEvent.pointerDown(el, { button: 0, clientX: fromX })
   fireEvent.pointerMove(document.body, { clientX: toX })
   fireEvent.pointerUp(document.body, { clientX: toX })
+}
+
+/* THE SLOT HOOK WALL (2026-09-22, round three of the scrollbar
+ * hunt): a `.shell > …` selector in studio.module.css compiles to a
+ * tenant-hashed class NO element carries (the shell div wears
+ * card-base's hashed class + our studioRoot) — dead code that reads
+ * like law. The slot law must ride `.studioRoot` (the class
+ * component.tsx hands StudioShell), doubled for specificity. */
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+const css = readFileSync(resolve(__dirname, "../src/ui/studio/studio.module.css"), "utf-8");
+if (!/\.studioRoot\.studioRoot > \*:nth-child\(2\)[^{]*\{[^}]*overflow: hidden/.test(css)) {
+  throw new Error("THE FIT LAW IS UNHOOKED: the center slot rule must be .studioRoot.studioRoot > *:nth-child(2) with overflow: hidden (a .shell selector is dead — nobody carries the tenant-hashed class)");
+}
+if (!/\.studioRoot\.studioRoot > \*:nth-child\(3\)[^{]*\{[^}]*max-height: none/.test(css)) {
+  throw new Error("THE NATURAL STRIP IS UNHOOKED: the bottom slot rule must be .studioRoot.studioRoot > *:nth-child(3) with max-height: none");
+}
+if (/^\.shell >/m.test(css)) {
+  throw new Error("DEAD LAW: studio.module.css still contains a .shell > slot selector — it compiles to a class no element carries");
+}
+/* THE SPILL WALL (round four): height:100% + padding under
+ * content-box sizing overflows the parent (hour-9's law, third
+ * appearance) — and heroRow's overflow-x:auto computes overflow-y
+ * to AUTO, so every spilled pixel becomes a vertical wheel on the
+ * preview. Every height:100% box with padding in the pane chain
+ * must be border-box. */
+for (const cls of [".finalCut", ".winTile"]) {
+  const m2 = css.split("\n").find((l) => l.trim().startsWith(cls));
+  if (m2 !== undefined && m2.includes("height: 100%") && !m2.includes("box-sizing")) {
+    const block = css.slice(css.indexOf(m2));
+    const body = block.slice(0, block.indexOf("}"));
+    if (body.includes("padding") && !body.includes("box-sizing: border-box")) {
+      throw new Error(`SPILL: ${cls} carries height:100% + padding without border-box — it wheels the preview pane`);
+    }
+  }
+}
+
+/* THE LANE-PICKER WALL (2026-09-22, the operator's law): the lanes'
+ * add door is the gutter's ⤴ riding the GENERIC source grammar —
+ * useSquareProvider with the audio MIME family — never a bespoke
+ * upload button. */
+import { readFileSync as readFileSyncLane } from "node:fs";
+import { resolve as resolveLane } from "node:path";
+const paneSrc = readFileSyncLane(resolveLane(__dirname, "../src/ui/studio/StudioStripPane.tsx"), "utf-8");
+const rowSrc = readFileSyncLane(resolveLane(__dirname, "../src/ui/studio/RunRefsClips.tsx"), "utf-8");
+if (!paneSrc.includes("useSquareProvider")) {
+  throw new Error("THE LANE PICKER IS UNHOOKED: StudioStripPane must ride useSquareProvider (the estate's one From flow / From media / From file grammar)");
+}
+if (!paneSrc.includes('accept: "audio/*"')) {
+  throw new Error("THE LANE PICKER'S FILE FACE IS UNNARROWED: the provider wire must pass accept: 'audio/*'");
+}
+if (rowSrc.includes("tl-audio-upload")) {
+  throw new Error("DEAD DOOR: RunRefsClips still renders the bespoke upload button — the add door is the gutter icon");
+}
+/* THE DEP-LAW WALL (2026-09-22, the From-media freeze): the
+ * provider's modal effect keys on loadMedia's IDENTITY. An inline
+ * arrow in the component = fresh identity per render = the infinite
+ * load loop that froze the card. The loader must be a module-level
+ * reference. */
+if (/loadMedia:\s*async/.test(paneSrc) || /loadMedia:\s*\(/.test(paneSrc)) {
+  throw new Error("DEP-LAW BREAK: loadMedia is inline — a per-render identity re-fires the provider's modal effect into an infinite load loop (the From-media freeze). Move the wrapper to module scope.")
+}
+if (!/const loadAudioMedia/.test(paneSrc)) {
+  throw new Error("DEP-LAW WALL: the stable module-level audio loader (loadAudioMedia) is missing from StudioStripPane")
 }
 
 describe("chrome (counts + fps + tracks + stem)", () => {
@@ -110,6 +176,47 @@ describe("chrome (counts + fps + tracks + stem)", () => {
     h1.els.unmount()
     strip({ keyframes: [], barLanes: [] as never })
     assert.equal(document.body.querySelector("[data-lane]"), null)
+  })
+})
+
+describe("the four lines (Calls + D-M-E)", () => {
+  it("dialogue, sfx, music clips each ride their own labeled lane; calls ride above", () => {
+    // (2026-09-22, the operator's timeline-bar law: four separate
+    // lines — Calls, Dialogue, SFX, Music. A clip lands on its
+    // class lane only; the gutter heads label every lane.)
+    const D1 = { id: "d1", name: "line.flac", start_frame: 10, dur_frames: 40, class: "dialogue", text: "get down." }
+    const S1 = { id: "s1", name: "boom.wav", start_frame: 60, dur_frames: 30, class: "sfx", text: "a blast" }
+    const M1 = { id: "m1", name: "pad.wav", start_frame: 0, dur_frames: 124, class: "music", text: "" }
+    const h = strip({ barAudioClips: [D1, S1, M1] as never, layerA: {} as never })
+    const lane = (id: string) => document.body.querySelector(`[data-audio-layer="${id}"]`)!
+    for (const [id, own, foreign] of [
+      ["dialogue", "d1", ["s1", "m1"]],
+      ["sfx", "s1", ["d1", "m1"]],
+      ["music", "m1", ["d1", "s1"]],
+    ] as Array<[string, string, string[]]>) {
+      assert.ok(lane(id).querySelector(`[data-audio-clip="${own}"]`), `${own} rides the ${id} lane`)
+      for (const f of foreign) {
+        assert.equal(lane(id).querySelector(`[data-audio-clip="${f}"]`), null, `${f} never leaks onto ${id}`)
+      }
+    }
+    // the calls line rides above with its prompt cards
+    assert.ok(screen.getByText("hello"))
+    assert.ok(screen.getByText("world"))
+    // (2026-09-22, the operator's card law) every clip renders as a
+    // CARD (small call-card look), every lane row is cards-height,
+    // and the gutter heads carry their class glyphs + accents.
+    for (const [id, own, icon] of [
+      ["dialogue", "d1", "mic"],
+      ["sfx", "s1", "zap"],
+      ["music", "m1", "music"],
+    ] as Array<[string, string, string]>) {
+      assert.equal(lane(id).getAttribute("data-lane-cards"), "true", `${id} lane is card-styled`)
+      assert.ok(lane(id).querySelector(`[data-audio-clip="${own}"][data-card="true"]`), `${own} renders as a card`)
+      const head = document.body.querySelector(`[data-audio-icon="${icon}"]`)
+      assert.ok(head, `the ${id} gutter head carries its ${icon} glyph`)
+    }
+    assert.ok(document.body.querySelector('[data-audio-icon="mic"]')!.getAttribute("style")!.includes("#22d3ee"), "the dialogue accent tints its head")
+    h.els.unmount()
   })
 })
 
@@ -230,6 +337,25 @@ describe("the Music row (drops land positioned; foreign writes nothing)", () => 
     drop({ raw: "not-json{{{ " })
     drop({})
     assert.deepEqual(rec.addedClip, [])
+  })
+
+  it("THE BLOCKER: reference audio present → drops are refused on EVERY lane, loudly", () => {
+    const { rec, els } = strip({ refAudiosBlocked: true })
+    // the lock is VISIBLE, not silent
+    assert.ok(els.container.querySelector('[data-testid="tl-lane-blocker"]'), "the banner states the lock")
+    drop({ url: "https://u/song.mp3" })
+    const f = new File(["x"], "take.wav", { type: "audio/wav" })
+    drop({ files: [f] })
+    assert.deepEqual(rec.addedClip, [], "no positioned add")
+    assert.deepEqual(rec.taken, [], "no file add")
+    // and unlocked again when the refs clear
+    els.unmount()
+    const again = strip()
+    fireEvent.drop(document.body.querySelector('[data-audio-layer="music"]')!, {
+      clientX: 60,
+      dataTransfer: { files: [], getData: () => JSON.stringify({ url: "https://u/song.mp3" }) },
+    })
+    assert.deepEqual(again.rec.addedClip, [["song.mp3", "song.mp3", 4242]])
   })
 
   it("an OS file lands through the file door", () => {

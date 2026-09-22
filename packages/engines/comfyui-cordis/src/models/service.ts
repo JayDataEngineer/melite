@@ -645,6 +645,7 @@ export function assertFactsCallers(
 async function validateBootContracts(svc: ModelsService): Promise<void> {
   const decls = svc.allDecls();
   let domains: import("./validate.ts").CardDomains | null = null;
+  const cardAdmits = new Map<string, readonly string[]>()
   const boardings = new Map<string, readonly string[]>();
   let factsModels: Record<string, { card?: string }> | null = null;
   let cardSvc: ReturnType<
@@ -680,6 +681,10 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
       /* v8 ignore next -- ids and defs read from the same service
          handle, so the miss half never fires (defense, 2026-09-12). */
       if (def !== undefined) boardings.set(id, def.boarded);
+      // THE ADMISSION LAW: the same def carries its admitted
+      // route-stamped keys — the validator honors them (2026-09-22)
+      const admits = (def as { admits?: readonly string[] } | undefined)?.admits;
+      if (def !== undefined && admits !== undefined) cardAdmits.set(id, admits);
     }
     // the rows assemble from the registry + frozen card slices
     // (facts.ts derivation, same dynamic seam as the card plane:
@@ -720,6 +725,7 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
       decls, domains, ["mode", "variant"], boardings,
       new Set(svc.modelIds()),
       new Map(svc.modelIds().map((id): [string, ModelDecl] => [id, svc.getModel(id)])),
+      cardAdmits,
     );
   }
   // ── THE MOD INTERLOCK + THE FACTS-CALLER CHECK (pure halves

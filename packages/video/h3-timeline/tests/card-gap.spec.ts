@@ -356,7 +356,7 @@ describe("the single-window doors", () => {
   it("the refine rider mounts a closing pass (own loader, the row's marriage, the doc's solver)", () => {
     const g = new GraphBuilder();
     def.compose(
-      { ...def.schema({ calls: [SHOT()] }), refine: { name: "taomate.safetensors", strength: 0.7, steps: 3 } },
+      { ...def.schema({ calls: [SHOT()], second_pass_enabled: true }), refine: { name: "taomate.safetensors", strength: 0.7, steps: 3 } },
       model, g, "run_refine",
     );
     const stacks = ofClass(graphOf(g), "LTX_lora_loader");
@@ -405,7 +405,7 @@ describe("the single-window doors", () => {
   it("interpolate_enabled doubles the playout fps (the V9 compensation)", () => {
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ calls: [SHOT()], interpolate_enabled: true }),
+      def.schema({ calls: [SHOT()], second_pass_enabled: true, interpolate_enabled: true }),
       model, g, "run_interp",
     );
     const created = ofClass(graphOf(g), "CreateVideo");
@@ -553,6 +553,7 @@ describe("the overlays cannot go around Schemaster", () => {
     def.compose(
       def.schema({
         calls: [SHOT()],
+        second_pass_enabled: true,
         interpolate_enabled: true, interp_model: "rife47.pth", interp_multiplier: 3,
         sr_switch: true, sr_model: "seedvr2_ema_3b_fp16.safetensors",
         sharpen_enabled: true,
@@ -587,23 +588,20 @@ describe("the overlays cannot go around Schemaster", () => {
     );
   });
 
-  it("a stanza-pinned fps_seconds advances the bed clock by the window's OWN duration", () => {
+  it("THE BED IS GONE (2026-09-22): no MeliteAudioSlice without an audio clip — the rail's fps_seconds gates on its own", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        bed_audio: "/inputs/bed.wav",
         calls: [
           { text: "first push", start_frame: 0, end_frame: 90, knobs: { fps_seconds: 4 } },
           { text: "second push", start_frame: 90, end_frame: 180 },
         ],
       }),
-      model, g, "run_bed_pin",
+      model, g, "run_nobed_pin",
     );
     const out = graphOf(g);
-    const slices = ofClass(out, "MeliteAudioSlice");
-    assert.ok(slices.length >= 2, "both windows slice the bed");
-    const starts = slices.map(([, n]) => Number(n.inputs.start_seconds)).sort((a, b) => a - b);
-    assert.equal(starts[1] - starts[0], 4, "the pinned fps_seconds (4s) advanced the bed clock exactly");
+    assert.equal(ofClass(out, "MeliteAudioSlice").length, 0,
+      "a clipless doc wires no slice — the bed exited the card with it");
   });
 
   it("a non-finite frame number skips the stanza length pin (num() refuses NaN, never crashes)", () => {
@@ -647,7 +645,7 @@ describe("the clips-stitch (the Music row lands in the rendered film)", () => {
     id: "c1", name: "line1.wav", src: "data:audio/wav;base64,AAA", start_frame: 100, dur_frames: 48, ...over,
   });
 
-  it("a clip mixes over the film at FILM time (window accounting + carry head)", () => {
+  it("a clip mixes over the film at its doc seat (owner map, no carry — the film clock)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
@@ -661,13 +659,17 @@ describe("the clips-stitch (the Music row lands in the rendered film)", () => {
     const load = ofClass(out, "LoadAudio");
     assert.equal(load.length, 1, "the clip loads");
     assert.equal(load[0]![1].inputs.audio, "data:audio/wav;base64,AAA");
-    // FILM TIME: window 1 (span 56) contributes 56/24s; window 2 starts
-    // there; the clip at doc frame 100 rides its carry head:
-    // 56/24 + (22 + (100 - 56))/24 = 122/24 ≈ 5.083s
-    const delay = ofClass(out, "MeliteAudioDelay");
+    // FILM TIME (corrected 2026-09-22 — the D-M-E proof measured
+    // the old carry-head formula landing takes 22f late: a take at
+    // film f96 overlaid at 4.917s, r=0.85 at the wrong seat, ~0 at
+    // the right one): the clip at film frame 100 rides start/24 =
+    // 100/24 ≈ 4.167s. NO window accounting on the film chain — the
+    // conditioning path carries its own window-scoped delay; the
+    // film-level chain is unscoped (clip.start IS film time).
+    const delay = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window"));
     assert.equal(delay.length, 1, "the clip is placed");
-    assert.equal(delay[0]![1].inputs.delay_seconds, 5.083, "film-time placement (window accounting + carry)");
-    assert.equal(delay[0]![1].inputs.duration_seconds, 7.083, "exact fit (delay + dur_frames/24)");
+    assert.equal(delay[0]![1].inputs.delay_seconds, 4.167, "film-time placement (start/24, no carry)");
+    assert.equal(delay[0]![1].inputs.duration_seconds, 6.167, "exact fit (delay + dur_frames/24)");
     // the mix: one node, chained INTO CreateVideo's audio
     const mix = ofClass(out, "MeliteAudioMix");
     assert.equal(mix.length, 1, "one chained mix");
@@ -689,11 +691,12 @@ describe("the clips-stitch (the Music row lands in the rendered film)", () => {
     );
     const out = graphOf(g);
     assert.equal(ofClass(out, "MeliteAudioMix").length, 2, "chained per clip");
-    assert.equal(ofClass(out, "MeliteAudioDelay").length, 2);
+    assert.equal(ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window")).length, 2);
     assert.equal(ofClass(out, "LoadAudio").length, 2);
-    // clip 2 at doc frame 0: window 1, no carry → 0s delay
-    const delays = ofClass(out, "MeliteAudioDelay").map(([, n]) => n.inputs.delay_seconds).sort();
-    assert.deepEqual(delays, [0, 5.083]);
+    // clip 2 at film frame 0 → 0s delay; clip 1 at film frame
+    // 100 → 100/24 (the corrected clock — never the old 5.083)
+    const delays = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window")).map(([, n]) => n.inputs.delay_seconds).sort();
+    assert.deepEqual(delays, [0, 4.167]);
   });
 
   it("NO clips = NO nodes (absent clips leave a byte-identical graph)", () => {
@@ -766,28 +769,87 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
-        audio_clips: [CLIP()],
+        audio_clips: [CLIP({ text: "finish it, please." })],
       }),
       model, g, "run_dialogue_cond",
     );
     const out = graphOf(g);
-    // window 2 (56-124) owns frames 100-124 of the clip: the slice is
-    // in GENERATION time — the window renders from (56 - 22 carry):
-    // (22 + (100 - 56))/24 = 2.75s in, for (124-100)/24 = 1.0s
+    // window 2 (56-124) owns frames 100-124 of the clip. The window's
+    // generation render starts at doc 56 - 22 carry = 34: the clip
+    // SOUNDS 2.75s into the window from its own source offset 0 — so
+    // the stamp slices source [0, 1.0s) and DELAYS it 2.75s, fitted
+    // to the window's generation length (22 + 17*3 = 73f = 3.042s).
+    // (corrected 2026-09-22: the first cut sliced the source AT 2.75 —
+    // the wrong part of the clip, played immediately)
     const slices = scoped(out, "window2_", "MeliteAudioSlice");
     assert.equal(slices.length, 1, "window 2 carries the dialogue slice");
-    assert.equal(slices[0]![1].inputs.start_seconds, 2.75, "generation time (carry head + doc offset)");
+    assert.equal(slices[0]![1].inputs.start_seconds, 0, "the clip's true head (its source starts at the slice)");
     assert.equal(slices[0]![1].inputs.duration_seconds, 1, "the intersection only");
     assert.equal(slices[0]![1].inputs.audio, "data:audio/wav;base64,AAA", "src verbatim (the walk stages it)");
-    // wired into the r2v's SECOND audio lane (dialogue(0), user refs(1-2))
-    const r2v = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]!;
+    // THE DIALOGUE TAG WALL (2026-09-22, the guide's section-8 law):
+    // a clip carrying text puts the EXACT words into the window's
+    // PROMPT as a timed <d>[English] tag — the mouth's conditioning
+    // lives in the prompt (the audio ref supplies the voice); a
+    // textless clip never grows a tag.
+    {
+      const r2v = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]!;
+      const pr = String(r2v[1].inputs.prompt);
+      assert.ok(pr.includes('<d>[English] finish it, please.</d>'), "the exact words ride the prompt verbatim");
+      assert.ok(pr.includes("overall_soundscape:"), "the guide's soundscape field carries the speech note");
+      assert.ok(/At 00:02\.750,/.test(pr), "timed at the stamp's local clock (delay 2.75s)");
+      const w1r2v = scoped(out, "window1_", "MiniMaxH3ReferenceToVideo")[0]!;
+      assert.ok(!String(w1r2v[1].inputs.prompt).includes("<d>"), "window1 (no stamp) carries no tag");
+    }
+    // THE PINNED GUIDE (rewired 2026-09-22): the slice rides an
+    // audio-only MiniMaxH3AddGuide keyframe at the clip's
+    // generation-frame index (delay 2.75s = frame 66) — the model's
+    // own timeline holds the speech; the ref lanes are free.
+    const guides = scoped(out, "window2_", "MiniMaxH3AddGuide");
+    assert.equal(guides.length, 1, "the stamped window pins its dialogue as a keyframe");
+    assert.equal(guides[0]![1].inputs.frame_idx, 66, "anchored at the clip's generation-frame index");
     assert.deepEqual(
-      r2v[1].inputs["ref_audios.ref_audio_0"],
+      guides[0]![1].inputs.audio,
       [slices[0]![0], 0],
-      "the dialogue owns lane 0 when no bed rides",
+      "the guide carries the true source segment",
     );
+    assert.equal(scoped(out, "window2_", "MeliteAudioDelay").length, 0, "no dialogue delay node — the pin places it, not silence");
+    const r2v = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]!;
+    const lane0 = JSON.stringify(r2v[1].inputs["ref_audios.ref_audio_0"] ?? null);
+    assert.ok(!lane0.includes("MeliteAudioSlice") && !lane0.includes("MeliteAudioDelay"), "no dialogue artifact rides a ref lane anymore");
     // window 1 never hears it (the clip starts at 100, window 1 ends at 56)
     assert.equal(scoped(out, "window1_", "MeliteAudioSlice").length, 0);
+  });
+
+  it("THE STAMPED SEAM WALL (2026-09-22): a stamped window still chains — t4r films keep the drift-control continuation AND the carried-head trim", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        audio_clips: [CLIP()],
+      }),
+      model, g, "run_dialogue_seam",
+    );
+    const out = graphOf(g);
+    // the stamp routes window 2 to t4r — the seam must NOT care
+    // (the regression this wall pins: the gate was t4_chain-only and
+    // a stamped film silently rendered independent windows, hard-
+    // concatenated — the operator caught it on the proof film)
+    const cont = scoped(out, "window2_", "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(cont.length, 1, "the stamped window still anchors on window 1's latent");
+    assert.equal(cont[0]![1].inputs.overlap_frames, 22, "the drift-control carry at its proven default");
+    assert.equal(cont[0]![1].inputs.continue_audio_latent, true, "the audio latent rides the soft release");
+    const fin = scoped(out, "window2_", "MiniMaxH3FiniteSegmentFinalize");
+    assert.equal(fin.length, 1, "the window's own clip finalize (the head trim)");
+    assert.equal(fin[0]![1].inputs.overlap_frames, 22, "the carried head leaves picture and sound");
+    assert.equal(fin[0]![1].inputs.trim_audio_head, true, "a clip never replays the seam it grew from");
+    // the film level still yields the previous tail to the join
+    const tail = ofClass(out, "MiniMaxH3FiniteAudioTrimTail");
+    assert.equal(tail.length, 1, "the previous film's tail yields its overlap");
+    assert.equal(tail[0]![1].inputs.overlap_frames, 22, "by the same carry");
+    // AND the stamp itself survives the family routing (both halves
+    // of the interaction, one graph)
+    assert.equal(scoped(out, "window2_", "MeliteAudioSlice").length, 1, "the dialogue slice still rides");
+    assert.equal(scoped(out, "window2_", "MiniMaxH3ReferenceToVideo").length, 1, "the r2v arm still renders it");
   });
 
   it("the generated voice DUCKS under the conditioned clip at film time (the doubling fix)", () => {
@@ -802,8 +864,10 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     const out = graphOf(g);
     const ducks = ofClass(out, "MeliteAudioDuck");
     assert.equal(ducks.length, 1, "one duck over the film audio");
-    // the clip's FULL film span ducks (5.083s for 2s = 48 frames)
-    assert.equal(ducks[0]![1].inputs.segments, "5.083:7.083");
+    // the clip's FULL film span ducks (100/24 ≈ 4.167s for 2s =
+    // 48 frames — the corrected clock; the old 5.083 carried the
+    // phantom +22f and ducked the wrong seat)
+    assert.equal(ducks[0]![1].inputs.segments, "4.167:6.167");
     assert.equal(ducks[0]![1].inputs.gain_db, -14, "the declared default rides when the knob is unset");
     // the mix chain rides OVER the ducked track
     const mix = ofClass(out, "MeliteAudioMix")[0]!;
@@ -848,43 +912,31 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     assert.ok((ofClass(out, "MeliteAudioDelay")[0]![1].inputs.duration_seconds as number) > 0, "its own length rides");
   });
 
-  it("THE BUS LAW: bed + dialogue + user ref audios > 3 lanes REFUSES loud, naming every competitor", () => {
-    const g = new GraphBuilder();
-    assert.throws(
-      () => def.compose(
-        def.schema({
-          calls: [SHOT(), SHOT({
-            text: "then a turn", start_frame: 56, end_frame: 124,
-            refs: { audios: ["a.mp3", "b.mp3"] },
-          })],
-          bed_audio: "bed.mp3",
-          audio_clips: [CLIP()],
-        }),
-        model, g, "run_bus_full",
-      ),
-      /audio bus is full — dialogue .* beside the music bed \(1\) 2 user ref audios \(2\)/,
-    );
-  });
-
-  it("the bus fits: bed + dialogue + ONE user ref audio wires all three lanes", () => {
+  it("THE DOOR GUARD ON THE BUS (2026-09-22, the operator's overlap law; the bed arm retired with the bed): a dialogue-stamped window mutes the user audios — the guide owns the dialogue", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({
           text: "then a turn", start_frame: 56, end_frame: 124,
-          refs: { audios: ["a.mp3"] },
+          refs: { audios: ["a.mp3", "b.mp3"] },
         })],
-        bed_audio: "bed.mp3",
-        audio_clips: [CLIP()],
+        audio_clips: [CLIP({ text: "get down, now." })],
       }),
       model, g, "run_bus_fits",
     );
     const out = graphOf(g);
     const r2v = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]!;
     const slices = scoped(out, "window2_", "MeliteAudioSlice");
-    // bed(0) + dialogue(1) + user(2)
-    assert.equal(slices.length, 2, "the bed cut and the dialogue slice");
-    assert.deepEqual(r2v[1].inputs["ref_audios.ref_audio_1"], [slices.find(([, n]) => n.inputs.audio === "data:audio/wav;base64,AAA")![0], 0]);
-    assert.ok(Array.isArray(r2v[1].inputs["ref_audios.ref_audio_2"]), "the user audio keeps lane 2");
+    // only the dialogue slice; the user audios are MUTED on
+    // this voice-pinned window (their lanes revert to the bundle's
+    // own outputs — the door guard, never a silent fourth lane)
+    assert.equal(slices.length, 1, "the dialogue slice, and nothing else — no bed exists to cut");
+    const dialogueSlice = slices.find(([, n]) => n.inputs.audio === "data:audio/wav;base64,AAA")!;
+    const guides = scoped(out, "window2_", "MiniMaxH3AddGuide");
+    assert.equal(guides.length, 1, "the dialogue rides the pinned guide");
+    assert.deepEqual(guides[0]![1].inputs.audio, [dialogueSlice[0], 0], "the guide carries the dialogue slice");
+    const w2Loads = scoped(out, "window2_", "LoadAudio")
+      .filter(([, n]) => String(n.inputs.audio) === "a.mp3" || String(n.inputs.audio) === "b.mp3");
+    assert.equal(w2Loads.length, 0, "the user audios stand down on the pinned window (the stanza declared them; the guard stripped them)");
   });
 });

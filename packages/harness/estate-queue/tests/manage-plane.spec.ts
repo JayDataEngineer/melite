@@ -528,9 +528,11 @@ describe("hProvisionModel", () => {
       route(() => new Response("BYTES"));
       const [c1, e1] = await manage({ action: "provision_model", model: "mask" });
       assert.equal(c1, 200);
-      assert.match(e1.detail, /downloaded: sam2\.1_hiera_large\.pt, yolo11m\.pt/);
+      assert.match(e1.detail, /downloaded: sam3\.1_multiplex_fp16\.safetensors, sam2\.1_hiera_large\.pt, person_yolov8m-seg\.pt, face_yolov8m\.pt, hand_yolov8n\.pt/);
       assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "sams", "sam2.1_hiera_large.pt"), "utf8"), "BYTES");
-      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "ultralytics", "bbox", "yolo11m.pt"), "utf8"), "BYTES");
+      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "ultralytics", "segm", "person_yolov8m-seg.pt"), "utf8"), "BYTES");
+      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "ultralytics", "bbox", "face_yolov8m.pt"), "utf8"), "BYTES");
+      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "ultralytics", "bbox", "hand_yolov8n.pt"), "utf8"), "BYTES");
       assert.equal((e1.data as { model: string }).model, "mask");
       // an unknown id stays a 404 (never a wrong install)
       fakeModels.poison = new CatalogMiss('model "ghost" not found in catalog');

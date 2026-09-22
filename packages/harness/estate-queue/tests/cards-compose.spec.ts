@@ -24,6 +24,10 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
     compose = composeInFiber;
     setFacts = () => undefined;
     setObjectInfo = () => undefined;
+    // the arm-weight gate's reader seat (the silent-truncation
+    // law): the fake arms it like production (always present —
+    // the gate itself is walled on the real service plane).
+    setWeightPresent = () => undefined;
   };
   return {
     ...real,

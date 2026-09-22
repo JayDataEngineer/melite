@@ -537,8 +537,15 @@ export interface BenchPatchRow {
   readonly patched: readonly string[];
 }
 
-/** patch — params merge with CAS + log (result/runStatus ride too:
- *  run-status writes from the tab land here, authored "user"). */
+/** patch — params merge with CAS + log. THE ONE OUTCOME DOOR
+ *  (the telemetry law's other half, 2026-10-08): run outcomes ride
+ *  drafts/patch — the archive's door, the poll's door. This verb
+ *  authors PARAMS only (the construct tool's patch grammar is
+ *  {stage, params}; the tab's outcome observer writes through the
+ *  drafts door). The old result/runStatus arms wrote ARCHIVE-LESS —
+ *  a landing here destroyed the previous result with no supersede —
+ *  under the old every-write-bumps law, so every outcome here also
+ *  ticked the rev. Outcomes refuse with the redirect voice. */
 export async function patchBench(
   drafts: Domain<DraftsDomainSpec>,
   session: string,
@@ -546,6 +553,13 @@ export async function patchBench(
   admit?: StageAdmission,
 ): Promise<BenchPatchRow> {
   refuseUnknown(body, PATCH_KEYS);
+  if ("result" in body || "runStatus" in body) {
+    throw new RemoteError(
+      "bench/bad-body",
+      "run outcomes ride the drafts/patch door (result/runStatus refused on the bench verb — it authors params only)",
+      {},
+    );
+  }
   const loaded: LoadedBench = await loadBench(drafts, session);
   casCheck(loaded.block, body["expect_rev"], session);
   const stageId: unknown = body["stage"];
@@ -602,19 +616,10 @@ export async function patchBench(
     );
     st["params"] = cur;
   }
-  let touched = 0;
-  if ("result" in body) {
-    st["result"] = body["result"];
-    touched++;
-  }
-  if ("runStatus" in body) {
-    st["runStatus"] = body["runStatus"];
-    touched++;
-  }
-  if (paramsIn === undefined && touched === 0) {
+  if (paramsIn === undefined) {
     throw new RemoteError(
       "bench/bad-body",
-      "nothing to patch (params|result|runStatus)",
+      "nothing to patch (params)",
       {},
     );
   }
@@ -622,11 +627,7 @@ export async function patchBench(
     author,
     kind: "patch",
     stage: stageId,
-    summary:
-      "patch " +
-      (paramsIn !== undefined
-        ? Object.keys(paramsIn).sort().join(",")
-        : "status"),
+    summary: "patch " + Object.keys(paramsIn).sort().join(","),
     inverse: { stage: stageId, params_before: before, params_added: added },
   });
   return {
@@ -634,7 +635,7 @@ export async function patchBench(
     session,
     rev: newRev,
     stage: stageId,
-    patched: paramsIn !== undefined ? Object.keys(paramsIn).sort() : [],
+    patched: Object.keys(paramsIn).sort(),
   };
 }
 

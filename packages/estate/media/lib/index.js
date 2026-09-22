@@ -33,7 +33,8 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     done = true;
 };
 import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-import { mediaVocab } from "@melite/contracts/mediaKinds";
+import { contentTypeForArtifact, mediaVocab } from "@melite/contracts/mediaKinds";
+import { parseRangeHeader } from "@melite/contracts/mediaRange";
 export const name = "estate-media";
 /** NOTHING is injected: the estate bundle rides headless mounts too
  * (the queue/drafts seats are headless-safe; the web carrier is
@@ -47,39 +48,73 @@ export const inject = [];
 export const MEDIA_PREFIX = "/melite-media/runs";
 /** The run-dir basename grammar (run-<hex>-<hex>, the mint law). */
 const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
-/** One confined relative segment: [A-Za-z0-9._-]+, no dots-only. */
-const SEGMENT = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
-/** The content-type map for the extensions the engines emit. */
-const CONTENT_TYPES = {
-    png: "image/png",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    webp: "image/webp",
-    gif: "image/gif",
-    mp4: "video/mp4",
-    webm: "video/webm",
-    json: "application/json; charset=utf-8",
-    txt: "text/plain; charset=utf-8",
-};
+/** One confined relative segment AFTER percent-decoding: the engines
+ *  mint raw names (`out 1.png`, unicode, parens) and mediaUrl
+ *  percent-encodes them — the grammar must accept what both halves
+ *  produce (the mint→serve round-trip law, stroke 82). The lock is:
+ *  not empty, not `.`/`..` (traversal), no NUL; every other byte is
+ *  a legal filename the realpath containment below re-checks. */
+function segmentOk(decoded) {
+    /* v8 ignore next -- defense-in-depth dot/empty fence, unreachable
+     * via the HTTP handler by construction (2026-09-16): "" never
+     * arrives (parseTarget filters empties before decode — only ""
+     * decodes to ""); "." / ".." never arrive (WHATWG URL
+     * dot-normalizes every single/double-dot spelling — literal,
+     * %2e/%2E, .%2e, %2e., %2e%2e in any case — to a short path
+     * before the segment loop runs; probed: all such forms refuse via
+     * the parts.length<2 arm, never here — see the single/double-dot
+     * walls). The fence stays for non-URL callers; the NUL arm below
+     * carries the behavioral wall. */
+    if (decoded === "" || decoded === "." || decoded === "..")
+        return false;
+    if (decoded.includes("\0"))
+        return false;
+    return true;
+}
+/** The servable-media law: run STATE lives beside the artifacts
+ *  (_flow.json, _request.json carry drafts and graphs — the run's
+ *  private record, never gallery bytes). `_poster.jpg` is the ONE
+ *  underscore exception (the runThumbnail mint law). */
+const UNDERSCORE_SERVABLE = new Set(["_poster.jpg"]);
+function relServable(relParts) {
+    const base = relParts[relParts.length - 1];
+    if (!base.startsWith("_"))
+        return true;
+    return UNDERSCORE_SERVABLE.has(base);
+}
+/** The content-type for one served artifact: the LEAF's one
+ *  spelling (contentTypeForArtifact — the vocab leaf's MIME table,
+ *  shared with the gallery artifact route; the route owns no map of
+ *  its own to drift). */
 function contentTypeFor(name) {
-    const dot = name.lastIndexOf(".");
-    const ext = dot < 0 ? "" : name.slice(dot + 1).toLowerCase();
-    return CONTENT_TYPES[ext] ?? "application/octet-stream";
+    return contentTypeForArtifact(name);
 }
 /** Parse /<runId>/<rel...> after the prefix; null when the shape or
- *  a segment violates the confinement grammar. */
+ *  a segment violates the confinement grammar. Each rel segment is
+ *  percent-DECODED first (malformed escapes refuse; %2e%2e decodes
+ *  to `..` and refuses) — the grammar holds on the decoded name. */
 function parseTarget(sub) {
     const parts = sub.split("/").filter((p) => p !== "");
     if (parts.length < 2)
         return null;
     const runId = parts[0];
-    const relParts = parts.slice(1);
     if (!RUN_ID.test(runId))
         return null;
-    for (const seg of relParts) {
-        if (!SEGMENT.test(seg))
+    const relParts = [];
+    for (const seg of parts.slice(1)) {
+        let decoded;
+        try {
+            decoded = decodeURIComponent(seg);
+        }
+        catch {
             return null;
+        }
+        if (!segmentOk(decoded))
+            return null;
+        relParts.push(decoded);
     }
+    if (!relServable(relParts))
+        return null;
     return { runId, rel: relParts.join("/") };
 }
 const NOT_FOUND_BODY = '{"error":"media/not-found"}';
@@ -139,28 +174,108 @@ export function apply(ctx) {
                 res.end(NOT_FOUND_BODY);
                 return;
             }
-            const stat = await fs.stat(realFile);
-            if (!stat.isFile()) {
+            // Byte-truth reads (stat + the asked window) sit inside the
+            // refusal scope and BEFORE the committed head: a file
+            // deleted, locked, or unreadable between realpath and read
+            // answers 404 — NEVER a rejected promise that leaves the
+            // socket hung, and never a 200 head with no body (audit
+            // finding, stroke 82; artifacts are buffered engine outputs —
+            // the known-length law holds, the failure window moved ahead
+            // of the commitment).
+            // THE RANGE LAW (the audio-seek stroke, 2026-10-08 — the
+            // operator's catch: "I can't even click and drag to change
+            // position in the audio clip"): native media elements seek
+            // by asking `Range: bytes=…`; answering whole-file 200s on
+            // every GET left the playhead stuck at the buffer edge.
+            // Satisfiable single ranges answer 206 with exactly the
+            // asked slice; a start past EOF answers the loud 416;
+            // everything else (no header, HEAD, malformed, multi-range)
+            // serves the full 200. `accept-ranges: bytes` rides every
+            // byte answer so the element knows seeking is live.
+            let stat;
+            // bytes is Buffer by the 200 arm below (the 206 arm returns
+            // early; the type rides the assignment, never an assertion)
+            let bytes = Buffer.alloc(0);
+            let slice;
+            try {
+                stat = await fs.stat(realFile);
+                if (!stat.isFile()) {
+                    res.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
+                    res.end(NOT_FOUND_BODY);
+                    return;
+                }
+                const range = req.method === "HEAD" ? null : parseRangeHeader(req.headers.range, stat.size);
+                if (range === "unsatisfiable") {
+                    res.writeHead(416, {
+                        "content-type": "application/json",
+                        "content-range": `bytes */${String(stat.size)}`,
+                        "accept-ranges": "bytes",
+                        "cache-control": "no-store",
+                    });
+                    res.end('{"error":"media/range-not-satisfiable"}');
+                    return;
+                }
+                if (range !== null) {
+                    const length = range.end - range.start + 1;
+                    const fh = await fs.open(realFile, "r");
+                    try {
+                        const buf = Buffer.alloc(length);
+                        // a raced truncation answers the bytes that remain —
+                        // the length head rides the READ's truth, never the
+                        // stat's (a zero-padded tail would be a silent lie)
+                        const { bytesRead } = await fh.read(buf, 0, length, range.start);
+                        // a raced truncation to NOTHING is the deleted-file law
+                        // (the refusal scope owns it: 404, never a 206 with an
+                        // inverted window); a partial read serves what remains.
+                        /* v8 ignore next -- defense-in-depth raced-truncation
+                         * fence, unreachable deterministically through the HTTP
+                         * handler (the window between this handler's own stat
+                         * and read is not interposable without mocks — the
+                         * spec's no-mocks law); the subarray line beside it is
+                         * line-covered only (every 206 wall executes it with
+                         * bytesRead === length), never behaviorally walled. */
+                        if (bytesRead === 0)
+                            throw new Error("media/read-empty");
+                        slice = { buf: buf.subarray(0, bytesRead), start: range.start, end: range.start + bytesRead - 1 };
+                    }
+                    finally {
+                        await fh.close();
+                    }
+                }
+                else {
+                    bytes = req.method === "HEAD"
+                        ? Buffer.alloc(0)
+                        : await fs.readFile(realFile);
+                }
+            }
+            catch {
                 res.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
                 res.end(NOT_FOUND_BODY);
                 return;
             }
-            res.writeHead(200, {
-                "content-type": contentTypeFor(target.rel),
-                "content-length": String(stat.size),
-                "cache-control": "no-store",
-            });
-            if (req.method === "HEAD") {
-                res.end();
+            if (slice !== undefined) {
+                res.writeHead(206, {
+                    "content-type": contentTypeFor(target.rel),
+                    "content-length": String(slice.buf.length),
+                    "content-range": `bytes ${String(slice.start)}-${String(slice.end)}/${String(stat.size)}`,
+                    "accept-ranges": "bytes",
+                    "cache-control": "no-store",
+                });
+                res.end(slice.buf);
                 return;
             }
-            // Buffered with an explicit length (the gallery's own law:
-            // a known length lets remote proxies buffer instead of
-            // mishandling chunked framing on lossy links). Artifacts are
-            // engine outputs — image/video files, not streams of unbounded
-            // size; a read failure past the committed head destroys the
-            // socket loudly.
-            const bytes = await fs.readFile(realFile);
+            res.writeHead(200, {
+                "content-type": contentTypeFor(target.rel),
+                // THE LENGTH'S TRUTH (the truncation race): the body below
+                // comes from the LATER read, not the stat — a file grown
+                // between the two would otherwise declare short and the
+                // client would truncate; a shrunk one throws at the read
+                // and lands 404 in the refusal scope. HEAD carries no body
+                // by definition, so it advertises the stat's size.
+                "content-length": String(req.method === "HEAD" ? stat.size : bytes.length),
+                "accept-ranges": "bytes",
+                "cache-control": "no-store",
+            });
             res.end(bytes);
         },
     }), "estate-media: runs artifact route");
