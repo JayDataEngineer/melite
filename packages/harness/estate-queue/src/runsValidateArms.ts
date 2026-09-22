@@ -182,38 +182,41 @@ export async function modelValidateArm(
       mid in facts ||
       svc.resolveCardFamily(mid, facts) in facts ||
       svc.modelMids().has(mid);
-    if (!resolves) {
-      // THE CARD-AWARE VOICE (cardsCompose's twin, 2026-10-08): a
-      // CARD id here is a lane mistake — name the card and its
-      // lane; the unknown-id voice stays for typos.
-      const cardRow: boolean = Object.prototype.hasOwnProperty.call(svc.cardDecls(facts), mid);
-      const why: string = cardRow
-        ? " — " + mid + " is a CARD (cards carry no model row by design): run cards on the bench/flows lane ({id: ...} / a stage's card), never the {model:} door"
-        : " (no .catalog.models row " + mid +
-          " in the frozen discovery catalog and no family declares route " +
-          mid + " in its variants' cells — checked the class tree's _routes map)";
+    // THE CARD-UNIT PASS (2026-10-08, the Run-press law): the
+    // bench's Run press addresses a family-less card by its OWN id
+    // (defaultFamilyForCard's documented fallback) — the door
+    // composes the card the press names. Only ids that are neither
+    // family NOR card refuse below (the unknown voice).
+    const cardUnit: boolean = !resolves &&
+      Object.prototype.hasOwnProperty.call(svc.cardDecls(facts), mid);
+    if (!resolves && !cardUnit) {
       return {
         status: 400,
         payload: {
-          error: "no model unit for model: " + mid + why,
+          error: "no model unit for model: " + mid +
+            " (no .catalog.models row " + mid +
+            " in the frozen discovery catalog and no family declares route " +
+            mid + " in its variants' cells — checked the class tree's _routes map)",
           code: "invalid_request",
         },
       };
     }
-    const fam: string = svc.resolveCardFamily(mid, facts);
-    const famRow: ModelFactsRow | undefined = facts[fam];
-    if (famRow === undefined) {
-      // Non-cordis compose arm (no family row): verdict + code.
-      return {
-        status: 400,
-        payload: {
-          error:
-            "card_compose phase 1: model " + JSON.stringify(mid) +
-            " composes outside the cordis plane (no family row — " +
-            "the model resolves but the facts file declares nothing for it)",
-          code: "card_compose",
-        },
-      };
+    if (!cardUnit) {
+      const fam: string = svc.resolveCardFamily(mid, facts);
+      const famRow: ModelFactsRow | undefined = facts[fam];
+      if (famRow === undefined) {
+        // Non-cordis compose arm (no family row): verdict + code.
+        return {
+          status: 400,
+          payload: {
+            error:
+              "card_compose phase 1: model " + JSON.stringify(mid) +
+              " composes outside the cordis plane (no family row — " +
+              "the model resolves but the facts file declares nothing for it)",
+            code: "card_compose",
+          },
+        };
+      }
     }
     // THE ROUTE-LENS STAMP OVERLAY (_route_stamp_overlay
     // 705-751): family defaults + the selected variant's

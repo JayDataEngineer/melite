@@ -747,6 +747,16 @@ function ModLeaf(props: {
                 : null,
             ),
             h('div', { className: css.modLeafFields },
+              // THE SECTION CAPTION (2026-10-08, the operator's
+              // demand — "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"):
+              // the kind's declared one-line name for what the
+              // stack IS, seated above the fields — the detector
+              // arms' chips + confidence ARE the bbox filter, and
+              // the caption says so (a caption-less stack reads as
+              // loose inputs).
+              k.section !== undefined
+                ? h('div', { className: css.modStageCaption, 'data-stage-caption': 'filter' }, k.section)
+                : null,
               leafFields.map((f) => h('div', { key: f.name },
                 (() => {
                   // THE UNWRAPPED SQUARE (same law as the hybrid arm
@@ -776,7 +786,11 @@ function ModLeaf(props: {
           // THE EMBEDDED CANVAS (stroke 95, the faceless-fallback
           // shape): a canvas the kind declares but the host did not
           // deliver can never mount — this arm renders the plain
-          // fields alone.
+          // fields alone. The section caption rides here too (the
+          // filter's name never depends on the host's faces).
+          k.section !== undefined
+            ? h('div', { className: css.modStageCaption, 'data-stage-caption': 'filter' }, k.section)
+            : null,
           leafFields.map((f) => h('div', { key: f.name },
             (() => {
               const sq = own.square(f)

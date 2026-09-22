@@ -49416,7 +49416,10 @@ void main() {
 						[paintField.name]: dataUrl
 					});
 				}
-			})) : null), (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (() => {
+			})) : null), (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, k.section !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.modStageCaption,
+				"data-stage-caption": "filter"
+			}, k.section) : null, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (() => {
 				const sq = own.square(f);
 				const atom = (0, react.createElement)(SpecAtom, {
 					f,
@@ -49430,7 +49433,10 @@ void main() {
 					...sq !== void 0 ? { square: sq } : {}
 				});
 				return sq !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), atom) : (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, atom);
-			})())), own.wireMenu)) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (() => {
+			})())), own.wireMenu)) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, k.section !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.modStageCaption,
+				"data-stage-caption": "filter"
+			}, k.section) : null, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (() => {
 				const sq = own.square(f);
 				const atom = (0, react.createElement)(SpecAtom, {
 					f,
@@ -49669,8 +49675,10 @@ void main() {
 		*  params.workflow nobody emitted — the Sep 11 bench runs' "node
 		*  carries no inline workflow". The {model:} door composes the card's
 		*  arms estate-side; `model` is the card's DEFAULT FAMILY from the
-		*  catalog (the runs door resolves neither card ids nor aliases —
-		*  defaultFamilyForCard carries the currency, session-cached).
+		*  catalog, and — the Run-press law, 2026-10-08 — a family-less
+		*  card rides its OWN id (defaultFamilyForCard's documented
+		*  fallback): the door's card-unit arm composes the card verbatim
+		*  (prepareCardParams/overlayCardParams branch; no family overlay).
 		*  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
 		*  slot holds — an upload's estate path or a picked upstream output's
 		*  media-route url — rides the start doc VERBATIM; the engine stages

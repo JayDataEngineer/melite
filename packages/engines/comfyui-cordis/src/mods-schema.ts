@@ -72,6 +72,12 @@ const ModKind = z.object({
   options: z.array(OptionRow),
   category: z.union([z.const("standalone"), z.const("ordered")]),
   leaf_face: z.union([z.const("paint-canvas"), z.const("bbox-canvas")]),
+  // THE SECTION CAPTION (2026-10-08, the operator's filter demand —
+  // "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): a one-line caption the
+  // leaf seats ABOVE the field stack, naming what the stack IS (the
+  // detector arms' class chips + confidence are the bbox filter; a
+  // caption-less stack reads as loose inputs). Served verbatim.
+  section: z.string(),
   // THE ARM-CONDITIONAL EXTENSION PACKS (service.ts): pack ids the
   // kind's arm needs live. Bare keys stay absent-able (the existing
   // rows omit entry/option_key the same way — the resolve fills

@@ -199,19 +199,38 @@ export function prepareCardParams(
     const resolves: boolean =
       mid in facts || deps.resolveCardFamily(mid, facts) in facts || deps.modelMids().has(mid);
     if (!resolves) {
-      // THE CARD-AWARE VOICE (2026-10-08, the mask stroke): a CARD
-      // id reaching the {model:} door is a lane mistake, not a
-      // missing catalog row — cards (requiresModel: false, no
-      // family behind them) NEVER resolve here by design. Name the
-      // card and its lane; the unknown-id voice stays for typos.
-      const cardRow: boolean = Object.prototype.hasOwnProperty.call(deps.cardDecls(facts), mid);
-      const why: string = cardRow
-        ? " — " + mid + " is a CARD (cards carry no model row by design): run cards on the bench/flows lane ({id: ...} / a stage's card), never the {model:} door"
-        : " (no .catalog.models row " + mid + " in the frozen discovery catalog and no family declares route " + mid +
-          " in its variants' cells — checked the class tree's _routes map)";
+      // THE CARD-UNIT COMPOSE (2026-10-08 second pass — the
+      // Run-press law, the operator's wall): the bench's Run press
+      // addresses a family-less card by its OWN id — runCardStage's
+      // documented fallback, defaultFamilyForCard returning the
+      // card id when no family stands behind the card. The {model:}
+      // door therefore COMPOSES the card the press names (the GUI's
+      // shape is the contract), params verbatim: no family row, so
+      // no variant selection and no model-defaults overlay — the
+      // card's own declaration owns every default. The refusal
+      // below stays for ids that are neither family nor card.
+      const decls: Record<string, CardDeclRow> = deps.cardDecls(facts);
+      if (Object.prototype.hasOwnProperty.call(decls, mid)) {
+        const decl: CardDeclRow = decls[mid] as CardDeclRow;
+        return {
+          mid,
+          // fam '' IS the model-less marker: the engine's compose
+          // lanes family-less cards on requiresModel===false +
+          // modelId==='' (service.ts:617) — a card id here would
+          // hit the not-boarded gate instead.
+          fam: "",
+          card: mid,
+          skeleton: decl.skeleton !== "" ? decl.skeleton : mid,
+          decl,
+          params: liftCardParams(body),
+          familyless: true,
+        };
+      }
       throw new CardArmError(
         400,
-        "no model unit for model: " + mid + why,
+        "no model unit for model: " + mid +
+          " (no .catalog.models row " + mid + " in the frozen discovery catalog and no family declares route " + mid +
+          " in its variants' cells — checked the class tree's _routes map)",
         "invalid_request",
       );
     }

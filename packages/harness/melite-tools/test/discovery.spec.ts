@@ -324,9 +324,16 @@ describe('live door arms', () => {
     // declared kind — the section offers the brush only on this row
     const paint = mods.find((m) => m.kind === 'draw')
     assert.equal(paint?.['leaf_face'], 'paint-canvas')
-    // stroke 78: the bbox face rides both standalone kinds
+    // stroke 78: the bbox face rides sam3's region canvas
     assert.equal(mods.find((m) => m.kind === 'sam3')?.['leaf_face'], 'bbox-canvas')
-    assert.equal(mods.find((m) => m.kind === 'sam2')?.['leaf_face'], 'bbox-canvas')
+    // stroke 99 (2026-10-08, "BBOX IS NOT MANUAL, IT IS AUTOMATED"):
+    // sam2 carries NO canvas — its popup is the DETECTOR FORM
+    assert.equal(mods.find((m) => m.kind === 'sam2')?.['leaf_face'], undefined)
+    // the SECTION captions (2026-10-08, "SAM2 AND SAM3 DON'T HAVE
+    // BBOX FILTER"): BOTH detector kinds NAME their filter
+    assert.ok(String(mods.find((m) => m.kind === 'sam2')?.['section']).startsWith('Bbox filter — YOLO'))
+    assert.ok(String(mods.find((m) => m.kind === 'sam3')?.['section']).startsWith('Bbox filter — the detector prompt'))
+    assert.equal(mods.find((m) => m.kind === 'draw')?.['section'], undefined)
     // the SAM2 law (2026-09-19 — declared, then auto provisioned):
     // the sam2 kind's pack requirements serve VERBATIM (the compose
     // door enforces them only when the bag is non-empty)

@@ -233,6 +233,12 @@ export interface ModifierKind {
    *  rectangle on (absent host degrades to the four number
    *  inputs). */
   leaf_face?: 'paint-canvas' | 'bbox-canvas'
+  /** THE SECTION CAPTION (2026-10-08, the operator's demand —
+   *  "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): the kind's declared
+   *  one-line name for what the field stack IS, seated ABOVE the
+   *  fields by the leaf (the detector arms name their bbox
+   *  filter). Served verbatim; absent = no caption. */
+  section?: string
   /** THE ARM-CONDITIONAL EXTENSION PACKS (the mask SAM2 law):
    *  pack ids this kind's arm needs live on the engine. Served
    *  verbatim; the compose door enforces them only when the kind's

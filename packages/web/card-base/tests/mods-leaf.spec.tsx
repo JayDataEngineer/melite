@@ -708,6 +708,10 @@ test('THE LEAF SQUARE: dropping a file uploads through the door and the name lan
 const SAM3_BOX = {
   kind: 'sam3', label: 'SAM3', param_key: 'sam3', cardinality: 'list',
   category: 'standalone', leaf_face: 'bbox-canvas',
+  // THE SECTION CAPTION (2026-10-08, "SAM2 AND SAM3 DON'T HAVE BBOX
+  // FILTER"): the detector kind NAMES its filter — the leaf seats
+  // it above the field stack.
+  section: 'Bbox filter — the detector prompt proposes the boxes (automated); the Region canvas below only scopes the search',
   fields: [
     { name: 'name', type: 'string', label: 'Name', default: 'sam3' },
     { name: 'prompt', type: 'string', label: 'Prompt', default: '' },
@@ -717,6 +721,28 @@ const SAM3_BOX = {
     { name: 'bbox_h', type: 'number', label: 'Box h', default: -1, faceOwned: true },
   ],
 } as unknown as ModifierKind
+
+// ── THE FACELESS FILTER CAPTION (sam2's shape — the popup IS the
+// detector form; no canvas, the section rides alone) ──
+
+const SAM2_DETECT = {
+  kind: 'sam2', label: 'SAM2', param_key: 'sam2', cardinality: 'list',
+  category: 'standalone',
+  section: 'Bbox filter — YOLO proposes the boxes (automated): pick classes, tune confidence',
+  fields: [
+    { name: 'labels', type: 'string', label: 'YOLO classes', default: 'person' },
+    { name: 'yolo_threshold', type: 'number', label: 'YOLO threshold', default: 0.5 },
+  ],
+} as unknown as ModifierKind
+
+test('THE FACELESS FILTER CAPTION (2026-10-08, "SAM2 AND SAM3 DON\'T HAVE BBOX FILTER"): a section-bearing kind with NO canvas seats the caption above its fields — the popup names itself the filter', () => {
+  openLeaf({ kinds: [SAM2_DETECT], values: {} })
+  openCreate('SAM2')
+  expect(document.querySelector('[data-stage-caption="filter"]')).not.toBeNull()
+  expect(screen.getByText('Bbox filter — YOLO proposes the boxes (automated): pick classes, tune confidence')).not.toBeNull()
+  // and the fields render under it (the caption never replaces them)
+  expect(screen.getByLabelText('YOLO classes')).not.toBeNull()
+})
 
 function FakeBboxFace(props: { referenceUrl: string; value: { x: number; y: number; width: number; height: number } | null; onChange: (b: { x: number; y: number; width: number; height: number } | null) => void }) {
   return h('div', { 'data-testid': 'bbox-face' },
@@ -744,6 +770,11 @@ test('THE BBOX CANVAS: the face embeds at the top; its commit writes the four fa
   // owns the boxes) — caption + stage mark
   expect(document.querySelector('[data-leaf-stage="bbox"]')).not.toBeNull()
   expect(screen.getByText('Region — optional (scopes the search; clear = whole image)')).not.toBeNull()
+  // THE FILTER CAPTION (2026-10-08, "SAM2 AND SAM3 DON'T HAVE BBOX
+  // FILTER"): the kind's declared section rides ABOVE the field
+  // stack, marked as the filter — the split arm seats it.
+  expect(document.querySelector('[data-stage-caption="filter"]')).not.toBeNull()
+  expect(screen.getByText('Bbox filter — the detector prompt proposes the boxes (automated); the Region canvas below only scopes the search')).not.toBeNull()
   // the four faceOwned fields NEVER render while the canvas rides
   expect(screen.queryByLabelText('Box x')).toBeNull()
   expect(screen.queryByLabelText('Box h')).toBeNull()

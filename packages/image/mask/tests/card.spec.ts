@@ -67,6 +67,19 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.equal(mods.find((k) => k.kind === "draw")!.leaf_face, "paint-canvas");
   });
 
+  it("the SECTION captions NAME the bbox filter on BOTH detector kinds (2026-10-08: \"SAM2 AND SAM3 DON'T HAVE BBOX FILTER\")", () => {
+    const mods = def.mods ?? [];
+    const sam2 = mods.find((k) => k.kind === "sam2")!;
+    const sam3 = mods.find((k) => k.kind === "sam3")!;
+    const draw = mods.find((k) => k.kind === "draw")!;
+    assert.ok(sam2.section !== undefined && sam2.section.startsWith("Bbox filter — YOLO"),
+      "sam2's caption names the YOLO filter (the chips + confidence ARE it)");
+    assert.ok(sam3.section !== undefined && sam3.section.startsWith("Bbox filter — the detector prompt"),
+      "sam3's caption names its own detector lane (the prompt/RT-DETR boxes)");
+    assert.equal(draw.section, undefined,
+      "draw carries no filter caption — the brush is not a detector");
+  });
+
   it("the region quad fields are FACE-OWNED with the -1 unset default (sam3's canvas is the face)", () => {
     const mods = def.mods ?? [];
     for (const k of [mods[0]!]) {

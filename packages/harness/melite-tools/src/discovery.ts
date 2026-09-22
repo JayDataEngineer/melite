@@ -410,6 +410,11 @@ function specModifiers(
     // section renderer offers the brush verb only on a declared
     // face; never sniffed from the kind name.
     if (k.leaf_face !== undefined) entry.leaf_face = k.leaf_face
+    // THE SECTION CAPTION (2026-10-08, the operator's demand —
+    // "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): served verbatim —
+    // the leaf seats the kind's own name for its field stack above
+    // the fields (the detector arms NAME their bbox filter).
+    if (k.section !== undefined) entry.section = k.section
     // THE ARM-CONDITIONAL EXTENSION PACKS (the mask SAM2 law):
     // served verbatim — the compose door enforces them only when
     // the kind's bag is non-empty.

@@ -134,6 +134,14 @@ export interface DeclaredModifierKind {
    *  drags a selection on (absent host degrades to the four number
    *  inputs). Served verbatim like every declared row. */
   leaf_face?: 'paint-canvas' | 'bbox-canvas'
+  /** THE SECTION CAPTION (2026-10-08, the operator's filter demand —
+   *  "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): a one-line caption
+   *  the leaf seats ABOVE the field stack, naming what the stack
+   *  IS. The detector arms use it to NAME the bbox filter (the
+   *  class chips + confidence ARE the filter — automated, Impact
+   *  Pack boxes + YOLO; a caption-less stack reads as loose
+   *  inputs). Served verbatim; absent = no caption. */
+  section?: string
   /** THE ARM-CONDITIONAL EXTENSION PACKS (the mask SAM2 law,
    *  2026-09-19 — the operator: "declared, then auto provisioned"):
    *  pack ids this KIND's arm needs live (impact-pack nodes for the

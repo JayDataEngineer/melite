@@ -55,24 +55,27 @@ describe("modelValidateArm (the model envelope)", () => {
     await ctx.fiber.dispose();
   });
 
-  it("a CARD id on the model lane names the card and its lane — never a bogus catalog miss (the mask correction, 2026-10-08)", async () => {
+  it("a CARD id composes through the {model:} door — the Run press's own shape (2026-10-08, the mask correction's correction)", async () => {
     // the fake-seat pattern (runs-registry-reconcile's rig): a
     // minimal registry stub — facts absent (the degrade), the
-    // decls table carrying the CARD row the voice must name.
+    // decls table carrying the CARD row, the overlay + compose
+    // stubs answering the card-unit path (the live lane owns the
+    // real compose proof).
     const ctx = new Context();
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
       modelFacts: (): unknown => { throw new Error("no facts"); },
       resolveCardFamily: (mid: string): string => mid,
       modelMids: (): unknown => new Set<string>(),
       cardDecls: (): unknown => ({ mask: {} }),
+      overlayCardParams: (): unknown => ({ fam: "mask", card: "mask", params: {} }),
+      composeValidateCard: (): Promise<unknown> => Promise.resolve(null),
     };
     const ans = await modelValidateArm({ model: "mask", params: {} }, ctx);
-    expect(ans.status).toBe(400);
-    const err = String((ans.payload as { error?: string }).error ?? "");
-    expect(err).toContain("no model unit for model: mask");
-    expect(err).toContain("mask is a CARD");
-    expect(err).toContain("never the {model:} door");
-    expect(err).not.toContain(".catalog.models row mask");
+    expect(ans.status).toBe(200);
+    const payload = ans.payload as { ok?: boolean; model?: string; card?: boolean };
+    expect(payload.ok).toBe(true);
+    expect(payload.model).toBe("mask");
+    expect(payload.card).toBe(true);
     await ctx.fiber.dispose();
   });
 

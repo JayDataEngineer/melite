@@ -153,6 +153,12 @@ const MODS: readonly DeclaredModifierKind[] = [
     // at the top of the leaf popup — the drawn rectangle fills the
     // entry's four faceOwned region fields.
     leaf_face: 'bbox-canvas',
+    // THE SECTION CAPTION (2026-10-08, the operator's demand —
+    // "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): names the filter the
+    // field stack IS. sam3's boxes come from its own detector lane
+    // (the prompt words / RT-DETR) — the caption says so; the
+    // Region canvas below scopes the search, it is not the filter.
+    section: 'Bbox filter — the detector prompt proposes the boxes (automated); the Region canvas below only scopes the search',
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam3', tooltip: "The saved mask's name (mask_<name>)." },
       { name: 'prompt', label: 'Prompt', type: 'string', default: '', tooltip: 'The SAM3 CLIP text selection — what to segment (empty + RT-DETR = the person-box lane).' },
@@ -190,6 +196,11 @@ const MODS: readonly DeclaredModifierKind[] = [
     // (an unused sam2 bag never fires the gate), and RunRescue
     // offers the install through the manage seat.
     requires: ['comfyui-impact-pack', 'comfyui-impact-subpack'],
+    // THE SECTION CAPTION (2026-10-08, the operator's demand —
+    // "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): names the filter the
+    // chips + confidence ARE — YOLO (Impact Pack) proposes the
+    // boxes for the picked classes; nobody draws anything.
+    section: 'Bbox filter — YOLO proposes the boxes (automated): pick classes, tune confidence',
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam2', tooltip: "The saved mask's name (mask_<name>)." },
       { name: 'labels', label: 'YOLO classes', type: 'select', multi: true, options: YOLO_CLASSES.map((c) => ({ value: c, label: c })), default: 'person', tooltip: 'The automated box filter: YOLO (Impact Pack) proposes boxes for exactly these COCO classes, SAM2 refines each one. Pick any set; the wire is the comma-joined list.' },

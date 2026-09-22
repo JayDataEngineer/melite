@@ -22,8 +22,10 @@ const MCP_CARD = 'mcp'
  *  params.workflow nobody emitted — the Sep 11 bench runs' "node
  *  carries no inline workflow". The {model:} door composes the card's
  *  arms estate-side; `model` is the card's DEFAULT FAMILY from the
- *  catalog (the runs door resolves neither card ids nor aliases —
- *  defaultFamilyForCard carries the currency, session-cached).
+ *  catalog, and — the Run-press law, 2026-10-08 — a family-less
+ *  card rides its OWN id (defaultFamilyForCard's documented
+ *  fallback): the door's card-unit arm composes the card verbatim
+ *  (prepareCardParams/overlayCardParams branch; no family overlay).
  *  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
  *  slot holds — an upload's estate path or a picked upstream output's
  *  media-route url — rides the start doc VERBATIM; the engine stages
