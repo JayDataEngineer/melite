@@ -397,6 +397,35 @@ describe("status + stop", () => {
     assert.equal((await remote(() => s.svc.status("run-f5none123456-00000004", sig()))).code, "runs/unknown-run");
   });
 
+  it("THE LIVE-ROW PLAN (efficiency Fix 2): a queued/running row with no stage rows projects its registered plan + card + age — never a bare 0/0", async () => {
+    const s = seat();
+    const q = live(s, {
+      runId: "run-f2plan123456-00000005",
+      status: "running",
+      cardId: "h3-timeline",
+      pipeline: "h3",
+      createdAt: Date.now() / 1000 - 100,
+      graphRows: [{
+        id: "h3-film", type: "comfyui", input_from: [], input_names: {},
+        outputs: {}, params: { workflow: { fat: "50KB of prompt JSON must never ride status" } },
+      }],
+    } as Partial<RunRecord>);
+    const got = await s.svc.status(q, sig());
+    assert.equal(got["status"], "running");
+    assert.equal(got["from_disk"], undefined);
+    assert.deepEqual(got["planned_stages"], [{ id: "h3-film", engine: "comfyui" }]);
+    assert.equal(got["card"], "h3-timeline");
+    assert.ok(typeof got["run_age_s"] === "number" && (got["run_age_s"] as number) >= 90);
+    // a row WITH stage rows carries no plan (the stages are the truth)
+    const w = live(s, {
+      runId: "run-f2staged12345-00000006",
+      status: "running",
+      stages: [{ id: "s1", status: "running" }],
+    } as Partial<RunRecord>);
+    const staged = await s.svc.status(w, sig());
+    assert.equal(staged["planned_stages"], undefined);
+  });
+
   it("status rewrites absolute artifact paths to route-relative (never a leading /)", async () => {
     // Stroke-82 fix (e): the executor harvests ABSOLUTE disk paths
     // into run.artifacts — serving them raw hands the browser

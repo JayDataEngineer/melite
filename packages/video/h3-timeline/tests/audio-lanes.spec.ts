@@ -18,6 +18,7 @@ import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { computeFilmMix, parseFilmMixClips } from "../src/filmMix.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -161,58 +162,91 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
   });
 
   it("THE DUCK MATRIX: music placements duck under dialogue+sfx spans; dialogue/sfx ride unity", () => {
+    const rawClips = [
+      clip({ id: "d1", start_frame: 10, dur_frames: 40, text: "get down, now." }),
+      clip({ id: "m1", class: "music", src: "/v1/assets/runs/run-m/music/score.flac", start_frame: 0, dur_frames: 124, text: "" }),
+      clip({ id: "s1", class: "sfx", src: "/v1/assets/runs/run-s/sfx/boom.flac", start_frame: 60, dur_frames: 30, text: "a distant boom" }),
+    ];
     const g = new GraphBuilder();
     def.compose(def.schema({
       calls: [SHOT({ text: "she speaks over the score" }), SHOT({ text: "turn", start_frame: 56, end_frame: 124 })],
-      audio_clips: [
-        clip({ id: "d1", start_frame: 10, dur_frames: 40, text: "get down, now." }),
-        clip({ id: "m1", class: "music", src: "/v1/assets/runs/run-m/music/score.flac", start_frame: 0, dur_frames: 124, text: "" }),
-        clip({ id: "s1", class: "sfx", src: "/v1/assets/runs/run-s/sfx/boom.flac", start_frame: 60, dur_frames: 30, text: "a distant boom" }),
-      ],
+      audio_clips: rawClips,
     }), model, g, "run_duck_matrix");
     const out = graphOf(g);
-    const ducks = ofClass(out, "MeliteAudioDuck");
-    assert.equal(ducks.length, 2, "two ducks: the generated voice + the music sub-bus");
+    const manifest = computeFilmMix({
+      spans: [{ start: 0, end: 56 }, { start: 56, end: 124 }],
+      clips: parseFilmMixClips(rawClips),
+      windowSecs: [56 / 24, 73 / 24],
+    });
+    // THE FILE TAIL CARRIES THE MATRIX IN-GRAPH (§20's amendment,
+    // 2026-09-22): the duck nodes and mix chain exist, and their
+    // inputs are the manifest's exact values — the graph is the
+    // manifest rendered, the manifest is the graph's math.
     // discriminate by span count: the film duck carries ALL
     // conditioned spans (d + m + s); the music sub-bus carries only
     // the voice-class spans (music never ducks itself)
-    const bySpans = ducks.map(([, n]) => String(n.inputs.segments).split(";"));
-    const three = bySpans.find((sv) => sv.length === 3);
-    const two = bySpans.find((sv) => sv.length === 2);
-    assert.ok(three, "the film duck exists with all three conditioned spans");
-    assert.ok(two, "the music sub-bus ducks with the voice spans");
-    assert.ok(!two.some((sv) => sv.startsWith("0:")), "no music self-duck at film 0 (its span starts there)");
-    // the mixes: music joins the film track LAST (after d/s placements)
+    assert.equal(manifest.duckSpans.length, 3, "the film duck exists with all three conditioned spans");
+    assert.equal(manifest.musicDuckSpans.length, 2, "the music sub-bus ducks with the voice spans");
+    assert.ok(!manifest.musicDuckSpanString.split(";").some((sv) => sv.startsWith("0:")), "no music self-duck at film 0 (its span starts there)");
+    assert.deepEqual(manifest.placements.map((p) => p.cls), ["dialogue", "music", "sfx"], "placements keep doc order; music joins last at mix time");
+    const ducks = ofClass(out, "MeliteAudioDuck");
+    assert.deepEqual(
+      ducks.map(([, n]) => String(n.inputs.segments)).sort(),
+      [manifest.musicDuckSpanString, manifest.duckSpanString].sort(),
+      "exactly two ducks — the film track's and the music sub-bus's — segments verbatim from the manifest",
+    );
+    const filmDuck = ducks.find(([, n]) => String(n.inputs.segments) === manifest.duckSpanString)!;
+    assert.equal(filmDuck[1].inputs.gain_db, manifest.duckDb, "duck depth rides the manifest's duckDb");
+    assert.equal(filmDuck[1].inputs.ramp_ms, 20, "the proven 20ms ramps");
     const mixes = ofClass(out, "MeliteAudioMix");
-    assert.ok(mixes.length >= 3, "placements + the music bus join");
+    assert.equal(mixes.length, 3, "the mix chain: d1 onto the film, s1 onto the film, the ducked music bus joins last");
+    for (const [, n] of mixes) {
+      assert.equal(n.inputs.length_mode, "base", "every mix keeps 'base' — a clip never extends the cut");
+    }
   });
 
-  it("THE FILM CLOCK: overlay delays + duck spans ride start/24 for every class — never the carry-shifted seat", () => {
+  it("THE FILM CLOCK: overlay seats + duck spans ride start/24 for every class — never the carry-shifted seat", () => {
     // (2026-09-22, the proof-render correction: the old owner/carry
     // formula landed window-2+ takes 22f late — dialogue at film f96
     // overlaid at 4.917s = f118, r=0.85 at the wrong seat, ~0 at
     // the right one. clip.start IS film time; the stamp/tag clock
     // is a different (window-scoped) clock and stays untouched.)
+    const rawClips = [
+      clip({ id: "d1", start_frame: 10, dur_frames: 40, text: "get down, now." }),
+      clip({ id: "m1", class: "music", src: "/v1/assets/runs/run-m/music/score.flac", start_frame: 0, dur_frames: 124, text: "" }),
+      clip({ id: "s1", class: "sfx", src: "/v1/assets/runs/run-s/sfx/boom.flac", start_frame: 60, dur_frames: 30, text: "a distant boom" }),
+    ];
     const g = new GraphBuilder();
     def.compose(def.schema({
       calls: [SHOT({ text: "she speaks over the score" }), SHOT({ text: "turn", start_frame: 56, end_frame: 124 })],
-      audio_clips: [
-        clip({ id: "d1", start_frame: 10, dur_frames: 40, text: "get down, now." }),
-        clip({ id: "m1", class: "music", src: "/v1/assets/runs/run-m/music/score.flac", start_frame: 0, dur_frames: 124, text: "" }),
-        clip({ id: "s1", class: "sfx", src: "/v1/assets/runs/run-s/sfx/boom.flac", start_frame: 60, dur_frames: 30, text: "a distant boom" }),
-      ],
+      audio_clips: rawClips,
     }), model, g, "run_film_clock");
     const out = graphOf(g);
-    const delays = ofClass(out, "MeliteAudioDelay")
-      .filter(([id]) => !id.startsWith("window"))
-      .map(([, n]) => n.inputs.delay_seconds as number).sort((a, b) => a - b);
-    assert.deepEqual(delays, [0, 0.417, 2.5], "music 0/24, dialogue 10/24, sfx 60/24 — the sfx sits at 2.5, never the old 3.417");
-    const segs = ofClass(out, "MeliteAudioDuck").map(([, n]) => String(n.inputs.segments));
-    assert.ok(segs.some((sg) => sg.includes("2.5:3.75")), "the film duck spans the sfx at its film seat");
-    assert.ok(!segs.some((sg) => sg.includes("3.417")), "the phantom +22f seat appears nowhere");
+    const manifest = computeFilmMix({
+      spans: [{ start: 0, end: 56 }, { start: 56, end: 124 }],
+      clips: parseFilmMixClips(rawClips),
+      windowSecs: [56 / 24, 73 / 24],
+    });
+    assert.deepEqual(manifest.placements.map((p) => p.filmSec), [0.417, 0, 2.5], "music 0/24, dialogue 10/24, sfx 60/24 — the sfx sits at 2.5, never the old 3.417");
+    assert.ok(manifest.duckSpanString.includes("2.5:3.75"), "the film duck spans the sfx at its film seat");
+    assert.ok(!manifest.duckSpanString.includes("3.417"), "the phantom +22f seat appears nowhere");
+    // THE FILE TAIL RENDERS THE SEATS: one film-level Delay per
+    // placement, its delay_seconds the manifest's filmSec
+    const delays = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window"));
+    assert.equal(delays.length, 3, "one film-level delay per placement");
+    assert.deepEqual(
+      delays.map(([, n]) => Number(n.inputs.delay_seconds)).sort((a, b) => a - b),
+      [0, 0.417, 2.5],
+      "the delay seats are the manifest's film seats, never the carry-shifted ones",
+    );
+    const sfxDelay = delays.find(([, n]) => Number(n.inputs.delay_seconds) === 2.5)!;
+    assert.equal(
+      Number(sfxDelay[1].inputs.duration_seconds), 3.75,
+      "the duration fit = seat + dur (2.5 + 30f/24), so the take lands exactly in its span",
+    );
   });
 
-  it("3-window extend: overlay + duck ride the owner map (filmStart + (start-docStart)), not start/24", () => {
+  it("3-window extend: overlay seat + duck ride the owner map (filmStart + (start-docStart)), not start/24", () => {
     // (2026-09-22, the adversarial correction: start/24 is right
     // for windows 1-2 but 22f late per EXTRA extend seam — the film
     // lags doc by one carry per join. Doc 200 in window 3
@@ -220,6 +254,9 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
     // = film f178; the pin agrees (w3 genStart 124, frame_idx 76).
     // Both historical wrongs say 8.333 here (start/24 AND the old
     // carry math coincide) — 7.417 distinguishes the true seat.)
+    const rawClips = [
+      clip({ id: "d3", start_frame: 200, dur_frames: 48, text: "third window, same line." }),
+    ];
     const g = new GraphBuilder();
     def.compose(def.schema({
       calls: [
@@ -227,41 +264,52 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
         SHOT({ text: "turn", start_frame: 56, end_frame: 146 }),
         SHOT({ text: "speak", start_frame: 146, end_frame: 270 }),
       ],
-      audio_clips: [
-        clip({ id: "d3", start_frame: 200, dur_frames: 48, text: "third window, same line." }),
-      ],
+      audio_clips: rawClips,
     }), model, g, "run_three_window_seat");
     const out = graphOf(g);
     const pins = scoped(out, "window3_", "MiniMaxH3AddGuide");
     assert.equal(pins.length, 1, "one dialogue pin on window 3");
     assert.equal(pins[0]![1].inputs.frame_idx, 76, "pin at doc 200 − genStart 124");
-    const delays = ofClass(out, "MeliteAudioDelay")
-      .filter(([id]) => !id.startsWith("window"))
-      .map(([, n]) => n.inputs.delay_seconds as number);
-    assert.deepEqual(delays, [7.417], "overlay at the owner-map seat — never 8.333");
-    const segs = ofClass(out, "MeliteAudioDuck").map(([, n]) => String(n.inputs.segments));
-    assert.ok(segs.some((sg) => sg.includes("7.417:9.417")), "the duck spans the true seat");
+    const manifest = computeFilmMix({
+      spans: [{ start: 0, end: 56 }, { start: 56, end: 146 }, { start: 146, end: 270 }],
+      clips: parseFilmMixClips(rawClips),
+      windowSecs: [56 / 24, 90 / 24, 124 / 24],
+    });
+    assert.deepEqual(manifest.placements.map((p) => p.filmSec), [7.417], "overlay at the owner-map seat — never 8.333");
+    assert.ok(manifest.duckSpanString.includes("7.417:9.417"), "the duck spans the true seat");
+    // THE FILE TAIL RENDERS THE OWNER-MAP SEAT (the 3-window case is
+    // where start/24 and the old carry math coincide — the graph's
+    // own delay is the discriminator)
+    const delays = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window"));
+    assert.equal(delays.length, 1, "one film-level delay");
+    assert.equal(Number(delays[0]![1].inputs.delay_seconds), 7.417, "the graph seats the clip at the owner-map seat — never 8.333");
   });
 
-  it("existing docs stay byte-shaped: music-only clips ride exactly as before (no duck, no bus change)", () => {
+  it("existing docs keep their conditioning; music-only clips ride the manifest with no self-duck", () => {
+    const rawClips = [clip({ class: undefined, text: undefined, src: "/v1/assets/runs/run-m/music/score.flac", start_frame: 0, dur_frames: 124 })];
     const gOld = new GraphBuilder();
     def.compose(def.schema({
       calls: FILM(),
-      audio_clips: [clip({ class: undefined, text: undefined, src: "/v1/assets/runs/run-m/music/score.flac", start_frame: 0, dur_frames: 124 })],
+      audio_clips: rawClips,
     }), model, gOld, "run_legacy_music");
     const outOld = graphOf(gOld);
     // textless + classless = music (the auto law)
-    // legacy music-only: NO pin (no stamp — wait, a music clip DOES
-    // stamp under the new law... the class law: textless music pins
-    // too. The LEGACY byte-compat holds only for the OVERLAY path:
-    // no duck (no other classes), placements identical. The pin is
-    // the new behavior the operator ordered (music goes INTO the
-    // model) — asserted here, not apologized for.
+    // the class law: textless music pins too. The LEGACY behavior
+    // holds for CONDITIONING (the operator ordered music INTO the
+    // model); the overlay path moved to the manifest.
     const guides = ofClass(outOld, "MiniMaxH3AddGuide");
     assert.equal(guides.length, 2, "the film-spanning music clip pins BOTH windows (the new law: music enters the model)");
+    const manifest = computeFilmMix({
+      spans: [{ start: 0, end: 56 }, { start: 56, end: 124 }],
+      clips: parseFilmMixClips(rawClips),
+      windowSecs: [56 / 24, 73 / 24],
+    });
+    assert.equal(manifest.duckSpans.length, 1, "one span, one clip");
+    assert.equal(manifest.musicDuckSpanString, "", "no voice spans ⇒ no music sub-bus duck");
+    // THE FILE TAIL: the ONE duck is the film track's (the conditioned
+    // music span — the doubling fix); no music sub-bus duck composes
     const ducks = ofClass(outOld, "MeliteAudioDuck");
-    assert.equal(ducks.length, 1, "one duck on the generated track (no voice spans ⇒ no music sub-bus)");
-    const mSegs = String(ducks[0]![1].inputs.segments).split(";");
-    assert.equal(mSegs.length, 1, "one span, one clip");
+    assert.equal(ducks.length, 1, "exactly one duck — the film track under the conditioned span");
+    assert.equal(String(ducks[0]![1].inputs.segments), manifest.duckSpanString, "segments verbatim from the manifest");
   });
 });

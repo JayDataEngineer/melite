@@ -19,7 +19,7 @@ law: no parameter pollution on the base card).
   "input_image": "/state/drafts/pic.png",
   "sam3":  [{ "prompt": "the red cloak" },
             { "name": "dog", "prompt": "the dog", "sam_threshold": 0.95 }],
-  "sam2":  [{ "labels": "person" }],
+  "sam2":  [{ "labels": "person", "figures": "1,2", "crop_factor": 4.5 }],
   "draw":  [{ "payload": "/state/drafts/paint.png" }]
 }
 ```
@@ -39,15 +39,25 @@ stringified JSON blob):
   on the manifest), and the region quad `bbox_x/y/w/h` (default -1
   = unscoped; the popup's embedded canvas draws it — an optional
   search REGION, not a detector box).
-- `sam2[]` — the YOLO + SAM2 arm (Impact pack), AUTOMATED: the
-  detector proposes boxes for the chosen classes, SAM2 refines
-  them into masks. There is NO hand-drawn box on this chain (the
-  node graph has no such input — labels + threshold ARE the box
-  filter). Fields: `name`, `labels`
-  (REQUIRED — a comma-joined SET from the closed 80-word COCO
-  vocabulary, e.g. `person` or `person,car,dog`; any other word
-  refuses loud), `yolo_threshold`
-  (0.05–0.95, default 0.5), `sam_threshold`, `sam_dilation`.
+- `sam2[]` — the detector + SAM2 arm (Impact pack), the FULL
+  TWO-STEP: the specialized detector proposes SEGS, SAM2 refines
+  each into a mask. `labels` (REQUIRED — a comma-joined SET from
+  the closed THREE-word vocabulary `person`, `face`, `hand`;
+  any other word refuses loud; ONE detector family per entry —
+  person rides the segm model, face/hand ride the bbox models,
+  mixing families in one entry refuses loud). `figures`
+  (PRIMARY only, chips 1–10 — after detection, pick instance
+  numbers; each picked figure gets its own `mask_figure_<n>`
+  mask carved by the SAME two-step on the picked subset). The
+  knobs (all per-entry, node-faithful ranges): detector side —
+  `detection_threshold` (0.05–0.95, default 0.5),
+  `detection_dilation` (−512–512, default 10), `crop_factor`
+  (1–100, default 3), `drop_size` (1–16384, default 10); SAM
+  side — `sam_threshold` (0.5–1, default 0.93),
+  `sam_dilation` (−512–512, default 0), `box_expansion`
+  (0–1000, default 0), `hint_threshold` (0–1, default 0.7).
+  The region quad `bbox_x/y/w/h` scopes the detector search
+  exactly like sam3's scopes the text selection.
 - `draw[]` — a painted PNG (alpha = strokes): `name`, `payload`
   (REQUIRED — the PNG path). The interactive paint canvas rides
   this leaf EMBEDDED in the popup.
@@ -56,10 +66,13 @@ stringified JSON blob):
 
 - The FIRST standalone entry (sam3 before sam2, bag order within)
   is the PRIMARY: it anchors `mask_combined` and owns the primary
-  arm (`via_rtdetr` on sam3; the YOLO labels set on sam2).
+  arm (`via_rtdetr` on sam3; the detector labels + figures on
+  sam2).
 - Every later entry is its own named export carrying ITS OWN tune
-  (per-entry threshold/refine/dilation/yolo_threshold — never the
+  (per-entry thresholds/dilations/crop/drop — never the
   primary's).
+- `figures` on a LATER sam2 entry refuses: the instances it picks
+  from are the primary's detection.
 - `via_rtdetr` on a later entry refuses: the RT-DETR readback is
   the primary's arm; give the entry a `prompt`.
 - `draw` stacks ONTO a standalone source (the ordered union chain
@@ -78,15 +91,14 @@ stringified JSON blob):
 ## When to use this card
 
 - The user wants masks for an inpaint/outpaint flow and can NAME
-  the target (a subject in words, a YOLO class, a painted
-  payload).
+  the target (a subject in words, a detector class — person,
+  face, hand — or a painted payload).
 - The user wants MULTIPLE masks from one image (stack sources,
   each with its own tune).
 - The user wants the RT-DETR box manifest (`via_rtdetr` on the
   primary; `export_boxes` per entry ORs the draw).
 
 The interactive canvases ride the mod popups EMBEDDED (paint on
-`draw`, the region rectangle on `sam3` — stroke 95; sam2 has NO
-canvas, its boxes are the detector's own). The
-studio card RETIRED at parity (2026-09-16, CONTRACT D) — this
+`draw`, the region rectangle on BOTH detector kinds — stroke 95).
+The studio card RETIRED at parity (2026-09-16, CONTRACT D) — this
 card composes AND owns the mask surface.

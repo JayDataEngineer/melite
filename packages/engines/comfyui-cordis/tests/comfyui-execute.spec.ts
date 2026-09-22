@@ -242,6 +242,72 @@ describe("hookProgress (the additive tap)", () => {
   });
 });
 
+describe("the engine-loss arm (roadmap §21: settle fast, never sit the deadline)", () => {
+  const refused = (): Error =>
+    Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:8188"), { code: "ECONNREFUSED" });
+  it("a dead engine settles LOUD with the sanctioned recovery (never sits the deadline)", async () => {
+    mapVerdict = () => ({ kind: "completed" });
+    const c = fakeClient({
+      waitForPrompt: async () => { throw refused(); },
+      getHistory: async () => ({ History: [] }),
+    });
+    localInterrupts = 0;
+    const started = Date.now();
+    await expect(waitTerminal(c, "p-1", Date.now() + 60_000, () => false, { streak: 3, minMs: 0 }))
+      .rejects.toThrow(/engine unreachable.*restart \+ rerun sanctioned/);
+    expect(Date.now() - started).toBeLessThan(5000);
+    expect(localInterrupts).toBeGreaterThan(0);
+  });
+  it("a lone transport failure then success never settles (transient tolerance)", async () => {
+    mapVerdict = () => ({ kind: "completed" });
+    let n = 0;
+    const c = fakeClient({
+      waitForPrompt: async () => {
+        n++;
+        if (n === 1) throw refused();
+      },
+      getHistory: async () => ({ History: [{ prompt: ["x", "p-1"] }] }),
+    });
+    await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false, { streak: 3, minMs: 0 }))
+      .resolves.toBeTruthy();
+    expect(n).toBeGreaterThan(1);
+  });
+  it("consecutive failures back the cadence off (250 → cap)", async () => {
+    mapVerdict = () => ({ kind: "completed" });
+    const cadences: Array<unknown> = [];
+    let n = 0;
+    const c = fakeClient({
+      waitForPrompt: async (_id: unknown, interval: unknown) => {
+        cadences.push(interval);
+        n++;
+        if (n <= 3) throw refused();
+      },
+      getHistory: async () => ({ History: [{ prompt: ["x", "p-1"] }] }),
+    });
+    await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false, { streak: 99, minMs: 0, backoffCapMs: 1000 }))
+      .resolves.toBeTruthy();
+    expect(cadences.slice(0, 4)).toEqual([250, 500, 1000, 1000]);
+  });
+  it("a sick engine (timeout, no transport code) keeps the old voice — never the engine-loss settle", async () => {
+    mapVerdict = () => ({ kind: "completed" });
+    const c = fakeClient({
+      waitForPrompt: async () => { throw new Error("socket timed out"); },
+      getHistory: async () => ({ History: [] }),
+    });
+    await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false, { streak: 1, minMs: 0 }))
+      .rejects.toThrow("socket timed out");
+  });
+  it("a dead history-GET feeds the same streak", async () => {
+    mapVerdict = () => ({ kind: "completed" });
+    const c = fakeClient({
+      waitForPrompt: async () => {},
+      getHistory: async () => { throw refused(); },
+    });
+    await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false, { streak: 2, minMs: 0 }))
+      .rejects.toThrow(/engine unreachable/);
+  });
+});
+
 describe("the stop probe (250ms tick)", () => {
   it("a true shouldStop verdict rejects with the interrupt voice", async () => {
     const c = fakeClient({

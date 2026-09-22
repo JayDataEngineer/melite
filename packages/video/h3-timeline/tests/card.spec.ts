@@ -127,7 +127,7 @@ describe("the h3-timeline compose gate", () => {
     assert.ok(["t4_chain", "t4r"].includes(String(chained.variant)), "chains derive a family");
   });
 
-  it("THE DISK-STITCH VALVE (agent-debt F-6c, 2026-09-22, the operator's \"dump to tmp file\"): a multi-window film with NO positioned clips emits windows only — no film node, no accumulation (each window frees after its own SaveVideo; the estate's filmMux owns the film from disk); clips or a single window keep the in-graph stitch", () => {
+  it("THE FILM TAIL, FILE FORM (§20's amendment, 2026-09-22 — the operator's provenance law): every multi-window film emits windows + the file tail — MeliteUnload (the boundary: orders the loads, flushes the allocator, KEEPS the weights) → MeliteConcatVideos (decodes the SAVED FILES, never window tensors) → the clips overlay → SaveVideo h3_t4_film; no accumulation node exists (each window's tensors die at its own SaveVideo)", () => {
     const nodeRows = (params: Record<string, unknown>) => {
       const g = new GraphBuilder();
       def.compose(def.schema(params), model, g, "run_valve");
@@ -135,39 +135,50 @@ describe("the h3-timeline compose gate", () => {
     };
     const savePrefixes = (rows: [string, { class_type: string; inputs: Record<string, unknown> }][]) =>
       rows.filter(([, n]) => n.class_type === "SaveVideo").map(([, n]) => String(n.inputs["filename_prefix"]));
+    const byClass = (rows: [string, { class_type: string; inputs: Record<string, unknown> }][], cls: string) =>
+      rows.filter(([, n]) => n.class_type === cls);
     const windowsDoc = {
       calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
       length: 124,
     };
-    // 1. the valve OPEN: no audio_clips → no film SaveVideo, no
-    //    accumulation, windows still save
+    // 1. the plain multi-window film: windows save, THEN the file
+    //    tail assembles — boundary → concat → film save
     const openRows = nodeRows(windowsDoc);
-    assert.ok(!savePrefixes(openRows).includes("h3_t4_film"), "no film file — the estate mux leads from the window files");
+    assert.ok(savePrefixes(openRows).includes("h3_t4_film"), "the film saves in-graph (the file tail)");
     assert.deepEqual(
       savePrefixes(openRows).filter((p) => p.startsWith("h3_t4_w")).sort(),
       ["h3_t4_w1", "h3_t4_w2"],
       "both windows save their own files",
     );
+    const unloads = byClass(openRows, "MeliteUnload");
+    assert.equal(unloads.length, 1, "exactly one boundary node");
+    assert.equal(unloads[0]![1].inputs["unload_models"], false, "weights STAY resident (the reload law)");
+    const concats = byClass(openRows, "MeliteConcatVideos");
+    assert.equal(concats.length, 1, "exactly one file loader");
+    assert.equal(concats[0]![1].inputs["videos"], "h3_t4_w1,h3_t4_w2", "the loader names the window files in film order");
     assert.ok(
       !openRows.some(([, n]) => n.class_type === "MiniMaxH3FiniteSegmentFinalize" && "accumulated_images" in n.inputs),
       "no accumulation node — nothing holds window 1's tensors while window 2 samples (a per-window finalize without accumulated_images may remain — that one is window-local)",
     );
-    // 2. the valve CLOSED: positioned clips → the film-level mix rides
-    //    in-graph (film SaveVideo + accumulation back)
+    // 2. positioned clips: the overlay rides the same tail (the
+    //    graph keeps the conditioning stamps AND gains the film-time
+    //    mix: Delay seats + Mix 'base' + the duck matrix)
     const closedRows = nodeRows({
       ...windowsDoc,
       audio_clips: [{ src: "/assets/line.flac", start_frame: 10, dur_frames: 40, text: "hello" }],
     });
-    assert.ok(savePrefixes(closedRows).includes("h3_t4_film"), "a positioned clip keeps the in-graph film stitch");
+    assert.ok(savePrefixes(closedRows).includes("h3_t4_film"), "positioned clips mix onto the in-graph film");
     assert.ok(
-      closedRows.some(([, n]) => n.class_type === "MiniMaxH3FiniteSegmentFinalize" && "accumulated_images" in n.inputs),
-      "the film accumulation composes for the film-level mix",
+      !closedRows.some(([, n]) => n.class_type === "MiniMaxH3FiniteSegmentFinalize" && "accumulated_images" in n.inputs),
+      "no film accumulation composes for positioned clips either",
     );
-    // 3. single window: the compose dispatch (card.ts: the film arm
-    //    requires >1 calls) routes it to the frozen window shape —
-    //    one artifact (h3_t4_w1), never a mux of one, never a film file
+    // 3. single window, nothing to mix: the FROZEN shape — the
+    //    dispatch keeps single-call docs byte-identical (one window
+    //    artifact, no film nodes, no decode round)
     const singleRows = nodeRows({ calls: [SHOT()], length: 56 });
-    assert.deepEqual(savePrefixes(singleRows), ["h3_t4_w1"], "a single-window doc saves exactly one window file — the film arm is multi-call");
+    assert.deepEqual(savePrefixes(singleRows), ["h3_t4_w1"], "a single-window doc saves exactly one window file — the film tail is a multi-call property");
+    assert.equal(byClass(singleRows, "MeliteConcatVideos").length, 0, "no decode round for a lone window");
+    assert.equal(byClass(singleRows, "MeliteUnload").length, 0, "no boundary needed — nothing to order");
   });
 
   it("THE ONE-MODEL LAW (roadmap §8): the card boards ONE family; the dead families' addresses ride the tool enum as variant routes", async () => {

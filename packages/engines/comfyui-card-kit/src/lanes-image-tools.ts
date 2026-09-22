@@ -13,7 +13,11 @@ type BboxDict = { x: number; y: number; width: number; height: number }
  *  rides its bag entry; the card threads each export's own tune as
  *  the trip's fourth arm). Absent arms ride the lane-flat values
  *  (the primary's tune). */
-export type EntryTune = { threshold?: number; refine?: number; dilation?: number; detection_threshold?: number }
+/** The one tune vocabulary (the audit's G1: vocab + finite-check
+ *  share this list — a new key added to the type but not here is a
+ *  compile-time refusal, never a silent unvalidated flow). */
+export const TUNE_KEYS: readonly string[] = ['threshold', 'refine', 'dilation', 'detection_threshold', 'box_expansion', 'hint_threshold', 'detection_dilation', 'crop_factor', 'drop_size']
+export type EntryTune = { threshold?: number; refine?: number; dilation?: number; detection_threshold?: number; box_expansion?: number; hint_threshold?: number; detection_dilation?: number; crop_factor?: number; drop_size?: number }
 
 /** The mask_t1 block — the selection lane (detect → refine → save),
  *  moved verbatim from the mask-studio card; the input_image
@@ -32,6 +36,19 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   // falls back to its old schema pin 2 when no explicit names it.
   const refineIterations = ((p.refine_iterations ?? 2) as number)
   const dilation = p.sam_dilation as number
+  // THE SIMPLE-NODE SUB-KNOBS (the operator's 2026-10-09 audit of
+  // ImpactSimpleDetectorSEGS: sub_bbox_expansion +
+  // sam_mask_hint_threshold were hard-pinned and unexposed): the
+  // lane-flat seat is the PRIMARY sam2's fold; absent (a sam3
+  // primary, pre-fold benches) = the pack's own defaults.
+  const bboxExpansion = (p.box_expansion as number | undefined) ?? 0
+  const hintThreshold = (p.hint_threshold as number | undefined) ?? 0.7
+  // THE DETECTOR TRIO (the operator's 2026-10-09 demand — the last
+  // three hard-pinned knobs): node-faithful defaults (10 / 3 / 10 —
+  // what the lane always shipped), now per-entry overridable.
+  const detectionDilation = (p.detection_dilation as number | undefined) ?? 10
+  const cropFactor = (p.crop_factor as number | undefined) ?? 3.0
+  const dropSize = (p.drop_size as number | undefined) ?? 10
   const exportBoxes = p.export_boxes as boolean
   const viaRtdetr = p.primary_via_rtdetr as boolean
 
@@ -152,9 +169,9 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
       [segmLane ? 'segm_detector' : 'bbox_detector']: provider,
       image: img(),
       threshold: (tune?.detection_threshold ?? (p.detection_threshold as number | undefined) ?? 0.5),
-      dilation: 10,
-      crop_factor: 3.0,
-      drop_size: 10,
+      dilation: tune?.detection_dilation ?? detectionDilation,
+      crop_factor: tune?.crop_factor ?? cropFactor,
+      drop_size: tune?.drop_size ?? dropSize,
       labels,
     }).out(0)
     // THE PER-INSTANCE CROPS (the gap audit's #3/#4 export half):
@@ -174,8 +191,8 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
       detection_hint: 'center-1',
       dilation: tune?.dilation ?? dilation,
       threshold: tune?.threshold ?? samThreshold,
-      bbox_expansion: 0,
-      mask_hint_threshold: 0.7,
+      bbox_expansion: tune?.box_expansion ?? bboxExpansion,
+      mask_hint_threshold: tune?.hint_threshold ?? hintThreshold,
       mask_hint_use_negative: 'False',
     }).out(0)
     const mask = scope ? scopeMask(refined, scope) : refined
@@ -234,7 +251,28 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
       }
       for (const n of [...new Set(figs)]) {
         const picked = g.node('ImpactSEGSPicker', { picks: String(n), segs: primarySegs }).out(0)
-        const figMask = g.node('SegsToCombinedMask', { segs: picked }).out(0)
+        // THE FIGURES RIDE THE SAME TWO-STEP (the operator's
+        // 2026-10-09 audit: "their masking is a two step process —
+        // YOLO/Segm, THEN extract the mask off the filtered area"):
+        // the picker NARROWS the SEGS to figure <n>, then
+        // SAMDetectorCombined refines THAT subset exactly as the
+        // combined arm does — per-figure SAM masks for EVERY class
+        // (person's YOLO segm OR face/hand's bare bbox crops alike;
+        // SegsToCombinedMask alone would have rendered step-one
+        // masks — rectangles on the bbox classes). Same loader
+        // node, same pack-test scalars, the primary's own
+        // dilation/threshold.
+        const figMask = g.node('SAMDetectorCombined', {
+          sam_model: samLoader(),
+          segs: picked,
+          image: img(),
+          detection_hint: 'center-1',
+          dilation,
+          threshold: samThreshold,
+          bbox_expansion: bboxExpansion,
+          mask_hint_threshold: hintThreshold,
+          mask_hint_use_negative: 'False',
+        }).out(0)
         save(primaryScope ? scopeMask(figMask, primaryScope) : figMask, `mask_figure_${n}`)
       }
     }
@@ -275,16 +313,19 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
       throw new Error(`maskT1: an export tune must be an object (threshold/refine/dilation/detection_threshold) — got ${JSON.stringify(raw).slice(0, 60)}`)
     }
     const t = raw as Record<string, unknown>
-    for (const key of ['threshold', 'refine', 'dilation', 'detection_threshold']) {
+    // ONE list drives both gates (the audit's G1: the finite check
+    // once covered only 4 of 9 keys — the 5 newer knobs flowed
+    // unvalidated to node inputs, an engine 400 instead of a loud
+    // lane refusal). Every value in a tune is a finite number.
+    const unknown = Object.keys(t).filter((k) => !TUNE_KEYS.includes(k))
+    if (unknown.length > 0) {
+      throw new Error(`maskT1: an export tune carries unknown key(s) ${unknown.join(', ')} — the vocabulary is ${TUNE_KEYS.join('/')}`)
+    }
+    for (const key of Object.keys(t)) {
       const v = t[key]
-      if (v === undefined) continue
       if (typeof v !== 'number' || !Number.isFinite(v)) {
         throw new Error(`maskT1: an export tune's '${key}' must be a finite number — got ${JSON.stringify(v).slice(0, 40)}`)
       }
-    }
-    const unknown = Object.keys(t).filter((k) => !['threshold', 'refine', 'dilation', 'detection_threshold'].includes(k))
-    if (unknown.length > 0) {
-      throw new Error(`maskT1: an export tune carries unknown key(s) ${unknown.join(', ')} — the vocabulary is threshold/refine/dilation/detection_threshold`)
     }
     return t as EntryTune
   }

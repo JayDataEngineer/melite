@@ -80,6 +80,13 @@ const PINS = {
 // two sam2 entries.
 const IMPACT_CLASSES = ['person', 'face', 'hand'] as const
 
+/** The figure-chip row (1-10): the UI affordance for picking
+ *  instances — the wire/API accept any 1-based number (crowd
+ *  scenes past 10 ride the JSON door), the chips cover the
+ *  working range. The per-instance crops (run/instance) are the
+ *  visual index these numbers pick from. */
+const FIGURE_CHOICES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
+
 /** Reads one entry's labels AGAINST the vocabulary: a comma-joined
  *  set of Impact classes (this declaration's own order, deduped) —
  *  empty or any unknown word refuses LOUD, naming the offender. */
@@ -264,10 +271,30 @@ const MODS: readonly DeclaredModifierKind[] = [
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam2', tooltip: "The saved mask's name (mask_<name>)." },
       { name: 'labels', label: 'Detection class', type: 'select', multi: true, options: IMPACT_CLASSES.map((c) => ({ value: c, label: c })), default: 'person', tooltip: 'The automated box filter: the Impact detector proposes a box for EVERY instance of these classes (no drawing), SAM2 refines each one. person rides the segm detector, face/hand ride their own bbox detectors — one family per entry.' },
-      { name: 'figures', label: 'Figure masks', type: 'string', default: '', tooltip: 'Save one mask per picked instance ("1,2" = figure one AND figure two as mask_figure_1/mask_figure_2) — how the agent selects an instance. The per-instance crops show the numbering. Primary entry only; empty = no figure masks.' },
+      // THE FIGURE CHIPS (the operator's 2026-10-09 verdict — the
+      // same atoms.tsx law as the class chips: a detector-owned
+      // vocabulary is NEVER a freeform text box): instance numbers
+      // are picked, not typed. The wire stays the comma-joined
+      // string the lane parses ("1,2"); the API stays permissive
+      // past 10 for crowd scenes (the chips are the UI affordance,
+      // not the vocab ceiling).
+      { name: 'figures', label: 'Figures', type: 'select', multi: true, options: FIGURE_CHOICES.map((n) => ({ value: String(n), label: String(n) })), default: '', tooltip: 'Pick the instance numbers (chips, no typing): each pick saves its own SAM-refined mask (mask_figure_2 = the second detected instance). Run once, read the numbered per-instance crops (run/instance), then pick. Primary entry only; none picked = no figure masks.' },
       { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.5, min: 0.05, max: 0.95, step: 0.05, tooltip: 'This entry\'s detector box confidence. Lower catches more instances, noisier boxes.' },
-      { name: 'sam_threshold', label: 'Mask threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'This selection\'s SAM2 mask confidence.' },
-      { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: 0, max: 64, step: 1, tooltip: 'Grow this mask N pixels.' },
+      // THE DETECTOR TRIO (the operator's 2026-10-09 demand: "WHAT
+      // ABOUT CROP FACTOR" — the last three hard-pinned detector
+      // knobs, node-faithful ranges from live object_info):
+      { name: 'detection_dilation', label: 'Detection dilation', type: 'number', default: 10, min: -512, max: 512, step: 1, tooltip: 'Grow each detected box N px before the crop (their bbox_dilation; negative shrinks).' },
+      { name: 'crop_factor', label: 'Crop factor', type: 'number', default: 3, min: 1, max: 100, step: 0.1, tooltip: 'How far the crop pads around each box (3 = 3× the box size) — more context, SAM sees more of the figure.' },
+      { name: 'drop_size', label: 'Drop size', type: 'number', default: 10, min: 1, max: 16384, step: 1, tooltip: 'Discard detections smaller than N px — noise cleanup on tiny false boxes.' },
+      { name: 'sam_threshold', label: 'Mask threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'SAM sensitivity — higher narrows the mask to the core subject (their sub_threshold; live-proven pixel-neutral on three clean unambiguous subjects: it bites on graded content, e.g. clothes-vs-person).' },
+      { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: -512, max: 512, step: 1, tooltip: 'Grow (positive) or erode (negative) this mask N px — the node\'s own full range (their sub_dilation).' },
+      // THE SIMPLE-NODE SUB-KNOBS (the operator's 2026-10-09 audit:
+      // ImpactSimpleDetectorSEGS exposes these; they were hard-pinned).
+      // NOTE the name: 'box_expansion', never 'bbox_expansion' — the
+      // bbox_* prefix is the REGION QUAD's owned namespace (the face
+      // canvas fields, wall-pinned).
+      { name: 'box_expansion', label: 'Box expansion', type: 'number', default: 0, min: 0, max: 1000, step: 1, tooltip: 'Grow each proposal box N px before SAM reads it — catches limbs clipped by a tight box (their sub_bbox_expansion; the node\'s own 0-1000 range).' },
+      { name: 'hint_threshold', label: 'Hint threshold', type: 'number', default: 0.7, min: 0, max: 1, step: 0.01, tooltip: 'The hint-mask confidence SAM seeds the selection from (their sam_mask_hint_threshold).' },
       ...BBOX_FIELDS,
     ],
   },
@@ -560,6 +587,15 @@ export function apply(ctx: Context): void {
         lane['primary_via_sam2'] = true
         lane['primary_sam2_labels'] = labelsOf(primary.entry, 'sam2 entry 0')
         lane['detection_threshold'] = num(whereOf(primary), primary.entry, 'sam2', 'detection_threshold')
+        // the simple-node sub-knobs fold from the primary like the
+        // detector threshold (SAM-step knobs — the figure arm reads
+        // the same lane-flat seat)
+        lane['box_expansion'] = num(whereOf(primary), primary.entry, 'sam2', 'box_expansion')
+        lane['hint_threshold'] = num(whereOf(primary), primary.entry, 'sam2', 'hint_threshold')
+        // the detector trio (crop factor et al) rides the same fold
+        lane['detection_dilation'] = num(whereOf(primary), primary.entry, 'sam2', 'detection_dilation')
+        lane['crop_factor'] = num(whereOf(primary), primary.entry, 'sam2', 'crop_factor')
+        lane['drop_size'] = num(whereOf(primary), primary.entry, 'sam2', 'drop_size')
         const figs = figuresOf(primary.entry, 'sam2 entry 0', true)
         if (figs !== undefined) lane['sam2_figures'] = figs
       }
@@ -604,6 +640,11 @@ export function apply(ctx: Context): void {
           exportKind.push('text')
         } else {
           tune['detection_threshold'] = num(whereOf(src), src.entry, 'sam2', 'detection_threshold')
+          tune['box_expansion'] = num(whereOf(src), src.entry, 'sam2', 'box_expansion')
+          tune['hint_threshold'] = num(whereOf(src), src.entry, 'sam2', 'hint_threshold')
+          tune['detection_dilation'] = num(whereOf(src), src.entry, 'sam2', 'detection_dilation')
+          tune['crop_factor'] = num(whereOf(src), src.entry, 'sam2', 'crop_factor')
+          tune['drop_size'] = num(whereOf(src), src.entry, 'sam2', 'drop_size')
           // figures ride the PRIMARY entry (the detection they pick
           // from is the first source's) — refuses LOUD here.
           figuresOf(src.entry, `sam2 entry ${src.i}`, false)

@@ -74,4 +74,10 @@ describe("the florence2 model plugin (the whole model, one package)", () => {
       assert.ok(ids.has(v.group), `row group '${v.group}' names a declared variant_groups id (case-exact)`);
     }
   });
+
+  it("ONE variant claims the family address (a second claimant last-wins the route and hijacks the default)", () => {
+    // Cells may claim for quant addressing; variants may not share.
+    const claimants = DECL.variants.filter((v) => v.route === DECL.id).map((v) => v.id);
+    assert.deepEqual(claimants, [DECL.variants[0]!.id], "the head alone claims the family address");
+  });
 });

@@ -130,8 +130,22 @@ The loop (agent law):
 3. **MONITOR**: the progress on the card (the user watches it run).
 4. **FIX**: on error, read the exact error the card reports,
    fix the CARD (not the queue), `patch` the stage. Max 3 retries.
-5. **DELIVER**: verify the video bytes (ffprobe duration, md5), then
-   `complete_asset_request(run_id, sha16)`.
+5. **DELIVER**: verify the video bytes with the byte-cheap probe
+   below, then `complete_asset_request(run_id, sha16)`.
+
+## The verify recipe (efficiency review 002, §27 — READ THIS)
+
+`ffprobe -show_format -show_streams` DUMPS 50 KB (the executor echoes
+the whole film doc in the MP4 metadata). The only probe that ever
+runs on a film:
+
+```
+ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_name,width,height,r_frame_rate <film.mp4>
+```
+
+~300 chars out (duration/size/streams — the whole verification).
+`melite_view` cannot show mp4 — never call it on a film; ffprobe is
+the observe arm.
 
 ## The compose flow
 

@@ -12,6 +12,7 @@ import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { sdkClient } from "./comfyui-transport.ts";
 import { spliceWorkflow, uploadReferenced } from "./comfyui-upload.ts";
+import { isTransportDownError } from "./supervisor.ts";
 import { fetchOutputs, mapHistoryEntry, normalizeTimeoutS, publishOutputChannels } from "./comfyui-outputs.ts";
 
 export interface ExecuteOpts {
@@ -116,21 +117,76 @@ async function historyEntry(
 
 /** Wait to terminal: the SDK's queue-membership wait under the
  *  estate's deadline + stop, then the history verdict decides.
- *  Every exit path but success delivers the interrupt first. */
+ *  Every exit path but success delivers the interrupt first.
+ *
+ *  THE ENGINE-LOSS ARM (roadmap §21 — measured live 2026-09-22: the
+ *  OOM kill wedged 101,501 blind polls over 84 min): transport-dead
+ *  failures (refused/reset/unroutable — never timeouts or HTTP
+ *  statuses; a sick engine is still a live one) ride a streak with
+ *  backoff (250ms → 30s ceiling). A streak of ENGINE_LOST_STREAK
+ *  spanning ENGINE_LOST_MIN_MS settles the run failed LOUD with the
+ *  sanctioned recovery instead of sitting the deadline — submit
+ *  already gated on a live engine, so transport failing later means
+ *  the engine died mid-run. A lone slow poll never settles (the
+ *  streak resets on any success). */
+const ENGINE_LOST_STREAK = 3;
+const ENGINE_LOST_MIN_MS = 30_000;
+const ENGINE_LOST_BACKOFF_CAP_MS = 30_000;
+/** Test seam for the engine-loss arm (production always omits it —
+ *  the constants above are the measured tuning, not guesses). */
+export interface EngineLostPolicy {
+  readonly streak?: number;
+  readonly minMs?: number;
+  readonly backoffCapMs?: number;
+}
 export async function waitTerminal(
   client: Client,
   promptId: string,
   deadline: number,
   shouldStop: () => boolean,
+  policy?: EngineLostPolicy,
 ): Promise<Record<string, EngineJson>> {
+  const lostStreak = policy?.streak ?? ENGINE_LOST_STREAK;
+  const lostMinMs = policy?.minMs ?? ENGINE_LOST_MIN_MS;
+  const backoffCapMs = policy?.backoffCapMs ?? ENGINE_LOST_BACKOFF_CAP_MS;
+  let cadence = 250;
+  let downStreak = 0;
+  let firstDownAt = 0;
   for (;;) {
     const probe = stopProbe(shouldStop);
+    let entry: Record<string, EngineJson> | undefined;
     try {
       await Promise.race([
-        client.waitForPrompt(promptId, 250, deadline - Date.now()),
+        client.waitForPrompt(promptId, cadence, deadline - Date.now()),
         probe.promise,
       ]);
+      entry = await historyEntry(client, promptId);
+      // any success breaks the streak — a lone slow poll never settles
+      downStreak = 0;
+      cadence = 250;
     } catch (e) {
+      if (isTransportDownError(e)) {
+        const now = Date.now();
+        if (downStreak === 0) firstDownAt = now;
+        downStreak++;
+        if (
+          downStreak >= lostStreak &&
+          now - firstDownAt >= lostMinMs
+        ) {
+          try {
+            await client.interrupt(promptId);
+          } catch {
+            /* best-effort — the refusal never masks the cause */
+          }
+          throw new ComfyError(
+            "engine unreachable — ComfyUI stopped answering mid-run " +
+            "(restart + rerun sanctioned, identical params/seed ride " +
+            "the node cache)",
+          );
+        }
+        cadence = Math.min(cadence * 2, backoffCapMs);
+        continue;
+      }
       try {
         await client.interrupt(promptId);
       } catch {
@@ -144,8 +200,6 @@ export async function waitTerminal(
     } finally {
       probe.dispose();
     }
-    const entry: Record<string, EngineJson> | undefined =
-      await historyEntry(client, promptId);
     const verdict = mapHistoryEntry(entry);
     if (verdict.kind === "failed") {
       throw new ComfyError("ComfyUI run failed: " + verdict.detail);

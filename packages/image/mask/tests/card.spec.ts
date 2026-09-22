@@ -131,7 +131,10 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.ok(names.includes("labels"), "sam2 selects by the closed detector-classes chips (never a freeform word, never the retired parts vocabulary)");
     assert.ok(!names.includes("part"), "the parts vocabulary is gone — the detector proposes, SAM2 refines");
     assert.deepEqual(names, [
-      "name", "labels", "figures", "detection_threshold", "sam_threshold", "sam_dilation",
+      "name", "labels", "figures", "detection_threshold",
+      "detection_dilation", "crop_factor", "drop_size",
+      "sam_threshold", "sam_dilation",
+      "box_expansion", "hint_threshold",
       "bbox_x", "bbox_y", "bbox_w", "bbox_h",
     ]);
     assert.deepEqual([...sam2.requires ?? []], ["comfyui-impact-pack", "comfyui-impact-subpack"],
@@ -151,6 +154,17 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.ok(!values.includes("dog") && !values.includes("car"), "a non-Impact word is not offered");
   });
 
+  it("figures is the instance-number CHIPS row (the operator's 2026-10-09 verdict: select the number, never a freeform text box)", () => {
+    const sam2 = (def.mods ?? []).find((k) => k.kind === "sam2")!;
+    const figs = ((((sam2 as unknown as Row)["fields"] ?? []) as Array<Row>).find((f) => f["name"] === "figures") ?? {}) as Row;
+    assert.equal(figs["type"], "select", "instance numbers are picked, not typed");
+    assert.equal(figs["multi"], true, "a figure pick is a SET (figure one AND figure two)");
+    assert.equal(figs["default"], "", "no figures picked by default");
+    const values = ((figs["options"] ?? []) as Array<Row>).map((o) => String(o["value"]));
+    assert.deepEqual(values, ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+      "the working range is chips 1-10 (the wire stays permissive past 10 for crowds)");
+  });
+
   it("a comma-joined class set composes in declaration order (deduped, verbatim into the detector node)", () => {
     // single detector family (face+hand ride bbox) — a mixed set
     // refuses in the lane, so the order wall lives on one family.
@@ -165,6 +179,41 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
       () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person,face" }] }, DUMMY, new GraphBuilder(), "r_mix"),
       /maskT1: one detector per sam2 entry/,
     );
+  });
+
+  it("THE DETECTOR TRIO (the operator's 2026-10-09 demand — 'WHAT ABOUT CROP FACTOR'): detection_dilation/crop_factor/drop_size reach the DETECTOR wire — shipped defaults when unset, per-entry values when set", () => {
+    // defaults: exactly what the lane always shipped (10 / 3 / 10 — the node's own)
+    const g0 = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }] }, DUMMY, g0, "r_cf0");
+    const det0 = Object.values(g0.toJSON()).find((n: Row) => n["class_type"] === "SegmDetectorSEGS") as { inputs: Row };
+    assert.equal(det0.inputs["dilation"], 10, "unset detection dilation = the shipped 10");
+    assert.equal(det0.inputs["crop_factor"], 3, "unset crop factor = the shipped 3");
+    assert.equal(det0.inputs["drop_size"], 10, "unset drop size = the shipped 10");
+    // per-entry values reach the wire verbatim
+    const g1 = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "face", detection_dilation: -8, crop_factor: 4.5, drop_size: 25 }] }, DUMMY, g1, "r_cf1");
+    const det1 = Object.values(g1.toJSON()).find((n: Row) => n["class_type"] === "BboxDetectorSEGS") as { inputs: Row };
+    assert.equal(det1.inputs["dilation"], -8, "negative detection dilation threads (their bbox_dilation range)");
+    assert.equal(det1.inputs["crop_factor"], 4.5, "crop factor threads the detector node");
+    assert.equal(det1.inputs["drop_size"], 25, "drop size threads the detector node");
+  });
+
+  it("THE SIMPLE-NODE SUB-KNOBS (the operator's 2026-10-09 audit): box_expansion + hint_threshold reach the SAM wire — defaults when unset, per-entry values when set", () => {
+    // defaults: the pack's own (0 / 0.7)
+    const g0 = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }] }, DUMMY, g0, "r_sub0");
+    const sam0 = Object.values(g0.toJSON()).find((n: Row) => n["class_type"] === "SAMDetectorCombined") as { inputs: Row };
+    assert.equal(sam0.inputs["bbox_expansion"], 0, "unset box expansion = the pack default 0");
+    assert.equal(sam0.inputs["mask_hint_threshold"], 0.7, "unset hint threshold = the pack default 0.7");
+    // the primary's own values ride BOTH arms (combined + figures)
+    const g1 = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", figures: "1", box_expansion: 24, hint_threshold: 0.55 }] }, DUMMY, g1, "r_sub1");
+    const sams = Object.values(g1.toJSON()).filter((n: Row) => n["class_type"] === "SAMDetectorCombined") as Array<{ inputs: Row }>;
+    assert.equal(sams.length, 2, "combined + figure arms");
+    for (const s of sams) {
+      assert.equal(s.inputs["bbox_expansion"], 24, "box expansion threads the SAM node (their sub_bbox_expansion)");
+      assert.equal(s.inputs["mask_hint_threshold"], 0.55, "hint threshold threads the SAM node (their sam_mask_hint_threshold)");
+    }
   });
 
   it("figures thread from the primary entry (the agent's figure-one/figure-two pick)", () => {

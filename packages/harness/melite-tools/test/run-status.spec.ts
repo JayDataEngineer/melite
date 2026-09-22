@@ -134,4 +134,18 @@ describe('run_status render — the human line', () => {
     assert.equal(text({}), 'run ? ? — 0/0 stage(s)')
     assert.equal(text({ run_id: 'r', status: 'queued', queue_position: 0 }), 'run r queued — 0/0 stage(s)')
   })
+
+  test('a live row with no stage rows renders its registered plan + age (Fix 2)', () => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    assert.equal(
+      text({ run_id: 'r1', status: 'running', stages: [], planned_stages: [{ id: 'h3-film', engine: 'comfyui' }], card: 'h3-timeline', run_age_s: 754 }),
+      'run r1 running — 0/0 stage(s) · plan: 1 stage(s) (h3-timeline) · age 754s',
+    )
+    // no plan: the bare render survives (honest fallback, never fabricated)
+    assert.equal(
+      text({ run_id: 'r2', status: 'queued', stages: [], queue_position: 0 }),
+      'run r2 queued — 0/0 stage(s)',
+    )
+  })
 })

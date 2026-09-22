@@ -254,6 +254,19 @@ describe("the input surface: variant derivation owns the lane first", () => {
   it("empty strings imply nothing (whitespace is absent, never a lane)", () => {
     assert.equal(def.schema({ last_frame: "  " }).variant, "t4_open");
   });
+
+  it("a guideless end-anchor doc COMPOSES (the t4r guard admits the anchor's own surface)", () => {
+    // variant derivation says last_frame implies t4r (above); the
+    // compose-side guard must agree — an end-anchor-only window is
+    // the FL2VA shape: input_2 locked, nothing else shelved. The
+    // guard's refs law counts the anchor itself, so the window
+    // composes instead of refusing as "guideless t4r".
+    const out = graphOf({ last_frame: "/m/end.png", calls: [SHOT()] }, "run_anchor_only");
+    const r2v = Object.values(out).filter((n) => n.class_type === "MiniMaxH3ReferenceToVideo");
+    assert.equal(r2v.length, 1, "the r2v lane composes for the anchor-only doc");
+    const b = bundleIn(out);
+    assert.equal(loaderFor(out, b, "input_2"), "/m/end.png", "the end anchor holds input 2");
+  });
 });
 
 describe("the input surface: the 9-slot bus shelves the FL2VA pair first", () => {

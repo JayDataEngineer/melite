@@ -44,7 +44,6 @@ import {
   strictBody,
 } from "./runsValidate.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
-import { engineFilmName, filmMuxPlan, muxWindows, probeDurationSec, shouldMuxWindows } from "./filmMux.ts";
 import type { QueueCore, QueueRefusal } from "./queue.ts";
 import {
   compileFlowInline,
@@ -583,6 +582,32 @@ export class RunsRuntimeService extends Service {
       const diskArts = Array.isArray(disk?.["artifacts"]) ? (disk?.["artifacts"] as unknown[]).length : 0;
       if (disk !== undefined && (diskStages > 0 || diskArts > 0)) {
         return { ...disk, from_disk: true, queue_position: payload["queue_position"] };
+      }
+    }
+    // THE LIVE-ROW PLAN (efficiency review 002, Fix 2, 2026-09-22):
+    // a live row that is queued/running yet carries NO stage rows
+    // renders "? — 0/0" at the agent — zero signal for a 20-minute
+    // render, which forced the whole bash-tail poll loop. The plan
+    // is already stamped at registration (graphRows: stage id +
+    // engine; cardId/pipeline; createdAt) — project it, never the
+    // params (a film graph is 50 KB of prompt JSON). The agent sees
+    // "running · plan: 1 stage (h3-timeline) · age 754s" and polls
+    // the cheap door instead of tailing logs.
+    if (
+      (run.status === "queued" || run.status === "running" ||
+        run.status === "stopping") &&
+      run.stages.length === 0
+    ) {
+      payload["planned_stages"] = run.graphRows.map((g) => ({
+        id: g.id,
+        engine: g.type,
+      }));
+      payload["card"] = run.cardId ?? run.pipeline;
+      if (run.createdAt > 0) {
+        payload["run_age_s"] = Math.max(
+          0,
+          Math.round(Date.now() / 1000 - run.createdAt),
+        );
       }
     }
     if (includeLog) payload["log_tail"] = runLogTail(payload as never);

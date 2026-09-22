@@ -7,7 +7,7 @@ import { executeFlow, loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/
 import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
 import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
 import { errText, runRel, type RunRecord, type StageRow } from "./runsTypes.ts";
-import { engineFilmName, filmMuxPlan, muxWindows, probeDurationSec, shouldMuxWindows } from "./filmMux.ts";
+import { engineFilmName } from "./filmLead.ts";
 import { join } from "node:path";
 import { needComfyUI as _ncu } from "@melite/comfyui-cordis";
 type EngineCtx = Parameters<typeof _ncu>[0];
@@ -205,16 +205,12 @@ export type SettleFn = (run: RunRecord) => void;
           let names: string[] = arts.map((a: string): string =>
             runRel(run, a),
           );
-          // THE FILM COMPLETION (2026-09-12, the 4s-stitch defect):
-          // when the stitch is shorter than the windows' total, the
-          // windows concat (stream copy) into film_video_mux.mp4 and
-          // the FILM leads the names — the hero never lies about the
-          // timeline. Any probe/mux failure keeps the engine's own
-          // stitch (loud, never a fake film).
-          // THE ENGINE FILM LEADS (2026-09-17): when the engine
+          // THE ENGINE FILM LEADS (2026-09-17; re-affirmed 2026-09-22
+          // when the disk-stitch valve died): when the engine
           // composed the film (h3_t4_film), presentation order is the
-          // harness's only job — film first, windows after. No mux:
-          // composition belongs to the engine, never a shell ffmpeg.
+          // harness's only job — film first, windows after. No mux,
+          // no mix, never a shell ffmpeg: composition belongs to the
+          // engine (the film-assemble stage's model-free workflow).
           const engineFilm = engineFilmName(names);
           if (engineFilm !== null) {
             names = [engineFilm, ...names.filter((n): boolean => n !== engineFilm)];
@@ -231,33 +227,13 @@ export type SettleFn = (run: RunRecord) => void;
             ? (await loadCardDefs()).get(run.cardId)?.primaryFile
             : undefined;
           names = declaredPrimaryFirst(names, stem);
-          const plan = filmMuxPlan(names);
-          if (plan !== null) {
-            if (plan.stitch === null) {
-              // THE MERGED FILM (2026-09-17, the seam-wiring stroke):
-              // no engine stitch exists — the TS card's windows ARE the
-              // film; concat unconditionally so ONE film leads the
-              // stage (loud on failure: the windows stay the truth).
-              const muxed = muxWindows(run.dir, plan);
-              if (muxed !== null) {
-                names.unshift(plan.out);
-                run.artifacts.push(muxed);
-              }
-            } else {
-              const stitchSec = probeDurationSec(join(run.dir, plan.stitch));
-              const windowSecs = plan.windows.map((w): number | null =>
-                probeDurationSec(join(run.dir, w)));
-              const decidable = stitchSec !== null
-                && windowSecs.every((t): t is number => t !== null);
-              if (decidable && shouldMuxWindows(stitchSec, windowSecs)) {
-                const muxed = muxWindows(run.dir, plan);
-                if (muxed !== null) {
-                  names.unshift(plan.out);
-                  run.artifacts.push(muxed);
-                }
-              }
-            }
-          }
+          // (THE DISK-STITCH VALVE DIED, 2026-09-22, the operator's
+          // provenance law: every artifact traces to a composition
+          // of cards — no harness ffmpeg ever owned the film. The
+          // film is assembled IN-GRAPH (the film-assemble stage's
+          // model-free workflow: MeliteLoadVideo + the Melite audio
+          // chain + CreateVideo/SaveVideo h3_t4_film); the harness's
+          // only job here is presentation order.)
           stage["url"] = names[0];
           stage["gallery"] = names.map(
             (n: string): EngineJson => ({ name: n }) as unknown as EngineJson,

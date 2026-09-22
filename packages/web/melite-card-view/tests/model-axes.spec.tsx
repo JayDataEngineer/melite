@@ -136,9 +136,22 @@ test('CardForm renders Model, Variant, and Quant selects ABOVE the parameters', 
   expect((variant as HTMLSelectElement).value).toBe('turbo')
   expect((quant as HTMLSelectElement).value).toBe('int8')
   expect(screen.getByLabelText('Prompt')).toBeTruthy()
-  // the axes sit ABOVE the parameter groups in the DOM
-  const form = model.closest('div')
-  expect(form?.firstElementChild?.getAttribute('data-model-axes')).toBe('1')
+  // the axes sit ABOVE the parameter groups in the DOM. (The old
+  // walk — model.closest('div').firstElementChild — dated from
+  // before the Model+Variant PAIR div (6f9c22e2): the select's
+  // nearest div became the pair, never the form. Walk the axes
+  // SECTION and prove document order against every parameter
+  // group instead.)
+  const axes = model.closest('section[data-model-axes]')
+  expect(axes).toBeTruthy()
+  const paramGroups = axes!.parentElement!.querySelectorAll(
+    'section:not([data-model-axes]):not([data-pack-prompt])')
+  expect(paramGroups.length).toBeGreaterThan(0)
+  paramGroups.forEach((g) => {
+    expect(
+      axes!.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
 })
 
 test('picking Raw applies the overlay: steps/cfg ride, quant clears, the model NEVER moves (stroke 21)', async () => {

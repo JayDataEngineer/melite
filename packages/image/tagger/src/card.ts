@@ -6,7 +6,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { taggerLane, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from '@melite/comfyui-card-kit'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
 declare module '@melite/comfyui-cordis/service' {

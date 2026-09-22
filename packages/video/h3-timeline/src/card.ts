@@ -32,6 +32,8 @@ import z from '@deepseek-ai/schemastery'
 import { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { finalizeH3 } from '@melite/comfyui-card-kit'
+import { computeFilmMix, parseFilmMixClips, spanStanzaFrames, stanzaSecs } from './filmMix.ts'
+import type { FilmMixClip, FilmMixSpan } from './filmMix.ts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 
@@ -393,6 +395,13 @@ export function schema(v: unknown): Record<string, unknown> {
       if ((c.end_frame as number) <= (c.start_frame as number)) {
         throw new Error(`calls[${i}]: end_frame ${c.end_frame} <= start_frame ${c.start_frame} — a reversed or empty span is not a shot`)
       }
+      // THE GRID GATE (§26, the walk arm): a call's knobs.length pin
+      // bypasses every snap arm downstream — validate at the walk so
+      // `validate` refuses what the engine would kill at GPU cost.
+      const cknobs = (c.knobs ?? {}) as Record<string, unknown>
+      if (cknobs.length !== undefined && cknobs.length !== null) {
+        assertGridLength(cknobs.length, `calls[${i}].knobs.length`)
+      }
     }
     // (the shot-law loop above guarantees every row is a shaped
     // object with pinned int spans — no gap-arms needed here)
@@ -566,49 +575,25 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // (independent windows, no guidance). No seam vocabulary, no
   // modes — the film accumulates through their finalize chain
   // (video: the previous window owns the overlap; audio: the
-  // incoming soft-released head owns the join) and ONE CreateVideo +
-  // SaveVideo emits the film the timeline promised. The estate
-  // reorders artifacts so the film leads; it never concats.
-  let film: { images: OutputHandle, audio: OutputHandle } | undefined
-  // THE DISK-STITCH VALVE (agent-debt F-6c, 2026-09-22 — the
-  // operator's "dump to tmp file" instinct): the in-graph film
-  // accumulation keeps EVERY window's images/audio tensors resident
-  // until the final CreateVideo (the last window samples under the
-  // whole film's backlog — the OOM signature). When NO positioned
-  // audio_clips ride (nothing mixes at film time — the windows' own
-  // generated tracks ARE the film's audio) the film node is pure
-  // temporal concat + remux, which the estate's filmMux already
-  // does from DISK (ffmpeg concat demuxer over the windows' own
-  // SaveVideo files, `filmMuxPlan` stitch:null → unconditional
-  // concat, film_video_mux.mp4 leads the stage). Skip the
-  // accumulation + CreateVideo entirely: each window frees after its
-  // own SaveVideo, the last window samples on a clean card. Films
-  // WITH positioned clips keep the in-graph stitch (the film-level
-  // mix + duck bus has no disk-side arm yet — the amix extension is
-  // the roadmap stroke). Single-call docs never reach renderH3Film
-  // (the compose dispatch routes them to the frozen window shape —
-  // one h3_t4_w1 artifact); the `|| calls.length === 1` term in the
-  // valve below guards that invariant should the dispatch widen.
-  // THE CLIPS-STITCH CLOCK (2026-09-21, corrected twice 2026-09-22):
-  // clip.start is DOC-anchored (call-span coordinates — the stamp,
-  // the studio lanes, and the tool face all speak doc). Each extend
-  // join trims 22f off the film, so the film seat of doc frame f in
-  // window k is filmStart_k + (f − docStart_k) — the owner map WITH
-  // NO carry term. First correction (start/24) was right for
-  // windows 1–2 but late by 22f per extra extend seam (adversarial
-  // review: 3-window repro, pin w3 f28 vs overlay 5.417s for doc
-  // 130 whose seat is 4.5s). The carry-math ORIGINAL double-counted
-  // the other way (+22f on window 2+). This map is the fixed point:
-  // identical numbers to start/24 for windows 1–2 (all proof
-  // renders + walls agree), true seats for 3+.
-  const windowFilm: Array<{ docStart: number, filmStartSec: number }> = []
-  let filmElapsedSec = 0
-  // THE CLIPS, PARSED ONCE (2026-09-21, the dialogue half): both
-  // consumers — the per-window CONDITIONING stamps (the model hears
-  // the dialogue: lip sync) and the final overlay mix (the audible
-  // authority) — read THIS list, one law for what a clip IS. A src
-  // without a numeric start_frame refuses loud (never a silent
-  // misplacement); a row without src is junk and skips.
+  // incoming soft-released head owns the join). §20, THREE ACTS
+  // (2026-09-22): (1) the ORIGINAL in-graph tail consumed every
+  // window's tensors until the final CreateVideo — the OOM signature
+  // that killed positioned-clips films 3× (a 43h engine); (2) the
+  // one-day disk-side valve (estate ffmpeg) died of the operator's
+  // provenance law — every artifact traces to a composition of
+  // cards, never a harness side-effect; (3) the FILE FORM now below:
+  // each window saves its own clip, an unload boundary orders +
+  // flushes, and a file-decoding tail assembles the film IN-GRAPH —
+  // no tensor ever spans the boundary. The mix math lives in
+  // filmMix.ts — one owner, stamps and overlay both.
+  // THE CONDITIONING stamps below stay in-graph per-window (what
+  // each window HEARS at generation — lip sync lives here). The
+  // overlay half (positions, duck spans, the music bus) rides the
+  // file tail, driven by the same filmMix.ts manifest.
+  // THE CLIPS, PARSED ONCE (2026-09-21, the dialogue half): the
+  // per-window CONDITIONING stamps (the model hears the dialogue:
+  // lip sync) read THIS list — parseFilmMixClips (filmMix.ts) is
+  // the one law for what a clip IS, shared with the disk-side mix.
   // THE THREE AUDIO LANES (2026-09-22, the operator's D-M-E law): a
   // clip rides one CLASS — dialogue | sfx | music — one H3 audio
   // input each. Every class runs the SAME machinery (stamp → pin →
@@ -616,43 +601,28 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // relationships differ. Default: a text-carrying row is dialogue
   // (the words law), a textless row is music (the historical
   // Music-row behavior, byte-identical for existing docs).
-  const clips: Array<{ src: string, start: number, dur: number, text: string, cls: 'dialogue' | 'sfx' | 'music' }> = []
-  for (const c of (Array.isArray(p.audio_clips) ? (p.audio_clips as Array<Record<string, unknown>>) : [])) {
-    if (c === null || typeof c !== 'object') continue
-    const src = typeof c.src === 'string' ? c.src.trim() : ''
-    if (src === '') continue
-    if (typeof c.start_frame !== 'number' || !Number.isFinite(c.start_frame)) {
-      throw new Error(
-        `audio_clips: a clip with src but no numeric start_frame — the audio lanes own placement (re-add the clip)`,
-      )
-    }
-    const dur = typeof c.dur_frames === 'number' && Number.isFinite(c.dur_frames) && c.dur_frames > 0 ? c.dur_frames : 0
-    // THE TRANSCRIPT (2026-09-22, the upstream guide's dialogue law):
-    // an optional text rides the clip — for dialogue, the WORDS the
-    // model must speak. The guide is explicit: dialogue rides the
-    // PROMPT in <d>[language] exact words.</d> tags (untranslated,
-    // unrewritten); the audio ref supplies the voice, the prompt
-    // supplies the words, and the mouth follows the prompt's tag —
-    // an audio-only conditioning leaves the lips idle (measured,
-    // twice). For sfx the text is the EVENT description the
-    // soundscape field times ("a sudden explosion rocks the room");
-    // for music it rides non_diegetic_music. In every class the
-    // text is what tells the model WHAT the audio is.
-    const text = typeof c.text === 'string' ? c.text.trim() : ''
-    const clsRaw = typeof c.class === 'string' ? c.class.trim().toLowerCase() : ''
-    if (clsRaw !== '' && clsRaw !== 'dialogue' && clsRaw !== 'sfx' && clsRaw !== 'music') {
-      throw new Error(
-        `audio_clips: unknown class "${clsRaw}" — dialogue | sfx | music (omit for auto: text → dialogue, else music)`,
-      )
-    }
-    const cls = (clsRaw !== '' ? clsRaw : text !== '' ? 'dialogue' : 'music') as 'dialogue' | 'sfx' | 'music'
-    clips.push({ src, start: c.start_frame, dur, text, cls })
-  }
-  // the valve's gate (the comment block sits at `film` above):
-  const stitchInGraph = clips.length > 0 || calls.length === 1
-  // which clips CONDITION a window (and so duck the generated voice
-  // at their film spans): filled by the loop below
-  const conditioned = new Set<number>()
+  const clips: FilmMixClip[] = parseFilmMixClips(
+    Array.isArray(p.audio_clips) ? (p.audio_clips as Array<Record<string, unknown>>) : [],
+  )
+  // THE FILM DOC'S SPANS — the clock's own rows, one per call, doc
+  // frames with the seam word (filmMix.ts owns the law). The stanza
+  // snap rides these (spanStanzaFrames): the render loop below and
+  // the film manifest at the tail read the SAME snap from the SAME
+  // rows — the two-clocks law, one owner.
+  const spans: FilmMixSpan[] = calls.map((c): FilmMixSpan => ({
+    // the shot-law loop above pins every row's int spans (loud
+    // refusals upstream) — no defensive fallback arms to keep alive
+    start: c.start_frame as number,
+    end: c.end_frame as number,
+    // the seam word rides RAW — filmMix's spanOverlap owns the one
+    // meaningful comparison ('cut' = overlap 0; every other spelling
+    // including absent IS extend); no card-side re-encoding
+    transition: str(c.transition),
+  }))
+  // (the clip text law lives where the text is consumed: THE
+  // TRANSCRIPT — dialogue words ride the <d> prompt tag, sfx text
+  // the soundscape field, music text non_diegetic_music. In every
+  // class the text tells the model WHAT the audio is.)
   // LORA STEPS APPLIED (operator correction, 2026-09-18): a distill
   // adapter is married to its step count — one lora for four steps,
   // another for eight — so the resolved bag rows carry `steps` and
@@ -746,7 +716,9 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
           delay_seconds: ms(Math.max(0, clip.start - genStart)),
           text: clip.text,
         }
-        conditioned.add(ci)
+        // (§20: the conditioned set moved to filmMix.ts — the
+        // disk-side mix derives it from the same stamp law. The
+        // stamps themselves stay: THIS window hears them.)
       }
     }
 
@@ -795,8 +767,7 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     else delete stanza.image
     // per-window length: the span rider law, unless the call's knobs pin one
     if (sf !== null && ef !== null && ef > sf && knobs.length === undefined) {
-      const kk = Math.round((ef - sf - 22) / 17)
-      stanza.length = Math.min(362, Math.max(22, 22 + 17 * kk))
+      stanza.length = spanStanzaFrames(spans[i]!)
       // THE TWO CLOCKS LAW (fixed 2026-09-22 — the 20-second proof
       // film): the window's VIDEO length derives from fps_seconds
       // (the builder's ComfyMathExpression reads it; the length
@@ -804,10 +775,21 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       // whose spans disagree with the stale fps_seconds renders
       // uniform 10s windows while the clock books doc spans — the
       // film clock and the render MUST state the same window.
+      // (The snap itself is filmMix's spanStanzaFrames — the ONE
+      // law the render loop and the film manifest share; the old
+      // inline 22+17k twin died here.)
       if (knobs.fps_seconds === undefined) {
         stanza.fps_seconds = Math.round(((stanza.length as number) / 24) * 1000) / 1000
       }
     }
+    // THE GRID GATE (§26): a knob-pinned length bypassed the snap
+    // above — validate, never trust. Refuses at compose (zero GPU)
+    // with the span, the nearest legal length, and the proven
+    // geometry in the message.
+    assertGridLength(
+      stanza.length,
+      `h3-timeline window ${k} (span ${sf}→${ef})`,
+    )
     if (i > 0) {
       stanza.__iteration = k - 1
       stanza.__overlap = overlap
@@ -821,162 +803,134 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     // windows (the pins own those lanes); the music arm has nothing
     // left to guard since the bed left. Per-window, never film-wide.
     assertOverlayGated(stanza, `h3-timeline window ${k} knobs`)
-    // the clips-stitch advance: THIS window's doc span starts at
-    // sf and its content starts at filmElapsedSec (each join trims
-    // the previous tail by the incoming overlap — the film lags doc
-    // by one carry per extend seam; NO carry term rides, the trim is
-    // already inside filmElapsedSec).
-    windowFilm.push({ docStart: sf ?? 0, filmStartSec: filmElapsedSec })
-    filmElapsedSec += ((stanza.length as number) - (k > 1 ? overlap : 0)) / 24
+    // WINDOWS REMAIN TENSORS-FREE (§20, 2026-09-22): no accumulation
+    // nodes, nothing holds a prior window's tensors — each window
+    // frees after its own SaveVideo. The film tail below assembles
+    // from the SAVED FILES (decode after every save), never from
+    // window tensors.
+    // the conditioning stamps ride the stanza (what THIS window
+    // hears at generation — the Slice → pin chain reads them).
     if (stamps.dialogue !== undefined) stanza.dialogue_slice = stamps.dialogue
     if (stamps.sfx !== undefined) stanza.sfx_slice = stamps.sfx
     if (stamps.music !== undefined) stanza.music_slice = stamps.music
     const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w))
     prev = h
-    if (!stitchInGraph) {
-      // the disk-stitch valve: windows only — no accumulation nodes,
-      // nothing holds a prior window's tensors; the estate's filmMux
-      // owns the film from the windows' own files.
-      return
-    }
-    if (film === undefined) {
-      film = { images: h.filmImages, audio: h.filmAudio }
-    } else {
-      // THE FILM ACCUMULATION (the director's own law): video rides
-      // their finalize at overlap 0 — the seam's frame dedup already
-      // happened inside each window (the clip finalize trims the
-      // carried overlap off the window's own head before its tail),
-      // so this is the pure temporal accumulate (prev's images own
-      // the overlap; the incoming window's duplicate opening is gone).
-      const acc = g.node('MiniMaxH3FiniteSegmentFinalize', {
-        sampled_latent: h.latOut, images: h.filmImages, audio: h.filmAudio,
-        iteration: 1, overlap_frames: 0, trim_audio_head: false,
-        accumulated_images: film.images,
-      })
-      // AUDIO: the Soft AV seam — the incoming window's audio was
-      // generated WITH the carried audio latent softly released into
-      // its head, so its opening owns the join; the previous film's
-      // tail yields its overlap. A 'cut' seam (overlap 0) keeps the
-      // previous tail whole — a true butt.
-      const prevTail = overlap > 0
-        ? g.node('MiniMaxH3FiniteAudioTrimTail', {
-            audio: film.audio, overlap_frames: overlap,
-          }).out(0)
-        : film.audio
-      const join = g.node('AudioConcat', {
-        audio1: prevTail, audio2: h.filmAudio, direction: 'after',
-      })
-      film = { images: acc.out(1), audio: join.out(0) }
-    }
   })
-  // (the film tail runs only under the valve — with clips to mix at
-  // film time or a single window; a windows-only multi-window film
-  // has NO film node: `film` stays undefined and the estate's
-  // filmMux leads with film_video_mux.mp4)
-  if (stitchInGraph) {
-    const f = film as { images: OutputHandle, audio: OutputHandle }
-    // THE CLIPS-STITCH (2026-09-21 — the Music row's lost consumer
-    // restored; the original cc_stage_audio_clips/ffmpeg_concat amix,
-    // reborn IN-GRAPH per the engine law): positioned dialogue/music
-    // clips mix over the final cut at FILM time, seamless across
-    // window seams (the mix never sees the seams — it rides the
-    // accumulated film audio). Per clip: LoadAudio (the submit-time
-    // upload walk stages data: URLs and asset URLs to input-dir
-    // names) → MeliteAudioDelay (head silence to the film position,
-    // exact duration fit) → MeliteAudioMix chained over the film
-    // track (length_mode 'base' — a clip never extends the cut).
-    // NO clips = no nodes = a byte-identical graph.
-    const placements = clips.map((clip, ci) => {
-      // clip.start is DOC-anchored (call-span coordinates — the
-      // stamp, the studio lanes, and the tool face all speak doc).
-      // The film seat of doc frame f owned by window w is
-      // w.filmStartSec + (f − w.docStart)/24 — the owner map with
-      // NO carry term (the trim already lives inside filmStartSec).
-      // Two measured wrongs bound this: the ORIGINAL added carry
-      // (+22f late on window 2+, proof run-77df); the first
-      // correction dropped the whole map (start/24 — right for
-      // windows 1–2, 22f late per EXTRA extend seam, adversarial
-      // 3-window repro). The STAMP side keeps its own clock (delay
-      // = start − genStart feeds the pin + the tag) — proven true,
-      // do not touch it.
-      const fFrame = clip.start
-      // owning window: the LAST whose docStart ≤ f (doc spans tile;
-      // a clip before the film's first doc frame clamps to 0s)
-      let owner = windowFilm[0]!
-      for (const w of windowFilm) if (fFrame >= w.docStart) owner = w
-      const filmSec = Math.max(0, owner.filmStartSec + (fFrame - owner.docStart) / 24)
-      const durSec = clip.dur > 0 ? clip.dur / 24 : 0
-      return { clip, ci, filmSec, durSec }
-    })
-    // THE DUCK MATRIX (D-M-E, 2026-09-22): the film's generated
-    // audio yields (duck_depth_db, 20ms ramps) during every clip
-    // that CONDITIONED a window — the doubling case (the model
-    // reproduces what it hears pinned: voice, blast, score). The
-    // MUSIC-class placements duck under the dialogue and sfx spans
-    // (the score yields to speech and impacts); dialogue and sfx
-    // ride at unity — an explosion bows to no whisper.
-    const span = (pl: { filmSec: number, durSec: number }): string =>
-      `${Math.round(pl.filmSec * 1000) / 1000}:${Math.round((pl.filmSec + pl.durSec) * 1000) / 1000}`
-    const stampedPlacements = placements.filter((pl) => conditioned.has(pl.ci) && pl.durSec > 0)
-    const duckSpans = stampedPlacements.map(span)
-    const musicDuckSpans = stampedPlacements
-      .filter((pl) => pl.clip.cls !== 'music')
-      .map(span)
-    const duckDb = typeof p.duck_depth_db === 'number' && Number.isFinite(p.duck_depth_db)
-      ? p.duck_depth_db : -14
-    let filmAudio = f.audio
-    if (duckSpans.length > 0) {
-      filmAudio = g.node('MeliteAudioDuck', {
-        audio: f.audio, segments: duckSpans.join(';'), gain_db: duckDb, ramp_ms: 20,
-      }).out(0)
-    }
-    // music-class placements pre-mix and duck BEFORE joining the
-    // film track (their own sub-bus); dialogue/sfx place straight
-    // onto the film track at unity.
-    let musicBus: OutputHandle | undefined
-    for (const { clip, filmSec, durSec } of placements) {
-      if (clip.cls === 'music') continue
-      const loaded = g.node('LoadAudio', { audio: clip.src }).out()
-      const placed = g.node('MeliteAudioDelay', {
-        audio: loaded,
-        delay_seconds: Math.round(filmSec * 1000) / 1000,
-        duration_seconds: durSec > 0 ? Math.round((filmSec + durSec) * 1000) / 1000 : 0,
-      }).out(0)
-      filmAudio = g.node('MeliteAudioMix', {
-        audio1: filmAudio, audio2: placed, length_mode: 'base',
-      }).out(0)
-    }
-    for (const { clip, filmSec, durSec } of placements) {
-      if (clip.cls !== 'music') continue
-      const loaded = g.node('LoadAudio', { audio: clip.src }).out()
-      const placed = g.node('MeliteAudioDelay', {
-        audio: loaded,
-        delay_seconds: Math.round(filmSec * 1000) / 1000,
-        duration_seconds: durSec > 0 ? Math.round((filmSec + durSec) * 1000) / 1000 : 0,
-      }).out(0)
-      musicBus = musicBus === undefined ? placed : g.node('MeliteAudioMix', {
-        audio1: musicBus, audio2: placed, length_mode: 'base',
-      }).out(0)
-    }
-    if (musicBus !== undefined) {
-      if (musicDuckSpans.length > 0) {
-        musicBus = g.node('MeliteAudioDuck', {
-          audio: musicBus, segments: musicDuckSpans.join(';'), gain_db: duckDb, ramp_ms: 20,
-        }).out(0)
-      }
-      filmAudio = g.node('MeliteAudioMix', {
-        audio1: filmAudio, audio2: musicBus, length_mode: 'base',
-      }).out(0)
-    }
-    const created = g.node('CreateVideo', {
-      images: f.images, audio: filmAudio, fps: 24, bit_depth: 8,
-      // color_space: pin autofill "sRGB"
-    })
-    g.node('SaveVideo', {
-      video: created.out(), filename_prefix: 'h3_t4_film',
-      format: 'mp4', codec: 'h264',
-    })
+  // ── THE FILM TAIL, FILE FORM (§20's amendment, 2026-09-22 — the
+  // operator's provenance law: every artifact traces to a
+  // composition of cards, never a harness side-effect) ──────────────
+  //
+  // The ORIGINAL tail consumed every window's tensors as graph data
+  // (the scheduler kept the whole film's backlog alive while later
+  // windows sampled — the 43h-OOM signature). The disk-side valve
+  // that replaced it died the same day (out-of-band ffmpeg). THIS
+  // tail inverts the memory law while staying in-graph:
+  //
+  //   1. every window SAVES its own clip (h3_t4_w<k>) — its tensors
+  //      die at that SaveVideo (nothing downstream consumes them);
+  //   2. MeliteUnload eats the LAST window's SaveVideo passthrough —
+  //      the ordering wire (windows chain, so the last save is
+  //      downstream of them all) — flushes the allocator WITHOUT
+  //      dropping model weights (the next run pays no reload);
+  //   3. MeliteConcatVideos decodes the saved FILES back in
+  //      (IMAGE+AUDIO+fps) — CPU-side, strictly after every save;
+  //   4. the clips overlay + duck matrix mix at film time
+  //      (filmMix.ts's manifest — the same law the stamps read);
+  //   5. CreateVideo → SaveVideo h3_t4_film. The film is a graph
+  //      output; the estate's engineFilmName presents it first.
+  //
+  // (Single-window docs never reach this tail — the compose
+  // dispatch keeps the frozen single-window shape byte-identical;
+  // the film is a MULTI-call property, and the single-call mapping
+  // refuses clips loudly downstream of the dispatch.)
+  const lastSave = prev?.savePassthrough
+  /* v8 ignore next 1 -- both family arms assign the passthrough (every path saves); a future arm that forgets refuses here, loudly */
+  if (lastSave === undefined) {
+    throw new Error('[h3-timeline] a family arm saved no clip to pass the film boundary — the film tail cannot order its loads')
   }
+  const manifest = computeFilmMix({
+    spans,
+    clips,
+    windowSecs: stanzaSecs(spans),
+    // the knob's declared default (−14) walks through the schema
+    // door; computeFilmMix owns the fallback for the absent key
+    duckDb: p.duck_depth_db as number | undefined,
+  })
+  const after = g.node('MeliteUnload', {
+    video: lastSave, unload_models: false,
+  }).out(0)
+  const concat = g.node('MeliteConcatVideos', {
+    videos: calls.map((_c, i): string => `h3_t4_w${i + 1}`).join(','),
+    after,
+  })
+  // THE DUCK MATRIX (D-M-E, 2026-09-22, the manifest's voice): the
+  // film's generated audio yields (duck_depth_db, 20ms ramps)
+  // during every clip that CONDITIONED a window — the doubling case
+  // (the model reproduces what it hears pinned: voice, blast,
+  // score). The MUSIC-class placements duck under the dialogue and
+  // sfx spans (the score yields to speech and impacts); dialogue
+  // and sfx ride at unity — an explosion bows to no whisper.
+  let filmAudio = concat.out(1)
+  if (manifest.duckSpans.length > 0) {
+    filmAudio = g.node('MeliteAudioDuck', {
+      audio: filmAudio, segments: manifest.duckSpanString,
+      gain_db: manifest.duckDb, ramp_ms: 20,
+    }).out(0)
+  }
+  // music-class placements pre-mix and duck BEFORE joining the film
+  // track (their own sub-bus); dialogue/sfx place straight onto the
+  // film track at unity. (LoadAudio: the submit-time upload walk
+  // stages data: URLs and asset URLs to input-dir names. Delay:
+  // head silence to the film seat, exact duration fit. Mix:
+  // length_mode 'base' — a clip never extends the cut.)
+  let musicBus: OutputHandle | undefined
+  for (const pl of manifest.placements) {
+    if (pl.cls === 'music') continue
+    const clip = clips[pl.clip]!
+    const loaded = g.node('LoadAudio', { audio: clip.src }).out()
+    const placed = g.node('MeliteAudioDelay', {
+      audio: loaded, delay_seconds: pl.filmSec,
+      duration_seconds: pl.durSec > 0
+        ? Math.round((pl.filmSec + pl.durSec) * 1000) / 1000
+        : 0,
+    }).out(0)
+    filmAudio = g.node('MeliteAudioMix', {
+      audio1: filmAudio, audio2: placed, length_mode: 'base',
+    }).out(0)
+  }
+  for (const pl of manifest.placements) {
+    if (pl.cls !== 'music') continue
+    const clip = clips[pl.clip]!
+    const loaded = g.node('LoadAudio', { audio: clip.src }).out()
+    const placed = g.node('MeliteAudioDelay', {
+      audio: loaded, delay_seconds: pl.filmSec,
+      duration_seconds: pl.durSec > 0
+        ? Math.round((pl.filmSec + pl.durSec) * 1000) / 1000
+        : 0,
+    }).out(0)
+    musicBus = musicBus === undefined ? placed : g.node('MeliteAudioMix', {
+      audio1: musicBus, audio2: placed, length_mode: 'base',
+    }).out(0)
+  }
+  if (musicBus !== undefined) {
+    if (manifest.musicDuckSpans.length > 0) {
+      musicBus = g.node('MeliteAudioDuck', {
+        audio: musicBus, segments: manifest.musicDuckSpanString,
+        gain_db: manifest.duckDb, ramp_ms: 20,
+      }).out(0)
+    }
+    filmAudio = g.node('MeliteAudioMix', {
+      audio1: filmAudio, audio2: musicBus, length_mode: 'base',
+    }).out(0)
+  }
+  const filmCreated = g.node('CreateVideo', {
+    images: concat.out(0), audio: filmAudio, fps: concat.out(2), bit_depth: 8,
+    // color_space: pin autofill "sRGB"
+  })
+  g.node('SaveVideo', {
+    video: filmCreated.out(), filename_prefix: 'h3_t4_film',
+    format: 'mp4', codec: 'h264',
+  })
 }
 
 /** The seam's cross-window wires: the RAW decode + sampler handles
@@ -990,6 +944,13 @@ export interface WindowHandles {
    *  currency (the film must not differ from its windows). */
   filmImages: OutputHandle
   filmAudio: OutputHandle
+  /** the window's SaveVideo VIDEO passthrough — the film tail's
+   *  ordering wire: the MeliteUnload boundary consumes it, so the
+   *  file loaders provably wait for the saves (and the passthrough
+   *  tensor dies at the boundary — the §20 law). Assigned by BOTH
+   *  family arms (every family path saves); the film tail refuses
+   *  loud if a future arm forgets. */
+  savePassthrough?: OutputHandle
 }
 
 // THE REF WIRE FORM (one law, three readers): refs ride as comma
@@ -1002,6 +963,35 @@ const wireList = (v: unknown): string[] =>
     : typeof v === 'string'
       ? v.split(',').map((x) => x.trim()).filter((x) => x !== '')
       : []
+
+/** THE RENDER GRID (roadmap §26 — measured live 2026-09-22: three
+ *  film runs died inside SamplerCustomAdvanced on a knob-pinned
+ *  off-grid length, each burning partial-window GPU): the engine
+ *  lawfully renders 22+17k frames in [22,362]. The snap arms compute
+ *  on-grid lengths by construction — but a call's knobs.length PIN
+ *  bypasses every snap, so the pin is validated, never trusted.
+ *  gridSnap names the nearest legal length; assertGridLength refuses
+ *  anything else at compose (zero GPU) with the fix in the message. */
+export function gridSnap(length: number): number {
+  const k = Math.round((length - 22) / 17)
+  return Math.min(362, Math.max(22, 22 + 17 * k))
+}
+export function assertGridLength(length: unknown, where: string): number {
+  if (
+    typeof length !== 'number' || !Number.isInteger(length) ||
+    length < 22 || length > 362 || (length - 22) % 17 !== 0
+  ) {
+    const nearest = typeof length === 'number' && Number.isFinite(length)
+      ? gridSnap(Math.min(362, Math.max(22, Math.round(length))))
+      : 124
+    throw new Error(
+      `${where}: length ${String(length)}f is off-grid — the engine renders ` +
+      `22+17k frames in [22,362] (nearest legal: ${nearest}f); ` +
+      `the doc-proven geometry is 0→124→243→362`,
+    )
+  }
+  return length
+}
 
 function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHandles {
   // REFS IMPLY THE R2V LANE (the bundle IS the r2v input): a
@@ -1018,6 +1008,10 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     throw new Error(`unknown window family '${String(p.variant)}' (known: ${[...FAMILIES].sort().join(', ')})`)
   }
   const k = (p.k ?? 1) as number
+  // THE GRID GATE (§26, defense in depth): no window renders
+  // off-grid — the film loop's pin check voices the call span, this
+  // one catches the single-call path and any direct caller.
+  assertGridLength(p.length, `h3-timeline window ${k}`)
   const isT4r = family === 't4r'
   const isChain = family === 't4_chain'
   const prompt = (p.prompt ?? '') as string
@@ -1348,10 +1342,12 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     }).out()
     const picked = g.node('ComfySwitchNode', {
       // THE SLA MASTER SWITCH (2026-09-21): sla_enabled=false takes
-      // the dense arm; absent = on (every existing doc); the hidden
-      // legacy sla_switch spelling still rides when sla_enabled is
-      // silent.
-      switch: (p.sla_enabled as boolean | undefined) ?? (p.sla_switch as boolean | undefined) ?? true, on_true: sla, on_false: mab,
+      // the dense arm; absent = on (every existing doc). The legacy
+      // `?? sla_switch ?? true` arms died 2026-09-22 by the
+      // no-silent-resolution law: sla_enabled is DECLARED with
+      // .default(true), so the walk always delivers a boolean and
+      // the fallback arms were unreachable lies.
+      switch: p.sla_enabled as boolean, on_true: sla, on_false: mab,
     }).out()
     const adaln = g.node('H3AdaLNLoRAFix', { model: picked, mode: 'port' }).out()
     sigmaModel = g.node('MiniMaxH3SigmaShift', {
@@ -1523,11 +1519,17 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       images: vdec, audio: vadec, fps: fpsInput, bit_depth: 8,
       // color_space: pin autofill "sRGB"
     })
-    g.node('SaveVideo', {
-      video: created.out(), filename_prefix: 'video/ComfyUI',
+    // ONE WINDOW-NAMING LAW (2026-09-22, the file-tail amendment):
+    // every window saves under h3_t4_w<k> — the t4r arm's legacy
+    // 'video/ComfyUI' prefix died (multi-window anchored films were
+    // unaddressable: every window collided on one prefix, and the
+    // file tail's loader could not name them).
+    const saved = g.node('SaveVideo', {
+      video: created.out(), filename_prefix: `h3_t4_w${k}`,
       format: 'auto', codec: 'h264',
       'codec.encoding': 're-encode', 'codec.encoding.crf': 10.0,
     })
+    rawHandles.savePassthrough = saved.out(0)
     delivered = { images: vdec, audio: vadec }
   } else {
     // sharpen leaves: only the EXPLICITLY-set ones patch the grouped
@@ -1599,10 +1601,11 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       images: sharpSw, audio: vadec, fps: interpOn ? 24 * interpMult : 24, bit_depth: 8,
       // color_space: pin autofill "sRGB"
     })
-    g.node('SaveVideo', {
+    const saved = g.node('SaveVideo', {
       video: created.out(), filename_prefix: `h3_t4_w${k}`,
       format: 'mp4', codec: 'h264',
     })
+    rawHandles.savePassthrough = saved.out(0)
     delivered = { images: sharpSw, audio: vadec }
   }
 
@@ -1670,12 +1673,15 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // admission covers the card's own served surface, image-gen's
     // recipe-knob law).
     admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'motion_*', 'noise_seed', 'quant', 'recipe', 'ref_image_size', 'sla_*', 'variant'],
-    // the six packs the window graph rides (EXTENSION LAW — mirrors
-    // the python card's requires tuple verbatim)
+    // the packs the window graph rides (EXTENSION LAW) + the film
+    // tail's file boundary (melite-utility-nodes: MeliteUnload +
+    // MeliteConcatVideos) + the overlay's audio chain
+    // (melite-audio-nodes: Delay/Mix/Duck).
     requires: [
       'comfyui-h3-motion-context', 'ComfyUI-PlagueKind-Nodes',
       'ComfyUI-Frame-Interpolation', 'ComfyUI-KJNodes',
       'ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-LTXVideo',
+      'melite-utility-nodes', 'melite-audio-nodes',
     ],
     schema,
     // the emitter carrier (this card's schema is the hand-written

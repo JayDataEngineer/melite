@@ -24,6 +24,8 @@ import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { gridSnap } from "../src/card.ts";
+import { computeFilmMix, parseFilmMixClips } from "../src/filmMix.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -162,15 +164,14 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     assert.ok(patched, "window 2's guider carries the drift-controlled model");
   });
 
-  it("the seam's overlap leaves the window's own clip (finalize); with clips the film joins soft in-graph", () => {
+  it("the seam's overlap leaves the window's own clip (finalize); with clips the film still joins on disk (windows only)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
-        // a positioned clip closes the DISK-STITCH VALVE (F-6c): the
-        // film-level mix owns the join, so the seam machinery composes.
-        // (A clips-free doc takes the disk path — no join nodes at all —
-        // pinned in card.spec.ts's valve test.)
+        // a positioned clip no longer closes a valve: the overlay
+        // seats moved to filmMix.ts, so even a clips-carrying doc
+        // emits windows only (the estate joins from disk).
         audio_clips: [{ src: "/a/line.flac", start_frame: 10, dur_frames: 40, text: "words" }],
       }),
       model, g, "run_seam_dedup",
@@ -182,17 +183,16 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     assert.equal(fin.length, 1);
     assert.equal(fin[0]![1].inputs.overlap_frames, 22);
     assert.equal(fin[0]![1].inputs.trim_audio_head, true, "a clip never replays its seam");
-    // THE FILM: no FilmConcat anywhere — accumulation through their
-    // finalize (video) + the soft audio join (tail yields, incoming head owns)
+    // THE FILM: no FilmConcat anywhere — and no top-level
+    // accumulation either (the windows tile from disk; the estate
+    // mux owns the join, with or without positioned clips)
     assert.equal(ofClass(out, "MiniMaxH3FilmConcat").length, 0, "the old concat is forgotten");
     const acc = ofClass(out, "MiniMaxH3FiniteSegmentFinalize").filter(([id]) => !id.startsWith("window"));
-    assert.equal(acc.length, 1, "the film accumulates at the prompt's top level (valve closed: clips ride)");
-    assert.equal(acc[0]![1].inputs.overlap_frames, 0, "video dedup already happened in-window");
+    assert.equal(acc.length, 0, "no top-level accumulation — positioned clips ride the disk-side manifest");
     const tail = ofClass(out, "MiniMaxH3FiniteAudioTrimTail");
-    assert.equal(tail.length, 1, "the previous film audio yields its overlap");
-    assert.equal(tail[0]![1].inputs.overlap_frames, 22);
+    assert.equal(tail.length, 0, "no previous-film tail yields in-graph");
     const joins = ofClass(out, "AudioConcat");
-    assert.equal(joins.length, 1, "the film's audio joins after the trimmed tail");
+    assert.equal(joins.length, 0, "no in-graph audio join — the estate concats the window files");
   });
 
   it("a blank call text REFUSES at the door — a call owns its text, the film prompt is not a fallback (the no-fallbacks law, 2026-09-21)", () => {
@@ -283,6 +283,53 @@ describe("the film's per-window stanza (guides, refs, lora steps, length pins)",
     const r2v1 = scoped(out, "window1_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.length;
     const r2v2 = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.length;
     assert.notEqual(r2v2, 56, "window 2 never renders the inert doc-level default");
+  });
+});
+
+describe("the render grid gate (roadmap §26 — zero-GPU refusal, never a sampler death)", () => {
+  it("gridSnap names the nearest legal length", () => {
+    assert.equal(gridSnap(124), 124);
+    assert.equal(gridSnap(136), 141);
+    assert.equal(gridSnap(10), 22);
+    assert.equal(gridSnap(400), 362);
+  });
+
+  it("a knob-pinned off-grid length refuses at the walk (the 136f death, caught at validate)", () => {
+    assert.throws(
+      () => def.schema({ calls: [SHOT({ knobs: { length: 136 } })] }),
+      /calls\[0\]\.knobs\.length: length 136f is off-grid.*nearest legal: 141f/,
+    );
+  });
+
+  it("an on-grid pin rides the walk untouched", () => {
+    const out = def.schema({ calls: [SHOT({ knobs: { length: 124 } })] }) as Record<string, unknown>;
+    assert.equal(((out.calls as Array<Record<string, unknown>>)[0]!.knobs as Record<string, unknown>).length, 124);
+  });
+
+  it("an off-grid pin smuggled past the walk refuses at the film loop with the span voice", () => {
+    // a stale or direct caller bypassing the walk — the compose door
+    // still refuses before any node builds (zero GPU)
+    const walked = def.schema({
+      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+    }) as Record<string, unknown>;
+    ((walked.calls as Array<Record<string, unknown>>)[1]!.knobs as Record<string, unknown>) = { length: 136 };
+    const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose(walked, model, g, "run_grid_smuggled"),
+      /h3-timeline window 2 \(span 56→124\): length 136f is off-grid.*doc-proven geometry is 0→124→243→362/,
+    );
+  });
+
+  it("an off-grid pin on a single-call doc refuses at the compose carrier (the single-call lift)", () => {
+    const walked = def.schema({ calls: [SHOT()] }) as Record<string, unknown>;
+    ((walked.calls as Array<Record<string, unknown>>)[0]!.knobs as Record<string, unknown>) = { length: 136 };
+    const g = new GraphBuilder();
+    // the carrier walk enforces the grid step on the lifted length —
+    // the renderer's own gate stands behind it as defense in depth
+    assert.throws(
+      () => def.compose(walked, model, g, "run_grid_single"),
+      /single-call lift: ValidationError: \$\.length expected number multiple of 17 but got 136/,
+    );
   });
 });
 
@@ -651,63 +698,84 @@ describe("the overlays cannot go around Schemaster", () => {
 // merely declared + serialized (the ledger's old lie) — the compose
 // CONSUMES it, and absent clips leave a byte-identical graph. ──
 
-describe("the clips-stitch (the Music row lands in the rendered film)", () => {
+describe("the clips-stitch (positioned clips land in the disk-side film)", () => {
   const CLIP = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
     id: "c1", name: "line1.wav", src: "data:audio/wav;base64,AAA", start_frame: 100, dur_frames: 48, ...over,
   });
 
-  it("a clip mixes over the film at its doc seat (owner map, no carry — the film clock)", () => {
+  it("a clip mixes over the film at its doc seat IN-GRAPH (owner map, no carry — the film clock)", () => {
+    const rawClips = [CLIP()];
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
-        audio_clips: [CLIP()],
+        audio_clips: rawClips,
       }),
       model, g, "run_clips_mix",
     );
     const out = graphOf(g);
-    // the chain rides: LoadAudio (src verbatim — the submit walk stages it)
-    const load = ofClass(out, "LoadAudio");
-    assert.equal(load.length, 1, "the clip loads");
-    assert.equal(load[0]![1].inputs.audio, "data:audio/wav;base64,AAA");
+    // THE FILE TAIL (§20's amendment): the graph keeps the window's
+    // conditioning stamp (MeliteAudioSlice → pin) AND renders the
+    // film-time chain — LoadAudio → delay → mix → CreateVideo →
+    // SaveVideo h3_t4_film — from the saved window files.
+    assert.ok(
+      Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "h3_t4_film"),
+      "the film saves in-graph",
+    );
+    const loads = ofClass(out, "LoadAudio").filter(([id]) => !id.startsWith("window"));
+    assert.equal(loads.length, 1, "one film-level LoadAudio");
+    assert.equal(loads[0]![1].inputs.audio, "data:audio/wav;base64,AAA", "the clip's own src");
     // FILM TIME (corrected 2026-09-22 — the D-M-E proof measured
     // the old carry-head formula landing takes 22f late: a take at
     // film f96 overlaid at 4.917s, r=0.85 at the wrong seat, ~0 at
-    // the right one): the clip at film frame 100 rides start/24 =
-    // 100/24 ≈ 4.167s. NO window accounting on the film chain — the
-    // conditioning path carries its own window-scoped delay; the
-    // film-level chain is unscoped (clip.start IS film time).
-    const delay = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window"));
-    assert.equal(delay.length, 1, "the clip is placed");
-    assert.equal(delay[0]![1].inputs.delay_seconds, 4.167, "film-time placement (start/24, no carry)");
-    assert.equal(delay[0]![1].inputs.duration_seconds, 6.167, "exact fit (delay + dur_frames/24)");
-    // the mix: one node, chained INTO CreateVideo's audio
-    const mix = ofClass(out, "MeliteAudioMix");
-    assert.equal(mix.length, 1, "one chained mix");
-    assert.equal(mix[0]![1].inputs.length_mode, "base", "a clip never extends the cut");
-    const create = ofClass(out, "CreateVideo");
-    assert.ok(create.length >= 1);
-    const filmCreate = create.find(([id]) => !id.startsWith("window"))!;
-    assert.deepEqual((filmCreate[1].inputs.audio as [string, number])[0], mix[0]![0], "the film's audio IS the mixed track");
+    // the right one). The clip at doc frame 100 rides 100/24 ≈
+    // 4.167s with a 2s fit. NO window accounting on the film seat —
+    // the conditioning path carries its own window-scoped delay;
+    // the film-level seat is unscoped (clip.start IS film time
+    // through the owner map).
+    const manifest = computeFilmMix({
+      spans: [{ start: 0, end: 56 }, { start: 56, end: 124 }],
+      clips: parseFilmMixClips(rawClips),
+      windowSecs: [56 / 24, 73 / 24],
+    });
+    assert.deepEqual(manifest.placements.map((p) => [p.filmSec, p.durSec]), [[4.167, 2]]);
+    assert.equal(manifest.duckSpanString, "4.167:6.167");
+    assert.equal(manifest.musicDuckSpanString, "", "a lone music span never ducks the music bus");
+    const delay = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window"))[0]!;
+    assert.equal(Number(delay[1].inputs.delay_seconds), 4.167, "the delay seats the take at the manifest's film seat");
+    assert.equal(Number(delay[1].inputs.duration_seconds), 6.167, "the fit = seat + dur (4.167 + 2)");
+    const mix = ofClass(out, "MeliteAudioMix")[0]!;
+    assert.equal(mix[1].inputs.length_mode, "base", "the mix keeps 'base' — a clip never extends the cut");
   });
 
-  it("two clips chain two mixes in doc order (each Mix's base is the previous)", () => {
+  it("two clips ride one mix chain in doc order (chained in-graph mixes, the file tail's own bus)", () => {
+    const rawClips = [CLIP(), CLIP({ id: "c2", name: "line2.wav", src: "data:audio/mpeg;base64,BBB", start_frame: 0, dur_frames: 24 })];
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
-        audio_clips: [CLIP(), CLIP({ id: "c2", name: "line2.wav", src: "data:audio/mpeg;base64,BBB", start_frame: 0, dur_frames: 24 })],
+        audio_clips: rawClips,
       }),
       model, g, "run_clips_chain",
     );
     const out = graphOf(g);
-    assert.equal(ofClass(out, "MeliteAudioMix").length, 2, "chained per clip");
-    assert.equal(ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window")).length, 2);
-    assert.equal(ofClass(out, "LoadAudio").length, 2);
-    // clip 2 at film frame 0 → 0s delay; clip 1 at film frame
+    assert.equal(ofClass(out, "MeliteAudioMix").length, 2, "two chained mixes — one per clip, in doc order");
+    assert.equal(ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window")).length, 2, "one film-level delay per clip");
+    assert.equal(ofClass(out, "LoadAudio").filter(([id]) => !id.startsWith("window")).length, 2, "one film-level load per clip");
+    // clip 2 at doc frame 0 → 0s seat; clip 1 at doc frame
     // 100 → 100/24 (the corrected clock — never the old 5.083)
-    const delays = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window")).map(([, n]) => n.inputs.delay_seconds).sort();
-    assert.deepEqual(delays, [0, 4.167]);
+    const manifest = computeFilmMix({
+      spans: [{ start: 0, end: 56 }, { start: 56, end: 124 }],
+      clips: parseFilmMixClips(rawClips),
+      windowSecs: [56 / 24, 73 / 24],
+    });
+    assert.deepEqual(manifest.placements.map((p) => p.filmSec), [4.167, 0]);
+    assert.deepEqual(manifest.placements.map((p) => p.filmSec).sort((a, b) => a - b), [0, 4.167]);
+    const seats = ofClass(out, "MeliteAudioDelay")
+      .filter(([id]) => !id.startsWith("window"))
+      .map(([, n]) => Number(n.inputs.delay_seconds))
+      .sort((a, b) => a - b);
+    assert.deepEqual(seats, [0, 4.167], "the graph delays seat both clips at the manifest's film seats");
   });
 
   it("NO clips = NO nodes (absent clips leave a byte-identical graph)", () => {
@@ -831,7 +899,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     assert.equal(scoped(out, "window1_", "MeliteAudioSlice").length, 0);
   });
 
-  it("THE STAMPED SEAM WALL (2026-09-22): a stamped window still chains — t4r films keep the drift-control continuation AND the carried-head trim", () => {
+  it("THE STAMPED SEAM WALL (2026-09-22): a stamped window still chains — t4r films keep the drift-control continuation AND the carried-head trim (the film join moved to disk)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
@@ -853,51 +921,72 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     assert.equal(fin.length, 1, "the window's own clip finalize (the head trim)");
     assert.equal(fin[0]![1].inputs.overlap_frames, 22, "the carried head leaves picture and sound");
     assert.equal(fin[0]![1].inputs.trim_audio_head, true, "a clip never replays the seam it grew from");
-    // the film level still yields the previous tail to the join
+    // the film level yields nothing in-graph: the carried overlap
+    // already left the window's own clip, and the estate joins the
+    // window files from disk (windows only, even stamped)
     const tail = ofClass(out, "MiniMaxH3FiniteAudioTrimTail");
-    assert.equal(tail.length, 1, "the previous film's tail yields its overlap");
-    assert.equal(tail[0]![1].inputs.overlap_frames, 22, "by the same carry");
+    assert.equal(tail.length, 0, "no previous-film tail yields in-graph");
+    assert.equal(ofClass(out, "AudioConcat").length, 0, "no in-graph audio join");
     // AND the stamp itself survives the family routing (both halves
     // of the interaction, one graph)
     assert.equal(scoped(out, "window2_", "MeliteAudioSlice").length, 1, "the dialogue slice still rides");
     assert.equal(scoped(out, "window2_", "MiniMaxH3ReferenceToVideo").length, 1, "the r2v arm still renders it");
   });
 
-  it("the generated voice DUCKS under the conditioned clip at film time (the doubling fix)", () => {
+  it("the generated voice DUCKS under the conditioned clip at film time (the doubling fix lives in the manifest)", () => {
+    const rawClips = [CLIP()];
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
-        audio_clips: [CLIP()],
+        audio_clips: rawClips,
       }),
       model, g, "run_dialogue_duck",
     );
     const out = graphOf(g);
+    // THE DOUBLING FIX, IN-GRAPH (§20's amendment): the file tail's
+    // MeliteAudioDuck rides the film track — the generated voice
+    // yields under the take the window was conditioned on
     const ducks = ofClass(out, "MeliteAudioDuck");
-    assert.equal(ducks.length, 1, "one duck over the film audio");
+    assert.equal(ducks.length, 1, "one film duck — the generated track under the conditioned clip");
     // the clip's FULL film span ducks (100/24 ≈ 4.167s for 2s =
     // 48 frames — the corrected clock; the old 5.083 carried the
     // phantom +22f and ducked the wrong seat)
-    assert.equal(ducks[0]![1].inputs.segments, "4.167:6.167");
-    assert.equal(ducks[0]![1].inputs.gain_db, -14, "the declared default rides when the knob is unset");
-    // the mix chain rides OVER the ducked track
-    const mix = ofClass(out, "MeliteAudioMix")[0]!;
-    assert.deepEqual(mix[1].inputs.audio1, [ducks[0]![0], 0], "the mixes ride the ducked film audio");
+    const manifest = computeFilmMix({
+      spans: [{ start: 0, end: 56 }, { start: 56, end: 124 }],
+      clips: parseFilmMixClips(rawClips),
+      windowSecs: [56 / 24, 73 / 24],
+    });
+    assert.equal(manifest.duckSpanString, "4.167:6.167");
+    assert.equal(manifest.duckDb, -14, "the declared default rides when the knob is unset");
+    assert.equal(String(ducks[0]![1].inputs.segments), "4.167:6.167", "the duck spans the clip's true film seat");
+    assert.equal(ducks[0]![1].inputs.gain_db, -14, "the duck rides the declared default depth");
   });
 
-  it("duck depth is a KNOB (roadmap §14): duck_depth_db rides the node, the declared default −14 (never a pinned literal)", () => {
+  it("duck depth is a KNOB (roadmap §14): duck_depth_db rides the manifest, the declared default −14 (never a pinned literal)", () => {
+    const rawClips = [CLIP()];
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
-        audio_clips: [CLIP()],
+        audio_clips: rawClips,
         duck_depth_db: -22,
       }),
       model, g, "run_duck_knob",
     );
-    const ducks = ofClass(graphOf(g), "MeliteAudioDuck");
-    assert.equal(ducks.length, 1);
-    assert.equal(ducks[0]![1].inputs.gain_db, -22, "the knob's value rides the node verbatim");
+    assert.equal(ofClass(graphOf(g), "MeliteAudioDuck")[0]![1].inputs.gain_db, -22, "the knob wires the in-graph duck's depth verbatim");
+    const gated = def.schema({
+      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      audio_clips: rawClips,
+      duck_depth_db: -22,
+    }) as Record<string, unknown>;
+    const manifest = computeFilmMix({
+      spans: [{ start: 0, end: 56 }, { start: 56, end: 124 }],
+      clips: parseFilmMixClips(rawClips),
+      windowSecs: [56 / 24, 73 / 24],
+      duckDb: gated.duck_depth_db as number,
+    });
+    assert.equal(manifest.duckDb, -22, "the knob's value rides the manifest verbatim");
     // the knob is DECLARED on the schema (the studio-contract law: no
     // UI fiction the door would drop)
     const spec = def.schema({}) as Record<string, unknown>;
@@ -907,20 +996,91 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     );
   });
 
-  it("a MUSIC-ONLY clip (no window hears it) never ducks — but still overlays", () => {
+  it("a MUSIC-ONLY clip no window hears still overlays IN-GRAPH (never a duck — nothing doubles)", () => {
+    const rawClips = [CLIP({ start_frame: 500, dur_frames: 100 })];
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
-        audio_clips: [CLIP({ start_frame: 500, dur_frames: 100 })],
+        audio_clips: rawClips,
       }),
       model, g, "run_music_only",
     );
     const out = graphOf(g);
     assert.equal(ofClass(out, "MeliteAudioDuck").length, 0, "no doubling case, no duck");
     assert.equal(ofClass(out, "MeliteAudioSlice").length, 0, "no window hears it");
-    assert.equal(ofClass(out, "MeliteAudioMix").length, 1, "the overlay still places it");
-    assert.ok((ofClass(out, "MeliteAudioDelay")[0]![1].inputs.duration_seconds as number) > 0, "its own length rides");
+    assert.equal(ofClass(out, "MeliteAudioMix").length, 1, "the file tail still overlays it — a graph output, not a side-effect");
+    assert.equal(
+      ofClass(out, "LoadAudio").filter(([id]) => !id.startsWith("window")).length, 1,
+      "the unheard clip still loads at film time",
+    );
+    const manifest = computeFilmMix({
+      spans: [{ start: 0, end: 56 }, { start: 56, end: 124 }],
+      clips: parseFilmMixClips(rawClips),
+      windowSecs: [56 / 24, 73 / 24],
+    });
+    assert.equal(manifest.placements.length, 1, "the overlay still places it");
+    assert.ok(manifest.placements[0]!.durSec > 0, "its own length rides");
+    assert.equal(manifest.duckSpans.length, 0, "an unheard clip never ducks");
+  });
+
+  it("dur-0 clips are overlay-only: no window hears them, no duration fit — both class loops ride the unfitted arm", () => {
+    const rawClips = [
+      CLIP({ dur_frames: 0, text: "get down, now." }),
+      CLIP({ id: "m0", src: "data:audio/mpeg;base64,CCC", dur_frames: 0 }),
+    ];
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        audio_clips: rawClips,
+      }),
+      model, g, "run_dur0",
+    );
+    const out = graphOf(g);
+    assert.equal(ofClass(out, "MeliteAudioSlice").length, 0, "a dur-0 clip cannot size a slice — no stamp, no pin");
+    assert.equal(ofClass(out, "MeliteAudioDuck").length, 0, "nothing conditioned, nothing doubles, no duck");
+    const delays = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window"));
+    assert.equal(delays.length, 2, "both classes still place at film time");
+    for (const [, n] of delays) {
+      assert.equal(n.inputs.duration_seconds, 0, "duration_seconds 0 = the unfitted arm (full length, never a fit)");
+    }
+  });
+
+  it("sla_enabled=false forces the chunked path: the t4r SLA selector rides the literal true", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [
+          SHOT({ image: "/m/guide.png" }),
+          SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
+        ],
+        sla_enabled: false,
+      }),
+      model, g, "run_sla_off",
+    );
+    const sel = ofClass(graphOf(g), "ComfySwitchNode")
+      .filter(([, n]) => n.inputs.switch === true);
+    assert.equal(sel.length, 1, "exactly one switch rides the scalar true — the t4r SLA-off (chunked) selector; the t4 arm's master switch rides false (the dense arm)");
+  });
+
+  it("the wire-literal wall: a junk interpolate_enabled string refuses loud at the schema door", () => {
+    assert.throws(
+      () => def.schema({ interpolate_enabled: "junk" }),
+      /interpolate_enabled must be a boolean or the wire literal "true"\/"false"/,
+    );
+  });
+
+  it("THE GRID GATE on a non-numeric pin: refuses with the neutral 124 as the nearest legal length", () => {
+    assert.throws(
+      () => def.compose(
+        def.schema({
+          calls: [SHOT(), SHOT({ text: "pinned", start_frame: 56, end_frame: 124, knobs: { length: "forever" } })],
+        }),
+        model, new GraphBuilder(), "run_grid_junk",
+      ),
+      /nearest legal: 124f/,
+    );
   });
 
   it("THE DOOR GUARD ON THE BUS (2026-09-22, the operator's overlap law; the bed arm retired with the bed): a dialogue-stamped window mutes the user audios — the guide owns the dialogue", () => {

@@ -157,13 +157,20 @@ describe("maskT1 (the selection lane's arms)", () => {
     );
   });
 
-  it("THE FIGURE MASKS (the operator's 2026-10-09 order): sam2_figures picks primary instances through the pack's own ImpactSEGSPicker", () => {
+  it("THE FIGURE MASKS (the operator's 2026-10-09 order): sam2_figures picks primary instances through the pack's own ImpactSEGSPicker — AND rides the SAME two-step (SAM refines the picked SEGS, never step-one segm/rect masks)", () => {
     const g = new GraphBuilder();
     maskT1({ ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person", sam2_figures: [2] }, MASK_PINS, g, "r_fig");
     const row = dump(g);
     const pick = Object.values(row).find((n) => n.class_type === "ImpactSEGSPicker")!;
     assert.equal(pick.inputs.picks, "2", "the figure number rides the picker's picks verbatim");
-    assert.ok(Object.values(row).some((n) => n.class_type === "SegsToCombinedMask"), "the picked SEGS becomes a mask");
+    // the figure arm's SAMDetectorCombined must eat the PICKED segs (the
+    // two-step law: YOLO proposes, SAM extracts — per figure, every class)
+    const sams = Object.values(row).filter((n) => n.class_type === "SAMDetectorCombined");
+    assert.equal(sams.length, 2, "the combined arm AND the figure arm each refine (one SAM per arm)");
+    const figSam = sams.find((n) => JSON.stringify(n.inputs.segs).includes("ImpactSEGSPicker"))!;
+    assert.ok(figSam, "the figure's SAM reads the PICKER's segs, not the raw detection");
+    assert.equal(figSam.inputs.detection_hint, "center-1", "the pack test's own hint rides the figure arm too");
+    assert.equal(figSam.inputs.threshold, 0.93, "the primary's sam_threshold rides the figure arm too");
     const saves = Object.values(row).filter((n) => n.class_type === "SaveImage");
     assert.ok(saves.some((s) => String(s.inputs.filename_prefix).endsWith("mask_figure_2")), "figure two saves its own mask_figure_2");
   });
@@ -410,6 +417,16 @@ describe("maskT1 (the selection lane's arms)", () => {
       () => maskT1({ ...maskBase, primary_class: "p", exports: [["x", "dog", undefined, { mystery: 1 }]], export_kind: ["text"] }, MASK_PINS, new GraphBuilder(), "r_t6"),
       /maskT1: an export tune carries unknown key\(s\) mystery/,
     );
+    // THE AUDIT'S G1: the finite check once covered only 4 of 9
+    // keys — the 5 newer knobs flowed garbage to node inputs (an
+    // engine 400, not a loud lane refusal). EVERY tune key validates.
+    for (const key of ["box_expansion", "hint_threshold", "detection_dilation", "crop_factor", "drop_size"]) {
+      assert.throws(
+        () => maskT1({ ...maskBase, primary_class: "p", exports: [["x", "dog", undefined, { [key]: "lots" }]], export_kind: ["text"] }, MASK_PINS, new GraphBuilder(), `r_g1_${key}`),
+        new RegExp(`maskT1: an export tune's '${key}' must be a finite number`),
+        `${key} validates (G1 wall)`,
+      );
+    }
   });
 });
 

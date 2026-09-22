@@ -34,6 +34,9 @@ type RunStatusResult = {
   artifacts?: Record<string, JsonValue>[];
   error?: string;
   queue_position?: number;
+  planned_stages?: Record<string, JsonValue>[];
+  card?: string;
+  run_age_s?: number;
 } & Record<string, JsonValue>;
 
 export function runStatus(request: EstateRequest): ToolDefinition {
@@ -87,6 +90,9 @@ export function runStatus(request: EstateRequest): ToolDefinition {
           artifacts: { type: 'array', description: 'Landed artifact rows (path, bytes). Empty until completed.' },
           error: { type: 'string', description: 'The EXACT failure string when status is error/failed, or the refusal text when the fetch refused.' },
           queue_position: { type: 'number', description: '0 = active; >0 = waiting in the FIFO.' },
+          planned_stages: { type: 'array', description: 'The registered plan (id/engine per stage) — present when a live row has no stage rows yet.' },
+          card: { type: 'string', description: 'The card (or pipeline) the run was born from.' },
+          run_age_s: { type: 'number', description: 'Seconds since registration — the heartbeat for long renders.' },
         },
         // Ledger row 11 (2026-09-10): the refusal shape carries
         // {run_id, error} (no status) — required is the intersection.
@@ -94,7 +100,8 @@ export function runStatus(request: EstateRequest): ToolDefinition {
       render: (args, value) => {
         const v = value as {
           run_id?: string; status?: string; stages?: Array<{ status?: string }>;
-          artifacts?: unknown[]; error?: string; queue_position?: number
+          artifacts?: unknown[]; error?: string; queue_position?: number;
+          planned_stages?: Array<{ id?: string }>; card?: string; run_age_s?: number
         }
         if (v && v.error) {
           return [{ type: 'text', text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + ' — ' + v.error }]
@@ -105,10 +112,18 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         const total = stages.length
         const pos = typeof v.queue_position === 'number' && v.queue_position > 0
           ? ' (queue #' + v.queue_position + ')' : ''
+        // THE LIVE-ROW PLAN (efficiency review 002, Fix 2): a live row
+        // with no stage rows yet renders its registered plan + age —
+        // never the bare "0/0" that sent agents to tail logs with bash.
+        const plan = total === 0 && Array.isArray(v.planned_stages) && v.planned_stages.length > 0
+          ? ' · plan: ' + v.planned_stages.length + ' stage(s)' +
+            (typeof v.card === 'string' && v.card ? ' (' + v.card + ')' : '') +
+            (typeof v.run_age_s === 'number' ? ' · age ' + v.run_age_s + 's' : '')
+          : ''
         return [{
           type: 'text',
           text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + pos
-            + ' — ' + done + '/' + total + ' stage(s)'
+            + ' — ' + done + '/' + total + ' stage(s)' + plan
             // hoisted above: the consequent's second ?? could never see
             // nullish (length-truthy implies defined) — same text (2026-09-12).
             + (artifacts.length ? ' · ' + artifacts.length + ' artifact(s)' : ''),
@@ -150,6 +165,11 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         // undefined on success by construction, never a second copy (2026-09-12).
         error: undefined,
         queue_position: typeof res.queue_position === 'number' ? res.queue_position : 0,
+        // THE LIVE-ROW PLAN (Fix 2): projected through verbatim — the
+        // render voices it, older consumers ignore it (additive).
+        planned_stages: Array.isArray(res.planned_stages) ? res.planned_stages : undefined,
+        card: typeof res.card === 'string' ? res.card : undefined,
+        run_age_s: typeof res.run_age_s === 'number' ? res.run_age_s : undefined,
       }) as RunStatusResult
     },
   });
