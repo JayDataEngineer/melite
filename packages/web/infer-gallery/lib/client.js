@@ -407,11 +407,18 @@ window.__ModuleLoader__.load({
 		*  image — a ran stage's result {run_id, url} IS the preview the
 		*  cards tile renders; the media-sidebar audit 2026-09-22: the stamp
 		*  was image-only, so every restored TTS / video / 3D card landed
-		*  with NO preview. _flow.json.artifacts are absolute paths; the
-		*  melite-media URL is the run-relative tail. THE KIND UNION is the
-		*  preview seam's own vocabulary, restated (client bundles cannot
-		*  import across plugins — the parity site is named:
-		*  melite-card-view's preview-kinds.ts previewKindFor). */
+		*  with NO preview). _flow.json.artifacts are absolute paths; the
+		*  URL is the GALLERY'S OWN same-origin artifact route carrying the
+		*  run-relative tail (the mask-recovery break's second half, live
+		*  proof: /melite-media/* 502s 'estate-media/no-queue-seat' on a
+		*  host without the queue seat, while /infer-gallery/artifact
+		*  serves the same file 200 — the preview is a BROWSER <img>/<video>
+		*  src, so it must ride the route that serves in THIS host; the
+		*  engine-side PATH params keep /melite-media — different consumer,
+		*  the engine's own lane). THE KIND UNION is the preview seam's own
+		*  vocabulary, restated (client bundles cannot import across
+		*  plugins — the parity site is named: melite-card-view's
+		*  preview-kinds.ts previewKindFor). */
 		function resultOfRun(flow, runId) {
 			const arts = flow?.["artifacts"];
 			if (!Array.isArray(arts)) return void 0;
@@ -421,7 +428,7 @@ window.__ModuleLoader__.load({
 			if (m === null) return void 0;
 			return {
 				run_id: runId,
-				url: "/melite-media/runs/" + m[1]
+				url: "/infer-gallery/artifact?path=" + encodeURIComponent(m[1])
 			};
 		}
 		/** The error message an !ok JSON response carries, else HTTP n. */
@@ -518,6 +525,8 @@ window.__ModuleLoader__.load({
 							delete st["result"];
 							delete st["runStatus"];
 							delete st["resolved"];
+							const stParams = st["params"];
+							if (typeof st["card"] === "string" && typeof stParams === "object" && stParams !== null && stParams["model"] === st["card"]) delete stParams["model"];
 							if (ranCard !== void 0 && st["card"] === ranCard && result !== void 0) st["result"] = result;
 							st["provenance"] = "restored";
 						}
@@ -531,6 +540,7 @@ window.__ModuleLoader__.load({
 					const params = typeof rawParams === "object" && rawParams !== null ? { ...rawParams } : {};
 					delete params["draft_id"];
 					delete params["test"];
+					if (params["model"] === card) delete params["model"];
 					const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : "restored run";
 					const result = resultOfRun(flow, String(side["run_id"] ?? ""));
 					await loadStagesOntoBench([{

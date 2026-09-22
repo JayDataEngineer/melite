@@ -61,11 +61,18 @@ export interface BenchLoadDeps {
  *  image — a ran stage's result {run_id, url} IS the preview the
  *  cards tile renders; the media-sidebar audit 2026-09-22: the stamp
  *  was image-only, so every restored TTS / video / 3D card landed
- *  with NO preview. _flow.json.artifacts are absolute paths; the
- *  melite-media URL is the run-relative tail. THE KIND UNION is the
- *  preview seam's own vocabulary, restated (client bundles cannot
- *  import across plugins — the parity site is named:
- *  melite-card-view's preview-kinds.ts previewKindFor). */
+ *  with NO preview). _flow.json.artifacts are absolute paths; the
+ *  URL is the GALLERY'S OWN same-origin artifact route carrying the
+ *  run-relative tail (the mask-recovery break's second half, live
+ *  proof: /melite-media/* 502s 'estate-media/no-queue-seat' on a
+ *  host without the queue seat, while /infer-gallery/artifact
+ *  serves the same file 200 — the preview is a BROWSER <img>/<video>
+ *  src, so it must ride the route that serves in THIS host; the
+ *  engine-side PATH params keep /melite-media — different consumer,
+ *  the engine's own lane). THE KIND UNION is the preview seam's own
+ *  vocabulary, restated (client bundles cannot import across
+ *  plugins — the parity site is named: melite-card-view's
+ *  preview-kinds.ts previewKindFor). */
 function resultOfRun(
   flow: Record<string, unknown> | null,
   runId: string,
@@ -77,7 +84,7 @@ function resultOfRun(
   if (first === undefined) return undefined
   const m = /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(first)
   if (m === null) return undefined
-  return { run_id: runId, url: '/melite-media/runs/' + m[1] }
+  return { run_id: runId, url: '/infer-gallery/artifact?path=' + encodeURIComponent(m[1]) }
 }
 
 /** The error message an !ok JSON response carries, else HTTP n. */
@@ -213,6 +220,14 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
         const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
         for (const st of bsStages as Record<string, unknown>[]) {
           delete st['result']; delete st['runStatus']; delete st['resolved']
+          // THE SELF-NAMING MODEL STRIP (see the card arm's law below
+          // — era stages ride the same strip before re-admission).
+          const stParams = st['params']
+          if (typeof st['card'] === 'string'
+            && typeof stParams === 'object' && stParams !== null
+            && (stParams as Record<string, unknown>)['model'] === st['card']) {
+            delete (stParams as Record<string, unknown>)['model']
+          }
           if (ranCard !== undefined && st['card'] === ranCard && result !== undefined) st['result'] = result
           st['provenance'] = 'restored'
         }
@@ -228,6 +243,18 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       const params = typeof rawParams === 'object' && rawParams !== null
         ? { ...(rawParams as Record<string, unknown>) } : {}
       delete params['draft_id']; delete params['test']
+      // THE SELF-NAMING MODEL STRIP (the mask-recovery break, live
+      // proof run-ffbabb558cb8: the era's compose wire stamped
+      // params.model = the card's own id — 40 archive runs carry it
+      // (mask ×6, h3-timeline ×34) — and today's write-time admission
+      // refuses a model the card does not board, so every restore of
+      // them died 'model X is not offered by card X'. A model naming
+      // the card itself is the family-less compose voice (stroke
+      // 100's {model:} law), never a board request — and the run's
+      // own bench_snapshot stage proves the ran stage carried no such
+      // key. Strip it; a model naming a REAL family (image-gen's
+      // z-image) rides untouched for admission to judge.
+      if (params['model'] === card) delete params['model']
       const intentSrc = typeof params['prompt'] === 'string' ? params['prompt'] as string : 'restored run'
       const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
       const stages = [{ id: 's_0', engine: 'comfyui', card, params, provenance: 'restored', ...(result !== undefined ? { result } : {}) }]

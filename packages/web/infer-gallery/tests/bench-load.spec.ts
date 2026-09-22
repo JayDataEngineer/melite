@@ -311,7 +311,7 @@ describe('loadRunOntoBench — the run record wins', () => {
       id: 's_0',
       card: 'image-gen',
       provenance: 'restored',
-      result: { run_id: 'r1', url: '/melite-media/runs/run-r1/out.png' },
+      result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/out.png') },
     })
     expect('runStatus' in stages[0]!).toBe(false)
     expect(stages[1]).toEqual({ id: 's_1', card: 'other', provenance: 'restored' })
@@ -335,6 +335,86 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(stages).toHaveLength(1)
     expect(stages[0]).toMatchObject({ id: 's_0', engine: 'comfyui', card: 'image-gen', provenance: 'restored' })
     expect(ensuredBody(calls).intent).toBe('solo')
+  })
+
+  it('THE MASK BREAK — a self-naming model (params.model === card) is stripped before re-admission', async () => {
+    // Live proof run-ffbabb558cb8-c79f2b98: the era's compose wire
+    // stamped model='mask' on the mask card, and today's write-time
+    // admission refuses a model the card does not board (mask boards
+    // none) — every mask restore died 'model X is not offered by
+    // card X'. The family-less voice strips; the restore lands.
+    const side = {
+      run_id: 'rm',
+      flow: {
+        artifacts: ['/data/runs/output/run-rm/mask/SaveImage.0_mask_combined_00001_.png'],
+        card_snapshot: {
+          card: 'mask',
+          params: {
+            input_image: '/melite-media/runs/run-src/generate/SaveImage.0_gen_00001_.png',
+            model: 'mask',
+            sam3: [{ name: 'sam3', prompt: 'hat', sam_threshold: 0.5 }],
+            draft_id: 'bench-session-x',
+            test: false,
+          },
+        },
+        bench_snapshot: { stages: [{ id: 's_0', card: 'mask', params: { model: 'mask' } }], intent: '' },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('rm', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages[0]).toMatchObject({
+      id: 's_0',
+      card: 'mask',
+      params: {
+        input_image: '/melite-media/runs/run-src/generate/SaveImage.0_gen_00001_.png',
+        sam3: [{ name: 'sam3', prompt: 'hat', sam_threshold: 0.5 }],
+      },
+    })
+    expect('model' in (stages[0]!['params'] as Record<string, unknown>)).toBe(false)
+  })
+
+  it('a model naming a REAL family rides untouched (admission judges it, never the restore)', async () => {
+    const side = {
+      run_id: 'rg',
+      flow: {
+        artifacts: ['/data/run-rg/out.png'],
+        card_snapshot: { card: 'image-gen', params: { model: 'z-image', prompt: 'a hat' } },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('rg', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect((stages[0]!['params'] as Record<string, unknown>)['model']).toBe('z-image')
+  })
+
+  it('a multi-stage snapshot strips the self-naming model per stage (era stages ride the same law)', async () => {
+    const side = {
+      run_id: 'rs',
+      flow: {
+        artifacts: ['/data/run-rs/out.png'],
+        card_snapshot: { card: 'mask', params: { model: 'mask' } },
+        bench_snapshot: {
+          stages: [
+            { id: 's_0', card: 'image-gen', params: { prompt: 'gen', model: 'z-image' } },
+            { id: 's_1', card: 'mask', params: { model: 'mask', sam3: [] } },
+          ],
+          intent: 'two stages, era model residue',
+        },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('rs', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect((stages[0]!['params'] as Record<string, unknown>)['model']).toBe('z-image')
+    expect('model' in (stages[1]!['params'] as Record<string, unknown>)).toBe(false)
+    expect(stages[1]!['params']).toMatchObject({ sam3: [] })
   })
 
   it('a snapshot without a preview or prompt restores bare (no result key, default intent)', async () => {
@@ -382,7 +462,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     expect(stages[0]).toMatchObject({
       card: 'tts',
-      result: { run_id: 'ra', url: '/melite-media/runs/run-ra/tts/SaveAudio.0_tts_00001.flac' },
+      result: { run_id: 'ra', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-ra/tts/SaveAudio.0_tts_00001.flac') },
     })
   })
 
@@ -400,7 +480,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(d.errors).toEqual([])
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     expect(stages[0]).toMatchObject({
-      result: { run_id: 'rv', url: '/melite-media/runs/run-rv/generate/film.mp4' },
+      result: { run_id: 'rv', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-rv/generate/film.mp4') },
     })
   })
 
@@ -418,7 +498,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(d.errors).toEqual([])
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     expect(stages[0]).toMatchObject({
-      result: { run_id: 'rm', url: '/melite-media/runs/run-rm/mesh/model.glb' },
+      result: { run_id: 'rm', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-rm/mesh/model.glb') },
     })
   })
 
@@ -508,7 +588,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     await loadRunOntoBench('rz', c)
     expect(c.errors).toEqual([])
     const fullStages = ensuredBody(fullCalls.calls).stages as Array<Record<string, unknown>>
-    expect(fullStages[0]).toMatchObject({ result: { run_id: '', url: '/melite-media/runs/run-rz/out.png' } })
+    expect(fullStages[0]).toMatchObject({ result: { run_id: '', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-rz/out.png') } })
     expect(ensuredBody(fullCalls.calls).intent).toBe('restored run')
   })
 
