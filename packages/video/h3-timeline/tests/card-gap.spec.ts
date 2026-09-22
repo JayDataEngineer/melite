@@ -949,6 +949,10 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     // yields under the take the window was conditioned on
     const ducks = ofClass(out, "MeliteAudioDuck");
     assert.equal(ducks.length, 1, "one film duck — the generated track under the conditioned clip");
+    // THE SLOW RELEASE (operator catch c): attack 20ms, release 350ms —
+    // a both-edges 20ms duck popped the bed back like a gate
+    assert.equal(ducks[0]![1].inputs.ramp_ms, 20, "attack stays fast");
+    assert.equal(ducks[0]![1].inputs.release_ms, 350, "release is slow — the console law");
     // the clip's FULL film span ducks (100/24 ≈ 4.167s for 2s =
     // 48 frames — the corrected clock; the old 5.083 carried the
     // phantom +22f and ducked the wrong seat)
