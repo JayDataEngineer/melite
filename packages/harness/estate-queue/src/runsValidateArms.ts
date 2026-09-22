@@ -183,14 +183,19 @@ export async function modelValidateArm(
       svc.resolveCardFamily(mid, facts) in facts ||
       svc.modelMids().has(mid);
     if (!resolves) {
+      // THE CARD-AWARE VOICE (cardsCompose's twin, 2026-10-08): a
+      // CARD id here is a lane mistake — name the card and its
+      // lane; the unknown-id voice stays for typos.
+      const cardRow: boolean = Object.prototype.hasOwnProperty.call(svc.cardDecls(facts), mid);
+      const why: string = cardRow
+        ? " — " + mid + " is a CARD (cards carry no model row by design): run cards on the bench/flows lane ({id: ...} / a stage's card), never the {model:} door"
+        : " (no .catalog.models row " + mid +
+          " in the frozen discovery catalog and no family declares route " +
+          mid + " in its variants' cells — checked the class tree's _routes map)";
       return {
         status: 400,
         payload: {
-          error:
-            "no model unit for model: " + mid +
-            " (no .catalog.models row " + mid +
-            " in the frozen discovery catalog and no family declares route " +
-            mid + " in its variants' cells — checked the class tree's _routes map)",
+          error: "no model unit for model: " + mid + why,
           code: "invalid_request",
         },
       };

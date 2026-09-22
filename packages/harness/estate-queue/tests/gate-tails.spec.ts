@@ -54,4 +54,41 @@ describe("modelValidateArm (the model envelope)", () => {
     expect([200, 400, 500]).toContain(ans.status);
     await ctx.fiber.dispose();
   });
+
+  it("a CARD id on the model lane names the card and its lane — never a bogus catalog miss (the mask correction, 2026-10-08)", async () => {
+    // the fake-seat pattern (runs-registry-reconcile's rig): a
+    // minimal registry stub — facts absent (the degrade), the
+    // decls table carrying the CARD row the voice must name.
+    const ctx = new Context();
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+      modelFacts: (): unknown => { throw new Error("no facts"); },
+      resolveCardFamily: (mid: string): string => mid,
+      modelMids: (): unknown => new Set<string>(),
+      cardDecls: (): unknown => ({ mask: {} }),
+    };
+    const ans = await modelValidateArm({ model: "mask", params: {} }, ctx);
+    expect(ans.status).toBe(400);
+    const err = String((ans.payload as { error?: string }).error ?? "");
+    expect(err).toContain("no model unit for model: mask");
+    expect(err).toContain("mask is a CARD");
+    expect(err).toContain("never the {model:} door");
+    expect(err).not.toContain(".catalog.models row mask");
+    await ctx.fiber.dispose();
+  });
+
+  it("an unknown id keeps the catalog voice (the card-aware arm widens nothing)", async () => {
+    const ctx = new Context();
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+      modelFacts: (): unknown => { throw new Error("no facts"); },
+      resolveCardFamily: (mid: string): string => mid,
+      modelMids: (): unknown => new Set<string>(),
+      cardDecls: (): unknown => ({}),
+    };
+    const ans = await modelValidateArm({ model: "not-a-card", params: {} }, ctx);
+    expect(ans.status).toBe(400);
+    const err = String((ans.payload as { error?: string }).error ?? "");
+    expect(err).toContain("no .catalog.models row not-a-card");
+    expect(err).not.toContain("is a CARD");
+    await ctx.fiber.dispose();
+  });
 });

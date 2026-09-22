@@ -15,13 +15,14 @@
 //   sam3[] — standalone: SAM3 selection. A CLIP text prompt (what
 //            to segment), or RT-DETR person boxes refined by SAM3
 //            (via_rtdetr — the primary's own arm). The entry's
-//            optional bbox scopes its selection (the EMBEDDED
-//            bbox canvas — faceOwned fields, never raw inputs).
-//   sam2[] — standalone: the YOLO + SAM2 arm (YOLO proposes boxes
-//            for the labels word, SAM2 refines them into masks).
-//            Same embedded bbox canvas. Declares its packs
-//            (impact-pack + impact-subpack) and its weights —
-//            declared, then auto provisioned.
+//            optional REGION scopes its search (the EMBEDDED
+//            region canvas — faceOwned fields, never raw inputs).
+//   sam2[] — standalone: the YOLO + SAM2 arm (Impact pack,
+//            AUTOMATED: the detector proposes boxes for the
+//            labels classes, SAM2 refines them into masks — a
+//            hand-drawn box has no node on this chain). Declares
+//            its packs (impact-pack + impact-subpack) and its
+//            weights — declared, then auto provisioned.
 //   draw[] — ORDERED: the painted payload (alpha = strokes). A
 //            draw STACKS — it receives the previous outputs and
 //            unions onto the combined mask (the ordered chain),
@@ -45,6 +46,12 @@ import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
 // impact-pack arm's pins (the card DECLARES them as provisions
 // below — declared, then auto provisioned, the operator's
 // 2026-09-19 order).
+// SIBLING DETECTORS ON DISK (2026-10-08, the live provider's own
+// list): face_yolov8m.pt (vocabulary: ['face']) and
+// hand_yolov8s.pt (['hand']) — separate PINNED models, NOT COCO
+// classes; the old "person, face, hand" tooltip conflated three
+// models into one labels field. Exposing the detector pick (with
+// a per-detector vocabulary) is OWED work, not built here.
 const PINS = {
   checkpoint: 'sam3.1_multiplex_fp16.safetensors',
   unet: 'rt_detr_v4-x-hgnet_fp32.safetensors',
@@ -97,7 +104,7 @@ const schema = z.object({
   input_image: z.string().role('path').description('Input').extra('extra', { order: 1, group: 'input', width: 2, tooltip: 'The image every mask selects FROM.', wtype: 'image' }),
 })
 
-// The optional bbox's four entry fields (the EMBEDDED bbox canvas
+// The optional search REGION's four entry fields (the EMBEDDED region
 // writes them; -1 = unset, the selection runs unscoped — the four
 // are FACE-OWNED: the leaf hides them under the canvas and shows
 // them only when the host degrades to plain inputs).
@@ -144,7 +151,7 @@ const MODS: readonly DeclaredModifierKind[] = [
     max_stack: 8,
     // THE EMBEDDED BBOX CANVAS (stroke 95): the selection preview
     // at the top of the leaf popup — the drawn rectangle fills the
-    // entry's four faceOwned bbox fields.
+    // entry's four faceOwned region fields.
     leaf_face: 'bbox-canvas',
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam3', tooltip: "The saved mask's name (mask_<name>)." },
@@ -168,8 +175,14 @@ const MODS: readonly DeclaredModifierKind[] = [
     category: 'standalone',
     cardinality: 'list',
     max_stack: 3,
-    // THE EMBEDDED BBOX CANVAS (stroke 95): same face as sam3.
-    leaf_face: 'bbox-canvas',
+    // NO LEAF CANVAS (2026-10-08, the operator's verdict: "BBOX IS
+    // NOT MANUAL, IT IS AUTOMATED"): in Impact Pack the boxes COME
+    // FROM THE DETECTOR — UltralyticsDetectorProvider proposes,
+    // BboxDetectorSEGS filters by labels+threshold, SAM2 refines.
+    // This popup is the DETECTOR FORM (the chips + thresholds ARE
+    // the automated box filter); a hand-drawn rectangle has no node
+    // on this chain and gets no face here. The region canvas lives
+    // on sam3 only (a search scope, not a bbox).
     // THE DECLARED DEPENDENCIES (the operator's 2026-09-19 order —
     // "declared, then auto provisioned"): the SAM2 arm rides the
     // impact-pack chain (YOLO proposes, SAM2 refines), so the kind
@@ -179,11 +192,10 @@ const MODS: readonly DeclaredModifierKind[] = [
     requires: ['comfyui-impact-pack', 'comfyui-impact-subpack'],
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam2', tooltip: "The saved mask's name (mask_<name>)." },
-      { name: 'labels', label: 'YOLO classes', type: 'select', multi: true, options: YOLO_CLASSES.map((c) => ({ value: c, label: c })), default: 'person', tooltip: 'The COCO classes the YOLO detector proposes (Impact Pack) — SAM2 refines each box. Pick any set; the wire is the comma-joined list.' },
+      { name: 'labels', label: 'YOLO classes', type: 'select', multi: true, options: YOLO_CLASSES.map((c) => ({ value: c, label: c })), default: 'person', tooltip: 'The automated box filter: YOLO (Impact Pack) proposes boxes for exactly these COCO classes, SAM2 refines each one. Pick any set; the wire is the comma-joined list.' },
       { name: 'yolo_threshold', label: 'YOLO threshold', type: 'number', default: 0.5, min: 0.05, max: 0.95, step: 0.05, tooltip: 'This entry\'s YOLO box confidence. Lower catches more instances, noisier boxes.' },
       { name: 'sam_threshold', label: 'Mask threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'This selection\'s SAM2 mask confidence.' },
       { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: 0, max: 64, step: 1, tooltip: 'Grow this mask N pixels.' },
-      ...BBOX_FIELDS,
     ],
   },
   {
@@ -206,7 +218,7 @@ const MODS: readonly DeclaredModifierKind[] = [
 
 export const identity = {
   label: 'Mask',
-  description: 'Simple mask: pick the input, then ADD sources — sam3 (text selection, optional box), sam2 (YOLO proposes + SAM2 refines, optional box), draw (painted, stacks onto the rest). Each popup previews the image and carries its own knobs.',
+  description: 'Simple mask: pick the input, then ADD sources — sam3 (text selection, optional region), sam2 (the YOLO detector proposes boxes automatically, SAM2 refines), draw (painted, stacks onto the rest). Each popup previews the image and carries its own knobs.',
   genre: 'image',
   icon: 'mask',
   ability: 'tool',
@@ -329,6 +341,20 @@ export function apply(ctx: Context): void {
       const sam3 = bagOf(doc, 'sam3', 'mask')
       const sam2 = bagOf(doc, 'sam2', 'mask')
       const draw = bagOf(doc, 'draw', 'mask')
+      // THE ENTRY-SURFACE LAW (2026-10-08, the bbox correction):
+      // the kind's declared fields are the WHOLE entry surface —
+      // an unknown key is drift and refuses LOUD (a hand-composed
+      // bbox_x on sam2 would otherwise run silently unscoped; the
+      // operator's law is never-silent).
+      const surfaceOf = new Map(MODS.map((m) => [m.kind, new Set((m.fields ?? []).map((f) => f.name))]))
+      for (const [bag, entries] of [['sam3', sam3], ['sam2', sam2], ['draw', draw]] as const) {
+        for (let i = 0; i < entries.length; i++) {
+          const extra = Object.keys(entries[i]!).filter((k) => !(surfaceOf.get(bag) as Set<string>).has(k))
+          if (extra.length > 0) {
+            throw new Error(`${bag} entry ${i}: unknown key(s) ${extra.join(', ')} — the kind's declared fields are the whole surface (bbox on sam2 is the detector's own, never a hand-drawn quad; drift refuses, never a silent skip)`)
+          }
+        }
+      }
       if (sam3.length === 0 && sam2.length === 0 && draw.length === 0) {
         throw new Error('no mask sources on the mask card — add at least one modifier (sam3, sam2, or draw)')
       }
@@ -387,9 +413,10 @@ export function apply(ctx: Context): void {
       if (primary.kind === 'sam3') {
         lane['refine_iterations'] = num(whereOf(primary), primary.entry, 'sam3', 'refine_iterations')
       }
-      // THE PRIMARY SCOPE (the first entry's drawn box — threads as
-      // the lane's scope_bbox; every SELECTION primary honors it).
-      const primaryBox = bboxOf(primary.entry, primary.kind)
+      // THE PRIMARY SCOPE (the first entry's drawn REGION — sam3's
+      // own face; threads as the lane's scope_bbox. A sam2 primary
+      // carries no quad: its boxes come from the detector).
+      const primaryBox = primary.kind === 'sam3' ? bboxOf(primary.entry, 'sam3') : null
       if (primaryBox) lane['scope_bbox'] = primaryBox
       if (primary.kind === 'sam3') {
         // the RT-DETR knobs thread from the primary (its own arm)
@@ -452,8 +479,9 @@ export function apply(ctx: Context): void {
           exportKind.push('text')
         } else {
           tune['yolo_threshold'] = num(whereOf(src), src.entry, 'sam2', 'yolo_threshold')
-          const bbox = bboxOf(src.entry, 'sam2')
-          exports.push([nameOf(src, `sam2_${src.i + 1}`), labelsOf(src.entry, `sam2 entry ${src.i}`), bbox ?? undefined, tune])
+          // no quad on sam2 exports — the detector's automated
+          // boxes ARE the payload (a hand-drawn rect has no node).
+          exports.push([nameOf(src, `sam2_${src.i + 1}`), labelsOf(src.entry, `sam2 entry ${src.i}`), undefined, tune])
           exportKind.push('sam2')
         }
       }

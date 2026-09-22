@@ -535,9 +535,9 @@ test('THE PAINT CANVAS: the face embeds ONCE at the top of the leaf (the FIRST i
   expect(screen.getAllByTestId('paint-face').length).toBe(1)
   expect(screen.queryByRole('button', { name: 'Paint' })).toBeNull()
   expect(screen.getByTestId('face-ref').textContent).toBe('ref-url')
-  // the paint stage carries NO filter caption (the filter section
-  // is the bbox canvas's own — never a stray caption on paint)
-  expect(screen.queryByText('Box filter — optional (clear = whole image)')).toBeNull()
+  // the paint stage carries NO region caption (the region canvas
+  // is sam3's own — never a stray caption on paint)
+  expect(screen.queryByText('Region — optional (scopes the search; clear = whole image)')).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Face stroke' }))
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('masks', [{
@@ -738,10 +738,12 @@ test('THE BBOX CANVAS: the face embeds at the top; its commit writes the four fa
   expect(screen.queryByRole('button', { name: 'Draw box' })).toBeNull()
   expect(screen.getByTestId('bbox-ref').textContent).toBe('ref-url')
   expect(screen.getByTestId('bbox-seed').textContent).toBe('null')
-  // the stage seats the FILTER section (the operator's framing:
-  // the box canvas is the OPTIONAL filter — caption + stage mark)
+  // the stage seats the REGION section (the operator's correction,
+  // 2026-10-08: "BBOX IS NOT MANUAL, IT IS AUTOMATED" — the canvas
+  // is an optional search REGION, never a box filter; the detector
+  // owns the boxes) — caption + stage mark
   expect(document.querySelector('[data-leaf-stage="bbox"]')).not.toBeNull()
-  expect(screen.getByText('Box filter — optional (clear = whole image)')).not.toBeNull()
+  expect(screen.getByText('Region — optional (scopes the search; clear = whole image)')).not.toBeNull()
   // the four faceOwned fields NEVER render while the canvas rides
   expect(screen.queryByLabelText('Box x')).toBeNull()
   expect(screen.queryByLabelText('Box h')).toBeNull()

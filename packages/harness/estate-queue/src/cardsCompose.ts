@@ -199,11 +199,19 @@ export function prepareCardParams(
     const resolves: boolean =
       mid in facts || deps.resolveCardFamily(mid, facts) in facts || deps.modelMids().has(mid);
     if (!resolves) {
+      // THE CARD-AWARE VOICE (2026-10-08, the mask stroke): a CARD
+      // id reaching the {model:} door is a lane mistake, not a
+      // missing catalog row — cards (requiresModel: false, no
+      // family behind them) NEVER resolve here by design. Name the
+      // card and its lane; the unknown-id voice stays for typos.
+      const cardRow: boolean = Object.prototype.hasOwnProperty.call(deps.cardDecls(facts), mid);
+      const why: string = cardRow
+        ? " — " + mid + " is a CARD (cards carry no model row by design): run cards on the bench/flows lane ({id: ...} / a stage's card), never the {model:} door"
+        : " (no .catalog.models row " + mid + " in the frozen discovery catalog and no family declares route " + mid +
+          " in its variants' cells — checked the class tree's _routes map)";
       throw new CardArmError(
         400,
-        "no model unit for model: " + mid + " (no .catalog.models row " + mid +
-          " in the frozen discovery catalog and no family declares route " + mid +
-          " in its variants' cells — checked the class tree's _routes map)",
+        "no model unit for model: " + mid + why,
         "invalid_request",
       );
     }

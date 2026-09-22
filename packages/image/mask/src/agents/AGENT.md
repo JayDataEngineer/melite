@@ -36,15 +36,18 @@ stringified JSON blob):
   `sam_dilation` (0–64 px, default 0), `detection_threshold`
   (0.05–0.95, RT-DETR arm), `max_instances` (0–100, RT-DETR arm),
   `export_boxes` (default true — draw this entry's RT-DETR boxes
-  on the manifest), and the bbox quad `bbox_x/y/w/h` (default -1
-  = unscoped; the popup's embedded canvas draws it).
-- `sam2[]` — the YOLO + SAM2 arm (Impact pack): YOLO proposes the
-  boxes, SAM2 refines them into masks. Fields: `name`, `labels`
+  on the manifest), and the region quad `bbox_x/y/w/h` (default -1
+  = unscoped; the popup's embedded canvas draws it — an optional
+  search REGION, not a detector box).
+- `sam2[]` — the YOLO + SAM2 arm (Impact pack), AUTOMATED: the
+  detector proposes boxes for the chosen classes, SAM2 refines
+  them into masks. There is NO hand-drawn box on this chain (the
+  node graph has no such input — labels + threshold ARE the box
+  filter). Fields: `name`, `labels`
   (REQUIRED — a comma-joined SET from the closed 80-word COCO
   vocabulary, e.g. `person` or `person,car,dog`; any other word
   refuses loud), `yolo_threshold`
-  (0.05–0.95, default 0.5), `sam_threshold`, `sam_dilation`, and
-  the same bbox quad.
+  (0.05–0.95, default 0.5), `sam_threshold`, `sam_dilation`.
 - `draw[]` — a painted PNG (alpha = strokes): `name`, `payload`
   (REQUIRED — the PNG path). The interactive paint canvas rides
   this leaf EMBEDDED in the popup.
@@ -63,8 +66,11 @@ stringified JSON blob):
   — one MaskComposite hop per payload, terminal
   `mask_combined_union`); draw without a standalone source
   refuses loud.
-- The primary's bbox quad scopes `mask_combined` (the rect scope);
-  an export's quad scopes its own detect. -1 everywhere = unscoped.
+- A sam3 region quad scopes its selection (the primary's scopes
+  `mask_combined`, an export's scopes its own search); -1
+  everywhere = unscoped. sam2 carries NO quad — its boxes come
+  from the detector, and a stray quad on a sam2 entry refuses as
+  drift (unknown key).
 - Missing `input_image`, empty bags, wrong-typed or out-of-bounds
   knobs refuse loud (the popup's fields are the declaration — the
   schema gates every hop).
@@ -80,6 +86,7 @@ stringified JSON blob):
   primary; `export_boxes` per entry ORs the draw).
 
 The interactive canvases ride the mod popups EMBEDDED (paint on
-`draw`, drag-rectangle on the standalone kinds — stroke 95). The
+`draw`, the region rectangle on `sam3` — stroke 95; sam2 has NO
+canvas, its boxes are the detector's own). The
 studio card RETIRED at parity (2026-09-16, CONTRACT D) — this
 card composes AND owns the mask surface.

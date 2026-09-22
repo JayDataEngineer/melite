@@ -68,6 +68,10 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
     },
     resolveCardFamily: (mid: unknown): unknown => mid,
     modelMids: (): unknown => new Set<string>(),
+    // the card-aware resolve voice (2026-10-08): the decls table
+    // answers whether a refused mid is a CARD (empty here — the
+    // ghost stays a catalog miss).
+    cardDecls: (): unknown => ({}),
     overlayCardParams: async (): Promise<unknown> => {
       throw new Error("unreached overlay");
     },

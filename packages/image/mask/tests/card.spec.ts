@@ -59,25 +59,29 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.deepEqual([...def.admits ?? []], ["sam3", "sam2", "draw"]);
   });
 
-  it("the leaf faces: bbox-canvas on the standalone kinds, paint-canvas on draw (declared, never sniffed)", () => {
+  it("the leaf faces: the region canvas on sam3 ONLY, paint on draw — sam2 has NO canvas (its boxes are the detector's, 2026-10-08: \"BBOX IS NOT MANUAL, IT IS AUTOMATED\")", () => {
     const mods = def.mods ?? [];
     assert.equal(mods.find((k) => k.kind === "sam3")!.leaf_face, "bbox-canvas");
-    assert.equal(mods.find((k) => k.kind === "sam2")!.leaf_face, "bbox-canvas");
+    assert.equal(mods.find((k) => k.kind === "sam2")!.leaf_face, undefined,
+      "sam2's popup is the DETECTOR FORM — a hand-drawn rectangle has no node on the Impact chain");
     assert.equal(mods.find((k) => k.kind === "draw")!.leaf_face, "paint-canvas");
   });
 
-  it("the bbox quad fields are FACE-OWNED with the -1 unset default (the canvas is the face)", () => {
+  it("the region quad fields are FACE-OWNED with the -1 unset default (sam3's canvas is the face)", () => {
     const mods = def.mods ?? [];
-    for (const k of [mods[0]!, mods[1]!]) {
+    for (const k of [mods[0]!]) {
       const quad = (((k as unknown as Row)["fields"] ?? []) as Array<Row>).filter((f) => String(f["name"]).startsWith("bbox_"));
-      assert.deepEqual(quad.map((f) => String(f["name"])), ["bbox_x", "bbox_y", "bbox_w", "bbox_h"], `${String((k as unknown as Row)["kind"])} carries the four bbox fields`);
+      assert.deepEqual(quad.map((f) => String(f["name"])), ["bbox_x", "bbox_y", "bbox_w", "bbox_h"], `${String((k as unknown as Row)["kind"])} carries the four region fields`);
       for (const f of quad) {
         assert.equal(f["faceOwned"], true, `${String(f["name"])} is face-owned — hidden under the canvas, shown only on the hostless degrade`);
         assert.equal(f["default"], -1, "unset = -1 (the selection runs unscoped)");
       }
     }
-    const draw = mods.find((k) => k.kind === "draw")!;
-    assert.ok(!(((draw as unknown as Row)["fields"] ?? []) as Array<Row>).some((f) => f["name"] === "bbox_x"), "draw carries no bbox — it stacks, never selects");
+    for (const kind of ["sam2", "draw"]) {
+      const k = mods.find((m) => m.kind === kind)!;
+      assert.ok(!(((k as unknown as Row)["fields"] ?? []) as Array<Row>).some((f) => f["name"] === "bbox_x"),
+        `${kind} carries no bbox — sam2's boxes come from the detector, draw stacks`);
+    }
   });
 
   it("sam3's entry owns the full tune (refine/threshold/dilation + the RT-DETR arm)", () => {
@@ -96,7 +100,6 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.ok(!names.includes("part"), "the parts vocabulary is gone — the detector proposes, SAM2 refines");
     assert.deepEqual(names, [
       "name", "labels", "yolo_threshold", "sam_threshold", "sam_dilation",
-      "bbox_x", "bbox_y", "bbox_w", "bbox_h",
     ]);
     assert.deepEqual([...sam2.requires ?? []], ["comfyui-impact-pack", "comfyui-impact-subpack"],
       "sam2 declares BOTH packs (the pack owns SAM/BBOX nodes; the subpack owns the YOLO provider)");
@@ -268,7 +271,7 @@ describe("the mask compose gate (the bag is the recipe)", () => {
 
   it("the sam2 YOLO + SAM2 arm: the Impact YOLO proposes the closed class set, SAM2 refines; empty labels refuse LOUD", () => {
     const g = new GraphBuilder();
-    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }, { labels: "dog", export_boxes: false }] }, DUMMY, g, "run_p");
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }, { labels: "dog" }] }, DUMMY, g, "run_p");
     const row = g.toJSON();
     const json = JSON.stringify(row);
     assert.ok(json.includes("UltralyticsDetectorProvider"), "the YOLO provider rides (the subpack node)");
@@ -300,14 +303,12 @@ describe("the mask compose gate (the bag is the recipe)", () => {
     assert.ok(dets.some((n) => n.inputs.threshold === 0.2), "the export's own yolo threshold reaches its detector");
   });
 
-  it("the sam2 primary with a drawn box scopes mask_combined (the rect scope — core nodes only)", () => {
-    const g = new GraphBuilder();
-    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", bbox_x: 10, bbox_y: 20, bbox_w: 100, bbox_h: 80 }] }, DUMMY, g, "run_s");
-    const row = g.toJSON();
-    const scopes = Object.values(row).filter((n: Row) => n["class_type"] === "MaskComposite");
-    const mult = scopes.find((n) => ((n as { inputs?: Record<string, unknown> }).inputs?.operation === "multiply"));
-    assert.ok(mult, "the drawn box scopes the sam2 selection (multiply over the rect)");
-    assert.ok(Object.values(row).some((n: Row) => n["class_type"] === "GetImageSizeAndCount"), "the rect sizes to the image");
+  it("a quad on a sam2 entry REFUSES as drift (bbox on this arm is the detector's own — no manual rectangle, 2026-10-08)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", bbox_x: 10, bbox_y: 20, bbox_w: 100, bbox_h: 80 }] }, DUMMY, new GraphBuilder(), "run_s"),
+      /bbox_x|unknown|drift/,
+      "sam2 declares no bbox fields — a hand-composed quad is drift, never a silent scope",
+    );
   });
 
   it("sam3-before-sam2 is the primary order (the first standalone source anchors combined)", () => {
