@@ -158,6 +158,24 @@ test('THE HIDDEN ARM (2026-09-21, the blank-rows catch): extra.hidden is validat
   expect(fieldsOfEnvelope(env).map((f) => f.name)).toEqual(['prompt'])
 })
 
+test('THE HIDDEN ARM on the image-edit shape: hidden legacy aliases project nothing, the anchor + stack project', () => {
+  // the production mechanism behind the unification (one concept,
+  // one row): image2/image3 stay DECLARED (old drafts/flows/agents
+  // still validate at the compose door) but the walker drops them
+  // before any face — entryFieldsOfEnvelope (the rail's source)
+  // never sees them, so no second input row can seat.
+  const env = schemaEnvelope({
+    image1: { type: 'string', meta: { description: 'Image 1', extra: { wtype: 'image' } } },
+    image2: { type: 'string', meta: { description: 'Image 2', extra: { wtype: 'image', hidden: true } } },
+    image3: { type: 'string', meta: { description: 'Image 3', extra: { wtype: 'image', hidden: true } } },
+    reference_images: { type: 'array', meta: { description: 'Reference Images', extra: { wtype: 'image_list' } } },
+  })
+  expect(fieldsOfEnvelope(env).map((f) => f.name)).toEqual(['image1', 'reference_images'])
+  expect(env.refs[0]).toMatchObject({ type: 'object' })
+  const dict = (env.refs[0] as { dict: Record<string, number> }).dict
+  expect(Object.keys(dict).sort()).toEqual(['image1', 'image2', 'image3', 'reference_images'])
+})
+
 test('THE WALK: one meta path — native wins, the extra bag fills, label falls to the name', () => {
   const env = schemaEnvelope({
     steps: { type: 'number', meta: { description: '', default: 20, min: 1, max: 60, step: 1, extra: { group: 'Run', order: 2, required: true } } },

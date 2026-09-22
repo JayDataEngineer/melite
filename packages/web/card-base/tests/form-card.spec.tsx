@@ -424,3 +424,52 @@ test('MODEL GUARD: a leaf declaring model=<family> hides on every other family o
   expect(screen.getByText('Prompt')).not.toBeNull()
   void a; void b
 })
+
+test('UNIFICATION: the image-edit face is anchor + ONE universal stack — references are one concept, one row, every lane', () => {
+  // the unified image-edit shape: the anchor rail slot + the
+  // reference stack with NO model guard (both lanes); the legacy
+  // named slots stay in the signature for old flows but seat
+  // NOTHING (hidden aliases, never a face).
+  const refs: Record<number, Ref> = {
+    0: { type: 'object', dict: { image1: 1, reference_images: 2 } },
+    1: { type: 'string', meta: { description: 'Image 1', extra: { wtype: 'image' } } },
+    2: { type: 'array', meta: { description: 'Reference Images', extra: { wtype: 'image_list', max_stack: 15 } } },
+  }
+  const docFor = (model: string): FormSpecDoc => ({
+    form: 'image-edit', model, schema: { uid: 0, refs },
+    inputs: [{ name: 'image1', kind: 'image' }, { name: 'image2', kind: 'image' }, { name: 'image3', kind: 'image' }],
+  } as never)
+  for (const lane of ['fam-2511', 'fam-21']) {
+    form({ spec: docFor(lane) })
+    const rail = document.querySelector('[data-input-rail]')
+    if (rail === null) throw new Error(`the ${lane} rail seats`)
+    // the anchor seats; the legacy names seat nothing (hidden)
+    expect(rail.textContent).toContain('Image 1')
+    expect(rail.textContent).not.toContain('Image 2')
+    expect(rail.textContent).not.toContain('Image 3')
+    // ONE reference row on EVERY lane — no second input concept
+    const stack = rail.querySelector('[data-input-stack="reference_images"]')
+    expect(stack).not.toBeNull()
+    expect(rail.querySelector('[data-stack-head="reference_images"]')?.textContent).toContain('0 / 15')
+    cleanup()
+  }
+})
+
+test('MODEL GUARD: a lane-bespoke rail slot hides on the sibling lane (never relocates to the params)', () => {
+  const refs: Record<number, Ref> = {
+    0: { type: 'object', dict: { image1: 1, image2: 2 } },
+    1: { type: 'string', meta: { description: 'Image 1', extra: { wtype: 'image' } } },
+    2: { type: 'string', meta: { description: 'Image 2', extra: { wtype: 'image', visible_when: 'model=fam-a' } } },
+  }
+  const docFor = (model: string): FormSpecDoc => ({
+    form: 'x', model, schema: { uid: 0, refs },
+    inputs: [{ name: 'image1', kind: 'image' }, { name: 'image2', kind: 'image' }],
+  } as never)
+  form({ spec: docFor('fam-b') })
+  const rail = document.querySelector('[data-input-rail]')
+  if (rail === null) throw new Error('the rail seats')
+  expect(rail.textContent).toContain('Image 1')
+  expect(rail.textContent).not.toContain('Image 2')
+  // hidden slots vanish — they never relocate into the param groups
+  expect(screen.queryByText('Image 2')).toBeNull()
+})

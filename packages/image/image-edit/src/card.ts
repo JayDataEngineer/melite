@@ -16,19 +16,25 @@
 // with `?? ''` / `?? []` normalization — never a TS-pinned ''/0/[].
 //
 // WIRING (kit: imageEdit over render-kit.ts — loadTextPair,
-// decodeSave, stackLoras): image2/image3 ride the STOCK node's native optional
-// slots (comfy_extras nodes_qwen TextEncodeQwenImageEditPlus takes
-// image1/2/3) via conditional LoadImages — blank slots stay out of
-// the inputs entirely, so plain graphs are byte-stable. On the 2.1
-// arm the reference_images STACK rides behind them (the encoder's
-// images.image_4+ autogrow slots, in array order — the node opens
-// inputs as filled, up to 16; the form's add-cell IS that UX). use_stock_
+// decodeSave, stackLoras): the lane merges ONE reference order —
+// legacy image2/image3 (hidden aliases, old drafts/agents/flows)
+// FIRST, then the reference_images stack — and maps it per lane:
+// 2511 onto the STOCK node's native image2/image3 optionals (blank
+// refs stay out of the inputs entirely, so plain and legacy-only
+// graphs are byte-stable); 2.1 contiguously onto the encoder's
+// images.image_2+ autogrow slots, in order (the node opens inputs
+// as filled, up to 16; the form's add-cell IS that UX). NOTE the
+// one renumber: pre-unification 2.1 drafts with a STACK mapped it
+// at image_4+ (named slots reserved 2/3); the unified order maps
+// contiguously from image_2, so stacked 2.1 graphs re-compose to
+// new slot keys — legacy-only drafts are unaffected.
+// use_stock_
 // nodes rides inert both ways: this plane builds the stock graph and
 // nothing else (the stock-only verdict below), so true asks for
 // exactly what it gets and false's patches can never trigger (every
 // patch trigger refuses). Everything else that would change the
-// graph (the 2511 lane's reference_images slot mapping — the 2.1 arm
-// maps the stack, double_reference's second
+// graph (the 2511 lane's over-2 references — the 2.1 arm maps the
+// full order, double_reference's second
 // encode, the lanpaint sampler + knobs, the outpaint pad chain, the
 // mask prep/region flow) REFUSES field-named instead of silently
 // plain-editing (the retired python MOD FIRING LAW, ported 1:1 —
@@ -40,9 +46,22 @@ import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
+import { DECL as qwenImgEdit2511Decl } from '@melite/models-qwen-img-edit-2511'
 
-export const schema = z.object({
-  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): declaration
+// THE STACK CAP (the max_images law — the card RIDES the models'
+// DECLs, never a hardcoded count): the roomiest boarded lane's
+// total image inputs minus the anchor. A boarded family WITHOUT
+// max_images breaks card registration LOUD (fail-loud over the
+// degenerate 1 — a missing cap is a DECL bug, and the degenerate
+// floor would silently disagree with the lane's narrow end).
+export const declCap = (d: { id: string; lane_inputs?: Record<string, unknown> }): number => {
+  const v = d.lane_inputs?.max_images
+  if (typeof v === 'number' && Number.isFinite(v) && v >= 1) return Math.floor(v)
+  throw new Error(`image-edit card: boarded family '${d.id}' declares no lane_inputs.max_images (the max_images law — the node's own image-input count)`)
+}
+const EDIT_STACK_CAP = Math.max(declCap(qwenImgEdit2511Decl), declCap(qwenImgEdit21Decl)) - 1
+
+export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): declaration
   // order = the field order. image1 IS THE PLAIN ANCHOR (2026-09-21,
   // the 2.1 rework: it rode the lanpaint mod and was therefore
   // 2511-hardcoded — the naming law makes the ANCHOR card-owned so
@@ -58,20 +77,23 @@ export const schema = z.object({
   // the split: the mod declares the editor surface, compose
   // owns firing.
   image1: z.string().role('path').description("Image 1").extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image', tooltip: 'The edit anchor — the image to edit.' }),
-  image2: z.string().role('path').description("Image 2").extra('extra', { order: 0, group: "input", width: 1, zone: 'inputs', wtype: 'image' }),
-  image3: z.string().role('path').description("Image 3").extra('extra', { order: 1, group: "input", width: 1, zone: 'inputs', wtype: 'image' }),
-  // reference_images is THE 2.1 STACK (2026-09-21 — the operator's
-  // catch: the 2.1 node opens image inputs as filled, up to 16, and
-  // the base form already renders exactly that UX — one square per
-  // entry plus the add-cell until the cap, i.e. progressive
-  // disclosure straight off the declaration). It rides the 2.1 lane
-  // ONLY (visible_when): the stock 2511 node takes image1/2/3 and
-  // nothing else, so a stated stack on 2511 still hits the loud
-  // 'reference_images fires' refusal at compose. max_stack 13 is the
-  // node's own ceiling in card arithmetic (1 anchor + Image 2/3 +
-  // 13 = 16); the lane refuses past it for callers that bypass the
-  // form (agents).
-  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", visible_when: 'model=qwen-img-edit-21', max_stack: 13, tooltip: "Reference stack — one square per entry, the add-cell opens the next until 13. The 2.1 lane splices them in order through the encoder's images.image_4+ slots (after Image 2/3). Hidden on 2511 — the stock node takes image1/2/3 only.", wtype: 'image_list' }),
+  // THE LEGACY ALIASES (the unification: image inputs and reference
+  // images are ONE concept — the anchor plus the reference stack
+  // below. image2/image3 were the stock node's native slot names
+  // showing as a second input row for the same thing; they no longer
+  // render. They stay DECLARED with hidden:true — validation-only
+  // gate keys, never a face (the walker's hidden arm) — so old
+  // drafts, agents, and flow edges stating them still validate, and
+  // compose merges them to the FRONT of the reference order).
+  image2: z.string().role('path').description("Image 2").extra('extra', { hidden: true }),
+  image3: z.string().role('path').description("Image 3").extra('extra', { hidden: true }),
+  // reference_images is THE reference stack — ONE row, both lanes
+  // (the unification: no visible_when, no second input concept).
+  // The cap RIDES the boarded DECLs (EDIT_STACK_CAP above — the
+  // roomiest lane's max_images minus the anchor); each lane refuses
+  // past its own DECL cap LOUD at compose (the firing law, never a
+  // silent drop).
+  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", max_stack: EDIT_STACK_CAP, tooltip: "Reference images — one square per entry, the add-cell opens the next until the roomiest lane's DECL cap. Each lane splices what its max_images allows (2511: 2 through the stock image2/image3, 2.1: 15 from the encoder's images.image_2) and refuses past that LOUD.", wtype: 'image_list' }),
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
   negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
   width: z.number().description("Width").extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
@@ -95,13 +117,13 @@ export const BOARDED: string[] = ['qwen-img-edit-2511', qwenImgEdit21Decl.id]
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
 export const identity = {
-  label: 'Image Edit',
+  label: 'Edit Image',
   description: 'Instruction-driven image editing — the edit_image interface card boarding the qwen image edit LANES: qwen-img-edit-2511 (the dedicated edit checkpoint — lightning/standard cascade, lanpaint flavor) and qwen-img-edit-21 (the cached-reference edit lane of the same 2.1 weights as the t2i sibling family). The family names the model, the card names the operation. The surface scopes itself.',
   genre: 'image',
   icon: 'edit',
   principles: [
-    'image1 is required — the edit is anchored on it (the lanpaint flavor declares it; slots image1..image3, input_image is the retired alias)',
-    'on the 2.1 lane the Reference Images stack grows past Image 3 — one square per entry, the add-cell opens the next until 13 (anchor + Image 2/3 + 13 = the encoder node\u2019s own 16-input ceiling)',
+    'image1 is required — the edit is anchored on it (slots image1..image3, input_image is the retired alias; image2/image3 are hidden legacy aliases merging to the reference front)',
+    'references are ONE stack — Reference Images rides both lanes up to each lane DECL max_images (the roomiest boarded cap sizes the form face); there is no second input row for the same concept',
     'Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0',
     'An input_mask alongside image1 switches the builder to the LanPaint inpaint sampler (LanPaint_KSamplerAdvanced — the masked region regenerates, the rest is preserved)',
     'Region Mode stays auto — crop_stitch/full_frame need chains this plane does not build',
@@ -129,17 +151,18 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: 'image-edit', order: 2 },
     flowKinds: {
-      // THE INPUT SIGNATURE = the old yaml's input_slots, VERBATIM
-      // (["image1", "image2", "image3"], 1:1 — prompt stays a text
-      // edge for flow wiring). reference_images is NOT a slot: the
-      // old system declared it (workflows pass resolved image lists
+      // THE INPUT SIGNATURE (the unification: the anchor plus the
+      // legacy named edges). image2/image3 stay declared as flow
+      // edges for old graphs wiring them — they seat NO rail square
+      // (hidden legacy aliases, never a face) and compose merges
+      // them to the reference front. reference_images is NOT a slot:
+      // the old system declared it (workflows pass resolved image lists
       // through it) but NEVER rendered it — no input_slots entry, no
       // slot component anywhere in the old tree, and the params flow
-      // excluded every non-params zone field. Declaration-only data
-      // on 2511 (the firing gate refuses a stated stack there); on
-      // the 2.1 lane it renders as the progressive stack and rides
-      // the params — still no flow edge (the flow graph carries the
-      // list inside the stage params, resolved at run).
+      // excluded every non-params zone field. It renders as the
+      // progressive stack and rides the params — still no flow edge
+      // (the flow graph carries the list inside the stage params,
+      // resolved at run).
       inputs: {
         prompt: 'text',
         image1: 'image',

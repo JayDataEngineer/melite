@@ -17,6 +17,7 @@ import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { declCap } from "../src/card.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -85,7 +86,9 @@ describe("the image-edit compose gate", () => {
 
   it("the firing refusals name the unbuildable graph (no silent plain-edit)", () => {
     const arms: Array<[Record<string, unknown>, RegExp]> = [
-      [{ reference_images: ["/m/a.png"] }, /'reference_images' fires .*\(multi-image lists/],
+      // the unification's narrow end: 2511's DECL caps at 3 — the
+      // THIRD reference refuses loud (one or two ride the stock slots).
+      [{ reference_images: ["/m/a.png", "/m/b.png", "/m/c.png"] }, /'reference_images' fires .*\(this lane takes 2 references/],
       [{ double_reference: true }, /'double_reference' fires .*\(the second encode/],
       // forcing the sampler with no region stated refuses —
       // there is nothing to regenerate.
@@ -189,9 +192,9 @@ describe("the image-edit compose gate", () => {
 });
 
 describe("the lane-bespoke leaves (the model guard — the naming law's visibility half)", () => {
-  it("THE FOUR LEAVES DECLARE THEIR FAMILY: width/height ride the 2.1 lane, use_stock_nodes/double_reference ride 2511 — never visible on the sibling", () => {
+  it("THE LEAVES DECLARE THEIR FAMILY: width/height ride the 2.1 lane, use_stock_nodes/double_reference ride 2511 — never visible on the sibling; references are ONE unguarded stack", () => {
     // the carrier dance (same as formSchemas: schemaCarrier ?? schema)
-    const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string; max_stack?: number } } }> } };
+    const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string; max_stack?: number; hidden?: boolean } } }> } };
     const json = carrier.toJSON();
     const root = Object.values(json.refs).find((n) => n.type === "object" && n.dict !== undefined);
     assert.ok(root, "the schema envelope serves");
@@ -210,18 +213,44 @@ describe("the lane-bespoke leaves (the model guard — the naming law's visibili
     assert.equal(leaf("prompt"), undefined, "the shared surface never carries a model guard");
     assert.equal(leaf("image1"), undefined, "the anchor is every edit lane's surface");
     assert.equal(leaf("seed"), undefined);
-    // THE REFERENCE STACK (2026-09-21 — the operator's catch: the 2.1
-    // node opens image inputs as filled, up to 16): the stack rides
-    // the 2.1 lane only, capped so anchor + Image 2/3 + stack can
-    // never pass the node's own ceiling (1 + 2 + 13 = 16).
-    assert.equal(leaf("reference_images"), "model=qwen-img-edit-21", "the stack declares its lane");
+    // THE UNIFICATION (image inputs and reference images are ONE
+    // concept): the stack rides BOTH lanes unguarded; the CAP rides
+    // the boarded DECLs (roomiest max_images minus the anchor — 15
+    // today); each lane refuses past its own DECL cap LOUD at compose.
+    assert.equal(leaf("reference_images"), undefined, "the stack carries no model guard — one row, both lanes");
     const refId = root!.dict!["reference_images"];
-    assert.equal(json.refs[refId]?.meta?.extra?.max_stack, 13, "the stack caps where the node ceiling lands");
+    assert.equal(json.refs[refId]?.meta?.extra?.max_stack, 15, "the stack caps at the roomiest boarded DECL (2.1's 16 minus the anchor)");
+    // THE DECL CAPS (the max_images law): each lane's own node truth
+    // rides its DECL into the runtime facts — the gate and the lane
+    // read them, never a hardcoded count.
+    assert.equal((model.lane_inputs as Record<string, unknown>).max_images, 3, "2511 declares its stock node: 3 total");
+    const model21 = facts.models["qwen-img-edit-21"]!;
+    assert.equal((model21.lane_inputs as Record<string, unknown>).max_images, 16, "2.1 declares its encoder: 16 total");
+    // THE LEGACY ALIASES: image2/image3 stay declared for old
+    // drafts/agents/flows but NEVER render (hidden — validation-only
+    // gate keys; compose merges them to the reference front).
+    for (const alias of ["image2", "image3"]) {
+      const aliasId: number | undefined = root?.dict?.[alias];
+      assert.ok(aliasId !== undefined, `${alias} stays declared for legacy callers`);
+      assert.equal(json.refs[aliasId]?.meta?.extra?.hidden, true, `${alias} never renders — one input row, not two`);
+    }
+  });
+
+  it("a 2-entry stack RIDES the 2511 lane through the card door (the narrow end, no refusal)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", reference_images: ["/m/pose.png", "/m/fabric.png"] }),
+      model, g, "r_stack2511",
+    );
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImageEditPlus");
+    assert.ok(enc, "the stock encoder renders through the card door");
+    assert.ok("image2" in enc!.inputs && "image3" in enc!.inputs, "the stack's refs ride the stock slots");
   });
 });
 
-describe("the reference stack composes on the 2.1 lane (and still refuses on 2511)", () => {
-  it("stated stack entries ride the encoder's image_4+ slots through the card's own compose door", () => {
+describe("the reference stack composes on the 2.1 lane (contiguous from image_2, legacy named first)", () => {
+  it("stated stack entries ride the encoder's image_2+ slots through the card's own compose door", () => {
     const model21 = facts.models["qwen-img-edit-21"]!;
     assert.ok(model21, "the qwen-img-edit-21 facts row serves");
     const g = new GraphBuilder();
@@ -233,9 +262,10 @@ describe("the reference stack composes on the 2.1 lane (and still refuses on 251
     const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21");
     assert.ok(enc, "the 2.1 encoder renders through the card door");
     assert.ok(enc!.inputs["images.image_1"], "anchor on image_1");
-    assert.ok(enc!.inputs["images.image_2"], "the named slot keeps image_2");
-    assert.ok(enc!.inputs["images.image_4"], "first stack entry on image_4");
-    assert.ok(enc!.inputs["images.image_5"], "second stack entry on image_5");
+    assert.ok(enc!.inputs["images.image_2"], "the legacy named slot keeps image_2");
+    assert.ok(enc!.inputs["images.image_3"], "first stack entry shifts to image_3 (no gap)");
+    assert.ok(enc!.inputs["images.image_4"], "second stack entry on image_4");
+    assert.equal(enc!.inputs["images.image_5"], undefined, "nothing past the stated order");
   });
 });
 
@@ -243,5 +273,19 @@ describe("the rail labels (the naming law: version-explicit, never the bare genr
   it("the two edit families are distinguishable by label alone", () => {
     assert.equal(registryModel("qwen-img-edit-2511").label, "Qwen Image Edit 2511");
     assert.equal(registryModel("qwen-img-edit-21").label, "Qwen Image Edit 2.1");
+  });
+});
+
+describe("declCap (the max_images law — the card face rides the DECLs, missing caps break registration LOUD)", () => {
+  it("declared caps ride through", () => {
+    assert.equal(declCap({ id: "t", lane_inputs: { max_images: 16 } }), 16);
+    assert.equal(declCap({ id: "t", lane_inputs: { max_images: 16.9 } }), 16, "a fractional cap floors");
+  });
+  it("a boarded family without max_images breaks LOUD (fail-loud over a degenerate floor)", () => {
+    const bads = [{ id: "t", lane_inputs: {} }, { id: "t" }, { id: "t", lane_inputs: { max_images: "16" } }, { id: "t", lane_inputs: { max_images: 0 } }];
+    for (const bad of bads) {
+      assert.throws(() => declCap(bad as never), /declares no lane_inputs\.max_images/,
+        `missing cap refuses: ${JSON.stringify(bad)}`);
+    }
   });
 });

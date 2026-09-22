@@ -173,6 +173,11 @@ export const DECL: ModelDecl = {
     "clip_vision": "",
     "family": "",
     "latent_node": "EmptySD3LatentImage",
+    // THE IMAGE CAPACITY (the node's own truth — the card and the
+    // lane RIDE this, never a hardcoded count): the stock
+    // TextEncodeQwenImageEditPlus takes image1/2/3 — 3 total, anchor
+    // + 2 references. Past that the kit refuses LOUD (switch lanes).
+    "max_images": 3,
     "model_path": "",
     "sampling_shift": 0,
     "text_encoder": "qwen_2.5_vl_7b_fp8_scaled.safetensors",

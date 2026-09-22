@@ -696,6 +696,50 @@ describe("the residual lane arms", () => {
     assert.ok(enc.length >= 2, "pos + neg encode");
     assert.ok("image2" in enc[0]!.inputs && "image3" in enc[0]!.inputs, "the reference slots wire");
   });
+
+  it("imageEdit on 2511 maps the unified stack onto the stock image2/image3 slots (one concept, narrow end)", () => {
+    const model = facts.models["qwen-img-edit-2511"]!;
+    const g = new GraphBuilder();
+    imageEdit({
+      prompt: "make it night", image1: "/m/1.png",
+      reference_images: ["/m/s1.png", "/m/s2.png"],
+      negative_prompt: "blur", seed: 5,
+    }, model, g, "run_5s");
+    const row = dump(g);
+    const loads = Object.values(row).filter((n) => n.class_type === "LoadImage");
+    assert.equal(loads.length, 3, "anchor + two stack refs load (no legacy slots stated)");
+    const enc = Object.values(row).filter((n) => n.class_type === "TextEncodeQwenImageEditPlus");
+    assert.ok(enc.length >= 2, "pos + neg encode");
+    assert.ok("image2" in enc[0]!.inputs && "image3" in enc[0]!.inputs, "the stack's refs ride the stock slots");
+  });
+
+  it("imageEdit on 2511 refuses past-2 references LOUD at the lane (direct callers bypass the gate)", () => {
+    const model = facts.models["qwen-img-edit-2511"]!;
+    assert.throws(
+      () => imageEdit({
+        prompt: "too many", image1: "/m/1.png",
+        image2: "/m/2.png", reference_images: ["/m/s1.png", "/m/s2.png"],
+        seed: 5,
+      }, model, new GraphBuilder(), "run_5x"),
+      /'reference_images' fires .*\(this lane takes 2 references/,
+    );
+  });
+
+  it("the stock arm asserts its own node shape (a lying DECL with max_images past 3 refuses, never drops)", () => {
+    const lying = {
+      ...facts.models["qwen-img-edit-2511"]!,
+      lane_inputs: { ...facts.models["qwen-img-edit-2511"]!.lane_inputs, max_images: 99 },
+    };
+    assert.throws(
+      () => imageEdit({
+        prompt: "lying decl", image1: "/m/1.png",
+        reference_images: ["/m/s1.png"],
+        seed: 5,
+      }, lying, new GraphBuilder(), "run_5lie"),
+      /'reference_images' fires .*stock TextEncodeQwenImageEditPlus.*max_images 99/,
+      "the arm serves the 3-input stock node — a roomier DECL is a bug, refused LOUD",
+    );
+  });
 });
 
 // ── the lanpaint merge arms (kit.ts 171/260/266/268/272) ─────────

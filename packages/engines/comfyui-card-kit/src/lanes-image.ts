@@ -107,18 +107,60 @@ export function finalizeImageEdit(graph: PromptGraph): PromptGraph {
   return stripAutofill(graph, IMAGE_EDIT_STRIP)
 }
 
+/** THE IMAGE CAPACITY (the max_images law — the card and the lane
+ *  RIDE the model's DECL, never a hardcoded count): total image
+ *  inputs the lane opens, anchor included (2511's stock node: 3;
+ *  2.1's encoder: 16). A lane that never declared max_images gets
+ *  the NARROW end (3) — loud-safe by construction: over-refusal is
+ *  field-named and names the missing DECL, while guessing roomy
+ *  would silently drop refs past the node's own slots. */
+export function editImageCap(model?: ModelFacts): number {
+  const declared = (model?.lane_inputs as Record<string, unknown> | undefined)?.max_images
+  if (typeof declared === 'number' && Number.isFinite(declared) && declared >= 1) return Math.floor(declared)
+  return 3
+}
+
+/** THE REFERENCE ORDER (the unification: image inputs and
+ *  reference images are ONE concept — the anchor plus references).
+ *  Legacy named slots (image2/image3 — hidden aliases from the
+ *  stock node's vocabulary, still stated by old drafts, agents, and
+ *  flow edges) merge FIRST, then the reference_images stack, blanks
+ *  dropped — array order IS apply order on every lane. Garbage
+ *  refuses LOUD (the never-drop law covers direct lane callers
+ *  bypassing the schema door): a non-string ref or a non-list stack
+ *  is a caller bug, never a quiet skip. */
+export function editRefs(p: Record<string, unknown>): string[] {
+  const out: string[] = []
+  const pushRef = (s: unknown, key: string): void => {
+    if (s === undefined || s === null) return
+    if (typeof s === 'string') {
+      if (s.trim()) out.push(s)
+      return
+    }
+    throw new Error(`'${key}' fires on the image-edit card (expected an image path string, got ${typeof s}) — the TS plane maps every stated image to a slot, never drops one quietly`)
+  }
+  pushRef(p.image2, 'image2')
+  pushRef(p.image3, 'image3')
+  const stack = p.reference_images
+  if (stack === undefined || stack === null) return out
+  if (!Array.isArray(stack)) {
+    throw new Error(`'reference_images' fires on the image-edit card (expected a list of image paths, got ${typeof stack}) — the TS plane maps every stated image to a slot, never drops one quietly`)
+  }
+  for (const s of stack) pushRef(s, 'reference_images')
+  return out
+}
+
 /** The firing gate (the MOD FIRING LAW, ported 1:1
  *  moved verbatim from the image-edit card): lane-promise values ride
  *  inert; anything that would change the graph refuses field-named
  *  INSTEAD of silently plain-editing.
  *
- *  THE SECOND SEAT (2026-09-21 — the reference stack): the gate reads
- *  the LANE off the model (lane_inputs.text_encode_node, the branch
- *  key — data, never a family-id switch). On the 2.1 arm the
- *  reference_images stack RIDES (the encoder's autogrow slots); on
- *  every other arm it fires exactly as before (the stock 2511 node
- *  has no slot mapping). An absent model refuses (the old law —
- *  direct lane callers pin it). */
+ *  THE SECOND SEAT (the max_images law): the gate reads
+ *  the CAP off the model (lane_inputs.max_images — the DECL's own
+ *  node truth, never a hardcoded count, never a family-id switch).
+ *  Refs past cap - 1 refuse LOUD on every lane (2511: 2, 2.1: 15);
+ *  the lane re-pins the same ceiling for direct callers. An absent
+ *  model refuses (the old law — direct lane callers pin it). */
 export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelFacts): void {
   const blank = (v: unknown): boolean =>
     v === undefined || v === null ||
@@ -129,7 +171,13 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
       throw new Error(`'${key}' fires on the image-edit card (${why}) — the TS plane builds the stock plain-edit graph only; refusing instead of silently plain-editing`)
     }
   }
-  fire('reference_images', !blank(p.reference_images) && model?.lane_inputs.text_encode_node !== 'TextEncodeQwenImage21', 'multi-image lists need slot mapping the stock image1/2/3 node has no rule for — the 2.1 lane splices the stack through the encoder autogrow slots')
+  const refs = editRefs(p)
+  // THE ABSENT-MODEL LAW (verbatim pre-unification behavior): with
+  // no model pinned the gate cannot know the lane's cap, so ANY
+  // stated ref refuses — direct lane callers pin the model.
+  fire('reference_images', model === undefined && refs.length > 0, 'no model pinned — direct lane callers pin the model (the gate reads the lane cap off lane_inputs.max_images)')
+  const cap = editImageCap(model)
+  fire('reference_images', refs.length > cap - 1, `this lane takes ${cap - 1} references (anchor + ${cap - 1} = max_images ${cap}) — drop ${refs.length - (cap - 1)} or switch the model lane`)
   fire('double_reference', p.double_reference === true, 'the second encode needs nodes this plane does not build')
   // THE LANPAINT LAW (revived 2026-09-15 — the arm above builds it):
   // a stated region switches to the lanpaint sampler; forcing it
@@ -150,7 +198,7 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   // lanpaint arm rides the 2511 lane only — the 2.1 arm returns
   // before it, and a stated region there would silently plain-edit
   // (the lying-stack crime the firing law bans). Refuse field-named.
-  fire('input_mask', maskStated && model?.lane_inputs.text_encode_node === 'TextEncodeQwenImage21',
+  fire('input_mask', maskStated && model?.lane_inputs?.text_encode_node === 'TextEncodeQwenImage21',
     'the lanpaint region rides the 2511 lane only — the 2.1 lane has no lanpaint sampler and would silently plain-edit; clear the mask or switch the model lane')
   fire('lanpaint_enabled', p.lanpaint_enabled === true && !maskStated, 'force LanPaint with no region stated — state input_mask (the region to regenerate)')
   fire('lanpaint_beta', ((p.lanpaint_beta ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Beta 1.0, the pack knob wires to no input; back it to 0.5 or order a pack change')
@@ -176,13 +224,21 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   unet = stackLoras(g, unet, fireLoras(model, p))
   const { clip, vae } = loadTextPair(g, li)
   const image = g.node('LoadImage', { image: p.image1, upload: 'image' }).out(0)
-  // optional reference slots (the stock node's native image2/image3):
-  // stated slots load ahead of the encodes (creation order IS node-id
-  // order); blank slots contribute no input at all (stable).
-  const slot2 = ((p.image2 ?? '') as string).trim()
-  const slot3 = ((p.image3 ?? '') as string).trim()
-  const ref2 = slot2 ? g.node('LoadImage', { image: slot2, upload: 'image' }).out(0) : null
-  const ref3 = slot3 ? g.node('LoadImage', { image: slot3, upload: 'image' }).out(0) : null
+  // THE REFERENCES (the unification — ONE order for both arms):
+  // legacy named slots first, then the stack, blanks dropped.
+  // THE SHARED CEILING (the max_images law — ONE check, both arms)
+  // runs BEFORE any ref loads: anchor + refs past the DECL cap
+  // refuses field-named, never drops quiet and never orphans
+  // LoadImages. The gate pins the same ceiling at the compose
+  // door; this re-pin covers direct lane callers.
+  const refs = editRefs(p)
+  const cap = editImageCap(model)
+  if (1 + refs.length > cap) {
+    throw new Error(`'reference_images' fires on the image-edit card (this lane takes ${cap - 1} references — anchor + refs count ${1 + refs.length}, max_images ${cap}; drop ${1 + refs.length - cap}) — the TS plane maps every stated image to a slot, never drops one quietly`)
+  }
+  // Each stated ref loads ahead of the encodes (creation order IS
+  // node-id order); blank refs contribute no input at all (stable).
+  const loaded = refs.map((s) => g.node('LoadImage', { image: s, upload: 'image' }).out(0))
   // ── THE 2.1 EDIT LANE (2026-09-21, the Comfy-Org release; branch
   // key = lane_inputs.text_encode_node, the latent_node precedent)
   // ── the 2.1 base has NO separate edit weights: the edit rides
@@ -203,24 +259,11 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
     // executor's dynamic-path split nests them into the images dict;
     // a bare 'image_1' reaches execute() as a kwarg and dies)
     const images21: Record<string, OutputHandle> = { 'images.image_1': image }
-    if (ref2) images21['images.image_2'] = ref2
-    if (ref3) images21['images.image_3'] = ref3
-    // THE REFERENCE STACK (2026-09-21 — the operator's catch: the
-    // node opens image inputs as filled, up to 16): stated stack
-    // entries load in array order onto images.image_4+ (AFTER the
-    // named slots — existing graphs stay byte-stable); blanks
-    // contribute no input (the blank() law). The CEILING is the
-    // node's own (agents bypass the form's max_stack): anchor +
-    // named + stack past 16 refuses field-named, never drops quiet.
-    const stack = Array.isArray(p.reference_images)
-      ? (p.reference_images as unknown[]).filter((s) => typeof s === 'string' && s.trim())
-      : []
-    const named = 1 + (ref2 ? 1 : 0) + (ref3 ? 1 : 0)
-    if (named + stack.length > 16) {
-      throw new Error(`'reference_images' fires on the image-edit card (the 2.1 encoder opens at most 16 image inputs — anchor + named slots + stack count ${named + stack.length}; drop ${named + stack.length - 16}) — the TS plane maps every stated image to a slot, never drops one quietly`)
-    }
-    stack.forEach((s, i) => {
-      images21[`images.image_${4 + i}`] = g.node('LoadImage', { image: s, upload: 'image' }).out(0)
+    // THE ORDER RIDES CONTIGUOUSLY (the unification): refs map onto
+    // images.image_2+ in order — no gaps, no second concept (the
+    // shared ceiling above already enforced the DECL cap).
+    loaded.forEach((ref, i) => {
+      images21[`images.image_${2 + i}`] = ref
     })
     const enc21 = g.node('TextEncodeQwenImage21', {
       clip, vae, prompt: p.prompt, negative_prompt: p.negative_prompt ?? '', resolution: 1024,
@@ -254,6 +297,21 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   if (p.width !== undefined || p.height !== undefined) {
     throw new Error("'width'/'height' fire on the image-edit card only on the Qwen Image 2.1 lane (target-resolution edit) — the 2511 lane edits at the source's own resolution; clear them or switch the model lane")
   }
+  // THE 2511 MAPPING (the unification's narrow end): refs ride the
+  // stock node's native image2/image3 optionals (the shared ceiling
+  // above already enforced the DECL cap — this arm only ever sees
+  // what fits). THE NODE-SHAPE ASSERT (not a second cap — a lying-
+  // DECL guard): this arm builds the stock TextEncodeQwenImageEditPlus
+  // graph, whose reference slots are image2/image3 and nothing else.
+  // A lane routing here with max_images past the node's own 3 would
+  // silently drop refs — refuse LOUD instead. Conditional spreads
+  // keep blank refs out of the inputs entirely (byte-stable plain
+  // graphs).
+  if (cap > 3) {
+    throw new Error(`'reference_images' fires on the image-edit card (this lane routes to the stock TextEncodeQwenImageEditPlus node — image1/2/3 and nothing else — but declares max_images ${cap}; fix the DECL) — the TS plane maps every stated image to a slot, never drops one quietly`)
+  }
+  const ref2 = loaded[0] ?? null
+  const ref3 = loaded[1] ?? null
   const pos = g.node('TextEncodeQwenImageEditPlus', {
     clip, image1: image, vae, prompt: p.prompt,
     ...(ref2 ? { image2: ref2 } : {}),

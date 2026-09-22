@@ -179,6 +179,13 @@ export const DECL: ModelDecl = {
     // a family-id switch): names the 2.1 encoder class; the kit's
     // imageEdit builder routes onto the cached-reference lane.
     "text_encode_node": "TextEncodeQwenImage21",
+    // THE IMAGE CAPACITY (the node's own truth — the card and the
+    // lane RIDE this, never a hardcoded count): TextEncodeQwenImage21
+    // opens image inputs as filled, up to 16 total (anchor +
+    // references). The kit caps the unified reference order at
+    // max_images - 1; the card caps its stack face at the roomiest
+    // boarded lane's max_images - 1.
+    "max_images": 16,
     "text_encoder": "qwen3vl_8b_int8_convrot.safetensors",
     "unet": "qwen_image_2.1_int8_convrot.safetensors",
     "vae": "qwen_image_2.1_vae_bf16.safetensors"

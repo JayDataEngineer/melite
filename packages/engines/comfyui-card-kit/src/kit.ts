@@ -40,6 +40,8 @@ export {
   finalizeImageEdit,
   refuseImageEditFiring,
   imageEdit,
+  editRefs,
+  editImageCap,
 } from './lanes-image.ts'
 export {
   VIDEO_NEGATIVE_FALLBACK,

@@ -28,7 +28,7 @@
  */
 import { createElement as h, useState } from 'react'
 import { type BboxFaceComponent, ModifiersSection, type PaintFaceComponent } from './mods.tsx'
-import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, modOwnedFields, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
+import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, modOwnedFields, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
 import { useFormSpec } from './use-form-spec.ts'
 import { type FieldAtomClaim, type SquareHost, type SquareWire, useSquareProvider } from './square-provider.tsx'
@@ -193,6 +193,12 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   const railFields = signature
     .map((inp) => (typeof inp?.name === 'string' ? railOf(inp as { name: string }) : undefined))
     .filter((f): f is SpecField => f !== undefined)
+    // THE VISIBILITY LAW (the image-edit two-rows incident): the rail
+    // seats ONLY visible fields — a lane-bespoke slot (visible_when:
+    // "model=<family>") hides on every other family, exactly like the
+    // param groups do below. Without this the 2.1-only Reference
+    // Images stack rode 2511 too — two input rows at all times.
+    .filter((f) => fieldVisible(f, { ...value, model: family ?? '' }))
   const railNames = new Set(railFields.map((f) => f.name))
   // THE PROGRESSIVE STACKS (the operator's law, 2026-09-20: "a
   // generic 'input row for input squares'… adding one causes it to
@@ -203,7 +209,12 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   // unclaimed-slot law (image_list rendered NOWHERE with a
   // signature present): a declared stack always has a face.
   // Mod-owned stacks stay off (the leaf owns them — one face).
-  const stackFields = flatFields.filter((f) => f.type === 'image_list' && !modFieldByName.has(f.name))
+  // THE VISIBILITY LAW rides here too (same incident): a hidden
+  // stack vanishes — it never relocates to the param groups (the
+  // visible() gate below excludes every image_list either way).
+  const stackFields = flatFields
+    .filter((f) => f.type === 'image_list' && !modFieldByName.has(f.name))
+    .filter((f) => fieldVisible(f, { ...value, model: family ?? '' }))
   const visible = (f: SpecField): boolean =>
     f.type !== 'image_list' && !railNames.has(f.name)
   const groupFieldsAll = flatFields.filter(visible)
