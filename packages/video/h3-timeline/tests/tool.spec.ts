@@ -52,7 +52,7 @@ describe("the h3-timeline tool face", () => {
       meta: { flow: "h3-timeline", model: "h3-timeline", run_id: "r9" },
     });
     assert.ok(view?.card === "generic");
-    assert.equal(view?.title, "H3 Timeline [h3-timeline] → r9");
+    assert.equal(view?.title, "Generate Video [h3-timeline] → r9");
   });
 
   it("a JSON-STRING calls unwraps to the array before the estate sees it (DSH json-param law)", async () => {

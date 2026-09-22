@@ -46,7 +46,7 @@ export const schema = z.object({
 })
 
 export const identity = {
-  label: 'Image',
+  label: 'Generate Image',
   description: 'Text-to-image generation — the generate_image interface card boarding krea-2, z-image, anima, and qwen-img-21 (the Qwen Image 2.1 base — its 2.1 lane emits the TextEncodeQwenImage21 graph; the edit sibling qwen-img-edit-21 boards the image-edit card); each family declares its mods and the surface scopes itself',
   genre: 'image',
   icon: 'image',

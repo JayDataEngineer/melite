@@ -45,7 +45,7 @@ describe("the image-edit tool face", () => {
       content: [], isError: false,
       meta: { flow: "image-edit", model: "qwen-img-edit-2511", run_id: "r9" },
     });
-    assert.equal(view?.title, "Image Edit [qwen-img-edit-2511] → r9");
+    assert.equal(view?.title, "Edit Image [qwen-img-edit-2511] → r9");
     assert.ok(view?.card === "generic", "the generic card view");
     assert.equal((view as { content?: unknown }).content, undefined, "content omitted — the raw result renders");
   });

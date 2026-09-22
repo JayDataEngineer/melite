@@ -111,7 +111,7 @@ export const inject = ['comfyui']
 // THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
 // identity ring; the card owns its label/description/genre/icon).
 export const identity = {
-  label: 'Image → 3D',
+  label: 'Generate 3D',
   description: 'The 3D lane — lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.',
   genre: '3d',
   icon: 'box',

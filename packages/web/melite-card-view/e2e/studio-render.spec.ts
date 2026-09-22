@@ -221,8 +221,8 @@ test('the add door shows the REAL card for h3-timeline (not the spec form)', asy
   // drives the SAME button handler the operator's click drives — the
   // law under test is the picked VIEW, not the pointer path. Scoped
   // to the dialog with the exact name: the bench tiles' accessible
-  // names also contain "H3 Timeline" and would steal a loose match.
-  await page.getByRole('dialog').getByRole('button', { name: 'H3 Timeline', exact: true }).dispatchEvent('click')
+  // names also contain "Generate Video" and would steal a loose match.
+  await page.getByRole('dialog').getByRole('button', { name: 'Generate Video', exact: true }).dispatchEvent('click')
   // THE PICK IS THE ADD: the stage lands on the bench… (a re-run
   // opens the PREVIOUS run's minted conversation, whose bench may
   // already carry earlier picks — the law is GROWTH, not +1 exactly)

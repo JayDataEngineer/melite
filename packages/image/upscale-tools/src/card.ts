@@ -34,7 +34,7 @@ export const inject = ['comfyui']
 // THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
 // identity ring; the card owns its label/description/genre/icon).
 export const identity = {
-  label: 'Upscale Tools',
+  label: 'Upscale Image',
   description: 'Diffusion upscale (SeedVR2-3B fp16) — the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)',
   genre: 'image',
   icon: 'maximize',

@@ -34,7 +34,7 @@ describe("real composition (the production path)", () => {
     // plugins — distinct domain from card plugins — each carrying
     // variants, quants, HF links, mods; never a restated string).
     assert.deepEqual([...def.boarded], [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id]);
-    assert.equal(def.identity?.label, "Image");
+    assert.equal(def.identity?.label, "Generate Image");
   });
 
   it("stroke 34: the card-recipe layer is DEAD — no catalog, no knob", async () => {

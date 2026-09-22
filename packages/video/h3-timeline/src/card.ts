@@ -490,7 +490,7 @@ export const BOARDED: string[] = ['h3-timeline']
 export const VARIANT_ADDRESSES: string[] = ['h3', 'h3-ref2va', 'h3-timeline-ref', 'h3-keyframe']
 
 export const identity = {
-  label: 'H3 Timeline',
+  label: 'Generate Video',
   description: 'THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.',
   genre: 'video',
   icon: 'video',
