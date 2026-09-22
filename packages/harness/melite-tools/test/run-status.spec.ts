@@ -8,12 +8,15 @@
 //   4. the render tolerates sparse values (replay path) and counts
 //      completions past null stage rows; queue suffix only past 0
 
-import { describe, test } from 'vitest'
+import { describe, test, vi, afterEach } from 'vitest'
 import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import { runStatus } from '../src/tools/run-status.ts'
+import { withArgCoercion, coerceArgs } from '../src/tools/arg-coerce.ts'
 import type { EstateRequest } from '../src/estate.ts'
+
+afterEach(() => { vi.useRealTimers() })
 
 function mockRequest(
   handler: (method: string, path: string, body: unknown) => unknown,
@@ -113,6 +116,95 @@ describe('run_status execute — the run monitor', () => {
     const { request } = mockRequest(() => { throw new Error('socket hangup') })
     const tool = runStatus(request)
     await assert.rejects(tool.execute({ runId: 'r' }, exec), /socket hangup/)
+  })
+})
+
+describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
+  // Fake timers own setTimeout AND Date — the loop's deadline math
+  // and its 5s cadence both advance under advanceTimersByTimeAsync.
+  function fakeClock(): void {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] })
+  }
+
+  test('wait_s=0 keeps the single-shot read (no wait keys, one fetch)', async () => {
+    const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
+    const tool = runStatus(seen.request)
+    const out = await tool.execute({ runId: 'r', wait_s: 0 }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    assert.equal(seen.calls.length, 1)
+    assert.equal(out.wait_expired, undefined)
+    assert.equal(out.waited_s, undefined)
+  })
+
+  test('the long-poll absorbs the poll loop: terminal inside budget → ONE call, waited_s receipt', async () => {
+    fakeClock()
+    let n = 0
+    const seen = mockRequest(() => {
+      n += 1
+      return n === 1
+        ? { run_id: 'r', status: 'running', stages: [] }
+        : { run_id: 'r', status: 'completed', stages: [{ id: 's_0', status: 'completed' }], artifacts: [{ path: 'f.mp4' }] }
+    })
+    const tool = runStatus(seen.request)
+    const p = tool.execute({ runId: 'r', wait_s: 300 }, { signal: AbortSignal.timeout(5000) })
+    const raced = Promise.race([p, vi.advanceTimersByTimeAsync(5000).then(() => new Promise(() => {}))])
+    const out = await raced as Record<string, unknown>
+    assert.equal(seen.calls.length, 2)          // running → (5s sleep) → completed
+    assert.equal(out.status, 'completed')
+    assert.equal(out.wait_expired, undefined)
+    assert.equal(typeof out.waited_s, 'number')
+  })
+
+  test('budget expiry on a live run → wait_expired:true + the last row (never fabricated)', async () => {
+    fakeClock()
+    const seen = mockRequest(() => ({ run_id: 'r', status: 'running', stages: [] }))
+    const tool = runStatus(seen.request)
+    const p = tool.execute({ runId: 'r', wait_s: 3 }, { signal: AbortSignal.timeout(5000) })
+    const out = await Promise.race([p, vi.advanceTimersByTimeAsync(10_000).then(() => new Promise(() => {}))]) as Record<string, unknown>
+    assert.equal(out.status, 'running')        // the truth at expiry, not a guess
+    assert.equal(out.wait_expired, true)
+    assert.equal(out.wait_budget_s, 3)
+    assert.ok(seen.calls.length >= 2)          // fetch → sleep-past-deadline → fetch
+  })
+
+  test('a numeric-string wait_s coerces (the 4× timeoutMs lesson, fix 3)', async () => {
+    const seen = mockRequest(() => ({ run_id: 'r', status: 'completed' }))
+    // the registration-site wrap (index.ts) — the valve BEFORE the gate
+    const tool = withArgCoercion(runStatus(seen.request))
+    const out = await tool.execute({ runId: 'r', wait_s: '0' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    assert.equal(out.status, 'completed')
+    assert.equal(seen.calls.length, 1)
+  })
+
+  test('a cancelled wait rejects through the sleep (no lingering fetch)', async () => {
+    fakeClock()
+    const ac = new AbortController()
+    const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
+    const tool = runStatus(seen.request)
+    const p = tool.execute({ runId: 'r', wait_s: 300 }, { signal: ac.signal })
+    const guard = p.catch((e: unknown) => e)
+    vi.advanceTimersByTimeAsync(1000).then(() => ac.abort(new Error('user cancelled')))
+    const settled = await Promise.race([guard, vi.advanceTimersByTimeAsync(6000).then(() => new Promise(() => {}))])
+    assert.ok(settled instanceof Error || settled === undefined)
+  })
+})
+
+describe('coerceArgs — the numeric-string valve (fix 3)', () => {
+  const props = { wait_s: { type: 'number' }, deep: { type: 'boolean' }, s: { type: 'string' } }
+  test('numeric strings coerce; boolean strings coerce; garbage stays for the gate', () => {
+    const out = coerceArgs(props, { wait_s: '300', deep: 'true', s: 'keep' }) as Record<string, unknown>
+    assert.equal(out.wait_s, 300)
+    assert.equal(out.deep, true)
+    assert.equal(out.s, 'keep')
+    const bad = coerceArgs(props, { wait_s: 'soon' }) as Record<string, unknown>
+    assert.equal(bad.wait_s, 'soon')
+    const empty = coerceArgs(props, { wait_s: '' }) as Record<string, unknown>
+    assert.equal(empty.wait_s, '')
+  })
+  test('non-objects and schema-less defs ride untouched', () => {
+    const obj = { a: '1' }
+    assert.equal(coerceArgs(undefined, obj), obj)
+    assert.equal(coerceArgs(props, null), null)
+    assert.equal(coerceArgs(props, 'x'), 'x')
   })
 })
 

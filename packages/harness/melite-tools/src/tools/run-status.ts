@@ -21,6 +21,37 @@ import { jsonClean } from '../json-clean.ts'
 
 const TIMEOUT_MS = 15_000
 
+// THE WAIT PRIMITIVE (efficiency review, prong (a) fix 5,
+// 2026-09-22): the attempt005 census counted 20 sleep calls —
+// polling was the only wait shape, and each wake re-read multi-KB
+// log tails from byte zero. wait_s turns N poll turns into ONE:
+// the tool re-fetches server-side on a flat 5s cadence (each fetch
+// ~200 bytes of context — the row, never the log) until the run is
+// terminal or the budget expires. The tool def's own timeoutMs
+// rises to cover the full budget + one fetch's slack; wait_s=0
+// keeps the historical single-shot read.
+const WAIT_MAX_S = 300
+const WAIT_POLL_S = 5
+
+/** Abortable sleep — resolves after ms, rejects immediately when
+ * the caller's signal aborts (a cancelled wait never lingers). */
+function sleepAbortable(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    function onAbort(): void {
+      clearTimeout(t)
+      reject(signal.reason ?? new Error('aborted'))
+    }
+    if (signal.aborted) { onAbort(); return }
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
+const TERMINAL = new Set(['completed', 'error', 'stopped', 'failed'])
+
 /** Canonical result — the typed mirror of output.schema (the music
  *  card's CardResult pattern: defineTool infers from the schema and
  *  checks the execute return against it). run_id rides every
@@ -77,7 +108,18 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         description: 'The run id returned by melite_flow.',
         required: true,
       },
+      wait_s: {
+        type: 'number',
+        description:
+          'Long-poll budget in seconds (0-300, default 0 = single read; clamped at execute). '
+          + 'The tool re-fetches internally every 5s until the run is terminal — '
+          + 'ONE result row instead of a sleep-and-repoll turn loop (efficiency '
+          + 'review fix 5). On budget expiry the row carries wait_expired: true.',
+      },
     },
+    // The wait budget runs INSIDE one execute — the def's own
+    // timeout must cover it (WAIT_MAX_S + one fetch's slack).
+    timeoutMs: (WAIT_MAX_S + 20) * 1000,
     presentCall,
     output: {
       schema: {
@@ -93,6 +135,8 @@ export function runStatus(request: EstateRequest): ToolDefinition {
           planned_stages: { type: 'array', description: 'The registered plan (id/engine per stage) — present when a live row has no stage rows yet.' },
           card: { type: 'string', description: 'The card (or pipeline) the run was born from.' },
           run_age_s: { type: 'number', description: 'Seconds since registration — the heartbeat for long renders.' },
+          wait_expired: { type: 'boolean', description: 'True when wait_s expired before the run reached a terminal state — wait again.' },
+          waited_s: { type: 'number', description: 'Seconds actually waited when the run reached terminal inside the budget.' },
         },
         // Ledger row 11 (2026-09-10): the refusal shape carries
         // {run_id, error} (no status) — required is the intersection.
@@ -101,7 +145,8 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         const v = value as {
           run_id?: string; status?: string; stages?: Array<{ status?: string }>;
           artifacts?: unknown[]; error?: string; queue_position?: number;
-          planned_stages?: Array<{ id?: string }>; card?: string; run_age_s?: number
+          planned_stages?: Array<{ id?: string }>; card?: string; run_age_s?: number;
+          wait_expired?: boolean; waited_s?: number
         }
         if (v && v.error) {
           return [{ type: 'text', text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + ' — ' + v.error }]
@@ -126,7 +171,11 @@ export function runStatus(request: EstateRequest): ToolDefinition {
             + ' — ' + done + '/' + total + ' stage(s)' + plan
             // hoisted above: the consequent's second ?? could never see
             // nullish (length-truthy implies defined) — same text (2026-09-12).
-            + (artifacts.length ? ' · ' + artifacts.length + ' artifact(s)' : ''),
+            + (artifacts.length ? ' · ' + artifacts.length + ' artifact(s)' : '')
+            // The wait primitive's two receipts (fix 5): expiry asks for
+            // another wait; waited_s proves the single call absorbed the poll.
+            + (v.wait_expired ? ' · wait expired (budget spent, not terminal — wait again)' : '')
+            + (typeof v.waited_s === 'number' ? ' · waited ' + v.waited_s + 's' : ''),
         }]
       },
     },
@@ -135,28 +184,54 @@ export function runStatus(request: EstateRequest): ToolDefinition {
       // (invalid args throw ToolArgsError there) — args is always a
       // defined object and runId a required string here, so honest casts
       // ride instead of gate-dead typeof fallbacks (2026-09-12).
-      const a = args as { runId?: unknown }
+      const a = args as { runId?: unknown; wait_s?: unknown }
       const runId = a.runId as string
       if (!runId) return jsonClean({ error: 'runId is required' }) as RunStatusResult
+      // The wait budget (fix 5): clamp defensively — the schema gate
+      // already enforces 0..WAIT_MAX_S; this arm only guards a
+      // non-numeric arrival (coerced below) never escaping the cap.
+      const waitRaw = typeof a.wait_s === 'number' ? a.wait_s : Number(a.wait_s)
+      const waitS = Number.isFinite(waitRaw)
+        ? Math.min(Math.max(waitRaw, 0), WAIT_MAX_S)
+        : 0
+      const deadline = Date.now() + waitS * 1000
       let res: Record<string, unknown>
-      try {
-        res = await request( 'GET',
-          '/v1/flows/status/' + encodeURIComponent(runId),
-          undefined, exec.signal, TIMEOUT_MS,
-        ) as Record<string, unknown>
-      } catch (e) {
-        // The seats era (REBUILD-15): status refusals arrive as
-        // RemoteErrors — the code+message IS the refusal voice.
-        const re = remoteErrorOf(e)
-        if (re !== null && re !== undefined) {
-          return jsonClean<RunStatusResult>({ run_id: runId, error: `${re.code}: ${re.message}` })
+      let waitExpired = false
+      // THE LONG-POLL LOOP: fetch → terminal? return : budget left?
+      // sleep 5s (abortable) : mark expiry and return the last row.
+      // Every fetch is the same cheap seat read (~200 B of context);
+      // the poll loop never touches logs.
+      for (;;) {
+        try {
+          res = await request( 'GET',
+            '/v1/flows/status/' + encodeURIComponent(runId),
+            undefined, exec.signal, TIMEOUT_MS,
+          ) as Record<string, unknown>
+        } catch (e) {
+          // The seats era (REBUILD-15): status refusals arrive as
+          // RemoteErrors — the code+message IS the refusal voice.
+          const re = remoteErrorOf(e)
+          if (re !== null && re !== undefined) {
+            return jsonClean<RunStatusResult>({ run_id: runId, error: `${re.code}: ${re.message}` })
+          }
+          throw e
         }
-        throw e
+        const status = typeof res?.['status'] === 'string' ? res['status'] : ''
+        if (TERMINAL.has(status)) break
+        if (Date.now() >= deadline) {
+          waitExpired = waitS > 0
+          break
+        }
+        await sleepAbortable(WAIT_POLL_S * 1000, exec.signal)
       }
       if (res && typeof res.error === 'string') {
         return jsonClean<RunStatusResult>({ run_id: runId, error: res.error })
       }
+      const waitedRow: Record<string, unknown> = waitExpired
+        ? { wait_expired: true, wait_budget_s: waitS }
+        : (waitS > 0 ? { waited_s: Math.round(waitS - Math.max(0, deadline - Date.now()) / 1000) } : {})
       return jsonClean({
+        ...waitedRow,
         run_id: typeof res.run_id === 'string' ? res.run_id : runId,
         status: typeof res.status === 'string' ? res.status : 'unknown',
         stages: Array.isArray(res.stages) ? res.stages : [],

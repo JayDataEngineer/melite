@@ -54,6 +54,7 @@ import { meliteView } from './tools/melite-view.ts'
 import { skillIndex } from './tools/skill-index.ts'
 import { skillRead } from './tools/skill-read.ts'
 import { ledgerTail } from './tools/ledger-tail.ts'
+import { withArgCoercion } from './tools/arg-coerce.ts'
 import type { ToolDefinition } from './types.ts'
 import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.ts'
 
@@ -245,8 +246,11 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // queue's own registration door, models named explicitly, never a
   // hand-assembled graph).
   if (headless) {
-    c.tools.register(meliteFlow(request))
-    c.tools.register(runStatus(request))
+    // THE COERCION VALVE (efficiency fix 3): numeric-string args
+    // coerce BEFORE the validation gate — the 4× timeoutMs lesson
+    // never repeats on a melite face.
+    c.tools.register(withArgCoercion(meliteFlow(request)))
+    c.tools.register(withArgCoercion(runStatus(request)))
   }
 
   // (2026-09-12: the readDefaultLlm copy that lived here is deleted —
