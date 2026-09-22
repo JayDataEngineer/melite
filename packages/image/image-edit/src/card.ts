@@ -99,20 +99,31 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   width: z.number().description("Width").extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
   height: z.number().description("Height").extra('extra', { order: 1, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "sampling", width: 1, zone: 'params' }),
-  steps: z.number().description("Steps").min(1).max(50).step(1).default(4).extra('extra', samplingExtra('steps')),
-  cfg: z.number().description("Guidance Scale").min(0.1).max(10).step(0.1).default(1).extra('extra', samplingExtra('cfg', { tooltip: "Qwen-Image-Edit uses low CFG (flow-matching)." })),
+  // RIDE-THE-MODEL (operator catch e, 2026-09-22): steps/cfg carry
+  // NO schema default — a default here is one lane's recipe served
+  // as universal (4/1 is the LIGHTNING recipe; standard weights
+  // sampled at 4 steps made the washed-out edits the operator
+  // caught). The family DECL owns the default (2511 standard
+  // 20/2.5, 2.1 25/1) through the service cascade, and the served
+  // tool face advertises none.
+  steps: z.number().description("Steps").min(1).max(50).step(1).extra('extra', samplingExtra('steps')),
+  cfg: z.number().description("Guidance Scale").min(0.1).max(10).step(0.1).extra('extra', samplingExtra('cfg', { tooltip: "Qwen-Image-Edit uses low CFG (flow-matching); leave unset — the model's own recipe is the default." })),
   sampler: SAMPLERS.description("Sampler").extra('extra', samplingExtra('sampler')),
   scheduler: SCHEDULERS.description("Scheduler").extra('extra', samplingExtra('scheduler')),
   use_stock_nodes: z.boolean().description("Use Stock Nodes").default(false).extra('extra', { order: 1, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' }),
   double_reference: z.boolean().description("Double Reference").default(false).extra('extra', { order: 2, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' }),
 })
 
-// THE BOARDING (2026-09-21, the naming law): the card names its
-// LANES — the family ids name models+versions, never operations.
-// 2511: the dedicated edit checkpoint (VAEEncode-of-source lane);
-// 2.1: the unified base — its edit rides QwenImage21Cache over the
-// SAME weights as t2i (branch by lane_inputs.text_encode_node).
-export const BOARDED: string[] = ['qwen-img-edit-2511', qwenImgEdit21Decl.id]
+// THE BOARDING (2026-09-21, the naming law; order flipped 2026-09-22,
+// operator catch e): the card names its LANES — the family ids name
+// models+versions, never operations. 2.1 IS THE DEFAULT (first =
+// the tool's defaultModel, the GUI enum's head, discovery's face):
+// it is the LATEST lane and the one whose weights this box ships.
+// 2511 is the BACKUP — the dedicated edit checkpoint
+// (VAEEncode-of-source lane); its standard INT8 ConvRot weights
+// ride provision, its Lightning variant needs its own FP8 file.
+// 2.1's edit arm branches by lane_inputs.text_encode_node.
+export const BOARDED: string[] = [qwenImgEdit21Decl.id, 'qwen-img-edit-2511']
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */

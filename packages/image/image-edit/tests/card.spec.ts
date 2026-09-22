@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
+import { BOARDED } from "../src/card.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -65,14 +66,26 @@ describe("the image-edit compose gate", () => {
     );
   });
 
-  it("THE SCHEMA GATE: unstated steps/cfg arrive as the declared defaults 4/1 (the walk fills them)", () => {
+  // RIDE-THE-MODEL (operator catch e, 2026-09-22): the schema pins
+  // NO steps/cfg default — one lane's lightning recipe (4/1) served
+  // as universal made the washed-out edits. The model DECL owns the
+  // default through the service cascade (2511 standard 20/2.5,
+  // 2.1 25/1); raw compose calls state them like the estate's
+  // merged params always do.
+  it("THE SCHEMA GATE: steps/cfg carry NO schema default (the model's DECL owns the recipe)", () => {
+    const walked = def.schema({ prompt: "make it night", image1: "/m/i.png" }) as Record<string, unknown>;
+    assert.equal(walked.steps, undefined, "no universal steps default on the walk");
+    assert.equal(walked.cfg, undefined, "no universal cfg default on the walk");
     const g = new GraphBuilder();
-    def.compose({ prompt: "make it night", image1: "/m/i.png" }, model, g, "r_def");
+    def.compose({ prompt: "make it night", image1: "/m/i.png", steps: 20, cfg: 2.5 }, model, g, "r_def");
     const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
-    assert.equal(graph["KSampler.0"]?.inputs.steps, 4,
-      "the fresh doc composes the schema-declared default steps 4, not undefined");
-    assert.equal(graph["KSampler.0"]?.inputs.cfg, 1,
-      "the fresh doc composes the schema-declared default cfg 1, not undefined");
+    assert.equal(graph["KSampler.0"]?.inputs.steps, 20, "stated values ride verbatim");
+    assert.equal(graph["KSampler.0"]?.inputs.cfg, 2.5, "stated values ride verbatim");
+  });
+
+  it("THE MODEL ORDER (operator catch e): 2.1 boards FIRST — the tool's default and the GUI's head", () => {
+    assert.equal(BOARDED[0], "qwen-img-edit-21", "2.1 is the LATEST lane — the default");
+    assert.equal(BOARDED[1], "qwen-img-edit-2511", "2511 is the BACKUP");
   });
 
   it("THE SCHEMA GATE: the mod-plane surface passes the walk verbatim (anchor + region + firing knobs reach the composer)", () => {

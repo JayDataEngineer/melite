@@ -16,12 +16,24 @@ export const DECL: ModelDecl = {
   "label": "Qwen Image Edit 2511",
   "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
   "engine": "comfyui",
+  // THE RECIPE↔WEIGHTS LAW (2026-09-22, operator catch e): the
+  // family defaults must sample THE UNET THE LANE PINS. lane_inputs
+  // below pins the INT8 ConvRot STANDARD checkpoint (the only 2511
+  // edit weights provisioned on this box) — the old defaults (steps
+  // 4, cfg 1) were the LIGHTNING recipe for a different, distilled
+  // checkpoint, so a default run sampled standard weights at 4
+  // steps and produced washed-out, broken edits (live-evidenced:
+  // run-bcb995c95f2c graph = int8_convrot unet × steps 4). Defaults
+  // are now the standard recipe; the lightning variant swaps BOTH
+  // the recipe AND the unet through its own lane_inputs, so a
+  // variant pick can never mix one checkpoint with the other's
+  // step count.
   "defaults": {
     "use_stock_nodes": false,
-    "steps": 4,
+    "steps": 20,
     "sampler": "euler",
     "scheduler": "simple",
-    "cfg": 1,
+    "cfg": 2.5,
     "double_reference": false
   },
   "prompt_guide": {
@@ -34,7 +46,7 @@ export const DECL: ModelDecl = {
       "list=("
     ],
     "label": "CFG",
-    "body": "Flow-matching lane: keep Guidance low (default 1.0; Standard stamps 2.5)",
+    "body": "Standard recipe: Guidance 2.5, 20 steps (the DEFAULT — matches the INT8 ConvRot weights the lane loads). Lightning stamps cfg 1.0 / 4 steps and swaps to the lightx2v distilled checkpoint.",
     "list": []
   },
   "genre": "image",
@@ -70,12 +82,19 @@ export const DECL: ModelDecl = {
     {
       "id": "lightning",
       "label": "Lightning",
-      "hint": "4-step distilled checkpoint (lightx2v Lightning) — fast (DEFAULT)",
+      "hint": "4-step distilled lightx2v checkpoint — fast. Swaps BOTH the recipe (steps 4, cfg 1) AND the unet (the recipe↔weights law — never one without the other). Requires provisioning: the FP8 Lightning file is NOT on this box by default; without it the engine validation refuses LOUD (the honest face) — the standard weights are what ship.",
       "group": "Variant",
       "route": "qwen-img-edit-2511-lightning4",
       "order": 0,
+      // THE WEIGHTS SWAP (recipe↔weights law): this variant's
+      // stamps ride its OWN unet, merged over the family's
+      // lane_inputs by the variant rail.
+      "lane_inputs": {
+        "unet": "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors"
+      },
       "resolver_defaults": {
-        "steps": 4
+        "steps": 4,
+        "cfg": 1
       },
       "cells": [
         {
@@ -88,7 +107,7 @@ export const DECL: ModelDecl = {
             "size_bytes": 20447469486,
             "sha256": "16d03fd9bab36b0a588e77db23825629df62ab99fc3e62f3a36887b201dcc36f",
             "dest_root": "COMFYUI_ROOT",
-            "dest_sub": "checkpoints",
+            "dest_sub": "diffusion_models",
             "size_hint_gb": 20.4
           }
         }
@@ -97,7 +116,7 @@ export const DECL: ModelDecl = {
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "20 steps, cfg 2.5 — highest quality path, the INT8 ConvRot merge.",
+      "hint": "20 steps, cfg 2.5 — the INT8 ConvRot merge (DEFAULT: the weights this box ships, the recipe the family defaults stamp).",
       "group": "Variant",
       "route": "qwen-img-edit-2511",
       "order": 1,

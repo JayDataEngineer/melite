@@ -14,7 +14,9 @@ import type { ToolDefinition, ToolRuntime } from "@deepseek-ai/dsh-tools";
 import * as pkg from "../src/index.ts";
 import { TOOL_NAME, buildImageEditTool as FACE } from "../src/tool.ts";
 
-const DEFAULT_MODEL = "qwen-img-edit-2511";
+// THE MODEL ORDER (operator catch e): 2.1 is the default lane —
+// 2511 boards second (the backup).
+const DEFAULT_MODEL = "qwen-img-edit-21";
 const GOOD_ARGS = { prompt: "make it night", image1: "/m/i.png" };
 
 const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];

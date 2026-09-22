@@ -31,7 +31,7 @@
 // subtree-top-index mechanism: consumers name the package, never a
 // path inside it — P46).
 export { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks/render-kit.ts'
-export { mintSeed } from './graph-helpers.ts'
+export { mintSeed, voiceLockSeed } from './graph-helpers.ts'
 export {
   IMAGE_GEN_STRIP,
   finalizeImageGen,

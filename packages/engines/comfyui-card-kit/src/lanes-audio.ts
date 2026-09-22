@@ -1,6 +1,7 @@
 import { GraphBuilder, OutputHandle } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
-import { mintSeed } from './graph-helpers.ts'
+import { mintSeed,
+  voiceLockSeed } from './graph-helpers.ts'
 import { assertModUse } from './mods/guard.ts'
 import {
   AUDIACORE_TTS_AUTOFILL,
@@ -185,7 +186,9 @@ export function ttsUseT1(p: Record<string, unknown>, model: ModelFacts, g: Graph
     instruct: (p.style_instruction ?? '') as string,
     temperature: p.temperature,
     voice_strength: strength,
-    seed: mintSeed(p),
+    // THE LOCK SEED (operator catch f): derived from the artifact
+    // path when unstated — same voice, same render seed, every time
+    seed: voiceLockSeed(p, path),
   })
   saveAudio(g, studio.out(), `${runId}/tts`)
 }

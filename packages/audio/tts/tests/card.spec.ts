@@ -124,6 +124,28 @@ describe("the qvoice USE lane (the voice-lock LOAD half — a stated .qvoice per
     assert.equal(studio.inputs.voice_strength, 1.4, "the identity intensity wires");
     assert.equal(graph["AudiocoreTTS.0"], undefined, "the persona synth never rides on a stated artifact (its embedding path is dead at the C ABI)");
   });
+
+  // THE LOCK SEED (operator catch f, 2026-09-22): "voice does not
+  // appear to lock" — the use lane minted a FRESH random seed every
+  // render, so the same persona drifted line to line. An unstated
+  // seed now derives from the artifact path (same voice ⇒ same
+  // seed); a stated seed still wins.
+  it("the lock seed: same artifact composes the SAME seed twice; a stated seed overrides; different voices differ", () => {
+    const seedOf = (doc: Record<string, unknown>): unknown => {
+      const g = new GraphBuilder();
+      def.compose(def.schema(doc), ttsModel, g, "run_lock");
+      return g.toJSON()["AudiocoreVoiceStudio.0"]?.inputs.seed;
+    };
+    const docA = { text: "one line", qvoice: [{ qvoice: "Cherry.qvoice" }] };
+    const s1 = seedOf(docA);
+    const s2 = seedOf(docA);
+    assert.equal(s1, s2, "same artifact, unstated seed ⇒ the SAME derived seed every compose (the lock)");
+    assert.ok(typeof s1 === "number" && s1 >= 0, `a real engine seed (≥0), got ${String(s1)}`);
+    const sOther = seedOf({ text: "one line", qvoice: [{ qvoice: "Cola.qvoice" }] });
+    assert.notEqual(s1, sOther, "a different voice derives a different seed");
+    const sStated = seedOf({ ...docA, seed: 4242 });
+    assert.equal(sStated, 4242, "a stated seed wins — explicit intent is never overridden");
+  });
   it("no stated bag keeps the persona synth (the preset timbre)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ text: "the words to speak" }), ttsModel, g, "run_6");
