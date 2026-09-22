@@ -43,7 +43,7 @@ const classes = (row: Record<string, { class_type: string }>): string[] =>
 beforeAll(() => { assert.ok(Object.keys(facts.models).length > 0, "the facts file serves"); });
 
 // ── the mask lane (RT-DETR proposals, exports, unions, manifests) ──
-const MASK_PINS = { checkpoint: "sam3_pin.pth", unet: "rtdetr_pin.pth", sam2: "sam2_pin.pt", yolo: "bbox/yolo_pin.pt" };
+const MASK_PINS = { checkpoint: "sam3_pin.pth", unet: "rtdetr_pin.pth", sam2: "sam2_pin.pt", yolo: "bbox/yolo_pin.pt", segm: "segm/person_pin.pt" };
 const maskBase = {
   input_image: "/m/p.png", sam_threshold: 0.93, sam_dilation: 0,
   export_boxes: false, primary_via_rtdetr: false,
@@ -110,7 +110,7 @@ describe("maskT1 (the selection lane's arms)", () => {
   it("the SAM2 impact-pack arm: YOLO proposes, SAM2 refines, the pins ride (the operator's SAM2)", () => {
     const g = new GraphBuilder();
     maskT1({
-      ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person", yolo_threshold: 0.6,
+      ...maskBase, primary_via_sam2: true, primary_sam2_labels: "dog,horse", yolo_threshold: 0.6,
     }, MASK_PINS, g, "r_sam2");
     const row = dump(g);
     assert.deepEqual(classes(row).filter((c) => ["UltralyticsDetectorProvider", "BboxDetectorSEGS", "SAMLoader", "SAMDetectorCombined"].includes(c)).sort(),
@@ -119,7 +119,7 @@ describe("maskT1 (the selection lane's arms)", () => {
     const yolo = Object.values(row).find((n) => n.class_type === "UltralyticsDetectorProvider")!;
     assert.equal(yolo.inputs.model_name, "bbox/yolo_pin.pt", "the card's YOLO pin rides (never a caller string)");
     const det = Object.values(row).find((n) => n.class_type === "BboxDetectorSEGS")!;
-    assert.equal(det.inputs.labels, "person", "the labels word rides");
+    assert.equal(det.inputs.labels, "dog,horse", "the labels set rides");
     assert.equal(det.inputs.threshold, 0.6, "the YOLO threshold rides verbatim");
     const sam = Object.values(row).find((n) => n.class_type === "SAMLoader")!;
     assert.equal(sam.inputs.model_name, "sam2_pin.pt", "the card's SAM2 pin rides (never a caller string)");
@@ -127,6 +127,26 @@ describe("maskT1 (the selection lane's arms)", () => {
     assert.equal(comb.inputs.detection_hint, "center-1", "the pack's best-practice hint rides");
     const saves = Object.values(row).filter((n) => n.class_type === "SaveImage");
     assert.ok(saves.some((s) => String(s.inputs.filename_prefix).endsWith("mask_combined")), "the sam2 primary anchors combined");
+  });
+
+  it("THE SEGM AUTO-LANE (the gap audit's #2): person-only rides SegmDetectorSEGS + the segm pin, others ride the bbox detector; every ride saves per-instance crops", () => {
+    const g = new GraphBuilder();
+    maskT1({ ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person" }, MASK_PINS, g, "r_segm");
+    const row = dump(g);
+    const segmDet = Object.values(row).find((n) => n.class_type === "SegmDetectorSEGS");
+    assert.ok(segmDet, "person-only routes the SEGMENTATION detector");
+    assert.ok(!Object.values(row).some((n) => n.class_type === "BboxDetectorSEGS"), "never both detectors for one payload");
+    const providers = Object.values(row).filter((n) => n.class_type === "UltralyticsDetectorProvider");
+    assert.ok(providers.some((n) => n.inputs.model_name === "segm/person_pin.pt"), "the SEGMENTATION pin rides");
+    assert.ok(Object.values(row).some((n) => n.class_type === "SEGSToImageList"), "SEGSToImageList unwraps the crops");
+    const cropSave = Object.values(row).find((n) => n.class_type === "SaveImage" && String(n.inputs.filename_prefix).endsWith("instance"));
+    assert.ok(cropSave, "the per-instance crops save under the run dir");
+
+    const g2 = new GraphBuilder();
+    maskT1({ ...maskBase, primary_via_sam2: true, primary_sam2_labels: "person,dog" }, MASK_PINS, g2, "r_segm2");
+    const row2 = dump(g2);
+    assert.ok(Object.values(row2).some((n) => n.class_type === "BboxDetectorSEGS"), "a mixed class set rides the BBOX detector (the segm vocabulary is person-only)");
+    assert.ok(!Object.values(row2).some((n) => n.class_type === "SegmDetectorSEGS"), "no segm detector on the mixed set");
   });
 
   it("the sam2 export arm: labels + its OWN box (the primary's box never leaks)", () => {

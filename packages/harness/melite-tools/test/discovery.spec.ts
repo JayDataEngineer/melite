@@ -326,13 +326,12 @@ describe('live door arms', () => {
     assert.equal(paint?.['leaf_face'], 'paint-canvas')
     // stroke 78: the bbox face rides sam3's region canvas
     assert.equal(mods.find((m) => m.kind === 'sam3')?.['leaf_face'], 'bbox-canvas')
-    // stroke 99 (2026-10-08, "BBOX IS NOT MANUAL, IT IS AUTOMATED"):
-    // sam2 carries NO canvas — its popup is the DETECTOR FORM
-    assert.equal(mods.find((m) => m.kind === 'sam2')?.['leaf_face'], undefined)
-    // the SECTION captions (2026-10-08, "SAM2 AND SAM3 DON'T HAVE
-    // BBOX FILTER"): BOTH detector kinds NAME their filter
-    assert.ok(String(mods.find((m) => m.kind === 'sam2')?.['section']).startsWith('Bbox filter — YOLO'))
-    assert.ok(String(mods.find((m) => m.kind === 'sam3')?.['section']).startsWith('Bbox filter — the detector prompt'))
+    // THE UNIFIED CARD (the operator's final word, 2026-10-08):
+    // BOTH detector kinds carry the image-preview canvas
+    assert.equal(mods.find((m) => m.kind === 'sam2')?.['leaf_face'], 'bbox-canvas')
+    // the SECTION captions: the twins — only the selector word differs
+    assert.ok(String(mods.find((m) => m.kind === 'sam2')?.['section']).startsWith('Bbox filter — the class dropdown'))
+    assert.ok(String(mods.find((m) => m.kind === 'sam3')?.['section']).startsWith('Bbox filter — the freetext prompt'))
     assert.equal(mods.find((m) => m.kind === 'draw')?.['section'], undefined)
     // the SAM2 law (2026-09-19 — declared, then auto provisioned):
     // the sam2 kind's pack requirements serve VERBATIM (the compose

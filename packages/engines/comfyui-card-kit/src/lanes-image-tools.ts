@@ -21,7 +21,7 @@ export type EntryTune = { threshold?: number; refine?: number; dilation?: number
  *  CLIP/RT-DETR leg (checkpoint + unet pins) and the SAM2
  *  impact-pack arm (sam2 + yolo pins — YOLO proposes, SAM2
  *  refines). */
-export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; unet: string; sam2: string; yolo: string }, g: GraphBuilder, runId: string): void {
+export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; unet: string; sam2: string; yolo: string; segm: string }, g: GraphBuilder, runId: string): void {
   const li = pins          // the ACTION CARD owns its pins (no model row — mask-studio is a tool, not weights)
   const prefix = `${runId}/mask`        // the arm's "%s/mask" % run_id
   const samThreshold = p.sam_threshold as number
@@ -98,16 +98,36 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   // scopes after (the rect scope above).
   let samH: OutputHandle | null = null
   let yoloH: OutputHandle | null = null
+  let segmH: OutputHandle | null = null
   const samLoader = (): OutputHandle =>
     (samH ??= g.node('SAMLoader', { model_name: li.sam2 as string, device_mode: 'AUTO' }).out(0))
   const yoloProvider = (): OutputHandle =>
     (yoloH ??= g.node('UltralyticsDetectorProvider', { model_name: li.yolo as string }).out(0))
+  // THE SEGM PROVIDER (the Impact Pack gap audit, 2026-10-08): the
+  // pack's own detailer-pipe-test wires SegmDetectorSEGS — a
+  // segmentation detector whose boxes come from CLASS-PIXEL masks
+  // (tighter crops, no center-point guess). The pin rides the
+  // card's PINS row (person_yolov8m-seg.pt, the model already on
+  // disk in models/ultralytics/segm/).
+  const segmProvider = (): OutputHandle =>
+    (segmH ??= g.node('UltralyticsDetectorProvider', { model_name: li.segm as string }).out(0))
   const sam2detect = (labels: string, scope?: BboxDict, tune?: EntryTune): OutputHandle => {
     if (labels === '') {
       throw new Error('maskT1: a sam2 selection needs labels (a YOLO class word — the card refuses empty)')
     }
-    const segs = g.node('BboxDetectorSEGS', {
-      bbox_detector: yoloProvider(),
+    // THE SEGM AUTO-LANE (the gap audit's #2): a person-only
+    // selection rides the segmentation detector — its boxes derive
+    // from class pixels (the pinned segm model's whole vocabulary
+    // is ['person']). Any other class set rides the bbox detector.
+    // (ImpactSimpleDetectorSEGS was AUDITED and REJECTED for this
+    // lane: it carries NO labels input — the class filter, the
+    // operator's core demand, cannot ride it. The pack's own
+    // labels-filtering test workflow (detailer-pipe-test.json)
+    // wires BboxDetectorSEGS + SAMDetectorCombined exactly as
+    // this lane does.)
+    const personOnly = labels === 'person'
+    const segs = g.node(personOnly ? 'SegmDetectorSEGS' : 'BboxDetectorSEGS', {
+      [personOnly ? 'segm_detector' : 'bbox_detector']: personOnly ? segmProvider() : yoloProvider(),
       image: img(),
       threshold: (tune?.yolo_threshold ?? (p.yolo_threshold as number | undefined) ?? 0.5),
       dilation: 10,
@@ -115,6 +135,16 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
       drop_size: 10,
       labels,
     }).out(0)
+    // THE PER-INSTANCE CROPS (the gap audit's #3/#4 export half):
+    // SEGSToImageList unwraps one crop per detected instance —
+    // PreviewImage saves each — the per-instance readback the
+    // pack's own examples ride (SEGSToImageList in
+    // detailer-pipe-test + 5-prompt-per-tile). Automatic: the
+    // crops ARE the manifest's granular sibling.
+    g.node('SaveImage', {
+      images: g.node('SEGSToImageList', { segs }).out(0),
+      filename_prefix: `${runId}/instance`,
+    })
     const refined = g.node('SAMDetectorCombined', {
       sam_model: samLoader(),
       segs,

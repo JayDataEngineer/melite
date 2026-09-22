@@ -66,11 +66,11 @@ stringified JSON blob):
   — one MaskComposite hop per payload, terminal
   `mask_combined_union`); draw without a standalone source
   refuses loud.
-- A sam3 region quad scopes its selection (the primary's scopes
+- A region quad scopes its selection on BOTH detector kinds (the
+  shared canvas's face-owned fields; the primary's scopes
   `mask_combined`, an export's scopes its own search); -1
-  everywhere = unscoped. sam2 carries NO quad — its boxes come
-  from the detector, and a stray quad on a sam2 entry refuses as
-  drift (unknown key).
+  everywhere = unscoped. A GENUINELY unknown entry key refuses as
+  drift (the entry-surface law).
 - Missing `input_image`, empty bags, wrong-typed or out-of-bounds
   knobs refuse loud (the popup's fields are the declaration — the
   schema gates every hop).

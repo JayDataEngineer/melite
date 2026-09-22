@@ -59,12 +59,31 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.deepEqual([...def.admits ?? []], ["sam3", "sam2", "draw"]);
   });
 
-  it("the leaf faces: the region canvas on sam3 ONLY, paint on draw — sam2 has NO canvas (its boxes are the detector's, 2026-10-08: \"BBOX IS NOT MANUAL, IT IS AUTOMATED\")", () => {
+  it("the leaf faces: the IMAGE PREVIEW canvas on BOTH detector kinds (the unified card, 2026-10-08: \"THE SAME [REDACTED 2026-11-05] CARD… THERE NEEDS TO BE AN IMAGE PREVIEW IN BOTH\"), paint on draw", () => {
     const mods = def.mods ?? [];
     assert.equal(mods.find((k) => k.kind === "sam3")!.leaf_face, "bbox-canvas");
-    assert.equal(mods.find((k) => k.kind === "sam2")!.leaf_face, undefined,
-      "sam2's popup is the DETECTOR FORM — a hand-drawn rectangle has no node on the Impact chain");
+    assert.equal(mods.find((k) => k.kind === "sam2")!.leaf_face, "bbox-canvas",
+      "sam2's popup previews the image and scopes the search — the canvas never proposes a box (the detector's own)");
     assert.equal(mods.find((k) => k.kind === "draw")!.leaf_face, "paint-canvas");
+  });
+
+  it("THE UNIFIED CARD: sam2 and sam3 declare the SAME shape — the ONLY difference is the selector (dropdown vs freetext), 2026-10-08 \"THE ONLY DIFFERENCE BEING THAT SAM2 TAKES A DROPDOWN… THE SAM3 TAKES FREETEXT\"", () => {
+    const mods = def.mods ?? [];
+    const sam2 = mods.find((k) => k.kind === "sam2")!;
+    const sam3 = mods.find((k) => k.kind === "sam3")!;
+    const names2 = ((sam2 as unknown as Row)["fields"] as Array<Row>).map((f) => String(f["name"]));
+    const names3 = ((sam3 as unknown as Row)["fields"] as Array<Row>).map((f) => String(f["name"]));
+    // shared core: both carry name, a threshold pair, dilation, the region quad
+    for (const shared of ["name", "sam_threshold", "sam_dilation", "bbox_x", "bbox_y", "bbox_w", "bbox_h"]) {
+      assert.ok(names2.includes(shared) && names3.includes(shared), `both kinds carry ${shared}`);
+    }
+    // THE difference: sam2's selector is the labels dropdown; sam3's is the prompt freetext
+    assert.ok(names2.includes("labels") && !names2.includes("prompt"), "sam2's selector is the class dropdown");
+    assert.ok(names3.includes("prompt") && !names3.includes("labels"), "sam3's selector is freetext");
+    // sam3's model-own lane knobs remain its own (the RT-DETR chain honors them; sam2's equivalents ARE the thresholds)
+    for (const sam3Only of ["via_rtdetr", "refine_iterations", "max_instances", "export_boxes"]) {
+      assert.ok(names3.includes(sam3Only) && !names2.includes(sam3Only), `${sam3Only} is the SAM3 lane's own knob`);
+    }
   });
 
   it("the SECTION captions NAME the bbox filter on BOTH detector kinds (2026-10-08: \"SAM2 AND SAM3 DON'T HAVE BBOX FILTER\")", () => {
@@ -72,17 +91,17 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     const sam2 = mods.find((k) => k.kind === "sam2")!;
     const sam3 = mods.find((k) => k.kind === "sam3")!;
     const draw = mods.find((k) => k.kind === "draw")!;
-    assert.ok(sam2.section !== undefined && sam2.section.startsWith("Bbox filter — YOLO"),
-      "sam2's caption names the YOLO filter (the chips + confidence ARE it)");
-    assert.ok(sam3.section !== undefined && sam3.section.startsWith("Bbox filter — the detector prompt"),
-      "sam3's caption names its own detector lane (the prompt/RT-DETR boxes)");
+    assert.ok(sam2.section !== undefined && sam2.section.startsWith("Bbox filter — the class dropdown"),
+      "sam2's caption names the dropdown filter (the chips + confidence ARE it)");
+    assert.ok(sam3.section !== undefined && sam3.section.startsWith("Bbox filter — the freetext prompt"),
+      "sam3's caption names its freetext filter — the TWIN text, only the selector word differs");
     assert.equal(draw.section, undefined,
       "draw carries no filter caption — the brush is not a detector");
   });
 
-  it("the region quad fields are FACE-OWNED with the -1 unset default (sam3's canvas is the face)", () => {
+  it("the region quad fields are FACE-OWNED with the -1 unset default (the shared canvas is the face — both detector kinds)", () => {
     const mods = def.mods ?? [];
-    for (const k of [mods[0]!]) {
+    for (const k of [mods[0]!, mods[1]!]) {
       const quad = (((k as unknown as Row)["fields"] ?? []) as Array<Row>).filter((f) => String(f["name"]).startsWith("bbox_"));
       assert.deepEqual(quad.map((f) => String(f["name"])), ["bbox_x", "bbox_y", "bbox_w", "bbox_h"], `${String((k as unknown as Row)["kind"])} carries the four region fields`);
       for (const f of quad) {
@@ -90,10 +109,10 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
         assert.equal(f["default"], -1, "unset = -1 (the selection runs unscoped)");
       }
     }
-    for (const kind of ["sam2", "draw"]) {
-      const k = mods.find((m) => m.kind === kind)!;
+    {
+      const k = mods.find((m) => m.kind === "draw")!;
       assert.ok(!(((k as unknown as Row)["fields"] ?? []) as Array<Row>).some((f) => f["name"] === "bbox_x"),
-        `${kind} carries no bbox — sam2's boxes come from the detector, draw stacks`);
+        "draw carries no bbox — the brush stacks, it never scopes");
     }
   });
 
@@ -113,6 +132,7 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.ok(!names.includes("part"), "the parts vocabulary is gone — the detector proposes, SAM2 refines");
     assert.deepEqual(names, [
       "name", "labels", "yolo_threshold", "sam_threshold", "sam_dilation",
+      "bbox_x", "bbox_y", "bbox_w", "bbox_h",
     ]);
     assert.deepEqual([...sam2.requires ?? []], ["comfyui-impact-pack", "comfyui-impact-subpack"],
       "sam2 declares BOTH packs (the pack owns SAM/BBOX nodes; the subpack owns the YOLO provider)");
@@ -301,26 +321,58 @@ describe("the mask compose gate (the bag is the recipe)", () => {
     );
   });
 
-  it("the sam2 entry's OWN yolo_threshold threads its detector verbatim", () => {
+  it("the sam2 entry's OWN yolo_threshold threads its detector verbatim (the bbox lane pins on a non-person class)", () => {
     const g = new GraphBuilder();
-    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", yolo_threshold: 0.35 }] }, DUMMY, g, "run_yt");
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "dog", yolo_threshold: 0.35 }] }, DUMMY, g, "run_yt");
     const det = Object.values(g.toJSON()).find((n: Row) => n["class_type"] === "BboxDetectorSEGS") as { inputs: Record<string, unknown> };
     assert.equal(det.inputs.threshold, 0.35, "the entry's own arm scalar rides");
   });
 
+  it("THE SEGM AUTO-LANE (the gap audit's #2): a person-only selection rides SegmDetectorSEGS with the pinned segm model — class-pixel boxes, the pack's own detailer-pipe-test shape", () => {
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }] }, DUMMY, g, "run_segm");
+    const json = g.toJSON();
+    const segmDet = Object.values(json).find((n: Row) => n["class_type"] === "SegmDetectorSEGS") as { inputs: Record<string, unknown> } | undefined;
+    assert.ok(segmDet, "the person-only selection routes SegmDetectorSEGS");
+    assert.equal(segmDet!.inputs["segm_detector"] !== undefined || segmDet!.inputs["1"] !== undefined || segmDet!.inputs["2"] !== undefined, true,
+      "the segm provider rides the detector input");
+    const providers = Object.values(json).filter((n: Row) => n["class_type"] === "UltralyticsDetectorProvider") as Array<{ inputs: Record<string, unknown> }>;
+    assert.ok(providers.some((n) => String(n.inputs["model_name"]).includes("person_yolov8m-seg")),
+      "the SEGMENTATION model is wired (person_yolov8m-seg.pt)");
+    assert.ok(!providers.some((n) => String(n.inputs["model_name"]).includes("yolo11m")),
+      "the providers are lazy — a person-only compose never fires the bbox model (the dog wall above pins that lane)");
+    assert.ok(!Object.values(json).some((n: Row) => n["class_type"] === "BboxDetectorSEGS"),
+      "a person-only selection never rides the box detector");
+  });
+
+  it("THE PER-INSTANCE CROPS (the gap audit's #3/#4 export half): every detector entry saves one crop per detected instance", () => {
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }] }, DUMMY, g, "run_crop");
+    const json = g.toJSON();
+    const toList = Object.values(json).find((n: Row) => n["class_type"] === "SEGSToImageList");
+    assert.ok(toList, "SEGSToImageList unwraps the per-instance crops");
+    const save = Object.values(json).find((n: Row) => n["class_type"] === "SaveImage") as { inputs: Record<string, unknown> } | undefined;
+    assert.ok(save, "the crops save");
+    assert.ok(String(save!.inputs["filename_prefix"]).endsWith("/instance"), "the crop prefix rides the run dir (/instance)");
+  });
+
   it("a LATER sam2 entry's yolo threshold threads ITS export's detector (per-export tune)", () => {
     const g = new GraphBuilder();
-    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person" }, { labels: "dog", yolo_threshold: 0.2 }] }, DUMMY, g, "run_yt2");
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "cat" }, { labels: "dog", yolo_threshold: 0.2 }] }, DUMMY, g, "run_yt2");
     const dets = Object.values(g.toJSON()).filter((n: Row) => n["class_type"] === "BboxDetectorSEGS") as Array<{ inputs: Record<string, unknown> }>;
     assert.equal(dets.length, 2, "primary + export detectors");
     assert.ok(dets.some((n) => n.inputs.threshold === 0.2), "the export's own yolo threshold reaches its detector");
   });
 
-  it("a quad on a sam2 entry REFUSES as drift (bbox on this arm is the detector's own — no manual rectangle, 2026-10-08)", () => {
+  it("a quad on a sam2 entry is the DECLARED region scope now (the unified card's shared canvas) — a genuinely unknown key still refuses as drift", () => {
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", bbox_x: 10, bbox_y: 20, bbox_w: 100, bbox_h: 80 }] }, DUMMY, g, "run_s");
+    const json = JSON.stringify(g.toJSON());
+    assert.ok(json.includes("MaskComposite"), "the region scope applies (the scope-mask multiply rides)");
     assert.throws(
-      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", bbox_x: 10, bbox_y: 20, bbox_w: 100, bbox_h: 80 }] }, DUMMY, new GraphBuilder(), "run_s"),
-      /bbox_x|unknown|drift/,
-      "sam2 declares no bbox fields — a hand-composed quad is drift, never a silent scope",
+      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", zzz_bogus: 1 }] }, DUMMY, new GraphBuilder(), "run_s2"),
+      /unknown key|drift/,
+      "the entry-surface law holds — a genuinely unknown key refuses",
     );
   });
 

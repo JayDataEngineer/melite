@@ -57,6 +57,10 @@ const PINS = {
   unet: 'rt_detr_v4-x-hgnet_fp32.safetensors',
   sam2: 'sam2.1_hiera_large.pt',
   yolo: 'bbox/yolo11m.pt',
+  // THE SEGM PIN (the gap audit's #2): the segmentation detector —
+  // person-only, class-pixel boxes. On disk: models/ultralytics/
+  // segm/person_yolov8m-seg.pt (the provider lists it live).
+  segm: 'segm/person_yolov8m-seg.pt',
 }
 
 // THE YOLO VOCABULARY (the pin's own truth, the operator's
@@ -158,7 +162,7 @@ const MODS: readonly DeclaredModifierKind[] = [
     // field stack IS. sam3's boxes come from its own detector lane
     // (the prompt words / RT-DETR) — the caption says so; the
     // Region canvas below scopes the search, it is not the filter.
-    section: 'Bbox filter — the detector prompt proposes the boxes (automated); the Region canvas below only scopes the search',
+    section: 'Bbox filter — the freetext prompt picks the targets (automated); the Region canvas below only scopes the search',
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam3', tooltip: "The saved mask's name (mask_<name>)." },
       { name: 'prompt', label: 'Prompt', type: 'string', default: '', tooltip: 'The SAM3 CLIP text selection — what to segment (empty + RT-DETR = the person-box lane).' },
@@ -181,14 +185,19 @@ const MODS: readonly DeclaredModifierKind[] = [
     category: 'standalone',
     cardinality: 'list',
     max_stack: 3,
-    // NO LEAF CANVAS (2026-10-08, the operator's verdict: "BBOX IS
-    // NOT MANUAL, IT IS AUTOMATED"): in Impact Pack the boxes COME
-    // FROM THE DETECTOR — UltralyticsDetectorProvider proposes,
-    // BboxDetectorSEGS filters by labels+threshold, SAM2 refines.
-    // This popup is the DETECTOR FORM (the chips + thresholds ARE
-    // the automated box filter); a hand-drawn rectangle has no node
-    // on this chain and gets no face here. The region canvas lives
-    // on sam3 only (a search scope, not a bbox).
+    // THE UNIFIED CARD (the operator's final word, 2026-10-08:
+    // "SAM2 AND SAM3 SHOULD BE THE SAME CARD. THE ONLY DIFFERENCE
+    // BEING THAT SAM2 TAKES A DROPDOWN FOR WHAT WE ARE SEGMENTING,
+    // THE SAM3 TAKES FREETEXT. THERE NEEDS TO BE AN IMAGE PREVIEW
+    // IN BOTH"): same shape as sam3 — the embedded IMAGE PREVIEW
+    // (the Region canvas: the preview first, an optional search
+    // scope second), the same threshold/dilation stack, the twin
+    // section caption. ONE difference: the selector is the YOLO
+    // class DROPDOWN (the closed COCO-80) where sam3's is FREETEXT.
+    // The boxes stay the detector's own ("BBOX IS NOT MANUAL, IT IS
+    // AUTOMATED") — the canvas previews and scopes, it never
+    // proposes a box.
+    leaf_face: 'bbox-canvas',
     // THE DECLARED DEPENDENCIES (the operator's 2026-09-19 order —
     // "declared, then auto provisioned"): the SAM2 arm rides the
     // impact-pack chain (YOLO proposes, SAM2 refines), so the kind
@@ -196,17 +205,17 @@ const MODS: readonly DeclaredModifierKind[] = [
     // (an unused sam2 bag never fires the gate), and RunRescue
     // offers the install through the manage seat.
     requires: ['comfyui-impact-pack', 'comfyui-impact-subpack'],
-    // THE SECTION CAPTION (2026-10-08, the operator's demand —
-    // "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): names the filter the
-    // chips + confidence ARE — YOLO (Impact Pack) proposes the
-    // boxes for the picked classes; nobody draws anything.
-    section: 'Bbox filter — YOLO proposes the boxes (automated): pick classes, tune confidence',
+    // THE SECTION CAPTION — the twin of sam3's, only the selector
+    // word differs (dropdown vs freetext): the class DROPDOWN picks
+    // the targets; the Region canvas below only scopes the search.
+    section: 'Bbox filter — the class dropdown picks the targets (automated); the Region canvas below only scopes the search',
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam2', tooltip: "The saved mask's name (mask_<name>)." },
       { name: 'labels', label: 'YOLO classes', type: 'select', multi: true, options: YOLO_CLASSES.map((c) => ({ value: c, label: c })), default: 'person', tooltip: 'The automated box filter: YOLO (Impact Pack) proposes boxes for exactly these COCO classes, SAM2 refines each one. Pick any set; the wire is the comma-joined list.' },
-      { name: 'yolo_threshold', label: 'YOLO threshold', type: 'number', default: 0.5, min: 0.05, max: 0.95, step: 0.05, tooltip: 'This entry\'s YOLO box confidence. Lower catches more instances, noisier boxes.' },
+      { name: 'yolo_threshold', label: 'Detection threshold', type: 'number', default: 0.5, min: 0.05, max: 0.95, step: 0.05, tooltip: 'This entry\'s YOLO box confidence. Lower catches more instances, noisier boxes.' },
       { name: 'sam_threshold', label: 'Mask threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'This selection\'s SAM2 mask confidence.' },
       { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: 0, max: 64, step: 1, tooltip: 'Grow this mask N pixels.' },
+      ...BBOX_FIELDS,
     ],
   },
   {
@@ -229,7 +238,7 @@ const MODS: readonly DeclaredModifierKind[] = [
 
 export const identity = {
   label: 'Mask',
-  description: 'Simple mask: pick the input, then ADD sources — sam3 (text selection, optional region), sam2 (the YOLO detector proposes boxes automatically, SAM2 refines), draw (painted, stacks onto the rest). Each popup previews the image and carries its own knobs.',
+  description: 'Simple mask: pick the input, then ADD sources — sam2 and sam3 are THE SAME card shape (image preview + thresholds + optional Region scope); the ONLY difference is the selector: sam2 a YOLO class dropdown (closed COCO-80, automated boxes), sam3 freetext. draw paints onto the rest.',
   genre: 'image',
   icon: 'mask',
   ability: 'tool',
@@ -424,10 +433,13 @@ export function apply(ctx: Context): void {
       if (primary.kind === 'sam3') {
         lane['refine_iterations'] = num(whereOf(primary), primary.entry, 'sam3', 'refine_iterations')
       }
-      // THE PRIMARY SCOPE (the first entry's drawn REGION — sam3's
-      // own face; threads as the lane's scope_bbox. A sam2 primary
-      // carries no quad: its boxes come from the detector).
-      const primaryBox = primary.kind === 'sam3' ? bboxOf(primary.entry, 'sam3') : null
+      // THE PRIMARY SCOPE (the first entry's drawn REGION — the
+      // unified card's shared face; threads as the lane's
+      // scope_bbox. sam2's region scopes the YOLO search exactly
+      // like sam3's scopes the text selection).
+      const primaryBox = primary.kind === 'sam3' || primary.kind === 'sam2'
+        ? bboxOf(primary.entry, primary.kind)
+        : null
       if (primaryBox) lane['scope_bbox'] = primaryBox
       if (primary.kind === 'sam3') {
         // the RT-DETR knobs thread from the primary (its own arm)
@@ -490,9 +502,9 @@ export function apply(ctx: Context): void {
           exportKind.push('text')
         } else {
           tune['yolo_threshold'] = num(whereOf(src), src.entry, 'sam2', 'yolo_threshold')
-          // no quad on sam2 exports — the detector's automated
-          // boxes ARE the payload (a hand-drawn rect has no node).
-          exports.push([nameOf(src, `sam2_${src.i + 1}`), labelsOf(src.entry, `sam2 entry ${src.i}`), undefined, tune])
+          // the unified card: sam2's region rides its export exactly
+          // like sam3's (the shared canvas's scope quad).
+          exports.push([nameOf(src, `sam2_${src.i + 1}`), labelsOf(src.entry, `sam2 entry ${src.i}`), bboxOf(src.entry, 'sam2') ?? undefined, tune])
           exportKind.push('sam2')
         }
       }
