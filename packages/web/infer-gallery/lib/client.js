@@ -405,12 +405,17 @@ window.__ModuleLoader__.load({
 		/** The run's own preview, stamped onto the restored stage (stroke
 		*  45b, the operator's catch: the flow loaded but the card showed no
 		*  image — a ran stage's result {run_id, url} IS the preview the
-		*  cards tile renders). _flow.json.artifacts are absolute paths;
-		*  the melite-media URL is the run-relative tail. */
+		*  cards tile renders; the media-sidebar audit 2026-09-22: the stamp
+		*  was image-only, so every restored TTS / video / 3D card landed
+		*  with NO preview. _flow.json.artifacts are absolute paths; the
+		*  melite-media URL is the run-relative tail. THE KIND UNION is the
+		*  preview seam's own vocabulary, restated (client bundles cannot
+		*  import across plugins — the parity site is named:
+		*  melite-card-view's preview-kinds.ts previewKindFor). */
 		function resultOfRun(flow, runId) {
 			const arts = flow?.["artifacts"];
 			if (!Array.isArray(arts)) return void 0;
-			const first = arts.find((a) => typeof a === "string" && /\.(png|jpe?g|webp)$/i.test(a));
+			const first = arts.find((a) => typeof a === "string" && /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(a));
 			if (first === void 0) return void 0;
 			const m = /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(first);
 			if (m === null) return void 0;
@@ -557,6 +562,10 @@ window.__ModuleLoader__.load({
 				const flowDraft = typeof flow === "object" && flow !== null ? flow["draft_id"] : void 0;
 				const topDraft = side["draft_id"];
 				const draftId = typeof flowDraft === "string" && flowDraft !== "" ? flowDraft : typeof topDraft === "string" && topDraft !== "" ? topDraft : "";
+				if (draftId.startsWith("bench-")) {
+					deps.onError("that run was born on a living bench and keeps no snapshot — nothing to restore exactly");
+					return;
+				}
 				if (draftId === "") {
 					deps.onError("this run keeps no card record — nothing to restore");
 					return;
@@ -1204,15 +1213,21 @@ window.__ModuleLoader__.load({
 				open(estateArtifactAddress(item.url));
 			};
 			const load = runsFeed.reload;
-			/** THE WAND (hunk 4, 2026-09-10; restore arm 2026-09-11): "recover
+			/** THE WAND (hunk 4, 2026-09-10; restore arm 2026-09-11;
+			*  RUN-FIRST law, the media-sidebar audit 2026-09-22): "recover
 			*  the cards that made this media" restores the run's workflow onto
 			*  THE BENCH and opens the cards tab on it. NOT a bare run-address
 			*  open: the run view hydrates from the registry's LIVE runs only,
 			*  so settled runs land on `runs/unknown-run` — the wand resolves
-			*  the producing draft itself (row fast path, else the sidecar)
-			*  and rides the bench CAS load. The window-global → DOM-claim →
-			*  iframe relay it replaced (window.__meliteDeckOpenWithDraft)
-			*  retired with the deck takeover. */
+			*  the run's OWN sidecar record first (stroke 45's law: the
+			*  workflow that HAD that media — a live row draft serves whatever
+			*  the draft holds NOW, which is wrong the moment the draft moved
+			*  on). The row draft is the FALLBACK only: when the sidecar keeps
+			*  no recoverable record but the draft still lives (a pruned run
+			*  dir), the draft restores through the same bench CAS load. The
+			*  window-global → DOM-claim → iframe relay it replaced
+			*  (window.__meliteDeckOpenWithDraft) retired with the deck
+			*  takeover. */
 			const openCards = (item) => {
 				const open = tabInfo?.tab.actions.openResource;
 				if (open === void 0) {
@@ -1224,11 +1239,36 @@ window.__ModuleLoader__.load({
 					onError: setError,
 					sessionId
 				};
-				if (item.draftId !== "" && !item.draftId.startsWith("bench-")) {
+				const canDraft = item.draftId !== "" && !item.draftId.startsWith("bench-");
+				if (item.runId !== "") {
+					const probed = [];
+					let probeError = "";
+					loadRunOntoBench(item.runId, {
+						openResource: (address) => {
+							probed.push(address);
+						},
+						onError: (message) => {
+							probeError = message;
+						},
+						sessionId
+					}).then(() => {
+						if (probed.length > 0) {
+							for (const address of probed) open(address);
+							return;
+						}
+						if (canDraft) {
+							loadDraftOntoBench(item.draftId, deps);
+							return;
+						}
+						setError(probeError !== "" ? probeError : "this run keeps no card record — nothing to restore");
+					});
+					return;
+				}
+				if (canDraft) {
 					loadDraftOntoBench(item.draftId, deps);
 					return;
 				}
-				loadRunOntoBench(item.runId, deps);
+				setError("this run keeps no card record — nothing to restore");
 			};
 			/** FLOW OPEN (hunk 4): a draft row loads onto THE BENCH (the shared
 			*  state both authors edit) and opens the cards tab — bench-load.ts. */

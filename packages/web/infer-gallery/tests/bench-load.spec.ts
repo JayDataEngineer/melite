@@ -367,6 +367,75 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect('result' in stages[0]!).toBe(false)
   })
 
+  it('an audio artifact stamps the run preview (the audit: TTS restores carried no preview)', async () => {
+    const side = {
+      run_id: 'ra',
+      flow: {
+        artifacts: ['/data/runs/output/run-ra/tts/SaveAudio.0_tts_00001.flac'],
+        card_snapshot: { card: 'tts', params: { model: 'qwen3-tts', text: 'say it' } },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('ra', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages[0]).toMatchObject({
+      card: 'tts',
+      result: { run_id: 'ra', url: '/melite-media/runs/run-ra/tts/SaveAudio.0_tts_00001.flac' },
+    })
+  })
+
+  it('a video artifact stamps the run preview', async () => {
+    const side = {
+      run_id: 'rv',
+      flow: {
+        artifacts: ['/data/runs/output/run-rv/generate/film.mp4'],
+        card_snapshot: { card: 'video-gen', params: { prompt: 'a film' } },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('rv', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages[0]).toMatchObject({
+      result: { run_id: 'rv', url: '/melite-media/runs/run-rv/generate/film.mp4' },
+    })
+  })
+
+  it('a model artifact stamps the run preview', async () => {
+    const side = {
+      run_id: 'rm',
+      flow: {
+        artifacts: ['/data/runs/output/run-rm/mesh/model.glb'],
+        card_snapshot: { card: 'img-to-mesh', params: {} },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('rm', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages[0]).toMatchObject({
+      result: { run_id: 'rm', url: '/melite-media/runs/run-rm/mesh/model.glb' },
+    })
+  })
+
+  it('a bench-born draft link refuses honestly (the living bench is never the source)', async () => {
+    stubFetch(runWith({ run_id: 'rb', flow: { draft_id: 'bench-main' } }))
+    const d = deps('s1')
+    await loadRunOntoBench('rb', d)
+    expect(d.opened).toEqual([])
+    expect(d.errors).toEqual(['that run was born on a living bench and keeps no snapshot — nothing to restore exactly'])
+
+    stubFetch(runWith({ run_id: 'rc', flow: null, draft_id: 'bench-other' }))
+    const e = deps('s1')
+    await loadRunOntoBench('rc', e)
+    expect(e.opened).toEqual([])
+    expect(e.errors).toEqual(['that run was born on a living bench and keeps no snapshot — nothing to restore exactly'])
+  })
+
   it('an image outside any run dir restores without a preview', async () => {
     const side = {
       run_id: 'r5',

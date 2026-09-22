@@ -443,7 +443,7 @@ describe('MediaPanel — the flows face + the bench CAS load', () => {
 describe('MediaPanel — the wand restores the run onto the bench', () => {
   const draftDoc = { draft_id: 'd9', status: 'ready', intent: 'walking card', stages: [{ id: 's_1', engine: 'comfyui' }] }
 
-  it('the history wand restores the run\'s card onto the bench and opens it (row draft fast path)', async () => {
+  it('the history wand reads the run sidecar first and falls back to the row draft only when the sidecar keeps no record', async () => {
     const opened: string[] = []
     const bodies: Array<Record<string, unknown>> = []
     const hits: string[] = []
@@ -473,13 +473,59 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     })
     fireEvent.click(wand)
     await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
-    // the row's draft went straight onto the bench — no sidecar read.
-    expect(hits.some((u) => u.startsWith('/infer-gallery/flow?'))).toBe(false)
+    // RUN-FIRST: the sidecar is always consulted; the row draft serves
+    // only because this sidecar keeps no recoverable record.
+    expect(hits.some((u) => u.startsWith('/infer-gallery/flow?'))).toBe(true)
     expect(bodies).toHaveLength(1)
     expect(bodies[0]).toEqual({
       session: 'main', author: 'user', stages: draftDoc.stages,
       intent: 'walking card', expect_rev: 3, overwrite: true,
     })
+  })
+
+  it('RUN-FIRST — a run with a live row draft AND a card_snapshot restores the snapshot, never the live draft', async () => {
+    const opened: string[] = []
+    const hits: string[] = []
+    const ensures: Record<string, unknown>[] = []
+    const liveDraft = { draft_id: 'd9', status: 'ready', intent: 'the draft as edited AFTER the run', stages: [{ id: 's_0', engine: 'comfyui', card: 'image-gen', params: { prompt: 'edited later' } }] }
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
+      const u = String(url)
+      hits.push(u)
+      if (u === '/infer-gallery/runs') {
+        return runsFeed([run({ draft_id: 'd9', artifacts: [{ url: '/v/ran.png', type: 'image' }] })])
+      }
+      if (u === '/infer-gallery/drafts') return draftsFeed([])
+      if (u.startsWith('/infer-gallery/flow?run_id=')) {
+        return Promise.resolve(new Response(JSON.stringify({
+          run_id: 'r1',
+          flow: {
+            draft_id: 'd9',
+            card_snapshot: { card: 'image-gen', params: { prompt: 'the prompt that RAN' } },
+            artifacts: ['/x/data/runs/output/run-r1/generate/out.png'],
+          },
+          request: null,
+        }), { status: 200 }))
+      }
+      if (u === '/v1/flows/drafts/d9') return Promise.resolve(new Response(JSON.stringify(liveDraft), { status: 200 }))
+      if (u === '/v1/bench/main') return Promise.resolve(new Response(JSON.stringify({ rev: 7 }), { status: 200 }))
+      if (u === '/v1/bench/ensure') {
+        ensures.push(JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>)
+        return Promise.resolve(new Response(JSON.stringify({ draft_id: 'bench-main', rev: 8 }), { status: 200 }))
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    })
+    render(<MediaPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: (a: string) => { opened.push(a) } } },
+    }) as never} />)
+    fireEvent.click(await waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement))
+    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
+    // the live draft door is never read — the run's own record wins.
+    expect(hits).not.toContain('/v1/flows/drafts/d9')
+    expect(ensures[0]?.['stages']).toEqual([
+      { id: 's_0', engine: 'comfyui', card: 'image-gen', params: { prompt: 'the prompt that RAN' }, provenance: 'restored', result: { run_id: 'r1', url: '/melite-media/runs/run-r1/generate/out.png' } },
+    ])
+    expect(ensures[0]?.['intent']).toBe('the prompt that RAN')
   })
 
   it('wand without a row draft resolves through the sidecar, then restores', async () => {

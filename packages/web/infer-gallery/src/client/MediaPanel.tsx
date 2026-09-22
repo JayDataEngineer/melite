@@ -421,15 +421,21 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   }
   const load = runsFeed.reload
 
-  /** THE WAND (hunk 4, 2026-09-10; restore arm 2026-09-11): "recover
+  /** THE WAND (hunk 4, 2026-09-10; restore arm 2026-09-11;
+   *  RUN-FIRST law, the media-sidebar audit 2026-09-22): "recover
    *  the cards that made this media" restores the run's workflow onto
    *  THE BENCH and opens the cards tab on it. NOT a bare run-address
    *  open: the run view hydrates from the registry's LIVE runs only,
    *  so settled runs land on `runs/unknown-run` — the wand resolves
-   *  the producing draft itself (row fast path, else the sidecar)
-   *  and rides the bench CAS load. The window-global → DOM-claim →
-   *  iframe relay it replaced (window.__meliteDeckOpenWithDraft)
-   *  retired with the deck takeover. */
+   *  the run's OWN sidecar record first (stroke 45's law: the
+   *  workflow that HAD that media — a live row draft serves whatever
+   *  the draft holds NOW, which is wrong the moment the draft moved
+   *  on). The row draft is the FALLBACK only: when the sidecar keeps
+   *  no recoverable record but the draft still lives (a pruned run
+   *  dir), the draft restores through the same bench CAS load. The
+   *  window-global → DOM-claim → iframe relay it replaced
+   *  (window.__meliteDeckOpenWithDraft) retired with the deck
+   *  takeover. */
   const openCards = (item: MediaItem): void => {
     const open = tabInfo?.tab.actions.openResource
     if (open === undefined) {
@@ -441,12 +447,37 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     // draft_id names the LIVING bench — loading it serves whatever
     // the bench holds NOW, never the workflow that made this image.
     // Bench-born artifacts always carry their run id: restore from
-    // the run's own record instead.
-    if (item.draftId !== '' && !item.draftId.startsWith('bench-')) {
+    // the run's own record instead (never a draft fallback either).
+    const canDraft = item.draftId !== '' && !item.draftId.startsWith('bench-')
+    if (item.runId !== '') {
+      // Silent probe: the run load opens through the probe on
+      // success; only its failure (captured, never surfaced twice)
+      // falls back to the row draft — or surfaces honestly when no
+      // draft may serve.
+      const probed: string[] = []
+      let probeError = ''
+      void loadRunOntoBench(item.runId, {
+        openResource: (address: string) => { probed.push(address) },
+        onError: (message: string) => { probeError = message },
+        sessionId,
+      }).then(() => {
+        if (probed.length > 0) {
+          for (const address of probed) open(address)
+          return
+        }
+        if (canDraft) {
+          void loadDraftOntoBench(item.draftId, deps)
+          return
+        }
+        setError(probeError !== '' ? probeError : 'this run keeps no card record — nothing to restore')
+      })
+      return
+    }
+    if (canDraft) {
       void loadDraftOntoBench(item.draftId, deps)
       return
     }
-    void loadRunOntoBench(item.runId, deps)
+    setError('this run keeps no card record — nothing to restore')
   }
 
   /** FLOW OPEN (hunk 4): a draft row loads onto THE BENCH (the shared

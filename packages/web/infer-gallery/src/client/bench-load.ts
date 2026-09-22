@@ -59,8 +59,13 @@ export interface BenchLoadDeps {
 /** The run's own preview, stamped onto the restored stage (stroke
  *  45b, the operator's catch: the flow loaded but the card showed no
  *  image — a ran stage's result {run_id, url} IS the preview the
- *  cards tile renders). _flow.json.artifacts are absolute paths;
- *  the melite-media URL is the run-relative tail. */
+ *  cards tile renders; the media-sidebar audit 2026-09-22: the stamp
+ *  was image-only, so every restored TTS / video / 3D card landed
+ *  with NO preview. _flow.json.artifacts are absolute paths; the
+ *  melite-media URL is the run-relative tail. THE KIND UNION is the
+ *  preview seam's own vocabulary, restated (client bundles cannot
+ *  import across plugins — the parity site is named:
+ *  melite-card-view's preview-kinds.ts previewKindFor). */
 function resultOfRun(
   flow: Record<string, unknown> | null,
   runId: string,
@@ -68,7 +73,7 @@ function resultOfRun(
   const arts = flow?.['artifacts']
   if (!Array.isArray(arts)) return undefined
   const first = arts.find((a: unknown): a is string =>
-    typeof a === 'string' && /\.(png|jpe?g|webp)$/i.test(a))
+    typeof a === 'string' && /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(a))
   if (first === undefined) return undefined
   const m = /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(first)
   if (m === null) return undefined
@@ -246,6 +251,17 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
     const draftId = typeof flowDraft === 'string' && flowDraft !== ''
       ? flowDraft
       : typeof topDraft === 'string' && topDraft !== '' ? topDraft : ''
+    // THE MUTABLE-BENCH REFUSAL, run side (the media-sidebar audit
+    // 2026-09-22): a bench-prefixed draft_id names the LIVING bench
+    // — loading it serves whatever the bench holds NOW, never the
+    // workflow that made this media (the panel's openCards refuses
+    // the same ids on the row fast path). A snapshot-less bench-born
+    // run is unrecoverable exactly; the honest error beats a wrong
+    // workflow.
+    if (draftId.startsWith('bench-')) {
+      deps.onError('that run was born on a living bench and keeps no snapshot — nothing to restore exactly')
+      return
+    }
     if (draftId === '') {
       deps.onError('this run keeps no card record — nothing to restore')
       return
