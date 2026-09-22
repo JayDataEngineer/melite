@@ -48434,7 +48434,7 @@ void main() {
 			return (0, react.createElement)("section", {
 				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
 				"data-model-axes": "1"
-			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Model"), (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Model"), (0, react.createElement)("select", {
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Model"), (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("select", {
 				className: card_module_css_default.specSelect,
 				"aria-label": "Model",
 				...refusedModel !== void 0 ? { "data-refused": "model" } : {},

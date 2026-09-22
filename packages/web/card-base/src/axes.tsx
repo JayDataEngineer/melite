@@ -158,8 +158,11 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
   }
   return h('section', { className: `${css.specGroup} ${css.modelAxes}`, 'data-model-axes': '1' },
     h('h4', { className: css.specGroupTitle }, 'Model'),
+    // NO KEY SPAN (the double-Model catch): the section head already
+    // names the zone — a second visible "Model" above the picker is
+    // the same word twice. The select keeps aria-label="Model" (the
+    // axes walls query it; screen readers keep the name).
     h('label', { className: css.specField },
-      h('span', { className: css.specFieldKey }, 'Model'),
       h('select', {
         className: css.specSelect,
         'aria-label': 'Model',

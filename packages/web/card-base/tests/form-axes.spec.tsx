@@ -93,6 +93,21 @@ test('AXES: no matrix, no rail (never an empty Model block)', () => {
   expect(container.innerHTML).toBe('')
 })
 
+test('MODEL: the zone names itself ONCE (never the head + the picker key saying the same word)', () => {
+  // the double-Model catch: the section head carries "Model" and the
+  // family picker kept its own visible "Model" key above the select —
+  // the same word twice. The head stays (the zone-names-itself
+  // symmetry); the picker rides aria-label only.
+  const { container } = axes({})
+  const section = container.querySelector('[data-model-axes]')
+  expect(section).not.toBeNull()
+  const hits = [...section!.querySelectorAll('h4, span')]
+    .map((n) => n.textContent?.trim())
+    .filter((t) => t === 'Model')
+  expect(hits).toEqual(['Model'])
+  expect(screen.getByLabelText('Model')).not.toBeNull()
+})
+
 test('MODEL: the served models pick; the switch reseeds every axis (the stale-variant cure)', () => {
   const spec = {
     ...doc(),
