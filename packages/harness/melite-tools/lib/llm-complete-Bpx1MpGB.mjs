@@ -1,4 +1,5 @@
-import { CARD_KINDS, buildCatalog, declaredDefaults, emitModifierKinds, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, registryModel, theService } from "@melite/comfyui-cordis";
+import { CARD_KINDS, buildCatalog, declaredDefaults, emitModifierKinds, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, registryModel, resolveRepoRoot, theService } from "@melite/comfyui-cordis";
+import { execFileSync } from "node:child_process";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
 /** Narrow the seat-bound request to the canonical EstateCall the card
@@ -241,6 +242,43 @@ function makeEstateRequest(ctx) {
 		const liveVoice = live.length > 0 ? `Live seats here: ${live.join(", ")}.` : `No seat of that family is mounted on this lane (ABSENCE, not a broken registry; nothing crashed).`;
 		throw new Error(`no seat on this lane serves ${method} ${path} — the ${family} is not mounted. ${liveVoice} The queue-plane seats mount when the estate state root is pinned (MELITE_STATE_ROOT / repoRoot config). On a chat lane, compose via melite_construct onto the shared bench instead of the raw flow doors.`);
 	};
+}
+//#endregion
+//#region src/faceStamp.ts
+const liveRun = (args, cwd) => execFileSync("git", args, {
+	cwd,
+	encoding: "utf8",
+	timeout: 15e3,
+	stdio: [
+		"ignore",
+		"pipe",
+		"pipe"
+	]
+});
+/** Pure: short hash + dirty flag -> the stamp. */
+function formatStamp(hash, dirty) {
+	const h = hash.trim();
+	if (h === "") return "unknown";
+	return dirty ? `${h}+dirty` : h;
+}
+/** Read the stamp through an injectable runner — any git failure
+*  (not a checkout, git absent, status unreadable) stamps `unknown`. */
+function readStamp(run, root) {
+	try {
+		return formatStamp(run([
+			"rev-parse",
+			"--short",
+			"HEAD"
+		], root), run(["status", "--porcelain"], root).trim() !== "");
+	} catch {
+		return "unknown";
+	}
+}
+let cached = null;
+/** The serving process's stamp (resolved once, then the value). */
+function faceStamp(root = resolveRepoRoot(), run = liveRun) {
+	if (cached === null) cached = readStamp(run, root);
+	return cached;
 }
 //#endregion
 //#region src/discovery.ts
@@ -759,7 +797,8 @@ async function cardToolsArm() {
 			genre: ident.genre,
 			families: fams,
 			params_schema: schema,
-			...mods.length > 0 ? { modifiers: mods } : {}
+			...mods.length > 0 ? { modifiers: mods } : {},
+			face_stamp: faceStamp()
 		});
 	}
 	return out;
