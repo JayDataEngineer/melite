@@ -49,22 +49,54 @@ test('THE VIDEO EMPTY: honest about the live-run flag (rendering vs never-run)',
   idle.unmount()
 })
 
-test('THE VIDEO SET: the active set names its windows beneath the hero', () => {
-  render(h(VideoStagePreview, video({
+test('THE VIDEO SET: the windows ride PLAYABLE thumbs, never text links (catch b, 2026-09-22)', () => {
+  // a film run's artifacts arrive windows-first, film LAST — the
+  // named film must still win the hero (the product, not w1), and
+  // every other clip shows its FACE (a <video> thumb), not a link
+  const { container } = render(h(VideoStagePreview, video({
     artifacts: [
-      { name: 'film', url: '/runs/cur/film.mp4' },
-      { name: 'storyboard', url: '/runs/cur/board.mp4' },
+      { name: 'h3_t4_w1', url: '/runs/cur/w1.mp4' },
+      { name: 'h3_t4_w2', url: '/runs/cur/w2.mp4' },
+      { name: 'h3_t4_w3', url: '/runs/cur/w3.mp4' },
+      { name: 'h3_t4_film', url: '/runs/cur/film.mp4' },
     ],
   })))
-  const link = screen.getByText('storyboard')
-  expect(link.tagName).toBe('A')
-  expect(link.getAttribute('href')).toBe('/runs/cur/board.mp4')
-  expect(link.getAttribute('target')).toBe('_blank')
+  // THE FILM IS THE HERO even though it arrives last
+  expect(screen.getByTestId('stage-preview-video-hero').getAttribute('src')).toBe('/runs/cur/film.mp4')
+  // ALL FOUR clips render as playable faces — the film included
+  // (the all-visible law: promoting a window never hides a clip)
+  const strip = screen.getByTestId('stage-preview-video-strip')
+  const faces = strip.querySelectorAll('video')
+  expect(faces.length).toBe(4)
+  expect(faces[0]!.getAttribute('src')).toBe('/runs/cur/film.mp4')
+  expect(faces[1]!.getAttribute('src')).toBe('/runs/cur/w1.mp4')
+  expect(faces[0]!.hasAttribute('controls')).toBe(false)
+  // names paint on the thumbs
+  expect(screen.getByText('h3_t4_w1')).not.toBeNull()
+  expect(screen.getByText('h3_t4_w3')).not.toBeNull()
+  // no text-link door in the video set
+  expect(strip.querySelector('a')).toBeNull()
 })
 
-test('THE SEAT BUBBLE: a rest link opens its tab WITHOUT opening the walk (ledger #45)', () => {
+test('THE VIDEO THUMB TOGGLE: click promotes a window into the hero, click again returns (the toggle law)', () => {
+  render(h(VideoStagePreview, video({
+    artifacts: [
+      { name: 'h3_t4_w1', url: '/runs/cur/w1.mp4' },
+      { name: 'h3_t4_film', url: '/runs/cur/film.mp4' },
+    ],
+  })))
+  expect(screen.getByTestId('stage-preview-video-hero').getAttribute('src')).toBe('/runs/cur/film.mp4')
+  const thumb = screen.getByTitle('h3_t4_w1 — click to preview')
+  fireEvent.click(thumb)
+  expect(screen.getByTestId('stage-preview-video-hero').getAttribute('src')).toBe('/runs/cur/w1.mp4')
+  // the film returns to the strip; clicking the active thumb toggles back
+  fireEvent.click(screen.getByTitle('h3_t4_w1 (viewing — click to return to the film)'))
+  expect(screen.getByTestId('stage-preview-video-hero').getAttribute('src')).toBe('/runs/cur/film.mp4')
+})
+
+test('THE SEAT BUBBLE: a thumb click opens its tab WITHOUT opening the walk (ledger #45)', () => {
   // the drilldown seat is a walk-opening button; the presenter
-  // rides inside it. The link must consume its own click — the
+  // rides inside it. The thumb must consume its own click — the
   // spy seat stands in for the walk opener.
   const opened: string[] = []
   render(h('div', { onClick: () => { opened.push('walk') } },
@@ -74,7 +106,7 @@ test('THE SEAT BUBBLE: a rest link opens its tab WITHOUT opening the walk (ledge
         { name: 'storyboard', url: '/runs/cur/board.mp4' },
       ],
     }))))
-  fireEvent.click(screen.getByText('storyboard'))
+  fireEvent.click(screen.getByTitle('storyboard — click to preview'))
   expect(opened).toEqual([])
 })
 

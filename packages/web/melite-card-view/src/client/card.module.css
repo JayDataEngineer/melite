@@ -413,6 +413,18 @@
 .tileImg {
   object-fit: cover;
 }
+/* THE VIDEO FACE LETTERBOXES (2026-09-22, the operator's catch:
+ * "the preview cuts off the video's sides") — a 5:3 film under
+ * cover in the near-square tile loses its sides; the video face
+ * shows the WHOLE frame (contain), the tile's own background
+ * letterboxes. Images keep cover — a still crops gracefully, a
+ * film's crop reads as broken. */
+.tileVideoImg {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
 
 /* THE AUDIO-BARS FACE (2026-09-13) — the old system's music preview:
  * a deterministic bar strip, pure CSS, zero media cost. Token-only

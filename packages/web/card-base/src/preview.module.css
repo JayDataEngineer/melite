@@ -92,6 +92,39 @@
   padding: 2px 6px;
   text-decoration: none;
 }
+/* THE VIDEO THUMB STRIP (2026-09-22, the operator's catch b: "the
+ * preview only shows one of the three clips") — a video set's other
+ * clips render as PLAYABLE faces, never text links; click promotes
+ * into the hero, the active thumb says so. */
+.thumbVideoBtn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px;
+  width: 128px;
+}
+.thumbVideoBtn:hover { border-color: var(--dsw-alias-border-l2); }
+.thumbVideoActive { border-color: var(--dsw-alias-brand-primary); }
+.thumbVideo {
+  background: var(--dsw-alias-bg-base);
+  border-radius: 6px;
+  display: block;
+  height: 66px;
+  object-fit: contain;
+  width: 100%;
+}
+.thumbVideoName {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .thumbRow {
   display: flex;
   flex: none;

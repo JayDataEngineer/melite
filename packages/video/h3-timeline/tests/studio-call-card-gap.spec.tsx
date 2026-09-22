@@ -13,6 +13,7 @@ import assert from "node:assert/strict"
 import { useState } from "react"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { CallCard, deliveredFrames } from "../src/ui/studio/CallCard.tsx"
+import { callsToPrompts } from "../src/ui/studio/docCalls.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import { fieldsOfEnvelope, type SpecField } from "@melite/card-base"
 import { ASSET_DRAG_MIME } from "@melite/card-base/square"
@@ -123,6 +124,21 @@ describe("the seam-carry readout (deliveredFrames)", () => {
     assert.equal(deliveredFrames({ ...BASE, transition: "extend" }, 1), 48 - 22)
     assert.equal(deliveredFrames({ ...BASE }, 1), 48 - 22, "absent transition = carried")
     expect(deliveredFrames({ ...BASE }, 0)).toBe(48)
+  })
+
+  it("the lane glyph reads absent as EXTEND — never a phantom cut (operator catch d, 2026-09-22)", () => {
+    // the card's spanOverlap law treats an absent transition as a
+    // carried (extend) seam; the bar glyph must never disagree —
+    // "hard cuts instead of our stitching" was the glyph calling
+    // every carried join a cut
+    const lanes = callsToPrompts([
+      { ...BASE },
+      { ...BASE, transition: "cut" },
+      { ...BASE, transition: "extend" },
+    ], 24)
+    assert.equal(lanes[0]!.seam, "extend", "absent = extend (the stitching default)")
+    assert.equal(lanes[1]!.seam, "cut", "an explicit cut stays a cut")
+    assert.equal(lanes[2]!.seam, "extend")
   })
 
   it("the header voices the delivered span (a carried call)", () => {

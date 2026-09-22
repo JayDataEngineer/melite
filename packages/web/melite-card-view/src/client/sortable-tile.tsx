@@ -148,7 +148,7 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
           row.face === 'audio'
             ? AudioBarsFace({ stageId: row.id })
             : row.videoUrl !== null
-            ? h('video', { className: css.tileImg, src: row.videoUrl, muted: true, playsInline: true, preload: 'metadata', 'data-testid': 'tile-face-video' })
+            ? h('video', { className: css.tileVideoImg, src: row.videoUrl, muted: true, playsInline: true, preload: 'metadata', 'data-testid': 'tile-face-video' })
             : row.thumbUrl !== null
             ? h('img', { className: css.tileImg, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
             : h('span', { className: css.kindFace, 'data-kind': row.kind },

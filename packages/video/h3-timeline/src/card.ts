@@ -874,7 +874,10 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   if (manifest.duckSpans.length > 0) {
     filmAudio = g.node('MeliteAudioDuck', {
       audio: filmAudio, segments: manifest.duckSpanString,
-      gain_db: manifest.duckDb, ramp_ms: 20,
+      // attack fast (20ms), release slow (350ms — the console law;
+      // a 20ms both-edges duck popped the bed back like a gate,
+      // operator catch c 2026-09-22)
+      gain_db: manifest.duckDb, ramp_ms: 20, release_ms: 350,
     }).out(0)
   }
   // music-class placements pre-mix and duck BEFORE joining the film
@@ -916,7 +919,7 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     if (manifest.musicDuckSpans.length > 0) {
       musicBus = g.node('MeliteAudioDuck', {
         audio: musicBus, segments: manifest.musicDuckSpanString,
-        gain_db: manifest.duckDb, ramp_ms: 20,
+        gain_db: manifest.duckDb, ramp_ms: 20, release_ms: 350,
       }).out(0)
     }
     filmAudio = g.node('MeliteAudioMix', {

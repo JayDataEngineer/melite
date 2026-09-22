@@ -215,7 +215,12 @@ export function callsToPrompts(calls: DocCall[], fps: number): TimelinePrompt[] 
     })(),
     // (F9) seam mode — rendered as a glyph at the clip's right edge so
     // the cut-vs-extend distinction is visible at a glance on the bar.
-    seam: c.transition === "extend" ? "extend" : "cut",
+    // ABSENT = EXTEND (the stitching default — operator catch d
+    // 2026-09-22: "the model chose hard cuts instead of our system
+    // of stitching"; the card's spanOverlap law treats absent as
+    // extend, the UI glyph must never disagree — only an explicit
+    // "cut" reads as a cut).
+    seam: c.transition === "cut" ? "cut" : "extend",
   }))
 }
 

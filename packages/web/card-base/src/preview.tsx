@@ -83,7 +83,16 @@ export function resetPickCellsForTests(): void {
  * current generation — the badge law; the between-runs fallback
  * hero gets NO badge: with no current run, the newest archive is
  * the closest thing to current, not a stale one). */
-function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | undefined, rest: PreviewArtifact[], viewingHistory: boolean, note: string | undefined, picked: number, promote: (i: number) => void, returnToCurrent: () => void } {
+/** The view-identity cell id (stage + run, else urls) — ONE law,
+ * exported so a preview's specialized pick cells (the video face's
+ * current-set pick) derive from the SAME identity, never re-derive. */
+export function previewCellIdOf(props: PreviewOwnerProps): string {
+  return props.runId !== undefined && props.runId !== ''
+    ? `${props.stageId}\u0000run:${props.runId}`
+    : `${props.stageId}\u0000${props.artifacts.map((a) => a.url).join('|')}`
+}
+
+function useHistoryHero(props: PreviewOwnerProps, opts?: { heroIndex?: (src: PreviewArtifact[]) => number }): { hero: PreviewArtifact | undefined, rest: PreviewArtifact[], viewingHistory: boolean, note: string | undefined, picked: number, promote: (i: number) => void, returnToCurrent: () => void } {
   const flat: PreviewArtifact[] = props.artifacts.length > 0
     ? props.artifacts
     : (props.history ?? []).flat()
@@ -108,9 +117,7 @@ function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | und
   // cycle (start patch → live flips → terminal), so the pick
   // survives the churn; a genuinely new run still resets (fresh
   // cell). Pre-run rows (runId '') fall back to the urls key.
-  const cellId = props.runId !== undefined && props.runId !== ''
-    ? `${props.stageId}\u0000run:${props.runId}`
-    : `${props.stageId}\u0000${props.artifacts.map((a) => a.url).join('|')}`
+  const cellId = previewCellIdOf(props)
   const [pickedKey, setPickedKey] = usePickCell(cellId)
   const picked = pickedKey === null ? -1 : history.findIndex((e) => keyOf(e) === pickedKey)
   // THE TOGGLE LAW (the operator's bug report, 2026-09-16: "not
@@ -130,9 +137,18 @@ function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | und
     ? history[picked]
     : null
   const source = entry ?? flat
+  // THE HERO INDEX (2026-09-22, the operator's catch b): "the
+  // preview only shows of the three clips one clip" — a film run's
+  // artifacts arrive in SAVE ORDER (windows first, the composed
+  // film last), so source[0] is a WINDOW and the product hides in
+  // the links. A preview may name its own hero (the video face
+  // names the film); the remainder keeps order around it.
+  const heroIdx = opts?.heroIndex !== undefined && source.length > 0
+    ? Math.min(Math.max(0, opts.heroIndex(source)), source.length - 1)
+    : 0
   return {
-    hero: source[0],
-    rest: source.slice(1, 12),
+    hero: source[heroIdx],
+    rest: [...source.slice(0, heroIdx), ...source.slice(heroIdx + 1)].slice(0, 12),
     viewingHistory: entry !== null,
     // ('' and undefined both mean no note — the owner builder sends
     // empty slots to keep historyNotes index-aligned with history)
@@ -266,12 +282,36 @@ function seatSafeLink(a: PreviewArtifact, i: number = 0): ReturnType<typeof h> {
 
 /** THE VIDEO PREVIEW — one hero film, one native player (the kit's
  *  FilmPlayer law: native <video controls>; no library, no kit). The
- *  stitch/hero is the active set's first; the set's named windows
- *  follow in the strip row (the CURRENT run's, or the picked
- *  history entry's — never mixed). Honest empty state while no
- *  artifact has landed. */
+ *  hero is THE FILM (the composed artifact — a film run's artifacts
+ *  arrive windows-first, the film last, so the named film wins the
+ *  seat; any other video card keeps the first). The set's other
+ *  clips render as PLAYABLE THUMBS in the strip (the operator's
+ *  catch b, 2026-09-22: "the preview only shows one of the three
+ *  clips" — a text link is not a preview): click a thumb to promote
+ *  it into the hero, click it again to return (the toggle law);
+ *  the name still opens the file raw in a new tab. The set is the
+ *  CURRENT run's (or the picked history entry's — never mixed).
+ *  Honest empty state while no artifact has landed. */
 export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
-  const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props)
+  const { hero: defaultHero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props, {
+    // the film is the product; windows are ingredients
+    heroIndex: (src) => {
+      const i = src.findIndex((a) => /(^|[^a-z])film([^a-z]|$)/i.test(a.name))
+      return i >= 0 ? i : 0
+    },
+  })
+  // the current-set face pick: a promoted thumb owns the hero until
+  // toggled off — keyed by url on the SAME view identity cell
+  const [faceUrl, setFaceUrl] = usePickCell(`${previewCellIdOf(props)}\u0000face`)
+  const promoted = faceUrl !== null && (defaultHero.url === faceUrl || rest.some((a) => a.url === faceUrl))
+    ? (defaultHero.url === faceUrl ? defaultHero : rest.find((a) => a.url === faceUrl))
+    : undefined
+  const hero = promoted ?? defaultHero
+  // EVERY clip stays visible (the all-visible law): the strip holds
+  // the whole set — the default hero included — and the hero mirrors
+  // the pick; the promoted thumb never vanishes from the strip, so
+  // the toggle-back click always exists
+  const others = defaultHero !== undefined ? [defaultHero, ...rest] : []
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-video' },
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
@@ -281,9 +321,17 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
           className: s.hero, controls: true, playsInline: true, key: hero.url,
           src: hero.url, 'data-testid': 'stage-preview-video-hero',
         }),
-    rest.length > 0
-      ? h('div', { className: s.strip },
-          rest.map(seatSafeLink))
+    others.length > 0
+      ? h('div', { className: s.strip, 'data-testid': 'stage-preview-video-strip' },
+          others.map((a) => h('button', {
+            key: a.url, type: 'button',
+            className: cn(s.thumbVideoBtn, a.url === faceUrl ? s.thumbVideoActive : undefined),
+            'aria-pressed': a.url === faceUrl,
+            title: a.name + (a.url === faceUrl ? ' (viewing — click to return to the film)' : ' — click to preview'),
+            onClick: (e: MouseEvent) => { e.stopPropagation(); setFaceUrl(a.url !== faceUrl ? a.url : null) },
+          },
+            h('video', { className: s.thumbVideo, src: a.url, muted: true, playsInline: true, preload: 'metadata' }),
+            h('span', { className: s.thumbVideoName }, a.name))))
       : null,
     HistoryStrip(props, promote, 'stage-output-history', picked),
   )
