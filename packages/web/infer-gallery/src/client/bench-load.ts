@@ -253,7 +253,13 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       // 100's {model:} law), never a board request — and the run's
       // own bench_snapshot stage proves the ran stage carried no such
       // key. Strip it; a model naming a REAL family (image-gen's
-      // z-image) rides untouched for admission to judge.
+      // z-image) rides untouched for admission to judge. THE ONE
+      // SELF-BOARDING CARD (audit 8a25fbc5): 'anny' boards the
+      // 'anny' family — but requiresModel:false and its compose
+      // ignores the model key outright (weights ride provisions), so
+      // today's wire never writes it there either; the only anny
+      // stage carrying model:'anny' is this same era residue, and
+      // the strip is correct on it too.
       if (params['model'] === card) delete params['model']
       const intentSrc = typeof params['prompt'] === 'string' ? params['prompt'] as string : 'restored run'
       const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
