@@ -59,6 +59,7 @@ import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } f
 import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { startCardRun, stopRun } from '@melite/card-base/runs-policy'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
+import { probeBuild, type BuildVerdict } from './build-handshake.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/preview'
 import { CardZoomOverlay } from './zoom.tsx'
 import { mediaUrl } from './draft.ts'
@@ -172,6 +173,21 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     return () => { alive = false }
   }, [lastRunId, snapshot?.value])
   const [localRunError, setLocalRunError] = useState<string | null>(null)
+  // THE DEPLOY HANDSHAKE (2026-09-23, the stale-tab root rot): probe
+  // the lane's current card-bundle stamps on mount, on focus, and
+  // once a minute — a tab running an older bundle than the lane
+  // serves renders the unmissable stale face. The immutable plugin
+  // cache means NO push exists; this poll is the only messenger.
+  const [buildVerdict, setBuildVerdict] = useState<BuildVerdict>({ kind: 'unknown' })
+  useEffect(() => {
+    let alive = true
+    const probe = (): void => { void probeBuild().then((v) => { if (alive) setBuildVerdict(v) }) }
+    probe()
+    const focus = (): void => probe()
+    window.addEventListener('focus', focus)
+    const timer = window.setInterval(probe, 60000)
+    return () => { alive = false; window.removeEventListener('focus', focus); window.clearInterval(timer) }
+  }, [])
   // THE OUTCOME WATCH (the attribution half): one controller per tab
   //  life — every stage run's observer rides it, unmount ends the
   //  watches (a completed patch is idempotent; an interrupted one is
@@ -399,6 +415,15 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // PLUS the loud error line (the silent-failure law holds — the
   // face never replaces the seat).
   const value = snapshot.value
+  // THE STALE-TAB FACE — above every kind's body, never replaceable
+  // by content: a tab older than the lane's build answers every
+  // "why didn't the fix work" before it's asked.
+  const staleBuildLine = buildVerdict.kind === 'stale'
+    ? h('p', { className: css.staleBuild, 'data-testid': 'cards-stale-build' },
+        'STALE TAB — this tab runs build ' + buildVerdict.baked.slice(0, 8)
+        + '; the lane serves ' + buildVerdict.served.slice(0, 8)
+        + '. RELOAD this page to pick up the shipped fixes — edits made here may run old code.')
+    : null
   const failedLine = snapshot.status === 'failed' && value !== undefined
     ? h('p', { className: css.failed, 'data-testid': 'cards-refresh-failed' },
         snapshot.failure?.message ?? 'cards resource failed — showing the last good state')
@@ -407,19 +432,25 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // A LIVE snapshot with no value is a broken provider (live
     // promises the latest ok frame's value) — voice it LOUD, never
     // a loading face that would hang forever claiming to wait.
+    // THE STALE FACE rides EVERY arm (even loading/broken): a stale
+    // tab is stale regardless of what it is failing to show.
     if (snapshot.status === 'live') {
-      return h('p', { className: css.failed }, 'cards resource gave no value')
+      return h(Fragment, null, staleBuildLine,
+        h('p', { className: css.failed }, 'cards resource gave no value'))
     }
     if (snapshot.status === 'failed') {
-      return h('p', { className: css.failed }, snapshot.failure?.message ?? 'cards resource failed')
+      return h(Fragment, null, staleBuildLine,
+        h('p', { className: css.failed }, snapshot.failure?.message ?? 'cards resource failed'))
     }
-    return h('p', { className: css.loading }, 'loading ' + address + '…')
+    return h(Fragment, null, staleBuildLine,
+      h('p', { className: css.loading }, 'loading ' + address + '…'))
   }
   return value.kind === 'bench'
     // Pure-DSH tab (2026-09-11): the bench renders the native BenchView
     // (tiles + drill + picker on the estate doors). The legacy 1:1
     // FlowCanvas branch was retired in Phase 2 (src/old/ deleted).
     ? h(Fragment, null,
+        staleBuildLine,
         failedLine,
         localRunError !== null ? h('p', { className: css.runError }, localRunError) : null,
         // THE RUN-GATE RESCUE (roadmap item 4): a rescueable miss —
@@ -452,6 +483,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       )
     : value.kind === 'draft'
     ? h(Fragment, null,
+        staleBuildLine,
         failedLine,
         localRunError !== null ? h('p', { className: css.runError }, localRunError) : null,
         localRunError !== null ? h(RunRescue, { error: localRunError, stages: value.stages, onRun: onRunDraftStage }) : null,
@@ -468,6 +500,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         }),
       )
     : h(Fragment, null,
+        staleBuildLine,
         failedLine,
         h(RunView, { run: value, sessionKey: benchKey, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop }))
 }

@@ -20,6 +20,7 @@ import {
   chmodSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   symlinkSync,
   unlinkSync,
@@ -38,7 +39,11 @@ import {
   MEDIA_PREFIX,
   mediaUrl,
   MediaRemoteService,
+  CARD_BUILD_PREFIX,
+  cardBuildStamps,
+  repoRootOf,
 } from "../src/index.ts";
+import { stampLine, stampOf } from "@melite/contracts/buildStamp";
 
 const NOT_FOUND_BODY = '{"error":"media/not-found"}';
 const NO_QUEUE_BODY =
@@ -150,13 +155,19 @@ async function mountWeb(
     ctx.provide("queue", stateRoots === undefined ? { stateRoot } : { stateRoot, stateRoots });
   }
   await ctx.plugin({ name: "t-probe", apply: mediaApply } as never);
-  assert.equal(rows.length, 1, "one prefix row registers");
+  assert.equal(rows.length, 2, "two prefix rows register (runs + the card-build handshake)");
   const row = rows[0] as { kind: string; path: string; handler: Handler };
   assert.deepEqual(
     { kind: row.kind, path: row.path },
     { kind: "prefix", path: MEDIA_PREFIX },
   );
   assert.equal(typeof row.handler, "function");
+  const buildRow = rows[1] as { kind: string; path: string; handler: Handler };
+  assert.deepEqual(
+    { kind: buildRow.kind, path: buildRow.path },
+    { kind: "prefix", path: CARD_BUILD_PREFIX },
+    "the deploy handshake route registers beside the runs route",
+  );
   return { ctx, rows, handler: row.handler };
 }
 
@@ -1131,5 +1142,69 @@ describe("the byte route across roots (the §23 manifest, degenerate shapes)", (
     const { handler } = await mountWeb(own, [own, mk]);
     const seen = await drive(handler, "GET", `${MEDIA_PREFIX}/run-0789ef-nd/real.mp4`);
     assert.deepEqual([seen.status, seen.body.toString()], [200, "REAL"]);
+  });
+});
+
+// ── THE DEPLOY HANDSHAKE (2026-09-23, the stale-tab root rot):
+//    the loader's /plugins URL is immutable-cached on the plugin
+//    LIST — rebuilt bundles ride the SAME URL and never reach a
+//    browser that cached it. The stamps route serves disk truth;
+//    these walls pin its law end to end. ──────────────────────────
+describe("the card-build handshake", () => {
+  test("the stamp law round-trips: stampLine(stampOf(code)) is idempotent", () => {
+    const code = "console.log('the living tree')\n";
+    const once = code + stampLine(stampOf(code));
+    // the appended line never perturbs its own value
+    assert.equal(stampOf(once), stampOf(code), "the stamp survives re-stamping");
+    // a CHANGED body changes the stamp — the museum detector
+    const changed = code + "// touched\n";
+    assert.notEqual(stampOf(changed), stampOf(code));
+  });
+
+  test("cardBuildStamps walks packages/*/lib/client.js, stamped or bare", () => {
+    const root = mkdtempSync(join(tmpdir(), "card-build-"));
+    onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, "packages", "card-one", "lib"), { recursive: true });
+    mkdirSync(join(root, "packages", "card-two", "lib"), { recursive: true });
+    mkdirSync(join(root, "packages", "host-only"), { recursive: true });
+    const one = "export const x = 1\n";
+    const two = "export const y = 2\n";
+    // one rides stamped (post-handshake build), one rides bare (never rebuilt)
+    writeFileSync(join(root, "packages", "card-one", "lib", "client.js"), one + stampLine(stampOf(one)));
+    writeFileSync(join(root, "packages", "card-two", "lib", "client.js"), two);
+    const stamps = cardBuildStamps(root);
+    assert.deepEqual(Object.keys(stamps).sort(), ["card-one", "card-two"], "client bundles only");
+    assert.equal(stamps["card-one"], stampOf(one), "a stamped bundle's stamp is its unstamped sha1");
+    assert.equal(stamps["card-two"], stampOf(two), "a bare bundle stamps its whole code");
+  });
+
+  test("repoRootOf walks up to the workspace manifest", () => {
+    const root = mkdtempSync(join(tmpdir(), "card-root-"));
+    onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+    writeFileSync(join(root, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n");
+    const deep = join(root, "packages", "estate", "media", "lib");
+    mkdirSync(deep, { recursive: true });
+    assert.equal(repoRootOf(join(deep, "index.js")), root);
+    // the no-manifest arm needs its OWN tree (a path under `root`
+    // would walk up INTO the manifest just planted)
+    const bare = mkdtempSync(join(tmpdir(), "card-bare-"));
+    onTestFinished(() => rmSync(bare, { recursive: true, force: true }));
+    mkdirSync(join(bare, "lib"), { recursive: true });
+    assert.equal(repoRootOf(join(bare, "lib", "index.js")), null, "no manifest → no root ({} served)");
+  });
+
+  test("the route serves no-store stamps; non-GET refuses", async () => {
+    const { rows } = await mountWeb(undefined);
+    const row = rows[1] as { handler: Handler };
+    const get = await drive(row.handler, "GET", CARD_BUILD_PREFIX);
+    assert.equal(get.status, 200);
+    assert.equal(get.headers["cache-control"], "no-store", "never cached — disk truth every ask");
+    const body = JSON.parse(get.body.toString()) as { stamps: Record<string, string> };
+    const repoRoot = repoRootOf(new URL(import.meta.url).pathname)!;
+    assert.equal(body.stamps["melite-card-view"], stampOf(
+      readFileSync(join(repoRoot, "packages", "web", "melite-card-view", "lib", "client.js"), "utf8"),
+    ), "the route's stamp equals the sha1 law on the real repo's own bundle");
+    const post = await drive(row.handler, "POST", CARD_BUILD_PREFIX);
+    assert.equal(post.status, 405);
   });
 });
