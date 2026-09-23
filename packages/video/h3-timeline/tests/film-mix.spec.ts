@@ -63,6 +63,25 @@ describe("stanzaSecs — the compose-time clock (§26's snap, one owner)", () =>
     assert.equal(spanStanzaFrames(SPAN(0, 9000)), 362, "the ceiling: the engine's hard 362");
   });
 
+  it("THE CARRY IS GENERATION — a carried window's stanza covers carry + span (the operator's standing 'the seam is still CUT' catch, MEASURED on the BRIEF4 proof film, 2026-09-23)", () => {
+    // THE INVARIANT SCHEMAMASTER CANNOT SEE: the old snap produced
+    // LEGAL grid lengths that failed the arithmetic — span 119,
+    // stanza 124, carry 22: the render starts at sf−22, covers
+    // [sf−22, sf+102), the finalize trims 22 → the SAVED clip is
+    // 102 frames, 17 SHORT of its span. The film joins by hard
+    // concat on the wrong frames — every carried seam a visible
+    // cut. No type/bounds gate catches this: 124 IS on the grid.
+    // THIS wall is the gate: stanza − carry ≥ span, snapped.
+    const seam = SPAN(362, 481); // the BRIEF4 W4: extend, carry 22
+    const stanza = spanStanzaFrames(seam, 22);
+    assert.equal(stanza, 141, "span 119 + carry 22 = 141 IS on the grid");
+    assert.ok(stanza - 22 >= seam.end - seam.start, "after the finalize trims the carried head, the saved clip still covers the span");
+    // the failure the operator watched: the old law's 124 saved 102
+    assert.notEqual(stanza, 124);
+    assert.equal(spanStanzaFrames(SPAN(56, 124), 22), 90, "68f span + 22 carry = 90, on the grid — the old pin 73 starved this window by 17");
+    assert.equal(spanStanzaFrames(SPAN(56, 124), 0), 73, "an uncalled-for carry (cut, or window 1) keeps the bare-span snap");
+  });
+
   it("a degenerate span conditions nothing (the defensive floor: end ≤ start, or a non-finite bound)", () => {
     // the door refuses these docs upstream (the shot law); the mix
     // still guards its own math — a degenerate span stamps no
@@ -82,18 +101,23 @@ describe("stanzaSecs — the compose-time clock (§26's snap, one owner)", () =>
     assert.equal(nan.duckSpans.length, 0, "a non-finite bound conditions nothing either");
   });
 
-  it("stanzaSecs feeds RAW frames/24 — no per-window rounding (sums must not compound drift)", () => {
+  it("stanzaSecs feeds RAW frames/24 — no per-window rounding (sums must not compound drift) — and states the CARRY (a k≥2 stanza covers carry + span)", () => {
     // the 3-window seat proof: rounded parts give filmStart
     // 2.333+3.75−0.917 = 5.166 → seat 7.416; raw gives
     // 5.1666… → seat 7.4166… → ms 7.417 (the true owner-map seat)
     const secs = stanzaSecs([SPAN(0, 56), SPAN(56, 146), SPAN(146, 270)]);
-    assert.deepEqual(secs, [56 / 24, 90 / 24, 124 / 24], "raw fractions, exactly frames/24");
+    // index-aware carry: w1 fresh (56); w2 span 90 + carry 22 = 112
+    // → 107; w3 span 124 + carry 22 = 146 → 141
+    assert.deepEqual(secs, [56 / 24, 107 / 24, 141 / 24], "raw fractions, exactly frames/24, carry included");
     const manifest = computeFilmMix({
       spans: [SPAN(0, 56), SPAN(56, 146), SPAN(146, 270)],
       clips: [CLIP({ src: "d.flac", start: 200, dur: 48, text: "third window" })],
       windowSecs: secs,
     });
-    assert.equal(manifest.placements[0]!.filmSec, 7.417, "the seat derived from RAW stanza secs is the true 7.417 — never the compounded 7.416");
+    // w3's film seat: 56/24 + (107−22)/24 = 141/24; the clip at doc
+    // 200 sits (200−146)/24 later — 8.125, derived from RAW stanza
+    // secs, never compounded rounded parts.
+    assert.equal(manifest.placements[0]!.filmSec, 8.125, "the seat derived from RAW stanza secs is the true 8.125 — never a compounded rounding");
   });
 });
 

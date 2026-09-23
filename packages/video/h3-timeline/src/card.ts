@@ -771,7 +771,13 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     else delete stanza.image
     // per-window length: the span rider law, unless the call's knobs pin one
     if (sf !== null && ef !== null && ef > sf && knobs.length === undefined) {
-      stanza.length = spanStanzaFrames(spans[i]!)
+      // THE CARRY IS GENERATION (fixed 2026-09-23): the stanza
+      // covers carry + span — the finalize trims the carried head
+      // off the SAVED clip, so the span's tail must exist inside
+      // the generation. chainLike is the render's own carry law
+      // (i>0 and a non-cut seam) — the same number filmMix's
+      // stanzaSecs states (the two-clocks law, still one owner).
+      stanza.length = spanStanzaFrames(spans[i]!, chainLike ? overlap : 0)
       // THE TWO CLOCKS LAW (fixed 2026-09-22 — the 20-second proof
       // film): the window's VIDEO length derives from fps_seconds
       // (the builder's ComfyMathExpression reads it; the length

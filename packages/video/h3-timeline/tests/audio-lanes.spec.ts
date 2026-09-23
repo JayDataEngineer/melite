@@ -18,7 +18,7 @@ import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { computeFilmMix, parseFilmMixClips } from "../src/filmMix.ts";
+import { computeFilmMix, parseFilmMixClips, stanzaSecs } from "../src/filmMix.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -270,19 +270,25 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
     const pins = scoped(out, "window3_", "MiniMaxH3AddGuide");
     assert.equal(pins.length, 1, "one dialogue pin on window 3");
     assert.equal(pins[0]![1].inputs.frame_idx, 76, "pin at doc 200 − genStart 124");
+    // THE CARRY IS GENERATION (2026-09-23): the k≥2 stanzas cover
+    // carry + span — w2 span 90 + 22 → 107, w3 span 124 + 22 → 141.
+    // The third window's true film start is 56/24 + (107−22)/24 =
+    // 141/24, so the clip at doc 200 seats at 141/24 + (200−146)/24
+    // = 8.125 — never the old 7.417 (the deficit-clock seat that
+    // landed overlay audio 0.7s EARLY at every carried seam).
     const manifest = computeFilmMix({
       spans: [{ start: 0, end: 56 }, { start: 56, end: 146 }, { start: 146, end: 270 }],
       clips: parseFilmMixClips(rawClips),
-      windowSecs: [56 / 24, 90 / 24, 124 / 24],
+      windowSecs: stanzaSecs([{ start: 0, end: 56 }, { start: 56, end: 146 }, { start: 146, end: 270 }]),
     });
-    assert.deepEqual(manifest.placements.map((p) => p.filmSec), [7.417], "overlay at the owner-map seat — never 8.333");
-    assert.ok(manifest.duckSpanString.includes("7.417:9.417"), "the duck spans the true seat");
+    assert.deepEqual(manifest.placements.map((p) => p.filmSec), [8.125], "overlay at the owner-map seat — never 8.333");
+    assert.ok(manifest.duckSpanString.includes("8.125:10.125"), "the duck spans the true seat");
     // THE FILE TAIL RENDERS THE OWNER-MAP SEAT (the 3-window case is
     // where start/24 and the old carry math coincide — the graph's
     // own delay is the discriminator)
     const delays = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window"));
     assert.equal(delays.length, 1, "one film-level delay");
-    assert.equal(Number(delays[0]![1].inputs.delay_seconds), 7.417, "the graph seats the clip at the owner-map seat — never 8.333");
+    assert.equal(Number(delays[0]![1].inputs.delay_seconds), 8.125, "the graph seats the clip at the owner-map seat — never the deficit 7.417");
   });
 
   it("existing docs keep their conditioning; music-only clips ride the manifest with no self-duck", () => {
