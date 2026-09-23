@@ -80,6 +80,13 @@ export interface ModelVariantFacts {
   group: string
   route: string
   resolver_defaults: Record<string, unknown>
+  /** THE VARIANT LANE (2026-09-23, the clone-lane repair): a variant
+   *  may re-key the compose lane (qwen3-tts Base: synth_lane clone) —
+   *  the service merges this over the family lane_inputs when the
+   *  run addresses the variant's route. Absent on old literals = {}
+   *  at the reader (never undefined inside deriveRow) — the TYPE
+   *  honors the same law: optional on literal fixtures. */
+  lane_inputs?: LaneInputsFacts
   sampler_envelope?: { steps?: [number, number]; cfg?: [number, number] } | null
   defaults: Record<string, unknown>
   cells: VariantCellFacts[]
@@ -115,6 +122,14 @@ export interface StudioFacts {
 export interface FactsFile {
   models: Record<string, ModelFacts>
   extension_node_types: Record<string, string[]>
+  /** Route → ladder-owner family (the addressOwners derivation,
+   *  emitted so the compose door resolves variant routes without a
+   *  registry read: 'qwen3-tts-base' → 'qwen3-tts'. Family ids map
+   *  to themselves; absent on old literals = identity (the reader
+   *  defaults, never refuses) — the TYPE honors the same law:
+   *  optional, so an inline fixture (the image-gen krea-2 stub)
+   *  omits it without a cast-through-unknown. */
+  owners?: Record<string, string>
 }
 
 /** The frozen card-owned slices (what the registry cannot carry). */
@@ -186,6 +201,7 @@ function deriveRow(
       group: v.group as string,
       route: reAddr((v.route ?? '') as string),
       resolver_defaults: (v.resolver_defaults ?? {}) as Record<string, unknown>,
+      lane_inputs: ((v.lane_inputs ?? {}) as LaneInputsFacts),
       // THE ROUTE ENVELOPE (cardsVariant.envelopeRefusal reads it):
       // a distilled lane declares the closed bounds its sampler
       // marriage lives in — stated values outside refuse at compose.
@@ -246,5 +262,5 @@ export function loadFacts(path: string, reads: FactsReads): FactsFile {
       owners,
     )
   }
-  return { models, extension_node_types: slices.extension_node_types ?? {} }
+  return { models, extension_node_types: slices.extension_node_types ?? {}, owners: Object.fromEntries(owners) }
 }
