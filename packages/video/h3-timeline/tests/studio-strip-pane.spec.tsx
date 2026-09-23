@@ -139,6 +139,17 @@ if (!/\.docLines [^{]*\{[^}]*overflow-wrap: anywhere/.test(css)) {
 if (!/\.railCol [^{]*\{[^}]*overflow-x: clip/.test(css)) {
   throw new Error("THE RAIL SPILLS: .railCol must carry overflow-x: clip — nothing inside may push past the column's box");
 }
+/* THE FULL-GRID WIDTH WALL (2026-09-23, the operator: "IT IS STILL
+ * TOO WIDE" — the rail faces shipped and the rail still stretched:
+ * the CENTER and STRIP slot rules carried no min-width: 0, so any
+ * wide preview/strip content forced its track and the whole grid
+ * spilled right. Every grid child may shrink inside its track.) */
+if (!/\.studioRoot\.studioRoot > \*:nth-child\(2\)[^{]*\{[^}]*min-width: 0/.test(css)) {
+  throw new Error("THE CENTER WIDENS: the nth-child(2) slot rule must carry min-width: 0 — wide preview content forces column 2 and the grid spills");
+}
+if (!/\.studioRoot\.studioRoot > \*:nth-child\(3\)[^{]*\{[^}]*min-width: 0/.test(css)) {
+  throw new Error("THE STRIP WIDENS: the nth-child(3) slot rule must carry min-width: 0 — spanning content distributes min-content into the tracks");
+}
 
 /* THE LANE-PICKER WALL (2026-09-22, the operator's law): the lanes'
  * add door is the gutter's ⤴ riding the GENERIC source grammar —

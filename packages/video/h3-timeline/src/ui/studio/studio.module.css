@@ -90,7 +90,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
  * scroll existed: the pane was a plain block cell, .filmBox's flex:1
  * was inert, and the video rendered at natural aspect height —
  * taller than the pane — so overflow-y: auto became a scrollbar.) */
-.studioRoot.studioRoot > *:nth-child(2) { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.studioRoot.studioRoot > *:nth-child(2) { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; min-width: 0; }
 /* THE TIMELINE NEVER SCROLLS (2026-09-22, the operator: "I DON'T
  * WANT A VERTICAL SCROLL WHEEL ON THE TIMELINE INPUT BAR"): the
  * bottom row sizes to its content — the shell grid's row 2 is AUTO,
@@ -102,6 +102,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   grid-column: 1 / -1;
   grid-row: 2;
   min-height: 0;
+  min-width: 0;
   max-height: none;
   overflow: visible;
 }
