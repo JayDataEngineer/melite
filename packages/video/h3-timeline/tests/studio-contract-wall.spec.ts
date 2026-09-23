@@ -91,6 +91,11 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
         `serializeLayerA emitted "${key}" — neither declared nor admitted`,
       ).toBe(true)
     }
+    // THE DECLARED-SURFACE ROUND TRIP (2026-09-23): card-level refs
+    // hydrate AND serialize back — a save never drops what the lanes show
+    expect(out.ref_images).toEqual(["https://u/d.png"])
+    expect(out.ref_videos).toEqual(["https://u/d.png"])
+    expect(out.ref_audios).toEqual(["https://u/d.png"])
   })
 
   it("every CALL_KNOB_KEYS entry sits on the declared surface (the per-call stanza is card truth too)", () => {
