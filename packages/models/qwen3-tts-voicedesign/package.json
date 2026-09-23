@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./package.json": "./package.json",
+    "./mods/qvoice": "./mods/qvoice.ts",
     "./mods/qvoice_save": "./mods/qvoice_save.ts"
   },
   "dependencies": {

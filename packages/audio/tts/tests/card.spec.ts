@@ -90,16 +90,27 @@ describe("the lane-bespoke leaves (the model guard — the persona knobs render 
       if (refId === undefined) return undefined;
       return json.refs[refId]?.meta?.extra?.visible_when;
     };
+    // THE 1:1 VISIBILITY LAW (operator 2026-09-23): a flavor's
+    // inputs key on the VARIANT (the lane), never the family — the
+    // same flavor at either size takes the same inputs.
     // CustomVoice instruction control = STYLE over the persona —
-    // the Base variant clones (no persona, no instruction)
-    assert.equal(leaf("voice"), "model=qwen3-tts&variant=customvoice", "voice declares its variant");
-    assert.equal(leaf("style_instruction"), "model=qwen3-tts&variant=customvoice", "style_instruction declares its variant");
+    // upstream reserves it for the 1.7B CustomVoice (the 0.6B row
+    // has no instruction control; the Base variant clones: no
+    // persona, no instruction).
+    assert.equal(leaf("voice"), "variant=customvoice", "voice declares its variant (either size — the lane owns the input)");
+    assert.equal(leaf("style_instruction"), "model=qwen3-tts-voicedesign&variant=customvoice", "instruct-text declares the 1.7B CustomVoice lane (upstream's capability table)");
     // the SHARED surface never hides
     assert.equal(leaf("text"), undefined, "the words ride every lane");
     // synth sampling renders on the synthesis lanes only (design
     // sampling lives in the Design entry — the README stroke)
-    assert.equal(leaf("temperature"), "model=qwen3-tts");
-    assert.equal(leaf("seed"), "model=qwen3-tts");
+    assert.equal(leaf("temperature"), "variant=customvoice|base", "temperature declares the synthesis lanes");
+    assert.equal(leaf("seed"), "variant=customvoice|base", "seed declares the synthesis lanes");
+    // THE GENERATE KWARGS (1:1 capabilities — the node serves them,
+    // the card declares them, absent rows ride the engine pin)
+    assert.equal(leaf("top_p"), "variant=customvoice|base");
+    assert.equal(leaf("speed"), "variant=customvoice|base");
+    assert.equal(leaf("repetition_penalty"), "variant=customvoice|base");
+    assert.equal(leaf("top_k"), "variant=customvoice|base");
   });
 });
 
@@ -167,13 +178,14 @@ describe("the three-lane surfaces (the README stroke 2026-09-21 — each model r
     return json.refs[refId]?.meta?.extra?.visible_when;
   };
   it("the cloner declares its inputs on the Base variant only; synth sampling skips the design lane", () => {
-    assert.equal(leaf("ref_audio"), "model=qwen3-tts&variant=base", "reference audio is a Base-variant input");
-    assert.equal(leaf("ref_text"), "model=qwen3-tts&variant=base", "reference transcript is a Base-variant input");
-    assert.equal(leaf("temperature"), "model=qwen3-tts", "synth sampling never renders on design");
-    assert.equal(leaf("seed"), "model=qwen3-tts", "seed never renders on design");
+    assert.equal(leaf("ref_audio"), "variant=base", "reference audio is a Base-variant input (either size)");
+    assert.equal(leaf("ref_text"), "variant=base", "reference transcript is a Base-variant input (either size)");
+    assert.equal(leaf("temperature"), "variant=customvoice|base", "synth sampling never renders on design");
+    assert.equal(leaf("seed"), "variant=customvoice|base", "seed never renders on design");
     assert.equal(leaf("text"), undefined, "the words ride every lane (the design sample on VoiceDesign)");
   });
-  it("the card boards the two Qwen checkpoints (Base is a variant of the .6, never a third model)", () => {
+  it("the card boards the two Qwen sizes LARGE-FIRST (boarded[0] is the default everywhere — the operator's large-model default)", () => {
+    assert.equal(def.boarded[0], "qwen3-tts-voicedesign");
     assert.deepEqual([...def.boarded].sort(), ["qwen3-tts", "qwen3-tts-voicedesign"]);
   });
 });
@@ -218,11 +230,29 @@ describe("the base clone lane (reference in, the speaker's voice out — no pers
       /style_instruction|Base|instruction/i,
     );
   });
-  it("a stated embedding on the cloner refuses loud (the Base variant loads nothing)", () => {
+  it("THE CARRY: a stated embedding on the cloner performs through the studio (upstream's design-then-clone flow — the exported voice IS the clone prompt)", () => {
+    const baseModel = facts.models["qwen3-tts-base"]!;
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ text: "the words", qvoice: [{ qvoice: "Cherry.qvoice" }] }),
+      baseModel,
+      g,
+      "r_useclone",
+    );
+    // the studio's generate node rides, the bare AudiocoreTTS cloner does not
+    const graph = g.toJSON();
+    const studio = Object.values(graph).find((n) => n.class_type === "AudiocoreVoiceStudio");
+    const bare = Object.values(graph).find((n) => n.class_type === "AudiocoreTTS");
+    assert.ok(studio, "the VoiceStudio generate node wires (qvoice across ALL qwen3-tts)");
+    assert.equal(studio.inputs.qvoice_path, "Cherry.qvoice", "the artifact path rides the studio");
+    assert.equal(studio.inputs.mode, "generate", "the studio performs");
+    assert.equal(bare, undefined, "no bare cloner node beside it");
+  });
+  it("neither reference stated on the cloner refuses loud (the clone lane needs a source)", () => {
     const baseModel = facts.models["qwen3-tts-base"]!;
     assert.throws(
-      () => def.compose(def.schema({ text: "the words", ref_audio: "ref.wav", ref_text: "the transcript", qvoice: [{ qvoice: "Cherry.qvoice" }] }), baseModel, new GraphBuilder(), "r_useclone"),
-      /qvoice|Base|embedding/i,
+      () => def.compose(def.schema({ text: "the words" }), baseModel, new GraphBuilder(), "r_bareclone"),
+      /ref_audio|ref_text|reference|Voice Embedding/i,
     );
   });
   it("clone inputs on the speak lane refuse loud (reference audio only fires on the Base variant)", () => {

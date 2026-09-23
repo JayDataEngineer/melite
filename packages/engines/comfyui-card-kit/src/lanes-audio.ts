@@ -160,9 +160,15 @@ export function ttsSpeakT1(p: Record<string, unknown>, model: ModelFacts, g: Gra
     // wires "" (served "").
     instruct: (p.style_instruction ?? '') as string,
     temperature: p.temperature,
+    // THE 1:1 GENERATE KWARGS (operator 2026-09-23): the card
+    // declares top_p/top_k/speed/repetition_penalty — absent rows
+    // ride the AUTOFILL pin (the node's own defaults), stated rows
+    // override. One surface, no second owner.
+    ...(p.top_p !== undefined && p.top_p !== null ? { top_p: p.top_p } : {}),
+    ...(p.top_k !== undefined && p.top_k !== null ? { top_k: p.top_k } : {}),
+    ...(p.speed !== undefined && p.speed !== null ? { speed: p.speed } : {}),
+    ...(p.repetition_penalty !== undefined && p.repetition_penalty !== null ? { repetition_penalty: p.repetition_penalty } : {}),
     seed,
-    // NO top_p/speed (not knobs — the AUTOFILL spread above owns
-    // 0.9/1.0; they ride from the pin, never from params).
   })
   saveAudio(g, synth.out(), `${runId}/tts`)
 }
@@ -193,21 +199,32 @@ export function ttsUseT1(p: Record<string, unknown>, model: ModelFacts, g: Graph
   saveAudio(g, studio.out(), `${runId}/tts`)
 }
 
-/** The tts_clone_t1 block — the 0.6B Base cloner (the README
- *  stroke: reference audio + transcript in, the speaker's voice
- *  out). No persona, no instruct, no embedding load — unwired,
- *  never merely hidden. Admission stays on the card. */
+/** The tts_clone_t1 block — the Base cloner (either size; the
+ * README stroke: reference audio + transcript in, the speaker's
+ * voice out). THE QVOICE CARRY (operator 2026-09-23, the 1:1 law:
+ * qvoice works across ALL qwen3-tts): a stated .qvoice on the
+ * clone lane performs through the studio's generate pipeline —
+ * upstream's design-then-clone flow, the exported voice IS the
+ * clone prompt (lite → Base + generate_voice_clone ICL with the
+ * stored ref_code). No persona, no instruct, never merely
+ * hidden. Admission stays on the card. */
 export function ttsCloneT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
+  const use = qvoiceUse(p)
+  if (use) return ttsUseT1(p, model, g, runId, use.path, use.strength)
   const seed = mintSeed(p)
   const loaded = loadAudiocore(g, model)
   const synth = g.node('AudiocoreTTS', {
     ...AUDIACORE_TTS_AUTOFILL,
     model: loaded,
     prompt: p.text,
-    mode: laneStr(model.defaults.mode, 'tts'),
+    mode: laneStr(model.defaults.mode, 'clone'),
     reference_audio: p.ref_audio,
     reference_text: p.ref_text,
     temperature: p.temperature,
+    ...(p.top_p !== undefined && p.top_p !== null ? { top_p: p.top_p } : {}),
+    ...(p.top_k !== undefined && p.top_k !== null ? { top_k: p.top_k } : {}),
+    ...(p.speed !== undefined && p.speed !== null ? { speed: p.speed } : {}),
+    ...(p.repetition_penalty !== undefined && p.repetition_penalty !== null ? { repetition_penalty: p.repetition_penalty } : {}),
     seed,
   })
   saveAudio(g, synth.out(), `${runId}/tts`)

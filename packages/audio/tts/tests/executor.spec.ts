@@ -14,7 +14,9 @@ import type { ToolDefinition, ToolRuntime } from "@deepseek-ai/dsh-tools";
 import * as pkg from "../src/index.ts";
 import { TOOL_NAME, buildTtsTool as FACE } from "../src/tool.ts";
 
-const DEFAULT_MODEL = "qwen3-tts";
+// THE LARGE DEFAULT (operator 2026-09-23): boarded[0] = the 1.7B
+// family — the unstated model resolves to the large checkpoint.
+const DEFAULT_MODEL = "qwen3-tts-voicedesign";
 const GOOD_ARGS = { text: "the words to speak" };
 
 const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];

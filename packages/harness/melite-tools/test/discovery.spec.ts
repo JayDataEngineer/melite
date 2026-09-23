@@ -241,8 +241,10 @@ describe('live door arms', () => {
     assert.equal(tools.length, defs.size)
     assert.deepEqual(tools.map((t) => t['name']), [...defs.keys()].sort())
     const tts = tools.find((t) => t['name'] === 'tts')!
-    assert.equal(tts['model'], 'qwen3-tts')
-    assert.deepEqual(tts['families'], ['qwen3-tts', 'qwen3-tts-voicedesign'])
+    // THE LARGE DEFAULT (operator 2026-09-23): boarded[0] = the 1.7B
+    // family — the manifest's default model + family order lead large.
+    assert.equal(tts['model'], 'qwen3-tts-voicedesign')
+    assert.deepEqual(tts['families'], ['qwen3-tts-voicedesign', 'qwen3-tts'])
     assert.ok(typeof tts['params_schema'] === 'object')
   })
 
@@ -288,8 +290,10 @@ describe('live door arms', () => {
   test('formSpecArm serves the tts envelope for its default family', async () => {
     const spec = (await formSpecSweep('tts')) as Record<string, unknown>
     assert.equal(spec['form'], 'tts')
-    assert.equal(spec['service'], 'qwen3-tts')
-    assert.equal(spec['model'], 'qwen3-tts')
+    // THE LARGE DEFAULT (operator 2026-09-23): the unstated model
+    // resolves the 1.7B family.
+    assert.equal(spec['service'], 'qwen3-tts-voicedesign')
+    assert.equal(spec['model'], 'qwen3-tts-voicedesign')
     assert.deepEqual(Object.keys(spec).sort(), [
       'contract',
       'engine',
@@ -716,14 +720,16 @@ describe('live door arms', () => {
       assert.ok(def !== undefined, card + ' boards')
       return (specBody(svc, defs, { card, service: model, model })['families'] as Array<Record<string, unknown>>)
     }
-    // the tts rail: three families, three checkpoint-honest faces —
+    // the tts rail: two sizes, two checkpoint-honest faces —
     // the operator's table: SIZES are models (the rail names
-    // checkpoints, never flavors), FLAVORS are variants (Base rides
-    // the .6's matrix, never a third family)
-    const tts = faces('tts', 'qwen3-tts')
+    // checkpoints, never flavors), FLAVORS are variants (each size's
+    // matrix carries its flavors — the 1:1 law puts customvoice/
+    // voicedesign/base on the 1.7B; the .6 carries customvoice/base).
+    // The 1.7B leads (the large default).
+    const tts = faces('tts', 'qwen3-tts-voicedesign')
     assert.deepEqual(
       tts.map((f) => [f['id'], f['label']]),
-      [['qwen3-tts', 'Qwen3-TTS 0.6B'], ['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B']],
+      [['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B'], ['qwen3-tts', 'Qwen3-TTS 0.6B']],
     )
     // true families keep their DECL faces (the 2026-09-16 family-face law, unmoved)
     const music = faces('music', 'music3')

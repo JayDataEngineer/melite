@@ -8,41 +8,52 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
 export const schema = z.object({
   text: z.string().description("Text").extra('extra', { order: null, placeholder: "The words to speak", tooltip: "The text to synthesize — the design sample on the VoiceDesign lane", required: true, wtype: 'textarea', }),
-  // ported voice surface (purge S-decls: the card is deleted
-  // 0.7, seed -1; style_instruction is ABSENT/defaultless
-  // (bare = optional at parse, ''-absent at compose via ?? '' below).
-  // NO speed/top_p (declares no such knobs — they ride the
-  // AUDIACORE_TTS_AUTOFILL pin; old drafts naming them still parse via
-  // the door's non-strict overlay but compose never reads them).
-  // THE QVOICE SURFACE IS MOD-OWNED (the interlock, 2026-09-08): the
-  // qvoice + qvoice_save PACK CONTRACTS (comfyui-cordis mods/packs.ts)
-  // declare the flat fields — qvoice/voice_strength on the CustomVoice
-  // lane, voice_name/style_instruction/design sampling on the
-  // VoiceDesign lane — and the compose door's phase-1 admission
-  // absorbs them per boarded family. The card schema stays OFF them
-  // (a nested bag here broke the carrier envelope — the pack is the
-  // one declared surface, never two).
-  voice: vocabulary(["ryan", "serena", "vivian", "aiden", "eric", "dylan", "sohee", "ono_anna", "uncle_fu"]).description("Voice").default("ryan").extra('extra', { order: null, tooltip: "Preset speaker persona (the CustomVoice variant only — style control over the target timbre)", wtype: 'select', visible_when: 'model=qwen3-tts&variant=customvoice' }),
-  style_instruction: z.string().description("Style Instruction").extra('extra', { order: null, tooltip: "Emotion and delivery control (e.g. 'speak with warm confidence') — styles the CustomVoice persona; the VoiceDesign variant takes its own instruction in the Design entry, the Base variant takes none", wtype: 'textarea', visible_when: 'model=qwen3-tts&variant=customvoice' }),
+  // THE 1:1 SURFACE (operator 2026-09-23: match QwenLM/Qwen3-TTS —
+  // capabilities AND models): visibility keys on the VARIANT (the
+  // lane), never the family — a flavor's inputs are the same at
+  // either size. voice = the CustomVoice speaker (upstream's 9
+  // premium timbres — a CustomVoice call REQUIRES one; the other
+  // lanes have no speaker at all, so the row hides there — voice is
+  // never forced on). style_instruction = instruct-text, an
+  // UPSTREAM 1.7B-CustomVoice capability (the 0.6B-CustomVoice
+  // table row has NO instruction control — a stated instruct on
+  // the small CustomVoice refuses at admission below).
+  voice: vocabulary(["ryan", "serena", "vivian", "aiden", "eric", "dylan", "sohee", "ono_anna", "uncle_fu"]).description("Voice").default("ryan").extra('extra', { order: null, tooltip: "Preset speaker persona (the CustomVoice variant only — the other variants take no speaker)", wtype: 'select', visible_when: 'variant=customvoice' }),
+  style_instruction: z.string().description("Style Instruction").extra('extra', { order: null, tooltip: "Instruct-text style control (e.g. 'speak with warm confidence') — an upstream 1.7B-CustomVoice capability; the VoiceDesign variant takes its own instruction in the Design entry, Base takes none, the 0.6B CustomVoice has no instruction control", wtype: 'textarea', visible_when: 'model=qwen3-tts-voicedesign&variant=customvoice' }),
   // THE CLONE INPUTS (the Base variant clones from a 3-second
   // reference): reference audio + its transcript, Base only.
-  ref_audio: z.string().role('path').description("Reference Audio").extra('extra', { order: null, tooltip: "3 seconds of the voice to clone (the Base variant only)", wtype: 'file', visible_when: 'model=qwen3-tts&variant=base' }),
-  ref_text: z.string().description("Reference Transcript").extra('extra', { order: null, tooltip: "What the reference audio says (the Base variant only)", wtype: 'textarea', visible_when: 'model=qwen3-tts&variant=base' }),
+  // OPTIONAL when a .qvoice rides instead (upstream's design-then-
+  // clone flow: the designed voice IS the clone prompt).
+  ref_audio: z.string().role('path').description("Reference Audio").extra('extra', { order: null, tooltip: "3 seconds of the voice to clone (the Base variant only; optional when a Voice Embedding performs instead)", wtype: 'file', visible_when: 'variant=base' }),
+  ref_text: z.string().description("Reference Transcript").extra('extra', { order: null, tooltip: "What the reference audio says (the Base variant only; optional when a Voice Embedding performs instead)", wtype: 'textarea', visible_when: 'variant=base' }),
+  // GENERATE KWARGS (the 1:1 capability surface — the engine node
+  // serves temperature/top_p/top_k/speed/repetition_penalty; the
+  // upstream README rides the same HF generate kwargs). Defaults
+  // are the NODE's own (0.8 was the old card default; the node + 1:1
+  // surface say 0.8→temperature stays the engine floor law below,
+  // the rest pin to node defaults: top_p 0.9, top_k 0=off, speed
+  // 1.0, repetition_penalty 1.05). Design-lane sampling stays
+  // mod-owned (the qvoice_save pack) — these render on the
+  // synthesis lanes only.
   // the 0.05 floor is the ENGINE's truth (GPU receipt, hour 15: the
   // native node refuses temperature 0 — "must be positive when
   // sampling"); the schema declares the smallest positive tick of
   // its own step. The declaration follows the engine, never vice.
-  // Synth sampling renders on the synthesis lanes only — design
-  // sampling lives in the Design entry (mod-owned, the qvoice_save
-  // pack contract).
-  temperature: z.number().description("Temperature").min(0.05).max(2).step(0.05).default(0.7).extra('extra', { order: null, visible_when: 'model=qwen3-tts' }),
-  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: null, visible_when: 'model=qwen3-tts' }),
+  temperature: z.number().description("Temperature").min(0.05).max(2).step(0.05).default(0.7).extra('extra', { order: null, visible_when: 'variant=customvoice|base' }),
+  top_p: z.number().description("Top P").min(0).max(1).step(0.01).default(0.9).extra('extra', { order: null, visible_when: 'variant=customvoice|base' }),
+  top_k: z.number().description("Top K").min(0).max(1000).step(1).default(0).extra('extra', { order: null, tooltip: "0 = off (the node's own default)", visible_when: 'variant=customvoice|base' }),
+  speed: z.number().description("Speed").min(0.5).max(2).step(0.1).default(1).extra('extra', { order: null, visible_when: 'variant=customvoice|base' }),
+  repetition_penalty: z.number().description("Repetition Penalty").min(0.8).max(2).step(0.01).default(1.05).extra('extra', { order: null, visible_when: 'variant=customvoice|base' }),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: null, visible_when: 'variant=customvoice|base' }),
 })
 
 // THE BOARDED MODELS (the operator's table: SIZES are models —
-// the .6 and the 1.7B checkpoints. Base is a VARIANT of the .6
-// (route 'qwen3-tts-base'), never a third model.)
-export const BOARDED: string[] = ['qwen3-tts', 'qwen3-tts-voicedesign']
+// the .6 and the 1.7B checkpoints. Base is a VARIANT (route
+// 'qwen3-tts-base'), never a third model. THE LARGE DEFAULT
+// (operator 2026-09-23): boarded[0] is the default everywhere
+// (tool projection + UI preselect — one source) — the 1.7B
+// family leads; the 0.6B stays a pick.)
+export const BOARDED: string[] = ['qwen3-tts-voicedesign', 'qwen3-tts']
 
 // THE VARIANT ROUTE (agents can't pick matrix variants — the tool's
 // closed model enum additionally offers the Base variant's compose
@@ -109,24 +120,35 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         ? (model.lane_inputs as Record<string, unknown>).synth_lane as string
         : '';
       const blank = (v: unknown): boolean => !(typeof v === 'string' ? v.trim() : v);
+      const qvoiceStated = (doc: Record<string, unknown>): boolean => {
+        const bag = doc.qvoice as Array<Record<string, unknown>> | string | undefined;
+        return Array.isArray(bag)
+          ? bag.some((e) => !blank((e as Record<string, unknown>)?.qvoice))
+          : !blank(bag);
+      }
       if (lane === 'clone') {
-        if (blank(doc.ref_audio) || blank(doc.ref_text)) {
-          throw new Error("required params 'ref_audio' + 'ref_text' missing or empty on the tts card (the Base variant clones — it needs its 3-second reference and transcript)")
+        // THE 1:1 CLONE LAW (operator 2026-09-23): Base clones from
+        // ref_audio+ref_text OR performs a designed .qvoice (the
+        // upstream design-then-clone flow — the exported voice IS
+        // the clone prompt). Either reference satisfies the lane;
+        // neither stated = the loud refusal.
+        if ((blank(doc.ref_audio) || blank(doc.ref_text)) && !qvoiceStated(doc)) {
+          throw new Error("required params 'ref_audio' + 'ref_text' missing or empty on the tts card (the Base variant clones — state the 3-second reference + transcript, or a Voice Embedding to perform the designed voice)")
         }
         if (!blank(doc.style_instruction)) {
           throw new Error("param 'style_instruction' fires nothing on the tts card's Base variant (style control styles the CustomVoice persona — the cloner has none; drop the instruction or switch to the CustomVoice variant)")
-        }
-        const bag = doc.qvoice as Array<Record<string, unknown>> | string | undefined;
-        const stated = Array.isArray(bag)
-          ? bag.some((e) => !blank((e as Record<string, unknown>)?.qvoice))
-          : !blank(bag);
-        if (stated) {
-          throw new Error("param 'qvoice' fires nothing on the tts card's Base variant (the cloner loads no embeddings — drop the Voice entry or switch to the CustomVoice variant)")
         }
       } else {
         if (!blank(doc.ref_audio) || !blank(doc.ref_text)) {
           throw new Error("params 'ref_audio'/'ref_text' fire nothing on the tts card outside the Base variant (reference audio only clones — switch to the Base variant or drop the reference)")
         }
+      }
+      // THE 0.6B INSTRUCT WALL (upstream capability table: the
+      // 0.6B-CustomVoice row has NO instruction control — instruct
+      // is the 1.7B lane's capability): a stated instruct on the
+      // small CustomVoice refuses loud, never silently drops.
+      if (lane !== 'design' && !blank(doc.style_instruction) && model.id === 'qwen3-tts') {
+        throw new Error("param 'style_instruction' fires nothing on the 0.6B CustomVoice lane (instruction control is the 1.7B checkpoint's capability upstream — switch to the 1.7B family's CustomVoice variant or drop the instruction)")
       }
       if (lane === 'design') {
         // FLAT SURFACE (2026-09-23, the unrunnable-lane fix): the

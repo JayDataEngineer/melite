@@ -193,7 +193,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       // qwen3-tts refusal this test names)
       () => validateRegistryAgainstCards(allDecls(), cards, [], boarded, served, new Map(), admits),
       (err: unknown): boolean =>
-        err instanceof ModelError && String(err.message).includes("qwen3-tts: default 'mode'"),
+        // 2026-09-23 (the 1:1 matrix): the 1.7B family now carries
+        // defaults.mode 'tts' on its customvoice default lane — the
+        // same engine-truth law, a new first thrower (it iterates
+        // before the 0.6B).
+        err instanceof ModelError && String(err.message).includes("qwen3-tts-voicedesign: default 'mode'"),
     );
     const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, boarded, served, allRouteViews(), await allAdmits());
     assert.ok(checked.length >= 24, `expected 24 checked pairs (wan-vace/scail2 retired 2026-09-21), got ${checked.length}`);
