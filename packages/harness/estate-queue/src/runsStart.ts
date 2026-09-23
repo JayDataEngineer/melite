@@ -434,13 +434,47 @@ export function registerCompiledRun(args: {
   // against. The card door passes its body; the inline door passes
   // the envelope's flow_inline doc below (same writes, same order).
   const requestBody: unknown = door?.requestBody ?? compiled;
+  // THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23: the
+  // operator pressed carried, the engine received cut, and the run
+  // left NO voice saying which — the film was 15 minutes of the
+  // wrong seam and the post-mortem could only infer). Computed BEFORE
+  // the durable writes, stamped ON them: the run record + the console
+  // + the ledger row name the doc revision the compose read and the
+  // seam values the engine actually received. "What did ComfyUI get?"
+  // is one grep away, forever, on every run — the read-side half of
+  // the law (the write-side half is the client's run gate: the engine
+  // never composes from a doc the press has not confirmed).
+  const bodyRec = requestBody as Record<string, unknown>;
+  const echoCalls: Array<Record<string, unknown>> = Array.isArray(bodyRec?.["calls"])
+    ? bodyRec["calls"] as Array<Record<string, unknown>>
+    : [];
+  const benchRec = door?.benchDoc as { bench?: { rev?: unknown } } | undefined;
+  const benchRev = typeof benchRec?.bench?.rev === "number" ? benchRec.bench.rev : null;
+  if (echoCalls.length > 0) {
+    const seam = echoCalls
+      .map((c) => (typeof c["transition"] === "string" ? c["transition"] : "carry"))
+      .join(",");
+    run.composeEcho = { seam, calls: echoCalls.length, benchRev };
+    console.log(`[compose] run=${runId} draft=${draftId} calls=${echoCalls.length} seam=${seam} bench_rev=${benchRev ?? "?"}`);
+  }
   atomicWriteJson(join(dir, "_request.json"), requestBody);
   atomicWriteJson(join(dir, "_flow.json"), sidecarDocFor(run));
-  appendLedger(stateRoot, "run.queued", {
-    run_id: runId,
-    draft_id: draftId,
-    pipeline: run.pipeline,
-  });
+  if (echoCalls.length > 0) {
+    appendLedger(stateRoot, "run.queued", {
+      run_id: runId,
+      draft_id: draftId,
+      pipeline: run.pipeline,
+      seam: run.composeEcho?.seam,
+      calls: echoCalls.length,
+      bench_rev: benchRev,
+    });
+  } else {
+    appendLedger(stateRoot, "run.queued", {
+      run_id: runId,
+      draft_id: draftId,
+      pipeline: run.pipeline,
+    });
+  }
   const queuePosition: number = enqueue(run);
   return { run, queuePosition };
 }
@@ -473,5 +507,8 @@ function sidecarDocFor(run: RunRecord): Record<string, unknown> {
     // F-6(b): admission warnings ride the queued sidecar (disk
     // rows carry them after a reload).
     warnings: run.warnings,
+    // THE COMPOSE ECHO: what the engine received rides the queued
+    // sidecar too (the wand/restore reads disk, not memory).
+    composeEcho: run.composeEcho,
   });
 }

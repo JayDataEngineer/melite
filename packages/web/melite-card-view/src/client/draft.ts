@@ -106,11 +106,14 @@ function isCasConflict(e: unknown): boolean {
 /** One drafts/patch round trip; throws the door's named refusal. The
  *  generated signature is (draftId, stageId, patch, expectRev:
  *  number | null) — the open local patch shape rides as the wire's
- *  own open JSON record (honestly JSON all the way down). */
+ *  own open JSON record (honestly JSON all the way down). Returns
+ *  the door's answer rev (THE CONFIRMED-WRITE LAW: the server's own
+ *  word that the write landed — the ledger records it, a caller may
+ *  use it as its next CAS handle). */
 async function patchOnce(
   draftId: string, stageId: string, patch: Record<string, unknown>,
   expectRev: number | undefined,
-): Promise<void> {
+): Promise<{ rev: number | null }> {
   const ns: DraftsNamespace = estateRemote().drafts
   const row = await unwrapRemote(
     ns.patch(draftId, stageId, patch as Parameters<DraftsNamespace['patch']>[2], expectRev ?? null),
@@ -120,6 +123,80 @@ async function patchOnce(
     const reason = typeof row['reason'] === 'string' ? row['reason'] : 'undelivered'
     throw new Error('drafts/patch: ' + reason + ' (draft ' + draftId + ', stage ' + stageId + ')')
   }
+  const rev = typeof row['rev'] === 'number' ? row['rev'] : null
+  return { rev }
+}
+
+// ── THE WRITE LEDGER (the one-press/one-engine law, 2026-09-23) ──
+//
+// THE OPERATOR'S LAW, verbatim: "Me pressing one thing and ComfyUI
+// getting another thing should be IMPOSSIBLE. By construction."
+//
+// The press → engine span is a CHAIN (emit → debounce → patch → CAS
+// → doc → compose) and any link can die silently: on 2026-09-23
+// 17:43 the operator toggled the seam cut→carried, pressed Run ten
+// seconds later, and a 15-minute film composed from fifteen 'cut' —
+// the bench log held NO patch for the toggle (the write died before
+// the wire, most plausibly in a debounce timer the run press's view
+// flip unmounted). The ledger makes the class DEAD BY CONSTRUCTION:
+//
+//   1. every authoring write REGISTERS here (module-level state that
+//      OUTLIVES component unmount — a view flip cannot kill a write
+//      by killing its timer owner);
+//   2. every run press FLUSHES the stage's writes first (the gate)
+//      — the engine composes only from confirmed doc state, and a
+//      write that fails refuses the run LOUD, naming the error;
+//   3. the last confirmed rev + last failure are queryable, so "did
+//      my press land?" has an answer in the client at all times.
+export interface StageWriteState {
+  readonly pending: number
+  readonly lastError: string | null
+  readonly confirmedRev: number | null
+}
+
+interface StageWriteRow {
+  inflight: Set<Promise<unknown>>
+  lastError: string | null
+  confirmedRev: number | null
+}
+
+const stageWrites = new Map<string, StageWriteRow>()
+
+function writeRow(draftId: string, stageId: string): StageWriteRow {
+  const key = draftId + '/' + stageId
+  let row = stageWrites.get(key)
+  if (row === undefined) {
+    row = { inflight: new Set(), lastError: null, confirmedRev: null }
+    stageWrites.set(key, row)
+  }
+  return row
+}
+
+/** The stage's write accountability snapshot — what the UI consults
+ * before it lets anything compose from this doc. */
+export function stageWriteState(draftId: string, stageId: string): StageWriteState {
+  const row = writeRow(draftId, stageId)
+  return { pending: row.inflight.size, lastError: row.lastError, confirmedRev: row.confirmedRev }
+}
+
+/** Await every authoring write still in flight for the stage (the
+ * run gate's flush). Never throws — the caller reads the settled
+ * state and refuses the run on any failure. */
+export async function flushStageWrites(draftId: string, stageId: string): Promise<StageWriteState> {
+  const row = writeRow(draftId, stageId)
+  while (row.inflight.size > 0) {
+    await Promise.allSettled([...row.inflight])
+  }
+  return stageWriteState(draftId, stageId)
+}
+
+/** Drop the whole ledger (spec isolation ONLY — same discipline as
+ * unbindEstateRemote: specs share draft/stage ids across tests, and
+ * a refusal recorded by one test must not refuse the next test's
+ * run. Production NEVER calls this: the ledger's memory is the
+ * law). */
+export function resetStageWrites(): void {
+  stageWrites.clear()
 }
 
 /** The CAS dance (the run-start face law, 2026-09-14): write with the
@@ -130,19 +207,19 @@ async function patchOnce(
 async function patchWithRebase(
   draftId: string, stageId: string, patch: Record<string, unknown>,
   expectRev: number | undefined,
-): Promise<void> {
+): Promise<{ rev: number | null }> {
   let rev = expectRev
   if (rev === undefined) {
     rev = await fetchDraftRev(draftId) ?? undefined
     if (rev === undefined) throw new Error('drafts/patch: no bench rev to write against (draft ' + draftId + ')')
   }
   try {
-    await patchOnce(draftId, stageId, patch, rev)
+    return await patchOnce(draftId, stageId, patch, rev)
   } catch (e: unknown) {
     if (!isCasConflict(e)) throw e
     const fresh = await fetchDraftRev(draftId) ?? undefined
     if (fresh === undefined) throw e
-    await patchOnce(draftId, stageId, patch, fresh)
+    return await patchOnce(draftId, stageId, patch, fresh)
   }
 }
 
@@ -165,7 +242,28 @@ export async function patchStageParams(
   // under the earlier author). On conflict the write re-reads the
   // rev and re-applies once (patchWithRebase) — a second conflict
   // still throws loud.
-  await patchWithRebase(draftId, stageId, { params }, expectRev)
+  //
+  // THE LEDGER REGISTRATION (the one-press/one-engine law): this
+  // write is ACCOUNTABLE from the moment it exists — in flight while
+  // it travels, its answer rev recorded when the server confirms,
+  // its refusal recorded when the server says no. The promise still
+  // rejects to the caller (their banner owns the face); the ledger
+  // owns the memory no unmount can kill.
+  const row = writeRow(draftId, stageId)
+  const attempt = (async (): Promise<void> => {
+    try {
+      const settled = await patchWithRebase(draftId, stageId, { params }, expectRev)
+      if (settled.rev !== null) row.confirmedRev = settled.rev
+      row.lastError = null
+    } catch (e: unknown) {
+      row.lastError = e instanceof Error ? e.message : String(e)
+      throw e
+    } finally {
+      row.inflight.delete(attempt)
+    }
+  })()
+  row.inflight.add(attempt)
+  return attempt
 }
 
 /** Report a stage's RUN OUTCOME onto the bench row — the same

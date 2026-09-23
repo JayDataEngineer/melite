@@ -17,6 +17,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { mountEstateFakes } from './estate-harness.ts'
 import { unbindEstateRemote } from '@melite/card-base/estate-remote'
+import { resetStageWrites } from '../src/client/draft.ts'
 import { createElement } from 'react'
 
 import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire'
@@ -122,6 +123,11 @@ function tileButton(): HTMLElement {
 
 afterEach(() => {
   unbindEstateRemote()
+  // THE LEDGER RESET (the one-press/one-engine law): the write
+  // ledger is accountable module state — specs share draft/stage ids
+  // across tests, and a refusal recorded by one test must not refuse
+  // the next test's run.
+  resetStageWrites()
   cleanup()
   vi.unstubAllGlobals()
 })

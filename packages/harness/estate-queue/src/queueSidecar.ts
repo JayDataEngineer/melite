@@ -51,6 +51,12 @@ export function sidecarDoc(args: {
    *  warn): the status row spells it `warnings` too — one spelling
    *  on disk and on the wire. Absent when none were stamped. */
   warnings?: string[];
+  /** THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23):
+   *  what the engine actually received at start — the seam values
+   *  of the composed calls + the bench revision the compose read.
+   *  Absent on non-film runs (no calls). The status row spells it
+   *  `compose_echo` too. */
+  composeEcho?: { seam: string; calls: number; benchRev: number | null };
 }): Record<string, unknown> {
   return {
     // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
@@ -75,6 +81,7 @@ export function sidecarDoc(args: {
     ...(args.cardSnapshot !== undefined ? { card_snapshot: args.cardSnapshot } : {}),
     ...(args.benchSnapshot !== undefined ? { bench_snapshot: args.benchSnapshot } : {}),
     ...(args.warnings !== undefined && args.warnings.length > 0 ? { warnings: [...args.warnings] } : {}),
+    ...(args.composeEcho !== undefined ? { compose_echo: args.composeEcho } : {}),
   };
 }
 

@@ -85,6 +85,13 @@ export interface RunRecord {
    *  start door — the film lane's VRAM-pressure warn): served on
    *  run_status rows, never a refusal. Absent means none. */
   warnings?: string[];
+  /** THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23):
+   *  what the ENGINE actually received at start — the seam values
+   *  of the composed calls + the bench revision the compose read.
+   *  The read-side receipt: "what did ComfyUI get" is answered by
+   *  the run record itself, not by inference. Non-film runs (no
+   *  calls) stamp nothing. */
+  composeEcho?: { seam: string; calls: number; benchRev: number | null };
 }
 
 /** The engine's path relative to the run dir (runRel, door-verbatim). */
@@ -153,6 +160,9 @@ export function settlePersist(
         // F-6(b): the admission warnings ride the settle rewrite
         // too (a terminal disk row keeps what the live row warned).
         warnings: run.warnings,
+        // THE COMPOSE ECHO rides the settle rewrite too (a terminal
+        // disk row keeps what the engine received at start).
+        composeEcho: run.composeEcho,
       }),
     );
   } catch {

@@ -314,6 +314,61 @@ describe("registerCompiledRun", () => {
     assert.deepEqual(run2.benchSnapshot, { stages, intent: "" });
   });
 
+  // THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23: the
+  // operator pressed carried, the engine received cut, and the run
+  // left NO voice saying which). A film start stamps what the engine
+  // actually received — the seam values of the composed calls + the
+  // bench revision the compose read — on the row, the queued sidecar,
+  // and the ledger row. "What did ComfyUI get" is answered by the run
+  // record itself, never by inference.
+  it("THE COMPOSE ECHO: a film start stamps the seam values + bench rev on the row, the sidecar, and the ledger", () => {
+    const root = tmp();
+    const body = {
+      model: "h3",
+      calls: [
+        { text: "one", start_frame: 0, end_frame: 124 },
+        { text: "two", start_frame: 124, end_frame: 243, transition: "cut" },
+      ],
+    };
+    const { run } = registerCompiledRun({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 0,
+      door: {
+        runId: "run-echo", pipeline: "m", cardId: "h3-timeline",
+        requestBody: body, benchDoc: { bench: { rev: 17 } },
+      },
+    });
+    // the first call carries no transition — the engine's own law
+    // (window 1 never carries) reads it as carried.
+    assert.deepEqual(run.composeEcho, { seam: "carry,cut", calls: 2, benchRev: 17 });
+    const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.deepEqual(flow["compose_echo"], { seam: "carry,cut", calls: 2, benchRev: 17 });
+    const lines = readFileSync(join(root, "output", "_ledger.jsonl"), "utf8").split("\n");
+    const queued = lines.filter((l) => l.includes("run.queued")).map((l) => JSON.parse(l) as { data: Record<string, unknown> }).at(-1);
+    assert.equal(queued?.data["seam"], "carry,cut");
+    assert.equal(queued?.data["calls"], 2);
+    assert.equal(queued?.data["bench_rev"], 17);
+    assert.equal(queued?.data["pipeline"], "m");
+  });
+
+  it("a non-film start stamps no compose echo (the key stays absent, never null)", () => {
+    const root = tmp();
+    const { run } = registerCompiledRun({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 0,
+      door: { runId: "run-noecho", pipeline: "m", cardId: "c", requestBody: { model: "m" } },
+    });
+    assert.equal(run.composeEcho, undefined);
+    const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal("compose_echo" in flow, false);
+  });
+
   it("an unwritable state root throws LOUD (a refusal contract, never a silent skip)", () => {
     // registerCompiledRun raw-throws the node fs Error (mkdirSync on
     // the 555 root raises EACCES) — the caller (the start arm) folds

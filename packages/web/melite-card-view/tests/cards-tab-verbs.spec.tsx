@@ -13,6 +13,7 @@ import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageRow } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { resetStageWrites } from "../src/client/draft.ts";
 
 interface Call { method: string; args: Record<string, unknown> }
 
@@ -127,6 +128,10 @@ afterEach(() => {
   fakes?.unmount();
   fakes = null;
   unbindEstateRemote();
+  // THE LEDGER RESET (the one-press/one-engine law — see
+  // card-drill.spec's afterEach): a refusal recorded by one test
+  // must not refuse the next test's run.
+  resetStageWrites();
   vi.unstubAllGlobals();
 });
 

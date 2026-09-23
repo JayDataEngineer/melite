@@ -1,0 +1,132 @@
+// @vitest-environment happy-dom
+/**
+ * THE RUN GATE (the one-press/one-engine law, 2026-09-23).
+ *
+ * THE OPERATOR'S LAW, verbatim: "Me pressing one thing and ComfyUI
+ * getting another thing should be IMPOSSIBLE. By construction."
+ *
+ * The incident: the operator toggled the h3 seam cut→carried, pressed
+ * Run ten seconds later, and a 15-minute film composed from the CUT —
+ * the bench log held NO patch for the toggle (the write died before
+ * the wire). The drill's own "Run stage" has its patch-first law; the
+ * TILE's bare verb (and the zoom pill, and the draft view) had NO
+ * gate at all — the engine composed from whatever the doc held.
+ *
+ * THE LAWS THIS SPEC PINS, through the REAL channel (the real
+ * draft.ts ledger → the real onRunStage gate → the fake wire):
+ *  1. a write that FAILED before the press REFUSES the run loud —
+ *     no runs/start fires, and the refusal names the unlanded write;
+ *  2. the gate is the ledger, not a latch — after a LATER write
+ *     lands, the same press runs (a refused run costs one press).
+ */
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, expect, test, vi } from 'vitest'
+import { mountEstateFakes } from './estate-harness.ts'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
+import { createElement } from 'react'
+
+import { CardsTab } from '../src/client/CardsTab.tsx'
+import { patchStageParams, resetStageWrites } from '../src/client/draft.ts'
+import { schemaEnvelope } from '../src/client/spec-form.tsx'
+import type { CardsBenchValue } from '../src/client/cards-resource.ts'
+
+const BENCH: CardsBenchValue = {
+  kind: 'bench',
+  draftId: 'bench-s1',
+  rev: 7,
+  stages: [
+    {
+      id: 's_0',
+      card: 'image-gen',
+      title: 'hero frame',
+      engine: 'comfyui',
+      params: { prompt: 'a red cube', steps: 8, turbo: false },
+    },
+  ],
+  log: [],
+}
+
+function stubWire(patchFailures?: Array<Record<string, unknown>>): { calls: Array<{ method: string; args: Record<string, unknown> }> } {
+  const estate = mountEstateFakes({ patchFailures })
+  vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
+    const path = String(url)
+    if (path.includes('/v1/form-spec')) {
+      const doc = {
+        form: 'image-gen', genre: 'image', engine: 'comfyui',
+        schema: schemaEnvelope({
+          prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+          steps: { type: 'number', meta: { description: 'Steps', default: 8, min: 1, max: 150, step: 1, extra: { wtype: 'number' } } },
+          turbo: { type: 'boolean', meta: { description: 'Turbo', default: false } },
+        }),
+      }
+      return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/model-catalog')) {
+      const doc = { cards: { 'image-gen': { label: 'Image Gen', description: 'generate an image', genre: 'image', families: ['image-gen'] } } }
+      return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    throw new Error('estate door on the fetch lane: ' + path)
+  })
+  return { calls: estate.calls }
+}
+
+function mountTab(): void {
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: () => {} },
+      },
+    }),
+    useResource: () => ({ status: 'live', value: BENCH }),
+  }))
+}
+
+/** The TILE's bare run verb (data-testid tile-run → onRunStage — the
+ *  verb with no patch-first law of its own; the gate's seat). */
+async function pressTileRun(): Promise<void> {
+  const user = userEvent.setup()
+  const btn = await screen.findByTestId('tile-run', {}, { timeout: 4000 })
+  await user.click(btn)
+}
+
+afterEach(() => {
+  unbindEstateRemote()
+  resetStageWrites()
+  cleanup()
+  vi.unstubAllGlobals()
+})
+
+test('THE RUN GATE: a write that failed before the press refuses the run — no runs/start, the refusal names the unlanded write', async () => {
+  // the FIRST drafts/patch fails (the toggle's write dying before
+  // the wire); everything after succeeds.
+  const { calls } = stubWire([{ draftId: 'bench-s1', stageId: 's_0', delivered: false, reason: 'stage not found' }])
+  // THE DEAD WRITE, through the REAL channel: a surface save fires,
+  // the door refuses, the ledger holds the failure. The operator
+  // sees the patch banner — then presses the tile's bare Run.
+  await expect(patchStageParams('bench-s1', 's_0', { steps: 20 }, 7)).rejects.toThrow(/stage not found/)
+  mountTab()
+  await pressTileRun()
+  await waitFor(() => {
+    expect(screen.getByText(/THE WRITE DID NOT LAND/)).toBeTruthy()
+  })
+  expect(calls.some((c) => c.method === 'runs/start')).toBe(false)
+})
+
+test('THE GATE IS THE LEDGER, NOT A LATCH: after a later write lands, the same press runs', async () => {
+  const { calls } = stubWire([{ draftId: 'bench-s1', stageId: 's_0', delivered: false, reason: 'stage not found' }])
+  await expect(patchStageParams('bench-s1', 's_0', { steps: 20 }, 7)).rejects.toThrow(/stage not found/)
+  mountTab()
+  await pressTileRun()
+  await screen.findByText(/THE WRITE DID NOT LAND/)
+  expect(calls.some((c) => c.method === 'runs/start')).toBe(false)
+  // THE RECOVERY: the operator's write lands this time (the failure
+  // burned) — the ledger clears, and the SAME bare press now runs.
+  await patchStageParams('bench-s1', 's_0', { steps: 20 }, 7)
+  await pressTileRun()
+  await waitFor(() => {
+    expect(calls.some((c) => c.method === 'runs/start')).toBe(true)
+  })
+})
