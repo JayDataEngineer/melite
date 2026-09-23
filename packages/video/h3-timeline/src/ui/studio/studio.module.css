@@ -135,6 +135,13 @@ details[open] > summary .chev { transform: rotate(180deg); }
   padding: 10px 12px;
 }
 .docBlock { flex: none; min-width: 0; border-bottom: 1px solid var(--dsw-alias-border-l1); padding-bottom: 10px; }
+/* THE RAIL FITS ITS PART (2026-09-23, the operator: "it actually
+ * fits in the part given, not clipped under the preview"): the rail
+ * is a flex column, so EVERY direct child carries the automatic
+ * minimum — any wide resident (knob grid, span readout) slid right
+ * and disappeared under the preview pane. Children may shrink; the
+ * content rules below make them fit instead of spill. */
+.railCol > * { min-width: 0; }
 .docLines { display: flex; flex-direction: column; gap: 4px; padding: 0 4px; font-size: 10px; line-height: 1.625; color: var(--dsw-alias-label-secondary); overflow-wrap: anywhere; }
 .warnRow { display: flex; align-items: flex-start; gap: 4px; color: var(--dsw-alias-state-warn-primary); }
 .warnIcon { margin-top: 2px; flex: none; }
@@ -281,7 +288,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .callCardSel .cardSpan { color: var(--dsw-alias-label-primary); }
 .cardHead { display: flex; align-items: center; gap: 8px; padding-bottom: 4px; }
 .cardId { flex: none; font-size: 9px; font-weight: 600; text-transform: uppercase; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
-.cardSpan { flex: none; font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
+.cardSpan { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
 .knobTag {
   flex: none;
   border-radius: 6px;
@@ -314,6 +321,10 @@ details[open] > summary .chev { transform: rotate(180deg); }
 }
 .delBtn:hover { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent); background: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-label-primary); }
 .spanRow { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+/* Frame inputs cap at their share of the row (native number inputs
+ * carry a ~170px intrinsic width — two of them alone overflow 280px). */
+.spanRow > span { min-width: 0; }
+.spanRow input { max-width: 100%; }
 .spanLabel { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
 .spanDash { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
 .spanNote { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
@@ -382,12 +393,24 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .knobGrid {
   margin-top: 4px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* 1fr IS minmax(auto, 1fr) — the columns refused to shrink and 26
+   * long-label rows forced the rail under the preview. minmax(0,…)
+   * lets both columns share the 280px they are actually given. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: 16px;
   row-gap: 6px;
   border-top: 1px solid var(--dsw-alias-border-l1);
   padding-top: 6px;
 }
+/* Cells, labels, and fields all shrink: the label text wraps, native
+ * inputs and selects cap at their cell (their popups are unaffected). */
+.knobGrid > * { min-width: 0; }
+.knobGrid label > span { min-width: 0; }
+.knobGrid input, .knobGrid select { max-width: 100%; }
+/* THE POPUP LAW (stroke 84): any module styling a select pins
+ * color-scheme: light — the closed popup renders dark-on-light
+ * deterministic, never host-theme roulette. */
+.knobGrid select, .seamRow > select { color-scheme: light; }
 
 /* ── CallCardPrompt ─────────────────────────────────────── */
 .beatsWrap { display: flex; flex-direction: column; gap: 4px; }
@@ -452,6 +475,9 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .linkClose:hover { color: var(--dsw-alias-label-primary); }
 .linkRow:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .seamRow { display: flex; align-items: center; gap: 4px; font-size: 10px; line-height: 1.25; color: var(--dsw-alias-label-secondary); }
+/* The seam select's longest option (~28 chars) sizes the box past the
+ * rail — cap it at its cell. */
+.seamRow > select { min-width: 0; max-width: 100%; }
 .seamLabel { flex: none; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-secondary); }
 .prevLabel { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 10px; line-height: 1.25; }
 .prevLabelOn { color: var(--dsw-alias-label-secondary); }

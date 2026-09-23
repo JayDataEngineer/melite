@@ -150,6 +150,29 @@ if (!/\.studioRoot\.studioRoot > \*:nth-child\(2\)[^{]*\{[^}]*min-width: 0/.test
 if (!/\.studioRoot\.studioRoot > \*:nth-child\(3\)[^{]*\{[^}]*min-width: 0/.test(css)) {
   throw new Error("THE STRIP WIDENS: the nth-child(3) slot rule must carry min-width: 0 — spanning content distributes min-content into the tracks");
 }
+/* THE FITS-ITS-PART WALL (2026-09-23, the operator: "it actually
+ * fits in the part given, not clipped under the preview" — the slot
+ * rules shipped and the rail STILL slid under the preview: the rail
+ * is a flex column, so every direct child carried the automatic
+ * minimum, and inside, the 1fr 1fr knob grid + the flex:none span
+ * readout + uncapped selects/inputs forced every panel past 280px.
+ * The track never grew (minmax caps it) — content slid UNDER the
+ * center instead. Five content faces:) */
+if (!/\.railCol > \* [^{]*\{[^}]*min-width: 0/.test(css)) {
+  throw new Error("THE RAIL SLIDES: .railCol > * must carry min-width: 0 — flex-column children keep the automatic minimum and slide under the preview");
+}
+if (!/\.knobGrid [^{]*\{[^}]*minmax\(0, ?1fr\)/.test(css)) {
+  throw new Error("THE KNOBS FORCE: .knobGrid must use minmax(0,1fr) columns — bare 1fr is minmax(auto,1fr) and 26 long-label rows force the rail");
+}
+if (!/\.cardSpan [^{]*\{[^}]*text-overflow: ellipsis/.test(css)) {
+  throw new Error("THE SPAN FORCES: .cardSpan must ellipsize (full text already in title) — flex:none + a 45-char readout forces every card head past the rail");
+}
+if (!/\.seamRow > select [^{]*\{[^}]*max-width: 100%/.test(css)) {
+  throw new Error("THE SEAM FORCES: .seamRow > select must cap at max-width: 100% — the longest option sizes the box past the rail");
+}
+if (!/\.spanRow input [^{]*\{[^}]*max-width: 100%/.test(css)) {
+  throw new Error("THE FRAMES FORCE: .spanRow input must cap at max-width: 100% — native number inputs carry ~170px intrinsic width each");
+}
 
 /* THE LANE-PICKER WALL (2026-09-22, the operator's law): the lanes'
  * add door is the gutter's ⤴ riding the GENERIC source grammar —
