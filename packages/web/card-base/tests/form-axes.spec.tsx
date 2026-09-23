@@ -6,6 +6,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
 import type { FormSpecDoc, SpecValues, VariantRow } from '../src/spec.ts'
 
 import { ModelAxes, PackPrompt, useFormSpec } from '../src/form.tsx'
@@ -252,6 +253,35 @@ test('PAIR: no Variant axis, no pair (the Model rides alone, exactly as before)'
   expect(container.querySelector('[data-axes-pair]')).toBeNull()
   expect(screen.getByLabelText('Model')).not.toBeNull()
   expect(screen.getByLabelText('Quant')).not.toBeNull()
+})
+
+test('CLEAN-ROW LAW: the axes zone owns exactly TWO rails — the rows below the pair align to its column lines (the sound-cards catch, operator 2026-09-23)', () => {
+  // The DOM truth: the section's children are the title (spans),
+  // the Model+Variant pair (spans), then the Quant axis and the
+  // recipe select as RAIL CELLS. The CSS truth (the fit-law
+  // precedent — read the module, pin the declarations): the zone
+  // grid is EXACTLY two minmax(0,1fr) rails, never auto-fit —
+  // auto-fit made the rail count follow the panel width so the
+  // Quant/recipe row staggered off the pair's rails.
+  const { container } = axes({})
+  const section = container.querySelector('[data-model-axes]') as HTMLElement
+  expect(section).not.toBeNull()
+  const kids = Array.from(section.children)
+  // the title and the pair each own a full row
+  expect(kids[0]!.tagName).toBe('H4')
+  const pair = container.querySelector('[data-axes-pair="Model+Variant"]')
+  expect(kids[1]).toBe(pair)
+  // the css law, pinned verbatim from the module (never auto-fit)
+  const css = readFileSync('packages/web/card-base/src/card.module.css', 'utf8')
+  const zone = css.match(/\.modelAxes \{[^}]*\}/)![0]
+  expect(zone).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))')
+  expect(zone).not.toContain('auto-fit')
+  // the pair rides the same two rails (its halves ARE the rails)
+  const pairCss = css.match(/\.axesPair \{[^}]*\}/)![0]
+  expect(pairCss).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)')
+  // the full-row children span: the title + the download hint
+  expect(css).toMatch(/\.modelAxes \.specGroupTitle \{ grid-column: 1 \/ -1/)
+  expect(css).toMatch(/\.modelAxes > \.specHint \{ grid-column: 1 \/ -1;? \}/)
 })
 
 test('AXES: a held stranger on an axis renders AS ITSELF, refused (the lane proof, held)', () => {

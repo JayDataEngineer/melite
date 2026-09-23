@@ -16,22 +16,34 @@
   gap: 8px;
 }
 /* THE MODEL AXES (the pass-along law): Model/Variant/Quant ride one
- * row ABOVE the parameter groups — three selects side by side. */
+ * row ABOVE the parameter groups — three selects side by side.
+ * THE CLEAN-ROW LAW (operator 2026-09-23, the sound-cards catch):
+ * the zone owns EXACTLY TWO RAILS — never auto-fit. The pair's
+ * halves (Model|Variant) and every row below (Quant under Model,
+ * the recipe select under Variant) share the SAME two column
+ * lines; auto-fit made the rail count follow the panel width, so
+ * the rows below the pair staggered off its rails ("not aligned
+ * in a clean row"). minmax(0) both rails: long option faces
+ * shrink, the zone never wraps. */
 .modelAxes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 /* the zone title SPANS the row — the h4 is a grid CHILD by default
  * and was eating the first cell (the empty slot under "Model", the
  * operator's lane report: "nothing is placed under the MODEL intro
- * title area, it takes up two vertical slots"). */
+ * title area, it takes up two vertical slots"). The download
+ * prompt spans the same way — a full-row hint line, never a rail
+ * cell (the clean-row law). */
 .modelAxes .specGroupTitle { grid-column: 1 / -1; margin-bottom: 0; }
+.modelAxes > .specHint { grid-column: 1 / -1; }
 /* THE MODEL+VARIANT PAIR (the pass-along law, enforced): Model and
- * Variant ride ONE row — a dedicated 1fr 1fr pair that NEVER wraps
- * (the auto-fit grid above stacks them in narrow panels). minmax(0)
- * both halves so long option faces shrink instead of forcing the
- * row wider than the panel. */
+ * Variant ride ONE row — a dedicated 1fr 1fr pair that NEVER
+ * wraps; its halves ARE the zone's two rails (the clean-row law
+ * above), so the rows below align to the very same column lines.
+ * minmax(0) both halves so long option faces shrink instead of
+ * forcing the row wider than the panel. */
 .axesPair {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
