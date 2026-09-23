@@ -1,8 +1,8 @@
 /**
  * The gallery host contract — the SAME-ORIGIN doors the media panel
- * rides (/infer-gallery/runs + /drafts + /flow + /artifact), pinned
- * WITHOUT the estate (fake cordis ctx, stubbed fetch, a tmp runs
- * tree on disk):
+ * rides (/infer-gallery/runs + /drafts + /flow + /artifact +
+ * /artifact-delete + /artifact-rename), pinned WITHOUT the estate
+ * (fake cordis ctx, stubbed fetch, a tmp runs tree on disk):
  *
  *   posture — cross-host fetches the owning DSH verbatim; in-tree
  *             reads the estate seats, and an ABSENT seat answers a
@@ -108,10 +108,12 @@ function writeSidecar(runId: string, flow: string, request?: string): void {
 }
 
 describe('registration + posture log', () => {
-  it('registers the four exact doors and logs the in-tree posture by default', () => {
+  it('registers the six exact doors and logs the in-tree posture by default', () => {
     const ctx = mount()
     expect(ctx.routes.map((r) => r.path).sort()).toEqual([
       '/infer-gallery/artifact',
+      '/infer-gallery/artifact-delete',
+      '/infer-gallery/artifact-rename',
       '/infer-gallery/drafts',
       '/infer-gallery/flow',
       '/infer-gallery/runs',
@@ -477,5 +479,175 @@ describe('GET /infer-gallery/artifact', () => {
     const saw = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/a.png`)}`)
     expect(saw.status).toBe(502)
     expect((json(saw) as { error: string }).error).toBe('artifact_unreadable')
+  })
+})
+
+/** POST-body harness for the mutating doors (the read door's `hit`
+ *  passes a bare {url, headers} — the mutating doors read JSON off
+ *  the node:http idiom, so the fake request speaks data/end). */
+function fakeMutReq(url: string, body: unknown, method = 'POST'): unknown {
+  const handlers: Record<string, Array<(...a: never[]) => void>> = {}
+  const req: Record<string, unknown> = {
+    url,
+    method,
+    headers: {},
+    on: (event: string, fn: (...a: never[]) => void): unknown => {
+      ;(handlers[event] ??= []).push(fn)
+      return req
+    },
+  }
+  queueMicrotask(() => {
+    const raw = typeof body === 'string' ? body : JSON.stringify(body)
+    for (const fn of handlers['data'] ?? []) fn(Buffer.from(raw) as never)
+    for (const fn of handlers['end'] ?? []) fn()
+  })
+  return req
+}
+
+async function post(ctx: Ctx, path: string, body: unknown, method = 'POST'): Promise<Saw> {
+  const route = ctx.routes.find((r) => r.path === path)
+  if (route === undefined) throw new Error('no route for ' + path)
+  const { saw, res } = fakeRes()
+  await route.handler(fakeMutReq(path, body, method), res)
+  return saw
+}
+
+function writeTreeArtifact(target: string, bytes: Uint8Array): void {
+  const full = join(flowDir, target)
+  mkdirSync(join(flowDir, target.slice(0, target.lastIndexOf('/'))), { recursive: true })
+  writeFileSync(full, bytes)
+}
+
+describe('POST /infer-gallery/artifact-delete', () => {
+  it('unlinks one run-relative file (200 {ok, path})', async () => {
+    writeTreeArtifact(`${RUN}/gen/a.png`, new Uint8Array([1, 2, 3]))
+    const ctx = mount({ flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-delete', { path: `${RUN}/gen/a.png` })
+    expect(saw.status).toBe(200)
+    expect(json(saw)).toEqual({ ok: true, path: `${RUN}/gen/a.png` })
+    // the file is gone — the read door now answers 502.
+    const gone = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/a.png`)}`)
+    expect(gone.status).toBe(502)
+  })
+
+  it('refuses non-POST with a 405', async () => {
+    const ctx = mount({ flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-delete', { path: `${RUN}/a.png` }, 'GET')
+    expect(saw.status).toBe(405)
+    expect((json(saw) as { error: string }).error).toBe('method_not_allowed')
+  })
+
+  it('refuses hostile paths, sidecars, bad bodies and missing files loudly', async () => {
+    const ctx = mount({ flowDir })
+    for (const target of ['', 'noseparator', 'run-xyz/bad.png', `${RUN}/../flow`]) {
+      const saw = await post(ctx, '/infer-gallery/artifact-delete', { path: target })
+      expect(saw.status, target).toBe(400)
+      expect((json(saw) as { error: string }).error, target).toBe('forbidden_path')
+    }
+    for (const target of [`${RUN}/_flow.json`, `${RUN}/_request.json`, `${RUN}/gen/_thumb.png`]) {
+      const saw = await post(ctx, '/infer-gallery/artifact-delete', { path: target })
+      expect(saw.status, target).toBe(400)
+      expect((json(saw) as { error: string }).error, target).toBe('protected_sidecar')
+    }
+    const garbage = await post(ctx, '/infer-gallery/artifact-delete', 'not json at all {{{')
+    expect(garbage.status).toBe(400)
+    expect((json(garbage) as { error: string }).error).toBe('forbidden_path')
+    const empty = await post(ctx, '/infer-gallery/artifact-delete', '')
+    expect(empty.status).toBe(400)
+    expect((json(empty) as { error: string }).error).toBe('forbidden_path')
+    const missing = await post(ctx, '/infer-gallery/artifact-delete', { path: `${RUN}/gone.png` })
+    expect(missing.status).toBe(404)
+    expect((json(missing) as { error: string }).error).toBe('no_artifact')
+  })
+
+  it('a transport failure answers artifact_unreadable (never throws)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('socket reset') }))
+    const ctx = mount({ gatewayUrl: 'https://owner.example', flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-delete', { path: `${RUN}/a.png` })
+    expect(saw.status).toBe(502)
+    expect((json(saw) as { error: string }).error).toBe('artifact_unreadable')
+  })
+
+  it('cross-host relays the JSON verbatim (status + body ride through)', async () => {
+    const seen: Array<{ url: string; init: unknown }> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: unknown, init: unknown): Promise<Response> => {
+      seen.push({ url: String(input), init })
+      return new Response(JSON.stringify({ ok: true, path: `${RUN}/a.png` }), { status: 200 })
+    }))
+    const ctx = mount({ gatewayUrl: 'https://owner.example', flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-delete', { path: `${RUN}/a.png` })
+    expect(saw.status).toBe(200)
+    expect(json(saw)).toEqual({ ok: true, path: `${RUN}/a.png` })
+    expect(seen[0]?.url).toBe('https://owner.example/infer-gallery/artifact-delete')
+    expect((seen[0]?.init as { body?: string }).body).toBe(JSON.stringify({ path: `${RUN}/a.png` }))
+  })
+})
+
+describe('POST /infer-gallery/artifact-rename', () => {
+  it('renames inside the same directory and answers the new path + url', async () => {
+    writeTreeArtifact(`${RUN}/gen/a.png`, new Uint8Array([4, 5, 6]))
+    const ctx = mount({ flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/gen/a.png`, name: 'b.png' })
+    expect(saw.status).toBe(200)
+    expect(json(saw)).toEqual({
+      ok: true,
+      path: `${RUN}/gen/b.png`,
+      url: `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/b.png`)}`,
+    })
+    const old = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/a.png`)}`)
+    expect(old.status).toBe(502)
+    const fresh = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/b.png`)}`)
+    expect(fresh.status).toBe(200)
+    expect(fresh.body).toEqual(Buffer.from([4, 5, 6]))
+  })
+
+  it('refuses non-POST with a 405', async () => {
+    const ctx = mount({ flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/a.png`, name: 'b.png' }, 'GET')
+    expect(saw.status).toBe(405)
+    expect((json(saw) as { error: string }).error).toBe('method_not_allowed')
+  })
+
+  it('refuses hostile paths, sidecars, bad names, missing sources and taken targets', async () => {
+    const ctx = mount({ flowDir })
+    const badPath = await post(ctx, '/infer-gallery/artifact-rename', { path: 'noseparator', name: 'b.png' })
+    expect(badPath.status).toBe(400)
+    expect((json(badPath) as { error: string }).error).toBe('forbidden_path')
+    const sidecar = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/_flow.json`, name: 'b.png' })
+    expect(sidecar.status).toBe(400)
+    expect((json(sidecar) as { error: string }).error).toBe('protected_sidecar')
+    for (const name of ['', 'a/b.png', '..', '_hidden.png', '../x.png', 'a'.repeat(129)]) {
+      const saw = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/a.png`, name })
+      expect(saw.status, name).toBe(400)
+      expect((json(saw) as { error: string }).error, name).toBe('bad_name')
+    }
+    const same = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/a.png`, name: 'a.png' })
+    // same-name refuses at the grammar only when the source is
+    // well-formed — here the source is missing but the no-op arm
+    // fires first (nothing to do is a caller fault, not a 404).
+    expect(same.status).toBe(400)
+    expect((json(same) as { error: string }).error).toBe('bad_name')
+    const missing = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/gone.png`, name: 'b.png' })
+    expect(missing.status).toBe(404)
+    expect((json(missing) as { error: string }).error).toBe('no_artifact')
+
+    writeTreeArtifact(`${RUN}/gen/a.png`, new Uint8Array([1]))
+    writeTreeArtifact(`${RUN}/gen/taken.png`, new Uint8Array([2]))
+    const taken = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/gen/a.png`, name: 'taken.png' })
+    expect(taken.status).toBe(409)
+    expect((json(taken) as { error: string }).error).toBe('already_exists')
+  })
+
+  it('cross-host relays the JSON verbatim (status + body ride through)', async () => {
+    const seen: Array<{ url: string; init: unknown }> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: unknown, init: unknown): Promise<Response> => {
+      seen.push({ url: String(input), init })
+      return new Response(JSON.stringify({ ok: true, path: `${RUN}/b.png`, url: '/infer-gallery/artifact?path=x' }), { status: 200 })
+    }))
+    const ctx = mount({ gatewayUrl: 'https://owner.example', flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/a.png`, name: 'b.png' })
+    expect(saw.status).toBe(200)
+    expect(seen[0]?.url).toBe('https://owner.example/infer-gallery/artifact-rename')
+    expect((seen[0]?.init as { body?: string }).body).toBe(JSON.stringify({ path: `${RUN}/a.png`, name: 'b.png' }))
   })
 })

@@ -20,6 +20,7 @@ import { useMemo, useState } from 'react'
 import { Modal, Pill, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { MediaDrilldown } from '../drilldown.tsx'
 import { loadDraftOntoBench, loadRunOntoBench } from './bench-load.ts'
+import { artifactPathOfUrl, deleteArtifact, renameArtifact } from './artifact-ops.ts'
 
 /** THE ESTATE-ARTIFACT ADDRESS (2026-09-10 regression fix): run artifacts
  *  live outside the DSH workspace, so no document owner can read them.
@@ -340,7 +341,7 @@ function tileBgFor(kind: Kind): string {
  * as content styles. (THE LOST MODAL, restored with the full port —
  * the bare gallery opened a new browser tab instead.)
  */
-function Overlay({ item, onClose, openArtifact, siblings, onNavigate }: {
+function Overlay({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename }: {
   item: MediaItem
   onClose: () => void
   openArtifact: (item: MediaItem) => void
@@ -348,6 +349,11 @@ function Overlay({ item, onClose, openArtifact, siblings, onNavigate }: {
    * the opened artifact walks exactly what the tiles show. */
   siblings: MediaItem[]
   onNavigate: (next: MediaItem) => void
+  /** THE MODAL MUTATIONS (the mediasidebar's popup modal on media
+   *  stuff): the gallery's delete + rename verbs — the drilldown
+   *  owns the confirm/inline faces, these own the host doors. */
+  onDelete: (item: MediaItem) => Promise<void>
+  onRename: (item: MediaItem, name: string) => Promise<void>
 }) {
   // ONE face everywhere (the operator's 1:1 order): the shared
   // MediaDrilldown — this surface only adapts its richer item (the
@@ -366,6 +372,8 @@ function Overlay({ item, onClose, openArtifact, siblings, onNavigate }: {
         /* v8 ignore next 1 -- the walk item came FROM siblings; find-by-url always hits (probe 2026-09-20) */
         onNavigate(siblings.find((s) => s.url === next.url)!)
       }}
+      onDelete={(drill) => onDelete(item)}
+      onRename={(drill, name) => onRename(item, name)}
     />
   )
 }
@@ -490,6 +498,28 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       return
     }
     void loadDraftOntoBench(draftId, { openResource: open, onError: setError, sessionId })
+  }
+
+  /** THE MODAL MUTATIONS (the mediasidebar's popup modal on media
+   *  stuff): delete unlinks the artifact file then closes the modal
+   *  and reloads the feed; rename re-points the open preview onto
+   *  the door's answer and reloads behind it. Both throw LOUD for
+   *  the drilldown's error face when the URL rides no gallery path
+   *  or the door refuses. */
+  const deleteItem = async (item: MediaItem): Promise<void> => {
+    const target = artifactPathOfUrl(item.url)
+    if (target === null) throw new Error('delete failed (not a gallery artifact — nothing to delete)')
+    await deleteArtifact(target)
+    setPreview(null)
+    load()
+  }
+
+  const renameItem = async (item: MediaItem, name: string): Promise<void> => {
+    const target = artifactPathOfUrl(item.url)
+    if (target === null) throw new Error('rename failed (not a gallery artifact — nothing to rename)')
+    const next = await renameArtifact(target, name)
+    setPreview({ ...item, id: next.url, url: next.url, file: next.path.split('/').pop() ?? name })
+    load()
   }
 
   const items = useMemo(() => flatten(runs), [runs])
@@ -696,6 +726,8 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
           openArtifact={openArtifact}
           siblings={shown}
           onNavigate={(next) => { setPreview(next) }}
+          onDelete={deleteItem}
+          onRename={renameItem}
         />
         : null}
     </PanelShell>

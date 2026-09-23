@@ -807,3 +807,99 @@ describe('MediaPanel — the flows face lists the drafts (the single-tab flows s
     expect(await screen.findByText(/no composed cards yet/)).toBeTruthy()
   })
 })
+
+describe('MediaPanel — the modal delete + rename buttons (the mediasidebar popup modal)', () => {
+  const GALLERY_URL = '/infer-gallery/artifact?path=' + encodeURIComponent('run-abc123-def/a.png')
+  const galleryRun = (): RunRow => run({
+    prompt: 'a deletable still',
+    artifacts: [{ url: GALLERY_URL, name: 'a.png', type: 'image' }],
+  })
+
+  async function openModal(): Promise<HTMLElement> {
+    const tile = await waitFor(() => {
+      const el = screen.getByText(/a\.png/).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(tile)
+    await screen.findByTestId('drill-delete')
+    return tile
+  }
+
+  it('delete unlinks the gallery artifact, closes the modal and reloads the feed', async () => {
+    const seen: Array<{ url: string; init: unknown }> = []
+    let runsCalls = 0
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init: unknown): Promise<Response> => {
+      const target = String(url)
+      seen.push({ url: target, init })
+      if (target === '/infer-gallery/runs') {
+        runsCalls += 1
+        // after the delete the feed is empty (the file is gone).
+        return runsCalls === 1 ? runsFeed([galleryRun()]) : runsFeed([])
+      }
+      if (target === '/infer-gallery/drafts') return draftsFeed([])
+      if (target === '/infer-gallery/artifact-delete') {
+        return new Response(JSON.stringify({ ok: true, path: 'run-abc123-def/a.png' }), { status: 200 })
+      }
+      throw new Error('unexpected fetch ' + target)
+    }))
+    render(<MediaPanel />)
+    await openModal()
+    fireEvent.click(screen.getByTestId('drill-delete'))
+    fireEvent.click(screen.getByTestId('drill-delete-confirm'))
+    await waitFor(() => { expect(screen.queryByTestId('drill-delete')).toBeNull() })
+    const del = seen.find((s) => s.url === '/infer-gallery/artifact-delete')!
+    expect(del).toBeTruthy()
+    expect((del.init as { method?: string }).method).toBe('POST')
+    expect((del.init as { body?: string }).body).toBe(JSON.stringify({ path: 'run-abc123-def/a.png' }))
+    // the feed reloaded behind the close (two runs calls).
+    await waitFor(() => { expect(runsCalls).toBeGreaterThanOrEqual(2) })
+  })
+
+  it('rename re-points the open preview onto the door answer and reloads behind it', async () => {
+    const seen: Array<{ url: string; init: unknown }> = []
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init: unknown): Promise<Response> => {
+      const target = String(url)
+      seen.push({ url: target, init })
+      if (target === '/infer-gallery/runs') return runsFeed([galleryRun()])
+      if (target === '/infer-gallery/drafts') return draftsFeed([])
+      if (target === '/infer-gallery/artifact-rename') {
+        return new Response(JSON.stringify({
+          ok: true,
+          path: 'run-abc123-def/b.png',
+          url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-abc123-def/b.png'),
+        }), { status: 200 })
+      }
+      throw new Error('unexpected fetch ' + target)
+    }))
+    render(<MediaPanel />)
+    await openModal()
+    fireEvent.click(screen.getByTestId('drill-rename'))
+    const input = screen.getByTestId('drill-rename-input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'b.png' } })
+    fireEvent.click(screen.getByTestId('drill-rename-save'))
+    // the preview re-points: the caption now names the new file.
+    await waitFor(() => { expect(screen.getAllByText(/b\.png/).length).toBeGreaterThanOrEqual(1) })
+    const ren = seen.find((s) => s.url === '/infer-gallery/artifact-rename')!
+    expect((ren.init as { body?: string }).body).toBe(JSON.stringify({ path: 'run-abc123-def/a.png', name: 'b.png' }))
+  })
+
+  it('a non-gallery URL surfaces the honest error inside the modal (never closes)', async () => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs'
+        ? runsFeed([run({ prompt: 'a still', artifacts: [{ url: '/v/pic.png', name: 'pic.png', type: 'image' }] })])
+        : draftsFeed([]))
+    render(<MediaPanel />)
+    const tile = await waitFor(() => {
+      const el = screen.getByText(/pic\.png/).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(tile)
+    await screen.findByTestId('drill-delete')
+    fireEvent.click(screen.getByTestId('drill-delete'))
+    fireEvent.click(screen.getByTestId('drill-delete-confirm'))
+    expect(await screen.findByTestId('drill-op-error')).toBeTruthy()
+    expect(screen.getByText(/not a gallery artifact/)).toBeTruthy()
+  })
+})

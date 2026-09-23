@@ -16,7 +16,7 @@ import * as React from 'react'
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 
 import css from './client/overlay.module.css'
-import { bgBase1, labelPrimary2, stateBusinessPrimary, textTertiary3 } from './client/ui.tokens'
+import { bgBase1, labelPrimary2, stateBusinessPrimary, stateWarnPrimary1, textTertiary3 } from './client/ui.tokens'
 
 /** The drilldown's own currency — everything the face reads, nothing
  *  it doesn't (the gallery's richer item satisfies it structurally). */
@@ -69,12 +69,21 @@ function ModelView({ item, openArtifact }: { item: MediaDrilldownItem; openArtif
  * self-painted surface), walk WRAP-AROUND, and the keyboard
  * ArrowLeft/ArrowRight ride the same verbs. No siblings = exactly
  * the old face (both call sites unchanged until wired). */
-export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate }: {
+export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename }: {
   item: MediaDrilldownItem
   onClose: () => void
   openArtifact?: (item: MediaDrilldownItem) => void
   siblings?: MediaDrilldownItem[]
   onNavigate?: (next: MediaDrilldownItem) => void
+  /** THE MODAL MUTATIONS (the mediasidebar's popup modal on media
+   *  stuff): OPTIONAL delete + rename verbs — a surface with no
+   *  mutating door (the card zoom) simply hides both buttons (the
+   *  3D-door pattern: optional prop, absent face). The verbs are
+   *  async (the host doors); the drilldown owns the confirm +
+   *  inline-rename faces, the busy/error states, and NOTHING else —
+   *  the parent owns what happens after (close / re-point / reload). */
+  onDelete?: (item: MediaDrilldownItem) => Promise<void>
+  onRename?: (item: MediaDrilldownItem, name: string) => Promise<void>
 }): React.JSX.Element {
   const walkable = siblings ?? []
   const at = walkable.findIndex((s) => s.url === item.url)
@@ -120,6 +129,80 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
     window.addEventListener('keydown', nat)
     return () => { window.removeEventListener('keydown', nat) }
   })
+  /* THE MODAL MUTATIONS — delete + rename faces (the mediasidebar's
+   * popup modal on media stuff): the drilldown owns the confirm +
+   * inline-rename faces and the busy/error states; the async verbs
+   * ride the optional props (absent = no buttons, the card zoom).
+   * A walk step re-points the item — the faces reset with it, so a
+   * confirm can never fire against the walked-away file. */
+  const [mode, setMode] = React.useState<'idle' | 'confirmDelete' | 'renaming'>('idle')
+  const [draftName, setDraftName] = React.useState('')
+  const [busy, setBusy] = React.useState(false)
+  const [opError, setOpError] = React.useState('')
+  /* THE IN-FLIGHT REF (the double-click guard): state flushes on
+   * re-render, so two confirms in the same tick would both read
+   * busy=false — the ref holds synchronously (reset with the faces
+   * on every walk step). */
+  const inflight = React.useRef(false)
+  React.useEffect(() => {
+    setMode('idle')
+    setDraftName('')
+    setBusy(false)
+    setOpError('')
+    inflight.current = false
+  }, [item.url])
+  const canDelete = onDelete !== undefined
+  const canRename = onRename !== undefined
+  const showActions = canDelete || canRename
+  const startDelete = (): void => {
+    setOpError('')
+    setMode('confirmDelete')
+  }
+  const confirmDelete = (): void => {
+    if (onDelete === undefined || inflight.current) return
+    inflight.current = true
+    setBusy(true)
+    setOpError('')
+    void onDelete(item)
+      .catch((e: unknown) => { setOpError(e instanceof Error ? e.message : String(e)) })
+      .finally(() => { inflight.current = false; setBusy(false); setMode('idle') })
+  }
+  const startRename = (): void => {
+    setOpError('')
+    setDraftName(item.file)
+    setMode('renaming')
+  }
+  const confirmRename = (): void => {
+    if (onRename === undefined || inflight.current) return
+    const name = draftName.trim()
+    if (name === '' || name === item.file) return
+    inflight.current = true
+    setBusy(true)
+    setOpError('')
+    void onRename(item, name)
+      .catch((e: unknown) => { setOpError(e instanceof Error ? e.message : String(e)) })
+      .finally(() => { inflight.current = false; setBusy(false); setMode('idle') })
+  }
+  const actionBtn = (label: string, verb: () => void, opts?: { danger?: boolean; testid?: string; aria?: string }): React.JSX.Element => (
+    <button
+      type="button"
+      aria-label={opts?.aria ?? label}
+      data-testid={opts?.testid ?? label}
+      disabled={busy}
+      onClick={(e) => { e.stopPropagation(); verb() }}
+      style={{
+        background: 'none',
+        border: `1px solid ${labelPrimary2}33`,
+        borderRadius: 8,
+        padding: '5px 12px',
+        fontSize: 12,
+        fontWeight: 600,
+        cursor: busy ? 'default' : 'pointer',
+        color: opts?.danger === true ? stateWarnPrimary1 : stateBusinessPrimary,
+        opacity: busy ? 0.5 : 1,
+      }}
+    >{label}</button>
+  )
   return (
     <Modal
       open
@@ -206,6 +289,51 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
           <div style={{ fontWeight: 600 }}>{item.head}</div>
           <div style={{ opacity: 0.7 }}>{[item.time, item.file].filter(Boolean).join(' · ')}</div>
         </div>
+        {showActions
+          ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }} onClick={(e) => { e.stopPropagation() }}>
+                {mode === 'idle'
+                  ? (
+                      <>
+                        {canRename ? actionBtn('Rename', startRename, { testid: 'drill-rename', aria: 'Rename media file' }) : null}
+                        {canDelete ? actionBtn('Delete', startDelete, { danger: true, testid: 'drill-delete', aria: 'Delete media file' }) : null}
+                      </>
+                    )
+                  : mode === 'confirmDelete'
+                    ? (
+                        <>
+                          <span style={{ color: labelPrimary2, fontSize: 12 }}>Delete {item.file}?</span>
+                          {actionBtn(busy ? 'Deleting…' : 'Confirm delete', confirmDelete, { danger: true, testid: 'drill-delete-confirm', aria: 'Confirm delete media file' })}
+                          {actionBtn('Cancel', () => { setMode('idle'); setOpError('') }, { testid: 'drill-delete-cancel', aria: 'Cancel delete' })}
+                        </>
+                      )
+                    : (
+                        <>
+                          <input
+                            aria-label="New file name"
+                            data-testid="drill-rename-input"
+                            value={draftName}
+                            disabled={busy}
+                            onChange={(e) => { setDraftName(e.target.value) }}
+                            onKeyDown={(e) => {
+                              e.stopPropagation()
+                              if (e.key === 'Enter') confirmRename()
+                              if (e.key === 'Escape') { setMode('idle'); setOpError('') }
+                            }}
+                            style={{
+                              background: bgBase1, color: labelPrimary2,
+                              border: `1px solid ${labelPrimary2}33`, borderRadius: 8,
+                              padding: '5px 10px', fontSize: 12, width: 'min(280px, 60vw)',
+                            }}
+                          />
+                          {actionBtn(busy ? 'Renaming…' : 'Save', confirmRename, { testid: 'drill-rename-save', aria: 'Save new file name' })}
+                          {actionBtn('Cancel', () => { setMode('idle'); setOpError('') }, { testid: 'drill-rename-cancel', aria: 'Cancel rename' })}
+                        </>
+                      )}
+              </div>
+            )
+          : null}
+        {opError !== '' ? <div data-testid="drill-op-error" style={{ color: stateWarnPrimary1, fontSize: 12 }}>{opError}</div> : null}
         <div style={{ color: textTertiary3, fontSize: 12 }}>Esc or click the mask to close</div>
       </div>
     </Modal>

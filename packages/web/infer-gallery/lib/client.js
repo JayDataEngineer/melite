@@ -164,7 +164,7 @@ window.__ModuleLoader__.load({
 		* self-painted surface), walk WRAP-AROUND, and the keyboard
 		* ArrowLeft/ArrowRight ride the same verbs. No siblings = exactly
 		* the old face (both call sites unchanged until wired). */
-		function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate }) {
+		function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename }) {
 			const walkable = siblings ?? [];
 			const at = walkable.findIndex((s) => s.url === item.url);
 			const seat = react.useRef(null);
@@ -198,6 +198,80 @@ window.__ModuleLoader__.load({
 				return () => {
 					window.removeEventListener("keydown", nat);
 				};
+			});
+			const [mode, setMode] = react.useState("idle");
+			const [draftName, setDraftName] = react.useState("");
+			const [busy, setBusy] = react.useState(false);
+			const [opError, setOpError] = react.useState("");
+			const inflight = react.useRef(false);
+			react.useEffect(() => {
+				setMode("idle");
+				setDraftName("");
+				setBusy(false);
+				setOpError("");
+				inflight.current = false;
+			}, [item.url]);
+			const canDelete = onDelete !== void 0;
+			const canRename = onRename !== void 0;
+			const showActions = canDelete || canRename;
+			const startDelete = () => {
+				setOpError("");
+				setMode("confirmDelete");
+			};
+			const confirmDelete = () => {
+				if (onDelete === void 0 || inflight.current) return;
+				inflight.current = true;
+				setBusy(true);
+				setOpError("");
+				onDelete(item).catch((e) => {
+					setOpError(e instanceof Error ? e.message : String(e));
+				}).finally(() => {
+					inflight.current = false;
+					setBusy(false);
+					setMode("idle");
+				});
+			};
+			const startRename = () => {
+				setOpError("");
+				setDraftName(item.file);
+				setMode("renaming");
+			};
+			const confirmRename = () => {
+				if (onRename === void 0 || inflight.current) return;
+				const name = draftName.trim();
+				if (name === "" || name === item.file) return;
+				inflight.current = true;
+				setBusy(true);
+				setOpError("");
+				onRename(item, name).catch((e) => {
+					setOpError(e instanceof Error ? e.message : String(e));
+				}).finally(() => {
+					inflight.current = false;
+					setBusy(false);
+					setMode("idle");
+				});
+			};
+			const actionBtn = (label, verb, opts) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+				type: "button",
+				"aria-label": opts?.aria ?? label,
+				"data-testid": opts?.testid ?? label,
+				disabled: busy,
+				onClick: (e) => {
+					e.stopPropagation();
+					verb();
+				},
+				style: {
+					background: "none",
+					border: `1px solid ${labelPrimary2}33`,
+					borderRadius: 8,
+					padding: "5px 12px",
+					fontSize: 12,
+					fontWeight: 600,
+					cursor: busy ? "default" : "pointer",
+					color: opts?.danger === true ? stateWarnPrimary1 : stateBusinessPrimary,
+					opacity: busy ? .5 : 1
+				},
+				children: label
 			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
@@ -346,6 +420,96 @@ window.__ModuleLoader__.load({
 								children: [item.time, item.file].filter(Boolean).join(" · ")
 							})]
 						}),
+						showActions ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							style: {
+								display: "flex",
+								alignItems: "center",
+								gap: 8,
+								flexWrap: "wrap",
+								justifyContent: "center"
+							},
+							onClick: (e) => {
+								e.stopPropagation();
+							},
+							children: mode === "idle" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [canRename ? actionBtn("Rename", startRename, {
+								testid: "drill-rename",
+								aria: "Rename media file"
+							}) : null, canDelete ? actionBtn("Delete", startDelete, {
+								danger: true,
+								testid: "drill-delete",
+								aria: "Delete media file"
+							}) : null] }) : mode === "confirmDelete" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									style: {
+										color: labelPrimary2,
+										fontSize: 12
+									},
+									children: [
+										"Delete ",
+										item.file,
+										"?"
+									]
+								}),
+								actionBtn(busy ? "Deleting…" : "Confirm delete", confirmDelete, {
+									danger: true,
+									testid: "drill-delete-confirm",
+									aria: "Confirm delete media file"
+								}),
+								actionBtn("Cancel", () => {
+									setMode("idle");
+									setOpError("");
+								}, {
+									testid: "drill-delete-cancel",
+									aria: "Cancel delete"
+								})
+							] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+									"aria-label": "New file name",
+									"data-testid": "drill-rename-input",
+									value: draftName,
+									disabled: busy,
+									onChange: (e) => {
+										setDraftName(e.target.value);
+									},
+									onKeyDown: (e) => {
+										e.stopPropagation();
+										if (e.key === "Enter") confirmRename();
+										if (e.key === "Escape") {
+											setMode("idle");
+											setOpError("");
+										}
+									},
+									style: {
+										background: bgBase1,
+										color: labelPrimary2,
+										border: `1px solid ${labelPrimary2}33`,
+										borderRadius: 8,
+										padding: "5px 10px",
+										fontSize: 12,
+										width: "min(280px, 60vw)"
+									}
+								}),
+								actionBtn(busy ? "Renaming…" : "Save", confirmRename, {
+									testid: "drill-rename-save",
+									aria: "Save new file name"
+								}),
+								actionBtn("Cancel", () => {
+									setMode("idle");
+									setOpError("");
+								}, {
+									testid: "drill-rename-cancel",
+									aria: "Cancel rename"
+								})
+							] })
+						}) : null,
+						opError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-testid": "drill-op-error",
+							style: {
+								color: stateWarnPrimary1,
+								fontSize: 12
+							},
+							children: opError
+						}) : null,
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							style: {
 								color: textTertiary3,
@@ -432,7 +596,7 @@ window.__ModuleLoader__.load({
 			};
 		}
 		/** The error message an !ok JSON response carries, else HTTP n. */
-		async function refusalOf(res, answer) {
+		async function refusalOf$1(res, answer) {
 			const err = answer?.["error"];
 			return typeof err === "string" && err !== "" ? err : "HTTP " + String(res.status);
 		}
@@ -465,7 +629,7 @@ window.__ModuleLoader__.load({
 				});
 				const answer = await ensureRes.json().catch(() => null);
 				if (!ensureRes.ok) {
-					deps.onError("the bench refused the load (" + await refusalOf(ensureRes, answer) + ")");
+					deps.onError("the bench refused the load (" + await refusalOf$1(ensureRes, answer) + ")");
 					return;
 				}
 				deps.openResource(cardsBenchAddress(deps.sessionId));
@@ -481,7 +645,7 @@ window.__ModuleLoader__.load({
 				const docRes = await fetch("/v1/flows/drafts/" + encodeURIComponent(draftId), { headers: { accept: "application/json" } });
 				const doc = await docRes.json().catch(() => null);
 				if (!docRes.ok || typeof doc !== "object" || doc === null) {
-					deps.onError("could not read that card (" + await refusalOf(docRes, doc) + ")");
+					deps.onError("could not read that card (" + await refusalOf$1(docRes, doc) + ")");
 					return;
 				}
 				const stages = doc["stages"];
@@ -509,7 +673,7 @@ window.__ModuleLoader__.load({
 				const sideRes = await fetch("/infer-gallery/flow?run_id=" + encodeURIComponent(runId), { headers: { accept: "application/json" } });
 				const side = await sideRes.json().catch(() => null);
 				if (!sideRes.ok || typeof side !== "object" || side === null) {
-					deps.onError("that run keeps no readable sidecar (" + await refusalOf(sideRes, side) + ")");
+					deps.onError("that run keeps no readable sidecar (" + await refusalOf$1(sideRes, side) + ")");
 					return;
 				}
 				const flow = side["flow"];
@@ -584,6 +748,76 @@ window.__ModuleLoader__.load({
 			} catch (e) {
 				deps.onError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 			}
+		}
+		//#endregion
+		//#region src/client/artifact-ops.ts
+		/**
+		* artifact-ops — the modal's delete + rename wires (the media
+		* sidebar's popup modal on media stuff).
+		*
+		* Both doors ride the gallery host's SAME-ORIGIN mutating routes
+		* (POST /infer-gallery/artifact-delete {path},
+		* POST /infer-gallery/artifact-rename {path, name}) — the read
+		* artifact route stays read-only, so a prefetcher can never mutate
+		* by URL. Failures surface as thrown Errors carrying the door's
+		* `error` code, never silent.
+		*/
+		/** The run-relative artifact path behind one same-origin artifact
+		*  URL (`/infer-gallery/artifact?path=run-<id>/<file>`) — null when
+		*  the URL rides no such path (foreign URLs, card previews). */
+		function artifactPathOfUrl(url) {
+			try {
+				const target = new URL(url, "http://artifact-ops.invalid").searchParams.get("path");
+				return target !== null && target !== "" ? target : null;
+			} catch {
+				return null;
+			}
+		}
+		async function refusalOf(res, answer) {
+			const err = answer?.["error"];
+			return typeof err === "string" && err !== "" ? err : "HTTP " + String(res.status);
+		}
+		/** Unlink one run-relative artifact file. */
+		async function deleteArtifact(path) {
+			let res;
+			try {
+				res = await fetch("/infer-gallery/artifact-delete", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ path })
+				});
+			} catch (e) {
+				throw new Error("delete failed — " + (e instanceof Error ? e.message : String(e)));
+			}
+			if (!res.ok) {
+				const answer = await res.json().catch(() => null);
+				throw new Error("delete failed (" + await refusalOf(res, answer) + ")");
+			}
+		}
+		/** Rename one artifact inside its own directory — resolves the new
+		*  run-relative path + its same-origin URL (the preview re-points). */
+		async function renameArtifact(path, name) {
+			let res;
+			try {
+				res = await fetch("/infer-gallery/artifact-rename", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						path,
+						name
+					})
+				});
+			} catch (e) {
+				throw new Error("rename failed — " + (e instanceof Error ? e.message : String(e)));
+			}
+			const answer = await res.json().catch(() => null);
+			if (!res.ok) throw new Error("rename failed (" + await refusalOf(res, answer) + ")");
+			const row = answer ?? {};
+			if (typeof row.path !== "string" || typeof row.url !== "string") throw new Error("rename failed (bad_rename_answer)");
+			return {
+				path: row.path,
+				url: row.url
+			};
 		}
 		//#endregion
 		//#region src/client/decode.ts
@@ -1145,7 +1379,7 @@ window.__ModuleLoader__.load({
 		* as content styles. (THE LOST MODAL, restored with the full port —
 		* the bare gallery opened a new browser tab instead.)
 		*/
-		function Overlay({ item, onClose, openArtifact, siblings, onNavigate }) {
+		function Overlay({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MediaDrilldown, {
 				item,
 				onClose,
@@ -1156,7 +1390,9 @@ window.__ModuleLoader__.load({
 				onNavigate: (next) => {
 					/* v8 ignore next 1 -- the walk item came FROM siblings; find-by-url always hits (probe 2026-09-20) */
 					onNavigate(siblings.find((s) => s.url === next.url));
-				}
+				},
+				onDelete: (drill) => onDelete(item),
+				onRename: (drill, name) => onRename(item, name)
 			});
 		}
 		/** Sidebar tab glyph — exported for the (JSX-free) client entry. */
@@ -1294,6 +1530,31 @@ window.__ModuleLoader__.load({
 					onError: setError,
 					sessionId
 				});
+			};
+			/** THE MODAL MUTATIONS (the mediasidebar's popup modal on media
+			*  stuff): delete unlinks the artifact file then closes the modal
+			*  and reloads the feed; rename re-points the open preview onto
+			*  the door's answer and reloads behind it. Both throw LOUD for
+			*  the drilldown's error face when the URL rides no gallery path
+			*  or the door refuses. */
+			const deleteItem = async (item) => {
+				const target = artifactPathOfUrl(item.url);
+				if (target === null) throw new Error("delete failed (not a gallery artifact — nothing to delete)");
+				await deleteArtifact(target);
+				setPreview(null);
+				load();
+			};
+			const renameItem = async (item, name) => {
+				const target = artifactPathOfUrl(item.url);
+				if (target === null) throw new Error("rename failed (not a gallery artifact — nothing to rename)");
+				const next = await renameArtifact(target, name);
+				setPreview({
+					...item,
+					id: next.url,
+					url: next.url,
+					file: next.path.split("/").pop() ?? name
+				});
+				load();
 			};
 			const items = (0, react.useMemo)(() => flatten(runs), [runs]);
 			const truncatedRuns = (0, react.useMemo)(() => runs.filter((r) => r.truncated !== void 0 && r.truncated.total > r.truncated.listed).length, [runs]);
@@ -1598,7 +1859,9 @@ window.__ModuleLoader__.load({
 						siblings: shown,
 						onNavigate: (next) => {
 							setPreview(next);
-						}
+						},
+						onDelete: deleteItem,
+						onRename: renameItem
 					}) : null
 				]
 			});
@@ -1650,16 +1913,19 @@ window.__ModuleLoader__.load({
 		exports.MediaPanel = MediaPanel;
 		exports.MediaTabIcon = MediaTabIcon;
 		exports.apply = apply;
+		exports.artifactPathOfUrl = artifactPathOfUrl;
 		exports.callsTextOf = callsTextOf;
 		exports.cardsBenchAddress = cardsBenchAddress;
 		exports.cardsRunAddress = cardsRunAddress;
 		exports.decodeDrafts = decodeDrafts;
 		exports.decodeRuns = decodeRuns;
+		exports.deleteArtifact = deleteArtifact;
 		exports.flatten = flatten;
 		exports.inject = inject;
 		exports.kindOf = kindOf;
 		exports.loadDraftOntoBench = loadDraftOntoBench;
 		exports.loadRunOntoBench = loadRunOntoBench;
+		exports.renameArtifact = renameArtifact;
 		exports.useFeed = useFeed;
 		return module.exports;
 	}

@@ -27,6 +27,13 @@
  * - `GET /infer-gallery/artifact?path=…` → streams one run
  *   artifact. Only run-relative names (`run-<id>/<file>`) are
  *   accepted (the run-artifact tree, confined).
+ * - `POST /infer-gallery/artifact-delete {path}` → unlinks one
+ *   run-relative artifact file (the modal's delete button — same
+ *   confinement + the sidecar guard: `_`-prefixed names refuse).
+ * - `POST /infer-gallery/artifact-rename {path, name}` → renames
+ *   one artifact inside its own directory (the modal's rename
+ *   button — `name` is a bare segment, never a path; existing
+ *   targets refuse 409).
  *
  * Failure policy: route handlers own their full response
  * lifecycle; the routes never throw.
@@ -88,6 +95,49 @@ function isRunRelative(target: string): boolean {
   return rest.split('/').every(
     (seg) => RUN_SEGMENT.test(seg) && seg !== '.' && seg !== '..',
   )
+}
+
+/** Sidecar/shadow guard for the MUTATING doors (delete + rename):
+ *  any `_`-prefixed segment names provenance, never media — the
+ *  runs tree's own convention (`_flow.json`, `_request.json`,
+ *  `_thumb/…`). A mutating door that unlinks/renames one would eat
+ *  the run's own record; refuse LOUD before touching disk. */
+function isProtectedSidecar(target: string): boolean {
+  return target.split('/').slice(1).some((seg) => seg.startsWith('_'))
+}
+
+/** A bare rename target: one segment, never a path — the door joins
+ *  it onto the source's own directory, so slashes/`..` refuse here
+ *  (directory moves are not renames). `_`-prefixed names refuse as
+ *  sidecars (see above); the length cap keeps ext4 happy. */
+function isBareFileName(name: string): boolean {
+  if (name.length === 0 || name.length > 128) return false
+  if (name === '.' || name === '..') return false
+  if (!RUN_SEGMENT.test(name)) return false
+  if (name.startsWith('_')) return false
+  return true
+}
+
+/** Read one JSON body off the node:http idiom (the estate doors'
+ *  own spelling — data/end/error over IncomingMessage). */
+function readJsonBody(req: {
+  on(event: 'data', fn: (d?: Uint8Array) => void): void
+  on(event: 'end', fn: () => void): void
+  on(event: 'error', fn: (e: unknown) => void): void
+}): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const chunks: Uint8Array[] = []
+    req.on('data', (d?: Uint8Array) => { if (d) chunks.push(d) })
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks).toString('utf8')
+      try {
+        resolve(raw === '' ? null : JSON.parse(raw))
+      } catch {
+        resolve(undefined)
+      }
+    })
+    req.on('error', reject)
+  })
 }
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
@@ -396,6 +446,170 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
     },
   }), 'infer-gallery: /infer-gallery/artifact route')
+
+  /* THE MUTATING DOORS (the modal's delete + rename buttons): POST
+   * with a JSON body — the artifact route above stays read-only, so
+   * a prefetcher can never mutate by URL. Both doors share the
+   * read door's confinement (isRunRelative + realpath containment)
+   * plus the sidecar guard (isProtectedSidecar): `_`-prefixed names
+   * are provenance, never media. Cross-host relays the same JSON
+   * upstream and passes its answer through untouched. */
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-gallery/artifact-delete',
+    handler: async (req, res) => {
+      if (req.method !== 'POST') {
+        fail(res, 405, 'method_not_allowed', { message: 'POST {path} only' })
+        return
+      }
+      try {
+        const body = await readJsonBody(req as unknown as {
+          on(event: 'data', fn: (d?: Uint8Array) => void): void
+          on(event: 'end', fn: () => void): void
+          on(event: 'error', fn: (e: unknown) => void): void
+        }) as { path?: unknown } | null | undefined
+        const target = typeof body?.path === 'string' ? body.path : ''
+        if (!isRunRelative(target)) {
+          fail(res, 400, 'forbidden_path', { message: 'artifact route only serves run-relative names (run-<id>/<file>)', path: target })
+          return
+        }
+        if (isProtectedSidecar(target)) {
+          fail(res, 400, 'protected_sidecar', { message: 'sidecar files are provenance, never media — refusing', path: target })
+          return
+        }
+        if (gatewayUrl !== '') {
+          const response = await fetch(`${gatewayUrl}/infer-gallery/artifact-delete`, {
+            method: 'POST',
+            signal: AbortSignal.timeout(timeoutMs),
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ path: target }),
+          })
+          const text = await response.text()
+          res.writeHead(response.status, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(text)) })
+          res.end(text)
+          return
+        }
+        const fs = await import('node:fs/promises')
+        const path = await import('node:path')
+        const root = path.resolve(flowDir)
+        const full = path.resolve(root, target)
+        /* v8 ignore next 4 -- the grammar above pins the name inside
+         * run-<id>/ segments, so resolution cannot escape; the check
+         * stays as the read door's realpath-style second lock. */
+        if (full !== root && !full.startsWith(root + path.sep)) {
+          fail(res, 400, 'forbidden_path', { message: 'artifact escapes the runs tree', path: target })
+          return
+        }
+        try {
+          await fs.unlink(full)
+        } catch (error) {
+          const code = (error as { code?: unknown }).code
+          if (code === 'ENOENT') {
+            fail(res, 404, 'no_artifact', { message: 'no such artifact', path: target })
+            return
+          }
+          throw error
+        }
+        const ok = JSON.stringify({ ok: true, path: target })
+        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(ok)) })
+        res.end(Buffer.from(ok))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        ctx.logger.warn('infer-gallery: artifact-delete failed: %s', message)
+        fail(res, 502, 'artifact_unreadable', { message })
+      }
+    },
+  }), 'infer-gallery: /infer-gallery/artifact-delete route')
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-gallery/artifact-rename',
+    handler: async (req, res) => {
+      if (req.method !== 'POST') {
+        fail(res, 405, 'method_not_allowed', { message: 'POST {path, name} only' })
+        return
+      }
+      try {
+        const body = await readJsonBody(req as unknown as {
+          on(event: 'data', fn: (d?: Uint8Array) => void): void
+          on(event: 'end', fn: () => void): void
+          on(event: 'error', fn: (e: unknown) => void): void
+        }) as { path?: unknown; name?: unknown } | null | undefined
+        const target = typeof body?.path === 'string' ? body.path : ''
+        const name = typeof body?.name === 'string' ? body.name : ''
+        if (!isRunRelative(target)) {
+          fail(res, 400, 'forbidden_path', { message: 'artifact route only serves run-relative names (run-<id>/<file>)', path: target })
+          return
+        }
+        if (isProtectedSidecar(target)) {
+          fail(res, 400, 'protected_sidecar', { message: 'sidecar files are provenance, never media — refusing', path: target })
+          return
+        }
+        if (!isBareFileName(name)) {
+          fail(res, 400, 'bad_name', { message: 'name must be one bare file segment (no slashes, no leading _)', name })
+          return
+        }
+        if (gatewayUrl !== '') {
+          const response = await fetch(`${gatewayUrl}/infer-gallery/artifact-rename`, {
+            method: 'POST',
+            signal: AbortSignal.timeout(timeoutMs),
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ path: target, name }),
+          })
+          const text = await response.text()
+          res.writeHead(response.status, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(text)) })
+          res.end(text)
+          return
+        }
+        const dir = target.slice(0, target.lastIndexOf('/'))
+        const next = dir + '/' + name
+        /* v8 ignore next 3 -- `name` already passed isBareFileName, so
+         * the joined target always satisfies the grammar; the check
+         * stays as defense against future callers joining paths. */
+        if (!isRunRelative(next) || isProtectedSidecar(next)) {
+          fail(res, 400, 'bad_name', { message: 'rename target refuses the artifact grammar', name })
+          return
+        }
+        if (next === target) {
+          fail(res, 400, 'bad_name', { message: 'rename to the same name changes nothing', name })
+          return
+        }
+        const fs = await import('node:fs/promises')
+        const path = await import('node:path')
+        const root = path.resolve(flowDir)
+        const full = path.resolve(root, target)
+        const fullNext = path.resolve(root, next)
+        /* v8 ignore next 4 -- the grammar above pins both names inside
+         * run-<id>/ segments, so resolution cannot escape; the check
+         * stays as the read door's realpath-style second lock. */
+        if ((full !== root && !full.startsWith(root + path.sep)) || (fullNext !== root && !fullNext.startsWith(root + path.sep))) {
+          fail(res, 400, 'forbidden_path', { message: 'artifact escapes the runs tree', path: target })
+          return
+        }
+        try {
+          await fs.stat(full)
+        } catch {
+          fail(res, 404, 'no_artifact', { message: 'no such artifact', path: target })
+          return
+        }
+        try {
+          await fs.stat(fullNext)
+          fail(res, 409, 'already_exists', { message: 'a file already carries that name', path: next })
+          return
+        } catch {
+          // absent — the rename may proceed.
+        }
+        await fs.rename(full, fullNext)
+        const ok = JSON.stringify({ ok: true, path: next, url: proxyAssetUrl(next) })
+        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(ok)) })
+        res.end(Buffer.from(ok))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        ctx.logger.warn('infer-gallery: artifact-rename failed: %s', message)
+        fail(res, 502, 'artifact_unreadable', { message })
+      }
+    },
+  }), 'infer-gallery: /infer-gallery/artifact-rename route')
 }
 
 /** Cross-host upstream answered an error status (its body rides). */

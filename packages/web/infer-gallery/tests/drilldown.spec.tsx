@@ -25,7 +25,7 @@ const IMAGE: MediaDrilldownItem = {
   time: '12:00',
 }
 
-function renderDrilldown(item: MediaDrilldownItem, props?: { openArtifact?: (item: MediaDrilldownItem) => void }): { closed: string[] } {
+function renderDrilldown(item: MediaDrilldownItem, props?: { openArtifact?: (item: MediaDrilldownItem) => void; onDelete?: (item: MediaDrilldownItem) => Promise<void>; onRename?: (item: MediaDrilldownItem, name: string) => Promise<void> }): { closed: string[] } {
   const closed: string[] = []
   render(<MediaDrilldown item={item} onClose={() => { closed.push('closed') }} {...props} />)
   return { closed }
@@ -181,5 +181,128 @@ describe('MediaDrilldown — the walk arrows', () => {
     render(<MediaDrilldown item={IMAGE} onClose={() => {}} siblings={[B, C]} onNavigate={() => {}} />)
     expect(screen.queryByTestId('drill-prev')).toBeNull()
     expect(screen.queryByTestId('drill-next')).toBeNull()
+  })
+})
+
+// ── THE MODAL MUTATIONS (the mediasidebar's popup modal on media
+// stuff): delete + rename buttons ──────────────────────────────
+// OPTIONAL verbs (the 3D-door pattern): absent = no buttons (the
+// card zoom); present = the confirm + inline-rename faces with
+// busy/error states owned here, the async verbs owned by the
+// parent.
+describe('MediaDrilldown — delete + rename buttons', () => {
+  it('NO VERBS = the old face: no buttons painted', () => {
+    renderDrilldown(IMAGE)
+    expect(screen.queryByTestId('drill-delete')).toBeNull()
+    expect(screen.queryByTestId('drill-rename')).toBeNull()
+  })
+
+  it('delete asks for confirm, then fires the verb (cancel holds)', async () => {
+    const user = userEvent.setup()
+    const deleted: MediaDrilldownItem[] = []
+    renderDrilldown(IMAGE, { onDelete: async (item) => { deleted.push(item) } })
+    await user.click(screen.getByTestId('drill-delete'))
+    // the confirm face names the file.
+    expect(screen.getByText('Delete a.png?')).toBeTruthy()
+    await user.click(screen.getByTestId('drill-delete-cancel'))
+    expect(deleted).toHaveLength(0)
+    expect(screen.queryByText('Delete a.png?')).toBeNull()
+    await user.click(screen.getByTestId('drill-delete'))
+    await user.click(screen.getByTestId('drill-delete-confirm'))
+    expect(deleted).toEqual([IMAGE])
+  })
+
+  it('a failing delete surfaces the door error (never closes)', async () => {
+    const user = userEvent.setup()
+    renderDrilldown(IMAGE, { onDelete: async () => { throw new Error('delete failed (protected_sidecar)') } })
+    await user.click(screen.getByTestId('drill-delete'))
+    await user.click(screen.getByTestId('drill-delete-confirm'))
+    expect(await screen.findByTestId('drill-op-error')).toBeTruthy()
+    expect(screen.getByText('delete failed (protected_sidecar)')).toBeTruthy()
+  })
+
+  it('rename opens an inline input prefilled with the file; save fires the verb', async () => {
+    const user = userEvent.setup()
+    const renamed: Array<{ item: MediaDrilldownItem; name: string }> = []
+    renderDrilldown(IMAGE, { onRename: async (item, name) => { renamed.push({ item, name }) } })
+    await user.click(screen.getByTestId('drill-rename'))
+    const input = screen.getByTestId('drill-rename-input') as HTMLInputElement
+    expect(input.value).toBe('a.png')
+    await user.clear(input)
+    await user.type(input, 'b.png')
+    await user.click(screen.getByTestId('drill-rename-save'))
+    expect(renamed).toEqual([{ item: IMAGE, name: 'b.png' }])
+  })
+
+  it('rename to the same name saves nothing; cancel holds', async () => {
+    const user = userEvent.setup()
+    const renamed: string[] = []
+    renderDrilldown(IMAGE, { onRename: async (_item, name) => { renamed.push(name) } })
+    await user.click(screen.getByTestId('drill-rename'))
+    // save with the prefilled (unchanged) name fires nothing.
+    await user.click(screen.getByTestId('drill-rename-save'))
+    expect(renamed).toHaveLength(0)
+    await user.click(screen.getByTestId('drill-rename-cancel'))
+    expect(screen.queryByTestId('drill-rename-input')).toBeNull()
+  })
+
+  it('Enter in the rename input saves; Escape cancels', async () => {
+    const user = userEvent.setup()
+    const renamed: string[] = []
+    renderDrilldown(IMAGE, { onRename: async (_item, name) => { renamed.push(name) } })
+    await user.click(screen.getByTestId('drill-rename'))
+    const input = screen.getByTestId('drill-rename-input')
+    await user.clear(input)
+    await user.type(input, 'typed.png')
+    await user.keyboard('[Enter]')
+    expect(renamed).toEqual(['typed.png'])
+    cleanup()
+    renderDrilldown(IMAGE, { onRename: async () => {} })
+    await user.click(screen.getByTestId('drill-rename'))
+    expect(screen.queryByTestId('drill-rename-input')).toBeTruthy()
+    fireEvent.keyDown(screen.getByTestId('drill-rename-input'), { key: 'Escape' })
+    expect(screen.queryByTestId('drill-rename-input')).toBeNull()
+  })
+
+  it('a double confirm fires the verb once (the busy guard holds the second click)', async () => {
+    const user = userEvent.setup()
+    let calls = 0
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    renderDrilldown(IMAGE, { onDelete: async () => { calls += 1; await gate } })
+    await user.click(screen.getByTestId('drill-delete'))
+    const confirm = screen.getByTestId('drill-delete-confirm')
+    // two rapid clicks before the gate releases — the second is held.
+    fireEvent.click(confirm)
+    fireEvent.click(confirm)
+    expect(calls).toBe(1)
+    expect(screen.getByText('Deleting…')).toBeTruthy()
+    release()
+    await screen.findByTestId('drill-delete')
+  })
+
+  it('a failing rename surfaces the door error', async () => {
+    const user = userEvent.setup()
+    renderDrilldown(IMAGE, { onRename: async () => { throw new Error('rename failed (already_exists)') } })
+    await user.click(screen.getByTestId('drill-rename'))
+    const input = screen.getByTestId('drill-rename-input') as HTMLInputElement
+    await user.clear(input)
+    await user.type(input, 'taken.png')
+    await user.click(screen.getByTestId('drill-rename-save'))
+    expect(await screen.findByTestId('drill-op-error')).toBeTruthy()
+    expect(screen.getByText('rename failed (already_exists)')).toBeTruthy()
+  })
+
+  it('only the passed verbs paint (delete without rename and vice versa)', async () => {
+    const user = userEvent.setup()
+    renderDrilldown(IMAGE, { onDelete: async () => {} })
+    expect(screen.queryByTestId('drill-delete')).toBeTruthy()
+    expect(screen.queryByTestId('drill-rename')).toBeNull()
+    await user.click(screen.getByTestId('drill-delete'))
+    expect(screen.queryByTestId('drill-delete-confirm')).toBeTruthy()
+    cleanup()
+    renderDrilldown(IMAGE, { onRename: async () => {} })
+    expect(screen.queryByTestId('drill-rename')).toBeTruthy()
+    expect(screen.queryByTestId('drill-delete')).toBeNull()
   })
 })

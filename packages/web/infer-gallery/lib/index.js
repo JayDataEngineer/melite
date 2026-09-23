@@ -1,3 +1,5 @@
+import { contentTypeForArtifact } from "@melite/contracts/mediaKinds";
+import { parseRangeHeader } from "@melite/contracts/mediaRange";
 //#region src/index.ts
 const name = "infer-gallery";
 /** Routes arrive with the webServer service. */
@@ -33,6 +35,44 @@ function isRunRelative(target) {
 	const rest = target.slice(slash + 1);
 	if (rest.length === 0) return false;
 	return rest.split("/").every((seg) => RUN_SEGMENT.test(seg) && seg !== "." && seg !== "..");
+}
+/** Sidecar/shadow guard for the MUTATING doors (delete + rename):
+*  any `_`-prefixed segment names provenance, never media — the
+*  runs tree's own convention (`_flow.json`, `_request.json`,
+*  `_thumb/…`). A mutating door that unlinks/renames one would eat
+*  the run's own record; refuse LOUD before touching disk. */
+function isProtectedSidecar(target) {
+	return target.split("/").slice(1).some((seg) => seg.startsWith("_"));
+}
+/** A bare rename target: one segment, never a path — the door joins
+*  it onto the source's own directory, so slashes/`..` refuse here
+*  (directory moves are not renames). `_`-prefixed names refuse as
+*  sidecars (see above); the length cap keeps ext4 happy. */
+function isBareFileName(name) {
+	if (name.length === 0 || name.length > 128) return false;
+	if (name === "." || name === "..") return false;
+	if (!RUN_SEGMENT.test(name)) return false;
+	if (name.startsWith("_")) return false;
+	return true;
+}
+/** Read one JSON body off the node:http idiom (the estate doors'
+*  own spelling — data/end/error over IncomingMessage). */
+function readJsonBody(req) {
+	return new Promise((resolve, reject) => {
+		const chunks = [];
+		req.on("data", (d) => {
+			if (d) chunks.push(d);
+		});
+		req.on("end", () => {
+			const raw = Buffer.concat(chunks).toString("utf8");
+			try {
+				resolve(raw === "" ? null : JSON.parse(raw));
+			} catch {
+				resolve(void 0);
+			}
+		});
+		req.on("error", reject);
+	});
 }
 const JSON_HEADERS = {
 	"content-type": "application/json; charset=utf-8",
@@ -205,19 +245,52 @@ function apply(ctx, config = {}) {
 				});
 				return;
 			}
+			const rangeAsk = req.headers?.range;
 			try {
 				if (gatewayUrl !== "") {
-					const response = await fetch(`${gatewayUrl}/v1/assets/runs/${target}`, { signal: AbortSignal.timeout(timeoutMs) });
+					const response = await fetch(`${gatewayUrl}/v1/assets/runs/${target}`, {
+						signal: AbortSignal.timeout(timeoutMs),
+						headers: rangeAsk !== void 0 ? { range: rangeAsk } : {}
+					});
+					if (response.status === 416) {
+						const unsatisfiable = {
+							"content-type": "application/json",
+							"cache-control": "no-store",
+							"accept-ranges": "bytes"
+						};
+						const upstreamWindow = response.headers.get("content-range");
+						if (upstreamWindow !== null) unsatisfiable["content-range"] = upstreamWindow;
+						res.writeHead(416, unsatisfiable);
+						res.end("{\"error\":\"infer-gallery/range-not-satisfiable\"}");
+						return;
+					}
+					if (response.ok && req.method === "HEAD" && response.body === null) {
+						const heads = {
+							"content-type": response.headers.get("content-type") ?? contentTypeForArtifact(target),
+							"content-length": response.headers.get("content-length") ?? "0",
+							"cache-control": "no-store"
+						};
+						const upstreamRange = response.headers.get("content-range");
+						if (upstreamRange !== null) heads["content-range"] = upstreamRange;
+						if (response.headers.get("accept-ranges") !== null) heads["accept-ranges"] = "bytes";
+						res.writeHead(response.status, heads);
+						res.end();
+						return;
+					}
 					if (!response.ok || response.body === null) {
 						fail(res, response.status, "gateway_error", { upstream: `${gatewayUrl}/v1/assets/runs/${target}` });
 						return;
 					}
 					const buffer = Buffer.from(await response.arrayBuffer());
-					res.writeHead(response.status, {
-						"content-type": response.headers.get("content-type") ?? "application/octet-stream",
+					const heads = {
+						"content-type": response.headers.get("content-type") ?? contentTypeForArtifact(target),
 						"cache-control": "no-store",
 						"content-length": String(buffer.byteLength)
-					});
+					};
+					const upstreamRange = response.headers.get("content-range");
+					if (upstreamRange !== null) heads["content-range"] = upstreamRange;
+					if (response.headers.get("accept-ranges") !== null) heads["accept-ranges"] = "bytes";
+					res.writeHead(response.status, heads);
 					res.end(buffer);
 					return;
 				}
@@ -232,13 +305,47 @@ function apply(ctx, config = {}) {
 					});
 					return;
 				}
+				const type = contentTypeForArtifact(target);
+				if (req.method === "HEAD") {
+					const stat = await fs.stat(full);
+					res.writeHead(200, {
+						"content-type": type,
+						"cache-control": "no-store",
+						"content-length": String(stat.size),
+						"accept-ranges": "bytes"
+					});
+					res.end();
+					return;
+				}
 				const file = await fs.readFile(full);
-				const ext = target.slice(target.lastIndexOf(".") + 1).toLowerCase();
-				const type = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : ext === "mp4" || ext === "webm" ? "video/webm" : "application/octet-stream";
+				const range = parseRangeHeader(rangeAsk, file.byteLength);
+				if (range === "unsatisfiable") {
+					res.writeHead(416, {
+						"content-type": "application/json",
+						"content-range": `bytes */${String(file.byteLength)}`,
+						"accept-ranges": "bytes",
+						"cache-control": "no-store"
+					});
+					res.end("{\"error\":\"infer-gallery/range-not-satisfiable\"}");
+					return;
+				}
+				if (range !== null) {
+					const slice = file.subarray(range.start, range.end + 1);
+					res.writeHead(206, {
+						"content-type": type,
+						"cache-control": "no-store",
+						"content-length": String(slice.byteLength),
+						"content-range": `bytes ${String(range.start)}-${String(range.end)}/${String(file.byteLength)}`,
+						"accept-ranges": "bytes"
+					});
+					res.end(slice);
+					return;
+				}
 				res.writeHead(200, {
 					"content-type": type,
 					"cache-control": "no-store",
-					"content-length": String(file.byteLength)
+					"content-length": String(file.byteLength),
+					"accept-ranges": "bytes"
 				});
 				res.end(file);
 			} catch (error) {
@@ -251,6 +358,207 @@ function apply(ctx, config = {}) {
 			}
 		}
 	}), "infer-gallery: /infer-gallery/artifact route");
+	ctx.effect(() => ctx.webServer.register({
+		kind: "exact",
+		path: "/infer-gallery/artifact-delete",
+		handler: async (req, res) => {
+			if (req.method !== "POST") {
+				fail(res, 405, "method_not_allowed", { message: "POST {path} only" });
+				return;
+			}
+			try {
+				const body = await readJsonBody(req);
+				const target = typeof body?.path === "string" ? body.path : "";
+				if (!isRunRelative(target)) {
+					fail(res, 400, "forbidden_path", {
+						message: "artifact route only serves run-relative names (run-<id>/<file>)",
+						path: target
+					});
+					return;
+				}
+				if (isProtectedSidecar(target)) {
+					fail(res, 400, "protected_sidecar", {
+						message: "sidecar files are provenance, never media — refusing",
+						path: target
+					});
+					return;
+				}
+				if (gatewayUrl !== "") {
+					const response = await fetch(`${gatewayUrl}/infer-gallery/artifact-delete`, {
+						method: "POST",
+						signal: AbortSignal.timeout(timeoutMs),
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify({ path: target })
+					});
+					const text = await response.text();
+					res.writeHead(response.status, {
+						...JSON_HEADERS,
+						"content-length": String(Buffer.byteLength(text))
+					});
+					res.end(text);
+					return;
+				}
+				const fs = await import("node:fs/promises");
+				const path = await import("node:path");
+				const root = path.resolve(flowDir);
+				const full = path.resolve(root, target);
+				/* v8 ignore next 4 -- the grammar above pins the name inside
+				* run-<id>/ segments, so resolution cannot escape; the check
+				* stays as the read door's realpath-style second lock. */
+				if (full !== root && !full.startsWith(root + path.sep)) {
+					fail(res, 400, "forbidden_path", {
+						message: "artifact escapes the runs tree",
+						path: target
+					});
+					return;
+				}
+				try {
+					await fs.unlink(full);
+				} catch (error) {
+					if (error.code === "ENOENT") {
+						fail(res, 404, "no_artifact", {
+							message: "no such artifact",
+							path: target
+						});
+						return;
+					}
+					throw error;
+				}
+				const ok = JSON.stringify({
+					ok: true,
+					path: target
+				});
+				res.writeHead(200, {
+					...JSON_HEADERS,
+					"content-length": String(Buffer.byteLength(ok))
+				});
+				res.end(Buffer.from(ok));
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				ctx.logger.warn("infer-gallery: artifact-delete failed: %s", message);
+				fail(res, 502, "artifact_unreadable", { message });
+			}
+		}
+	}), "infer-gallery: /infer-gallery/artifact-delete route");
+	ctx.effect(() => ctx.webServer.register({
+		kind: "exact",
+		path: "/infer-gallery/artifact-rename",
+		handler: async (req, res) => {
+			if (req.method !== "POST") {
+				fail(res, 405, "method_not_allowed", { message: "POST {path, name} only" });
+				return;
+			}
+			try {
+				const body = await readJsonBody(req);
+				const target = typeof body?.path === "string" ? body.path : "";
+				const name = typeof body?.name === "string" ? body.name : "";
+				if (!isRunRelative(target)) {
+					fail(res, 400, "forbidden_path", {
+						message: "artifact route only serves run-relative names (run-<id>/<file>)",
+						path: target
+					});
+					return;
+				}
+				if (isProtectedSidecar(target)) {
+					fail(res, 400, "protected_sidecar", {
+						message: "sidecar files are provenance, never media — refusing",
+						path: target
+					});
+					return;
+				}
+				if (!isBareFileName(name)) {
+					fail(res, 400, "bad_name", {
+						message: "name must be one bare file segment (no slashes, no leading _)",
+						name
+					});
+					return;
+				}
+				if (gatewayUrl !== "") {
+					const response = await fetch(`${gatewayUrl}/infer-gallery/artifact-rename`, {
+						method: "POST",
+						signal: AbortSignal.timeout(timeoutMs),
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify({
+							path: target,
+							name
+						})
+					});
+					const text = await response.text();
+					res.writeHead(response.status, {
+						...JSON_HEADERS,
+						"content-length": String(Buffer.byteLength(text))
+					});
+					res.end(text);
+					return;
+				}
+				const next = target.slice(0, target.lastIndexOf("/")) + "/" + name;
+				/* v8 ignore next 3 -- `name` already passed isBareFileName, so
+				* the joined target always satisfies the grammar; the check
+				* stays as defense against future callers joining paths. */
+				if (!isRunRelative(next) || isProtectedSidecar(next)) {
+					fail(res, 400, "bad_name", {
+						message: "rename target refuses the artifact grammar",
+						name
+					});
+					return;
+				}
+				if (next === target) {
+					fail(res, 400, "bad_name", {
+						message: "rename to the same name changes nothing",
+						name
+					});
+					return;
+				}
+				const fs = await import("node:fs/promises");
+				const path = await import("node:path");
+				const root = path.resolve(flowDir);
+				const full = path.resolve(root, target);
+				const fullNext = path.resolve(root, next);
+				/* v8 ignore next 4 -- the grammar above pins both names inside
+				* run-<id>/ segments, so resolution cannot escape; the check
+				* stays as the read door's realpath-style second lock. */
+				if (full !== root && !full.startsWith(root + path.sep) || fullNext !== root && !fullNext.startsWith(root + path.sep)) {
+					fail(res, 400, "forbidden_path", {
+						message: "artifact escapes the runs tree",
+						path: target
+					});
+					return;
+				}
+				try {
+					await fs.stat(full);
+				} catch {
+					fail(res, 404, "no_artifact", {
+						message: "no such artifact",
+						path: target
+					});
+					return;
+				}
+				try {
+					await fs.stat(fullNext);
+					fail(res, 409, "already_exists", {
+						message: "a file already carries that name",
+						path: next
+					});
+					return;
+				} catch {}
+				await fs.rename(full, fullNext);
+				const ok = JSON.stringify({
+					ok: true,
+					path: next,
+					url: proxyAssetUrl(next)
+				});
+				res.writeHead(200, {
+					...JSON_HEADERS,
+					"content-length": String(Buffer.byteLength(ok))
+				});
+				res.end(Buffer.from(ok));
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				ctx.logger.warn("infer-gallery: artifact-rename failed: %s", message);
+				fail(res, 502, "artifact_unreadable", { message });
+			}
+		}
+	}), "infer-gallery: /infer-gallery/artifact-rename route");
 }
 /** Cross-host upstream answered an error status (its body rides). */
 var GalleryUpstreamError = class extends Error {
