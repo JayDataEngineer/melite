@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createElement as h, type Ref } from 'react'
 import { FilmPlayer, TimelineScrubBar } from '@melite-plugin/timeline/ui/timeline'
 import type { FilmPlayerHandle } from '@melite-plugin/timeline/ui/timeline'
+import s from './filmSeam.module.css'
 
 /** the observable bridge — player writes, bar reads */
 export interface FilmSeam {
@@ -55,7 +56,11 @@ export function createFilmSeam(fps = 0): FilmSeam {
   return seam
 }
 
-/** THE PREVIEW SLOT FACE — the shared player, wired to the seam */
+/** THE PREVIEW SLOT FACE — the shared player, wired to the seam.
+ * Carries the FIT LAW (one law per estate — .hero's own): the
+ * shared player renders a bare <video>; without the class a
+ * 1344px film overflows a narrow pane sideways (the operator's
+ * tall-screen catch, 2026-09-23). */
 export function FilmSeamPlayer(props: { seam: FilmSeam; src: string; 'data-testid'?: string }): ReturnType<typeof h> {
   const { seam, src } = props
   const onTime = useCallback((sec: number) => { seam.report({ current: sec }) }, [seam])
@@ -64,6 +69,7 @@ export function FilmSeamPlayer(props: { seam: FilmSeam; src: string; 'data-testi
   const ref: Ref<FilmPlayerHandle> = (handle) => { seam.bind(handle) }
   return h(FilmPlayer, {
     src,
+    className: s.player,
     onTime,
     onDuration,
     onPlayingChange,

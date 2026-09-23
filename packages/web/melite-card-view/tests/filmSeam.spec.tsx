@@ -51,6 +51,29 @@ describe('createFilmSeam (the observable bridge)', () => {
 })
 
 describe('the straddle: player writes, bar reads', () => {
+  it("the player carries THE FIT LAW (the tall-screen catch, 2026-09-23: 'the video AGAIN FLOWS OVER THE SIDES') — a 1344px film never paints outside its pane", async () => {
+    const restore = silenceMedia()
+    try {
+      const seam = createFilmSeam()
+      render(h(FilmSeamPlayer, { seam, src: 'https://x/final.mp4' }))
+      const v = screen.getByTestId('film-seam-player') as HTMLVideoElement
+      // the shared player renders a bare <video> — the class is the
+      // ONLY fit law this face has; absent, the intrinsic width wins
+      expect(v.className).toMatch(/player/)
+      // jsdom does no layout: the module's own file IS the contract —
+      // pin the law's declarations (the honest jsdom way for CSS;
+      // vitest runs from the repo root, the workspace runner's cwd)
+      const fs = await import('node:fs')
+      const law = fs.readFileSync('packages/web/melite-card-view/src/client/filmSeam.module.css', 'utf8')
+      expect(law).toContain('width: 100%')
+      expect(law).toContain('max-width: 100%')
+      expect(law).toContain('max-height: 100%')
+      expect(law).toContain('object-fit: contain')
+    } finally {
+      restore()
+    }
+  })
+
   it('the player binds its handle and reports the clock through the seam', () => {
     const restore = silenceMedia()
     try {
