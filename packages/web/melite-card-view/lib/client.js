@@ -7160,7 +7160,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** One drafts/patch round trip; throws the door's named refusal. The
 		*  generated signature is (draftId, stageId, patch, expectRev:
 		*  number | null) — the open local patch shape rides as the wire's
-		*  own open JSON record (honestly JSON all the way down). */
+		*  own open JSON record (honestly JSON all the way down). Returns
+		*  the door's answer rev (THE CONFIRMED-WRITE LAW: the server's own
+		*  word that the write landed — the ledger records it, a caller may
+		*  use it as its next CAS handle). */
 		async function patchOnce(draftId, stageId, patch, expectRev) {
 			const ns = estateRemote().drafts;
 			const row = await unwrapRemote(ns.patch(draftId, stageId, patch, expectRev ?? null), "drafts/patch");
@@ -7168,6 +7171,51 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const reason = typeof row["reason"] === "string" ? row["reason"] : "undelivered";
 				throw new Error("drafts/patch: " + reason + " (draft " + draftId + ", stage " + stageId + ")");
 			}
+			return { rev: typeof row["rev"] === "number" ? row["rev"] : null };
+		}
+		const stageWrites = /* @__PURE__ */ new Map();
+		function writeRow(draftId, stageId) {
+			const key = draftId + "/" + stageId;
+			let row = stageWrites.get(key);
+			if (row === void 0) {
+				row = {
+					inflight: /* @__PURE__ */ new Set(),
+					failedKeys: /* @__PURE__ */ new Set(),
+					lastError: null,
+					confirmedRev: null
+				};
+				stageWrites.set(key, row);
+			}
+			return row;
+		}
+		/** The stage's write accountability snapshot — what the UI consults
+		* before it lets anything compose from this doc. */
+		function stageWriteState(draftId, stageId) {
+			const row = writeRow(draftId, stageId);
+			return {
+				pending: row.inflight.size,
+				failedKeys: [...row.failedKeys],
+				lastError: row.lastError,
+				confirmedRev: row.confirmedRev
+			};
+		}
+		/** Await every authoring write still in flight for the stage (the
+		* run gate's flush). Never throws — the caller reads the settled
+		* state and refuses the run on any failure. */
+		async function flushStageWrites(draftId, stageId) {
+			const row = writeRow(draftId, stageId);
+			while (row.inflight.size > 0) await Promise.allSettled([...row.inflight]);
+			return stageWriteState(draftId, stageId);
+		}
+		/** THE RUN GATE'S VOICE (the one-press/one-engine law) — the ONE
+		* seat every run verb rides (runCardStage, the chat tile, every
+		* future caller): flush the stage's authoring writes, then refuse
+		* with the naming message when a key's latest write has not landed.
+		* Null = the press may compose. Never throws. */
+		async function refuseForUnlandedWrite(draftId, stageId) {
+			const state = await flushStageWrites(draftId, stageId);
+			if (state.failedKeys.length === 0) return null;
+			return "THE WRITE DID NOT LAND — run refused: " + (state.lastError ?? "authoring write(s) still in flight") + " (unlanded keys: " + state.failedKeys.join(", ") + "). The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.";
 		}
 		/** The CAS dance (the run-start face law, 2026-09-14): write with the
 		*  held rev; on the door's cas-conflict RE-READ the rev and re-apply
@@ -7181,12 +7229,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (rev === void 0) throw new Error("drafts/patch: no bench rev to write against (draft " + draftId + ")");
 			}
 			try {
-				await patchOnce(draftId, stageId, patch, rev);
+				return await patchOnce(draftId, stageId, patch, rev);
 			} catch (e) {
 				if (!isCasConflict$1(e)) throw e;
 				const fresh = await fetchDraftRev(draftId) ?? void 0;
 				if (fresh === void 0) throw e;
-				await patchOnce(draftId, stageId, patch, fresh);
+				return await patchOnce(draftId, stageId, patch, fresh);
 			}
 		}
 		/** Edit one stage's params — the REAL door, reborn 2026-09-11: the
@@ -7199,7 +7247,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  the door's JSON Merge Patch arm deletes those keys (the unset
 		*  path's domain half). */
 		async function patchStageParams(draftId, stageId, params, expectRev) {
-			await patchWithRebase(draftId, stageId, { params }, expectRev);
+			const row = writeRow(draftId, stageId);
+			const keys = Object.keys(params);
+			const attempt = (async () => {
+				try {
+					const settled = await patchWithRebase(draftId, stageId, { params }, expectRev);
+					if (settled.rev !== null) row.confirmedRev = settled.rev;
+					for (const k of keys) row.failedKeys.delete(k);
+					if (row.failedKeys.size === 0) row.lastError = null;
+				} catch (e) {
+					for (const k of keys) row.failedKeys.add(k);
+					row.lastError = e instanceof Error ? e.message : String(e);
+					throw e;
+				} finally {
+					row.inflight.delete(attempt);
+				}
+			})();
+			row.inflight.add(attempt);
+			return attempt;
 		}
 		/** Report a stage's RUN OUTCOME onto the bench row — the same
 		*  shared-state door (runStatus + result keys of the fixed patch
@@ -8685,6 +8750,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							const draftId = parsed.draftId;
 							if (draftId === null) throw new Error("draft id gone");
 							if (patch !== null) await patchStageParams(draftId, openRow.stageId, patch);
+							const gate = await refuseForUnlandedWrite(draftId, openRow.stageId);
+							if (gate !== null) throw new Error(gate);
 							await startDraft(draftId);
 							setOpenStage(null);
 							refresh();
@@ -49708,6 +49775,8 @@ void main() {
 		*  Exported for the tab seam's door-contract spec. */
 		async function runCardStage(draftId, row) {
 			if (typeof row.card !== "string" || row.card === "") return { refused: "this stage names no card — nothing to compose" };
+			const gate = await refuseForUnlandedWrite(draftId, row.id);
+			if (gate !== null) return { refused: gate };
 			const src = await freshStageRow(draftId, row.id) ?? row;
 			const params = typeof src.params === "object" && src.params !== null && !Array.isArray(src.params) ? src.params : {};
 			const card = typeof src.card === "string" && src.card !== "" ? src.card : "";
@@ -58985,6 +59054,10 @@ void main() {
 			/* v8 ignore next 4 -- BenchView is only ever mounted with kind bench (single-render law — probe 2026-09-19) */
 			const onRun = (0, react.useCallback)(() => {
 				if (snapshot?.value?.kind !== "bench") return;
+				if (snapshot.status === "failed") {
+					setLocalRunError("refresh failed — showing the last good state, not composing from it (" + (snapshot.failure?.message ?? "cards resource failed") + ")");
+					return;
+				}
 				setRunning(true);
 				setLocalRunError(null);
 				runAllAbort.current?.abort();
@@ -59353,4 +59426,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="ea22e4215ec305e51e7a580b08005423bd48e0e0";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f4b54a94591d712c5e09dd5212f2c18d793812a6";

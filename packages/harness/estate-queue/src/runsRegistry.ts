@@ -606,6 +606,13 @@ export class RunsRuntimeService extends Service {
       // F-6(b): admission warnings ride the row (additive — older
       // consumers ignore the key; absent means none were stamped).
       warnings: [...(run.warnings ?? [])],
+      // THE COMPOSE ECHO, SERVED (the one-press/one-engine law,
+      // audit 2026-09-23: the echo rode disk + ledger but no live
+      // door served it — the face that pressed Run could not show
+      // what the engine got without shell access). Additive, same
+      // spelling as the sidecar; absent on non-film runs. The disk
+      // fallback below spreads the sidecar row, which carries it.
+      ...(run.composeEcho !== undefined ? { compose_echo: run.composeEcho } : {}),
       queue_position: this.core.queuePosition(run.runId),
     };
     // THE TERMINAL-HUSK RECOVERY (F-5's second face): a live row that

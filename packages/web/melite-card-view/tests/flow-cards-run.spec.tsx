@@ -27,6 +27,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { createElement as h } from "react";
 import { FlowCards } from "../src/client/FlowCards.tsx";
 import type { ToolCallBlockView } from "../src/client/types.ts";
+import { patchStageParams, resetStageWrites } from "../src/client/draft.ts";
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
 
 type Fakes = ReturnType<typeof mountEstateFakes>;
@@ -43,6 +44,10 @@ afterEach(() => {
   active?.unmount();
   active = null;
   cleanup();
+  // the write ledger is module state shared across tests in this
+  // file (same discipline as the tab specs): a refusal recorded by
+  // one test must not refuse the next test's run.
+  resetStageWrites();
   vi.unstubAllGlobals();
 });
 
@@ -258,6 +263,21 @@ describe("THE GESTURE — open drill, edit, Run = patch FIRST, then start", () =
     fireEvent.click(await screen.findByText("Run", {}, { timeout: 4000 }));
     // the drill STAYS OPEN with the named refusal (the run never started)
     expect(await screen.findByText(/admission: unknown stage/, {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  test("a dead write refuses the chat-tile run (the audit's A2) — the drill stays open, no runs/start", async () => {
+    const seen = stubDraftDoc({ patchFailures: [{ draftId: "draft-1", stageId: "s_0", delivered: false, reason: "stage not found" }] }).calls;
+    // THE DEAD WRITE, through the REAL channel — then a no-edit Run
+    // (patch null: the tile's own patch is skipped, so ONLY the
+    // ledger stands between the press and the engine).
+    await expect(patchStageParams("draft-1", "s_0", { steps: 99 }, 3)).rejects.toThrow(/stage not found/);
+    const { container } = render(h(FlowCards, { block: settled() }));
+    await screen.findByText("gen", {}, { timeout: 4000 });
+    (container.querySelector('[data-stage="s_0"]') as HTMLElement).click();
+    expect(await screen.findByText("Card gen", {}, { timeout: 4000 })).toBeTruthy();
+    fireEvent.click(await screen.findByText("Run", {}, { timeout: 4000 }));
+    expect(await screen.findByText(/THE WRITE DID NOT LAND/, {}, { timeout: 4000 })).toBeTruthy();
+    expect(seen.map((c) => c.method)).not.toContain("runs/start");
   });
 
   test("closing the drill unrunned refreshes behind it (never a stale card)", async () => {

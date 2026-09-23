@@ -52,7 +52,7 @@ import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
 import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
 import { cardLlmArg } from '@melite/catalog'
 import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-form.tsx'
-import { flushStageWrites, paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
+import { paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import { runCardStage, runBenchSequential } from './stage-run.ts'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
@@ -247,6 +247,16 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   /* v8 ignore next 4 -- BenchView is only ever mounted with kind bench (single-render law — probe 2026-09-19) */
   const onRun = useCallback((): void => {
     if (snapshot?.value?.kind !== 'bench') return
+    // THE STALE-LIST FENCE (the audit's A4, 2026-09-23: the pass
+    // composes the snapshot's stage LIST — per-stage params
+    // self-heal via runCardStage's fresh read, but the list cannot).
+    // A failed refresh voices cards-refresh-failed AND blocks the
+    // pass: Run ALL never composes from last-good state.
+    if (snapshot.status === 'failed') {
+      setLocalRunError('refresh failed — showing the last good state, not composing from it ('
+        + (snapshot.failure?.message ?? 'cards resource failed') + ')')
+      return
+    }
     setRunning(true)
     setLocalRunError(null)
     runAllAbort.current?.abort()
@@ -296,33 +306,18 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         .then(() => { touchBench() })
         .catch(() => {})
     }
-    // THE RUN GATE (the one-press/one-engine law, 2026-09-23: the
-    // operator toggled the seam cut→carried, pressed Run ten seconds
-    // later, and a 15-minute film composed from the CUT — the
-    // toggle's write left NO trace anywhere). By construction the
-    // engine now NEVER composes from a doc the press has not
-    // confirmed: every authoring write for this stage is FLUSHED
-    // first (the module-level ledger outlives unmounts — a view flip
-    // cannot kill a write by killing its timer owner), and a write
-    // that failed REFUSES the run loud, naming the error. A refused
-    // run costs one press; a film from the wrong doc costs fifteen
-    // minutes.
-    void flushStageWrites(draftId, stageId).then((state) => {
-      if (state.pending > 0 || state.lastError !== null) {
-        carryFailure('THE WRITE DID NOT LAND — run refused: '
-          + (state.lastError ?? state.pending + ' authoring write(s) still in flight')
-          + '. The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.')
-        return
-      }
-      void runCardStage(draftId, stage).then((res) => {
-        if ('runId' in res) onStarted(res.runId, { draftId, stageId })
-        else carryFailure(res.refused)
-      }, (e: unknown) => {
-        // a THROWN start (wire down, 500, read-back failure) is a
-        // rejection too — the old code had NO catch here: the promise
-        // died unhandled, running stuck, and the operator saw NOTHING
-        carryFailure(e instanceof Error ? e.message : 'run start failed')
-      })
+    // THE RUN GATE LIVES IN runCardStage (the one-press/one-engine
+    // law — the tile, the drill, the draft view, Run ALL, and the
+    // rescue rerun all ride that one composing door, so the refusal
+    // below covers every verb with no second gate to drift).
+    void runCardStage(draftId, stage).then((res) => {
+      if ('runId' in res) onStarted(res.runId, { draftId, stageId })
+      else carryFailure(res.refused)
+    }, (e: unknown) => {
+      // a THROWN start (wire down, 500, read-back failure) is a
+      // rejection too — the old code had NO catch here: the promise
+      // died unhandled, running stuck, and the operator saw NOTHING
+      carryFailure(e instanceof Error ? e.message : 'run start failed')
     })
   }, [snapshot, onStarted, touchBench])
   // THE TILE CHROME'S STOP + REMOVE (the chat-input law's verbs):
@@ -373,19 +368,11 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     if (target === undefined) return
     setRunning(true)
     setLocalRunError(null)
-    // THE RUN GATE RIDES THE DRAFT VIEW TOO (the one-press/one-engine
-    // law — the draft editor's Run composes from the same doc and
-    // owes the same confirmation: no run past a write that has not
-    // landed).
-    void flushStageWrites(value.draftId, target.id).then((state) => {
-      if (state.pending > 0 || state.lastError !== null) {
-        setRunning(false)
-        setLocalRunError('THE WRITE DID NOT LAND — run refused: '
-          + (state.lastError ?? state.pending + ' authoring write(s) still in flight')
-          + '. The persisted doc under this stage is not what the editor shows; nothing was sent to the engine.')
-        return
-      }
-      void runCardStage(value.draftId, target).then((res) => {
+    // THE GATE LIVES IN runCardStage (the one-press/one-engine law —
+    // the draft editor's Run rides the same composing door, so the
+    // refusal (with its row carry below) covers it with no second
+    // gate to drift).
+    void runCardStage(value.draftId, target).then((res) => {
       if ('runId' in res) onStarted(res.runId, { draftId: value.draftId, stageId: target.id })
       else {
         setRunning(false)
@@ -401,7 +388,6 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } }, rev)
           .catch(() => {})
       }
-      })
     })
   }, [snapshot, onStarted])
   // DRAFT-STAGE PATCH (the draft view's onPatch currency): the drafts

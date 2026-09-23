@@ -57,7 +57,7 @@ import { CardDrill } from './card-drill.tsx'
 import { cardsDraftStageAddress } from './cards-resource.ts'
 import type { ToolCallBlockView } from './types.ts'
 import {
-  cardRows, fetchDraft, paramFields, patchStageParams, runFinished, runStatus, startDraft,
+  cardRows, fetchDraft, paramFields, patchStageParams, refuseForUnlandedWrite, runFinished, runStatus, startDraft,
 } from './draft.ts'
 import type { CardRow, DraftDoc, RunStatusDoc } from './draft.ts'
 
@@ -282,9 +282,17 @@ export function FlowCards({ block, openSurface }: FlowCardsProps) {
             // The shared-state law: the patch lands in the domain
             // BEFORE the run reads it — the card runs what the user
             // SEES. A patch failure names itself and stops the run.
+            // THE RUN GATE (the one-press/one-engine law, audit
+            // 2026-09-23: this tile awaited its OWN patch but never
+            // consulted the ledger — any other in-flight or failed
+            // write for the stage ran past it). A refusal throws
+            // into the drill's runError face, same as a patch
+            // failure — never silent, never a run.
             const draftId = parsed.draftId
             if (draftId === null) throw new Error('draft id gone')
             if (patch !== null) await patchStageParams(draftId, openRow.stageId, patch)
+            const gate = await refuseForUnlandedWrite(draftId, openRow.stageId)
+            if (gate !== null) throw new Error(gate)
             await startDraft(draftId)
             setOpenStage(null)
             refresh()

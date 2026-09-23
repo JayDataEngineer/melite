@@ -121,6 +121,15 @@ describe("settlePersist", () => {
     settlePersist(run, fileAsDir);
     settlePersist(record(), join(dir, "nostate", "deep"));
   });
+
+  it("THE TERMINAL ECHO (the audit's gap): the compose echo survives into the settled _flow.json", () => {
+    const runDir = join(dir, "recho");
+    mkdirSync(runDir, { recursive: true });
+    const echo = { seam: "carry,cut", calls: 2, benchRev: 17 };
+    settlePersist(record({ dir: runDir, composeEcho: echo }), dir);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.deepEqual(sidecar["compose_echo"], echo);
+  });
 });
 
 describe("runLogTail", () => {

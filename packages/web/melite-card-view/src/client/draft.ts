@@ -150,12 +150,19 @@ async function patchOnce(
 //      my press land?" has an answer in the client at all times.
 export interface StageWriteState {
   readonly pending: number
+  /** Param keys whose latest write FAILED and has not since landed
+   *  (the audit's B2, 2026-09-23: a single lastError slot let ANY
+   *  later success erase a real refusal while the UI still showed
+   *  the failed value — failure memory is per-KEY, cleared only by
+   *  that key landing). */
+  readonly failedKeys: string[]
   readonly lastError: string | null
   readonly confirmedRev: number | null
 }
 
 interface StageWriteRow {
   inflight: Set<Promise<unknown>>
+  failedKeys: Set<string>
   lastError: string | null
   confirmedRev: number | null
 }
@@ -166,7 +173,7 @@ function writeRow(draftId: string, stageId: string): StageWriteRow {
   const key = draftId + '/' + stageId
   let row = stageWrites.get(key)
   if (row === undefined) {
-    row = { inflight: new Set(), lastError: null, confirmedRev: null }
+    row = { inflight: new Set(), failedKeys: new Set(), lastError: null, confirmedRev: null }
     stageWrites.set(key, row)
   }
   return row
@@ -176,7 +183,7 @@ function writeRow(draftId: string, stageId: string): StageWriteRow {
  * before it lets anything compose from this doc. */
 export function stageWriteState(draftId: string, stageId: string): StageWriteState {
   const row = writeRow(draftId, stageId)
-  return { pending: row.inflight.size, lastError: row.lastError, confirmedRev: row.confirmedRev }
+  return { pending: row.inflight.size, failedKeys: [...row.failedKeys], lastError: row.lastError, confirmedRev: row.confirmedRev }
 }
 
 /** Await every authoring write still in flight for the stage (the
@@ -188,6 +195,20 @@ export async function flushStageWrites(draftId: string, stageId: string): Promis
     await Promise.allSettled([...row.inflight])
   }
   return stageWriteState(draftId, stageId)
+}
+
+/** THE RUN GATE'S VOICE (the one-press/one-engine law) — the ONE
+ * seat every run verb rides (runCardStage, the chat tile, every
+ * future caller): flush the stage's authoring writes, then refuse
+ * with the naming message when a key's latest write has not landed.
+ * Null = the press may compose. Never throws. */
+export async function refuseForUnlandedWrite(draftId: string, stageId: string): Promise<string | null> {
+  const state = await flushStageWrites(draftId, stageId)
+  if (state.failedKeys.length === 0) return null
+  return 'THE WRITE DID NOT LAND — run refused: '
+    + (state.lastError ?? 'authoring write(s) still in flight')
+    + ' (unlanded keys: ' + state.failedKeys.join(', ') + '). '
+    + 'The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.'
 }
 
 /** Drop the whole ledger (spec isolation ONLY — same discipline as
@@ -248,14 +269,19 @@ export async function patchStageParams(
   // it travels, its answer rev recorded when the server confirms,
   // its refusal recorded when the server says no. The promise still
   // rejects to the caller (their banner owns the face); the ledger
-  // owns the memory no unmount can kill.
+  // owns the memory no unmount can kill. Failure memory is PER-KEY
+  // (the audit's B2): a later success clears only the keys IT
+  // carried — an unrelated key landing never erases a real refusal.
   const row = writeRow(draftId, stageId)
+  const keys = Object.keys(params)
   const attempt = (async (): Promise<void> => {
     try {
       const settled = await patchWithRebase(draftId, stageId, { params }, expectRev)
       if (settled.rev !== null) row.confirmedRev = settled.rev
-      row.lastError = null
+      for (const k of keys) row.failedKeys.delete(k)
+      if (row.failedKeys.size === 0) row.lastError = null
     } catch (e: unknown) {
+      for (const k of keys) row.failedKeys.add(k)
       row.lastError = e instanceof Error ? e.message : String(e)
       throw e
     } finally {

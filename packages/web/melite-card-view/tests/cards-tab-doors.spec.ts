@@ -19,6 +19,7 @@ import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { patchStageParams, resetStageWrites } from "../src/client/draft.ts";
 
 function stage(over: Partial<BenchStageRow> & { id: string }): BenchStageRow {
   return { engine: "comfyui", ...over };
@@ -57,6 +58,10 @@ afterEach(() => {
   fakes?.unmount();
   fakes = null;
   unbindEstateRemote();
+  // the write ledger is module state shared across tests in this
+  // file (same discipline as the view specs): a refusal recorded by
+  // one test must not refuse the next test's run.
+  resetStageWrites();
   vi.unstubAllGlobals();
   resetCardFamiliesCache();
 });
@@ -135,6 +140,40 @@ describe("runBenchSequential — the pre-aborted pass returns empty", () => {
     const res = await runBenchSequential(bench, { signal: AbortSignal.abort() });
     expect(res).toEqual({ ran: [], stoppedAt: null, refused: null });
     expect(calls).toEqual([]);
+  });
+});
+
+describe("the audit's A1 — Run ALL rides the same gate (the gate lives in runCardStage, so the sequential pass inherits it)", () => {
+  test("a stage whose write has not landed stops the pass with the refusal — no runs/start", async () => {
+    stubWire({ patchFailures: [{ draftId: "bench-main", stageId: "s_1", delivered: false, reason: "stage not found" }] });
+    await expect(patchStageParams("bench-main", "s_1", { prompt: "never" }, 5)).rejects.toThrow(/stage not found/);
+    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", rev: 5, log: [], stages: [
+      stage({ id: "s_1", card: "img-to-mesh", params: {} }),
+    ] };
+    const res = await runBenchSequential(bench, {});
+    expect(res.ran).toEqual([]);
+    expect(res.stoppedAt).toEqual("s_1");
+    expect(res.refused).toMatch(/THE WRITE DID NOT LAND/);
+    expect(res.refused).toMatch(/unlanded keys: prompt/);
+    expect(calls.some((c) => c.method === "runs/start")).toBe(false);
+  });
+});
+
+describe("the audit's B2 — failure memory is per-key (an unrelated landing never lifts the refusal; the failed key landing does)", () => {
+  test("unrelated success refuses; failed-key success runs", async () => {
+    stubWire({ patchFailures: [{ draftId: "bench-main", stageId: "s_1", delivered: false, reason: "stage not found" }] });
+    await expect(patchStageParams("bench-main", "s_1", { prompt: "never" }, 5)).rejects.toThrow(/stage not found/);
+    await patchStageParams("bench-main", "s_1", { steps: 9 }, 5);
+    const held = stage({ id: "s_1", card: "img-to-mesh", params: {} });
+    const refused = await runCardStage("bench-main", held);
+    expect("refused" in refused && refused.refused).toMatch(/unlanded keys: prompt/);
+    expect(calls.some((c) => c.method === "runs/start")).toBe(false);
+    await patchStageParams("bench-main", "s_1", { prompt: "now" }, 5);
+    stubWire({
+      draftStages: [{ id: "s_1", card: "img-to-mesh", params: {} }],
+    });
+    const res = await runCardStage("bench-main", held);
+    expect(res).toEqual({ runId: "run-1" });
   });
 });
 

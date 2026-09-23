@@ -71,7 +71,7 @@ function stubWire(patchFailures?: Array<Record<string, unknown>>): { calls: Arra
   return { calls: estate.calls }
 }
 
-function mountTab(): void {
+function mountTab(resource: { status: 'live' | 'failed'; failure?: { message?: string } } = { status: 'live' }): void {
   render(createElement(CardsTab, {
     useTabInfo: () => ({
       tab: {
@@ -80,7 +80,7 @@ function mountTab(): void {
         actions: { openResource: () => {} },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: resource.status, value: BENCH, ...(resource.failure !== undefined ? { failure: resource.failure } : {}) }),
   }))
 }
 
@@ -129,4 +129,31 @@ test('THE GATE IS THE LEDGER, NOT A LATCH: after a later write lands, the same p
   await waitFor(() => {
     expect(calls.some((c) => c.method === 'runs/start')).toBe(true)
   })
+})
+
+test('THE PER-KEY MEMORY (the audit B2): a later success on an UNRELATED key does not erase the refusal — the press still refuses, naming the unlanded key', async () => {
+  const { calls } = stubWire([{ draftId: 'bench-s1', stageId: 's_0', delivered: false, reason: 'stage not found' }])
+  await expect(patchStageParams('bench-s1', 's_0', { steps: 20 }, 7)).rejects.toThrow(/stage not found/)
+  // an UNRELATED key lands clean after the failure — the old single
+  // slot would have cleared the refusal here; per-key memory holds.
+  await patchStageParams('bench-s1', 's_0', { prompt: 'a blue cube' }, 7)
+  mountTab()
+  await pressTileRun()
+  await waitFor(() => {
+    expect(screen.getByText(/THE WRITE DID NOT LAND/)).toBeTruthy()
+  })
+  expect(screen.getByText(/unlanded keys: steps/)).toBeTruthy()
+  expect(calls.some((c) => c.method === 'runs/start')).toBe(false)
+})
+
+test('THE STALE-LIST FENCE (the audit A4): Run ALL on a failed refresh refuses — never composes from last-good state', async () => {
+  const { calls } = stubWire()
+  mountTab({ status: 'failed', failure: { message: 'door down' } })
+  const user = userEvent.setup()
+  const btn = await screen.findByRole('button', { name: /Play/ }, { timeout: 4000 })
+  await user.click(btn)
+  await waitFor(() => {
+    expect(screen.getByText(/not composing from it/)).toBeTruthy()
+  })
+  expect(calls.some((c) => c.method === 'runs/start')).toBe(false)
 })

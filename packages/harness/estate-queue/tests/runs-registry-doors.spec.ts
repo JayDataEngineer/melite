@@ -353,6 +353,16 @@ describe("status + stop", () => {
     assert.match(String(logged["log_tail"]), /run: queued/);
   });
 
+  it("THE COMPOSE ECHO, SERVED (the audit's C): a film run's status carries compose_echo; a non-film run omits the key", async () => {
+    const echo = { seam: "carry,cut", calls: 2, benchRev: 17 };
+    const filmed = seat();
+    const filmId = live(filmed, { pipeline: "h3", composeEcho: echo });
+    assert.deepEqual((await filmed.svc.status(filmId, sig()))["compose_echo"], echo);
+    const plain = seat();
+    const plainId = live(plain, { pipeline: "m" });
+    assert.equal("compose_echo" in await plain.svc.status(plainId, sig()), false);
+  });
+
   it("THE DISK FALLBACK (agent-debt F-5): a run unknown to memory answers from its on-disk _flow.json, marked from_disk — never fabricated", async () => {
     // The maker-test lane: status answered runs/unknown-run (or
     // "? — 0/0 stage(s)" husks) for runs whose _flow.json on disk

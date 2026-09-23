@@ -71,8 +71,16 @@ details[open] > summary .chev { transform: rotate(180deg); }
  * dead code: the fit law and the natural-height strip NEVER
  * applied, and the base layer alone decided. The doubled class
  * (.studioRoot.studioRoot) outspecifies the base module's rules,
- * so import order can never flip the tenant's law off. */
-.studioRoot.studioRoot > *:first-child { grid-column: 1; grid-row: 1; }
+ * so import order can never flip the tenant's law off.
+ * THE RAIL NEVER WIDENS (2026-09-23, the operator: "the parameter
+ * sidebar goes too far, I can't read it all" — the node id
+ * h3-film::window1_MiniMaxH3ReferenceToVideo.0 is one unbreakable
+ * token: the rail item's automatic minimum width refused the
+ * track's 330px max and the column spilled right, clipping its own
+ * edge against the card). min-width: 0 lets the item shrink inside
+ * its track; the readout wraps (docLines below); nothing unbroken
+ * ever forces the column again. */
+.studioRoot.studioRoot > *:first-child { grid-column: 1; grid-row: 1; min-height: 0; min-width: 0; }
 /* THE PREVIEW FITS (2026-09-22, operator: "THE VIDEO SHOULD BE 'FIT'
  * NOT 'SCROLL'" — supersedes the hour-8 scroll verdict): the center
  * pane is a flex column with overflow HIDDEN — the filmBox flexes to
@@ -115,13 +123,18 @@ details[open] > summary .chev { transform: rotate(180deg); }
   display: flex;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
+  /* THE RAIL NEVER WIDENS, second face: nothing inside may spill
+   * past the column's box — clip (never hidden: no scroll container,
+   * no wheel hijack; the vertical scroll above is untouched). */
+  overflow-x: clip;
   padding: 10px 12px;
 }
-.docBlock { flex: none; border-bottom: 1px solid var(--dsw-alias-border-l1); padding-bottom: 10px; }
-.docLines { display: flex; flex-direction: column; gap: 4px; padding: 0 4px; font-size: 10px; line-height: 1.625; color: var(--dsw-alias-label-secondary); }
+.docBlock { flex: none; min-width: 0; border-bottom: 1px solid var(--dsw-alias-border-l1); padding-bottom: 10px; }
+.docLines { display: flex; flex-direction: column; gap: 4px; padding: 0 4px; font-size: 10px; line-height: 1.625; color: var(--dsw-alias-label-secondary); overflow-wrap: anywhere; }
 .warnRow { display: flex; align-items: flex-start; gap: 4px; color: var(--dsw-alias-state-warn-primary); }
 .warnIcon { margin-top: 2px; flex: none; }
 .runFold { flex: none; border-bottom: 1px solid var(--dsw-alias-border-l1); }

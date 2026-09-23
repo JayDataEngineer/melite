@@ -8,6 +8,7 @@ import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
 import { startCardRun, startFlowInlineRun } from '@melite/card-base/runs-policy'
 import type { CardsBenchValue, BenchStageRow } from './cards-resource.ts'
 import { freshStageRow, observeRunOutcome } from './cards-resource.ts'
+import { refuseForUnlandedWrite } from './draft.ts'
 
 /** The generic MCP card's id (the ONE engine-served card the run
  * press routes on — the subagent-spawn card, engine 'agent'). */
@@ -40,6 +41,16 @@ export async function runCardStage(
   if (typeof row.card !== 'string' || row.card === '') {
     return { refused: 'this stage names no card — nothing to compose' }
   }
+  // THE RUN GATE (the one-press/one-engine law, 2026-09-23, seated
+  // 2026-09-23 audit: the gate lived on two call sites while Run ALL
+  // and the chat tile composed past it). THIS is the seat now — the
+  // SAME single-stage door the drill, the tile, the draft view, the
+  // sequential pass, and the rescue rerun all ride: every compose
+  // flushes the stage's authoring writes and refuses when a key's
+  // latest write has not landed. A future caller inherits the law
+  // by calling this door; no call site can route around it.
+  const gate = await refuseForUnlandedWrite(draftId, row.id)
+  if (gate !== null) return { refused: gate }
   // THE FRESH-READ LAW (2026-09-13 incident): compose the ESTATE's
   // row, read back AFTER the drill's patch — the passed row is the
   // client's render snapshot (the row as it stood at open) and the

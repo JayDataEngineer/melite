@@ -121,6 +121,25 @@ for (const cls of [".finalCut", ".winTile"]) {
   }
 }
 
+/* THE NARROW RAIL WALL (2026-09-23, the operator: "the parameter
+ * sidebar goes too far, I can't read it all" — the node id is one
+ * unbreakable token and the rail item's automatic minimum width
+ * refused the track's 330px max, spilling the column right). Three
+ * faces, all pinned as CSS text (jsdom cannot measure layout):
+ * the doubled first-child slot rule carries min-width: 0 (the item
+ * may shrink inside its track whatever the import order); the
+ * readout wraps unbreakable tokens; the rail clips horizontal spill
+ * (clip, never hidden — no scroll container, no wheel hijack). */
+if (!/\.studioRoot\.studioRoot > \*:first-child[^{]*\{[^}]*min-width: 0/.test(css)) {
+  throw new Error("THE RAIL WIDENS: the first-child slot rule must carry min-width: 0 — an unbreakable node id forces the column past its track");
+}
+if (!/\.docLines [^{]*\{[^}]*overflow-wrap: anywhere/.test(css)) {
+  throw new Error("THE READOUT SPILLS: .docLines must carry overflow-wrap: anywhere — the node id is one unbreakable token");
+}
+if (!/\.railCol [^{]*\{[^}]*overflow-x: clip/.test(css)) {
+  throw new Error("THE RAIL SPILLS: .railCol must carry overflow-x: clip — nothing inside may push past the column's box");
+}
+
 /* THE LANE-PICKER WALL (2026-09-22, the operator's law): the lanes'
  * add door is the gutter's ⤴ riding the GENERIC source grammar —
  * useSquareProvider with the audio MIME family — never a bespoke
