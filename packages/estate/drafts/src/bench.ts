@@ -265,11 +265,27 @@ export async function ensureBench(
   if (rec === undefined) {
     const stagesIn: unknown = Array.isArray(body["stages"]) ? body["stages"] : [];
     admitStages(admit, stagesIn);
-    admitWiringList(normalizeStages(stagesIn, author), session);
+    // A BENCH IS BORN CLEAN OF ARCHIVES (the cross-bench history
+    // leak, 2026-09-23 — live proof bench-session-2bd2a61f): the
+    // wand restores onto fresh sessions carrying stage rows from a
+    // FOREIGN bench's run snapshot; archives (history,
+    // resultParams, runStatus, resolved — the observe state THIS
+    // bench's own runs earn) never survive a birth. The one lawful
+    // birth memory is `result` — the wand's preview stamp for the
+    // ran card. The LOAD arm keeps the stage memory law whole
+    // (same-id carry + fill-never-clobber).
+    const born: Record<string, unknown>[] = normalizeStages(stagesIn, author);
+    for (const row of born) {
+      delete row["history"];
+      delete row["resultParams"];
+      delete row["runStatus"];
+      delete row["resolved"];
+    }
+    admitWiringList(born, session);
     const doc: Record<string, unknown> = {
       draft_id: draftId,
       intent: typeof body["intent"] === "string" ? body["intent"] : "bench",
-      stages: normalizeStages(stagesIn, author) as JsonValue,
+      stages: born as JsonValue,
       status: "ready",
       createdAt: Date.now(),
       completedAt: null,

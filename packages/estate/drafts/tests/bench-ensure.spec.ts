@@ -28,6 +28,42 @@ test("ensure refuses unknown keys, bad sessions, and stageless loads without exp
   assert.equal(loaded.rev, 1);
 });
 
+test("A BENCH IS BORN CLEAN OF ARCHIVES — history/resultParams/runStatus/resolved die at birth, the wand's result stamp rides", async () => {
+  // The cross-bench history leak (2026-09-23, live proof
+  // bench-session-2bd2a61f): the wand restores a run onto a fresh
+  // session carrying stage rows from a FOREIGN bench's snapshot —
+  // history tiles named like the other card's files landed in the
+  // new bench and the next Run press archived them into view.
+  // Archives are earned by THIS bench's own runs; only `result`
+  // (the wand's preview stamp for the ran card) survives a birth.
+  // The LOAD arm keeps the stage memory law whole (same-id carry,
+  // fill-never-clobber — remote.spec.ts owns that wall).
+  const drafts = await boot();
+  const born = await ensureBench(drafts, {
+    session: "s",
+    stages: [{
+      id: "s_0",
+      card: "sfx",
+      params: { prompt: "thunder" },
+      history: [{ run_id: "run-foreign", url: "/tts/x.flac" }],
+      result: { run_id: "run-own", url: "/sfx/SaveAudio.0_sfx_00001.flac" },
+      resultParams: { qvoice: [] },
+      runStatus: "done",
+      resolved: { model: "moss-sfx" },
+    }],
+  });
+  assert.equal(born.rev, 0);
+  const [row] = born.stages as Array<Record<string, unknown>>;
+  assert.equal(row["id"], "s_0");
+  assert.equal(row["card"], "sfx");
+  assert.deepEqual(row["params"], { prompt: "thunder" });
+  assert.deepEqual(row["result"], { run_id: "run-own", url: "/sfx/SaveAudio.0_sfx_00001.flac" },
+    "the wand's preview stamp (result) is the one lawful birth memory");
+  for (const k of ["history", "resultParams", "runStatus", "resolved"]) {
+    assert.equal(k in row, false, k + " must not survive a birth");
+  }
+});
+
 test("the overwrite law: a wholesale load onto a non-empty bench refuses without overwrite:true", async () => {
   const drafts = await boot();
   await ensureBench(drafts, { session: "s", stages: [{ id: "a" }, { id: "b" }] });

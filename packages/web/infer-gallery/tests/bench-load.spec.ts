@@ -318,6 +318,66 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(String(ensuredBody(calls).intent).length).toBeLessThanOrEqual(77)
   })
 
+  it('THE CROSS-BENCH HISTORY LEAK — history/resultParams never ride a restore (bench-session-2bd2a61f proof)', async () => {
+    // Live proof, 2026-09-23: the operator's bench s_0 (an sfx card)
+    // showed history tiles NAMED LIKE ANOTHER CARD'S FILE — a tts
+    // flac from the maker session's run and an sfx run from a third
+    // bench. Mechanism: the wand's bench_snapshot arm stripped
+    // result/runStatus/resolved but SHIPPED history/resultParams
+    // verbatim; ensure admitted them; the next Run press archived
+    // the foreign memory into this bench's tiles. The restore ships
+    // the WORKFLOW only — memory never crosses benches.
+    const side = {
+      run_id: 'r-leak',
+      flow: {
+        artifacts: ['/data/run-r-leak/tts/SaveAudio.0_tts_00001.flac'],
+        card_snapshot: { card: 'sfx', params: { prompt: 'thunder' } },
+        bench_snapshot: {
+          stages: [
+            {
+              id: 's_0',
+              card: 'sfx',
+              result: { run_id: 'run-foreign-1', url: '/x/flac' },
+              runStatus: 'done',
+              history: [
+                { run_id: 'run-foreign-tts', url: '/tts/SaveAudio.0_tts_00001.flac' },
+                { run_id: 'run-foreign-sfx', url: '/sfx/SaveAudio.0_sfx_00001.flac', params: { qvoice: [{ qvoice: '/v/joren.qvoice' }] } },
+              ],
+              resultParams: { qvoice: [{ qvoice: '/v/joren.qvoice' }], style_instruction: 'young man' },
+            },
+            {
+              id: 's_1',
+              card: 'tts',
+              history: [{ run_id: 'run-foreign-tts', url: '/tts/x.flac' }],
+              resultParams: { voice: 'ryan' },
+            },
+          ],
+          intent: 'restored from a foreign bench, memory must die here',
+        },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r-leak', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages).toHaveLength(2)
+    for (const st of stages) {
+      expect('history' in st).toBe(false)
+      expect('resultParams' in st).toBe(false)
+      expect('runStatus' in st).toBe(false)
+      expect('resolved' in st).toBe(false)
+    }
+    // the ran card still keeps ITS OWN preview (the restore's one
+    // lawful result stamp — this run's artifact, not the memory).
+    expect(stages[0]).toMatchObject({
+      id: 's_0',
+      card: 'sfx',
+      provenance: 'restored',
+      result: { run_id: 'r-leak', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r-leak/tts/SaveAudio.0_tts_00001.flac') },
+    })
+  })
+
   it('a single-stage snapshot falls through to the card arm', async () => {
     const side = {
       run_id: 'r2',

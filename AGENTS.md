@@ -49,6 +49,14 @@ non-trivial model- or product-user-visible change updates a keyless
 recorded-session snapshot in the same PR. `test:coverage`, not `test`,
 is the CI coverage gate.
 
+THE 3088 AGENT LOOP (operator law 2026-09-23, paid for — never forget):
+generation-commission testing = ONE human-like task prompt to the headless
+maker on the 3088 lane, then the coding session ANALYZES THE LOGS. The exact
+recipe: `docs/RUNBOOK-3088-AGENT.md`. Read it before any "run the loop /
+test the system / commission" task. Never hand-drive the estate doors as a
+substitute; never spawn 3080 subagents for it; never ask the operator for
+details the runbook already holds.
+
 # Hard Rules
 
 ## AGENT MODE — the media compose contract (chat sessions on the Melite lane)

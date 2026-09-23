@@ -658,8 +658,18 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
 
   test("a history that already holds the urls never double-archives (already-head skip)", async () => {
     const { ctx, domain } = await bootCtx();
+    // A bench is BORN CLEAN OF ARCHIVES (2026-09-23) — the head
+    // shape (a history head whose url matches the current result)
+    // is reached through the LOAD arm's fill-never-clobber carry,
+    // never a birth.
     await ensureBench(domain, {
       session: "ah",
+      stages: [{ id: "s_0", result: { url: "/cur.png", run_id: "c" } }],
+    });
+    await ensureBench(domain, {
+      session: "ah",
+      overwrite: true,
+      expect_rev: 0,
       stages: [{
         id: "s_0",
         result: { url: "/cur.png", run_id: "c" },
