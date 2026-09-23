@@ -43,7 +43,7 @@ import {
   cardBuildStamps,
   repoRootOf,
 } from "../src/index.ts";
-import { stampLine, stampOf } from "@melite/contracts/buildStamp";
+import { stampLine, stampOf, unstamped } from "@melite/contracts/buildStamp";
 
 const NOT_FOUND_BODY = '{"error":"media/not-found"}';
 const NO_QUEUE_BODY =
@@ -1159,6 +1159,32 @@ describe("the card-build handshake", () => {
     // a CHANGED body changes the stamp — the museum detector
     const changed = code + "// touched\n";
     assert.notEqual(stampOf(changed), stampOf(code));
+    // the strip is byte-exact both ways (no newline drift)
+    assert.equal(once.replace(stampLine(stampOf(code)), ""), code);
+  });
+
+  test("THE GUILLOTINE WALL: an inert marker mid-file is never stripped", () => {
+    // the night's live breakage: a bundle inlining this module's
+    // own marker literal (inside a string/template) made the old
+    // textual strip cut the file mid-expression — the whole muxed
+    // /plugins payload failed to parse and every plugin refused to
+    // register in the operator's browser. The strip is structural
+    // now: only a marker that BEGINS the final content line and is
+    // followed by exactly the stamp assignment counts.
+    const marker = "/*__MELITE_BUILD_STAMP__*/";
+    const body =
+      `const STAMP_MARKER = "${marker}";\n` +
+      `const line = \`${marker}globalThis.x="y";\n\`;\n` +
+      `module.exports = { STAMP_MARKER, line };\n`;
+    // a mid-file marker (bare or inside strings/templates) is inert
+    assert.equal(stampOf(body), stampOf(body), "no strip, no crash");
+    const stamped = body + stampLine(stampOf(body));
+    assert.equal(stampOf(stamped), stampOf(body), "the real tail still strips");
+    // the guillotine, reproduced: the OLD law would return only the
+    // prefix before the FIRST-in-order lastIndexOf hit — assert the
+    // new law keeps the body intact
+    assert.ok(unstamped(stamped).endsWith("module.exports = { STAMP_MARKER, line };\n"),
+      "the body survives its own marker literal");
   });
 
   test("cardBuildStamps walks packages/*/lib/client.js, stamped or bare", () => {

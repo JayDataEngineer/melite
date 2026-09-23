@@ -3,7 +3,6 @@
 export * from "./FlowTypes"
 export * from "./benchResult"
 export * from "./browserStorage"
-export * from "./buildStamp"
 export * from "./card"
 export * from "./character"
 export * from "./enhanceTypes"
