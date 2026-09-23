@@ -8,6 +8,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  candidateTrees,
   spliceWorkflow,
   uploadFile,
   isFile,
@@ -190,6 +191,53 @@ describe("uploadReferenced (the staging walk)", () => {
     await expect(uploadReferenced(fakeClient(), {
       n: { class_type: "X", inputs: { v: "/v1/assets/runs/run-1/ghost.png" } },
     }, { runsRoot: ROOT })).rejects.toThrow(/not found/);
+  });
+  // §23 CROSS-ROOTS (the operator's law, 2026-09-23: "the agent
+  // maker and the user share EVERYTHING"): a chained input may
+  // point at a run living in ANOTHER state root — the maker lane's
+  // run resolves on the user's lane (the live refusal this wall
+  // kills: run-9758446ae437's edit sheet, written under the
+  // maker's output/ tree, dangling as "estate asset url not found"
+  // under the user's data/runs/output). Own root first; a miss
+  // names EVERY searched tree.
+  it("THE SHARED-EVERYTHING WALL — an estate URL resolves under a MELITE_STATE_ROOTS tree; a miss names every root", async () => {
+    const OTHER_STATE = join(DIR, "maker-state");
+    mkdirSync(join(OTHER_STATE, "output", "run-maker"), { recursive: true });
+    writeFileSync(join(OTHER_STATE, "output", "run-maker", "sheet.png"), "png");
+    const prev = process.env.MELITE_STATE_ROOTS;
+    process.env.MELITE_STATE_ROOTS = OTHER_STATE;
+    try {
+      // the media route AND the runs-relative form both stage from
+      // the OTHER root's output tree
+      const { graph } = await uploadReferenced(fakeClient(), {
+        media: { class_type: "LoadImage", inputs: { image: "/melite-media/runs/run-maker/sheet.png" } },
+        rel: { class_type: "X", inputs: { v: "run-maker/sheet.png" } },
+      }, { runsRoot: ROOT });
+      expect((graph["media"] as { inputs: { image: string } }).inputs["image"]).toMatch(/sheet_[0-9a-f]{12}\.png$/);
+      expect((graph["rel"] as { inputs: { v: string } }).inputs["v"]).toMatch(/sheet_[0-9a-f]{12}\.png$/);
+      // a true miss names BOTH searched trees (the NAME-THE-ROOT law)
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "X", inputs: { v: "/v1/assets/runs/run-ghost/none.png" } },
+      }, { runsRoot: ROOT })).rejects.toThrow(/not found[\s\S]*searched [^\n]*maker-state\/output/);
+    } finally {
+      if (prev === undefined) delete process.env.MELITE_STATE_ROOTS;
+      else process.env.MELITE_STATE_ROOTS = prev;
+    }
+  });
+  it("candidateTrees: own output root leads, manifest roots' output/ follow, dedup keeps first", () => {
+    const prev = process.env.MELITE_STATE_ROOTS;
+    process.env.MELITE_STATE_ROOTS = [join(DIR, "a"), "", join(DIR, "b"), join(DIR, "a")].join(":");
+    try {
+      const own = join(DIR, "own", "output");
+      expect(candidateTrees(own)).toEqual([
+        own,
+        join(DIR, "a", "output"),
+        join(DIR, "b", "output"),
+      ]);
+    } finally {
+      if (prev === undefined) delete process.env.MELITE_STATE_ROOTS;
+      else process.env.MELITE_STATE_ROOTS = prev;
+    }
   });
   it("runs-relative names resolve under the root; a miss falls to cwd", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {

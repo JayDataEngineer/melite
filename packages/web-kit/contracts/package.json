@@ -18,6 +18,7 @@
     "./package.json": "./package.json",
     "./FlowTypes": "./src/FlowTypes.ts",
     "./regions": "./src/regions.ts",
+    "./rootsManifest": "./src/rootsManifest.ts",
     "./schema": "./src/schema.d.ts",
     "./studio": "./src/studio.ts",
     "./stageView": "./src/stageView.ts",

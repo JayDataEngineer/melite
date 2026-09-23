@@ -5,10 +5,27 @@ import { randomBytes } from "node:crypto";
 import { readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import type { Client } from "@stable-canvas/comfyui-client";
+// The subpath (never the package index — the service's plain-ESM
+// loader cannot link the index's extensionless sibling exports;
+// rootsManifest.ts itself imports nothing).
+import { rootsManifest, searchedVoice } from "@melite/contracts/rootsManifest";
 import { ComfyError } from "./comfyui-types.ts";
 import type { EngineJson } from "./comfyui-types.ts";
+
+/** §23 CROSS-ROOTS TREES for the chained-input arms: the run trees
+ *  a '<run>/<rel>' tail may resolve under — the own output root
+ *  first (the caller's runsRoot — own writes win), then every
+ *  manifest state root's `output/` in manifest order. The state
+ *  root OF the runsRoot is its parent (runsRoot is
+ *  <stateRoot>/output); the dedup keeps the first occurrence so
+ *  a manifest naming the own state root adds nothing. Pure (env
+ *  injectable through rootsManifest). */
+export function candidateTrees(runsRoot: string, env: Record<string, string | undefined> = process.env): string[] {
+  const trees = [runsRoot, ...rootsManifest(dirname(runsRoot), env).map((r: string): string => join(r, "output"))];
+  return [...new Set(trees)];
+}
 
 // ── workflow finalization (native 231-327) ──
 
@@ -306,6 +323,15 @@ export async function uploadReferenced(
     // Resolved on disk under opts.runsRoot — no HTTP hop to self —
     // and uploaded exactly like a local file. Loud on dangling
     // (the http arm's law: re-run the producer card).
+    // §23 CROSS-ROOTS (2026-09-23, the operator's law: "the agent
+    // maker and the user share EVERYTHING"): the run the chained
+    // input points at may live in ANOTHER state root — the maker
+    // lane's runs resolve on the user's lane and back. The
+    // candidates are the manifest's trees (own output root first —
+    // own writes win, the same order every run door searches),
+    // each state root's `output/` carrying the run tree. A miss
+    // names EVERY searched tree (the NAME-THE-ROOT law) — a
+    // two-roots box stays debuggable, never a bare unknown.
     const routePrefix =
       lower.startsWith(MEDIA_ROUTE_PREFIX) ? MEDIA_ROUTE_PREFIX :
       lower.startsWith(ASSET_ROUTE_PREFIX) ? ASSET_ROUTE_PREFIX : "";
@@ -317,9 +343,14 @@ export async function uploadReferenced(
       if (rel.includes("..")) {
         throw new ComfyError("estate asset url refuses traversal: " + p);
       }
-      const cand = join(opts.runsRoot, rel);
-      if (!isFile(cand)) {
-        throw new ComfyError("estate asset url not found (" + p + " -> " + cand + ") — the upstream output is unreachable; re-run the producer card");
+      const trees = candidateTrees(opts.runsRoot);
+      let cand: string | null = null;
+      for (const tree of trees) {
+        const c = join(tree, rel);
+        if (isFile(c)) { cand = c; break }
+      }
+      if (cand === null) {
+        throw new ComfyError("estate asset url not found (" + p + ") — the upstream output is unreachable; re-run the producer card " + searchedVoice(trees));
       }
       if (!(cand in seen)) seen[cand] = (await uploadFile(client, cand)).name;
       return seen[cand] as string;
@@ -327,12 +358,18 @@ export async function uploadReferenced(
     // RUNS-RELATIVE ARM: '<run>/<rel>' (the estate's third accepted
     // artifact form) resolves under the root when the file exists;
     // a miss falls to the cwd arm below (estate-relative input paths
-    // like data/input/x.png ride there — unchanged law).
+    // like data/input/x.png ride there — unchanged law). The same
+    // cross-roots trees serve (the maker's '<run>/<rel>' chained
+    // input stages from its own tree on the user's lane).
     if (opts?.runsRoot !== undefined && !p.startsWith("/") && p.includes("/") && !p.includes("..")) {
-      const cand = join(opts.runsRoot, p);
-      if (isFile(cand)) {
-        if (!(cand in seen)) seen[cand] = (await uploadFile(client, cand)).name;
-        return seen[cand] as string;
+      let hit: string | null = null;
+      for (const tree of candidateTrees(opts.runsRoot)) {
+        const c = join(tree, p);
+        if (isFile(c)) { hit = c; break }
+      }
+      if (hit !== null) {
+        if (!(hit in seen)) seen[hit] = (await uploadFile(client, hit)).name;
+        return seen[hit] as string;
       }
     }
     const cand: string = p.startsWith("/") ? p : join(process.cwd(), p);
