@@ -173,6 +173,16 @@ if (!/\.seamRow > select [^{]*\{[^}]*max-width: 100%/.test(css)) {
 if (!/\.spanRow input [^{]*\{[^}]*max-width: 100%/.test(css)) {
   throw new Error("THE FRAMES FORCE: .spanRow input must cap at max-width: 100% — native number inputs carry ~170px intrinsic width each");
 }
+/* THE +18px WALL (2026-09-23, measured in Chromium, selected call,
+ * knob fold open: beatsWrap 296→314 — width:100% + 16px padding +
+ * 2px border under content-box. Border-box on every rail field;
+ * the short row caps never crush (spanLabel keeps its floor).) */
+if (!/\.railCol input, \.railCol select, \.railCol textarea [^{]*\{[^}]*box-sizing: border-box/.test(css)) {
+  throw new Error("THE +18px: rail fields must be border-box — width:100% + padding + border under content-box renders 100% PLUS 18px");
+}
+if (!/\.spanLabel [^{]*\{[^}]*flex: none/.test(css)) {
+  throw new Error("THE LABEL CRUSHES: .spanLabel must be flex:none — the frame inputs hog the row and crush the cap to 10px");
+}
 
 /* THE LANE-PICKER WALL (2026-09-22, the operator's law): the lanes'
  * add door is the gutter's ⤴ riding the GENERIC source grammar —

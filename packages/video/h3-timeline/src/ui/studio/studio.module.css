@@ -324,8 +324,8 @@ details[open] > summary .chev { transform: rotate(180deg); }
 /* Frame inputs cap at their share of the row (native number inputs
  * carry a ~170px intrinsic width — two of them alone overflow 280px). */
 .spanRow > span { min-width: 0; }
-.spanRow input { max-width: 100%; }
-.spanLabel { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
+.spanRow input { width: 100%; max-width: 100%; }
+.spanLabel { flex: none; font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
 .spanDash { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
 .spanNote { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
 .guidesRow { display: flex; align-items: center; gap: 8px; }
@@ -414,6 +414,12 @@ details[open] > summary .chev { transform: rotate(180deg); }
 
 /* ── CallCardPrompt ─────────────────────────────────────── */
 .beatsWrap { display: flex; flex-direction: column; gap: 4px; }
+.beatsWrap > * { min-width: 0; }
+/* THE +18px (2026-09-23, measured in Chromium: beatsWrap 296→314):
+ * width:100% + padding + border under content-box renders 100% PLUS
+ * 18px. Border-box on every rail field — native elements, so the DSW
+ * wrappers cannot interpose. */
+.railCol input, .railCol select, .railCol textarea { box-sizing: border-box; }
 .iconMini:hover { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent); }
 .iconMini:disabled { opacity: 0.3; }
 .iconMiniMut:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
