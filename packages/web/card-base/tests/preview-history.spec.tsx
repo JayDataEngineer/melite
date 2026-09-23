@@ -16,7 +16,7 @@ import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
 import { createElement as h } from 'react'
 
-import { ImageStagePreview, MeshStagePreview } from '../src/preview.tsx'
+import { AudioStagePreview, ImageStagePreview, MeshStagePreview } from '../src/preview.tsx'
 import type { PreviewOwnerProps } from '@melite/contracts'
 import { resetPickCellsForTests } from '../src/preview.tsx'
 
@@ -519,4 +519,70 @@ test('THE HERO CAP LAW (operator 2026-09-21: "too many history items → the lar
   expect(face).toContain('height: 16px')
   expect(face).toContain('padding: 15px')
   expect(face).not.toContain('font-size') // no text in the face — never a long rectangle
+})
+
+/** CROSS-CARD ISOLATION (the operator's "THAT SHOULD BE
+ *  IMPOSSIBLE", 2026-09-23: sound previews leaked across cards
+ *  under the drill's History). The drill remounts per stage and
+ *  every pick cell is keyed stage+run — these walls pin the render
+ *  half of that law: two sound owners sharing one module registry
+ *  never mix strips, heroes, or picks, drilled sequentially (the
+ *  deck shape: one drill at a time) or mounted together (the chat
+ *  toolview + sidebar shape). */
+const SFX_OWNER: PreviewOwnerProps = {
+  kind: 'audio',
+  artifacts: [{ name: 'sfx.wav', url: '/runs/run-sfx/sfx.wav' }],
+  runStatus: 'completed',
+  stageId: 's_0',
+  runId: 'run-sfx',
+  history: [[{ name: 'sfx-prev.wav', url: '/runs/run-sfx-old/sfx-prev.wav' }]],
+}
+const TTS_OWNER: PreviewOwnerProps = {
+  kind: 'audio',
+  artifacts: [{ name: 'tts.flac', url: '/runs/run-tts/tts.flac' }],
+  runStatus: 'completed',
+  stageId: 's_1',
+  runId: 'run-tts',
+  history: [[{ name: 'tts-prev.flac', url: '/runs/run-tts-old/tts-prev.flac' }]],
+}
+function audioHeroSrc(container: ParentNode): string | null {
+  return (container.querySelector('[data-testid="stage-preview-audio-hero"]') as HTMLAudioElement | null)?.getAttribute('src') ?? null
+}
+function stripTiles(container: ParentNode): NodeListOf<HTMLButtonElement> {
+  return container.querySelectorAll('[data-testid="stage-output-history"] button') as NodeListOf<HTMLButtonElement>
+}
+
+test('CROSS-CARD ISOLATION, SEQUENTIAL: drilling sfx then tts in one registry never mixes strips or picks', () => {
+  // drill card A and promote its history entry
+  const first = render(h(AudioStagePreview, SFX_OWNER))
+  expect(stripTiles(first.container).length).toBe(1)
+  fireEvent.click(stripTiles(first.container)[0] as HTMLElement)
+  expect(audioHeroSrc(first.container)).toBe('/runs/run-sfx-old/sfx-prev.wav')
+  first.unmount()
+  // drill card B in the SAME registry WITHOUT a cell reset (the
+  // afterEach reset is the test-only shape — prod keeps the map):
+  // its hero is its own current, its strip holds ONLY its entry
+  const second = render(h(AudioStagePreview, TTS_OWNER))
+  expect(audioHeroSrc(second.container)).toBe('/runs/run-tts/tts.flac')
+  expect(stripTiles(second.container).length).toBe(1)
+  fireEvent.click(stripTiles(second.container)[0] as HTMLElement)
+  expect(audioHeroSrc(second.container)).toBe('/runs/run-tts-old/tts-prev.flac')
+})
+
+test('CROSS-CARD ISOLATION, SIDE BY SIDE: two mounted audio previews keep their own heroes, strips, and picks', () => {
+  const { container } = render(h('div', null, h(AudioStagePreview, SFX_OWNER), h(AudioStagePreview, TTS_OWNER)))
+  const heroes = container.querySelectorAll('[data-testid="stage-preview-audio-hero"]')
+  expect(heroes.length).toBe(2)
+  expect((heroes[0] as HTMLAudioElement).getAttribute('src')).toBe('/runs/run-sfx/sfx.wav')
+  expect((heroes[1] as HTMLAudioElement).getAttribute('src')).toBe('/runs/run-tts/tts.flac')
+  const strips = container.querySelectorAll('[data-testid="stage-output-history"]')
+  expect(strips.length).toBe(2)
+  expect(strips[0]?.querySelectorAll('button').length).toBe(1)
+  expect(strips[1]?.querySelectorAll('button').length).toBe(1)
+  // promoting the sfx history entry moves ONLY the sfx hero
+  fireEvent.click(strips[0]?.querySelector('button') as HTMLElement)
+  expect((container.querySelectorAll('[data-testid="stage-preview-audio-hero"]')[0] as HTMLAudioElement).getAttribute('src'))
+    .toBe('/runs/run-sfx-old/sfx-prev.wav')
+  expect((container.querySelectorAll('[data-testid="stage-preview-audio-hero"]')[1] as HTMLAudioElement).getAttribute('src'))
+    .toBe('/runs/run-tts/tts.flac')
 })
