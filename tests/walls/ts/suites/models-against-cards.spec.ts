@@ -118,6 +118,93 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     assert.ok(checked.length >= 24, `expected ≥24 checked pairs (wan-vace/scail2 retired 2026-09-21), got ${checked.length}`);
   });
 
+  // THE VARIANT-STAMP LAW (operator 2026-09-23, "base doesn't even
+  // have the audio input — where is the audit?"): the form's
+  // visible_when guards key `variant=` against the RESOLVED
+  // model_defaults value. The tts card's own spec pinned the guard
+  // STRINGS while no wall anywhere pinned the STAMP CHAIN — the
+  // 0.6B family stamped `variant` on no route, so every
+  // variant-scoped row (reference audio, the voice picker, the
+  // sampling rows) rendered on NO lane of that family, with every
+  // existing wall green. This wall wires the two planes the
+  // incident proved unwired:
+  //   (a) every guard ARM names a declared Variant row of every
+  //       boarded family (a dead arm hides its rows forever);
+  //   (b) every ROUTE of every boarded family resolves a stamped,
+  //       declared variant — an unstamped route serves variant:''
+  //       and the lock holds with no key.
+  it("a card declaring variant-scoped fields gets a stamped, declared variant on every route of every boarded family", async (): Promise<void> => {
+    const boardings = await allBoardings();
+    const defs = await loadCardDefs();
+    let guardedCards = 0;
+    for (const [cardId, atoms] of boardings) {
+      const def = defs.get(cardId) as
+        | { schemaCarrier?: unknown; schema?: unknown }
+        | undefined;
+      const carrier = def?.schemaCarrier ?? def?.schema;
+      const dict = (carrier as
+        | { dict?: Record<string, { meta?: { extra?: { visible_when?: string } } } | undefined> }
+        | undefined)?.dict;
+      if (dict === undefined) continue;
+      const guards = Object.values(dict)
+        .map((f) => f?.meta?.extra?.visible_when ?? "")
+        .filter((g) => g.includes("variant="));
+      if (guards.length === 0) continue;
+      guardedCards += 1;
+      const arms = new Map<string, Set<string>>();
+      for (const g of guards) {
+        const conjuncts = g.split("&");
+        const modelGuard = conjuncts.find((c) => c.startsWith("model="));
+        // an arm is owed ONLY on families where the guard can pass:
+        // a model-conjoined guard owes its arms on the named family
+        // alone (the other families hide the row on the model arm
+        // before the variant arm is ever consulted)
+        const owed = new Set<string>();
+        for (const atom of atoms) {
+          if (modelGuard === undefined || modelGuard.slice("model=".length).split("|").includes(atom)) owed.add(atom);
+        }
+        for (const guard of conjuncts) {
+          if (!guard.startsWith("variant=")) continue;
+          for (const arm of guard.slice("variant=".length).split("|")) {
+            const set = arms.get(arm) ?? new Set<string>();
+            for (const o of owed) set.add(o);
+            arms.set(arm, set);
+          }
+        }
+      }
+      for (const [arm, owed] of arms) {
+        for (const atom of owed) {
+          const variantIds = new Set(
+            registryModel(atom).variants.filter((v) => v.group === "Variant").map((v) => v.id),
+          );
+          assert.ok(
+            variantIds.has(arm),
+            `card ${cardId} guards variant=${arm} but family ${atom} declares no such Variant row (${[...variantIds].join(", ")}) — the arm hides its rows on every lane of this family`,
+          );
+        }
+      }
+      for (const atom of atoms) {
+        const variantIds = new Set(
+          registryModel(atom).variants.filter((v) => v.group === "Variant").map((v) => v.id),
+        );
+        for (const id of modelIds()) {
+          const view = getModel(id);
+          if (view.id !== atom) continue;
+          const stamped = (view.defaults as Record<string, unknown>).variant;
+          assert.ok(
+            typeof stamped === "string" && stamped !== "",
+            `route ${id} (family ${atom}) resolves NO variant stamp — card ${cardId}'s variant-scoped rows (guards: ${guards.join(" ; ")}) render on no lane of this route`,
+          );
+          assert.ok(
+            variantIds.has(stamped),
+            `route ${id} stamps variant '${stamped}' but family ${atom} declares no such Variant row`,
+          );
+        }
+      }
+    }
+    assert.ok(guardedCards >= 1, "the variant-guard grammar lost its only speaker — update this wall with the successor");
+  });
+
   it("every non-empty COMFYUI card ref names a REGISTERED card (the amnesty is over)", async (): Promise<void> => {
     const cards = await cardTable();
     // THE CARD SELECTS THE ATOMS: a boarded id naming no

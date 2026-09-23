@@ -219,11 +219,11 @@ const QvoiceSaveFields = z.object({
       wtype: 'text', group: 'qvoice_save', zone: 'mods', order: 0, required: true,
       tooltip: 'Name for the designed persona — becomes the .qvoice filename stem. Reused across every future TTS render.',
     }),
-  style_instruction: z.string().description('Style Instruction')
-    .extra('extra', {
-      wtype: 'textarea', group: 'qvoice_save', zone: 'mods', order: 1, required: true,
-      tooltip: 'The voice description — becomes the VoiceDesign prompt (e.g. \'A warm female voice with a British accent\').',
-    }),
+  // THE PROMPT MOVED TO THE LANE (operator 2026-09-23, three
+  // variants three inputs): the design prompt is the VoiceDesign
+  // lane's own required input — the card's task-named row
+  // (design_prompt, "Voice Persona & Timbre"), visible on that
+  // variant only. One knob, one owner: never restated here.
   temperature: z.number().description('Temperature').min(0).max(2).step(0.05).default(0.7)
     .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 2, tooltip: 'Design sampling temperature.' }),
   top_p: z.number().description('Top-P').min(0).max(1).step(0.01).default(0.9)

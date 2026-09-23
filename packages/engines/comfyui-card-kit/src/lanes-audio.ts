@@ -236,13 +236,12 @@ export function ttsCloneT1(p: Record<string, unknown>, model: ModelFacts, g: Gra
  *  sampling ride VoiceStudio export_lite on the larger checkpoint;
  *  the card text voices the sample. Admission stays on the card. */
 export function ttsDesignT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
-  // FLAT READ (2026-09-23, the unrunnable-lane fix): the qvoice_save
-  // PACK CONTRACT (comfyui-cordis mods/packs.ts) admits
-  // voice_name/style_instruction + design sampling as FLAT params.
-  // The old nested read (p.qvoice_save[0].voice_name) demanded the
-  // one shape phase-1 admission refuses as an unknown param — the
-  // design lane could never run. The lane now reads exactly what the
-  // pack admits; required-field admission stays on the card.
+  // THE LANE'S OWN PROMPT ROW (operator 2026-09-23, three variants
+  // three inputs): the design prompt rides the CARD as
+  // design_prompt (the task-named "Voice Persona & Timbre" row) —
+  // the pack owns the export name + design sampling, never the
+  // prompt (one knob, one owner). Required-field admission stays
+  // on the card.
   assertModUse(model, 'qvoice_save')
   const seed = mintSeed(p)
   const loaded = loadAudiocore(g, model)
@@ -251,7 +250,7 @@ export function ttsDesignT1(p: Record<string, unknown>, model: ModelFacts, g: Gr
     model: loaded,
     mode: 'export_lite',
     name: (p.voice_name as string).trim(),
-    instruct: (p.style_instruction as string).trim(),
+    instruct: (p.design_prompt as string).trim(),
     sample_text: p.text,
     temperature: p.temperature,
     top_p: p.top_p,

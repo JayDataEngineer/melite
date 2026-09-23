@@ -54,7 +54,7 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
   assert.deepEqual(gen.flatMap(names), ["controlnets", "controlnet_strength_floor", "ip_adapters", "loras"],
     "image-gen absorbs loras + the controlnet stack (the z-image restoration) + the ip_adapter bag (the refused-fate restoration: vocabulary served, entries refuse loud)");
   const tts = svc.cardModFields("tts");
-  assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "repetition_penalty", "seed", "speed", "style_instruction", "temperature", "top_p", "voice_name", "voice_strength"], "tts absorbs the qvoice pack + the qvoice_save pack (the README stroke — save lives on the tts card's mods; voice_strength replaced the fiction PCA knob at the round-trip stroke, the clone pipeline's real knob)");
+  assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "repetition_penalty", "seed", "speed", "temperature", "top_p", "voice_name", "voice_strength"], "tts absorbs the qvoice pack + the qvoice_save pack (the README stroke — save lives on the tts card's mods; the DESIGN PROMPT moved to the lane's own card row design_prompt 2026-09-23, one knob one owner — the pack keeps the export name + design sampling)");
 });
 
 // THE ENVELOPE PARITY: formSchemas serves the card's own toJSON

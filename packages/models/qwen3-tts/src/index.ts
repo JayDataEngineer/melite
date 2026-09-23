@@ -25,7 +25,13 @@ export const DECL: ModelDecl = {
   "engine": "comfyui",
   "defaults": {
     "mode": "tts",
-    "voice": "vivian"
+    "voice": "vivian",
+    // THE VARIANT STAMP (the 1.7B mirror's own law): the family's
+    // resting variant rides the defaults so the customvoice route's
+    // model_defaults carries variant:'customvoice' — without it the
+    // 0.6B form's variant-scoped rows (the voice picker, sampling)
+    // hid on EVERY lane of this family.
+    "variant": "customvoice"
   },
   "genre": "audio",
   "mods": [
@@ -63,8 +69,15 @@ export const DECL: ModelDecl = {
       // THE RE-POINT (krea-2-raw precedent): a variant pick
       // resolves server-side to the route address; the NULL stamp
       // unsets the inherited persona (the voicedesign meld).
+      // THE VARIANT STAMP (operator 2026-09-23, "base doesn't even
+      // have the audio input"): resolver_defaults MUST carry
+      // variant:'base' — the form's visible_when guards key on the
+      // RESOLVED variant value (model_defaults ← this overlay), and
+      // an unstamped route serves variant:'' — every variant-scoped
+      // row (ref_audio/ref_text/sampling) hid on this lane forever.
       "resolver_defaults": {
         "model": "qwen3-tts-base",
+        "variant": "base",
         "voice": null,
       },
       "cells": [
