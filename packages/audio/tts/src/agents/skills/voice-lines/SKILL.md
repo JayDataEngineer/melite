@@ -13,9 +13,11 @@ carrying a whole script.
 
 ## Voice DNA
 
-Per character, lock: the .qvoice embedding (or preset voice) AND the
-style instruction. Both identical across every line the character
-speaks — that is what makes them recognisable.
+Per character, lock the TWO halves separately: the .qvoice embedding
+(WHO — built once from the character instruct on the VoiceDesign
+lane) AND the style instruction (HOW — the emotion instruct on the
+performing CustomVoice lane). Both identical across every line the
+character speaks — that is what makes them recognisable.
 
 ## Delivery
 

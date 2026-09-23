@@ -2,7 +2,7 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { ttsT1 } from '@melite/comfyui-card-kit'
+import { ttsDesignT1, ttsT1 } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
@@ -27,7 +27,7 @@ export const schema = z.object({
   //   VoiceDesign → Voice Persona & Timbre (WHO is speaking —
   //                 designs a brand-new voice from the description)
   style_instruction: z.string().description("Emotion & Delivery Style").extra('extra', { order: null, placeholder: "e.g. Speak with immense excitement, laughing slightly", tooltip: "HOW the preset speaker delivers the text — emotion, tone, pacing (excited, whisper, cheerful). The 1.7B CustomVoice lane's capability; the 0.6B has no instruction control, Base clones instead, VoiceDesign designs the speaker itself", wtype: 'textarea', visible_when: 'model=qwen3-tts-voicedesign&variant=customvoice' }),
-  design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', { order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the lane designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice can later perform any script on the Base lane", wtype: 'textarea', visible_when: 'model=qwen3-tts-voicedesign&variant=voicedesign' }),
+  design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', { order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the exporter designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice performs any script on every qwen3-tts lane. Pairs with the Design mod's name (voice_name) — the save fires from ANY lane", wtype: 'textarea', visible_when: 'model=qwen3-tts-voicedesign|qwen3-tts|qwen3-tts-base' }),
   // THE CLONE INPUTS (the Base variant clones from a 3-second
   // reference): reference audio + its transcript, Base only.
   // OPTIONAL when a .qvoice rides instead (upstream's design-then-
@@ -78,10 +78,10 @@ export const identity = {
   icon: 'microphone',
   principles: [
     'text is required — empty text fails',
-    'the Base variant clones: reference audio + transcript required, no persona, no instruction',
-    'task-named rows, never "instruct": Emotion & Delivery Style styles HOW the CustomVoice preset reads; Voice Persona & Timbre designs WHO speaks on the VoiceDesign lane — different controls, never one knob',
-    'the VoiceDesign variant designs: state the persona description (Voice Persona & Timbre) + the Design mod name',
-    'Use Voice Embedding (.qvoice) for consistent character voices',
+    'ALWAYS the big model: the 1.7B (qwen3-tts-voicedesign) is the default on every door; the 0.6B is a fallback, never an unprompted pick; the Base route is named only to clone from reference audio',
+    'THE THREE SIGNATURES: VoiceDesign takes the CHARACTER instruct (Voice Persona & Timbre — WHO speaks, designed and exported as a .qvoice); CustomVoice takes the EMOTION instruct (Emotion & Delivery Style — HOW the line reads, on a preset or a saved voice); Base only clones (3-second reference + transcript in, that speaker out)',
+    'THE FLOW: character instruct INTO emotion instruct — design the character once on VoiceDesign (qvoice_save: voice_name + the persona description), then the saved .qvoice performs on CustomVoice (qvoice) with the emotion instruct riding on top',
+    'Use Voice Embedding (.qvoice) for consistent character voices — the file IS the voice',
     'One line per call — serial execution for multi-line sequences',
   ],
 }
@@ -91,7 +91,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     id: 'tts',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'tts',
-    boarded: [...BOARDED],
+    // THE OFFERED SET = atoms + variant routes (operator 2026-09-23,
+    // qvoice across ALL qwen3-tts): the bench door and the tool enum
+    // offer the SAME set — the Base compose address rides boarded so
+    // a stage may name it (the envelope serves through the
+    // ROUTE→ATOM FOLD; an unoffered address starves the lane no
+    // less than a dropped envelope). The default stays BOARDED[0].
+    boarded: [...BOARDED, ...VARIANT_ADDRESSES],
     tags: ['audio', 'tts', 'voice', 'generate'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -134,6 +140,38 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
           ? bag.some((e) => !blank((e as Record<string, unknown>)?.qvoice))
           : !blank(bag);
       }
+      // THE SAVE INTENT (operator 2026-09-23, the full qvoice law:
+      // SAVE and LOAD across ALL qwen3-tts): a stated voice_name (the
+      // Design mod's export name) is the save signal — the studio
+      // exporter fires from ANY lane (it loads its own model
+      // variants; the lane's checkpoint only resolves directories).
+      // The VoiceDesign VARIANT is the same path by definition
+      // (designing IS its lane). Walls: the export needs BOTH the
+      // name and the persona description; it takes no delivery
+      // style, no clone reference, no saved persona (an export
+      // performs nothing), and the stale 'qvoice_save' param names
+      // no surface (the Design entry is FLAT).
+      const saveIntent = lane === 'design' || !blank(doc.voice_name)
+      if (saveIntent) {
+        if (blank(doc.voice_name) || blank(doc.design_prompt)) {
+          throw new Error("required Design params 'voice_name' + 'design_prompt' missing or empty on the tts card (the export needs the persona description + the Design mod's name — state both; the save fires from any lane)")
+        }
+        if (!blank(doc.style_instruction)) {
+          throw new Error("param 'style_instruction' fires nothing on a Design export (the persona description designs the speaker — drop the delivery style, or style the exported voice on the CustomVoice lane after the save)")
+        }
+        if (!blank(doc.ref_audio) || !blank(doc.ref_text)) {
+          throw new Error("params 'ref_audio'/'ref_text' fire nothing on a Design export (the exporter designs from the description — no reference clones; drop them, or run the Base variant without voice_name)")
+        }
+        const stale = doc.qvoice_save as unknown
+        if (stale !== undefined) {
+          throw new Error("param 'qvoice_save' names no surface on the tts card (the Design entry is FLAT — voice_name + design_prompt + sampling, the qvoice_save pack contract)")
+        }
+        if (qvoiceStated(doc)) {
+          throw new Error("param 'qvoice' fires nothing on a Design export (an export creates a new voice — it performs no saved persona; drop the Voice entry or switch to a performing lane)")
+        }
+        ttsDesignT1(doc, model, g, runId)
+        return
+      }
       if (lane === 'clone') {
         // THE 1:1 CLONE LAW (operator 2026-09-23): Base clones from
         // ref_audio+ref_text OR performs a designed .qvoice (the
@@ -144,46 +182,23 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
           throw new Error("required params 'ref_audio' + 'ref_text' missing or empty on the tts card (the Base variant clones — state the 3-second reference + transcript, or a Voice Embedding to perform the designed voice)")
         }
         if (!blank(doc.style_instruction) || !blank(doc.design_prompt)) {
-          throw new Error("params 'style_instruction'/'design_prompt' fire nothing on the tts card's Base variant (style control styles the CustomVoice persona, the persona description designs a VoiceDesign speaker — the cloner takes neither; drop them or switch variants)")
+          throw new Error("params 'style_instruction'/'design_prompt' fire nothing on the tts card's Base variant (style control styles the CustomVoice persona; the persona description only exports WITH the Design mod's name — pair it with voice_name or drop them)")
         }
       } else {
         if (!blank(doc.ref_audio) || !blank(doc.ref_text)) {
           throw new Error("params 'ref_audio'/'ref_text' fire nothing on the tts card outside the Base variant (reference audio only clones — switch to the Base variant or drop the reference)")
         }
-        if (lane !== 'design' && !blank(doc.design_prompt)) {
-          throw new Error("param 'design_prompt' fires nothing on the tts card outside the VoiceDesign variant (the persona description designs a speaker — switch to the VoiceDesign variant or drop it)")
-        }
-        if (lane === 'design' && !blank(doc.style_instruction)) {
-          throw new Error("param 'style_instruction' fires nothing on the tts card's VoiceDesign variant (emotion styling rides the CustomVoice lane; the design lane takes 'design_prompt' — the Voice Persona & Timbre row)")
+        if (!blank(doc.design_prompt)) {
+          throw new Error("param 'design_prompt' without 'voice_name' fires nothing on the tts card (the persona description exports a voice only with the Design mod's name — state voice_name too, or drop the description)")
         }
       }
       // THE 0.6B INSTRUCT WALL (upstream capability table: the
       // 0.6B-CustomVoice row has NO instruction control — instruct
       // is the 1.7B lane's capability): a stated instruct on the
       // small CustomVoice refuses loud, never silently drops.
-      if (lane !== 'design' && !blank(doc.style_instruction) && model.id === 'qwen3-tts') {
+      // (the export path returned above — every lane here performs.)
+      if (!blank(doc.style_instruction) && model.id === 'qwen3-tts') {
         throw new Error("param 'style_instruction' fires nothing on the 0.6B CustomVoice lane (instruction control is the 1.7B checkpoint's capability upstream — switch to the 1.7B family's CustomVoice variant or drop the instruction)")
-      }
-      if (lane === 'design') {
-        // THE LANE'S OWN SURFACE (operator 2026-09-23, three
-        // variants three inputs): the design prompt rides the card
-        // as its own task-named row (design_prompt — Voice Persona
-        // & Timbre); the pack keeps the export name + design
-        // sampling. Required-field admission stays here.
-        if (blank(doc.voice_name) || blank(doc.design_prompt)) {
-          throw new Error("required Design params 'voice_name' + 'design_prompt' missing or empty on the tts card (the VoiceDesign lane designs — state the Voice Persona & Timbre description + the Design mod's name for the export)")
-        }
-        const stale = doc.qvoice_save as unknown
-        if (stale !== undefined) {
-          throw new Error("param 'qvoice_save' names no surface on the tts card (the Design entry is FLAT — voice_name + design_prompt + sampling, the qvoice_save pack contract)")
-        }
-        const useBag = doc.qvoice as Array<Record<string, unknown>> | string | undefined;
-        const useStated = Array.isArray(useBag)
-          ? useBag.some((e) => !blank((e as Record<string, unknown>)?.qvoice))
-          : !blank(useBag);
-        if (useStated) {
-          throw new Error("param 'qvoice' fires nothing on the tts card's VoiceDesign variant (design exports a new voice — it performs no saved persona; drop the Voice entry or switch to the CustomVoice variant)")
-        }
       }
       ttsT1(doc, model, g, runId)
     },

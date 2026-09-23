@@ -20,6 +20,7 @@ import {
   ModelError,
   getModel,
   modelIds,
+  owningAtom,
   registryIds,
   registryModel,
 } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
@@ -73,7 +74,12 @@ async function allAdmits(): Promise<Map<string, readonly string[]>> {
 /** comfyui compose's engine truth (ENGINE_TRUTH_KEYS @ 034e1f97,
  *  compose/__init__.py line 76 — "the audio lanes' default mode
  *  (tts/design) rides defaults and the renderer reads it as data"). */
-const ENGINE_TRUTH = ["mode", "variant"] as const;
+// ENGINE_TRUTH mirrors the boot contract's call (service.ts): the
+// compose's own declaration keys, never card fields. "model" is the
+// ROUTE RE-POINT token — a card boarding a route address (qvoice
+// across ALL qwen3-tts, operator 2026-09-23) walks that view's
+// defaults and the token must skip like "variant" does.
+const ENGINE_TRUTH = ["mode", "variant", "model"] as const;
 
 async function cardTable(): Promise<CardDomains> {
   const defs = await loadCardDefs();
@@ -174,22 +180,26 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       }
       for (const [arm, owed] of arms) {
         for (const atom of owed) {
+          // THE FOLD (qvoice across ALL qwen3-tts, 2026-09-23): a
+          // boarding may name a ROUTE ADDRESS (qwen3-tts-base) —
+          // resolve its owning atom before the registry read.
           const variantIds = new Set(
-            registryModel(atom).variants.filter((v) => v.group === "Variant").map((v) => v.id),
+            registryModel(owningAtom(atom)).variants.filter((v) => v.group === "Variant").map((v) => v.id),
           );
           assert.ok(
             variantIds.has(arm),
-            `card ${cardId} guards variant=${arm} but family ${atom} declares no such Variant row (${[...variantIds].join(", ")}) — the arm hides its rows on every lane of this family`,
+            `card ${cardId} guards variant=${arm} but family ${owningAtom(atom)} declares no such Variant row (${[...variantIds].join(", ")}) — the arm hides its rows on every lane of this family`,
           );
         }
       }
       for (const atom of atoms) {
+        const atomId = owningAtom(atom);
         const variantIds = new Set(
-          registryModel(atom).variants.filter((v) => v.group === "Variant").map((v) => v.id),
+          registryModel(atomId).variants.filter((v) => v.group === "Variant").map((v) => v.id),
         );
         for (const id of modelIds()) {
           const view = getModel(id);
-          if (view.id !== atom) continue;
+          if (owningAtom(view.id) !== atomId) continue;
           const stamped = (view.defaults as Record<string, unknown>).variant;
           assert.ok(
             typeof stamped === "string" && stamped !== "",

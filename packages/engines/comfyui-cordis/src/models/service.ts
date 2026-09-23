@@ -241,6 +241,18 @@ export class ModelsService extends Service {
     return head
   }
 
+  /** The OWNING ATOM of an address (the fold read, operator
+   *  2026-09-23 — qvoice across ALL qwen3-tts): a route composes
+   *  through its owner, an atom owns itself. Mods board at the
+   *  ATOM (the interlock: families name atoms), so every envelope
+   *  plane folds an address through this read — a variant route
+   *  (qwen3-tts-base) carries its family's packs exactly like the
+   *  head. Unknown ids return the name as given (the callers' own
+   *  filters refuse). */
+  owningAtom(id: string): string {
+    return this.routes.get(id)?.modelId ?? id
+  }
+
   /** The declaration for an address — EVERY served id composes
    *  through the cascade (the model id itself carries a route
    *  row: its resolving variant + cell; paper §3.2.3: base ←
@@ -721,8 +733,15 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
      see the range note). */
   if (domains !== null) {
     const { validateRegistryAgainstCards } = await import("./validate.ts");
+    // ENGINE_TRUTH ("mode", "variant", "model"): the compose's own
+    // declaration keys, never card fields. "model" is the ROUTE
+    // RE-POINT token (resolver_defaults.model, the krea-2-raw
+    // precedent — a variant pick resolves server-side); a card
+    // boarding a route address (qvoice across ALL qwen3-tts,
+    // operator 2026-09-23) walks that view's defaults and the
+    // token must skip like "variant" does.
     validateRegistryAgainstCards(
-      decls, domains, ["mode", "variant"], boardings,
+      decls, domains, ["mode", "variant", "model"], boardings,
       new Set(svc.modelIds()),
       new Map(svc.modelIds().map((id): [string, ModelDecl] => [id, svc.getModel(id)])),
       cardAdmits,

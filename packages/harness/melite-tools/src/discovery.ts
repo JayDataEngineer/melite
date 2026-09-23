@@ -22,6 +22,7 @@ import {
   getModel,
   isServedFamily,
   liveScanOrder,
+  owningAtom,
   registryModel,
   loadCardDefs,
   modelIds,
@@ -443,7 +444,16 @@ function familyFace(fam: string): string {
   try {
     return registryModel(fam).label
   } catch {
-    return fam
+    // A ROUTE ADDRESS (qwen3-tts-base, the qvoice-across-all
+    // boarding 2026-09-23): the DECL face belongs to its owning
+    // atom; the route faces the COMPOSED view label — model +
+    // variant tokens joined at the derived read ("Qwen3-TTS 0.6B
+    // Base"), never the raw id.
+    try {
+      return getModel(fam).label
+    } catch {
+      return fam
+    }
   }
 }
 
@@ -524,7 +534,18 @@ export function specBody(
   //  its frozen 15-key row are gone. The client derives fields,
   //  groups, defaults, and presentation off the envelope
   //  (card-base fieldsOf); this body projects card meta only.
-  const schemas = svc.formSchemas(res.card, key)
+  // THE ROUTE→ATOM FOLD (operator 2026-09-23, qvoice across ALL
+  //  qwen3-tts): the envelope's mod filter matches registered ATOMS,
+  //  and mods board at the FAMILY level (the fold law) — a variant
+  //  route address (qwen3-tts-base) asks with its OWNING ATOM
+  //  (owningAtom: a route composes through its owner) so every
+  //  address a family serves carries the family's packs exactly
+  //  like the head. Without the fold the route's envelope starves
+  //  and the modifier entry dies with it (the envelope-mirror kill
+  //  — the qvoice base-lane hole this fold closed). An unknown name
+  //  asks as named and the filters speak for themselves.
+  const envelopeKey = owningAtom(key)
+  const schemas = svc.formSchemas(res.card, envelopeKey)
   if (schemas === null) {
     throw new Error(`form-spec: card '${res.card}' unknown`)
   }

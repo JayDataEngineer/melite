@@ -34,8 +34,14 @@ export const DECL: ModelDecl = {
     "variant": "customvoice"
   },
   "genre": "audio",
+  // QVOICE SAVES AND LOADS ACROSS ALL qwen3-tts (operator
+  // 2026-09-23): the load pack performs a saved persona on every
+  // lane; the save pack fires the studio exporter from any lane
+  // (the studio loads its own variants — no VoiceDesign variant is
+  // claimed for the 0.6B, the 1:1 upstream table holds).
   "mods": [
-    "qvoice"
+    "qvoice",
+    "qvoice_save"
   ],
   "variants": [
     {

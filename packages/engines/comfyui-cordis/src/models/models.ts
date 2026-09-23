@@ -44,6 +44,10 @@ export function liveScanOrder(): string[] {
 /** The MODEL registry ids — one per model (the declaration plane,
  *  vs the served route view). */
 export const registryModel = (id: string) => modelsService().registryModel(id);
+/** The OWNING ATOM of an address (the fold read): a route composes
+ *  through its owner, an atom owns itself — the envelope plane's
+ *  one route→atom spelling. */
+export const owningAtom = (id: string): string => modelsService().owningAtom(id);
 export const registryIds = (): string[] => modelsService().registryIds();
 
 export function mergedDefaults(

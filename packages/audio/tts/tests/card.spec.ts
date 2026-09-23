@@ -99,7 +99,13 @@ describe("the lane-bespoke leaves (the model guard — the persona knobs render 
     // persona, no instruction).
     assert.equal(leaf("voice"), "variant=customvoice", "voice declares its variant (either size — the lane owns the input)");
     assert.equal(leaf("style_instruction"), "model=qwen3-tts-voicedesign&variant=customvoice", "the Emotion & Delivery Style row declares the 1.7B CustomVoice lane (upstream's capability table)");
-    assert.equal(leaf("design_prompt"), "model=qwen3-tts-voicedesign&variant=voicedesign", "the Voice Persona & Timbre row declares the VoiceDesign lane — the lane's own prompt, never the pack's");
+    // QVOICE SAVES AND LOADS ACROSS ALL qwen3-tts (operator
+    // 2026-09-23, the full law): the persona description pairs with
+    // the Design mod's name (voice_name) to fire the studio exporter
+    // from ANY lane — the row shows on every address; the compose
+    // walls own the pairing (voice_name without design_prompt, or
+    // the reverse, refuses loud).
+    assert.equal(leaf("design_prompt"), "model=qwen3-tts-voicedesign|qwen3-tts|qwen3-tts-base", "the Voice Persona & Timbre row shows on every qwen3-tts address — the save fires from any lane; the lane's own prompt, never the pack's");
     // the SHARED surface never hides
     assert.equal(leaf("text"), undefined, "the words ride every lane");
     // synth sampling renders on the synthesis lanes only (design
@@ -185,9 +191,9 @@ describe("the three-lane surfaces (the README stroke 2026-09-21 — each model r
     assert.equal(leaf("seed"), "variant=customvoice|base", "seed never renders on design");
     assert.equal(leaf("text"), undefined, "the words ride every lane (the design sample on VoiceDesign)");
   });
-  it("the card boards the two Qwen sizes LARGE-FIRST (boarded[0] is the default everywhere — the operator's large-model default)", () => {
+  it("the card offers BOTH SIZES + THE BASE ROUTE, LARGE-FIRST (boarded[0] is the default everywhere — the operator's large-model default; the base compose address rides the offer, qvoice across ALL qwen3-tts, operator 2026-09-23)", () => {
     assert.equal(def.boarded[0], "qwen3-tts-voicedesign");
-    assert.deepEqual([...def.boarded].sort(), ["qwen3-tts", "qwen3-tts-voicedesign"]);
+    assert.deepEqual([...def.boarded].sort(), ["qwen3-tts", "qwen3-tts-base", "qwen3-tts-voicedesign"]);
   });
 });
 

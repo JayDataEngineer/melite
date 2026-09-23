@@ -177,6 +177,7 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
     ['@melite/models-z-image/mods/ip_adapter', 'z-image ip_adapter'],
     ['@melite/models-anny/mods/verbs', 'anny verbs'],
     ['@melite/models-qwen3-tts/mods/qvoice', 'qwen3-tts qvoice'],
+    ['@melite/models-qwen3-tts/mods/qvoice_save', 'qwen3-tts qvoice_save'],
     // THE CARRY (operator 2026-09-23: qvoice across ALL qwen3-tts):
     // the 1.7B family boards the pack too — a saved persona
     // performs on its lanes exactly as on the 0.6B's.

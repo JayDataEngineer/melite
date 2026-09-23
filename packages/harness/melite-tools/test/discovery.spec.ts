@@ -243,8 +243,10 @@ describe('live door arms', () => {
     const tts = tools.find((t) => t['name'] === 'tts')!
     // THE LARGE DEFAULT (operator 2026-09-23): boarded[0] = the 1.7B
     // family — the manifest's default model + family order lead large.
+    // The Base compose address rides last (qvoice across ALL
+    // qwen3-tts — the offer serves atoms + the clone route).
     assert.equal(tts['model'], 'qwen3-tts-voicedesign')
-    assert.deepEqual(tts['families'], ['qwen3-tts-voicedesign', 'qwen3-tts'])
+    assert.deepEqual(tts['families'], ['qwen3-tts-voicedesign', 'qwen3-tts', 'qwen3-tts-base'])
     assert.ok(typeof tts['params_schema'] === 'object')
   })
 
@@ -720,23 +722,23 @@ describe('live door arms', () => {
       assert.ok(def !== undefined, card + ' boards')
       return (specBody(svc, defs, { card, service: model, model })['families'] as Array<Record<string, unknown>>)
     }
-    // the tts rail: two sizes, two checkpoint-honest faces —
-    // the operator's table: SIZES are models (the rail names
-    // checkpoints, never flavors), FLAVORS are variants (each size's
-    // matrix carries its flavors — the 1:1 law puts customvoice/
-    // voicedesign/base on the 1.7B; the .6 carries customvoice/base).
-    // The 1.7B leads (the large default).
+    // the tts rail: two sizes, two checkpoint-honest faces, plus the
+    // Base compose address (qvoice across ALL qwen3-tts, operator
+    // 2026-09-23 — the rail names checkpoints, never flavors, and
+    // the variant route rides for agents to name the clone lane;
+    // flavors are variants in each size's matrix). The 1.7B leads
+    // (the large default).
     const tts = faces('tts', 'qwen3-tts-voicedesign')
     assert.deepEqual(
       tts.map((f) => [f['id'], f['label']]),
-      [['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B'], ['qwen3-tts', 'Qwen3-TTS 0.6B']],
+      [['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B'], ['qwen3-tts', 'Qwen3-TTS 0.6B'], ['qwen3-tts-base', 'Qwen3-TTS 0.6B Base Native']],
     )
     // true families keep their DECL faces (the 2026-09-16 family-face law, unmoved)
     const music = faces('music', 'music3')
     assert.deepEqual(music.map((f) => [f['id'], f['label']]), [['music3', 'MiniMax Music 3'], ['yue2', 'YuE2']])
   })
 
-  test('THE QVOICE SEAT (the voice-lock mod catch 2026-09-21 — the boarded qvoice pack renders its modifiers entry on the owner, never on the scoped-out base)', async () => {
+  test('THE QVOICE SEAT (qvoice loads across ALL qwen3-tts — the owner and every route, operator 2026-09-23)', async () => {
     const defs = await loadCardDefs()
     const svc = theService()
     const modsOf = (model: string): Array<Record<string, unknown>> => {
@@ -762,13 +764,17 @@ describe('live door arms', () => {
         cardinality: 'list', max_stack: 1, options: [],
       },
     )
-    // the scoped-out base lane withholds it (its envelope is
-    // dropped — a seat with no envelope is a brick by construction)
+    // QVOICE LOADS ON EVERY ADDRESS (operator 2026-09-23, the full
+    // law — qvoice saves and loads across ALL qwen3-tts): the base
+    // route's envelope arrives through the ROUTE→ATOM FOLD at the
+    // spec door (owningAtom: a route composes through its owner) —
+    // the pre-fold owner-scoping that starved the base lane is DEAD
+    // LAW; the seat renders everywhere the family serves.
     const base = modsOf('qwen3-tts-base')
-    assert.ok(!base.some((m) => m['kind'] === 'qvoice'), 'no qvoice seat on base: ' + JSON.stringify(base.map((m) => m['kind'])))
+    assert.ok(base.some((m) => m['kind'] === 'qvoice'), 'the qvoice seat renders on the base route: ' + JSON.stringify(base.map((m) => m['kind'])))
   })
 
-  test('THE DESIGN SEAT (the README stroke 2026-09-21 — the save mod renders its entry on the designer, nowhere else)', async () => {
+  test('THE DESIGN SEAT (qvoice saves across ALL qwen3-tts — the exporter fires from any lane, operator 2026-09-23)', async () => {
     const defs = await loadCardDefs()
     const svc = theService()
     const modsOf = (model: string): Array<Record<string, unknown>> => {
@@ -791,10 +797,16 @@ describe('live door arms', () => {
         cardinality: 'list', max_stack: 1, options: [],
       },
     )
-    // the 0.6B lanes withhold it (their envelopes are dropped —
-    // a seat with no envelope is a brick by construction)
-    for (const other of ['qwen3-tts', 'qwen3-tts-base']) {
-      const mods = modsOf(other)
-      assert.ok(!mods.some((m) => m['kind'] === 'qvoice_save'), 'no save seat on ' + other + ': ' + JSON.stringify(mods.map((m) => m['kind'])))
+    // QVOICE SAVES AND LOADS ACROSS ALL qwen3-tts (operator
+    // 2026-09-23, the full law): the SAVE seat renders on every
+    // address — the save fires the studio exporter from any lane (it
+    // loads its own variants), and the LOAD seat rides with it. The
+    // base route's envelope arrives through the ROUTE→ATOM FOLD at
+    // the spec door — without the fold the route's entry starved
+    // (the envelope-mirror kill: a seat with no envelope is a brick).
+    for (const model of ['qwen3-tts', 'qwen3-tts-base']) {
+      const mods = modsOf(model)
+      assert.ok(mods.some((m) => m['kind'] === 'qvoice_save'), 'the save seat renders on ' + model + ': ' + JSON.stringify(mods.map((m) => m['kind'])))
+      assert.ok(mods.some((m) => m['kind'] === 'qvoice'), 'the load seat renders on ' + model + ': ' + JSON.stringify(mods.map((m) => m['kind'])))
     }
   })

@@ -1,9 +1,12 @@
-// families/audio/qwen3-tts/mods/qvoice.ts — qwen3-tts'SS QVOICE BOARDING (a
-// bare flavor: owner-only — CustomVoice embeddings render through
-// the qwen3-tts family; qwen3-tts-base scopes them OUT of its
-// form-spec (the owner-scoping law: formSpec('tts', 'qwen3-tts-base')
-// drops the absorbed qvoice fields, the owner keeps them). Shapes
-// live on the contract, one shape).
+// families/audio/qwen3-tts/mods/qvoice.ts — the 0.6B family's QVOICE
+// LOAD boarding (operator 2026-09-23, the full law: qvoice SAVES and
+// LOADS across ALL qwen3-tts). The families list names the registered
+// ATOM only (the interlock: routes compose, the registry holds atoms)
+// — every address the family serves, including the base route
+// 'qwen3-tts-base', carries this envelope through the ROUTE→ATOM FOLD
+// at the spec door (discovery.ts specBody). The clone lane performs a
+// stated .qvoice through the studio's generate pipeline (the exported
+// voice IS the clone prompt).
 import type { Context } from '@deepseek-ai/cordis'
 
 export const inject = ['comfyui']
