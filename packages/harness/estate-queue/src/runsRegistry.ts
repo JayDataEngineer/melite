@@ -373,7 +373,7 @@ export class RunsRuntimeService extends Service {
         outputNodes: {},
         inputNames: {},
       };
-      const { run } = registerCompiledRun({
+      const reg = registerCompiledRun({
         compiled: { stages: [cardStage] },
         testFlag: checked.testFlag,
         draftId: checked.draftId,
@@ -391,6 +391,10 @@ export class RunsRuntimeService extends Service {
           benchDoc,
         },
       });
+      // THE SOURCE-ECHO REFUSAL: a dead media source refuses at the
+      // door with its URL named — the run never registers.
+      if ("payload" in reg) throw toRemoteError(reg);
+      const { run } = reg;
       void run;
       this.kick();
       return {
@@ -459,7 +463,7 @@ export class RunsRuntimeService extends Service {
         ),
       );
     }
-    const { run } = registerCompiledRun({
+    const reg = registerCompiledRun({
       compiled,
       testFlag: checked.testFlag,
       draftId: checked.draftId,
@@ -472,6 +476,9 @@ export class RunsRuntimeService extends Service {
         ? {}
         : { door: { runId: reuse.runId, pipeline: pipelineOf(body), requestBody: body } }),
     });
+    // THE SOURCE-ECHO REFUSAL (same law on the inline door).
+    if ("payload" in reg) throw toRemoteError(reg);
+    const { run } = reg;
     void run;
     this.kick();
     return {
@@ -613,6 +620,9 @@ export class RunsRuntimeService extends Service {
       // spelling as the sidecar; absent on non-film runs. The disk
       // fallback below spreads the sidecar row, which carries it.
       ...(run.composeEcho !== undefined ? { compose_echo: run.composeEcho } : {}),
+      // THE SOURCE ECHO, SERVED (same law: the run's sources ride
+      // the live row too — additive, same spelling as the sidecar).
+      ...(run.sourceEcho !== undefined ? { source_echo: run.sourceEcho } : {}),
       queue_position: this.core.queuePosition(run.runId),
     };
     // THE TERMINAL-HUSK RECOVERY (F-5's second face): a live row that

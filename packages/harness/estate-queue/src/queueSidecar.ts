@@ -57,6 +57,11 @@ export function sidecarDoc(args: {
    *  Absent on non-film runs (no calls). The status row spells it
    *  `compose_echo` too. */
   composeEcho?: { seam: string; calls: number; benchRev: number | null };
+  /** THE SOURCE ECHO (the source-echo law, 2026-09-23): the files
+   *  the run was created from, resolved at registration. The
+   *  status row spells it `source_echo` too. Absent on sourceless
+   *  runs. */
+  sourceEcho?: { refs: Array<{ url: string; file: string }> };
 }): Record<string, unknown> {
   return {
     // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
@@ -82,6 +87,7 @@ export function sidecarDoc(args: {
     ...(args.benchSnapshot !== undefined ? { bench_snapshot: args.benchSnapshot } : {}),
     ...(args.warnings !== undefined && args.warnings.length > 0 ? { warnings: [...args.warnings] } : {}),
     ...(args.composeEcho !== undefined ? { compose_echo: args.composeEcho } : {}),
+    ...(args.sourceEcho !== undefined ? { source_echo: args.sourceEcho } : {}),
   };
 }
 

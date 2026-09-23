@@ -15,6 +15,18 @@ import {
   unknownDraftRefusal,
 } from "../src/runsStart.ts";
 import type { CompiledStage } from "../src/runsStart.ts";
+import type { RunRecord } from "../src/runsTypes.ts";
+
+/** registerCompiledRun now returns a refusal union (the source-echo
+ *  gate) — these walls register sourceless stages, so a refusal is
+ *  itself the failure. */
+const mustRegister = (
+  args: Parameters<typeof registerCompiledRun>[0],
+): { run: RunRecord; queuePosition: number } => {
+  const out = registerCompiledRun(args);
+  if ("payload" in out) throw new Error("unexpected refusal: " + JSON.stringify(out.payload));
+  return out;
+};
 
 let TMP = "";
 afterEach(() => {
@@ -211,7 +223,7 @@ describe("registerCompiledRun", () => {
   it("mints, routes the out root on the test flag, and writes the durable pair", () => {
     const root = tmp();
     const seen: string[] = [];
-    const { run, queuePosition } = registerCompiledRun({
+    const { run, queuePosition } = mustRegister({
       compiled: compiled([one]),
       testFlag: true,
       draftId: "d1",
@@ -250,7 +262,7 @@ describe("registerCompiledRun", () => {
   it("the card door carries its identity (minted id, pipeline, request body)", () => {
     const root = tmp();
     const body = { model: "m" };
-    const { run } = registerCompiledRun({
+    const { run } = mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -271,7 +283,7 @@ describe("registerCompiledRun", () => {
     const root = tmp();
     const body = { model: "m" };
     const benchDoc = { stages: [{ id: "s", card: "c" }], intent: "the beach flow" };
-    const { run } = registerCompiledRun({
+    const { run } = mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -289,7 +301,7 @@ describe("registerCompiledRun", () => {
   it("an empty bench stamps no bench snapshot (the key stays absent, never null)", () => {
     const root = tmp();
     const doorBase = { runId: "run-nobench", pipeline: "m", cardId: "c", requestBody: {} };
-    const { run } = registerCompiledRun({
+    const { run } = mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -303,7 +315,7 @@ describe("registerCompiledRun", () => {
     assert.deepEqual(flow["card_snapshot"], { card: "c", params: {} });
     // a non-string intent stamps "" (the wand reads a string, never a guess)
     const stages = [{ id: "s" }];
-    const { run: run2 } = registerCompiledRun({
+    const { run: run2 } = mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -330,7 +342,7 @@ describe("registerCompiledRun", () => {
         { text: "two", start_frame: 124, end_frame: 243, transition: "cut" },
       ],
     };
-    const { run } = registerCompiledRun({
+    const { run } = mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -356,7 +368,7 @@ describe("registerCompiledRun", () => {
 
   it("a non-film start stamps no compose echo (the key stays absent, never null)", () => {
     const root = tmp();
-    const { run } = registerCompiledRun({
+    const { run } = mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -383,7 +395,7 @@ describe("registerCompiledRun", () => {
     try {
       assert.throws(
         () =>
-          registerCompiledRun({
+          mustRegister({
             compiled: compiled([one]),
             testFlag: false,
             draftId: "d1",

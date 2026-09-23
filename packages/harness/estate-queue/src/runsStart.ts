@@ -24,6 +24,9 @@ import {
 } from "./runsGates.ts";
 import { appendLedger, atomicWriteJson, newRunId, outRootFor, refusal, sidecarDoc } from "./queue.ts";
 import type { QueueRefusal } from "./queue.ts";
+import { rootsManifest } from "./rootsManifest.ts";
+import { collectMediaRefs, resolveSourceRefs } from "./runsSourceEcho.ts";
+import type { SourceEchoRef } from "./runsSourceEcho.ts";
 import type { GraphRow } from "./queue.ts";
 import type { RunRecord, StageRow } from "./runsTypes.ts";
 
@@ -352,9 +355,24 @@ export function registerCompiledRun(args: {
      *  so the wand restores the whole flow, not just the ran card. */
     benchDoc?: Record<string, unknown>;
   };
-}): { run: RunRecord; queuePosition: number } {
+}): { run: RunRecord; queuePosition: number } | StartRefusal {
   const { compiled, testFlag, draftId, stateRoot, enqueue, door } = args;
   const runId: string = door?.runId ?? newRunId();
+  // THE SOURCE-ECHO GUARD (the source-echo law, 2026-09-23): every
+  // compiled stage's params are swept for media sources BEFORE the
+  // run dir exists — a dead source refuses here with its URL named,
+  // never mid-render, and nothing registers. The roots are the
+  // manifest (own root first — the media server's own walk).
+  const roots: string[] = rootsManifest(stateRoot);
+  let sources: SourceEchoRef[];
+  try {
+    sources = resolveSourceRefs(
+      collectMediaRefs(compiled.stages.map((s) => s.params)),
+      roots,
+    );
+  } catch (e) {
+    return refusal(400, (e as Error).message, "invalid_request", "params");
+  }
   const dir: string = join(outRootFor(stateRoot, testFlag), runId);
   mkdirSync(dir, { recursive: true });
   const st: CompiledStage = compiled.stages[0] as CompiledStage;
@@ -457,6 +475,14 @@ export function registerCompiledRun(args: {
     run.composeEcho = { seam, calls: echoCalls.length, benchRev };
     console.log(`[compose] run=${runId} draft=${draftId} calls=${echoCalls.length} seam=${seam} bench_rev=${benchRev ?? "?"}`);
   }
+  // THE SOURCE ECHO STAMP (the same law, source-side): the resolved
+  // files ride the record, the console, and the ledger row — "what
+  // created this run" is one grep away, forever. Sourceless runs
+  // stamp nothing.
+  if (sources.length > 0) {
+    run.sourceEcho = { refs: sources.map((s) => ({ url: s.url, file: s.file })) };
+    console.log(`[sources] run=${runId} draft=${draftId} refs=${sources.length} ${sources.map((s) => s.url).join(",")}`);
+  }
   atomicWriteJson(join(dir, "_request.json"), requestBody);
   atomicWriteJson(join(dir, "_flow.json"), sidecarDocFor(run));
   if (echoCalls.length > 0) {
@@ -467,12 +493,14 @@ export function registerCompiledRun(args: {
       seam: run.composeEcho?.seam,
       calls: echoCalls.length,
       bench_rev: benchRev,
+      sources: sources.length,
     });
   } else {
     appendLedger(stateRoot, "run.queued", {
       run_id: runId,
       draft_id: draftId,
       pipeline: run.pipeline,
+      sources: sources.length,
     });
   }
   const queuePosition: number = enqueue(run);
@@ -510,5 +538,8 @@ function sidecarDocFor(run: RunRecord): Record<string, unknown> {
     // THE COMPOSE ECHO: what the engine received rides the queued
     // sidecar too (the wand/restore reads disk, not memory).
     composeEcho: run.composeEcho,
+    // THE SOURCE ECHO: the files that created the run ride the
+    // queued sidecar too.
+    sourceEcho: run.sourceEcho,
   });
 }

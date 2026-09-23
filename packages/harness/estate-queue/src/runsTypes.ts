@@ -92,6 +92,14 @@ export interface RunRecord {
    *  the run record itself, not by inference. Non-film runs (no
    *  calls) stamp nothing. */
   composeEcho?: { seam: string; calls: number; benchRev: number | null };
+  /** THE SOURCE ECHO (the source-echo law, 2026-09-23): the FILES
+   *  the run was created from — every /melite-media/runs/ URL in
+   *  the compiled stage params resolved to disk at registration
+   *  (first-root-wins across the manifest, the media server's own
+   *  walk). The write-side receipt: "what created this run" is
+   *  answered by the record itself, never by inference. Runs with
+   *  no media sources stamp nothing. */
+  sourceEcho?: { refs: Array<{ url: string; file: string }> };
 }
 
 /** The engine's path relative to the run dir (runRel, door-verbatim). */
@@ -163,6 +171,9 @@ export function settlePersist(
         // THE COMPOSE ECHO rides the settle rewrite too (a terminal
         // disk row keeps what the engine received at start).
         composeEcho: run.composeEcho,
+        // THE SOURCE ECHO rides the settle rewrite too (a terminal
+        // disk row keeps the files that created it).
+        sourceEcho: run.sourceEcho,
       }),
     );
   } catch {
