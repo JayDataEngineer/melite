@@ -151,10 +151,37 @@ describe("the h3-timeline compose gate", () => {
       "both windows save their own files",
     );
     const unloads = byClass(openRows, "MeliteUnload");
-    assert.equal(unloads.length, 1, "exactly one boundary node");
-    assert.equal(unloads[0]![1].inputs["unload_models"], false, "weights STAY resident (the reload law)");
+    assert.equal(unloads.length, 2, "one boundary PER window save — the chain orders every save (2026-09-23: the single last-save boundary left cut windows' saves unordered islands)");
+    for (const [, n] of unloads) {
+      assert.equal(n.inputs["unload_models"], false, "every boundary keeps weights resident (the reload law)");
+    }
+    // THE ORDERING CHAIN LAW: every window save feeds its OWN boundary,
+    // boundaries token-chain through the optional 'after' input, and the
+    // loader's 'after' is the chain's end — no save is an unordered island
+    const byId = new Map(openRows);
+    const windowSaveIds = new Set(
+      openRows
+        .filter(([, n]) => n.class_type === "SaveVideo" && String(n.inputs["filename_prefix"]).startsWith("h3_t4_w"))
+        .map(([id]) => id),
+    );
+    const boundaryVideoSrcs = unloads.map(([, n]) => (n.inputs["video"] as [string, number])[0]);
+    for (const src of boundaryVideoSrcs) assert.ok(windowSaveIds.has(src), `each boundary eats a window save (${src})`);
+    assert.equal(new Set(boundaryVideoSrcs).size, boundaryVideoSrcs.length, "each boundary eats its OWN window's save — one per save, none orphaned");
+    const afterSrc = (n: { class_type: string; inputs: Record<string, unknown> }): string | undefined =>
+      (n.inputs["after"] as [string, number] | undefined)?.[0];
+    assert.equal(unloads.filter(([, n]) => afterSrc(n) === undefined).length, 1, "exactly one chain head (the first boundary)");
     const concats = byClass(openRows, "MeliteConcatVideos");
     assert.equal(concats.length, 1, "exactly one file loader");
+    const chainEnd = (concats[0]![1].inputs["after"] as [string, number])[0];
+    let walked = 0;
+    let cursor: string | undefined = chainEnd;
+    while (cursor !== undefined) {
+      const node = byId.get(cursor) as { class_type: string; inputs: Record<string, unknown> };
+      assert.equal(node.class_type, "MeliteUnload", "the chain links only boundaries");
+      walked += 1;
+      cursor = afterSrc(node);
+    }
+    assert.equal(walked, unloads.length, "the chain threads EVERY boundary — the loader provably waits for all saves");
     assert.equal(concats[0]![1].inputs["videos"], "h3_t4_w1,h3_t4_w2", "the loader names the window files in film order");
     assert.ok(
       !openRows.some(([, n]) => n.class_type === "MiniMaxH3FiniteSegmentFinalize" && "accumulated_images" in n.inputs),

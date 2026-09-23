@@ -85,12 +85,13 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal(art.dest_sub, "diffusion_models");
   });
 
-  it("the mods set survived (8 families declare capability packs — h3 boards loras with the mod-plane stroke, renamed with the survivor-id correction 2026-09-22; voicedesign boards qvoice_save, 2026-09-21)", (): void => {
+  it("the mods set survived (9 families declare capability packs — h3 boards loras with the mod-plane stroke, renamed with the survivor-id correction 2026-09-22; voicedesign boards qvoice_save, 2026-09-21; qwen-img-edit-21 boards the mask pack with the 2.1 region-detailer re-scope, 2026-09-23)", (): void => {
     const withMods = registryIds().filter((id) => (registryModel(id).mods ?? []).length > 0);
     assert.deepEqual(withMods, [
       "anny",
       "h3",
       "krea-2",
+      "qwen-img-edit-21",
       "qwen-img-edit-2511",
       "qwen3-tts",
       "qwen3-tts-voicedesign",

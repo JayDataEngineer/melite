@@ -564,6 +564,10 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
   let prev: WindowHandles | undefined
+  // every window's SaveVideo passthrough, in film order — the film
+  // tail's ordering wire needs ALL of them (2026-09-23: the
+  // last-save-only boundary left cut windows' saves unordered)
+  const windowSaves: OutputHandle[] = []
   // THE FILM RAIL (the operator's call, 2026-09-17: the film is media
   // composition — the ENGINE'S job, never a harness-side ffmpeg).
   // THE SEAM (2026-09-20, the operator's order: forget the
@@ -815,6 +819,8 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     if (stamps.music !== undefined) stanza.music_slice = stamps.music
     const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w))
     prev = h
+    /* v8 ignore next 1 -- both family arms assign the passthrough (every path saves); a future arm that forgets is refused loud at the film tail */
+    if (h.savePassthrough !== undefined) windowSaves.push(h.savePassthrough)
   })
   // ── THE FILM TAIL, FILE FORM (§20's amendment, 2026-09-22 — the
   // operator's provenance law: every artifact traces to a
@@ -828,10 +834,15 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   //
   //   1. every window SAVES its own clip (h3_t4_w<k>) — its tensors
   //      die at that SaveVideo (nothing downstream consumes them);
-  //   2. MeliteUnload eats the LAST window's SaveVideo passthrough —
-  //      the ordering wire (windows chain, so the last save is
-  //      downstream of them all) — flushes the allocator WITHOUT
-  //      dropping model weights (the next run pays no reload);
+  //   2. ONE MeliteUnload boundary PER window save, token-chained
+  //      through the optional 'after' input (2026-09-23: the old
+  //      single boundary on the last save assumed "windows chain, so
+  //      the last save is downstream of them all" — FALSE for cut
+  //      films, which chain nothing; window 2's save was an unordered
+  //      island and the loader could beat it) — every boundary flushes
+  //      the allocator WITHOUT dropping model weights (the next run
+  //      pays no reload), and the chain's final token provably waits
+  //      for EVERY save;
   //   3. MeliteConcatVideos decodes the saved FILES back in
   //      (IMAGE+AUDIO+fps) — CPU-side, strictly after every save;
   //   4. the clips overlay + duck matrix mix at film time
@@ -843,9 +854,8 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // dispatch keeps the frozen single-window shape byte-identical;
   // the film is a MULTI-call property, and the single-call mapping
   // refuses clips loudly downstream of the dispatch.)
-  const lastSave = prev?.savePassthrough
   /* v8 ignore next 1 -- both family arms assign the passthrough (every path saves); a future arm that forgets refuses here, loudly */
-  if (lastSave === undefined) {
+  if (windowSaves.length === 0) {
     throw new Error('[h3-timeline] a family arm saved no clip to pass the film boundary — the film tail cannot order its loads')
   }
   const manifest = computeFilmMix({
@@ -856,9 +866,28 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     // door; computeFilmMix owns the fallback for the absent key
     duckDb: p.duck_depth_db as number | undefined,
   })
-  const after = g.node('MeliteUnload', {
-    video: lastSave, unload_models: false,
-  }).out(0)
+  // ONE BOUNDARY PER WINDOW SAVE, token-chained (2026-09-23, the
+  // cut-film ordering fix — receipts run-1057a53c4252 (stale-file
+  // stitch: 960×576 leftovers globbed as windows) and
+  // run-18ea8c810104 (loud no-match refusal on h3_t4_w2): cut
+  // windows chain NOTHING and even chained windows' SAVE nodes are
+  // not downstream of one another, so the old single boundary on
+  // the LAST save rode a scheduler tie-break — window 2's save was
+  // an unordered island the loader could beat). Every window's
+  // SaveVideo passthrough feeds its OWN boundary; each boundary's
+  // optional 'after' wires the prior boundary's token, so the final
+  // token (the concat's 'after') transitively depends on EVERY
+  // save — and each window's passthrough tensor still dies at its
+  // own boundary (the §20 law; the flush is idempotent, weights
+  // stay resident).
+  let boundaryAfter: OutputHandle | undefined
+  for (const save of windowSaves) {
+    boundaryAfter = g.node('MeliteUnload', {
+      video: save, unload_models: false,
+      ...(boundaryAfter !== undefined ? { after: boundaryAfter } : {}),
+    }).out(0)
+  }
+  const after = boundaryAfter!
   const concat = g.node('MeliteConcatVideos', {
     videos: calls.map((_c, i): string => `h3_t4_w${i + 1}`).join(','),
     after,
