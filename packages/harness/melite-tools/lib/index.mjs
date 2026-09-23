@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import { AttachmentError, AttachmentId } from "@deepseek-ai/dsh-attachment";
 import { listMedia } from "@melite/estate-media";
+import { rootsManifest, searchedVoice } from "@melite/estate-queue";
 //#region src/expansion.ts
 /**
 * THE EXPANSION SEAT (progressive disclosure, operator 2026-10-08 —
@@ -1900,6 +1901,21 @@ function meliteLoad(request, opts = {}) {
 * `listMedia`) — never from caller text. The caller's `artifact` is
 * a substring FILTER over names the walk already produced.
 */
+/** §23 CROSS-ROOTS (2026-09-23): the view walk searches the
+*  manifest in order — own root first, then the maker's tree
+*  (MELITE_STATE_ROOTS). First root holding the run serves (own
+*  writes win); a miss names every searched root. */
+const firstRootWithRun = async (seat, kind, runId) => {
+	for (const root of rootsManifest(seat.stateRoot)) {
+		const { items } = await listMedia(root, kind);
+		const own = items.filter((i) => i.runId === runId);
+		if (own.length > 0) return {
+			own,
+			root
+		};
+	}
+	return null;
+};
 /** The run-id grammar (estate/media's containment law, verbatim). */
 const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 /** Extension → declared media type (read_image's map, copied). */
@@ -2025,14 +2041,14 @@ const defaultFilmProc = async (bin, args, signal) => {
 *  sheet lands in os.tmpdir (never the run tree — a view must not
 *  mint provenance). */
 async function viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments, proc = defaultFilmProc) {
-	const { items } = await listMedia(seat.stateRoot, "video");
-	const own = items.filter((i) => i.runId === runId);
-	if (own.length === 0) throw new Error("run \"" + runId + "\" produced no image artifacts (and no viewable film — the run holds no video artifacts either) (searched " + seat.stateRoot + ")");
+	const found = await firstRootWithRun(seat, "video", runId);
+	if (found === null) throw new Error("run \"" + runId + "\" produced no image artifacts (and no viewable film — the run holds no video artifacts either) " + searchedVoice(rootsManifest(seat.stateRoot)));
+	const own = found.own;
 	const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
-	if (picked.length === 0) throw new Error("run \"" + runId + "\" has no film artifact containing \"" + artifact + "\" — the run holds: " + own.slice(0, 8).map((i) => i.name).join(", ") + " (searched " + seat.stateRoot + ")");
+	if (picked.length === 0) throw new Error("run \"" + runId + "\" has no film artifact containing \"" + artifact + "\" — the run holds: " + own.slice(0, 8).map((i) => i.name).join(", ") + " " + searchedVoice(rootsManifest(seat.stateRoot)));
 	const row = picked[0];
 	await assertImageCapableRoute(ctx, exec, runId);
-	const absPath = join(seat.stateRoot, "output", row.runId, row.name);
+	const absPath = join(found.root, "output", row.runId, row.name);
 	let probe;
 	try {
 		const { stdout } = await proc("ffprobe", [
@@ -2260,13 +2276,13 @@ function meliteView(ctx) {
 			if (attachments === void 0) throw new Error("cannot view run \"" + runId + "\": no attachment service is mounted");
 			const seat = ctx.get("queue", false);
 			if (seat === void 0) throw new Error("cannot view run \"" + runId + "\": the queue seat owns the runs tree root — mount @melite-plugin/melite-estate");
-			const { items } = await listMedia(seat.stateRoot, "image");
-			const own = items.filter((i) => i.runId === runId);
-			if (own.length === 0) return await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments);
+			const found = await firstRootWithRun(seat, "image", runId);
+			if (found === null) return await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments);
+			const own = found.own;
 			const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
 			if (picked.length === 0) throw new Error("run \"" + runId + "\" has no image artifact containing \"" + artifact + "\" — the run holds: " + own.slice(0, 8).map((i) => i.name).join(", "));
 			const row = picked[0];
-			const absPath = join(seat.stateRoot, "output", row.runId, row.name);
+			const absPath = join(found.root, "output", row.runId, row.name);
 			const declared = imageMediaTypeForPath(row.name);
 			if (declared !== void 0 && !attachments.imageLimits.mediaTypes.includes(declared)) throw new Error("cannot view \"" + row.name + "\": " + declared + " images are not accepted by this deployment");
 			await assertImageCapableRoute(ctx, exec, runId);
@@ -2594,7 +2610,8 @@ function ledgerTail(request) {
 			return jsonClean({
 				shown: typeof res.shown === "number" ? res.shown : entries.length,
 				matched: typeof res.matched === "number" ? res.matched : entries.length,
-				entries
+				entries,
+				...Array.isArray(res.searched) ? { searched: res.searched } : {}
 			});
 		}
 	});
