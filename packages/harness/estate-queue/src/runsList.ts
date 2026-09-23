@@ -440,6 +440,49 @@ interface RunsEnt {
   readonly dir: string;
   readonly created: number;
   readonly media: boolean;
+  /** §23 CROSS-ROOTS: the state root that held this dir (the
+   *  manifest entry, not the out-root — the row names it). */
+  readonly root: string;
+}
+
+/** The single-root scan (the file-era walk, intact): PROD output
+ *  root only (test runs never listed — kept 1:1). */
+function scanRunsRoot(stateRoot: string): RunsEnt[] {
+  // The PROD output root only (the door's list scanned
+  // roots.runsRoot; test runs never listed — kept 1:1).
+  const outputRoot: string = join(stateRoot, "output");
+  let names: string[];
+  try {
+    names = readdirSync(outputRoot);
+  } catch {
+    names = [];
+  }
+  const ents: RunsEnt[] = [];
+  for (const name of names) {
+    if (ents.length >= 8192) break; // the C's 8192 collected cap
+    if (!name.startsWith("run-")) continue;
+    const runDir: string = join(outputRoot, name);
+    let created = 0;
+    let buf = "";
+    try {
+      buf = readFileSync(join(runDir, "_flow.json"), "utf8").slice(0, 8191);
+    } catch {
+      buf = "";
+    }
+    if (buf) {
+      // created_at (sidecar) first, "created" (C fossil) fallback.
+      created = sidecarNum(buf, "created", 0);
+      const at: number = buf.indexOf('"created_at":');
+      if (at >= 0) created = parseLeadingInt(buf.slice(at + 13));
+    }
+    ents.push({
+      dir: name,
+      created,
+      media: runDirHasMedia(runDir),
+      root: stateRoot,
+    });
+  }
+  return ents;
 }
 
 /** The per-run card build (the file-era row law, intact): sidecar
@@ -523,39 +566,23 @@ export async function listRuns(
   limit: number,
   hasDraft: (draftId: string) => Promise<boolean>,
 ): Promise<{ count: number; runs: Record<string, unknown>[] }> {
-  // The PROD output root only (the door's list scanned
-  // roots.runsRoot; test runs never listed — kept 1:1).
-  const outputRoot: string = join(stateRoot, "output");
-  let names: string[];
-  try {
-    names = readdirSync(outputRoot);
-  } catch {
-    names = [];
-  }
+  return listRunsAcross([stateRoot], limit, hasDraft);
+}
+
+/** §23 CROSS-ROOTS (2026-09-23): the union list across the
+ *  manifest — every root scanned, one media-first + newest sort,
+ *  the limit sliced off the merged order, the scan total counted
+ *  (refused cards SKIPPED but counted, per root). Every served row
+ *  names its root (served_from); same-run-id collisions serve the
+ *  FIRST manifest root's row (own writes win — the sort is stable,
+ *  own root scanned first). */
+export async function listRunsAcross(
+  roots: string[],
+  limit: number,
+  hasDraft: (draftId: string) => Promise<boolean>,
+): Promise<{ count: number; runs: Record<string, unknown>[] }> {
   const ents: RunsEnt[] = [];
-  for (const name of names) {
-    if (ents.length >= 8192) break; // the C's 8192 collected cap
-    if (!name.startsWith("run-")) continue;
-    const runDir: string = join(outputRoot, name);
-    let created = 0;
-    let buf = "";
-    try {
-      buf = readFileSync(join(runDir, "_flow.json"), "utf8").slice(0, 8191);
-    } catch {
-      buf = "";
-    }
-    if (buf) {
-      // created_at (sidecar) first, "created" (C fossil) fallback.
-      created = sidecarNum(buf, "created", 0);
-      const at: number = buf.indexOf('"created_at":');
-      if (at >= 0) created = parseLeadingInt(buf.slice(at + 13));
-    }
-    ents.push({
-      dir: name,
-      created,
-      media: runDirHasMedia(runDir),
-    });
-  }
+  for (const root of roots) ents.push(...scanRunsRoot(root));
   const count: number = ents.length;
   ents.sort((a: RunsEnt, b: RunsEnt): number => {
     const am: number = a.media ? 0 : 1;
@@ -564,11 +591,14 @@ export async function listRuns(
     return b.created - a.created; // newest-first; stable
   });
   const sliced: RunsEnt[] = ents.slice(0, limit);
+  const seen = new Set<string>();
   const rows: Record<string, unknown>[] = [];
   for (const ent of sliced) {
-    const row = await buildRunCard(outputRoot, ent, hasDraft);
+    if (seen.has(ent.dir)) continue; // first manifest root wins
+    seen.add(ent.dir);
+    const row = await buildRunCard(join(ent.root, "output"), ent, hasDraft);
     if (row === null) continue; // RESILIENCE LAW: loud skip
-    rows.push(row);
+    rows.push({ ...row, served_from: ent.root });
   }
   return { count, runs: rows };
 }

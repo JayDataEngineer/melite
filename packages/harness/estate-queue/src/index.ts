@@ -44,6 +44,7 @@ export * from "./runsList.ts";
 export * from "./mediaKinds.ts";
 export * from "./runsTypes.ts";
 export * from "./runsStart.ts";
+export * from "./rootsManifest.ts";
 export * from "./discloseRegistry.ts";
 export * from "./skillPlane.ts";
 export * from "./skillRegistry.ts";

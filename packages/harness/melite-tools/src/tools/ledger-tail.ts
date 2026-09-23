@@ -116,12 +116,15 @@ export function ledgerTail(request: EstateRequest): ToolDefinition {
       }
       const path = '/v1/ledger' + (q.length > 0 ? '?' + q.join('&') : '')
       const res = await request( 'GET', path, undefined, exec.signal, LEDGER_TIMEOUT_MS,
-      ) as { entries?: LedgerEntry[]; shown?: unknown; matched?: unknown }
+      ) as { entries?: LedgerEntry[]; shown?: unknown; matched?: unknown; searched?: unknown }
       const entries = Array.isArray(res.entries) ? res.entries : []
       return jsonClean({
         shown: typeof res.shown === 'number' ? res.shown : entries.length,
         matched: typeof res.matched === 'number' ? res.matched : entries.length,
         entries,
+        // §23 CROSS-ROOTS: the seat names the manifest roots whose
+        // journals merged (absent on the legacy single-root call).
+        ...(Array.isArray(res.searched) ? { searched: res.searched } : {}),
       }) as LedgerTailResult
     },
   });

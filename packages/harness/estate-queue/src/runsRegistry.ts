@@ -30,6 +30,7 @@ import {
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadEndpointConfig } from "@melite/comfyui-cordis";
 import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.ts";
+import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger } from "./queue.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
@@ -56,7 +57,7 @@ import {
 } from "./runsStart.ts";
 import type { CompiledStage } from "./runsStart.ts";
 import type { StageRow } from "./runsTypes.ts";
-import { listRuns, parseIntOrNull } from "./runsList.ts";
+import { listRunsAcross, parseIntOrNull } from "./runsList.ts";
 import { inlineArm } from "./runsValidate.ts";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
 import {
@@ -502,8 +503,10 @@ export class RunsRuntimeService extends Service {
       );
     }
     const limit: number = Math.max(1, Math.min(500, parsed));
-    return await listRuns(
-      this.ctx.queue.stateRoot,
+    // §23 CROSS-ROOTS: the union list across the manifest (own
+    // root first — own rows win collisions, every row served_from).
+    return await listRunsAcross(
+      rootsManifest(this.ctx.queue.stateRoot),
       limit,
       async (draftId) => {
         try {
@@ -558,24 +561,29 @@ export class RunsRuntimeService extends Service {
       // reload (or a husk in-memory row) must still answer the truth
       // the run tree holds. Never fabricated: no disk row → the same
       // runs/unknown-run refusal as before.
-      const disk: Record<string, unknown> | undefined = this.diskRunRow(runId);
+      const disk = this.diskRunRow(runId);
       if (disk === undefined) {
         // §23 NAME-THE-ROOT (2026-09-22, attempt006's two-roots
-        // lesson): a miss names the tree it searched — the
-        // operator sees WHICH root answered, never a bare unknown.
-        // No branch: the queue seat owns stateRoot on every boot
-        // (the service refuses root-less — the constructor's law).
+        // lesson; 2026-09-23: every manifest root named): a miss
+        // names the trees it searched — the operator sees WHICH
+        // roots answered, never a bare unknown. No branch: the
+        // queue seat owns stateRoot on every boot (the service
+        // refuses root-less — the constructor's law).
         throw new RemoteError(
           "runs/unknown-run",
-          "unknown run_id \"" + runId + "\" (searched " + this.ctx.queue.stateRoot + ")",
+          "unknown run_id \"" + runId + "\" " +
+            searchedVoice(rootsManifest(this.ctx.queue.stateRoot)),
           { runId },
         );
       }
-      return { ...disk, from_disk: true, queue_position: 0 };
+      return { ...disk.row, from_disk: true, queue_position: 0, served_from: disk.root };
     }
     const payload: Record<string, unknown> = {
       run_id: run.runId,
       status: run.status,
+      // §23 CROSS-ROOTS: every row names the root that served it —
+      // live rows ride the seat's own root, disk rows their find.
+      served_from: this.ctx.queue.stateRoot,
       // The card-back-into-flow key (2026-09-11): the draft that
       // produced this run — the tab restores via drafts/get (the
       // draft holds the full card/engine/params stages) + per-stage
@@ -611,11 +619,11 @@ export class RunsRuntimeService extends Service {
       (run.status === "completed" || run.status === "failed") &&
       run.stages.length === 0 && run.artifacts.length === 0
     ) {
-      const disk: Record<string, unknown> | undefined = this.diskRunRow(runId);
-      const diskStages = Array.isArray(disk?.["stages"]) ? (disk?.["stages"] as unknown[]).length : 0;
-      const diskArts = Array.isArray(disk?.["artifacts"]) ? (disk?.["artifacts"] as unknown[]).length : 0;
+      const disk = this.diskRunRow(runId);
+      const diskStages = disk !== undefined && Array.isArray(disk.row["stages"]) ? (disk.row["stages"] as unknown[]).length : 0;
+      const diskArts = disk !== undefined && Array.isArray(disk.row["artifacts"]) ? (disk.row["artifacts"] as unknown[]).length : 0;
       if (disk !== undefined && (diskStages > 0 || diskArts > 0)) {
-        return { ...disk, from_disk: true, queue_position: payload["queue_position"] };
+        return { ...disk.row, from_disk: true, queue_position: payload["queue_position"], served_from: disk.root };
       }
     }
     // THE LIVE-ROW PLAN (efficiency review 002, Fix 2, 2026-09-22):
@@ -655,9 +663,14 @@ export class RunsRuntimeService extends Service {
     signal.throwIfAborted();
     const run: RunRecord | undefined = this.liveRun(runId);
     if (run === undefined) {
+      // §23 CROSS-ROOTS: the stop miss names the searched roots
+      // (same law as status — a stop for a maker-owned run says
+      // which trees answered; cross-process stop stays refused by
+      // the unknown code, never a blind guess).
       throw new RemoteError(
         "runs/run-unknown",
-        "unknown run_id " + JSON.stringify(runId),
+        "unknown run_id " + JSON.stringify(runId) + " " +
+          searchedVoice(rootsManifest(this.ctx.queue.stateRoot)),
         { runId },
       );
     }
@@ -690,20 +703,25 @@ export class RunsRuntimeService extends Service {
 
   /** The durable record under the run tree (F-5's fallback read):
    *  the on-disk _flow.json for a run — the SAME file the maker
-   *  verified byte-by-byte while status answered husks. Both
-   *  out-roots are probed (production first, then test) since the
+   *  verified byte-by-byte while status answered husks. The
+   *  manifest roots are probed in order (own first), both
+   *  out-roots per root (production first, then test) since the
    *  fallback may not know the row's testFlag. Unparseable/absent →
    *  undefined — never a fabricated row. */
-  private diskRunRow(runId: string): Record<string, unknown> | undefined {
-    const root = this.ctx.queue.stateRoot;
-    for (const dir of [join(root, "output", runId), join(root, "test-output", runId)]) {
-      try {
-        const doc: unknown = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8"));
-        if (typeof doc === "object" && doc !== null && !Array.isArray(doc)) {
-          return doc as Record<string, unknown>;
+  private diskRunRow(runId: string): { row: Record<string, unknown>; root: string } | undefined {
+    // §23 CROSS-ROOTS (2026-09-23): the manifest in order — own
+    // root first, then the maker's tree (MELITE_STATE_ROOTS). Own
+    // writes win; the first root holding the run serves.
+    for (const root of rootsManifest(this.ctx.queue.stateRoot)) {
+      for (const dir of [join(root, "output", runId), join(root, "test-output", runId)]) {
+        try {
+          const doc: unknown = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8"));
+          if (typeof doc === "object" && doc !== null && !Array.isArray(doc)) {
+            return { row: doc as Record<string, unknown>, root };
+          }
+        } catch {
+          /* absent/unreadable in this root — try the next */
         }
-      } catch {
-        /* absent/unreadable in this root — try the next */
       }
     }
     return undefined;

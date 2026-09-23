@@ -22,8 +22,9 @@ import {
   releaseLock,
   resolveStateRoot,
 } from "./queue.ts";
-import { tailLedger } from "./ledgerTail.ts";
+import { tailLedgerAcross } from "./ledgerTail.ts";
 import type { LedgerTailAnswer } from "./ledgerTail.ts";
+import { rootsManifest } from "./rootsManifest.ts";
 
 /** Provider config: where the estate's run state lives. */
 export interface QueueConfig {
@@ -91,9 +92,11 @@ export class QueueService extends Service {
   /** The journal tail (REBUILD-19; the dead GET /v1/ledger arm —
    *  the doors/assets.ts _h_ledger law rides verbatim): limit
    *  default 50 / clamp 1..500 / garbage -> 50, event prefix on
-   *  the raw line, oldest -> newest within the tail. */
+   *  the raw line, oldest -> newest within the tail. §23
+   *  CROSS-ROOTS: every manifest root's journal merges into one
+   *  timeline and the answer names the searched roots. */
   ledger(rawLimit: string, rawEvent: string): LedgerTailAnswer {
-    return tailLedger(this.ledgerPath, rawLimit, rawEvent);
+    return tailLedgerAcross(rootsManifest(this.stateRoot), rawLimit, rawEvent);
   }
 
   /** Whether dispose already released our lock (test probe). */

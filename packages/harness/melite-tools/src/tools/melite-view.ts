@@ -39,7 +39,26 @@ import { AttachmentError, AttachmentId } from '@deepseek-ai/dsh-attachment'
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { listMedia } from '@melite/estate-media'
+import type { MediaListRow } from '@melite/estate-media'
+import { rootsManifest, searchedVoice } from '@melite/estate-queue'
 import type { JsonValue, ToolDefinition } from '../types.ts'
+
+/** §23 CROSS-ROOTS (2026-09-23): the view walk searches the
+ *  manifest in order — own root first, then the maker's tree
+ *  (MELITE_STATE_ROOTS). First root holding the run serves (own
+ *  writes win); a miss names every searched root. */
+const firstRootWithRun = async (
+  seat: { stateRoot: string },
+  kind: 'image' | 'video',
+  runId: string,
+): Promise<{ own: MediaListRow[]; root: string } | null> => {
+  for (const root of rootsManifest(seat.stateRoot)) {
+    const { items } = await listMedia(root, kind)
+    const own = items.filter((i) => i.runId === runId)
+    if (own.length > 0) return { own, root }
+  }
+  return null
+}
 
 /** The run-id grammar (estate/media's containment law, verbatim). */
 const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/
@@ -210,21 +229,23 @@ export async function viewFilmArtifact(
   attachments: AttachmentsSeam,
   proc: FilmProc = defaultFilmProc,
 ): Promise<ViewedImageValue> {
-  const { items } = await listMedia(seat.stateRoot, 'video')
-  const own = items.filter((i) => i.runId === runId)
-  if (own.length === 0) {
-    // §23 NAME-THE-ROOT: the miss names the searched tree (same
+  // §23 CROSS-ROOTS: the video walk spans the manifest (own root
+  // first); the miss names every searched tree.
+  const found = await firstRootWithRun(seat, 'video', runId)
+  if (found === null) {
+    // §23 NAME-THE-ROOT: the miss names the searched tree(s) (same
     // law as the registry's unknown-run — a two-roots box stays
     // debuggable). The prefix keeps the old walls green.
-    throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film — the run holds no video artifacts either) (searched ' + seat.stateRoot + ')')
+    throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film — the run holds no video artifacts either) ' + searchedVoice(rootsManifest(seat.stateRoot)))
   }
+  const own = found.own
   const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own
   if (picked.length === 0) {
-    throw new Error('run "' + runId + '" has no film artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' (searched ' + seat.stateRoot + ')')
+    throw new Error('run "' + runId + '" has no film artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot)))
   }
   const row = picked[0]!
   await assertImageCapableRoute(ctx, exec, runId)
-  const absPath = join(seat.stateRoot, 'output', row.runId, row.name)
+  const absPath = join(found.root, 'output', row.runId, row.name)
   let probe: { duration_s?: number, size_bytes?: number, streams: FilmStreamSummary[] }
   try {
     const { stdout } = await proc('ffprobe', [
@@ -460,12 +481,13 @@ export function meliteView(ctx: Context): ToolDefinition {
         throw new Error('cannot view run "' + runId + '": the queue seat owns the runs tree root — mount @melite-plugin/melite-estate')
       }
 
-      // THE WALK (listMedia — same tree the media/list door walks):
-      // run-filtered, image-kind, newest first; the artifact substring
-      // only narrows names the walk itself produced.
-      const { items } = await listMedia(seat.stateRoot, 'image')
-      const own = items.filter((i) => i.runId === runId)
-      if (own.length === 0) {
+      // THE WALK (listMedia over the §23 manifest — same trees the
+      // media/list door walks, own root first): run-filtered,
+      // image-kind, newest first; the artifact substring only
+      // narrows names the walk itself produced. A no-image run
+      // falls to the film arm (§24) which walks video the same way.
+      const found = await firstRootWithRun(seat, 'image', runId)
+      if (found === null) {
         // THE FILM ARM (§24): a film run holds no images — observe
         // it through its own artifact (ffprobe summary + a contact
         // sheet the model can SEE). The no-film voice keeps the old
@@ -473,6 +495,7 @@ export function meliteView(ctx: Context): ToolDefinition {
         const filmed = await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments)
         return filmed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
       }
+      const own = found.own
       const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own
       if (picked.length === 0) {
         throw new Error('run "' + runId + '" has no image artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', '))
@@ -480,9 +503,9 @@ export function meliteView(ctx: Context): ToolDefinition {
       const row = picked[0]!
 
       // CONTAINMENT BY CONSTRUCTION: the absolute path is built from
-      // the walk's own runId + name — caller text never reaches the
-      // filesystem as a path.
-      const absPath = join(seat.stateRoot, 'output', row.runId, row.name)
+      // the walk's own root + runId + name — caller text never
+      // reaches the filesystem as a path.
+      const absPath = join(found.root, 'output', row.runId, row.name)
       const declared = imageMediaTypeForPath(row.name)
       if (declared !== undefined && !attachments.imageLimits.mediaTypes.includes(declared)) {
         throw new Error('cannot view "' + row.name + '": ' + declared + ' images are not accepted by this deployment')

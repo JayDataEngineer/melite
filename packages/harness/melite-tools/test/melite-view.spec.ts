@@ -601,3 +601,44 @@ describe('melite_view film — the §24 observe arm (real binaries on the commit
     assert.deepEqual(sheetPlan(-3), [0.5])
   })
 })
+
+describe('melite_view cross-roots (§23 manifest)', () => {
+  test('an image run living only on the maker root is viewed; the miss names every root', async () => {
+    const maker = mkdtempSync(join(tmpdir(), 'melite-view-maker-'))
+    const run = join(maker, 'output', 'run-cafe77-only')
+    mkdirSync(run, { recursive: true })
+    writeFileSync(join(run, 'gen_00001_.png'), PNG_BYTES)
+    process.env['MELITE_STATE_ROOTS'] = maker
+    try {
+      const { ctx } = fakeCtx()
+      const out = await meliteView(ctx).execute({ run_id: 'run-cafe77-only' }, visualExec as never) as ViewedImageValue
+      assert.equal(out.runId, 'run-cafe77-only')
+      // the miss names BOTH roots (own + maker)
+      await assert.rejects(
+        meliteView(ctx).execute({ run_id: 'run-0abcde-ghost' }, visualExec as never) as never,
+        (e: Error) => e.message.includes('(searched ' + root + ', ' + maker + ')'),
+      )
+    } finally {
+      delete process.env['MELITE_STATE_ROOTS']
+      rmSync(maker, { recursive: true, force: true })
+    }
+  })
+
+  test('own root wins a run-id collision (the maker copy is shadowed)', async () => {
+    const maker = mkdtempSync(join(tmpdir(), 'melite-view-maker-'))
+    const mkRun = join(maker, 'output', 'run-abc123-hero')
+    mkdirSync(mkRun, { recursive: true })
+    writeFileSync(join(mkRun, 'gen_00001_.png'), PNG_BYTES)
+    process.env['MELITE_STATE_ROOTS'] = maker
+    try {
+      const { ctx } = fakeCtx()
+      // own tree holds TWO images (newest-first: gen_00002_) — the
+      // maker's single-image copy must NOT answer this view.
+      const out = await meliteView(ctx).execute({ run_id: 'run-abc123-hero' }, visualExec as never) as ViewedImageValue
+      assert.equal(out.url, '/melite-media/runs/run-abc123-hero/gen_00002_.png')
+    } finally {
+      delete process.env['MELITE_STATE_ROOTS']
+      rmSync(maker, { recursive: true, force: true })
+    }
+  })
+})

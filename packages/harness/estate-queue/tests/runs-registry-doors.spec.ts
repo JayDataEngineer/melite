@@ -611,3 +611,94 @@ describe("film admission warn (F-6b)", () => {
     }
   });
 });
+
+describe("cross-roots manifest (§23)", () => {
+  const richDoc = (extra: Record<string, unknown> = {}): Record<string, unknown> => ({
+    status: "completed",
+    draft_id: "d1",
+    pipeline: "h3-timeline",
+    stages: [{ id: "s", status: "completed" }],
+    artifacts: ["film.mp4"],
+    ...extra,
+  });
+  const plant = (root: string, runId: string, doc: Record<string, unknown>): void => {
+    mkdirSync(join(root, "output", runId), { recursive: true });
+    writeFileSync(join(root, "output", runId, "_flow.json"), JSON.stringify(doc));
+  };
+  const withMaker = (fn: (maker: string) => Promise<void>): (() => Promise<void>) => async () => {
+    const maker = tmp();
+    process.env["MELITE_STATE_ROOTS"] = maker;
+    try {
+      await fn(maker);
+    } finally {
+      delete process.env["MELITE_STATE_ROOTS"];
+    }
+  };
+
+  it("status resolves a run living only on the second root (names its root)", withMaker(async (maker) => {
+    const s = seat();
+    plant(maker, "run-maker1", richDoc());
+    const got = await s.svc.status("run-maker1", sig());
+    assert.equal(got["from_disk"], true);
+    assert.equal(got["served_from"], maker);
+  }));
+
+  const liveRow = (s: Seat): string => {
+    const row = {
+      runId: "run-live",
+      status: "queued",
+      stages: [],
+      skippedStages: [],
+      artifacts: [],
+      error: "",
+      draftId: "d1",
+      dir: join(s.state, "output", "run-live"),
+      testFlag: false,
+      stopFlag: false,
+      params: [],
+      createdAt: 1,
+      pipeline: "flow_inline",
+      graphRows: [],
+      outputNodes: [],
+    } as RunRecord;
+    (s.core.runs as Map<string, RunRecord>).set(row.runId, row);
+    return row.runId;
+  };
+
+  it("own root wins the collision; live rows name the seat root", withMaker(async (maker) => {
+    const s = seat();
+    plant(s.state, "run-both1", richDoc({ pipeline: "own-pipe" }));
+    plant(maker, "run-both1", richDoc({ pipeline: "maker-pipe" }));
+    const got = await s.svc.status("run-both1", sig());
+    assert.equal(got["served_from"], s.state);
+    const id = liveRow(s);
+    assert.equal((await s.svc.status(id, sig()))["served_from"], s.state);
+  }));
+
+  it("misses name every searched root (status + stop)", withMaker(async (maker) => {
+    const s = seat();
+    const miss = await remote(() => s.svc.status("run-x", sig()));
+    assert.ok(miss.message.includes(s.state), miss.message);
+    assert.ok(miss.message.includes(maker), miss.message);
+    const stopMiss = await remote(() => s.svc.stop("run-x", sig()));
+    assert.equal(stopMiss.code, "runs/run-unknown");
+    assert.ok(stopMiss.message.includes(maker), stopMiss.message);
+  }));
+
+  it("list unions both roots; every row names its root; own wins collisions", withMaker(async (maker) => {
+    const s = seat();
+    plant(s.state, "run-own1", richDoc());
+    plant(maker, "run-mk1", richDoc());
+    plant(s.state, "run-both2", richDoc({ pipeline: "own-pipe" }));
+    plant(maker, "run-both2", richDoc({ pipeline: "maker-pipe" }));
+    const listed = await s.svc.list("50", sig());
+    // The scan total counts every dir in every tree (the collision
+    // exists on both); the SERVED rows dedupe to one per run-id.
+    assert.equal(listed.count, 4);
+    assert.equal(listed.runs.length, 3);
+    const byId = new Map(listed.runs.map((r) => [r["run_id"], r]));
+    assert.equal(byId.get("run-own1")?.["served_from"], s.state);
+    assert.equal(byId.get("run-mk1")?.["served_from"], maker);
+    assert.equal(byId.get("run-both2")?.["served_from"], s.state);
+  }));
+});
