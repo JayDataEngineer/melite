@@ -99,6 +99,29 @@ function apply(ctx, config = {}) {
 	const gatewayUrl = (config.gatewayUrl ?? "").replace(/\/+$/, "");
 	const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 	const flowDir = config.flowDir ?? DEFAULT_FLOW_DIR;
+	const flowTrees = () => {
+		const seat = ctx.get("queue", false);
+		if (seat === void 0) return [flowDir];
+		const roots = seat.stateRoots !== void 0 && seat.stateRoots.length > 0 ? [...seat.stateRoots] : [seat.stateRoot];
+		const trees = [];
+		for (const tree of [flowDir, ...roots.map((r) => `${r}/output`)]) if (!trees.includes(tree)) trees.push(tree);
+		return trees;
+	};
+	/** The first tree holding the target wins (the grammar was already
+	*  proven by isRunRelative; containment re-proves per tree — the
+	*  read door's second lock, kept per root). Null = miss. */
+	const resolveRunTarget = async (fs, path, target) => {
+		for (const tree of flowTrees()) {
+			const root = path.resolve(tree);
+			const full = path.resolve(root, target);
+			if (full !== root && !full.startsWith(root + path.sep)) continue;
+			try {
+				await fs.stat(full);
+				return full;
+			} catch {}
+		}
+		return null;
+	};
 	/** One upstream JSON document. Cross-host fetches the owning DSH
 	*  verbatim; in-tree answers over the seat. An absent seat is a
 	*  LOUD 502 naming the fix — no fallback absorbs it. */
@@ -162,7 +185,10 @@ function apply(ctx, config = {}) {
 			}
 			try {
 				const fs = await import("node:fs/promises");
-				const raw = await fs.readFile(`${flowDir}/${runId}/_flow.json`, "utf8");
+				const path = await import("node:path");
+				const flowFile = await resolveRunTarget(fs, path, `${runId}/_flow.json`);
+				if (flowFile === null) throw new Error(`no readable _flow.json for ${runId}`);
+				const raw = await fs.readFile(flowFile, "utf8");
 				let doc;
 				try {
 					doc = JSON.parse(raw);
@@ -171,7 +197,8 @@ function apply(ctx, config = {}) {
 				}
 				let request = null;
 				try {
-					request = JSON.parse(await fs.readFile(`${flowDir}/${runId}/_request.json`, "utf8"));
+					const reqFile = await resolveRunTarget(fs, path, `${runId}/_request.json`);
+					if (reqFile !== null) request = JSON.parse(await fs.readFile(reqFile, "utf8"));
 				} catch {
 					request = null;
 				}
@@ -296,15 +323,8 @@ function apply(ctx, config = {}) {
 				}
 				const fs = await import("node:fs/promises");
 				const path = await import("node:path");
-				const root = path.resolve(flowDir);
-				const full = path.resolve(root, target);
-				if (full !== root && !full.startsWith(root + path.sep)) {
-					fail(res, 400, "forbidden_path", {
-						message: "artifact escapes the runs tree",
-						path: target
-					});
-					return;
-				}
+				const full = await resolveRunTarget(fs, path, target);
+				if (full === null) throw new Error(`ENOENT: no such file or directory, open '${path.resolve(flowDir, target)}'`);
 				const type = contentTypeForArtifact(target);
 				if (req.method === "HEAD") {
 					const stat = await fs.stat(full);
@@ -400,14 +420,10 @@ function apply(ctx, config = {}) {
 				}
 				const fs = await import("node:fs/promises");
 				const path = await import("node:path");
-				const root = path.resolve(flowDir);
-				const full = path.resolve(root, target);
-				/* v8 ignore next 4 -- the grammar above pins the name inside
-				* run-<id>/ segments, so resolution cannot escape; the check
-				* stays as the read door's realpath-style second lock. */
-				if (full !== root && !full.startsWith(root + path.sep)) {
-					fail(res, 400, "forbidden_path", {
-						message: "artifact escapes the runs tree",
+				const full = await resolveRunTarget(fs, path, target);
+				if (full === null) {
+					fail(res, 404, "no_artifact", {
+						message: "no such artifact",
 						path: target
 					});
 					return;
@@ -511,19 +527,15 @@ function apply(ctx, config = {}) {
 				}
 				const fs = await import("node:fs/promises");
 				const path = await import("node:path");
-				const root = path.resolve(flowDir);
-				const full = path.resolve(root, target);
-				const fullNext = path.resolve(root, next);
-				/* v8 ignore next 4 -- the grammar above pins both names inside
-				* run-<id>/ segments, so resolution cannot escape; the check
-				* stays as the read door's realpath-style second lock. */
-				if (full !== root && !full.startsWith(root + path.sep) || fullNext !== root && !fullNext.startsWith(root + path.sep)) {
-					fail(res, 400, "forbidden_path", {
-						message: "artifact escapes the runs tree",
+				const full = await resolveRunTarget(fs, path, target);
+				if (full === null) {
+					fail(res, 404, "no_artifact", {
+						message: "no such artifact",
 						path: target
 					});
 					return;
 				}
+				const fullNext = path.resolve(path.dirname(full), name);
 				try {
 					await fs.stat(full);
 				} catch {

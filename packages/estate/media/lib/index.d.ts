@@ -25,8 +25,18 @@ import type { MediaListRow } from "./types.js";
  *  Synchronous fs on purpose: the door answers one page; the tree
  *  is the queue's own bounded output, not an adversarial mount. */
 /** Exported for the door pins (the draft's benchRow precedent): the
- *  list arm runs pure over a tree fixture. */
+ *  list arm runs pure over a tree fixture. Single-root shape (the
+ *  legacy law rides verbatim — listMediaAcross with one root). */
 export declare function listMedia(stateRoot: string, kind: string): Promise<{
+    count: number;
+    items: MediaListRow[];
+}>;
+/** §23 CROSS-ROOTS list arm: every manifest root's runs tree, one
+ *  merged answer. Run-ids union across roots (newest run mtime
+ *  first; a collision resolves FIRST-ROOT-WINS — own writes win);
+ *  every row names the root that served it. Cap stays LIST_CAP on
+ *  the merged answer. */
+export declare function listMediaAcross(roots: readonly string[], kind: string): Promise<{
     count: number;
     items: MediaListRow[];
 }>;

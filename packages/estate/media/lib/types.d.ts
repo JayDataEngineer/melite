@@ -6,4 +6,7 @@ export interface MediaListRow {
     readonly name: string;
     readonly kind: string;
     readonly runId: string;
+    /** §23 CROSS-ROOTS: the state root that served this row (own
+     *  root first; first-root-wins on run-id collisions). */
+    readonly served_from: string;
 }

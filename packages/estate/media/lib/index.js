@@ -35,6 +35,12 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { contentTypeForArtifact, mediaVocab } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
+/** The roots a media answer searches: the seat's manifest when it
+ *  carries one, else the single own root (§23 — own root always
+ *  leads; a run-id collision resolves first-root-wins). */
+const seatRoots = (seat) => seat.stateRoots !== undefined && seat.stateRoots.length > 0
+    ? [...seat.stateRoots]
+    : [seat.stateRoot];
 export const name = "estate-media";
 /** NOTHING is injected: the estate bundle rides headless mounts too
  * (the queue/drafts seats are headless-safe; the web carrier is
@@ -150,11 +156,29 @@ export function apply(ctx) {
                 res.end('{"error":"estate-media/no-queue-seat","message":"mount @melite-plugin/melite-estate (the queue seat owns the runs tree root)"}');
                 return;
             }
-            const stateRoot = seat.stateRoot;
-            const runDir = `${stateRoot}/output/${target.runId}`;
-            const file = `${runDir}/${target.rel}`;
+            // §23 CROSS-ROOTS: the first manifest root holding the run
+            // serves the bytes (own root leads — first-root-wins).
             const fs = await import("node:fs/promises");
             const path = await import("node:path");
+            const roots = seatRoots(seat);
+            let runDir = "";
+            for (const root of roots) {
+                const candidate = `${root}/output/${target.runId}`;
+                try {
+                    const st = await fs.stat(candidate);
+                    if (st.isDirectory()) {
+                        runDir = candidate;
+                        break;
+                    }
+                }
+                catch { /* not in this root */ }
+            }
+            if (runDir === "") {
+                res.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
+                res.end(NOT_FOUND_BODY);
+                return;
+            }
+            const file = `${runDir}/${target.rel}`;
             // Realpath containment: the resolved file AND its run dir
             // must nest (the regex is the first lock; this is the second).
             let realFile;
@@ -315,29 +339,46 @@ function kindForExt(ext) {
  *  Synchronous fs on purpose: the door answers one page; the tree
  *  is the queue's own bounded output, not an adversarial mount. */
 /** Exported for the door pins (the draft's benchRow precedent): the
- *  list arm runs pure over a tree fixture. */
+ *  list arm runs pure over a tree fixture. Single-root shape (the
+ *  legacy law rides verbatim — listMediaAcross with one root). */
 export async function listMedia(stateRoot, kind) {
+    return await listMediaAcross([stateRoot], kind);
+}
+/** §23 CROSS-ROOTS list arm: every manifest root's runs tree, one
+ *  merged answer. Run-ids union across roots (newest run mtime
+ *  first; a collision resolves FIRST-ROOT-WINS — own writes win);
+ *  every row names the root that served it. Cap stays LIST_CAP on
+ *  the merged answer. */
+export async function listMediaAcross(roots, kind) {
     const fs = await import("node:fs");
     const path = await import("node:path");
     const wanted = kind === "all" ? "" : kind;
     const items = [];
-    const outRoot = path.join(stateRoot, "output");
-    let runIds = [];
-    try {
-        runIds = fs.readdirSync(outRoot).filter((id) => RUN_ID.test(id));
-    }
-    catch {
-        return { count: 0, items: [] };
-    }
-    const runTimes = new Map();
-    for (const id of runIds) {
+    // runId -> { root, t }: the union scan. Insertion walks roots in
+    // manifest order, so a seen id keeps its FIRST root (own wins).
+    const runs = new Map();
+    for (const root of roots) {
+        const outRoot = path.join(root, "output");
+        let runIds = [];
         try {
-            runTimes.set(id, fs.statSync(path.join(outRoot, id)).mtimeMs);
+            runIds = fs.readdirSync(outRoot).filter((id) => RUN_ID.test(id));
         }
-        catch { /* raced */ }
+        catch {
+            continue; // a missing/unreadable root reads empty, never poisons
+        }
+        for (const id of runIds) {
+            if (runs.has(id))
+                continue;
+            let t = 0;
+            try {
+                t = fs.statSync(path.join(outRoot, id)).mtimeMs;
+            }
+            catch { /* raced */ }
+            runs.set(id, { root, t });
+        }
     }
-    runIds.sort((a, b) => (runTimes.get(b) ?? 0) - (runTimes.get(a) ?? 0));
-    const walk = (runId, dir, rel, depth) => {
+    const ordered = [...runs.entries()].sort((a, b) => b[1].t - a[1].t);
+    const walk = (root, runId, dir, rel, depth) => {
         if (items.length >= LIST_CAP || depth > 3)
             return;
         let entries;
@@ -350,7 +391,7 @@ export async function listMedia(stateRoot, kind) {
         const files = [];
         for (const e of entries) {
             if (e.isDirectory()) {
-                walk(runId, path.join(dir, e.name), rel === "" ? e.name : `${rel}/${e.name}`, depth + 1);
+                walk(root, runId, path.join(dir, e.name), rel === "" ? e.name : `${rel}/${e.name}`, depth + 1);
                 continue;
             }
             if (!e.isFile())
@@ -381,11 +422,12 @@ export async function listMedia(stateRoot, kind) {
                 name,
                 kind: kindForExt(f.name.slice(f.name.lastIndexOf(".") + 1).toLowerCase()),
                 runId,
+                served_from: root,
             });
         }
     };
-    for (const id of runIds)
-        walk(id, path.join(outRoot, id), "", 1);
+    for (const [id, r] of ordered)
+        walk(r.root, id, path.join(r.root, "output", id), "", 1);
     return { count: items.length, items };
 }
 /** The media remote: media/list over the queue seat's runs tree. */
@@ -414,7 +456,9 @@ let MediaRemoteService = (() => {
             if (seat === undefined) {
                 throw new RemoteError("media/no-seat", "media/list: the queue seat owns the runs tree root — mount @melite-plugin/melite-estate", {});
             }
-            return await listMedia(seat.stateRoot, kind);
+            // §23 CROSS-ROOTS: the seat's manifest (own root first) — the
+            // Infer Media bar sees every lane's runs on one box.
+            return await listMediaAcross(seatRoots(seat), kind);
         }
     };
 })();
