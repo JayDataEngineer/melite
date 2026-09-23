@@ -330,6 +330,10 @@ export function registerCompiledRun(args: {
   draftId: string;
   stateRoot: string;
   enqueue: (row: { runId: string; status: string; error: string; createdAt: number; draftId: string; testFlag: boolean; stopFlag: boolean }) => number;
+  /** F-6(b) admission warnings (computed pre-registration by the
+   *  start door — the film lane's VRAM-pressure warn): stamped on
+   *  the record and the queued sidecar. Absent means none. */
+  warnings?: string[];
   /** The {model:} card door carries its own run identity (minted
    *  BEFORE phase-2 compose — a refusal names its field, never a
    *  zombie slot) + the pipeline/cardId/request body for the
@@ -393,6 +397,9 @@ export function registerCompiledRun(args: {
     outputNodes: [st.outputNodes],
   };
   run.inputNames = { [st.id]: st.inputNames };
+  if (args.warnings !== undefined && args.warnings.length > 0) {
+    run.warnings = [...args.warnings];
+  }
   if (door !== undefined) {
     run.pipeline = door.pipeline;
     if (door.cardId !== undefined) run.cardId = door.cardId;
@@ -463,5 +470,8 @@ function sidecarDocFor(run: RunRecord): Record<string, unknown> {
     graph: run.graphRows,
     cardSnapshot: run.cardSnapshot,
     benchSnapshot: run.benchSnapshot,
+    // F-6(b): admission warnings ride the queued sidecar (disk
+    // rows carry them after a reload).
+    warnings: run.warnings,
   });
 }

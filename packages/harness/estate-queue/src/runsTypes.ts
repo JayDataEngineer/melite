@@ -81,6 +81,10 @@ export interface RunRecord {
    *  at Run press ({stages, intent}) — same carry law as the card
    *  snapshot. */
   benchSnapshot?: unknown;
+  /** F-6(b) ADMISSION WARNINGS (stamped post-registration by the
+   *  start door — the film lane's VRAM-pressure warn): served on
+   *  run_status rows, never a refusal. Absent means none. */
+  warnings?: string[];
 }
 
 /** The engine's path relative to the run dir (runRel, door-verbatim). */
@@ -146,6 +150,9 @@ export function settlePersist(
         // at registration ride along, never wiped.
         cardSnapshot: run.cardSnapshot,
         benchSnapshot: run.benchSnapshot,
+        // F-6(b): the admission warnings ride the settle rewrite
+        // too (a terminal disk row keeps what the live row warned).
+        warnings: run.warnings,
       }),
     );
   } catch {

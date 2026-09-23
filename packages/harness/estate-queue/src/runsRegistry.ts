@@ -28,6 +28,8 @@ import {
   registryInitialsError,
 } from "./flowsData.ts";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
+import { loadEndpointConfig } from "@melite/comfyui-cordis";
+import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.ts";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger } from "./queue.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
@@ -376,6 +378,10 @@ export class RunsRuntimeService extends Service {
         draftId: checked.draftId,
         stateRoot,
         enqueue: (row): number => this.core.enqueue(row as never),
+        // F-6(b): the admission warn computes pre-registration so
+        // it rides the record AND the queued sidecar (disk rows
+        // carry it after a reload).
+        warnings: await this.filmAdmissionWarnings(p1.card, body),
         door: {
           runId,
           pipeline: pipelineOf(body),
@@ -516,6 +522,26 @@ export class RunsRuntimeService extends Service {
    *  preview refusal (their remotes are later strokes); a 4xx
    *  answer folds to runs/flow-compile | runs/workflow-pin with
    *  the door's payload voices; the 200 serves verbatim. */
+  /** F-6(b) — THE ADMISSION MEMORY WARN (the film lane's tool
+   *  half of the pre-flight): a film admitted while the engine's
+   *  VRAM sits below the pressure line warns — the caller stamps
+   *  the returned warnings on the run (they ride run_status, never
+   *  a refusal). Any telemetry failure (config unreadable, engine
+   *  unreachable, stats unparseable) returns none — admission never
+   *  blocks on a stats read. */
+  async filmAdmissionWarnings(cardId: string, body: Record<string, unknown>): Promise<string[]> {
+    if (cardId !== "h3-timeline") return [];
+    const load = filmLoadOf(body);
+    if (load === null) return [];
+    let url = "";
+    try {
+      const cfg = loadEndpointConfig() as unknown as Record<string, unknown>;
+      if (typeof cfg["url"] === "string") url = cfg["url"] as string;
+    } catch { url = ""; }
+    const warn = filmMemoryWarn(load, await fetchEngineMem(url));
+    return warn === null ? [] : [warn];
+  }
+
   async status(
     runId: string,
     signal: AbortSignal,
@@ -569,6 +595,9 @@ export class RunsRuntimeService extends Service {
           : a,
       ),
       error: run.error,
+      // F-6(b): admission warnings ride the row (additive — older
+      // consumers ignore the key; absent means none were stamped).
+      warnings: [...(run.warnings ?? [])],
       queue_position: this.core.queuePosition(run.runId),
     };
     // THE TERMINAL-HUSK RECOVERY (F-5's second face): a live row that

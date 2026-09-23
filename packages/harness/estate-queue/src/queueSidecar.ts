@@ -47,6 +47,10 @@ export function sidecarDoc(args: {
    *  the pinned prefix above never shifts. */
   cardSnapshot?: unknown;
   benchSnapshot?: unknown;
+  /** F-6(b) ADMISSION WARNINGS (the film lane's VRAM-pressure
+   *  warn): the status row spells it `warnings` too — one spelling
+   *  on disk and on the wire. Absent when none were stamped. */
+  warnings?: string[];
 }): Record<string, unknown> {
   return {
     // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
@@ -70,6 +74,7 @@ export function sidecarDoc(args: {
     graph: args.graph,
     ...(args.cardSnapshot !== undefined ? { card_snapshot: args.cardSnapshot } : {}),
     ...(args.benchSnapshot !== undefined ? { bench_snapshot: args.benchSnapshot } : {}),
+    ...(args.warnings !== undefined && args.warnings.length > 0 ? { warnings: [...args.warnings] } : {}),
   };
 }
 

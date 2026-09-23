@@ -1,7 +1,7 @@
 // runs-registry-doors.spec.ts — the runs seat, list, validate, status + stop: split from runs-registry.spec.ts
 // (pure move — zero test-content change; the queue core is real,
 // the card registry rides a structural fake).
-import { describe, it, afterEach } from "vitest";
+import { describe, it, afterEach, beforeEach, vi } from "vitest";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
@@ -488,5 +488,126 @@ describe("status + stop", () => {
     assert.deepEqual(await s.svc.stop(done, sig()), {
       error: "cannot stop run in state completed",
     });
+  });
+});
+
+describe("film admission warn (F-6b)", () => {
+  const GIB = 1024 ** 3;
+  // Every arm pins its own endpoint config (a valid absolute URL
+  // the stubbed fetch answers) — never the repo's data file.
+  beforeEach(() => {
+    const good = join(tmp(), "endpoint.json");
+    writeFileSync(good, JSON.stringify({ url: "http://stubbed-engine" }));
+    process.env["COMFYUI_ENDPOINT_CONFIG"] = good;
+  });
+  afterEach(() => {
+    delete process.env["COMFYUI_ENDPOINT_CONFIG"];
+  });
+  const filmBody = (): Record<string, unknown> => ({
+    draft_id: "d1",
+    test: false,
+    model: "h3-timeline",
+    calls: [
+      { start_frame: 0, end_frame: 124 },
+      { start_frame: 124, end_frame: 243 },
+      { start_frame: 243, end_frame: 362 },
+    ],
+    width: 1344,
+    height: 768,
+  });
+  const filmSeat = (): Seat => seat({
+    phase1Card: (async (): Promise<unknown> => ({ card: "h3-timeline", skeleton: "s" })) as never,
+    phase2Card: (async (): Promise<unknown> => ({ graph: {} })) as never,
+  });
+  const stubMem = (free: number, total: number): void => {
+    vi.stubGlobal("fetch", async (url: unknown) => {
+      // Mirror the real fetch: a baseless relative URL (the config
+      // arm's "" + '/system_stats') throws — the stub answers only
+      // absolute URLs.
+      if (typeof url !== "string" || !url.startsWith("http")) throw new Error("no base");
+      return {
+        json: async () => ({ devices: [{ name: "cuda:0", vram_free: free, vram_total: total }] }),
+      };
+    });
+  };
+
+  it("a pressured engine warns on the run (the warn rides run_status)", async () => {
+    stubMem(0.8 * GIB, 24.5 * GIB);
+    try {
+      const s = filmSeat();
+      const ans = await s.svc.start(filmBody(), sig());
+      const row = await s.svc.status(ans.run_id, sig());
+      const warnings = row["warnings"] as string[];
+      assert.equal(warnings.length, 1);
+      assert.match(warnings[0] as string, /film admission/);
+      assert.match(warnings[0] as string, /0\.8 of 24\.5 GiB free/);
+      assert.match(warnings[0] as string, /3-window film/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("headroom stays quiet; a dead stats read never blocks admission", async () => {
+    stubMem(20 * GIB, 24.5 * GIB);
+    try {
+      const s = filmSeat();
+      const ans = await s.svc.start(filmBody(), sig());
+      assert.deepEqual((await s.svc.status(ans.run_id, sig()))["warnings"], []);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    vi.stubGlobal("fetch", async () => {
+      throw new Error("engine down");
+    });
+    try {
+      const s = filmSeat();
+      const ans = await s.svc.start(filmBody(), sig());
+      assert.equal(ans.status, "queued");
+      assert.deepEqual((await s.svc.status(ans.run_id, sig()))["warnings"], []);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("an unreadable endpoint config skips the warn (admission never blocks on config)", async () => {
+    const dir = tmp();
+    const bad = join(dir, "endpoint.json");
+    writeFileSync(bad, "{ not json");
+    process.env["COMFYUI_ENDPOINT_CONFIG"] = bad;
+    stubMem(0.8 * GIB, 24.5 * GIB);
+    try {
+      const s = filmSeat();
+      const ans = await s.svc.start(filmBody(), sig());
+      assert.equal(ans.status, "queued");
+      assert.deepEqual((await s.svc.status(ans.run_id, sig()))["warnings"], []);
+    } finally {
+      delete process.env["COMFYUI_ENDPOINT_CONFIG"];
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("non-film cards never warn (the calls shape is the film lane's)", async () => {
+    stubMem(0.8 * GIB, 24.5 * GIB);
+    try {
+      const s = seat({
+        phase1Card: (async (): Promise<unknown> => ({ card: "tts", skeleton: "s" })) as never,
+        phase2Card: (async (): Promise<unknown> => ({ graph: {} })) as never,
+      });
+      const ans = await s.svc.start({ draft_id: "d1", test: false, model: "tts", text: "hi" }, sig());
+      assert.deepEqual((await s.svc.status(ans.run_id, sig()))["warnings"], []);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("an h3 body with no computable spans never warns (nothing to warn about)", async () => {
+    stubMem(0.8 * GIB, 24.5 * GIB);
+    try {
+      const s = filmSeat();
+      const ans = await s.svc.start({ draft_id: "d1", test: false, model: "h3-timeline" }, sig());
+      assert.deepEqual((await s.svc.status(ans.run_id, sig()))["warnings"], []);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
