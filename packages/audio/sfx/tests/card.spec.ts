@@ -56,4 +56,19 @@ describe("the sfx compose gate", () => {
     assert.equal(synth.inputs.mode, "tts", "the sfx lane's own mode");
     assert.equal(graph["SaveAudio.0"].inputs.filename_prefix, "run_6/sfx");
   });
+
+  it("UPSTREAM 1:1 DEFAULTS — the card carries MOSS-SFX-v2's pipeline point (100 steps, cfg 4.0)", () => {
+    // defect b (2026-09-23): upstream pipeline_moss_soundeffect.py
+    // declares num_inference_steps=100 / cfg_scale=4.0; the card
+    // shipped the INNER wan_audio layer's 50/5.0 — half budget,
+    // over-guided. The schema's defaults ARE the quality point the
+    // operator gets on a bare Run press; pin them to upstream.
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "thunder crack" }), moss, g, "run_up1");
+    const synth = g.toJSON()["AudiocoreTTS.0"];
+    assert.equal(synth.inputs.num_inference_steps, 100,
+      "upstream pipeline default (100), not the wan_audio layer floor (50)");
+    assert.equal(synth.inputs.guidance_scale, 4.0,
+      "upstream pipeline default (4.0), not the wan_audio layer default (5.0)");
+  });
 });

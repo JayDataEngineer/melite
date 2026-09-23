@@ -7,8 +7,15 @@ import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 
 const schema = z.object({
   prompt: z.string().description("Sound Description").extra('extra', { order: null, tooltip: "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')", required: true, wtype: 'textarea', }),
-  guidance_scale: z.number().description("CFG").min(0).max(20).step(0.1).default(5).extra('extra', { order: null, tooltip: "Diffusion classifier-free guidance" }),
-  n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(500).step(1).default(50).extra('extra', { order: null, tooltip: "More = higher quality, slower", wtype: 'slider' }),
+  // UPSTREAM 1:1 (defect b, 2026-09-23): MOSS-SFX-v2's pipeline
+  // declares num_inference_steps=100 / cfg_scale=4.0
+  // (vendor/…/moss_sfx_impl/moss_soundeffect_v2/pipeline_moss_soundeffect.py:162).
+  // The old 50/5.0 were the INNER wan_audio layer's defaults — half
+  // the sampling budget, over-guided: the operator's low-quality
+  // catch. The node's _DEFAULT_* constants stay the layer floor;
+  // the CARD carries the pipeline's quality point.
+  guidance_scale: z.number().description("CFG").min(0).max(20).step(0.1).default(4).extra('extra', { order: null, tooltip: "Diffusion classifier-free guidance" }),
+  n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(500).step(1).default(100).extra('extra', { order: null, tooltip: "More = higher quality, slower", wtype: 'slider' }),
   duration: z.number().description("Duration (s)").min(0.5).max(300).step(0.5).default(10).extra('extra', { order: null, tooltip: "Output length in seconds" }),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: null }),
 })
