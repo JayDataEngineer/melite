@@ -2,7 +2,7 @@
 // cardsRegistry.ts, the god-file cut): param preparation (steps
 // 2-6) and the in-process compose (steps 7-9). Explicit seat
 // deps; no Service state beyond the accessors the seat passes.
-import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent } from "@melite/comfyui-cordis";
+import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent, owningAtom } from "@melite/comfyui-cordis";
 import { EngineContext, composeModPlane, loadFacts, liveObjectInfo, theService } from "@melite/comfyui-cordis";
 import type { FactsReads } from "@melite/comfyui-cordis";
 import type { PreparedCard } from "./cardsRegistry.ts";
@@ -147,10 +147,19 @@ export function admissionRefusal(
        the test fiber (always throws here): the mod surface stays empty
        in tests; knobs+admits still gate (2026-09-12) */
     try {
+      // THE ROUTE→ATOM FOLD (qvoice across ALL qwen3-tts, operator
+      // 2026-09-23 — the same fold the spec door rides, discovery.ts
+      // specBody): flavors register for the FAMILY ATOM; a run at a
+      // VARIANT ROUTE address (qwen3-tts-base) asks with its owning
+      // atom or the absorbed surface drops and every mod param
+      // refuses as unknown (verified live by the maker: voice_name
+      // refused at the base route pre-fold). Atoms pass through
+      // unchanged (owningAtom: routes.get(id)?.modelId ?? id).
+      const envelopeAtom: string = owningAtom(fam)
       modNames = new Set(
         theService()
           .cardModFields(card)
-          .filter((a) => a.families.includes(fam))
+          .filter((a) => a.families.includes(envelopeAtom))
           .flatMap((a) => Object.keys(a.fields.dict ?? {})),
       )
       /* v8 ignore stop */
