@@ -8,7 +8,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   collectMediaRefs,
+  collectSourceRefs,
   parseMediaRef,
+  parseSourceRef,
   resolveSourceRefs,
 } from "../src/runsSourceEcho.ts";
 import { registerCompiledRun } from "../src/runsStart.ts";
@@ -74,6 +76,49 @@ describe("collectMediaRefs", () => {
   });
 });
 
+describe("collectSourceRefs (every face the stager stages)", () => {
+  it("sweeps the assets face and padded spellings; stamps verbatim", () => {
+    const got = collectSourceRefs({
+      clip: "/v1/assets/runs/run-aaaa1111-bb22cc33/edit/a.png",
+      padded: "  /melite-media/runs/run-aaaa1111-bb22cc33/edit/a.png  ",
+    });
+    assert.deepEqual(got, [
+      "/v1/assets/runs/run-aaaa1111-bb22cc33/edit/a.png",
+      "  /melite-media/runs/run-aaaa1111-bb22cc33/edit/a.png  ",
+    ]);
+  });
+
+  it("sweeps absolute paths and run-tails", () => {
+    const got = collectSourceRefs({
+      abs: "/tmp/x/a.png",
+      tail: "run-aaaa1111-bb22cc33/edit/a.png",
+    });
+    assert.deepEqual(got, ["/tmp/x/a.png", "run-aaaa1111-bb22cc33/edit/a.png"]);
+  });
+
+  it("prose never qualifies (no false refusals on prompts)", () => {
+    assert.deepEqual(
+      collectSourceRefs({
+        prompt: "AC/DC live 24/7, a cat/dog hybrid",
+        rel: "data/input/x.png",
+        tom: "Tom/Jerry",
+      }),
+      [],
+    );
+  });
+
+  it("data:, bare names, and linked http(s) ride untouched (the engine's own arms)", () => {
+    assert.deepEqual(
+      collectSourceRefs({
+        a: "data:image/png;base64,xx",
+        b: "still-a",
+        c: "https://example.com/c.png",
+      }),
+      [],
+    );
+  });
+});
+
 describe("parseMediaRef", () => {
   it("parses run dir + rel", () => {
     assert.deepEqual(parseMediaRef("/melite-media/runs/run-aaaa1111-bb22cc33/edit/a.png"), {
@@ -87,6 +132,27 @@ describe("parseMediaRef", () => {
     assert.throws(() => parseMediaRef("/melite-media/runs/notarun/a.png"), /mint grammar/);
     assert.throws(() => parseMediaRef("/melite-media/runs/run-aaaa1111-bb22cc33/../x"), /traversal/);
     assert.throws(() => parseMediaRef("/melite-media/runs/run-aaaa1111-bb22cc33/%zz"), /percent-escape/);
+  });
+});
+
+describe("parseSourceRef (faces + the servable fence)", () => {
+  it("parses the assets face and run-tails", () => {
+    assert.equal(parseSourceRef("/v1/assets/runs/run-aaaa1111-bb22cc33/edit/a.png").runId, "run-aaaa1111-bb22cc33");
+    const tail = parseSourceRef("run-aaaa1111-bb22cc33/edit/a.png");
+    assert.equal(tail.runId, "run-aaaa1111-bb22cc33");
+    assert.equal(tail.rel, "edit/a.png");
+    assert.equal(parseSourceRef("/tmp/x/a.png").face, "abs");
+  });
+
+  it("run-state files refuse (the server 404s them) — _poster.jpg excepted", () => {
+    assert.throws(
+      () => parseSourceRef("/melite-media/runs/run-aaaa1111-bb22cc33/_request.json"),
+      /run-state file/,
+    );
+    assert.equal(
+      parseSourceRef("/melite-media/runs/run-aaaa1111-bb22cc33/_poster.jpg").rel,
+      "_poster.jpg",
+    );
   });
 });
 
@@ -125,6 +191,54 @@ describe("resolveSourceRefs", () => {
       () => resolveSourceRefs(["/melite-media/runs/run-aaaa1111-bb22cc33/edit/a.png"], [root]),
       /resolve nowhere/,
     );
+  });
+
+  it("the assets face resolves through the same trees", () => {
+    const r = rooted("run-aaaa1111-bb22cc33", "edit/a.png");
+    const rows = resolveSourceRefs(["/v1/assets/runs/run-aaaa1111-bb22cc33/edit/a.png"], [r]);
+    assert.equal(rows[0]?.file, join(r, "output", "run-aaaa1111-bb22cc33", "edit/a.png"));
+    assert.throws(
+      () => resolveSourceRefs(["/v1/assets/runs/run-aaaa1111-bb22cc33/edit/gone.png"], [r]),
+      /gone\.png/,
+    );
+  });
+
+  it("run-tails resolve through trees, then the lane cwd (the stager's order)", () => {
+    const r = rooted("run-aaaa1111-bb22cc33", "edit/a.png");
+    const rows = resolveSourceRefs(
+      ["run-aaaa1111-bb22cc33/edit/a.png"],
+      [tmp()],
+      join(r, "output", "run-aaaa1111-bb22cc33"),
+    );
+    assert.equal(rows.length, 1);
+    assert.throws(
+      () => resolveSourceRefs(["run-aaaa1111-bb22cc33/edit/a.png"], [tmp()], tmp()),
+      /resolve nowhere/,
+    );
+  });
+
+  it("the registering run's own id passes unstamped (its future output path rides the graph)", () => {
+    const self = "run-aaaa1111-bb22cc33";
+    const rows = resolveSourceRefs(
+      [`${self}/gen`, `/melite-media/runs/${self}/gen`],
+      [tmp()],
+      tmp(),
+      self,
+    );
+    assert.deepEqual(rows, []);
+    // …while every OTHER dead tail still refuses.
+    assert.throws(
+      () => resolveSourceRefs(["run-bbbb2222-cc33dd44/gen"], [tmp()], tmp(), self),
+      /resolve nowhere/,
+    );
+  });
+
+  it("absolute paths stage verbatim or refuse", () => {
+    const r = tmp();
+    writeFileSync(join(r, "a.png"), "bytes");
+    const rows = resolveSourceRefs([join(r, "a.png")], [tmp()]);
+    assert.equal(rows[0]?.file, join(r, "a.png"));
+    assert.throws(() => resolveSourceRefs([join(r, "gone.png")], [tmp()]), /resolve nowhere/);
   });
 });
 

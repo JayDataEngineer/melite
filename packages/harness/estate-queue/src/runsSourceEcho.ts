@@ -4,27 +4,46 @@
 //
 // The compose-echo (runsStart registerCompiledRun) is the read-side
 // model (what the engine received, stamped on the record + console +
-// ledger). This is the source-side twin: collect every
-// /melite-media/runs/ URL in the compiled stage params, resolve each
-// against the run's roots with the SAME walk the media server serves
-// (estate/media index.ts: first manifest root holding the run dir
-// wins — `${root}/output/<runId>/<rel>`), refuse naming the dead,
-// stamp the resolved on the run record.
+// ledger). This is the source-side twin: collect every source
+// pointer in the compiled stage params, resolve each the way the
+// engine's submit-time walk stages it (comfyui-upload stageOne —
+// the engine TRIMS, matches both estate prefixes case-insensitively,
+// walks candidateTrees, falls a run-tail through to cwd), refuse
+// naming the dead, stamp the resolved on the run record.
 //
+// Faces swept (anything else — data: URLs, bare artifact names,
+// http(s) linked inputs, prose — rides untouched; the engine owns
+// those arms and refuses them loud itself):
+//   /melite-media/runs/<run>/<rel>  (the media route)
+//   /v1/assets/runs/<run>/<rel>      (the assets route — same trees)
+//   <run-id>/<rel>                   (runs-relative tails; the first
+//                                    segment must match the mint
+//                                    grammar — prose with slashes
+//                                    never qualifies)
+//   /abs/path                        (absolute disk paths — the cwd
+//                                    arm stages them verbatim)
 // The parse is a TWIN of the server's parseTarget (RUN_ID grammar +
-// segment confinement), cross-linked, not shared — the server's
-// parser is route-local and unexported; a twin with the same laws
-// cannot drift silently because the walls pin both faces.
+// segment confinement + the _poster.jpg servable exception),
+// cross-linked, not shared — the server's parser is route-local and
+// unexported; a twin with the same laws cannot drift silently
+// because the walls pin both faces.
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 import { statSync } from "node:fs";
 import { join } from "node:path";
 
-/** The serving prefix the estate media route owns (estate/media). */
+/** The serving prefixes the estate owns (comfyui-upload's
+ *  MEDIA/ASSET_ROUTE_PREFIX twins — detection is case-insensitive
+ *  like the engine's; the sliced tail keeps its case). */
 export const MEDIA_RUNS_PREFIX = "/melite-media/runs/";
+export const ASSET_RUNS_PREFIX = "/v1/assets/runs/";
 
 /** The run-dir basename grammar (the mint law — media index.ts). */
 const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+
+/** The servable-media law's one underscore exception (media
+ *  index.ts relServable twin): run STATE files are not sources. */
+const UNDERSCORE_SERVABLE: ReadonlySet<string> = new Set(["_poster.jpg"]);
 
 /** One confined rel segment: not empty, not dot/dotdot
  *  (traversal), no NUL — the server's segmentOk twin. */
@@ -34,12 +53,51 @@ function segmentOk(seg: string): boolean {
   return true;
 }
 
-/** Collect every media-runs URL in a params tree (deep walk over
+export type SourceFace = "run" | "abs";
+
+/** A collected pointer: the VERBATIM string (history stamps what
+ *  the params held — the engine trims for staging, the record
+ *  keeps the author's spelling) plus its parsed face. */
+export interface ParsedSource {
+  readonly url: string;
+  readonly face: SourceFace;
+  readonly runId: string;
+  readonly rel: string;
+  readonly abs: string;
+}
+
+/** The detection grammar (runs on the trimmed string — the engine
+ *  trims before every arm, so detection sees what staging sees):
+ *  either estate prefix (either case), an absolute path, or a
+ *  run-tail whose first segment matches the mint grammar. Prose
+ *  with slashes never qualifies — no false refusals on prompts. */
+function detectFace(t: string): { face: SourceFace; rest: string } | null {
+  const lower: string = t.toLowerCase();
+  // Both estate prefixes end in "/runs/" — one slice serves both
+  // faces (detection is case-insensitive like the engine's; the
+  // tail keeps its case).
+  if (lower.startsWith(MEDIA_RUNS_PREFIX) || lower.startsWith(ASSET_RUNS_PREFIX)) {
+    return { face: "run", rest: t.slice(lower.indexOf("/runs/") + "/runs/".length) };
+  }
+  if (t.startsWith("/")) return { face: "abs", rest: t };
+  if (!t.includes("/") || t.includes("..")) return null;
+  const head: string = t.split("/", 1)[0] as string;
+  let decodedHead: string;
+  try {
+    decodedHead = decodeURIComponent(head);
+  } catch {
+    return null;
+  }
+  if (!RUN_ID.test(decodedHead)) return null;
+  return { face: "run", rest: t };
+}
+
+/** Collect every source pointer in a params tree (deep walk over
  *  objects/arrays — card params nest refs inside calls, clips,
- *  stanzas). Order of discovery, deduped. data: URLs, bare
- *  artifact names, and foreign URLs are not media pointers and
- *  never collect. */
-export function collectMediaRefs(value: unknown): string[] {
+ *  stanzas). Verbatim strings, order of discovery, deduped.
+ *  Detection runs on the trimmed string (the engine trims); the
+ *  stamped URL keeps the author's spelling. */
+export function collectSourceRefs(value: unknown): string[] {
   const found: string[] = [];
   const seen = new Set<string>();
   const seenObjs = new Set<object>();
@@ -47,7 +105,8 @@ export function collectMediaRefs(value: unknown): string[] {
   while (stack.length > 0) {
     const cur: unknown = stack.pop();
     if (typeof cur === "string") {
-      if (cur.startsWith(MEDIA_RUNS_PREFIX) && !seen.has(cur)) {
+      const t: string = cur.trim();
+      if (t !== "" && detectFace(t) !== null && !seen.has(cur)) {
         seen.add(cur);
         found.push(cur);
       }
@@ -67,15 +126,33 @@ export function collectMediaRefs(value: unknown): string[] {
   return found;
 }
 
-/** Parse a media-runs URL into run dir + rel. Throws naming the
- *  violation when the shape or a segment breaks confinement — a
- *  malformed pointer can never serve, so it refuses here, loud. */
-export function parseMediaRef(ref: string): { runId: string; rel: string } {
-  const rest: string = ref.slice(MEDIA_RUNS_PREFIX.length);
-  const parts: string[] = rest.split("/");
+/** Backward face (the first law's name): the media-prefix sweep.
+ *  New code prefers collectSourceRefs. */
+export function collectMediaRefs(value: unknown): string[] {
+  return collectSourceRefs(value).filter((s) =>
+    s.trim().toLowerCase().startsWith(MEDIA_RUNS_PREFIX),
+  );
+}
+
+/** Parse a collected pointer. Throws naming the violation when the
+ *  shape or a segment breaks confinement — an unservable pointer
+ *  refuses here, loud. */
+export function parseSourceRef(ref: string): ParsedSource {
+  const t: string = ref.trim();
+  const det: { face: SourceFace; rest: string } | null = detectFace(t);
+  if (det === null) {
+    throw new Error("not a source pointer: " + JSON.stringify(ref));
+  }
+  if (det.face === "abs") {
+    if (t.includes("\0")) {
+      throw new Error("media source refuses NUL: " + JSON.stringify(ref));
+    }
+    return { url: ref, face: "abs", runId: "", rel: "", abs: t };
+  }
+  const parts: string[] = det.rest.split("/");
   if (parts.length < 2) {
     throw new Error(
-      "malformed media source (want /melite-media/runs/<run_id>/<file>): " +
+      "malformed media source (want <prefix>/<run_id>/<file>): " +
         JSON.stringify(ref),
     );
   }
@@ -103,7 +180,24 @@ export function parseMediaRef(ref: string): { runId: string; rel: string } {
     }
     relParts.push(decoded);
   }
-  return { runId, rel: relParts.join("/") };
+  // THE SERVABLE-MEDIA FENCE (media index.ts relServable twin):
+  // run STATE files are not sources (the server 404s them) —
+  // _poster.jpg excepted (a legit thumbnail source).
+  const base: string = relParts[relParts.length - 1] as string;
+  if (base.startsWith("_") && !UNDERSCORE_SERVABLE.has(base)) {
+    throw new Error(
+      "media source is a run-state file, not servable media: " +
+        JSON.stringify(ref),
+    );
+  }
+  return { url: ref, face: "run", runId, rel: relParts.join("/"), abs: "" };
+}
+
+/** Backward face: parse a media-prefix URL. */
+export function parseMediaRef(ref: string): { runId: string; rel: string } {
+  const p: ParsedSource = parseSourceRef(ref);
+  if (p.face !== "run") throw new Error("not a run source: " + JSON.stringify(ref));
+  return { runId: p.runId, rel: p.rel };
 }
 
 export interface SourceEchoRef {
@@ -127,30 +221,58 @@ function isFile(p: string): boolean {
   }
 }
 
-/** Resolve every ref against the run's roots — the server's walk:
- *  first root holding the RUN DIR wins, the file rides under it.
- *  Returns the resolved rows in collection order. Throws ONE error
- *  naming EVERY unresolvable source plus the roots searched — the
- *  run refuses before it registers, never mid-render. */
-export function resolveSourceRefs(refs: readonly string[], roots: readonly string[]): SourceEchoRef[] {
+/** Resolve every pointer the way the engine stages it — run faces
+ *  walk the manifest trees (first root holding the RUN DIR wins,
+ *  the file rides under it — the server's and the stager's shared
+ *  walk), tails fall through to cwd (the stager's own order),
+ *  absolute paths stage verbatim. A pointer at selfRunId (the run
+ *  being registered — the compose writes its OWN future output
+ *  path, `${runId}/gen`, into the graph) is a forward reference,
+ *  not a source: it passes unstamped, never refused. Returns the
+ *  resolved rows in collection order. Throws ONE error naming EVERY
+ *  unresolvable source plus the roots searched — the run refuses
+ *  before it registers, never mid-render. */
+export function resolveSourceRefs(
+  refs: readonly string[],
+  roots: readonly string[],
+  cwd: string = process.cwd(),
+  selfRunId = "",
+): SourceEchoRef[] {
   const dead: string[] = [];
   const rows: SourceEchoRef[] = [];
   for (const ref of refs) {
-    let parsed: { runId: string; rel: string };
+    let parsed: ParsedSource;
     try {
-      parsed = parseMediaRef(ref);
+      parsed = parseSourceRef(ref);
     } catch (e) {
       dead.push(ref + " (" + (e as Error).message + ")");
       continue;
     }
     let file = "";
-    for (const root of roots) {
-      const runDir: string = join(root, "output", parsed.runId);
-      if (!isDir(runDir)) continue;
-      const cand: string = join(runDir, parsed.rel);
-      if (isFile(cand)) {
-        file = cand;
-        break;
+    if (parsed.face === "abs") {
+      if (isFile(parsed.abs)) file = parsed.abs;
+    } else if (selfRunId !== "" && parsed.runId === selfRunId) {
+      // THE SELF-CHAIN EXEMPTION (2026-09-23 — the hook gate caught
+      // it: krea-2's composed graph carries `${runId}/gen`, its OWN
+      // SaveImage prefix, inside stage params; refusing it refuses
+      // every generation). Forward reference — passes unstamped.
+      continue;
+    } else {
+      for (const root of roots) {
+        const runDir: string = join(root, "output", parsed.runId);
+        if (!isDir(runDir)) continue;
+        const cand: string = join(runDir, parsed.rel);
+        if (isFile(cand)) {
+          file = cand;
+          break;
+        }
+      }
+      // THE CWD FALL-THROUGH (the stager's own order — a tail the
+      // trees miss still stages from the lane's cwd, so the guard
+      // honors it too; same process, same cwd, no drift).
+      if (file === "" && !parsed.url.trim().startsWith("/")) {
+        const cand: string = join(cwd, parsed.rel);
+        if (isFile(cand)) file = cand;
       }
     }
     if (file === "") dead.push(ref);
@@ -164,9 +286,15 @@ export function resolveSourceRefs(refs: readonly string[], roots: readonly strin
         dead.join("; ") +
         ") — searched roots " +
         JSON.stringify(roots) +
-        " (the media walk: <root>/output/<run_id>/<file>). " +
+        " (+ lane cwd for run-tails). " +
         "Re-link or regenerate the sources; the run refuses rather than render sourceless",
     );
   }
   return rows;
+}
+
+/** Backward face (roots-only walk — the first law's signature).
+ *  New code prefers resolveSourceRefs. */
+export function resolveMediaRefs(refs: readonly string[], roots: readonly string[]): SourceEchoRef[] {
+  return resolveSourceRefs(refs, roots);
 }

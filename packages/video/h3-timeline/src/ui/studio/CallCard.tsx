@@ -50,6 +50,27 @@ function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "a
   )
 }
 
+/** A REDUNDANT per-call copy (H4, 2026-09-23 — no hole left): a
+ *  per-call chip already riding card-level hides from the lane (the
+ *  bus dedupes it) — but hiding is not stranding. This row names
+ *  the copy and offers its × : stripping the per-call copy changes
+ *  NOTHING on the bus (the value still rides card-level), so the
+ *  door cannot lie. */
+function RedundantRow({ name, onStrip }: { name: string; onStrip: () => void }) {
+  const short = name.startsWith("data:") ? `upload (${name.length} chars)` : declaredShortName(name)
+  return (
+    <span
+      className={s.redundantRow}
+      data-testid="tl-redundant-ref"
+      title={`redundant per-call copy — already rides card-level, so the bus ignores this entry\n${name}\n× strips the copy (the bus is unchanged)`}
+    >
+      <span className={s.redundantName}>⟡ {short}</span>
+      <button type="button" className={s.redundantX} data-testid="tl-redundant-strip" onClick={onStrip} title="strip the redundant per-call copy">
+        ×
+      </button>
+    </span>
+  )
+}
 /** ONE ref bucket — the estate's SourceRow per chip (the operator's
  *  2026-09-13 law: SourceRow owns EVERY input slot): pick from the
  *  available artifacts, upload inline (data: URL chip), remove via
@@ -93,6 +114,11 @@ function RefsBucket({
     .filter((a) => refGenreOf(a.name, a.url) === kind && !chips.includes(a.name))
     .map((a) => ({ id: a.name, label: a.name, url: a.url }))
   const setChips = (next: string[]): void => onChange(next.length ? next.join(", ") : "")
+  // THE REDUNDANT COPIES (H4 — no hole left): per-call chips already
+  // riding card-level hide from the lane but NOT from the door —
+  // each names itself with a × that strips the copy (the bus is
+  // unchanged: the value still rides card-level).
+  const redundant = chips.filter((ch) => (declared ?? []).includes(ch))
   const up = REF_UPLOAD_SPEC[kind]
   // THE PICK TRANSLATION (the slot grammar): a From-flow pick hands
   // the candidate's URL — the refs wire carries artifact NAMES (the
@@ -163,6 +189,13 @@ function RefsBucket({
             } catch { /* unreadable — the pickers never throw */ }
           }}
         />
+        {redundant.map((name) => (
+          <RedundantRow
+            key={`redundant-${name}`}
+            name={name}
+            onStrip={() => setChips(chips.filter((ch) => ch !== name))}
+          />
+        ))}
       </div>
     </div>
   )
@@ -304,6 +337,8 @@ export function CallCard({
           const shown = chips
             .map((ch, idx) => ({ ch, idx }))
             .filter(({ ch }) => !declared.includes(ch))
+          // THE REDUNDANT COPIES (H4 — same door as the buckets).
+          const redundant = chips.filter((ch) => declared.includes(ch))
           const anchor = (c.image ?? "").trim() !== "" ? 1 : 0
           const total = anchor + bus.length
           const over = total > 9
@@ -383,6 +418,13 @@ export function CallCard({
                     } catch { /* unreadable — the pickers never throw */ }
                   }}
                 />
+                {redundant.map((name) => (
+                  <RedundantRow
+                    key={`redundant-${name}`}
+                    name={name}
+                    onStrip={() => setChips(chips.filter((ch) => ch !== name))}
+                  />
+                ))}
               </div>
             </div>
           )

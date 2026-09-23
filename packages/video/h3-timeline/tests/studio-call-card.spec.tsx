@@ -297,4 +297,16 @@ describe("THE DECLARED SURFACE (2026-09-23): the bundle shows what the compose m
     assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/9"))
     h.unmount()
   })
+
+  it("H4 — a hidden redundant copy names itself with a strip door that leaves the bus unchanged", () => {
+    const { d, calls } = deps({ layerA: LAYER })
+    const h = render(
+      <CallCard c={{ ...BASE, refs: { images: "https://u/d1.png, still-a" } }} i={0} deps={d} />,
+    )
+    const rows = h.container.querySelectorAll('[data-testid="tl-redundant-ref"]')
+    assert.equal(rows.length, 1, "the redundant copy is named, not stranded")
+    fireEvent.click(h.container.querySelector('[data-testid="tl-redundant-strip"]')!)
+    assert.deepEqual(calls.refs, [[0, "images", "still-a"]], "only the copy strips — the bus still rides card-level")
+    h.unmount()
+  })
 })

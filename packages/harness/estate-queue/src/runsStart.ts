@@ -25,7 +25,7 @@ import {
 import { appendLedger, atomicWriteJson, newRunId, outRootFor, refusal, sidecarDoc } from "./queue.ts";
 import type { QueueRefusal } from "./queue.ts";
 import { rootsManifest } from "./rootsManifest.ts";
-import { collectMediaRefs, resolveSourceRefs } from "./runsSourceEcho.ts";
+import { collectSourceRefs, resolveSourceRefs } from "./runsSourceEcho.ts";
 import type { SourceEchoRef } from "./runsSourceEcho.ts";
 import type { GraphRow } from "./queue.ts";
 import type { RunRecord, StageRow } from "./runsTypes.ts";
@@ -359,16 +359,21 @@ export function registerCompiledRun(args: {
   const { compiled, testFlag, draftId, stateRoot, enqueue, door } = args;
   const runId: string = door?.runId ?? newRunId();
   // THE SOURCE-ECHO GUARD (the source-echo law, 2026-09-23): every
-  // compiled stage's params are swept for media sources BEFORE the
+  // compiled stage's params are swept for source pointers BEFORE the
   // run dir exists — a dead source refuses here with its URL named,
   // never mid-render, and nothing registers. The roots are the
-  // manifest (own root first — the media server's own walk).
+  // manifest (own root first — the media server's own walk); tails
+  // fall through to the lane cwd, the stager's own order. The run's
+  // own id is exempt (the compose writes its future output path
+  // into the graph — a forward reference, not a source).
   const roots: string[] = rootsManifest(stateRoot);
   let sources: SourceEchoRef[];
   try {
     sources = resolveSourceRefs(
-      collectMediaRefs(compiled.stages.map((s) => s.params)),
+      collectSourceRefs(compiled.stages.map((s) => s.params)),
       roots,
+      process.cwd(),
+      runId,
     );
   } catch (e) {
     return refusal(400, (e as Error).message, "invalid_request", "params");
