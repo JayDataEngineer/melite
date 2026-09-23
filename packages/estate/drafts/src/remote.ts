@@ -627,6 +627,22 @@ export class DraftsRemoteService extends TypertRemoteService {
     // log — the answer serves the CURRENT rev so a caller that treats
     // it as the next CAS handle stays honest).
     let rev = bench.rev;
+    // THE INNER-KEY RECEIPT (operator 2026-09-23: "I changed the seam
+    // from cut to carried" — the toggle left NO trace: every params
+    // patch logged the summary "params", so four revs of edits could
+    // not be told apart from four model stamps. A params patch now
+    // names the keys it merged — the log alone answers "did the seam
+    // write ever land".) The spell: `params` alone when the patch
+    // carried an empty/non-object params arm (a door refusal would
+    // never let us get here), else `params:<inner keys sorted>`.
+    const paramsSummary = (p: unknown): string => {
+      if (p === null || typeof p !== "object" || Array.isArray(p)) return "params";
+      const inner = Object.keys(p as Record<string, unknown>).sort();
+      return inner.length === 0 ? "params" : "params:" + inner.join(",");
+    };
+    const summary = Object.keys(patch).sort()
+      .map((k) => (k === "params" ? paramsSummary(patch["params"]) : k))
+      .join(",");
     if (!telemetry) {
       rev = bench.rev + 1;
       const log = [...bench.log, {
@@ -635,10 +651,15 @@ export class DraftsRemoteService extends TypertRemoteService {
         author: "user",
         kind: "patch",
         stage: stageId,
-        summary: Object.keys(patch).sort().join(","),
+        summary,
       }] as BenchBlock["log"];
       doc["bench"] = { rev, log };
     }
+    // THE AUDIT VOICE (the same night): the patch's arrival and its
+    // named keys also land in the service log — a UI write that dies
+    // client-side (never sent) leaves NO such line, so the silence is
+    // distinguishable from a refusal.
+    this.ctx.logger.info("drafts/patch %s %s rev=%d %s", draftId, stageId, rev, summary);
     try {
       await drafts.table("docs").put(draftId, {
         updated_at: Math.floor(Date.now() / 1000),

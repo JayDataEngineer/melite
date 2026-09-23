@@ -129,6 +129,47 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
     render(h(H3TimelineStudio, owner({ runStatus: 'running' })))
     expect(document.body.textContent ?? '').not.toBe('')
   })
+
+  // THE SEAM TOGGLE WALL (operator 2026-09-23: "I changed the seam
+  // from cut to carried" — the run composed 'cut' and the bench
+  // STILL said 'cut'; the flash-then-drop). The toggle must leave
+  // the studio as a calls patch carrying the new transition —
+  // anything less is a silent refusal hiding a broken write.
+  it('THE SEAM TOGGLE RIDES THE WRITE CHANNEL: cut → extend leaves onSave as calls with the new transition', async () => {
+    const p = owner({
+      row: {
+        id: 's_4', card: 'h3-timeline', title: 'H3 Timeline',
+        params: {
+          calls: [
+            { text: 'shot one', start_frame: 0, end_frame: 160 },
+            { text: 'shot two', start_frame: 160, end_frame: 247, transition: 'cut' },
+          ],
+          keyframes: [], fps: 24, seed: 7,
+        },
+      },
+    })
+    render(h(H3TimelineStudio, p))
+    // select the SECOND call (the seam control renders for i>0)
+    const card = await screen.findByText('shot two')
+    fireEvent.click(card)
+    const mode = await waitFor(() => {
+      const el = screen.queryByLabelText('Call 1 seam mode') as HTMLSelectElement | null
+      if (el === null) throw new Error('no seam control yet')
+      return el
+    })
+    expect(mode.value).toBe('cut')
+    fireEvent.change(mode, { target: { value: 'extend' } })
+    const patch = await waitFor(() => {
+      const hit = (p.onPatch as ReturnType<typeof vi.fn>).mock.calls
+        .map((c) => c[0] as Record<string, unknown>)
+        .filter((x) => Array.isArray(x['calls']))
+        .at(-1)
+      if (hit === undefined) throw new Error('no calls patch fired')
+      return hit
+    })
+    const calls = patch['calls'] as Array<{ transition?: string }>
+    expect(calls[1]!.transition).toBe('extend')
+  })
 })
 
 // ── STROKE 35 RETIRED (the generic-seam law): the advanced rail's

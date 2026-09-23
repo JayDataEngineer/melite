@@ -614,7 +614,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     const bench = doc["bench"] as { rev: number; log: Array<Record<string, unknown>> };
     assert.equal(bench.log.length, 1);
     assert.equal(bench.log[0]?.["kind"], "patch");
-    assert.equal(bench.log[0]?.["summary"], "params,runStatus");
+    assert.equal(bench.log[0]?.["summary"], "params:seed,runStatus");
   });
 
   test("a params patch against a non-object stored params starts from empty", async () => {
@@ -1348,4 +1348,43 @@ test("the stage memory law: load rebuilds the bench but a same-id stage KEEPS it
     undefined,
     "a prev row with no history carries none",
   );
+});
+
+// ── THE SEAM TOGGLE LANDING WALL (operator 2026-09-23: the toggle
+//    flashed, the run composed the OLD seam, the doc never moved) ──
+test("a params patch carrying calls[].transition LANDS and persists (the seam toggle's full door)", async () => {
+  const { ctx, domain } = await bootCtx();
+  await seed(domain, "seam", {
+    bench: { rev: 0, log: [] },
+    stages: [{
+      id: "s_0", card: "h3-timeline", engine: "comfyui",
+      params: {
+        calls: [
+          { text: "one", start_frame: 0, end_frame: 124 },
+          { text: "two", start_frame: 124, end_frame: 243, transition: "cut" },
+        ],
+        seed: 7,
+      },
+    }] as never,
+  });
+  const svc = new DraftsRemoteService(ctx);
+  const answer = await svc.patch("bench-seam", "s_0", {
+    params: {
+      calls: [
+        { text: "one", start_frame: 0, end_frame: 124 },
+        { text: "two", start_frame: 124, end_frame: 243, transition: "extend" },
+      ],
+    },
+  }, null, sig);
+  assert.equal(answer.delivered, true);
+  assert.deepEqual(answer.patched, ["params"]);
+  const row = await domain.table("docs").get("bench-seam") as { doc: { stages: Array<{ id: string; params: { calls: Array<{ transition?: string }> } }>; bench: { log: Array<{ summary: string }> } } };
+  const calls = row.doc.stages.find((s) => s.id === "s_0")!.params.calls;
+  assert.equal(calls[1]!.transition, "extend", "the landed doc carries the toggled seam");
+  // THE INNER-KEY RECEIPT (2026-09-23): the seam night proved the
+  // summary "params" worthless — four revs of UI edits and four model
+  // stamps all spelled the same. The log entry NAMES the merged keys:
+  // a seam toggle is forever distinguishable from a quant stamp.
+  assert.equal(row.doc.bench.log.at(-1)!.summary, "params:calls",
+    "the bench log names the merged inner keys");
 });
