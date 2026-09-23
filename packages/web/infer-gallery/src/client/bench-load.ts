@@ -79,12 +79,41 @@ function resultOfRun(
 ): Record<string, unknown> | undefined {
   const arts = flow?.['artifacts']
   if (!Array.isArray(arts)) return undefined
-  const first = arts.find((a: unknown): a is string =>
-    typeof a === 'string' && /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(a))
-  if (first === undefined) return undefined
-  const m = /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(first)
-  if (m === null) return undefined
-  return { run_id: runId, url: '/infer-gallery/artifact?path=' + encodeURIComponent(m[1]) }
+  const isMedia = (a: unknown): a is string =>
+    typeof a === 'string' && /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(a)
+  // THE FULL GALLERY RIDES THE STAMP (the operator's catch,
+  // 2026-09-23: "reload card history, open the timeline card — the
+  // preview shows ONE of the three clips"): the old stamp carried
+  // the FIRST media artifact alone, so a restored h3 stage rendered
+  // one window and the drill walk had one item. The stamp mirrors
+  // the estate's terminal outcome: hero url + the artifacts map
+  // (every clip, keyed by its run-relative name) + assetUrls.
+  // THE HERO IS THE PRODUCT: a video WITHOUT a window suffix (the
+  // concatenated film) beats any window clip. THE REAL SPELLING:
+  // estate video lanes emit `<stem>_w<N>_<seq>_.mp4` — hex/decimal
+  // sequence then a TRAILING UNDERSCORE before the extension
+  // (live proof, BRIEF4: h3_t4_w1_00005_.mp4 vs
+  // h3_t4_film_00021_.mp4). The window-suffix law is MediaPanel's
+  // WINDOW_FILM, restated corrected here (client bundles cannot
+  // import across plugins — the parity site is named in this
+  // file's header).
+  const WINDOW_FILM = /_w\d+_\w+_?\.mp4$/i
+  const media = arts.filter(isMedia)
+  if (media.length === 0) return undefined
+  const hero = media.find((p: string): boolean => !WINDOW_FILM.test(p)) ?? media[0]
+  const tailOf = (p: string): string | undefined => /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(p)?.[1]
+  const heroTail = tailOf(hero)
+  if (heroTail === undefined) return undefined
+  const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+  const artifacts: Record<string, string> = {}
+  const assetUrls: string[] = []
+  for (const p of [hero, ...media.filter((m: string): boolean => m !== hero)]) {
+    const tail = tailOf(p)
+    if (tail === undefined || artifacts[tail] !== undefined) continue
+    artifacts[tail] = route(tail)
+    assetUrls.push(route(tail))
+  }
+  return { run_id: runId, url: route(heroTail), artifacts, assetUrls }
 }
 
 /** The error message an !ok JSON response carries, else HTTP n. */

@@ -381,8 +381,9 @@ window.__ModuleLoader__.load({
 							autoPlay: true,
 							playsInline: true,
 							style: {
-								maxWidth: "94vw",
-								maxHeight: "78vh",
+								width: "100%",
+								maxHeight: "72vh",
+								objectFit: "contain",
 								borderRadius: 8,
 								background: bgBase1
 							}
@@ -398,10 +399,10 @@ window.__ModuleLoader__.load({
 							src: item.url,
 							alt: item.file,
 							style: {
-								maxWidth: "94vw",
-								maxHeight: "78vh",
-								borderRadius: 8,
-								objectFit: "contain"
+								width: "100%",
+								maxHeight: "72vh",
+								objectFit: "contain",
+								borderRadius: 8
 							}
 						}) : null,
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -586,13 +587,28 @@ window.__ModuleLoader__.load({
 		function resultOfRun(flow, runId) {
 			const arts = flow?.["artifacts"];
 			if (!Array.isArray(arts)) return void 0;
-			const first = arts.find((a) => typeof a === "string" && /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(a));
-			if (first === void 0) return void 0;
-			const m = /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(first);
-			if (m === null) return void 0;
+			const isMedia = (a) => typeof a === "string" && /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(a);
+			const WINDOW_FILM = /_w\d+_\w+_?\.mp4$/i;
+			const media = arts.filter(isMedia);
+			if (media.length === 0) return void 0;
+			const hero = media.find((p) => !WINDOW_FILM.test(p)) ?? media[0];
+			const tailOf = (p) => /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(p)?.[1];
+			const heroTail = tailOf(hero);
+			if (heroTail === void 0) return void 0;
+			const route = (tail) => "/infer-gallery/artifact?path=" + encodeURIComponent(tail);
+			const artifacts = {};
+			const assetUrls = [];
+			for (const p of [hero, ...media.filter((m) => m !== hero)]) {
+				const tail = tailOf(p);
+				if (tail === void 0 || artifacts[tail] !== void 0) continue;
+				artifacts[tail] = route(tail);
+				assetUrls.push(route(tail));
+			}
 			return {
 				run_id: runId,
-				url: "/infer-gallery/artifact?path=" + encodeURIComponent(m[1])
+				url: route(heroTail),
+				artifacts,
+				assetUrls
 			};
 		}
 		/** The error message an !ok JSON response carries, else HTTP n. */
@@ -689,6 +705,8 @@ window.__ModuleLoader__.load({
 							delete st["result"];
 							delete st["runStatus"];
 							delete st["resolved"];
+							delete st["history"];
+							delete st["resultParams"];
 							const stParams = st["params"];
 							if (typeof st["card"] === "string" && typeof stParams === "object" && stParams !== null && stParams["model"] === st["card"]) delete stParams["model"];
 							if (ranCard !== void 0 && st["card"] === ranCard && result !== void 0) st["result"] = result;
@@ -1119,8 +1137,11 @@ window.__ModuleLoader__.load({
 		/** Numbered frame dumps (per-frame PNG exports) — noise in a run with 100+ frames. */
 		const FRAME_DUMP = /(^|_)\d{3,}_?\.png$/i;
 		/** Concatenated film = video WITHOUT a per-window suffix; window films
-		*  carry it (video lanes emit `<stem>_w<idx>_<hash>.mp4`). */
-		const WINDOW_FILM = /_w\d+_[0-9a-f]+\.mp4$/;
+		*  carry it. THE REAL SPELLING (live proof, BRIEF4 2026-09-23):
+		*  `<stem>_w<idx>_<seq>_.mp4` — the sequence rides a TRAILING
+		*  UNDERSCORE before the extension; the old hash-then-dot pattern
+		*  matched nothing, so windows classified as finals. */
+		const WINDOW_FILM = /_w\d+_\w+_?\.mp4$/;
 		/** Poster siblings rendered beside a film, keyed by artifact stem. */
 		const POSTER_STEMS = [/^(.+)_last_frame\.png$/i, /^(.+)_poster\.png$/i];
 		/** Classifier — kind ORDER comes from the SSOT's key order; the
@@ -1448,6 +1469,7 @@ window.__ModuleLoader__.load({
 			const [search, setSearch] = (0, react.useState)("");
 			const [preview, setPreview] = (0, react.useState)(null);
 			const [tab, setTab] = (0, react.useState)("artifacts");
+			const [sort, setSort] = (0, react.useState)("new");
 			const tabInfo = useTabInfo !== void 0 ? useTabInfo() : void 0;
 			/** Open one 3D artifact as the estate-artifact resource (ModelView). */
 			const openArtifact = (item) => {
@@ -1568,15 +1590,19 @@ window.__ModuleLoader__.load({
 			}, [items]);
 			const shown = (0, react.useMemo)(() => {
 				const q = search.trim().toLowerCase();
-				return items.filter((it) => {
+				const out = items.filter((it) => {
 					if (cat !== "all" && it.kind !== cat) return false;
 					if (q === "") return true;
 					return (it.head + " " + it.file + " " + it.time).toLowerCase().includes(q);
 				});
+				if (sort === "old") out.sort((a, b) => a.created - b.created);
+				else if (sort === "name") out.sort((a, b) => a.file.localeCompare(b.file));
+				return out;
 			}, [
 				items,
 				cat,
-				search
+				search,
+				sort
 			]);
 			const chip = (c, label) => {
 				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
@@ -1631,6 +1657,23 @@ window.__ModuleLoader__.load({
 									},
 									children: t === "flows" ? "Flows " + String(drafts.length) : "Artifacts " + String(items.length)
 								}, t))
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								style: {
+									display: "flex",
+									gap: 4
+								},
+								children: [
+									["new", "Newest"],
+									["old", "Oldest"],
+									["name", "A–Z"]
+								].map(([m, label]) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+									active: sort === m,
+									onClick: () => {
+										setSort(m);
+									},
+									children: label
+								}, m))
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SearchInput, {
 								value: search,

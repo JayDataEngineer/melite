@@ -544,6 +544,45 @@ describe('loadRunOntoBench — the run record wins', () => {
     })
   })
 
+  it('THE FULL GALLERY RIDES THE STAMP — an h3 run restores ALL clips, hero = the concatenated film (the "one of three clips" catch)', async () => {
+    // Operator catch, 2026-09-23: "reload card history, open the
+    // timeline card — the preview shows ONE of the three clips."
+    // The old stamp carried arts.find(first) alone — for h3 runs
+    // _flow.json.artifacts[0] is often a WINDOW clip, so the restored
+    // hero was the wrong clip AND the walk set held one item. The
+    // stamp mirrors the estate's terminal outcome: artifacts map +
+    // assetUrls for every clip; the hero is the video WITHOUT a
+    // window suffix (the concatenated film).
+    const R = (p: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(p)
+    const side = {
+      run_id: 'rh3',
+      flow: {
+        artifacts: [
+          '/data/runs/output/run-rh3/h3-film/h3_t4_w2_00004_.mp4',
+          '/data/runs/output/run-rh3/h3-film/h3_t4_film_00021_.mp4',
+          '/data/runs/output/run-rh3/h3-film/h3_t4_w1_00005_.mp4',
+          '/data/runs/output/run-rh3/h3-film/notes.txt',
+        ],
+        card_snapshot: { card: 'h3-timeline', params: { prompt: 'the storm' } },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('rh3', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    const result = stages[0]?.['result'] as Record<string, unknown>
+    expect(result['run_id']).toBe('rh3')
+    expect(result['url']).toBe(R('run-rh3/h3-film/h3_t4_film_00021_.mp4'),
+      'the hero is the concatenated film, not the first-listed window')
+    expect(result['artifacts']).toEqual({
+      'run-rh3/h3-film/h3_t4_film_00021_.mp4': R('run-rh3/h3-film/h3_t4_film_00021_.mp4'),
+      'run-rh3/h3-film/h3_t4_w2_00004_.mp4': R('run-rh3/h3-film/h3_t4_w2_00004_.mp4'),
+      'run-rh3/h3-film/h3_t4_w1_00005_.mp4': R('run-rh3/h3-film/h3_t4_w1_00005_.mp4'),
+    })
+    expect(result['assetUrls']).toHaveLength(3)
+  })
+
   it('a model artifact stamps the run preview', async () => {
     const side = {
       run_id: 'rm',

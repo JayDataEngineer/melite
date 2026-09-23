@@ -52,6 +52,30 @@ describe('MediaDrilldown — the kind-switched face', () => {
     expect(document.querySelector('audio')?.getAttribute('src')).toBe('https://example.com/a.png')
   })
 
+  it('FIT THE BOX, NOT THE VIEWPORT — video and image size to the seat, never 94vw (the "too big for the box" catch)', () => {
+    // Operator catch, 2026-09-23 (asked 5+ times): the lightbox
+    // dialog is min(1200px, 96vw); a maxWidth:94vw video is
+    // viewport-clamped and renders WIDER than the dialog on any
+    // screen past ~1280px. The media element takes the seat's
+    // content width and letterboxes inside itself (contain) — it
+    // can never exceed the box. No vw clamp anywhere on the element.
+    const video = render(
+      <MediaDrilldown item={{ ...IMAGE, kind: 'video', file: 'v.mp4' }} onClose={() => {}} />,
+    )
+    const v = document.querySelector('video') as HTMLElement
+    expect(v.style.width).toBe('100%')
+    expect(v.style.objectFit).toBe('contain')
+    expect(v.style.maxWidth).toBe('')
+    expect(v.style.maxHeight).toBe('72vh')
+    video.unmount()
+    renderDrilldown({ ...IMAGE, kind: 'image', file: 'i.png' })
+    const img = document.querySelector('img') as HTMLElement
+    expect(img.style.width).toBe('100%')
+    expect(img.style.objectFit).toBe('contain')
+    expect(img.style.maxWidth).toBe('')
+    expect(img.style.maxHeight).toBe('72vh')
+  })
+
   it('an unknown kind renders the caption without an artifact', () => {
     renderDrilldown({ ...IMAGE, kind: 'pdf' } as unknown as MediaDrilldownItem)
     expect(screen.getByText('a red cube')).toBeTruthy()

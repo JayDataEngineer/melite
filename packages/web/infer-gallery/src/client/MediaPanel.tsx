@@ -130,8 +130,11 @@ const FRAME_DUMP = /(^|_)\d{3,}_?\.png$/i
  * use site drift silently). Pinned by the media-sidebar wall
  * (filename contracts single definition). */
 /** Concatenated film = video WITHOUT a per-window suffix; window films
- *  carry it (video lanes emit `<stem>_w<idx>_<hash>.mp4`). */
-const WINDOW_FILM = /_w\d+_[0-9a-f]+\.mp4$/
+ *  carry it. THE REAL SPELLING (live proof, BRIEF4 2026-09-23):
+ *  `<stem>_w<idx>_<seq>_.mp4` — the sequence rides a TRAILING
+ *  UNDERSCORE before the extension; the old hash-then-dot pattern
+ *  matched nothing, so windows classified as finals. */
+const WINDOW_FILM = /_w\d+_\w+_?\.mp4$/
 /** Poster siblings rendered beside a film, keyed by artifact stem. */
 const POSTER_STEMS = [/^(.+)_last_frame\.png$/i, /^(.+)_poster\.png$/i]
 
@@ -414,6 +417,12 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<MediaItem | null>(null)
   const [tab, setTab] = useState<'artifacts' | 'flows'>('artifacts')
+  /* THE SORT CONTROL (operator 2026-09-23): the archive is the
+   * operator's record — Newest is the default scan, Oldest and A–Z
+   * are the two reorderings the date wall made necessary. Applies to
+   * the artifacts grid AND the drilldown's prev/next siblings (they
+   * share `shown`). */
+  const [sort, setSort] = useState<'new' | 'old' | 'name'>('new')
   /* The tab's own navigation face (the standard hook every tab body
    * receives). Hook-count law: the prop is stable per mount, so the
    * conditional call keeps one hook order for the panel's lifetime. */
@@ -537,12 +546,15 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   }, [items])
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return items.filter((it) => {
+    const out = items.filter((it) => {
       if (cat !== 'all' && it.kind !== cat) return false
       if (q === '') return true
       return (it.head + ' ' + it.file + ' ' + it.time).toLowerCase().includes(q)
     })
-  }, [items, cat, search])
+    if (sort === 'old') out.sort((a, b) => a.created - b.created)
+    else if (sort === 'name') out.sort((a, b) => a.file.localeCompare(b.file))
+    return out
+  }, [items, cat, search, sort])
 
   /* Category chips ride the DSH Pill 1:1 (active/onClick/children —
    * the handrolled bordered-button replica died here 2026-09-09: the
@@ -583,6 +595,18 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
               active={tab === t}
               onClick={() => { setTab(t) }}
             >{t === 'flows' ? 'Flows ' + String(drafts.length) : 'Artifacts ' + String(items.length)}</Pill>
+          ))}
+        </span>
+        {/* SORT (operator 2026-09-23): three Pills in the DSH chrome —
+            Newest (default scan), Oldest, A–Z by file. Rides `shown`,
+            so the drilldown prev/next walk the same order. */}
+        <span style={{ display: 'flex', gap: 4 }}>
+          {([['new', 'Newest'], ['old', 'Oldest'], ['name', 'A–Z']] as const).map(([m, label]) => (
+            <Pill
+              key={m}
+              active={sort === m}
+              onClick={() => { setSort(m) }}
+            >{label}</Pill>
           ))}
         </span>
         <SearchInput value={search} onChange={setSearch} placeholder="search prompt, file…" />

@@ -609,6 +609,51 @@ describe("the drilldown walk — the card's opened image scrolls the stage galle
     expect(document.querySelector('[data-testid="drill-next"]')).toBeNull();
     expect(document.querySelector('[data-testid="drill-prev"]')).toBeNull();
   });
+
+  // THE OPERATOR'S CATCH (2026-09-23, told 5+ times): "when I
+  // reload card history and open the timeline / h3 card, the
+  // preview only shows of the three clips ONE clip." The stage's
+  // result must carry the FULL gallery (the wand's stamp — see
+  // bench-load's FULL GALLERY wall); the card's drill walks ALL of
+  // it with the concatenated FILM as the hero. The window naming
+  // is the real estate spelling (h3_t4_w2_00004_.mp4).
+  test("THE FULL GALLERY ON THE CARD — an h3 stage restores ALL THREE clips, hero = the concatenated film, and the player FITS THE BOX", async () => {
+    mountBench([{
+      id: "s_0", card: "image-gen", engine: "comfyui",
+      params: { prompt: "the storm" },
+      result: {
+        run_id: "run-rh3",
+        url: "/h3_t4_film_00021_.mp4",
+        artifacts: {
+          "h3-film/h3_t4_film_00021_.mp4": "/h3_t4_film_00021_.mp4",
+          "h3-film/h3_t4_w1_00005_.mp4": "/h3_t4_w1_00005_.mp4",
+          "h3-film/h3_t4_w2_00004_.mp4": "/h3_t4_w2_00004_.mp4",
+        },
+      },
+    } as never]);
+    await openFirstTile();
+    fireEvent.click(previewSeat());
+    const next = await screen.findByTestId("drill-next", {}, { timeout: 4000 });
+    const src = (): string | null =>
+      document.querySelector('div[class*="lightbox"] video')?.getAttribute("src") ?? null;
+    // the hero is the FILM — never a window clip
+    expect(src()).toBe("/h3_t4_film_00021_.mp4");
+    const user = userEvent.setup();
+    await user.click(next);                                  // → window 1 of 3
+    expect(src()).toBe("/h3_t4_w1_00005_.mp4");
+    await user.click(screen.getByTestId("drill-next"));      // → window 2 of 3
+    expect(src()).toBe("/h3_t4_w2_00004_.mp4");
+    await user.click(screen.getByTestId("drill-next"));      // tail HOLDS — never wraps
+    expect(src()).toBe("/h3_t4_w2_00004_.mp4");
+    // FIT THE BOX, NOT THE VIEWPORT (same operator catch, same
+    // sitting): the MODAL's player sizes to the seat — no 94vw
+    // (scoped to the lightbox: the card's preview face renders its
+    // own video hero outside the modal).
+    const el = document.querySelector('div[class*="lightbox"] video') as HTMLElement;
+    expect(el.style.width).toBe("100%");
+    expect(el.style.objectFit).toBe("contain");
+    expect(el.style.maxWidth).toBe("");
+  });
 });
 
 // ── THE STICKY HERO (2026-09-20, the operator's catch: "it jumps

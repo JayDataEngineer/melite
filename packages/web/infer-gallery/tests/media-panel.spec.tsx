@@ -523,7 +523,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     // the live draft door is never read — the run's own record wins.
     expect(hits).not.toContain('/v1/flows/drafts/d9')
     expect(ensures[0]?.['stages']).toEqual([
-      { id: 's_0', engine: 'comfyui', card: 'image-gen', params: { prompt: 'the prompt that RAN' }, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/generate/out.png') } },
+      { id: 's_0', engine: 'comfyui', card: 'image-gen', params: { prompt: 'the prompt that RAN' }, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/generate/out.png'), artifacts: { 'run-r1/generate/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/generate/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/generate/out.png')] } },
     ])
     expect(ensures[0]?.['intent']).toBe('the prompt that RAN')
   })
@@ -589,7 +589,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     expect(hits).not.toContain('/v1/flows/drafts/bench-main')
     expect(ensures[0]?.['expect_rev']).toBe(4)
     expect(ensures[0]?.['stages']).toEqual([
-      { id: 's_0', engine: 'comfyui', card: 'image-edit', params: { model: 'qwen-img-edit-2511', prompt: 'red hair' }, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/edit/out.png') } },
+      { id: 's_0', engine: 'comfyui', card: 'image-edit', params: { model: 'qwen-img-edit-2511', prompt: 'red hair' }, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/edit/out.png'), artifacts: { 'run-r1/edit/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/edit/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/edit/out.png')] } },
     ])
   })
 
@@ -624,7 +624,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
     expect(hits).not.toContain('/v1/flows/drafts/bench-main')
     expect(ensures[0]?.['stages']).toEqual([
-      { id: 's_0', engine: 'comfyui', params: { model: 'anima', prompt: 'beach girl', variant: 'fp8' }, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/generate/img.png') } },
+      { id: 's_0', engine: 'comfyui', params: { model: 'anima', prompt: 'beach girl', variant: 'fp8' }, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/generate/img.png'), artifacts: { 'run-r1/generate/img.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/generate/img.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/generate/img.png')] } },
     ])
   })
 
@@ -670,7 +670,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     expect(stages?.[0]).not.toHaveProperty('result')
     expect(stages?.[0]?.['provenance']).toBe('restored')
     // THE RAN CARD carries the run's preview
-    expect(stages?.[1]?.['result']).toEqual({ run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/edit/out.png') })
+    expect(stages?.[1]?.['result']).toEqual({ run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/edit/out.png'), artifacts: { 'run-r1/edit/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/edit/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/edit/out.png')] })
     expect(stages?.[1]).not.toHaveProperty('runStatus')
   })
 

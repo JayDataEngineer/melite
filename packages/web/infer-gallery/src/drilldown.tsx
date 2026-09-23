@@ -255,12 +255,22 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
           : null}
         {item.kind === 'video'
           ? (
+              // FIT THE BOX, NOT THE VIEWPORT (the operator's catch,
+              // 2026-09-23, asked 5+ times: "the video is too big
+              // for the box"): the lightbox dialog is
+              // min(1200px, 96vw) WIDE — a 94vw/78vh video is
+              // viewport-clamped, so on any screen wider than
+              // ~1280px the element renders WIDER than the dialog
+              // and spills out of it. The element takes the seat's
+              // content width (the box minus its padding) and
+              // letterboxes inside itself (contain) under a vh
+              // ceiling — it can never exceed the box.
               <video
                 src={item.url}
                 controls
                 autoPlay
                 playsInline
-                style={{ maxWidth: '94vw', maxHeight: '78vh', borderRadius: 8, background: bgBase1 }}
+                style={{ width: '100%', maxHeight: '72vh', objectFit: 'contain', borderRadius: 8, background: bgBase1 }}
               />
             )
           : item.kind === 'audio'
@@ -281,7 +291,7 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
                 <img
                   src={item.url}
                   alt={item.file}
-                  style={{ maxWidth: '94vw', maxHeight: '78vh', borderRadius: 8, objectFit: 'contain' }}
+                  style={{ width: '100%', maxHeight: '72vh', objectFit: 'contain', borderRadius: 8 }}
                 />
               )
             : null}
