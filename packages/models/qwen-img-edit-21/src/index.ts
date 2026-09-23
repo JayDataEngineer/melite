@@ -53,6 +53,15 @@ export const DECL: ModelDecl = {
     "list": []
   },
   "genre": "image",
+  // THE MASK BOARDING (2026-09-22, the operator's lane call: "2511
+  // is the legacy model… 2.1 is the new Qwen edit model"): the mask
+  // pack's region contract absorbs onto THIS lane — crop_stitch (the
+  // generic region detailer) rides the cache-wrapped model + encoder
+  // conditioning; auto+mask still refuses field-named (lanpaint is
+  // 2511's flavor — that sampler does not board here).
+  "mods": [
+    "mask"
+  ],
   // THE PROVISION TRUTH (the silent-failure cure, 2511's law): the
   // text encoder and vae carry provisions from the same
   // Comfy-Org/Qwen-Image-2.1 repo; the unet rides the cell artifacts

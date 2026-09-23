@@ -163,18 +163,28 @@ const MaskFields = z.object({
     .extra('extra', {
       wtype: 'select', group: 'mask', zone: 'mods', order: 1, width: 1,
       options: ['auto', 'crop_stitch', 'full_frame'],
-      tooltip: 'How the mask is honored: auto (the lane\'s own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back — pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).',
+      tooltip: 'How the region is honored: auto (stated mask = inline inpaint; unstated = whole image), crop_stitch (crop to the region + context, run the region detailer, composite back — pixels outside the region never change), full_frame (whole-image pass; the one arm still unbuilt, so it refuses).',
+    }),
+  mask_detector: z.union([z.const('off'), z.const('person'), z.const('face'), z.const('hand')]).default('off').description('Region Detector')
+    .extra('extra', {
+      wtype: 'select', group: 'mask', zone: 'mods', order: 2, width: 1,
+      options: ['off', 'person', 'face', 'hand'],
+      tooltip: 'Automated region source for crop_stitch (the Impact detectors): person = segmentation silhouette, face/hand = boxes. off = use the Region Mask.',
     }),
   mask_context_pad: z.number().min(0).max(256).step(8).default(64).description('Context Padding')
-    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 2, width: 1, tooltip: 'Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.' }),
+    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 3, width: 1, tooltip: 'Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.' }),
   mask_grow: z.number().min(-32).max(32).step(1).default(8).description('Grow / Shrink')
-    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 3, width: 1, tooltip: 'Expand (+) or shrink (−) the region by an exact pixel disk before the run. Applied host-side.' }),
+    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 4, width: 1, tooltip: 'Expand (+) or shrink (−) the region by an exact pixel disk before the run. Applied host-side.' }),
   mask_feather: z.number().min(0).max(32).step(1).default(8).description('Feather')
-    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 4, width: 1, tooltip: 'Gaussian falloff the composite blends through — kills the pasted-on rectangle edge.' }),
+    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 5, width: 1, tooltip: 'Gaussian falloff the composite blends through — kills the pasted-on rectangle edge.' }),
   mask_threshold: z.number().min(0).max(1).step(0.05).default(0).description('Re-threshold')
-    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 5, width: 1, tooltip: 'Re-binarize the feathered mask at this level. 0 = keep the soft falloff.' }),
+    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 6, width: 1, tooltip: 'Re-binarize the feathered mask at this level. 0 = keep the soft falloff.' }),
   mask_invert: z.boolean().default(false).description('Invert')
-    .extra('extra', { wtype: 'boolean', group: 'mask', zone: 'mods', order: 6, width: 1, tooltip: 'Work OUTSIDE the painted region instead.' }),
+    .extra('extra', { wtype: 'boolean', group: 'mask', zone: 'mods', order: 7, width: 1, tooltip: 'Work OUTSIDE the painted region instead.' }),
+  mask_detail_size: z.number().min(64).max(16384).step(8).default(512).description('Region Detail Size')
+    .extra('extra', { wtype: 'number', group: 'mask', zone: 'mods', order: 8, width: 1, tooltip: 'Working size the region detailer scales each region toward (DetailerForEach guide_size with bbox sizing, capped by the canonical max 1024).' }),
+  mask_denoise: z.number().min(0.05).max(1).step(0.05).default(0.5).description('Region Denoise')
+    .extra('extra', { wtype: 'number', group: 'mask', zone: 'mods', order: 9, width: 1, tooltip: 'How strongly the region is reworked (DetailerForEach denoise): 0.5 keeps structure, 1 fully rewrites the crop.' }),
 })
 
 // ── QVOICE (the qvoice pack): a saved persona artifact — the

@@ -187,19 +187,44 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   // but wire to no input, and this plane never drops a stated knob
   // quietly.
   const bagN = Array.isArray(p.mask) ? (p.mask as unknown[]).length : 0
-  const bagMask = bagN === 1
-    ? (((p.mask as Array<Record<string, unknown>>)[0]?.input_mask ?? '') as string)
-    : ''
+  const bagEntry = bagN === 1 && typeof (p.mask as Array<unknown>)[0] === 'object' && (p.mask as Array<unknown>)[0] !== null
+    ? (p.mask as Array<Record<string, unknown>>)[0]!
+    : {}
+  // the bag merges UNDER flat params (explicit flat keys win) — the
+  // gate and the builder read the same merged region row.
+  const region: Record<string, unknown> = { ...p }
+  for (const [k, v] of Object.entries(bagEntry)) {
+    if (region[k] === undefined) region[k] = v
+  }
+  const bagMask = (region.input_mask ?? '') as string
   // a single-entry bag's region counts (the arm merges it); an empty
   // bag states nothing — the force flag must not pass on an empty bag
   // and then silently plain-edit.
   const maskStated = !blank(p.input_mask) || !blank(bagMask)
-  // THE LANE-SCOPED REGION LAW (roadmap §10, the second wave): the
-  // lanpaint arm rides the 2511 lane only — the 2.1 arm returns
-  // before it, and a stated region there would silently plain-edit
-  // (the lying-stack crime the firing law bans). Refuse field-named.
-  fire('input_mask', maskStated && model?.lane_inputs?.text_encode_node === 'TextEncodeQwenImage21',
-    'the lanpaint region rides the 2511 lane only — the 2.1 lane has no lanpaint sampler and would silently plain-edit; clear the mask or switch the model lane')
+  const mode = (region.mask_mode ?? 'auto') as string
+  const detector = (region.mask_detector ?? 'off') as string
+  const detectorThreshold = (region.mask_detector_threshold ?? 0.5) as number
+  const detailSize = (region.mask_detail_size ?? 512) as number
+  const denoise = (region.mask_denoise ?? 0.5) as number
+  fire('mask_mode', mode !== 'auto' && mode !== 'crop_stitch' && mode !== 'full_frame', `unknown region mode '${mode}' — only auto/crop_stitch ride (full_frame is declared but still unbuilt)`)
+  fire('mask_detector', detector !== 'off' && detector !== 'person' && detector !== 'face' && detector !== 'hand', `unknown region detector '${detector}' — pick off/person/face/hand`)
+  // THE LANE-SCOPED REGION LAW (revoked + re-scoped 2026-09-22, the
+  // operator's call: "2511 is the legacy model… 2.1 is the new Qwen
+  // edit model"): the REGION DETAILER (crop_stitch) rides BOTH
+  // lanes — it is lane-agnostic machinery (whatever model/clip/vae/
+  // conditioning the lane built). What stays 2511-only is the
+  // LANPAINT inline-inpaint arm (its sampler is that family's
+  // flavor). auto+mask on 2.1 still refuses field-named — but the
+  // voice now teaches the fix: state crop_stitch.
+  const lanpaintLane = model?.lane_inputs?.text_encode_node !== 'TextEncodeQwenImage21'
+  fire('input_mask', maskStated && mode === 'auto' && !lanpaintLane,
+    'the lanpaint arm rides the 2511 lane only — for a region on this lane state mask_mode crop_stitch (the region detailer), or switch the model lane')
+  // width/height are the plain 2.1 edit's TARGET-resolution knobs;
+  // the detailer path builds no EmptyLatentImage (DetailerForEach
+  // sizes each crop itself) — a stated value would wire to nothing.
+  fire('width', mode === 'crop_stitch' && !lanpaintLane && (p.width !== undefined || p.height !== undefined),
+    "the region detailer reworks the source's own pixels at the crop's own size — width/height ride the plain 2.1 edit's target resolution only; clear them")
+  fire('mask_mode', mode === 'full_frame', 'full_frame is declared but its whole-image arm is still unbuilt — use auto or crop_stitch')
   fire('lanpaint_enabled', p.lanpaint_enabled === true && !maskStated, 'force LanPaint with no region stated — state input_mask (the region to regenerate)')
   fire('lanpaint_beta', ((p.lanpaint_beta ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Beta 1.0, the pack knob wires to no input; back it to 0.5 or order a pack change')
   fire('lanpaint_friction', ((p.lanpaint_friction ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Friction 15, the pack knob wires to no input; back it to 0.5 or order a pack change')
@@ -208,11 +233,82 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   fire('outpaint_bottom', ((p.outpaint_bottom ?? 0) as number) !== 0, 'canvas expansion needs the outpaint pad chain this plane does not build')
   fire('outpaint_left', ((p.outpaint_left ?? 0) as number) !== 0, 'canvas expansion needs the outpaint pad chain this plane does not build')
   fire('outpaint_overlap', ((p.outpaint_overlap ?? 16) as number) !== 16, 'outpaint knob off its lane promise with no outpaint chain to carry it')
-  fire('mask', bagN > 1, 'one region per run — the lanpaint sampler takes a single mask')
+  fire('mask', bagN > 1, 'one region per run — the region arms take a single source')
   fire('mask', !blank(p.mask) && !Array.isArray(p.mask), 'the mask bag is a list — state one entry ([{input_mask, ...}]) or use the flat input_mask')
-  fire('mask_mode', ((p.mask_mode ?? 'auto') as string) !== 'auto', 'only auto rides — crop_stitch/full_frame need chains this plane does not build; the lanpaint arm inpaints the region inline')
-  fire('mask_context_pad', ((p.mask_context_pad ?? 64) as number) !== 64, 'context padding belongs to the unbuilt crop_stitch chain — the lanpaint arm needs none')
-  fire('mask_threshold', ((p.mask_threshold ?? 0) as number) !== 0, 'no core node re-binarizes — the soft feathered falloff rides as-is')
+  if (mode === 'crop_stitch') {
+    // THE CROP_STITCH LAW: exactly one region source — the painted
+    // mask or the automated detector, never both, never neither.
+    fire('mask_detector', maskStated && detector !== 'off', 'one region per run — the Region Mask and a detector are both stated; clear one')
+    fire('mask_mode', !maskStated && detector === 'off', 'crop_stitch needs a region — state input_mask or pick a detector')
+    fire('lanpaint_enabled', p.lanpaint_enabled === true, 'pick one sampler — crop_stitch details the region itself; the LanPaint force flag belongs to auto')
+    fire('mask_threshold', ((region.mask_threshold ?? 0) as number) !== 0, 'no core node re-binarizes — the soft feathered falloff rides as-is')
+  } else {
+    fire('mask_detector', detector !== 'off', 'detectors ride crop_stitch only — set mask_mode crop_stitch or back the detector to off')
+    fire('mask_detector_threshold', detectorThreshold !== 0.5, 'the detector threshold rides crop_stitch only — set mask_mode crop_stitch or back it to 0.5')
+    fire('mask_detail_size', detailSize !== 512, 'the detail size rides crop_stitch only — set mask_mode crop_stitch or back it to 512')
+    fire('mask_denoise', denoise !== 0.5, 'the region denoise rides crop_stitch only — set mask_mode crop_stitch or back it to 0.5')
+    fire('mask_context_pad', ((region.mask_context_pad ?? 64) as number) !== 64, 'context padding rides crop_stitch only — set mask_mode crop_stitch or back it to 64')
+    fire('mask_threshold', ((region.mask_threshold ?? 0) as number) !== 0, 'no core node re-binarizes — the soft feathered falloff rides as-is')
+  }
+}
+
+/** THE REGION SEGS (the generic region detailer's source): the
+ * detector proposes (person = segmentation silhouette, face/hand =
+ * boxes) or the painted mask converts via MaskToSEGS(combined) —
+ * one region per run. grow + context_pad compose as ONE px
+ * expansion (the region's working halo). Lane-agnostic.
+ *
+ * THE LIVE-ENGINE PINS (proven against :8188's own
+ * UltralyticsDetectorProvider model list, 2026-09-22): hand is the
+ * s-variant this engine ships — the n-variant pin was a stale copy
+ * that would refuse at execute time. */
+function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: OutputHandle, maskPath: string): OutputHandle {
+  const detector = (region.mask_detector ?? 'off') as string
+  const segm = detector === 'person'
+  const expand = ((region.mask_grow ?? 8) as number) + ((region.mask_context_pad ?? 64) as number)
+  if (detector !== 'off') {
+    const weight = segm
+      ? 'segm/person_yolov8m-seg.pt'
+      : detector === 'face' ? 'bbox/face_yolov8m.pt' : 'bbox/hand_yolov8s.pt'
+    const found = g.node('UltralyticsDetectorProvider', { model_name: weight }).out(segm ? 1 : 0)
+    const regionArgs = {
+      image, threshold: (region.mask_detector_threshold ?? 0.5) as number,
+      dilation: expand, crop_factor: 3.0, drop_size: 10, labels: 'all',
+    }
+    return segm
+      ? g.node('SegmDetectorSEGS', { segm_detector: found, ...regionArgs }).out()
+      : g.node('BboxDetectorSEGS', { bbox_detector: found, ...regionArgs }).out()
+  }
+  let m = g.node('LoadImageMask', { image: maskPath, channel: 'alpha' }).out()
+  if (expand !== 0) m = g.node('GrowMask', { mask: m, expand, tapered_corners: true }).out()
+  if ((region.mask_invert ?? false) === true) m = g.node('InvertMask', { mask: m }).out()
+  return g.node('MaskToSEGS', {
+    mask: m, combined: true, crop_factor: 3.0, bbox_fill: false, drop_size: 10, contour_fill: false,
+  }).out()
+}
+
+/** THE REGION DETAILER TAIL: DetailerForEach (crop → edit → paste)
+ * reworks each region at mask_detail_size/mask_denoise and saves
+ * DIRECTLY — the node returns IMAGE, never a latent (a VAEDecode
+ * under it is a wiring bug, not a path). Pixels outside the region
+ * never change (the paste touches the seg mask only).
+ * Lane-agnostic: the model/clip/vae/conditioning are whatever the
+ * active lane built. */
+function detailerSave(
+  g: GraphBuilder, p: Record<string, unknown>, region: Record<string, unknown>,
+  io: { image: OutputHandle, segs: OutputHandle, model: OutputHandle, clip: OutputHandle, vae: OutputHandle, positive: OutputHandle, negative: OutputHandle, seed: number },
+  runId: string,
+): void {
+  const detailed = g.node('DetailerForEach', {
+    image: io.image, segs: io.segs, model: io.model, clip: io.clip, vae: io.vae,
+    guide_size: (region.mask_detail_size ?? 512) as number, guide_size_for: true, max_size: 1024,
+    seed: io.seed, steps: p.steps, cfg: p.cfg,
+    sampler_name: p.sampler || 'euler', scheduler: p.scheduler || 'simple',
+    positive: io.positive, negative: io.negative,
+    denoise: (region.mask_denoise ?? 0.5) as number, feather: (region.mask_feather ?? 8) as number,
+    noise_mask: true, force_inpaint: true, wildcard: '', cycle: 1,
+  }).out()
+  g.node('SaveImage', { images: detailed, filename_prefix: `${runId}/edit` })
 }
 
 /** The image_edit block — the anchored instruction-edit lane (moved
@@ -239,6 +335,19 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   // Each stated ref loads ahead of the encodes (creation order IS
   // node-id order); blank refs contribute no input at all (stable).
   const loaded = refs.map((s) => g.node('LoadImage', { image: s, upload: 'image' }).out(0))
+  // THE REGION ROW (one merge, BOTH lanes — the gate's own merge
+  // twin): the bag merges UNDER flat params (explicit flat keys
+  // win). One region per run; every region arm below reads this row.
+  const bag = Array.isArray(p.mask) ? (p.mask as Array<Record<string, unknown>>) : []
+  const merged: Record<string, unknown> = { ...p }
+  const bagObj = bag.length === 1 && typeof bag[0] === 'object' && bag[0] !== null ? bag[0] : null
+  if (bagObj) {
+    for (const [k, v] of Object.entries(bagObj)) {
+      if (merged[k] === undefined) merged[k] = v
+    }
+  }
+  const maskPath = ((merged.input_mask ?? '') as string).trim()
+  const cropStitch = ((merged.mask_mode ?? 'auto') as string) === 'crop_stitch'
   // ── THE 2.1 EDIT LANE (2026-09-21, the Comfy-Org release; branch
   // key = lane_inputs.text_encode_node, the latent_node precedent)
   // ── the 2.1 base has NO separate edit weights: the edit rides
@@ -269,6 +378,23 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
       clip, vae, prompt: p.prompt, negative_prompt: p.negative_prompt ?? '', resolution: 1024,
       ...images21,
     })
+    // ── THE REGION DETAILER ON 2.1 (the operator's lane, 2026-09-22:
+    // "2511 is the legacy model… 2.1 is the new Qwen edit model") ──
+    // the SAME generic arm as the 2511 tail, riding THIS lane's own
+    // model and conditioning: the cache-wrapped unet + the encoder's
+    // pos/neg (the reference vision tokens live in the conditioning —
+    // each crop edits against the anchor, the plain arm's contract).
+    // No EmptyLatentImage on this path: DetailerForEach encodes and
+    // sizes each crop itself (width/height would wire to nothing —
+    // the gate refuses them field-named).
+    if (cropStitch) {
+      const segs = regionSegs(g, merged, image, maskPath)
+      detailerSave(g, p, merged, {
+        image, segs, model: cached, clip, vae,
+        positive: enc21.out(0), negative: enc21.out(1), seed,
+      }, runId)
+      return
+    }
     const latent21 = g.node('EmptyLatentImage', {
       batch_size: 1,
       width: ((p.width as number | undefined) ?? 1024),
@@ -357,18 +483,11 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   // No core node re-binarizes — non-zero mask_threshold still
   // refuses. Polarity: LanPaint 1 = regenerate; mask-studio white
   // region = regenerate. Consistent.
-  // The bag merges UNDER flat params (explicit flat keys win; the
-  // flattened bag -> flat the same way). One region per run.
-  const bag = Array.isArray(p.mask) ? (p.mask as Array<Record<string, unknown>>) : []
-  const merged: Record<string, unknown> = { ...p }
-  const bagObj = bag.length === 1 && typeof bag[0] === 'object' && bag[0] !== null ? bag[0] : null
-  if (bagObj) {
-    for (const [k, v] of Object.entries(bagObj)) {
-      if (merged[k] === undefined) merged[k] = v
-    }
-  }
-  const maskPath = ((merged.input_mask ?? '') as string).trim()
-  if (maskPath) {
+  // The region row (merged above, before the 2.1 branch) owns the
+  // mask path; auto owns the inline inpaint — crop_stitch falls
+  // through to the region detailer below (the gate refuses every
+  // other combination).
+  if (maskPath && !cropStitch) {
     let m = g.node('LoadImageMask', { image: maskPath, channel: 'alpha' }).out()
     const grow = (merged.mask_grow ?? 8) as number
     if (grow !== 0) m = g.node('GrowMask', { mask: m, expand: grow, tapered_corners: true }).out()
@@ -399,6 +518,19 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
       samples: lpSampled.out(), vae, image, mask: m, blend_overlap: 9,
     })
     g.node('SaveImage', { images: lpDecoded.out(), filename_prefix: `${runId}/edit` })
+    return
+  }
+  // ── THE CROP_STITCH ARM (the generic region detailer, shared with
+  // the 2.1 branch above): region source → SEGS → DetailerForEach
+  // (crop → Qwen edit → paste) on THIS lane's shifted model and
+  // EditPlus conditioning. The helpers own the wiring; pixels
+  // outside the region never change. ──
+  if (cropStitch) {
+    const segs = regionSegs(g, merged, image, maskPath)
+    detailerSave(g, p, merged, {
+      image, segs, model: shifted, clip, vae,
+      positive: pos.out(), negative: neg.out(), seed,
+    }, runId)
     return
   }
   const encoded = g.node('VAEEncode', { pixels: image, vae }).out()

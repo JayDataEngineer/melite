@@ -181,6 +181,12 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
     ['@melite/models-qwen-img-edit-2511/mods/lanpaint', 'qwen-img-edit-2511 lanpaint'],
     ['@melite/models-qwen-img-edit-2511/mods/loras', 'qwen-img-edit-2511 loras'],
     ['@melite/models-qwen-img-edit-2511/mods/mask', 'qwen-img-edit-2511 mask'],
+    // THE 2.1 MASK BOARDING (2026-09-22, the operator's lane call):
+    // the region contract absorbs onto the CURRENT edit lane — the
+    // GPU receipt caught the gap (the compose door's admission
+    // rejected every mask field on a 2.1 run: no flavor scoped the
+    // pack to this family).
+    ['@melite/models-qwen-img-edit-21/mods/mask', 'qwen-img-edit-21 mask'],
   ]
   for (const [specifier, label] of packagedFlavors) {
     await pluginPackage(ctx, specifier, 'packaged flavor', label)

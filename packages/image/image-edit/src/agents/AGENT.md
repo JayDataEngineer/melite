@@ -35,6 +35,11 @@ KSampler.steps) before blaming the prompt.
 1. ONE card per session. Compose, verify, done.
 2. image1 is required — an edit without a source fails.
 3. The prompt describes WHAT to change, never the whole image.
+4. Regions: auto + input_mask inpaints inline (LanPaint); crop_stitch
+   runs the region detailer (crop → edit → paste, rest preserved).
+   The region is a painted mask, or a detector pick (person/face/hand)
+   — exactly one source per run. Tune with mask_detail_size (working
+   size) + mask_denoise (rework strength).
 4. Qwen-Image-Edit uses low CFG (flow-matching) — guidance tops at 10;
    2.1 rides cfg 1, 2511 standard rides 2.5 (leave the default).
 5. Lightning 4-step iterates fastest BUT needs its own FP8 weights —

@@ -320,11 +320,11 @@ describe("editImageCap (the max_images law — the lane rides the DECL, never a 
   });
 });
 
-// ── THE LANPAINT NEVER-LIE GAP (roadmap §10, the second wave) ──
-// the lanpaint arm rides the 2511 lane only; the 2.1 lane's early
-// return would silently plain-edit a stated region — the exact
-// lying-stack crime the firing law bans. A stated input_mask (or a
-// single-entry mask bag) on the 2.1 lane REFUSES field-named.
+// ── THE LANPAINT NEVER-LIE GAP (roadmap §10, the second wave;
+// re-scoped 2026-09-22) ── the lanpaint INLINE-INPAINT arm rides the
+// 2511 lane only; auto+mask on 2.1 refuses field-named (the voice
+// teaches crop_stitch). The REGION DETAILER (crop_stitch) itself now
+// rides BOTH lanes — the operator's call: 2.1 is the edit model.
 describe("the 2.1 edit lane — the lanpaint region never lies", () => {
   const SOLVER21 = { width: 1024, height: 1024, seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" };
   const SOLVER2511 = { seed: 3, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" };
@@ -347,6 +347,43 @@ describe("the 2.1 edit lane — the lanpaint region never lies", () => {
       () => refuseImageEditFiring(paramsBag, FACTS_21),
       (err: unknown): boolean =>
         err instanceof Error && err.message.includes("'input_mask'"),
+    );
+  });
+  it("crop_stitch on the 2.1 lane BUILDS the region detailer on the cache model (the operator's lane, 2026-09-22: '2511 is the legacy model… 2.1 is the new Qwen edit model')", () => {
+    const g = new GraphBuilder({});
+    // NO width/height: the detailer path builds no target latent (the
+    // gate refuses them field-named — see the next row).
+    imageEdit(
+      { prompt: "new jacket", image1: "in.png", seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple", mask_mode: "crop_stitch", mask_detector: "person" },
+      FACTS_21, g, "probe-crop-21",
+    );
+    const graph = graphOf(g) as Record<string, { class_type?: string, inputs?: Record<string, unknown> }>;
+    const byClass = (c: string) => Object.values(graph).filter((n) => n.class_type === c);
+    assert.equal(byClass("QwenImage21Cache").length, 1, "the unet rides the cache wrapper");
+    assert.equal(byClass("TextEncodeQwenImage21").length, 1, "the 2.1 encoder conditions the crops");
+    assert.equal(byClass("UltralyticsDetectorProvider").length, 1, "the detector weights load");
+    assert.equal(byClass("SegmDetectorSEGS").length, 1, "person rides the segm detector");
+    const detail = byClass("DetailerForEach")[0]!;
+    const cacheId = Object.keys(graph).find((id) => graph[id]?.class_type === "QwenImage21Cache")!;
+    const encId = Object.keys(graph).find((id) => graph[id]?.class_type === "TextEncodeQwenImage21")!;
+    assert.equal((detail.inputs!.model as string[])[0], cacheId, "the detailer samples the CACHE-WRAPPED model");
+    assert.equal((detail.inputs!.positive as string[])[0], encId, "positive rides the encoder");
+    assert.equal((detail.inputs!.positive as string[])[1], 0, "positive rides out 0");
+    assert.equal((detail.inputs!.negative as string[])[1], 1, "negative rides the encoder's out 1");
+    assert.deepEqual(byClass("SaveImage")[0]!.inputs!.images, [Object.keys(graph).find((id) => graph[id]?.class_type === "DetailerForEach"), 0], "the IMAGE output saves directly — no decode");
+    assert.equal(byClass("EmptyLatentImage").length, 0, "the detailer path builds no target latent");
+    assert.equal(byClass("KSampler").length, 0, "no plain sampler beside the arm");
+    assert.equal(byClass("VAEEncode").length, 0, "this lane never encodes the source");
+    assert.equal(byClass("VAEDecode").length, 0, "no decode under an IMAGE output");
+  });
+  it("width/height on a 2.1 crop_stitch run refuse field-named (the detailer owns the crop size — a stated value would wire to nothing)", () => {
+    assert.throws(
+      () => refuseImageEditFiring(
+        { prompt: "x", image1: "in.png", seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple", mask_mode: "crop_stitch", mask_detector: "face", width: 1024, height: 1024 },
+        FACTS_21,
+      ),
+      (err: unknown): boolean =>
+        err instanceof Error && err.message.includes("'width' fires") && err.message.includes("clear them"),
     );
   });
   it("the same mask on the 2511 lane still fires the lanpaint arm (the refusal is lane-scoped, never global)", () => {

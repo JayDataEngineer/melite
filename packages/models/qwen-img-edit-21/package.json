@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./package.json": "./package.json",
-    "./mods/loras": "./mods/loras.ts"
+    "./mods/loras": "./mods/loras.ts",
+    "./mods/mask": "./mods/mask.ts"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",

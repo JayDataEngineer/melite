@@ -19,7 +19,7 @@
  */
 import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -493,6 +493,114 @@ describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)',
         w2.stop()
         await w2.ctx.fiber.dispose()
       }
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 900_000)
+
+  // ── THE GENERIC REGION DETAILER'S GPU RECEIPT (2026-09-22, the
+  // operator's ask: "test the mods on the GPU" + "2.1 is the new
+  // Qwen edit model"): crop_stitch on the 2.1 lane — region → SEGS →
+  // DetailerForEach riding the lane's OWN cache-wrapped model and
+  // encoder conditioning. Two region sources, one row each: the
+  // painted mask (synthetic alpha fixture, deterministic) and the
+  // face detector (a real detection off a generated portrait). ──
+
+  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen-img-edit-21'))('qwen-img-edit-21 crop_stitch painted mask: MaskToSEGS(combined) → DetailerForEach on the cache model RUNS', async () => {
+    const w = await bootWorld('recipes-q21-cropmask-')
+    try {
+      // THE ANCHOR + THE ALPHA MASK: two local fixture files (the
+      // green 2.1 row's own door — the estate stages local paths
+      // into the engine's input dir itself). The mask is a 64×64
+      // RGBA PNG with a 32×32 opaque center square — alpha IS the
+      // region (synthesized with python3 zlib/struct, deterministic).
+      const anchor = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAY0lEQVR42u3QQREAAAgDoEVfc83hyYMCpO18FgECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIOC+BYjT8kqKv7OUAAAAAElFTkSuQmCC',
+        'base64',
+      )
+      const region = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAASElEQVR42u3QIQEAAAgDsPcvDQGuUJgtwhIAAACAo3kmQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECAAAAAAoC0Hk8OIVAHFZAAAAAElFTkSuQmCC',
+        'base64',
+      )
+      const fixDir = join(w.stateRoot, 'input')
+      mkdirSync(fixDir, { recursive: true })
+      const anchorPath = join(fixDir, 'e2e_cs_anchor.png')
+      const maskPath = join(fixDir, 'e2e_cs_region.png')
+      writeFileSync(anchorPath, anchor)
+      writeFileSync(maskPath, region)
+
+      const s = await runCard(w, {
+        model: 'qwen-img-edit-21', prompt: 'turn the region a deep teal',
+        image1: anchorPath, input_mask: maskPath, mask_mode: 'crop_stitch',
+        // zero halo keeps the region the painted square on the tiny
+        // fixture (grow 8 + pad 64 would swallow all 64 px)
+        mask_grow: 0, mask_context_pad: 0, mask_feather: 0,
+        mask_denoise: 0.6,
+      }, 'q21 crop_stitch painted mask')
+      // THE RUN WORKFLOW (the wiring the unit walls pin, now proven
+      // against the live executor): the mask converts, the detailer
+      // rides the CACHE model + encoder outs, the IMAGE output saves
+      // directly (no decode under it — the bug this receipt hunts).
+      assert.equal(byClass(s, 'LoadImageMask').length, 1, 'the alpha mask loads')
+      assert.equal(byClass(s, 'MaskToSEGS').length, 1, 'the painted mask converts to SEGS')
+      const mts = byClass(s, 'MaskToSEGS')[0]!
+      assert.equal(mts[1].inputs?.['combined'], true, 'one combined region')
+      assert.equal(byClass(s, 'UltralyticsDetectorProvider').length, 0, 'no detector beside the painted mask')
+      const detail = byClass(s, 'DetailerForEach')
+      assert.equal(detail.length, 1, 'the region detailer runs')
+      const cacheId = Object.keys(s.workflow).find((id) => s.workflow[id]?.class_type === 'QwenImage21Cache')
+      const encId = Object.keys(s.workflow).find((id) => s.workflow[id]?.class_type === 'TextEncodeQwenImage21')
+      assert.ok(cacheId !== undefined && encId !== undefined, 'the 2.1 cache + encoder ride')
+      assert.equal((detail[0]![1].inputs?.model as string[])[0], cacheId, 'the detailer samples the CACHE-WRAPPED model')
+      assert.equal((detail[0]![1].inputs?.positive as string[])[0], encId, 'positive rides the 2.1 encoder')
+      assert.equal((detail[0]![1].inputs?.denoise as number), 0.6, 'the region denoise rides verbatim')
+      const save = byClass(s, 'SaveImage')[0]!
+      assert.equal((save[1].inputs?.images as string[])[0], Object.keys(s.workflow).find((id) => s.workflow[id]?.class_type === 'DetailerForEach'), 'the IMAGE output saves directly')
+      assert.equal(byClass(s, 'KSampler').length, 0, 'no plain sampler beside the arm')
+      assert.equal(byClass(s, 'EmptyLatentImage').length, 0, 'no target latent on the detailer path')
+      assert.equal(byClass(s, 'VAEDecode').length, 0, 'no decode under an IMAGE output')
+      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the region-edit artifact is a real PNG')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 600_000)
+
+  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen-img-21'))('qwen-img-edit-21 crop_stitch face detector: the Impact chain proposes the region off a generated portrait and RUNS', async () => {
+    const w = await bootWorld('recipes-q21-cropface-')
+    try {
+      // A REAL FACE TO FIND: the 2.1 t2i lane generates the portrait
+      // (the chain precedent — one lane's artifact feeds the next).
+      const s0 = await runCard(w, {
+        model: 'qwen-img-21', prompt: 'a front-facing portrait of a woman, centered, plain studio background',
+        width: 512, height: 512,
+      }, 'q21 portrait for detection')
+      const portrait = join(s0.runDir, s0.stageUrl)
+
+      const s = await runCard(w, {
+        model: 'qwen-img-edit-21', prompt: 'studio regrade of the face, crisp detail',
+        image1: portrait, mask_mode: 'crop_stitch', mask_detector: 'face',
+        mask_denoise: 0.45, mask_detail_size: 768,
+      }, 'q21 crop_stitch face')
+      // THE DETECTOR CHAIN (the live-engine pins proven against
+      // :8188's own provider list): face rides the bbox slot.
+      const prov = byClass(s, 'UltralyticsDetectorProvider')
+      assert.equal(prov.length, 1, 'the detector weights load')
+      assert.equal(prov[0]![1].inputs?.model_name, 'bbox/face_yolov8m.pt', 'the LIVE-ENGINE face pin rides')
+      const bbox = byClass(s, 'BboxDetectorSEGS')
+      assert.equal(bbox.length, 1, 'face rides the bbox detector')
+      assert.equal((bbox[0]![1].inputs?.bbox_detector as string[])[0], Object.keys(s.workflow).find((id) => s.workflow[id]?.class_type === 'UltralyticsDetectorProvider'), 'the SEGS reads the provider')
+      assert.equal(bbox[0]![1].inputs?.dilation, 72, 'grow 8 + context pad 64 compose the halo')
+      assert.equal(byClass(s, 'SegmDetectorSEGS').length, 0, 'no segm chain beside a face pick')
+      assert.equal(byClass(s, 'LoadImageMask').length, 0, 'no painted mask beside the detector')
+      const detail = byClass(s, 'DetailerForEach')
+      assert.equal(detail.length, 1, 'the region detailer runs')
+      assert.equal(detail[0]![1].inputs?.guide_size, 768, 'the detail size rides verbatim')
+      assert.equal(detail[0]![1].inputs?.denoise, 0.45, 'the region denoise rides verbatim')
+      assert.equal((detail[0]![1].inputs?.model as string[])[0], Object.keys(s.workflow).find((id) => s.workflow[id]?.class_type === 'QwenImage21Cache'), 'the detailer samples the CACHE-WRAPPED model')
+      assert.equal(byClass(s, 'KSampler').length, 0, 'no plain sampler beside the arm')
+      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the face-detail artifact is a real PNG')
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()

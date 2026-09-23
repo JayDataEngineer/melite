@@ -115,8 +115,18 @@ describe("the image-edit compose gate", () => {
       // a bare-string mask states nothing the arm can read.
       [{ mask: "/m/mask.png" }, /'mask' fires .*\(the mask bag is a list/],
       [{ mask: [{ input_mask: "/m/a.png" }, { input_mask: "/m/b.png" }] }, /'mask' fires .*\(one region per run/],
-      [{ mask_mode: "hard" }, /'mask_mode' fires .*\(only auto rides/],
-      [{ mask_context_pad: 128 }, /'mask_context_pad' fires .*\(context padding belongs to the unbuilt crop_stitch/],
+      [{ mask_mode: "hard" }, /'mask_mode' fires .*\(unknown region mode/],
+      [{ mask_detector: "yolo" }, /'mask_detector' fires .*\(unknown region detector/],
+      [{ mask_mode: "full_frame" }, /'mask_mode' fires .*still unbuilt/],
+      [{ mask_mode: "crop_stitch" }, /'mask_mode' fires .*needs a region/],
+      [{ mask_mode: "crop_stitch", input_mask: "/m/a.png", mask_detector: "face" }, /'mask_detector' fires .*both stated/],
+      [{ mask_mode: "crop_stitch", input_mask: "/m/a.png", lanpaint_enabled: true }, /'lanpaint_enabled' fires .*\(pick one sampler/],
+      [{ mask_mode: "crop_stitch", input_mask: "/m/a.png", mask_threshold: 0.5 }, /'mask_threshold' fires .*re-binarizes/],
+      [{ mask_detector: "face" }, /'mask_detector' fires .*ride crop_stitch only/],
+      [{ mask_detector_threshold: 0.7 }, /'mask_detector_threshold' fires .*rides crop_stitch only/],
+      [{ mask_detail_size: 768 }, /'mask_detail_size' fires .*rides crop_stitch only/],
+      [{ mask_denoise: 0.8 }, /'mask_denoise' fires .*rides crop_stitch only/],
+      [{ mask_context_pad: 128 }, /'mask_context_pad' fires .*rides crop_stitch only/],
       [{ mask_threshold: 0.5 }, /'mask_threshold' fires .*\(no core node re-binarizes/],
     ];
     for (const [over, voice] of arms) {
@@ -187,6 +197,185 @@ describe("the image-edit compose gate", () => {
     assert.ok(graph["LoadImageMask.0"], "the bag's region feeds the arm");
     assert.ok(!graph["GrowMask.0"], "grow 0 builds no node");
     assert.ok(!graph["FeatherMask.0"], "feather 0 builds no node");
+  });
+  it("crop_stitch with a painted mask builds the region detailer (MaskToSEGS → DetailerForEach → save)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "repaint the sign", image1: "/m/i.png", seed: 42, steps: 20, cfg: 2.5,
+        input_mask: "/m/region.png", mask_mode: "crop_stitch",
+        mask_detail_size: 768, mask_denoise: 0.8, mask_grow: 0, mask_feather: 4,
+      }),
+      model, g, "run_cs",
+    );
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.equal(graph["LoadImageMask.0"].inputs.channel, "alpha", "alpha marks the region");
+    assert.equal(graph["GrowMask.0"].inputs.expand, 64, "grow 0 + context pad 64 compose one halo");
+    assert.equal(graph["MaskToSEGS.0"].inputs.combined, true, "one region from the user mask");
+    assert.equal(graph["MaskToSEGS.0"].inputs.crop_factor, 3, "canonical detailer context");
+    const detail = graph["DetailerForEach.0"].inputs;
+    assert.equal(detail.guide_size, 768, "detail size rides");
+    assert.equal(detail.guide_size_for, true, "bbox sizing");
+    assert.equal(detail.max_size, 1024, "canonical DetailerForEach ceiling");
+    assert.equal(detail.denoise, 0.8, "region denoise rides");
+    assert.equal(detail.feather, 4, "feather blends the paste");
+    assert.equal(detail.seed, 42, "the minted seed rides");
+    assert.equal(detail.steps, 20, "steps ride the detailer");
+    assert.equal(detail.cfg, 2.5, "cfg rides the detailer");
+    assert.equal(detail.noise_mask, true, "the crop edits inside the mask");
+    assert.equal(detail.force_inpaint, true, "their example wiring");
+    assert.ok(graph["SaveImage.0"], "the edit saves");
+    // THE DIRECT-SAVE LAW (the bug the GPU receipt caught pre-flight):
+    // DetailerForEach returns IMAGE — SaveImage wires it DIRECTLY, and
+    // a VAEDecode under it (the latent-path habit) would refuse at
+    // execute time.
+    assert.deepEqual(graph["SaveImage.0"].inputs.images, ["DetailerForEach.0", 0], "the detailer's IMAGE output saves directly — no latent decode");
+    assert.ok(!graph["VAEDecode.0"], "no decode under an IMAGE output");
+    assert.ok(!graph["KSampler.0"], "no plain sampler beside the arm");
+    assert.ok(!graph["VAEEncode.0"], "no plain encode beside the arm");
+    assert.ok(!graph["LanPaint_KSamplerAdvanced.0"], "no lanpaint sampler beside the arm");
+  });
+
+  it("crop_stitch with zero halo builds no GrowMask, invert splices before the SEGS", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "x", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        input_mask: "/m/r.png", mask_mode: "crop_stitch",
+        mask_grow: 0, mask_context_pad: 0, mask_feather: 0, mask_invert: true,
+      }),
+      model, g, "run_cs0",
+    );
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.ok(!graph["GrowMask.0"], "zero halo builds no node");
+    assert.deepEqual(graph["InvertMask.0"].inputs.mask, ["LoadImageMask.0", 0], "the invert reads the loaded mask");
+    assert.deepEqual(graph["MaskToSEGS.0"].inputs.mask, ["InvertMask.0", 0], "the SEGS reads the INVERTED mask");
+  });
+
+  it("crop_stitch with the face detector wires the bbox chain (provider slot 0)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "studio portrait", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        mask_mode: "crop_stitch", mask_detector: "face", mask_detector_threshold: 0.7,
+      }),
+      model, g, "run_face",
+    );
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.equal(graph["UltralyticsDetectorProvider.0"].inputs.model_name, "bbox/face_yolov8m.pt", "the face weights ride");
+    assert.deepEqual(graph["BboxDetectorSEGS.0"].inputs.bbox_detector, ["UltralyticsDetectorProvider.0", 0], "face rides the bbox detector slot");
+    assert.equal(graph["BboxDetectorSEGS.0"].inputs.threshold, 0.7, "the detector threshold rides");
+    assert.equal(graph["BboxDetectorSEGS.0"].inputs.dilation, 72, "grow 8 + context pad 64 compose the halo");
+    assert.ok(graph["DetailerForEach.0"], "the detailer pastes the face crop back");
+    assert.ok(!graph["LoadImageMask.0"], "no painted mask beside the detector");
+  });
+
+  it("crop_stitch with the person detector wires the segm chain (provider slot 1)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "new jacket", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        mask_mode: "crop_stitch", mask_detector: "person",
+      }),
+      model, g, "run_person",
+    );
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.equal(graph["UltralyticsDetectorProvider.0"].inputs.model_name, "segm/person_yolov8m-seg.pt", "the person weights ride");
+    assert.deepEqual(graph["SegmDetectorSEGS.0"].inputs.segm_detector, ["UltralyticsDetectorProvider.0", 1], "person rides the segm detector slot");
+    assert.ok(graph["DetailerForEach.0"], "the detailer pastes the person crop back");
+  });
+
+  // ── THE 2.1 LANE (the operator's lane, 2026-09-22: "2511 is the
+  // legacy model… 2.1 is the new Qwen edit model") — the SAME generic
+  // region detailer rides the cache-wrapped model + the 2.1 encoder's
+  // conditioning; no EmptyLatentImage (the detailer sizes each crop
+  // itself), no source VAEEncode (this lane never encodes the source).
+  it("crop_stitch on the 2.1 lane rides the cache model + encoder conditioning (the operator's lane)", () => {
+    const model21 = facts.models["qwen-img-edit-21"]!;
+    assert.ok(model21, "the qwen-img-edit-21 facts row serves");
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "studio portrait", image1: "/m/i.png", seed: 7, steps: 25, cfg: 1,
+        mask_mode: "crop_stitch", mask_detector: "face",
+      }),
+      model21, g, "run_21cs",
+    );
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.ok(graph["QwenImage21Cache.0"], "the unet rides the 2.1 cache wrapper");
+    assert.equal(graph["TextEncodeQwenImage21.0"].inputs.prompt, "studio portrait", "the 2.1 encoder conditions the crops");
+    assert.equal(graph["UltralyticsDetectorProvider.0"].inputs.model_name, "bbox/face_yolov8m.pt", "the face weights ride");
+    assert.deepEqual(graph["BboxDetectorSEGS.0"].inputs.bbox_detector, ["UltralyticsDetectorProvider.0", 0], "face rides the bbox detector slot");
+    const detail = graph["DetailerForEach.0"].inputs;
+    assert.deepEqual(detail.model, ["QwenImage21Cache.0", 0], "the detailer samples the CACHE-WRAPPED model");
+    assert.deepEqual(detail.positive, ["TextEncodeQwenImage21.0", 0], "positive rides the encoder's out 0");
+    assert.deepEqual(detail.negative, ["TextEncodeQwenImage21.0", 1], "negative rides the encoder's out 1");
+    assert.deepEqual(graph["SaveImage.0"].inputs.images, ["DetailerForEach.0", 0], "the IMAGE output saves directly");
+    assert.ok(!graph["EmptyLatentImage.0"], "the detailer path builds no target latent");
+    assert.ok(!graph["KSampler.0"], "no plain sampler beside the arm");
+    assert.ok(!graph["VAEEncode.0"], "this lane never encodes the source");
+    assert.ok(!graph["VAEDecode.0"], "no decode under an IMAGE output");
+  });
+
+  it("width/height on a 2.1 crop_stitch run refuse field-named (the detailer owns the crop size)", () => {
+    const model21 = facts.models["qwen-img-edit-21"]!;
+    assert.throws(
+      () => def.compose(
+        def.schema({
+          prompt: "studio portrait", image1: "/m/i.png", seed: 7, steps: 25, cfg: 1,
+          mask_mode: "crop_stitch", mask_detector: "face", width: 1024, height: 1024,
+        }),
+        model21, new GraphBuilder(), "run_21wh",
+      ),
+      /'width' fires .*clear them/,
+    );
+  });
+
+  it("crop_stitch with the hand detector wires the nano bbox chain", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "fix the fingers", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        mask_mode: "crop_stitch", mask_detector: "hand",
+      }),
+      model, g, "run_hand",
+    );
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.equal(graph["UltralyticsDetectorProvider.0"].inputs.model_name, "bbox/hand_yolov8s.pt", "the hand weights ride");
+    assert.deepEqual(graph["BboxDetectorSEGS.0"].inputs.bbox_detector, ["UltralyticsDetectorProvider.0", 0], "hand rides the bbox detector slot");
+  });
+
+  it("crop_stitch with a bag-stated detector merges under the flat params", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "x", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        mask_mode: "crop_stitch", mask: [{ mask_detector: "hand" }],
+      }),
+      model, g, "run_bagdet",
+    );
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.equal(graph["UltralyticsDetectorProvider.0"].inputs.model_name, "bbox/hand_yolov8s.pt", "the bag's detector feeds the arm");
+  });
+
+  it("THE ARM WEIGHTS: only a crop_stitch detector run names its provision row", () => {
+    const arm = def.armWeights!;
+    assert.deepEqual(arm({}), [], "no params names nothing");
+    assert.deepEqual(arm({ mask_mode: "auto", mask_detector: "face" }), [], "auto names nothing — the gate refuses that combo after this read");
+    assert.deepEqual(arm({ mask_mode: "crop_stitch" }), [], "a painted-mask run touches no detector weights");
+    assert.deepEqual(arm({ mask_mode: "crop_stitch", mask: "nope" }), [], "a non-list bag names nothing");
+    assert.deepEqual(arm({ mask_mode: "crop_stitch", mask: [{}, {}] }), [], "a multi-entry bag names nothing");
+    assert.deepEqual(arm({ mask_mode: "crop_stitch", mask: ["nope"] }), [], "a non-object bag entry names nothing");
+    assert.deepEqual(arm({ mask_mode: "crop_stitch", mask: [null] }), [], "a null bag entry names nothing");
+    assert.deepEqual(
+      arm({ mask_mode: "crop_stitch", mask_detector: "off", mask: [{ mask_mode: "auto" }] }),
+      [], "an explicit flat key wins over the bag",
+    );
+    assert.deepEqual(arm({ mask_mode: "crop_stitch", mask_detector: "person" }), ["person_yolov8m-seg.pt"], "person names its row");
+    assert.deepEqual(arm({ mask_mode: "crop_stitch", mask: [{ mask_detector: "face" }] }), ["face_yolov8m.pt"], "a bag-stated detector names its row");
+    assert.deepEqual(arm({ mask_mode: "crop_stitch", mask_detector: "hand" }), ["hand_yolov8s.pt"], "hand names its row");
+    const rows = (def.provisions ?? []).map((r) => r.name).sort();
+    assert.deepEqual(rows, ["face_yolov8m.pt", "hand_yolov8s.pt", "person_yolov8m-seg.pt"], "every named row is declared");
   });
   it("the firing refusals pass the DEFAULT lanes (the blank() law)", () => {
     // the lanpaint/outpaint/mask knobs at their declared defaults

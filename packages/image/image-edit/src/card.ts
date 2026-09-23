@@ -136,8 +136,9 @@ export const identity = {
     'image1 is required — the edit is anchored on it (slots image1..image3, input_image is the retired alias; image2/image3 are hidden legacy aliases merging to the reference front)',
     'references are ONE stack — Reference Images rides both lanes up to each lane DECL max_images (the roomiest boarded cap sizes the form face); there is no second input row for the same concept',
     'Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0',
-    'An input_mask alongside image1 switches the builder to the LanPaint inpaint sampler (LanPaint_KSamplerAdvanced — the masked region regenerates, the rest is preserved)',
-    'Region Mode stays auto — crop_stitch/full_frame need chains this plane does not build',
+    'An input_mask alongside image1 in auto switches the 2511 lane to the LanPaint inpaint sampler (the masked region regenerates, the rest is preserved); the 2.1 lane refuses auto+mask field-named — state crop_stitch there',
+    'Region Mode crop_stitch runs the generic region detailer instead, on BOTH lanes (the operator\'s 2.1 rides its cache-wrapped model + encoder conditioning): region → SEGS → DetailerForEach crop/edit/paste — pixels outside the region never change; the region is the painted mask, or pick a detector (person/face/hand) and the Impact chain proposes it',
+    'Region detail rides mask_detail_size (working size) + mask_denoise (rework strength); grow + context pad compose the region halo, feather blends the paste',
     'Mask prep (grow/feather/invert) rides in-graph ahead of the sampler; re-threshold has no node and refuses non-zero',
     'Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged',
     'Previous card outputs ride as artifact URLs (/v1/assets/runs/<run>/<file>); the compose resolves them to data/runs/output/<run>/<file> and stages into the comfy input dir (phase 1 validates on the mounts BEFORE registration)',
@@ -156,6 +157,64 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // extension map over-claim core nodes. No requires to declare.
     boarded: [...BOARDED],
     tags: ['image', 'edit'],
+    // THE DECLARED DETECTORS (the crop_stitch law — "declared, then
+    // auto provisioned"): the automated region source rides the
+    // Impact Pack's OWN specialized detectors (the subpack provider
+    // reads models/ultralytics/<segm|bbox/>): person/face/hand — the
+    // same bytes the mask card declares (hashes minted by direct
+    // download, the supply-chain law). The compose door checks them
+    // ONLY when a crop_stitch run actually touches a detector (an
+    // unused arm never blocks a run).
+    provisions: [
+      {
+        name: 'person_yolov8m-seg.pt',
+        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/person_yolov8m-seg.pt',
+        folder: 'ultralytics/segm',
+        sha256: 'c8ab26f517173b1fe8342d336a09f443eb61cb08dcbfc78d53fff4c2547ae81e',
+        size_bytes: 54827683,
+      },
+      {
+        name: 'face_yolov8m.pt',
+        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8m.pt',
+        folder: 'ultralytics/bbox',
+        sha256: '717923c19b3fbbf5250b728f1fa6b2cb72a33aed1d236ea9caf0e21ad943e5f',
+        size_bytes: 52026019,
+      },
+      {
+        // THE LIVE-ENGINE PIN (proven against :8188's provider list,
+        // 2026-09-22): this engine ships the s-variant; the n-variant
+        // was a stale copy that would refuse at execute time.
+        // sha256/size minted from the on-disk file.
+        name: 'hand_yolov8s.pt',
+        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/hand_yolov8s.pt',
+        folder: 'ultralytics/bbox',
+        sha256: '70b540063fbc385736d8258970744a4afbc4cbf7932134bae3b24cdadeadec06',
+        size_bytes: 22507643,
+      },
+    ],
+    // THE ARM WEIGHTS (the silent-truncation law): a crop_stitch run
+    // with a detector stated names that detector's row — auto mode
+    // names nothing even when a detector is stated (the firing gate
+    // refuses that combination field-named AFTER this read, so the
+    // weight gate must not fire first and mask the real refusal).
+    armWeights: (merged: Record<string, unknown>) => {
+      // the bag merges UNDER flat params (explicit flat keys win) —
+      // the same merge the firing gate reads, so a bag-stated
+      // detector names its row too.
+      const row: Record<string, unknown> = { ...merged }
+      const bag = merged.mask
+      if (Array.isArray(bag) && bag.length === 1 && typeof bag[0] === 'object' && bag[0] !== null) {
+        for (const [k, v] of Object.entries(bag[0] as Record<string, unknown>)) {
+          if (row[k] === undefined) row[k] = v
+        }
+      }
+      if (((row.mask_mode ?? 'auto') as string) !== 'crop_stitch') return []
+      const detector = ((row.mask_detector ?? 'off') as string)
+      if (detector === 'person') return ['person_yolov8m-seg.pt']
+      if (detector === 'face') return ['face_yolov8m.pt']
+      if (detector === 'hand') return ['hand_yolov8s.pt']
+      return []
+    },
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
     // discovery export — the card owns its sidebar, surface, and

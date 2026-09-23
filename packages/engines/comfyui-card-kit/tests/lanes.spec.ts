@@ -845,6 +845,24 @@ describe("the lanpaint merge arms (the bag/flat law)", () => {
     );
   });
 
+  it("a non-object single-entry bag states nothing (the typeof arm)", () => {
+    assert.doesNotThrow(
+      () => refuseImageEditFiring({ mask: ["/m/stray.png"] }),
+      "a single string entry is not a region row — the gate passes",
+    );
+    assert.doesNotThrow(
+      () => refuseImageEditFiring({ mask: [null] }),
+      "a single null entry is not a region row — the gate passes",
+    );
+  });
+
+  it("the gate merges the same row (flat wins, bag fills the rest)", () => {
+    assert.doesNotThrow(
+      () => refuseImageEditFiring({ input_mask: "/m/flat.png", mask: [{ input_mask: "/m/bag.png" }] }),
+      "flat region + single bag entry passes the gate — the flat key wins the merge",
+    );
+  });
+
   it("an explicit flat region wins over the single-entry bag (the merge's skip arm)", () => {
     const g = new GraphBuilder();
     imageEdit({
