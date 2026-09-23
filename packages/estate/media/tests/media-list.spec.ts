@@ -2,11 +2,11 @@
 // over a fixture runs tree: kind filtering by the vocab leaf, the
 // /melite-media/runs URL grammar minted at the tree, newest-run-first
 // ordering, and the sidecar skip.
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, rm, utimes } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterAll, beforeAll, expect, test } from 'vitest'
-import { listMedia, MEDIA_PREFIX } from '../src/index.ts'
+import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { listMedia, listMediaAcross, MEDIA_PREFIX } from '../src/index.ts'
 
 let root = ''
 
@@ -73,5 +73,62 @@ test('kind filters: wav names audio, mp4 video, glb model, A.PNG image', async (
     expect(all.count).toBe(4)
   } finally {
     await rm(root, { recursive: true, force: true })
+  }
+})
+
+// §23 CROSS-ROOTS: the list arm walks the manifest (own root first),
+// unions the runs, stamps every row with the serving root, and
+// resolves run-id collisions first-root-wins.
+test('listMediaAcross: the manifest union — newest run first across roots, every row names its root', async () => {
+  const own = await mkdtemp(join(tmpdir(), 'melite-media-x-own-'))
+  const mk = await mkdtemp(join(tmpdir(), 'melite-media-x-mk-'))
+  try {
+    await mkdir(join(own, 'output', 'run-0aaa1-own'), { recursive: true })
+    await mkdir(join(mk, 'output', 'run-0bbb2-mk'), { recursive: true })
+    await writeFile(join(own, 'output', 'run-0aaa1-own', 'a.png'), 'x')
+    await writeFile(join(mk, 'output', 'run-0bbb2-mk', 'b.mp4'), 'xx')
+    // deterministic order: the maker run is the NEWER tree
+    await utimes(join(mk, 'output', 'run-0bbb2-mk'), 5_000, 5_000)
+    await utimes(join(own, 'output', 'run-0aaa1-own'), 1_000, 1_000)
+    const { count, items } = await listMediaAcross([own, mk], 'all')
+    expect(count).toBe(2)
+    expect(items.map((i) => i.name)).toEqual(['b.mp4', 'a.png'])
+    expect(items[0]?.served_from).toBe(mk)
+    expect(items[1]?.served_from).toBe(own)
+  } finally {
+    await rm(own, { recursive: true, force: true })
+    await rm(mk, { recursive: true, force: true })
+  }
+})
+
+test('listMediaAcross: a run-id collision resolves FIRST-ROOT-WINS (own root leads)', async () => {
+  const own = await mkdtemp(join(tmpdir(), 'melite-media-x-c1-'))
+  const mk = await mkdtemp(join(tmpdir(), 'melite-media-x-c2-'))
+  try {
+    await mkdir(join(own, 'output', 'run-0ccc3-dup'), { recursive: true })
+    await mkdir(join(mk, 'output', 'run-0ccc3-dup'), { recursive: true })
+    await writeFile(join(own, 'output', 'run-0ccc3-dup', 'own.png'), 'x')
+    await writeFile(join(mk, 'output', 'run-0ccc3-dup', 'mk.png'), 'x')
+    const { count, items } = await listMediaAcross([own, mk], 'image')
+    expect(count).toBe(1)
+    expect(items[0]?.name).toBe('own.png')
+    expect(items[0]?.served_from).toBe(own)
+  } finally {
+    await rm(own, { recursive: true, force: true })
+    await rm(mk, { recursive: true, force: true })
+  }
+})
+
+test('listMediaAcross: a missing/unreadable root reads empty, never poisons the union', async () => {
+  const own = await mkdtemp(join(tmpdir(), 'melite-media-x-e1-'))
+  const ghost = join(tmpdir(), 'melite-media-x-ghost-')
+  try {
+    await mkdir(join(own, 'output', 'run-0ddd4-solo'), { recursive: true })
+    await writeFile(join(own, 'output', 'run-0ddd4-solo', 's.png'), 'x')
+    const { count, items } = await listMediaAcross([own, ghost], 'all')
+    expect(count).toBe(1)
+    expect(items[0]?.served_from).toBe(own)
+  } finally {
+    await rm(own, { recursive: true, force: true })
   }
 })

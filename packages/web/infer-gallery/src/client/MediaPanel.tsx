@@ -652,6 +652,12 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
                         : it.kind === 'video'
                           ? (
+                              // contain, never cover: a cropped video tile
+                              // hides its own frame — the operator's
+                              // "video not fitting" catch (images keep
+                              // cover: a square tile cropping a photo is
+                              // the thumbnail law, a video cropped is a
+                              // lie about what was made).
                               <video
                                 src={it.url}
                                 poster={it.poster !== '' && it.poster !== it.url ? it.poster : undefined}
@@ -661,7 +667,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                                 disablePictureInPicture
                                 aria-hidden="true"
                                 tabIndex={-1}
-                                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
+                                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }}
                               />
                             )
                           : null}

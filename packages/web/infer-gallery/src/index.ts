@@ -169,6 +169,51 @@ export function apply(ctx: Context, config: Config = {}): void {
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const flowDir = config.flowDir ?? DEFAULT_FLOW_DIR
 
+  /** §23 CROSS-ROOTS (the media-bar catch, 2026-09-23): the runs
+   *  list already unions the queue seat's manifest, but this host's
+   *  own run-file doors (artifact/flow/delete/rename) walked ONE
+   *  tree — rows served from a second root answered 502 on their
+   *  own artifact URLs. The seat carries the manifest (own root
+   *  first); every run-file door walks the trees FIRST-ROOT-WINS,
+   *  containment proven per winning tree. No seat (the cross-host
+   *  posture, or estate-free) → the single configured tree, the
+   *  legacy walk verbatim. */
+  interface QueueSeatFace {
+    readonly stateRoot: string
+    readonly stateRoots?: readonly string[]
+  }
+  const flowTrees = (): string[] => {
+    const seat = ctx.get('queue', false) as QueueSeatFace | undefined
+    if (seat === undefined) return [flowDir]
+    const roots = seat.stateRoots !== undefined && seat.stateRoots.length > 0
+      ? [...seat.stateRoots]
+      : [seat.stateRoot]
+    const trees: string[] = []
+    for (const tree of [flowDir, ...roots.map((r: string) => `${r}/output`)]) {
+      if (!trees.includes(tree)) trees.push(tree)
+    }
+    return trees
+  }
+  /** The first tree holding the target wins (the grammar was already
+   *  proven by isRunRelative; containment re-proves per tree — the
+   *  read door's second lock, kept per root). Null = miss. */
+  const resolveRunTarget = async (
+    fs: typeof import('node:fs/promises'),
+    path: typeof import('node:path'),
+    target: string,
+  ): Promise<string | null> => {
+    for (const tree of flowTrees()) {
+      const root = path.resolve(tree)
+      const full = path.resolve(root, target)
+      if (full !== root && !full.startsWith(root + path.sep)) continue
+      try {
+        await fs.stat(full)
+        return full
+      } catch { /* not in this tree */ }
+    }
+    return null
+  }
+
   /** One upstream JSON document. Cross-host fetches the owning DSH
    *  verbatim; in-tree answers over the seat. An absent seat is a
    *  LOUD 502 naming the fix — no fallback absorbs it. */
@@ -241,7 +286,14 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
       try {
         const fs = await import('node:fs/promises')
-        const raw = await fs.readFile(`${flowDir}/${runId}/_flow.json`, 'utf8')
+        const path = await import('node:path')
+        // §23: the sidecar reads walk the trees — a maker run in a
+        // second root round-trips its params too.
+        const flowFile = await resolveRunTarget(fs, path, `${runId}/_flow.json`)
+        if (flowFile === null) {
+          throw new Error(`no readable _flow.json for ${runId}`)
+        }
+        const raw = await fs.readFile(flowFile, 'utf8')
         let doc: unknown
         try {
           doc = JSON.parse(raw)
@@ -251,10 +303,11 @@ export function apply(ctx: Context, config: Config = {}): void {
         // THE OLD-RUN FLOOR (stroke 45): pre-snapshot runs recorded
         // their invocation verbatim in _request.json (model/prompt/
         // variant/...) — the honest reconstruction material when no
-        // card_snapshot exists. Same tree, same confinement.
+        // card_snapshot exists. Same trees, same confinement.
         let request: unknown = null
         try {
-          request = JSON.parse(await fs.readFile(`${flowDir}/${runId}/_request.json`, 'utf8'))
+          const reqFile = await resolveRunTarget(fs, path, `${runId}/_request.json`)
+          if (reqFile !== null) request = JSON.parse(await fs.readFile(reqFile, 'utf8'))
         } catch { request = null }
         const body = JSON.stringify({ run_id: runId, flow: doc, request })
         res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(body)) })
@@ -380,18 +433,19 @@ export function apply(ctx: Context, config: Config = {}): void {
           res.end(buffer)
           return
         }
-        // In-tree: the runs output tree itself (the same sidecar
-        // tree /infer-gallery/flow reads — one disk, no seat).
-        // DOUBLE CONFINEMENT (the media route's law): the grammar
-        // refused traversal above; resolved-path containment proves
-        // the read stays inside flowDir.
+        // In-tree: the runs output trees themselves (§23: the seat
+        // manifest — first tree holding the file serves). DOUBLE
+        // CONFINEMENT (the media route's law): the grammar refused
+        // traversal above; resolved-path containment proves the read
+        // stays inside the WINNING tree.
         const fs = await import('node:fs/promises')
         const path = await import('node:path')
-        const root = path.resolve(flowDir)
-        const full = path.resolve(root, target)
-        if (full !== root && !full.startsWith(root + path.sep)) {
-          fail(res, 400, 'forbidden_path', { message: 'artifact escapes the runs tree', path: target })
-          return
+        const full = await resolveRunTarget(fs, path, target)
+        if (full === null) {
+          // byte-identical to the legacy ENOENT (the message names
+          // the OWN tree — the miss stays debuggable, never a
+          // synthesized foreign path)
+          throw new Error(`ENOENT: no such file or directory, open '${path.resolve(flowDir, target)}'`)
         }
         const type = contentTypeForArtifact(target)
         if (req.method === 'HEAD') {
@@ -491,13 +545,11 @@ export function apply(ctx: Context, config: Config = {}): void {
         }
         const fs = await import('node:fs/promises')
         const path = await import('node:path')
-        const root = path.resolve(flowDir)
-        const full = path.resolve(root, target)
-        /* v8 ignore next 4 -- the grammar above pins the name inside
-         * run-<id>/ segments, so resolution cannot escape; the check
-         * stays as the read door's realpath-style second lock. */
-        if (full !== root && !full.startsWith(root + path.sep)) {
-          fail(res, 400, 'forbidden_path', { message: 'artifact escapes the runs tree', path: target })
+        // §23: the unlink walks the trees (first tree holding the
+        // file wins — the door that lists it manages it).
+        const full = await resolveRunTarget(fs, path, target)
+        if (full === null) {
+          fail(res, 404, 'no_artifact', { message: 'no such artifact', path: target })
           return
         }
         try {
@@ -576,16 +628,16 @@ export function apply(ctx: Context, config: Config = {}): void {
         }
         const fs = await import('node:fs/promises')
         const path = await import('node:path')
-        const root = path.resolve(flowDir)
-        const full = path.resolve(root, target)
-        const fullNext = path.resolve(root, next)
-        /* v8 ignore next 4 -- the grammar above pins both names inside
-         * run-<id>/ segments, so resolution cannot escape; the check
-         * stays as the read door's realpath-style second lock. */
-        if ((full !== root && !full.startsWith(root + path.sep)) || (fullNext !== root && !fullNext.startsWith(root + path.sep))) {
-          fail(res, 400, 'forbidden_path', { message: 'artifact escapes the runs tree', path: target })
+        // §23: the rename walks the trees; the new name lands beside
+        // the source in the WINNING tree (a bare segment joined onto
+        // the source's own directory — containment holds by
+        // construction, the walk proved the tree).
+        const full = await resolveRunTarget(fs, path, target)
+        if (full === null) {
+          fail(res, 404, 'no_artifact', { message: 'no such artifact', path: target })
           return
         }
+        const fullNext = path.resolve(path.dirname(full), name)
         try {
           await fs.stat(full)
         } catch {

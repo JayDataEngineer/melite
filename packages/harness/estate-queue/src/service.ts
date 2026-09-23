@@ -45,6 +45,11 @@ export class QueueService extends Service {
 
   /** The run-state root this fiber owns (lock + ledger + outdirs). */
   readonly stateRoot: string;
+  /** §23 CROSS-ROOTS manifest (own root first, then
+   *  MELITE_STATE_ROOTS, colon-separated): the run-resolving doors
+   *  walk it, and the seat carries it so consumers (the media door)
+   *  read one law instead of re-deriving their own. */
+  readonly stateRoots: string[];
   /** The boot gate's verdict trail (acquired | stolen-from-dead). */
   readonly lockNote: string;
   /** The in-memory serial registry (runs + FIFO order + active). */
@@ -66,6 +71,7 @@ export class QueueService extends Service {
       );
     }
     this.stateRoot = resolveStateRoot(config.repoRoot ?? process.cwd());
+    this.stateRoots = rootsManifest(this.stateRoot);
     // Pre-boot gate (main 4474-4480 heritage): BEFORE any boot side
     // effect. A held-by-live-pid lock refuses HERE — the throw is
     // the loud exit, not a fallback.

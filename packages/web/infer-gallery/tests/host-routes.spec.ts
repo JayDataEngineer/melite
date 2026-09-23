@@ -15,7 +15,7 @@
  *             without snapshots fall back to their _request.json.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -649,5 +649,143 @@ describe('POST /infer-gallery/artifact-rename', () => {
     expect(saw.status).toBe(200)
     expect(seen[0]?.url).toBe('https://owner.example/infer-gallery/artifact-rename')
     expect((seen[0]?.init as { body?: string }).body).toBe(JSON.stringify({ path: `${RUN}/a.png`, name: 'b.png' }))
+  })
+})
+
+// §23 CROSS-ROOTS (the media-bar catch, 2026-09-23): the host's
+// run-file doors walk the queue seat's manifest — the configured
+// tree first, then every manifest root's output dir, first tree
+// holding the file wins. No seat → the single configured tree (the
+// legacy walk, byte-identical).
+describe('the run-file doors across roots (the §23 manifest)', () => {
+  const SEAT = (own: string, maker: string): Record<string, unknown> => ({
+    queue: { stateRoot: own, stateRoots: [own, maker] },
+  })
+
+  it('an artifact that lives only in the SECOND root serves its bytes', async () => {
+    const own = mkdtempSync(join(tmpdir(), 'gallery-x-own-'))
+    const maker = mkdtempSync(join(tmpdir(), 'gallery-x-mk-'))
+    try {
+      mkdirSync(join(maker, 'output', 'run-0aa1-mk'), { recursive: true })
+      writeFileSync(join(maker, 'output', 'run-0aa1-mk', 'film.mp4'), 'MAKERFILM')
+      const ctx = mount({ flowDir }, SEAT(own, maker))
+      const saw = await hit(ctx, '/infer-gallery/artifact', '/infer-gallery/artifact?path=run-0aa1-mk%2Ffilm.mp4')
+      expect(saw.status).toBe(200)
+      expect(saw.body.toString()).toBe('MAKERFILM')
+    } finally {
+      rmSync(own, { recursive: true, force: true })
+      rmSync(maker, { recursive: true, force: true })
+    }
+  })
+
+  it('a run-id collision resolves FIRST-TREE-WINS (the own tree\'s bytes serve)', async () => {
+    const own = mkdtempSync(join(tmpdir(), 'gallery-x-c1-'))
+    const maker = mkdtempSync(join(tmpdir(), 'gallery-x-c2-'))
+    try {
+      mkdirSync(join(flowDir, 'run-0bb2-dup'), { recursive: true })
+      writeFileSync(join(flowDir, 'run-0bb2-dup', 'take.mp4'), 'OWN')
+      mkdirSync(join(maker, 'output', 'run-0bb2-dup'), { recursive: true })
+      writeFileSync(join(maker, 'output', 'run-0bb2-dup', 'take.mp4'), 'MAKER')
+      const ctx = mount({ flowDir }, SEAT(own, maker))
+      const saw = await hit(ctx, '/infer-gallery/artifact', '/infer-gallery/artifact?path=run-0bb2-dup%2Ftake.mp4')
+      expect(saw.body.toString()).toBe('OWN')
+    } finally {
+      rmSync(own, { recursive: true, force: true })
+      rmSync(maker, { recursive: true, force: true })
+    }
+  })
+
+  it('a miss everywhere keeps the legacy ENOENT answer (the message names the own tree)', async () => {
+    const own = mkdtempSync(join(tmpdir(), 'gallery-x-e1-'))
+    const maker = mkdtempSync(join(tmpdir(), 'gallery-x-e2-'))
+    try {
+      const ctx = mount({ flowDir }, SEAT(own, maker))
+      const saw = await hit(ctx, '/infer-gallery/artifact', '/infer-gallery/artifact?path=run-0cc3-ghost%2Fx.png')
+      expect(saw.status).toBe(502)
+      const doc = json(saw) as { error: string; message: string }
+      expect(doc.error).toBe('artifact_unreadable')
+      expect(doc.message).toBe(`ENOENT: no such file or directory, open '${join(flowDir, 'run-0cc3-ghost/x.png')}'`)
+    } finally {
+      rmSync(own, { recursive: true, force: true })
+      rmSync(maker, { recursive: true, force: true })
+    }
+  })
+
+  it('the flow door round-trips a second-root sidecar pair', async () => {
+    const own = mkdtempSync(join(tmpdir(), 'gallery-x-f1-'))
+    const maker = mkdtempSync(join(tmpdir(), 'gallery-x-f2-'))
+    try {
+      mkdirSync(join(maker, 'output', 'run-0dd4-mk'), { recursive: true })
+      writeFileSync(join(maker, 'output', 'run-0dd4-mk', '_flow.json'), '{"status":"completed"}')
+      writeFileSync(join(maker, 'output', 'run-0dd4-mk', '_request.json'), '{"model":"h3"}')
+      const ctx = mount({ flowDir }, SEAT(own, maker))
+      const saw = await hit(ctx, '/infer-gallery/flow', '/infer-gallery/flow?run_id=run-0dd4-mk')
+      expect(saw.status).toBe(200)
+      const doc = json(saw) as { run_id: string; flow: unknown; request: unknown }
+      expect(doc.run_id).toBe('run-0dd4-mk')
+      expect((doc.flow as { status: string }).status).toBe('completed')
+      expect((doc.request as { model: string }).model).toBe('h3')
+    } finally {
+      rmSync(own, { recursive: true, force: true })
+      rmSync(maker, { recursive: true, force: true })
+    }
+  })
+
+  it('delete + rename act on the winning tree (the door that lists it manages it)', async () => {
+    const own = mkdtempSync(join(tmpdir(), 'gallery-x-m1-'))
+    const maker = mkdtempSync(join(tmpdir(), 'gallery-x-m2-'))
+    const dir = join(maker, 'output', 'run-0ee5-mk')
+    try {
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(join(dir, 'clip.mp4'), 'BYTES')
+      const ctx = mount({ flowDir }, SEAT(own, maker))
+      // rename through a raw JSON body
+      const route = ctx.routes.find((r) => r.path === '/infer-gallery/artifact-rename')
+      const { saw: sawRen, res: resRen } = fakeRes()
+      const chunks: Uint8Array[] = [Buffer.from(JSON.stringify({ path: 'run-0ee5-mk/clip.mp4', name: 'film.mp4' }))]
+      await route!.handler({
+        method: 'POST',
+        url: '/infer-gallery/artifact-rename',
+        headers: {},
+        on(event: string, fn: (d?: Uint8Array) => void) {
+          if (event === 'data') for (const c of chunks) fn(c)
+          else if (event === 'end') fn()
+          return this
+        },
+      } as never, resRen)
+      expect(sawRen.status).toBe(200)
+      expect(existsSync(join(dir, 'film.mp4'))).toBe(true)
+      const del = ctx.routes.find((r) => r.path === '/infer-gallery/artifact-delete')
+      const { saw: sawDel, res: resDel } = fakeRes()
+      const body2: Uint8Array[] = [Buffer.from(JSON.stringify({ path: 'run-0ee5-mk/film.mp4' }))]
+      await del!.handler({
+        method: 'POST',
+        url: '/infer-gallery/artifact-delete',
+        headers: {},
+        on(event: string, fn: (d?: Uint8Array) => void) {
+          if (event === 'data') for (const c of body2) fn(c)
+          else if (event === 'end') fn()
+          return this
+        },
+      } as never, resDel)
+      expect(sawDel.status).toBe(200)
+      expect(existsSync(join(dir, 'film.mp4'))).toBe(false)
+    } finally {
+      rmSync(own, { recursive: true, force: true })
+      rmSync(maker, { recursive: true, force: true })
+    }
+  })
+
+  it('no seat → only the configured tree is searched (the legacy walk)', async () => {
+    const maker = mkdtempSync(join(tmpdir(), 'gallery-x-n1-'))
+    try {
+      mkdirSync(join(maker, 'output', 'run-0ff6-mk'), { recursive: true })
+      writeFileSync(join(maker, 'output', 'run-0ff6-mk', 'a.mp4'), 'X')
+      const ctx = mount({ flowDir })
+      const saw = await hit(ctx, '/infer-gallery/artifact', '/infer-gallery/artifact?path=run-0ff6-mk%2Fa.mp4')
+      expect(saw.status).toBe(502)
+    } finally {
+      rmSync(maker, { recursive: true, force: true })
+    }
   })
 })

@@ -132,7 +132,10 @@ interface Mount {
 
 /** Mount the plugin on a fresh Context with a recording webServer
  *  seat and an optional queue seat; deep-equals the registered row. */
-async function mountWeb(stateRoot: string | undefined): Promise<Mount> {
+async function mountWeb(
+  stateRoot: string | undefined,
+  stateRoots?: readonly string[],
+): Promise<Mount> {
   const ctx = new Context();
   const rows: Array<{ kind: string; path: string; handler: Handler }> = [];
   ctx.provide("webServer", {
@@ -141,7 +144,11 @@ async function mountWeb(stateRoot: string | undefined): Promise<Mount> {
       return () => undefined;
     },
   });
-  if (stateRoot !== undefined) ctx.provide("queue", { stateRoot });
+  if (stateRoot !== undefined) {
+    // §23: the seat may carry the manifest — undefined stays the
+    // legacy single-root seat (the fallback arm stays covered).
+    ctx.provide("queue", stateRoots === undefined ? { stateRoot } : { stateRoot, stateRoots });
+  }
   await ctx.plugin({ name: "t-probe", apply: mediaApply } as never);
   assert.equal(rows.length, 1, "one prefix row registers");
   const row = rows[0] as { kind: string; path: string; handler: Handler };
@@ -1071,5 +1078,58 @@ describe("coverage walls: decode-validate refusals (NUL + malformed escape)", ()
       assert.deepEqual(seen.body.toString(), NOT_FOUND_BODY);
       assert.equal(seen.ended, true);
     }
+  });
+});
+
+// §23 CROSS-ROOTS: the byte route walks the seat's manifest — the
+// first root holding the run serves the bytes (own root leads).
+describe("the byte route across roots (the §23 manifest)", () => {
+  test("a run that lives only in the SECOND root serves its bytes", async () => {
+    const own = mintRoot();
+    const mk = mintRoot();
+    seedRun(mk, "run-0eee5-mk", { "film.mp4": Buffer.from("MAKERFILM") });
+    const { handler } = await mountWeb(own, [own, mk]);
+    const seen = await drive(handler, "GET", `${MEDIA_PREFIX}/run-0eee5-mk/film.mp4`);
+    assert.deepEqual([seen.status, seen.body.toString()], [200, "MAKERFILM"]);
+  });
+
+  test("a run-id collision resolves FIRST-ROOT-WINS (the own root's bytes serve)", async () => {
+    const own = mintRoot();
+    const mk = mintRoot();
+    seedRun(own, "run-0fff6-dup", { "take.mp4": Buffer.from("OWN") });
+    seedRun(mk, "run-0fff6-dup", { "take.mp4": Buffer.from("MAKER") });
+    const { handler } = await mountWeb(own, [own, mk]);
+    const seen = await drive(handler, "GET", `${MEDIA_PREFIX}/run-0fff6-dup/take.mp4`);
+    assert.deepEqual([seen.status, seen.body.toString()], [200, "OWN"]);
+  });
+
+  test("a run in NO searched root stays the honest 404", async () => {
+    const own = mintRoot();
+    const mk = mintRoot();
+    const { handler } = await mountWeb(own, [own, mk]);
+    const seen = await drive(handler, "GET", `${MEDIA_PREFIX}/run-0123ab-ghost/x.png`);
+    assert.deepEqual([seen.status, seen.body.toString()], [404, NOT_FOUND_BODY]);
+  });
+
+  test("a manifest root that is MISSING on disk reads empty, never poisons", async () => {
+    const own = mintRoot();
+    seedRun(own, "run-0456cd-solo", { "s.png": Buffer.from("SOLO") });
+    const ghost = join(tmpdir(), "media-route-ghost-none");
+    const { handler } = await mountWeb(own, [own, ghost]);
+    const seen = await drive(handler, "GET", `${MEDIA_PREFIX}/run-0456cd-solo/s.png`);
+    assert.deepEqual([seen.status, seen.body.toString()], [200, "SOLO"]);
+  });
+});
+
+describe("the byte route across roots (the §23 manifest, degenerate shapes)", () => {
+  test("a run-id path that is a FILE (not a dir) is skipped — the next root serves", async () => {
+    const own = mintRoot();
+    const mk = mintRoot();
+    mkdirSync(join(own, "output"), { recursive: true });
+    writeFileSync(join(own, "output", "run-0789ef-nd"), "i am a file, not a run dir");
+    seedRun(mk, "run-0789ef-nd", { "real.mp4": Buffer.from("REAL") });
+    const { handler } = await mountWeb(own, [own, mk]);
+    const seen = await drive(handler, "GET", `${MEDIA_PREFIX}/run-0789ef-nd/real.mp4`);
+    assert.deepEqual([seen.status, seen.body.toString()], [200, "REAL"]);
   });
 });
