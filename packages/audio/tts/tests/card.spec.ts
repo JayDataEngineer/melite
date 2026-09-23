@@ -234,14 +234,25 @@ describe("the base clone lane (reference in, the speaker's voice out — no pers
 });
 
 describe("the design lane (the SAVE half — the Design mod carries name + prompt, the lane exports)", () => {
-  it("a stated save bag fires VoiceStudio export_lite on the 1.7B checkpoint", () => {
+  // FLAT SURFACE (2026-09-23, the unrunnable-lane fix): the Design
+  // entry rides the qvoice_save PACK CONTRACT's flat params
+  // (voice_name + style_instruction + sampling) — the one shape the
+  // compose door's phase-1 admission admits. The old bag shape
+  // (qvoice_save[0].voice_name) was refused as an unknown param, so
+  // no spelling ever passed both gates.
+  it("a stated flat Design entry fires VoiceStudio export_lite on the 1.7B checkpoint", () => {
     const designModel = facts.models["qwen3-tts-voicedesign"]!;
     assert.ok(designModel, "the design facts row serves");
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         text: "the sample to voice",
-        qvoice_save: [{ voice_name: "Cherry", style_instruction: "a warm voice", temperature: 0.7, top_p: 0.9, speed: 1, repetition_penalty: 1.05, seed: 7 }],
+        voice_name: "Cherry",
+        style_instruction: "a warm voice",
+        top_p: 0.9,
+        speed: 1,
+        repetition_penalty: 1.05,
+        seed: 7,
       }),
       designModel,
       g,
@@ -254,11 +265,7 @@ describe("the design lane (the SAVE half — the Design mod carries name + promp
     assert.equal(studio.inputs.name, "Cherry", "the entry's name wires");
     assert.equal(studio.inputs.instruct, "a warm voice", "the entry's prompt wires");
     assert.equal(studio.inputs.sample_text, "the sample to voice", "the card text voices the sample");
-    assert.equal(studio.inputs.temperature, 0.7, "the entry's sampling wires");
     assert.equal(studio.inputs.seed, 7, "the entry's seed wires");
-    // the loader steers the C++ session task off extras.variant
-    // (the engine's own vocabulary: vdes = VoiceDesign — the C++
-    // refuses a VoiceDesign checkpoint under task tts, loudly)
     const loader = graph["LoadAudiocoreModel.0"];
     assert.ok(loader, "the loader rides");
     assert.equal(loader.inputs.extras, JSON.stringify({ variant: "voicedesign" }), "design declares its variant");
@@ -267,7 +274,19 @@ describe("the design lane (the SAVE half — the Design mod carries name + promp
     const designModel = facts.models["qwen3-tts-voicedesign"]!;
     assert.throws(
       () => def.compose(def.schema({ text: "the words" }), designModel, new GraphBuilder(), "r_nodesign"),
-      /qvoice_save|Design/i,
+      /voice_name|style_instruction|Design/i,
+    );
+  });
+  it("the stale bag shape refuses loud (it names no surface — the flat params are the contract)", () => {
+    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    assert.throws(
+      () => def.compose(def.schema({
+        text: "the sample to voice",
+        voice_name: "Cherry",
+        style_instruction: "a warm voice",
+        qvoice_save: [{ voice_name: "Cherry", style_instruction: "a warm voice" }],
+      }), designModel, new GraphBuilder(), "r_stalebag"),
+      /qvoice_save/i,
     );
   });
   it("a saved persona on the designer refuses loud (design exports a new voice — it performs none)", () => {
@@ -275,7 +294,8 @@ describe("the design lane (the SAVE half — the Design mod carries name + promp
     assert.throws(
       () => def.compose(def.schema({
         text: "the sample to voice",
-        qvoice_save: [{ voice_name: "Cherry", style_instruction: "a warm voice", temperature: 0.7, top_p: 0.9, speed: 1, repetition_penalty: 1.05, seed: 7 }],
+        voice_name: "Cherry",
+        style_instruction: "a warm voice",
         qvoice: [{ qvoice: "Old.qvoice" }],
       }), designModel, new GraphBuilder(), "r_usedesign"),
       /qvoice|VoiceDesign|persona/i,

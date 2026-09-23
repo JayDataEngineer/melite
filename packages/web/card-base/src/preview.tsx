@@ -303,7 +303,7 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
   // the current-set face pick: a promoted thumb owns the hero until
   // toggled off — keyed by url on the SAME view identity cell
   const [faceUrl, setFaceUrl] = usePickCell(`${previewCellIdOf(props)}\u0000face`)
-  const promoted = faceUrl !== null && (defaultHero.url === faceUrl || rest.some((a) => a.url === faceUrl))
+  const promoted = faceUrl !== null && defaultHero !== undefined && (defaultHero.url === faceUrl || rest.some((a) => a.url === faceUrl))
     ? (defaultHero.url === faceUrl ? defaultHero : rest.find((a) => a.url === faceUrl))
     : undefined
   const hero = promoted ?? defaultHero

@@ -70,22 +70,34 @@ export function useDerivedView(args: {
   // ── Filmstrip: the last run's windows, by artifact name (data already
   // in props — no fetch, no plan-parse; the plan manifest's reused/rendered
   // detail stays backend-side).
+  // ARTIFACT-NAME CONTRACT (2026-09-23, the first-clip preview defect):
+  // the queue publishes the card's REAL save names — h3_t4_film_<n>_.mp4
+  // (the hero, filmLead.ts's lead law) and h3_t4_w<k>_<n>_.mp4 (windows).
+  // The legacy video / video_w<k>_main names belong to an older engine
+  // era and stay as a second spelling — but the REAL names are the
+  // contract this face is tested against (fixture from run-b664de5e4155).
   const filmstrip = useMemo(() => {
     const res = stage.result
     const arts = res?.artifacts ?? {}
     const urls = Array.isArray(res?.assetUrls) ? res.assetUrls : []
+    // both eras, one matcher: video_w<k>_… (legacy) | h3_t4_w<k>_<n>_.mp4 (real)
+    const windowIndexOf = (n: string): number | null => {
+      const legacy = /^video_w(\d+)_/.exec(n)
+      if (legacy !== null) return Number(legacy[1])
+      const real = /^h3_t4_w(\d+)_\d+_\.mp4$/.exec(n)
+      if (real !== null) return Number(real[1])
+      return null
+    }
     const windows = Object.keys(arts)
-      .filter((n) => /^video_w\d+_/.test(n) && !n.endsWith("_last_frame") && !n.includes("_seam") && !n.includes("_prev"))
+      .filter((n) => windowIndexOf(n) !== null && !n.endsWith("_last_frame") && !n.includes("_seam") && !n.includes("_prev"))
       // no-fake-data guard (2026-08-31): a placeholder artifact with an
       // EMPTY url must never become a tile — an empty src renders a
       // broken video player. Absence of a url = absence of a window.
       .filter((n) => typeof arts[n] === "string" && arts[n] !== "")
       .sort((a, b) => {
-        // (every window name matched /^video_w\d+_/ above, so the
-        // index always parses — no fallback arms.)
-        const ai = Number(/_w(\d+)_/.exec(a)![1])
-        const bi = Number(/_w(\d+)_/.exec(b)![1])
-        return ai - bi
+        // (both indexes parsed non-null in the filter above — no
+        // fallback arms.)
+        return windowIndexOf(a)! - windowIndexOf(b)!
       })
       .map((name) => ({ name, url: arts[name]! }))
     // FLAT-LIST FALLBACK (2026-08-30 "only shows the first clip"): the
@@ -108,7 +120,17 @@ export function useDerivedView(args: {
         windows.push({ name: m ? `video_w${m[1]}_main` : u.split("/").pop()!, url: u })
       }
     }
-    return { windows, final: arts.video ?? urls[0] ?? null }
+    // THE HERO (same defect, the hero arm): the engine film leads by
+    // NAME (filmLead.ts's regex, mirrored here for the browser bundle)
+    // — the legacy 'video' key and the flat list trail it. A run whose
+    // gallery carries the film can never preview a window as the cut.
+    const filmName = Object.keys(arts).find((n): boolean => /^h3_t4_film_\d+_\.mp4$/.test(n))
+    const filmUrl = filmName !== undefined && typeof arts[filmName] === "string" && arts[filmName] !== ""
+      ? arts[filmName] as string : ""
+    return {
+      windows,
+      final: filmUrl !== "" ? filmUrl : typeof arts.video === "string" && arts.video !== "" ? arts.video : urls[0] ?? null,
+    }
   }, [stage.result])
 
   // (fps is always >0 post-hydration — the num() proof — no `|| 24`.)

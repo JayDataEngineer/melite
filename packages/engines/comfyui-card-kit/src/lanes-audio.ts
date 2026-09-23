@@ -219,25 +219,27 @@ export function ttsCloneT1(p: Record<string, unknown>, model: ModelFacts, g: Gra
  *  sampling ride VoiceStudio export_lite on the larger checkpoint;
  *  the card text voices the sample. Admission stays on the card. */
 export function ttsDesignT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
-  // the mod surface delivers the bag at params[param_key]: a list
-  // of entry dicts (the mask precedent, max_stack 1) — first entry
-  // wins. Direct indexing (the dead voicelockT1 precedent):
-  // admission stays on the card, the lane trusts the stated bag.
-  const entry = (p.qvoice_save as Array<Record<string, unknown>>)[0]
+  // FLAT READ (2026-09-23, the unrunnable-lane fix): the qvoice_save
+  // PACK CONTRACT (comfyui-cordis mods/packs.ts) admits
+  // voice_name/style_instruction + design sampling as FLAT params.
+  // The old nested read (p.qvoice_save[0].voice_name) demanded the
+  // one shape phase-1 admission refuses as an unknown param — the
+  // design lane could never run. The lane now reads exactly what the
+  // pack admits; required-field admission stays on the card.
   assertModUse(model, 'qvoice_save')
-  const seed = mintSeed(entry)
+  const seed = mintSeed(p)
   const loaded = loadAudiocore(g, model)
   const studio = g.node('AudiocoreVoiceStudio', {
     ...AUDIACORE_STUDIO_AUTOFILL,
     model: loaded,
     mode: 'export_lite',
-    name: (entry.voice_name as string).trim(),
-    instruct: (entry.style_instruction as string).trim(),
+    name: (p.voice_name as string).trim(),
+    instruct: (p.style_instruction as string).trim(),
     sample_text: p.text,
-    temperature: entry.temperature,
-    top_p: entry.top_p,
-    speed: entry.speed,
-    repetition_penalty: entry.repetition_penalty,
+    temperature: p.temperature,
+    top_p: p.top_p,
+    speed: p.speed,
+    repetition_penalty: p.repetition_penalty,
     seed,
   })
   saveAudio(g, studio.out(), `${runId}/design`)

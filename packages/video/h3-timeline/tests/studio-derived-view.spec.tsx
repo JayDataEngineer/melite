@@ -128,6 +128,54 @@ describe("filmstrip (the last run's windows)", () => {
     assert.equal(r3.current.filmstrip.final, "https://r/only.mp4")
     expect(r3.current.filmstrip.windows.length).toBe(0)
   })
+
+  // THE ARTIFACT-NAME CONTRACT (2026-09-23): the queue publishes the
+  // card's REAL save names — fixture verbatim from run-b664de5e4155
+  // (the first-clip preview defect: the face grepped a dead era's
+  // names and the film could never be the hero).
+  it("real engine names: the film is the hero, windows tile by index", () => {
+    const { result } = view({
+      stage: stageWith({
+        artifacts: {
+          // gallery order as the queue leads it (filmLead.ts): film first
+          "h3_t4_film_00019_.mp4": "https://r/h3_t4_film_00019_.mp4",
+          "h3_t4_w1_00003_.mp4": "https://r/h3_t4_w1_00003_.mp4",
+          "h3_t4_w2_00002_.mp4": "https://r/h3_t4_w2_00002_.mp4",
+          "h3_t4_w3_00003_.mp4": "https://r/h3_t4_w3_00003_.mp4",
+        },
+        assetUrls: [
+          "https://r/h3_t4_film_00019_.mp4",
+          "https://r/h3_t4_w1_00003_.mp4",
+          "https://r/h3_t4_w2_00002_.mp4",
+          "https://r/h3_t4_w3_00003_.mp4",
+        ],
+      }),
+    })
+    assert.equal(result.current.filmstrip.final, "https://r/h3_t4_film_00019_.mp4")
+    assert.deepEqual(
+      result.current.filmstrip.windows.map((w) => w.name),
+      ["h3_t4_w1_00003_.mp4", "h3_t4_w2_00002_.mp4", "h3_t4_w3_00003_.mp4"],
+    )
+  })
+
+  it("a window can never impersonate the hero when the film is absent", () => {
+    const { result } = view({
+      stage: stageWith({
+        artifacts: {
+          "h3_t4_w1_00003_.mp4": "https://r/h3_t4_w1_00003_.mp4",
+          "h3_t4_w2_00002_.mp4": "https://r/h3_t4_w2_00002_.mp4",
+        },
+        assetUrls: ["https://r/h3_t4_w1_00003_.mp4", "https://r/h3_t4_w2_00002_.mp4"],
+      }),
+    })
+    // windows tile; the hero falls to the flat list's lead (urls[0]),
+    // still never a FABRICATED film url
+    assert.deepEqual(
+      result.current.filmstrip.windows.map((w) => w.name),
+      ["h3_t4_w1_00003_.mp4", "h3_t4_w2_00002_.mp4"],
+    )
+    assert.equal(result.current.filmstrip.final, "https://r/h3_t4_w1_00003_.mp4")
+  })
 })
 
 describe("bar-space memos (film map on/off)", () => {

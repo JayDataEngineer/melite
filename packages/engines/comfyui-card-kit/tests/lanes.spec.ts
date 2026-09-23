@@ -965,7 +965,10 @@ describe("the tts lane dispatch (synth_lane data, never the family id)", () => {
 
   it("synth_lane 'design' routes the VoiceStudio lane whatever the id", () => {
     const g = new GraphBuilder();
-    ttsT1({ text: "hi", seed: 1, qvoice_save: [{ voice_name: "V", style_instruction: "warm", seed: 1 }] }, stub("not-the-real-id", "design"), g, "rd");
+    // FLAT surface (2026-09-23): the Design entry rides the pack's
+    // flat params — voice_name + style_instruction — the one shape
+    // the compose door's phase-1 admission admits.
+    ttsT1({ text: "hi", seed: 1, voice_name: "V", style_instruction: "warm" }, stub("not-the-real-id", "design"), g, "rd");
     assert.ok(classes(dump(g)).includes("AudiocoreVoiceStudio"), "the design lane emits the studio node");
   });
 
