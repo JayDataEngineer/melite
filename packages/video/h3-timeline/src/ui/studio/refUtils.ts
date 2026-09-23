@@ -80,3 +80,26 @@ export const REF_UPLOAD_SPEC: Record<"image" | "video" | "audio", { accept: stri
 export function artifactThumbNote(name: string): string {
   return `artifact: ${name}`
 }
+/** THE DECLARED SURFACE (2026-09-23, the operator: the agent-persisted
+ * card-level ref_images showed NOWHERE — every lane read only the
+ * per-call refs while the compose merges the card-level fields as
+ * PRIMARY onto every stanza's bus; the bundle said "0/9" with 2
+ * images riding the bus). Normalize the card-level field (the schema
+ * holds string[]; the wire also admits the comma list) to a list. */
+export function normalizeDeclaredRefs(v: unknown): string[] {
+  if (Array.isArray(v)) return (v as unknown[]).filter((s): s is string => typeof s === "string" && s.trim() !== "")
+  if (typeof v === "string") return splitRefList(v)
+  return []
+}
+/** THE BUS-ORDER MERGE (UI twin of the compose's mergeRefs, card.ts:
+ * declared PRIMARY first, per-call appended deduped — the compose
+ * and the UI agree or they lie). */
+export function mergeDeclaredRefs(declared: string[], perCall: string[]): string[] {
+  return [...declared, ...perCall.filter((s) => !declared.includes(s))]
+}
+/** Short display name for a declared URL (last path segment) — the
+ * full URL rides the title. */
+export function declaredShortName(url: string): string {
+  const tail = url.split("?")[0].split("/").pop() ?? url
+  return tail === "" ? url : tail
+}

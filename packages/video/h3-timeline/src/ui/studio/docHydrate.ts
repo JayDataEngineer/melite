@@ -13,6 +13,14 @@
  */
 import type { DocAudioClip, LayerA } from "./docModel"
 import { LEGACY_LAYERA_KEY, stemToClip } from "./docModel"
+import { normalizeDeclaredRefs } from "./refUtils"
+
+/** Card-level ref lists hydrate to arrays; absent/empty stays absent
+ * (undefined = the compose sees no declared surface — same as today). */
+function optRefs(raw: Record<string, unknown> | undefined, k: string): string[] | undefined {
+  const list = normalizeDeclaredRefs(raw?.[k])
+  return list.length > 0 ? list : undefined
+}
 
 // ── Hydration (params → tenant state) + serialization (state → params) ────
 
@@ -131,6 +139,12 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
       }
       return parsed?.length ? parsed : undefined
     })(),
+    // THE DECLARED REFERENCE SURFACE (2026-09-23): card-level refs
+    // hydrate so the lanes can SHOW what the compose merges — the
+    // schema holds string[]; the wire also admits the comma list.
+    ref_images: optRefs(raw, "ref_images"),
+    ref_videos: optRefs(raw, "ref_videos"),
+    ref_audios: optRefs(raw, "ref_audios"),
   }
 }
 
@@ -180,5 +194,11 @@ export function serializeLayerA(a: LayerA): Record<string, unknown> {
   // (Layer A NLE) positioned audio clips — only when present (an empty
   // array = no clips = absent; the engine default is silence).
   if (a.audio_clips?.length) out.audio_clips = a.audio_clips
+  // THE DECLARED REFERENCE SURFACE rides back only when present — a
+  // save shows what the compose merges and never drops it (an empty
+  // array = absent, same as today).
+  if (a.ref_images?.length) out.ref_images = a.ref_images
+  if (a.ref_videos?.length) out.ref_videos = a.ref_videos
+  if (a.ref_audios?.length) out.ref_audios = a.ref_audios
   return out
 }

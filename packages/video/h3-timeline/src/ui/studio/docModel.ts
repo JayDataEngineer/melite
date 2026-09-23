@@ -322,6 +322,16 @@ export interface LayerA {
    * APPLIED, 2026-09-18) — the same row shape the Modifiers menu
    * writes and the family's recipe pills stamp (Rule A). */
   loras?: Array<{ id: string, strength?: number, steps?: number }>
+  /** THE DECLARED REFERENCE SURFACE (2026-09-23, the operator: the
+   * agent-persisted card-level refs showed NOWHERE in the studio):
+   * card-level ref_images/ref_videos/ref_audios — the compose merges
+   * them as PRIMARY onto every stanza's bus; the lanes display them
+   * as card-level chips ahead of the per-call chips. Display-owned
+   * (the studio never writes them — the agent path does); the
+   * serialize rides them back so a save never drops what it shows. */
+  ref_images?: string[]
+  ref_videos?: string[]
+  ref_audios?: string[]
   variant?: string
   /** The MODEL ROUTE key (Layer A selector): "h3-timeline" (FL2VA) vs
    * "h3-timeline-ref" (Ref2VA). Serialized as params.model — which WINS

@@ -183,6 +183,16 @@ if (!/\.railCol input, \.railCol select, \.railCol textarea [^{]*\{[^}]*box-sizi
 if (!/\.spanLabel [^{]*\{[^}]*flex: none/.test(css)) {
   throw new Error("THE LABEL CRUSHES: .spanLabel must be flex:none — the frame inputs hog the row and crush the cap to 10px");
 }
+/* THE DECLARED-CHIP WALL (2026-09-23 — the bundle shows the
+ * card-level refs: a long run URL must never widen the rail. The
+ * chip caps at the track and the name ellipsizes; the full URL
+ * rides the title.) */
+if (!/\.declaredChip [^{]*\{[^}]*max-width: 100%/.test(css)) {
+  throw new Error("THE DECLARED CHIP FORCES: .declaredChip must cap at max-width: 100% — a run-URL chip would force the rail past 280px");
+}
+if (!/\.declaredName [^{]*\{[^}]*text-overflow: ellipsis/.test(css)) {
+  throw new Error("THE DECLARED NAME FORCES: .declaredName must ellipsize (full URL already in title)");
+}
 
 /* THE LANE-PICKER WALL (2026-09-22, the operator's law): the lanes'
  * add door is the gutter's ⤴ riding the GENERIC source grammar —

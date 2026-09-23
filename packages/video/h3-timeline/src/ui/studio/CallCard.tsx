@@ -15,7 +15,7 @@ import { readAsDataURL } from "@melite/card-base/chrome"
 import { SourceRow } from "@melite/card-base/form"
 import { FirstFrameSlot, SeamControls } from "./CallFrameSubcard"
 import { CallCardPrompt } from "./CallCardPrompt"
-import { REF_UPLOAD_SPEC, refGenreOf, splitRefList } from "./refUtils"
+import { REF_UPLOAD_SPEC, declaredShortName, mergeDeclaredRefs, normalizeDeclaredRefs, refGenreOf, splitRefList } from "./refUtils"
 import type { CallCardDeps } from "./CallCardsPanel"
 
 /** THE SEAM-CARRY TRUTH (mirror of the card's own law, 2026-09-20):
@@ -30,13 +30,33 @@ export const deliveredFrames = (c: DocCall, i: number): number => {
   return Math.max(0, span - SEAM_OVERLAP_FRAMES)
 }
 
+/** A CARD-LEVEL reference chip (2026-09-23, the operator: the
+ *  agent-persisted card-level refs showed NOWHERE): display-only — the
+ *  studio never writes the declared surface (the agent path owns it),
+ *  so there is no edit door to lie about. The full URL rides the
+ *  title; a dead URL shows its broken thumb honestly. */
+function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "audio" }) {
+  const short = declaredShortName(url)
+  return (
+    <span
+      className={s.declaredChip}
+      data-testid="tl-declared-ref"
+      title={`card-level reference — rides every window's bus (edit via the card params, not this call)\n${url}`}
+    >
+      {kind === "image" ? <img src={url} alt={short} className={s.declaredThumb} /> : null}
+      <span className={s.declaredName}>{short}</span>
+      <span className={s.declaredTag}>card</span>
+    </span>
+  )
+}
+
 /** ONE ref bucket — the estate's SourceRow per chip (the operator's
  *  2026-09-13 law: SourceRow owns EVERY input slot): pick from the
  *  available artifacts, upload inline (data: URL chip), remove via
  *  clear. The wire form is the comma string (the card's wireList
  *  law — trimmed entries, empties absent). */
 function RefsBucket({
-  label, kind, accept, cap, value, artifacts, onChange, disabled, disabledHint,
+  label, kind, accept, cap, value, artifacts, onChange, disabled, disabledHint, declared,
 }: {
   label: string
   kind: "image" | "video" | "audio"
@@ -56,9 +76,19 @@ function RefsBucket({
   value: string | undefined
   artifacts: Array<{ name: string; url: string }>
   onChange: (next: string) => void
+  /** THE DECLARED SURFACE (2026-09-23): card-level refs ride ahead of
+   * the per-call chips in bus order (declared PRIMARY, per-call
+   * appended deduped — the compose's mergeRefs twin). Display-only. */
+  declared?: string[]
 }) {
   const chips = splitRefList(value)
-  const over = chips.length > cap
+  // per-call chips already riding as card-level hide (the bus dedupes
+  // them) — true indices address the wire, never the view.
+  const shown = chips
+    .map((ch, idx) => ({ ch, idx }))
+    .filter(({ ch }) => !(declared ?? []).includes(ch))
+  const bus = mergeDeclaredRefs(declared ?? [], chips)
+  const over = bus.length > cap
   const candidates = artifacts
     .filter((a) => refGenreOf(a.name, a.url) === kind && !chips.includes(a.name))
     .map((a) => ({ id: a.name, label: a.name, url: a.url }))
@@ -85,16 +115,19 @@ function RefsBucket({
             className={over ? s.refCountOver : disabled ? s.refCountOver : undefined}
             title={disabled
               ? (disabledHint ?? "pinned window — this input stands down")
-              : over ? `${chips.length} claimed — the bus holds ${cap}` : `${chips.length} of ${cap}`}
+              : over ? `${bus.length} claimed — the bus holds ${cap}` : `${bus.length} of ${cap}${(declared ?? []).length ? ` (${declared!.length} card-level)` : ""}`}
           >
-            {chips.length}/{cap}{over ? " over cap" : ""}{disabled ? " · pinned" : ""}
+            {bus.length}/{cap}{over ? " over cap" : ""}{disabled ? " · pinned" : ""}
           </span>
         }
       >
         {label}
       </SectionLabel>
       <div className={s.chips} style={disabled ? { opacity: 0.45, pointerEvents: "none" } : undefined}>
-        {chips.map((chip, ci) => (
+        {(declared ?? []).map((url) => (
+          <DeclaredChip key={`declared-${url}`} url={url} kind={kind} />
+        ))}
+        {shown.map(({ ch: chip, idx: ci }) => (
           <SourceRow
             key={`${chip}-${ci}`}
             label={chip.startsWith("data:") ? `upload ${ci + 1}` : chip}
@@ -262,8 +295,17 @@ export function CallCard({
             ref chips, then the add-row. One grammar, one family. */}
         {(() => {
           const chips = splitRefList(c.refs?.images)
+          // THE DECLARED SURFACE (2026-09-23): card-level refs ride
+          // ahead of the per-call chips in bus order (the compose's
+          // mergeRefs twin) — the bundle shows what rides, not just
+          // what this call owns. True indices address the wire.
+          const declared = normalizeDeclaredRefs(layerA?.ref_images)
+          const bus = mergeDeclaredRefs(declared, chips)
+          const shown = chips
+            .map((ch, idx) => ({ ch, idx }))
+            .filter(({ ch }) => !declared.includes(ch))
           const anchor = (c.image ?? "").trim() !== "" ? 1 : 0
-          const total = anchor + chips.length
+          const total = anchor + bus.length
           const over = total > 9
           const candidates = refArtifacts
             .filter((a) => refGenreOf(a.name, a.url) === "image" && !chips.includes(a.name))
@@ -287,7 +329,7 @@ export function CallCard({
                     className={over ? s.refCountOver : undefined}
                     title={over
                       ? `${total} image slots claimed — the bus holds 9 (1 anchor + 8 refs); the compose slices the overflow`
-                      : `${total} of 9 image slots on the bus`}
+                      : `${total} of 9 image slots on the bus${declared.length ? ` (${declared.length} card-level)` : ""}`}
                     data-testid="tl-call-ref-images"
                   >
                     {total}/9{over ? " over bus" : ""}
@@ -306,7 +348,10 @@ export function CallCard({
                   urlToName={artifactIndex.byUrl}
                   links={linkGroups}
                 />
-                {chips.map((chip, ci) => (
+                {declared.map((url) => (
+                  <DeclaredChip key={`declared-${url}`} url={url} kind="image" />
+                ))}
+                {shown.map(({ ch: chip, idx: ci }) => (
                   <SourceRow
                     key={`${chip}-${ci}`}
                     label={chip.startsWith("data:") ? `upload ${ci + 1}` : chip}
@@ -355,6 +400,7 @@ export function CallCard({
           value={c.refs?.videos}
           artifacts={refArtifacts}
           onChange={(v) => setCallRefs(i, "videos", v)}
+          declared={normalizeDeclaredRefs(layerA?.ref_videos)}
         />
         <RefsBucket
           label="Ref audios"
@@ -364,6 +410,7 @@ export function CallCard({
           value={c.refs?.audios}
           artifacts={refArtifacts}
           onChange={(v) => setCallRefs(i, "audios", v)}
+          declared={normalizeDeclaredRefs(layerA?.ref_audios)}
           disabled={audioClipsPresent || (voicePinnedCalls?.has(i) ?? false)}
           disabledHint={audioClipsPresent
             ? "THE BLOCKER: the timeline carries audio clips — the clips own the model's audio inputs; clear the D-M-E lanes to use reference audio"

@@ -267,3 +267,34 @@ describe("THE BLOCKER (2026-09-22): clips and reference audio are mutually exclu
     h.unmount()
   })
 })
+
+describe("THE DECLARED SURFACE (2026-09-23): the bundle shows what the compose merges", () => {
+  const LAYER = { fps: 24, seed: 42, ref_images: ["https://u/d1.png", "https://u/d2.png"] }
+  it("card-level refs render as card chips ahead of the per-call chips, and count on the bus", () => {
+    const h = render(
+      <CallCard c={{ ...BASE, refs: { images: "still-a" } }} i={0} deps={deps({ layerA: LAYER }).d} />,
+    )
+    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 2)
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("3/9"))
+    h.unmount()
+  })
+
+  it("a per-call chip already riding card-level hides (the bus dedupes it) — edits address the wire", () => {
+    const { d, calls } = deps({ layerA: LAYER })
+    const h = render(
+      <CallCard c={{ ...BASE, refs: { images: "https://u/d1.png, still-a" } }} i={0} deps={d} />,
+    )
+    // d1 hides (declared), still-a shows; the bus counts 3, not 4
+    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 2)
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("3/9"))
+    h.unmount()
+    assert.deepEqual(calls.refs, [], "rendering writes nothing")
+  })
+
+  it("no declared surface → the lane renders exactly as before (zero-behavior delta)", () => {
+    const h = render(<CallCard c={{ ...BASE, refs: { images: "still-a" } }} i={0} deps={deps().d} />)
+    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 0)
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/9"))
+    h.unmount()
+  })
+})

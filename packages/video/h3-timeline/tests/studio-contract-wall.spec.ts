@@ -46,6 +46,7 @@ const LAYER_A_ALL_KEYS: string[] = [
   "interpolate_enabled", "interp_model", "interp_multiplier",
   "sr_switch", "sr_model", "sr_resolution",
   "ref_image_size", "model", "audio_stem", "loras", "audio_clips",
+  "ref_images", "ref_videos", "ref_audios",
 ]
 
 describe("the studio contract wall (Layer A writes only card truth)", () => {
@@ -66,6 +67,9 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     for (const key of LAYER_A_ALL_KEYS) {
       if (key === "loras") populated.loras = [{ id: "x", strength: 0.5 }]
       else if (key === "audio_clips") populated.audio_clips = [{ id: "a", name: "a", src: "data:audio/x", start_frame: 0, dur_frames: 24 }]
+      // THE DECLARED REFERENCE SURFACE (2026-09-23): card-level refs
+      // populate as the schema holds them (string arrays)
+      else if (key === "ref_images" || key === "ref_videos" || key === "ref_audios") populated[key] = ["https://u/d.png"]
       else if (key === "seed") populated.seed = 7
       else if (key === "sharpen_enabled" || key === "interpolate_enabled" || key === "sr_switch" || key === "second_pass_enabled") populated[key] = true
       // the SLA master switch rides the wire ONLY as false (absent =

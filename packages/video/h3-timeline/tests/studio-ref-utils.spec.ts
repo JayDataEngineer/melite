@@ -13,6 +13,9 @@ import assert from "node:assert/strict"
 import {
   REF_UPLOAD_SPEC,
   artifactThumbNote,
+  declaredShortName,
+  mergeDeclaredRefs,
+  normalizeDeclaredRefs,
   refGenreOf,
   splitRefList,
 } from "../src/ui/studio/refUtils.ts"
@@ -129,5 +132,26 @@ describe("upload spec + thumb note", () => {
 
   it("the chip hover names the artifact (unknown names flagged by being named)", () => {
     assert.equal(artifactThumbNote("video_w1_main"), "artifact: video_w1_main")
+  })
+})
+
+describe("the declared surface (2026-09-23 — the bundle shows what the compose merges)", () => {
+  it("normalizeDeclaredRefs: arrays pass, comma strings split, junk absents", () => {
+    assert.deepEqual(normalizeDeclaredRefs(["a.png", "", "  ", "b.png"]), ["a.png", "b.png"])
+    assert.deepEqual(normalizeDeclaredRefs("a.png, b.png"), ["a.png", "b.png"])
+    assert.deepEqual(normalizeDeclaredRefs(undefined), [])
+    assert.deepEqual(normalizeDeclaredRefs(null), [])
+    assert.deepEqual(normalizeDeclaredRefs(42), [])
+  })
+
+  it("mergeDeclaredRefs: declared PRIMARY first, per-call appended deduped (the compose twin)", () => {
+    assert.deepEqual(mergeDeclaredRefs(["d1", "d2"], ["p1", "d1", "p2"]), ["d1", "d2", "p1", "p2"])
+    assert.deepEqual(mergeDeclaredRefs([], ["p1"]), ["p1"])
+    assert.deepEqual(mergeDeclaredRefs(["d1"], []), ["d1"])
+  })
+
+  it("declaredShortName: last path segment shows, the full URL rides the title", () => {
+    assert.equal(declaredShortName("/melite-media/runs/run-x/edit/SaveImage.0_edit_00001_.png"), "SaveImage.0_edit_00001_.png")
+    assert.equal(declaredShortName("https://u/a.png?v=2"), "a.png")
   })
 })

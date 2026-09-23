@@ -510,6 +510,14 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .refRow { display: flex; flex-direction: column; gap: 2px; }
 /* (the bucket heads died with the SectionLabel conformance — see above) */
 .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+/* THE DECLARED CHIP (2026-09-23): a card-level reference — dashed
+ * (it is shown, not edited, here) and width-capped (the fits-its-part
+ * law: a long run URL never widens the rail — the name ellipsizes,
+ * the full URL rides the title). */
+.declaredChip { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; border: 1px dashed var(--dsw-alias-border-l2); border-radius: 6px; padding: 2px 6px 2px 2px; font-size: 9px; color: var(--dsw-alias-label-secondary); }
+.declaredThumb { width: 24px; height: 24px; flex: none; object-fit: cover; border-radius: 4px; }
+.declaredName { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.declaredTag { flex: none; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--dsw-alias-label-tertiary); }
 /* THE ANCHOR SLOT (bundle split 2026-09-18): the first frame renders
  * IN the chips row — one grammar with the ref chips (never an alien
  * box). Column so the file-error line rides under the square. */
