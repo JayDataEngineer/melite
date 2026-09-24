@@ -1502,6 +1502,37 @@ describe('melite_flow bench — the status distill arms', () => {
     assert.equal(row['status'], 'done')
   })
 
+  test('the terminal artifacts ride the pass row inline (the gap-5 receipt, 032/033 both re-polled run_status for this)', async () => {
+    const seen = mockFetch([
+      (u: string) => {
+        if (u === '/v1/bench/main') {
+          return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
+            { id: 's_0', card: 'image-gen', params: {} },
+          ] } }
+        }
+        if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rart', status: 'queued' } }
+        if (u.startsWith('/v1/flows/status/')) {
+          return { status: 200, body: { status: 'completed', stages: [
+            { id: 's_0', url: '/melite-media/runs/rart/clip.mp4' },
+          ], artifacts: [
+            { path: 'run-rart/clip.mp4', bytes: 1234 },
+            'run-rart/sheet.png',
+            { junk: true }, 42, // non-path rows drop, never throw
+          ] } }
+        }
+        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    const row = (out.pass as Array<Record<string, unknown>>)[0]!
+    // paths ride AS SERVED (wire spelling — run_status owns the
+    // canonicalization law for its own text); junk rows drop
+    assert.deepEqual(row['artifacts'], ['run-rart/clip.mp4', 'run-rart/sheet.png'])
+  })
+
   test('an absolute stage url rides verbatim (no media-route rewrite)', async () => {
     const seen = mockFetch([
       (u: string) => {
