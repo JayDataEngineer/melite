@@ -416,7 +416,6 @@ export function meliteConstruct(
       // (invalid args throw ToolArgsError there) — args is always a
       // defined object here, so no nullish fallback exists to cover
       // (2026-09-12).
-      const a = args as Record<string, unknown>
       // THE ARRAY WIRE GUARD (P2, 2026-09-24 — commission 034's
       // forensic, run-9953f652410d-d365af74): arrays nested under
       // free-form tool params (additionalProperties) corrupt on the
@@ -427,11 +426,13 @@ export function meliteConstruct(
       // reads and compose never see the poison. (The `""`→[] fill
       // for schema-declared array keys lives at the card parse seat
       // — the card kit's coerceWireArrays, h3 precedent law.)
-      const guarded = unwrapItemArrays(a)
-      for (const key of ['params', 'stages', 'inputs', 'expected', 'outputs', 'from'] as const) {
-        const v = guarded[key]
-        if (v !== undefined) a[key] = v
-      }
+      // THE REBIND LAW (attempt-035's freeze receipt, 2026-09-24):
+      // writing onto the wire-delivered args object threw
+      // `Cannot assign to read only property 'params'` — Probe A
+      // and Probe B were dead instruments. The guard walks a copy;
+      // the body reads the fresh binding only, the caller's object
+      // is never touched.
+      const a = { ...unwrapItemArrays(args) } as Record<string, unknown>
       const verb = typeof a.verb === 'string' ? a.verb : ''
       // The conversation wins (the one-flow law rides the agent's own
       // session); an explicit bench key applies only to unattributed

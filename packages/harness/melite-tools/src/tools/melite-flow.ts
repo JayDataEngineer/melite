@@ -782,20 +782,22 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       // defined object here, so no nullish fallback exists to cover;
       // every composition arm stays optional (exactly-one is enforced
       // below, never the schema) (2026-09-12).
-      const a = args as {
-        bench?: unknown; card?: unknown; model?: unknown; flow?: unknown; stages?: unknown; connects?: unknown;
-        prompt?: unknown; params?: unknown; id?: unknown; description?: unknown; test?: unknown;
-      }
       // THE ARRAY WIRE GUARD (P2, ROADMAP §36.4 — commission 034's
       // forensic): free-form nested arrays corrupt on the wire
       // (`{item:[…]}` non-empty, `""` empty). The shape-based
       // unwrap rides EVERY param-bearing arg before composition —
       // the card seat (the kit's coerceWireArrays) fills the ""
       // arm for schema-declared arrays.
-      const guarded = unwrapItemArrays(a)
-      if (guarded.params !== undefined) a.params = guarded.params
-      if (guarded.stages !== undefined) a.stages = guarded.stages
-      if (guarded.connects !== undefined) a.connects = guarded.connects
+      // THE REBIND LAW (attempt-035's construct/flow freeze
+      // receipt, 2026-09-24): the wire may deliver args FROZEN —
+      // writing `a.params = …` threw `Cannot assign to read only
+      // property 'params'` on every param-bearing mutation. The
+      // guard NEVER writes to the caller's object: it walks a copy
+      // and the body reads the new binding only.
+      const a = { ...unwrapItemArrays(args) } as {
+        bench?: unknown; card?: unknown; model?: unknown; flow?: unknown; stages?: unknown; connects?: unknown;
+        prompt?: unknown; params?: unknown; id?: unknown; description?: unknown; test?: unknown;
+      }
       const bag = (a.params && typeof a.params === 'object' && !Array.isArray(a.params))
         ? a.params as Record<string, unknown> : {}
       const test = a.test === true

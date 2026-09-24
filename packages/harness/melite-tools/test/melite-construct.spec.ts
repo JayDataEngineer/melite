@@ -883,6 +883,19 @@ describe('melite_construct execute — the array wire guard', () => {
     assert.deepEqual(row.params.calls, [{ text: 'hi' }])
   })
 
+  test('FROZEN wire args never throw and still unwrap (the 035 freeze receipt: Cannot assign to read only property params)', async () => {
+    const { seen, request } = mockRequest((_m, _p, _b) => ({}))
+    const tool = meliteConstruct(request)
+    // the wire may deliver the args object read-only — the rebind
+    // law walks a copy and never writes to the caller's object
+    const frozen = Object.freeze({ verb: 'add_stage', card: 'c', expect_rev: 1, params: { tags: { item: ['a'] } } })
+    let threw: unknown = null
+    try { await tool.execute(frozen, exec()) } catch (e) { threw = e }
+    assert.equal(threw, null)
+    const add = seen.find((s) => s.path.endsWith('/add_stage'))
+    assert.deepEqual((add!.body as { params: Record<string, unknown> }).params.tags, ['a'])
+  })
+
   test('a genuine object with an item key never unwraps (two keys = not the wire shape)', async () => {
     const { seen, request } = mockRequest((_m, _p, _b) => ({}))
     const tool = meliteConstruct(request)
