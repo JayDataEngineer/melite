@@ -712,6 +712,14 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     assert.equal(out.stoppedAt, 's_0')
     assert.equal(out.error, 'stage s_0 (image-gen) ended failed')
     assert.equal(out.run_id, 'rb9')
+    // THE RENDER LAW (transcript-016): a stopped-mid-flow refusal PRINTS
+    // the run id — the maker must never glob output/ to find a run it
+    // already paid for (ten wasted calls before this pin).
+    const rendered = tool.output!.render!({ bench: true } as never, out)
+    assert.match(String(rendered[0]!.text), /melite_flow REFUSED: stage s_0 \(image-gen\) ended failed — run rb9 \(poll with run_status\)/)
+    // a PRE-RUN refusal (no run started) renders without the run clause
+    const preRun = tool.output!.render!({ bench: true } as never, { mode: 'bench', target: 'x', status: 'stopped', error: 'stage s_0 names no card' })
+    assert.equal(String(preRun[0]!.text), 'melite_flow REFUSED: stage s_0 names no card')
     // ONE start total — s_1 never reached the queue
     assert.equal(seen.calls.filter((c) => c.url.endsWith('/v1/flows/start')).length, 1)
   })

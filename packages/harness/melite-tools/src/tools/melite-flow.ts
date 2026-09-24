@@ -657,7 +657,7 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
         type: 'object',
         additionalProperties: true,
         properties: {
-          run_id: { type: 'string', description: 'The queue run id — poll with run_status(run_id). Absent on refusal.' },
+          run_id: { type: 'string', description: 'The queue run id — poll with run_status(run_id). Absent on a pre-run refusal; PRESENT on a stopped-mid-flow refusal (a stage that ran and failed — render prints it after the error).' },
           draft_id: { type: 'string', description: 'The minted card draft id — the chat tile handle (?meliteCards=). Absent on refusal.' },
           status: { type: 'string', description: 'Registration status (queued/running). Absent on refusal.' },
           mode: { type: 'string', description: 'Which composition ran (or was attempted): card | flow | adhoc.', required: true },
@@ -672,7 +672,15 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       },
       render: (_args, value) => {
         const v = value as { run_id?: string; draft_id?: string; mode?: string; target?: string; status?: string; error?: string }
-        if (v && typeof v.error === 'string') return [{ type: 'text', text: 'melite_flow REFUSED: ' + v.error }]
+        if (v && typeof v.error === 'string') {
+          // A stopped-mid-flow bench carries the failed stage's run_id
+          // ALONGSIDE the error (the loop return at the stop site).
+          // The maker must never have to glob output/ to find a run it
+          // already paid for (transcript-016: ten wasted calls hunting
+          // the id the tool held but did not print).
+          const ran = typeof v.run_id === 'string' && v.run_id !== '' ? ` — run ${v.run_id} (poll with run_status)` : ''
+          return [{ type: 'text', text: 'melite_flow REFUSED: ' + v.error + ran }]
+        }
         // The render stays human/model-facing prose; the tile handle rides
         // presentationMeta (the persisted channel — see below). The leading
         // `card <draftId>` token is the LEGACY replay path only: sessions
