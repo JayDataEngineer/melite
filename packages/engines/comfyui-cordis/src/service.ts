@@ -671,6 +671,19 @@ export class ComfyUIService extends Service {
     })
   }
 
+  /** THE PACK FIELD-NAMES READ (022's self-critique #3, 2026-09-24):
+   *  the registered contract's own field names, declaration order —
+   *  the agent-facing load surface serves the pack grammar (param_key
+   *  + fields) without re-deriving anything; this read IS the
+   *  contract (the same map registerPack validates loudly, one shape
+   *  per name). Unknown pack = empty (the grammar table's consumer
+   *  drops the row, same as an unregistered flavor). */
+  packFieldNames(pack: string): string[] {
+    const contract = this.packs.get(pack)
+    if (contract === undefined) return []
+    return Object.keys(contract.fields.dict as Record<string, Record<string, unknown>>)
+  }
+
   compose(cardId: string, modelId: string | null, params: unknown, runId: string): PromptGraph {
     const def = this.cards.get(cardId)
     if (!def) throw new ComposeRefusal('unknown-card', `unknown card '${cardId}' (registered: ${[...this.cards.keys()].sort().join(', ') || 'none'})`)

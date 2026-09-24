@@ -8,13 +8,16 @@ One voice per character. Current cast: **scavenger** = voice `aiden` +
 instruct DNA "weathered desert survivor, low gravelly timbre".
 Per-LINE instruct carries only the emotion ("surprised, warming into relief").
 
-## Casting a voice (export_qvoice)
-Flat door with `export_qvoice: true, export_name: <char>_v1` emits a real
-`.qvoice` (QVOICE-LITE magic, lands in the run dir + output/voices).
-Drive lines THROUGH a cast voice via the voice-studio flow:
-`{"yaml":"qwen3-tts-voice-studio","voice_studio_mode":"generate",
-"qvoice_path":"<bare input name>","text":"..."}` — NOT form_tts
-`voice_file` (that slot wants raw float32 embeddings by design).
+## Casting a voice (the qvoice seats)
+The retired flat door (`export_qvoice: true`) is GONE — the save and load
+ride the tts card's mod bags (022's receipt: the grammar rides melite_load's
+mods line):
+- **Save**: `qvoice_save: [{ voice_name: '<char>_v1', temperature: 0.7, seed: -1 }]`
+  plus the lane's `design_prompt` (the persona description — WHO speaks).
+  Any lane fires the export; the `.qvoice` lands under the voices root.
+- **Perform**: `qvoice: [{ qvoice: '<path>.qvoice', voice_strength: 1 }]`
+  with `voice: "none"` on the CustomVoice lane (a preset and a saved persona
+  never ride together; the Base lane clones ref_audio instead).
 
 ## Run (queue door — the only inference door)
 Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).

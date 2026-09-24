@@ -287,7 +287,10 @@ test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)
   ) as Array<{ text?: string }>
   const text = parts.map((p) => p?.text ?? '').join('\n')
   assert.ok(text.includes('params: input_image* (* required)'), 'params still ride')
-  assert.ok(text.includes('mods: sam3[] (standalone), draw[] (ordered)'), 'the kinds + categories ride')
+  // THE FAMILY-PACK SEATS (022's self-critique #3): the mods line
+  // carries each kind's FIELD names beside the category — the
+  // compose grammar the maker had to grep card.ts for.
+  assert.ok(text.includes('mods: sam3[] (standalone; fields: prompt), draw[] (ordered; fields: payload)'), 'the kinds + categories + fields ride')
   assert.ok(text.includes('ordered kinds stack in array order, standalone kinds each provide their own output'), 'the stacking law names itself')
   // kindless cards stay line-less (never an empty mods line)
   const plain = tool.output.render(

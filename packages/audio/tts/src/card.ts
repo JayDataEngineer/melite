@@ -122,6 +122,18 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
+      // THE .QVOICE PATH HINT (022's self-critique #5, 2026-09-24):
+      // the vocabulary refusal on `voice` lists the preset enum and
+      // never names the lawful seat — an agent holding a .qvoice
+      // path burned a probe turn learning where it goes. Pointed
+      // refusal BEFORE the schema gate (card-local, never the shared
+      // vocabulary text) names the seat.
+      if (typeof (p as Record<string, unknown>)?.voice === 'string'
+        && ((p as Record<string, unknown>).voice as string).trim().endsWith('.qvoice')) {
+        throw new Error(
+          "param 'voice' takes a preset speaker, never a .qvoice path — the saved persona rides the qvoice mod bag: qvoice: [{ qvoice: '<path>', voice_strength: 1 }] (the load seat's grammar rides melite_load's mods line)",
+        );
+      }
       // THE SCHEMA GATE (the h3 admission precedent): the card's
       // own schemastery walk validates types + bounds (temperature
       // is 0–2 — anything else refuses LOUD, never composes), fills

@@ -229,8 +229,11 @@ function groupContract(decl: ModelDecl | null): Record<string, unknown> {
  *  "rides inline" exemption became a dropped seat — the family
  *  boards lanpaint, mod_schemas serves it, compose requires it, but
  *  no modifiers entry ever offered the brick. The rail seats the
- *  anchor (the client half); this row offers the knobs. */
-const MODIFIER_PACKS: Record<
+ *  anchor (the client half); this row offers the knobs.
+ *  EXPORTED (022's self-critique #3, 2026-09-24): the load bundle's
+ *  mods line serves the SAME grammar for DECL-boarded packs (the
+ *  qvoice seats) — one table, two consumers, never a copy. */
+export const MODIFIER_PACKS: Record<
   string,
   {
     kind: string

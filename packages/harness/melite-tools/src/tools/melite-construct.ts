@@ -344,9 +344,28 @@ export function meliteConstruct(
               const id = typeof s.id === 'string' ? s.id : '?'
               const card = typeof s.card === 'string' ? s.card : (typeof s.card_id === 'string' ? s.card_id : '?')
               const engine = typeof s.engine === 'string' ? s.engine : '?'
-              lines.push(`  ${id} — ${card} [${engine}]`)
+              // THE LAST_RUN DISCLOSURE (022's self-critique #2,
+              // 2026-09-24 — stroke 85's twin): withLastRun ATTACHES
+              // the draft's latest run to every stage, but the render
+              // never printed it — the model read a stage list that
+              // promised last_run in the description and saw nothing,
+              // then paid a turn confirming the bench is not a
+              // receipt source. The render now voices what it holds.
+              const lr = s.last_run as { run_id?: unknown; status?: unknown; artifacts?: unknown } | null | undefined
+              let suffix = ''
+              if (lr !== null && lr !== undefined && typeof lr.run_id === 'string' && lr.run_id !== '') {
+                const arts = Array.isArray(lr.artifacts) ? lr.artifacts.length : 0
+                suffix = ` — last_run ${lr.run_id} (${String(lr.status ?? '?')}${arts ? ', ' + arts + ' artifact(s)' : ''})`
+              } else if (lr === null) {
+                suffix = ' — last_run null (draft has no run in the window)'
+              }
+              lines.push(`  ${id} — ${card} [${engine}]${suffix}`)
             }
           }
+        }
+        const runsFacts = (v as { runs?: { checked?: unknown; total?: unknown; matched?: unknown } }).runs
+        if (runsFacts !== undefined) {
+          lines.push(`runs window: checked ${String(runsFacts.checked ?? '?')}, total ${String(runsFacts.total ?? '?')}, matched ${String(runsFacts.matched ?? '?')}`)
         }
         if (typeof v.intent === 'string' && v.intent !== '') lines.push('intent: ' + v.intent)
         if (typeof v.hint === 'string' && v.hint !== '') lines.push('hint: ' + v.hint)

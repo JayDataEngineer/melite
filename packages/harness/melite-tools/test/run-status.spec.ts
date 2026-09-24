@@ -340,7 +340,10 @@ describe('run_status render — the human line', () => {
     )
     assert.equal(
       text({ run_id: 'r', status: 'completed', stages: [{ status: 'completed' }], waited_s: 5 }),
-      'run r completed — 1/1 stage(s) · waited 5s',
+      // THE RECEIPT-PATH LAW (022's self-critique #1): terminal rows
+      // voice their per-stage status (id-less rows print ?) — the
+      // count-only line forced output/ globs before.
+      'run r completed — 1/1 stage(s) · waited 5s\nstages: ?:completed',
     )
   })
 })

@@ -165,6 +165,32 @@ export function runStatus(request: EstateRequest): ToolDefinition {
             (typeof v.card === 'string' && v.card ? ' (' + v.card + ')' : '') +
             (typeof v.run_age_s === 'number' ? ' · age ' + v.run_age_s + 's' : '')
           : ''
+        // THE RECEIPT-PATH LAW (022's self-critique #1, 2026-09-24):
+        // a completed row that names only COUNTS forces the agent to
+        // `ls output/<run_id>` for the actual paths — the exact
+        // glob-output detour the efficiency law forbids. Terminal
+        // rows render their artifact paths (up to 4, as served) and
+        // per-stage status rows; live rows stay one-line (counts +
+        // plan + age — nothing to receipt yet).
+        const terminal = v.status === 'completed' || v.status === 'failed'
+        const stageVoice = terminal && stages.length
+          ? '\nstages: ' + stages.map((s) => {
+            const row = s as { id?: unknown; name?: unknown; error?: unknown }
+            const id = typeof row.id === 'string' ? row.id : (typeof row.name === 'string' ? row.name : '?')
+            const st = typeof s?.status === 'string' ? s.status : '?'
+            const err = typeof row.error === 'string' && row.error !== '' ? ' ! ' + row.error : ''
+            return id + ':' + st + err
+          }).join(', ')
+          : ''
+        const artPaths = terminal ? artifacts.slice(0, 4).map((a) => {
+          const p = typeof a === 'string' ? a
+            : (typeof (a as { path?: unknown })?.path === 'string' ? (a as { path: string }).path : '')
+          return p
+        }).filter(Boolean) : []
+        const artVoice = artPaths.length
+          ? '\nartifacts: ' + artPaths.join('\n  ')
+            + (artifacts.length > 4 ? `\n  (+${artifacts.length - 4} more)` : '')
+          : ''
         return [{
           type: 'text',
           text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + pos
@@ -175,7 +201,8 @@ export function runStatus(request: EstateRequest): ToolDefinition {
             // The wait primitive's two receipts (fix 5): expiry asks for
             // another wait; waited_s proves the single call absorbed the poll.
             + (v.wait_expired ? ' · wait expired (budget spent, not terminal — wait again)' : '')
-            + (typeof v.waited_s === 'number' ? ' · waited ' + v.waited_s + 's' : ''),
+            + (typeof v.waited_s === 'number' ? ' · waited ' + v.waited_s + 's' : '')
+            + stageVoice + artVoice,
         }]
       },
     },

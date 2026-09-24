@@ -7,6 +7,8 @@
 // Bodies stay behind melite_skill_read; quote the bundle digest you hold
 // and skip reload on a match. Thin door wrapper (estateRequest).
 import { expandEstateDoors } from '../expansion.ts'
+import { MODIFIER_PACKS } from '../discovery.ts'
+import { registryModel, theService } from '@melite/comfyui-cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
@@ -158,13 +160,34 @@ export function meliteLoad(
           // and params alone leave the agent blind to them. The
           // category names the stacking law (ordered = array order
           // matters; standalone = own output).
+          // THE FAMILY-PACK SEATS (022's self-critique #3, 2026-09-24):
+          // the card's OWN declared kinds ride the signature; the
+          // DECL-BOARDED packs (qvoice/qvoice_save on the tts card)
+          // ride the families — the load line now serves BOTH, with
+          // the param_key + field names the compose bag takes (the
+          // grammar the maker had to grep card.ts for).
           const mods = Array.isArray(sig?.modifiers) ? sig.modifiers : []
-          if (mods.length > 0) {
-            out.push('mods: ' + mods.map((m) => {
-              const kind = str(m?.kind) || '?'
-              const cat = str(m?.category) || 'ordered'
-              return kind + '[] (' + cat + ')'
-            }).join(', ') + ' — pass arrays under these keys; ordered kinds stack in array order, standalone kinds each provide their own output')
+          const packSeats = familyPackSeats(
+            Array.isArray(b.model_hints) ? b.model_hints : [],
+            new Set(mods.map((m) => str(m?.kind))),
+          )
+          const modLines = mods.map((m) => {
+            const kind = str(m?.kind) || '?'
+            const cat = str(m?.category) || 'ordered'
+            const fs = Array.isArray(m?.fields)
+              ? m.fields.filter((f): f is string => typeof f === 'string') : []
+            return kind + '[] (' + cat + (fs.length ? '; fields: ' + fs.join(', ') : '') + ')'
+          })
+          for (const p of packSeats) {
+            modLines.push(p.kind + '[] (' + p.cardinality + '; fields: ' + p.fields.join(', ') + ')')
+          }
+          if (modLines.length > 0) {
+            out.push('mods: ' + modLines.join(', ')
+              + ' — pass arrays under the kind keys (the bag lives at param_key when it differs); ordered kinds stack in array order, standalone kinds each provide their own output')
+            const keyed = packSeats.filter((p) => p.param_key !== p.kind)
+            if (keyed.length > 0) {
+              out.push('mod param_keys: ' + keyed.map((p) => p.kind + ' → ' + p.param_key + ' (entries: {' + p.fields.join(', ') + '})').join('; '))
+            }
           }
           const model = str(sig.model)
           if (model !== '') out.push('signature model: ' + model)
@@ -240,4 +263,55 @@ export function meliteLoad(
   // soft-validation gate (see the adaptation above).
   def.presentCall = presentCall;
   return def;
+}
+
+/** THE FAMILY-PACK SEATS (022's self-critique #3): the grammar of
+ *  every modifier pack the card's boarded families DECL-board, read
+ *  off the ONE grammar table (MODIFIER_PACKS — the form-spec's own)
+ *  with field names off the engine's registered pack contract (the
+ *  service read, never a re-derivation). Kinds the card itself
+ *  declares are skipped (dedupe — the signature already serves
+ *  them). A registry/service miss drops the family quietly here:
+ *  the compose door still refuses loud on a bad bag, and the
+ *  signature's own kinds were never at risk. */
+function familyPackSeats(
+  hints: Array<Record<string, unknown>>,
+  servedKinds: Set<string>,
+): Array<{ kind: string; param_key: string; fields: string[]; cardinality: string }> {
+  const out: Array<{ kind: string; param_key: string; fields: string[]; cardinality: string }> = []
+  const seen = new Set<string>(servedKinds)
+  let svc: { packFieldNames(pack: string): string[] } | null = null
+  try {
+    svc = theService() as { packFieldNames(pack: string): string[] }
+  } catch {
+    svc = null
+  }
+  for (const h of hints) {
+    const fam = typeof h?.id === 'string' ? h.id : ''
+    if (fam === '') continue
+    let packs: string[] = []
+    try {
+      const decl = registryModel(fam) as { mods?: unknown } | null
+      const raw = decl?.mods
+      if (Array.isArray(raw)) {
+        packs = raw.map((m) => typeof m === 'string' ? m : (typeof (m as { pack?: unknown })?.pack === 'string' ? (m as { pack: string }).pack : '')).filter((p) => p !== '')
+      }
+    } catch {
+      continue
+    }
+    for (const pack of packs) {
+      const meta = MODIFIER_PACKS[pack]
+      if (meta === undefined || seen.has(meta.kind)) continue
+      seen.add(meta.kind)
+      const fields = svc !== null ? svc.packFieldNames(pack) : []
+      if (fields.length === 0) continue
+      out.push({
+        kind: meta.kind,
+        param_key: meta.param_key ?? pack,
+        fields,
+        cardinality: meta.cardinality,
+      })
+    }
+  }
+  return out;
 }
