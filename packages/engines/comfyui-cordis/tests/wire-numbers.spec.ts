@@ -85,3 +85,32 @@ describe("the compose door — the numeric-string fill (commission 035)", () => 
     );
   });
 });
+
+describe("the compose door — the ARRAY arm of the coercion family (035 attempt-12's bare-voice receipt)", () => {
+  it("THE RECEIPT: an {item:[…]} ref_images COMPOSES through a card whose compose re-walks the carrier (the bare `$.ref_images expected array` died at the compose-internal gate)", async () => {
+    const carrier2 = z.object({
+      prompt: z.string().default("x"),
+      ref_images: z.array(z.string()),
+    });
+    const arrCard = (): CardDefinition => ({
+      id: "arr",
+      skeleton: "gen",
+      boarded: [],
+      schema: ((v: unknown) => carrier2(v)) as unknown as (v: unknown) => Record<string, unknown>,
+      schemaCarrier: carrier2 as never,
+      // the compose-internal gate — the card.ts:1788 shape: the walk
+      // is BARE (a plain Error escapes, never a ComposeRefusal)
+      compose: (p, _m, g) => {
+        const walked = carrier2(p) as Record<string, unknown>;
+        g.node("TestNode", { refs: JSON.stringify(walked["ref_images"]) });
+      },
+      sidebar: { key: "gen", order: 1 },
+      flowKinds: { inputs: {}, outputs: { image: "image" } },
+      requiresModel: false,
+    });
+    const svc = await boot();
+    svc.registerCard(arrCard());
+    const graph = svc.compose("arr", null, { ref_images: { item: ["/a.png", "/b.png"] } }, "run-wire-arr");
+    assert.ok(JSON.stringify(graph).includes("/a.png"), "the unwrapped array rode the graph");
+  });
+});

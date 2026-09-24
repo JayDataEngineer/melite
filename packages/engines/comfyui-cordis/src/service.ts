@@ -9,7 +9,7 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph'
 import type { PromptGraph, JsonValue } from '@melite/comfyui-card-kit/graph'
 import { assertControlNetSchedule } from '@melite/comfyui-card-kit/guard'
-import { coerceWireNumbers, wireTypeLedger } from '@melite/comfyui-card-kit'
+import { coerceWireArrays, coerceWireNumbers, unwrapItemArrays, wireTypeLedger } from '@melite/comfyui-card-kit'
 import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { ProvisionRow } from './models/families/contract.ts'
 import { provisionDest } from './catalog.ts'
@@ -700,7 +700,7 @@ export class ComfyUIService extends Service {
         // assertNoCheat reads — card-agnostic, both compose paths,
         // every card, no opt-out. Receipt: `$.width expected number
         // but got 768` (the wire stringified a nested number).
-        merged = def.schema(coerceWireNumbers((def.schemaCarrier ?? def.schema) as unknown as Schema, params))
+        merged = def.schema(coerceWireNumbers((def.schemaCarrier ?? def.schema) as unknown as Schema, coerceWireArrays((def.schemaCarrier ?? def.schema) as unknown as Schema, unwrapItemArrays(params))))
       } catch (e) {
         // THE WIRE-TYPE LEDGER (035's maker gap #2): the bare
         // `got 768` named no type — the receipt could not
@@ -752,7 +752,7 @@ export class ComfyUIService extends Service {
     // refused it bare-voiced (attempt-035's live receipt: walk
     // passed, merge poisoned, `$.width expected number but got
     // 768` surfaced from past the wrap — 2026-09-24).
-    const coerced = coerceWireNumbers((def.schemaCarrier ?? def.schema) as unknown as Schema, params) as Record<string, unknown>
+    const coerced = coerceWireNumbers((def.schemaCarrier ?? def.schema) as unknown as Schema, coerceWireArrays((def.schemaCarrier ?? def.schema) as unknown as Schema, unwrapItemArrays(params))) as Record<string, unknown>
     try {
       merged = def.schema(coerced)
     } catch (e) {
