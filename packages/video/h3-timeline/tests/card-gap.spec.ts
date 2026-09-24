@@ -209,6 +209,62 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     );
   });
 
+  it("THE STANDING SEAM PROBE (roadmap §32a, 2026-09-24): a no-cut film mounts continuation + finalize on EVERY carried window, chained through the film — not memory, the compose itself", () => {
+    // The 2-window arm above proves window 2 once; this probe walks
+    // a FOUR-window no-cut film and asserts the chain per carried
+    // window: k=2,3,4 each mount the drift-control continuation fed
+    // by the PREVIOUS window's own sampler (the accumulation — the
+    // film builds window-to-window, never all-from-the-opener), each
+    // trims its own carried head (per-window finalize), the opener
+    // stays fresh, and the file tail gives every save its own
+    // MeliteUnload boundary (the §20 ordering law).
+    const g = new GraphBuilder();
+    const shot = (i: number): Record<string, unknown> =>
+      SHOT({ text: `window ${i + 1} of the film`, start_frame: i * 56, end_frame: (i + 1) * 56 + 12 });
+    def.compose(
+      def.schema({ calls: [shot(0), shot(1), shot(2), shot(3)] }),
+      model, g, "run_standing_seam",
+    );
+    const out = graphOf(g);
+    for (let k = 2; k <= 4; k++) {
+      const scope = `window${k}_`;
+      const cont = scoped(out, scope, "MiniMaxH3FiniteLatentContinuation");
+      assert.equal(cont.length, 1, `window ${k} mounts the drift-control seam`);
+      const cin = cont[0]![1].inputs;
+      assert.equal(cin.iteration, k - 1, `window ${k} is segment ${k} of the film`);
+      assert.equal(cin.overlap_frames, 22, `window ${k} carries the director's default overlap`);
+      // the carried latent is the IMMEDIATELY PREVIOUS window's
+      // sampler output — the accumulation walks the film, window to
+      // window (a chain fed from the opener would silently restart
+      // drift control every seam).
+      const prevSampled = scoped(out, `window${k - 1}_`, "SamplerCustomAdvanced")[0]!;
+      assert.deepEqual(
+        cin.previous_latent, [prevSampled[0], 0],
+        `window ${k} continues window ${k - 1}'s raw latent`,
+      );
+      // per-window finalize: the carried head trimmed off picture
+      // AND sound — every carried window, never just the last
+      const fin = scoped(out, scope, "MiniMaxH3FiniteSegmentFinalize");
+      assert.equal(fin.length, 1, `window ${k} finalizes its own clip`);
+      assert.equal(fin[0]![1].inputs.overlap_frames, 22, `window ${k}'s finalize trims the carry`);
+      assert.equal(fin[0]![1].inputs.trim_audio_head, true, `window ${k}'s audio head never replays`);
+    }
+    // the opener stays a true fresh window
+    assert.equal(scoped(out, "window1_", "MiniMaxH3FiniteLatentContinuation").length, 0,
+      "the opener carries nothing");
+    assert.equal(scoped(out, "window1_", "MiniMaxH3FiniteSegmentFinalize").length, 0,
+      "the opener trims nothing");
+    // the file tail's ordering law: one boundary PER window save
+    // (4 windows → 4 MeliteUnload boundaries, token-chained)
+    assert.equal(ofClass(out, "MeliteUnload").length, 4,
+      "every window save owns its own unload boundary");
+    // and the film assembles from the saved files, never tensors
+    const concat = ofClass(out, "MeliteConcatVideos");
+    assert.equal(concat.length, 1, "one file-decoding tail assembles the film");
+    assert.match(String(concat[0]![1].inputs.videos), /h3_t4_w1,h3_t4_w2,h3_t4_w3,h3_t4_w4/,
+      "the concat names every saved window in order");
+  });
+
   it("a cut call is the director's overlap-0 arm (independent windows, a true butt)", () => {
     const g = new GraphBuilder();
     def.compose(

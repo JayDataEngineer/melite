@@ -253,6 +253,12 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  /* THE FIT LAW (roadmap §32b audit, 2026-09-24): without this the
+   * title's ellipsis NEVER engages — a flex child's min-width:auto
+   * is its min-content, so a long title stretched the head past a
+   * narrow pane instead of clipping (the bare-intrinsic-size
+   * disease the video hero already died of). */
+  min-width: 0;
 }
 .reportStatus {
   font-size: 10px;
@@ -289,9 +295,20 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  /* THE FIT LAW (§32b): a flex row is as wide as its widest child
+   * unless it may shrink — machine verdicts carry path/hash keys
+   * that never break on their own. */
+  min-width: 0;
 }
 .reportKey {
-  flex: none;
+  /* the §32b fix (2026-09-24): the key keeps its
+   * content width when the row has room, yields when it is tight,
+   * and an unbreakable path/hash key wraps at the last resort
+   * instead of pushing the card past a narrow pane (the old rule
+   * was an unyielding fixed-basis key). */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 10px;
   color: var(--dsw-alias-label-dimmed);
 }
