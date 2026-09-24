@@ -58,6 +58,26 @@ describe('run_status execute — the run monitor', () => {
     assert.equal(seen.calls.length, 0)
   })
 
+  test('a completed row carrying error:"" serves RICH, never the ? — 0/0 husk (021 receipt)', async () => {
+    // THE EMPTY-ERROR TRAP (2026-09-24): the registry writes error:""
+    // on success; the old bare typeof-string check read it as the
+    // refusal shape and returned {run_id, error:""} — the render
+    // voiced "? — 0/0 stage(s)" on all four 021 stages (completed,
+    // with artifacts). Only a NON-EMPTY error refuses.
+    const seen = mockRequest(() => ({
+      run_id: 'run-x', status: 'completed', error: '',
+      stages: [{ id: 'tts', name: 'tts', index: 0, status: 'completed', outputs: {}, expected: {} }],
+      artifacts: ['out/tts.flac'],
+      skipped_stages: [],
+    }))
+    const tool = runStatus(seen.request)
+    const out = await tool.execute({ runId: 'run-x' }, exec) as Record<string, unknown>
+    assert.equal(out.status, 'completed')
+    assert.equal(out.error, undefined)
+    assert.equal((out.stages as unknown[]).length, 1)
+    assert.equal((out.artifacts as unknown[]).length, 1)
+  })
+
   test('a full row projects verbatim (encoding rides the path)', async () => {
     const seen = mockRequest((_m, path) => {
       assert.equal(path, '/v1/flows/status/' + encodeURIComponent('r/1'))

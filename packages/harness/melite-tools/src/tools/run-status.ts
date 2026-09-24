@@ -224,7 +224,14 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         }
         await sleepAbortable(WAIT_POLL_S * 1000, exec.signal)
       }
-      if (res && typeof res.error === 'string') {
+      // THE EMPTY-ERROR TRAP (021's self-critique receipt, 2026-09-24):
+      // the registry writes `error: ""` on SUCCESS — a bare typeof
+      // string check read that as the refusal shape and returned
+      // {run_id, error:""}, which the render voices as "? — 0/0
+      // stage(s)" on a COMPLETED run (all four 021 stages). Only a
+      // NON-EMPTY error is a refusal; everything else falls through
+      // to the rich row.
+      if (res && typeof res.error === 'string' && res.error !== '') {
         return jsonClean<RunStatusResult>({ run_id: runId, error: res.error })
       }
       const waitedRow: Record<string, unknown> = waitExpired

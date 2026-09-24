@@ -203,7 +203,10 @@ async function startRun(
     }
     throw e
   }
-  if (res && typeof res.error === 'string') return { error: res.error }
+  // THE EMPTY-ERROR TRAP (run-status's twin, fixed with it 2026-09-24):
+  // a start answer may carry `error: ""` on success — only a NON-EMPTY
+  // error refuses.
+  if (res && typeof res.error === 'string' && res.error !== '') return { error: res.error }
   return {
     run_id: typeof res.run_id === 'string' ? res.run_id : '',
     status: typeof res.status === 'string' ? res.status : 'queued',
