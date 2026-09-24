@@ -7,7 +7,10 @@
  */
 export {
   ASSET_DRAG_MIME,
+  DEFAULT_SQUARE_ACCEPT,
+  MESH_SQUARE_ACCEPT,
   isImageUrl,
+  isMeshUrl,
   readAsDataUrl,
   InputSquare,
   type InputSquareVerbs,

@@ -76,6 +76,11 @@ export interface CardResult {
   motionPreviews?: { label: string; url: string | null; artifact: string }[]
 }
 
+export interface CardInputBinding {
+  slot: string
+  source: { stage: string; output?: string } | { initial: true }
+}
+
 /**
  * A flow stage as the card renders it — the superset of the agent
  * stage, the YAML brick stage, and a plain asset entry. Surfaces map their
@@ -88,15 +93,18 @@ export interface CardStage {
   kind: string
   /** Model key / brick family / asset name — shown on the service badge. */
   service: string
+  model?: string
   /** Catalog-declared media genre — ONE vocabulary
-  * (image|video|audio|3d|motion|other|text), resolved
-  * by the surface adapter from the model route. Drives the badge icon +
-  * video gating. undefined = non-catalog service (generic badge). */
+   *  (image|video|audio|3d|motion|other|text), resolved
+   *  by the surface adapter from the model route. Drives the badge icon +
+   *  video gating. undefined = non-catalog service (generic badge). */
   genre?: CardGenre
   /** Provenance/descriptor tags — orthogonal to genre. 'ai_generated'
-  * lives here, never in genre. */
+   *  lives here, never in genre. */
   tags?: CardTag[]
   params: Record<string, unknown>
+  inputSlots?: string[]
+  inputBindings?: CardInputBinding[]
   /** Upstream stage ids (dependency wiring). */
   inputs: string[]
   /** Per-slot NAMED output selection (input_prep → mask): inputOutputs[i]

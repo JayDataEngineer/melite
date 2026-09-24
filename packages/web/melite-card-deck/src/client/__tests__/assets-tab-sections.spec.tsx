@@ -272,6 +272,48 @@ test('the result pane formats every row arm, object bodies, and absent bodies', 
   expect(within(logged).getByText(/"lines"/)).toBeTruthy()
 })
 
+test('declared resource status and restart-required results are explicit', async () => {
+  stubManageWire({
+    status: {
+      action: 'status',
+      ok: true,
+      detail: 'up',
+      data: {
+        endpoint: { reachable: true, url: 'http://engine:8188' },
+        active_runs: [],
+        resources: [{
+          ref: { kind: 'model', owner: 'family', id: 'wan' },
+          state: 'absent',
+          items: [{ key: 'model:family:wan', kind: 'model', state: 'absent' }],
+        }],
+      },
+    },
+    install_extension_url: {
+      action: 'install_extension_url',
+      ok: true,
+      detail: 'restart required',
+      data: {
+        state: 'restart_required',
+        operation_id: 'op-ext-1',
+        restart_required: true,
+        items: [{ key: 'extension:pack', state: 'restart_required' }],
+      },
+    },
+  })
+  const user = userEvent.setup()
+  render(<ComfyManagerPanel />)
+  const resources = await screen.findByTestId('resource-status')
+  expect(within(resources).getByText('model family/wan')).toBeTruthy()
+  expect(within(resources).getAllByText('absent').length).toBe(2)
+  await user.type(screen.getByPlaceholderText('https://github.com/…'), 'https://example.com/pack.zip')
+  await user.click(screen.getByRole('button', { name: 'Install from URL' }))
+  const result = await screen.findByTestId('provision-state')
+  expect(within(result.parentElement as HTMLElement).getByText('RESTART REQUIRED')).toBeTruthy()
+  expect(within(result).getByText(/state: restart_required/)).toBeTruthy()
+  expect(within(result).getByText(/op-ext-1/)).toBeTruthy()
+  expect(within(result).getByText(/Restart ComfyUI/)).toBeTruthy()
+})
+
 test('install rails dispatch with the exact bodies and reload the browse rows', async () => {
   const { calls } = stubManageWire({
     status: DOWN,

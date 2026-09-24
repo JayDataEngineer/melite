@@ -773,12 +773,33 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       }),
     )
   // the consult (ToolCallTree's call verbatim): entryKey = card name
+  const currentStageIndex = bench.stages.findIndex((candidate) => candidate.id === stage.id)
+  const priorStageIds = currentStageIndex < 0
+    ? []
+    : bench.stages.slice(0, currentStageIndex).map((candidate) => candidate.id)
   return renderStageView({
     stageId: stage.id,
     cardName: String(stage.card ?? ''),
     row: stage as unknown as Record<string, unknown>,
     runStatus: typeof stage.runStatus === 'string' ? stage.runStatus : '',
     onPatch: onPatchParams,
+    onWireSlot: (slotKey, upstreamId) => {
+      const candidate = upstreamId === null
+        ? undefined
+        : candidates.find((entry) => entry.id === upstreamId)
+      if (upstreamId !== null && candidate === undefined) {
+        setError(`wire source is no longer on the bench: ${upstreamId}`)
+        return
+      }
+      void patchStageParams(
+        bench.draftId,
+        stage.id,
+        { [slotKey]: upstreamId === null ? null : candidate.url },
+        bench.rev,
+      ).catch((wireError: unknown) => {
+        setError(wireError instanceof Error ? wireError.message : 'wire failed')
+      })
+    },
     onRun,
     onStop,
     // THE GESTURE CHANNEL (hour-26): a studio with a domain-first
@@ -789,5 +810,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     onSurface: reportSurface,
     upstream: candidates.map((c) => ({ id: c.id, title: c.label, url: c.url })),
     runId: runId ?? null,
+    effective: {
+      model: modelKey !== '' ? modelKey : String(stage.card ?? stage.engine ?? ''),
+      params: { ...held, ...user },
+      inputSlots: (spec?.inputs ?? []).map((input) => input.name),
+    },
+    priorStageIds,
   }, genericDetail())
 }

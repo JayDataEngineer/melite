@@ -55,6 +55,29 @@ interface StatusView {
   manager_security?: string
   active_runs?: string[]
   routing?: Record<string, unknown>
+  resources?: ResourceView[]
+  resources_detail?: string
+}
+
+interface ResourceView {
+  ref?: { kind?: string; owner?: string; id?: string; variant?: string; quant?: string }
+  state?: string
+  detail?: string
+  items?: Array<{
+    key?: string
+    kind?: string
+    state?: string
+    integrity?: string
+    errorCode?: string
+    detail?: string
+  }>
+}
+
+interface ProvisionReplyData {
+  state: string
+  operation_id?: string
+  restart_required?: boolean
+  items: Array<Record<string, unknown>>
 }
 
 /** Correlation id for one client-request frame (the reference caller
@@ -138,6 +161,23 @@ export async function postManage(action: string, payload: Record<string, unknown
 /** Bytes → GB string (ComfyUI reports raw bytes in system_stats). */
 function gb(bytes: unknown): string {
   return typeof bytes === 'number' && bytes > 0 ? (bytes / 2 ** 30).toFixed(1) : '?'
+}
+
+function provisionData(data: unknown): ProvisionReplyData | null {
+  if (typeof data !== 'object' || data === null) return null
+  const value = data as Record<string, unknown>
+  if (typeof value.state !== 'string' || !Array.isArray(value.items)) return null
+  return value as unknown as ProvisionReplyData
+}
+
+function resourceLabel(resource: ResourceView): string {
+  const ref = resource.ref
+  if (ref === undefined) return 'resource'
+  const kind = ref.kind === 'extension' ? 'extension' : 'model'
+  const owner = ref.owner === undefined ? '' : ref.owner + '/'
+  const variant = ref.variant === undefined ? '' : ':' + ref.variant
+  const quant = ref.quant === undefined ? '' : ':' + ref.quant
+  return kind + ' ' + owner + (ref.id ?? '?') + variant + quant
 }
 
 /**
@@ -355,6 +395,13 @@ export function ComfyManagerPanel(): React.ReactElement {
   const up = ep?.reachable === true
   const workspaceUp = status?.server_info?.running === true
   const activeRuns = status?.active_runs ?? []
+  const resultProvision = result === null ? null : provisionData(result.data)
+  const resultLabel = resultProvision?.state === 'partial'
+    ? 'PARTIAL'
+    : resultProvision?.state === 'restart_required'
+      ? 'RESTART REQUIRED'
+      : result?.ok === true ? 'OK' : 'REFUSED'
+  const resultGood = result?.ok === true && (resultProvision === null || resultProvision.state === 'active')
   return (
     <div className={css.root} data-comfy-manager="">
       <div className={css.head}>
@@ -408,16 +455,52 @@ export function ComfyManagerPanel(): React.ReactElement {
             active runs: {activeRuns.length}{activeRuns.length > 0 ? ' (' + activeRuns.join(', ') + ')' : ''}
           </span>
         </div>
+        {(status?.resources ?? []).length > 0 && (
+          <ul className={css.list} data-testid="resource-status">
+            {(status?.resources ?? []).map((resource, index) => (
+              <li className={css.listRow} key={resourceLabel(resource) + ':' + index}>
+                <span className={css.mono}>{resourceLabel(resource)}</span>
+                <span>{resource.state ?? 'unknown'}</span>
+                {(resource.items ?? []).map((item) => (
+                  <span className={css.sub} key={item.key ?? item.state ?? 'item'}>
+                    {item.state ?? 'unknown'}{item.integrity === 'operator-unverified' ? ' (operator-unverified)' : ''}
+                    {item.detail === undefined ? '' : ' — ' + item.detail}
+                  </span>
+                ))}
+              </li>
+            ))}
+          </ul>
+        )}
+        {status?.resources_detail !== undefined && (
+          <p className={css.sub}>resource status: {status.resources_detail}</p>
+        )}
       </section>
 
       {/* ── RESULT (the last reply — every action lands here) ── */}
       {result !== null && (
         <section className={css.section} data-testid="manage-result">
           <div className={css.resultHead}>
-            <span className={result.ok === true ? css.resultOk : css.resultBad}>{result.ok === true ? 'OK' : 'REFUSED'}</span>
+            <span className={resultGood ? css.resultOk : css.resultBad}>{resultLabel}</span>
             <span className={css.mono}>{result.action}</span>
             <span className={css.sub}>{result.detail}</span>
           </div>
+          {resultProvision !== null && (
+            <div data-testid="provision-state">
+              <div className={css.sub}>
+                state: {resultProvision.state}
+                {resultProvision.operation_id === undefined ? '' : ' · operation: ' + resultProvision.operation_id}
+              </div>
+              {resultProvision.items.map((item, index) => (
+                <div className={css.listRow} key={String(item.key ?? index)}>
+                  <span className={css.mono}>{String(item.key ?? 'item')}</span>
+                  <span>{String(item.state ?? 'unknown')}</span>
+                  {typeof item.integrity === 'string' ? <span className={css.sub}>{item.integrity}</span> : null}
+                  {typeof item.detail === 'string' ? <span className={css.sub}>{item.detail}</span> : null}
+                </div>
+              ))}
+              {resultProvision.restart_required === true && <p className={css.sub}>Restart ComfyUI to activate the declared resources.</p>}
+            </div>
+          )}
           {result.data !== undefined && result.data !== null && (
             <details className={css.details}>
               <summary>data</summary>
@@ -457,7 +540,7 @@ export function ComfyManagerPanel(): React.ReactElement {
           >Install</Btn>
         </div>
         <div className={css.row}>
-          <Field label="git URL (cm_cli direct)" value={extUrl} placeholder="https://github.com/…" mono onChange={setExtUrl} />
+          <Field label="git URL (ComfyUI-Manager)" value={extUrl} placeholder="https://github.com/…" mono onChange={setExtUrl} />
           <Btn
             busy={busy === 'install_extension_url'}
             disabled={extUrl.trim() === ''}
@@ -512,7 +595,7 @@ export function ComfyManagerPanel(): React.ReactElement {
           >Search</Btn>
         </div>
         <div className={css.row}>
-          <Field label="download URL" value={dlUrl} placeholder="https://…/model.safetensors" mono onChange={setDlUrl} />
+          <Field label="download URL (Manager)" value={dlUrl} placeholder="https://…/model.safetensors" mono onChange={setDlUrl} />
           <Field label="relative path" value={dlPath} placeholder="models/checkpoints" mono onChange={setDlPath} />
           <Field label="filename" value={dlName} placeholder="model.safetensors" mono onChange={setDlName} />
           <Btn

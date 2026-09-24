@@ -107,10 +107,16 @@ test('a registered key takes over the whole drill (owner currency rides)', async
   // the generic form did NOT render alongside (takeover, not compose)
   expect(screen.queryByText('Threshold')).toBeNull()
   // the owner currency is the bench's frozen truth
-  expect(seen[0]?.row['params']).toEqual({ prompt: 'a red cube' })
-  expect(seen[0]?.runStatus).toBe('')
+  const current = seen[seen.length - 1]
+  expect(current?.row['params']).toEqual({ prompt: 'a red cube' })
+  expect(current?.effective?.model).toBe('image-gen')
+  expect(current?.effective?.params).toEqual({ prompt: 'a red cube' })
+  expect(current?.effective?.inputSlots).toEqual(expect.any(Array))
+  expect(current?.priorStageIds).toEqual([])
+  expect(current?.runStatus).toBe('')
   expect(typeof seen[0]?.onRun).toBe('function')
   expect(typeof seen[0]?.onPatch).toBe('function')
+  expect(typeof seen[0]?.onWireSlot).toBe('function')
 })
 
 test('an unclaimed key renders the generic form-spec card (the fallback IS the form)', async () => {

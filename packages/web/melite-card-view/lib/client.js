@@ -9625,10 +9625,34 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function cn(...inputs) {
 			return clsx(...inputs);
 		}
+		/** THE ESTATE'S DRAG CONTRACT (2026-09-18, exterminated): the MIME
+		*  under which an upstream asset rides a drop payload — a JSON blob
+		*  {url, name, …} carried by the source's dataTransfer. h3's kit and
+		*  motion's kit each redeclared it; card-base, the card-view's
+		*  CardsTab and input-square already consumed it. One definition
+		*  estate-wide (the drag is a shared contract, not a studio rule). */
+		const ASSET_DRAG_MIME = "application/tech-noir-asset";
+		function parseAssetDrop(raw) {
+			if (raw === "") return {};
+			let parsed;
+			try {
+				parsed = JSON.parse(raw);
+			} catch {
+				return {};
+			}
+			if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+			const payload = parsed;
+			const url = typeof payload["url"] === "string" && payload["url"] !== "" ? payload["url"] : void 0;
+			const type = typeof payload["type"] === "string" && payload["type"] !== "" ? payload["type"] : void 0;
+			return {
+				...url === void 0 ? {} : { url },
+				...type === void 0 ? {} : { type }
+			};
+		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$7 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_modelAxes>.FRpSCG_specHint{grid-column:1/-1}.FRpSCG_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.FRpSCG_axesPair>*{min-width:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareMesh{pointer-events:none;position:absolute;inset:0}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_specChips{flex-wrap:wrap;gap:4px;display:flex}.FRpSCG_specChip{border:1px solid var(--dsw-alias-border-l2,#8080804d);background:var(--dsw-alias-bg-base,transparent);color:var(--dsw-alias-label-secondary,inherit);cursor:pointer;border-radius:999px;padding:4px 8px;font-size:11px;line-height:1.2}.FRpSCG_specChipOn{border-color:var(--dsw-alias-accent,#80808099);background:var(--dsw-alias-bg-elevated,#8080801f);color:var(--dsw-alias-label-primary,inherit);font-weight:600}.FRpSCG_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.FRpSCG_modLeafStage{min-width:0}.FRpSCG_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
-		const tagId$7 = "@melite-plugin/dsh-card-view/card.module.css@bf779fd0";
+		const css$7 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_modelAxes>.FRpSCG_specHint{grid-column:1/-1}.FRpSCG_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.FRpSCG_axesPair>*{min-width:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareMesh{pointer-events:none;position:absolute;inset:0}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareEmptyIcon{align-items:center;display:flex}.FRpSCG_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.FRpSCG_squareActions>*{pointer-events:auto}.FRpSCG_squarePick{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.FRpSCG_squareBadge{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_specChips{flex-wrap:wrap;gap:4px;display:flex}.FRpSCG_specChip{border:1px solid var(--dsw-alias-border-l2,#8080804d);background:var(--dsw-alias-bg-base,transparent);color:var(--dsw-alias-label-secondary,inherit);cursor:pointer;border-radius:999px;padding:4px 8px;font-size:11px;line-height:1.2}.FRpSCG_specChipOn{border-color:var(--dsw-alias-accent,#80808099);background:var(--dsw-alias-bg-elevated,#8080801f);color:var(--dsw-alias-label-primary,inherit);font-weight:600}.FRpSCG_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.FRpSCG_modLeafStage{min-width:0}.FRpSCG_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
+		const tagId$7 = "@melite-plugin/dsh-card-view/card.module.css@7ac0a6ba";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$7) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -9714,7 +9738,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"specSlotRow": "FRpSCG_specSlotRow",
 			"specStack": "FRpSCG_specStack",
 			"specTextarea": "FRpSCG_specTextarea",
+			"squareActions": "FRpSCG_squareActions",
+			"squareBadge": "FRpSCG_squareBadge",
 			"squareBox": "FRpSCG_squareBox",
+			"squareEmptyIcon": "FRpSCG_squareEmptyIcon",
 			"squareFileInput": "FRpSCG_squareFileInput",
 			"squareGlyph": "FRpSCG_squareGlyph",
 			"squareLabel": "FRpSCG_squareLabel",
@@ -9722,6 +9749,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"squareMetric": "FRpSCG_squareMetric",
 			"squareOff": "FRpSCG_squareOff",
 			"squareOver": "FRpSCG_squareOver",
+			"squarePick": "FRpSCG_squarePick",
 			"squareThumb": "FRpSCG_squareThumb",
 			"squareWrap": "FRpSCG_squareWrap",
 			"squareX": "FRpSCG_squareX",
@@ -9776,6 +9804,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				style,
 				...rest,
 				children
+			});
+		}
+		function Upload({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17 8-5-5-5 5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v12" })
+				]
 			});
 		}
 		function Box({ className, style, ...rest }) {
@@ -47203,8 +47243,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$6 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.ClEuBa_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.ClEuBa_thumbVideoBtn:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.ClEuBa_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.ClEuBa_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.ClEuBa_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_thumbFace{box-sizing:content-box;border:1px solid var(--dsw-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.ClEuBa_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_layerRow{flex:none;gap:6px;display:flex}.ClEuBa_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.ClEuBa_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.ClEuBa_reportCard{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.ClEuBa_reportHead{align-items:center;gap:6px;display:flex}.ClEuBa_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.ClEuBa_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.ClEuBa_reportChips{flex-wrap:wrap;gap:4px;display:flex}.ClEuBa_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.ClEuBa_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.ClEuBa_reportRow{justify-content:space-between;gap:12px;display:flex}.ClEuBa_reportKey{color:var(--dsw-alias-label-dimmed);flex:none;font-size:10px}.ClEuBa_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.ClEuBa_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
-		const tagId$6 = "@melite-plugin/dsh-card-view/preview.module.css@c4e3079d";
+		const css$6 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.ClEuBa_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.ClEuBa_thumbVideoBtn:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.ClEuBa_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.ClEuBa_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.ClEuBa_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_thumbFace{box-sizing:content-box;border:1px solid var(--dsw-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.ClEuBa_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_layerRow{flex:none;gap:6px;display:flex}.ClEuBa_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.ClEuBa_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.ClEuBa_reportCard{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.ClEuBa_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.ClEuBa_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.ClEuBa_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.ClEuBa_reportChips{flex-wrap:wrap;gap:4px;display:flex}.ClEuBa_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.ClEuBa_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.ClEuBa_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.ClEuBa_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.ClEuBa_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.ClEuBa_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
+		const tagId$6 = "@melite-plugin/dsh-card-view/preview.module.css@bf1f1d7d";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$6) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -47728,9 +47768,6 @@ void main() {
 		* automatically. One input component; no card hand-rolls its own
 		* file field ever again.
 		*/
-		/** The media-bar drag contract (the tab's drop surface serves the
-		* same MIME — ONE spelling, imported from the base's law). */
-		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
 		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
 		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
 		*  artifact URLs. Every slot-shaped value renders the same way. */
@@ -47743,7 +47780,7 @@ void main() {
 		*  square with the inline GLB thumb (the mini GlbStagePreview), the
 		*  same square grammar as images: never a bespoke mesh picker. */
 		function isMeshUrl(value) {
-			return /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
+			return /^data:model\/gltf-binary[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
 		}
 		/** Read a File/Blob and resolve its data: URL — the ONE read path for
 		*  every slot-shaped attach (the old law, single definition). */
@@ -47759,17 +47796,8 @@ void main() {
 				r.readAsDataURL(file);
 			});
 		}
-		/** Parse the asset MIME off a drop event. null = absent or malformed. */
-		function assetPayload(e) {
-			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
-			if (raw === "") return null;
-			try {
-				const p = JSON.parse(raw);
-				return typeof p["url"] === "string" ? p["url"] : null;
-			} catch {
-				return null;
-			}
-		}
+		const DEFAULT_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp";
+		const MESH_SQUARE_ACCEPT = ".glb,.gltf";
 		function InputSquare(props) {
 			const { label, value, metric, disabled } = props;
 			const seat = props.ariaLabel ?? label;
@@ -47779,6 +47807,12 @@ void main() {
 			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
 			const mesh = thumb === null && typeof value === "string" && value !== "" && isMeshUrl(value) ? value : null;
 			const empty = thumb === null && mesh === null;
+			const acceptsDrop = (event) => {
+				if (event.dataTransfer.getData("application/tech-noir-asset") !== "" || event.dataTransfer.files.length > 0) return true;
+				const types = event.dataTransfer.types;
+				if (types === void 0 || types === null) return false;
+				return types.includes("application/tech-noir-asset") || types.includes("Files");
+			};
 			const pick = () => {
 				if (disabled) return;
 				if (props.onPick !== void 0) props.onPick(boxRef.current);
@@ -47789,13 +47823,14 @@ void main() {
 				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
 				role: "button",
 				tabIndex: 0,
+				"data-slot-square": true,
 				"aria-label": (seat || "source") + (seat !== "" ? " source" : ""),
 				onClick: pick,
 				onKeyDown: (e) => {
 					if (e.key === "Enter") pick();
 				},
 				onDragOver: (e) => {
-					if (disabled) return;
+					if (disabled || !acceptsDrop(e)) return;
 					e.preventDefault();
 					setOver(true);
 				},
@@ -47803,16 +47838,16 @@ void main() {
 					setOver(false);
 				},
 				onDrop: (e) => {
-					if (disabled) return;
-					e.preventDefault();
 					setOver(false);
-					const asset = assetPayload(e);
-					if (asset !== null && props.onAsset !== void 0) {
-						props.onAsset(asset);
+					if (disabled || !acceptsDrop(e)) return;
+					e.preventDefault();
+					const asset = parseAssetDrop(e.dataTransfer.getData(ASSET_DRAG_MIME));
+					if (asset.url !== void 0 && props.onAsset !== void 0) {
+						props.onAsset(asset.url);
 						return;
 					}
-					const f = e.dataTransfer.files[0];
-					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
+					const file = e.dataTransfer.files[0];
+					if (file !== void 0 && props.onFile !== void 0) props.onFile(file);
 				}
 			}, thumb !== null ? (0, react.createElement)("img", {
 				className: card_module_css_default.squareThumb,
@@ -47824,7 +47859,12 @@ void main() {
 					url: mesh
 				}],
 				label: "square-mesh"
-			})) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
+			})) : props.emptyIcon === void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }) : (0, react.createElement)("span", { className: card_module_css_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? (0, react.createElement)("span", {
+				className: card_module_css_default.squareActions,
+				onClick: (event) => {
+					event.stopPropagation();
+				}
+			}, props.actions) : null, !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
 				className: card_module_css_default.squareX,
 				type: "button",
 				title: "Detach",
@@ -47833,17 +47873,34 @@ void main() {
 					e.stopPropagation();
 					props.onClear();
 				}
-			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+			}, "✕") : null, props.showFileAction === true && props.onFile !== void 0 && !disabled ? (0, react.createElement)("button", {
+				className: card_module_css_default.squarePick,
+				type: "button",
+				title: `Pick a file for ${label}`,
+				"aria-label": `Pick a file for ${label}`,
+				"data-slot-pick": true,
+				onClick: (event) => {
+					event.stopPropagation();
+					fileRef.current?.click();
+				}
+			}, (0, react.createElement)(Upload, { "aria-hidden": true })) : null), label !== "" ? (0, react.createElement)("span", {
+				className: card_module_css_default.squareLabel,
+				"data-slot-label": true
+			}, label) : null, props.badge === void 0 ? null : (0, react.createElement)("span", {
+				className: card_module_css_default.squareBadge,
+				"data-slot-badge": true
+			}, props.badge), metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
 				ref: fileRef,
 				type: "file",
-				accept: "image/png,image/jpeg,image/webp",
+				accept: props.accept ?? "image/png,image/jpeg,image/webp",
 				className: card_module_css_default.squareFileInput,
+				"data-slot-input": true,
 				"aria-hidden": true,
 				tabIndex: -1,
 				onChange: (e) => {
-					const f = e.target.files?.[0];
-					if (f !== void 0 && f !== null) props.onFile?.(f);
-					fileRef.current.value = "";
+					const file = e.target.files?.[0];
+					if (file !== void 0 && file !== null) props.onFile?.(file);
+					if (fileRef.current !== null) fileRef.current.value = "";
 				}
 			}) : null);
 		}
@@ -47867,7 +47924,7 @@ void main() {
 		*  imperatively at click time — the accept is a property of the
 		*  field being picked, never of the provider instance. */
 		function acceptOfField(f) {
-			return f !== null && f.type === "mesh" ? ".glb,.gltf" : "image/png,image/jpeg,image/webp";
+			return f !== null && f.type === "mesh" ? MESH_SQUARE_ACCEPT : DEFAULT_SQUARE_ACCEPT;
 		}
 		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
 		*  every slot-shaped field of a stage gets the same verbs — file
@@ -51896,6 +51953,160 @@ void main() {
 		var init_stagePreview = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/stageView.ts
+		function recordOf(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+		}
+		function nonEmptyString(value) {
+			return typeof value === "string" && value !== "" ? value : "";
+		}
+		function stringsOf(value) {
+			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
+		}
+		function statusOf(value) {
+			switch (value.toLowerCase()) {
+				case "done":
+				case "completed":
+				case "succeeded": return "done";
+				case "failed":
+				case "error": return "error";
+				case "running": return "running";
+				case "queued": return "queued";
+				case "stale": return "stale";
+				case "cached": return "cached";
+				case "skipped": return "skipped";
+				case "reused": return "reused";
+				default: return "pending";
+			}
+		}
+		function galleryOf(value) {
+			if (!Array.isArray(value)) return void 0;
+			const gallery = value.flatMap((entry) => {
+				const row = recordOf(entry);
+				const name = nonEmptyString(row["name"]);
+				const url = nonEmptyString(row["url"]);
+				return name !== "" && url !== "" ? [{
+					name,
+					url
+				}] : [];
+			});
+			return gallery.length > 0 ? gallery : void 0;
+		}
+		function previewsOf(value) {
+			if (!Array.isArray(value)) return void 0;
+			const previews = value.flatMap((entry) => {
+				const row = recordOf(entry);
+				const label = nonEmptyString(row["label"]);
+				const artifact = nonEmptyString(row["artifact"]);
+				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
+				return label !== "" && artifact !== "" ? [{
+					label,
+					url,
+					artifact
+				}] : [];
+			});
+			return previews.length > 0 ? previews : void 0;
+		}
+		function cardResultFromRecord(value) {
+			const result = recordOf(value);
+			const artifacts = {};
+			for (const [name, url] of Object.entries(recordOf(result["artifacts"]))) {
+				const clean = nonEmptyString(url);
+				if (clean !== "") artifacts[name] = clean;
+			}
+			const assetUrls = stringsOf(result["assetUrls"]);
+			const metadata = recordOf(result["metadata"]);
+			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			return {
+				artifacts,
+				assetUrls,
+				metadata,
+				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
+				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
+				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
+			};
+		}
+		function inputBindingsOf(value) {
+			const bindings = [];
+			for (const [slot, raw] of Object.entries(recordOf(value))) {
+				const ref = recordOf(raw);
+				const stage = nonEmptyString(ref["stage"]);
+				if (stage !== "") {
+					const output = nonEmptyString(ref["output"]);
+					bindings.push({
+						slot,
+						source: output === "" ? { stage } : {
+							stage,
+							output
+						}
+					});
+				} else if (typeof ref["initial"] === "string") bindings.push({
+					slot,
+					source: { initial: true }
+				});
+			}
+			return bindings;
+		}
+		function projectStageView(owner, options = {}) {
+			const row = owner.row;
+			const resolved = recordOf(row["resolved"]);
+			const rowParams = recordOf(row["params"]);
+			const params = owner.effective?.params ?? rowParams;
+			const card = nonEmptyString(row["card"]) || owner.cardName;
+			const kind = options.kind ?? (card || "stage");
+			const service = options.service ?? (nonEmptyString(row["service"]) || kind);
+			const model = nonEmptyString(owner.effective?.model) || nonEmptyString(resolved["model"]) || nonEmptyString(row["model"]) || nonEmptyString(params["model"]) || service;
+			const inputSlots = (owner.effective?.inputSlots ?? []).filter((slot) => typeof slot === "string" && slot !== "");
+			const inputBindings = inputBindingsOf(row["inputs"]);
+			const inputs = inputBindings.flatMap((binding) => "stage" in binding.source ? [binding.source.stage] : []);
+			const inputOutputs = inputBindings.map((binding) => "stage" in binding.source ? binding.source.output ?? null : null);
+			const priorStageIds = owner.priorStageIds ?? owner.upstream.map((stage) => stage.id);
+			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
+			const result = cardResultFromRecord(row["result"]);
+			const harvested = options.result === void 0 ? result : options.result(row, result);
+			const resultRecord = recordOf(row["result"]);
+			const metadata = recordOf(harvested?.metadata);
+			const error = nonEmptyString(row["error"]) || nonEmptyString(resultRecord["error"]) || nonEmptyString(metadata["error"]);
+			const runId = owner.runId || nonEmptyString(row["runId"]) || nonEmptyString(resultRecord["runId"]) || nonEmptyString(resultRecord["run_id"]) || nonEmptyString(metadata["runId"]) || null;
+			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
+			return {
+				id: owner.stageId,
+				title: nonEmptyString(row["title"]) || card || owner.stageId,
+				kind,
+				service,
+				model,
+				...options.genre === void 0 ? {} : { genre: options.genre },
+				...tags === void 0 ? {} : { tags },
+				params,
+				...inputSlots.length === 0 ? {} : { inputSlots },
+				...inputBindings.length === 0 ? {} : { inputBindings },
+				inputs,
+				...inputOutputs.length === 0 ? {} : { inputOutputs },
+				inputIndices,
+				result: harvested,
+				status: statusOf(owner.runStatus),
+				...error === "" ? {} : { error },
+				runId,
+				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
+			};
+		}
+		function projectUpstreamStages(owner, options = {}) {
+			return owner.upstream.map((upstream) => ({
+				id: upstream.id,
+				title: upstream.title,
+				kind: options.kind ?? "image",
+				service: options.service ?? "",
+				genre: options.genre ?? "image",
+				params: {},
+				inputs: [],
+				inputIndices: [],
+				result: {
+					artifacts: upstream.title === "" ? {} : { [upstream.title]: upstream.url },
+					assetUrls: upstream.url === "" ? [] : [upstream.url],
+					metadata: {}
+				},
+				status: "done"
+			}));
+		}
 		var init_stageView = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/studio.ts
@@ -52015,6 +52226,7 @@ void main() {
 			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
 			applySubcardDrop: () => applySubcardDrop,
 			benchResultDefects: () => benchResultDefects,
+			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
 			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
 			hasModifierCapability: () => hasModifierCapability,
@@ -52034,6 +52246,8 @@ void main() {
 			newLoraEntry: () => newLoraEntry,
 			normalizeLoraEntry: () => normalizeLoraEntry,
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
+			projectStageView: () => projectStageView,
+			projectUpstreamStages: () => projectUpstreamStages,
 			revokeAll: () => revokeAll,
 			revokeObjectUrlFor: () => revokeObjectUrlFor,
 			rootsManifest: () => rootsManifest,
@@ -55296,14 +55510,7 @@ void main() {
 		}
 		//#endregion
 		//#region src/client/dnd-payloads.ts
-		/** dnd-payloads.ts — the old system's drag MIME pair + parsers
-		* (extracted from CardsTab.tsx hour 15; the MIME pair is the law). */
-		/** The OLD system's drag contract, VERBATIM (2026-08-08/08-22 era,
-		*  recovered from d13560be^ packages/web-kit): capability tiles carry
-		*  a fully-resolved card; asset tiles carry {url, type}. One drop
-		*  target, two contracts, no ambiguity — the MIME pair is the law. */
 		const CAPABILITY_DRAG_MIME = "application/tech-noir-capability";
-		const ASSET_DRAG_MIME = "application/tech-noir-asset";
 		/** The tile-reorder drag's MIME (native HTML5 sortable — DSH ships no
 		*  drag library; the estate drags natively). Carries the source id. */
 		const CARD_DRAG_MIME = "application/x-melite-card";
@@ -55317,14 +55524,6 @@ void main() {
 				return null;
 			} catch {
 				return null;
-			}
-		}
-		function parseAssetDrop(raw) {
-			if (raw === "") return {};
-			try {
-				return JSON.parse(raw);
-			} catch {
-				return {};
 			}
 		}
 		//#endregion
@@ -58286,12 +58485,24 @@ void main() {
 					}))) : null;
 				})())
 			}));
+			const currentStageIndex = bench.stages.findIndex((candidate) => candidate.id === stage.id);
+			const priorStageIds = currentStageIndex < 0 ? [] : bench.stages.slice(0, currentStageIndex).map((candidate) => candidate.id);
 			return renderStageView({
 				stageId: stage.id,
 				cardName: String(stage.card ?? ""),
 				row: stage,
 				runStatus: typeof stage.runStatus === "string" ? stage.runStatus : "",
 				onPatch: onPatchParams,
+				onWireSlot: (slotKey, upstreamId) => {
+					const candidate = upstreamId === null ? void 0 : candidates.find((entry) => entry.id === upstreamId);
+					if (upstreamId !== null && candidate === void 0) {
+						setError(`wire source is no longer on the bench: ${upstreamId}`);
+						return;
+					}
+					patchStageParams(bench.draftId, stage.id, { [slotKey]: upstreamId === null ? null : candidate.url }, bench.rev).catch((wireError) => {
+						setError(wireError instanceof Error ? wireError.message : "wire failed");
+					});
+				},
 				onRun,
 				onStop,
 				bindRun: (r) => {
@@ -58306,7 +58517,16 @@ void main() {
 					title: c.label,
 					url: c.url
 				})),
-				runId: runId ?? null
+				runId: runId ?? null,
+				effective: {
+					model: modelKey !== "" ? modelKey : String(stage.card ?? stage.engine ?? ""),
+					params: {
+						...held,
+						...user
+					},
+					inputSlots: (spec?.inputs ?? []).map((input) => input.name)
+				},
+				priorStageIds
 			}, genericDetail());
 		}
 		//#endregion
@@ -59426,4 +59646,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f4b54a94591d712c5e09dd5212f2c18d793812a6";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="6a1ad4d6c4213f818654e72c8a2c6981a156a61a";
