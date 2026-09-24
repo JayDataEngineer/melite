@@ -53,6 +53,7 @@ export interface MeliteStageArg {
   id?: unknown
   engine?: unknown
   description?: unknown
+  card?: unknown
   params?: unknown
   outputs?: unknown
 }
@@ -64,6 +65,12 @@ export interface MeliteFoldedStage {
   id: string
   engine: string
   description: string
+  // THE CARD FOLD (attempt-035's dead-route receipt, 2026-09-24):
+  // the fold once DROPPED `card` — validate saw a cardless row,
+  // start's card gate never fired, and the engine answered with
+  // the cryptic `node carries no inline workflow`. The fold keeps
+  // the card so validate's own gate refuses loud, compile-first.
+  card: string
   params: Record<string, unknown>
   inputs: Record<string, EdgeRow>
   expected: Record<string, string>
@@ -93,6 +100,7 @@ export function foldConnects(
       id: String(st.id ?? ''),
       engine: String(st.engine ?? ''),
       description: String(st.description ?? ''),
+      card: typeof st.card === 'string' ? st.card : '',
       params: (st.params !== null && typeof st.params === 'object'
         && !Array.isArray(st.params))
         ? st.params as Record<string, unknown> : {},
@@ -568,6 +576,7 @@ async function runAdHoc(
       id: s.id,
       engine: s.engine,
       description: s.description,
+      ...(s.card !== '' ? { card: s.card } : {}),
       params: s.params,
       ...(Object.keys(s.inputs).length > 0 ? { inputs: s.inputs } : {}),
       ...(Object.keys(s.expected).length > 0 ? { expected: s.expected } : {}),
@@ -640,7 +649,7 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
     description:
       'Execute through the serial GPU queue — the ONE execution verb. Exactly one per call: bench (run THE shared '
       + 'bench exactly as it stands — what the user\'s Run press runs) | card (a card id + model — single '
-      + 'generation) | flow (a NAMED template from melite_load) | stages (cards drafted on the fly: [{id, engine, '
+      + 'generation) | flow (a NAMED template from melite_load) | stages (engine-node stages on the fly: [{id, engine, '
       + 'params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent). Compositions '
       + 'LOAD the shared bench first (nothing mints fresh — one state, one log, one undo); every start rides the '
       + 'bench\'s doc-backed draft_id (CARD BIRTH LAW) — it rides the value as the chat tile handle, never an '

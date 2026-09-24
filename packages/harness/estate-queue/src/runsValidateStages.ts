@@ -130,6 +130,13 @@ export function buildStageRow(i: number, st: unknown): StageRow {
     }
     const description: string = "description" in rec ? String(rec["description"] ?? "") : "";
     const card: string = String(rec["card"] || "");
+    // (THE CARD FOLD NOTE, attempt-035's dead-route receipt
+    // 2026-09-24: validate's cardGate COMPOSES card stages through
+    // the registry — the feature stands. The dead route was the
+    // TOOL seat DROPPING card in foldConnects: validate saw a
+    // cardless row, start's flow_inline card gate never fired, and
+    // the engine answered `node carries no inline workflow`. The
+    // fold now keeps card — start refuses loud, never cryptic.)
     if (!FLOW_ID_RE.test(id)) {
       throw new FlowError(
         where +

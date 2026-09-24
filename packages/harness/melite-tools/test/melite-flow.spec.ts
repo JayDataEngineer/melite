@@ -1230,9 +1230,9 @@ describe('foldConnects — the typed fold (pure)', () => {
     { id: 'move', engine: 'comfyui', params: {} },
   ]
 
-  test('missing row fields default (id/engine/description/params/outputs)', () => {
+  test('missing row fields default (id/engine/description/card/params/outputs)', () => {
     assert.deepEqual(foldConnects('f', [{}], []), [
-      { id: '', engine: '', description: '', params: {}, inputs: {}, expected: {}, outputs: {} },
+      { id: '', engine: '', description: '', card: '', params: {}, inputs: {}, expected: {}, outputs: {} },
     ])
   })
 
@@ -1468,6 +1468,34 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
     const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
     assert.equal(out.error, 'stage s_0 (image-gen) ended unknown')
+  })
+})
+
+describe('melite_flow adhoc — the card fold + compile-first gate (035 dead-route receipt)', () => {
+  test('foldConnects keeps the card on the wire body (035 dead-route receipt: the drop hid the card from every gate)', async () => {
+    const seen = mockFetch([
+      (u: string) => {
+        if (u === '/v1/flows/validate') return { status: 200, body: { ok: true } }
+        if (u === '/v1/bench/main') return { status: 200, body: { draft_id: 'd1', rev: 1, stages: [] } }
+        if (u === '/v1/bench/ensure') return { status: 200, body: { draft_id: 'd1', rev: 2 } }
+        if (u.endsWith('/v1/flows/start')) return { status: 400, body: { error: 'flow_inline stage "s0": card= stages are unported on this gateway' } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ stages: [{ id: 's0', engine: 'comfyui', card: 'image-gen', params: { prompt: 'x' } }] }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    // the START door's own honest voice — never the engine's
+    // `node carries no inline workflow`
+    assert.match(String(out['error']), /card= stages are unported/)
+    const v = seen.calls.find((c) => c.url === '/v1/flows/validate')
+    const row = ((v!.init.body as { stages: Array<Record<string, unknown>> }).stages)[0]!
+    assert.equal(row['card'], 'image-gen')
+  })
+
+  test('a cardless stages row never synthesizes an empty card key', async () => {
+    const rows = foldConnects('f', [{ id: 's0', engine: 'comfyui', params: { prompt: 'x' } }], [])
+    assert.equal('card' in (rows[0] as unknown as Record<string, unknown>), true)
+    assert.equal((rows[0] as unknown as { card: string }).card, '')
   })
 })
 
