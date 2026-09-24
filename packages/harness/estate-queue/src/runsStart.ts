@@ -22,7 +22,7 @@ import {
   checkFlowInlineTop,
   checkFlowStage,
 } from "./runsGates.ts";
-import { appendLedger, atomicWriteJson, newRunId, outRootFor, refusal, sidecarDoc } from "./queue.ts";
+import { appendLedger, atomicWriteJson, newRunId, outRootFor, refusal, sidecarDoc, variantOfBodies } from "./queue.ts";
 import type { QueueRefusal } from "./queue.ts";
 import { rootsManifest } from "./rootsManifest.ts";
 import { collectSourceRefs, resolveSourceRefs } from "./runsSourceEcho.ts";
@@ -488,6 +488,19 @@ export function registerCompiledRun(args: {
     run.sourceEcho = { refs: sources.map((s) => ({ url: s.url, file: s.file })) };
     console.log(`[sources] run=${runId} draft=${draftId} refs=${sources.length} ${sources.map((s) => s.url).join(",")}`);
   }
+  // THE VARIANT STAMP (commission 033's self-critique #5,
+  // 2026-09-24): the lane the run rides (voicedesign vs
+  // customvoice) names itself at BIRTH — the 033 ledger read
+  // pipeline qwen3-tts-voicedesign on both a design run and a
+  // performing run, indistinguishable. run.params first, the exact
+  // submitted body (card snapshot / request body) as fallback —
+  // the export-name stamp's 024 lesson. Variant-less runs stamp
+  // nothing (the lift returns undefined; absent, never guessed).
+  const regVariant = variantOfBodies([...run.params, door?.requestBody])
+  if (regVariant !== undefined) {
+    run.variant = regVariant;
+    console.log(`[variant] run=${runId} draft=${draftId} variant=${regVariant}`);
+  }
   atomicWriteJson(join(dir, "_request.json"), requestBody);
   atomicWriteJson(join(dir, "_flow.json"), sidecarDocFor(run));
   if (echoCalls.length > 0) {
@@ -495,6 +508,7 @@ export function registerCompiledRun(args: {
       run_id: runId,
       draft_id: draftId,
       pipeline: run.pipeline,
+      ...(regVariant !== undefined ? { variant: regVariant } : {}),
       seam: run.composeEcho?.seam,
       calls: echoCalls.length,
       bench_rev: benchRev,
@@ -505,6 +519,7 @@ export function registerCompiledRun(args: {
       run_id: runId,
       draft_id: draftId,
       pipeline: run.pipeline,
+      ...(regVariant !== undefined ? { variant: regVariant } : {}),
       sources: sources.length,
     });
   }
@@ -546,5 +561,8 @@ function sidecarDocFor(run: RunRecord): Record<string, unknown> {
     // THE SOURCE ECHO: the files that created the run ride the
     // queued sidecar too.
     sourceEcho: run.sourceEcho,
+    // THE VARIANT: the lane rides the queued sidecar too (the
+    // wand/restore reads disk, not memory).
+    variant: run.variant,
   });
 }

@@ -25,6 +25,26 @@ export interface SidecarStage {
   readonly expected: Record<string, unknown>;
 }
 
+/** THE VARIANT LIFT (commission 033's self-critique #5, 2026-09-24):
+ *  the first non-empty `variant` string across the submitted bodies —
+ *  the LANE the run rode (voicedesign vs customvoice on the same
+ *  family). The 033 ledger read pipeline `qwen3-tts-voicedesign` on
+ *  BOTH a design run and a performing CustomVoice run — an analyst
+ *  reading the ledger alone could not tell them apart (only
+ *  `sources: 1` hinted). Compiled stage params are engine-shaped
+ *  (the compose may consume card keys — the exportName stamp's
+ *  024 lesson), so callers pass run.params FIRST and the exact
+ *  submitted body (card snapshot / request body) as the fallback,
+ *  same order as the export-name stamp. */
+export function variantOfBodies(bodies: unknown[]): string | undefined {
+  for (const p of bodies) {
+    if (p === null || typeof p !== "object" || Array.isArray(p)) continue
+    const v: unknown = (p as Record<string, unknown>)["variant"]
+    if (typeof v === "string" && v.trim() !== "") return v.trim()
+  }
+  return undefined
+}
+
 /** The sidecar document: KEY ORDER as (run_id, status, error,
  *  stages, skipped_stages, artifacts, created_at, test, draft_id,
  *  pipeline, graph). error rides the JSON error capped at 20000 chars when
@@ -71,6 +91,11 @@ export function sidecarDoc(args: {
    *  (stage result_outputs.qvoice_path → qvoicePathsOf). The status
    *  row spells it `export_path`. Absent when nothing minted. */
   exportPath?: string;
+  /** THE VARIANT (commission 033's self-critique #5, 2026-09-24):
+   *  the lane the run rode (e.g. voicedesign vs customvoice) — the
+   *  status row spells it `variant` too. Absent on variant-less
+   *  runs (the lift found no non-empty variant string). */
+  variant?: string;
 }): Record<string, unknown> {
   return {
     // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
@@ -88,6 +113,7 @@ export function sidecarDoc(args: {
     pipeline: args.pipeline,
     ...(args.exportName !== undefined && args.exportName !== "" ? { export_name: args.exportName } : {}),
     ...(args.exportPath !== undefined && args.exportPath !== "" ? { export_path: args.exportPath } : {}),
+    ...(args.variant !== undefined && args.variant !== "" ? { variant: args.variant } : {}),
     error:
       args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
     stages: args.stages,

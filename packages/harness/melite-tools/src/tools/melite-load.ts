@@ -200,10 +200,19 @@ export function meliteLoad(
             // (flow_inline/ad-hoc stages) takes arrays under the kind
             // keys; card-mode (melite_flow card) takes the FIELDS
             // flat inside params. Stated per-mode, never mingled.
+            // THE BENCH-GRAMMAR-FIRST LAW (032/033, 2026-09-24): two
+            // commissions burned a refusal + a remove/re-add cycle on
+            // the mods copy because it LED with bag-mode arrays while
+            // every maker composes on the BENCH (melite_construct
+            // add_stage/patch), whose door REFUSES arrays under kind
+            // keys — "its fields ride flat top-level: voice_name, …"
+            // (the compose door's own voice, cardsCompose.ts). The
+            // refusal taught better than the hint did. So the hint
+            // now leads with the bench grammar and quotes the door.
             out.push('mods: ' + modLines.join(', ')
-              + ' — TWO grammars, one per mode: (a) bag-mode (flow_inline/ad-hoc stages): pass ARRAYS under the kind keys (the bag lives at param_key when it differs); ordered kinds stack in array order, standalone kinds each provide their own output'
-              + '; (b) card-mode (melite_flow card): mod FIELDS ride FLAT inside params (e.g. params {voice_name, qvoice}) — never keyed under the pack name, never at flow top-level'
-              + '; card-mode lane select: `variant`/`quant` ride INSIDE params (e.g. params {variant: \'customvoice\'}) while `model` rides top-level — the compose reads them off the body, the engine never sees them')
+              + ' — THE BENCH GRAMMAR (melite_construct add_stage/patch, where you compose): mod FIELDS ride FLAT inside params (e.g. params {voice_name, qvoice}) — never keyed under the pack name, never at flow top-level. A pack key (e.g. qvoice_save) as a params key REFUSES at the compose door: the pack takes no key of its own, its fields ride flat top-level'
+              + '; card-mode lane select: `variant`/`quant` ride INSIDE params (e.g. params {variant: \'customvoice\'}) while `model` rides top-level — the compose reads them off the body, the engine never sees them'
+              + '; bag-mode arrays under the kind keys exist ONLY for flow_inline/ad-hoc stages (melite_flow {flow}, never the bench) — ordered kinds stack in array order, standalone kinds each provide their own output (the bag lives at param_key when it differs)')
             const keyed = packSeats.filter((p) => p.param_key !== p.kind)
             if (keyed.length > 0) {
               out.push('mod param_keys: ' + keyed.map((p) => p.kind + ' → ' + p.param_key + ' (entries: {' + p.fields.join(', ') + '})').join('; '))

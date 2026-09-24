@@ -13,6 +13,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { resetStageWrites } from "../src/client/draft.ts";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
@@ -21,6 +22,15 @@ afterEach(() => {
   cleanup();
   unbindEstateRemote();
   vi.unstubAllGlobals();
+  // THE LEDGER ISOLATION RESET (the cross-test pollution law, found
+  // 2026-09-24: the "undelivered run patch" test records a refused
+  // 'prompt' write on this file's shared 'bench-p/s_0' ledger row;
+  // without the reset, the inherit test's OWN first press refuses
+  // with "(unlanded keys: prompt)" — inherited from a dead test,
+  // order-dependent, green in isolation and red in the file run).
+  // resetStageWrites is the door's own spec-isolation verb; the
+  // ledger's memory in production is the law and never resets.
+  resetStageWrites();
 });
 
 type FormSpecMode = "ok" | "deferred" | "reject-error";

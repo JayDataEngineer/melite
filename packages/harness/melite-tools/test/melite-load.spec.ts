@@ -291,11 +291,13 @@ test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)
   // carries each kind's FIELD names beside the category — the
   // compose grammar the maker had to grep card.ts for.
   assert.ok(text.includes('mods: sam3[] (standalone; fields: prompt), draw[] (ordered; fields: payload)'), 'the kinds + categories + fields ride')
-  // THE TWO-GRAMMAR SPLIT (030's self-critique #2): each
-  // grammar carries its mode owner — bag arrays for
-  // flow_inline/ad-hoc, flat fields for card-mode.
-  assert.ok(text.includes('(a) bag-mode (flow_inline/ad-hoc stages): pass ARRAYS under the kind keys'), 'the bag grammar owns its mode')
-  assert.ok(text.includes("(b) card-mode (melite_flow card): mod FIELDS ride FLAT inside params"), 'the flat grammar owns its mode')
+  // THE BENCH-GRAMMAR-FIRST LAW (032/033, 2026-09-24): the bench
+  // grammar leads (makers compose on melite_construct, whose door
+  // REFUSES arrays under kind keys) and quotes the door's own
+  // voice; bag-mode is scoped to flow_inline/ad-hoc ONLY.
+  assert.ok(text.includes('THE BENCH GRAMMAR (melite_construct add_stage/patch, where you compose)'), 'the bench grammar leads')
+  assert.ok(text.includes('its fields ride flat top-level'), 'the door voice is quoted')
+  assert.ok(text.includes('bag-mode arrays under the kind keys exist ONLY for flow_inline/ad-hoc stages (melite_flow {flow}, never the bench)'), 'bag-mode is scoped, never leading')
   // THE VARIANT SEAT (025's self-critique #4): the lane select
   // rides inside card-mode params — stated, never guessed.
   assert.ok(text.includes('card-mode lane select'), 'the variant seat is stated')

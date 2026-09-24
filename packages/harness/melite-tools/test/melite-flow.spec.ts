@@ -447,6 +447,93 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     assert.equal(parseTileToken(text), 'draft-tile-2')
   })
 
+  test('THE RUN-ID VISIBILITY LAW (032/033): bench success names the final run at top level and EVERY minted id in the prose', async () => {
+    // the maker paid for two runs; the old render printed ONE '?'
+    // and both commissions burned ledger_tail detours to learn ids
+    // the tool already held (the transcript-016 law's success half).
+    let n = 0
+    const seen = mockFetch([
+      (u: string) => {
+        if (u === '/v1/bench/main') {
+          return { status: 200, body: { draft_id: 'd_rid', rev: 2, stages: [
+            { id: 's_0', card: 'tts', params: {} },
+            { id: 's_1', card: 'sfx', params: {} },
+          ] } }
+        }
+        if (u.endsWith('/v1/flows/start')) {
+          return { status: 202, body: { run_id: `r_bench_${n++}`, status: 'queued' } }
+        }
+        if (u.startsWith('/v1/flows/status/')) {
+          return { status: 200, body: { status: 'completed', stages: [
+            { id: 's_0', url: '/runs/a.flac' }, { id: 's_1', url: '/runs/b.flac' },
+          ] } }
+        }
+        if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 3, patched: ['runStatus'] } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    assert.equal(out.run_id, 'r_bench_1', 'the final stage\'s run id rides the top level')
+    const text = (tool.output.render({ bench: true }, out as never) as Array<{ text?: string }>)
+      .map((p) => p?.text ?? '').join('\n')
+    assert.ok(text.includes('r_bench_0') && text.includes('r_bench_1'), 'every minted id prints')
+    assert.ok(text.includes('s_1 sfx → r_bench_1 [done] /runs/b.flac'), 'a pass row spells stage, card, id, status, url')
+    assert.ok(!text.includes(' → ? '), 'no anonymous arrow remains')
+  })
+
+  test('THE ALL-SKIPPED BENCH (032/033 run-id law, the loop fallthrough): a bench with nothing to mint returns run_id blank, never a phantom id', async () => {
+    // every row already done: zero starts, status done, and the
+    // top-level run_id is the EMPTY string (the lastRun loop's
+    // fallthrough — no pass entry carries an id). A maker reading
+    // this return must NOT poll: there is nothing to poll.
+    const seen = mockFetch([
+      (u: string) => {
+        if (u === '/v1/bench/main') {
+          return { status: 200, body: { draft_id: 'd_skip', rev: 5, stages: [
+            { id: 's_0', card: 'tts', runStatus: 'done', params: {} },
+            { id: 's_1', card: 'sfx', runStatus: 'done', params: {} },
+          ] } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(6000) }) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    assert.equal(out.run_id, '', 'no run minted — the id is blank, never guessed')
+    assert.deepEqual(out.pass, [
+      { stage: 's_0', card: 'tts', skipped: 'done' },
+      { stage: 's_1', card: 'sfx', skipped: 'done' },
+    ])
+    assert.equal(seen.calls.filter((c) => c.url.endsWith('/v1/flows/start')).length, 0)
+    const text = (tool.output.render({ bench: true }, out as never) as Array<{ text?: string }>)
+      .map((p) => p?.text ?? '').join('\n')
+    assert.ok(text.includes('s_0 tts [done]'), 'a skipped row prints stage, card, and its skipped mark')
+    assert.ok(!text.includes('→'), 'no arrow prints — there is no id to point at')
+  })
+
+  test('THE PASS-ROWS RENDER NEVER CRASHES (the receipt over unknown JSON): partial rows print ? marks, never throw', async () => {
+    // the render faces tool-output values, typed unknown — a row
+    // missing every key (a persisted shape from before the pass
+    // list, a hand-built replay) prints its ? marks; the receipt
+    // degrades, never throws.
+    const seen = mockFetch([okBenchWith('draft-render-1')])
+    const tool = meliteFlow(seen.request)
+    const text = (v: unknown): string =>
+      (tool.output.render({ bench: true }, v as never) as Array<{ text?: string }>)
+        .map((p) => p?.text ?? '').join('\n')
+    assert.ok(
+      text({ mode: 'bench', draft_id: 'd', target: 't', status: 'done', pass: [{}] }).includes('· ? ? [?]'),
+      'an empty row prints three ? marks',
+    )
+    assert.ok(
+      text({ mode: 'bench', draft_id: 'd', target: 't', status: 'done', pass: [{ stage: 's', card: 'c' }] }).includes('· s c [?]'),
+      'a keyless row still names its stage and card',
+    )
+  })
+
   test('presentationMeta carries the handle — the native channel, pure', async () => {
     const seen = mockFetch([okBenchWith('draft-meta-7'), okDraftThenStart('draft-meta-7', 'r9')])
     const tool = meliteFlow(seen.request)

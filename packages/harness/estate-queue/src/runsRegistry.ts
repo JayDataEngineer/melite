@@ -698,6 +698,11 @@ export class RunsRuntimeService extends Service {
       // minted file the engine reported — additive, same spelling
       // as the sidecar; the disk fallback spreads the sidecar row.
       ...(run.exportPath !== undefined && run.exportPath !== "" ? { export_path: run.exportPath } : {}),
+      // THE VARIANT, SERVED (commission 033's self-critique #5):
+      // the lane the run rode — additive, same spelling as the
+      // sidecar; the disk fallback spreads the sidecar row, which
+      // carries it. Absent on variant-less runs.
+      ...(run.variant !== undefined && run.variant !== "" ? { variant: run.variant } : {}),
       // THE TEST FLAG, SERVED (023's self-critique #3): the
       // agent-facing receipt canonicalizes route-relative artifact
       // paths against the out root — test runs live under

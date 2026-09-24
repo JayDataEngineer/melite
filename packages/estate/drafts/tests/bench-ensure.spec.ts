@@ -130,6 +130,32 @@ test("a bench doc without a bench block reads as rev 0 and gains its block on fi
   assert.equal(after.log.length, 1);
 });
 
+test("THE NULL-UNSET ARM (commission 033's gap): a null param DELETES its key — and undo resurrects it", async () => {
+  // The drafts door has always deleted null keys (JSON Merge Patch);
+  // this door landed literal nulls — a key that could never clear,
+  // forcing makers into remove_stage + add_stage dances to move a
+  // lane. One law, two doors: null deletes here too.
+  const drafts = await boot();
+  await seed(drafts, "unset", { stages: [{ id: "s_0", card: "tts", params: { voice_name: "ann", pitch: 5 } }] });
+  const cut = await patchBench(drafts, "unset", {
+    stage: "s_0", params: { voice_name: null, style: "warm" }, expect_rev: 0,
+  });
+  assert.equal(cut.rev, 1);
+  const row = getBench(drafts, "unset").stages[0]! as Record<string, unknown>;
+  const params = row["params"] as Record<string, unknown>;
+  assert.equal("voice_name" in params, false, "the null key is GONE, not a literal null");
+  assert.equal(params["style"], "warm", "sibling keys in the same patch land");
+  assert.equal(params["pitch"], 5, "untouched keys survive");
+  // the receipt's patched names both moved keys
+  assert.deepEqual([...cut.patched].sort(), ["style", "voice_name"]);
+  // UNDO resurrects: the inverse carries params_before, the deleted
+  // key's old value rides it home.
+  await undoBench(drafts, "unset", {});
+  const undone = (getBench(drafts, "unset").stages[0] as Record<string, unknown>)["params"] as Record<string, unknown>;
+  assert.equal(undone["voice_name"], "ann", "undo restores the deleted key");
+  assert.equal("style" in undone, false, "the same patch's addition reverts");
+});
+
 test("getBench refuses bad sessions and unknown benches with their voices", async () => {
   const drafts = await boot();
   assert.match(syncCodeOf((): unknown => getBench(drafts, "no!")), /^bench\/bad-session/);

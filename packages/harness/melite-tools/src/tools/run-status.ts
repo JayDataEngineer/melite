@@ -70,6 +70,7 @@ type RunStatusResult = {
   run_age_s?: number;
   export_name?: string;
   export_path?: string;
+  variant?: string;
   test?: boolean;
 } & Record<string, JsonValue>;
 
@@ -140,6 +141,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
           run_age_s: { type: 'number', description: 'Seconds since registration — the heartbeat for long renders.' },
           wait_expired: { type: 'boolean', description: 'True when wait_s expired before the run reached a terminal state — wait again.' },
           waited_s: { type: 'number', description: 'Seconds actually waited when the run reached terminal inside the budget.' },
+          variant: { type: 'string', description: 'The lane the run rode (e.g. voicedesign vs customvoice) — present when the submitted body named one. A design run and a performing run on the same pipeline read apart here.' },
         },
         // Ledger row 11 (2026-09-10): the refusal shape carries
         // {run_id, error} (no status) — required is the intersection.
@@ -149,7 +151,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
           run_id?: string; status?: string; stages?: Array<{ status?: string }>;
           artifacts?: unknown[]; error?: string; queue_position?: number;
           planned_stages?: Array<{ id?: string }>; card?: string; run_age_s?: number;
-          wait_expired?: boolean; waited_s?: number; export_name?: string; export_path?: string; test?: boolean
+          wait_expired?: boolean; waited_s?: number; export_name?: string; export_path?: string; variant?: string; test?: boolean
         }
         if (v && v.error) {
           return [{ type: 'text', text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + ' — ' + v.error }]
@@ -231,6 +233,15 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         const exportVoice = terminal && typeof v.export_name === 'string' && v.export_name !== ''
           ? `\nexport: '${v.export_name}' — preview audio is the design sample; the deliverable .qvoice is ${typeof v.export_path === 'string' && v.export_path !== '' ? v.export_path : `the newest ${v.export_name}_*.qvoice under the voices root`}`
           : ''
+        // THE VARIANT VOICE (commission 033's self-critique #5,
+        // 2026-09-24): the lane rides the FIRST line — a design run
+        // and a performing run on one pipeline read apart at a
+        // glance (033's ledger named both qwen3-tts-voicedesign;
+        // only sources: 1 hinted the difference). Live rows voice
+        // it too — the lane is known at birth, not at settle.
+        const variantVoice = typeof v.variant === 'string' && v.variant !== ''
+          ? ' · variant ' + v.variant
+          : ''
         return [{
           type: 'text',
           text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + pos
@@ -242,6 +253,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
             // another wait; waited_s proves the single call absorbed the poll.
             + (v.wait_expired ? ' · wait expired (budget spent, not terminal — wait again)' : '')
             + (typeof v.waited_s === 'number' ? ' · waited ' + v.waited_s + 's' : '')
+            + variantVoice
             + stageVoice + artVoice + exportVoice,
         }]
       },

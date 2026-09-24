@@ -448,4 +448,22 @@ describe("pump + engine", () => {
     assert.equal(s.svc.pumping, false);
     void release;
   });
+
+  it("THE VARIANT, SERVED (commission 033's self-critique #5): the live status row serves the lane the row holds; variant-less rows serve no key", async () => {
+    const s = seat();
+    // park the claim gate (the PUBLIC teardown flag) — the row
+    // stays queued, so the status reads are stable with no engine
+    // seated and no worker racing the assertions.
+    s.svc.tearingDown = true;
+    const a = await s.svc.start(wfBody(), sig());
+    // an inline run names no lane — the key stays absent, never guessed
+    const bare = await s.svc.status(a.run_id, sig());
+    assert.ok(!("variant" in bare));
+    // the registration stamp is what names it (walled in
+    // runs-start.spec.ts); the serve arm projects the row verbatim
+    const live = s.core.runs.get(a.run_id) as RunRecord;
+    live.variant = "customvoice";
+    const served = await s.svc.status(a.run_id, sig());
+    assert.equal(served["variant"], "customvoice");
+  });
 });

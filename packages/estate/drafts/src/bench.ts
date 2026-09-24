@@ -610,7 +610,19 @@ export async function patchBench(
     for (const k of Object.keys(paramsIn)) {
       if (Object.prototype.hasOwnProperty.call(cur, k)) before[k] = cur[k];
       else added.push(k);
-      cur[k] = (paramsIn as Record<string, unknown>)[k];
+      // THE NULL-UNSET ARM (2026-09-24, commission 033's gap: "patch
+      // can't unset a param — a lane switch forced remove_stage +
+      // add_stage where one clear-semantics patch would do"). The
+      // drafts door has ALWAYS deleted null keys (JSON Merge Patch
+      // law, draft.ts's own doc: "null params values ride VERBATIM —
+      // the door's JSON Merge Patch arm deletes those keys"); this
+      // door landed them as literal nulls instead — a key that could
+      // never be cleared, only overwritten. Null now deletes here
+      // too: one law, two doors. The inverse restores from
+      // params_before, so undo resurrects a deleted key.
+      const v: unknown = (paramsIn as Record<string, unknown>)[k];
+      if (v === null) delete cur[k];
+      else cur[k] = v;
     }
     // admission on the MERGED view (the row's card + the params the
     // NEXT run would compose — a patch that lands poison is as bad

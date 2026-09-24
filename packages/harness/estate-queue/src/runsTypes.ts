@@ -15,6 +15,7 @@ import {
   appendLedger,
   atomicWriteJson,
   sidecarDoc,
+  variantOfBodies,
 } from "./queue.ts";
 import type { GraphRow } from "./queue.ts";
 
@@ -103,6 +104,15 @@ export interface RunRecord {
    *  zero voices-dir listing. Verbatim from the engine; the harness
    *  never hardcodes the voices root. */
   exportPath?: string;
+  /** THE VARIANT (commission 033's self-critique #5, 2026-09-24):
+   *  the lane the run rode (voicedesign vs customvoice on one
+   *  family) — stamped at registration AND settle from the
+   *  submitted bodies (variantOfBodies: run.params first, the card
+   *  snapshot's exact submitted body as fallback), served on
+   *  run_status rows and both ledger rows so a design run and a
+   *  performing run on the same pipeline read apart. Absent on
+   *  variant-less runs. */
+  variant?: string;
   /** THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23):
    *  what the ENGINE actually received at start — the seam values
    *  of the composed calls + the bench revision the compose read.
@@ -165,7 +175,7 @@ export function settlePersist(
   // keys into the workflow — 024 proved voice_name missing there),
   // so the card snapshot (the exact submitted body) is the fallback.
   let exportName: string | undefined
-  const bodies: unknown[] = [...(run.params ?? [])]
+  const bodies: unknown[] = [...run.params]
   const snap = run.cardSnapshot as { params?: unknown } | undefined
   if (snap !== undefined && snap !== null && typeof snap === "object") bodies.push(snap.params)
   for (const p of bodies) {
@@ -177,6 +187,15 @@ export function settlePersist(
       break
     }
   }
+  // THE VARIANT STAMP (commission 033's self-critique #5): the
+  // lane rides the same bodies as the export name (run.params
+  // first, the card snapshot's exact submitted body as fallback —
+  // the compose may consume card keys into engine-shaped params).
+  // Stamped on the row (registration may already hold it; settle
+  // re-lifts with the registration stamp as fallback — the row in
+  // memory is the truth either way).
+  const variant = variantOfBodies(bodies) ?? run.variant
+  if (variant !== undefined) run.variant = variant
   // THE EXPORT-PATH STAMP: lift the engine-reported mint path off
   // the stage result_outputs (set at execute time from the history
   // ui — qvoicePathsOf). Stamped only when the engine actually
@@ -230,6 +249,7 @@ export function settlePersist(
         sourceEcho: run.sourceEcho,
         exportName,
         exportPath,
+        variant,
       }),
     );
   } catch {
@@ -239,6 +259,10 @@ export function settlePersist(
     appendLedger(stateRoot, "run." + run.status, {
       run_id: run.runId,
       error: run.error,
+      // THE VARIANT RIDES THE TERMINAL ROW TOO (033 #5): the
+      // queued row named it at birth; the terminal row names it at
+      // rest — one grep tells design from performing, state to state.
+      ...(variant !== undefined ? { variant } : {}),
     });
     /* v8 ignore next -- unreachable: appendLedger self-swallows I/O
        faults by law, and settle's payload is two strings (the dumps

@@ -298,6 +298,69 @@ describe("registerCompiledRun", () => {
     assert.deepEqual(flow["bench_snapshot"], { stages: benchDoc.stages, intent: "the beach flow" });
   });
 
+  it("THE VARIANT AT BIRTH (commission 033's self-critique #5): the lane stamps the row, the queued sidecar, and the queued ledger row", () => {
+    const root = tmp();
+    // a film body (calls present): the ECHO queued-row arm carries
+    // the variant too — both run.queued writers stamp the lane, and
+    // the wall pins both (the else arm rides the wall below).
+    const body = {
+      model: "qwen3-tts",
+      variant: "customvoice",
+      voice_name: "night-frequency",
+      calls: [{ text: "one", start_frame: 0, end_frame: 124 }],
+    };
+    const { run } = mustRegister({
+      compiled: compiled([{ ...one, params: { text: "hi" } }]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 0,
+      door: { runId: "run-var", pipeline: "qwen3-tts", cardId: "qwen3-tts", requestBody: body },
+    });
+    // the compiled stage params carry no variant (engine-shaped) —
+    // the exact submitted body names the lane (the export-name
+    // stamp's 024 lesson, same fallback order).
+    assert.equal(run.variant, "customvoice");
+    const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(flow["variant"], "customvoice");
+    const ledger = readFileSync(join(root, "output", "_ledger.jsonl"), "utf8");
+    assert.match(ledger, /"event":"run\.queued"/);
+    assert.match(ledger, /"variant":"customvoice"/);
+  });
+
+  it("THE VARIANT AT BIRTH, NON-FILM ARM: a stageless-body registration stamps the lane on the else queued-row writer too", () => {
+    const root = tmp();
+    const body = { model: "qwen3-tts", variant: "voicedesign", voice_name: "night-frequency" };
+    const { run } = mustRegister({
+      compiled: compiled([{ ...one, params: { text: "hi" } }]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 0,
+      door: { runId: "run-var2", pipeline: "qwen3-tts", cardId: "qwen3-tts", requestBody: body },
+    });
+    assert.equal(run.variant, "voicedesign");
+    const ledger = readFileSync(join(root, "output", "_ledger.jsonl"), "utf8");
+    assert.match(ledger, /"event":"run\.queued"/);
+    assert.match(ledger, /"variant":"voicedesign"/);
+  });
+
+  it("a variant-less registration stamps nothing (the lane is never guessed)", () => {
+    const root = tmp();
+    const { run } = mustRegister({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 0,
+    });
+    assert.equal(run.variant, undefined);
+    const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.ok(!("variant" in flow));
+    const ledger = readFileSync(join(root, "output", "_ledger.jsonl"), "utf8");
+    assert.ok(!ledger.includes('"variant"'));
+  });
+
   it("an empty bench stamps no bench snapshot (the key stays absent, never null)", () => {
     const root = tmp();
     const doorBase = { runId: "run-nobench", pipeline: "m", cardId: "c", requestBody: {} };

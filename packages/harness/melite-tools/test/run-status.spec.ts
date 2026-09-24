@@ -383,6 +383,30 @@ describe('run_status render — the human line', () => {
     assert.ok(!out.includes('_*.qvoice'), 'the glob hint retires when the path rode')
   })
 
+  test('THE VARIANT VOICE (commission 033 self-critique #5): the lane rides the first line — design reads apart from performing at a glance', () => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    // the 033 ledger named BOTH runs qwen3-tts-voicedesign; the lane
+    // is what tells them apart — it voices on live rows too (known
+    // at birth, not at settle).
+    assert.ok(
+      text({ run_id: 'run-d', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: [], variant: 'voicedesign' }).startsWith('run run-d completed — 1/1 stage(s) · variant voicedesign'),
+      'the design lane leads the receipt',
+    )
+    assert.ok(
+      text({ run_id: 'run-q', status: 'queued', planned_stages: [{ id: 't' }], card: 'tts', variant: 'customvoice' }).includes('· variant customvoice'),
+      'a live performing row voices its lane',
+    )
+    assert.ok(
+      !text({ run_id: 'run-x', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: [] }).includes('variant'),
+      'variant-less runs voice nothing — absent, never guessed',
+    )
+    assert.ok(
+      !text({ run_id: 'run-e', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: [], variant: '' }).includes('variant'),
+      'an empty lane voices nothing — the blank is not a lane',
+    )
+  })
+
   test('THE LEGACY-DOUBLE COLLAPSE (024 self-critique #2): rows served pre-fix spell <run>/<run>/… — the receipt collapses the stencil', () => {
     const tool = runStatus((async () => ({})) as EstateRequest)
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''

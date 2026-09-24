@@ -13,6 +13,7 @@ import {
   settlePersist,
   runLogTail,
 } from "../src/runsTypes.ts";
+import { variantOfBodies } from "../src/queue.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
 
 let dir = "";
@@ -209,6 +210,76 @@ describe("settlePersist", () => {
     assert.equal(run.exportPath, undefined);
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.ok(!("export_path" in sidecar));
+  });
+
+  it("THE VARIANT STAMP (commission 033's self-critique #5): the lane rides the record + sidecar + terminal ledger row — design reads apart from performing", () => {
+    const runDir = join(dir, "rvariant");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({
+      dir: runDir,
+      params: [{ text: "hi" } as never],
+      cardSnapshot: { card: "qwen3-tts", params: { variant: "customvoice", voice_name: "night-frequency" } },
+    });
+    settlePersist(run, dir);
+    assert.equal(run.variant, "customvoice");
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(sidecar["variant"], "customvoice");
+    const ledger = readFileSync(join(dir, "output", "_ledger.jsonl"), "utf8");
+    assert.match(ledger, /"event":"run\.completed"/);
+    assert.match(ledger, /"variant":"customvoice"/);
+  });
+
+  it("runs without a variant stamp nothing (no variant key — never guessed)", () => {
+    const runDir = join(dir, "rnovariant");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({ dir: runDir, params: [{ text: "hi" } as never] });
+    settlePersist(run, dir);
+    assert.equal(run.variant, undefined);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.ok(!("variant" in sidecar));
+  });
+
+  it("THE REGISTRATION CARRY: a row that already holds a variant keeps it when the bodies name none (the ?? right side)", () => {
+    // registration stamps run.variant; settle re-lifts from the same
+    // bodies — the fallback keeps the birth stamp when neither body
+    // names a lane (never un-names a run at rest).
+    const runDir = join(dir, "rvarcarry");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({ dir: runDir, params: [{ text: "hi" } as never], variant: "voicedesign" });
+    settlePersist(run, dir);
+    assert.equal(run.variant, "voicedesign");
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(sidecar["variant"], "voicedesign");
+  });
+
+  it("THE JUNK-BODIES SKIP (§16 burn-down: the stamp loops' guard arm): null/array bodies never crash the stamp — the lane still lifts from the live body", () => {
+    // the export-name loop's `continue` TRUE arm had no wall (a
+    // flagged branch at HEAD); the variant lift shares the shape.
+    // Junk in, lane out — never a crash, never a guess.
+    const runDir = join(dir, "rjunk");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({
+      dir: runDir,
+      params: [null, { variant: "customvoice" }] as never,
+      cardSnapshot: { card: "qwen3-tts", params: ["junk"] },
+    });
+    settlePersist(run, dir);
+    assert.equal(run.variant, "customvoice");
+    assert.equal(run.exportName, undefined);
+  });
+});
+
+describe("variantOfBodies", () => {
+  // THE LIFT'S EVERY ARM (033 #5): junk bodies skip, non-string and
+  // blank variants fall through, the first non-empty string wins.
+  it("lifts the first non-empty variant across bodies in order", () => {
+    assert.equal(variantOfBodies([{ variant: "voicedesign" }, { variant: "customvoice" }]), "voicedesign");
+    assert.equal(variantOfBodies([{ text: "hi" }, { variant: "  customvoice  " }]), "customvoice");
+  });
+  it("skips junk bodies and junk variants, returning undefined when none names a lane", () => {
+    assert.equal(variantOfBodies([]), undefined);
+    assert.equal(variantOfBodies([null, undefined, "x", 5, ["variant"]]), undefined);
+    assert.equal(variantOfBodies([{ variant: 5 }, { variant: "" }, { variant: "   " }, { text: "hi" }]), undefined);
   });
 });
 

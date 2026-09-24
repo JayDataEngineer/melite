@@ -332,7 +332,21 @@ async function runBench(
         error: `stage ${stageId} (${card}) ended ${outcome.status}`, pass }
     }
   }
-  return { mode: 'bench', target, draft_id: draftId, status: 'done', pass }
+  // THE RUN-ID VISIBILITY LAW (commissions 032/033, the transcript-016
+  // half that never landed): the SUCCESS return carries the final
+  // stage's run_id at the top level and every minted id in pass[] —
+  // the render prints them. A maker that cannot see the id it just
+  // paid for burns calls on ledger_tail to find it (032 and 033 both
+  // did, twice each — the doc promised {run_id, draft_id} while the
+  // value printed '?').
+  const lastRun = (() => {
+    for (let i = pass.length - 1; i >= 0; i--) {
+      const rid = pass[i]!['run_id']
+      if (typeof rid === 'string' && rid !== '') return rid
+    }
+    return ''
+  })()
+  return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'done', pass }
 }
 
 /** Signal-honoring sleep — the observer's poll cadence (the run-wire
@@ -703,10 +717,26 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
         // presentationMeta (the persisted channel — see below). The leading
         // `card <draftId>` token is the LEGACY replay path only: sessions
         // logged before the meta channel keep hydrating through it.
+        // THE PASS LIST rides the prose too (032/033: a maker that minted
+        // three runs saw ONE '?' — every id it paid for prints here now).
+        const pass = (v as { pass?: unknown }).pass
+        const passRows = Array.isArray(pass)
+          ? (pass as Array<Record<string, unknown>>).map((p) =>
+            '  · ' + String(p['stage'] ?? '?') + ' ' + String(p['card'] ?? '?')
+            + (typeof p['run_id'] === 'string' && p['run_id'] !== '' ? ' → ' + p['run_id'] : '')
+            + ' [' + String(p['status'] ?? p['skipped'] ?? '?') + ']'
+            + (typeof p['url'] === 'string' && p['url'] !== '' ? ' ' + p['url'] : ''),
+          ).join('\n')
+          : ''
         return [{
           type: 'text',
           text: 'card ' + String(v.draft_id ?? '?') + ' · flow ' + String(v.target ?? '?')
-            + ' → ' + String(v.run_id ?? '?') + ' [' + String(v.status ?? 'queued') + '] — poll with run_status',
+            // no dangling arrow: an all-skipped bench mints nothing
+            // (run_id '') and the header says so — the id prints only
+            // when a run exists to poll.
+            + (typeof v.run_id === 'string' && v.run_id !== '' ? ' → ' + v.run_id : '')
+            + ' [' + String(v.status ?? 'queued') + '] — poll with run_status'
+            + (passRows !== '' ? '\n' + passRows : ''),
         }]
       },
       // presentationMeta: the NATIVE tile channel — persisted verbatim on
