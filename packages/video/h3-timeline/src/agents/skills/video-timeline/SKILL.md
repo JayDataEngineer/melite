@@ -162,6 +162,6 @@ hook time.
 
 ## Per-window knobs
 
-Any per-call knob (sampler, sampler_steps, shift_video, etc.) can be
+Any per-call knob (sampler_name, steps, shift_video, etc.) can be
 overridden inside a call. Knobs NOT in the call inherit from the card-
 level params (the card_knobs SSOT — read via tools/code).

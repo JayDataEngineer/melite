@@ -17,6 +17,7 @@ const RETIRED: Array<[string, RegExp]> = [
   ["per-call audio", /"audio"\s*:|\bcall'?s? `audio`|per-call `audio`/],
   ["audio_stem", /audio_stem/],
   ["seam_carry", /seam_carry/],
+  ["retired step spelling", /\bsampler_steps\b|\bsampling_steps\b/],
 ];
 
 describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
