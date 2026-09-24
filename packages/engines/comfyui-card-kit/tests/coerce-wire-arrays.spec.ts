@@ -132,3 +132,18 @@ describe("coerceWireNumbers — the boxed-number unbox", () => {
     assert.equal(typeof out.width, "number");
   });
 });
+
+describe("coerceWireArrays — the single-element arm (035 attempt-008)", () => {
+  const schema = Schema.object({
+    ref_images: Schema.array(String),
+    prompt: Schema.string(),
+  });
+  it("a one-element transport encoding {item: el} restores to [el] for array-declared keys", () => {
+    const out = coerceWireArrays(schema, { ref_images: { item: "/a.png" }, prompt: "x" });
+    assert.deepEqual(out.ref_images, ["/a.png"]);
+  });
+  it("a two-key object with an item key never fills (not the transport shape)", () => {
+    const out = coerceWireArrays(schema, { ref_images: { item: "/a.png", x: 1 }, prompt: "x" });
+    assert.deepEqual(out.ref_images, { item: "/a.png", x: 1 });
+  });
+});

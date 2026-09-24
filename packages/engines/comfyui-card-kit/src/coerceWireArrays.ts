@@ -93,6 +93,18 @@ export function coerceWireArrays(
     } else if (isItemWrapped(v)) {
       out = out ?? { ...raw }
       out[key] = (v as Record<string, unknown>)['item']
+    } else if (
+      typeof v === 'object' && v !== null && !Array.isArray(v) &&
+      Object.keys(v).length === 1 && Object.prototype.hasOwnProperty.call(v, 'item')
+    ) {
+      // THE SINGLE-ELEMENT ARM (attempt-035/008's forensic,
+      // 2026-09-24): the transport encodes a ONE-element array as
+      // `{item: <the element>}` — the element itself, NOT wrapped
+      // in an array — so the shape seat (isItemWrapped) misses it.
+      // Here the DICT has already declared this key an array, so
+      // the restore is schema-licensed: `[element]`.
+      out = out ?? { ...raw }
+      out[key] = [(v as Record<string, unknown>)['item']]
     }
   }
   return out ?? raw
