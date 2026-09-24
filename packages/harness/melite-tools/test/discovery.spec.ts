@@ -246,7 +246,7 @@ describe('live door arms', () => {
     // The Base compose address rides last (qvoice across ALL
     // qwen3-tts — the offer serves atoms + the clone route).
     assert.equal(tts['model'], 'qwen3-tts-voicedesign')
-    assert.deepEqual(tts['families'], ['qwen3-tts-voicedesign', 'qwen3-tts', 'qwen3-tts-base'])
+    assert.deepEqual(tts['families'], ['qwen3-tts-voicedesign', 'qwen3-tts', 'qwen3-tts-base', 'qwen3-tts-voicedesign-design'])
     assert.ok(typeof tts['params_schema'] === 'object')
   })
 
@@ -731,7 +731,7 @@ describe('live door arms', () => {
     const tts = faces('tts', 'qwen3-tts-voicedesign')
     assert.deepEqual(
       tts.map((f) => [f['id'], f['label']]),
-      [['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B'], ['qwen3-tts', 'Qwen3-TTS 0.6B'], ['qwen3-tts-base', 'Qwen3-TTS 0.6B Base Native']],
+      [['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B'], ['qwen3-tts', 'Qwen3-TTS 0.6B'], ['qwen3-tts-base', 'Qwen3-TTS 0.6B Base Native'], ['qwen3-tts-voicedesign-design', 'Qwen3-TTS 1.7B VoiceDesign Native']],
     )
     // true families keep their DECL faces (the 2026-09-16 family-face law, unmoved)
     const music = faces('music', 'music3')

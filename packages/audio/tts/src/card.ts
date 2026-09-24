@@ -27,7 +27,7 @@ export const schema = z.object({
   //   VoiceDesign → Voice Persona & Timbre (WHO is speaking —
   //                 designs a brand-new voice from the description)
   style_instruction: z.string().description("Emotion & Delivery Style").extra('extra', { order: null, placeholder: "e.g. Speak with immense excitement, laughing slightly", tooltip: "HOW the preset speaker delivers the text — emotion, tone, pacing (excited, whisper, cheerful). The 1.7B CustomVoice lane's capability; the 0.6B has no instruction control, Base clones instead, VoiceDesign designs the speaker itself", wtype: 'textarea', visible_when: 'model=qwen3-tts-voicedesign&variant=customvoice' }),
-  design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', { order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the exporter designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice performs any script on every qwen3-tts lane. Pairs with the Design mod's name (voice_name) — the save fires from ANY lane", wtype: 'textarea', visible_when: 'model=qwen3-tts-voicedesign|qwen3-tts|qwen3-tts-base' }),
+  design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', { order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the exporter designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice performs any script on every qwen3-tts lane. Pairs with the Design mod's name (voice_name) — the save fires from ANY lane", wtype: 'textarea', visible_when: 'model=qwen3-tts-voicedesign|qwen3-tts-voicedesign-design|qwen3-tts|qwen3-tts-base' }),
   // THE CLONE INPUTS (the Base variant clones from a 3-second
   // reference): reference audio + its transcript, Base only.
   // OPTIONAL when a .qvoice rides instead (upstream's design-then-
@@ -67,7 +67,10 @@ export const BOARDED: string[] = ['qwen3-tts-voicedesign', 'qwen3-tts']
 // closed model enum additionally offers the Base variant's compose
 // address; the drafts door resolves route mids through the facts
 // rows, krea-2-raw precedent).
-export const VARIANT_ADDRESSES: string[] = ['qwen3-tts-base']
+// The design lane's own route joined 2026-09-24 (transcript-015 -
+// the head serves the family default CustomVoice; the design variant
+// re-keys only through its own address).
+export const VARIANT_ADDRESSES: string[] = ['qwen3-tts-base', 'qwen3-tts-voicedesign-design']
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */

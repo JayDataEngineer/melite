@@ -24,12 +24,12 @@ import {
 describe("the resurrected model registry (families/variants/cells/links)", () => {
   it("carries the hierarchy: 45 registry models, 96 serving routes (ideogram retired 2026-09-17; fit + skin stroke 87; z-image fold stroke 46h; the qwen 2.1 pair — t2i + cached-reference edit — 2026-09-21; the qwen TTS fold — Base is a variant route of the .6, never a third family — 2026-09-21; the H3 fold — the timeline owns the whole surface, h3 + h3-keyframe died into its variants — 2026-09-21; the survivor-id correction — the family IS the checkpoint `h3`, timeline is the lane route h3-timeline, single-shot moves to h3-fl2va, the family self-address serves — 2026-09-22; yue2 boarded on the music card — 2026-09-20)", (): void => {
     assert.equal(registryIds().length, 45); // -2: wan-vace + scail2-animate retired with the video-gen card (2026-09-21 — h3-timeline is the only video door) // +1: yue2 (2026-09-20) // +1: qwen3-tts-voicedesign // +2: the qwen 2.1 pair // -2: the H3 fold // 2026-09-22: the survivor-id correction renames h3-timeline → h3 in place (registry count unchanged)
-    assert.equal(modelIds().length, 97); // +1: yue2, 2026-09-20 // +6: the qwen 2.1 pair (t2i + edit), 2026-09-21 // +1: the survivor-id correction, 2026-09-22 — the family id h3 serves as its own address (the default variant claims it; the dead-family route h3 → h3-fl2va) // +1: qwen3-tts-voicedesign-base — the 1.7B Base clone lane's OWN flat route (the 1:1 matrix, 2026-09-23; the 0.6B owns 'qwen3-tts-base' — one owner per route id)
+    assert.equal(modelIds().length, 98); // +1: qwen3-tts-voicedesign-design — the design lane's OWN flat route (transcript-015: the head serves the family default CustomVoice, so the design variant needs its own address), 2026-09-24 // +1: yue2, 2026-09-20 // +6: the qwen 2.1 pair (t2i + edit), 2026-09-21 // +1: the survivor-id correction, 2026-09-22 — the family id h3 serves as its own address (the default variant claims it; the dead-family route h3 → h3-fl2va) // +1: qwen3-tts-voicedesign-base — the 1.7B Base clone lane's OWN flat route (the 1:1 matrix, 2026-09-23; the 0.6B owns 'qwen3-tts-base' — one owner per route id)
     const comfy = modelIds().filter((id) => {
       const e = getModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
     });
-    assert.equal(comfy.length, 85); // -2: wan-vace + scail2 comfy routes retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // ideogram gone (2026-09-17); fit + skin gone (stroke 87); +6 the qwen 2.1 pair (2026-09-21) // +1: the h3 family self-address, 2026-09-22 // +1: the 1:1 1.7B clone route, 2026-09-23
+    assert.equal(comfy.length, 86); // +1: the design lane route, 2026-09-24 // -2: wan-vace + scail2 comfy routes retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // ideogram gone (2026-09-17); fit + skin gone (stroke 87); +6 the qwen 2.1 pair (2026-09-21) // +1: the h3 family self-address, 2026-09-22 // +1: the 1:1 1.7B clone route, 2026-09-23
     const rcomfy = registryIds().filter((id) => {
       const e = registryModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
@@ -37,9 +37,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal(rcomfy.length, 41); // -2: wan-vace + scail2 registry rows retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // +1 the qwen TTS voicedesign family (2026-09-21; base folded back into the .6 as a variant) // +2 the qwen 2.1 pair (2026-09-21) // -2 the H3 fold (h3 + h3-keyframe died into h3-timeline's variants) // ideogram gone (2026-09-17); fit + skin gone (stroke 87)
   });
 
-  it("serves 58 offered routes; the unoffered are excluded loud-side (ideogram retired 2026-09-17; fit + skin stroke 87; the qwen 2.1 pair 2026-09-21; yue2 2026-09-20; the h3 survivor-id correction — the family self-address offers — 2026-09-22)", (): void => {
+  it("serves 59 offered routes; the unoffered are excluded loud-side (ideogram retired 2026-09-17; fit + skin stroke 87; the qwen 2.1 pair 2026-09-21; yue2 2026-09-20; the h3 survivor-id correction — the family self-address offers — 2026-09-22)", (): void => {
     const cat = modelCatalog();
-    assert.equal(Object.keys(cat).length, 59); // -2: wan-vace + scail2 routes retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // +6: the qwen 2.1 pair, 2026-09-21 // +1: the h3 family self-address, 2026-09-22 // +1: qwen3-tts-voicedesign-base (the 1:1 matrix, 2026-09-23)
+    assert.equal(Object.keys(cat).length, 60); // -2: wan-vace + scail2 routes retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // +6: the qwen 2.1 pair, 2026-09-21 // +1: the h3 family self-address, 2026-09-22 // +1: qwen3-tts-voicedesign-base (the 1:1 matrix, 2026-09-23) // +1: qwen3-tts-voicedesign-design — the design lane's own route (transcript-015), 2026-09-24
     // the 4 fragment/retired unoffered + the 13 hollow atoms
     // (2026-09-08: served but callerless and unrunnable — the
     // catalog offers only runnable atoms, walled in

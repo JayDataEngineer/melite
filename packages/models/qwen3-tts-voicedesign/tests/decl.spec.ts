@@ -39,7 +39,7 @@ describe("the qwen3-tts-voicedesign model plugin (1.7B, the full 1:1 flavor matr
     const vd = byId["voicedesign"]!;
     assert.equal((vd.lane_inputs as Record<string, unknown>)["model_path"], "Qwen3-TTS-12Hz-1.7B-VoiceDesign");
     assert.equal((vd.lane_inputs as Record<string, unknown>)["synth_lane"], "design");
-    assert.equal(vd.route, "qwen3-tts-voicedesign", "the address never moves (no draft migration)");
+    assert.equal(vd.route, "qwen3-tts-voicedesign-design", "the design lane's OWN flat route (transcript-015: the head serves the family default CustomVoice — the design variant re-keys only through its own address)");
     const base = byId["base"]!;
     assert.equal((base.lane_inputs as Record<string, unknown>)["model_path"], "qwen3-tts/hf/models--Qwen--Qwen3-TTS-12Hz-1.7B-Base/snapshots/fd4b254389122332181a7c3db7f27e918eec64e3");
     assert.equal((base.lane_inputs as Record<string, unknown>)["synth_lane"], "clone");

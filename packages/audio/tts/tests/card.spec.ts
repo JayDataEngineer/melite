@@ -105,7 +105,7 @@ describe("the lane-bespoke leaves (the model guard — the persona knobs render 
     // from ANY lane — the row shows on every address; the compose
     // walls own the pairing (voice_name without design_prompt, or
     // the reverse, refuses loud).
-    assert.equal(leaf("design_prompt"), "model=qwen3-tts-voicedesign|qwen3-tts|qwen3-tts-base", "the Voice Persona & Timbre row shows on every qwen3-tts address — the save fires from any lane; the lane's own prompt, never the pack's");
+    assert.equal(leaf("design_prompt"), "model=qwen3-tts-voicedesign|qwen3-tts-voicedesign-design|qwen3-tts|qwen3-tts-base", "the Voice Persona & Timbre row shows on every qwen3-tts address (the design route joined 2026-09-24) — the save fires from any lane; the lane's own prompt, never the pack's");
     // the SHARED surface never hides
     assert.equal(leaf("text"), undefined, "the words ride every lane");
     // synth sampling renders on the synthesis lanes only (design
@@ -193,7 +193,8 @@ describe("the three-lane surfaces (the README stroke 2026-09-21 — each model r
   });
   it("the card offers BOTH SIZES + THE BASE ROUTE, LARGE-FIRST (boarded[0] is the default everywhere — the operator's large-model default; the base compose address rides the offer, qvoice across ALL qwen3-tts, operator 2026-09-23)", () => {
     assert.equal(def.boarded[0], "qwen3-tts-voicedesign");
-    assert.deepEqual([...def.boarded].sort(), ["qwen3-tts", "qwen3-tts-base", "qwen3-tts-voicedesign"]);
+    // +qwen3-tts-voicedesign-design: the design lane's own route (transcript-015)
+    assert.deepEqual([...def.boarded].sort(), ["qwen3-tts", "qwen3-tts-base", "qwen3-tts-voicedesign", "qwen3-tts-voicedesign-design"]);
   });
 });
 

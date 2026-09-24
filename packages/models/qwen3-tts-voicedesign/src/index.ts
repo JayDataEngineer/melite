@@ -80,7 +80,12 @@ export const DECL: ModelDecl = {
       "label": "VoiceDesign",
       "description": "design a voice from a description, export the .qvoice embedding",
       "group": "Variant",
-      "route": "qwen3-tts-voicedesign",
+      // THE DESIGN LANE'S OWN FLAT ROUTE (transcript-015: with the
+      // head serving the family default — CustomVoice, the
+      // operator's large-model default — a stated design variant
+      // could never re-key the lane; the design lane had NO
+      // address. Route law mirrors the base lane: <family>-<lane>).
+      "route": "qwen3-tts-voicedesign-design",
       "lane_inputs": {
         "model_path": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
         "synth_lane": "design",
@@ -93,7 +98,7 @@ export const DECL: ModelDecl = {
         {
           "quant": "native",
           "label": "Native",
-          "route": "qwen3-tts-voicedesign",
+          "route": "qwen3-tts-voicedesign-design",
         }
       ]
     },
