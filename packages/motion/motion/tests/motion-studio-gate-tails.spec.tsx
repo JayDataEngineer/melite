@@ -481,17 +481,23 @@ describe('stage + undo + authoring tails', () => {
     }, { timeout: 60000 })
     await vi.waitFor(() => {
       if (railButton('Repose').disabled) throw new Error('joints not landed yet — Repose still disabled')
-    }, { timeout: 30000 })
-    fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })
+    }, { timeout: 60000 })
+    // THE KEYDOWN RETRY (coverage-load flake, 2026-09-24): under the
+    // full-gate's v8 instrumentation the editor's key handler can
+    // attach AFTER the Repose-enabled observation — a single
+    // keyDown lands on nothing and the undo starves. Re-fire inside
+    // the wait (same retry idiom as the Refine press above): once
+    // the handler is attached one lands.
     await vi.waitFor(() => {
+      fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })
       if (!railButton('Repose').disabled) throw new Error('undo not landed yet — joints still live')
-    }, { timeout: 10000 })
+    }, { timeout: 30000 })
     fireEvent.click(railButton('Done'))
     await vi.waitFor(() => {
       getByText(document.body, 'Refine pose')
-    }, { timeout: 10000 })
+    }, { timeout: 30000 })
     expect(queryByText(document.body, 'Reset pose')).toBeNull()
-  }, 30000)
+  }, 120000)
 
   test('a repose whose save blows up toasts the failure', async () => {
     stubLoads()
