@@ -791,22 +791,22 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
       model, g, "run_clips_mix",
     );
     const out = graphOf(g);
-    // THE VALVE'S SECOND ARM (2026-09-24, the VRAM-leak fix): the
-    // graph keeps the window's conditioning stamp (MeliteAudioSlice
-    // → pin) AND renders the film-time mix through ONE
-    // MeliteFilmAudioMix (torch, ComfyUI-only — never ffmpeg) fed by
-    // the saved window files — no in-graph stitch, no film
-    // CreateVideo/SaveVideo; SaveAudio emits the film's audio.
+    // THE VALVE'S SECOND ARM (2026-09-24, the VRAM-leak fix; GAP 1
+    // CLOSED same night — the arm delivers the film mp4): the graph
+    // keeps the window's conditioning stamp (MeliteAudioSlice → pin)
+    // AND renders the film-time mix through ONE MeliteFilmAudioMix
+    // (torch, ComfyUI-only — never ffmpeg) fed by the saved window
+    // files — no in-graph audio stitch; the VIDEO join is the
+    // clips-free arm's own file-tail machinery with the mixed audio
+    // wired into CreateVideo → SaveVideo h3_t4_film.
     assert.ok(
-      !Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "h3_t4_film"),
-      "no in-graph film save — the film's audio leaves through SaveAudio",
+      Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "h3_t4_film"),
+      "the film mp4 saves in-graph (GAP 1 — the video join rides the clips arm)",
     );
-    assert.equal(ofClass(out, "MeliteConcatVideos").length, 0, "no file-tail loader — windows free per-window");
     assert.equal(ofClass(out, "MeliteAudioDuck").length, 0, "no in-graph duck — the duck matrix rides the mix node");
     assert.equal(ofClass(out, "MeliteAudioMix").length, 0, "no in-graph mix chain");
     assert.equal(ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window")).length, 0, "no film-level delay");
     assert.equal(ofClass(out, "LoadAudio").filter(([id]) => !id.startsWith("window")).length, 0, "no film-level load");
-    assert.equal(ofClass(out, "CreateVideo").filter(([id]) => !id.startsWith("window")).length, 0, "no film-level CreateVideo");
     // FILM TIME (corrected 2026-09-22 — the D-M-E proof measured
     // the old carry-head formula landing takes 22f late: a take at
     // film f96 overlaid at 4.917s, r=0.85 at the wrong seat, ~0 at
@@ -932,11 +932,14 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
   });
 });
 
-// ── THE VALVE'S SECOND ARM (2026-09-24, the VRAM-leak fix): an
-// audio-clips doc (a) no longer composes the in-graph film
-// mix/duck/accumulation nodes, (b) DOES compose one post-generation
-// MeliteFilmAudioMix with the clips' spans + duck depth wired, and
-// (c) windows still free per-window (no film-level CreateVideo). ──
+// ── THE VALVE'S SECOND ARM (2026-09-24, the VRAM-leak fix; GAP 1
+// CLOSED same night — the arm delivers the film mp4): an
+// audio-clips doc (a) no longer composes the in-graph film AUDIO
+// stitch but DOES emit the file-tail video join, (b) DOES compose
+// one post-generation MeliteFilmAudioMix with the clips' spans +
+// duck depth wired, (c) windows still free per-window, (d) the film
+// mp4 carries the MIXED audio (not the raw concat audio), (e) no
+// accumulation node returns. ──
 
 describe("the valve's second arm (audio-carrying films free per-window)", () => {
   const CLIP = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
@@ -946,19 +949,21 @@ describe("the valve's second arm (audio-carrying films free per-window)", () => 
     calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
   };
 
-  it("(a) the in-graph film stitch is GONE for audio-clips docs", () => {
+  it("(a) the in-graph AUDIO stitch is GONE for audio-clips docs (the video join stays)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ ...FILM, audio_clips: [CLIP()] }), model, g, "run_valve_absent");
     const out = graphOf(g);
-    assert.equal(ofClass(out, "MeliteConcatVideos").length, 0, "no file-tail loader");
     assert.equal(ofClass(out, "MeliteAudioDuck").length, 0, "no in-graph duck");
     assert.equal(ofClass(out, "MeliteAudioMix").length, 0, "no in-graph mix");
     assert.equal(ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window")).length, 0, "no film-level delay");
     assert.equal(ofClass(out, "LoadAudio").filter(([id]) => !id.startsWith("window")).length, 0, "no film-level load");
-    assert.equal(ofClass(out, "CreateVideo").filter(([id]) => !id.startsWith("window")).length, 0, "no film-level CreateVideo");
+    // GAP 1: the file-tail VIDEO join rides this arm — one loader,
+    // one film-level CreateVideo, the h3_t4_film save.
+    assert.equal(ofClass(out, "MeliteConcatVideos").length, 1, "exactly one file-tail video join");
+    assert.equal(ofClass(out, "CreateVideo").filter(([id]) => !id.startsWith("window")).length, 1, "exactly one film-level CreateVideo");
     assert.ok(
-      !Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "h3_t4_film"),
-      "no in-graph film save",
+      Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "h3_t4_film"),
+      "the film mp4 saves in-graph",
     );
     // the windows themselves still render + save (the valve's law)
     assert.equal(scoped(out, "window1_", "CreateVideo").length, 1, "window 1 still renders");
@@ -966,8 +971,8 @@ describe("the valve's second arm (audio-carrying films free per-window)", () => 
     const saves = Object.entries(out).filter(([, n]) => n.class_type === "SaveVideo");
     assert.deepEqual(
       saves.map(([, n]) => String(n.inputs.filename_prefix)).sort(),
-      ["h3_t4_w1", "h3_t4_w2"],
-      "exactly the window files save as video — nothing else",
+      ["h3_t4_film", "h3_t4_w1", "h3_t4_w2"],
+      "the window files + the film mp4 save as video — nothing else",
     );
     const audioSaves = ofClass(out, "SaveAudio");
     assert.equal(audioSaves.length, 1, "exactly one film-audio save");
@@ -1021,6 +1026,44 @@ describe("the valve's second arm (audio-carrying films free per-window)", () => 
       cursor = afterOf(byId.get(cursor) as { class_type: string; inputs: Record<string, unknown> });
     }
     assert.equal(walked, unloads.length, "the mix provably waits for EVERY window save");
+  });
+
+  it("(d) the film mp4 carries the MIXED audio (GAP 1 — join shape per the clips-free arm)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ ...FILM, audio_clips: [CLIP()] }), model, g, "run_valve_join");
+    const out = graphOf(g);
+    const mixes = ofClass(out, "MeliteFilmAudioMix");
+    assert.equal(mixes.length, 1, "exactly one mix node");
+    const joins = ofClass(out, "MeliteConcatVideos");
+    assert.equal(joins.length, 1, "exactly one file-tail join");
+    assert.equal(joins[0]![1].inputs.videos, "h3_t4_w1,h3_t4_w2", "the join names the window files in film order");
+    // the join waits on the same chained boundary token as the mix
+    assert.deepEqual(joins[0]![1].inputs.after, mixes[0]![1].inputs.after, "join + mix share the boundary token");
+    const created = ofClass(out, "CreateVideo").filter(([id]) => !id.startsWith("window"));
+    assert.equal(created.length, 1, "exactly one film-level CreateVideo");
+    assert.deepEqual(created[0]![1].inputs.images, [joins[0]![0], 0], "the picture is the join's decoded images");
+    assert.deepEqual(created[0]![1].inputs.audio, [mixes[0]![0], 0], "the film's audio is the MIX output — never the raw concat audio");
+    assert.deepEqual(created[0]![1].inputs.fps, [joins[0]![0], 2], "the clock is the join's fps");
+    assert.equal(created[0]![1].inputs.bit_depth, 8, "8-bit, per the clips-free arm");
+    const filmSaves = Object.entries(out).filter(
+      ([, n]) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "h3_t4_film",
+    );
+    assert.equal(filmSaves.length, 1, "exactly one film save");
+    assert.deepEqual(filmSaves[0]![1].inputs.video, [created[0]![0], 0], "the save carries the film CreateVideo");
+    assert.equal(filmSaves[0]![1].inputs.format, "mp4", "mp4 container");
+    assert.equal(filmSaves[0]![1].inputs.codec, "h264", "h264 codec");
+  });
+
+  it("(e) no accumulation node returns for audio-clips docs", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ ...FILM, audio_clips: [CLIP()] }), model, g, "run_valve_noaccum");
+    const out = graphOf(g);
+    const accumulators = Object.entries(out).filter(
+      ([, n]) =>
+        n.class_type === "MiniMaxH3FiniteSegmentFinalize" &&
+        (n.inputs as Record<string, unknown>).accumulated_images !== undefined,
+    );
+    assert.equal(accumulators.length, 0, "no live-tensor accumulation — windows exist only during generation");
   });
 });
 

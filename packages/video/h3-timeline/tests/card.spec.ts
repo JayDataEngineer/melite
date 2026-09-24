@@ -127,7 +127,7 @@ describe("the h3-timeline compose gate", () => {
     assert.ok(["t4_chain", "t4r"].includes(String(chained.variant)), "chains derive a family");
   });
 
-  it("THE FILM TAIL, FILE FORM (§20's amendment, 2026-09-22 — the operator's provenance law; the valve's second arm, 2026-09-24): every multi-window film emits windows + MeliteUnload boundaries (orders the saves, flushes the allocator, KEEPS the weights); clips-free films assemble in-graph (MeliteConcatVideos → SaveVideo h3_t4_film), clips-carrying films compose post-generation (MeliteFilmAudioMix → SaveAudio h3_t4_film_audio); no accumulation node exists (each window's tensors die at its own SaveVideo)", () => {
+  it("THE FILM TAIL, FILE FORM (§20's amendment, 2026-09-22 — the operator's provenance law; the valve's second arm, 2026-09-24; GAP 1 CLOSED same night — the clips arm emits the film mp4): every multi-window film emits windows + MeliteUnload boundaries (orders the saves, flushes the allocator, KEEPS the weights); clips-free films assemble in-graph (MeliteConcatVideos → SaveVideo h3_t4_film), clips-carrying films compose audio post-generation (MeliteFilmAudioMix → SaveAudio h3_t4_film_audio) AND emit the same file-tail video join with the mixed audio wired in; no accumulation node exists (each window's tensors die at its own SaveVideo)", () => {
     const nodeRows = (params: Record<string, unknown>) => {
       const g = new GraphBuilder();
       def.compose(def.schema(params), model, g, "run_valve");
@@ -189,21 +189,22 @@ describe("the h3-timeline compose gate", () => {
     );
     // 2. positioned clips: the film takes the valve's second arm
     //    (2026-09-24, the VRAM-leak fix — operator law: WE USE
-    //    COMFYUI, NEVER FFMPEG for the mix): windows still save +
+    //    COMFYUI, NEVER FFMPEG for the mix; GAP 1 CLOSED same night
+    //    — the arm delivers the film mp4): windows still save +
     //    free per-window behind the chained boundaries, and ONE
     //    post-generation MeliteFilmAudioMix composes the film's
-    //    audio — no in-graph film stitch (concat/duck/mix/delay/
-    //    film-CreateVideo), no film SaveVideo; SaveAudio emits the
-    //    film's audio for the final mux.
+    //    audio — no in-graph AUDIO stitch (duck/mix/delay); the
+    //    file-tail video join rides with the MIXED audio wired into
+    //    CreateVideo → SaveVideo h3_t4_film; SaveAudio emits the stem.
     const closedRows = nodeRows({
       ...windowsDoc,
       audio_clips: [{ src: "/assets/line.flac", start_frame: 10, dur_frames: 40, text: "hello" }],
     });
     assert.ok(
-      !savePrefixes(closedRows).includes("h3_t4_film"),
-      "positioned clips no longer save an in-graph film — the film's audio leaves through SaveAudio",
+      savePrefixes(closedRows).includes("h3_t4_film"),
+      "the clips arm delivers the film mp4 (GAP 1 — same file-tail join, mixed audio wired in)",
     );
-    assert.equal(byClass(closedRows, "MeliteConcatVideos").length, 0, "no film-stitch loader for clips docs");
+    assert.equal(byClass(closedRows, "MeliteConcatVideos").length, 1, "exactly one file-tail video join for clips docs");
     assert.equal(byClass(closedRows, "MeliteAudioDuck").length, 0, "no in-graph duck for clips docs");
     assert.equal(byClass(closedRows, "MeliteAudioMix").length, 0, "no in-graph mix for clips docs");
     assert.equal(byClass(closedRows, "MeliteUnload").length, 2, "windows still free per-window behind the chained boundaries");

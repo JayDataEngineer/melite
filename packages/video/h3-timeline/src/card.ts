@@ -911,18 +911,20 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   //
   //   AUDIO-CARRYING films (the valve's SECOND ARM, 2026-09-24 — the
   //   VRAM-leak fix, operator law: WE USE COMFYUI, NEVER FFMPEG for
-  //   the mix): the retired in-graph film stitch (concat + film-time
-  //   Delay/Mix/Duck + film CreateVideo/SaveVideo) held every window
-  //   resident until the final save — the accumulation that OOM'd a
+  //   the mix; GAP 1 CLOSED same night — the arm delivers the film
+  //   mp4): the retired in-graph film stitch (film-time Delay/Mix/
+  //   Duck over live window tensors) held every window resident
+  //   until the final save — the accumulation that OOM'd a
   //   two-window BRIEF9 film at 20.57 GiB. These films take the valve
   //   path (windows save per-window and free behind the same chained
   //   boundaries — steps 1–2 above) PLUS one post-generation
   //   MeliteFilmAudioMix (Layer C, torch, the estate's own node):
   //   window audio files + the manifest's clips/duck law in,
-  //   SaveAudio h3_t4_film_audio out (the estate's final mux joins it
-  //   with the disk-side video concat). No MeliteConcatVideos, no
-  //   film-time Delay/Mix/Duck/LoadAudio, no film CreateVideo — the
-  //   graph holds windows only during generation.
+  //   SaveAudio h3_t4_film_audio stem out — AND the same file-tail
+  //   video join (MeliteConcatVideos → CreateVideo → SaveVideo
+  //   h3_t4_film) with the MIXED audio wired in. No film-time
+  //   Delay/Mix/Duck/LoadAudio — the graph holds windows only
+  //   during generation.
   //
   // (Single-window docs never reach this tail — the compose
   // dispatch keeps the frozen single-window shape byte-identical;
@@ -964,13 +966,19 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   const after = boundaryAfter!
   if (clips.length > 0) {
     // THE VALVE'S SECOND ARM (2026-09-24 — the film mix leaves the
-    // graph's generation half): ONE MeliteFilmAudioMix composes the
-    // film's audio post-generation from the saved window files + the
-    // manifest's clips/duck law (the SAME Delay/Mix/Duck methods the
-    // retired tail called, in the SAME order — now torch-side inside
-    // the estate's own node, never ffmpeg). SaveAudio emits it for
-    // the estate's final mux. Early return: the clips-free arm below
-    // stays byte-frozen.
+    // graph's generation half; GAP 1 CLOSED 2026-09-24 — the arm
+    // delivers the film mp4 too): ONE MeliteFilmAudioMix composes
+    // the film's audio post-generation from the saved window files
+    // + the manifest's clips/duck law (the SAME Delay/Mix/Duck
+    // methods the retired tail called, in the SAME order — now
+    // torch-side inside the estate's own node, never ffmpeg).
+    // SaveAudio emits the stem; the VIDEO join is the clips-free
+    // arm's own machinery (MeliteConcatVideos decodes the saved
+    // files CPU-side strictly after every save — windows' tensors
+    // died at their SaveVideos, so no accumulation returns) with
+    // the MIXED audio wired into CreateVideo — the film mp4 carries
+    // the mix, not the raw concat audio. Early return: the
+    // clips-free arm below stays byte-frozen.
     const mix = g.node('MeliteFilmAudioMix', {
       videos: calls.map((_c, i): string => `h3_t4_w${i + 1}`).join(','),
       after,
@@ -988,6 +996,21 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     })
     g.node('SaveAudio', {
       audio: mix.out(0), filename_prefix: 'h3_t4_film_audio',
+    })
+    // THE FILM MP4 (GAP 1): the same file-tail video join the
+    // clips-free arm rides — container mux only (CreateVideo +
+    // SaveVideo h264/mp4 on the decoded window files), never the
+    // mix. The mix rides it: audio carries the node's output.
+    const join = g.node('MeliteConcatVideos', {
+      videos: calls.map((_c, i): string => `h3_t4_w${i + 1}`).join(','),
+      after,
+    })
+    const filmCreated = g.node('CreateVideo', {
+      images: join.out(0), audio: mix.out(0), fps: join.out(2), bit_depth: 8,
+    })
+    g.node('SaveVideo', {
+      video: filmCreated.out(), filename_prefix: 'h3_t4_film',
+      format: 'mp4', codec: 'h264',
     })
     return
   }
