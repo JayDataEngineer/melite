@@ -49,7 +49,7 @@ import type { JsonValue, ToolDefinition } from '../types.ts'
  *  writes win); a miss names every searched root. */
 const firstRootWithRun = async (
   seat: { stateRoot: string },
-  kind: 'image' | 'video',
+  kind: 'image' | 'video' | 'audio',
   runId: string,
 ): Promise<{ own: MediaListRow[]; root: string } | null> => {
   for (const root of rootsManifest(seat.stateRoot)) {
@@ -126,15 +126,32 @@ export interface ViewedImageValue {
     streams: Array<{ codec: string, width?: number, height?: number, fps?: string, frames?: number }>
     sheet_of: number
   }
+  /** THE AUDIO ARM (§33 gap-6): the observed artifact is audio —
+   *  the viewed image IS its waveform sheet and this row carries
+   *  the probe verdict (duration/bytes/codec/rate/channels). The
+   *  mint-time duration gap closes at the observe door: one native
+   *  call, no shell. Absent on the image/film paths. */
+  audio?: {
+    file: string
+    duration_s?: number
+    size_bytes?: number
+    streams: Array<{ codec: string, sample_rate?: number, channels?: number }>
+    waveform_of: boolean
+  }
 }
 
 /** A probed film stream (ffprobe's row, narrowed). */
+/** (the audio arm shares this row: sample_rate/channels ride on
+ *  audio streams, geometry on video — one summary shape, both
+ *  probes). */
 export interface FilmStreamSummary {
   codec: string
   width?: number
   height?: number
   fps?: string
   frames?: number
+  sample_rate?: number
+  channels?: number
 }
 
 /** THE FILM PROBE (§24, the byte-cheap flags the skill prescribes):
@@ -164,6 +181,10 @@ export function parseProbeSummary(jsonText: string): { duration_s?: number, size
     if (typeof s['height'] === 'number') row.height = s['height'] as number
     if (typeof s['r_frame_rate'] === 'string') row.fps = s['r_frame_rate'] as string
     if (typeof s['nb_frames'] === 'string' && s['nb_frames'] !== '' && Number.isFinite(Number(s['nb_frames']))) row.frames = Number(s['nb_frames'])
+    if (typeof s['sample_rate'] === 'number') row.sample_rate = s['sample_rate']
+    else if (typeof s['sample_rate'] === 'string' && s['sample_rate'] !== '' && Number.isFinite(Number(s['sample_rate']))) row.sample_rate = Number(s['sample_rate'])
+    if (typeof s['channels'] === 'number') row.channels = s['channels']
+    else if (typeof s['channels'] === 'string' && s['channels'] !== '' && Number.isFinite(Number(s['channels']))) row.channels = Number(s['channels'])
     streams.push(row)
   }
   if (streams.length === 0) {
@@ -321,7 +342,95 @@ export async function viewFilmArtifact(
     await rm(work, { recursive: true, force: true })
   }
 }
-/** FILM-ARM-INSERT — replaced below. */
+
+/** View an audio artifact: ffprobe summary + a WAVEFORM sheet
+ * committed as the viewed image (the audio twin of §24's film arm;
+ * ROADMAP §33 gap-6, receipt: 032/034's makers shelled to ffprobe
+ * because no estate door surfaced duration at mint time — the
+ * observe arm answers it natively now, and the sheet SHOWS the
+ * envelope: a 42µs stub renders an empty trace, real speech
+ * renders bars). Containment rides the walk's own row (absPath
+ * built from runId + name, never caller text); the sheet lands in
+ * os.tmpdir (never the run tree — a view must not mint
+ * provenance). */
+export async function viewAudioArtifact(
+  seat: QueueSeatSeam,
+  runId: string,
+  artifact: string,
+  exec: ViewExec,
+  ctx: { get(name: string): unknown },
+  attachments: AttachmentsSeam,
+  proc: FilmProc = defaultFilmProc,
+): Promise<ViewedImageValue> {
+  const found = await firstRootWithRun(seat, 'audio', runId)
+  if (found === null) {
+    throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film or audio — the run holds no image/video/audio artifacts either) ' + searchedVoice(rootsManifest(seat.stateRoot)))
+  }
+  const own = found.own
+  const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own
+  if (picked.length === 0) {
+    throw new Error('run "' + runId + '" has no audio artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot)))
+  }
+  const row = picked[0]!
+  await assertImageCapableRoute(ctx, exec, runId)
+  const absPath = join(found.root, 'output', row.runId, row.name)
+  let probe: { duration_s?: number, size_bytes?: number, streams: FilmStreamSummary[] }
+  try {
+    const { stdout } = await proc('ffprobe', [
+      '-v', 'error',
+      '-show_entries', 'format=duration,size:stream=codec_name,sample_rate,channels',
+      '-of', 'json', absPath,
+    ], exec.signal)
+    probe = parseProbeSummary(stdout)
+  } catch (error) {
+    if (error instanceof Error && (error as { code?: unknown }).code === 'ENOENT') {
+      throw new Error('cannot view the audio "' + row.name + '": ffprobe is not installed on the estate host', { cause: error })
+    }
+    throw new Error('cannot view the audio "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error })
+  }
+  const work = await mkdtemp(join(tmpdir(), 'melite-view-'))
+  try {
+    const sheet = join(work, 'waveform.png')
+    try {
+      await proc('ffmpeg', ['-v', 'error', '-i', absPath, '-filter_complex', 'showwavespic=s=640x240:colors=#9db4ff', '-frames:v', '1', '-y', sheet], exec.signal)
+    } catch (error) {
+      throw new Error('cannot view the audio "' + row.name + '": the waveform sheet could not be built (' + (error instanceof Error ? error.message : String(error)) + ')', { cause: error })
+    }
+    const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes)
+    const data = await readFile(sheet, { signal: exec.signal })
+    if (data.byteLength > byteCap) {
+      throw new Error('cannot view the audio "' + row.name + '": its waveform sheet exceeds the ' + String(byteCap) + '-byte image cap')
+    }
+    let ref: ImageAttachmentRef
+    try {
+      ref = await attachments.saveImage({ data, mediaType: 'image/png', name: basename(row.name, extname(row.name)) + '-waveform.png' })
+    } catch (error) {
+      throw new Error('cannot commit the audio waveform sheet for "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error })
+    }
+    return {
+      runId: row.runId,
+      url: row.url,
+      image: {
+        attachmentId: ref.attachmentId,
+        mediaType: ref.mediaType,
+        bytes: ref.bytes,
+        width: ref.width,
+        height: ref.height,
+        ...(ref.name === undefined ? {} : { name: ref.name }),
+        ...(ref.originalDimensions === undefined ? {} : { originalDimensions: { ...ref.originalDimensions } }),
+      },
+      audio: {
+        file: row.name,
+        ...(probe.duration_s === undefined ? {} : { duration_s: probe.duration_s }),
+        ...(probe.size_bytes === undefined ? {} : { size_bytes: probe.size_bytes }),
+        streams: probe.streams.map((s) => ({ codec: s.codec, ...(s.sample_rate === undefined ? {} : { sample_rate: s.sample_rate }), ...(s.channels === undefined ? {} : { channels: s.channels }) })),
+        waveform_of: true,
+      },
+    }
+  } finally {
+    await rm(work, { recursive: true, force: true })
+  }
+}
 /** The structural exec view the route gate reads (the types.ts
  * ToolExec adaptation, widened for THIS tool's need — the gate walks
  * exec.agent; contravariance-safe: a body accepting this accepts any
@@ -389,6 +498,18 @@ function viewedContent(value: ViewedImageValue): ContentBlock[] {
         + (f.size_bytes !== undefined ? ', ' + String(f.size_bytes) + ' bytes' : '')
         + ', streams: ' + streams + '; contact sheet of ' + String(f.sheet_of)
         + ': ' + value.image.mediaType + ' ' + String(value.image.width) + 'x' + String(value.image.height) + ')' },
+      { type: 'image', attachment: imageRefFromValue(value.image) },
+    ]
+  }
+  if (value.audio !== undefined) {
+    const a = value.audio
+    const streams = a.streams.map((s) =>
+      s.codec + (s.sample_rate !== undefined ? ' ' + String(s.sample_rate) + 'Hz' : '') + (s.channels !== undefined ? ' ' + String(s.channels) + 'ch' : '')).join(' + ')
+    return [
+      { type: 'text', text: 'melite_view audio: ' + value.url + ' (' + a.file
+        + (a.duration_s !== undefined ? ', ' + String(a.duration_s) + 's' : '')
+        + (a.size_bytes !== undefined ? ', ' + String(a.size_bytes) + ' bytes' : '')
+        + ', streams: ' + streams + '; waveform sheet: ' + value.image.mediaType + ' ' + String(value.image.width) + 'x' + String(value.image.height) + ')' },
       { type: 'image', attachment: imageRefFromValue(value.image) },
     ]
   }
@@ -486,14 +607,37 @@ export function meliteView(ctx: Context): ToolDefinition {
       // image-kind, newest first; the artifact substring only
       // narrows names the walk itself produced. A no-image run
       // falls to the film arm (§24) which walks video the same way.
+      // THE AUDIO ARM (§33 gap-6): an artifact that names an audio
+      // extension declares intent BEFORE the image walk — a run can
+      // hold images AND audio (a portrait commission that also
+      // exported a voice), and `melite_view run-x line.flac` must
+      // observe the CLIP, not the newest png. Extension list =
+      // mediaKinds' audio vocab (the SSOT; mirrored like the image
+      // table above).
+      const AUDIO_EXTENSIONS = new Set(['.wav', '.flac', '.mp3', '.ogg', '.m4a', '.aac'])
+      if (artifact !== '' && AUDIO_EXTENSIONS.has(extname(artifact).toLowerCase())) {
+        const heard = await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments)
+        return heard as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+      }
       const found = await firstRootWithRun(seat, 'image', runId)
       if (found === null) {
         // THE FILM ARM (§24): a film run holds no images — observe
         // it through its own artifact (ffprobe summary + a contact
         // sheet the model can SEE). The no-film voice keeps the old
         // prefix (the walls pin it); the value carries the film row.
-        const filmed = await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments)
-        return filmed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+        try {
+          const filmed = await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments)
+          return filmed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+        } catch (filmMiss) {
+          // THE AUDIO-ONLY RUN (§33 gap-6): when the film arm found
+          // no VIDEO either, an audio-holding run (a tts/music/sfx
+          // commission) observes through the audio arm. Any other
+          // film-arm refusal (a real probe failure on a real film)
+          // rethrows — the chain never masks a working arm's error.
+          if (!(filmMiss instanceof Error && /produced no image artifacts/.test(filmMiss.message))) throw filmMiss
+          const heard = await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments)
+          return heard as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+        }
       }
       const own = found.own
       const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own

@@ -339,7 +339,25 @@ export class CardRegistryService extends Service {
    *  own (the validate door's degraded read). */
   resolveCardFamily(mid: string, facts?: Record<string, ModelFactsRow>): string {
     const table: Record<string, ModelFactsRow> = facts ?? this.modelFacts();
-    if (mid in table) return mid;
+    if (mid in table) {
+      // THE ROUTE-ADDRESS FOLD (ROADMAP §36.5, 2026-09-24 — the
+      // operator's "(registered: …)" receipt's twin): the facts
+      // projection registers per-ROUTE rows (the flattener's one-
+      // owner-per-route picker rows, receipt: the address row
+      // 'qwen3-tts-voicedesign-design' exists as its own facts key
+      // with defaults {model: 'qwen3-tts-voicedesign', variant:
+      // 'voicedesign'}) — a KEY hit used to return the ADDRESS as
+      // if it were a family, and every family-resolution consumer
+      // downstream answered the models registry's unknown-model
+      // voice. The row's OWN defaults name the owning atom: fold
+      // to it. The address row itself keeps serving the picker
+      // (this is the resolution lens, never the serve table); a
+      // real family row's defaults point at itself and returns
+      // unchanged.
+      const owner = table[mid].defaults?.["model"];
+      if (typeof owner === "string" && owner !== mid && owner in table) return owner;
+      return mid;
+    }
     // (every real route is also a catalog mid — the mid/family/mids
     // hits above always win. Census 2026-09-12: zero routes outside
     // mids — the lens arms never fire through this path.)

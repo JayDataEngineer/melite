@@ -31,7 +31,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
-import { finalizeH3 } from '@melite/comfyui-card-kit'
+import { finalizeH3, coerceWireArrays } from '@melite/comfyui-card-kit'
 import { computeFilmMix, parseFilmMixClips, spanStanzaFrames, stanzaSecs } from './filmMix.ts'
 import type { FilmMixClip, FilmMixSpan } from './filmMix.ts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
@@ -346,7 +346,15 @@ export function schema(v: unknown): Record<string, unknown> {
   const raw = (v ?? {}) as Record<string, unknown>
   // length null SURVIVES this walk on purpose (the walk-shadow fix:
   // multi-call docs keep null — per-window spans compute at compose).
-  const out: Record<string, unknown> = paramSchema(coerceWireBoolean(raw))
+  // THE ARRAY WIRE GUARD (P2, 2026-09-24): the schema's own dict
+  // names the array keys — a wire "" (the empty-array corruption)
+  // fills to [], an {item:[…]} wrapper unwraps — same law as the
+  // boolean wire tolerance above (receipts: commission 034's
+  // run-9953f652410d-d365af74, `$.ref_images expected array but
+  // got [object Object]` ×4 and `calls: ""`).
+  const out: Record<string, unknown> = paramSchema(
+    coerceWireArrays(paramSchema, coerceWireBoolean(raw)),
+  )
   let variant = typeof raw.variant === 'string' ? raw.variant : undefined
   // variant DERIVATION (retired timeline/laws.py, b324c480^ —
   // opener_family/chain_family): the studio calls shape carries no

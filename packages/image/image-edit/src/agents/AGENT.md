@@ -51,4 +51,10 @@ KSampler.steps) before blaming the prompt.
   bench (`patch` / `rewire` to refine). The flow is live in the user's
   cards tab; keep editing it as the user asks.
 - Run: THE USER'S Run press on the card — never yours.
+  THE LANE LAW (3088 receipt, 2026-09-24): that is the CHAT
+  session's law. On a HEADLESS commission lane (the 3088
+  maker) the brief IS the user's press — `melite_flow`
+  starts the run there lawfully, and the runbook owns the
+  proof. Never confused: chat = compose-only, headless
+  commission = execute the brief.
 - Progress: on the card itself (the user watches it run).

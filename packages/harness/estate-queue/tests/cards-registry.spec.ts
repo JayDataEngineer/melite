@@ -390,3 +390,21 @@ describe("repairStageModel — THE SCHEMA-MASTER REPAIR (operator law 2026-09-24
     expect(svc.admitStageModel("tts", fix!.model)).toEqual({ ok: true });
   });
 });
+
+describe("resolveCardFamily — THE ROUTE-ADDRESS FOLD (ROADMAP §36.5)", () => {
+  it("THE RECEIPT: an address row folds to the owning atom its own defaults name", () => {
+    expect(svc.resolveCardFamily("qwen3-tts-voicedesign-design")).toBe("qwen3-tts-voicedesign");
+  });
+  it("a real family id resolves to itself (its defaults point at itself or are absent)", () => {
+    expect(svc.resolveCardFamily("qwen3-tts-voicedesign")).toBe("qwen3-tts-voicedesign");
+    expect(svc.resolveCardFamily("qwen3-tts")).toBe("qwen3-tts");
+  });
+  it("a variant route not keyed in facts still folds through the variant table", () => {
+    // route ladder unchanged: the cell/variant route arms keep their law
+    const out = svc.resolveCardFamily("qwen3-tts-voicedesign-base");
+    expect(out).toBe("qwen3-tts-voicedesign");
+  });
+  it("an unknown id rides verbatim (never a fuzzy guess)", () => {
+    expect(svc.resolveCardFamily("not-a-model")).toBe("not-a-model");
+  });
+});

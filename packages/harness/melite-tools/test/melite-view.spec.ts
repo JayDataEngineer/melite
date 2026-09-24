@@ -642,3 +642,83 @@ describe('melite_view cross-roots (§23 manifest)', () => {
     }
   })
 })
+
+describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the committed tone fixture, fakes for refusals)', () => {
+  const PROBE_AUDIO = '{"format":{"duration":"0.500000","size":"8078"},"streams":[{"codec_name":"pcm_s16le","sample_rate":"8000","channels":1}]}'
+  const fakeAudioProc = (opts?: { probe?: string, ffprobeThrow?: unknown, ffmpegThrow?: unknown }): FilmProc =>
+    async (bin, args) => {
+      if (bin === 'ffprobe') {
+        if (opts?.ffprobeThrow !== undefined) throw opts.ffprobeThrow
+        return { stdout: opts?.probe ?? PROBE_AUDIO }
+      }
+      if (opts?.ffmpegThrow !== undefined) {
+        throw opts.ffmpegThrow === true ? new Error('ffmpeg exploded') : opts.ffmpegThrow
+      }
+      writeFileSync(args[args.length - 1]!, PNG_BYTES)
+      return { stdout: '' }
+    }
+
+  beforeAll(() => {
+    // the audio run: the committed 0.5s tone fixture (pcm_s16le
+    // 8000Hz mono, 8078 bytes) — real ffprobe/ffmpeg prove the
+    // success path; fakes pin the refusals below
+    const audio = join(root, 'output', 'run-a0d10-tone')
+    mkdirSync(audio, { recursive: true })
+    copyFileSync(new URL('./fixtures/tone-05s.wav', import.meta.url), join(audio, 'line.wav'))
+  })
+
+  test('an audio-only run serves the probe verdict + waveform sheet; the run tree stays untouched', async () => {
+    const { ctx, attachments } = fakeCtx()
+    const tool = meliteView(ctx)
+    const out = await tool.execute({ run_id: 'run-a0d10-tone' }, visualExec as never) as ViewedImageValue
+    assert.equal(out.runId, 'run-a0d10-tone')
+    assert.equal(out.url, '/melite-media/runs/run-a0d10-tone/line.wav')
+    // THE PROBE VERDICT (duration/size/codec/rate/channels pinned on
+    // the fixture — THE MINT-TIME DURATION the gap asked for)
+    assert.equal(out.audio!.file, 'line.wav')
+    assert.equal(out.audio!.duration_s, 0.5)
+    assert.equal(out.audio!.size_bytes, 8078)
+    assert.deepEqual(out.audio!.streams, [{ codec: 'pcm_s16le', sample_rate: 8000, channels: 1 }])
+    assert.equal(out.audio!.waveform_of, true)
+    // the viewed image IS the waveform sheet (a real PNG)
+    assert.equal(out.image.mediaType, 'image/png')
+    assert.ok(out.image.name!.endsWith('-waveform.png'))
+    assert.equal(attachments.saved.length, 1)
+    // PROVENANCE: a view mints nothing — the run still holds exactly the clip
+    assert.deepEqual(readdirSync(join(root, 'output', 'run-a0d10-tone')), ['line.wav'])
+  })
+
+  test('THE STUB DETECTOR: a near-zero duration reads in the verdict (the 032 receipt closes natively)', async () => {
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx)
+    const proc = fakeAudioProc({ probe: '{"format":{"duration":"0.000042","size":"1770"},"streams":[{"codec_name":"pcm_s16le","sample_rate":"8000","channels":1}]}' })
+    // route through viewAudioArtifact directly (the proc seam)
+    const { viewAudioArtifact } = await import('../src/tools/melite-view.ts')
+    const out = await viewAudioArtifact({ stateRoot: root } as never, 'run-a0d10-tone', 'line.wav', visualExec as never, ctx, (ctx.get('attachments') as never), proc)
+    assert.equal(out.audio!.duration_s, 0.000042)
+  })
+
+  test('an explicit audio artifact name observes the CLIP even when the run also holds images', async () => {
+    // the mixed run: an image AND the clip — explicit intent wins
+    const mixed = join(root, 'output', 'run-b1e5d-mix2')
+    mkdirSync(mixed, { recursive: true })
+    writeFileSync(join(mixed, 'portrait.png'), PNG_BYTES)
+    copyFileSync(new URL('./fixtures/tone-05s.wav', import.meta.url), join(mixed, 'line.flac'))
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx)
+    const out = await tool.execute({ run_id: 'run-b1e5d-mix2', artifact: 'line.flac' }, visualExec as never) as ViewedImageValue
+    assert.equal(out.audio!.file, 'line.flac')
+    assert.equal(out.audio!.duration_s, 0.5)
+  })
+
+  test('a probe refusal names the clip LOUD (never a silent stub)', async () => {
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx)
+    const proc = fakeAudioProc({ ffprobeThrow: new Error('truncated') })
+    const { viewAudioArtifact } = await import('../src/tools/melite-view.ts')
+    await assert.rejects(
+      viewAudioArtifact({ stateRoot: root } as never, 'run-a0d10-tone', 'line.wav', visualExec as never, ctx, (ctx.get('attachments') as never), proc),
+      /cannot view the audio "line\.wav": truncated/,
+    )
+  })
+})

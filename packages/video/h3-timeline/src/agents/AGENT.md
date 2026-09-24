@@ -37,6 +37,12 @@ The card composes through `melite_construct` `add_stage` (card `h3-timeline`, yo
 
 - Compose: `melite_construct` `add_stage` with card `h3-timeline` and your `params.calls` (the runPlan skeleton is one stage) — the flow is live in the user's cards tab; keep editing it as the user asks. NEVER by-pass the queue.
 - Run: THE USER'S Run press on the card — never yours.
+  THE LANE LAW (3088 receipt, 2026-09-24): that is the CHAT
+  session's law. On a HEADLESS commission lane (the 3088
+  maker) the brief IS the user's press — `melite_flow`
+  starts the run there lawfully, and the runbook owns the
+  proof. Never confused: chat = compose-only, headless
+  commission = execute the brief.
 - Progress: on the card itself (the user watches it run).
 - Continue: NOT SUPPORTED (the promise was retired 2026-09-24 — no completed film ever saved an `h3_context/` strip; the producer is roadmapped, not built). To extend a story past one run, author part 2 as its own film and match the seams BY HAND: part 2's first call starts on the same visual beat part 1 ended on (same setting, wardrobe, lighting; a cut-on-action or a new establishing shot hides the join — the two-part BRIEF4 film is the worked example).
 - Fix errors: read the exact error message the card reports, fix the CARD, patch the stage — small changes only (constrained: the edit tile number must be what failed).

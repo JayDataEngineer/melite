@@ -840,3 +840,60 @@ describe('melite_construct add_stage — expected/outputs ride (the load workaro
     )
   })
 })
+
+// ── THE ARRAY WIRE GUARD (P2, ROADMAP §36.4) — commission 034's
+// forensic receipts: arrays under free-form params corrupt on the
+// wire (`{item:[…]}` non-empty, `""` empty). The tool-boundary
+// unwrap runs BEFORE any request: the bench stores clean.
+describe('melite_construct execute — the array wire guard', () => {
+  test('THE RECEIPT: add_stage params carrying {item:[…]} POST unwrapped', async () => {
+    const { seen, request } = mockRequest((_m, _p, _b) => ({}))
+    const tool = meliteConstruct(request)
+    const r = (await tool.execute(
+      {
+        verb: 'add_stage', card: 'h3-timeline', expect_rev: 3,
+        params: { ref_images: { item: ['/a.png'] }, prompt: 'x' },
+      },
+      exec(),
+    )) as Record<string, unknown>
+    assert.equal(r.ok, true)
+    const add = seen.find((s) => s.path.endsWith('/add_stage'))
+    assert.ok(add !== undefined, 'the add_stage request fired')
+    assert.deepEqual(
+      (add.body as { params: Record<string, unknown> }).params.ref_images,
+      ['/a.png'],
+      'the wrapped array reached the estate UNWRAPPED',
+    )
+    assert.equal((add.body as { params: Record<string, unknown> }).params.prompt, 'x')
+  })
+
+  test('load stages[].params unwrap at depth; the "" arm stays for the card seat', async () => {
+    const { seen, request } = mockRequest((_m, _p, _b) => ({ rev: 5, stages: [] }))
+    const tool = meliteConstruct(request)
+    await tool.execute(
+      {
+        verb: 'load', expect_rev: 4,
+        stages: [{ id: 's0', card: 'h3-timeline', params: { calls: { item: [{ text: 'hi' }] } } }],
+      },
+      exec(),
+    )
+    const ensure = seen.find((s) => s.path === '/v1/bench/ensure')
+    assert.ok(ensure !== undefined)
+    const row = (ensure.body as { stages: Array<{ params: Record<string, unknown> }> }).stages[0]
+    assert.deepEqual(row.params.calls, [{ text: 'hi' }])
+  })
+
+  test('a genuine object with an item key never unwraps (two keys = not the wire shape)', async () => {
+    const { seen, request } = mockRequest((_m, _p, _b) => ({}))
+    const tool = meliteConstruct(request)
+    await tool.execute(
+      { verb: 'add_stage', card: 'c', expect_rev: 1, params: { meta: { item: 'label', x: 1 } } },
+      exec(),
+    )
+    const add = seen.find((s) => s.path.endsWith('/add_stage'))
+    assert.deepEqual(
+      (add!.body as { params: Record<string, unknown> }).params.meta,
+      { item: 'label', x: 1 },
+    )
+  })
+})

@@ -9,6 +9,7 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph'
 import type { PromptGraph, JsonValue } from '@melite/comfyui-card-kit/graph'
 import { assertControlNetSchedule } from '@melite/comfyui-card-kit/guard'
+import { coerceWireNumbers, wireTypeLedger } from '@melite/comfyui-card-kit'
 import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { ProvisionRow } from './models/families/contract.ts'
 import { provisionDest } from './catalog.ts'
@@ -694,9 +695,18 @@ export class ComfyUIService extends Service {
     if (def.requiresModel === false && (modelId === null || modelId === '')) {
       let merged: Record<string, unknown>
       try {
-        merged = def.schema(params)
+        // THE NUMERIC-STRING FILL (commission 035, 2026-09-24):
+        // schema-derived through the carrier — the same seat
+        // assertNoCheat reads — card-agnostic, both compose paths,
+        // every card, no opt-out. Receipt: `$.width expected number
+        // but got 768` (the wire stringified a nested number).
+        merged = def.schema(coerceWireNumbers((def.schemaCarrier ?? def.schema) as unknown as Schema, params))
       } catch (e) {
-        throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}`)
+        // THE WIRE-TYPE LEDGER (035's maker gap #2): the bare
+        // `got 768` named no type — the receipt could not
+        // distinguish string from box. The ledger appends the
+        // RECEIVED typeof for every mismatched key.
+        throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}` + wireTypeLedger((def.schemaCarrier ?? def.schema) as unknown as Schema, params))
       }
       assertNoCheat(cardId, def, merged, params)
       assertModRequires(cardId, def, merged, this.objectInfoNodes, this.facts?.extension_node_types ?? {})
@@ -735,9 +745,11 @@ export class ComfyUIService extends Service {
     // explicit params. The merge below IS the whole law.
     let merged: Record<string, unknown>
     try {
-      merged = def.schema(params)
+      // THE NUMERIC-STRING FILL — the model path shares the same
+      // seat (see the model-less arm above for the receipt).
+      merged = def.schema(coerceWireNumbers((def.schemaCarrier ?? def.schema) as unknown as Schema, params))
     } catch (e) {
-      throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}`)
+      throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}` + wireTypeLedger((def.schemaCarrier ?? def.schema) as unknown as Schema, params))
     }
     merged = { ...merged, ...Object.fromEntries(Object.entries(model.defaults).filter(([, v]) => v !== null && !Array.isArray(v))), ...((params ?? {}) as Record<string, unknown>) }
     assertNoCheat(cardId, def, merged, params)

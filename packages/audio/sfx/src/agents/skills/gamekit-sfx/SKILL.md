@@ -6,7 +6,8 @@ description: Gameplay SFX wave via moss-sfx - five-event lane (combat, creature,
 ## Run (queue door — the only inference door)
 Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).
 Compose via `melite_construct` `add_stage` onto the shared bench — the run
-starts at the user's Run press.
+starts at the user's Run press (chat lanes; a headless commission's brief
+IS that press — melite_flow executes there).
 Five bricks run serially ON PURPOSE
 (concurrent audio model loads contend and fail).
 

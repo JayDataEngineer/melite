@@ -11,7 +11,8 @@ Arrangement (instrumentation timeline, bpm, key).
 ## Run (queue door — the only inference door)
 Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).
 Compose via `melite_construct` `add_stage` onto the shared bench — the run
-starts at the user's Run press.
+starts at the user's Run press (chat lanes; a headless commission's brief
+IS that press — melite_flow executes there).
 Iterate ONLY at **`duration: 30`**; render the final at `duration: 90–120`
 once the caption is locked (no `preset` knob exists — duration is the
 draft/final lever; the caption itself rides `params.prompt`).

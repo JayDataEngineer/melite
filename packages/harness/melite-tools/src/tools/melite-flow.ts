@@ -24,6 +24,7 @@ import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import type { EstateRequest } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
+import { unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { benchKeyOfExec } from './melite-construct.ts'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import { boardedMap, resolveSpecKey } from '../discovery.ts'
@@ -326,7 +327,8 @@ async function runBench(
     const runId = started['run_id'] as string
     const outcome = await observeAndAttribute(request, draftId, stageId, runId, signal)
     pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
-      ...(outcome.url !== '' ? { url: outcome.url } : {}) })
+      ...(outcome.url !== '' ? { url: outcome.url } : {}),
+      ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}) })
     if (outcome.status !== 'done') {
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, run_id: runId,
         error: `stage ${stageId} (${card}) ended ${outcome.status}`, pass }
@@ -383,7 +385,7 @@ async function observeAndAttribute(
   stageId: string,
   runId: string,
   signal: AbortSignal,
-): Promise<{ status: string; url: string }> {
+): Promise<{ status: string; url: string; artifacts: string[] }> {
   let lastLive = ''
   for (;;) {
     signal.throwIfAborted()
@@ -395,7 +397,7 @@ async function observeAndAttribute(
       // must match the stream's — runFinished's law); transport
       // hiccups retry on cadence.
       const re = remoteErrorOf(e)
-      if (re !== null && re !== undefined && re.code === 'runs/unknown-run') return { status: 'unknown', url: '' }
+      if (re !== null && re !== undefined && re.code === 'runs/unknown-run') return { status: 'unknown', url: '', artifacts: [] }
       await sleepAbort(1500, signal)
       continue
     }
@@ -409,14 +411,31 @@ async function observeAndAttribute(
       const rawUrl = st !== undefined && typeof st['url'] === 'string' && st['url'] !== '' ? st['url'] as string : ''
       const url = rawUrl === '' ? ''
         : /^([a-z][a-z0-9+.-]*:|\/)/i.test(rawUrl) ? rawUrl : `/melite-media/runs/${runId}/${rawUrl}`
+      // THE INLINE ARTIFACT RECEIPT (§33 gap-5, 2026-09-24): the
+      // terminal doc already carries artifacts[] (run_status's own
+      // door shape) — harvest the paths so the flow's return
+      // self-receipts. A maker that must burn a run_status call
+      // just to learn WHAT was minted (032/033 both did) reads it
+      // off the pass row instead. Paths ride AS SERVED (the wire
+      // spelling); canonicalization stays run_status's text law.
+      const arts: string[] = []
+      const rawArts = doc['artifacts']
+      if (Array.isArray(rawArts)) {
+        for (const a of rawArts) {
+          const p = typeof a === 'string' ? a
+            : (typeof (a as { path?: unknown })?.['path'] === 'string' ? (a as { path: string })['path'] : '')
+          if (p !== '') arts.push(p)
+        }
+      }
       const result: Record<string, unknown> = { run_id: runId }
       if (url !== '') result['url'] = url
+      if (arts.length > 0) result['artifacts'] = arts
       const terminal = status === 'completed' ? 'done' : status
       try {
         await request( 'PATCH', `/v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`,
           { runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS)
       } catch { /* bookkeeping — the run's own outcome is the answer */ }
-      return { status: terminal, url }
+      return { status: terminal, url, artifacts: arts }
     }
     const live = status === 'queued' || status === 'pending' ? 'queued' : 'running'
     if (live !== lastLive) {
@@ -767,6 +786,16 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
         bench?: unknown; card?: unknown; model?: unknown; flow?: unknown; stages?: unknown; connects?: unknown;
         prompt?: unknown; params?: unknown; id?: unknown; description?: unknown; test?: unknown;
       }
+      // THE ARRAY WIRE GUARD (P2, ROADMAP §36.4 — commission 034's
+      // forensic): free-form nested arrays corrupt on the wire
+      // (`{item:[…]}` non-empty, `""` empty). The shape-based
+      // unwrap rides EVERY param-bearing arg before composition —
+      // the card seat (the kit's coerceWireArrays) fills the ""
+      // arm for schema-declared arrays.
+      const guarded = unwrapItemArrays(a)
+      if (guarded.params !== undefined) a.params = guarded.params
+      if (guarded.stages !== undefined) a.stages = guarded.stages
+      if (guarded.connects !== undefined) a.connects = guarded.connects
       const bag = (a.params && typeof a.params === 'object' && !Array.isArray(a.params))
         ? a.params as Record<string, unknown> : {}
       const test = a.test === true

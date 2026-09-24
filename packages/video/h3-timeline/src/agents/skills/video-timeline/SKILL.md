@@ -145,8 +145,13 @@ ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_n
 ```
 
 ~300 chars out (duration/size/streams — the whole verification).
-`melite_view` cannot show mp4 — never call it on a film; ffprobe is
-the observe arm.
+`melite_view` DOES serve films now (§24's film arm, verified live in
+commission 034): it answers a four-frame contact sheet PLUS the same
+stream summary ffprobe gives (duration/frames/bytes/codecs) — one
+call, no shell. It is the FIRST observe arm for a film; ffprobe is
+the independent second opinion when you must re-verify decode or
+cross-check numbers. (The sheet is generated in-view — it is not a
+file on disk; never `read_image` a contact-sheet path.)
 
 ## The compose flow
 

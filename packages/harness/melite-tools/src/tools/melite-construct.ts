@@ -35,6 +35,7 @@ import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import type { EstateRequest } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
+import { unwrapItemArrays } from '@melite/comfyui-card-kit'
 
 /** The default bench — the unattributed seat (headless runs,
  *  legacy callers). */
@@ -274,8 +275,10 @@ export function meliteConstruct(
       + 'Verbs: read (the state — '
       + 'always start here; a stage that has run carries last_run {run_id, status, artifacts} — null + runs '
       + '{checked, total, matched} when the draft has no run in the window; view a run_id with melite_view, '
-      + 'chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE: refused on a non-empty bench unless '
-      + 'overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, '
+      + 'chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE on THE CONVERSATION\'S '
+      + 'SHARED BENCH: this is the bench the user watches in their cards tab, and overwrite:true replaces whatever '
+      + 'was there — load a throwaway TEST/scratch flow only when replacing is the intent, never to "try" a shape; '
+      + 'refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, '
       + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card\'s declared ports, never files: '
       + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell consumes the channel, the queue resolves it at run time; to chain '
       + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
@@ -414,6 +417,21 @@ export function meliteConstruct(
       // defined object here, so no nullish fallback exists to cover
       // (2026-09-12).
       const a = args as Record<string, unknown>
+      // THE ARRAY WIRE GUARD (P2, 2026-09-24 — commission 034's
+      // forensic, run-9953f652410d-d365af74): arrays nested under
+      // free-form tool params (additionalProperties) corrupt on the
+      // wire — a non-empty array arrives as `{item:[…]}`, an empty
+      // one as `""`. The unwrap is shape-based and unambiguous; it
+      // runs on EVERY param-bearing arg (params, stages[].params,
+      // inputs, expected, outputs, from) so the bench STORES clean —
+      // reads and compose never see the poison. (The `""`→[] fill
+      // for schema-declared array keys lives at the card parse seat
+      // — the card kit's coerceWireArrays, h3 precedent law.)
+      const guarded = unwrapItemArrays(a)
+      for (const key of ['params', 'stages', 'inputs', 'expected', 'outputs', 'from'] as const) {
+        const v = guarded[key]
+        if (v !== undefined) a[key] = v
+      }
       const verb = typeof a.verb === 'string' ? a.verb : ''
       // The conversation wins (the one-flow law rides the agent's own
       // session); an explicit bench key applies only to unattributed
