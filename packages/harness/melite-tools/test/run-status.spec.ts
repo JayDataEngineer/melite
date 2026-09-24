@@ -369,7 +369,7 @@ describe('run_status render — the human line', () => {
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     const out = text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['/repo/output/run-abc/tts/f.flac'], export_name: 'night-keeper' })
     assert.ok(out.includes("export: 'night-keeper'"), 'the mint is named')
-    assert.ok(out.includes('near-empty by design'), 'the preview stops looking like a silent hole')
+    assert.ok(out.includes('preview audio is the design sample'), 'the preview is sold, not holed (the 1-sample stub died 2026-09-24)')
     assert.ok(out.includes('night-keeper_*.qvoice'), 'the voices-root glob is spelled')
   })
 

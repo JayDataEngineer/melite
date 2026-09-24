@@ -396,4 +396,56 @@ describe("pump + engine", () => {
     assert.equal((await settleWait(s, "run-manual")).status, "completed");
     assert.equal((await settleWait(s, ans.run_id)).status, "completed");
   });
+
+  // THE TEARDOWN RACE, RETIRED (standing debt since transcript-014;
+  // fixed 2026-09-24): before the arm, dispose stopped NOTHING —
+  // the pump kept claiming queued runs past fiber death (GPU work
+  // after teardown; a next boot's reconcile could replay a run the
+  // zombie pump was still settling — duplicate GPU spend). The arm:
+  // the dispose effect flips the PUBLIC tearingDown gate, presses
+  // stopFlags on every live row, and fires the engine interrupt
+  // best-effort; the pump's claim gate refuses new claims.
+  it("THE TEARDOWN ARM: dispose stops the in-flight run (flag + interrupt) and the pump claims nothing more", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    let release: (() => void) | undefined;
+    const parked = new Promise<void>((r) => { release = r; });
+    engine.onFlow = async (_rows, runDir, _in, _init, opts) => {
+      // a run that parks until the worker's stop check (the
+      // stopFlag the dispose effect presses) converges
+      await new Promise<void>((done) => {
+        const tick = (): void => {
+          if (opts.shouldStop?.()) { done(); return; }
+          setTimeout(tick, 5);
+        };
+        tick();
+      });
+      release?.();
+      return { stages: { s: { outputs: {}, artifacts: [] } }, promptId: "p" };
+    };
+    const a = await s.svc.start(wfBody(), sig());
+    await waitRunning(s, a.run_id);
+    // a SECOND run sits queued behind the in-flight one — the
+    // claim the teardown gate must refuse
+    const b = await s.svc.start(wfBody({ name_hint: "second" }), sig());
+    assert.equal((s.core.runs.get(b.run_id) as RunRecord).status, "queued");
+    // TEARDOWN: the fiber's own dispose (the cordis effect verb)
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    await ctx.fiber.dispose();
+    await parked; // the engine arm observed the stop and returned
+    // (1) the in-flight run converges STOPPED, never completed
+    const aRow = await settleWait(s, a.run_id);
+    assert.equal(aRow.status, "stopped");
+    // (2) the engine interrupt fired for the in-flight run's dir
+    assert.ok(engine.stops.includes(aRow.dir), "the dispose pressed the engine interrupt");
+    // (3) THE CLAIM GATE: the queued run stays queued forever —
+    // no post-teardown claim, no duplicate GPU spend
+    await new Promise((r) => setTimeout(r, 50));
+    const bRow = s.core.runs.get(b.run_id) as RunRecord;
+    assert.equal(bRow.status, "queued");
+    assert.equal(bRow.stopFlag, true); // the sweep pressed its flag too — the next boot's reconcile owns it
+    assert.equal(s.svc.tearingDown, true); // the PUBLIC gate a next claim consults
+    assert.equal(s.svc.pumping, false);
+    void release;
+  });
 });

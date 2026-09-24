@@ -324,7 +324,7 @@ async function runBench(
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, error: started['error'], pass }
     }
     const runId = started['run_id'] as string
-    const outcome = await observeAndAttribute(request, a.bench, stageId, runId, signal)
+    const outcome = await observeAndAttribute(request, draftId, stageId, runId, signal)
     pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
       ...(outcome.url !== '' ? { url: outcome.url } : {}) })
     if (outcome.status !== 'done') {
@@ -346,16 +346,26 @@ function sleepAbort(ms: number, signal: AbortSignal): Promise<void> {
 
 /** THE OUTCOME OBSERVER, agent-side (observeRunOutcome's law, the
  *  attribution half): poll the run to terminal, writing every flip
- *  onto the bench row (runStatus + result) through the bench patch
- *  door. Patches are bookkeeping — a refusal is swallowed (the next
- *  run rewrites the row); the loop's own refusals are the run's.
- *  The url rides the estate's media route: run-RELATIVE names
- *  prefix /melite-media/runs/<runId>/, urls that carry a scheme or
- *  lead with / pass verbatim (the ONE rewrite — the run-wire law,
+ *  onto the stage row (runStatus + result) through the DRAFTS
+ *  stage-patch door — `/v1/flows/drafts/<draftId>/stages/<stageId>`
+ *  (THE SKIP-DONE HOLE, transcript-011's duplicate GPU runs, fixed
+ *  2026-09-24: the old arm posted runStatus/result to the BENCH
+ *  patch verb, whose law REFUSES run outcomes — "run outcomes ride
+ *  the drafts/patch door" — so every agent-side attribution was
+ *  refused and swallowed as bookkeeping; done marks never landed
+ *  and the next bench pass re-ran completed stages. The UI's
+ *  observer always used this door — that is why the user's Run All
+ *  skipped and the agent's never did). Patches remain bookkeeping —
+ *  a refusal is swallowed (the run's own outcome is the answer) —
+ *  but the door is now the one the law names, so the swallow only
+ *  ever sees transport, never a wired-in refusal. The url rides the
+ *  estate's media route: run-RELATIVE names prefix
+ *  /melite-media/runs/<runId>/, urls that carry a scheme or lead
+ *  with / pass verbatim (the ONE rewrite — the run-wire law,
  *  mirrored). */
 async function observeAndAttribute(
   request: EstateRequest,
-  bench: string,
+  draftId: string,
   stageId: string,
   runId: string,
   signal: AbortSignal,
@@ -389,17 +399,17 @@ async function observeAndAttribute(
       if (url !== '') result['url'] = url
       const terminal = status === 'completed' ? 'done' : status
       try {
-        await request( 'POST', `/v1/bench/${bench}/patch`,
-          { stage: stageId, runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS)
-      } catch { /* bookkeeping — the next run rewrites the row */ }
+        await request( 'PATCH', `/v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`,
+          { runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS)
+      } catch { /* bookkeeping — the run's own outcome is the answer */ }
       return { status: terminal, url }
     }
     const live = status === 'queued' || status === 'pending' ? 'queued' : 'running'
     if (live !== lastLive) {
       lastLive = live
       try {
-        await request( 'POST', `/v1/bench/${bench}/patch`,
-          { stage: stageId, runStatus: live, result: { run_id: runId } }, signal, DRAFT_TIMEOUT_MS)
+        await request( 'PATCH', `/v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`,
+          { runStatus: live, result: { run_id: runId } }, signal, DRAFT_TIMEOUT_MS)
       } catch { /* bookkeeping */ }
     }
     await sleepAbort(1500, signal)

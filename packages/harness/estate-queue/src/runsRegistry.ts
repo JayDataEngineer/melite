@@ -150,6 +150,26 @@ export class RunsRuntimeService extends Service {
    *  private #fields do not cross cordis proxies). */
   reconciled = false;
 
+  /** THE TEARDOWN ARM (the standing teardown race, retired
+   *  2026-09-24): before this, dispose stopped NOTHING — the pump
+   *  kept claiming queued runs and settling them after the fiber
+   *  died (GPU work past teardown; a next boot's reconcile could
+   *  replay a run the zombie pump was still settling — duplicate
+   *  GPU spend, the same signature as the bench skip-done hole).
+   *  The dispose effect flips this flag; the pump checks it before
+   *  every claim, and the in-flight run gets the stop door's own
+   *  treatment (stopFlag + best-effort engine interrupt) so the
+   *  engine's shouldStop converges at the next boundary. A public
+   *  field — the pumping-field precedent (cordis proxies). */
+  tearingDown: boolean = false;
+
+  /** The cached engine seat for the teardown interrupt: a ctx.get
+   *  from a DYING fiber refuses (the lookup that feeds the stop
+   *  door works only while this fiber lives), so the pump caches
+   *  the seat at claim time and the dispose effect rides the
+   *  cache. Structural type — no engine import cycle. */
+  engineSeat: { stopForRunDir: (dir: string) => Promise<void> } | undefined;
+
   constructor(ctx: Context) {
     super(ctx, "runs");
     // STROKE 83 — THE BOOT RECONCILE (resurrect is no longer
@@ -160,7 +180,46 @@ export class RunsRuntimeService extends Service {
     let disposed = false;
     this.ctx.effect((): (() => void) => {
       disposed = false;
-      return (): void => { disposed = true; };
+      // THE TEARDOWN ARM: the same flip arms the pump's claim gate
+      // and presses stop on anything in flight (the stop door's
+      // own verbs — flag first, engine interrupt best-effort; the
+      // worker's stop check converges the state when no seat
+      // answers). Never throws: teardown must not fail.
+      this.tearingDown = false;
+      return (): void => {
+        disposed = true;
+        this.tearingDown = true;
+        try {
+          for (const run of (this.core.runs as Map<string, RunRecord>).values()) {
+            if (run.status === "queued" || run.status === "running" || run.status === "stopping") {
+              run.stopFlag = true;
+            }
+          }
+          const inFlight: RunRecord[] = [...(this.core.runs as Map<string, RunRecord>).values()]
+            .filter((r) => r.status === "running" || r.status === "stopping");
+          if (inFlight.length > 0) {
+            // The cached seat first (a ctx.get from this dying
+            // fiber refuses); the fresh lookup is the fallback for
+            // a teardown before any claim (best-effort, never
+            // throws — teardown must not fail).
+            const comfy = this.engineSeat ?? (() => {
+              try {
+                return needComfyUI(this.ctx as unknown as EngineCtx, "runsRemote teardown");
+              } catch {
+                return undefined;
+              }
+            })();
+            if (comfy !== undefined) {
+              for (const run of inFlight) {
+                void comfy.stopForRunDir(run.dir).catch((): void => {});
+              }
+            }
+          }
+        } catch {
+          /* no engine seat at teardown: the stopFlags converge the
+           * worker loop at its next boundary — teardown never throws */
+        }
+      };
     }, "estate-runs.reconcile-guard");
     /* v8 ignore next 3 -- defensive-only (the fire-and-forget
      * law's unhandled-rejection guard): planResurrect swallows
@@ -828,11 +887,28 @@ export class RunsRuntimeService extends Service {
     this.pumping = true;
     try {
       for (;;) {
+        // THE TEARDOWN CLAIM GATE: a disposed fiber claims nothing
+        // more — the queued rows stay queued for the next boot's
+        // reconcile (their replay law), and the in-flight run rides
+        // the stopFlags the dispose effect pressed.
+        if (this.tearingDown) return;
         // The remote only ever enqueues RICH rows (RunRecord
         // extends the core's row — one object, one voice), so the
         // claim is this map's own row.
         const run: RunRecord | null = this.core.tryDequeue() as RunRecord | null;
         if (run === null) return;
+        // Cache the engine seat WHILE this fiber lives — the
+        // teardown effect's interrupt rides this cache (a ctx.get
+        // from a dying fiber refuses). Best-effort: a claim
+        // without a seat leaves the cache untouched, never fails
+        // the run (the worker converges on its own errors).
+        if (this.engineSeat === undefined) {
+          try {
+            this.engineSeat = needComfyUI(this.ctx as unknown as EngineCtx, "runsRemote pump");
+          } catch {
+            /* no seat yet — the card-plane rigs never have one */
+          }
+        }
         await runOne(run, this.ctx, (r) => this.settle(r));
       }
     } finally {

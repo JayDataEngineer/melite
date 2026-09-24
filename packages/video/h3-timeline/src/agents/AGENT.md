@@ -38,19 +38,18 @@ The card composes through `melite_construct` `add_stage` (card `h3-timeline`, yo
 - Compose: `melite_construct` `add_stage` with card `h3-timeline` and your `params.calls` (the runPlan skeleton is one stage) — the flow is live in the user's cards tab; keep editing it as the user asks. NEVER by-pass the queue.
 - Run: THE USER'S Run press on the card — never yours.
 - Progress: on the card itself (the user watches it run).
-- Continue: set `params.context` to a latent artifact ref (`runs/<prior-run>/h3_context`) to chain — window 1 loads the prior strip's final clip.
+- Continue: NOT SUPPORTED (the promise was retired 2026-09-24 — no completed film ever saved an `h3_context/` strip; the producer is roadmapped, not built). To extend a story past one run, author part 2 as its own film and match the seams BY HAND: part 2's first call starts on the same visual beat part 1 ended on (same setting, wardrobe, lighting; a cut-on-action or a new establishing shot hides the join — the two-part BRIEF4 film is the worked example).
 - Fix errors: read the exact error message the card reports, fix the CARD, patch the stage — small changes only (constrained: the edit tile number must be what failed).
 
 ## The compose flow
 
-The card composes in a single process — the compose dispatcher validates, compiles, and emits the graph in one pass. The system resolves initial chain state for continuation runs (chain context path from prior run artifacts).
+The card composes in a single process — the compose dispatcher validates, compiles, and emits the graph in one pass. There is no cross-run chain state: every film starts from its own window 1 (the within-run seam below is the only chaining that exists).
 
-## Continuation (chaining runs)
+## Continuation (chaining WITHIN one run — automatic)
 
-Set `context: runs/<prior_run_id>/h3_context` in the request body to continue from that run's ending (an artifact ref — the same law as image refs, kind=latent). Window 1 of the new card loads the prior run's final `h3_context/clip_N.safetensors`; the rest of the windows follow as normal.
+Every window k≥2 of a multi-call film carries the previous window's raw sampled latent through the drift-control continuation (schedule-matched prefix noise + Soft AV audio release) at a fixed 22-frame overlap — no knob, no seam vocabulary, nothing to author. A call marked `transition: "cut"` is the one exception: a true fresh window, nothing carried.
 
-The seam between windows is AUTOMATIC (drift-control carry at a fixed
-22-frame overlap — no knob); the seam stays invisible.
+There is NO across-run continuation: `params.context` was documentation vapor (BRIEF4 defect 35 — the maker trusted it and shipped a deliberate two-part cut). Do not pass `context`; the schema has no such key and the compose never consumed one.
 
 ## Worked examples (usage the schema cannot say)
 

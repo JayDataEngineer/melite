@@ -651,7 +651,15 @@ describe('melite_flow presentCall/render/meta — the faces', () => {
 })
 
 describe('melite_flow bench — the agent drives THE shared bench', () => {
-  test('the sequential pass: done rows skip, one {model: card-id} start per runnable row, rows attribute through the bench patch door', async () => {
+  test('the sequential pass: done rows skip, one {model: card-id} start per runnable row, rows attribute through the DRAFTS stage door (the skip-done hole, transcript-011)', async () => {
+    // THE SKIP-DONE HOLE (transcript-011's duplicate GPU runs, fixed
+    // 2026-09-24): the old observer posted runStatus/result to the
+    // BENCH patch verb, whose law REFUSES run outcomes ("run
+    // outcomes ride the drafts/patch door") — every agent-side
+    // attribution was refused and swallowed as bookkeeping, done
+    // marks never landed, and the next bench pass re-ran completed
+    // stages. This wall pins the DRAFTS stage door, so a regression
+    // to the refused verb fails HERE, not on duplicate GPU spend.
     // the status door: first poll 'running', then terminal 'completed'
     // with the stage's run-relative url (the ONE media-route rewrite).
     let polls = 0
@@ -670,7 +678,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
           if (polls === 1) return { status: 200, body: { status: 'running', stages: [] } }
           return { status: 200, body: { status: 'completed', stages: [{ id: 's_1', url: 'img/SaveImage_00001_.png' }] } }
         }
-        if (u === '/v1/bench/main/patch') {
+        if (u === '/v1/flows/drafts/d_bench/stages/s_1') {
           patches.push(decodeJsonBody(seen.calls[seen.calls.length - 1]!.init))
           return { status: 200, body: { rev: 4, stage: 's_1', patched: ['runStatus', 'result'] } }
         }
@@ -699,12 +707,13 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     assert.equal(startBody.test, true)
     assert.equal(startBody.draft_id, 'd_bench')
     // THE ATTRIBUTION: every flip writes the row — running first,
-    // then done + the media-routed result url
+    // then done + the media-routed result url — THROUGH THE DRAFTS
+    // STAGE DOOR (the drafts patch takes runStatus/result directly;
+    // the stage rides the URL, not the body — the bench verb's law)
     assert.equal(patches.length, 2)
-    assert.equal(patches[0]!.stage, 's_1')
     assert.equal(patches[0]!.runStatus, 'running')
     assert.deepEqual(patches[0]!.result, { run_id: 'rb1' })
-    assert.equal(patches[1]!.stage, 's_1')
+    assert.ok(!('stage' in patches[0]!), 'the stage rides the URL path, never the body')
     assert.equal(patches[1]!.runStatus, 'done')
     assert.deepEqual(patches[1]!.result, { run_id: 'rb1', url: '/melite-media/runs/rb1/img/SaveImage_00001_.png' })
   })

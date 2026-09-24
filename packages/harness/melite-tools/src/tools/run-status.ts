@@ -216,10 +216,12 @@ export function runStatus(request: EstateRequest): ToolDefinition {
             + (artifacts.length > 4 ? `\n  (+${artifacts.length - 4} more)` : '')
           : ''
         // THE EXPORT-NAME VOICE (023's self-critique #4/#6): a
-        // design/export lane's receipt names the mint — the preview
-        // flac is near-empty BY DESIGN, and the deliverable .qvoice
-        // (collision-numbered, newest match wins) rides no artifact
+        // design/export lane's receipt names the mint — the
+        // deliverable .qvoice (collision-numbered) rides no artifact
         // list. One line kills the voices-dir timestamp correlation.
+        // (2026-09-24: the preview flac now carries the REAL design
+        // sample — the 1-sample stub died with BRIEF4's cosmetic
+        // defect fix — so the line sells the sample, not the hole.)
         // THE EXPORT-PATH VOICE (roadmap OWED 2026-09-24 — the
         // export FULL PATH, transcript-026 #4): when the engine's
         // harvest carried the minted file's ABSOLUTE path, print IT
@@ -227,7 +229,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         // load lanes with zero voices-dir listing. The newest-match
         // hint stays the fallback for pre-path rows.
         const exportVoice = terminal && typeof v.export_name === 'string' && v.export_name !== ''
-          ? `\nexport: '${v.export_name}' — preview media near-empty by design; the deliverable .qvoice is ${typeof v.export_path === 'string' && v.export_path !== '' ? v.export_path : `the newest ${v.export_name}_*.qvoice under the voices root`}`
+          ? `\nexport: '${v.export_name}' — preview audio is the design sample; the deliverable .qvoice is ${typeof v.export_path === 'string' && v.export_path !== '' ? v.export_path : `the newest ${v.export_name}_*.qvoice under the voices root`}`
           : ''
         return [{
           type: 'text',

@@ -87,7 +87,7 @@ export interface RunRecord {
   warnings?: string[];
   /** THE EXPORT NAME (023's self-critique #4/#6, 2026-09-24): the
    *  voice_name a design/export lane minted — the run-dir preview
-   *  flac is near-empty BY DESIGN, and the deliverable .qvoice
+   *  flac carries the REAL design sample (since 2026-09-24), and the deliverable .qvoice
    *  (collision-numbered under the voices root) rides no artifact
    *  list. Stamped at settle from the stage params; served on
    *  run_status rows so the receipt names the mint. Absent on
@@ -159,7 +159,7 @@ export function settlePersist(
   // THE EXPORT-NAME STAMP (023's self-critique #4/#6): a
   // design/export lane's voice_name rides the submitted body — lift
   // the first non-empty one onto the row so the receipt names the
-  // mint (the preview flac is near-empty by design; the .qvoice
+  // mint (the preview flac carries the design sample; the .qvoice
   // is the deliverable and rides no artifact list). The compiled
   // stage params are engine-shaped (the compose may consume card
   // keys into the workflow — 024 proved voice_name missing there),

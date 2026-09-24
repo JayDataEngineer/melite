@@ -40,7 +40,7 @@ The h3-timeline card is a SIMPLE card. The compose tool call carries:
   with the full description) — and (b) `ref_images` conditioning (the
   character sheets themselves, max 8). A window with no image rail and
   no named slot drifts.
-- **params.context** (optional): a LATENT artifact ref to chain from (e.g. `runs/<prior-run>/h3_context`)
+- **NO chaining key** — `params.context` DOES NOT EXIST (the promise was retired 2026-09-24, BRIEF4 defect 35: the docs advertised a latent-strip chain no build ever saved or consumed). Within-run chaining is automatic; across-run is authored by hand (see Continuation below).
 - **params.seed** / **params.fps** / **params.width** / **params.height** (optional — omit to use defaults)
 - **params.lora_name** / **params.lora_strength** (optional): a lora on the ComfyUI loras mount riding entry[0] of the stack (`h3/<file>.safetensors`, strength default 0.5). The lane's turbo row always rides behind it — declared lane data, not card code.
 - Per-call: `image`, `knobs`, `transition`
@@ -90,27 +90,28 @@ Rules (enforced — tool errors, not advice):
   place the audio_clips row across the boundary and the card stamps
   both windows.
 
-## Continuation (chaining runs)
+## Continuation (WITHIN a run — automatic; ACROSS runs — by hand)
 
-A continuation card opens from a prior run's ending:
+WITHIN one film, every window k≥2 chains automatically: the previous
+window's raw sampled latent rides the drift-control continuation at a
+fixed 22-frame overlap (schedule-matched prefix noise + Soft AV audio
+release — no knob, no seam vocabulary). A `transition: "cut"` call is
+the one exception: a true fresh window.
 
-```
-{model: "h3", params: {context: "runs/<prior-run>/h3_context", ...}}
-```
+ACROSS runs there is NO chaining (2026-09-24: the old `context` /
+`h3_context` promise was documentation vapor — no completed film ever
+saved a context strip, and the compose never consumed one; BRIEF4
+defect 35, where the maker trusted the docs and shipped a deliberate
+two-part cut). To extend a story past one run:
 
-A continuation chains through the `context` latent — identity across
-the seam rides the per-call texts (name the character slots in every
-window's prose, as above); there is no identity param to lean on.
-
-The compose dispatcher resolves `context` through the shared artifact primitive (compose/artifact, kind=latent) against the output mount:
-the prior run must have `h3_context/clip_*.safetensors` present; the
-dispatcher rejects silently with, typically, a 404 (no context → nothing
-to chain from). The chain windows then load the prior run's Motion Context
-seamlessly.
-
-Combined with the automatic seams inside a run, the fabric is continuous
-across runs. Series recipe: each subsequent film sets `context` to the prior run's strip ref
-previous run's id.
+1. author part 2 as its OWN film (its own calls document);
+2. match the seams by hand — part 2's opening call lands on the visual
+   beat part 1 ended on (same setting, wardrobe, lighting);
+3. lean on the ref-image rail (`ref_images` with the character sheets)
+   for identity across the join — prose-named slots alone drift;
+4. a cut-on-action or a fresh establishing shot hides the seam. The
+   two-part BRIEF4 film (`run-e42ba0e8b80b` + `run-fcfeb440082b`) is
+   the worked example.
 
 ## Composing and queuing
 
