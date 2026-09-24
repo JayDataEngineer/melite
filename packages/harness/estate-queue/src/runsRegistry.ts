@@ -413,13 +413,14 @@ export class RunsRuntimeService extends Service {
         throw e;
       }
       const runId: string = reuse?.runId ?? newRunId();
-      let graph: Record<string, unknown>;
+      let composed: Awaited<ReturnType<typeof cards.phase2Card>>;
       try {
-        graph = (await cards.phase2Card(p1, runId)).graph;
+        composed = await cards.phase2Card(p1, runId);
       } catch (e) {
         if (e instanceof CardArmError) throw toRemoteError(cardRefusal(e));
         throw e;
       }
+      const graph: Record<string, unknown> = composed.graph;
       const skeleton: string = p1.skeleton;
       const cardStage: CompiledStage = {
         id: skeleton,
@@ -427,9 +428,9 @@ export class RunsRuntimeService extends Service {
         // ComfyUI's — the card arm rides it by construction).
         engine: "comfyui",
         params: { workflow: graph as unknown as EngineJson },
-        outputs: {},
+        outputs: composed.outputs,
         expected: {},
-        outputNodes: {},
+        outputNodes: composed.outputNodes,
         inputNames: {},
       };
       const reg = registerCompiledRun({

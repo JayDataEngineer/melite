@@ -91,7 +91,7 @@ import type { Context } from "@deepseek-ai/cordis";
  *  imported through the engine's public surface like every other
  *  engine dep. No deep path, no runtime-only dodge. */
 import { EngineContext } from "@melite/comfyui-cordis";
-import { bootModels, buildCatalog, checkModelPresent, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, liveScanOrder, loadCardDefs, loadEndpointConfig, loadFacts, modelIds, registryIds, registryModel, theService } from "@melite/comfyui-cordis";
+import { bootModels, buildCatalog, checkModelPresent, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, liveScanOrder, loadCardDefs, loadEndpointConfig, loadFacts, modelIds, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
@@ -730,7 +730,20 @@ export class CardRegistryService extends Service {
         "invalid_request",
       );
     }
-    return { graph, skeleton: p1.skeleton, spell: p1.spell };
+    const def = this.defsSync().get(p1.card)
+    if (def === undefined) {
+      throw new CardArmError(400, `unknown card ${p1.card}`, "card_compose")
+    }
+    let flow: { outputs: Record<string, string>; outputNodes: Record<string, string> }
+    try {
+      flow = resolveCardFlowOutputs(def, p1.params, graph)
+    } catch (error) {
+      if (error instanceof ComposeRefusal) {
+        throw new CardArmError(400, `${error.code}: ${error.message}`, "card_compose")
+      }
+      throw error
+    }
+    return { graph, skeleton: p1.skeleton, spell: p1.spell, ...flow };
   }
 }
 
@@ -823,6 +836,8 @@ export interface ComposedCard {
   readonly graph: Record<string, unknown>;
   readonly skeleton: string;
   readonly spell: { skeleton: string; inputs: Record<string, unknown> } | null;
+  readonly outputs: Record<string, string>;
+  readonly outputNodes: Record<string, string>;
 }
 
 // ── the two phases (steps 7 + 9, shared by start; phase-1 shared

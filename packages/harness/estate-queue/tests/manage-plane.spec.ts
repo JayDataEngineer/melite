@@ -16,6 +16,7 @@ import type {
   ProvisionPlanItem,
   ProvisionResult,
   ProvisioningServiceDefinition,
+  ExternalProvisionRequest,
   ProvisionState,
   ResourceRef,
   ResourceStatus,
@@ -153,11 +154,13 @@ const provisioningPlans = new Map<string, ProvisionPlan>();
 const provisioningOutcomes = new Map<string, FakeOutcome>();
 const provisioningPlanCalls: ResourceRef[] = [];
 const provisioningEnsureCalls: ResourceRef[] = [];
+const provisioningExternalCalls: ExternalProvisionRequest[] = [];
 const resetFakeProvisioning = (): void => {
   provisioningPlans.clear();
   provisioningOutcomes.clear();
   provisioningPlanCalls.length = 0;
   provisioningEnsureCalls.length = 0;
+  provisioningExternalCalls.length = 0;
 };
 const planRef = async (ref: ResourceRef): Promise<ProvisionPlan> => {
   provisioningPlanCalls.push(ref);
@@ -185,8 +188,27 @@ const fakeProvisioning: FakeProvisioning = {
   plan: planRef,
   ensure: ensureRef,
   activate: async (ref): Promise<ProvisionResult> => await ensureRef(ref),
-  acquireExternal: async (): Promise<ProvisionResult> => {
-    throw new Error("external provisioning is not used");
+  acquireExternal: async (request): Promise<ProvisionResult> => {
+    provisioningExternalCalls.push(request);
+    if (request.kind === "extension") {
+      const ref: ResourceRef = { kind: "extension", id: "external-extension" };
+      const item = extensionItem(ref.id, { url: request.url });
+      return resultFor(
+        ref,
+        "restart_required",
+        [resultItem(item, "restart_required", { detail: "git-url installed " + request.url + " (restart required)" })],
+        "git-url installed " + request.url + " (restart required)",
+      );
+    }
+    const ref: ResourceRef = { kind: "model", owner: "card", id: "external-model" };
+    const name = request.filename ?? "download.bin";
+    const item = modelItem(ref, { key: "model:card:external-model:" + name, name, url: request.url });
+    return resultFor(
+      ref,
+      "active",
+      [resultItem(item, "active", { detail: "downloaded " + name })],
+      "downloaded " + name,
+    );
   },
   reconcile: async (): Promise<ResourceStatus[]> => [],
   stateOf: (): ProvisionState => "unknown",
@@ -627,21 +649,17 @@ describe("hInstallExtension", () => {
 });
 
 describe("hInstallExtensionUrl", () => {
-  it("needs a url; posts the git route; maps refusals", async () => {
+  it("needs a url and delegates external acquisition to provisioning", async () => {
     mkRoot();
     try {
       const [, e0] = await manage({ action: "install_extension_url" });
       assert.match(e0.detail, /install_extension_url requires: url/);
       const [, e1] = await manage({ action: "install_extension_url", url: 5 });
       assert.match(e1.detail, /install_extension_url requires: url/);
-      route(() => json({}));
-      const [c2, e2] = await manage({ action: "install_extension_url", url: "https://x/y" });
-      assert.equal(c2, 200);
-      assert.match(e2.detail, /git-url installed/);
-      route(() => text("gone", 404));
-      const [c3, e3] = await manage({ action: "install_extension_url", url: "https://x/y" });
-      assert.equal(c3, 404);
-      assert.match(e3.detail, /no such target/);
+      const [code, env] = await manage({ action: "install_extension_url", url: "https://x/y" });
+      assert.equal(code, 200);
+      assert.match(env.detail, /git-url installed/);
+      assert.deepEqual(provisioningExternalCalls, [{ kind: "extension", url: "https://x/y" }]);
     } finally {
       rmRoot();
     }
@@ -649,7 +667,7 @@ describe("hInstallExtensionUrl", () => {
 });
 
 describe("hDownloadModel", () => {
-  it("guards paths; lands bytes; maps fetch arms", async () => {
+  it("guards paths and delegates the unverified external artifact to provisioning", async () => {
     mkRoot();
     try {
       const [, e0] = await manage({ action: "download_model" });
@@ -662,33 +680,21 @@ describe("hDownloadModel", () => {
       assert.match(e2.detail, /must be a bare name/);
       const [, e2b] = await manage({ action: "download_model", url: "http://h/" });
       assert.match(e2b.detail, /must be a bare name/);
-      route(() => text("no", 500));
-      const [c3, e3] = await manage({ action: "download_model", url: "http://h/f", filename: "m.bin" });
-      assert.equal(c3, 502);
-      assert.match(e3.detail, /download refused: HTTP 500/);
-      route(() => new Response(null, { status: 200 }));
-      const [c4, e4] = await manage({ action: "download_model", url: "http://h/f", filename: "m.bin" });
-      assert.equal(c4, 502);
-      assert.match(e4.detail, /no body/);
-      route(() => {
-        throw new TypeError("cut");
-      });
-      const [c5, e5] = await manage({ action: "download_model", url: "http://h/f", filename: "m.bin" });
-      assert.equal(c5, 502);
-      assert.match(e5.detail, /download failed: cut/);
-      seenTimeouts.length = 0;
-      route(() => new Response("BYTES"));
-      const [c6, e6] = await manage({
+      const [code, env] = await manage({
         action: "download_model",
         url: "http://h/dir/f.bin",
         relative_path: "models/ckpt",
         timeout_seconds: 9999,
       });
-      assert.equal(c6, 200);
-      assert.match(e6.detail, /f\.bin → /);
-      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "ckpt", "f.bin"), "utf8"), "BYTES");
+      assert.equal(code, 200);
+      assert.match(env.detail, /downloaded f\.bin/);
+      assert.deepEqual(provisioningExternalCalls, [{
+        kind: "model",
+        url: "http://h/dir/f.bin",
+        relativePath: "ckpt",
+        filename: "f.bin",
+      }]);
       assert.ok(seenTimeouts.includes(850 * 1000));
-      assert.ok(seenTimeouts.includes(1000) === false);
     } finally {
       rmRoot();
     }
@@ -1102,12 +1108,15 @@ describe("residual arms", () => {
   it("download string-throws; guard passes empty roots; install uses declared plans", async () => {
     mkRoot();
     try {
-      route(() => {
-        throw "string-down";
-      });
       const [c1, e1] = await manage({ action: "download_model", url: "http://h/f", filename: "m.bin" });
-      assert.equal(c1, 502);
-      assert.match(e1.detail, /download failed: string-down/);
+      assert.equal(c1, 200);
+      assert.match(e1.detail, /downloaded m\.bin/);
+      assert.deepEqual(provisioningExternalCalls, [{
+        kind: "model",
+        url: "http://h/f",
+        relativePath: "checkpoints",
+        filename: "m.bin",
+      }]);
       fakeBin({ systemctl: { out: "", code: 0 } });
       route(() => json({}));
       const [c2, e2] = await manage({ action: "stop" });

@@ -209,6 +209,11 @@ describe("loadCard", () => {
       { id: "fam-a", label: "A", description: "first" },
       { id: "ghost-fam", label: "G" },
     ],
+    resolveCatalogArtifact: (id: string) => id === "fam-a"
+      ? [{ relative_path: "checkpoints", name: "a.safetensors" }]
+      : [],
+    checkModelPresent: (folder: string, name: string) =>
+      folder === "checkpoints" && name === "a.safetensors" ? "/models/a.safetensors" : null,
   };
 
   it("bundles signature + agents + skills + hints + digest", () => {

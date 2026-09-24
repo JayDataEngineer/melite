@@ -310,6 +310,15 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
     expect(p1.spell).toBeNull();
     expect(composeOnce).toHaveBeenCalled();
   });
+  it("phase-2 resolves semantic card outputs and producer nodes", async () => {
+    const graph = { "SaveAudio.0": { class_type: "SaveAudio", inputs: {} } };
+    composeOnce.mockResolvedValueOnce(graph as never).mockResolvedValueOnce(graph as never);
+    const p1 = await svc.phase1Card({ text: "hello" }, "qwen3-tts-voicedesign");
+    const composed = await svc.phase2Card(p1, "run-tts");
+    expect(composed.outputs).toEqual({ default: "audio" });
+    expect(composed.outputNodes).toEqual({ default: "SaveAudio.0" });
+  });
+
   it("a plain body composes phase-1 and phase-2 rides the same seat", async () => {
     composeOnce.mockClear();
     const facts = svc.modelFacts();

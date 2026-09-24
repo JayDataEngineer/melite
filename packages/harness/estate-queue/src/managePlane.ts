@@ -11,20 +11,19 @@
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
 import { spawnSync } from "node:child_process";
-import { createWriteStream, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { pipeline } from "node:stream/promises";
-import { Readable } from "node:stream";
-import { endpointConfigPath, loadEndpointConfig, runtimeModelsRoot } from "@melite/comfyui-cordis";
+import { endpointConfigPath, loadEndpointConfig } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type {
   ProvisionResult,
   ProvisioningServiceDefinition,
   ResourceRef,
+  ResourceStatus,
 } from "@melite/estate-provisioning";
 import { ManagerApiError, managerBase, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
 import { probeEndpoint, activeRuns, managerSecurity } from "./manageProbe.ts";
-import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, downloadIntoModelsTree, systemctl, guardLifecycle, COMFY_UNIT } from "./manageOps.ts";
+import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle, COMFY_UNIT } from "./manageOps.ts";
 
 // ── SSOT vocabulary ─────────────────────────────────────────────────
 // Closed vocabulary — a typo is a 422, not a silent miss.
@@ -50,6 +49,14 @@ export const ACTIONS = [
 ] as const;
 
 export type ManageAction = (typeof ACTIONS)[number];
+
+/** The status reconcile bound (the wall law — see hStatus): status
+ *  answers inside the plane's 5s wall; the digest-verifying
+ *  reconcile cannot, so it rides this bound and reports partial.
+ *  1.5s (not 3s): the wall's 5s covers bundle-mount + seat settle
+ *  too — under battery load the settle alone eats ~2s, so the
+ *  reconcile must leave headroom (the flake law). */
+const STATUS_RECONCILE_MS = 1_500;
 
 // Lifecycle actions that would kill a live GPU job — guarded
 // (INFERENCE LAW: management never manufactures zombie runs; the stop
@@ -195,11 +202,31 @@ async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   } else {
     manager = { reachable: false, reason: "endpoint not reachable" };
   }
+  let resources: ResourceStatus[] = [];
+  let resourcesDetail: string | undefined;
+  try {
+    // THE STATUS BOUND (the wall law): status answers in seconds, but
+    // a full reconcile verifies GB-scale digests sequentially — unbounded
+    // it can never fit the plane's 5s wall. Bound the status reconcile
+    // at 3s; the abort threads into per-chunk hash checks and the loop's
+    // between-row check, so settled rows ride `resources` and the
+    // remainder rides `resources_detail` (loud partial, never silent).
+    resources = await withManageTimeout(
+      req,
+      ctx,
+      (signal) => ctx.provisioning.reconcile(undefined, signal),
+      STATUS_RECONCILE_MS,
+    );
+  } catch (error: unknown) {
+    resourcesDetail = error instanceof Error ? error.message : String(error);
+  }
   const data = {
     endpoint,
     manager: { ...manager, security: managerSecurity(ctx.repoRoot), unit: COMFY_UNIT },
     active_runs: active,
     routing,
+    resources,
+    ...(resourcesDetail === undefined ? {} : { resources_detail: resourcesDetail }),
   };
   if (endpoint.reachable) return ok(req.action, "server up", data);
   return ok(req.action, "server not reachable", data);
@@ -242,11 +269,43 @@ async function hSearch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   return ok(req.action, hits.length + " hit(s) for '" + req.query + "'", hits);
 }
 
+async function withManageTimeout<T>(
+  req: Req,
+  ctx: ManageCtx,
+  work: (signal: AbortSignal) => Promise<T>,
+  boundMs: number = railMs(req),
+): Promise<T> {
+  const controller = new AbortController();
+  const cancel = ctx.timeout(() => controller.abort(), boundMs);
+  try {
+    return await work(controller.signal);
+  } finally {
+    cancel();
+  }
+}
+
+function externalModelPath(req: Req): { readonly relativePath: string; readonly filename: string } {
+  const rawFolder = req.relative_path.startsWith("models/")
+    ? req.relative_path.slice("models/".length)
+    : req.relative_path === "" ? "checkpoints" : req.relative_path;
+  const folder = rawFolder === "models" ? "" : rawFolder;
+  if (folder.includes("..") || folder.startsWith("/")) {
+    throw badRequest("relative_path must stay under the models root: " + req.relative_path);
+  }
+  const filename = req.filename !== "" ? req.filename : req.url.split("/").pop() ?? "";
+  if (filename === "" || filename.includes("/") || filename.includes("..")) {
+    throw badRequest("filename must be a bare name under the models root");
+  }
+  return { relativePath: folder, filename };
+}
+
 function safeProvisionItems(result: ProvisionResult): Array<Record<string, unknown>> {
   return result.items.map((item) => ({
     key: item.key,
     kind: item.kind,
     state: item.state,
+    ...(item.sha256 === undefined ? {} : { sha256: item.sha256 }),
+    ...(item.integrity === undefined ? {} : { integrity: item.integrity }),
     ...(item.errorCode === undefined ? {} : { errorCode: item.errorCode }),
     ...(item.detail === undefined ? {} : { detail: item.detail }),
   }));
@@ -311,93 +370,104 @@ function mergeProvisionResults(results: readonly ProvisionResult[]): {
 async function hInstallExtension(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   if (req.nodes.length === 0) throw badRequest("install_extension requires: nodes");
   estateOnly(req, ctx.endpoint());
-  const results: ProvisionResult[] = [];
-  const misses: string[] = [];
-  for (const node of req.nodes) {
-    const ref: ResourceRef = { kind: "extension", id: node };
-    try {
-      await ctx.provisioning.plan(ref);
-      results.push(await ctx.provisioning.ensure(ref));
-    } catch (error: unknown) {
-      misses.push(node + ": " + (error instanceof Error ? error.message : String(error)));
+  return await withManageTimeout(req, ctx, async (signal) => {
+    const results: ProvisionResult[] = [];
+    const misses: string[] = [];
+    for (const node of req.nodes) {
+      const ref: ResourceRef = { kind: "extension", id: node };
+      try {
+        await ctx.provisioning.plan(ref);
+        results.push(await ctx.provisioning.ensure(ref, undefined, signal));
+      } catch (error: unknown) {
+        misses.push(node + ": " + (error instanceof Error ? error.message : String(error)));
+      }
     }
-  }
-  if (results.length === 0) throw notFound("extension is not declared: " + misses.join(", "));
-  const merged = mergeProvisionResults(results);
-  const result: ProvisionResult = {
-    operationId: merged.operationId,
-    ref: { kind: "extension", id: req.nodes.join(",") },
-    state: merged.state,
-    outcome: merged.state,
-    operationState: merged.state === "partial"
-      ? "installed"
-      : merged.state === "cancelled"
-        ? "failed"
-        : merged.state,
-    items: merged.items,
-    restartRequired: merged.restartRequired,
-  };
-  return provisionEnvelope(req.action, result, {
-    queued: merged.items.filter((item) => item.state === "restart_required" || item.state === "active").map((item) => item.key),
-    misses,
+    if (results.length === 0) throw notFound("extension is not declared: " + misses.join(", "));
+    const merged = mergeProvisionResults(results);
+    const result: ProvisionResult = {
+      operationId: merged.operationId,
+      ref: { kind: "extension", id: req.nodes.join(",") },
+      state: merged.state,
+      outcome: merged.state,
+      operationState: merged.state === "partial"
+        ? "installed"
+        : merged.state === "cancelled"
+          ? "failed"
+          : merged.state,
+      items: merged.items,
+      restartRequired: merged.restartRequired,
+    };
+    return provisionEnvelope(req.action, result, {
+      queued: merged.items.filter((item) => item.state === "restart_required" || item.state === "active").map((item) => item.key),
+      misses,
+    });
   });
 }
 
 async function hInstallExtensionUrl(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "url");
-  const cfg = ctx.endpoint();
-  estateOnly(req, cfg);
-  try {
-    await managerPost(base(ctx), "/customnode/install/git_url", { url: req.url }, { ctx, timeoutMs: railMs(req) });
-  } catch (e) {
-    throw mapRail(e, req.action);
-  }
-  return ok(req.action, "git-url installed " + req.url + " (restart required)", {
-    restart_required: true,
-  });
+  estateOnly(req, ctx.endpoint());
+  const result = await withManageTimeout(req, ctx, (signal) =>
+    ctx.provisioning.acquireExternal(
+      { kind: "extension", url: req.url },
+      { operatorConfirmed: true },
+      signal,
+    ));
+  return provisionEnvelope(req.action, result);
 }
 
 async function hDownloadModel(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "url");
-  const dest = await downloadIntoModelsTree(ctx, {
-    url: req.url,
-    relative_path: req.relative_path === "" ? "checkpoints" : req.relative_path,
-    filename: req.filename,
-  }, railMs(req));
-  return ok(req.action, "downloaded " + dest.split("/").pop() + " → " + dest, { path: dest });
+  estateOnly(req, ctx.endpoint());
+  const path = externalModelPath(req);
+  const result = await withManageTimeout(req, ctx, (signal) =>
+    ctx.provisioning.acquireExternal(
+      {
+        kind: "model",
+        url: req.url,
+        relativePath: path.relativePath,
+        filename: path.filename,
+      },
+      { operatorConfirmed: true },
+      signal,
+    ));
+  return provisionEnvelope(req.action, result);
 }
 
 async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "model");
-  const family: ResourceRef = {
-    kind: "model",
-    owner: "family",
-    id: req.model,
-    ...(req.variant === "" ? {} : { variant: req.variant }),
-    ...(req.quant === "" ? {} : { quant: req.quant }),
-  };
-  let ref = family;
-  try {
-    await ctx.provisioning.plan(family);
-  } catch (error: unknown) {
-    ref = {
+  estateOnly(req, ctx.endpoint());
+  return await withManageTimeout(req, ctx, async (signal) => {
+    const family: ResourceRef = {
       kind: "model",
-      owner: "card",
+      owner: "family",
       id: req.model,
       ...(req.variant === "" ? {} : { variant: req.variant }),
       ...(req.quant === "" ? {} : { quant: req.quant }),
     };
+    let ref = family;
     try {
-      await ctx.provisioning.plan(ref);
-    } catch {
-      throw notFound(error instanceof Error ? error.message : String(error));
+      await ctx.provisioning.plan(family);
+    } catch (error: unknown) {
+      ref = {
+        kind: "model",
+        owner: "card",
+        id: req.model,
+        ...(req.variant === "" ? {} : { variant: req.variant }),
+        ...(req.quant === "" ? {} : { quant: req.quant }),
+      };
+      try {
+        await ctx.provisioning.plan(ref);
+      } catch {
+        throw notFound(error instanceof Error ? error.message : String(error));
+      }
     }
-  }
-  const result = await ctx.provisioning.ensure(ref);
-  return provisionEnvelope(req.action, result, {
-    model: req.model,
-    files: result.items.filter((item) => item.state === "active").map((item) => item.key),
-    present: result.items.filter((item) => item.state === "active").map((item) => item.key),
+    const result = await ctx.provisioning.ensure(ref, undefined, signal);
+    return provisionEnvelope(req.action, result, {
+      model: req.model,
+      files: result.items.filter((item) => item.state === "active").map((item) => item.key),
+      present: result.items.filter((item) => item.state === "active").map((item) => item.key),
+    });
   });
 }
 

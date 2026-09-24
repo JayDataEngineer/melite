@@ -57,6 +57,7 @@ export * from "./manageRegistry.ts";
 export * from "./flowsData.ts";
 export * from "./runsValidate.ts";
 export * from "./cardsRegistry.ts";
+export { factsPath } from "./cardsFacts.ts";
 
 /** The runs registry row: mounts the live-run service (REBUILD-6).
  *  Inject gates on the queue + drafts + card-registry seats (the

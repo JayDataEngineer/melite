@@ -3,14 +3,10 @@
 // refusals folding, estate model downloads, and the systemd
 // lifecycle verbs.
 import { spawnSync } from "node:child_process";
-import { createWriteStream, mkdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { pipeline } from "node:stream/promises";
-import { Readable } from "node:stream";
-import { runtimeModelsRoot } from "@melite/comfyui-cordis";
 import { activeRuns } from "./manageProbe.ts";
 import { ManagerApiError, managerBase, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
-import { Refused, badRequest } from "./managePlane.ts";
+import { Refused } from "./managePlane.ts";
 import type { ManageCtx, ManageEnvelope, Req } from "./managePlane.ts";
 
 // ── the manager rail (vendor HTTP — see manager-api.ts) ────────────
@@ -75,51 +71,6 @@ export function estateOnly(req: Req, cfg: Record<string, unknown>): void {
     409,
     "byo endpoint: " + req.action + " orchestrates the estate engine — the estate never touches a user-owned ComfyUI",
   );
-}
-
-// ── estate model downloads (TS-native — no vendor on this path) ────
-/** Download one model file into the runtime models tree. Direct
- *  URLs are ESTATE truth (the catalog carries them); the vendor's
- *  model plane is whitelist-only for registered models — a
- *  mismatched dependency was the old comfy-mcp's job, not ours. */
-export async function downloadIntoModelsTree(
-  ctx: ManageCtx,
-  row: { url: string; relative_path: string; filename: string },
-  timeoutMs: number,
-): Promise<string> {
-  /* v8 ignore next -- need(url) pre-empts upstream (both callers
-     gate it): the recheck never fires (2026-09-12) */
-  if (row.url === "") throw badRequest("download requires: url");
-  const folder = row.relative_path.startsWith("models/")
-    ? row.relative_path.slice("models/".length)
-    : row.relative_path;
-  if (folder.includes("..") || folder.startsWith("/")) {
-    throw badRequest("relative_path must stay under the models root: " + row.relative_path);
-  }
-  // (split never yields [] — pop is always a string here)
-  const name = row.filename !== "" ? row.filename : (row.url.split("/").pop() as string);
-  if (name === "" || name.includes("/") || name.includes("..")) {
-    throw badRequest("filename must be a bare name under the models root");
-  }
-  const dir = join(runtimeModelsRoot(ctx.repoRoot), folder);
-  mkdirSync(dir, { recursive: true });
-  const dest = join(dir, name);
-  const ctrl = new AbortController();
-  const t = ctx.timeout((): void => ctrl.abort(), timeoutMs);
-  try {
-    const r = await fetch(row.url, { signal: ctrl.signal });
-    if (!(r.status >= 200 && r.status < 300)) {
-      throw new Refused(502, "download refused: HTTP " + r.status + " for " + row.url);
-    }
-    if (r.body === null) throw new Refused(502, "download returned no body: " + row.url);
-    await pipeline(Readable.fromWeb(r.body as never), createWriteStream(dest));
-    return dest;
-  } catch (e) {
-    if (e instanceof Refused) throw e;
-    throw new Refused(502, "download failed: " + (e instanceof Error ? e.message : String(e)).slice(0, 200));
-  } finally {
-    t();
-  }
 }
 
 // ── systemd orchestration (estate deployment — TS-native) ──────────

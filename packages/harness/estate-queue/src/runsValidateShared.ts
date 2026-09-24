@@ -50,6 +50,7 @@ export const KIND_VOCAB: readonly string[] = [
   "num",
   "lora",
   "seg",
+  "data",
 ];
 export const SKIP_VOCAB: readonly string[] = ["present", "absent"];
 

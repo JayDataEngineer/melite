@@ -115,7 +115,17 @@ describe("registryFlowToInline", () => {
       stages: Array<Record<string, unknown>>;
     };
     assert.deepEqual(tts.stages[0]!["card_io"], { wav: "audio" });
+    assert.deepEqual(tts.stages[0]!["inputs"], { text: { initial: "prompt" } });
+    assert.deepEqual(tts.stages[0]!["outputs"], { wav: "audio" });
     assert.equal(tts.stages[0]!["card"], "tts");
+    const kimodo = registryFlowToInline(getRegistryFlow("kimodo-native")!) as {
+      stages: Array<Record<string, unknown>>;
+    };
+    assert.deepEqual(kimodo.stages[0]!["outputs"], { motion_npz: "data" });
+    assert.deepEqual(
+      (kimodo.stages[0]!["params"] as Record<string, unknown>)["output_nodes"],
+      { motion_npz: "2" },
+    );
     const annyInline = registryFlowToInline(getRegistryFlow("anny-hmr")!) as {
       stages: Array<Record<string, unknown>>;
     };

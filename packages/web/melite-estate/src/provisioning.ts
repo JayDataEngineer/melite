@@ -1,4 +1,3 @@
-import { execFile } from "node:child_process";
 import { join } from "node:path";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import {
@@ -10,6 +9,7 @@ import {
   ProvisioningService,
   type DeclarationPort,
   type ManagerInstallRequest,
+  type ManagerModelInstallRequest,
   type ManagerPort,
   type ProvisionPlan,
   type ProvisionPlanItem,
@@ -28,6 +28,7 @@ import {
   type ProvisionRow,
 } from "@melite/comfyui-cordis";
 import { mergeManifest } from "@melite/comfyui-cordis/provisioning-manifest";
+import { resolveStoreRoot } from "@melite/estate-models";
 import { factsPath } from "@melite/estate-queue";
 
 interface CardService {
@@ -51,7 +52,12 @@ function endpointUrl(): string {
 function configuredStoreRoot(): string | undefined {
   const cfg = loadEndpointConfig();
   const value = stringValue(cfg["model_download_path"] ?? cfg["model_base_path"]);
-  return value === "" ? undefined : value;
+  if (value !== "") return value;
+  try {
+    return resolveStoreRoot(resolveRepoRoot());
+  } catch {
+    return undefined;
+  }
 }
 
 function modelRefKey(ref: Extract<ResourceRef, { kind: "model" }>, name: string): string {
@@ -176,29 +182,6 @@ function cardProvisions(cards: CardService, id: string): ProvisionRow[] {
   return [...(def.provisions ?? [])];
 }
 
-function runtimePython(): string {
-  const venv = stringValue(process.env["VIRTUAL_ENV"]);
-  if (venv !== "") return join(venv, "bin", "python");
-  return join(runtimeModelsRoot(resolveRepoRoot()).replace(/\/models$/u, ""), "..", "..", "..", ".venv", "bin", "python");
-}
-
-function runUvPip(args: readonly string[], signal?: AbortSignal): Promise<void> {
-  return new Promise((resolvePromise, rejectPromise) => {
-    execFile("uv", ["pip", "install", "--python", runtimePython(), ...args], {
-      encoding: "utf8",
-      signal,
-      timeout: 600_000,
-      windowsHide: true,
-    }, (error) => {
-      if (error === null) {
-        resolvePromise();
-        return;
-      }
-      rejectPromise(error);
-    });
-  });
-}
-
 function lazyManager(): ManagerPort {
   let provider: ComfyUiManagerProvider | undefined;
   const get = (): ComfyUiManagerProvider => {
@@ -212,9 +195,13 @@ function lazyManager(): ManagerPort {
     });
     const git = new PinnedGitExtensionProvider({
       customNodesRoot: join(runtimeModelsRoot(resolveRepoRoot()).replace(/\/models$/u, ""), "custom_nodes"),
-      postInstall: async ({ requirements, signal }: { requirements: readonly string[]; signal?: AbortSignal }): Promise<void> => {
-        if (requirements.length > 0) await runUvPip(requirements, signal);
-      },
+       postInstall: async ({ requirements, signal }: { requirements: readonly string[]; signal?: AbortSignal }): Promise<void> => {
+         if (requirements.length > 0) {
+           await client.postText("/customnode/install/pip", requirements.join("\n"), {
+             ...(signal === undefined ? {} : { signal }),
+           });
+         }
+       },
     });
     provider = new ComfyUiManagerProvider(client, { git });
     return provider;
@@ -222,7 +209,48 @@ function lazyManager(): ManagerPort {
   return {
     canInstall: async (request: ManagerInstallRequest, signal?: AbortSignal): Promise<boolean> => await get().canInstall(request, signal),
     install: async (request: ManagerInstallRequest, signal?: AbortSignal) => await get().install(request, signal),
+    installModel: async (request: ManagerModelInstallRequest, signal?: AbortSignal) => await get().installModel(request, signal),
   };
+}
+
+// THE CANCELLABLE NODE-DEFS DIAL (the no-hang law): the SDK's
+// getNodeDefs carries no signal — one blackholed engine hangs every
+// extension inspect past the status plane's wall (19 manifest rows,
+// sequential). The inspector dials the same /object_info door
+// through the SDK's own public fetchApi with a linked signal (the
+// caller's abort + a 2s dial bound — the waitUntilReady dial
+// precedent; LAN engines answer in ms, the bound only bites the
+// absent), and the doc rides process-life memo: success caches per
+// url (the transport oiCache precedent — ~3.5MB, immutable per
+// boot), failure memos 30s (Date math, no timers) so N rows cost
+// one dial, never N hangs. A refusal is never cached silent —
+// every memoised miss still throws loud with the dial's detail.
+const INSPECT_DIAL_MS = 2_000;
+const INSPECT_DOWN_MEMO_MS = 30_000;
+const nodeDefsDocs = new Map<string, Record<string, unknown>>();
+let nodeDefsDownUntil = 0;
+let nodeDefsDownDetail = "";
+
+async function nodeDefsDoc(url: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const hit = nodeDefsDocs.get(url);
+  if (hit !== undefined) return hit;
+  if (Date.now() < nodeDefsDownUntil) {
+    throw new Error(`engine node-defs unreachable (dial memo): ${nodeDefsDownDetail}`);
+  }
+  const bounded = signal === undefined
+    ? AbortSignal.timeout(INSPECT_DIAL_MS)
+    : AbortSignal.any([signal, AbortSignal.timeout(INSPECT_DIAL_MS)]);
+  let doc: Record<string, unknown>;
+  try {
+    const res = await sdkClient(url).fetchApi("/object_info", { signal: bounded });
+    doc = await res.json() as Record<string, unknown>;
+  } catch (error: unknown) {
+    nodeDefsDownUntil = Date.now() + INSPECT_DOWN_MEMO_MS;
+    nodeDefsDownDetail = error instanceof Error ? error.message.slice(0, 160) : String(error);
+    throw error;
+  }
+  nodeDefsDocs.set(url, doc);
+  return doc;
 }
 
 function lazyInspector(): {
@@ -233,7 +261,7 @@ function lazyInspector(): {
       if (signal?.aborted === true) throw new Error("inspection cancelled");
       const url = endpointUrl();
       if (url === "") throw new Error("ComfyUI endpoint URL is not configured");
-      const doc = await sdkClient(url).getNodeDefs();
+      const doc = await nodeDefsDoc(url, signal);
       const nodeTypes = Object.keys(doc);
       if (ref.kind === "model") return { active: false, nodeTypes };
       const facts = loadFacts(factsPath(), {

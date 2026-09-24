@@ -132,15 +132,16 @@ export const AUDIO_NATIVE_TTS: RegistryFlow = {
       engine: "comfyui",
       card: "tts",
       description: "Qwen3-TTS text to speech via the tts card",
-      inputs: { prompt: initial("prompt") },
+      inputs: { text: initial("prompt") },
       // every wired input needs its expected Kind (kindsOk's own
       // law) — this row shipped without it and only the LIVE
       // /v1/flows/validate path tripped it; completed at the
       // round-trip stroke 2026-09-20 beside the wall that catches
       // the class (kindsOk over every registry flow)
-      expected: { prompt: "text" },
+      expected: { text: "text" },
+      outputs: { wav: "audio" },
       cardIo: { wav: "audio" },
-      params: { model: "qwen3-tts", text: "$prompt", seed: 42 },
+      params: { model: "qwen3-tts", text: "$text", seed: 42 },
     }),
   ],
   initialValidators: {},
@@ -498,8 +499,9 @@ export const KIMODO_NATIVE: RegistryFlow = {
       description: "Kimodo text-to-pose via live ComfyUI nodes",
       inputs: { prompt: initial("prompt") },
       expected: { prompt: "text" },
-      outputs: { mp4: "video" },
+      outputs: { motion_npz: "data" },
       params: {
+        output_nodes: { motion_npz: "2" },
         out_dir: "./output",
         timeout_s: 1800,
         workflow: {

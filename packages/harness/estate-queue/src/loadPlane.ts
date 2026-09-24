@@ -320,16 +320,17 @@ export function loadCard(
   const pkgDir: string = resolveCardPackageDir(repo, cardId);
   const decls = new Map(models.allDecls().map((d): [string, { id: string; label: string; description: string }] => [d.id, { id: d.id, label: d.label, description: d.description ?? "" }]));
   const hints: Array<Record<string, unknown>> = [];
-  // THE PRESENCE MARK (no-silent-drop law, hour 26 stroke 17): every
-  // boarded family serves — INCLUDING the ones this machine has not
-  // downloaded, marked present:false. The LLM sees the machine truth
-  // at load time (never picks a model the run cannot shoot, never
-  // learns it from a run-time refusal).
-  const mids: Set<string> = cards.modelMids();
   for (const fam of (def as { boarded: readonly string[] }).boarded) {
     const d = decls.get(fam);
     if (d === undefined) continue;
-    hints.push({ id: d.id, label: d.label, description: d.description, present: mids.has(d.id) });
+    let present = false;
+    try {
+      const rows = models.resolveCatalogArtifact(fam, "", "", repo);
+      present = rows.length > 0 && rows.every((row) => models.checkModelPresent(row.relative_path, row.name, repo) !== null);
+    } catch {
+      present = false;
+    }
+    hints.push({ id: d.id, label: d.label, description: d.description, present });
   }
   // THE PACK HINTS (the no-silent-drop law's extension half,
   // stroke 18): the card's declared extension packs (flat requires +
