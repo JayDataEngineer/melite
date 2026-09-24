@@ -178,31 +178,26 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
       clips: parseFilmMixClips(rawClips),
       windowSecs: [56 / 24, 73 / 24],
     });
-    // THE FILE TAIL CARRIES THE MATRIX IN-GRAPH (§20's amendment,
-    // 2026-09-22): the duck nodes and mix chain exist, and their
-    // inputs are the manifest's exact values — the graph is the
-    // manifest rendered, the manifest is the graph's math.
-    // discriminate by span count: the film duck carries ALL
-    // conditioned spans (d + m + s); the music sub-bus carries only
-    // the voice-class spans (music never ducks itself)
+    // THE MIX NODE CARRIES THE MATRIX (2026-09-24, the valve's
+    // second arm): the duck spans and placements ride clips_json +
+    // duck_spans verbatim — the mix node IS the manifest rendered,
+    // the manifest is the node's math. Discriminate by span count:
+    // the film duck carries ALL conditioned spans (d + m + s); the
+    // music sub-bus carries only the voice-class spans (music never
+    // ducks itself)
     assert.equal(manifest.duckSpans.length, 3, "the film duck exists with all three conditioned spans");
     assert.equal(manifest.musicDuckSpans.length, 2, "the music sub-bus ducks with the voice spans");
     assert.ok(!manifest.musicDuckSpanString.split(";").some((sv) => sv.startsWith("0:")), "no music self-duck at film 0 (its span starts there)");
     assert.deepEqual(manifest.placements.map((p) => p.cls), ["dialogue", "music", "sfx"], "placements keep doc order; music joins last at mix time");
-    const ducks = ofClass(out, "MeliteAudioDuck");
-    assert.deepEqual(
-      ducks.map(([, n]) => String(n.inputs.segments)).sort(),
-      [manifest.musicDuckSpanString, manifest.duckSpanString].sort(),
-      "exactly two ducks — the film track's and the music sub-bus's — segments verbatim from the manifest",
-    );
-    const filmDuck = ducks.find(([, n]) => String(n.inputs.segments) === manifest.duckSpanString)!;
-    assert.equal(filmDuck[1].inputs.gain_db, manifest.duckDb, "duck depth rides the manifest's duckDb");
-    assert.equal(filmDuck[1].inputs.ramp_ms, 20, "the proven 20ms ramps");
-    const mixes = ofClass(out, "MeliteAudioMix");
-    assert.equal(mixes.length, 3, "the mix chain: d1 onto the film, s1 onto the film, the ducked music bus joins last");
-    for (const [, n] of mixes) {
-      assert.equal(n.inputs.length_mode, "base", "every mix keeps 'base' — a clip never extends the cut");
-    }
+    assert.equal(ofClass(out, "MeliteAudioDuck").length, 0, "no in-graph duck — the matrix rides the mix node");
+    assert.equal(ofClass(out, "MeliteAudioMix").length, 0, "no in-graph mix chain");
+    const mixes = ofClass(out, "MeliteFilmAudioMix");
+    assert.equal(mixes.length, 1, "exactly one mix node");
+    assert.equal(String(mixes[0]![1].inputs.duck_spans), manifest.duckSpanString, "the film spans verbatim");
+    assert.equal(String(mixes[0]![1].inputs.music_duck_spans), manifest.musicDuckSpanString, "the music-bus spans verbatim");
+    assert.equal(mixes[0]![1].inputs.duck_db, manifest.duckDb, "duck depth rides the manifest's duckDb");
+    const rows = JSON.parse(String(mixes[0]![1].inputs.clips_json)) as Array<Record<string, unknown>>;
+    assert.deepEqual(rows.map((r) => r.class), ["dialogue", "music", "sfx"], "clips_json keeps doc order — the node replays the tail's two loops");
   });
 
   it("THE FILM CLOCK: overlay seats + duck spans ride start/24 for every class — never the carry-shifted seat", () => {
@@ -230,19 +225,21 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
     assert.deepEqual(manifest.placements.map((p) => p.filmSec), [0.417, 0, 2.5], "music 0/24, dialogue 10/24, sfx 60/24 — the sfx sits at 2.5, never the old 3.417");
     assert.ok(manifest.duckSpanString.includes("2.5:3.75"), "the film duck spans the sfx at its film seat");
     assert.ok(!manifest.duckSpanString.includes("3.417"), "the phantom +22f seat appears nowhere");
-    // THE FILE TAIL RENDERS THE SEATS: one film-level Delay per
-    // placement, its delay_seconds the manifest's filmSec
-    const delays = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window"));
-    assert.equal(delays.length, 3, "one film-level delay per placement");
+    // THE MIX NODE RENDERS THE SEATS: clips_json carries one row
+    // per placement, its start_sec the manifest's filmSec
+    assert.equal(ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window")).length, 0, "no film-level delays — seats ride clips_json");
+    const rows = JSON.parse(String(ofClass(out, "MeliteFilmAudioMix")[0]![1].inputs.clips_json)) as Array<Record<string, unknown>>;
+    assert.equal(rows.length, 3, "one row per placement");
     assert.deepEqual(
-      delays.map(([, n]) => Number(n.inputs.delay_seconds)).sort((a, b) => a - b),
-      [0, 0.417, 2.5],
-      "the delay seats are the manifest's film seats, never the carry-shifted ones",
+      rows.map((r) => r.start_sec),
+      [0.417, 0, 2.5],
+      "the seats are the manifest's film seats in doc order, never the carry-shifted ones",
     );
-    const sfxDelay = delays.find(([, n]) => Number(n.inputs.delay_seconds) === 2.5)!;
-    assert.equal(
-      Number(sfxDelay[1].inputs.duration_seconds), 3.75,
-      "the duration fit = seat + dur (2.5 + 30f/24), so the take lands exactly in its span",
+    const sfxRow = rows.find((r) => r.start_sec === 2.5)!;
+    assert.deepEqual(
+      [sfxRow.start_sec, sfxRow.dur_sec],
+      [2.5, 1.25],
+      "the fit = seat + dur (2.5 + 30f/24), so the take lands exactly in its span",
     );
   });
 
@@ -283,12 +280,12 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
     });
     assert.deepEqual(manifest.placements.map((p) => p.filmSec), [8.125], "overlay at the owner-map seat — never 8.333");
     assert.ok(manifest.duckSpanString.includes("8.125:10.125"), "the duck spans the true seat");
-    // THE FILE TAIL RENDERS THE OWNER-MAP SEAT (the 3-window case is
-    // where start/24 and the old carry math coincide — the graph's
-    // own delay is the discriminator)
-    const delays = ofClass(out, "MeliteAudioDelay").filter(([id]) => !id.startsWith("window"));
-    assert.equal(delays.length, 1, "one film-level delay");
-    assert.equal(Number(delays[0]![1].inputs.delay_seconds), 8.125, "the graph seats the clip at the owner-map seat — never the deficit 7.417");
+    // THE MIX NODE RENDERS THE OWNER-MAP SEAT (the 3-window case is
+    // where start/24 and the old carry math coincide — the node's
+    // clips_json row is the discriminator)
+    const mixRows = JSON.parse(String(ofClass(out, "MeliteFilmAudioMix")[0]![1].inputs.clips_json)) as Array<Record<string, unknown>>;
+    assert.equal(mixRows.length, 1, "one row for the one clip");
+    assert.equal(mixRows[0]!.start_sec, 8.125, "the node seats the clip at the owner-map seat — never the deficit 7.417");
   });
 
   it("existing docs keep their conditioning; music-only clips ride the manifest with no self-duck", () => {
@@ -312,10 +309,12 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
     });
     assert.equal(manifest.duckSpans.length, 1, "one span, one clip");
     assert.equal(manifest.musicDuckSpanString, "", "no voice spans ⇒ no music sub-bus duck");
-    // THE FILE TAIL: the ONE duck is the film track's (the conditioned
-    // music span — the doubling fix); no music sub-bus duck composes
-    const ducks = ofClass(outOld, "MeliteAudioDuck");
-    assert.equal(ducks.length, 1, "exactly one duck — the film track under the conditioned span");
-    assert.equal(String(ducks[0]![1].inputs.segments), manifest.duckSpanString, "segments verbatim from the manifest");
+    // THE MIX NODE: the duck spans ride duck_spans (the conditioned
+    // music span — the doubling fix); no music sub-bus duck exists
+    assert.equal(ofClass(outOld, "MeliteAudioDuck").length, 0, "no in-graph duck — the matrix rides the mix node");
+    const legacyMix = ofClass(outOld, "MeliteFilmAudioMix");
+    assert.equal(legacyMix.length, 1, "exactly one mix node");
+    assert.equal(String(legacyMix[0]![1].inputs.duck_spans), manifest.duckSpanString, "spans verbatim from the manifest");
+    assert.equal(String(legacyMix[0]![1].inputs.music_duck_spans), "", "no voice spans ⇒ no music sub-bus duck");
   });
 });

@@ -624,11 +624,14 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // THE CONDITIONING stamps below stay in-graph per-window (what
   // each window HEARS at generation — lip sync lives here). The
   // overlay half (positions, duck spans, the music bus) rides the
-  // file tail, driven by the same filmMix.ts manifest.
+  // post-generation MeliteFilmAudioMix for clips-carrying films
+  // (the valve's second arm) and the clips-free file tail otherwise
+  // — both driven by the same filmMix.ts manifest.
   // THE CLIPS, PARSED ONCE (2026-09-21, the dialogue half): the
   // per-window CONDITIONING stamps (the model hears the dialogue:
   // lip sync) read THIS list — parseFilmMixClips (filmMix.ts) is
-  // the one law for what a clip IS, shared with the disk-side mix.
+  // the one law for what a clip IS, shared with the post-generation
+  // mix node (its clips_json rows carry the parsed seats verbatim).
   // THE THREE AUDIO LANES (2026-09-22, the operator's D-M-E law): a
   // clip rides one CLASS — dialogue | sfx | music — one H3 audio
   // input each. Every class runs the SAME machinery (stamp → pin →
@@ -752,8 +755,8 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
           text: clip.text,
         }
         // (§20: the conditioned set moved to filmMix.ts — the
-        // disk-side mix derives it from the same stamp law. The
-        // stamps themselves stay: THIS window hears them.)
+        // post-generation mix node derives it from the same stamp
+        // law. The stamps themselves stay: THIS window hears them.)
       }
     }
 
@@ -886,8 +889,9 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // (the scheduler kept the whole film's backlog alive while later
   // windows sampled — the 43h-OOM signature). The disk-side valve
   // that replaced it died the same day (out-of-band ffmpeg). THIS
-  // tail inverts the memory law while staying in-graph:
+  // tail inverts the memory law while staying in-graph, in TWO arms:
   //
+  //   CLIPS-FREE films (the 27-film precedent — never OOM'd):
   //   1. every window SAVES its own clip (h3_t4_w<k>) — its tensors
   //      die at that SaveVideo (nothing downstream consumes them);
   //   2. ONE MeliteUnload boundary PER window save, token-chained
@@ -901,10 +905,24 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   //      for EVERY save;
   //   3. MeliteConcatVideos decodes the saved FILES back in
   //      (IMAGE+AUDIO+fps) — CPU-side, strictly after every save;
-  //   4. the clips overlay + duck matrix mix at film time
-  //      (filmMix.ts's manifest — the same law the stamps read);
-  //   5. CreateVideo → SaveVideo h3_t4_film. The film is a graph
+  //   4. CreateVideo → SaveVideo h3_t4_film. The film is a graph
   //      output; the estate's engineFilmName presents it first.
+  //      (No clips ⇒ the duck/overlay loops below compose nothing.)
+  //
+  //   AUDIO-CARRYING films (the valve's SECOND ARM, 2026-09-24 — the
+  //   VRAM-leak fix, operator law: WE USE COMFYUI, NEVER FFMPEG for
+  //   the mix): the retired in-graph film stitch (concat + film-time
+  //   Delay/Mix/Duck + film CreateVideo/SaveVideo) held every window
+  //   resident until the final save — the accumulation that OOM'd a
+  //   two-window BRIEF9 film at 20.57 GiB. These films take the valve
+  //   path (windows save per-window and free behind the same chained
+  //   boundaries — steps 1–2 above) PLUS one post-generation
+  //   MeliteFilmAudioMix (Layer C, torch, the estate's own node):
+  //   window audio files + the manifest's clips/duck law in,
+  //   SaveAudio h3_t4_film_audio out (the estate's final mux joins it
+  //   with the disk-side video concat). No MeliteConcatVideos, no
+  //   film-time Delay/Mix/Duck/LoadAudio, no film CreateVideo — the
+  //   graph holds windows only during generation.
   //
   // (Single-window docs never reach this tail — the compose
   // dispatch keeps the frozen single-window shape byte-identical;
@@ -944,6 +962,39 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     }).out(0)
   }
   const after = boundaryAfter!
+  if (clips.length > 0) {
+    // THE VALVE'S SECOND ARM (2026-09-24 — the film mix leaves the
+    // graph's generation half): ONE MeliteFilmAudioMix composes the
+    // film's audio post-generation from the saved window files + the
+    // manifest's clips/duck law (the SAME Delay/Mix/Duck methods the
+    // retired tail called, in the SAME order — now torch-side inside
+    // the estate's own node, never ffmpeg). SaveAudio emits it for
+    // the estate's final mux. Early return: the clips-free arm below
+    // stays byte-frozen.
+    const mix = g.node('MeliteFilmAudioMix', {
+      videos: calls.map((_c, i): string => `h3_t4_w${i + 1}`).join(','),
+      after,
+      // the manifest rendered verbatim: every placement's source,
+      // film seat, duration, and class — doc order kept (the node's
+      // two loops read the same order the retired tail did)
+      clips_json: JSON.stringify(manifest.placements.map((pl) => {
+        const clip = clips[pl.clip]!
+        return { src: clip.src, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls }
+      })),
+      duck_spans: manifest.duckSpanString,
+      music_duck_spans: manifest.musicDuckSpanString,
+      duck_db: manifest.duckDb,
+      film_seconds: manifest.filmSec,
+    })
+    g.node('SaveAudio', {
+      audio: mix.out(0), filename_prefix: 'h3_t4_film_audio',
+    })
+    return
+  }
+  // THE CLIPS-FREE ARM (byte-frozen — the 27-film precedent): the
+  // file tail assembles the film in-graph from the saved window
+  // files. The duck/overlay loops below iterate empty placements
+  // and compose nothing.
   const concat = g.node('MeliteConcatVideos', {
     videos: calls.map((_c, i): string => `h3_t4_w${i + 1}`).join(','),
     after,
@@ -955,6 +1006,10 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   // score). The MUSIC-class placements duck under the dialogue and
   // sfx spans (the score yields to speech and impacts); dialogue
   // and sfx ride at unity — an explosion bows to no whisper.
+  // (Clips-carrying films return through the second arm above, so
+  // this arm's loops iterate empty placements — the matrix lives in
+  // MeliteFilmAudioMix now; the loops stay as the arm's general
+  // mechanism, composing nothing.)
   let filmAudio = concat.out(1)
   if (manifest.duckSpans.length > 0) {
     filmAudio = g.node('MeliteAudioDuck', {
@@ -1763,8 +1818,10 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'motion_*', 'noise_seed', 'quant', 'recipe', 'ref_image_size', 'sla_*', 'variant'],
     // the packs the window graph rides (EXTENSION LAW) + the film
     // tail's file boundary (melite-utility-nodes: MeliteUnload +
-    // MeliteConcatVideos) + the overlay's audio chain
-    // (melite-audio-nodes: Delay/Mix/Duck).
+    // MeliteConcatVideos) + the film audio (melite-audio-nodes: the
+    // clips arm's post-generation MeliteFilmAudioMix; the retired
+    // in-graph Delay/Mix/Duck chain needed no declaration beyond the
+    // same pack).
     requires: [
       'comfyui-h3-motion-context', 'ComfyUI-PlagueKind-Nodes',
       'ComfyUI-Frame-Interpolation', 'ComfyUI-KJNodes',
