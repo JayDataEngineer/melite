@@ -14,11 +14,13 @@ import {
   REF_UPLOAD_SPEC,
   artifactThumbNote,
   declaredShortName,
+} from "../src/ui/studio/refUtils.ts"
+import {
   mergeDeclaredRefs,
   normalizeDeclaredRefs,
   refGenreOf,
   splitRefList,
-} from "../src/ui/studio/refUtils.ts"
+} from "../src/timelineContract.ts"
 
 describe("refGenreOf (genre-typed ref buckets)", () => {
   it("window renders are films — *_main and the final cut class video", () => {

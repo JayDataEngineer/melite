@@ -5,8 +5,8 @@
  */
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import type { BeatKnobs, DocCall, DocKeyframe } from "./docModel"
-import { CALL_KNOB_KEYS, GUIDE_KINDS, KIND_OF_TRACK, LEGACY_KNOB_KEY, STARTER_CALLS } from "./docModel"
-import { splitRefList } from "./refUtils"
+import { CALL_KNOB_KEYS, GUIDE_KINDS, KIND_OF_TRACK, STARTER_CALLS } from "./docModel"
+import { joinRefList, migrateCallKnobKey, splitRefList } from "../../timelineContract.ts"
 
 export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall[] {
   // Layer B: `calls` is the vocabulary (2026-08-16, the B/C conflation
@@ -97,16 +97,8 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
     // UI's comma-joined form (serialize splits them back to arrays).
     if (r.refs !== null && typeof r.refs === "object" && !Array.isArray(r.refs)) {
       const rr = r.refs as Record<string, unknown>
-      const join = (v: unknown): string | undefined => {
-        if (Array.isArray(v)) {
-          const arr = v.map(String).map(s => s.trim()).filter(Boolean)
-          return arr.length ? arr.join(", ") : undefined
-        }
-        if (typeof v === "string" && v.trim()) return v.trim()
-        return undefined
-      }
       const refs: NonNullable<DocCall["refs"]> = {}
-      const im = join(rr.images), vi = join(rr.videos), au = join(rr.audios)
+      const im = joinRefList(rr.images), vi = joinRefList(rr.videos), au = joinRefList(rr.audios)
       if (im) refs.images = im
       if (vi) refs.videos = vi
       if (au) refs.audios = au
@@ -120,7 +112,7 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
     if (r.knobs !== null && typeof r.knobs === "object") {
       const knobs: BeatKnobs = {}
       for (const [rawK, v] of Object.entries(r.knobs as Record<string, unknown>)) {
-        const k = LEGACY_KNOB_KEY[rawK] ?? rawK
+        const k = migrateCallKnobKey(rawK)
         if (!CALL_KNOB_KEYS.has(k)) {
           console.warn(`VideoTimelineStudio: dropping unknown call knob "${rawK}" (the card's knob vocabulary)`)
           continue
@@ -268,13 +260,9 @@ export function serializeCalls(calls: DocCall[]): DocCall[] {
     // the run-level refs panel — the bundle never mounted it).
     // Data:-aware split (an inline upload carries its own comma).
     if (c.refs) {
-      const join = (s?: string): string | undefined => {
-        const chips = splitRefList(s)
-        return chips.length ? chips.join(", ") : undefined
-      }
-      const images = join(c.refs.images)
-      const videos = join(c.refs.videos)
-      const audios = join(c.refs.audios)
+      const images = joinRefList(splitRefList(c.refs.images))
+      const videos = joinRefList(splitRefList(c.refs.videos))
+      const audios = joinRefList(splitRefList(c.refs.audios))
       if (images || videos || audios) {
         out.refs = {
           ...(images ? { images } : {}),

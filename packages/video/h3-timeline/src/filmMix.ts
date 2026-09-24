@@ -16,6 +16,10 @@
 //
 // The two wrongs in the card's history (the +22f carry original,
 // the start/24 first correction) stay dead in one place.
+import { spanOverlap, spanStanzaFrames } from './timelineContract.ts'
+
+export { spanOverlap, spanStanzaFrames } from './timelineContract.ts'
+
 export type FilmMixClipClass = 'dialogue' | 'sfx' | 'music'
 
 /** One clip row — the card's audio_clips shape, post-parse. */
@@ -132,33 +136,6 @@ const round3 = (v: number): number => Math.round(v * 1000) / 1000
 /** The duck span string — "start:end" at ms precision, ';'-joined. */
 export function formatDuckSpan(start: number, end: number): string {
   return `${round3(start)}:${round3(end)}`
-}
-
-/** The seam overlap of a span (frames): 'cut' = 0, else the proven 22. */
-export function spanOverlap(span: FilmMixSpan): number {
-  return span.transition === 'cut' ? 0 : 22
-}
-
-/** The render grid's stanza length for one span (§26): 22+17k
- *  frames, clamped [22,362] — the snap the card's window loop and
- *  this clock share, owned HERE so they can never drift (the
- *  two-clocks law: the render and the accounting must state the
- *  same window).
- *
- *  THE CARRY IS GENERATION (fixed 2026-09-23 — the operator's
- *  standing "the seam is still CUT" catch, MEASURED live on the
- *  BRIEF4 proof film): a carried window k≥2 renders from
- *  sf − carry — the carry head lives INSIDE the stanza length, the
- *  finalize trims it off the saved clip, so the stanza must cover
- *  carry + span. The old snap counted the span alone: span 119 →
- *  stanza 124 → render [sf−22, sf+102) → trim 22 → SAVED 102 —
- *  the window 17 frames SHORT of its span, the film joined by a
- *  hard concat on the wrong frames, every positioned clip past the
- *  seam landing late. The caller owns WHICH windows carry (the
- *  first window never does — the render's chainLike law). */
-export function spanStanzaFrames(span: FilmMixSpan, carry = 0): number {
-  const kk = Math.round((span.end - span.start + carry - 22) / 17)
-  return Math.min(362, Math.max(22, 22 + 17 * kk))
 }
 
 /** Per-window stanza seconds — THE compose-time windowSecs

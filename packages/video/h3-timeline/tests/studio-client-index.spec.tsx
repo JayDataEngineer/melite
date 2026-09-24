@@ -25,6 +25,8 @@ function owner(row: Record<string, unknown>, over?: Record<string, unknown>) {
     onStop: () => {},
     onRemove: () => {},
     onSurface: () => {},
+    upstream: [],
+    runId: null,
     ...over,
   } as never
 }

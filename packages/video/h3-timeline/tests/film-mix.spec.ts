@@ -10,9 +10,9 @@ import assert from "node:assert/strict";
 import {
   computeFilmMix,
   parseFilmMixClips,
-  spanStanzaFrames,
   stanzaSecs,
 } from "../src/filmMix.ts";
+import { spanStanzaFrames } from "../src/timelineContract.ts";
 import type { FilmMixClip, FilmMixSpan } from "../src/filmMix.ts";
 
 const SPAN = (start: number, end: number, transition?: string): FilmMixSpan =>

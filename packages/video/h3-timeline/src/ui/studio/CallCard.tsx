@@ -15,20 +15,17 @@ import { readAsDataURL } from "@melite/card-base/chrome"
 import { SourceRow } from "@melite/card-base/form"
 import { FirstFrameSlot, SeamControls } from "./CallFrameSubcard"
 import { CallCardPrompt } from "./CallCardPrompt"
-import { REF_UPLOAD_SPEC, declaredShortName, mergeDeclaredRefs, normalizeDeclaredRefs, refGenreOf, splitRefList } from "./refUtils"
+import { REF_UPLOAD_SPEC, declaredShortName } from "./refUtils"
+import {
+  IMAGE_BUS_SLOTS,
+  REF_CAPS,
+  deliveredFrames,
+  mergeDeclaredRefs,
+  normalizeDeclaredRefs,
+  refGenreOf,
+  splitRefList,
+} from "../../timelineContract.ts"
 import type { CallCardDeps } from "./CallCardsPanel"
-
-/** THE SEAM-CARRY TRUTH (mirror of the card's own law, 2026-09-20):
- *  a carried window's delivered frames are its span MINUS the seam's
- *  overlap — the drift-control continuation carries the director's
- *  proven 22 frames, automatic. First windows and cuts deliver their
- *  whole span. */
-const SEAM_OVERLAP_FRAMES = 22
-export const deliveredFrames = (c: DocCall, i: number): number => {
-  const span = c.end_frame - c.start_frame
-  if (i === 0 || c.transition === "cut") return span
-  return Math.max(0, span - SEAM_OVERLAP_FRAMES)
-}
 
 /** A CARD-LEVEL reference chip (2026-09-23, the operator: the
  *  agent-persisted card-level refs showed NOWHERE): display-only — the
@@ -341,7 +338,7 @@ export function CallCard({
           const redundant = chips.filter((ch) => declared.includes(ch))
           const anchor = (c.image ?? "").trim() !== "" ? 1 : 0
           const total = anchor + bus.length
-          const over = total > 9
+          const over = total > IMAGE_BUS_SLOTS
           const candidates = refArtifacts
             .filter((a) => refGenreOf(a.name, a.url) === "image" && !chips.includes(a.name))
             .map((a) => ({ id: a.name, label: a.name, url: a.url }))
@@ -363,11 +360,11 @@ export function CallCard({
                   <span
                     className={over ? s.refCountOver : undefined}
                     title={over
-                      ? `${total} image slots claimed — the bus holds 9 (1 anchor + 8 refs); the compose slices the overflow`
-                      : `${total} of 9 image slots on the bus${declared.length ? ` (${declared.length} card-level)` : ""}`}
+                      ? `${total} image slots claimed — the bus holds ${IMAGE_BUS_SLOTS} (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow`
+                      : `${total} of ${IMAGE_BUS_SLOTS} image slots on the bus${declared.length ? ` (${declared.length} card-level)` : ""}`}
                     data-testid="tl-call-ref-images"
                   >
-                    {total}/9{over ? " over bus" : ""}
+                    {total}/{IMAGE_BUS_SLOTS}{over ? " over bus" : ""}
                   </span>
                 }
               >
@@ -438,7 +435,7 @@ export function CallCard({
           label="Ref videos"
           kind="video"
           accept="video/*"
-          cap={3}
+          cap={REF_CAPS.videos}
           value={c.refs?.videos}
           artifacts={refArtifacts}
           onChange={(v) => setCallRefs(i, "videos", v)}
@@ -448,7 +445,7 @@ export function CallCard({
           label="Ref audios"
           kind="audio"
           accept="audio/*"
-          cap={3}
+          cap={REF_CAPS.audios}
           value={c.refs?.audios}
           artifacts={refArtifacts}
           onChange={(v) => setCallRefs(i, "audios", v)}

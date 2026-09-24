@@ -4,6 +4,15 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import type { TimelineTrack } from "@melite-plugin/timeline/ui/timeline"
+import {
+  CALL_KNOB_KEYS,
+  KNOB_ORDER,
+  LEGACY_KNOB_KEY,
+  type KnobKey,
+} from "../../timelineContract.ts"
+
+export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY } from "../../timelineContract.ts"
+export type { KnobKey } from "../../timelineContract.ts"
 
 // ── The document types (the builder SCHEMA's shapes, client-side) ─────────
 
@@ -99,60 +108,6 @@ export interface BeatKnobs {
   interp_multiplier?: number
 }
 
-/** The backend's CALL_KNOB_KEYS vocabulary — hydration accepts only
- * these (a foreign key is dropped with a warning, never re-sent).
- * (2026-09-02 parity fix) h3_attention is LAYER A ONLY — the compose
- * gate REFUSES it on calls by name ("a per-call h3_attention would
- * silently do nothing") — and legacy h3_sage_attention is not in the
- * card_knobs map at all; both are gone from the vocabulary so the UI
- * can never author a card the run door refuses. Legacy docs carrying
- * them hydrate-drop with a warning. */
-/* (compose-law sync, 2026-09-01) the studio offers EXACTLY the keys the
- * h3-timeline compose gate accepts (card_knobs.yaml + cc_key_allowed).
- * Every key here is verified handled; a key the gate refuses would
- * brick the user's card at submit — removed: cfg (retired: the guider
- * bakes 1), h3_context_steps / h3_audio_context_steps (latent-chain
- * seam math is structural, not a knob), h3_fp16_accumulation /
- * h3_torch_compile (engine build flags, no inject), h3_ref_videos
- * (ref2va images only). (2026-09-02 knob audit) sharpen radius /
- * threshold / iterations RE-ADMITTED — they are real ImageSharpenKJ
- * grouped-widget sub-inputs and now carry card_knobs entries. */
-/* THE CALL-KNOB VOCABULARY (the Layer A/B law stroke, 2026-09-17):
- * the stanza keys the CARD's compose actually reads — the wire names,
- * no studio dialect. The retired spellings (sampling_steps / sampler /
- * scheduler / h3_sla_* / interpolate_model / interpolate_multiplier)
- * never matched the card's reads and were silently ignored by
- * compose; they migrate at hydration (LEGACY_KNOB_KEY) and never
- * serialize again. */
-export const CALL_KNOB_KEYS = new Set([
-  "steps", "denoise", "sampler_name", "sched_name",
-  "shift_video", "shift_audio",
-  "sla_sparsity", "sla_block_size",
-  "sla_min_seq_len", "sla_dense_last_steps",
-  "sla_protect_audio", "sla_stabilize_motion",
-  "sla_reference_protection", "sla_dense_backend",
-  "sla_dense_steps", "sla_disable_fp16_accum",
-  "sharpen_enabled", "sharpen_method", "sharpen_strength",
-  "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
-  "interpolate_enabled", "interp_model", "interp_multiplier",
-  "length",
-])
-
-export const KNOB_ORDER = [
-  "steps", "denoise", "sampler_name", "sched_name",
-  "shift_video", "shift_audio",
-  "sla_sparsity", "sla_block_size",
-  "sla_min_seq_len", "sla_dense_last_steps",
-  "sla_protect_audio", "sla_stabilize_motion",
-  "sla_reference_protection", "sla_dense_backend",
-  "sla_dense_steps", "sla_disable_fp16_accum",
-  "sharpen_enabled", "sharpen_method", "sharpen_strength",
-  "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
-  "interpolate_enabled", "interp_model", "interp_multiplier",
-  "length",
-] as const
-export type KnobKey = (typeof KNOB_ORDER)[number]
-
 export const KNOB_LABELS: Record<KnobKey, string> = {
   steps: "Steps",
   denoise: "Denoise",
@@ -181,38 +136,6 @@ export const KNOB_LABELS: Record<KnobKey, string> = {
   interp_multiplier: "Interp multiplier",
   length: "Window length (frames)",
 }
-
-/** The retired knob spellings → the card's wire names. Hydration
- * migrates; serialization only ever writes the wire names. */
-export const LEGACY_KNOB_KEY: Record<string, string> = {
-  sampling_steps: "steps",
-  sampler: "sampler_name",
-  scheduler: "sched_name",
-  h3_sla_sparsity: "sla_sparsity",
-  h3_sla_block_size: "sla_block_size",
-  h3_sla_min_seq_len: "sla_min_seq_len",
-  h3_sla_dense_last_steps: "sla_dense_last_steps",
-  h3_sla_protect_audio: "sla_protect_audio",
-  h3_sla_stabilize_motion: "sla_stabilize_motion",
-  h3_sla_reference_protection: "sla_reference_protection",
-  h3_sla_dense_backend: "sla_dense_backend",
-  h3_sla_dense_steps: "sla_dense_steps",
-  h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
-  interpolate_model: "interp_model",
-  interpolate_multiplier: "interp_multiplier",
-}
-
-// The same option lists as the card form's engine fold (the builder
-// SCHEMA is the source of truth; these mirror it for the compact studio
-// controls — adding an engine option updates both).
-export const SAMPLER_OPTIONS = [
-  "euler", "euler_cfg_pp", "euler_ancestral",
-  "dpmpp_2m", "dpmpp_2m_sde", "heun",
-]
-export const SCHEDULER_OPTIONS = [
-  "simple", "beta", "linear_quadratic", "normal",
-  "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform",
-]
 
 /** One Layer A audio clip (the audio lanes' NLE block): position in
  * DOC frames, length in doc frames, gain linear (1 = unity).
@@ -366,21 +289,7 @@ export interface LayerA {
  * catalog id when the filename matches, else drops with a warning
  * (it was decorative anyway — compose never read it). */
 export const LEGACY_LAYERA_KEY: Record<string, string> = {
-  sampling_steps: "steps",
-  sampler: "sampler_name",
-  scheduler: "sched_name",
-  h3_sla_sparsity: "sla_sparsity",
-  h3_sla_block_size: "sla_block_size",
-  h3_sla_min_seq_len: "sla_min_seq_len",
-  h3_sla_dense_last_steps: "sla_dense_last_steps",
-  h3_sla_protect_audio: "sla_protect_audio",
-  h3_sla_stabilize_motion: "sla_stabilize_motion",
-  h3_sla_reference_protection: "sla_reference_protection",
-  h3_sla_dense_backend: "sla_dense_backend",
-  h3_sla_dense_steps: "sla_dense_steps",
-  h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
-  interpolate_model: "interp_model",
-  interpolate_multiplier: "interp_multiplier",
+  ...LEGACY_KNOB_KEY,
   rtx_vsr_enabled: "sr_switch",
   h3_ref_image_size: "ref_image_size",
 }

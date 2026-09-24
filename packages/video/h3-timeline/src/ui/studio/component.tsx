@@ -199,7 +199,6 @@ export function VideoTimelineStudio({
               sidebar shows the global params until a call/beat clip is
               selected in the bar — then it swaps to THAT item's editor;
               a click on the empty timeline swaps back). */}
-          {selected == null && (
           <CallCardsPanel
             calls={calls}
             selected={selected}
@@ -227,7 +226,6 @@ export function VideoTimelineStudio({
               audioClipsPresent: derived.audioClipsPresent,
             }}
           />
-          )}
           {selected == null && (
           <details data-testid="tl-run-panel" className={s.runFold}>
             <summary className={s.runSummary}>
@@ -256,35 +254,6 @@ export function VideoTimelineStudio({
           />
             </div>
           </details>
-          )}
-          {selected != null && (
-          <CallCardsPanel
-            calls={calls}
-            selected={selected}
-            setSelected={view.setSelected}
-            fps={fps}
-            sourceOptions={derived.sourceOptions}
-            keyframes={keyframes}
-            handleKeyframeMove={kf.handleKeyframeMove}
-            handleKeyframeDelete={kf.handleKeyframeDelete}
-            setKeyframeSource={kf.setKeyframeSource}
-            deps={{
-              selected, fps, layerA, knobFields,
-              callCardRefs: view.callCardRefs,
-              artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
-              refArtifacts: audio.refArtifacts,
-              handlePromptDelete: pr.handlePromptDelete,
-              handlePromptUpdate: pr.handlePromptUpdate,
-              enhanceOne: enh.enhanceOne, undoEnhance: enh.undoEnhance,
-              enhancing: enh.enhancing, enhanceErr: enh.enhanceErr,
-              enhanceUndo: enh.enhanceUndo,
-              setCallSpan: mut.setCallSpan, setCallGuide: mut.setCallGuide,
-              setCallTransition: mut.setCallTransition,
-              setCallRefs: mut.setCallRefs, setCallKnob: mut.setCallKnob,
-              voicePinnedCalls: derived.voicePinnedCalls,
-              audioClipsPresent: derived.audioClipsPresent,
-            }}
-          />
           )}
         </div>
       }

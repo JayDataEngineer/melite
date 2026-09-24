@@ -312,6 +312,16 @@ describe("the input surface: the 9-slot bus shelves the FL2VA pair first", () =>
     assert.equal(loaderFor(out, b, "input_4"), null, "the dup never double-loads");
   });
 
+  it("legacy comma refs preserve a data URL's mime comma", () => {
+    const data = "data:image/png;base64,iVBORw0KGgo=";
+    const out = graphOf({
+      calls: [SHOT({ refs: { images: `${data}, /m/b.png` } })],
+    }, "run_data_refs");
+    const b = bundleIn(out);
+    assert.equal(loaderFor(out, b, "input_2"), data);
+    assert.equal(loaderFor(out, b, "input_3"), "/m/b.png");
+  });
+
   it("Layer B wins: a call's knobs replace the card-level stack (never union)", () => {
     const out = graphOf({
       ref_images: ["/m/a.png"],

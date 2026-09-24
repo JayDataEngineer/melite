@@ -13,7 +13,7 @@
  */
 import type { DocAudioClip, LayerA } from "./docModel"
 import { LEGACY_LAYERA_KEY, stemToClip } from "./docModel"
-import { normalizeDeclaredRefs } from "./refUtils"
+import { normalizeDeclaredRefs } from "../../timelineContract.ts"
 
 /** Card-level ref lists hydrate to arrays; absent/empty stays absent
  * (undefined = the compose sees no declared surface — same as today). */

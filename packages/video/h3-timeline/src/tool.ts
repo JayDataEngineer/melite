@@ -23,6 +23,7 @@ import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
 import { carrier, identity, BOARDED, VARIANT_ADDRESSES } from './card.ts'
+import { SEAM_OVERLAP_FRAMES } from './timelineContract.ts'
 
 export const TOOL_NAME = 'h3_timeline'
 
@@ -46,7 +47,7 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition =>
       calls: {
         type: 'json',
         required: true,
-        description: 'Shots — one per film shot: [{ text, start_frame, end_frame, image?, transition?, refs? }]. Spans are ints (end > start); the seam is automatic (drift-control carry at 22 frames); transition "cut" = independent window, nothing carries. There is NO per-call audio — spoken lines ride audio_clips.',
+        description: `Shots — one per film shot: [{ text, start_frame, end_frame, image?, transition?, refs? }]. Spans are ints (end > start); the seam is automatic (drift-control carry at ${SEAM_OVERLAP_FRAMES} frames); transition "cut" = independent window, nothing carries. There is NO per-call audio — spoken lines ride audio_clips.`,
       },
       audio_clips: {
         type: 'json',

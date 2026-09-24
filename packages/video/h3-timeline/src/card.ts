@@ -32,10 +32,27 @@ import z from '@deepseek-ai/schemastery'
 import { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { finalizeH3, coerceWireArrays } from '@melite/comfyui-card-kit'
-import { computeFilmMix, parseFilmMixClips, spanStanzaFrames, stanzaSecs } from './filmMix.ts'
+import { computeFilmMix, parseFilmMixClips, stanzaSecs } from './filmMix.ts'
 import type { FilmMixClip, FilmMixSpan } from './filmMix.ts'
+import {
+  GRID_BASE_FRAMES,
+  GRID_MAX_FRAMES,
+  GRID_REMAINDER,
+  GRID_STEP_FRAMES,
+  IMAGE_BUS_SLOTS,
+  REF_CAPS,
+  assertGridLength,
+  gridSnap,
+  imageReferenceCap,
+  mergeDeclaredRefs,
+  normalizeDeclaredRefs,
+  spanStanzaFrames,
+  transitionOverlap,
+} from './timelineContract.ts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
+
+export { assertGridLength, gridSnap } from './timelineContract.ts'
 
 // inputs the t4 family templates OMIT whose pin defaults comfy-script
 // would auto-fill at serialization — the strip set lives in src/kit.ts
@@ -66,7 +83,7 @@ const LORA_STACK_GOLD =
 // His 17k+5 grid, in-graph (ComfyMathExpression): snap latent steps to 2 mod 5
 // (the card's own principles row: "Length snaps to the 17k+5 frame grid
 // at 24fps" — the principles).
-const MATH_STEPS_GOLD = 'max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17'
+const MATH_STEPS_GOLD = `max(${GRID_REMAINDER}, round(a * 24)) + (${GRID_REMAINDER} - (max(${GRID_REMAINDER}, round(a * 24)) % ${GRID_STEP_FRAMES})) % ${GRID_STEP_FRAMES}`
 // the never-selected i2v branch's dead-branch prompt (template gold;
 // provenance: the frozen served captures).
 const I2V_GOLD_PROMPT = 'In a high action fun scene The character from the picture is facing the camera and sprinting towards the camera which tracks their movement, in a hitech futuristic city, dodging passing vehicles and other obstacles.\nHigh action, quick movements, cinematic. It is raining and night time, with glowing led lights.\nCars are crashing into eachother, bombs are dropping, but the character remains untouched by the chaos as they sprint.\nthey jump over a car as it slams into another car, and a bomb nearly hits the character.\nany car crashes or bomb impacts cause massive realistic destruction.\n\n[sound]\na futuristic electro cyber song plays in the background, and the background noise of crashes and explosions.\n'
@@ -120,9 +137,9 @@ const paramSchema = z.object({
   // `refs` stanza bag keeps its compose-side wireList readers; the
   // declared fields are the primary surface.
   last_frame: z.string().role('path').description("Last frame (end anchor)").extra('extra', { order: null, wtype: 'image', tooltip: "FL2VA end anchor — bundle input 2. Locks the final frame's pixels; H3 generates the motion between the two anchors." }),
-  ref_images: z.array(z.string().role('path')).description("Reference images").max(8).extra('extra', { order: null, wtype: 'image_list', max_stack: 8, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." }),
-  ref_videos: z.array(z.string().role('path')).description("Reference videos").max(3).extra('extra', { order: null, wtype: 'image_list', media: 'video', max_stack: 3, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." }),
-  ref_audios: z.array(z.string().role('path')).description("Reference audios").max(3).extra('extra', { order: null, wtype: 'image_list', media: 'audio', max_stack: 3, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." }),
+  ref_images: z.array(z.string().role('path')).description("Reference images").max(REF_CAPS.images).extra('extra', { order: null, wtype: 'image_list', max_stack: REF_CAPS.images, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." }),
+  ref_videos: z.array(z.string().role('path')).description("Reference videos").max(REF_CAPS.videos).extra('extra', { order: null, wtype: 'image_list', media: 'video', max_stack: REF_CAPS.videos, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." }),
+  ref_audios: z.array(z.string().role('path')).description("Reference audios").max(REF_CAPS.audios).extra('extra', { order: null, wtype: 'image_list', media: 'audio', max_stack: REF_CAPS.audios, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." }),
   // (THE BED IS GONE — operator 2026-09-22: "We have Audio Bed
   // input. We don't use that, that is a bug that is there." Film
   // music rides the D-M-E lanes' MUSIC clips, pinned per window;
@@ -147,7 +164,7 @@ const paramSchema = z.object({
   // explicit 90 passes the walk. 56 (the declared
   // default) is on-grid; the omitted-key path normalizes to null in
   // schema() so the body computes the family's frame budget.
-  length: z.number().description("Frames").min(22).max(362).step(17).default(56).extra('extra', { order: null, columns: 2, width: 1, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
+  length: z.number().description("Frames").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', { order: null, columns: 2, width: 1, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
   steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', samplingExtra('steps', { tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
   // THE SECOND-PASS MASTER (2026-09-22, operator: "Second Pass also
   // needs an on/off switch, it is very unclear if it is on or off"):
@@ -493,8 +510,7 @@ export function schema(v: unknown): Record<string, unknown> {
       const ef = rows[0].end_frame as number
       // (the shot laws above guarantee valid int spans — every
       // single-call doc rides the snap arm; no defensive else)
-      const k = Math.round((ef! - sf! - 22) / 17)
-      out.length = Math.min(362, Math.max(22, 22 + 17 * k))
+      out.length = gridSnap(ef! - sf!)
     }
     // rows.length !== 1: the walked default stands (56 fresh-card,
     // inert for multi-call chains — spans own the film)
@@ -696,7 +712,7 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     // (22 frames ≈ 0.92s). first_frame_prev_sec retired with the
     // MotionContext seam — cross-run continuity is the FL2VA anchor
     // (set the first-frame square to the previous film's last frame).
-    const overlap = call.transition === 'cut' ? 0 : 22
+    const overlap = transitionOverlap(typeof call.transition === 'string' ? call.transition : undefined)
     const knobs = (call.knobs ?? {}) as Record<string, unknown>
     // refs are a LAYER B (per-call) property — the reference bundle
     // rides the stanza; a refs-carrying call is t4r EVEN without a
@@ -1119,45 +1135,7 @@ export interface WindowHandles {
   savePassthrough?: OutputHandle
 }
 
-// THE REF WIRE FORM (one law, three readers): refs ride as comma
-// strings (the stagers' IsString law) OR string arrays (hand-authored
-// JSON); entries are trimmed filenames, empties are absent. Never a
-// bespoke per-site reading.
-const wireList = (v: unknown): string[] =>
-  Array.isArray(v)
-    ? v.filter((x): x is string => typeof x === 'string' && x.trim() !== '')
-    : typeof v === 'string'
-      ? v.split(',').map((x) => x.trim()).filter((x) => x !== '')
-      : []
-
-/** THE RENDER GRID (roadmap §26 — measured live 2026-09-22: three
- *  film runs died inside SamplerCustomAdvanced on a knob-pinned
- *  off-grid length, each burning partial-window GPU): the engine
- *  lawfully renders 22+17k frames in [22,362]. The snap arms compute
- *  on-grid lengths by construction — but a call's knobs.length PIN
- *  bypasses every snap, so the pin is validated, never trusted.
- *  gridSnap names the nearest legal length; assertGridLength refuses
- *  anything else at compose (zero GPU) with the fix in the message. */
-export function gridSnap(length: number): number {
-  const k = Math.round((length - 22) / 17)
-  return Math.min(362, Math.max(22, 22 + 17 * k))
-}
-export function assertGridLength(length: unknown, where: string): number {
-  if (
-    typeof length !== 'number' || !Number.isInteger(length) ||
-    length < 22 || length > 362 || (length - 22) % 17 !== 0
-  ) {
-    const nearest = typeof length === 'number' && Number.isFinite(length)
-      ? gridSnap(Math.min(362, Math.max(22, Math.round(length))))
-      : 124
-    throw new Error(
-      `${where}: length ${String(length)}f is off-grid — the engine renders ` +
-      `22+17k frames in [22,362] (nearest legal: ${nearest}f); ` +
-      `the doc-proven geometry is 0→124→243→362`,
-    )
-  }
-  return length
-}
+const wireList = normalizeDeclaredRefs
 
 function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHandles {
   // REFS IMPLY THE R2V LANE (the bundle IS the r2v input): a
@@ -1294,8 +1272,6 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     const declaredImages = wireList(p.ref_images)
     const declaredVideos = wireList(p.ref_videos)
     const declaredAudios = wireList(p.ref_audios)
-    const mergeRefs = (declared: string[], legacy: string[]): string[] =>
-      [...declared, ...legacy.filter((s) => !declared.includes(s))]
     // THE 9-SLOT IMAGE BUS (the bundle's own topology — the compose
     // and the UI agree or they lie): inputs 1-9 are IMAGE slots —
     // the anchor at 1, the FL2VA pair's END anchor at 2 when
@@ -1305,13 +1281,14 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // image stream — and be silently clobbered; the law refuses
     // LOUD instead.
     const lastFrame = (p.last_frame ?? '') as string
-    const refImagesAll = mergeRefs(declaredImages, wireList(refBag.images))
-    if (lastFrame !== '' && refImagesAll.length > 7) {
-      throw new Error(`[h3-timeline] the image bus is full: a last frame (input 2) + ${String(refImagesAll.length)} references exceeds the 9-slot bus — keep references ≤ 7 with an end anchor (≤ 8 without)`)
+    const refImagesAll = mergeDeclaredRefs(declaredImages, wireList(refBag.images))
+    const imageCap = imageReferenceCap(lastFrame !== '')
+    if (lastFrame !== '' && refImagesAll.length > imageCap) {
+      throw new Error(`[h3-timeline] the image bus is full: a last frame (input 2) + ${String(refImagesAll.length)} references exceeds the ${IMAGE_BUS_SLOTS}-slot bus — keep references ≤ ${imageCap} with an end anchor (≤ ${REF_CAPS.images} without)`)
     }
-    const refImages = refImagesAll.slice(0, 8)
-    const refVideos = mergeRefs(declaredVideos, wireList(refBag.videos)).slice(0, 3)
-    const refAudios = mergeRefs(declaredAudios, wireList(refBag.audios)).slice(0, 3)
+    const refImages = refImagesAll.slice(0, imageCap)
+    const refVideos = mergeDeclaredRefs(declaredVideos, wireList(refBag.videos)).slice(0, REF_CAPS.videos)
+    const refAudios = mergeDeclaredRefs(declaredAudios, wireList(refBag.audios)).slice(0, REF_CAPS.audios)
     const bundleInputs: Record<string, OutputHandle> = {}
     let anchorRaw: OutputHandle | undefined
     if (guideImage !== '') {

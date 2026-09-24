@@ -20,6 +20,10 @@ function owner(over: Partial<StageViewOwnerProps> = {}): StageViewOwnerProps {
   return {
     stageId: 's_4',
     cardName: 'h3-timeline',
+    // the contract's required seat: no upstreams on this bench —
+    // the projection tolerates nothing, so the helper seats [] (never
+    // an omitted cast — the crash it hid broke six arms at once)
+    upstream: [],
     row: {
       id: 's_4',
       card: 'h3-timeline',
