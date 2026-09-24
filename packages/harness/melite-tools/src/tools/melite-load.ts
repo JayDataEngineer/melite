@@ -195,7 +195,7 @@ export function meliteLoad(
             out.push('mods: ' + modLines.join(', ')
               + ' — pass arrays under the kind keys (the bag lives at param_key when it differs); ordered kinds stack in array order, standalone kinds each provide their own output'
               + ' — card-mode envelope: mod FIELDS ride flat top-level (e.g. voice_name, qvoice), never keyed under the pack name'
-              + '; card-mode lane select: `variant`/`quant` ride INSIDE params (e.g. params {variant: \'customvoice\'}) — the compose reads them off the body, the engine never sees them')
+              + '; card-mode lane select: `variant`/`quant` ride INSIDE params (e.g. params {variant: \'customvoice\'}) while `model` rides top-level — the compose reads them off the body, the engine never sees them')
             const keyed = packSeats.filter((p) => p.param_key !== p.kind)
             if (keyed.length > 0) {
               out.push('mod param_keys: ' + keyed.map((p) => p.kind + ' → ' + p.param_key + ' (entries: {' + p.fields.join(', ') + '})').join('; '))

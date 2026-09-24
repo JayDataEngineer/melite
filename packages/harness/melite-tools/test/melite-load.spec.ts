@@ -296,6 +296,9 @@ test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)
   // rides inside card-mode params — stated, never guessed.
   assert.ok(text.includes('card-mode lane select'), 'the variant seat is stated')
   assert.ok(text.includes("params {variant: 'customvoice'}"), 'the seat shape is spelled')
+  // 026#3: model rides top-level while variant rides inside —
+  // both seats stated, the params.model misread dies here.
+  assert.ok(text.includes('`model` rides top-level'), 'the model seat is stated')
   // kindless cards stay line-less (never an empty mods line)
   const plain = tool.output.render(
     { name: 'c', inference_type: 'card' },
