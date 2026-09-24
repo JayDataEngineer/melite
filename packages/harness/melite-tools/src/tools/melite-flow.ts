@@ -195,6 +195,16 @@ interface StartResult {
 
 /** POST /v1/flows/start — the verbatim-error pattern (the agent
  *  reads the gateway's refusal text, not a transport code). */
+/** THE WIRE-BOOLEAN READ (attempt-035's provenance receipt,
+ * 2026-09-24): the same corruptor that stringifies declared
+ *  numerics can stringify the declared boolean — `test: "true"`
+ *  failed `=== true` and diagnostic runs landed under output/ as
+ *  test:false. Loose spellings read truthy; everything else stays
+ *  false (never truthy-coerce junk like 1/"yes"). */
+function wireBool(v: unknown): boolean {
+  return v === true || v === 'true'
+}
+
 async function startRun(
   request: EstateRequest,
   body: Record<string, unknown>,
@@ -327,7 +337,7 @@ async function runBench(
       ? row['params'] as Record<string, unknown> : {}
     const model = await modelForCard(card, params)
     const started = await startRun(request, {
-      ...params, model, test: a.test === true, draft_id: draftId,
+      ...params, model, test: wireBool(a.test), draft_id: draftId,
     }, signal)
     if (typeof started['error'] === 'string') {
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, error: started['error'], pass }
@@ -510,7 +520,7 @@ async function runSingle(
   } catch (e) {
     return { mode: 'card', target: card, error: e instanceof Error ? e.message : String(e) }
   }
-  const started = await startRun(request, { ...bag, model, test: a.test === true, draft_id: draftId }, signal)
+  const started = await startRun(request, { ...bag, model, test: wireBool(a.test), draft_id: draftId }, signal)
   if (typeof started["error"] === 'string') return { mode: 'card', target: card, ...started }
   return { mode: 'card', target: card, model, draft_id: draftId, ...started }
 }
@@ -543,7 +553,7 @@ async function runTemplate(
     // diagnostic ("bench moved: rev is N, caller held M").
     return { mode: 'flow', target: flow, error: e instanceof Error ? e.message : String(e) }
   }
-  const started = await startRun(request, { ...overrides, flow, test: a.test === true, draft_id: draftId }, signal)
+  const started = await startRun(request, { ...overrides, flow, test: wireBool(a.test), draft_id: draftId }, signal)
   // a refused start carries the error and NO draft_id — a tile never
   // mounts for a run that never registered (the estate card-tool law).
   if (typeof started["error"] === 'string') return { mode: 'flow', target: flow, ...started }
@@ -602,7 +612,7 @@ async function runAdHoc(
   } catch (e) {
     return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : String(e) }
   }
-  const started = await startRun(request, { flow_inline: flowBody, test: a.test === true, draft_id: draftId }, signal)
+  const started = await startRun(request, { flow_inline: flowBody, test: wireBool(a.test), draft_id: draftId }, signal)
   if (typeof started["error"] === 'string') return { mode: 'adhoc', target: flowId, ...started }
   return { mode: 'adhoc', target: flowId, draft_id: draftId, ...started }
 }
@@ -809,7 +819,7 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       }
       const bag = (a.params && typeof a.params === 'object' && !Array.isArray(a.params))
         ? a.params as Record<string, unknown> : {}
-      const test = a.test === true
+      const test = wireBool(a.test)
       const hasBench = a.bench === true
       const hasCard = typeof a.card === 'string' && a.card !== '';
       const hasFlow = typeof a.flow === 'string' && a.flow !== '';
