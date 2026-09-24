@@ -133,6 +133,27 @@ describe('comfy_manage execute — the manage lane', () => {
     assert.deepEqual(body, FULL)
   })
 
+  test('lifts provisioning state fields without hiding the raw data', async () => {
+    const { request } = mockRequest(() => ({
+      ok: true,
+      action: 'install_extension',
+      detail: 'restart required',
+      data: {
+        state: 'partial',
+        operation_id: 'op-1',
+        restart_required: true,
+        items: [{ key: 'extension:pack', state: 'restart_required' }],
+      },
+    }))
+    const tool = comfyManage(request)
+    const out = await tool.execute({ action: 'install_extension', nodes: ['pack'] }, exec()) as Record<string, unknown>
+    assert.equal(out.state, 'partial')
+    assert.equal(out.partial, true)
+    assert.equal(out.operation_id, 'op-1')
+    assert.equal(out.restart_required, true)
+    assert.deepEqual(out.items, [{ key: 'extension:pack', state: 'restart_required' }])
+  })
+
   test('blank and omitted fields stay out of the envelope', async () => {
     const { seen, request } = mockRequest(() => ({ ok: true, action: 'status', detail: 'fine' }))
     const tool = comfyManage(request)

@@ -1,0 +1,3 @@
+{"type":"header","format":"v0","sessionId":"provisioning-manager","profile":"melite-test"}
+{"type":"user","text":"Install the declared extension pack and report its operation state."}
+{"type":"assistant","text":"The extension operation is recorded with restart required."}

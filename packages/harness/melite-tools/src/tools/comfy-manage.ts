@@ -65,7 +65,24 @@ type ManageResult = {
   detail?: string;
   data?: JsonValue;
   error?: string;
+  operation_id?: string;
+  state?: string;
+  restart_required?: boolean;
+  partial?: boolean;
+  items?: JsonValue[];
 } & Record<string, JsonValue>;
+
+function provisioningFields(data: unknown): Partial<ManageResult> {
+  if (typeof data !== 'object' || data === null) return {}
+  const value = data as Record<string, unknown>
+  const fields: Partial<ManageResult> = {}
+  if (typeof value.operation_id === 'string') fields.operation_id = value.operation_id
+  if (typeof value.state === 'string') fields.state = value.state
+  if (typeof value.restart_required === 'boolean') fields.restart_required = value.restart_required
+  if (Array.isArray(value.items)) fields.items = value.items as JsonValue[]
+  if (value.state === 'partial') fields.partial = true
+  return fields
+}
 
 export function comfyManage(request: EstateRequest): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
@@ -93,8 +110,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
   const def = defineTool({
     name: 'comfy_manage',
     description:
-
-      + 'managed workspace only), snapshot_list / snapshot_save / '
+      'managed workspace only), snapshot_list / snapshot_save / '
       + 'snapshot_restore (environment snapshots; restore is refused while '
       + 'runs are active); endpoint_set (point at a different ComfyUI server '
       + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '
@@ -159,6 +175,11 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
           action: { type: 'string', required: true },
           detail: { type: 'string', description: 'One-line human summary.' },
           error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
+          operation_id: { type: 'string', description: 'Provisioning operation correlation id when the manage seat returned one.' },
+          state: { type: 'string', description: 'Provisioning state: active, restart_required, partial, failed, cancelled, or blocked.' },
+          restart_required: { type: 'boolean', description: 'Whether ComfyUI must restart before the result is active.' },
+          partial: { type: 'boolean', description: 'True when some provisioning items landed and others did not.' },
+          items: { type: 'array', description: 'Per-resource provisioning item results.' },
         },
       },
       render: (_args, value) => {
@@ -209,6 +230,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
             return jsonClean({
               ok: false, action: d.action, detail: re.message,
               data: d.data ?? null,
+              ...provisioningFields(d.data),
             }) as ManageResult
           }
         }
@@ -219,6 +241,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
         action: res.action,
         detail: res.detail,
         data: res.data ?? null,
+        ...provisioningFields(res.data),
       }) as ManageResult
     },
   });
