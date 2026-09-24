@@ -28,6 +28,10 @@ import { Readable } from "node:stream";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import type { ProvisionRow } from "@melite/comfyui-cordis/model-contract";
+import type {
+  ProvisionResult,
+  ProvisioningServiceDefinition,
+} from "@melite/estate-provisioning";
 import {
   acquireRow,
   apply,
@@ -80,6 +84,58 @@ function fetchOk(bytes: Buffer = GOOD_BYTES): FetchFn {
   return async () => ({ status: 200, body: webBody(bytes) });
 }
 
+function fakeProvisioning(deps: Pick<DoorDeps, "storeRoot" | "provisions" | "fetchFn">): ProvisioningServiceDefinition {
+  return {
+    inspect: async (ref): Promise<never> => {
+      throw new Error(`unexpected inspect ${ref.kind}`);
+    },
+    plan: async (ref): Promise<never> => {
+      throw new Error(`unexpected plan ${ref.kind}`);
+    },
+    ensure: async (ref, options): Promise<ProvisionResult> => {
+      const rows = await deps.provisions(ref.id);
+      const requested = new Set(options?.items ?? []);
+      const selected = rows.filter((entry) => requested.size === 0 || requested.has(entry.name));
+      try {
+        for (const entry of selected) {
+          const destination = resolveDest(deps.storeRoot(), entry.folder, entry.name);
+          if (existsSync(destination)) rmSync(destination, { force: true });
+          await acquireRow(entry, destination, deps.fetchFn as FetchFn);
+        }
+        return {
+          operationId: "test-model-operation",
+          ref,
+          state: "active",
+          outcome: "active",
+          operationState: "active",
+          items: selected.map((entry) => ({
+            key: `model:family:${ref.id}:${entry.name}`,
+            kind: "model",
+            state: "active",
+            outcome: "active",
+          })),
+          restartRequired: false,
+        };
+      } catch (error: unknown) {
+        throw error;
+      }
+    },
+    activate: async (ref): Promise<ProvisionResult> => {
+      throw new Error(`unexpected activate ${ref.kind}`);
+    },
+    acquireExternal: async (): Promise<ProvisionResult> => {
+      throw new Error("unexpected external acquisition");
+    },
+    reconcile: async (): Promise<never> => {
+      throw new Error("unexpected reconcile");
+    },
+    stateOf: () => "unknown",
+    operationOf: () => undefined,
+    isLocked: () => false,
+    subscribe: () => () => undefined,
+  };
+}
+
 interface Captured {
   status: number;
   headers: Record<string, string>;
@@ -119,13 +175,17 @@ function fakeReq(method: string, path?: string): DoorRequest {
 }
 
 function deps(over: Partial<DoorDeps> = {}): DoorDeps {
-  return {
-    storeRoot: () => {
+  const base = {
+    storeRoot: over.storeRoot ?? (() => {
       throw new Error("storeRoot not stubbed");
-    },
-    fetchFn: fetchOk(),
-    provisions: async () => [row()],
+    }),
+    fetchFn: over.fetchFn ?? fetchOk(),
+    provisions: over.provisions ?? (async () => [row()]),
+  };
+  return {
+    ...base,
     ...over,
+    provisioning: over.provisioning ?? fakeProvisioning(base),
   };
 }
 

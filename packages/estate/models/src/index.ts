@@ -3,9 +3,8 @@
 // the weights mount. The `packages/models/*` families are PACKAGES
 // we made: the door IMPORTS them (the booted DECL table — kimodo's
 // row carries the skin's folder + sha256) and serves their OWNED
-// bytes. NO remotes, NO proxies, NO gateway fallback, NO manager —
-// ever. Nothing here forwards client traffic anywhere: every
-// response is bytes the estate owns, verified against the DECL.
+// bytes. The door serves only declared, verified bytes; it does not
+// forward client traffic or download models.
 //
 // THE 502 THAT DIED HERE (2026-09-12): the motion studio's SOMA skin
 // fetch (`/v1/models/kimodo/provisions/skin_standard.npz`) fell
@@ -16,24 +15,15 @@
 // ("another plugin registers every feature route"), reading the
 // imported family DECLs and the weights mount DIRECTLY.
 //
-// ACQUISITION (operator law, 2026-09-12 — direct, no manager): a
-// DECL provision row IS a download artifact (url + sha256 + size —
-// the declaration law), and the door materializes it from the
-// DECL's own pinned distribution. A miss on the mount fetches the
-// row's url straight into a temp file, gates it on the DECL
-// sha256, and renames it into the DECL place — the same bytes
-// `provision models` lands at deploy. A fetch refusal is a LOUD
-// 502; a sha mismatch deletes the temp bytes and is a LOUD 502
-// (unverifiable bytes never land). The DECL sha gates EVERY serve.
-// (The ComfyUI Manager path was built and REVERTED the same day:
-// its install_model whitelist 400s every non-listed DECL row —
-// proven live on the lane — so it cannot acquire package files.
-// The manager is not in this path.)
-//
+// ACQUISITION: the live door delegates missing or drifted DECL
+// artifacts to the shared ProvisioningService. The service submits
+// the complete row to ComfyUI-Manager's install_model queue, then
+// verifies the declared path and SHA-256. This door never downloads
+// model bytes itself.
 // Grammar (the client seam's one truth):
 //   GET /v1/models/<family>/provisions/<name>
-// Placement (the provision script's law, provision.ts fetchVerified
-// + boundModelFolders): <download_path>/<folder>/<name>, where
+// Placement (the provision service's declared row + boundModelFolders):
+// <download_path>/<folder>/<name>, where
 // download_path resolves endpoint model_download_path (when set)
 // else endpoint model_base_path (when set) else
 // <root models.download_root>/<engines.comfyui.base>. The DECL's
@@ -47,6 +37,10 @@ import type { Context } from "@deepseek-ai/cordis";
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from "@deepseek-ai/dsh-host-webserver";
 import { bootModels } from "@melite/comfyui-cordis/models-service";
+import {
+  ProvisioningError,
+  writeVerifiedArtifact,
+} from "@melite/estate-provisioning";
 import type { ProvisioningServiceDefinition } from "@melite/estate-provisioning";
 import type {
   ModelDecl,
@@ -55,20 +49,15 @@ import type {
 import { createHash } from "node:crypto";
 import {
   closeSync,
-  createWriteStream,
   existsSync,
-  mkdirSync,
   openSync,
   readFileSync,
   readSync,
-  renameSync,
   rmSync,
   statSync,
   type Stats,
 } from "node:fs";
-import { dirname, join } from "node:path";
-import { Readable } from "node:stream";
-import { pipeline } from "node:stream/promises";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const name = "estate-models";
@@ -344,12 +333,6 @@ export function resetInflightForTests(): void {
   inflight.clear();
 }
 
-/** Materialize one DECL row at dest (fetch → temp → sha gate →
- *  rename into the DECL place). Concurrent calls for one dest
- *  share the same flight. An unpinned row refuses before the wire;
- *  a refused/unreachable distribution is models/acquire-refused; a
- *  sha mismatch deletes the temp bytes and is models/sha-mismatch
- *  (unverifiable bytes never land, never serve). */
 export async function acquireRow(
   row: ProvisionRow,
   dest: string,
@@ -393,37 +376,42 @@ async function downloadRow(
       `the DECL distribution for provision '${row.name}' is unreachable (${row.url}) — re-run \`provision models\``,
     );
   }
-  if (res.status !== 200 || res.body === null)
+  if (res.status !== 200 || res.body === null) {
     throw new ModelsDoorError(
       502,
       "models/acquire-refused",
       `the DECL distribution for provision '${row.name}' refused (HTTP ${String(res.status)}) — re-run \`provision models\``,
     );
-  // Stream to a pid-suffixed temp (dest is never touched until the
-  // sha gate passes — a crashed flight leaves a .part orphan, never
-  // a corrupt provision).
-  const tmp = `${dest}.part-${String(process.pid)}`;
-  mkdirSync(dirname(dest), { recursive: true });
-  await pipeline(
-    Readable.fromWeb(res.body),
-    createWriteStream(tmp),
-  );
-  if (sha256OfFile(tmp).toLowerCase() !== sha.toLowerCase()) {
-    rmSync(tmp);
+  }
+  try {
+    await writeVerifiedArtifact({
+      root: dirname(dest),
+      relativePath: basename(dest),
+      expectedSha256: sha,
+      operationId: `model-${String(process.pid)}`,
+      source: res.body,
+    });
+  } catch (error: unknown) {
+    if (error instanceof ProvisioningError && error.code === "hash-mismatch") {
+      throw new ModelsDoorError(
+        502,
+        "models/sha-mismatch",
+        `provision '${row.name}' misses the DECL sha (the DECL pins ${sha}) — the temp bytes were deleted, re-run \`provision models\``,
+      );
+    }
     throw new ModelsDoorError(
       502,
-      "models/sha-mismatch",
-      `provision '${row.name}' misses the DECL sha (the DECL pins ${sha}) — the temp bytes were deleted, re-run \`provision models\``,
+      "models/acquire-refused",
+      `the DECL distribution for provision '${row.name}' could not be landed safely (${error instanceof Error ? error.message : String(error)})`,
     );
   }
-  renameSync(tmp, dest);
 }
 
 /** The door's seams (injected in specs, live in apply). */
 export interface DoorDeps {
   storeRoot: () => string;
   provisions: (family: string) => Promise<ProvisionRow[]>;
-  fetchFn: FetchFn;
+  fetchFn?: FetchFn;
   provisioning?: ProvisioningServiceDefinition;
 }
 
@@ -502,38 +490,30 @@ export async function serveTarget(
     present = false;
   }
   if (!present || !checkSha(sha, dest)) {
-    if (deps.provisioning !== undefined) {
-      const result = await deps.provisioning.ensure(
-        { kind: "model", owner: "family", id: target.family },
-        { items: [row.name] },
+    if (deps.provisioning === undefined) {
+      throw new ModelsDoorError(
+        503,
+        "models/provisioning-unavailable",
+        "declared model acquisition requires the shared provisioning service",
       );
-      if (result.state !== "active") {
-        throw new ModelsDoorError(
-          502,
-          `models/provision-${result.state}`,
-          result.detail ?? `provision '${row.name}' did not become active`,
-        );
-      }
-      if (!checkSha(sha, dest)) {
-        throw new ModelsDoorError(
-          502,
-          "models/sha-mismatch",
-          `provision '${row.name}' did not produce the declared bytes`,
-        );
-      }
-    } else {
-      if (!present) await acquireRow(row, dest, deps.fetchFn);
-      if (!checkSha(sha, dest)) {
-        rmSync(dest, { force: true });
-        await acquireRow(row, dest, deps.fetchFn);
-        if (!checkSha(sha, dest)) {
-          throw new ModelsDoorError(
-            502,
-            "models/sha-mismatch",
-            `provision '${row.name}' did not produce the declared bytes`,
-          );
-        }
-      }
+    }
+    const result = await deps.provisioning.ensure(
+      { kind: "model", owner: "family", id: target.family },
+      { items: [row.name] },
+    );
+    if (result.state !== "active") {
+      throw new ModelsDoorError(
+        502,
+        `models/provision-${result.state}`,
+        result.detail ?? `provision '${row.name}' did not become active`,
+      );
+    }
+    if (!checkSha(sha, dest)) {
+      throw new ModelsDoorError(
+        502,
+        "models/sha-mismatch",
+        `provision '${row.name}' did not produce the declared bytes`,
+      );
     }
   }
   const bytes = readFileSync(dest);
@@ -640,6 +620,12 @@ export function apply(ctx: Context): void {
     return;
   }
   const provisioning = ctx.get("provisioning", false) as ProvisioningServiceDefinition | undefined;
+  if (provisioning === undefined) {
+    ctx.logger.warn(
+      "estate-models: no provisioning service in this mount — declared model bytes cannot be acquired",
+    );
+    return;
+  }
   ctx.effect(() =>
     webServer.register(
       {
@@ -648,8 +634,7 @@ export function apply(ctx: Context): void {
         handler: createHandler({
           storeRoot: liveStoreRoot,
           provisions: provisionsForFamily,
-          fetchFn: liveFetchDirect,
-          ...(provisioning === undefined ? {} : { provisioning }),
+          provisioning,
         }),
       },
       "estate-models: family provision files route",
