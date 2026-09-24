@@ -13,6 +13,7 @@ import {
   viewTimeoutMs,
   fetchOutputs,
   publishOutputChannels,
+  qvoicePathsOf,
   mapHistoryEntry,
   normalizeTimeoutS,
   CHANNEL_EXTS,
@@ -150,8 +151,37 @@ describe("fetchOutputs (the harvest matrix)", () => {
   });
 });
 
-describe("publishOutputChannels (the declared-channel law)", () => {
-  it("first unmatched artifact wins per channel, declaration order, claimed across channels", () => {
+describe("qvoicePathsOf (THE QVOICE CHANNEL — the export FULL PATH, roadmap OWED 2026-09-24)", () => {
+  it("lifts the first engine-reported mint path verbatim (history ui shape)", () => {
+    const outputs = {
+      "10": {
+        qvoice_path: ["/mnt/data/models/audio/voices/night-keeper_17.qvoice"],
+        mode: ["export_lite"],
+      },
+    };
+    expect(qvoicePathsOf(outputs)).toBe(
+      "/mnt/data/models/audio/voices/night-keeper_17.qvoice",
+    );
+  });
+  it("first non-empty across nodes; blanks and non-strings skip", () => {
+    expect(
+      qvoicePathsOf({
+        a: { qvoice_path: ["", "  "] },
+        b: { qvoice_path: ["/voices/x_2.qvoice"] },
+      }),
+    ).toBe("/voices/x_2.qvoice");
+    expect(qvoicePathsOf({ a: { qvoice_path: "not-a-list" } })).toBe("");
+  });
+  it("no qvoice node, garbage shapes, absent outputs — empty string, never a throw", () => {
+    expect(qvoicePathsOf({ a: { images: [{ filename: "p.png" }] } })).toBe("");
+    expect(qvoicePathsOf(undefined)).toBe("");
+    expect(qvoicePathsOf(null)).toBe("");
+    expect(qvoicePathsOf([1, 2])).toBe("");
+    expect(qvoicePathsOf({ a: null, b: 3, c: "x" })).toBe("");
+  });
+});
+
+describe("publishOutputChannels (the declared-channel law)", () => {  it("first unmatched artifact wins per channel, declaration order, claimed across channels", () => {
     const out = publishOutputChannels(
       { hero: "image", clip: "video", other: "mesh" },
       ["/r/a.mp4", "/r/b.png", "/r/c.glb"],

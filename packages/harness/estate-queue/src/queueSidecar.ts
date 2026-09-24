@@ -66,6 +66,11 @@ export function sidecarDoc(args: {
    *  the design/export lane minted. The status row spells it
    *  `export_name` too. Absent on non-export runs. */
   exportName?: string;
+  /** THE EXPORT PATH (roadmap OWED 2026-09-24 — the export FULL
+   *  PATH): the engine-reported minted .qvoice absolute path
+   *  (stage result_outputs.qvoice_path → qvoicePathsOf). The status
+   *  row spells it `export_path`. Absent when nothing minted. */
+  exportPath?: string;
 }): Record<string, unknown> {
   return {
     // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
@@ -82,6 +87,7 @@ export function sidecarDoc(args: {
     draft_id: args.draftId,
     pipeline: args.pipeline,
     ...(args.exportName !== undefined && args.exportName !== "" ? { export_name: args.exportName } : {}),
+    ...(args.exportPath !== undefined && args.exportPath !== "" ? { export_path: args.exportPath } : {}),
     error:
       args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
     stages: args.stages,

@@ -387,6 +387,10 @@ export function runRowOrNull(
     /** THE EXPORT NAME (023's self-critique #4/#6): optional —
      *  older sidecars predate it, and only export lanes stamp it. */
     export_name?: string;
+    /** THE EXPORT PATH (the export FULL PATH): optional — the
+     *  engine-reported minted .qvoice absolute path; older sidecars
+     *  predate it, load lanes stamp nothing. */
+    export_path?: string;
   },
 ): Record<string, unknown> | null {
   if (!RUN_ID_RE.test(row.run_id)) return null;
@@ -409,6 +413,7 @@ export function runRowOrNull(
     params: row.params,
     draft_id: row.draft_id,
     ...(typeof row.export_name === "string" && row.export_name !== "" ? { export_name: row.export_name } : {}),
+    ...(typeof row.export_path === "string" && row.export_path !== "" ? { export_path: row.export_path } : {}),
   };
 }
 
@@ -513,6 +518,7 @@ async function buildRunCard(
   let prompt = "";
   let draft = "";
   let exported = "";
+  let exportedPath = "";
   let seed = -1;
   let created: number = ent.created;
   const rawBytes: Uint8Array =
@@ -539,6 +545,10 @@ async function buildRunCard(
     // design lane's mint rides the list row too — additive, same
     // spelling as the sidecar; absent on non-export runs.
     exported = sidecarStr(rawBytes, "export_name", 128);
+    // THE EXPORT PATH, LISTED (the export FULL PATH): the engine's
+    // minted .qvoice absolute path rides the list row — the voices
+    // root is long, so the slice budget doubles the name's.
+    exportedPath = sidecarStr(rawBytes, "export_path", 256);
     seed = sidecarNum(buf, "seed", -1);
     const at: number = buf.indexOf('"created_at":');
     if (at >= 0) created = parseLeadingInt(buf.slice(at + 13));
@@ -561,6 +571,7 @@ async function buildRunCard(
     params: { seed },
     draft_id: draft,
     ...(exported !== "" ? { export_name: exported } : {}),
+    ...(exportedPath !== "" ? { export_path: exportedPath } : {}),
   });
   return row; // null = RESILIENCE LAW loud skip
 }

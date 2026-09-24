@@ -45,6 +45,10 @@ vi.mock("../src/comfyui-outputs.ts", () => ({
   mapHistoryEntry: (entry: unknown) => (mapVerdict as (e: unknown) => { kind: string; detail?: string })(entry),
   normalizeTimeoutS: (v: unknown) => (typeof v === "number" && v > 0 ? v : 2400),
   publishOutputChannels: () => ({ image: ["/v1/assets/runs/run-1/out.png"] }),
+  // THE QVOICE CHANNEL: the real collector has its own wall — here
+  // it stays the identity pass-through (no qvoice rides these
+  // fixtures; the "" arm is the exercised one).
+  qvoicePathsOf: () => "",
 }));
 
 vi.mock("../src/comfyui-config.ts", () => ({

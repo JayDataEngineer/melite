@@ -551,7 +551,7 @@ describe('melite_construct render — refused or revved', () => {
       {
         verb: 'read', bench: 'main', ok: true, rev: 47,
         stages: [
-          { id: 's_1', card: 'qwen3-tts', engine: 'comfyui', last_run: { run_id: 'run-abc', status: 'completed', artifacts: ['output/run-abc/tts/f.flac'], export_name: 'night-keeper' } },
+          { id: 's_1', card: 'qwen3-tts', engine: 'comfyui', last_run: { run_id: 'run-abc', status: 'completed', artifacts: ['output/run-abc/tts/f.flac'], export_name: 'night-keeper', export_path: '/mnt/data/models/audio/voices/night-keeper_17.qvoice' } },
           { id: 's_2', card: 'qwen3-tts', engine: 'comfyui', last_run: { run_id: 'run-def', status: 'completed', artifacts: [{ path: './output/run-def/tts/f.flac' }] } },
           { id: 's_3', card: 'image-gen', engine: 'comfyui', last_run: null },
         ],
@@ -559,7 +559,7 @@ describe('melite_construct render — refused or revved', () => {
     ) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'bench read → rev 47\nstages: 3\n  s_1 — qwen3-tts [comfyui] — last_run run-abc (completed, 1 artifact(s), export \'night-keeper\', output/run-abc/tts/f.flac)\n  s_2 — qwen3-tts [comfyui] — last_run run-def (completed, 1 artifact(s), output/run-def/tts/f.flac)\n  s_3 — image-gen [comfyui] — last_run null (draft has no run in the window)',
+      'bench read → rev 47\nstages: 3\n  s_1 — qwen3-tts [comfyui] — last_run run-abc (completed, 1 artifact(s), export \'night-keeper\' @ /mnt/data/models/audio/voices/night-keeper_17.qvoice, output/run-abc/tts/f.flac)\n  s_2 — qwen3-tts [comfyui] — last_run run-def (completed, 1 artifact(s), output/run-def/tts/f.flac)\n  s_3 — image-gen [comfyui] — last_run null (draft has no run in the window)',
     )
   })
 

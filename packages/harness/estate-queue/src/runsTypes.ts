@@ -93,6 +93,16 @@ export interface RunRecord {
    *  run_status rows so the receipt names the mint. Absent on
    *  non-export runs. */
   exportName?: string;
+  /** THE EXPORT-PATH STAMP (roadmap OWED 2026-09-24 — the export
+   *  FULL PATH, transcript-026 #4): the engine's own harvest carries
+   *  the minted .qvoice ABSOLUTE path on the stage's
+   *  result_outputs.qvoice_path (the node reports it in the history
+   *  ui; the file lives engine-side in the voices root, so it rides
+   *  NO artifact list). The receipt names the exact
+   *  collision-numbered file — the maker feeds it to load lanes with
+   *  zero voices-dir listing. Verbatim from the engine; the harness
+   *  never hardcodes the voices root. */
+  exportPath?: string;
   /** THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23):
    *  what the ENGINE actually received at start — the seam values
    *  of the composed calls + the bench revision the compose read.
@@ -167,6 +177,21 @@ export function settlePersist(
       break
     }
   }
+  // THE EXPORT-PATH STAMP: lift the engine-reported mint path off
+  // the stage result_outputs (set at execute time from the history
+  // ui — qvoicePathsOf). Stamped only when the engine actually
+  // minted one (a load lane mints nothing).
+  let exportPath: string | undefined
+  for (const st of run.stages) {
+    const ro: unknown = st["result_outputs"]
+    if (ro === null || typeof ro !== "object" || Array.isArray(ro)) continue
+    const v: unknown = (ro as Record<string, unknown>)["qvoice_path"]
+    if (typeof v === "string" && v.trim() !== "") {
+      exportPath = v.trim()
+      run.exportPath = exportPath
+      break
+    }
+  }
   try {
     atomicWriteJson(
       join(run.dir, "_flow.json"),
@@ -204,6 +229,7 @@ export function settlePersist(
         // disk row keeps the files that created it).
         sourceEcho: run.sourceEcho,
         exportName,
+        exportPath,
       }),
     );
   } catch {

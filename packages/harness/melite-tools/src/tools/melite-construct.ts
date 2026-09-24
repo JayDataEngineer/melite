@@ -181,6 +181,9 @@ async function withLastRun(
     // project the list row's export_name through so the render can
     // voice which .qvoice the draft's latest run minted.
     ...(typeof win['export_name'] === 'string' && win['export_name'] !== '' ? { export_name: win['export_name'] } : {}),
+    // THE EXPORT PATH (the FULL-mint voice): the engine-reported
+    // .qvoice file rides the read's last_run too — additive.
+    ...(typeof win['export_path'] === 'string' && win['export_path'] !== '' ? { export_path: win['export_path'] } : {}),
   }
   return {
     stages: stages.map((s): unknown => {
@@ -368,7 +371,7 @@ export function meliteConstruct(
               // promised last_run in the description and saw nothing,
               // then paid a turn confirming the bench is not a
               // receipt source. The render now voices what it holds.
-              const lr = s.last_run as { run_id?: unknown; status?: unknown; artifacts?: unknown; export_name?: unknown } | null | undefined
+              const lr = s.last_run as { run_id?: unknown; status?: unknown; artifacts?: unknown; export_name?: unknown; export_path?: unknown } | null | undefined
               let suffix = ''
               if (lr !== null && lr !== undefined && typeof lr.run_id === 'string' && lr.run_id !== '') {
                 const arts = Array.isArray(lr.artifacts) ? lr.artifacts.length : 0
@@ -378,8 +381,14 @@ export function meliteConstruct(
                 // String artifacts print verbatim (absolute); object
                 // rows print their path; route-relative rows gain
                 // their out root (the run_status canonical law).
+                // THE FULL MINT (2026-09-24): when the engine's path
+                // rode, it prints beside the name — the exact file.
                 const first = Array.isArray(lr.artifacts) ? firstArtifactPath(lr.artifacts) : ''
-                const exp = typeof lr.export_name === 'string' && lr.export_name !== '' ? `, export '${lr.export_name}'` : ''
+                const expName = typeof lr.export_name === 'string' && lr.export_name !== '' ? lr.export_name : ''
+                const expPath = typeof lr.export_path === 'string' && lr.export_path !== '' ? lr.export_path : ''
+                const exp = expName !== ''
+                  ? `, export '${expName}'${expPath !== '' ? ` @ ${expPath}` : ''}`
+                  : expPath !== '' ? `, export ${expPath}` : ''
                 suffix = ` — last_run ${lr.run_id} (${String(lr.status ?? '?')}${arts ? ', ' + arts + ' artifact(s)' : ''}${exp}${first !== '' ? ', ' + first : ''})`
               } else if (lr === null) {
                 suffix = ' — last_run null (draft has no run in the window)'

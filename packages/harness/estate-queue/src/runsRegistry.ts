@@ -635,6 +635,10 @@ export class RunsRuntimeService extends Service {
       // The disk fallback below spreads the sidecar row, which
       // carries it).
       ...(run.exportName !== undefined && run.exportName !== "" ? { export_name: run.exportName } : {}),
+      // THE EXPORT PATH, SERVED (the export FULL PATH): the exact
+      // minted file the engine reported — additive, same spelling
+      // as the sidecar; the disk fallback spreads the sidecar row.
+      ...(run.exportPath !== undefined && run.exportPath !== "" ? { export_path: run.exportPath } : {}),
       // THE TEST FLAG, SERVED (023's self-critique #3): the
       // agent-facing receipt canonicalizes route-relative artifact
       // paths against the out root — test runs live under

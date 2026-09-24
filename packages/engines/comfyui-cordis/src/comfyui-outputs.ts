@@ -137,6 +137,32 @@ export const CHANNEL_EXTS: Record<string, readonly string[]> = {
   seg: [".png"],
 };
 
+/** THE QVOICE CHANNEL (roadmap OWED 2026-09-24 — the export FULL
+ *  PATH, transcript-026 #4): the vendored AudiocoreVoiceStudio
+ *  export node returns its minted .qvoice ABSOLUTE path in the
+ *  history ui dict (`outputs[<node>].qvoice_path = [path]`) — the
+ *  file lives engine-side in the voices root, never the ComfyUI
+ *  output dir, so /view cannot fetch it. Collect the FIRST
+ *  non-empty string (one design lane per run — the single-stage
+ *  gateway law) so the stage's result_outputs carry the exact
+ *  collision-numbered path; the harness never hardcodes the
+ *  voices root (the path rides verbatim from the engine). Pure:
+ *  shared by the single and merge harvests. */
+export function qvoicePathsOf(
+  outputs: EngineJson | undefined,
+): string {
+  if (typeof outputs !== "object" || outputs === null || Array.isArray(outputs)) return "";
+  for (const nodeOut of Object.values(outputs as Record<string, EngineJson>)) {
+    if (typeof nodeOut !== "object" || nodeOut === null || Array.isArray(nodeOut)) continue;
+    const raw: EngineJson = (nodeOut as Record<string, EngineJson>)["qvoice_path"];
+    if (!Array.isArray(raw)) continue;
+    for (const p of raw) {
+      if (typeof p === "string" && p.trim() !== "") return p.trim();
+    }
+  }
+  return "";
+}
+
 /** Harvested paths -> {channel: path} for the FILE-kind channels
  *  the stage DECLARED. First unmatched artifact wins per channel,
  *  declaration order. */

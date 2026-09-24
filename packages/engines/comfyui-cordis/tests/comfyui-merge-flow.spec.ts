@@ -24,6 +24,8 @@ vi.mock("../src/comfyui-outputs.ts", () => ({
   mapHistoryEntry: () => ({ kind: "completed" }),
   normalizeTimeoutS: (v: unknown) => (typeof v === "number" && v > 0 ? v : 2400),
   publishOutputChannels: (_o: unknown, arts: unknown) => ({ image: arts }),
+  // THE QVOICE CHANNEL: pass-through (own wall in comfyui-outputs.spec)
+  qvoicePathsOf: () => "",
 }));
 vi.mock("../src/comfyui-config.ts", () => ({
   resolveEngineBaseUrl: () => "http://config-resolved:8188",

@@ -69,6 +69,7 @@ type RunStatusResult = {
   card?: string;
   run_age_s?: number;
   export_name?: string;
+  export_path?: string;
   test?: boolean;
 } & Record<string, JsonValue>;
 
@@ -148,7 +149,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
           run_id?: string; status?: string; stages?: Array<{ status?: string }>;
           artifacts?: unknown[]; error?: string; queue_position?: number;
           planned_stages?: Array<{ id?: string }>; card?: string; run_age_s?: number;
-          wait_expired?: boolean; waited_s?: number; export_name?: string; test?: boolean
+          wait_expired?: boolean; waited_s?: number; export_name?: string; export_path?: string; test?: boolean
         }
         if (v && v.error) {
           return [{ type: 'text', text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + ' — ' + v.error }]
@@ -219,8 +220,14 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         // flac is near-empty BY DESIGN, and the deliverable .qvoice
         // (collision-numbered, newest match wins) rides no artifact
         // list. One line kills the voices-dir timestamp correlation.
+        // THE EXPORT-PATH VOICE (roadmap OWED 2026-09-24 — the
+        // export FULL PATH, transcript-026 #4): when the engine's
+        // harvest carried the minted file's ABSOLUTE path, print IT
+        // — the maker feeds the exact collision-numbered file to
+        // load lanes with zero voices-dir listing. The newest-match
+        // hint stays the fallback for pre-path rows.
         const exportVoice = terminal && typeof v.export_name === 'string' && v.export_name !== ''
-          ? `\nexport: '${v.export_name}' — preview media near-empty by design; the deliverable .qvoice is the newest ${v.export_name}_*.qvoice under the voices root`
+          ? `\nexport: '${v.export_name}' — preview media near-empty by design; the deliverable .qvoice is ${typeof v.export_path === 'string' && v.export_path !== '' ? v.export_path : `the newest ${v.export_name}_*.qvoice under the voices root`}`
           : ''
         return [{
           type: 'text',
@@ -312,8 +319,10 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         run_age_s: typeof res.run_age_s === 'number' ? res.run_age_s : undefined,
         // THE EXPORT NAME, THREADED (023's self-critique #4/#6) +
         // the test flag (the canonical receipt path needs the out
-        // root). Additive — older consumers ignore both.
+        // root). Additive — older consumers ignore both. The export
+        // PATH rides the same additive law (the FULL-mint voice).
         export_name: typeof res.export_name === 'string' ? res.export_name : undefined,
+        export_path: typeof res.export_path === 'string' ? res.export_path : undefined,
         test: typeof res.test === 'boolean' ? res.test : undefined,
       }) as RunStatusResult
     },

@@ -6,7 +6,7 @@ import { ACTIVE, ComfyError } from "./comfyui-types.ts";
 import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { uploadReferenced } from "./comfyui-upload.ts";
-import { fetchOutputs, normalizeTimeoutS, publishOutputChannels } from "./comfyui-outputs.ts";
+import { fetchOutputs, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
 import { hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.ts";
 import { sdkClient } from "./comfyui-transport.ts";
 import type { ExecuteOpts } from "./comfyui-execute.ts";
@@ -388,8 +388,14 @@ export async function executeFlowInner(
       const arts: string[] = await fetchOutputs(client, stageDir, {
         outputs: subOutputs,
       }, r.params["timeout_s"]);
+      const outputs: Record<string, EngineJson> = publishOutputChannels(r.outputs, arts);
+      // THE QVOICE CHANNEL (the export FULL PATH): the minted path
+      // rides the stage result verbatim — same law as the single
+      // path, the merge just walks per-stage subOutputs.
+      const qvoice: string = qvoicePathsOf(subOutputs);
+      if (qvoice !== "") outputs["qvoice_path"] = qvoice;
       results[r.stageId] = {
-        outputs: publishOutputChannels(r.outputs, arts),
+        outputs,
         artifacts: arts,
       };
     }

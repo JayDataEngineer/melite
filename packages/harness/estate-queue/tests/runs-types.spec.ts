@@ -164,6 +164,52 @@ describe("settlePersist", () => {
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(sidecar["export_name"], "night-keeper");
   });
+
+  it("THE EXPORT-PATH STAMP (the export FULL PATH, roadmap OWED 2026-09-24): the engine-reported mint rides the record + sidecar verbatim", () => {
+    const runDir = join(dir, "rpath");
+    mkdirSync(runDir, { recursive: true });
+    const mint = "/mnt/data/models/audio/voices/night-keeper_17.qvoice";
+    const run = record({
+      dir: runDir,
+      params: [{ voice_name: "night-keeper" } as never],
+      stages: [{
+        id: "tts",
+        name: "tts",
+        index: 0,
+        status: "completed",
+        outputs: {},
+        expected: {},
+        result_outputs: { prompt_id: "p1", qvoice_path: mint },
+      } as never],
+    });
+    settlePersist(run, dir);
+    assert.equal(run.exportPath, mint);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(sidecar["export_path"], mint);
+    assert.equal(sidecar["export_name"], "night-keeper");
+  });
+
+  it("runs whose engine minted nothing stamp no export_path (load lanes)", () => {
+    const runDir = join(dir, "rnopath");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({
+      dir: runDir,
+      params: [{ voice_name: "night-keeper" } as never],
+      stages: [{
+        id: "tts",
+        name: "tts",
+        index: 0,
+        status: "completed",
+        outputs: {},
+        expected: {},
+        result_outputs: { prompt_id: "p1" },
+      } as never],
+    });
+    settlePersist(run, dir);
+    assert.equal(run.exportPath, undefined);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.ok(!("export_path" in sidecar));
+  });
 });
 
 describe("runLogTail", () => {

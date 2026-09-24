@@ -373,6 +373,16 @@ describe('run_status render — the human line', () => {
     assert.ok(out.includes('night-keeper_*.qvoice'), 'the voices-root glob is spelled')
   })
 
+  test('THE EXPORT-PATH VOICE (roadmap OWED 2026-09-24 — the FULL PATH): the engine-reported mint file prints verbatim', () => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    const mint = '/mnt/data/models/audio/voices/night-keeper_17.qvoice'
+    const out = text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: [], export_name: 'night-keeper', export_path: mint })
+    assert.ok(out.includes("export: 'night-keeper'"), 'the mint is named')
+    assert.ok(out.includes('the deliverable .qvoice is ' + mint), 'the exact collision-numbered file prints — zero voices-dir listing')
+    assert.ok(!out.includes('_*.qvoice'), 'the glob hint retires when the path rode')
+  })
+
   test('THE LEGACY-DOUBLE COLLAPSE (024 self-critique #2): rows served pre-fix spell <run>/<run>/… — the receipt collapses the stencil', () => {
     const tool = runStatus((async () => ({})) as EstateRequest)
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''

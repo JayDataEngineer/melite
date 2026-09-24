@@ -136,6 +136,22 @@ describe("runRowOrNull model rows", () => {
     );
     assert.equal(row, null);
   });
+
+  it("THE EXPORT CARRY (the FULL PATH): export_name + export_path ride the list row verbatim; absent stamps stay absent", () => {
+    const withPath = runRowOrNull({
+      ...stamp([]),
+      export_name: "night-keeper",
+      export_path: "/mnt/data/models/audio/voices/night-keeper_17.qvoice",
+    }) as Record<string, unknown>;
+    assert.equal(withPath["export_name"], "night-keeper");
+    assert.equal(
+      withPath["export_path"],
+      "/mnt/data/models/audio/voices/night-keeper_17.qvoice",
+    );
+    const bare = runRowOrNull(stamp([])) as Record<string, unknown>;
+    assert.ok(!("export_name" in bare));
+    assert.ok(!("export_path" in bare));
+  });
 });
 
 describe("parseLeadingInt + sidecarNum", () => {

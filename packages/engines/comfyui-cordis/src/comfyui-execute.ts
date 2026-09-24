@@ -13,7 +13,7 @@ import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { sdkClient } from "./comfyui-transport.ts";
 import { spliceWorkflow, uploadReferenced } from "./comfyui-upload.ts";
 import { isTransportDownError } from "./supervisor.ts";
-import { fetchOutputs, mapHistoryEntry, normalizeTimeoutS, publishOutputChannels } from "./comfyui-outputs.ts";
+import { fetchOutputs, mapHistoryEntry, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
 
 export interface ExecuteOpts {
   /** Seconds; the estate's own budget (default 2400). */
@@ -285,6 +285,11 @@ export async function executeSingleInner(
     const arts: string[] = await fetchOutputs(client, String(runDir), entry, params["timeout_s"]);
     const outputs: Record<string, EngineJson> = { prompt_id: promptId };
     Object.assign(outputs, publishOutputChannels(nodeOutputs, arts));
+    // THE QVOICE CHANNEL: the export node's minted path rides the
+    // stage result verbatim (engine-reported absolute — no
+    // hardcode, no /view fetch: the file lives in the voices root).
+    const qvoice: string = qvoicePathsOf(entry["outputs"]);
+    if (qvoice !== "") outputs["qvoice_path"] = qvoice;
     return { outputs, artifacts: arts, promptId };
   } finally {
     unhook?.();
