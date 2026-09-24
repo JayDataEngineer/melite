@@ -2,7 +2,13 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { type InputSquareVerbs, isImageUrl, readAsDataUrl } from './square.tsx'
+import {
+  DEFAULT_SQUARE_ACCEPT,
+  MESH_SQUARE_ACCEPT,
+  type InputSquareVerbs,
+  isImageUrl,
+  readAsDataUrl,
+} from './square.tsx'
 import { uploadInputFile } from './wire.ts'
 import { type SpecField } from './spec.ts'
 import css from './card.module.css'
@@ -24,7 +30,7 @@ function mediaKindForField(f: SpecField): string {
  *  imperatively at click time — the accept is a property of the
  *  field being picked, never of the provider instance. */
 export function acceptOfField(f: SpecField | null): string {
-  return f !== null && f.type === 'mesh' ? '.glb,.gltf' : 'image/png,image/jpeg,image/webp'
+  return f !== null && f.type === 'mesh' ? MESH_SQUARE_ACCEPT : DEFAULT_SQUARE_ACCEPT
 }
 
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):

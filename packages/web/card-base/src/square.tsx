@@ -31,11 +31,11 @@
 import { createElement as h, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { IconPlusOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { GlbStagePreview } from './glb-stage.tsx'
+import { ASSET_DRAG_MIME, parseAssetDrop } from './chrome.ts'
+import { Upload } from './icons.tsx'
 import css from './card.module.css'
 
-/** The media-bar drag contract (the tab's drop surface serves the
- * same MIME — ONE spelling, imported from the base's law). */
-export const ASSET_DRAG_MIME = 'application/tech-noir-asset'
+export { ASSET_DRAG_MIME } from './chrome.ts'
 
 /** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
  *  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
@@ -54,7 +54,7 @@ export function isImageUrl(value: string): boolean {
  *  square with the inline GLB thumb (the mini GlbStagePreview), the
  *  same square grammar as images: never a bespoke mesh picker. */
 export function isMeshUrl(value: string): boolean {
-  return /\.(?:glb|gltf)(?:[?#]|$)/i.test(value)
+  return /^data:model\/gltf-binary[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value)
 }
 
 /** Read a File/Blob and resolve its data: URL — the ONE read path for
@@ -81,6 +81,9 @@ export interface InputSquareVerbs {
   onClear?: () => void
 }
 
+export const DEFAULT_SQUARE_ACCEPT = 'image/png,image/jpeg,image/webp'
+export const MESH_SQUARE_ACCEPT = '.glb,.gltf'
+
 export interface InputSquareProps extends InputSquareVerbs {
   /** Short field key shown under the square (e.g. "input_image").
    *  Empty string = NO caption (the owning section already names it
@@ -98,39 +101,36 @@ export interface InputSquareProps extends InputSquareVerbs {
   /** Secondary mono line. */
   metric?: string
   disabled?: boolean
+  accept?: string
+  badge?: ReactNode
+  actions?: ReactNode
+  emptyIcon?: ReactNode
+  showFileAction?: boolean
 }
 
-/** Parse the asset MIME off a drop event. null = absent or malformed. */
-function assetPayload(e: DragEvent): string | null {
-  const raw = e.dataTransfer.getData(ASSET_DRAG_MIME)
-  if (raw === '') return null
-  try {
-    const p = JSON.parse(raw) as { url?: unknown }
-    return typeof p['url'] === 'string' ? p['url'] : null
-  } catch { return null }
-}
 
 export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
   const { label, value, metric, disabled } = props
-  // THE SEAT NAME (aria) may differ from the visible caption — the
-  // head-above law (#37): one name for the list, indices under the
-  // cells, the full seat name for assistive tech and the verbs.
   const seat = props.ariaLabel ?? label
   const fileRef = useRef<HTMLInputElement | null>(null)
   const boxRef = useRef<HTMLDivElement | null>(null)
   const [over, setOver] = useState(false)
   const thumb = typeof value === 'string' && isImageUrl(value) ? value : null
-  // THE MESH THUMB (primitive ③): a .glb/.gltf value renders the
-  // inline mini viewport, not the image face — same square, same
-  // verbs, the 3D atom inside the 2D shell.
   const mesh = thumb === null && typeof value === 'string' && value !== '' && isMeshUrl(value)
     ? value : null
   const empty = thumb === null && mesh === null
+  const acceptsDrop = (event: DragEvent): boolean => {
+    // PAYLOAD FIRST (the typeless-drop law): a drop carrying an asset
+    // payload or files IS a drop — types is a hint browsers populate,
+    // never the arbiter (synthetic drops and some hosts leave it
+    // empty/null while carrying files).
+    if (event.dataTransfer.getData(ASSET_DRAG_MIME) !== '' || event.dataTransfer.files.length > 0) return true
+    const types = event.dataTransfer.types as readonly string[] | undefined | null
+    if (types === undefined || types === null) return false
+    return types.includes(ASSET_DRAG_MIME) || types.includes('Files')
+  }
   const pick = (): void => {
     if (disabled) return
-    // THE SLOT IS THE WIRE: with a picker attached, the click ALWAYS
-    // opens it (the menu carries upload + clear too); a bare square
-    // falls to the file dialog
     if (props.onPick !== undefined) props.onPick(boxRef.current)
     else if (empty && props.onFile !== undefined) fileRef.current?.click()
   }
@@ -140,23 +140,27 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
       className: css.squareBox + (over ? ' ' + css.squareOver : ''),
       role: 'button',
       tabIndex: 0,
+      'data-slot-square': true,
       'aria-label': (seat || 'source') + (seat !== '' ? ' source' : ''),
       onClick: pick,
       onKeyDown: (e: unknown) => { if ((e as KeyboardEvent).key === 'Enter') pick() },
       onDragOver: (e: DragEvent) => {
-        if (disabled) return
+        if (disabled || !acceptsDrop(e)) return
         e.preventDefault()
         setOver(true)
       },
       onDragLeave: () => { setOver(false) },
       onDrop: (e: DragEvent) => {
-        if (disabled) return
-        e.preventDefault()
         setOver(false)
-        const asset = assetPayload(e)
-        if (asset !== null && props.onAsset !== undefined) { props.onAsset(asset); return }
-        const f = e.dataTransfer.files[0]
-        if (f !== undefined && props.onFile !== undefined) props.onFile(f)
+        if (disabled || !acceptsDrop(e)) return
+        e.preventDefault()
+        const asset = parseAssetDrop(e.dataTransfer.getData(ASSET_DRAG_MIME))
+        if (asset.url !== undefined && props.onAsset !== undefined) {
+          props.onAsset(asset.url)
+          return
+        }
+        const file = e.dataTransfer.files[0]
+        if (file !== undefined && props.onFile !== undefined) props.onFile(file)
       },
     },
       thumb !== null
@@ -164,7 +168,15 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
         : mesh !== null
           ? h('div', { className: css.squareMesh },
               h(GlbStagePreview, { assets: [{ id: 'square-mesh', url: mesh }], label: 'square-mesh' }))
-          : h(IconPlusOutline16, { className: css.squareGlyph }),
+          : props.emptyIcon === undefined
+            ? h(IconPlusOutline16, { className: css.squareGlyph })
+            : h('span', { className: css.squareEmptyIcon }, props.emptyIcon),
+      props.actions !== undefined && props.actions !== null && props.actions !== false && !disabled
+        ? h('span', {
+            className: css.squareActions,
+            onClick: (event: MouseEvent) => { event.stopPropagation() },
+          }, props.actions)
+        : null,
       !empty && props.onClear !== undefined
         ? h('button', {
             className: css.squareX,
@@ -174,23 +186,38 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
             onClick: (e: MouseEvent) => { e.stopPropagation(); props.onClear!() },
           }, '✕')
         : null,
+      props.showFileAction === true && props.onFile !== undefined && !disabled
+        ? h('button', {
+            className: css.squarePick,
+            type: 'button',
+            title: `Pick a file for ${label}`,
+            'aria-label': `Pick a file for ${label}`,
+            'data-slot-pick': true,
+            onClick: (event: MouseEvent) => {
+              event.stopPropagation()
+              fileRef.current?.click()
+            },
+          }, h(Upload, { 'aria-hidden': true }))
+        : null,
     ),
-    label !== '' ? h('span', { className: css.squareLabel }, label) : null,
+    label !== '' ? h('span', { className: css.squareLabel, 'data-slot-label': true }, label) : null,
+    props.badge === undefined
+      ? null
+      : h('span', { className: css.squareBadge, 'data-slot-badge': true }, props.badge),
     metric !== undefined ? h('span', { className: css.squareMetric }, metric) : null,
     props.onFile !== undefined && !disabled
       ? h('input', {
           ref: fileRef,
           type: 'file',
-          accept: 'image/png,image/jpeg,image/webp',
+          accept: props.accept ?? DEFAULT_SQUARE_ACCEPT,
           className: css.squareFileInput,
+          'data-slot-input': true,
           'aria-hidden': true,
           tabIndex: -1,
           onChange: (e: unknown) => {
-            const f = (e as { target: { files: FileList | null } }).target.files?.[0]
-            if (f !== undefined && f !== null) props.onFile?.(f)
-            // (total: the ref clears only in the unmount commit, which
-            //  detaches this closure first — non-null whenever we run.)
-            fileRef.current!.value = ''
+            const file = (e as { target: { files: FileList | null } }).target.files?.[0]
+            if (file !== undefined && file !== null) props.onFile?.(file)
+            if (fileRef.current !== null) fileRef.current.value = ''
           },
         })
       : null,

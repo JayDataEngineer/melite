@@ -105,10 +105,10 @@ test('THE MESH RULE: estate GLB paths and artifact GLB URLs pass; everything els
     '/runs/run-1/mesh.glb',
     'https://host/mesh.GLB?download=1',
     '//host/mesh.gltf#preview',
+    'data:model/gltf-binary;base64,AAA',
   ]) expect(isMeshUrl(good)).toBe(true)
   for (const bad of [
     '', 'donor', 'https://host/mesh.glb.evil', 'https://host/a.png',
-    'data:model/gltf-binary;base64,AAA',
   ]) expect(isMeshUrl(bad)).toBe(false)
 })
 
@@ -190,15 +190,16 @@ test('THE X: an unlabeled square still names its detach (never an empty accessib
   expect(screen.getByRole('button', { name: 'Detach source' })).not.toBeNull()
 })
 
-test('DRAG-OVER: the square lights up (prevented); disabled squares stay dark', () => {
+test('DRAG-OVER: accepted types light up; unknown and disabled drags stay dark', () => {
   const { container, rerender } = render(h(InputSquare, { label: 'x' }))
   const box = screen.getByRole('button', { name: 'x source' })
-  // prevented drags dispatch false (the default died at the door)
-  expect(fireEvent.dragOver(box)).toBe(false)
+  expect(fireEvent.dragOver(box, { dataTransfer: { types: ['Files'], getData: () => '', files: [] } })).toBe(false)
+  expect(fireEvent.dragOver(box, { dataTransfer: { types: ['text/plain'], getData: () => '', files: [] } })).toBe(true)
   fireEvent.dragLeave(box)
   rerender(h(InputSquare, { label: 'x', disabled: true }))
-  // unprevented drags dispatch true (the disabled square never touches the event)
-  expect(fireEvent.dragOver(screen.getByRole('button', { name: 'x source' }))).toBe(true)
+  expect(fireEvent.dragOver(screen.getByRole('button', { name: 'x source' }), {
+    dataTransfer: { types: ['Files'], getData: () => '', files: [] },
+  })).toBe(true)
   expect(container.querySelector('input[type="file"]')).toBeNull()
 })
 
@@ -207,7 +208,7 @@ test('DROP: the asset MIME speaks first (files never shadow a media-bar drop)', 
   const onFile = vi.fn()
   render(h(InputSquare, { label: 'x', onAsset, onFile }))
   const box = screen.getByRole('button', { name: 'x source' })
-  const payload = { getData: (t: string) => (t === ASSET_DRAG_MIME ? JSON.stringify({ url: 'https://host/a.png' }) : ''), files: [new File(['x'], 'a.png')] }
+  const payload = { types: [ASSET_DRAG_MIME], getData: (t: string) => (t === ASSET_DRAG_MIME ? JSON.stringify({ url: 'https://host/a.png' }) : ''), files: [new File(['x'], 'a.png')] }
   fireEvent.drop(box, { dataTransfer: payload })
   expect(onAsset).toHaveBeenCalledTimes(1)
   expect(onAsset).toHaveBeenCalledWith('https://host/a.png')
@@ -219,12 +220,12 @@ test('DROP: without the asset MIME the file rides; without either nothing fires'
   render(h(InputSquare, { label: 'x', onFile }))
   const box = screen.getByRole('button', { name: 'x source' })
   const file = new File(['x'], 'a.png', { type: 'image/png' })
-  fireEvent.drop(box, { dataTransfer: { getData: () => '', files: [file] } })
+  fireEvent.drop(box, { dataTransfer: { types: ['Files'], getData: () => '', files: [file] } })
   expect(onFile).toHaveBeenCalledTimes(1)
   expect(onFile).toHaveBeenCalledWith(file)
-  fireEvent.drop(box, { dataTransfer: { getData: () => 'garbage{', files: [file] } })
+  fireEvent.drop(box, { dataTransfer: { types: [ASSET_DRAG_MIME], getData: () => 'garbage{', files: [file] } })
   expect(onFile).toHaveBeenCalledTimes(2)
-  fireEvent.drop(box, { dataTransfer: { getData: () => '', files: [] as File[] } })
+  fireEvent.drop(box, { dataTransfer: { types: ['Files'], getData: () => '', files: [] as File[] } })
   expect(onFile).toHaveBeenCalledTimes(2)
 })
 
@@ -234,11 +235,11 @@ test('DROP: a urlless asset payload falls through to the file', () => {
   render(h(InputSquare, { label: 'x', onAsset, onFile }))
   const box = screen.getByRole('button', { name: 'x source' })
   const file = new File(['x'], 'a.png', { type: 'image/png' })
-  fireEvent.drop(box, { dataTransfer: { getData: () => JSON.stringify({ noUrl: 1 }), files: [file] } })
+  fireEvent.drop(box, { dataTransfer: { types: [ASSET_DRAG_MIME], getData: () => JSON.stringify({ noUrl: 1 }), files: [file] } })
   expect(onAsset).not.toHaveBeenCalled()
   expect(onFile).toHaveBeenCalledTimes(1)
   // a non-string url is no url either
-  fireEvent.drop(box, { dataTransfer: { getData: () => JSON.stringify({ url: 7 }), files: [] as File[] } })
+  fireEvent.drop(box, { dataTransfer: { types: [ASSET_DRAG_MIME], getData: () => JSON.stringify({ url: 7 }), files: [] as File[] } })
   expect(onAsset).not.toHaveBeenCalled()
   expect(onFile).toHaveBeenCalledTimes(1)
 })
@@ -299,4 +300,36 @@ test('THE HIDDEN PICKER: a host that unmounts mid-pick never throws (the reset g
   // the host unmounted on the voice — the square is gone, no throw, one voice
   expect(container.querySelector('input[type="file"]')).toBeNull()
   expect(voices).toBe(1)
+})
+
+test('the shared square carries mesh compatibility affordances and slot hooks', () => {
+  const onPick = vi.fn()
+  const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+  const { container, rerender } = render(h(InputSquare, {
+    label: 'preview_glb',
+    value: 'data/input/rig.glb',
+    accept: '.glb,.gltf',
+    badge: 'Rigged',
+    metric: 'waiting',
+    actions: h('button', { type: 'button' }, 'Wire'),
+    emptyIcon: h('span', { 'data-testid': 'empty-icon' }, 'Person'),
+    showFileAction: true,
+    onPick,
+    onFile: () => {},
+    onAsset: () => {},
+    onClear: () => {},
+  }))
+  expect(container.querySelector('[data-slot-square]')).not.toBeNull()
+  expect(container.querySelector('[data-slot-input]')?.getAttribute('accept')).toBe('.glb,.gltf')
+  expect(container.querySelector('[data-slot-label]')?.textContent).toBe('preview_glb')
+  expect(container.querySelector('[data-slot-badge]')?.textContent).toBe('Rigged')
+  fireEvent.click(screen.getByRole('button', { name: 'Wire' }))
+  expect(onPick).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Pick a file for preview_glb' }))
+  expect(clickSpy).toHaveBeenCalledTimes(1)
+  rerender(h(InputSquare, {
+    label: 'preview_glb',
+    emptyIcon: h('span', { 'data-testid': 'empty-icon' }, 'Person'),
+  }))
+  expect(screen.getByTestId('empty-icon').textContent).toBe('Person')
 })

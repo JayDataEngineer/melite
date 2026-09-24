@@ -6,7 +6,7 @@
 // data URL and refuses loud when the read fails.
 import { expect, test } from 'vitest'
 
-import { cn, cx, readAsDataURL } from '../src/chrome.ts'
+import { cn, cx, parseAssetDrop, readAsDataURL } from '../src/chrome.ts'
 
 test('cx: the plain joiner — truthy parts joined with one space, falsy dropped', () => {
   expect(cx('a', 'b', 'c')).toBe('a b c')
@@ -62,5 +62,16 @@ test('readAsDataURL: a failure with no reader error still refuses (the backstop 
     await expect(readAsDataURL(new Blob(['x']))).rejects.toThrow(/read failed/)
   } finally {
     globalThis.FileReader = RealReader
+  }
+})
+
+test('parseAssetDrop: only object string fields survive malformed input', () => {
+  expect(parseAssetDrop('{"url":"/a.glb","type":"model/gltf-binary"}'))
+    .toEqual({ url: '/a.glb', type: 'model/gltf-binary' })
+  expect(parseAssetDrop('{"url":"","type":7,"name":"ignored"}')).toEqual({})
+  expect(parseAssetDrop('')).toEqual({})
+  expect(parseAssetDrop('garbage{')).toEqual({})
+  for (const raw of ['null', '[]', '"value"', '7']) {
+    expect(parseAssetDrop(raw)).toEqual({})
   }
 })

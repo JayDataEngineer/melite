@@ -31,6 +31,30 @@ export type CardSeamDefs = {
   stagePreview: SlotEntryDef
 }
 
+export function defineStageViewRegistration<I extends object = object>(
+  key: string,
+  view: (props: StageViewOwnerProps & I) => unknown,
+  inject?: () => I,
+): (ctx: {
+  slots: {
+    inject: (seam: string, callback: () => void) => unknown
+    register: (
+      descriptor: { name: 'cards.stage.view'; key: string; inject?: () => I },
+      component: (props: StageViewOwnerProps & I) => unknown,
+    ) => unknown
+  }
+}) => void {
+  return (ctx): void => {
+    ctx.slots.inject('cards.stage.view', () => {
+      ctx.slots.register({
+        name: 'cards.stage.view',
+        key,
+        ...(inject === undefined ? {} : { inject }),
+      }, view)
+    })
+  }
+}
+
 /** The seam ids, spelled once. Claims use these constants. */
 export const CARD_SLOTS = {
   /** keyed by wire type: 'image' | 'file' | 'mesh' | 'select' | ... — the

@@ -36,3 +36,22 @@ export function readAsDataURL(file: Blob): Promise<string> {
  *  CardsTab and input-square already consumed it. One definition
  *  estate-wide (the drag is a shared contract, not a studio rule). */
 export const ASSET_DRAG_MIME = "application/tech-noir-asset"
+
+export interface AssetDropPayload {
+  url?: string
+  type?: string
+}
+
+export function parseAssetDrop(raw: string): AssetDropPayload {
+  if (raw === '') return {}
+  let parsed: unknown
+  try { parsed = JSON.parse(raw) } catch { return {} }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {}
+  const payload = parsed as Record<string, unknown>
+  const url = typeof payload['url'] === 'string' && payload['url'] !== '' ? payload['url'] : undefined
+  const type = typeof payload['type'] === 'string' && payload['type'] !== '' ? payload['type'] : undefined
+  return {
+    ...(url === undefined ? {} : { url }),
+    ...(type === undefined ? {} : { type }),
+  }
+}
