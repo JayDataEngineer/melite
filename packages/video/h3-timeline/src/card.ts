@@ -385,6 +385,29 @@ export function schema(v: unknown): Record<string, unknown> {
     if (calls.length === 0) {
       throw new Error('h3-timeline: no calls to compose')
     }
+    // THE ROW-LEVEL NUMERIC RESTORE (attempt-035/009's stop-law
+    // receipt, 2026-09-24): `calls` and `audio_clips` are
+    // DELIBERATELY undeclared on paramSchema (the agent plane owns
+    // them) — the dict-driven wire fill has no license on undeclared
+    // keys, so a stringified `start_frame: "0"` rode into the shot
+    // laws and refused `start_frame is required (int frames — text
+    // alone is not a shot)` EVEN THOUGH the caller sent the number.
+    // The card OWNS the int law here — it restores the strict-grammar
+    // int-string itself (same fill law as the kit's, scoped to the
+    // row fields the shot laws read).
+    const INT_STRING = /^[+-]?\d+$/
+    const wireInt = (x: unknown): unknown =>
+      (typeof x === 'string' && INT_STRING.test(x.trim()) ? Number(x.trim()) : x)
+    for (let wi = 0; wi < calls.length; wi++) {
+      const wc = (calls[wi] ?? {}) as Record<string, unknown>
+      for (const wn of ['start_frame', 'end_frame'] as const) {
+        const wv = wireInt(wc[wn])
+        if (wv !== wc[wn]) {
+          wc[wn] = wv
+          calls[wi] = wc
+        }
+      }
+    }
     // THE SHOT LAWS (schema.py _wire_value_laws port — the ranges
     // are the card gate's, never a silent re-default: the retired era
     // quietly re-defaulted an out-of-range seam and rendered a

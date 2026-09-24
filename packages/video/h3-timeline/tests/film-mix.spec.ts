@@ -210,3 +210,19 @@ describe("computeFilmMix — the owner map (filmStart + (start−docStart), no c
     assert.equal(b.duckDb, -8);
   });
 });
+
+describe("parseFilmMixClips — the row-level numeric restore (035 wire family)", () => {
+  it("stringified start_frame/dur_frames restore", () => {
+    const clips = parseFilmMixClips([
+      { src: "/v1/assets/runs/r/tts/line.flac", start_frame: "144", dur_frames: "134", text: "Rain's done." },
+    ]);
+    assert.deepEqual(clips[0]!.start, 144);
+    assert.deepEqual(clips[0]!.dur, 134);
+  });
+  it("a non-numeric start still refuses", () => {
+    assert.throws(
+      () => parseFilmMixClips([{ src: "a.flac", start_frame: "soon" }]),
+      /no numeric start_frame/,
+    );
+  });
+});

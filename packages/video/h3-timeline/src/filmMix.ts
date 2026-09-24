@@ -35,9 +35,20 @@ export interface FilmMixClip {
  *  class auto law (text → dialogue, textless → music) rides here. */
 export function parseFilmMixClips(rows: readonly unknown[]): FilmMixClip[] {
   const clips: FilmMixClip[] = []
+  // THE ROW-LEVEL NUMERIC RESTORE (attempt-035's wire family, the
+  // card-owed arm): audio_clips is undeclared on paramSchema (the
+  // agent plane owns it), so the dict-driven fill has no license —
+  // a stringified start_frame rode in and refused. The parse owns
+  // the int law, the parse restores the strict int-string (same
+  // grammar as the kit's numeric fill; scoped to these two rows).
+  const INT_STRING = /^[+-]?\d+$/
+  const wireInt = (x: unknown): unknown =>
+    (typeof x === 'string' && INT_STRING.test(x.trim()) ? Number(x.trim()) : x)
   for (const c of rows) {
     if (c === null || typeof c !== 'object') continue
     const row = c as Record<string, unknown>
+    row['start_frame'] = wireInt(row['start_frame'])
+    row['dur_frames'] = wireInt(row['dur_frames'])
     const src = typeof row.src === 'string' ? row.src.trim() : ''
     if (src === '') continue
     if (typeof row.start_frame !== 'number' || !Number.isFinite(row.start_frame)) {

@@ -76,6 +76,26 @@ describe("the schema gate arms", () => {
     );
   });
 
+  it("wire-stringified call spans restore (the 035/009 stop-law receipt — calls is undeclared, the card owns the int law)", () => {
+    const out = def.schema({
+      calls: [
+        { text: "morning roll", start_frame: "0", end_frame: "141" },
+        { text: "sign-on", start_frame: "141", end_frame: "282" },
+      ],
+    }) as Record<string, unknown>;
+    assert.deepEqual(out.calls, [
+      { text: "morning roll", start_frame: 0, end_frame: 141 },
+      { text: "sign-on", start_frame: 141, end_frame: 282 },
+    ]);
+  });
+
+  it("a non-numeric span string still refuses (never a reinterpretation)", () => {
+    assert.throws(
+      () => def.schema({ calls: [{ text: "x", start_frame: "soon", end_frame: 90 }] }),
+      /calls\[0\]: start_frame is required/,
+    );
+  });
+
   it("an unknown window family refuses loud", () => {
     assert.throws(
       () => def.schema({ variant: "bogus", calls: [SHOT()] }),
