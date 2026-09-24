@@ -192,9 +192,17 @@ export function meliteLoad(
             // state it: `variant`/`quant` ride INSIDE card-mode
             // params (the compose selects the lane off the body;
             // the engine never sees them).
+            // THE TWO-GRAMMAR SPLIT (030's self-critique #2,
+            // 2026-09-24): the old line stated BOTH grammars with no
+            // mode owner — "arrays under the kind keys" vs "fields
+            // flat, never under the pack key" read as opposite
+            // instructions. They are the TWO MODES: bag-mode
+            // (flow_inline/ad-hoc stages) takes arrays under the kind
+            // keys; card-mode (melite_flow card) takes the FIELDS
+            // flat inside params. Stated per-mode, never mingled.
             out.push('mods: ' + modLines.join(', ')
-              + ' — pass arrays under the kind keys (the bag lives at param_key when it differs); ordered kinds stack in array order, standalone kinds each provide their own output'
-              + ' — card-mode envelope: mod FIELDS ride flat top-level (e.g. voice_name, qvoice), never keyed under the pack name'
+              + ' — TWO grammars, one per mode: (a) bag-mode (flow_inline/ad-hoc stages): pass ARRAYS under the kind keys (the bag lives at param_key when it differs); ordered kinds stack in array order, standalone kinds each provide their own output'
+              + '; (b) card-mode (melite_flow card): mod FIELDS ride FLAT inside params (e.g. params {voice_name, qvoice}) — never keyed under the pack name, never at flow top-level'
               + '; card-mode lane select: `variant`/`quant` ride INSIDE params (e.g. params {variant: \'customvoice\'}) while `model` rides top-level — the compose reads them off the body, the engine never sees them')
             const keyed = packSeats.filter((p) => p.param_key !== p.kind)
             if (keyed.length > 0) {

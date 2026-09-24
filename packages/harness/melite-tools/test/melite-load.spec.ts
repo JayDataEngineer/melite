@@ -291,7 +291,11 @@ test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)
   // carries each kind's FIELD names beside the category — the
   // compose grammar the maker had to grep card.ts for.
   assert.ok(text.includes('mods: sam3[] (standalone; fields: prompt), draw[] (ordered; fields: payload)'), 'the kinds + categories + fields ride')
-  assert.ok(text.includes('ordered kinds stack in array order, standalone kinds each provide their own output'), 'the stacking law names itself')
+  // THE TWO-GRAMMAR SPLIT (030's self-critique #2): each
+  // grammar carries its mode owner — bag arrays for
+  // flow_inline/ad-hoc, flat fields for card-mode.
+  assert.ok(text.includes('(a) bag-mode (flow_inline/ad-hoc stages): pass ARRAYS under the kind keys'), 'the bag grammar owns its mode')
+  assert.ok(text.includes("(b) card-mode (melite_flow card): mod FIELDS ride FLAT inside params"), 'the flat grammar owns its mode')
   // THE VARIANT SEAT (025's self-critique #4): the lane select
   // rides inside card-mode params — stated, never guessed.
   assert.ok(text.includes('card-mode lane select'), 'the variant seat is stated')
