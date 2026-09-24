@@ -10,16 +10,13 @@
  * over the SAME form-spec SSOT, and organization is data now.
  */
 import { createElement as h } from 'react'
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
-// Type-only: the service seats this entry touches ride cordis Context
-// declaration-merging from each owning package's ./client entry — the
-// renderer owns ctx.slots. (The card-view client's own law, verbatim.)
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-// Type-only: the 'cards.stage.view' seam declaration (card-base owns
-// the card-UI seams). Erased — the bundle stays pure.
-import type {} from '@melite/card-base/slots'
 import type { StageViewOwnerProps } from '@melite/contracts'
-import { DeclarativeStudio, defineStudioDeclaration } from '@melite/card-base'
+import {
+  DeclarativeStudio,
+  defineStageViewRegistration,
+  defineStudioDeclaration,
+} from '@melite/card-base'
 
 /** The door's group truth (schema_groups, 2026-09-12 lane read):
  *  input, generation — exposed; stage, mesh, bake, lab — folded. */
@@ -46,7 +43,4 @@ export const name = 'imgToMeshStudio'
 
 export const inject = ['slots']
 
-export function apply(ctx: ClientContext): void {
-ctx.slots.inject('cards.stage.view', () =>
-  ctx.slots.register({ name: 'cards.stage.view', key: 'img-to-mesh' }, ImgToMeshStudio))
-}
+export const apply = defineStageViewRegistration('img-to-mesh', ImgToMeshStudio)

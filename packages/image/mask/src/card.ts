@@ -38,32 +38,24 @@
 // anchor); every further entry is a per-name export.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { finalizeMask, maskT1 } from '@melite/comfyui-card-kit'
+import {
+  finalizeMask,
+  maskT1,
+  IMPACT_DETECTOR_IDS,
+  IMPACT_DETECTOR_PROVISIONS,
+  IMPACT_PACKS,
+  impactArmNames,
+} from '@melite/comfyui-card-kit'
 import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
 
-// THE ACTION CARD OWNS ITS PINS (the studio's law, shared — the
-// same weights, the same lane). sam2 + the three Impact detectors
-// (segm/person, bbox/face, bbox/hand) are the SAM2 impact-pack
-// arm's pins (the card DECLARES them as provisions below —
-// declared, then auto provisioned, the operator's 2026-09-19
-// order). BUILT 2026-10-09 (the old "OWED, not built here" note):
-// the labels vocabulary IS the per-detector pick — person rides
-// segm, face/hand ride their own bbox models, one detector family
-// per entry.
+// THE ACTION CARD OWNS ITS SAM PINS (the studio's law, shared —
+// the same weights, the same lane). The three Impact detector
+// vocabularies, provisions, graph paths, and routing live in the
+// card kit's one detector catalog.
 const PINS = {
   checkpoint: 'sam3.1_multiplex_fp16.safetensors',
   unet: 'rt_detr_v4-x-hgnet_fp32.safetensors',
   sam2: 'sam2.1_hiera_large.pt',
-  // THE SEGM PIN (the gap audit's #2): the segmentation detector —
-  // person-only, class-pixel boxes. ABSENT until 2026-10-09
-  // (downloaded + provision-declared that night).
-  segm: 'segm/person_yolov8m-seg.pt',
-  // THE FACE + HAND PINS (the operator's 2026-10-09 order: ONLY
-  // the Impact Pack examples' detectors): the pack's own
-  // specialized bbox models, exactly as detailer-pipe-test.json
-  // wires them (face_yolov8m + hand nano, both on disk).
-  face: 'bbox/face_yolov8m.pt',
-  hand: 'bbox/hand_yolov8n.pt',
 }
 
 // THE IMPACT VOCABULARY (the operator's 2026-10-09 order: "I DON'T
@@ -78,7 +70,7 @@ const PINS = {
 // detector family per entry (person rides segm, face/hand ride
 // bbox) — a mixed set refuses LOUD in the lane; split it across
 // two sam2 entries.
-const IMPACT_CLASSES = ['person', 'face', 'hand'] as const
+const IMPACT_CLASSES = IMPACT_DETECTOR_IDS
 
 /** The figure-chip row (1-10): the UI affordance for picking
  *  instances — the wire/API accept any 1-based number (crowd
@@ -121,9 +113,7 @@ const armWeights = (merged: Record<string, unknown>): readonly string[] => {
       const labels = typeof (e as Record<string, unknown>)['labels'] === 'string'
         ? String((e as Record<string, unknown>)['labels']).toLowerCase().split(',').map((w) => w.trim())
         : []
-      if (labels.includes('person')) out.add('person_yolov8m-seg.pt')
-      if (labels.includes('face')) out.add('face_yolov8m.pt')
-      if (labels.includes('hand')) out.add('hand_yolov8n.pt')
+      for (const name of impactArmNames(labels)) out.add(name)
     }
   }
   return [...out]
@@ -263,7 +253,7 @@ const MODS: readonly DeclaredModifierKind[] = [
     // the kind declares BOTH packs — the compose door refuses
     // without them (an unused sam2 bag never fires the gate), and
     // RunRescue offers the install through the manage seat.
-    requires: ['comfyui-impact-pack', 'comfyui-impact-subpack'],
+    requires: [...IMPACT_PACKS],
     // THE SECTION CAPTION — the twin of sam3's, only the selector
     // word differs (dropdown vs freetext): the class DROPDOWN picks
     // the targets; the Region canvas below only scopes the search.
@@ -422,35 +412,7 @@ export function apply(ctx: Context): void {
         sha256: '2647878d5dfa5098f2f8649825738a9345572bae2d4350a2468587ece47dd318',
         size_bytes: 898083611,
       },
-      {
-        // THE SEGM DETECTOR (the person vocabulary — class-pixel
-        // boxes, the auto-bbox the operator demanded). Hash minted
-        // by direct download 2026-10-09 (the supply-chain law).
-        name: 'person_yolov8m-seg.pt',
-        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/person_yolov8m-seg.pt',
-        folder: 'ultralytics/segm',
-        sha256: 'c8ab26f517173b1fe8342d336a09f443eb61cb08dcbfc78d53fff4c2547ae81e',
-        size_bytes: 54827683,
-      },
-      {
-        // THE FACE DETECTOR (the pack's own test-workflow model).
-        // Hash minted by direct download 2026-09-19.
-        name: 'face_yolov8m.pt',
-        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8m.pt',
-        folder: 'ultralytics/bbox',
-        sha256: '717923c19b3f4bbf5250b728f1fa6b2cb72a33aed1d236ea9caf0e21ad943e5f',
-        size_bytes: 52026019,
-      },
-      {
-        // THE HAND DETECTOR (nano variant of the pack's hand
-        // model — the file on disk). Hash minted by direct
-        // download 2026-09-19.
-        name: 'hand_yolov8n.pt',
-        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/hand_yolov8n.pt',
-        folder: 'ultralytics/bbox',
-        sha256: '3991202eb69e9ddcb3b9ba80cdeb41e734ffaf844403d6c9f47d515cd88c6f29',
-        size_bytes: 6237883,
-      },
+      ...IMPACT_DETECTOR_PROVISIONS,
     ],
     sidebar: { key: 'image', order: 9 },
     // no surface row — a FORM card (layout serves null)

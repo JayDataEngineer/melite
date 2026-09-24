@@ -51,13 +51,20 @@ describe("the image-gen compose gate", () => {
     );
   });
 
-  it("THE SCHEMA GATE: an unstated steps arrives as the declared default 8 (the walk fills it)", () => {
+  it("THE MODEL CASCADE: an unstated steps arrives from the family DECL default", () => {
     const model = facts.models[def.boarded[0]!]!;
     const g = new GraphBuilder();
-    def.compose({ prompt: "a cat" }, model, g, "r_def");
+    def.compose({ ...model.defaults, prompt: "a cat" }, model, g, "r_def");
     const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
     assert.equal(graph["KSampler.0"]?.inputs.steps, 8,
-      "the fresh doc composes the schema-declared default 8, not undefined");
+      "the fresh doc composes the family default, not a card-owned duplicate");
+  });
+
+  it("the card schema does not duplicate model-backed width, height, or steps defaults", () => {
+    const doc = def.schema({ prompt: "a cat" }) as Record<string, unknown>;
+    assert.equal(doc.width, undefined);
+    assert.equal(doc.height, undefined);
+    assert.equal(doc.steps, undefined);
   });
 
   it("THE SCHEMA GATE: mod-plane keys pass the walk verbatim (no lora-stamp drop)", () => {

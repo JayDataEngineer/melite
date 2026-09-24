@@ -41,7 +41,13 @@
 // admission is the surface, firing is compose's call).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { imageEdit, refuseImageEditFiring, finalizeImageEdit } from '@melite/comfyui-card-kit'
+import {
+  finalizeImageEdit,
+  imageEdit,
+  impactArmNames,
+  IMPACT_DETECTOR_PROVISIONS,
+  refuseImageEditFiring,
+} from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
@@ -165,33 +171,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // download, the supply-chain law). The compose door checks them
     // ONLY when a crop_stitch run actually touches a detector (an
     // unused arm never blocks a run).
-    provisions: [
-      {
-        name: 'person_yolov8m-seg.pt',
-        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/person_yolov8m-seg.pt',
-        folder: 'ultralytics/segm',
-        sha256: 'c8ab26f517173b1fe8342d336a09f443eb61cb08dcbfc78d53fff4c2547ae81e',
-        size_bytes: 54827683,
-      },
-      {
-        name: 'face_yolov8m.pt',
-        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8m.pt',
-        folder: 'ultralytics/bbox',
-        sha256: '717923c19b3fbbf5250b728f1fa6b2cb72a33aed1d236ea9caf0e21ad943e5f',
-        size_bytes: 52026019,
-      },
-      {
-        // THE LIVE-ENGINE PIN (proven against :8188's provider list,
-        // 2026-09-22): this engine ships the s-variant; the n-variant
-        // was a stale copy that would refuse at execute time.
-        // sha256/size minted from the on-disk file.
-        name: 'hand_yolov8s.pt',
-        url: 'https://huggingface.co/Bingsu/adetailer/resolve/main/hand_yolov8s.pt',
-        folder: 'ultralytics/bbox',
-        sha256: '70b540063fbc385736d8258970744a4afbc4cbf7932134bae3b24cdadeadec06',
-        size_bytes: 22507643,
-      },
-    ],
+    provisions: [...IMPACT_DETECTOR_PROVISIONS],
     // THE ARM WEIGHTS (the silent-truncation law): a crop_stitch run
     // with a detector stated names that detector's row — auto mode
     // names nothing even when a detector is stated (the firing gate
@@ -210,10 +190,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       }
       if (((row.mask_mode ?? 'auto') as string) !== 'crop_stitch') return []
       const detector = ((row.mask_detector ?? 'off') as string)
-      if (detector === 'person') return ['person_yolov8m-seg.pt']
-      if (detector === 'face') return ['face_yolov8m.pt']
-      if (detector === 'hand') return ['hand_yolov8s.pt']
-      return []
+      return impactArmNames([detector])
     },
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen

@@ -14,6 +14,7 @@ import { BOARDED } from "../src/card.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { IMPACT_DETECTOR_PROVISIONS } from "@melite/comfyui-card-kit/impact";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
@@ -374,6 +375,7 @@ describe("the image-edit compose gate", () => {
     assert.deepEqual(arm({ mask_mode: "crop_stitch", mask_detector: "person" }), ["person_yolov8m-seg.pt"], "person names its row");
     assert.deepEqual(arm({ mask_mode: "crop_stitch", mask: [{ mask_detector: "face" }] }), ["face_yolov8m.pt"], "a bag-stated detector names its row");
     assert.deepEqual(arm({ mask_mode: "crop_stitch", mask_detector: "hand" }), ["hand_yolov8s.pt"], "hand names its row");
+    assert.deepEqual(def.provisions, IMPACT_DETECTOR_PROVISIONS, "the card's Impact rows are the card-kit catalog verbatim");
     const rows = (def.provisions ?? []).map((r) => r.name).sort();
     assert.deepEqual(rows, ["face_yolov8m.pt", "hand_yolov8s.pt", "person_yolov8m-seg.pt"], "every named row is declared");
   });

@@ -234,10 +234,34 @@ window.__ModuleLoader__.load({
 		function cx(...parts) {
 			return parts.filter(Boolean).join(" ");
 		}
+		/** THE ESTATE'S DRAG CONTRACT (2026-09-18, exterminated): the MIME
+		*  under which an upstream asset rides a drop payload — a JSON blob
+		*  {url, name, …} carried by the source's dataTransfer. h3's kit and
+		*  motion's kit each redeclared it; card-base, the card-view's
+		*  CardsTab and input-square already consumed it. One definition
+		*  estate-wide (the drag is a shared contract, not a studio rule). */
+		const ASSET_DRAG_MIME = "application/tech-noir-asset";
+		function parseAssetDrop(raw) {
+			if (raw === "") return {};
+			let parsed;
+			try {
+				parsed = JSON.parse(raw);
+			} catch {
+				return {};
+			}
+			if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+			const payload = parsed;
+			const url = typeof payload["url"] === "string" && payload["url"] !== "" ? payload["url"] : void 0;
+			const type = typeof payload["type"] === "string" && payload["type"] !== "" ? payload["type"] : void 0;
+			return {
+				...url === void 0 ? {} : { url },
+				...type === void 0 ? {} : { type }
+			};
+		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$3 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareMesh{pointer-events:none;position:absolute;inset:0}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
-		const tagId$3 = "@melite/3d-img-to-mesh/card.module.css@f4287eaf";
+		const css$3 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_modelAxes>.FRpSCG_specHint{grid-column:1/-1}.FRpSCG_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.FRpSCG_axesPair>*{min-width:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareMesh{pointer-events:none;position:absolute;inset:0}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareEmptyIcon{align-items:center;display:flex}.FRpSCG_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.FRpSCG_squareActions>*{pointer-events:auto}.FRpSCG_squarePick{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.FRpSCG_squareBadge{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_specChips{flex-wrap:wrap;gap:4px;display:flex}.FRpSCG_specChip{border:1px solid var(--dsw-alias-border-l2,#8080804d);background:var(--dsw-alias-bg-base,transparent);color:var(--dsw-alias-label-secondary,inherit);cursor:pointer;border-radius:999px;padding:4px 8px;font-size:11px;line-height:1.2}.FRpSCG_specChipOn{border-color:var(--dsw-alias-accent,#80808099);background:var(--dsw-alias-bg-elevated,#8080801f);color:var(--dsw-alias-label-primary,inherit);font-weight:600}.FRpSCG_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.FRpSCG_modLeafStage{min-width:0}.FRpSCG_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
+		const tagId$3 = "@melite/3d-img-to-mesh/card.module.css@7ac0a6ba";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
@@ -246,6 +270,7 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var card_module_css_default = {
+			"axesPair": "FRpSCG_axesPair",
 			"ctlRow": "FRpSCG_ctlRow",
 			"ctlRowSm": "FRpSCG_ctlRowSm",
 			"emptyHint": "FRpSCG_emptyHint",
@@ -264,9 +289,13 @@ window.__ModuleLoader__.load({
 			"modLeafActions": "FRpSCG_modLeafActions",
 			"modLeafError": "FRpSCG_modLeafError",
 			"modLeafFields": "FRpSCG_modLeafFields",
+			"modLeafModal": "FRpSCG_modLeafModal",
+			"modLeafSplit": "FRpSCG_modLeafSplit",
+			"modLeafStage": "FRpSCG_modLeafStage",
 			"modRow": "FRpSCG_modRow",
 			"modSection": "FRpSCG_modSection",
 			"modSelect": "FRpSCG_modSelect",
+			"modStageCaption": "FRpSCG_modStageCaption",
 			"modTile": "FRpSCG_modTile",
 			"modTileLabel": "FRpSCG_modTileLabel",
 			"modTileRecipe": "FRpSCG_modTileRecipe",
@@ -294,6 +323,9 @@ window.__ModuleLoader__.load({
 			"sectionLabelText": "FRpSCG_sectionLabelText",
 			"skeleton": "FRpSCG_skeleton",
 			"sourceRow": "FRpSCG_sourceRow",
+			"specChip": "FRpSCG_specChip",
+			"specChipOn": "FRpSCG_specChipOn",
+			"specChips": "FRpSCG_specChips",
 			"specDice": "FRpSCG_specDice",
 			"specDiceOn": "FRpSCG_specDiceOn",
 			"specField": "FRpSCG_specField",
@@ -315,7 +347,10 @@ window.__ModuleLoader__.load({
 			"specSlotRow": "FRpSCG_specSlotRow",
 			"specStack": "FRpSCG_specStack",
 			"specTextarea": "FRpSCG_specTextarea",
+			"squareActions": "FRpSCG_squareActions",
+			"squareBadge": "FRpSCG_squareBadge",
 			"squareBox": "FRpSCG_squareBox",
+			"squareEmptyIcon": "FRpSCG_squareEmptyIcon",
 			"squareFileInput": "FRpSCG_squareFileInput",
 			"squareGlyph": "FRpSCG_squareGlyph",
 			"squareLabel": "FRpSCG_squareLabel",
@@ -323,6 +358,7 @@ window.__ModuleLoader__.load({
 			"squareMetric": "FRpSCG_squareMetric",
 			"squareOff": "FRpSCG_squareOff",
 			"squareOver": "FRpSCG_squareOver",
+			"squarePick": "FRpSCG_squarePick",
 			"squareThumb": "FRpSCG_squareThumb",
 			"squareWrap": "FRpSCG_squareWrap",
 			"squareX": "FRpSCG_squareX",
@@ -377,6 +413,18 @@ window.__ModuleLoader__.load({
 				style,
 				...rest,
 				children
+			});
+		}
+		function Upload({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17 8-5-5-5 5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v12" })
+				]
 			});
 		}
 		function AlertTriangle({ className, style, ...rest }) {
@@ -14630,6 +14678,286 @@ window.__ModuleLoader__.load({
 				if (value === true) this.version++;
 			}
 		};
+		/**
+		* A material for rendering instances of {@link Sprite}.
+		*
+		* ```js
+		* const map = new THREE.TextureLoader().load( 'textures/sprite.png' );
+		* const material = new THREE.SpriteMaterial( { map: map, color: 0xffffff } );
+		*
+		* const sprite = new THREE.Sprite( material );
+		* sprite.scale.set(200, 200, 1)
+		* scene.add( sprite );
+		* ```
+		*
+		* @augments Material
+		*/
+		var SpriteMaterial = class extends Material {
+			/**
+			* Constructs a new sprite material.
+			*
+			* @param {Object} [parameters] - An object with one or more properties
+			* defining the material's appearance. Any property of the material
+			* (including any property from inherited materials) can be passed
+			* in here. Color values can be passed any type of value accepted
+			* by {@link Color#set}.
+			*/
+			constructor(parameters) {
+				super();
+				/**
+				* This flag can be used for type testing.
+				*
+				* @type {boolean}
+				* @readonly
+				* @default true
+				*/
+				this.isSpriteMaterial = true;
+				this.type = "SpriteMaterial";
+				/**
+				* Color of the material.
+				*
+				* @type {Color}
+				* @default (1,1,1)
+				*/
+				this.color = new Color(16777215);
+				/**
+				* The color map. May optionally include an alpha channel, typically combined
+				* with {@link Material#transparent} or {@link Material#alphaTest}. The texture map
+				* color is modulated by the diffuse `color`.
+				*
+				* @type {?Texture}
+				* @default null
+				*/
+				this.map = null;
+				/**
+				* The alpha map is a grayscale texture that controls the opacity across the
+				* surface (black: fully transparent; white: fully opaque).
+				*
+				* Only the color of the texture is used, ignoring the alpha channel if one
+				* exists. For RGB and RGBA textures, the renderer will use the green channel
+				* when sampling this texture due to the extra bit of precision provided for
+				* green in DXT-compressed and uncompressed RGB 565 formats. Luminance-only and
+				* luminance/alpha textures will also still work as expected.
+				*
+				* @type {?Texture}
+				* @default null
+				*/
+				this.alphaMap = null;
+				/**
+				* The rotation of the sprite in radians.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.rotation = 0;
+				/**
+				* Specifies whether size of the sprite is attenuated by the camera depth (perspective camera only).
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.sizeAttenuation = true;
+				/**
+				* Overwritten since sprite materials are transparent
+				* by default.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.transparent = true;
+				/**
+				* Whether the material is affected by fog or not.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.fog = true;
+				this.setValues(parameters);
+			}
+			copy(source) {
+				super.copy(source);
+				this.color.copy(source.color);
+				this.map = source.map;
+				this.alphaMap = source.alphaMap;
+				this.rotation = source.rotation;
+				this.sizeAttenuation = source.sizeAttenuation;
+				this.fog = source.fog;
+				return this;
+			}
+		};
+		let _geometry;
+		const _intersectPoint = /*@__PURE__*/ new Vector3();
+		const _worldScale = /*@__PURE__*/ new Vector3();
+		const _mvPosition = /*@__PURE__*/ new Vector3();
+		const _alignedPosition = /*@__PURE__*/ new Vector2();
+		const _rotatedPosition = /*@__PURE__*/ new Vector2();
+		const _viewWorldMatrix = /*@__PURE__*/ new Matrix4();
+		const _vA$1 = /*@__PURE__*/ new Vector3();
+		const _vB$1 = /*@__PURE__*/ new Vector3();
+		const _vC$1 = /*@__PURE__*/ new Vector3();
+		const _uvA = /*@__PURE__*/ new Vector2();
+		const _uvB = /*@__PURE__*/ new Vector2();
+		const _uvC = /*@__PURE__*/ new Vector2();
+		/**
+		* A sprite is a plane that always faces towards the camera, generally with a
+		* partially transparent texture applied.
+		*
+		* Sprites do not cast shadows, setting {@link Object3D#castShadow} to `true` will
+		* have no effect.
+		*
+		* ```js
+		* const map = new THREE.TextureLoader().load( 'sprite.png' );
+		* const material = new THREE.SpriteMaterial( { map: map } );
+		*
+		* const sprite = new THREE.Sprite( material );
+		* scene.add( sprite );
+		* ```
+		*
+		* @augments Object3D
+		*/
+		var Sprite = class extends Object3D {
+			/**
+			* Constructs a new sprite.
+			*
+			* @param {(SpriteMaterial|SpriteNodeMaterial)} [material] - The sprite material.
+			*/
+			constructor(material = new SpriteMaterial()) {
+				super();
+				/**
+				* This flag can be used for type testing.
+				*
+				* @type {boolean}
+				* @readonly
+				* @default true
+				*/
+				this.isSprite = true;
+				this.type = "Sprite";
+				if (_geometry === void 0) {
+					_geometry = new BufferGeometry();
+					const interleavedBuffer = new InterleavedBuffer(new Float32Array([
+						-.5,
+						-.5,
+						0,
+						0,
+						0,
+						.5,
+						-.5,
+						0,
+						1,
+						0,
+						.5,
+						.5,
+						0,
+						1,
+						1,
+						-.5,
+						.5,
+						0,
+						0,
+						1
+					]), 5);
+					_geometry.setIndex([
+						0,
+						1,
+						2,
+						0,
+						2,
+						3
+					]);
+					_geometry.setAttribute("position", new InterleavedBufferAttribute(interleavedBuffer, 3, 0, false));
+					_geometry.setAttribute("uv", new InterleavedBufferAttribute(interleavedBuffer, 2, 3, false));
+				}
+				/**
+				* The sprite geometry.
+				*
+				* @type {BufferGeometry}
+				*/
+				this.geometry = _geometry;
+				/**
+				* The sprite material.
+				*
+				* @type {(SpriteMaterial|SpriteNodeMaterial)}
+				*/
+				this.material = material;
+				/**
+				* The sprite's anchor point, and the point around which the sprite rotates.
+				* A value of `(0.5, 0.5)` corresponds to the midpoint of the sprite. A value
+				* of `(0, 0)` corresponds to the lower left corner of the sprite.
+				*
+				* @type {Vector2}
+				* @default (0.5,0.5)
+				*/
+				this.center = new Vector2(.5, .5);
+				/**
+				* The number of instances of this sprite.
+				* Can only be used with {@link WebGPURenderer}.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.count = 1;
+			}
+			/**
+			* Computes intersection points between a casted ray and this sprite.
+			*
+			* @param {Raycaster} raycaster - The raycaster.
+			* @param {Array<Object>} intersects - The target array that holds the intersection points.
+			*/
+			raycast(raycaster, intersects) {
+				if (raycaster.camera === null) error("Sprite: \"Raycaster.camera\" needs to be set in order to raycast against sprites.");
+				_worldScale.setFromMatrixScale(this.matrixWorld);
+				_viewWorldMatrix.copy(raycaster.camera.matrixWorld);
+				this.modelViewMatrix.multiplyMatrices(raycaster.camera.matrixWorldInverse, this.matrixWorld);
+				_mvPosition.setFromMatrixPosition(this.modelViewMatrix);
+				if (raycaster.camera.isPerspectiveCamera && this.material.sizeAttenuation === false) _worldScale.multiplyScalar(-_mvPosition.z);
+				const rotation = this.material.rotation;
+				let sin, cos;
+				if (rotation !== 0) {
+					cos = Math.cos(rotation);
+					sin = Math.sin(rotation);
+				}
+				const center = this.center;
+				transformVertex(_vA$1.set(-.5, -.5, 0), _mvPosition, center, _worldScale, sin, cos);
+				transformVertex(_vB$1.set(.5, -.5, 0), _mvPosition, center, _worldScale, sin, cos);
+				transformVertex(_vC$1.set(.5, .5, 0), _mvPosition, center, _worldScale, sin, cos);
+				_uvA.set(0, 0);
+				_uvB.set(1, 0);
+				_uvC.set(1, 1);
+				let intersect = raycaster.ray.intersectTriangle(_vA$1, _vB$1, _vC$1, false, _intersectPoint);
+				if (intersect === null) {
+					transformVertex(_vB$1.set(-.5, .5, 0), _mvPosition, center, _worldScale, sin, cos);
+					_uvB.set(0, 1);
+					intersect = raycaster.ray.intersectTriangle(_vA$1, _vC$1, _vB$1, false, _intersectPoint);
+					if (intersect === null) return;
+				}
+				const distance = raycaster.ray.origin.distanceTo(_intersectPoint);
+				if (distance < raycaster.near || distance > raycaster.far) return;
+				intersects.push({
+					distance,
+					point: _intersectPoint.clone(),
+					uv: Triangle.getInterpolation(_intersectPoint, _vA$1, _vB$1, _vC$1, _uvA, _uvB, _uvC, new Vector2()),
+					face: null,
+					object: this
+				});
+			}
+			copy(source, recursive) {
+				super.copy(source, recursive);
+				if (source.center !== void 0) this.center.copy(source.center);
+				this.material = source.material;
+				return this;
+			}
+		};
+		function transformVertex(vertexPosition, mvPosition, center, scale, sin, cos) {
+			_alignedPosition.subVectors(vertexPosition, center).addScalar(.5).multiply(scale);
+			if (sin !== void 0) {
+				_rotatedPosition.x = cos * _alignedPosition.x - sin * _alignedPosition.y;
+				_rotatedPosition.y = sin * _alignedPosition.x + cos * _alignedPosition.y;
+			} else _rotatedPosition.copy(_alignedPosition);
+			vertexPosition.copy(mvPosition);
+			vertexPosition.x += _rotatedPosition.x;
+			vertexPosition.y += _rotatedPosition.y;
+			vertexPosition.applyMatrix4(_viewWorldMatrix);
+		}
 		const _vector$7 = /*@__PURE__*/ new Vector3();
 		const _segCenter = /*@__PURE__*/ new Vector3();
 		const _segDir = /*@__PURE__*/ new Vector3();
@@ -17469,6 +17797,41 @@ window.__ModuleLoader__.load({
 			}
 			set images(value) {
 				this.image = value;
+			}
+		};
+		/**
+		* Creates a texture from a canvas element.
+		*
+		* This is almost the same as the base texture class, except that it sets {@link Texture#needsUpdate}
+		* to `true` immediately since a canvas can directly be used for rendering.
+		*
+		* @augments Texture
+		*/
+		var CanvasTexture = class extends Texture {
+			/**
+			* Constructs a new texture.
+			*
+			* @param {HTMLCanvasElement} [canvas] - The HTML canvas element.
+			* @param {number} [mapping=Texture.DEFAULT_MAPPING] - The texture mapping.
+			* @param {number} [wrapS=ClampToEdgeWrapping] - The wrapS value.
+			* @param {number} [wrapT=ClampToEdgeWrapping] - The wrapT value.
+			* @param {number} [magFilter=LinearFilter] - The mag filter value.
+			* @param {number} [minFilter=LinearMipmapLinearFilter] - The min filter value.
+			* @param {number} [format=RGBAFormat] - The texture format.
+			* @param {number} [type=UnsignedByteType] - The texture type.
+			* @param {number} [anisotropy=Texture.DEFAULT_ANISOTROPY] - The anisotropy value.
+			*/
+			constructor(canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy) {
+				super(canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy);
+				/**
+				* This flag can be used for type testing.
+				*
+				* @type {boolean}
+				* @readonly
+				* @default true
+				*/
+				this.isCanvasTexture = true;
+				this.needsUpdate = true;
 			}
 		};
 		/**
@@ -24074,6 +24437,128 @@ window.__ModuleLoader__.load({
 				return this;
 			}
 		});
+		const _vector$2 = /*@__PURE__*/ new Vector3();
+		const _boneMatrix = /*@__PURE__*/ new Matrix4();
+		const _matrixWorldInv = /*@__PURE__*/ new Matrix4();
+		/**
+		* A helper object to assist with visualizing a {@link Skeleton}.
+		*
+		* ```js
+		* const helper = new THREE.SkeletonHelper( skinnedMesh );
+		* scene.add( helper );
+		* ```
+		*
+		* @augments LineSegments
+		*/
+		var SkeletonHelper = class extends LineSegments {
+			/**
+			* Constructs a new skeleton helper.
+			*
+			* @param {Object3D} object -  Usually an instance of {@link SkinnedMesh}. However, any 3D object
+			* can be used if it represents a hierarchy of bones (see {@link Bone}).
+			*/
+			constructor(object) {
+				const bones = getBoneList(object);
+				const geometry = new BufferGeometry();
+				const vertices = [];
+				const colors = [];
+				for (let i = 0; i < bones.length; i++) {
+					const bone = bones[i];
+					if (bone.parent && bone.parent.isBone) {
+						vertices.push(0, 0, 0);
+						vertices.push(0, 0, 0);
+						colors.push(0, 0, 0);
+						colors.push(0, 0, 0);
+					}
+				}
+				geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+				geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
+				const material = new LineBasicMaterial({
+					vertexColors: true,
+					depthTest: false,
+					depthWrite: false,
+					toneMapped: false,
+					transparent: true
+				});
+				super(geometry, material);
+				/**
+				* This flag can be used for type testing.
+				*
+				* @type {boolean}
+				* @readonly
+				* @default true
+				*/
+				this.isSkeletonHelper = true;
+				this.type = "SkeletonHelper";
+				/**
+				* The object being visualized.
+				*
+				* @type {Object3D}
+				*/
+				this.root = object;
+				/**
+				* The list of bones that the helper visualizes.
+				*
+				* @type {Array<Bone>}
+				*/
+				this.bones = bones;
+				this.matrix = object.matrixWorld;
+				this.matrixAutoUpdate = false;
+				const color1 = new Color(255);
+				const color2 = new Color(65280);
+				this.setColors(color1, color2);
+			}
+			updateMatrixWorld(force) {
+				const bones = this.bones;
+				const geometry = this.geometry;
+				const position = geometry.getAttribute("position");
+				_matrixWorldInv.copy(this.root.matrixWorld).invert();
+				for (let i = 0, j = 0; i < bones.length; i++) {
+					const bone = bones[i];
+					if (bone.parent && bone.parent.isBone) {
+						_boneMatrix.multiplyMatrices(_matrixWorldInv, bone.matrixWorld);
+						_vector$2.setFromMatrixPosition(_boneMatrix);
+						position.setXYZ(j, _vector$2.x, _vector$2.y, _vector$2.z);
+						_boneMatrix.multiplyMatrices(_matrixWorldInv, bone.parent.matrixWorld);
+						_vector$2.setFromMatrixPosition(_boneMatrix);
+						position.setXYZ(j + 1, _vector$2.x, _vector$2.y, _vector$2.z);
+						j += 2;
+					}
+				}
+				geometry.getAttribute("position").needsUpdate = true;
+				super.updateMatrixWorld(force);
+			}
+			/**
+			* Defines the colors of the helper.
+			*
+			* @param {Color} color1 - The first line color for each bone.
+			* @param {Color} color2 - The second line color for each bone.
+			* @return {SkeletonHelper} A reference to this helper.
+			*/
+			setColors(color1, color2) {
+				const colorAttribute = this.geometry.getAttribute("color");
+				for (let i = 0; i < colorAttribute.count; i += 2) {
+					colorAttribute.setXYZ(i, color1.r, color1.g, color1.b);
+					colorAttribute.setXYZ(i + 1, color2.r, color2.g, color2.b);
+				}
+				colorAttribute.needsUpdate = true;
+				return this;
+			}
+			/**
+			* Frees the GPU-related resources allocated by this instance. Call this
+			* method whenever this instance is no longer used in your app.
+			*/
+			dispose() {
+				this.geometry.dispose();
+				this.material.dispose();
+			}
+		};
+		function getBoneList(object) {
+			const boneList = [];
+			if (object.isBone === true) boneList.push(object);
+			for (let i = 0; i < object.children.length; i++) boneList.push(...getBoneList(object.children[i]));
+			return boneList;
+		}
 		/**
 		* The helper is an object to define grids. Grids are two-dimensional
 		* arrays of lines.
@@ -39432,10 +39917,39 @@ void main() {
 				}
 			};
 		}
+		/** A billboard TEXT label — the drei <Billboard><Text/></Text> analogue:
+		*  canvas-drawn glyphs on a THREE.Sprite (sprites always face the camera,
+		*  which IS the billboard). worldHeight is the label's height in scene
+		*  units (drei Text's fontSize is world units too). */
+		function makeLabelSprite(text, color, worldHeight) {
+			const px = 96;
+			const c = document.createElement("canvas");
+			const ctx = c.getContext("2d");
+			if (ctx !== null) {
+				ctx.font = `600 ${px}px system-ui, sans-serif`;
+				const w = Math.ceil(ctx.measureText(text).width) + 32;
+				c.width = w;
+				c.height = 128;
+				ctx.font = `600 ${px}px system-ui, sans-serif`;
+				ctx.textAlign = "center";
+				ctx.textBaseline = "middle";
+				ctx.fillStyle = color;
+				ctx.fillText(text, w / 2, 64);
+			}
+			const tex = new CanvasTexture(c);
+			tex.minFilter = LinearFilter;
+			const sprite = new Sprite(new SpriteMaterial({
+				map: tex,
+				transparent: true
+			}));
+			const aspect = c.width / c.height;
+			sprite.scale.set(worldHeight * aspect, worldHeight, 1);
+			return sprite;
+		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$2 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.ClEuBa_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
-		const tagId$2 = "@melite/3d-img-to-mesh/preview.module.css@120c4109";
+		const css$2 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.ClEuBa_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.ClEuBa_thumbVideoBtn:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.ClEuBa_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.ClEuBa_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.ClEuBa_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_thumbFace{box-sizing:content-box;border:1px solid var(--dsw-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.ClEuBa_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_layerRow{flex:none;gap:6px;display:flex}.ClEuBa_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.ClEuBa_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.ClEuBa_reportCard{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.ClEuBa_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.ClEuBa_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.ClEuBa_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.ClEuBa_reportChips{flex-wrap:wrap;gap:4px;display:flex}.ClEuBa_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.ClEuBa_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.ClEuBa_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.ClEuBa_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.ClEuBa_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.ClEuBa_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
+		const tagId$2 = "@melite/3d-img-to-mesh/preview.module.css@bf1f1d7d";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
@@ -39454,13 +39968,30 @@ void main() {
 			"historyTile": "ClEuBa_historyTile",
 			"historyTileActive": "ClEuBa_historyTileActive",
 			"historyTitle": "ClEuBa_historyTitle",
+			"layerChip": "ClEuBa_layerChip",
+			"layerRow": "ClEuBa_layerRow",
+			"reportCard": "ClEuBa_reportCard",
+			"reportChip": "ClEuBa_reportChip",
+			"reportChips": "ClEuBa_reportChips",
+			"reportHead": "ClEuBa_reportHead",
+			"reportKey": "ClEuBa_reportKey",
+			"reportRow": "ClEuBa_reportRow",
+			"reportRows": "ClEuBa_reportRows",
+			"reportStatus": "ClEuBa_reportStatus",
+			"reportTitle": "ClEuBa_reportTitle",
+			"reportVal": "ClEuBa_reportVal",
 			"stageCanvas": "ClEuBa_stageCanvas",
 			"stagePreview": "ClEuBa_stagePreview",
 			"staleBadge": "ClEuBa_staleBadge",
 			"strip": "ClEuBa_strip",
 			"stripLink": "ClEuBa_stripLink",
 			"thumb": "ClEuBa_thumb",
-			"thumbRow": "ClEuBa_thumbRow"
+			"thumbFace": "ClEuBa_thumbFace",
+			"thumbRow": "ClEuBa_thumbRow",
+			"thumbVideo": "ClEuBa_thumbVideo",
+			"thumbVideoActive": "ClEuBa_thumbVideoActive",
+			"thumbVideoBtn": "ClEuBa_thumbVideoBtn",
+			"thumbVideoName": "ClEuBa_thumbVideoName"
 		};
 		//#endregion
 		//#region ../../web/card-base/src/glb-stage.tsx
@@ -39566,6 +40097,7 @@ void main() {
 				setClickSink: (fn) => {
 					clickSink = fn;
 				},
+				addTick: stage.addTick,
 				dispose: () => {
 					grid.geometry.dispose();
 					stage.dispose();
@@ -39581,13 +40113,152 @@ void main() {
 				if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
 			});
 		}
+		/** Flip the wireframe flag on every wireframe-capable material under
+		*  the root (mesh materials; points/lines have no such flag and are
+		*  left alone). Idempotent — loads mint fresh materials, so no
+		*  original-flag bookkeeping is owed. */
+		function applyWireframe(root, on) {
+			root.traverse((o) => {
+				const m = o.material;
+				if (m !== void 0 && m !== null && "wireframe" in m) m.wireframe = on;
+			});
+		}
+		/** A bone-visualization overlay for one loaded group — null when
+		*  the group carries no bones (unrigged meshes seat no overlay, the
+		*  honest absence). The caller adds the helper to the scene and owns
+		*  its visibility + disposal. */
+		function skeletonHelperFor(group) {
+			const bones = [];
+			group.traverse((o) => {
+				if (o.isBone === true) bones.push(o);
+			});
+			if (bones.length === 0) return null;
+			return new SkeletonHelper(group);
+		}
+		/** THE TURNTABLE SPEED (radians/sec) — one revolution every ~12.5s,
+		*  the gentle review idle; fast enough to read as motion in a
+		*  glance, slow enough to inspect. */
+		const TURNTABLE_SPEED = .5;
+		/** One turntable frame: rotate every group about its OWN Y axis
+		*  (each spins in place — the row layout's positions stand). Pure —
+		*  the stage's tick seam calls it with the rAF delta; a 0 delta is
+		*  a no-op. Declared per-asset rotation rides along (the spin adds
+		*  to the current angle, never resets it). */
+		function turntableTick(groups, delta) {
+			if (delta === 0) return;
+			const d = TURNTABLE_SPEED * delta;
+			for (const g of groups) g.rotation.y += d;
+		}
+		/** ── THE WEIGHTS HEAT OVERLAY (primitive ②, fourth slice) ───────────
+		*
+		* Per-vertex skin-weight heat: a skinned mesh's dominant-bone weight
+		* (the max of its skinWeight components, ∈ [0.25,1] under 4
+		* influences) paints a blue→red ramp through vertex colors. Unskinned
+		* meshes are untouched (no skinWeight attribute — no lane, no paint).
+		* OFF restores each geometry's ORIGINAL color attribute (cached the
+		* first time we touch it — absent means we delete ours) and the
+		* material's vertexColors flag. Idempotent both ways. */
+		/** The heat ramp — 5 stops (blue→cyan→green→yellow→red), t clamped.
+		*  Pure: the same ramp every stage paints, the wall pins the stops. */
+		function heatColor(t) {
+			const x = Math.min(1, Math.max(0, t));
+			const stops = [
+				[
+					0,
+					0,
+					1
+				],
+				[
+					0,
+					1,
+					1
+				],
+				[
+					0,
+					1,
+					0
+				],
+				[
+					1,
+					1,
+					0
+				],
+				[
+					1,
+					0,
+					0
+				]
+			];
+			const s = x * (stops.length - 1);
+			const i = Math.min(stops.length - 2, Math.floor(s));
+			const f = s - i;
+			const a = stops[i], b = stops[i + 1];
+			return [
+				a[0] + (b[0] - a[0]) * f,
+				a[1] + (b[1] - a[1]) * f,
+				a[2] + (b[2] - a[2]) * f
+			];
+		}
+		const weightColorCache = /* @__PURE__ */ new WeakMap();
+		function applyWeightsHeat(root, on) {
+			root.traverse((o) => {
+				const mesh = o;
+				const geo = mesh.geometry;
+				if (geo === void 0) return;
+				const mat = mesh.material;
+				if (mat === void 0 || mat === null || Array.isArray(mat)) return;
+				const sw = geo.getAttribute("skinWeight");
+				if (sw === void 0) return;
+				const pos = geo.getAttribute("position");
+				if (pos === void 0) return;
+				const sm = mat;
+				if (on) {
+					if (!weightColorCache.has(geo)) weightColorCache.set(geo, geo.getAttribute("color") ?? null);
+					const colors = new Float32Array(pos.count * 3);
+					const comps = Math.min(4, sw.itemSize);
+					for (let i = 0; i < pos.count; i++) {
+						let w = sw.getX(i);
+						for (let c = 1; c < comps; c++) {
+							const v = c === 1 ? sw.getY(i) : c === 2 ? sw.getZ(i) : sw.getW(i);
+							if (v > w) w = v;
+						}
+						const [r, g, b] = heatColor(w);
+						colors[i * 3] = r;
+						colors[i * 3 + 1] = g;
+						colors[i * 3 + 2] = b;
+					}
+					geo.setAttribute("color", new BufferAttribute(colors, 3));
+					sm.vertexColors = true;
+					sm.needsUpdate = true;
+				} else {
+					const orig = weightColorCache.get(geo);
+					if (orig === null) geo.deleteAttribute("color");
+					else if (orig !== void 0) geo.setAttribute("color", orig);
+					if (sm.vertexColors === true) {
+						sm.vertexColors = false;
+						sm.needsUpdate = true;
+					}
+				}
+			});
+		}
+		/** ── NAMED MESH SLOTS (primitive ②, third slice) ────────────────────
+		* A comparison seat: assets may declare a SLOT (`slot: 'source'` /
+		* `'result'`, body/garment, donor/target, LOD names) — the stage
+		* paints the slot's label above the asset (a billboard sprite, the
+		* stage3d makeLabelSprite). Unslotted assets seat unlabeled, as
+		* ever. Pure derivation, mount-side paint (the WebGL-exempt arm). */
+		function slotLabelOf(asset) {
+			return typeof asset.slot === "string" && asset.slot !== "" ? asset.slot : null;
+		}
 		/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
 		*  row, click to select, per-asset load failures reported upward).
 		*  No assets → the honest empty state; the canvas mounts when the
 		*  first asset lands. */
-		function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label }) {
+		function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label, layers, onLayers, turntable }) {
 			const canvasRef = (0, react.useRef)(null);
 			const sceneRef = (0, react.useRef)(null);
+			const skeletonHelpers = (0, react.useRef)([]);
+			const slotLabels = (0, react.useRef)([]);
 			const [loaded, setLoaded] = (0, react.useState)([]);
 			const [failed, setFailed] = (0, react.useState)(null);
 			const [ready, setReady] = (0, react.useState)(false);
@@ -39596,6 +40267,10 @@ void main() {
 			const key = assets.map((a) => a.id + "@" + a.url).join("|");
 			const errRef = (0, react.useRef)(onAssetError);
 			errRef.current = onAssetError;
+			const groupsRef = (0, react.useRef)([]);
+			groupsRef.current = loaded.map((l) => l.group);
+			const turntableRef = (0, react.useRef)(turntable === true);
+			turntableRef.current = turntable === true;
 			(0, react.useEffect)(() => {
 				setLoaded([]);
 				setFailed(null);
@@ -39651,7 +40326,44 @@ void main() {
 						x += size.x + .4;
 					}
 				}
+				const helpers = [];
+				for (const { group } of loaded) {
+					const helper = skeletonHelperFor(group);
+					if (helper !== null) {
+						helper.visible = false;
+						mounted.scene.add(helper);
+						helpers.push(helper);
+					}
+				}
+				skeletonHelpers.current = helpers;
+				const labels = [];
+				for (const { asset, group } of loaded) {
+					const text = slotLabelOf(asset);
+					if (text === null) continue;
+					const sprite = makeLabelSprite(text, "#1c1f26", .05);
+					const box = new Box3().setFromObject(group);
+					sprite.position.set(group.position.x, box.max.y + .06, 0);
+					mounted.scene.add(sprite);
+					labels.push(sprite);
+				}
+				slotLabels.current = labels;
+				mounted.addTick((dt) => {
+					if (!turntableRef.current) return;
+					turntableTick(groupsRef.current, dt);
+				});
 				return () => {
+					for (const helper of skeletonHelpers.current) {
+						mounted.scene.remove(helper);
+						helper.dispose();
+					}
+					skeletonHelpers.current = [];
+					for (const sprite of slotLabels.current) {
+						mounted.scene.remove(sprite);
+						const mat = sprite.material;
+						mat.map?.dispose();
+						mat.dispose();
+					}
+					slotLabels.current = [];
 					sceneRef.current = null;
 					mounted.dispose();
 				};
@@ -39659,6 +40371,18 @@ void main() {
 			(0, react.useEffect)(() => {
 				for (const { asset, group } of loaded) tint(group, asset.id === selectedId);
 			}, [loaded, selectedId]);
+			const wireframe = layers?.wireframe ?? false;
+			(0, react.useEffect)(() => {
+				for (const { group } of loaded) applyWireframe(group, wireframe);
+			}, [loaded, wireframe]);
+			const skeleton = layers?.skeleton ?? false;
+			(0, react.useEffect)(() => {
+				for (const helper of skeletonHelpers.current) helper.visible = skeleton;
+			}, [loaded, skeleton]);
+			const weights = layers?.weights === true;
+			(0, react.useEffect)(() => {
+				for (const { group } of loaded) applyWeightsHeat(group, weights);
+			}, [loaded, weights]);
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-viewport": label ?? "glb-stage"
@@ -39666,7 +40390,55 @@ void main() {
 				ref: canvasRef,
 				className: preview_module_css_default.stageCanvas,
 				"data-testid": "stage-preview-glb"
-			}));
+			}), onLayers !== void 0 && assets.length > 0 ? (0, react.createElement)("div", {
+				className: preview_module_css_default.layerRow,
+				role: "group",
+				"aria-label": "mesh layers"
+			}, (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.layerChip,
+				"aria-pressed": !wireframe,
+				onClick: () => {
+					onLayers({
+						wireframe: false,
+						skeleton,
+						weights
+					});
+				}
+			}, "Shaded"), (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.layerChip,
+				"aria-pressed": wireframe,
+				onClick: () => {
+					onLayers({
+						wireframe: true,
+						skeleton,
+						weights
+					});
+				}
+			}, "Wireframe"), (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.layerChip,
+				"aria-pressed": skeleton,
+				onClick: () => {
+					onLayers({
+						wireframe,
+						skeleton: !skeleton,
+						weights
+					});
+				}
+			}, "Skeleton"), (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.layerChip,
+				"aria-pressed": weights,
+				onClick: () => {
+					onLayers({
+						wireframe,
+						skeleton,
+						weights: !weights
+					});
+				}
+			}, "Weights")) : null);
 		}
 		//#endregion
 		//#region ../../web/card-base/src/square.tsx
@@ -39700,9 +40472,6 @@ void main() {
 		* automatically. One input component; no card hand-rolls its own
 		* file field ever again.
 		*/
-		/** The media-bar drag contract (the tab's drop surface serves the
-		* same MIME — ONE spelling, imported from the base's law). */
-		const ASSET_DRAG_MIME = "application/tech-noir-asset";
 		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
 		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
 		*  artifact URLs. Every slot-shaped value renders the same way. */
@@ -39715,7 +40484,7 @@ void main() {
 		*  square with the inline GLB thumb (the mini GlbStagePreview), the
 		*  same square grammar as images: never a bespoke mesh picker. */
 		function isMeshUrl(value) {
-			return /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
+			return /^data:model\/gltf-binary[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
 		}
 		/** Read a File/Blob and resolve its data: URL — the ONE read path for
 		*  every slot-shaped attach (the old law, single definition). */
@@ -39731,17 +40500,8 @@ void main() {
 				r.readAsDataURL(file);
 			});
 		}
-		/** Parse the asset MIME off a drop event. null = absent or malformed. */
-		function assetPayload(e) {
-			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME);
-			if (raw === "") return null;
-			try {
-				const p = JSON.parse(raw);
-				return typeof p["url"] === "string" ? p["url"] : null;
-			} catch {
-				return null;
-			}
-		}
+		const DEFAULT_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp";
+		const MESH_SQUARE_ACCEPT = ".glb,.gltf";
 		function InputSquare(props) {
 			const { label, value, metric, disabled } = props;
 			const seat = props.ariaLabel ?? label;
@@ -39751,6 +40511,12 @@ void main() {
 			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
 			const mesh = thumb === null && typeof value === "string" && value !== "" && isMeshUrl(value) ? value : null;
 			const empty = thumb === null && mesh === null;
+			const acceptsDrop = (event) => {
+				if (event.dataTransfer.getData("application/tech-noir-asset") !== "" || event.dataTransfer.files.length > 0) return true;
+				const types = event.dataTransfer.types;
+				if (types === void 0 || types === null) return false;
+				return types.includes("application/tech-noir-asset") || types.includes("Files");
+			};
 			const pick = () => {
 				if (disabled) return;
 				if (props.onPick !== void 0) props.onPick(boxRef.current);
@@ -39761,13 +40527,14 @@ void main() {
 				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
 				role: "button",
 				tabIndex: 0,
+				"data-slot-square": true,
 				"aria-label": (seat || "source") + (seat !== "" ? " source" : ""),
 				onClick: pick,
 				onKeyDown: (e) => {
 					if (e.key === "Enter") pick();
 				},
 				onDragOver: (e) => {
-					if (disabled) return;
+					if (disabled || !acceptsDrop(e)) return;
 					e.preventDefault();
 					setOver(true);
 				},
@@ -39775,16 +40542,16 @@ void main() {
 					setOver(false);
 				},
 				onDrop: (e) => {
-					if (disabled) return;
-					e.preventDefault();
 					setOver(false);
-					const asset = assetPayload(e);
-					if (asset !== null && props.onAsset !== void 0) {
-						props.onAsset(asset);
+					if (disabled || !acceptsDrop(e)) return;
+					e.preventDefault();
+					const asset = parseAssetDrop(e.dataTransfer.getData(ASSET_DRAG_MIME));
+					if (asset.url !== void 0 && props.onAsset !== void 0) {
+						props.onAsset(asset.url);
 						return;
 					}
-					const f = e.dataTransfer.files[0];
-					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
+					const file = e.dataTransfer.files[0];
+					if (file !== void 0 && props.onFile !== void 0) props.onFile(file);
 				}
 			}, thumb !== null ? (0, react.createElement)("img", {
 				className: card_module_css_default.squareThumb,
@@ -39796,7 +40563,12 @@ void main() {
 					url: mesh
 				}],
 				label: "square-mesh"
-			})) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
+			})) : props.emptyIcon === void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }) : (0, react.createElement)("span", { className: card_module_css_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? (0, react.createElement)("span", {
+				className: card_module_css_default.squareActions,
+				onClick: (event) => {
+					event.stopPropagation();
+				}
+			}, props.actions) : null, !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
 				className: card_module_css_default.squareX,
 				type: "button",
 				title: "Detach",
@@ -39805,17 +40577,34 @@ void main() {
 					e.stopPropagation();
 					props.onClear();
 				}
-			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+			}, "✕") : null, props.showFileAction === true && props.onFile !== void 0 && !disabled ? (0, react.createElement)("button", {
+				className: card_module_css_default.squarePick,
+				type: "button",
+				title: `Pick a file for ${label}`,
+				"aria-label": `Pick a file for ${label}`,
+				"data-slot-pick": true,
+				onClick: (event) => {
+					event.stopPropagation();
+					fileRef.current?.click();
+				}
+			}, (0, react.createElement)(Upload, { "aria-hidden": true })) : null), label !== "" ? (0, react.createElement)("span", {
+				className: card_module_css_default.squareLabel,
+				"data-slot-label": true
+			}, label) : null, props.badge === void 0 ? null : (0, react.createElement)("span", {
+				className: card_module_css_default.squareBadge,
+				"data-slot-badge": true
+			}, props.badge), metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
 				ref: fileRef,
 				type: "file",
-				accept: "image/png,image/jpeg,image/webp",
+				accept: props.accept ?? "image/png,image/jpeg,image/webp",
 				className: card_module_css_default.squareFileInput,
+				"data-slot-input": true,
 				"aria-hidden": true,
 				tabIndex: -1,
 				onChange: (e) => {
-					const f = e.target.files?.[0];
-					if (f !== void 0 && f !== null) props.onFile?.(f);
-					fileRef.current.value = "";
+					const file = e.target.files?.[0];
+					if (file !== void 0 && file !== null) props.onFile?.(file);
+					if (fileRef.current !== null) fileRef.current.value = "";
 				}
 			}) : null);
 		}
@@ -39901,7 +40690,7 @@ void main() {
 		*  imperatively at click time — the accept is a property of the
 		*  field being picked, never of the provider instance. */
 		function acceptOfField(f) {
-			return f !== null && f.type === "mesh" ? ".glb,.gltf" : "image/png,image/jpeg,image/webp";
+			return f !== null && f.type === "mesh" ? MESH_SQUARE_ACCEPT : DEFAULT_SQUARE_ACCEPT;
 		}
 		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
 		*  every slot-shaped field of a stage gets the same verbs — file
@@ -40189,6 +40978,34 @@ void main() {
 					metric: typeof value === "string" && value !== "" && !isImageUrl(value) && !isMeshUrl(value) ? value : void 0,
 					...square.verbs
 				});
+			}
+			if (f.type === "select" && f.multi === true && Array.isArray(f.options) && f.options.length > 0) {
+				const rows = f.options.map((o) => typeof o === "string" ? {
+					value: o,
+					label: o
+				} : o);
+				const held = new Set(String(value ?? "").split(",").map((w) => w.trim()).filter((w) => w !== ""));
+				return (0, react.createElement)("div", {
+					className: card_module_css_default.specChips,
+					role: "group",
+					"aria-label": f.label,
+					...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+				}, rows.map((row) => {
+					const on = held.has(row.value);
+					return (0, react.createElement)("button", {
+						type: "button",
+						key: row.value,
+						className: card_module_css_default.specChip + (on ? " " + card_module_css_default.specChipOn : ""),
+						"aria-pressed": on,
+						"data-chip": row.value,
+						onClick: () => {
+							const next = new Set(held);
+							if (on) next.delete(row.value);
+							else next.add(row.value);
+							onEdit(f.name, rows.filter((r) => next.has(r.value)).map((r) => r.value).join(","));
+						}
+					}, titleCaseId(row.label));
+				}));
 			}
 			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
 				className: card_module_css_default.specSelect,
@@ -40544,6 +41361,19 @@ void main() {
 		*        renders kind.fields through the same constructor atoms —
 		*        the fields NEVER render flat on the card form.
 		*/
+		//#endregion
+		//#region ../../web/card-base/src/slots.ts
+		function defineStageViewRegistration(key, view, inject) {
+			return (ctx) => {
+				ctx.slots.inject("cards.stage.view", () => {
+					ctx.slots.register({
+						name: "cards.stage.view",
+						key,
+						...inject === void 0 ? {} : { inject }
+					}, view);
+				});
+			};
+		}
 		//#endregion
 		//#region ../../web/card-base/src/use-resolved.ts
 		/**
@@ -40977,8 +41807,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/shell.module.css.mjs
-		const css$1 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
-		const tagId$1 = "@melite/3d-img-to-mesh/shell.module.css@62658dc6";
+		const css$1 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:0;max-height:none;overflow:visible}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
+		const tagId$1 = "@melite/3d-img-to-mesh/shell.module.css@147bff9d";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
@@ -41250,12 +42080,7 @@ void main() {
 		* module namespace IS the plugin: the loader consumes name/inject/apply). */
 		const name = "imgToMeshStudio";
 		const inject = ["slots"];
-		function apply(ctx) {
-			ctx.slots.inject("cards.stage.view", () => ctx.slots.register({
-				name: "cards.stage.view",
-				key: "img-to-mesh"
-			}, ImgToMeshStudio));
-		}
+		const apply = defineStageViewRegistration("img-to-mesh", ImgToMeshStudio);
 		//#endregion
 		exports.ImgToMeshStudio = ImgToMeshStudio;
 		exports.apply = apply;
@@ -41266,3 +42091,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="dd3c717f0f83bd63f015c7663797d402eebe8d2e";

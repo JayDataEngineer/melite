@@ -39,7 +39,7 @@ const boot = async (mods: string[] = []) => {
       "krea-2": {
         id: "krea-2",
         card: frozen.rows["krea-2"]!.card,
-        defaults: {},
+        defaults: { width: 1024, height: 1024, steps: 8 },
         lane_inputs: {},
         card_knobs: frozen.rows["krea-2"]!.card_knobs ?? [],
         variants: [],
@@ -56,10 +56,10 @@ const boot = async (mods: string[] = []) => {
 const graphText = (g: unknown): string => JSON.stringify(g);
 
 describe("the card-recipe layer is dead (stroke 34)", () => {
-  it("compose is the honest merge — schema defaults stand, no overlay leg", async () => {
+  it("compose is the honest merge — model defaults stand, no overlay leg", async () => {
     const { svc, ctx } = await boot();
     const graph = svc.compose("image-gen", "krea-2", { prompt: "a cat" }, "run-1");
-    assert.ok(graphText(graph).includes('"steps":8'), "the schema default survives — nothing overlays it");
+    assert.ok(graphText(graph).includes('"steps":8'), "the family default survives — nothing overlays it");
     await ctx.fiber.dispose();
   });
 
@@ -68,7 +68,7 @@ describe("the card-recipe layer is dead (stroke 34)", () => {
     // Schemastery passes unknown keys through; compose ignores what
     // no layer consumes — the graph builds on the declared surface
     const graph = svc.compose("image-gen", "krea-2", { prompt: "a cat", recipe: "fast_draft" }, "run-2");
-    assert.ok(graphText(graph).includes('"steps":8'), "no overlay ever fires — steps stay the schema default");
+    assert.ok(graphText(graph).includes('"steps":8'), "no overlay ever fires — steps stay the family default");
     await ctx.fiber.dispose();
   });
 

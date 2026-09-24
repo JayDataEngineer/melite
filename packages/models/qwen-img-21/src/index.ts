@@ -29,6 +29,8 @@ export const DECL: ModelDecl = {
   "description": "Qwen-Image-2.1 — the unified 2.1 base (text-to-image and reference-cached image edit ride the SAME checkpoint; the edit lane wraps the unet in QwenImage21Cache and conditions on reference images through TextEncodeQwenImage21's own vision path — no separate edit weights). Boards both the image-gen card (t2i) and the image-edit card (cached-reference edit).",
   "engine": "comfyui",
   "defaults": {
+    "width": 1024,
+    "height": 1024,
     "steps": 25,
     "sampler": "euler",
     "scheduler": "simple",

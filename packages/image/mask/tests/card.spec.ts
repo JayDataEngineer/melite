@@ -10,6 +10,7 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { IMPACT_DETECTOR_PROVISIONS } from "@melite/comfyui-card-kit/impact";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
@@ -257,6 +258,7 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
   it("the card declares its weights (declared, then auto provisioned — the operator's 2026-09-19 order; the SAM3 checkpoint joined 2026-10-08, the red-box hunt: the pin had no weight for weeks and the engine truncated the mask arm in silence; the segm/face/hand detectors joined 2026-10-09, the Impact trim: person/face/hand replace yolo11m's 80 COCO)", () => {
     const rows = def.provisions ?? [];
     assert.equal(rows.length, 5, "the card's five weight files");
+    assert.deepEqual(rows.slice(2), IMPACT_DETECTOR_PROVISIONS, "the Impact rows are the card-kit catalog verbatim");
     const sam3 = rows.find((r) => r.name === "sam3.1_multiplex_fp16.safetensors")!;
     assert.ok(sam3, "the sam3 checkpoint rides (the red-box hunt's missing weight)");
     assert.equal(sam3.folder, "checkpoints", "CheckpointLoaderSimple reads models/checkpoints/");
@@ -275,7 +277,7 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.ok(face, "the face detector rides (the pack's own test-workflow model)");
     assert.equal(face.folder, "ultralytics/bbox", "the subpack provider reads models/ultralytics/bbox/");
     assert.match(face.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted from disk)");
-    const hand = rows.find((r) => r.name === "hand_yolov8n.pt")!;
+    const hand = rows.find((r) => r.name === "hand_yolov8s.pt")!;
     assert.ok(hand, "the hand detector rides");
     assert.equal(hand.folder, "ultralytics/bbox", "the subpack provider reads models/ultralytics/bbox/");
     assert.match(hand.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted from disk)");
@@ -293,7 +295,7 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.deepEqual(names({ sam2: [{ labels: "person" }] }),
       ["person_yolov8m-seg.pt", "sam2.1_hiera_large.pt"], "a person-only run never names the face/hand detectors");
     assert.deepEqual(names({ sam2: [{ labels: "face" }, { labels: "hand" }] }),
-      ["face_yolov8m.pt", "hand_yolov8n.pt", "sam2.1_hiera_large.pt"], "face/hand entries name their own bbox detectors, never the segm one");
+      ["face_yolov8m.pt", "hand_yolov8s.pt", "sam2.1_hiera_large.pt"], "face/hand entries name their own bbox detectors, never the segm one");
     assert.deepEqual(names({ sam2: [{ labels: "person", figures: "1,2" }] }),
       ["person_yolov8m-seg.pt", "sam2.1_hiera_large.pt"], "figures add no weights (they pick from the primary's own SEGS)");
   });
@@ -473,8 +475,8 @@ describe("the mask compose gate (the bag is the recipe)", () => {
     const g2 = new GraphBuilder();
     def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "hand" }] }, DUMMY, g2, "run_hand");
     const providers2 = Object.values(g2.toJSON()).filter((n: Row) => n["class_type"] === "UltralyticsDetectorProvider") as Array<{ inputs: Record<string, unknown> }>;
-    assert.ok(providers2.some((n) => String(n.inputs["model_name"]).includes("hand_yolov8n")),
-      "the HAND model is wired (bbox/hand_yolov8n.pt)");
+    assert.ok(providers2.some((n) => String(n.inputs["model_name"]).includes("hand_yolov8s")),
+      "the HAND model is wired (bbox/hand_yolov8s.pt)");
   });
 
   it("THE 512-HINT STRIP (the red-box hunt's third bug): the runtime finalize kills the autofilled default-equal bboxes — a latent quarter-blind hazard, NOT the observed empty mask (that was the 0.93 threshold: 0.93 → 0.00% with and without the hint, 0.5 → 6.5%)", () => {

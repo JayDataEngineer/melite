@@ -54,6 +54,46 @@ describe("the input-prep compose gate", () => {
     assert.ok(Object.values(graph).some((n) => n.class_type === "ImageCrop"), "the crop row survives the gate");
   });
 
+  it("the transform controls are declared and normalize into the image lane", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({
+      source: "upload.png",
+      crop_x: 4,
+      crop_y: 6,
+      crop_width: 64,
+      crop_height: 48,
+      scale_width: 32,
+      scale_height: 24,
+      scale_method: "nearest-exact",
+    }), DUMMY, g, "run_transform");
+    const graph = g.toJSON();
+    assert.ok(Object.values(graph).some((node) => node.class_type === "ImageCrop"));
+    const scale = Object.values(graph).find((node) => node.class_type === "ImageScale");
+    assert.equal(scale?.inputs.width, 32);
+    assert.equal(scale?.inputs.height, 24);
+    assert.equal(scale?.inputs.upscale_method, "nearest-exact");
+  });
+
+  it("partial crop and scale declarations refuse instead of silently defaulting", () => {
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", crop_x: 4 }), DUMMY, new GraphBuilder(), "bad_crop"),
+      /crop needs all four/,
+    );
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", scale_width: 32 }), DUMMY, new GraphBuilder(), "bad_scale"),
+      /scale needs positive/,
+    );
+  });
+
+  it("audio selects the audio output producer instead of an image save", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ source: "speech.wav", media_type: "audio" }), DUMMY, g, "run_audio");
+    const graph = g.toJSON();
+    assert.ok(Object.values(graph).some((node) => node.class_type === "SaveAudio"));
+    assert.ok(!Object.values(graph).some((node) => node.class_type === "SaveImage"));
+    assert.deepEqual(def.flowKinds.outputs, { image: "image", audio: "audio" });
+  });
+
   it("the happy lane stages the source for the chain", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ source: "upload.png" }), DUMMY, g, "run_1");

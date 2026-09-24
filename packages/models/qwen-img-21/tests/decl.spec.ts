@@ -31,6 +31,8 @@ describe("the qwen-img-21 model plugin (the t2i lane of the 2.1 base)", () => {
     assert.equal((DECL.lane_inputs ?? {} as Record<string, unknown>).unet, "qwen_image_2.1_int8_convrot.safetensors");
     assert.equal((DECL.lane_inputs ?? {} as Record<string, unknown>).vae, "qwen_image_2.1_vae_bf16.safetensors");
     // the official t2i template's sampler truth: 25 steps, cfg 1, euler/simple
+    assert.equal((DECL.defaults ?? {} as Record<string, unknown>).width, 1024);
+    assert.equal((DECL.defaults ?? {} as Record<string, unknown>).height, 1024);
     assert.equal((DECL.defaults ?? {} as Record<string, unknown>).steps, 25);
     assert.equal((DECL.defaults ?? {} as Record<string, unknown>).cfg, 1);
     assert.equal((DECL.defaults ?? {} as Record<string, unknown>).sampler, "euler");
