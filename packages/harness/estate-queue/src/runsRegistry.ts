@@ -427,7 +427,10 @@ export class RunsRuntimeService extends Service {
         // The {model:} card door's engine (the compose plane is
         // ComfyUI's — the card arm rides it by construction).
         engine: "comfyui",
-        params: { workflow: graph as unknown as EngineJson },
+        params: {
+          workflow: graph as unknown as EngineJson,
+          output_nodes: composed.outputNodes as unknown as EngineJson,
+        },
         outputs: composed.outputs,
         expected: {},
         outputNodes: composed.outputNodes,

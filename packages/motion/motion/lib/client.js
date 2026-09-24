@@ -48,6 +48,296 @@ window.__ModuleLoader__.load({
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
+		//#region ../../web-kit/formats/src/readFile.ts
+		/**
+		* readFile — THE one read path for every slot-shaped attach, ported
+		* native from the retired kit's SlotSquare (2026-09-12, the kit
+		* retirement). A plain FileReader promise — no UI dependency owns a
+		* file read.
+		*/
+		/** Read a File / Blob and resolve its data: URL. */
+		function readAsDataURL$1(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
+				reader.readAsDataURL(file);
+			});
+		}
+		var init_readFile = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/api.ts
+		/** The named escape for non-table URLs. Every use is deliberate and
+		* greppable. */
+		function externalUrl(u) {
+			return u;
+		}
+		function shouldRetryStatus(status, method) {
+			return GATEWAY_CODES.has(status) || SAFE_METHODS.has(method) && status >= 500 && status < 600;
+		}
+		function getBackendState() {
+			return state;
+		}
+		/** Subscribe to backend liveness changes. Returns an unsubscribe fn. */
+		function onBackendState(cb) {
+			listeners$1.add(cb);
+			return () => {
+				listeners$1.delete(cb);
+			};
+		}
+		function setState(next) {
+			if (next === state) return;
+			state = next;
+			for (const cb of listeners$1) try {
+				cb(next);
+			} catch {}
+		}
+		/** True if `input` targets our own backend (same-origin or root-relative). */
+		function isBackendUrl(input) {
+			if (input.startsWith("/")) return true;
+			try {
+				return new URL(input, window.location.origin).origin === window.location.origin;
+			} catch {
+				return false;
+			}
+		}
+		function sleep$1(ms, signal) {
+			return new Promise((resolve, reject) => {
+				const t = setTimeout(resolve, ms);
+				signal?.addEventListener("abort", () => {
+					clearTimeout(t);
+					reject(new DOMException("Aborted", "AbortError"));
+				}, { once: true });
+			});
+		}
+		function backoffMs(attempt) {
+			const exp = Math.min(CAP_MS, BASE_MS * 2 ** attempt);
+			return Math.round(exp * (.5 + Math.random() * .5));
+		}
+		/**
+		* Drop-in replacement for `fetch()` with retry, backoff, GET dedup, and a
+		* global liveness signal. Throws only on persistent network failure (after
+		* MAX_RETRIES) or caller AbortError. Returns the Response for any HTTP
+		* status (including 4xx/5xx) so existing `if (!res.ok)` checks keep working.
+		*/
+		async function apiFetch(input, init = {}) {
+			const method = (init.method ?? "GET").toUpperCase();
+			const backend = isBackendUrl(input);
+			const dedupKey = method === "GET" && backend ? input : null;
+			if (dedupKey && inflight.has(dedupKey)) return inflight.get(dedupKey).then((r) => {
+				if (r && typeof r.clone === "function") return r.clone();
+				return r;
+			});
+			const run = async () => {
+				const deadline = Date.now() + TOTAL_BUDGET_MS;
+				let lastErr = null;
+				for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+					if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+					try {
+						const ctrl = new AbortController();
+						const callerSignal = init.signal;
+						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
+						const res = await fetch(input, {
+							...init,
+							signal: ctrl.signal
+						});
+						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
+							if (backend) setState("degraded");
+							await sleep$1(backoffMs(attempt), callerSignal);
+							continue;
+						}
+						if (backend) {
+							consecutiveFail = 0;
+							setState("online");
+						}
+						return res;
+					} catch (err) {
+						if (err instanceof DOMException && err.name === "AbortError") throw err;
+						lastErr = err;
+						if (backend) {
+							consecutiveFail++;
+							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
+						}
+						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep$1(backoffMs(attempt));
+					}
+				}
+				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
+			};
+			const p = run();
+			if (dedupKey) {
+				inflight.set(dedupKey, p);
+				p.then(() => {
+					inflight.delete(dedupKey);
+				}, () => {
+					inflight.delete(dedupKey);
+				});
+			}
+			return p;
+		}
+		/**
+		* Convenience for JSON endpoints. Throws an Error on non-2xx (message
+		* includes status + body excerpt) so callers can use try/catch directly.
+		*/
+		async function apiJson(input, init) {
+			const res = await apiFetch(input, init);
+			if (!res.ok) {
+				let body = "";
+				try {
+					body = await res.text();
+				} catch (readErr) {
+					throw new Error(`${input}: ${res.status} ${res.statusText} (body read failed: ${readErr instanceof Error ? readErr.message : String(readErr)})`);
+				}
+				throw new Error(`${input}: ${res.status} ${res.statusText} ${body.slice(0, 200)}`);
+			}
+			return res.json();
+		}
+		/** Fetch a same-origin artifact URL and re-encode it as a data URL
+		*  (survived the unicananvas client purge 2026-08-21 — the ONE live
+		*  export of that dead module; generic wire utility, so it lives with
+		*  the transport). */
+		async function urlToDataUrl(url, signal) {
+			const res = await fetch(url, { signal });
+			if (!res.ok) throw new Error(`Canvas artifact fetch failed: HTTP ${res.status} for ${url.slice(0, 200)}`);
+			const blob = await res.blob();
+			try {
+				return await readAsDataURL$1(blob);
+			} catch {
+				throw new Error(`Failed to read ${url.slice(0, 200)} as data URL`);
+			}
+		}
+		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners$1, inflight;
+		var init_api = __esmMin((() => {
+			init_readFile();
+			MAX_RETRIES = 4;
+			BASE_MS = 400;
+			CAP_MS = 4e3;
+			OFFLINE_THRESHOLD = 3;
+			TOTAL_BUDGET_MS = 15e3;
+			SAFE_METHODS = /* @__PURE__ */ new Set(["GET", "HEAD"]);
+			GATEWAY_CODES = /* @__PURE__ */ new Set([
+				502,
+				503,
+				504
+			]);
+			state = "online";
+			consecutiveFail = 0;
+			listeners$1 = /* @__PURE__ */ new Set();
+			inflight = /* @__PURE__ */ new Map();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/catalogContract.ts
+		function validateCatalogContract(catalog) {
+			const violations = [];
+			if (!isObj$1(catalog)) return {
+				valid: false,
+				violations: [{
+					kind: "catalog",
+					message: "Catalog is not an object — this is an error body, not a contract."
+				}]
+			};
+			const families = catalog.families;
+			if (!isObj$1(families)) violations.push({
+				kind: "catalog",
+				message: "Catalog has no `families` record — no family can be located."
+			});
+			const models = catalog.models;
+			if (!isObj$1(models)) violations.push({
+				kind: "catalog",
+				message: "Catalog has no `models` record — no model can be located."
+			});
+			const capabilities = catalog.capabilities;
+			if (capabilities !== void 0 && !isObj$1(capabilities)) violations.push({
+				kind: "catalog",
+				message: "`capabilities` is not a record keyed by id — capability routing is dead."
+			});
+			if (families === void 0 || models === void 0) return {
+				valid: false,
+				violations
+			};
+			if (isObj$1(families)) for (const [id, entry] of Object.entries(families)) {
+				if (!isObj$1(entry)) {
+					violations.push({
+						kind: id,
+						message: `Family ${id} is not an object.`
+					});
+					continue;
+				}
+				if (!isNonEmptyString(entry.label)) violations.push({
+					kind: id,
+					message: `Family ${id} declares no "label" — it would render as an empty picker entry.`
+				});
+				const modifiers = entry.modifiers;
+				if (modifiers !== void 0 && modifiers !== null && !Array.isArray(modifiers)) violations.push({
+					kind: id,
+					message: `Family ${id} declares "modifiers" but it is not an array — modifier capability is unreadable.`
+				});
+				else if (Array.isArray(modifiers)) for (const raw of modifiers) {
+					if (!isObj$1(raw) || typeof raw.kind !== "string") continue;
+					if (raw.kind !== "controlnet" && raw.kind !== "lora") continue;
+					const options = Array.isArray(raw.options) ? raw.options : [];
+					if ((raw.cardinality ?? "list") === "list" && options.length === 0 && !raw.upload_dir) violations.push({
+						kind: id,
+						message: `Family ${id} modifier kind "${raw.kind}" carries ZERO options and no upload_dir — the dropdown would render empty (phantom capability).`
+					});
+				}
+			}
+			if (isObj$1(models)) for (const [id, entry] of Object.entries(models)) {
+				if (!isObj$1(entry)) {
+					violations.push({
+						kind: id,
+						message: `Model ${id} is not an object.`
+					});
+					continue;
+				}
+				const missing = [];
+				if (!isNonEmptyString(entry.family)) missing.push("family");
+				if (!isNonEmptyString(entry.form)) missing.push("form");
+				if (!isNonEmptyString(entry.label)) missing.push("label");
+				if (missing.length > 0) violations.push({
+					kind: id,
+					message: `Model ${id} is missing required key(s) ${missing.join(", ")} — it cannot route or render.`
+				});
+			}
+			if (isObj$1(capabilities)) for (const [id, entry] of Object.entries(capabilities)) {
+				if (!isObj$1(entry)) {
+					violations.push({
+						kind: id,
+						message: `Capability ${id} is not an object.`
+					});
+					continue;
+				}
+				const missing = [];
+				if (!isNonEmptyString(entry.label)) missing.push("label");
+				const declaredFam = entry.default_family;
+				if (declaredFam !== void 0 && !isNonEmptyString(declaredFam)) missing.push("default_family (present but not a string)");
+				const resolved = entry.resolved;
+				if (!(isObj$1(resolved) && isNonEmptyString(resolved.family) && isNonEmptyString(resolved.model)) && !isNonEmptyString(declaredFam)) missing.push("default_family or resolved route");
+				if (!Array.isArray(entry.families) || entry.families.length === 0) missing.push("families");
+				else if (entry.families.some((f) => !isNonEmptyString(f))) missing.push("families (non-string entries)");
+				if (missing.length > 0) violations.push({
+					kind: id,
+					message: `Capability ${id} is missing required key(s) ${missing.join(", ")} — it cannot route.`
+				});
+			}
+			return {
+				valid: violations.length === 0,
+				violations
+			};
+		}
+		var CatalogContractError, isObj$1, isNonEmptyString;
+		var init_catalogContract = __esmMin((() => {
+			CatalogContractError = class extends Error {
+				violations;
+				constructor(violations) {
+					super(`Catalog contract violation (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
+					this.name = "CatalogContractError";
+					this.violations = violations;
+				}
+			};
+			isObj$1 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
+			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
+		}));
+		//#endregion
 		//#region ../../web/card-base/src/toastStore.ts
 		/**
 		* THE ONE TOAST STORE (node-safe half of the one toast system,
@@ -93,12 +383,12 @@ window.__ModuleLoader__.load({
 		* Per-seam subpath: `@melite/card-base/toast-store`.
 		*/
 		function emit() {
-			listeners$1.forEach((l) => l());
+			listeners.forEach((l) => l());
 		}
 		function subscribe(listener) {
-			listeners$1.add(listener);
+			listeners.add(listener);
 			return () => {
-				listeners$1.delete(listener);
+				listeners.delete(listener);
 			};
 		}
 		function getSnapshot() {
@@ -135,11 +425,11 @@ window.__ModuleLoader__.load({
 			if (patch.toasts !== void 0) entries = patch.toasts;
 			emit();
 		}
-		var nextId, entries, listeners$1, liveAddToast, useToastStore;
+		var nextId, entries, listeners, liveAddToast, useToastStore;
 		var init_toastStore = __esmMin((() => {
 			nextId = 1;
 			entries = [];
-			listeners$1 = /* @__PURE__ */ new Set();
+			listeners = /* @__PURE__ */ new Set();
 			liveAddToast = addToast;
 			useToastStore = Object.assign(function useToastStore(selector) {
 				const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
@@ -155,1693 +445,3475 @@ window.__ModuleLoader__.load({
 			});
 		}));
 		//#endregion
-		//#region ../../web/card-base/src/toast.tsx
-		/**
-		* ToastViewport — THE RENDERER FACE of the one toast system
-		* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
-		* atom); this file re-exports it so UI users keep the single
-		* `@melite/card-base/toast` import — and mounts the viewport.
-		*
-		* THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
-		* studio shell, the cards console — and the document still renders
-		* toasts exactly ONCE. The first live viewport owns rendering;
-		* every other mounted viewport renders nothing; ownership
-		* re-broadcasts when owners unmount. No studio wires it, no studio
-		* can forget it, no seat can duplicate it.
-		*
-		* Per-seam subpath: `@melite/card-base/toast`.
-		*/
-		init_toastStore();
-		init_toastStore();
-		const liveViewportIds = /* @__PURE__ */ new Set();
-		let viewportEpoch = 0;
-		const viewportListeners = /* @__PURE__ */ new Set();
-		function emitViewportChange() {
-			viewportEpoch++;
-			viewportListeners.forEach((l) => l());
+		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
+			activeVariantForRoute: () => activeVariantForRoute,
+			axisCellExists: () => axisCellExists,
+			canvasDefaultModel: () => canvasDefaultModel,
+			composeVariantRoute: () => composeVariantRoute,
+			controlnetTypesOf: () => controlnetTypesOf,
+			dropdownModels: () => dropdownModels,
+			ensureCatalog: () => ensureCatalog,
+			familiesForForm: () => familiesForForm,
+			familyAccepts: () => familyAccepts,
+			familyCardSummary: () => familyCardSummary,
+			familyConditioning: () => familyConditioning,
+			familyGenre: () => familyGenre,
+			familyHasVariantAxis: () => familyHasVariantAxis,
+			familyLabel: () => familyLabel,
+			familyOf: () => familyOf,
+			familyOptionalOutputs: () => familyOptionalOutputs,
+			familyPrimaryRoute: () => familyPrimaryRoute,
+			familyTransformMatrix: () => familyTransformMatrix,
+			formOf: () => formOf,
+			getCachedCatalog: () => getCachedCatalog,
+			hiddenFromDropdown: () => hiddenFromDropdown,
+			isCatalogLoaded: () => isCatalogLoaded,
+			loadCatalog: () => loadCatalog,
+			modelDescription: () => modelDescription,
+			modelLabel: () => modelLabel,
+			narrowGenre: () => narrowGenre,
+			onCatalogReady: () => onCatalogReady,
+			presetsForRoute: () => presetsForRoute,
+			primeCatalog: () => primeCatalog,
+			promptGuide: () => promptGuide,
+			routeCoordinates: () => routeCoordinates,
+			studioOf: () => studioOf,
+			variantLabel: () => variantLabel,
+			variantSiblings: () => variantSiblings,
+			variantsForRoute: () => variantsForRoute
+		});
+		/** Narrow the wire's plain string genre (string | null — the backend
+		* Literal does not survive the wire as a type) onto the view union.
+		* Out-of-vocabulary values return undefined (callers fall back) — never a
+		* silent cast: an unknown genre must NOT masquerade as a known one. */
+		function narrowGenre(g) {
+			return CARD_GENRES.find((genre) => genre === g);
 		}
-		function subscribeViewport(l) {
-			viewportListeners.add(l);
+		/** CN type keys a family declares — derived from its ``modifiers:`` block
+		* (kind=controlnet options; the ONLY source of truth, Phase A finalé).
+		* ServicePicker advertises CN support per tile from this — the "weird
+		* reason" most models show no CN subcards: only families that declare a
+		* controlnet kind have CN support (DiT models without compatible CN
+		* trainings correctly declare nothing). */
+		function controlnetTypesOf(family) {
+			return ((family?.modifiers ?? []).find((m) => m.kind === "controlnet")?.options ?? []).map((o) => ({
+				type: o.value,
+				label: o.label
+			}));
+		}
+		function _notify() {
+			for (const fn of _listeners$3) try {
+				fn();
+			} catch (e) {
+				console.warn("[modelCatalog] listener error:", e);
+			}
+		}
+		/** Subscribe to catalog readiness. Called when _cache transitions from
+		* null → populated. Returns an unsubscribe fn. */
+		function onCatalogReady(fn) {
+			_listeners$3.add(fn);
 			return () => {
-				viewportListeners.delete(l);
+				_listeners$3.delete(fn);
 			};
 		}
-		function getViewportEpoch() {
-			return viewportEpoch;
+		/** True after the catalog has been successfully loaded at least once. */
+		function isCatalogLoaded() {
+			return _loaded;
 		}
-		let nextViewportId = 1;
-		/** Mount anywhere the system needs a renderer — the studio shell,
-		*  the cards console, any seat. The claim law guarantees exactly one
-		*  live renderer per document: the first-mounted viewport renders,
-		*  others render nothing until the owner unmounts. Renders the live
-		*  entries through the DSH Toast atom (body-portaled banner, owner
-		*  unmounts onDone). */
-		function ToastViewport() {
-			const idRef = (0, react.useRef)(nextViewportId++);
-			(0, react.useEffect)(() => {
-				const id = idRef.current;
-				liveViewportIds.add(id);
-				emitViewportChange();
-				return () => {
-					liveViewportIds.delete(id);
-					emitViewportChange();
-				};
-			}, []);
-			(0, react.useSyncExternalStore)(subscribeViewport, getViewportEpoch, getViewportEpoch);
-			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
-			if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: toasts.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {
-				text: t.message,
-				holdMs: t.type === "error" ? 15e3 : 5e3,
-				onDone: () => removeToast(t.id)
-			}, t.id)) });
+		/** Fetch the model catalog. THROWS on non-2xx (no silent empty `{}`).
+		* The caller MUST surface the error. Returning a fake empty catalog here
+		* is what hid every "model dropdown is empty" bug — the user saw nothing
+		* and the console warning was invisible. Loud failure is honest. */
+		/** The ONE ingest gate (2026-08-11): validate BEFORE caching.
+		* A catalog that violates the contract is a BACKEND bug — reported to the
+		* contract store, NEVER cached, and the caller gets a
+		* CatalogContractError (ensureCatalog will not auto-retry it). */
+		function _ingest(data) {
+			const { valid, violations } = validateCatalogContract(data);
+			if (!valid) throw new CatalogContractError(violations);
+			useCatalogContractStore.getState().reportOk();
+			const catalog = data;
+			_cache$3 = catalog;
+			_cacheTime = Date.now();
+			_loaded = true;
+			_notify();
+			return catalog;
 		}
-		//#endregion
-		//#region ../../web/card-base/src/spec.ts
-		/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
-		*  (krea-2, z-image, euler, comfyui…) render titled — never raw.
-		*  FACES ONLY: option values, param keys, and wire bodies keep the
-		*  verbatim id (the 1:1 law — the eye gets prose, the door gets the
-		*  id). First letter of each separator-bound word upper, the rest
-		*  untouched (INT8 stays INT8); idempotent on titled prose. */
-		function titleCaseId(id) {
-			return id.split(/[-_\s]+/).filter((w) => w !== "").map((w) => w.slice(0, 1).toUpperCase() + w.slice(1)).join(" ");
+		async function loadCatalog(opts) {
+			if (_cache$3 && !opts?.force) {
+				if (Date.now() - _cacheTime > _CACHE_TTL_MS && !_inflight$2) _inflight$2 = (async () => {
+					try {
+						_ingest(await apiJson("/v1/model-catalog"));
+					} catch (e) {
+						if (e instanceof CatalogContractError) useCatalogContractStore.getState().reportViolation(e.violations);
+						else useCatalogContractStore.getState().reportError(e instanceof Error ? e.message : String(e));
+					}
+					return _cache$3;
+				})().finally(() => {
+					_inflight$2 = null;
+				});
+				return _cache$3;
+			}
+			if (_inflight$2) return _inflight$2;
+			_inflight$2 = (async () => {
+				try {
+					return _ingest(await apiJson("/v1/model-catalog"));
+				} catch (e) {
+					if (e instanceof CatalogContractError) useCatalogContractStore.getState().reportViolation(e.violations);
+					else useCatalogContractStore.getState().reportError(e instanceof Error ? e.message : String(e));
+					throw e;
+				}
+			})().finally(() => {
+				_inflight$2 = null;
+			});
+			return _inflight$2;
 		}
-		/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
-		*  resolveValue's first layer; the base never invents one). */
-		function specDefaults(fields) {
+		/** Fire-and-forget background load with auto-retry. If the first attempt
+		* fails (gateway reloading, network blip), schedules a retry after 3s.
+		* Keeps trying until the catalog loads, then notifies subscribers.
+		* Safe to call multiple times — collapses into a single inflight request. */
+		function ensureCatalog() {
+			if (_loaded) return;
+			if (_inflight$2) return;
+			loadCatalog().then(() => {
+				if (_bgRetryTimer) {
+					clearTimeout(_bgRetryTimer);
+					_bgRetryTimer = null;
+				}
+			}).catch((e) => {
+				if (e instanceof CatalogContractError) {
+					console.error("[modelCatalog] catalog contract violation — not auto-retrying:", e.message);
+					return;
+				}
+				console.warn("[modelCatalog] load failed, will retry in 3s:", e);
+				if (_bgRetryTimer) clearTimeout(_bgRetryTimer);
+				_bgRetryTimer = setTimeout(() => {
+					_bgRetryTimer = null;
+					ensureCatalog();
+				}, 3e3);
+			});
+		}
+		function getCachedCatalog() {
+			return _cache$3;
+		}
+		/** Seed the cache with pre-fetched data (test utility — production code uses
+		* loadCatalog/ensureCatalog which fetch from the endpoint). Lets tests inject
+		* a fake catalog without going to the network. */
+		function primeCatalog(data) {
+			_cache$3 = data;
+			_loaded = true;
+			_notify();
+		}
+		/**
+		* For route keys that are NOT top-level catalog entries (e.g. a quant-tier
+		* sibling that only appears as a variant route on its parent), find the
+		* parent model that owns the route via its ``variants:`` block.
+		*/
+		function parentModelForRoute(routeKey, cat) {
+			for (const [key, spec] of Object.entries(cat.models)) if ((spec.variants ?? []).some((v) => v.route === routeKey)) return key;
+		}
+		function familyOf(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!cat?.models) return void 0;
+			const own = cat.models[routeKey]?.family;
+			if (own) return own;
+			const parent = parentModelForRoute(routeKey, cat);
+			return parent ? cat.models[parent].family : void 0;
+		}
+		function studioOf(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.studio ?? void 0;
+		}
+		/**
+		* The catalog-declared FORM for a route key (the model's ``form`` — the
+		* same id _FORM_CONFIGS keys by on the backend). Resolves variants to
+		* their parent model like familyOf. The tag routes the model's
+		* editor surface (the FORM LAW: a model without a form cannot route
+		* or render). The 2026-09-18 retirement: the retired per-form alias
+		* tables are gone — forms no longer reshape slot keys.
+		*/
+		function formOf(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!cat?.models) return void 0;
+			const own = cat.models[routeKey]?.form;
+			if (own) return own;
+			const parent = parentModelForRoute(routeKey, cat);
+			return parent ? cat.models[parent].form : void 0;
+		}
+		function familyLabel(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return routeKey;
+			return cat.families?.[fam]?.label ?? routeKey;
+		}
+		/**
+		* The family-declared media genre for a route key. Resolves model routes
+		* AND raw family ids (``detect``) — the catalog passthrough
+		* emits ``genre:`` verbatim. Non-catalog services (trellis, kimodo, yaml
+		* brick families) return undefined → callers fall back to their generic
+		* badge. The schema-driven replacement for engine-name substring
+		* classifiers.
+		*/
+		function familyGenre(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			return narrowGenre((fam ? cat.families?.[fam]?.genre : void 0) ?? cat.families?.[routeKey]?.genre);
+		}
+		/**
+		* The source-media types a family declares it ingests (FamilyEntry.accepts,
+		* a closed literal on the backend). Returns the declared list, or
+		* [] when the family declares none / is unknown → the canvas drop handler
+		* treats [] as "not a drop target" (no card spawned, no hard-fail on the
+		* MIME itself — there simply is no input family to receive the drop). The
+		* gate that replaces a free-coded isImageFile prefix check. (2026-08-09)
+		*/
+		function familyAccepts(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			return cat.families?.[fam ?? routeKey]?.accepts ?? [];
+		}
+		/**
+		* The media-type→param applicability matrix for a family's gated source
+		* params: {paramName → [media types it applies to]}. Returns {} when the
+		* family declares no transforms / is unknown. The InputCardEditor gates
+		* field renders on this (no trim control for an image — no time axis) and
+		* applySource strips params whose declared types no longer include the new
+		* source's type — both driven ENTIRELY by this declaration, no hardcoded
+		* image/video/audio branches. ONE source (input_prep.yaml transforms:),
+		* TWO consumers (this editor + backend _validate_params_for_media), zero
+		* drift. (2026-08-09)
+		*/
+		function familyTransformMatrix(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			const transforms = cat.families?.[fam ?? routeKey]?.transforms;
+			if (!transforms) return {};
 			const out = {};
-			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+			for (const t of transforms) out[t.name] = t.applies_to;
 			return out;
 		}
-		/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
-		*
-		* One pure projection: serialized schemastery schema -> derived
-		* SpecFields. Every presentation fact lives in the nodes' meta (the
-		* declaration IS the UI contract — the Field.emit law); this
-		* walk reads, never invents. THE ORDER: dict insertion order with
-		* the declared `order` hint as tie-break (a stable sort — equal
-		* keys keep insertion order).
-		*
-		* Families scoping: a node whose extra.families names families the
-		* spec does NOT serve skips (the absorption is family-scoped —
-		* the card serves only the boarded plane).
-		*
-		* Nullable pairs: a union of [X, const(null)] wires as X — the
-		* OUTER meta wins (schemastery's nullable() shape, probed live on
-		* image-gen 2026-09-14).
-		*
-		* Presentation types (the audit's client-side derivation — a view
-		* choice over typed meta, never a server row): extra.wtype wins
-		* (declared presentation); union-of-consts -> select; number ->
-		* step 1 -> seed, any other step -> slider, no step -> slider;
-		* string -> text; boolean -> boolean; array -> loras.
-		*
-		* Option labels: a union's const members carry their own
-		* meta.description (the emitter's label law) — the declared
-		* extra.options override when present. */
-		function fieldsOfEnvelope(env, family) {
-			if (env == null) return [];
-			const root = env.refs[env.uid];
-			return projectDict(env, root?.dict ?? {}, family);
+		/**
+		* The family's declared video conditioning slots ([first_frame,
+		* last_frame] for ltx) —
+		* schema-driven input-wiring labels (no engine-name classifiers).
+		*/
+		/**
+		* The compact card's declared size line (FamilyEntry.card_summary, a
+		* validated block on the backend). Returns {width_param, height_param}
+		* for generation families (rendered "WxH") OR {size_param, size_suffix} for
+		* the Enhance / upscale families (rendered as a single value), or null when
+		* the family declares no size line / is unknown. The CardTile reads whichever
+		* is declared — no free-coded per-family dimension logic in the view.
+		* (2026-08-09; size_param added 2026-08-10.)
+		*/
+		function familyCardSummary(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			return cat.families?.[fam ?? routeKey]?.card_summary ?? null;
 		}
-		/** The dict projector (the walker's body — one meta path for the
-		*  root, the hybrid element, and the pack-level rows). */
-		function projectDict(env, dict, family) {
-			const out = [];
-			for (const [name, id] of Object.entries(dict)) {
-				let node = env.refs[id];
-				if (node === void 0) continue;
-				if (node.type === "union" && Array.isArray(node.list) && node.list.length === 2) {
-					const a = env.refs[node.list[0]];
-					const b = env.refs[node.list[1]];
-					const nullConst = (r) => r?.type === "const" && r.value === null;
-					if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
-				}
-				const meta = node.meta ?? {};
-				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
-				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
-				if (families !== null && family !== void 0 && !families.includes(family)) continue;
-				let options;
-				if (node.type === "union" && Array.isArray(node.list)) {
-					const opts = [];
-					for (const mid of node.list) {
-						const m = env.refs[mid];
-						if (m?.type !== "const") continue;
-						const v = m.value;
-						if (v === null || v === void 0) continue;
-						const label = typeof m.meta?.["description"] === "string" ? m.meta["description"] : String(v);
-						if (label === String(v)) opts.push(String(v));
-						else opts.push({
-							value: String(v),
-							label
-						});
-					}
-					if (opts.length > 0) options = opts;
-				}
-				if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
-					value: String(o["value"]),
-					label: String(o["label"])
-				} : String(o));
-				const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
-				let type;
-				if (hint !== "") type = hint;
-				else if (options !== void 0 && node.type === "union") type = "select";
-				else if (node.type === "number") type = String(meta["step"] ?? "") === "1" ? "seed" : "slider";
-				else if (node.type === "string") type = "text";
-				else if (node.type === "boolean") type = "boolean";
-				else if (node.type === "array") type = "loras";
-				else type = node.type ?? "string";
-				const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
-				const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
-				out.push({
-					name,
-					label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
-					order: typeof extra["order"] === "number" ? extra["order"] : void 0,
-					type,
-					default: meta["default"] === void 0 ? void 0 : meta["default"],
-					min: num("min"),
-					max: num("max"),
-					step: type === "seed" ? void 0 : num("step"),
-					options,
-					group: str("group") ?? "",
-					zone: str("zone"),
-					required: extra["required"] === true || meta["required"] === true,
-					placeholder: str("placeholder"),
-					tooltip: str("tooltip"),
-					visible_when: str("visible_when"),
-					columns: typeof extra["columns"] === "number" ? extra["columns"] : void 0,
-					width: typeof extra["width"] === "number" ? extra["width"] : void 0,
-					max_stack: typeof extra["max_stack"] === "number" ? extra["max_stack"] : void 0,
-					media: str("media")
+		function familyConditioning(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.video?.conditioning ?? void 0;
+		}
+		/**
+		* The family's declared optional outputs (Option A — the optional-outputs
+		* vocabulary). Empty/undefined when the family declares none (legacy
+		* single-output compat). Consumers render one editor per entry, keyed by
+		* ``genre`` — the input card no longer declares any (mask removed
+		* 2026-08-14), so this is the vocabulary for OTHER families that do.
+		*/
+		function familyOptionalOutputs(familyId, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return cat.families?.[familyId]?.optional_outputs ?? [];
+		}
+		/**
+		* The catalog-declared Canvas default model route — the model whose entry
+		* carries ``canvas_default: true`` (krea-2). Replaces the hardcoded
+		* CANVAS_DEFAULT_MODEL; returns undefined before the catalog loads (the
+		* caller keeps its own pre-catalog bootstrap value).
+		*/
+		function canvasDefaultModel(cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return Object.entries(cat.models).find(([, m]) => m.canvas_default)?.[0];
+		}
+		/** Display name for a model within its family variant picker (Turbo / Base / Raw / …). */
+		function variantLabel(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models?.[routeKey];
+			return m?.variant_label ?? m?.label ?? routeKey;
+		}
+		/**
+		* One entry per model family that has dropdown-visible members in the given
+		* form. The primaryRoute is the catalog-declared `default_model` if present
+		* (and visible), else the member whose key equals the family ID, else the
+		* first visible member. Used to drive the family-level dropdown and the
+		* empty-model seed. The default is FULLY catalog-declared — the frontend
+		* never picks a default itself.
+		*/
+		function familiesForForm(formTag, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const visible = dropdownModels(formTag, cat);
+			const seen = /* @__PURE__ */ new Set();
+			const result = [];
+			for (const key of visible) {
+				const fam = cat.models[key]?.family ?? key;
+				if (seen.has(fam)) continue;
+				seen.add(fam);
+				const members = visible.filter((k) => (cat.models[k]?.family ?? k) === fam);
+				const declared = cat.families[fam]?.default_model;
+				const primary = (declared && members.includes(declared) ? declared : void 0) ?? members.find((k) => k === fam) ?? members[0];
+				result.push({
+					familyId: fam,
+					primaryRoute: primary,
+					label: cat.families[fam]?.label ?? fam
 				});
 			}
-			return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
+			return result;
 		}
-		/** THE EDIT COERCION (the one specPatch duty that survives, moved
-		* to the edit boundary): atoms emit raw strings while typing; a
-		* numeric field's edit rides the user layer as a NUMBER. An
-		* unparseable/empty numeric string rides VERBATIM (display
-		* continuity through clear-and-retype — the bench drill's law; a
-		* blank that reaches the run's schema parse refuses loud, naming
-		* the field — never a silent 0). `v === undefined` stays undefined
-		* (the tri-state's inherit — the caller's unset signal). The
-		* STUDIOS' blank-inherits law lives one door up, at their own edit
-		* verb (useResolvedForm) — each face owns its blank semantics.
-		* PURE. */
-		function coerceFieldEdit(f, v) {
-			if (v === void 0) return void 0;
-			if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
-			return v;
+		/**
+		* Given a route key (including quant-tier variants like z-image-sd-q8),
+		* return the family's primary route key — the one to use as the dropdown
+		* value so the dropdown always shows the family even when a sub-variant is
+		* selected.
+		*/
+		function familyPrimaryRoute(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return routeKey;
+			const declared = cat.families[fam]?.default_model;
+			if (declared && cat.models[declared]?.family === fam) return declared;
+			const members = Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
+			return members.find((k) => k === fam) ?? members[0];
 		}
-		/** The card's own derived fields (the schema envelope walked,
-		* families-scoped to the served family). Memoize at the caller for
-		* hot loops — the walk is pure. */
-		function fieldsOf(spec) {
-			return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
+		function modelLabel(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models[routeKey];
+			if (!m) return routeKey;
+			return m.label ?? cat.families[m.family]?.label ?? routeKey;
 		}
-		/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
-		* client-side (stroke 34 — the card-recipe layer is dead): schema
-		* defaults <- model defaults <- SERVED STAMPS <- user. The form
-		* SHOWS exactly what a run composes; `user` rides verbatim by key
-		* presence (a PRESENCE is the override mark, never its value — the
-		* settings law). Arrays (lora bags) and nulls in model_defaults
-		* skip, matching the engine's overlay filter.
+		/** Description for a model route, or undefined. Callers provide their own
+		* fallback string — this returns `undefined` so `??` works. Reads the
+		* `description:` declared on the model's family in the catalog YAML. */
+		function modelDescription(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.description ?? void 0;
+		}
+		function promptGuide(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families[fam]?.prompt_guide ?? void 0;
+		}
+		function dropdownModels(formTag, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const out = [];
+			for (const [key, spec] of Object.entries(cat.models)) {
+				if (spec.hide_from_dropdown) continue;
+				if (formTag) {
+					if (spec.form !== formTag) continue;
+				} else if (spec.edit_only) continue;
+				out.push(key);
+			}
+			return out.sort();
+		}
+		function variantSiblings(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			if (!fam) return routeKey ? [routeKey] : [];
+			return Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
+		}
+		/**
+		* Models hidden from the dropdown because they're reachable only via a
+		* variant toggle (e.g. z-image-q5 — picked by clicking the Q5 button).
+		*/
+		function hiddenFromDropdown(cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return new Set(Object.entries(cat.models).filter(([, m]) => m.hide_from_dropdown).map(([k]) => k));
+		}
+		/**
+		* The ``variants:`` list for a model — resolves through the parent if the
+		* route key is a quant-tier sibling (e.g. z-image-q5 inherits z-image's
+		* variants). Returns ``[]`` for models without variants.
+		*/
+		function variantsForRoute(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const own = cat.models[routeKey]?.variants;
+			if (own) return own;
+			const parent = parentModelForRoute(routeKey, cat);
+			return parent ? cat.models[parent].variants : [];
+		}
+		/**
+		* The route's served recipe presets — the LOAD-TIME per-route merge
+		* (2026-08-18, compose model): every route's ``presets`` dict is the
+		* head base layer (presets/ on the model head) ⊕ the owning variant's
+		* layer (variants/<vid>/presets/), both only_routes-filtered AT LOAD
+		* (variant wins on id collision). Own-only read: the backend attaches
+		* the merged dict to EVERY route, so a fallback chain (tree-head scan,
+		* the retired family-block carve-out) would be a second precedence —
+		* the exact two-sources drift the composer's contract forbids. The
+		* card and the run door read the SAME per-route dict, so the
+		* h3-timeline incident dies by construction. only_routes gating is
+		* not re-derived here — the wire never carries a gated-out preset.
+		*/
+		function presetsForRoute(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const own = cat.models[routeKey]?.presets;
+			return own && typeof own === "object" && Object.keys(own).length > 0 ? own : void 0;
+		}
+		/**
+		* Find the variant whose route matches ``routeKey`` — used to highlight the
+		* active toggle when the form is hydrated from saved state.
+		*/
+		function activeVariantForRoute(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const ownList = variantsForRoute(routeKey, cat);
+			const own = ownList.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? ownList.find((v) => v.route === routeKey);
+			if (own) return own;
+			for (const spec of Object.values(cat.models)) {
+				const list = spec.variants ?? [];
+				const hit = list.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? list.find((v) => v.route === routeKey);
+				if (hit) return hit;
+			}
+		}
+		/**
+		* The matrix coordinates of a route within its family's variant grid —
+		* the values that distinguish it from its siblings. Read from the model
+		* spec's ``variant`` (Turbo / Raw / Distilled / Base …) and ``quant``
+		* (fp8 / q8 / q5 …) fields, resolving the FP8 default's quant through
+		* its variant entries (the default route omits ``quant:`` since it IS
+		* the fp8 tier).
 		*
-		* THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
-		* stage row's `resolved` map — prepareCardParams' own stamped +
-		* lifted body, served by the drafts doors. It layers UNDER the user
-		* (presence still wins) and OVER model_defaults (the server's own
-		* family/variant stamps replace the client's guesses — variant
-		* resolver_defaults, family defaults, the surface filter). Absent
-		* base = the registry-less lane derive. PURE. */
-		function resolveValue(spec, user, base) {
-			const out = specDefaults(fieldsOf(spec));
-			for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
-				if (v === null || Array.isArray(v)) continue;
-				out[k] = v;
+		* This is the ONE model for how variant axes compose (2026-08-08): every
+		* axis is a labeled toggle row declared in ``variant_groups``, and the
+		* routes are the cells of the grid. Krea 2 = Variant (Turbo/Raw) × Quant
+		* (FP8/Q8/Q5) → 6 routes. The composer below switches one axis while
+		* preserving the others.
+		*/
+		function routeCoordinates(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models[routeKey];
+			return {
+				variant: m?.variant ?? void 0,
+				quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant ?? void 0
+			};
+		}
+		/**
+		* Resolve the route that combines the clicked variant's axis with the
+		* current route's OTHER axes. Scans the family's routes (including the
+		* ``hide_from_dropdown`` quant siblings) for the coordinate match, so
+		* clicking "Raw" while on Turbo+Q8 lands on Raw+Q8 — never Raw+FP8.
+		*
+		* Group → axis mapping: a ``Quant`` group switches the quant tier (base
+		* variant preserved); a ``Variant`` group switches the base variant (quant
+		* preserved). The vocabulary is closed to Variant/Quant (schema.py
+		* CANONICAL_VARIANT_GROUPS, 2026-08-09 — "Speed" was a duplicate name for
+		* the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
+		* with no ``route:`` never reach here — the caller handles those as draft
+		* overlays.
+		*
+		* Falls back to the clicked entry's own ``route`` when no matrix sibling
+		* matches (single-axis families, or a quant tier with no sibling for the
+		* target variant). This is the ONE composition path — there is no longer
+		* a separate sibling-picker (2026-08-08).
+		*/
+		/** The wanted matrix coordinates after one axis switch — the ONE
+		* derivation shared by the composer and the existence check (a second
+		* copy of this arithmetic would be the exact two-sources drift the
+		* composer's contract forbids). A ``Quant`` click keeps the current
+		* variant and takes the clicked quant; a ``Variant`` click keeps the
+		* current quant and takes the clicked variant. */
+		function axisWants(currentRoute, clicked, cat) {
+			const cur = routeCoordinates(currentRoute, cat);
+			const tgt = routeCoordinates(clicked.route, cat);
+			const switchesQuant = clicked.group === "Quant";
+			return {
+				variant: switchesQuant ? cur.variant : tgt.variant ?? cur.variant,
+				quant: switchesQuant ? clicked.quant ?? tgt.quant : cur.quant
+			};
+		}
+		/** The ONE matrix-cell lookup: the route in ``fam`` whose coordinates are
+		* exactly (variant, quant), or undefined when no such cell exists. */
+		function matrixCell(fam, variant, quant, cat) {
+			for (const [key, spec] of Object.entries(cat.models)) {
+				if ((spec.family ?? key) !== fam) continue;
+				const rc = routeCoordinates(key, cat);
+				if (rc.variant === variant && rc.quant === quant) return key;
 			}
-			if (base !== void 0) for (const [k, v] of Object.entries(base)) {
-				if (v === null || v === void 0 || Array.isArray(v)) continue;
-				out[k] = v;
-			}
-			for (const [k, v] of Object.entries(user)) {
-				if (v === null || v === void 0) continue;
-				out[k] = v;
-			}
-			for (const kind of spec.features?.modifiers ?? []) {
-				if (kind.marries === void 0) continue;
-				const bag = out[kind.param_key];
-				if (!Array.isArray(bag) || bag.length === 0) continue;
-				const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]));
-				for (const knob of Object.keys(kind.marries)) {
-					const counts = [];
-					for (const row of bag) {
-						const stated = row?.[knob];
-						if (typeof stated === "number" && Number.isFinite(stated)) {
-							counts.push(stated);
+		}
+		function composeVariantRoute(currentRoute, clicked, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(currentRoute, cat);
+			const clickedRoute = clicked.route;
+			if (!fam || !clickedRoute) return clickedRoute ?? currentRoute;
+			const wants = axisWants(currentRoute, clicked, cat);
+			return matrixCell(fam, wants.variant, wants.quant, cat) ?? clickedRoute;
+		}
+		/**
+		* Only-existing-combinations (2026-08-16 — "ONLY show models combinations
+		* that exist"): does clicking `clicked` from `currentRoute` land on a
+		* REAL catalog cell?
+		*
+		* Derives the SAME wanted coordinates as the composer (axisWants — one
+		* derivation) and asks the matrix directly whether that cell exists
+		* (matrixCell). This is NOT derivable from composeVariantRoute's return:
+		* the composer falls back to ``clicked.route`` when the cell is missing,
+		* so a phantom combo and a real one return the same string — the silent
+		* sibling-axis switch the fallback causes is exactly the phantom
+		* combination this check keeps OUT of the axis dropdowns.
+		*
+		* Patch-only variants (no ``route``) always compose — they layer onto
+		* whatever cell is active, so they always exist. An unresolvable family
+		* (catalog not loaded yet) also passes: without the matrix we cannot
+		* positively know a cell is missing, and the served variants list is
+		* itself catalog-derived — hiding is only correct on positive evidence.
+		*/
+		function axisCellExists(currentRoute, clicked, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!clicked.route) return true;
+			const fam = familyOf(currentRoute, cat);
+			if (!fam) return true;
+			const wants = axisWants(currentRoute, clicked, cat);
+			return matrixCell(fam, wants.variant, wants.quant, cat) !== void 0;
+		}
+		/**
+		* True when the family owns its version axis via a declared ``Variant``
+		* group (Krea 2 Turbo/Raw, …). The legacy sibling-picker defers to the
+		* matrix system in that case so the two never render duplicate rows
+		* (2026-08-08 — one system, not two).
+		*/
+		function familyHasVariantAxis(routeKey, cat = _cache$3 ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf(routeKey, cat);
+			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
+			return !!groups && "Variant" in groups;
+		}
+		var CARD_GENRES, _cache$3, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$3;
+		var init_modelCatalog = __esmMin((() => {
+			init_api();
+			init_catalogContract();
+			init_catalogContractStore();
+			CARD_GENRES = [
+				"image",
+				"video",
+				"audio",
+				"3d",
+				"motion",
+				"other",
+				"text"
+			];
+			_cache$3 = null;
+			_cacheTime = 0;
+			_CACHE_TTL_MS = 3e4;
+			_inflight$2 = null;
+			_loaded = false;
+			_bgRetryTimer = null;
+			_listeners$3 = /* @__PURE__ */ new Set();
+			/* v8 ignore next -- module warm-load runs only in browser builds, where
+			* MODE is "production"/"development"; under vitest MODE is always "test",
+			* so the taken arm is unreachable here (2026-09-12). */
+			if ({}.env?.MODE !== "test") ensureCatalog();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
+		* outage that produced it, so the operator should also see WHEN it fired.
+		* 24h local time, seconds resolution. */
+		function _stamp() {
+			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
+		}
+		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
+		* re-validates + re-reports. Lazy import: modelCatalog imports THIS store
+		* (for CatalogContractError reporting) — a static import would be circular. */
+		function retryCatalog() {
+			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+		}
+		function _subscribe$1(listener) {
+			_listeners$2.add(listener);
+			return () => {
+				_listeners$2.delete(listener);
+			};
+		}
+		function _setState$1(patch, replace) {
+			const p = typeof patch === "function" ? patch(_state$1) : patch;
+			if (replace === true) _state$1 = p;
+			else _state$1 = {
+				..._state$1,
+				...p
+			};
+			_listeners$2.forEach((l) => l());
+		}
+		function _getState$1() {
+			return _state$1;
+		}
+		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+		* for useSyncExternalStore (dom-project territory, like the slots seam's
+		* useVersion). The selector contract is pinned node-side through
+		* getState/subscribe in catalog-contract-store.spec.ts. (2026-09-12) */
+		function _useCatalogContractStoreHook(selector) {
+			return (0, react.useSyncExternalStore)(_subscribe$1, selector ? () => selector(_getState$1()) : () => _getState$1());
+		}
+		var IDLE, _lastToastedOutage, _listeners$2, _state$1, _initialState$1, useCatalogContractStore;
+		var init_catalogContractStore = __esmMin((() => {
+			init_toastStore();
+			IDLE = {
+				state: "idle",
+				violations: [],
+				error: null
+			};
+			_lastToastedOutage = null;
+			_listeners$2 = /* @__PURE__ */ new Set();
+			_state$1 = {
+				record: IDLE,
+				reportOk: () => {
+					const wasOutage = useCatalogContractStore.getState().record.state === "error";
+					_lastToastedOutage = null;
+					_setState$1({ record: {
+						state: "loaded",
+						violations: [],
+						error: null
+					} });
+					if (wasOutage) useToastStore.getState().addToast("info", `Catalog back online (at ${_stamp()}).`);
+				},
+				reportViolation: (violations) => {
+					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
+					_setState$1({ record: {
+						state: "violation",
+						violations,
+						error: null
+					} });
+					const first = violations[0];
+					const msg = first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape";
+					useToastStore.getState().addToast("error", `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
+						label: "Retry",
+						onClick: retryCatalog
+					});
+				},
+				reportError: (message) => {
+					const clean = message.trim();
+					console.error(`[catalogContract] catalog fetch failed (at ${_stamp()}):`, clean);
+					_setState$1({ record: {
+						state: "error",
+						violations: [],
+						error: clean
+					} });
+					if (clean === _lastToastedOutage) return;
+					_lastToastedOutage = clean;
+					useToastStore.getState().addToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
+						label: "Retry",
+						onClick: retryCatalog
+					});
+				},
+				clear: () => {
+					_lastToastedOutage = null;
+					_setState$1({ record: IDLE });
+				}
+			};
+			_initialState$1 = _state$1;
+			useCatalogContractStore = Object.assign(_useCatalogContractStoreHook, {
+				getState: _getState$1,
+				setState: _setState$1,
+				subscribe: _subscribe$1,
+				getInitialState: () => _initialState$1,
+				destroy: () => {}
+			});
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		/** Validate a status payload against the ONE status-channel contract.
+		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
+		* decides what a violation means on its branch. */
+		function validateRunStatusContract(payload) {
+			const violations = [];
+			if (!isObj(payload)) return {
+				valid: false,
+				violations: [{
+					field: "body",
+					kind: "shape",
+					message: "Status payload is not an object — this is an error body, not a contract."
+				}]
+			};
+			if (typeof payload.run_id !== "string" || !payload.run_id) violations.push({
+				field: "run_id",
+				kind: "missing",
+				message: "Status payload has no run_id — it cannot identify the run."
+			});
+			if (typeof payload.status !== "string" || !RUN_STATUSES.has(payload.status)) violations.push({
+				field: "status",
+				kind: "invalid",
+				message: `Run-level status ${JSON.stringify(payload.status)} is not in the backend vocabulary (${[...RUN_STATUSES].join(", ")}).`
+			});
+			if (!Array.isArray(payload.stages)) violations.push({
+				field: "stages",
+				kind: "missing",
+				message: "Status payload has no stages array — stage progress cannot be located."
+			});
+			else payload.stages.forEach((stage, i) => {
+				if (!isObj(stage)) {
+					violations.push({
+						field: `stages.${i}`,
+						kind: "shape",
+						message: `Stage ${i} is not an object.`
+					});
+					return;
+				}
+				const core = [
+					["id", stage.id],
+					["name", stage.name],
+					["index", stage.index],
+					["status", stage.status]
+				];
+				for (const [field, value] of core) if (field === "index" ? typeof value !== "number" : typeof value !== "string") violations.push({
+					field: `stages.${i}.${field}`,
+					kind: "missing",
+					message: `Stage ${i} has no ${field} — the stage cannot be rendered.`
+				});
+			});
+			return {
+				valid: violations.length === 0,
+				violations
+			};
+		}
+		/** True when a non-ok body carries the backend's contract-violation
+		* signature (flow_status 500s: {error, run_id, violations: [...]}). */
+		function hasViolationsSignature(body) {
+			return isObj(body) && Array.isArray(body.violations);
+		}
+		var _RUN_STATUS_VALUES, RUN_STATUSES, RunStatusContractError, isObj;
+		var init_runStatusContract = __esmMin((() => {
+			_RUN_STATUS_VALUES = [
+				"pending",
+				"running",
+				"completed",
+				"failed",
+				"stopped",
+				"interrupted",
+				"unknown",
+				"queued"
+			];
+			RUN_STATUSES = new Set(_RUN_STATUS_VALUES);
+			RunStatusContractError = class extends Error {
+				violations;
+				constructor(runId, violations) {
+					super(`Run status contract violation for ${runId} (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
+					this.name = "RunStatusContractError";
+					this.violations = violations;
+				}
+			};
+			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
+		* bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
+		* whole protocol layer; the store only needs it on click. */
+		function repoll(runId) {
+			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
+				maxWaitMs: 3e4,
+				intervalMs: 2e3
+			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
+		}
+		function toastVerdict(v) {
+			const toast = useToastStore.getState().addToast;
+			if (v.kind === "violation") {
+				const first = v.violations[0]?.message ?? "the status response did not match the expected shape";
+				toast("error", `Run ${v.runId}: ${v.violations.length} contract issue(s) — ${first}. Retry to re-check, or re-run the card.`, {
+					label: "Retry",
+					onClick: () => repoll(v.runId)
+				});
+			} else toast("error", `Run ${v.runId}: status channel error — ${v.message}. Retry to re-check.`, {
+				label: "Retry",
+				onClick: () => repoll(v.runId)
+			});
+		}
+		function _subscribe(listener) {
+			_listeners$1.add(listener);
+			return () => {
+				_listeners$1.delete(listener);
+			};
+		}
+		function _setState(patch, replace) {
+			const p = typeof patch === "function" ? patch(_state) : patch;
+			if (replace === true) _state = p;
+			else _state = {
+				..._state,
+				...p
+			};
+			_listeners$1.forEach((l) => l());
+		}
+		function _getState() {
+			return _state;
+		}
+		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+		* for useSyncExternalStore (dom-project territory, like the slots seam's
+		* useVersion). The selector contract is pinned node-side through
+		* getState/subscribe in run-status-contract-store.spec.ts. (2026-09-12) */
+		function _useRunStatusContractStoreHook(selector) {
+			return (0, react.useSyncExternalStore)(_subscribe, selector ? () => selector(_getState()) : () => _getState());
+		}
+		var _listeners$1, _state, _initialState, useRunStatusContractStore;
+		var init_runStatusContractStore = __esmMin((() => {
+			init_toastStore();
+			_listeners$1 = /* @__PURE__ */ new Set();
+			_state = {
+				verdict: null,
+				reportViolation: (runId, violations) => {
+					console.error("[runStatusContract] status channel violation:", runId, violations);
+					const verdict = {
+						kind: "violation",
+						runId,
+						violations
+					};
+					_setState({ verdict });
+					toastVerdict(verdict);
+				},
+				reportError: (runId, message) => {
+					console.error("[runStatusContract] status channel error:", runId, message);
+					const verdict = {
+						kind: "error",
+						runId,
+						message
+					};
+					_setState({ verdict });
+					toastVerdict(verdict);
+				},
+				clear: () => _setState({ verdict: null })
+			};
+			_initialState = _state;
+			useRunStatusContractStore = Object.assign(_useRunStatusContractStoreHook, {
+				getState: _getState,
+				setState: _setState,
+				subscribe: _subscribe,
+				getInitialState: () => _initialState,
+				destroy: () => {}
+			});
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/FlowTypes.ts
+		var init_FlowTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/benchResult.ts
+		/** Validate a result row against the contract. Returns the defect
+		* list — EMPTY means the row is lawful. Each defect names the law
+		* and the offending keys, in the door's own voice. */
+		function benchResultDefects(row) {
+			if (typeof row !== "object" || row === null || Array.isArray(row)) return ["result: not an object"];
+			const r = row;
+			const defects = [];
+			if (typeof r.run_id !== "string" || r.run_id === "") defects.push("run_id: missing or empty (every result names its run)");
+			if (r.url !== void 0 && (typeof r.url !== "string" || r.url === "")) defects.push("url: present but not a non-empty string");
+			if (r.artifacts !== void 0) {
+				if (typeof r.artifacts !== "object" || r.artifacts === null || Array.isArray(r.artifacts)) defects.push("artifacts: not an object (the name→url map)");
+				else {
+					const seen = /* @__PURE__ */ new Map();
+					for (const [k, v] of Object.entries(r.artifacts)) {
+						if (typeof v !== "string" || v === "") {
+							defects.push(`artifacts.${k}: not a non-empty string url`);
 							continue;
 						}
-						const id = typeof row?.["id"] === "string" ? row["id"] : void 0;
-						const fromCatalog = id === void 0 ? void 0 : (catalog.get(id)?.defaults)?.[knob];
-						if (typeof fromCatalog === "number" && Number.isFinite(fromCatalog)) counts.push(fromCatalog);
+						const keys = seen.get(v) ?? [];
+						keys.push(k);
+						seen.set(v, keys);
 					}
-					if (counts.length > 0) out[knob] = Math.max(...counts);
+					for (const [url, keys] of seen) if (keys.length > 1) defects.push("one-file-one-key: " + url + " rides " + keys.length + " keys (" + keys.join(", ") + ") — a file under two keys renders twice");
+				}
+			}
+			if (r.reports !== void 0) {
+				if (typeof r.reports !== "object" || r.reports === null || Array.isArray(r.reports)) defects.push("reports: not an object (the name→verdict map)");
+				else for (const [k, v] of Object.entries(r.reports)) {
+					if (typeof v !== "object" || v === null || Array.isArray(v)) {
+						defects.push(`reports.${k}: not an object (kind 'report' entry)`);
+						continue;
+					}
+					const rep = v;
+					if (rep["kind"] !== "report") defects.push(`reports.${k}: kind is not 'report' (the only entry kind)`);
+					if (rep["status"] !== "pass" && rep["status"] !== "fail" && rep["status"] !== "warn") defects.push(`reports.${k}: status is not pass|fail|warn`);
+					if (rep["title"] !== void 0 && (typeof rep["title"] !== "string" || rep["title"] === "")) defects.push(`reports.${k}.title: present but not a non-empty string`);
+					if (rep["chips"] !== void 0) {
+						if (!Array.isArray(rep["chips"])) defects.push(`reports.${k}.chips: not an array`);
+						else rep["chips"].forEach((c, i) => {
+							if (typeof c !== "string" || c === "") defects.push(`reports.${k}.chips[${String(i)}]: not a non-empty string`);
+						});
+					}
+					if (rep["rows"] !== void 0) {
+						if (typeof rep["rows"] !== "object" || rep["rows"] === null || Array.isArray(rep["rows"])) defects.push(`reports.${k}.rows: not an object (the key-value body)`);
+						else for (const [rk, rv] of Object.entries(rep["rows"])) if (typeof rv !== "string" && typeof rv !== "number" && typeof rv !== "boolean") defects.push(`reports.${k}.rows.${rk}: not a string|number|boolean`);
+					}
+				}
+			}
+			if (r.assetUrls !== void 0) {
+				if (!Array.isArray(r.assetUrls)) defects.push("assetUrls: not an array");
+				else r.assetUrls.forEach((u, i) => {
+					if (typeof u !== "string" || u === "") defects.push(`assetUrls[${String(i)}]: not a non-empty string url`);
+				});
+			}
+			if (r.error !== void 0 && typeof r.error !== "string") defects.push("error: present but not a string");
+			return defects;
+		}
+		var init_benchResult = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/browserStorage.ts
+		/** Test hook — resets the cached connection + cache + install flag. */
+		function _resetBrowserStorageForTests() {
+			installed = false;
+			cache$1 = /* @__PURE__ */ new Map();
+			dbPromise = null;
+		}
+		function openDb() {
+			if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
+				if (typeof indexedDB === "undefined") {
+					reject(/* @__PURE__ */ new Error("IndexedDB unavailable"));
+					return;
+				}
+				const req = indexedDB.open(DB_NAME, DB_VERSION);
+				req.onupgradeneeded = () => {
+					const db = req.result;
+					if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+				};
+				req.onsuccess = () => resolve(req.result);
+				req.onerror = () => reject(req.error);
+			});
+			return dbPromise;
+		}
+		/** Full dump of the store as [key, value] pairs. */
+		async function idbDump() {
+			const req = (await openDb()).transaction(STORE, "readonly").objectStore(STORE).openCursor();
+			return new Promise((resolve, reject) => {
+				const out = [];
+				req.onsuccess = () => {
+					const cursor = req.result;
+					if (!cursor) {
+						resolve(out);
+						return;
+					}
+					out.push([String(cursor.key), String(cursor.value)]);
+					cursor.continue();
+				};
+				req.onerror = () => reject(req.error);
+			});
+		}
+		async function idbPut(key, value) {
+			const tx = (await openDb()).transaction(STORE, "readwrite");
+			tx.objectStore(STORE).put(value, key);
+			await new Promise((res, rej) => {
+				tx.oncomplete = () => res();
+				tx.onerror = () => rej(tx.error);
+				tx.onabort = () => rej(tx.error);
+			});
+		}
+		async function idbRemove(key) {
+			const tx = (await openDb()).transaction(STORE, "readwrite");
+			tx.objectStore(STORE).delete(key);
+			await new Promise((res, rej) => {
+				tx.oncomplete = () => res();
+				tx.onerror = () => rej(tx.error);
+				tx.onabort = () => rej(tx.error);
+			});
+		}
+		async function idbClear() {
+			const tx = (await openDb()).transaction(STORE, "readwrite");
+			tx.objectStore(STORE).clear();
+			await new Promise((res, rej) => {
+				tx.oncomplete = () => res();
+				tx.onerror = () => rej(tx.error);
+				tx.onabort = () => rej(tx.error);
+			});
+		}
+		function writeFailure(key, e) {
+			console.error(`[storage] failed to persist '${key}' to IndexedDB:`, e);
+		}
+		/**
+		* Seed the in-memory cache from IndexedDB, migrate any leftover native
+		* localStorage into IDB, then install the facade as the global localStorage.
+		* Called once from main.tsx BEFORE the app is (dynamically) imported, so
+		* every module-eval-time read sees the persisted data. Never throws.
+		*/
+		async function initBrowserStorage() {
+			if (installed) return;
+			try {
+				const entries = await idbDump();
+				for (const [k, v] of entries) cache$1.set(k, v);
+			} catch (e) {
+				console.error("[storage] failed to load IndexedDB cache:", e);
+			}
+			try {
+				const native = globalThis.localStorage;
+				if (native && typeof native.length === "number") {
+					const jobs = [];
+					let anyMigrated = false;
+					let failed = false;
+					for (let i = 0; i < native.length; i++) {
+						const k = native.key(i);
+						if (!k) continue;
+						const v = native.getItem(k);
+						if (v == null || cache$1.has(k)) continue;
+						anyMigrated = true;
+						cache$1.set(k, v);
+						jobs.push(idbPut(k, v).catch(() => {
+							failed = true;
+						}));
+					}
+					if (jobs.length > 0) await Promise.all(jobs);
+					if (anyMigrated && !failed) try {
+						native.clear();
+					} catch {}
+				}
+			} catch (e) {
+				console.error("[storage] failed to migrate native localStorage:", e);
+			}
+			try {
+				Object.defineProperty(globalThis, "localStorage", {
+					value: facade,
+					configurable: true,
+					writable: true
+				});
+				installed = true;
+			} catch (e) {
+				console.error("[storage] failed to install IndexedDB-backed localStorage:", e);
+				installed = true;
+			}
+		}
+		var DB_NAME, DB_VERSION, STORE, dbPromise, cache$1, installed, facade;
+		var init_browserStorage = __esmMin((() => {
+			DB_NAME = "melite:browser-storage:v1";
+			DB_VERSION = 1;
+			STORE = "kv";
+			dbPromise = null;
+			cache$1 = /* @__PURE__ */ new Map();
+			installed = false;
+			facade = {
+				get length() {
+					return cache$1.size;
+				},
+				key(index) {
+					if (index < 0 || index >= cache$1.size) return null;
+					let i = 0;
+					for (const k of cache$1.keys()) {
+						if (i === index) return k;
+						i++;
+					}
+					return null;
+				},
+				getItem(key) {
+					return cache$1.has(key) ? cache$1.get(key) : null;
+				},
+				setItem(key, value) {
+					cache$1.set(key, String(value));
+					idbPut(key, String(value)).catch((e) => writeFailure(key, e));
+				},
+				removeItem(key) {
+					cache$1.delete(key);
+					idbRemove(key).catch((e) => writeFailure(key, e));
+				},
+				clear() {
+					cache$1.clear();
+					idbClear().catch((e) => writeFailure("*", e));
+				}
+			};
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/card.ts
+		var init_card = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/character.ts
+		var init_character = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/enhanceTypes.ts
+		var init_enhanceTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/loraTypes.ts
+		var init_loraTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/mediaTypes.ts
+		var init_mediaTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/modifierFaces.ts
+		var init_modifierFaces = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/modifierSubcards.ts
+		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
+		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
+		* old cards load; the next save rewrites them as id-keyed rows. */
+		function subcardId(kind, entry) {
+			return kind === "controlnet" ? entry.id ?? "" : `lora-${entry.id ?? entry.name ?? ""}`;
+		}
+		/** Normalize a wire lora row: id wins, the fossil `name` key migrates.
+		* An empty id passes through — compose refuses it loudly; the tile still
+		* renders so the operator can see and delete the broken entry. */
+		function loraIdOf(entry) {
+			return String(entry.id ?? entry.name ?? "").trim();
+		}
+		/** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
+		* id-keyed row — ONE shape leaves every boundary (modal draft, bag
+		* commit, run body). The fossil key is dropped, never re-emitted.
+		* A row missing `strength` (never emitted by the pre-flip UI, but a
+		* hand-edited draft may carry one) takes 1.0 — the same house default
+		* the catalog row seeds at compose. */
+		function normalizeLoraEntry(entry) {
+			return {
+				id: loraIdOf(entry),
+				strength: typeof entry.strength === "number" ? entry.strength : 1
+			};
+		}
+		/** Derive the subcard view from the param bag — a pure projection. */
+		function subcardsFromParams(params) {
+			const loras = params.loras ?? [];
+			const cns = params.controlnets ?? [];
+			return [...loras.map((l) => {
+				const lid = loraIdOf(l);
+				return {
+					id: `lora-${lid}`,
+					kind: "lora",
+					label: loraLabel(lid),
+					name: lid,
+					enabled: true,
+					strength: typeof l.strength === "number" ? l.strength : 1,
+					strengthSet: typeof l.strength === "number"
+				};
+			}), ...cns.map((c) => ({
+				id: subcardId("controlnet", c),
+				kind: "controlnet",
+				label: c.type,
+				enabled: c.enabled,
+				strength: c.strength,
+				type: c.type,
+				model: c.model,
+				preprocessor: c.preprocessor,
+				image_b64: c.image_b64,
+				start_percent: c.start_percent,
+				end_percent: c.end_percent
+			}))];
+		}
+		/** Human label for a LoRA entry (file base name, extension stripped). */
+		function loraLabel(name) {
+			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
+		}
+		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
+		function subcardCount(params) {
+			const loras = params.loras ?? [];
+			const cns = params.controlnets ?? [];
+			return loras.length + cns.length;
+		}
+		/** Pure array move — the ONLY way order changes (dragEnd → this). */
+		function moveItem(arr, from, to) {
+			if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
+			const next = [...arr];
+			const [moved] = next.splice(from, 1);
+			next.splice(to, 0, moved);
+			return next;
+		}
+		/**
+		* Resolve which declared kind a draggable subcard id belongs to. Walks each
+		* LIST-kind's wire array (scalar kinds aren't draggable — no reorder
+		* semantics on a single value). Returns the kind spec or null when the id
+		* isn't a known subcard (e.g. a stale drag handle). Generic over arbitrary
+		* kinds — the param_key comes from the spec, not a hardcoded kind→key map.
+		*/
+		function kindForId(params, id, kinds) {
+			for (const kind of kinds) {
+				if (kind.cardinality === "scalar") continue;
+				if ((params[kind.param_key] ?? []).some((e) => subcardId(kind.kind, e) === id)) return kind;
+			}
+			return null;
+		}
+		/**
+		* Apply a drag drop to the param bag. Cross-kind drops are no-ops (each kind
+		* has its own wire array at ``params[kind.param_key]``; a LoRA cannot swap
+		* places with a ControlNet, nor with a clip_skip). Returns the same params
+		* object when nothing moved (stable identity → no re-render).
+		*
+		* The ``kinds`` list is the declared modifier vocabulary (from
+		* modifiersFeatureOf) — the param_key lookup is data-driven, not a hardcoded
+		* ``kind === "lora" ? "loras" : "controlnets"`` ternary. A novel kind's drag
+		* works the day it's declared, with zero code change here.
+		*/
+		function applySubcardDrop(params, activeId, overId, kinds) {
+			const spec = kindForId(params, activeId, kinds);
+			if (!spec) return params;
+			if (kindForId(params, overId, kinds)?.kind !== spec.kind) return params;
+			const arr = params[spec.param_key];
+			const next = moveItem(arr, arr.findIndex((e) => subcardId(spec.kind, e) === activeId), arr.findIndex((e) => subcardId(spec.kind, e) === overId));
+			return next === arr ? params : {
+				...params,
+				[spec.param_key]: next
+			};
+		}
+		function newCnId() {
+			_cnIdCounter += 1;
+			return `cn-${Date.now().toString(36)}-${_cnIdCounter}`;
+		}
+		/**
+		* New ControlNet entry from a schema entry — honors the catalog's declared
+		* defaults (model, preprocessor, default_strength) with ControlNetApplyAdvanced
+		* defaults for the step range. Returns null when the stack is full (max_stack).
+		* Takes the KIND SPEC (the one contract entry) — no parallel feature shape.
+		*/
+		function newControlnetEntry(entries, type, cnKind) {
+			const maxStack = cnKind?.max_stack ?? 3;
+			if (entries.length >= maxStack) return null;
+			const schema = cnEntriesOf(cnKind).find((e) => e.type === type) ?? NO_CN_SCHEMA;
+			const declaredDefault = (cnKind?.fields.find((f) => f.name === "strength"))?.default;
+			const defaultStrength = typeof declaredDefault === "number" ? declaredDefault : .8;
+			return {
+				id: newCnId(),
+				type,
+				model: schema.model,
+				preprocessor: schema.preprocessor,
+				image_b64: "",
+				strength: schema.default_strength ?? defaultStrength,
+				start_percent: 0,
+				end_percent: 1,
+				enabled: true,
+				source: "user"
+			};
+		}
+		/** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
+		* own default when the spec omits it). */
+		function newLoraEntry(id, strength = 1) {
+			return {
+				id,
+				strength
+			};
+		}
+		/**
+		* New generic entry for a NOVEL modifier kind (not lora / controlnet — those
+		* keep their bespoke templates above). Renders from ``kind.fields``: the
+		* selected option's ``defaults`` win over field-level ``default`` over the
+		* raw type zero (0 / "" / false). Returns null when the list is full
+		* (``max_stack``, cardinality=list only). Scalar kinds return a single dict
+		* at ``params[kind.param_key]`` — no id, no stack check.
+		*
+		* This is the proof the user demanded: a YAML block declaring a new kind
+		* (clip_skip, sampler_override, …) gets a working create-template with ZERO
+		* code beyond the catalog edit + the one ``@register`` applier. The generic
+		* grid row + generic modal editor render from the same ``kind.fields``.
+		*/
+		function newGenericEntry(kind, stackLength, optionValue) {
+			if (kind.cardinality === "list") {
+				if (stackLength >= (kind.max_stack ?? 5)) return null;
+			}
+			const option = kind.options?.find((o) => o.value === optionValue);
+			const entry = {};
+			for (const field of kind.fields) {
+				const fromOption = option?.defaults?.[field.name];
+				if (fromOption !== void 0) entry[field.name] = fromOption;
+				else if (field.default !== void 0 && field.default !== null) entry[field.name] = field.default;
+				else entry[field.name] = defaultForType(field.type);
+			}
+			if (kind.cardinality === "list") entry.id = newCnId();
+			if (optionValue !== void 0 && !("value" in entry)) entry.value = optionValue;
+			return entry;
+		}
+		/** The type-correct zero for a modifier field with no declared default. */
+		function defaultForType(type) {
+			switch (type) {
+				case "integer":
+				case "float": return 0;
+				case "boolean": return false;
+				case "select": return "";
+				case "image": return "";
+				case "string": return "";
+			}
+		}
+		/** The lora kind's options as the legacy adapter list — the LoRA dropdown. */
+		function loraAdaptersOf(kind) {
+			if (!kind) return [];
+			return (kind.options ?? []).map((o) => ({
+				name: o.value,
+				filename: o.model ?? o.value,
+				label: o.label,
+				category: o.metadata?.category ?? "LoRA",
+				default_strength: o.defaults?.strength ?? 1,
+				prompt_hint: o.metadata?.prompt_hint ?? null,
+				installed: o.installed ?? true
+			}));
+		}
+		/** The controlnet kind's options as the legacy schema-entry list — the CN dropdown. */
+		function cnEntriesOf(kind) {
+			if (!kind) return [];
+			const strengthField = kind.fields.find((f) => f.name === "strength");
+			return (kind.options ?? []).map((o) => ({
+				type: o.value,
+				label: o.label,
+				tooltip: o.tooltip ?? void 0,
+				model: o.model ?? void 0,
+				default_strength: o.defaults?.strength ?? strengthField?.default ?? .8,
+				preprocessor: o.metadata?.preprocessor ?? void 0,
+				installed: o.installed ?? void 0
+			}));
+		}
+		/** LoRA strength bounds — from the kind's strength field (one source). */
+		function loraStrengthBoundsOf(kind) {
+			const strengthField = kind?.fields.find((f) => f.name === "strength");
+			return {
+				min: strengthField?.min ?? -2,
+				max: strengthField?.max ?? 5,
+				step: strengthField?.step ?? .05
+			};
+		}
+		/**
+		* The generic arbitrary-kind list — the ONE key the frontend reads to decide
+		* which modifier rows to render. Declared-only (Phase A finalé): the backend
+		* emits ``features.modifiers`` from the catalog's ``modifiers:`` block and
+		* nothing else — the legacy client-side projection is deleted (rule 4).
+		* Returns ``[]`` when the family declares no modifier capability.
+		*/
+		function modifiersFeatureOf(formSpec) {
+			const raw = formSpec?.features?.modifiers;
+			return Array.isArray(raw) ? raw : [];
+		}
+		/** The family declares at least one modifier kind. The grid renders iff true. */
+		function hasModifierCapability(formSpec) {
+			return modifiersFeatureOf(formSpec).length > 0;
+		}
+		/** Find a kind's spec by its discriminator — convenience for the grid/modal. */
+		function kindSpecOf(formSpec, kind) {
+			return modifiersFeatureOf(formSpec).find((k) => k.kind === kind) ?? null;
+		}
+		var NO_CN_SCHEMA, _cnIdCounter;
+		var init_modifierSubcards = __esmMin((() => {
+			NO_CN_SCHEMA = {
+				type: "",
+				label: ""
+			};
+			_cnIdCounter = 0;
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/objectUrlCache.ts
+		/** True iff `s` is a base64 data URL (large enough to benefit from conversion). */
+		function isDataUrl(s) {
+			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
+		}
+		/**
+		* Convert a data URL (or pass through other URL forms) to a cached object URL.
+		*
+		* - `data:…` URLs → converted once, cached, returned.
+		* - `blob:`, `http:`, `https:`, relative paths → returned as-is.
+		* - `null` / `undefined` / empty → returned as-is (caller handles).
+		*
+		* The same input always yields the same output for the lifetime of the
+		* module (until revokeObjectUrlFor or revokeAll is called).
+		*/
+		function dataUrlToObjectUrl(url) {
+			if (url == null || url === "") return null;
+			if (!isDataUrl(url)) return url;
+			const cached = cache.get(url);
+			if (cached) return cached;
+			const obj = createObjectUrlFromDataUrl(url);
+			cache.set(url, obj);
+			return obj;
+		}
+		/** Revoke the object URL associated with `sourceUrl` (the original data URL). */
+		function revokeObjectUrlFor(sourceUrl) {
+			const obj = cache.get(sourceUrl);
+			if (obj) {
+				try {
+					URL.revokeObjectURL(obj);
+				} catch {}
+				cache.delete(sourceUrl);
+			}
+		}
+		/** Revoke every cached object URL. Intended for tests and explicit teardown. */
+		function revokeAll() {
+			for (const obj of cache.values()) try {
+				URL.revokeObjectURL(obj);
+			} catch {}
+			cache.clear();
+		}
+		/** Test-only: how many object URLs are currently cached. */
+		function _cachedCount() {
+			return cache.size;
+		}
+		function createObjectUrlFromDataUrl(dataUrl) {
+			const comma = dataUrl.indexOf(",");
+			if (comma < 0) return dataUrl;
+			const header = dataUrl.slice(0, comma);
+			const payload = dataUrl.slice(comma + 1);
+			const mime = header.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
+			const isBase64 = header.includes(";base64");
+			let bytes;
+			if (isBase64) {
+				let bin;
+				try {
+					bin = atob(payload);
+				} catch {
+					return dataUrl;
+				}
+				bytes = new Uint8Array(bin.length);
+				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+			} else bytes = new TextEncoder().encode(decodeURIComponent(payload));
+			return URL.createObjectURL(new Blob([bytes.slice()], { type: mime }));
+		}
+		var cache;
+		var init_objectUrlCache = __esmMin((() => {
+			cache = /* @__PURE__ */ new Map();
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/regions.ts
+		var init_regions = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/rootsManifest.ts
+		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
+		*  door (status/view/ledger/list — and, since the operator's law
+		*  of the same night ("the agent maker and the user share
+		*  EVERYTHING, THAT IS THE WHOLE POINT"), the ENGINE'S chained-
+		*  input resolver too) searches the manifest IN ORDER — own root
+		*  first (the fast path; own writes win), then the
+		*  MELITE_STATE_ROOTS extras. The extras ride the same per-process
+		*  env seam as MELITE_STATE_ROOT (the queue boot law refuses to
+		*  guess from cwd — roots are named, never inferred):
+		*  colon-separated, explicit per lane. Dedup keeps the first
+		*  occurrence (own root always leads); blanks drop. Pure (env
+		*  injectable) for the walls.
+		*
+		*  HOSTED IN CONTRACTS (the one package every plane sees): the
+		*  estate queue reads it for its run doors, the ComfyUI engine
+		*  reads it when staging a chained input — the maker lane's runs
+		*  resolve on the user's lane and back. One law, one spelling. */
+		function rootsManifest(ownRoot, env = process.env) {
+			const extras = (env["MELITE_STATE_ROOTS"] ?? "").split(":").map((s) => s.trim()).filter((s) => s !== "");
+			return [.../* @__PURE__ */ new Set([ownRoot, ...extras])];
+		}
+		/** The miss voice names every searched tree (the NAME-THE-ROOT
+		*  law, extended across the manifest — a two-roots box stays
+		*  debuggable on a miss, never a bare unknown). */
+		function searchedVoice(roots) {
+			return "(searched " + roots.join(", ") + ")";
+		}
+		var init_rootsManifest = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/stagePreview.ts
+		var init_stagePreview = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/stageView.ts
+		function recordOf(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+		}
+		function nonEmptyString(value) {
+			return typeof value === "string" && value !== "" ? value : "";
+		}
+		function stringsOf(value) {
+			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
+		}
+		function statusOf(value) {
+			switch (value.toLowerCase()) {
+				case "done":
+				case "completed":
+				case "succeeded": return "done";
+				case "failed":
+				case "error": return "error";
+				case "running": return "running";
+				case "queued": return "queued";
+				case "stale": return "stale";
+				case "cached": return "cached";
+				case "skipped": return "skipped";
+				case "reused": return "reused";
+				default: return "pending";
+			}
+		}
+		function galleryOf(value) {
+			if (!Array.isArray(value)) return void 0;
+			const gallery = value.flatMap((entry) => {
+				const row = recordOf(entry);
+				const name = nonEmptyString(row["name"]);
+				const url = nonEmptyString(row["url"]);
+				return name !== "" && url !== "" ? [{
+					name,
+					url
+				}] : [];
+			});
+			return gallery.length > 0 ? gallery : void 0;
+		}
+		function previewsOf(value) {
+			if (!Array.isArray(value)) return void 0;
+			const previews = value.flatMap((entry) => {
+				const row = recordOf(entry);
+				const label = nonEmptyString(row["label"]);
+				const artifact = nonEmptyString(row["artifact"]);
+				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
+				return label !== "" && artifact !== "" ? [{
+					label,
+					url,
+					artifact
+				}] : [];
+			});
+			return previews.length > 0 ? previews : void 0;
+		}
+		function cardResultFromRecord(value) {
+			const result = recordOf(value);
+			const artifacts = {};
+			for (const [name, url] of Object.entries(recordOf(result["artifacts"]))) {
+				const clean = nonEmptyString(url);
+				if (clean !== "") artifacts[name] = clean;
+			}
+			const assetUrls = stringsOf(result["assetUrls"]);
+			const metadata = recordOf(result["metadata"]);
+			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			return {
+				artifacts,
+				assetUrls,
+				metadata,
+				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
+				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
+				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
+			};
+		}
+		function inputBindingsOf(value) {
+			const bindings = [];
+			for (const [slot, raw] of Object.entries(recordOf(value))) {
+				const ref = recordOf(raw);
+				const stage = nonEmptyString(ref["stage"]);
+				if (stage !== "") {
+					const output = nonEmptyString(ref["output"]);
+					bindings.push({
+						slot,
+						source: output === "" ? { stage } : {
+							stage,
+							output
+						}
+					});
+				} else if (typeof ref["initial"] === "string") bindings.push({
+					slot,
+					source: { initial: true }
+				});
+			}
+			return bindings;
+		}
+		function projectStageView(owner, options = {}) {
+			const row = owner.row;
+			const resolved = recordOf(row["resolved"]);
+			const rowParams = recordOf(row["params"]);
+			const params = owner.effective?.params ?? rowParams;
+			const card = nonEmptyString(row["card"]) || owner.cardName;
+			const kind = options.kind ?? (card || "stage");
+			const service = options.service ?? (nonEmptyString(row["service"]) || kind);
+			const model = nonEmptyString(owner.effective?.model) || nonEmptyString(resolved["model"]) || nonEmptyString(row["model"]) || nonEmptyString(params["model"]) || service;
+			const inputSlots = (owner.effective?.inputSlots ?? []).filter((slot) => typeof slot === "string" && slot !== "");
+			const inputBindings = inputBindingsOf(row["inputs"]);
+			const inputs = inputBindings.flatMap((binding) => "stage" in binding.source ? [binding.source.stage] : []);
+			const inputOutputs = inputBindings.map((binding) => "stage" in binding.source ? binding.source.output ?? null : null);
+			const priorStageIds = owner.priorStageIds ?? owner.upstream.map((stage) => stage.id);
+			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
+			const result = cardResultFromRecord(row["result"]);
+			const harvested = options.result === void 0 ? result : options.result(row, result);
+			const resultRecord = recordOf(row["result"]);
+			const metadata = recordOf(harvested?.metadata);
+			const error = nonEmptyString(row["error"]) || nonEmptyString(resultRecord["error"]) || nonEmptyString(metadata["error"]);
+			const runId = owner.runId || nonEmptyString(row["runId"]) || nonEmptyString(resultRecord["runId"]) || nonEmptyString(resultRecord["run_id"]) || nonEmptyString(metadata["runId"]) || null;
+			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
+			return {
+				id: owner.stageId,
+				title: nonEmptyString(row["title"]) || card || owner.stageId,
+				kind,
+				service,
+				model,
+				...options.genre === void 0 ? {} : { genre: options.genre },
+				...tags === void 0 ? {} : { tags },
+				params,
+				...inputSlots.length === 0 ? {} : { inputSlots },
+				...inputBindings.length === 0 ? {} : { inputBindings },
+				inputs,
+				...inputOutputs.length === 0 ? {} : { inputOutputs },
+				inputIndices,
+				result: harvested,
+				status: statusOf(owner.runStatus),
+				...error === "" ? {} : { error },
+				runId,
+				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
+			};
+		}
+		function projectUpstreamStages(owner, options = {}) {
+			return owner.upstream.map((upstream) => ({
+				id: upstream.id,
+				title: upstream.title,
+				kind: options.kind ?? "image",
+				service: options.service ?? "",
+				genre: options.genre ?? "image",
+				params: {},
+				inputs: [],
+				inputIndices: [],
+				result: {
+					artifacts: upstream.title === "" ? {} : { [upstream.title]: upstream.url },
+					assetUrls: upstream.url === "" ? [] : [upstream.url],
+					metadata: {}
+				},
+				status: "done"
+			}));
+		}
+		var init_stageView = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/studio.ts
+		var init_studio = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/timelineTypes.ts
+		/** Coerce an unknown persisted/imported status into the SegmentStatus
+		* union. Anything outside it (e.g. pre-refactor persisted "error") is
+		* normalized to 'empty' — an out-of-union status silently breaks the
+		* failed-state UI (the NLE clip check tests status === 'failed'). */
+		function normalizeSegmentStatus(raw) {
+			return typeof raw === "string" && SEGMENT_STATUSES.includes(raw) ? raw : "empty";
+		}
+		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS;
+		var init_timelineTypes = __esmMin((() => {
+			SEGMENT_STATUSES = [
+				"empty",
+				"pending",
+				"generating",
+				"ready",
+				"failed"
+			];
+			FLF_MODES = [{
+				id: "off",
+				label: "First frame only (standard I2V)"
+			}, {
+				id: "on",
+				label: "First + Last frame (FLF2V)"
+			}];
+			TRACK_COLORS = [
+				"#4ade80",
+				"#facc15",
+				"#fb923c",
+				"#60a5fa",
+				"#f472b6",
+				"#a78bfa",
+				"#34d399",
+				"#fbbf24",
+				"#f87171",
+				"#38bdf8"
+			];
+			DEFAULT_SEGMENT_PARAMS = {
+				seed: 42,
+				width: 640,
+				height: 480,
+				frames: 33,
+				fps: 16,
+				resizeMethod: "crop",
+				samplingSteps: 10,
+				guideScale: 5,
+				model: "h3",
+				profile: "fast",
+				motionAmplitude: 1,
+				flfMode: false,
+				teacacheEnabled: false,
+				teacacheThreshold: .01,
+				progressiveEnabled: false,
+				progressiveLevels: 2,
+				progressiveDelta: .15,
+				progressiveMode: "dct",
+				relayEpsilon: .01,
+				guideStrength: 1,
+				guideCrf: 0,
+				scaleBy: 1,
+				upscaleMethod: "bicubic",
+				useTiledEncode: false,
+				tileSize: 256,
+				tileOverlap: 64,
+				imageAttentionStrength: 1,
+				loras: [],
+				motionVideoB64: null,
+				motionStrength: .7,
+				motionTrimStart: 0,
+				motionTrimEnd: 0,
+				motionOffset: 0,
+				resampleMode: "nearest",
+				retakePrompt: "",
+				retakeStartFrame: 0,
+				retakeEndFrame: -1
+			};
+			DEFAULT_LIPSYNC_FIELDS = {
+				lipSyncedVideoUrl: null,
+				lipSyncPreferOriginal: false
+			};
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/vocab.ts
+		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
+		* metadata, a drag payload) before rendering. */
+		function isProvenance(v) {
+			return typeof v === "string" && PROVENANCE_VALUES.includes(v);
+		}
+		var Provenance, PROVENANCE_VALUES;
+		var init_vocab = __esmMin((() => {
+			Provenance = {
+				agent: "agent",
+				user: "user",
+				imported: "imported"
+			};
+			PROVENANCE_VALUES = Object.values(Provenance);
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/wire.ts
+		var init_wire = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/index.ts
+		var src_exports$1 = /* @__PURE__ */ __exportAll({
+			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
+			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
+			FLF_MODES: () => FLF_MODES,
+			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
+			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
+			Provenance: () => Provenance,
+			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
+			TRACK_COLORS: () => TRACK_COLORS,
+			_cachedCount: () => _cachedCount,
+			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
+			applySubcardDrop: () => applySubcardDrop,
+			benchResultDefects: () => benchResultDefects,
+			cardResultFromRecord: () => cardResultFromRecord,
+			cnEntriesOf: () => cnEntriesOf,
+			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
+			hasModifierCapability: () => hasModifierCapability,
+			initBrowserStorage: () => initBrowserStorage,
+			isDataUrl: () => isDataUrl,
+			isProvenance: () => isProvenance,
+			kindForId: () => kindForId,
+			kindSpecOf: () => kindSpecOf,
+			loraAdaptersOf: () => loraAdaptersOf,
+			loraIdOf: () => loraIdOf,
+			loraLabel: () => loraLabel,
+			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
+			modifiersFeatureOf: () => modifiersFeatureOf,
+			moveItem: () => moveItem,
+			newControlnetEntry: () => newControlnetEntry,
+			newGenericEntry: () => newGenericEntry,
+			newLoraEntry: () => newLoraEntry,
+			normalizeLoraEntry: () => normalizeLoraEntry,
+			normalizeSegmentStatus: () => normalizeSegmentStatus,
+			projectStageView: () => projectStageView,
+			projectUpstreamStages: () => projectUpstreamStages,
+			revokeAll: () => revokeAll,
+			revokeObjectUrlFor: () => revokeObjectUrlFor,
+			rootsManifest: () => rootsManifest,
+			searchedVoice: () => searchedVoice,
+			subcardCount: () => subcardCount,
+			subcardId: () => subcardId,
+			subcardsFromParams: () => subcardsFromParams
+		});
+		var init_src$2 = __esmMin((() => {
+			init_FlowTypes();
+			init_benchResult();
+			init_browserStorage();
+			init_card();
+			init_character();
+			init_enhanceTypes();
+			init_loraTypes();
+			init_mediaTypes();
+			init_modifierFaces();
+			init_modifierSubcards();
+			init_objectUrlCache();
+			init_regions();
+			init_rootsManifest();
+			init_stagePreview();
+			init_stageView();
+			init_studio();
+			init_timelineTypes();
+			init_vocab();
+			init_wire();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/familyParamContract.ts
+		var familyParamContract_exports = /* @__PURE__ */ __exportAll({
+			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
+			coerceParamsToSchema: () => coerceParamsToSchema,
+			getFamilySchema: () => getFamilySchema,
+			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated,
+			loadFamilySchemas: () => loadFamilySchemas,
+			validateModifierEntries: () => validateModifierEntries,
+			validateParamsAgainstSchema: () => validateParamsAgainstSchema
+		});
+		/**
+		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
+		* level cache, inflight dedup, idempotent. Call at boot (alongside
+		* loadCatalog) so the validator never blocks on a fetch.
+		*
+		* Returns the cached index on subsequent calls (no refetch). Use
+		* { force: true } to bypass the cache.
+		*/
+		async function loadFamilySchemas(opts) {
+			if (_cache$2 && !opts?.force) return _cache$2;
+			if (_inflight$1) return _inflight$1;
+			_inflight$1 = (async () => {
+				try {
+					const data = await apiJson("/v1/flows/families/param-schemas");
+					_cache$2 = data;
+					return data;
+				} finally {
+					_inflight$1 = null;
+				}
+			})();
+			return _inflight$1;
+		}
+		/** Sync lookup — returns the cached schema for a family, or null if the
+		* cache isn't loaded yet or the family is unknown. Pure, no fetch. */
+		function getFamilySchema(familyId) {
+			if (!_cache$2) return null;
+			return _cache$2[familyId] ?? null;
+		}
+		/** Is the schema cache POPULATED (a successful bulk fetch with ≥1
+		* family)? Distinguishes "transmission worked and the family is absent"
+		* (a phantom family — throw) from the cache-cold/failed branch (defer). */
+		function isFamilySchemaCachePopulated() {
+			return !!_cache$2 && Object.keys(_cache$2).length > 0;
+		}
+		function jsonTypeOf(val) {
+			/* v8 ignore next -- defensive: both callers (coerceParamsToSchema,
+			* validateParamsAgainstSchema) route val === null through the defaulted
+			* null path BEFORE calling, so null never reaches here (2026-09-12) */
+			if (val === null) return "null";
+			if (Array.isArray(val)) return "array";
+			const t = typeof val;
+			if (t === "string") return "string";
+			if (t === "boolean") return "boolean";
+			if (t === "number") return Number.isInteger(val) ? "integer" : "number";
+			return "object";
+		}
+		/**
+		* Coerce a params dict to a family's schema types — the TYPED RUN BODY.
+		* Canonical coercions ONLY (2026-09-05 compile-time incident: form state,
+		* stale drafts and legacy editors carry strings for numbers/booleans and
+		* "" for empty arrays — the class admits the canonical forms, so the
+		* boundary normalizes them instead of refusing what the backend takes):
+		*   - integer/number: numbers kept (integer rejects fractions); a trimmed
+		*     canonical numeric string becomes Number; "" means UNSET (falls into
+		*     the null path: default-or-omit — "" is NEVER 0); anything else is
+		*     a violation (never NaN into the wire).
+		*   - boolean: booleans kept; "true"/"false" become bool; else violation.
+		*   - array: arrays kept; "" becomes [] (the unowned picker's empty
+		*     serialization — the class coerces the same); a non-empty string is
+		*     a violation (ambiguous — never a split-guess).
+		*   - string/object: kept on exact type; anything else is a violation
+		*     (never String()-collapse, never JSON.parse-guess).
+		*   - null / UNSET-"": OMITTED when the field declares a default —
+		*     absent rides the backend default (the class's own semantics:
+		*     explicit null refuses on numerics, so the boundary must never
+		*     POST a null the click gate waved through — 2026-09-06
+		*     frontend-impossible incident). A null/UNSET with NO default is
+		*     kept so the validator refuses it loudly. Untyped fields (the
+		*     loras/mask tile bags) pass null through untouched — the class's
+		*     own None-coercion owns them, and it runs on explicit values.
+		*   - fields with NO declared type (the loras/mask tile bags {}): passed
+		*     through untouched — the compose door owns them.
+		* Returns the typed copy + violations against the TYPED values (empty =
+		* the body is exactly what the class admits — the POST must send THIS
+		* body, never the raw draft).
+		*/
+		function coerceParamsToSchema(schema, params, opts = {}) {
+			const out = [];
+			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
+			const typed = {};
+			const props = schema.properties ?? {};
+			for (const [key, val] of Object.entries(params)) {
+				const field = props[key];
+				if (!field || !field.type) {
+					typed[key] = val;
+					continue;
+				}
+				const expected = field.type;
+				if (val === null) {
+					if ("default" in field) continue;
+					typed[key] = val;
+					continue;
+				}
+				const actual = jsonTypeOf(val);
+				if (actual === expected) {
+					typed[key] = val;
+					continue;
+				}
+				if (expected === "number" && actual === "integer") {
+					typed[key] = val;
+					continue;
+				}
+				const coerced = coerceScalar(key, expected, val);
+				if ("value" in coerced) {
+					typed[key] = coerced.value;
+					continue;
+				}
+				if (coerced.unset) {
+					if (field && "default" in field) continue;
+					typed[key] = null;
+					continue;
+				}
+				out.push({
+					path: `${prefix}${key}`,
+					message: `'${key}': expected ${expected}, got ${actual}`
+				});
+				typed[key] = val;
+			}
+			return {
+				params: typed,
+				violations: out
+			};
+		}
+		/** Canonical scalar coercion. ok = coerced value; unset = "" for a
+		* non-string field (the value is UNSET — the caller routes it into the
+		* null path); neither = refuse loudly. */
+		function coerceScalar(_key, expected, val) {
+			if (typeof val === "string") {
+				const t = val.trim();
+				if (t === "") {
+					if (expected === "array") return {
+						ok: true,
+						value: []
+					};
+					return {
+						ok: false,
+						unset: true
+					};
+				}
+				if (expected === "integer" || expected === "number") {
+					const n = Number(t);
+					if (!Number.isFinite(n)) return {
+						ok: false,
+						unset: false
+					};
+					if (expected === "integer" && !Number.isInteger(n)) return {
+						ok: false,
+						unset: false
+					};
+					return {
+						ok: true,
+						value: n
+					};
+				}
+				if (expected === "boolean") {
+					if (t === "true") return {
+						ok: true,
+						value: true
+					};
+					if (t === "false") return {
+						ok: true,
+						value: false
+					};
+					return {
+						ok: false,
+						unset: false
+					};
+				}
+				return {
+					ok: false,
+					unset: false
+				};
+			}
+			return {
+				ok: false,
+				unset: false
+			};
+		}
+		/**
+		* Validate a params dict against a family's param schema. Pure + synchronous.
+		* Returns violations (empty = clean). A null for a field WITH a default is
+		* treated as "use the default" (no violation) — coerce strips such nulls
+		* to absent before this runs, and absent rides the backend default; the
+		* tolerance here is defense-in-depth for direct callers (the boundary
+		* must NEVER POST a null the class would refuse — explicit null 400s
+		* on every numeric row, so coerce omits, it never forwards). A null for
+		* a field WITHOUT a default IS a violation.
+		*
+		* WHAT IT CATCHES (the motion_constraints bug class):
+		*   - TYPE mismatches: a str param sent an object/number/array.
+		*   - EXTRA fields: unknown param names (additionalProperties: false).
+		*   - null for NON-defaulted fields.
+		*
+		* WHAT IT LEAVES TO THE BACKEND (no false positives):
+		*   - REQUIRED-field presence — the frontend doesn't know which keys are
+		*     injected from flow.shared via the consumes axis (comfy_url, model).
+		*     The backend's card phase-1 compose knows the consumes set, so it
+		*     knows. The frontend defers required-checking to the hard wire gate.
+		*/
+		function validateParamsAgainstSchema(schema, params, opts = {}) {
+			const out = [];
+			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
+			const props = schema.properties ?? {};
+			if (Object.keys(props).length === 0) return out;
+			for (const [key, val] of Object.entries(params)) {
+				const field = props[key];
+				if (!field) {
+					if (schema.additionalProperties === false && !WIRE_RELAXED_KEYS.has(key)) out.push({
+						path: `${prefix}${key}`,
+						message: `unknown parameter '${key}' — not in the family signature`
+					});
+					continue;
+				}
+				if (val === null) {
+					if (!("default" in field)) out.push({
+						path: `${prefix}${key}`,
+						message: `'${key}' is null but has no default — provide a value`
+					});
+					continue;
+				}
+				const expected = field.type;
+				if (!expected) continue;
+				const actual = jsonTypeOf(val);
+				if (actual === expected) continue;
+				if (expected === "number" && actual === "integer") continue;
+				out.push({
+					path: `${prefix}${key}`,
+					message: `'${key}': expected ${expected}, got ${actual}`
+				});
+			}
+			return out;
+		}
+		/**
+		* Validate a stage's modifier entries against the family's declared kinds.
+		* Mirrors backend validate_modifier_entries: per declared kind with a
+		* param_key, params[param_key] must honor the cardinality (list kinds take
+		* a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
+		* and each entry's keys/required/type/bounds/select-membership must match
+		* the declared fields. Empty = clean; never throws. No kinds → no-op.
+		*/
+		function validateModifierEntries(kinds, params) {
+			const out = [];
+			if (!kinds) return out;
+			for (const kind of kinds) {
+				const key = kind.param_key;
+				const value = params[key];
+				if (value === void 0 || value === null) continue;
+				const fields = kind.fields ?? [];
+				if ((kind.cardinality ?? "list") === "scalar") {
+					if (typeof value === "object") {
+						out.push({
+							path: key,
+							message: `expected a single scalar value for '${kind.kind}' (cardinality='scalar'), got ${Array.isArray(value) ? "array" : "object"}`
+						});
+						continue;
+					}
+					if (fields.length > 0 && fields[0].name) checkModEntry(out, { [fields[0].name]: value }, fields, kind, key, kind.kind === "controlnet");
+					continue;
+				}
+				if (!Array.isArray(value)) {
+					out.push({
+						path: key,
+						message: `expected a list of entries for '${kind.kind}' (cardinality='list'), got ${typeof value}`
+					});
+					continue;
+				}
+				if (typeof kind.max_stack === "number" && value.length > kind.max_stack) out.push({
+					path: key,
+					message: `stack of ${value.length} exceeds the declared max_stack (${kind.max_stack}) for '${kind.kind}'`
+				});
+				const cnKind = kind.kind === "controlnet";
+				for (let i = 0; i < value.length; i++) {
+					const entry = value[i];
+					const entryPath = `${key}[${i}]`;
+					if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+						out.push({
+							path: entryPath,
+							message: `expected a dict entry, got ${Array.isArray(entry) ? "array" : typeof entry}`
+						});
+						continue;
+					}
+					checkModEntry(out, entry, fields, kind, entryPath, cnKind);
 				}
 			}
 			return out;
 		}
-		/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
-		* one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
-		* (The ONE schema grammar — a field declares its own visibility;
-		* the walker interprets, cards never hand-rolled predicates.) A
-		* field with no visible_when always shows. Unknown guard keys:
-		* show (never hide on a typo). Examples:
-		*   "sharpen_enabled=true"
-		*   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
-		function fieldVisible(f, values) {
-			const rule = f.visible_when;
-			if (typeof rule !== "string" || rule === "") return true;
-			for (const guard of rule.split("&")) {
-				const eq = guard.indexOf("=");
-				if (eq < 0) continue;
-				const key = guard.slice(0, eq);
-				if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
+		function checkModEntry(out, entry, fields, kind, path, cnKind) {
+			const declared = /* @__PURE__ */ new Map();
+			for (const f of fields) if (f.name) declared.set(f.name, f);
+			const allowed = /* @__PURE__ */ new Set([...declared.keys(), ...EDITOR_MOD_ENTRY_KEYS]);
+			for (const entryKey of Object.keys(entry)) if (!allowed.has(entryKey)) out.push({
+				path: `${path}.${entryKey}`,
+				message: `unknown field '${entryKey}'. Declared fields: ${[...declared.keys()].sort().join(", ")}.`
+			});
+			const kindOptions = (kind.options ?? []).map((o) => o?.value).filter((v) => typeof v === "string");
+			const hasUploadDir = Boolean(kind.upload_dir);
+			for (const f of fields) {
+				const name = f.name;
+				const val = entry[name];
+				if (!(name in entry && val !== null && val !== void 0)) {
+					if (f.default === void 0 && f.type !== "image" && name !== "artifact") out.push({
+						path: `${path}.${name}`,
+						message: `missing required field '${name}'.`
+					});
+					continue;
+				}
+				if (f.type === "integer" || f.type === "float") {
+					if (typeof val !== "number") {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected a number, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (f.type === "integer" && !Number.isInteger(val)) {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected an integer, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (typeof f.min === "number" && val < f.min) out.push({
+						path: `${path}.${name}`,
+						message: `value ${val} below the declared minimum ${f.min}.`
+					});
+					if (typeof f.max === "number" && val > f.max) out.push({
+						path: `${path}.${name}`,
+						message: `value ${val} above the declared maximum ${f.max}.`
+					});
+				} else if (f.type === "boolean") {
+					if (typeof val !== "boolean") out.push({
+						path: `${path}.${name}`,
+						message: `expected a boolean, got ${typeof val}.`
+					});
+				} else if (f.type === "string") {
+					if (typeof val !== "string") out.push({
+						path: `${path}.${name}`,
+						message: `expected a string, got ${typeof val}.`
+					});
+					else if (name === "id" && kindOptions.length > 0 && !hasUploadDir && !cnKind) {
+						if (!kindOptions.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown adapter '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
+						});
+					}
+				} else if (f.type === "select") {
+					if (typeof val !== "string") {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected a string, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (f.options && f.options.length > 0) {
+						if (!f.options.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown option '${val}'. Allowed: ${[...f.options].sort().join(", ")}.`
+						});
+					} else if (kindOptions.length > 0 && !hasUploadDir && !cnKind) {
+						if (!kindOptions.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown option '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
+						});
+					}
+				}
 			}
-			return true;
 		}
-		//#endregion
-		//#region ../../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
-		function r(e) {
-			var t, f, n = "";
-			if ("string" == typeof e || "number" == typeof e) n += e;
-			else if ("object" == typeof e) if (Array.isArray(e)) {
-				var o = e.length;
-				for (t = 0; t < o; t++) e[t] && (f = r(e[t])) && (n && (n += " "), n += f);
-			} else for (f in e) e[f] && (n && (n += " "), n += f);
-			return n;
-		}
-		function clsx() {
-			for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
-			return n;
-		}
-		//#endregion
-		//#region ../../web/card-base/src/chrome.ts
 		/**
-		* Card chrome primitives — the ONE joiner + the ONE file reader
-		* (founded 2026-09-12, debt extermination: anny/ideo cx, motion/h3
-		* clsx-cn, and the four identical readAsDataURL copies collapsed
-		* here). DOM-free, no CSS, no atoms — safe for node and browser.
+		* Pre-submit gate: resolve model → family → schema (from the ONE cache),
+		* validate params, throw on any violation. Called before EVERY GPU-starting
+		* fetch so the crash comes before the button press, not after a round-trip.
 		*
-		* Per-seam subpath: `@melite/card-base/chrome`.
+		* Ensures the schema cache is loaded (loadFamilySchemas) on the first call,
+		* then validates synchronously.
+		*
+		* NO SILENT DEFERS (2026-08-16): the old gate no-op'd when the model was
+		* missing from the catalog or the family had no schema — silently
+		* shipping UNKNOWN params to the backend and calling that "the backend's
+		* backstop". That is the silent-drop class this contract exists to kill:
+		*   - catalog LOADED + model missing → THROW. The picker is showing a
+		*     model that DOES NOT EXIST (the original operator complaint) — the
+		*     catalog is the source of truth and the model is not in it.
+		*   - family resolved + no schema → THROW. The schema transmission is
+		*     broken (bulk fetch dropped it); deferring would validate against
+		*     NOTHING. (The workflow:* exemption died with the workflow lane —
+		*     §12.2; a workflow is a plugin card with a REAL signature now.)
+		* The ONE honest defer left: the catalog cache is still cold at boot
+		* (nothing fetched yet — cannot resolve anything, backend gate decides).
 		*/
-		/** Plain classnames joiner (no conflicting utilities to merge —
-		*  plain join is exact). */
-		function cx(...parts) {
-			return parts.filter(Boolean).join(" ");
-		}
-		/** The merging joiner (clsx — objects/arrays/conditionals). */
-		function cn(...inputs) {
-			return clsx(...inputs);
-		}
-		/** Blob → data URL (FileReader promise). */
-		function readAsDataURL$1(file) {
-			return new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => resolve(reader.result);
-				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
-				reader.readAsDataURL(file);
-			});
-		}
-		/** THE ESTATE'S DRAG CONTRACT (2026-09-18, exterminated): the MIME
-		*  under which an upstream asset rides a drop payload — a JSON blob
-		*  {url, name, …} carried by the source's dataTransfer. h3's kit and
-		*  motion's kit each redeclared it; card-base, the card-view's
-		*  CardsTab and input-square already consumed it. One definition
-		*  estate-wide (the drag is a shared contract, not a studio rule). */
-		const ASSET_DRAG_MIME$2 = "application/tech-noir-asset";
-		//#endregion
-		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$9 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
-		const tagId$9 = "@melite/motion-motion/card.module.css@563d0537";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$9) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$9;
-			tag.textContent = css$9;
-			document.head.appendChild(tag);
-		}
-		var card_module_css_default = {
-			"ctlRow": "FRpSCG_ctlRow",
-			"ctlRowSm": "FRpSCG_ctlRowSm",
-			"emptyHint": "FRpSCG_emptyHint",
-			"emptyOverlay": "FRpSCG_emptyOverlay",
-			"emptyPane": "FRpSCG_emptyPane",
-			"emptyTitle": "FRpSCG_emptyTitle",
-			"groupTab": "FRpSCG_groupTab",
-			"groupTabActive": "FRpSCG_groupTabActive",
-			"groupTabs": "FRpSCG_groupTabs",
-			"inputRail": "FRpSCG_inputRail",
-			"modAddSquare": "FRpSCG_modAddSquare",
-			"modField": "FRpSCG_modField",
-			"modHead": "FRpSCG_modHead",
-			"modHint": "FRpSCG_modHint",
-			"modLeaf": "FRpSCG_modLeaf",
-			"modLeafActions": "FRpSCG_modLeafActions",
-			"modLeafError": "FRpSCG_modLeafError",
-			"modLeafFields": "FRpSCG_modLeafFields",
-			"modRow": "FRpSCG_modRow",
-			"modSection": "FRpSCG_modSection",
-			"modSelect": "FRpSCG_modSelect",
-			"modTile": "FRpSCG_modTile",
-			"modTileLabel": "FRpSCG_modTileLabel",
-			"modTileRecipe": "FRpSCG_modTileRecipe",
-			"modTileSteps": "FRpSCG_modTileSteps",
-			"modTileStrength": "FRpSCG_modTileStrength",
-			"modTitle": "FRpSCG_modTitle",
-			"modelAxes": "FRpSCG_modelAxes",
-			"paneHeaderPreview": "FRpSCG_paneHeaderPreview",
-			"paneHeaderStrip": "FRpSCG_paneHeaderStrip",
-			"paneHint": "FRpSCG_paneHint",
-			"paneMeta": "FRpSCG_paneMeta",
-			"paneMetaNum": "FRpSCG_paneMetaNum",
-			"panePulse": "FRpSCG_panePulse",
-			"paneShell": "FRpSCG_paneShell",
-			"paneTitle": "FRpSCG_paneTitle",
-			"pickBtn": "FRpSCG_pickBtn",
-			"pickEmpty": "FRpSCG_pickEmpty",
-			"pickGlyph": "FRpSCG_pickGlyph",
-			"pickLabel": "FRpSCG_pickLabel",
-			"pickList": "FRpSCG_pickList",
-			"pickRow": "FRpSCG_pickRow",
-			"pickThumb": "FRpSCG_pickThumb",
-			"sectionLabel": "FRpSCG_sectionLabel",
-			"sectionLabelTail": "FRpSCG_sectionLabelTail",
-			"sectionLabelText": "FRpSCG_sectionLabelText",
-			"skeleton": "FRpSCG_skeleton",
-			"sourceRow": "FRpSCG_sourceRow",
-			"specDice": "FRpSCG_specDice",
-			"specDiceOn": "FRpSCG_specDiceOn",
-			"specField": "FRpSCG_specField",
-			"specFieldHead": "FRpSCG_specFieldHead",
-			"specFieldKey": "FRpSCG_specFieldKey",
-			"specForm": "FRpSCG_specForm",
-			"specGrid": "FRpSCG_specGrid",
-			"specGroup": "FRpSCG_specGroup",
-			"specGroupTitle": "FRpSCG_specGroupTitle",
-			"specHint": "FRpSCG_specHint",
-			"specInfo": "FRpSCG_specInfo",
-			"specLinkBtn": "FRpSCG_specLinkBtn",
-			"specRequired": "FRpSCG_specRequired",
-			"specSelect": "FRpSCG_specSelect",
-			"specSlider": "FRpSCG_specSlider",
-			"specSliderRow": "FRpSCG_specSliderRow",
-			"specSliderValue": "FRpSCG_specSliderValue",
-			"specSlotCell": "FRpSCG_specSlotCell",
-			"specSlotRow": "FRpSCG_specSlotRow",
-			"specStack": "FRpSCG_specStack",
-			"specTextarea": "FRpSCG_specTextarea",
-			"squareBox": "FRpSCG_squareBox",
-			"squareFileInput": "FRpSCG_squareFileInput",
-			"squareGlyph": "FRpSCG_squareGlyph",
-			"squareLabel": "FRpSCG_squareLabel",
-			"squareMetric": "FRpSCG_squareMetric",
-			"squareOff": "FRpSCG_squareOff",
-			"squareOver": "FRpSCG_squareOver",
-			"squareThumb": "FRpSCG_squareThumb",
-			"squareWrap": "FRpSCG_squareWrap",
-			"squareX": "FRpSCG_squareX",
-			"sz14": "FRpSCG_sz14",
-			"tileDragging": "FRpSCG_tileDragging",
-			"tipAnchor": "FRpSCG_tipAnchor",
-			"wireDialog": "FRpSCG_wireDialog",
-			"wireEmpty": "FRpSCG_wireEmpty",
-			"wireIdx": "FRpSCG_wireIdx",
-			"wireList": "FRpSCG_wireList",
-			"wireMeta": "FRpSCG_wireMeta",
-			"wireOption": "FRpSCG_wireOption",
-			"wireOut": "FRpSCG_wireOut",
-			"wireSelected": "FRpSCG_wireSelected",
-			"wireSub": "FRpSCG_wireSub",
-			"wireThumb": "FRpSCG_wireThumb",
-			"wireThumbFallback": "FRpSCG_wireThumbFallback",
-			"wireTitle": "FRpSCG_wireTitle",
-			"wireUnwire": "FRpSCG_wireUnwire",
-			"wiredTag": "FRpSCG_wiredTag"
-		};
-		//#endregion
-		//#region ../../web/card-base/src/layout.tsx
-		function Tip$1({ tip, children }) {
-			if (tip === void 0) return children;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-				label: tip,
-				side: "top",
-				delayMs: 300,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: card_module_css_default.tipAnchor,
-					children
-				})
-			});
-		}
-		/** Skeleton — the quiet loading block (promoted 2026-09-18 from
-		*  motion's kit, where it was the estate's only copy): a bare div
-		*  with the estate pulse. EmptyState is the pane's empty face;
-		*  Skeleton is its loading face. */
-		function Skeleton$1({ className, ...props }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				"data-slot": "skeleton",
-				className: cn(card_module_css_default.skeleton, className),
-				...props
-			});
-		}
-		function PaneHeader({ title, meta, hint, lead, variant = "strip", className }) {
-			if (variant === "preview") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				"data-slot": "pane-header",
-				"data-variant": "preview",
-				className: cn(card_module_css_default.paneHeaderPreview, className),
-				children: [
-					lead,
-					title != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.paneTitle,
-						children: title
-					}) : null,
-					meta != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.paneMeta,
-						children: meta
-					}) : null,
-					hint
-				]
-			});
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				"data-slot": "pane-header",
-				"data-variant": "strip",
-				className: cn(card_module_css_default.paneHeaderStrip, className),
-				children: [
-					lead,
-					title != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.paneTitle,
-						children: title
-					}) : null,
-					meta != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.paneMetaNum,
-						children: meta
-					}) : null,
-					hint != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.paneHint,
-						children: hint
-					}) : null
-				]
-			});
-		}
-		function PaneShell({ children, className }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				"data-slot": "pane-shell",
-				className: cn(card_module_css_default.paneShell, className),
-				children
-			});
-		}
-		//#endregion
-		//#region ../../web/card-base/src/icons.tsx
-		function Svg$1({ className, style, children, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-				xmlns: "http://www.w3.org/2000/svg",
-				width: 24,
-				height: 24,
-				viewBox: "0 0 24 24",
-				fill: "none",
-				stroke: "currentColor",
-				strokeWidth: 2,
-				strokeLinecap: "round",
-				strokeLinejoin: "round",
-				"aria-hidden": "true",
-				focusable: "false",
-				className,
-				style,
-				...rest,
-				children
-			});
-		}
-		function X$1({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 6 6 18" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 6 12 12" })]
-			});
-		}
-		function ChevronLeft({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 18-6-6 6-6" })
-			});
-		}
-		function ChevronRight({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 18 6-6-6-6" })
-			});
-		}
-		function Upload({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17 8-5-5-5 5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v12" })
-				]
-			});
-		}
-		function PersonStanding({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "5",
-						r: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 20 3-6 3 6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 8 6 2 6-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 10v4" })
-				]
-			});
-		}
-		function User({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-					cx: "12",
-					cy: "7",
-					r: "4"
-				})]
-			});
-		}
-		function Link2({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 17H7A5 5 0 0 1 7 7h2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 7h2a5 5 0 1 1 0 10h-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 12h8" })
-				]
-			});
-		}
-		function Plus({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 5v14" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5 12h14" })]
-			});
-		}
-		function Check({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M20 6 9 17l-5-5" })
-			});
-		}
-		function Box({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 8.5v7a2 2 0 0 1-1 1.73l-6 3.5a2 2 0 0 1-2 0l-6-3.5A2 2 0 0 1 5 15.5v-7a2 2 0 0 1 1-1.73l6-3.5a2 2 0 0 1 2 0l6 3.5a2 2 0 0 1 1 1.73Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m5.3 7.3 6.7 3.9 6.7-3.9" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 22V11" })
-				]
-			});
-		}
-		function Layers$1({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m12 2 9 4.9-9 4.9-9-4.9L12 2Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 11.9 9 4.9 9-4.9" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 16.9 9 4.9 9-4.9" })
-				]
-			});
-		}
-		function Palette({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "13.5",
-						cy: "6.5",
-						r: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "17.5",
-						cy: "10.5",
-						r: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "8.5",
-						cy: "7.5",
-						r: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "6.5",
-						cy: "12.5",
-						r: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.26-.29-.43-.68-.43-1.12A1.68 1.68 0 0 1 14.46 16h2.08A5.46 5.46 0 0 0 22 10.5C21.94 5.75 17.5 2 12 2Z" })
-				]
-			});
-		}
-		function Move({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m5 9-3 3 3 3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 5 3-3 3 3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 19-3 3-3-3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m19 9 3 3-3 3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2 12h20" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 2v20" })
-				]
-			});
-		}
-		function AlertTriangle({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 9v4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 17h.01" })
-				]
-			});
-		}
-		function Info({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "12",
-						r: "10"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 16v-4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 8h.01" })
-				]
-			});
-		}
-		function Pause({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: "14",
-					y: "4",
-					width: "4",
-					height: "16",
-					rx: "1"
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: "6",
-					y: "4",
-					width: "4",
-					height: "16",
-					rx: "1"
-				})]
-			});
-		}
-		function Download({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m7 10 5 5 5-5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 15V3" })
-				]
-			});
-		}
-		function EyeOff({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9.88 9.88a3 3 0 1 0 4.24 4.24" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10.73 5.08A10.4 10.4 0 0 1 12 5c7 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.7 9.7 0 0 0 5.39-1.61" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m2 2 20 20" })
-				]
-			});
-		}
-		function RefreshCw({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 3v5h-5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 21v-5h5" })
-				]
-			});
-		}
-		function RotateCw({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 3v5h-5" })]
-			});
-		}
-		function RotateCcw({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 3v5h5" })]
-			});
-		}
-		function Target({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "12",
-						r: "10"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "12",
-						r: "6"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "12",
-						r: "2"
-					})
-				]
-			});
-		}
-		function ImagePlus({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 5h6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 2v6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "9",
-						cy: "9",
-						r: "2"
-					})
-				]
-			});
-		}
-		function Camera$1({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-					cx: "12",
-					cy: "13",
-					r: "3"
-				})]
-			});
-		}
-		function FileBox({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14 2v4a2 2 0 0 0 2 2h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 9H8" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 13H8" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 17H8" })
-				]
-			});
-		}
-		function Film$1({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						x: "3",
-						y: "3",
-						width: "18",
-						height: "18",
-						rx: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7 3v18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 7.5h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12h18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 16.5h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 3v18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 7.5h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 16.5h4" })
-				]
-			});
-		}
-		function Crop({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 2v14a2 2 0 0 0 2 2h14" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 22V8a2 2 0 0 0-2-2H2" })]
-			});
-		}
-		function Frame({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 6H2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 18H2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 2v20" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 2v20" })
-				]
-			});
-		}
-		/** Motion's simplified eye variant. */
-		function EyeAlt({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-					cx: "12",
-					cy: "12",
-					r: "3"
-				})]
-			});
-		}
-		/** Motion's sharp-corner play variant. */
-		function PlayAlt({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg$1, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 4l14 8-14 8V4z" })
-			});
-		}
-		//#endregion
-		//#region ../../web/card-base/src/square.tsx
-		/**
-		* square.tsx — InputSquare, THE ONE square for any slot-shaped value
-		* — the base's default input component. Ported from the old system's
-		* SlotSquare law (packages/web-kit/ui/SlotSquare.tsx, 2026-08-08:
-		* "the look for it will be reused for the sub-card system") onto the
-		* DSH substrate: ui-primitives glyphs, module CSS under the
-		* web-styling chrome laws, no lucide/cn/tip.
-		*
-		* THE PLUS LAW (2026-09-13, the operator): the empty square
-		* carries the PLUS — "add a source" — and the click opens the
-		* three-entry source menu (From flow / From media / From file) in
-		* the provider; a bare square without a picker still files.
-		* THE OLD LAW, KEPT — a square thumbnail with label + badge
-		* + the THREE source verbs (operator, 2026-09-12: "we rendered a
-		* square and gave the option to do 1 of 3 things"):
-		*   a) from previous card  → onClick (the host opens the wire picker;
-		*                            badge = the upstream card's title)
-		*   b) from file upload    → onPickFile/onDropFile (hidden input +
-		*                            OS drop — the ONE read path readAsDataURL)
-		*   c) from media bar      → onDropAsset (the ASSET_DRAG_MIME contract
-		*                            the drop surface already serves)
-		* plus the X (detach). The consumer owns the doors — this shell only
-		* voices them (ui-attachment's own law: presentation registers, the
-		* service seams stay with their owners).
-		*
-		* THE CONSTRUCTION LAW (2026-09-12, the card-base founding): a card
-		* package EMITS an image input → the base constructs THIS square
-		* automatically. One input component; no card hand-rolls its own
-		* file field ever again.
-		*/
-		/** The media-bar drag contract (the tab's drop surface serves the
-		* same MIME — ONE spelling, imported from the base's law). */
-		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
-		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
-		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
-		*  artifact URLs. Every slot-shaped value renders the same way. */
-		function isImageUrl(value) {
-			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
-		}
-		/** Parse the asset MIME off a drop event. null = absent or malformed. */
-		function assetPayload(e) {
-			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
-			if (raw === "") return null;
+		async function assertParamsMatchFamilySchema(model, params) {
+			let family;
+			let modifiers;
+			let cat;
 			try {
-				const p = JSON.parse(raw);
-				return typeof p["url"] === "string" ? p["url"] : null;
+				const { getCachedCatalog } = await Promise.resolve().then(() => (init_src(), src_exports));
+				cat = getCachedCatalog();
+				family = cat?.models?.[model]?.family;
+				modifiers = cat?.families?.[family ?? ""]?.modifiers;
 			} catch {
-				return null;
+				return params;
 			}
-		}
-		function InputSquare(props) {
-			const { label, value, metric, disabled } = props;
-			const seat = props.ariaLabel ?? label;
-			const fileRef = (0, react.useRef)(null);
-			const boxRef = (0, react.useRef)(null);
-			const [over, setOver] = (0, react.useState)(false);
-			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
-			const empty = thumb === null;
-			const pick = () => {
-				if (disabled) return;
-				if (props.onPick !== void 0) props.onPick(boxRef.current);
-				else if (empty && props.onFile !== void 0) fileRef.current?.click();
-			};
-			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
-				ref: boxRef,
-				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
-				role: "button",
-				tabIndex: 0,
-				"aria-label": (seat || "source") + (seat !== "" ? " source" : ""),
-				onClick: pick,
-				onKeyDown: (e) => {
-					if (e.key === "Enter") pick();
-				},
-				onDragOver: (e) => {
-					if (disabled) return;
-					e.preventDefault();
-					setOver(true);
-				},
-				onDragLeave: () => {
-					setOver(false);
-				},
-				onDrop: (e) => {
-					if (disabled) return;
-					e.preventDefault();
-					setOver(false);
-					const asset = assetPayload(e);
-					if (asset !== null && props.onAsset !== void 0) {
-						props.onAsset(asset);
-						return;
-					}
-					const f = e.dataTransfer.files[0];
-					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
-				}
-			}, thumb !== null ? (0, react.createElement)("img", {
-				className: card_module_css_default.squareThumb,
-				src: thumb,
-				alt: label
-			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
-				className: card_module_css_default.squareX,
-				type: "button",
-				title: "Detach",
-				"aria-label": "Detach " + (seat || "source"),
-				onClick: (e) => {
-					e.stopPropagation();
-					props.onClear();
-				}
-			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
-				ref: fileRef,
-				type: "file",
-				accept: "image/png,image/jpeg,image/webp",
-				className: card_module_css_default.squareFileInput,
-				"aria-hidden": true,
-				tabIndex: -1,
-				onChange: (e) => {
-					const f = e.target.files?.[0];
-					if (f !== void 0 && f !== null) props.onFile?.(f);
-					fileRef.current.value = "";
-				}
-			}) : null);
-		}
-		//#endregion
-		//#region ../../web/card-base/src/wirePicker.tsx
-		/** The wire picker — prior stages by ARRAY INDEX, including ones that
-		* haven't run yet ("not run yet" — wire BEFORE the upstream runs).
-		*
-		* Named outputs: when an upstream stage produced >1 named artifact
-		* (input_prep → media + mask), it expands into ONE ROW PER output so the
-		* user can wire mask → lanpaint_mask specifically. Upstreams with 0–1
-		* named artifacts render as a single row (legacy — primary via
-		* assetUrls[0]). The output name rides onPick → setSlotInput →
-		* inputOutputs → collectUpstreamResults. */
-		function WirePickerModal({ slot, priorStages, currentId, currentOutput, onPick, onUnwire, onClose }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose,
-				title: `Wire ${slot} from an earlier card`,
-				closeLabel: "Close wire picker",
-				className: card_module_css_default.wireDialog,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					"data-wire-modal": true,
-					children: [currentId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-						type: "button",
-						onClick: onUnwire,
-						"data-wire-unwire": true,
-						className: card_module_css_default.wireUnwire,
-						children: "Unwire — this slot will ask for a file or wire again"
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("ul", {
-						className: card_module_css_default.wireList,
-						children: [priorStages.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
-							className: card_module_css_default.wireEmpty,
-							children: "No earlier cards yet — add a card before this one to wire from it."
-						}), priorStages.map((u, i) => {
-							const named = u.result?.artifacts ?? {};
-							const namedEntries = Object.entries(named);
-							const multi = namedEntries.length > 1;
-							return (multi ? namedEntries.map(([name, url]) => ({
-								outputName: name,
-								thumb: url,
-								label: name
-							})) : [{
-								outputName: null,
-								thumb: u.result?.assetUrls[0],
-								label: "primary"
-							}]).map((row, ri) => {
-								const selected = u.id === currentId && (currentOutput ?? null) === (row.outputName ?? null);
-								return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-									type: "button",
-									onClick: () => onPick(u.id, row.outputName),
-									"data-wire-option": row.outputName ?? "primary",
-									className: clsx(card_module_css_default.wireOption, selected && card_module_css_default.wireSelected),
-									children: [
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: card_module_css_default.wireIdx,
-											children: String(i + 1).padStart(2, "0")
-										}),
-										row.thumb && isImageUrl(row.thumb) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-											src: row.thumb,
-											alt: "",
-											className: card_module_css_default.wireThumb
-										}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-											className: card_module_css_default.wireThumbFallback,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Link2, { className: card_module_css_default.sz14 })
-										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-											className: card_module_css_default.wireMeta,
-											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-												className: card_module_css_default.wireTitle,
-												children: [u.title, multi && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-													className: card_module_css_default.wireOut,
-													children: ["· ", row.label]
-												})]
-											}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-												className: card_module_css_default.wireSub,
-												children: u.result ? row.thumb ?? "no artifacts" : "not run yet"
-											})]
-										}),
-										selected && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: card_module_css_default.wiredTag,
-											children: "wired"
-										})
-									]
-								}) }, u.id + (ri > 0 ? `:${row.outputName}` : ""));
-							});
-						})]
-					})]
-				})
-			});
-		}
-		//#endregion
-		//#region ../../web/card-base/src/wire.ts
-		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
-		*  own error text when present). */
-		async function v1Get(path, signal) {
-			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
-			const body = await res.json().catch(() => null);
-			if (!res.ok) {
-				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
-				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
+			if (!cat) return params;
+			if (!family) throw new Error(`Parameter validation failed — model '${model}' is not in the catalog. The picker showed a model that DOES NOT EXIST; the catalog is the source of truth and this key is not in it. (The backend wire gate would 400 the same request.)`);
+			try {
+				await loadFamilySchemas();
+			} catch {
+				return params;
 			}
-			return body;
-		}
-		/** /v1/form-spec?model=<family> — the card family's emission (the
-		*  serialized schema envelope + model defaults + the declared edges
-		*  + the mod kinds and their envelopes). */
-		async function fetchFormSpec(model, signal) {
-			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
-			const env = doc["schema"];
-			if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
-			return doc;
-		}
-		//#endregion
-		//#region ../../web/card-base/src/square-provider.tsx
-		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		//#endregion
-		//#region ../../web/card-base/src/atoms.tsx
-		/** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
-		*  promoted from h3's studio-local TriControl (same semantics, same
-		*  option order). Serves schema-bound fields of type 'tri' AND the
-		*  standalone rail rows that hand-rolled the select before. */
-		function TriStateAtom({ label, value, onEdit, name, disabled }) {
-			return (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"aria-label": label,
-				disabled: disabled === true,
-				value: value === void 0 ? "" : String(value),
-				onChange: (e) => {
-					const v = e.target.value;
-					onEdit(name, v === "" ? void 0 : v === "true");
-				}
-			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
-		}
-		/** The slider's local display during a drag (the settle law's
-		*  carrier): local owns the bubble while dragging; an external move
-		*  of the backing value (agent write, revive, another card opened)
-		*  reclaims the display. */
-		function useLocalSliderValue(value) {
-			const num = typeof value === "number" ? value : Number(value);
-			const [local, setLocal] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				setLocal(null);
-			}, [num]);
-			return {
-				value: local !== null ? local : Number.isFinite(num) ? num : null,
-				set: setLocal
-			};
-		}
-		/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
-		*  mask-studio's draft absorber, 2026-08-10): a drag fires input
-		*  60×/sec; if every step wrote to the card, updateStageParams →
-		*  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
-		*  the editor. The atom shows the drag locally and persists ONCE on
-		*  settle (the change event = release / keyboard step). External
-		*  writes (agent, revive) re-sync the display when the backing
-		*  value actually moves. */
-		function SpecSliderAtom({ f, value, onEdit }) {
-			const shown = useLocalSliderValue(value);
-			if (shown.value === null) return (0, react.createElement)("span", {
-				className: card_module_css_default.specSliderRow,
-				"data-refused": f.name
-			}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value) + " — REFUSED: not a number"));
-			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
-				className: card_module_css_default.specSlider,
-				type: "range",
-				min: f.min ?? 0,
-				max: f.max ?? 10,
-				step: f.step ?? .1,
-				value: shown.value,
-				onInput: (e) => {
-					shown.set(Number(e.target.value));
-				},
-				onChange: (e) => {
-					onEdit(f.name, e.target.value);
-				},
-				"aria-label": f.label
-			}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value)));
-		}
-		/** One spec atom — typed by the declaration, edited as a raw string
-		*  while typing (decimal dots survive; coercion happens once at patch). */
-		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }) {
-			if ((f.type === "image" || f.type === "file") && square !== void 0) {
-				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
-				return (0, react.createElement)(InputSquare, {
-					label: f.label !== "" ? f.label : f.name,
-					value: shown !== null && isImageUrl(shown) ? shown : null,
-					metric: typeof value === "string" && value !== "" && !isImageUrl(value) ? value : void 0,
-					...square.verbs
-				});
+			const schema = getFamilySchema(family);
+			if (!schema) {
+				if (isFamilySchemaCachePopulated()) throw new Error(`Parameter validation failed — family '${family}' (model '${model}') has no param schema in the populated cache — the backend does not know this family. Refusing to validate against nothing.`);
+				return params;
 			}
-			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				value: String(value ?? ""),
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			}, ghost !== void 0 ? (0, react.createElement)("option", { value: "" }, ghost) : null, f.options.map((o) => {
-				const row = typeof o === "string" ? {
-					value: o,
-					label: o
-				} : o;
-				return (0, react.createElement)("option", {
-					key: row.value,
-					value: row.value
-				}, titleCaseId(row.label));
-			}));
-			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
-				f,
-				value,
-				onEdit
-			});
-			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
-				label: f.label !== "" ? f.label : f.name,
-				value: value === void 0 || value === null ? void 0 : value === true || value === "true",
-				onEdit,
-				name: f.name
-			});
-			if (f.type === "switch" || f.type === "boolean") {
-				if (value !== void 0 && value !== null && typeof value !== "boolean" && value !== "true" && value !== "false") return (0, react.createElement)("span", {
-					className: card_module_css_default.specField,
-					"data-refused": f.name
-				}, f.label + ": " + String(value) + " — REFUSED: not a boolean");
-				const on = value === true || value === "true";
-				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
-					label: f.label,
-					checked: on,
-					onChange: (next) => {
-						onEdit(f.name, next);
-					}
-				});
+			const coerced = coerceParamsToSchema(schema, params);
+			const violations = [...coerced.violations];
+			violations.push(...validateParamsAgainstSchema(schema, coerced.params));
+			violations.push(...validateModifierEntries(modifiers, params));
+			if (violations.length > 0) {
+				const lines = violations.map((v) => `  - ${v.path}: ${v.message}`).join("\n");
+				throw new Error(`Parameter validation failed — the params do not match the '${family}' family signature. Fix before running:\n${lines}\n\n(The backend's wire gate would reject this same request with 400.)`);
 			}
-			if (f.type === "textarea") {
-				const fit = (el) => {
-					if (el === null) return;
-					el.style.height = "auto";
-					el.style.height = Math.max(el.scrollHeight, 44) + "px";
-				};
-				return (0, react.createElement)("textarea", {
-					className: card_module_css_default.specTextarea,
-					rows: 2,
-					value: String(value ?? ""),
-					placeholder: f.placeholder ?? "",
-					ref: fit,
-					onChange: (e) => {
-						const el = e.target;
-						fit(el);
-						onEdit(f.name, el.value);
-					},
-					"aria-label": f.label
-				});
-			}
-			if (f.type === "number") return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				min: f.min,
-				max: f.max,
-				step: f.step,
-				value: String(value ?? ""),
-				placeholder: placeholder ?? f.placeholder ?? "",
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			});
-			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				value: String(value ?? ""),
-				placeholder: placeholder ?? f.placeholder ?? "",
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			});
+			return coerced.params;
 		}
-		/** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
-		*  plus ONE SELECT PER SERVED AXIS GROUP — Variant, Quant, Recipe,
-		*  Precision, … the declaration's whole vocabulary, NEVER a hardcoded
-		*  list (the operator's lane proof caught the hardcoded Quant-only
-		*  list dropping seedvr2's and qwen's other axes). Order: the door's
-		*  variant_groups contract, else first-seen. Chain: an axis' options
-		*  are the rows composing with the axes above (the row's `owner`).
-		*  Each pick applies the row's defaults overlay through onEdit — the
-		*  values (model + every axis key + overlay keys) ride the caller's
-		*  map and pass along at Run. Renders nothing when the spec declares
-		*  no matrix. */
-		//#endregion
-		//#region ../../web/card-base/src/rows.tsx
-		/** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		/** THE INFO GLYPH (hour 21): the field's declared help prose (the
-		*  schema's extra.tooltip) rides a hover (i) beside the label — one
-		*  definition for every card; absent prose, no glyph. The text is
-		*  aria-carried (the DSH Tooltip is hover-only). */
-		function infoGlyph(f) {
-			if (f.tooltip === void 0 || f.tooltip === "") return null;
-			return (0, react.createElement)(Tip$1, {
-				tip: f.tooltip,
-				children: (0, react.createElement)("span", {
-					className: card_module_css_default.specInfo,
-					role: "note",
-					"aria-label": `info: ${f.tooltip}`
-				}, "i")
-			});
-		}
-		/** THE SEED DICE (stroke 39 — the operator's QOL law): the seed
-		*  knob carries the RANDOM sentinel -1 (GATE S: -1 mints a fresh
-		*  seed in the lane, EVERY run). The dice sits at the key line's
-		*  right end, across from the field's name: FILLED pips = random
-		*  (a new seed every run), HOLLOW pips = fixed (this exact seed
-		*  re-runs). The state DERIVES from the resolved value alone — no
-		*  hidden mode to drift; the click writes the value: fixed → -1
-		*  (random), random → a minted concrete int (the kit's own mint
-		*  law, Math.floor(random * 2147483647)). Typing a number while
-		*  random fixes it — the dice unfills by derivation, one source
-		*  of truth. The input never paints the sentinel: random shows
-		*  the placeholder, never "-1". */
-		function SeedDice({ random, onToggle }) {
-			return (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.specDice + (random ? " " + card_module_css_default.specDiceOn : ""),
-				"data-seed-dice": random ? "random" : "fixed",
-				"aria-pressed": random,
-				"aria-label": "seed dice",
-				title: random ? "Random — a new seed every run. Click to fix one." : "Fixed seed — this exact seed re-runs. Click for a new one every run.",
-				onClick: onToggle
-			}, (0, react.createElement)("svg", {
-				width: 14,
-				height: 14,
-				viewBox: "0 0 16 16",
-				fill: "none",
-				xmlns: "http://www.w3.org/2000/svg",
-				"aria-hidden": "true"
-			}, (0, react.createElement)("rect", {
-				x: 1.4,
-				y: 1.4,
-				width: 13.2,
-				height: 13.2,
-				rx: 3.2,
-				stroke: "currentColor",
-				strokeWidth: 1.3
-			}), (0, react.createElement)("circle", {
-				cx: 5,
-				cy: 5,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 11,
-				cy: 5,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 8,
-				cy: 8,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 5,
-				cy: 11,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 11,
-				cy: 11,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			})));
-		}
-		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
-			const seedKnob = f.name === "seed";
-			const seedRandom = seedKnob && (value === -1 || value === "-1");
-			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SeedDice, {
-				random: seedRandom,
-				onToggle: () => {
-					if (seedRandom) onEdit(f.name, Math.floor(Math.random() * 2147483647));
-					else onEdit(f.name, -1);
-				}
-			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SpecAtom, {
-				f,
-				value: seedRandom ? void 0 : value,
-				...seedRandom ? { placeholder: "random — new every run" } : {},
-				onEdit,
-				square,
-				...wireCandidates !== void 0 ? { wireCandidates } : {}
-			}));
-		}
-		//#endregion
-		//#region ../../web/card-base/src/axes.tsx
-		/** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		/** THE CARD FORM (the constructor's surface half) — the emission's
-		*  fields walked off the schema envelope, grouped, visible-when
-		*  honored; the RESOLVED value derives per render (resolveValue —
-		*  the engine's compose cascade mirrored), edits are set/unset ops
-		*  over the USER layer (the settings law: presence IS the override
-		*  mark, the reset chip removes it). Each field renders through the
-		*  claimed atom for its emitted type when the caller passes one;
-		*  the base's built-in atom is the default.
-		*
-		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
-		*  img-to-mesh input component — you are not using it around — you
-		*  are hardcoding"): an emitted image/file input constructs THE ONE
-		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
-		*  square provider — no call site wires it, no call site can forget
-		*  it. The caller hands only the WIRE (picker candidates), never the
-		*  component; a caller that passes its own `square` fn overrides (the
-		*  host-claim seam), but the default is the constructor's own. */
-		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
-		*  required star, hint) around the atom — CardForm's own row, opened
-		*  to rail sections that render served fields outside a whole form
-		*  (mask's TuneSection). The claim seam stays CardForm's; this row
-		*  takes the resolved atom inputs. */
-		//#endregion
-		//#region ../../web/card-base/src/use-form-spec.ts
-		/** use-form-spec.ts — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
-		*  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
-		*  img-to-mesh's client, ideogram4's client) each hand-copied the
-		*  same fetch-once + abort dance. One spelling now: fetches
-		*  /v1/form-spec?model=<id> when the id is non-empty, aborts the
-		*  in-flight fetch on unmount or id change, and hands back the doc
-		*  (null until it lands) + the refusal message (null unless the door
-		*  refused — loud consumers render it, silent ones ignore it).
-		*  Consumer-specific derivations (field filters, value seeding) stay
-		*  at the call site as reactions to `spec`. */
-		function useFormSpec(modelId) {
-			const [spec, setSpec] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
-			const id = typeof modelId === "string" && modelId !== "" ? modelId : null;
-			(0, react.useEffect)(() => {
-				if (id === null) return;
-				const ctl = new AbortController();
-				setSpec(null);
-				setError(null);
-				fetchFormSpec(id, ctl.signal).then((doc) => {
-					setSpec(doc);
-				}).catch((e) => {
-					setError(e instanceof Error ? e.message : "form-spec failed");
-				});
-				return () => {
-					ctl.abort();
-				};
-			}, [id]);
-			return {
-				spec,
-				error
-			};
-		}
-		//#endregion
-		//#region ../../web/card-base/src/spec-panel.tsx
-		/** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
-		/** THE DYNAMIC PARAMETER PANEL (2026-09-17, the operator's shared-
-		* component law): sections of the SERVED form-spec's rows at their
-		* wire names — ONE mechanism every card seats, never a per-card
-		* re-walk. The card owns POLICY through the DECLARATION (which
-		* fields exist, their visible_when leaves); the base owns MECHANISM
-		* (fetch → walker → row atoms → visibility grammar → the error
-		* law). A row the door never declared renders NOTHING (no ghost,
-		* no twin); a refused spec renders AS an error — never a thinner
-		* panel. */
-		function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: errorProp }) {
-			const owned = useFormSpec(model);
-			const spec = specProp !== void 0 ? specProp : owned.spec;
-			const error = specProp !== void 0 ? errorProp ?? null : owned.error;
-			if (error !== null) return (0, react.createElement)("div", {
-				className: card_module_css_default.specGroup,
-				role: "alert",
-				"data-testid": "spec-panel-error"
-			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, "form-spec failed — parameters unavailable"), (0, react.createElement)("div", { className: card_module_css_default.specHint }, error));
-			if (spec === null) return null;
-			const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]));
-			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, sections.map((sec) => (0, react.createElement)("div", {
-				className: card_module_css_default.specGroup,
-				key: sec.title,
-				...sec.testid !== void 0 ? { "data-testid": sec.testid } : {}
-			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
-				const f = byName.get(row.name);
-				if (f === void 0) return null;
-				if (!fieldVisible(f, values)) return null;
-				return (0, react.createElement)(SpecFieldRow, {
-					key: row.name,
-					f,
-					value: values[row.name],
-					onEdit
-				});
-			}))));
-		}
-		//#endregion
-		//#region ../../web/card-base/src/form.tsx
-		/**
-		* form.tsx — @melite/card-base: THE CONSTRUCTOR (the godfile
-		* split, hour 15: the seams live in their own files now —
-		* use-form-spec.ts, square-provider.tsx, atoms.tsx, rows.tsx,
-		* spec-panel.tsx, axes.tsx — this file is the CardForm
-		* composition + the stable re-export surface).
-		*
-		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
-		* construct the card ui should see that the card package emits an
-		* image input, then constructs the input component automatically"):
-		* the base reads the card package's EMISSION — the served form-spec
-		* (the schema envelope, declared input/output edges, mod kinds) —
-		* and constructs the surface. The resolved value derives per render
-		* (resolveValue — the engine's compose cascade mirrored); every
-		* image/file field gets THE ONE square (square.tsx) with the
-		* three source verbs; no card ever hand-rolls an input component.
-		*
-		* THE SEAM (slots.ts): each field renders through the field-atom seam
-		* keyed by its emitted wire type — the caller may pass claimed atoms
-		* (the composition consults the slot machinery and hands them in);
-		* the base's built-in atom is the default (the ui-tool built-ins
-		* pattern). A whole-form takeover replaces CardForm itself.
-		*
-		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
-		* atoms the primitives set lacks (select, slider, textarea) are
-		* layout-only module CSS over native elements, every color an
-		* inherited --dsw-alias-* token (the package's documented pattern).
-		*/
-		//#endregion
-		//#region ../../web/card-base/src/mods.tsx
-		/**
-		* mods.tsx — THE MOD SYSTEM, CORE (the old SubcardGrid, ported 1:1 —
-		* and moved into the base package 2026-09-12 after the operator's
-		* law: "MOD SYSTEM IS CORE. NEVER HARDCODED. The LORAS should not be
-		* on cards, the MOD SYSTEM SHOULD").
-		*
-		* The laws this section enforces:
-		*  - mods NEVER ride the card's param form. The estate serves the
-		*    OPEN kind vocabulary (features.modifiers); the constructor
-		*    (CardForm) renders THIS section itself and excludes every
-		*    mod-owned name from the flat groups — no surface wires it, no
-		*    surface can forget it (the construction law, same as the
-		*    square).
-		*  - THE WIRE IS THE STORAGE: params[param_key] holds the bag; the
-		*    same bag runs and the agent reads/writes it.
-		*  - commits persist immediately (the old onSaveParams law — never
-		*    deferred to Run): onEdit rides the caller's values map AND
-		*    onPatch (when present) persists to the domain on the spot.
-		*  - apply order = array order; the drag rewrites the bag.
-		*  - THREE kind shapes, all first-class (the leaf switches on the
-		*    SERVED entry mode, never the kind name):
-		*      OPTION kinds (lora): served catalog rows + strength; the
-		*        entry is { id, strength } — the row's own defaults seed the
-		*        strength.
-		*      HYBRID kinds (controlnet): served catalog rows AND entry
-		*        fields; the entry is the bag element keyed by its option_key
-		*        (type) — the leaf stamps the row's resolved facts (model +
-		*        preprocessor) onto new entries so the run record carries the
-		*        retired wire shape; the lane re-validates them, never trusts
-		*        them. Pack-level scalars (the strength floor) render as the
-		*        section's own rows above the tiles.
-		*      OPTION kinds (lora): served catalog rows + strength; the
-		*        entry is { id, strength } — the row's own defaults seed the
-		*        strength.
-		*      FIELD kinds (mask): the kind's own spec fields (image squares,
-		*        selects, sliders); the entry IS the params object. The leaf
-		*        renders kind.fields through the same constructor atoms —
-		*        the fields NEVER render flat on the card form.
-		*/
-		//#endregion
-		//#region ../../web/card-base/src/use-resolved.ts
-		/**
-		* use-resolved.ts — THE STUDIO SEAM, ONE UNIVERSAL DEFAULT SYSTEM
-		* (operator, 2026-09-18: "there is no universal default system
-		* right?"). ONE resolver composes EVERY layer — schema defaults <-
-		* model_defaults <- base (the persisted/bench layer) <- user — and
-		* the surface reads THE ONE resolved map. Never a hand `??` ladder
-		* at a call site: a ladder IS a second resolver, and every extra
-		* arm is a place the truth forks.
-		*
-		* PRE-FETCH LAW: the spec arrives async, but the resolved map is
-		* STILL the layer composition — base under user, verbatim — so a
-		* synchronous render shows the document's own held values; the
-		* fetch landing fills the declared defaults under them (the same
-		* one map, richer). Nothing renders blank, nothing flickers, no
-		* call site branches on spec-null.
-		*
-		* THE EDIT LAW: `undefined` is the tri-state's inherit signal (the
-		* unset) — it rides verbatim, the caller's write owns what it
-		* means. Edits coerce at the SCHEMA BOUNDARY (coerceFieldEdit):
-		* numeric strings ride as numbers, unparseable strings ride
-		* verbatim for the run's schema parse to refuse LOUD, and keys the
-		* spec never declared (the mod bag) ride verbatim — the mod plane
-		* owns their validation.
-		*/
-		/** The resolved studio seam: spec + error from the door, values
-		* resolved through the ONE cascade, edits coerced at the schema
-		* boundary. `user` is the surface's explicit layer (a document's
-		* params — sparse by design); `base` is the persisted layer under
-		* it (the bench/stage row's params), when the surface has one. */
-		function useResolvedForm(family, user, onWrite, base) {
-			const { spec, error } = useFormSpec(family);
-			const resolved = (0, react.useMemo)(() => resolveValueLayered(spec, base, user), [
-				spec,
-				base,
-				user
+		var _cache$2, _inflight$1, WIRE_RELAXED_KEYS, EDITOR_MOD_ENTRY_KEYS;
+		var init_familyParamContract = __esmMin((() => {
+			init_api();
+			_cache$2 = null;
+			_inflight$1 = null;
+			WIRE_RELAXED_KEYS = /* @__PURE__ */ new Set([
+				"sampling_steps",
+				"guide_scale",
+				"num_frames",
+				"end_image",
+				"image1",
+				"image2",
+				"image3",
+				"input_image",
+				"first_frame",
+				"last_frame",
+				"input_glb",
+				"prev_motion_artifact",
+				"lanpaint_mask",
+				"source_glb",
+				"outfit_glb",
+				"hair_glb",
+				"motion_npz",
+				"loras",
+				"controlnets",
+				"modifiers",
+				"service",
+				"source",
+				"preset",
+				"reference_audio",
+				"reference_text",
+				"rigged_path",
+				"npz_path",
+				"export_glb",
+				"export_fbx",
+				"export_usd",
+				"export_obj",
+				"detect_mode",
+				"model_name",
+				"t5_name",
+				"vae_name"
 			]);
-			const fieldOf = (0, react.useCallback)((name) => spec !== null ? fieldsOf(spec).find((f) => f.name === name) : void 0, [spec]);
+			EDITOR_MOD_ENTRY_KEYS = /* @__PURE__ */ new Set([
+				"id",
+				"value",
+				"model",
+				"preprocessor",
+				"enabled",
+				"source"
+			]);
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/cardBirth.ts
+		var cardBirth_exports = /* @__PURE__ */ __exportAll({
+			composeCard: () => composeCard,
+			ensureDraftId: () => ensureDraftId
+		});
+		/** Mint the card doc for a start body. The doc carries the body
+		*  verbatim (intent/stages/model/params become the card extras —
+		*  see python/editor_runs.py drafts_save), so what the card shows is
+		*  what the run consumed. Throws LOUDLY on any refusal — a refused
+		*  compose never proceeds to a start (no silent cardless runs). */
+		async function composeCard(body, signal) {
+			const res = await fetch("/v1/flows/drafts", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+				signal
+			});
+			const text = await res.text();
+			if (!res.ok) throw new Error(`card compose refused: HTTP ${res.status}${text ? `: ${text.slice(0, 400)}` : ""}`);
+			let data;
+			try {
+				data = JSON.parse(text);
+			} catch {
+				throw new Error("card compose returned a non-JSON body");
+			}
+			const draftId = data.draftId;
+			if (typeof draftId !== "string" || !draftId) throw new Error("card compose returned no draftId — refusing to start cardless");
+			return draftId;
+		}
+		/** The card-birth half of every run start: return the body's
+		*  declared draft_id when present, else compose the card and return
+		*  the minted id. Stamp the result onto the start envelope BEFORE
+		*  the start fetch:
+		*
+		*    startBody.draft_id = await ensureDraftId(startBody, signal)
+		*/
+		async function ensureDraftId(body, signal) {
+			const declared = body.draft_id;
+			if (typeof declared === "string" && declared !== "") return declared;
+			return composeCard(body, signal);
+		}
+		var init_cardBirth = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/FlowProtocol.ts
+		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({
+			assertNoParamDrops: () => assertNoParamDrops,
+			collectNamedArtifacts: () => collectNamedArtifacts,
+			collectStageUrls: () => collectStageUrls,
+			describeErrorBody: () => describeErrorBody,
+			pollFlowRun: () => pollFlowRun,
+			runCompiledGeneration: () => runCompiledGeneration,
+			sanitizeRevivedResult: () => sanitizeRevivedResult,
+			setRequiredEmptyResolver: () => setRequiredEmptyResolver
+		});
+		/**
+		* Extract the backend's error message from a non-2xx body for surfacing.
+		*
+		* Our backend always answers errors as `{"error": "..."}` — the string
+		* carries REAL newlines once parsed (the wire JSON escapes them), which is
+		* exactly what a multi-line flow doc parse error / validation report
+		* looks like in the drilldown modal. When the body isn't JSON, or has no
+		* string `error` field (proxy error page, unexpected shape), the raw text
+		* is returned unchanged.
+		*
+		* 2026-08-10: the error path used to `slice(0, 200)` the body, which cut
+		* "Validation failed: N violation(s)" reports mid-sentence — the full
+		* error is now surfaced unmodified (user: "full errors in the modals").
+		*/
+		function describeErrorBody(text) {
+			try {
+				const parsed = JSON.parse(text);
+				if (typeof parsed?.error === "string") return parsed.error;
+			} catch {}
+			return text;
+		}
+		/** Collect every artifact URL from a run status (stage.url + gallery).
+		*  The FLAT list — preserves the legacy wire-by-position behavior (the
+		*  primary output is always [0]). Use collectNamedArtifacts when the wire
+		*  needs to address a specific named output (mask, detection, …). */
+		function collectStageUrls(stages) {
+			const urls = [];
+			if (Array.isArray(stages)) for (const s of stages) {
+				if (s.url) urls.push(s.url);
+				if (Array.isArray(s.gallery)) {
+					for (const g of s.gallery) if (g && typeof g.url === "string") urls.push(g.url);
+				}
+			}
+			return urls;
+		}
+		/** Revived/stashed docs are untrusted (written by any client or session):
+		*  artifacts + assetUrls must be STRING-only, or every consumer crashes
+		*  (u.endsWith on undefined — motion card 2026-08-10). Filter instead of
+		*  casting verbatim; callers still hard-error on structural doc junk.
+		*  Missing numeric fields default so downstream guards (assetUrls.length)
+		*  behave — never a null result while the result object is present. */
+		function sanitizeRevivedResult(raw) {
+			if (!raw || typeof raw !== "object") return null;
+			const r = raw;
+			const assetUrls = Array.isArray(r.assetUrls) ? r.assetUrls.filter((u) => typeof u === "string" && !!u) : [];
+			const artifacts = {};
+			if (r.artifacts && typeof r.artifacts === "object" && !Array.isArray(r.artifacts)) {
+				for (const [k, v] of Object.entries(r.artifacts)) if (typeof v === "string" && v) artifacts[k] = v;
+			}
 			return {
-				spec,
-				error,
-				resolved,
-				edit: (0, react.useCallback)((name, v) => {
-					const f = fieldOf(name);
-					if (v === "" && f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider")) {
-						onWrite(name, void 0);
-						return;
-					}
-					onWrite(name, coerceFieldEdit(f, v));
-				}, [fieldOf, onWrite]),
-				fieldOf
+				assetUrls,
+				artifacts,
+				metadata: r.metadata && typeof r.metadata === "object" ? r.metadata : {},
+				completedAt: typeof r.completedAt === "number" ? r.completedAt : Date.now(),
+				durationSec: typeof r.durationSec === "number" ? r.durationSec : 0
 			};
 		}
-		/** The layer composition — PURE, exported for the seam's own wall:
-		* with a spec it is exactly resolveValue (schema <- model_defaults
-		* <- base <- user); without one (the pre-fetch render, the dead
-		* door) it is still the LAYERS — base under user, verbatim — so
-		* every surface reads the same shape at every moment. */
-		function resolveValueLayered(spec, base, user) {
-			if (spec === null) {
-				const out = { ...base ?? {} };
-				for (const [k, v] of Object.entries(user)) {
-					if (v === null || v === void 0) continue;
-					out[k] = v;
+		/** Collect named artifacts from a run status → {name: URL}. The NAMED map
+		*  — lets a downstream slot wire a SPECIFIC output (mask → lanpaint_mask)
+		*  rather than only the primary (assetUrls[0]). Falls back to {} when the
+		*  backend didn't send named_urls (legacy runs / single-output bricks). */
+		function collectNamedArtifacts(stages) {
+			const out = {};
+			if (Array.isArray(stages)) {
+				for (const s of stages) if (s.named_urls && typeof s.named_urls === "object") {
+					for (const [name, url] of Object.entries(s.named_urls)) if (typeof url === "string" && url) out[name] = url;
 				}
-				return out;
 			}
-			return resolveValue(spec, user, base);
+			return out;
 		}
+		/**
+		* Poll a flow run until terminal. Throws on error/timeout/abort.
+		*
+		* Terminal statuses: "completed"/"done" → success; "error"/"failed" →
+		* throws with the run-level error message.
+		*
+		* `onTick(status)` fires after every successful poll — used by the store
+		* to hydrate live KSampler step progress onto the running card BEFORE the
+		* run goes terminal (so the per-card progress bar animates during the
+		* run, 2026-08-08). Not fired on the terminal tick (the final status is
+		* the return value).
+		*/
+		async function pollFlowRun(runId, signal, opts) {
+			const maxWaitMs = opts?.maxWaitMs ?? 36e5;
+			const intervalMs = opts?.intervalMs ?? 2e3;
+			const started = performance.now();
+			while (performance.now() - started < maxWaitMs) {
+				if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+				const resp = await apiFetch(`/v1/flows/status/${runId}`, { signal });
+				if (!resp.ok) {
+					if (resp.status === 404) throw new Error(`Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`);
+					let errorBody = null;
+					try {
+						errorBody = await resp.json();
+					} catch {
+						errorBody = null;
+					}
+					if (hasViolationsSignature(errorBody)) {
+						const violations = errorBody.violations;
+						useRunStatusContractStore.getState().reportViolation(runId, violations);
+						throw new RunStatusContractError(runId, violations);
+					}
+					await new Promise((r) => setTimeout(r, intervalMs));
+					continue;
+				}
+				const data = await resp.json();
+				const { valid, violations } = validateRunStatusContract(data);
+				if (!valid) {
+					useRunStatusContractStore.getState().reportViolation(runId, violations);
+					throw new RunStatusContractError(runId, violations);
+				}
+				if (data.status === "completed") return data;
+				if (data.status === "failed") {
+					const detail = data.error;
+					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
+				}
+				opts?.onTick?.(data);
+				await new Promise((r) => setTimeout(r, intervalMs));
+			}
+			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
+		}
+		/** Register (or clear) the required-empty resolver. */
+		function setRequiredEmptyResolver(fn) {
+			_requiredEmptyResolver = fn;
+		}
+		/**
+		* HARD VALIDATION: no silent parameter drops in the generate request body.
+		*
+		* JSON.stringify silently drops `undefined` values — `{a: 1, b: undefined}`
+		* serializes to `{"a":1}` with ZERO error. This is the TypeScript version
+		* of the Python `**kwargs` absorb pattern: a field that was set in the form
+		* state, survived into the body object, but vanishes on the wire with no
+		* error, no warning. The backend receives defaults and the user sees
+		* degraded output they can't diagnose.
+		*
+		* This function is called before EVERY GPU-starting fetch (generate,
+		* startChain — the run doors) —
+		* it is the universal gate. It catches:
+		*   - `undefined` values (silently dropped by JSON.stringify)
+		*   - `NaN` / `Infinity` (serialized as `null` — a value mutation)
+		*   - `function` / `symbol` / `bigint` values (dropped or thrown by JSON)
+		*   - empty string for known-critical fields (prompt, model)
+		*
+		* SILENT PARAMETER DROPS ARE COMPLETELY UNACCEPTABLE ANYWHERE EVER.
+		*
+		* @param body the request body about to be JSON.stringify'd and POST'd
+		* @throws Error listing every field that would be silently dropped or mutated
+		*/
+		function assertNoParamDrops(body) {
+			const dropped = [];
+			const mutated = [];
+			for (const [key, val] of Object.entries(body)) if (val === void 0) dropped.push(key);
+			else if (typeof val === "number" && !Number.isFinite(val)) mutated.push(`${key} (NaN/Infinity → JSON serializes as null)`);
+			else if (typeof val === "function" || typeof val === "symbol") dropped.push(`${key} (${typeof val} value — JSON.stringify drops it)`);
+			else if (typeof val === "bigint") mutated.push(`${key} (bigint → JSON.stringify throws)`);
+			if (typeof body.model === "string" && _requiredEmptyResolver) {
+				const fields = _requiredEmptyResolver(body.model, body);
+				for (const field of fields ?? []) {
+					const v = body[field];
+					if (typeof v === "string" && v.trim() === "") throw new Error(`'${field}' is empty for '${body.model}' — the model's form declares it required (the engine has no conditioning signal without it). Type it before running. (Backend semantic validator would 400 this same run.)`);
+				}
+			}
+			if (dropped.length > 0 || mutated.length > 0) {
+				const parts = [dropped.length > 0 ? `DROPPED: [${dropped.join(", ")}]` : "", mutated.length > 0 ? `MUTATED: [${mutated.join(", ")}]` : ""].filter(Boolean);
+				throw new Error(`SILENT PARAMETER DROP DETECTED in generate request body — ${parts.join("; ")}. JSON.stringify would silently lose or mutate these values on the wire. SILENT PARAMETER DROPS ARE UNACCEPTABLE. Fix the caller to omit or set these fields explicitly.`);
+			}
+		}
+		/** Append the door's 400 violation envelope ({violations: [{field,
+		* message}]}) as one line per violation — a bare headline would silently
+		* DROP the dotted paths (the whole point of a refusal is seeing WHICH
+		* param failed). ONE construction, both run doors (compile + start). */
+		function violationLines(text) {
+			try {
+				const parsed = JSON.parse(text);
+				if (Array.isArray(parsed.violations)) {
+					const lines = parsed.violations.map((v) => `${String(v.field ?? "?")}: ${String(v.message ?? "")}`).filter((line) => !line.endsWith(": "));
+					if (lines.length > 0) return `\n${lines.join("\n")}`;
+				}
+			} catch {}
+			return "";
+		}
+		async function runCompiledGeneration(body, signal, opts) {
+			if (Array.isArray(body.loras)) {
+				const { normalizeLoraEntry } = await Promise.resolve().then(() => (init_src$2(), src_exports$1));
+				body = {
+					...body,
+					loras: body.loras.map((e) => e && typeof e === "object" ? normalizeLoraEntry(e) : e)
+				};
+			}
+			assertNoParamDrops(body);
+			let typedBody = body;
+			if (typeof body.model === "string") {
+				const { assertParamsMatchFamilySchema } = await Promise.resolve().then(() => (init_familyParamContract(), familyParamContract_exports));
+				const paramOnly = {};
+				for (const [k, v] of Object.entries(body)) {
+					if (k === "model") continue;
+					paramOnly[k] = v;
+				}
+				typedBody = {
+					...await assertParamsMatchFamilySchema(body.model, paramOnly),
+					model: body.model
+				};
+				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth(), cardBirth_exports));
+				typedBody.draft_id = await ensureDraftId(typedBody, signal);
+				const compileRes = await fetch("/v1/flows/validate", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(typedBody),
+					signal
+				});
+				if (!compileRes.ok) {
+					const text = await compileRes.text();
+					throw new Error(`card failed to compile: HTTP ${compileRes.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`);
+				}
+			}
+			if (typeof typedBody.draft_id !== "string" || typedBody.draft_id === "") {
+				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth(), cardBirth_exports));
+				typedBody.draft_id = await ensureDraftId(typedBody, signal);
+			}
+			const res = await fetch("/v1/flows/start", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(typedBody),
+				signal
+			});
+			const text = await res.text();
+			if (res.ok) {
+				let data;
+				try {
+					data = JSON.parse(text);
+				} catch {
+					throw new Error(`generate failed: /v1/flows/start returned non-JSON body: ${text.slice(0, NON_JSON_BODY_CAP)}`);
+				}
+				const runId = data.run_id;
+				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
+				opts?.onStart?.(runId);
+				const status = await pollFlowRun(runId, signal, {
+					intervalMs: opts?.intervalMs,
+					onTick: opts?.onTick
+				});
+				return {
+					kind: "started",
+					runId,
+					status,
+					urls: collectStageUrls(status.stages)
+				};
+			}
+			throw new Error(`generate failed: HTTP ${res.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`);
+		}
+		var NON_JSON_BODY_CAP, _requiredEmptyResolver;
+		var init_FlowProtocol = __esmMin((() => {
+			init_api();
+			init_runStatusContract();
+			init_runStatusContractStore();
+			NON_JSON_BODY_CAP = 2e3;
+			_requiredEmptyResolver = null;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/FlowEvents.ts
+		/**
+		* Open the events stream for one run. Returns immediately; frames land
+		* in `onEvent`. Auto-reconnects with capped backoff until a terminal
+		* `run` frame, an explicit close, or `signal` aborts.
+		*/
+		function streamFlowEvents(runId, onEvent, opts = {}) {
+			let ws = null;
+			let terminal = false;
+			let closed = false;
+			let attempt = 0;
+			let timer = null;
+			const cleanup = () => {
+				if (timer) clearTimeout(timer);
+				timer = null;
+				if (ws) {
+					ws.onmessage = null;
+					ws.onclose = null;
+					ws.onerror = null;
+					try {
+						ws.close();
+					} catch {}
+					ws = null;
+				}
+			};
+			const finish = () => {
+				terminal = true;
+				cleanup();
+			};
+			const connect = () => {
+				/* v8 ignore next -- defensive: close()/finish() always clear the pending reconnect timer, so connect() can never run after close or a terminal frame (2026-09-12) */
+				if (closed || terminal) return;
+				if (typeof WebSocket === "undefined") return;
+				const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws";
+				const host = typeof location !== "undefined" ? location.host : "";
+				try {
+					ws = new WebSocket(`${proto}://${host}/v1/flows/events?run_id=${encodeURIComponent(runId)}`);
+				} catch {
+					return;
+				}
+				ws.onmessage = (ev) => {
+					if (closed || terminal) return;
+					attempt = 0;
+					let frame = null;
+					try {
+						frame = JSON.parse(String(ev.data));
+					} catch {
+						return;
+					}
+					if (!frame || typeof frame !== "object" || typeof frame.type !== "string") return;
+					onEvent(frame);
+					if (frame.type === "run" && TERMINAL.has(String(frame.status))) finish();
+				};
+				ws.onclose = () => {
+					if (closed || terminal) return;
+					const wait = Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt++);
+					timer = setTimeout(connect, wait);
+				};
+				ws.onerror = () => {};
+			};
+			connect();
+			if (opts.signal) opts.signal.addEventListener("abort", () => {
+				closed = true;
+				cleanup();
+			}, { once: true });
+			return {
+				close: () => {
+					closed = true;
+					cleanup();
+				},
+				done: () => terminal
+			};
+		}
+		var TERMINAL, BACKOFF_BASE_MS, BACKOFF_CAP_MS;
+		var init_FlowEvents = __esmMin((() => {
+			TERMINAL = /* @__PURE__ */ new Set([
+				"completed",
+				"failed",
+				"stopped",
+				"unknown"
+			]);
+			BACKOFF_BASE_MS = 500;
+			BACKOFF_CAP_MS = 5e3;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/tagMap.ts
+		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
+		*  a future server payload) before it enters the store. */
+		function isTagColor(v) {
+			return typeof v === "string" && TAG_COLOR_VALUES.includes(v);
+		}
+		function slugify(name) {
+			return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "tag";
+		}
+		/** Generate a unique tag id from a name, appending -2, -3, … on collision. */
+		function uniqueId(name, existing) {
+			const base = slugify(name);
+			if (!existing.has(base)) return base;
+			let n = 2;
+			while (existing.has(`${base}-${n}`)) n++;
+			return `${base}-${n}`;
+		}
+		/** Cycle through the palette so consecutive new tags get distinct colors. */
+		function nextColor(count) {
+			return TAG_COLOR_VALUES[count % TAG_COLOR_VALUES.length];
+		}
+		/**
+		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
+		* before it enters the store. Drops any tag whose color isn't in the closed
+		* enum, then rebuilds the forward index dropping orphan entries. This is the
+		* front-end mirror of the pydantic TagDocument validator; the server enforces
+		* the same rules on PUT, but we don't trust the wire even from our own server
+		* — defense in depth.
+		*/
+		function validateDocument(parsed) {
+			const empty = {
+				tags: {},
+				map: {}
+			};
+			if (!parsed) return empty;
+			const tags = {};
+			for (const [id, def] of Object.entries(parsed.tags ?? {})) if (def && typeof def.name === "string" && isTagColor(def.color)) tags[id] = {
+				id,
+				name: def.name,
+				color: def.color
+			};
+			const knownIds = new Set(Object.keys(tags));
+			const map = {};
+			for (const [key, ids] of Object.entries(parsed.map ?? {})) if (Array.isArray(ids)) {
+				const clean = ids.filter((id) => typeof id === "string" && knownIds.has(id));
+				if (clean.length > 0) map[key] = clean;
+			}
+			return {
+				tags,
+				map
+			};
+		}
+		function loadPersisted() {
+			if (typeof localStorage === "undefined") return {
+				tags: {},
+				map: {}
+			};
+			try {
+				const raw = localStorage.getItem(STORAGE_KEY);
+				if (!raw) return {
+					tags: {},
+					map: {}
+				};
+				return validateDocument(JSON.parse(raw));
+			} catch {
+				return {
+					tags: {},
+					map: {}
+				};
+			}
+		}
+		/**
+		* Write-through to localStorage (synchronous cache) + schedule a debounced
+		* server PUT. Called from every mutation action. The localStorage write is
+		* unconditional (offline fallback stays fresh); the server PUT is gated by
+		* `serverSyncEnabled`. Failures are swallowed (the local state is still
+		* valid; the next successful mutation retries).
+		*/
+		function scheduleSync(data) {
+			try {
+				localStorage.setItem(STORAGE_KEY, JSON.stringify({
+					tags: data.tags,
+					map: data.map
+				}));
+			} catch {}
+			if (!serverSyncEnabled || typeof fetch === "undefined") return;
+			if (syncTimer) clearTimeout(syncTimer);
+			syncTimer = setTimeout(() => {
+				syncTimer = null;
+				apiFetch("/v1/tags", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						tags: data.tags,
+						map: data.map
+					})
+				}).catch((e) => {
+					console.warn("[tagMap] server sync failed:", e);
+				});
+			}, SYNC_DEBOUNCE_MS);
+		}
+		/**
+		* Hydrate the store from the server (canonical) + enable server pushes.
+		* Called once by the app shell on mount. The store already has the
+		* localStorage cache (loaded synchronously at module init), so the UI renders
+		* immediately; this replaces it with the server copy if one exists (the server
+		* wins ties — it's the cross-device source of truth). After this call,
+		* mutations push to the server via the debounced PUT.
+		*
+		* Silent on failure: if the server is unreachable, the store keeps the
+		* localStorage cache and server pushes stay disabled (offline mode).
+		*/
+		async function initTagSync() {
+			if (serverSyncEnabled) return;
+			if (typeof fetch === "undefined") return;
+			try {
+				const res = await apiFetch("/v1/tags");
+				if (!res.ok) return;
+				const doc = validateDocument(await res.json());
+				useTagMap.setState({
+					tags: doc.tags,
+					map: doc.map
+				});
+				serverSyncEnabled = true;
+			} catch {}
+		}
+		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+		* for useSyncExternalStore (dom-project territory, like the slots seam's
+		* useVersion). The selector contract is pinned node-side through
+		* getState/subscribe in tag-map.spec.ts. (2026-09-12) */
+		function useTagMapHook() {
+			return (0, react.useSyncExternalStore)((l) => {
+				tagMapListeners.add(l);
+				return () => {
+					tagMapListeners.delete(l);
+				};
+			}, tagMapGetState);
+		}
+		/** Read tagsOf without a React subscription. The useListFilter accessor uses
+		*  this so the filter flow doesn't need to re-subscribe on every item. */
+		function tagsOf(key) {
+			return useTagMap.getState().map[key] ?? [];
+		}
+		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapListeners, tagMapState, notifyTagMap, tagMapSetState, tagMapGetState, useTagMap, tagMapActions;
+		var init_tagMap = __esmMin((() => {
+			init_api();
+			TagColor = {
+				brand: "brand",
+				sky: "sky",
+				violet: "violet",
+				rose: "rose",
+				emerald: "emerald",
+				amber: "amber",
+				cyan: "cyan"
+			};
+			TAG_COLOR_VALUES = Object.values(TagColor);
+			TAG_COLOR_META = {
+				brand: {
+					dot: "bg-brand",
+					pill: "border-brand/30 bg-brand/10 text-brand"
+				},
+				sky: {
+					dot: "bg-sky-500",
+					pill: "border-sky-500/30 bg-sky-500/10 text-sky-400"
+				},
+				violet: {
+					dot: "bg-violet-500",
+					pill: "border-violet-500/30 bg-violet-500/10 text-violet-400"
+				},
+				rose: {
+					dot: "bg-rose-500",
+					pill: "border-rose-500/30 bg-rose-500/10 text-rose-400"
+				},
+				emerald: {
+					dot: "bg-emerald-500",
+					pill: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+				},
+				amber: {
+					dot: "bg-amber-500",
+					pill: "border-amber-500/30 bg-amber-500/10 text-amber-400"
+				},
+				cyan: {
+					dot: "bg-cyan-500",
+					pill: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400"
+				}
+			};
+			STORAGE_KEY = "melite:tag-map:v1";
+			SYNC_DEBOUNCE_MS = 500;
+			serverSyncEnabled = false;
+			syncTimer = null;
+			initial = loadPersisted();
+			tagMapListeners = /* @__PURE__ */ new Set();
+			notifyTagMap = () => {
+				for (const l of tagMapListeners) l();
+			};
+			tagMapSetState = (patch) => {
+				const p = typeof patch === "function" ? patch(tagMapState) : patch;
+				tagMapState = {
+					...tagMapState,
+					...p
+				};
+				notifyTagMap();
+			};
+			tagMapGetState = () => tagMapState;
+			useTagMap = Object.assign(useTagMapHook, {
+				getState: tagMapGetState,
+				setState: tagMapSetState,
+				subscribe: (l) => {
+					tagMapListeners.add(l);
+					return () => {
+						tagMapListeners.delete(l);
+					};
+				}
+			});
+			tagMapActions = (set, get) => ({
+				createTag: (name, color) => {
+					const trimmed = name.trim();
+					if (!trimmed) return "";
+					const id = uniqueId(trimmed, new Set(Object.keys(get().tags)));
+					const c = color ?? nextColor(Object.keys(get().tags).length);
+					set((s) => {
+						const tags = {
+							...s.tags,
+							[id]: {
+								id,
+								name: trimmed,
+								color: c
+							}
+						};
+						scheduleSync({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+					return id;
+				},
+				renameTag: (id, name) => {
+					const trimmed = name.trim();
+					if (!trimmed) return;
+					set((s) => {
+						const def = s.tags[id];
+						if (!def) return s;
+						const tags = {
+							...s.tags,
+							[id]: {
+								...def,
+								name: trimmed
+							}
+						};
+						scheduleSync({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+				},
+				recolorTag: (id, color) => {
+					if (!isTagColor(color)) return;
+					set((s) => {
+						const def = s.tags[id];
+						if (!def) return s;
+						const tags = {
+							...s.tags,
+							[id]: {
+								...def,
+								color
+							}
+						};
+						scheduleSync({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+				},
+				deleteTag: (id) => {
+					set((s) => {
+						if (!s.tags[id]) return s;
+						const tags = { ...s.tags };
+						delete tags[id];
+						const map = {};
+						for (const [key, ids] of Object.entries(s.map)) {
+							const filtered = ids.filter((t) => t !== id);
+							if (filtered.length > 0) map[key] = filtered;
+						}
+						scheduleSync({
+							tags,
+							map
+						});
+						return {
+							tags,
+							map
+						};
+					});
+				},
+				setItemTags: (key, tagIds) => {
+					const known = new Set(Object.keys(get().tags));
+					const clean = [...new Set(tagIds)].filter((id) => known.has(id));
+					set((s) => {
+						const map = { ...s.map };
+						if (clean.length > 0) map[key] = clean;
+						else delete map[key];
+						scheduleSync({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				addTagToItem: (key, tagId) => {
+					if (!get().tags[tagId]) return;
+					set((s) => {
+						const current = s.map[key] ?? [];
+						if (current.includes(tagId)) return s;
+						const map = {
+							...s.map,
+							[key]: [...current, tagId]
+						};
+						scheduleSync({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				removeTagFromItem: (key, tagId) => {
+					set((s) => {
+						const current = s.map[key];
+						if (!current || !current.includes(tagId)) return s;
+						const next = current.filter((t) => t !== tagId);
+						const map = { ...s.map };
+						if (next.length > 0) map[key] = next;
+						else delete map[key];
+						scheduleSync({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				tagsOf: (key) => get().map[key] ?? [],
+				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
+			});
+			tagMapState = {
+				...tagMapActions(tagMapSetState, tagMapGetState),
+				tags: initial.tags,
+				map: initial.map
+			};
+		}));
+		//#endregion
+		//#region ../../web-kit/formats/src/npz.ts
+		function readU16(d, o) {
+			return d[o] | d[o + 1] << 8;
+		}
+		function readU32(d, o) {
+			return (d[o] | d[o + 1] << 8 | d[o + 2] << 16 | d[o + 3] << 24) >>> 0;
+		}
+		async function inflateRaw(compressed) {
+			const ds = new DecompressionStream("deflate-raw");
+			const stream = new Blob([compressed]).stream().pipeThrough(ds);
+			const buf = await new Response(stream).arrayBuffer();
+			return new Uint8Array(buf);
+		}
+		/** Parse a single .npy file from its raw (decompressed) bytes. */
+		function parseNpy(bytes) {
+			if (bytes.length < 10 || bytes[0] !== 147 || bytes[1] !== 78 || bytes[2] !== 85 || bytes[3] !== 77 || bytes[4] !== 80 || bytes[5] !== 89) throw new Error("Invalid .npy magic bytes");
+			const ver = bytes[6];
+			let headerLen;
+			let headerOff;
+			if (ver <= 1) {
+				headerLen = readU16(bytes, 8);
+				headerOff = 10;
+			} else {
+				headerLen = readU32(bytes, 8);
+				headerOff = 12;
+			}
+			const headerBytes = bytes.subarray(headerOff, headerOff + headerLen);
+			const header = new TextDecoder().decode(headerBytes);
+			const dataBytes = bytes.subarray(headerOff + headerLen);
+			const shapeMatch = header.match(/'shape':\s*\(([^)]*)\)/);
+			const dtypeMatch = header.match(/'descr':\s*'([^']+)'/);
+			if (!shapeMatch || !dtypeMatch) throw new Error(`Unparseable .npy header: ${header.slice(0, 120)}`);
+			const shape = shapeMatch[1].split(",").map((s) => s.trim()).filter((s) => s.length > 0).map(Number);
+			const dtype = dtypeMatch[1].trim();
+			const copy = new Uint8Array(dataBytes.length);
+			copy.set(dataBytes);
+			if (dtype === "<f4" || dtype === "|f4" || dtype === "=f4") return {
+				shape,
+				data: new Float32Array(copy.buffer, 0, Math.floor(copy.length / 4))
+			};
+			if (dtype === "<f8" || dtype === "|f8" || dtype === "=f8") {
+				const f64 = new Float64Array(copy.buffer, 0, Math.floor(copy.length / 8));
+				return {
+					shape,
+					data: new Float32Array(f64)
+				};
+			}
+			if (dtype === "<i4" || dtype === "|i4" || dtype === "=i4") {
+				const i32 = new Int32Array(copy.buffer, 0, Math.floor(copy.length / 4));
+				return {
+					shape,
+					data: new Uint32Array(i32)
+				};
+			}
+			if (dtype === "<i8" || dtype === "|i8" || dtype === "=i8") return {
+				shape,
+				data: new BigInt64Array(copy.buffer, 0, Math.floor(copy.length / 8))
+			};
+			throw new Error(`Unsupported .npy dtype "${dtype}" (float32/64 + int32/64 supported)`);
+		}
+		/** Find the End-of-Central-Directory record, searching backward from EOF. */
+		function findEocd(bytes) {
+			const min = Math.max(0, bytes.length - 22 - 65535);
+			for (let i = bytes.length - 22; i >= min; i--) if (bytes[i] === 80 && bytes[i + 1] === 75 && bytes[i + 2] === 5 && bytes[i + 3] === 6) return i;
+			return -1;
+		}
+		/**
+		* Parse an NPZ file and return a map of array-name → {shape, data}.
+		* Entry names have their `.npy` extension stripped (so `posed_joints.npy`
+		* is keyed as `"posed_joints"`).
+		*/
+		async function parseNpz(bytes) {
+			const out = /* @__PURE__ */ new Map();
+			const eocd = findEocd(bytes);
+			if (eocd < 0) throw new Error("NPZ parse failed: End-of-Central-Directory not found");
+			const cdEntries = readU16(bytes, eocd + 10);
+			let off = readU32(bytes, eocd + 16);
+			for (let i = 0; i < cdEntries; i++) {
+				if (readU32(bytes, off) !== CDFH_SIG) break;
+				const method = readU16(bytes, off + 10);
+				const compSize = readU32(bytes, off + 20);
+				const nameLen = readU16(bytes, off + 28);
+				const extraLen = readU16(bytes, off + 30);
+				const commentLen = readU16(bytes, off + 32);
+				const localOff = readU32(bytes, off + 42);
+				const name = new TextDecoder().decode(bytes.subarray(off + 46, off + 46 + nameLen));
+				const lfhNameLen = readU16(bytes, localOff + 26);
+				const lfhExtraLen = readU16(bytes, localOff + 28);
+				const dataOff = localOff + 30 + lfhNameLen + lfhExtraLen;
+				const compressed = bytes.subarray(dataOff, dataOff + compSize);
+				let raw;
+				if (method === 0) raw = compressed;
+				else if (method === 8) raw = await inflateRaw(compressed);
+				else throw new Error(`NPZ entry "${name}": unsupported compression method ${method}`);
+				if (name.endsWith(".npy")) {
+					const key = name.slice(0, -4);
+					try {
+						out.set(key, parseNpy(raw));
+					} catch {}
+				}
+				off += 46 + nameLen + extraLen + commentLen;
+			}
+			return out;
+		}
+		var CDFH_SIG;
+		var init_npz = __esmMin((() => {
+			CDFH_SIG = 33639248;
+		}));
+		//#endregion
+		//#region ../../web-kit/formats/src/somaSkin.ts
+		/** Invert a 4×4 matrix (column-major-agnostic: stored row-major as 16 floats). */
+		function invert4(m) {
+			const a = Array.from(m);
+			const inv = [
+				1,
+				0,
+				0,
+				0,
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+				1
+			];
+			for (let col = 0; col < 4; col++) {
+				let piv = col, max = Math.abs(a[col * 4 + col]);
+				for (let r = col + 1; r < 4; r++) {
+					const v = Math.abs(a[r * 4 + col]);
+					if (v > max) {
+						max = v;
+						piv = r;
+					}
+				}
+				if (max < 1e-12) continue;
+				if (piv !== col) for (let c = 0; c < 4; c++) {
+					[a[col * 4 + c], a[piv * 4 + c]] = [a[piv * 4 + c], a[col * 4 + c]];
+					[inv[col * 4 + c], inv[piv * 4 + c]] = [inv[piv * 4 + c], inv[col * 4 + c]];
+				}
+				const diag = a[col * 4 + col];
+				for (let c = 0; c < 4; c++) {
+					a[col * 4 + c] /= diag;
+					inv[col * 4 + c] /= diag;
+				}
+				for (let r = 0; r < 4; r++) {
+					if (r === col) continue;
+					const factor = a[r * 4 + col];
+					if (factor === 0) continue;
+					for (let c = 0; c < 4; c++) {
+						a[r * 4 + c] -= factor * a[col * 4 + c];
+						inv[r * 4 + c] -= factor * inv[col * 4 + c];
+					}
+				}
+			}
+			return Float32Array.from(inv);
+		}
+		function asFloat32(arr) {
+			return arr instanceof Float32Array ? arr : new Float32Array(arr);
+		}
+		/** Extract the rest pose from row-major FORWARD bind transforms (J×16):
+		* translation column (tx, ty, tz) = indices 3, 7, 11 of each 4×4, and the
+		* 3×3 rotation block = 0,1,2 / 4,5,6 / 8,9,10. This is the TS equivalent
+		* of Kimodo's neutral_joints — the motion card's pre-inference pose (see
+		* SomaSkin.restJoints doc). Shared by both loaders: the npz carries the
+		* forward binds directly; the GLB adapter inverts glTF boneInverses into
+		* the same row-major forward shape first. */
+		function restPoseFromBind(bindRig, jointCount) {
+			const restJoints = new Float32Array(jointCount * 3);
+			const restRots = new Float32Array(jointCount * 9);
+			for (let j = 0; j < jointCount; j++) {
+				const b = j * 16;
+				restJoints[j * 3] = bindRig[b + 3];
+				restJoints[j * 3 + 1] = bindRig[b + 7];
+				restJoints[j * 3 + 2] = bindRig[b + 11];
+				restRots[j * 9] = bindRig[b + 0];
+				restRots[j * 9 + 1] = bindRig[b + 1];
+				restRots[j * 9 + 2] = bindRig[b + 2];
+				restRots[j * 9 + 3] = bindRig[b + 4];
+				restRots[j * 9 + 4] = bindRig[b + 5];
+				restRots[j * 9 + 5] = bindRig[b + 6];
+				restRots[j * 9 + 6] = bindRig[b + 8];
+				restRots[j * 9 + 7] = bindRig[b + 9];
+				restRots[j * 9 + 8] = bindRig[b + 10];
+			}
+			return {
+				restJoints,
+				restRots
+			};
+		}
+		/** Load + cache the neutral SOMA skin (one fetch per session). */
+		async function loadSomaSkin() {
+			if (_skinPromise) return _skinPromise;
+			_skinPromise = (async () => {
+				const res = await apiFetch(SKIN_URL);
+				if (!res.ok) throw new Error(`Failed to fetch SOMA skin: ${res.status}`);
+				const arrays = await parseNpz(new Uint8Array(await res.arrayBuffer()));
+				const bv = arrays.get("bind_vertices");
+				const fc = arrays.get("faces");
+				const brt = arrays.get("bind_rig_transform");
+				const li = arrays.get("lbs_indices");
+				const lw = arrays.get("lbs_weights");
+				if (!bv || !fc || !brt || !li || !lw) throw new Error(`SOMA skin missing keys (have: ${[...arrays.keys()].join(",")})`);
+				const bindVertices = asFloat32(bv.data);
+				const bindRig = asFloat32(brt.data);
+				const bindRigInv = /* @__PURE__ */ new Float32Array(1232);
+				for (let j = 0; j < J$1; j++) {
+					const m = bindRig.subarray(j * 16, j * 16 + 16);
+					bindRigInv.set(invert4(m), j * 16);
+				}
+				const { restJoints, restRots } = restPoseFromBind(bindRig, J$1);
+				const faceSrc = fc.data instanceof BigInt64Array ? Array.from(fc.data, (x) => Number(x)) : Array.from(fc.data);
+				const faces = Uint32Array.from(faceSrc);
+				return {
+					bindVertices,
+					faces,
+					lbsIndices: li.data instanceof Uint32Array ? li.data : li.data instanceof BigInt64Array ? Uint32Array.from(li.data, (x) => Number(x)) : Uint32Array.from(li.data),
+					lbsWeights: asFloat32(lw.data),
+					bindRigInv,
+					restJoints,
+					restRots,
+					vertexCount: bindVertices.length / 3,
+					faceCount: faces.length / 3,
+					jointCount: J$1,
+					influences: W
+				};
+			})();
+			try {
+				return await _skinPromise;
+			} catch (e) {
+				_skinPromise = null;
+				throw e;
+			}
+		}
+		/**
+		* Build per-joint (3,4) affine matrices for one frame:
+		*   affine[j] = (fk[j] · bindRigInv[j])[:3, :]
+		* fk[j] is the global posed transform (global_rot → rotation, global_pos →
+		* translation). Output is `affines` length J*12 (row-major 3×4 per joint).
+		*/
+		function buildAffines(globalRot, globalPos, bindRigInv, out, jointCount) {
+			for (let j = 0; j < jointCount; j++) {
+				const r = j * 9;
+				const p = j * 3;
+				const bi = j * 16;
+				const a0 = bindRigInv[bi + 0], a1 = bindRigInv[bi + 1], a2 = bindRigInv[bi + 2], a3 = bindRigInv[bi + 3];
+				const a4 = bindRigInv[bi + 4], a5 = bindRigInv[bi + 5], a6 = bindRigInv[bi + 6], a7 = bindRigInv[bi + 7];
+				const a8 = bindRigInv[bi + 8], a9 = bindRigInv[bi + 9], a10 = bindRigInv[bi + 10], a11 = bindRigInv[bi + 11];
+				const fr0 = globalRot[r], fr1 = globalRot[r + 1], fr2 = globalRot[r + 2];
+				const fr3 = globalRot[r + 3], fr4 = globalRot[r + 4], fr5 = globalRot[r + 5];
+				const fr6 = globalRot[r + 6], fr7 = globalRot[r + 7], fr8 = globalRot[r + 8];
+				const o0 = fr0 * a0 + fr1 * a4 + fr2 * a8;
+				const o1 = fr0 * a1 + fr1 * a5 + fr2 * a9;
+				const o2 = fr0 * a2 + fr1 * a6 + fr2 * a10;
+				const o3 = fr0 * a3 + fr1 * a7 + fr2 * a11 + globalPos[p];
+				const o4 = fr3 * a0 + fr4 * a4 + fr5 * a8;
+				const o5 = fr3 * a1 + fr4 * a5 + fr5 * a9;
+				const o6 = fr3 * a2 + fr4 * a6 + fr5 * a10;
+				const o7 = fr3 * a3 + fr4 * a7 + fr5 * a11 + globalPos[p + 1];
+				const o8 = fr6 * a0 + fr7 * a4 + fr8 * a8;
+				const o9 = fr6 * a1 + fr7 * a5 + fr8 * a9;
+				const o10 = fr6 * a2 + fr7 * a6 + fr8 * a10;
+				const o11 = fr6 * a3 + fr7 * a7 + fr8 * a11 + globalPos[p + 2];
+				const o = j * 12;
+				out[o] = o0;
+				out[o + 1] = o1;
+				out[o + 2] = o2;
+				out[o + 3] = o3;
+				out[o + 4] = o4;
+				out[o + 5] = o5;
+				out[o + 6] = o6;
+				out[o + 7] = o7;
+				out[o + 8] = o8;
+				out[o + 9] = o9;
+				out[o + 10] = o10;
+				out[o + 11] = o11;
+			}
+		}
+		/**
+		* Skinning: compute deformed vertex positions for one frame.
+		*   out (V, 3) = Σ_w lbsWeights[v,w] · (affines[lbsIndices[v,w]] · [bindV, 1])
+		*
+		* Mirrors soma_skin.py lbs() exactly. `out` is Float32Array length V*3.
+		*
+		* SKIN-DRIVEN DIMENSIONS (2026-08-15): the joint count and the per-vertex
+		* influence count come from the SKIN (jointCount / influences), not module
+		* constants — the neutral npz skin is J=77/W=8, a glTF character skin is
+		* J=77/W=4 (glTF skins are VEC4). Same LBS math, both substrates; see
+		* lib/glbSkin.ts.
+		*/
+		function deformFrame(globalRot, globalPos, skin, out) {
+			const J_ = skin.jointCount;
+			const W_ = skin.influences;
+			const affines = new Float32Array(J_ * 12);
+			buildAffines(globalRot, globalPos, skin.bindRigInv, affines, J_);
+			const { bindVertices, lbsIndices, lbsWeights } = skin;
+			const V = skin.vertexCount;
+			for (let v = 0; v < V; v++) {
+				const vi = v * 3;
+				const bx = bindVertices[vi], by = bindVertices[vi + 1], bz = bindVertices[vi + 2];
+				let ox = 0, oy = 0, oz = 0;
+				const wi = v * W_;
+				for (let widx = 0; widx < W_; widx++) {
+					const weight = lbsWeights[wi + widx];
+					if (weight === 0) continue;
+					const ai = lbsIndices[wi + widx] * 12;
+					ox += weight * (affines[ai] * bx + affines[ai + 1] * by + affines[ai + 2] * bz + affines[ai + 3]);
+					oy += weight * (affines[ai + 4] * bx + affines[ai + 5] * by + affines[ai + 6] * bz + affines[ai + 7]);
+					oz += weight * (affines[ai + 8] * bx + affines[ai + 9] * by + affines[ai + 10] * bz + affines[ai + 11]);
+				}
+				out[vi] = ox;
+				out[vi + 1] = oy;
+				out[vi + 2] = oz;
+			}
+		}
+		var SKIN_URL, J$1, W, _skinPromise;
+		var init_somaSkin = __esmMin((() => {
+			init_npz();
+			init_src();
+			SKIN_URL = "/v1/models/kimodo/provisions/skin_standard.npz";
+			J$1 = 77;
+			W = 8;
+			_skinPromise = null;
+		}));
 		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js
 		/**
@@ -2027,8 +4099,8 @@ window.__ModuleLoader__.load({
 		*/
 		function warnOnce(...params) {
 			const message = params.join(" ");
-			if (message in _cache$3) return;
-			_cache$3[message] = true;
+			if (message in _cache$1) return;
+			_cache$1[message] = true;
 			warn(...params);
 		}
 		/**
@@ -2822,6 +4894,12 @@ window.__ModuleLoader__.load({
 				for (let i = 0, l = children.length; i < l; i++) intersect(children[i], raycaster, intersects, true);
 			}
 		}
+		function getBoneList(object) {
+			const boneList = [];
+			if (object.isBone === true) boneList.push(object);
+			for (let i = 0; i < object.children.length; i++) boneList.push(...getBoneList(object.children[i]));
+			return boneList;
+		}
 		/**
 		* Determines how many bytes must be used to represent the texture.
 		*
@@ -2913,7 +4991,7 @@ window.__ModuleLoader__.load({
 			}
 			throw new Error(`Unknown texture type ${type}.`);
 		}
-		var MOUSE, TOUCH, AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, UnsignedInt101111Type, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, R11_EAC_Format, SIGNED_R11_EAC_Format, RG11_EAC_Format, SIGNED_RG11_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$3, _setConsoleFunction, ReversedDepthFuncs, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers, _object3DId, _v1$6, _q1, _m1$1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _moveEvent, WebXRController, _colorKeywords, _hslA, _hslB, Color, _color, Scene, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1$3, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, SpriteMaterial, _geometry, _intersectPoint, _worldScale, _mvPosition, _alignedPosition, _rotatedPosition, _viewWorldMatrix, _vA$1, _vB$1, _vC$1, _uvA, _uvB, _uvC, Sprite, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray$4, _sphere, _position$3, Points, CubeTexture, CanvasTexture, DepthTexture, CubeDepthTexture, ExternalTexture, BoxGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, OctahedronGeometry, PlaneGeometry, RingGeometry, SphereGeometry, TorusGeometry, ShadowMaterial, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, RawShaderMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, MeshDistanceMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, _position$2, _quaternion$2, _scale$2, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, _errorMap, ImageBitmapLoader, fov, aspect, CubeCamera, ArrayCamera, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, Clock, Spherical, GridHelper, Controls;
+		var MOUSE, TOUCH, AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, UnsignedInt101111Type, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, R11_EAC_Format, SIGNED_R11_EAC_Format, RG11_EAC_Format, SIGNED_RG11_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$1, _setConsoleFunction, ReversedDepthFuncs, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers$1, _object3DId, _v1$6, _q1, _m1$1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _moveEvent, WebXRController, _colorKeywords, _hslA, _hslB, Color, _color, Scene, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1$3, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, SpriteMaterial, _geometry, _intersectPoint, _worldScale, _mvPosition, _alignedPosition, _rotatedPosition, _viewWorldMatrix, _vA$1, _vB$1, _vC$1, _uvA, _uvB, _uvC, Sprite, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton$1, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray$4, _sphere, _position$3, Points, CubeTexture, CanvasTexture, DepthTexture, CubeDepthTexture, ExternalTexture, BoxGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, OctahedronGeometry, PlaneGeometry, RingGeometry, SphereGeometry, TorusGeometry, ShadowMaterial, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, RawShaderMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, MeshDistanceMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, _position$2, _quaternion$2, _scale$2, Camera$1, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, _errorMap, ImageBitmapLoader, fov, aspect, CubeCamera, ArrayCamera, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, Clock, Spherical, _vector$2, _boneMatrix, _matrixWorldInv, SkeletonHelper, GridHelper, Controls;
 		var init_three_core = __esmMin((() => {
 			MOUSE = {
 				LEFT: 0,
@@ -3014,7 +5092,7 @@ window.__ModuleLoader__.load({
 			KeepStencilOp = 7680;
 			StaticDrawUsage = 35044;
 			WebGLCoordinateSystem = 2e3;
-			_cache$3 = {};
+			_cache$1 = {};
 			_setConsoleFunction = null;
 			ReversedDepthFuncs = {
 				[0]: 1,
@@ -8938,7 +11016,6 @@ window.__ModuleLoader__.load({
 				/**
 				* Creates a perspective projection matrix. This is used internally by
 				* {@link PerspectiveCamera#updateProjectionMatrix}.
-				
 				* @param {number} left - Left boundary of the viewing frustum at the near plane.
 				* @param {number} right - Right boundary of the viewing frustum at the near plane.
 				* @param {number} top - Top boundary of the viewing frustum at the near plane.
@@ -8987,7 +11064,6 @@ window.__ModuleLoader__.load({
 				/**
 				* Creates a orthographic projection matrix. This is used internally by
 				* {@link OrthographicCamera#updateProjectionMatrix}.
-				
 				* @param {number} left - Left boundary of the viewing frustum at the near plane.
 				* @param {number} right - Right boundary of the viewing frustum at the near plane.
 				* @param {number} top - Top boundary of the viewing frustum at the near plane.
@@ -9384,7 +11460,7 @@ window.__ModuleLoader__.load({
 			* @default 'XYZ'
 			*/
 			Euler.DEFAULT_ORDER = "XYZ";
-			Layers = class {
+			Layers$1 = class {
 				/**
 				* Constructs a new layers instance, with membership
 				* initially set to layer `0`.
@@ -9673,7 +11749,7 @@ window.__ModuleLoader__.load({
 					*
 					* @type {Layers}
 					*/
-					this.layers = new Layers();
+					this.layers = new Layers$1();
 					/**
 					* When set to `true`, the 3D object gets rendered.
 					*
@@ -16810,7 +18886,7 @@ window.__ModuleLoader__.load({
 			};
 			_offsetMatrix = /*@__PURE__*/ new Matrix4();
 			_identityMatrix$1 = /*@__PURE__*/ new Matrix4();
-			Skeleton = class Skeleton {
+			Skeleton$1 = class Skeleton$1 {
 				/**
 				* Constructs a new skeleton.
 				*
@@ -16926,7 +19002,7 @@ window.__ModuleLoader__.load({
 				* @return {Skeleton} A clone of this instance.
 				*/
 				clone() {
-					return new Skeleton(this.bones, this.boneInverses);
+					return new Skeleton$1(this.bones, this.boneInverses);
 				}
 				/**
 				* Computes a data texture for passing bone data to the vertex shader.
@@ -22829,7 +24905,7 @@ window.__ModuleLoader__.load({
 			_position$2 = /*@__PURE__*/ new Vector3();
 			_quaternion$2 = /*@__PURE__*/ new Quaternion();
 			_scale$2 = /*@__PURE__*/ new Vector3();
-			Camera = class extends Object3D {
+			Camera$1 = class extends Object3D {
 				/**
 				* Constructs a new camera.
 				*/
@@ -22918,7 +24994,7 @@ window.__ModuleLoader__.load({
 			_v3$1 = /*@__PURE__*/ new Vector3();
 			_minTarget = /*@__PURE__*/ new Vector2();
 			_maxTarget = /*@__PURE__*/ new Vector2();
-			PerspectiveCamera = class extends Camera {
+			PerspectiveCamera = class extends Camera$1 {
 				/**
 				* Constructs a new perspective camera.
 				*
@@ -23476,7 +25552,7 @@ window.__ModuleLoader__.load({
 					return data;
 				}
 			};
-			OrthographicCamera = class extends Camera {
+			OrthographicCamera = class extends Camera$1 {
 				/**
 				* Constructs a new orthographic camera.
 				*
@@ -24508,7 +26584,7 @@ window.__ModuleLoader__.load({
 					*
 					* @type {Layers}
 					*/
-					this.layers = new Layers();
+					this.layers = new Layers$1();
 					/**
 					* A parameter object that configures the raycasting. It has the structure:
 					*
@@ -24903,6 +26979,112 @@ window.__ModuleLoader__.load({
 					return this;
 				}
 			});
+			_vector$2 = /*@__PURE__*/ new Vector3();
+			_boneMatrix = /*@__PURE__*/ new Matrix4();
+			_matrixWorldInv = /*@__PURE__*/ new Matrix4();
+			SkeletonHelper = class extends LineSegments {
+				/**
+				* Constructs a new skeleton helper.
+				*
+				* @param {Object3D} object -  Usually an instance of {@link SkinnedMesh}. However, any 3D object
+				* can be used if it represents a hierarchy of bones (see {@link Bone}).
+				*/
+				constructor(object) {
+					const bones = getBoneList(object);
+					const geometry = new BufferGeometry();
+					const vertices = [];
+					const colors = [];
+					for (let i = 0; i < bones.length; i++) {
+						const bone = bones[i];
+						if (bone.parent && bone.parent.isBone) {
+							vertices.push(0, 0, 0);
+							vertices.push(0, 0, 0);
+							colors.push(0, 0, 0);
+							colors.push(0, 0, 0);
+						}
+					}
+					geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+					geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
+					const material = new LineBasicMaterial({
+						vertexColors: true,
+						depthTest: false,
+						depthWrite: false,
+						toneMapped: false,
+						transparent: true
+					});
+					super(geometry, material);
+					/**
+					* This flag can be used for type testing.
+					*
+					* @type {boolean}
+					* @readonly
+					* @default true
+					*/
+					this.isSkeletonHelper = true;
+					this.type = "SkeletonHelper";
+					/**
+					* The object being visualized.
+					*
+					* @type {Object3D}
+					*/
+					this.root = object;
+					/**
+					* The list of bones that the helper visualizes.
+					*
+					* @type {Array<Bone>}
+					*/
+					this.bones = bones;
+					this.matrix = object.matrixWorld;
+					this.matrixAutoUpdate = false;
+					const color1 = new Color(255);
+					const color2 = new Color(65280);
+					this.setColors(color1, color2);
+				}
+				updateMatrixWorld(force) {
+					const bones = this.bones;
+					const geometry = this.geometry;
+					const position = geometry.getAttribute("position");
+					_matrixWorldInv.copy(this.root.matrixWorld).invert();
+					for (let i = 0, j = 0; i < bones.length; i++) {
+						const bone = bones[i];
+						if (bone.parent && bone.parent.isBone) {
+							_boneMatrix.multiplyMatrices(_matrixWorldInv, bone.matrixWorld);
+							_vector$2.setFromMatrixPosition(_boneMatrix);
+							position.setXYZ(j, _vector$2.x, _vector$2.y, _vector$2.z);
+							_boneMatrix.multiplyMatrices(_matrixWorldInv, bone.parent.matrixWorld);
+							_vector$2.setFromMatrixPosition(_boneMatrix);
+							position.setXYZ(j + 1, _vector$2.x, _vector$2.y, _vector$2.z);
+							j += 2;
+						}
+					}
+					geometry.getAttribute("position").needsUpdate = true;
+					super.updateMatrixWorld(force);
+				}
+				/**
+				* Defines the colors of the helper.
+				*
+				* @param {Color} color1 - The first line color for each bone.
+				* @param {Color} color2 - The second line color for each bone.
+				* @return {SkeletonHelper} A reference to this helper.
+				*/
+				setColors(color1, color2) {
+					const colorAttribute = this.geometry.getAttribute("color");
+					for (let i = 0; i < colorAttribute.count; i += 2) {
+						colorAttribute.setXYZ(i, color1.r, color1.g, color1.b);
+						colorAttribute.setXYZ(i + 1, color2.r, color2.g, color2.b);
+					}
+					colorAttribute.needsUpdate = true;
+					return this;
+				}
+				/**
+				* Frees the GPU-related resources allocated by this instance. Call this
+				* method whenever this instance is no longer used in your app.
+				*/
+				dispose() {
+					this.geometry.dispose();
+					this.material.dispose();
+				}
+			};
 			GridHelper = class extends LineSegments {
 				/**
 				* Constructs a new grid helper.
@@ -27816,7 +29998,7 @@ window.__ModuleLoader__.load({
 			return format === 1030 || format === 37490 || format === 36285;
 		}
 		function WebGLPrograms(renderer, environments, extensions, capabilities, bindingStates, clipping) {
-			const _programLayers = new Layers();
+			const _programLayers = new Layers$1();
 			const _customShaders = new WebGLShaderCache();
 			const _activeChannels = /* @__PURE__ */ new Set();
 			const programs = [];
@@ -35818,6104 +38000,6 @@ void main() {
 			};
 		}));
 		//#endregion
-		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/OrbitControls.js
-		init_three_module();
-		/**
-		* Fires when the camera has been transformed by the controls.
-		*
-		* @event OrbitControls#change
-		* @type {Object}
-		*/
-		const _changeEvent$1 = { type: "change" };
-		/**
-		* Fires when an interaction was initiated.
-		*
-		* @event OrbitControls#start
-		* @type {Object}
-		*/
-		const _startEvent = { type: "start" };
-		/**
-		* Fires when an interaction has finished.
-		*
-		* @event OrbitControls#end
-		* @type {Object}
-		*/
-		const _endEvent = { type: "end" };
-		const _ray = new Ray();
-		const _plane = new Plane();
-		const _TILT_LIMIT = Math.cos(70 * MathUtils.DEG2RAD);
-		const _v = new Vector3();
-		const _twoPI = 2 * Math.PI;
-		const _STATE = {
-			NONE: -1,
-			ROTATE: 0,
-			DOLLY: 1,
-			PAN: 2,
-			TOUCH_ROTATE: 3,
-			TOUCH_PAN: 4,
-			TOUCH_DOLLY_PAN: 5,
-			TOUCH_DOLLY_ROTATE: 6
-		};
-		const _EPS = 1e-6;
-		/**
-		* Orbit controls allow the camera to orbit around a target.
-		*
-		* OrbitControls performs orbiting, dollying (zooming), and panning. Unlike {@link TrackballControls},
-		* it maintains the "up" direction `object.up` (+Y by default).
-		*
-		* - Orbit: Left mouse / touch: one-finger move.
-		* - Zoom: Middle mouse, or mousewheel / touch: two-finger spread or squish.
-		* - Pan: Right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move.
-		*
-		* ```js
-		* const controls = new OrbitControls( camera, renderer.domElement );
-		*
-		* // controls.update() must be called after any manual changes to the camera's transform
-		* camera.position.set( 0, 20, 100 );
-		* controls.update();
-		*
-		* function animate() {
-		*
-		* 	// required if controls.enableDamping or controls.autoRotate are set to true
-		* 	controls.update();
-		*
-		* 	renderer.render( scene, camera );
-		*
-		* }
-		* ```
-		*
-		* @augments Controls
-		* @three_import import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-		*/
-		var OrbitControls = class extends Controls {
-			/**
-			* Constructs a new controls instance.
-			*
-			* @param {Object3D} object - The object that is managed by the controls.
-			* @param {?HTMLElement} domElement - The HTML element used for event listeners.
-			*/
-			constructor(object, domElement = null) {
-				super(object, domElement);
-				this.state = _STATE.NONE;
-				/**
-				* The focus point of the controls, the `object` orbits around this.
-				* It can be updated manually at any point to change the focus of the controls.
-				*
-				* @type {Vector3}
-				*/
-				this.target = new Vector3();
-				/**
-				* The focus point of the `minTargetRadius` and `maxTargetRadius` limits.
-				* It can be updated manually at any point to change the center of interest
-				* for the `target`.
-				*
-				* @type {Vector3}
-				*/
-				this.cursor = new Vector3();
-				/**
-				* How far you can dolly in (perspective camera only).
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minDistance = 0;
-				/**
-				* How far you can dolly out (perspective camera only).
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxDistance = Infinity;
-				/**
-				* How far you can zoom in (orthographic camera only).
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minZoom = 0;
-				/**
-				* How far you can zoom out (orthographic camera only).
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxZoom = Infinity;
-				/**
-				* How close you can get the target to the 3D `cursor`.
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minTargetRadius = 0;
-				/**
-				* How far you can move the target from the 3D `cursor`.
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxTargetRadius = Infinity;
-				/**
-				* How far you can orbit vertically, lower limit. Range is `[0, Math.PI]` radians.
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minPolarAngle = 0;
-				/**
-				* How far you can orbit vertically, upper limit. Range is `[0, Math.PI]` radians.
-				*
-				* @type {number}
-				* @default Math.PI
-				*/
-				this.maxPolarAngle = Math.PI;
-				/**
-				* How far you can orbit horizontally, lower limit. If set, the interval `[ min, max ]`
-				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
-				*
-				* @type {number}
-				* @default -Infinity
-				*/
-				this.minAzimuthAngle = -Infinity;
-				/**
-				* How far you can orbit horizontally, upper limit. If set, the interval `[ min, max ]`
-				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
-				*
-				* @type {number}
-				* @default -Infinity
-				*/
-				this.maxAzimuthAngle = Infinity;
-				/**
-				* Set to `true` to enable damping (inertia), which can be used to give a sense of weight
-				* to the controls. Note that if this is enabled, you must call `update()` in your animation
-				* loop.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.enableDamping = false;
-				/**
-				* The damping inertia used if `enableDamping` is set to `true`.
-				*
-				* Note that for this to work, you must call `update()` in your animation loop.
-				*
-				* @type {number}
-				* @default 0.05
-				*/
-				this.dampingFactor = .05;
-				/**
-				* Enable or disable zooming (dollying) of the camera.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enableZoom = true;
-				/**
-				* Speed of zooming / dollying.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.zoomSpeed = 1;
-				/**
-				* Enable or disable horizontal and vertical rotation of the camera.
-				*
-				* Note that it is possible to disable a single axis by setting the min and max of the
-				* `minPolarAngle` or `minAzimuthAngle` to the same value, which will cause the vertical
-				* or horizontal rotation to be fixed at that value.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enableRotate = true;
-				/**
-				* Speed of rotation.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.rotateSpeed = 1;
-				/**
-				* How fast to rotate the camera when the keyboard is used.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.keyRotateSpeed = 1;
-				/**
-				* Enable or disable camera panning.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enablePan = true;
-				/**
-				* Speed of panning.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.panSpeed = 1;
-				/**
-				* Defines how the camera's position is translated when panning. If `true`, the camera pans
-				* in screen space. Otherwise, the camera pans in the plane orthogonal to the camera's up
-				* direction.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.screenSpacePanning = true;
-				/**
-				* How fast to pan the camera when the keyboard is used in
-				* pixels per keypress.
-				*
-				* @type {number}
-				* @default 7
-				*/
-				this.keyPanSpeed = 7;
-				/**
-				* Setting this property to `true` allows to zoom to the cursor's position.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.zoomToCursor = false;
-				/**
-				* Set to true to automatically rotate around the target
-				*
-				* Note that if this is enabled, you must call `update()` in your animation loop.
-				* If you want the auto-rotate speed to be independent of the frame rate (the refresh
-				* rate of the display), you must pass the time `deltaTime`, in seconds, to `update()`.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.autoRotate = false;
-				/**
-				* How fast to rotate around the target if `autoRotate` is `true`. The default  equates to 30 seconds
-				* per orbit at 60fps.
-				*
-				* Note that if `autoRotate` is enabled, you must call `update()` in your animation loop.
-				*
-				* @type {number}
-				* @default 2
-				*/
-				this.autoRotateSpeed = 2;
-				/**
-				* This object contains references to the keycodes for controlling camera panning.
-				*
-				* ```js
-				* controls.keys = {
-				* 	LEFT: 'ArrowLeft', //left arrow
-				* 	UP: 'ArrowUp', // up arrow
-				* 	RIGHT: 'ArrowRight', // right arrow
-				* 	BOTTOM: 'ArrowDown' // down arrow
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.keys = {
-					LEFT: "ArrowLeft",
-					UP: "ArrowUp",
-					RIGHT: "ArrowRight",
-					BOTTOM: "ArrowDown"
-				};
-				/**
-				* This object contains references to the mouse actions used by the controls.
-				*
-				* ```js
-				* controls.mouseButtons = {
-				* 	LEFT: THREE.MOUSE.ROTATE,
-				* 	MIDDLE: THREE.MOUSE.DOLLY,
-				* 	RIGHT: THREE.MOUSE.PAN
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.mouseButtons = {
-					LEFT: MOUSE.ROTATE,
-					MIDDLE: MOUSE.DOLLY,
-					RIGHT: MOUSE.PAN
-				};
-				/**
-				* This object contains references to the touch actions used by the controls.
-				*
-				* ```js
-				* controls.mouseButtons = {
-				* 	ONE: THREE.TOUCH.ROTATE,
-				* 	TWO: THREE.TOUCH.DOLLY_PAN
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.touches = {
-					ONE: TOUCH.ROTATE,
-					TWO: TOUCH.DOLLY_PAN
-				};
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {Vector3}
-				*/
-				this.target0 = this.target.clone();
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {Vector3}
-				*/
-				this.position0 = this.object.position.clone();
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {number}
-				*/
-				this.zoom0 = this.object.zoom;
-				this._cursorStyle = "auto";
-				this._domElementKeyEvents = null;
-				this._lastPosition = new Vector3();
-				this._lastQuaternion = new Quaternion();
-				this._lastTargetPosition = new Vector3();
-				this._quat = new Quaternion().setFromUnitVectors(object.up, new Vector3(0, 1, 0));
-				this._quatInverse = this._quat.clone().invert();
-				this._spherical = new Spherical();
-				this._sphericalDelta = new Spherical();
-				this._scale = 1;
-				this._panOffset = new Vector3();
-				this._rotateStart = new Vector2();
-				this._rotateEnd = new Vector2();
-				this._rotateDelta = new Vector2();
-				this._panStart = new Vector2();
-				this._panEnd = new Vector2();
-				this._panDelta = new Vector2();
-				this._dollyStart = new Vector2();
-				this._dollyEnd = new Vector2();
-				this._dollyDelta = new Vector2();
-				this._dollyDirection = new Vector3();
-				this._mouse = new Vector2();
-				this._performCursorZoom = false;
-				this._pointers = [];
-				this._pointerPositions = {};
-				this._controlActive = false;
-				this._onPointerMove = onPointerMove$1.bind(this);
-				this._onPointerDown = onPointerDown$1.bind(this);
-				this._onPointerUp = onPointerUp$1.bind(this);
-				this._onContextMenu = onContextMenu.bind(this);
-				this._onMouseWheel = onMouseWheel.bind(this);
-				this._onKeyDown = onKeyDown.bind(this);
-				this._onTouchStart = onTouchStart.bind(this);
-				this._onTouchMove = onTouchMove.bind(this);
-				this._onMouseDown = onMouseDown.bind(this);
-				this._onMouseMove = onMouseMove.bind(this);
-				this._interceptControlDown = interceptControlDown.bind(this);
-				this._interceptControlUp = interceptControlUp.bind(this);
-				if (this.domElement !== null) this.connect(this.domElement);
-				this.update();
-			}
-			/**
-			* Defines the visual representation of the cursor.
-			*
-			* @type {('auto'|'grab')}
-			* @default 'auto'
-			*/
-			set cursorStyle(type) {
-				this._cursorStyle = type;
-				if (type === "grab") this.domElement.style.cursor = "grab";
-				else this.domElement.style.cursor = "auto";
-			}
-			get cursorStyle() {
-				return this._cursorStyle;
-			}
-			connect(element) {
-				super.connect(element);
-				this.domElement.addEventListener("pointerdown", this._onPointerDown);
-				this.domElement.addEventListener("pointercancel", this._onPointerUp);
-				this.domElement.addEventListener("contextmenu", this._onContextMenu);
-				this.domElement.addEventListener("wheel", this._onMouseWheel, { passive: false });
-				this.domElement.getRootNode().addEventListener("keydown", this._interceptControlDown, {
-					passive: true,
-					capture: true
-				});
-				this.domElement.style.touchAction = "none";
-			}
-			disconnect() {
-				this.domElement.removeEventListener("pointerdown", this._onPointerDown);
-				this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
-				this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
-				this.domElement.removeEventListener("pointercancel", this._onPointerUp);
-				this.domElement.removeEventListener("wheel", this._onMouseWheel);
-				this.domElement.removeEventListener("contextmenu", this._onContextMenu);
-				this.stopListenToKeyEvents();
-				this.domElement.getRootNode().removeEventListener("keydown", this._interceptControlDown, { capture: true });
-				this.domElement.style.touchAction = "";
-			}
-			dispose() {
-				this.disconnect();
-			}
-			/**
-			* Get the current vertical rotation, in radians.
-			*
-			* @return {number} The current vertical rotation, in radians.
-			*/
-			getPolarAngle() {
-				return this._spherical.phi;
-			}
-			/**
-			* Get the current horizontal rotation, in radians.
-			*
-			* @return {number} The current horizontal rotation, in radians.
-			*/
-			getAzimuthalAngle() {
-				return this._spherical.theta;
-			}
-			/**
-			* Returns the distance from the camera to the target.
-			*
-			* @return {number} The distance from the camera to the target.
-			*/
-			getDistance() {
-				return this.object.position.distanceTo(this.target);
-			}
-			/**
-			* Adds key event listeners to the given DOM element.
-			* `window` is a recommended argument for using this method.
-			*
-			* @param {HTMLElement} domElement - The DOM element
-			*/
-			listenToKeyEvents(domElement) {
-				domElement.addEventListener("keydown", this._onKeyDown);
-				this._domElementKeyEvents = domElement;
-			}
-			/**
-			* Removes the key event listener previously defined with `listenToKeyEvents()`.
-			*/
-			stopListenToKeyEvents() {
-				if (this._domElementKeyEvents !== null) {
-					this._domElementKeyEvents.removeEventListener("keydown", this._onKeyDown);
-					this._domElementKeyEvents = null;
-				}
-			}
-			/**
-			* Save the current state of the controls. This can later be recovered with `reset()`.
-			*/
-			saveState() {
-				this.target0.copy(this.target);
-				this.position0.copy(this.object.position);
-				this.zoom0 = this.object.zoom;
-			}
-			/**
-			* Reset the controls to their state from either the last time the `saveState()`
-			* was called, or the initial state.
-			*/
-			reset() {
-				this.target.copy(this.target0);
-				this.object.position.copy(this.position0);
-				this.object.zoom = this.zoom0;
-				this.object.updateProjectionMatrix();
-				this.dispatchEvent(_changeEvent$1);
-				this.update();
-				this.state = _STATE.NONE;
-			}
-			/**
-			* Programmatically pan the camera.
-			*
-			* @param {number} deltaX - The horizontal pan amount in pixels.
-			* @param {number} deltaY - The vertical pan amount in pixels.
-			*/
-			pan(deltaX, deltaY) {
-				this._pan(deltaX, deltaY);
-				this.update();
-			}
-			/**
-			* Programmatically dolly in (zoom in for perspective camera).
-			*
-			* @param {number} dollyScale - The dolly scale factor.
-			*/
-			dollyIn(dollyScale) {
-				this._dollyIn(dollyScale);
-				this.update();
-			}
-			/**
-			* Programmatically dolly out (zoom out for perspective camera).
-			*
-			* @param {number} dollyScale - The dolly scale factor.
-			*/
-			dollyOut(dollyScale) {
-				this._dollyOut(dollyScale);
-				this.update();
-			}
-			/**
-			* Programmatically rotate the camera left (around the vertical axis).
-			*
-			* @param {number} angle - The rotation angle in radians.
-			*/
-			rotateLeft(angle) {
-				this._rotateLeft(angle);
-				this.update();
-			}
-			/**
-			* Programmatically rotate the camera up (around the horizontal axis).
-			*
-			* @param {number} angle - The rotation angle in radians.
-			*/
-			rotateUp(angle) {
-				this._rotateUp(angle);
-				this.update();
-			}
-			update(deltaTime = null) {
-				const position = this.object.position;
-				_v.copy(position).sub(this.target);
-				_v.applyQuaternion(this._quat);
-				this._spherical.setFromVector3(_v);
-				if (this.autoRotate && this.state === _STATE.NONE) this._rotateLeft(this._getAutoRotationAngle(deltaTime));
-				if (this.enableDamping) {
-					this._spherical.theta += this._sphericalDelta.theta * this.dampingFactor;
-					this._spherical.phi += this._sphericalDelta.phi * this.dampingFactor;
-				} else {
-					this._spherical.theta += this._sphericalDelta.theta;
-					this._spherical.phi += this._sphericalDelta.phi;
-				}
-				let min = this.minAzimuthAngle;
-				let max = this.maxAzimuthAngle;
-				if (isFinite(min) && isFinite(max)) {
-					if (min < -Math.PI) min += _twoPI;
-					else if (min > Math.PI) min -= _twoPI;
-					if (max < -Math.PI) max += _twoPI;
-					else if (max > Math.PI) max -= _twoPI;
-					if (min <= max) this._spherical.theta = Math.max(min, Math.min(max, this._spherical.theta));
-					else this._spherical.theta = this._spherical.theta > (min + max) / 2 ? Math.max(min, this._spherical.theta) : Math.min(max, this._spherical.theta);
-				}
-				this._spherical.phi = Math.max(this.minPolarAngle, Math.min(this.maxPolarAngle, this._spherical.phi));
-				this._spherical.makeSafe();
-				if (this.enableDamping === true) this.target.addScaledVector(this._panOffset, this.dampingFactor);
-				else this.target.add(this._panOffset);
-				this.target.sub(this.cursor);
-				this.target.clampLength(this.minTargetRadius, this.maxTargetRadius);
-				this.target.add(this.cursor);
-				let zoomChanged = false;
-				if (this.zoomToCursor && this._performCursorZoom || this.object.isOrthographicCamera) this._spherical.radius = this._clampDistance(this._spherical.radius);
-				else {
-					const prevRadius = this._spherical.radius;
-					this._spherical.radius = this._clampDistance(this._spherical.radius * this._scale);
-					zoomChanged = prevRadius != this._spherical.radius;
-				}
-				_v.setFromSpherical(this._spherical);
-				_v.applyQuaternion(this._quatInverse);
-				position.copy(this.target).add(_v);
-				this.object.lookAt(this.target);
-				if (this.enableDamping === true) {
-					this._sphericalDelta.theta *= 1 - this.dampingFactor;
-					this._sphericalDelta.phi *= 1 - this.dampingFactor;
-					this._panOffset.multiplyScalar(1 - this.dampingFactor);
-				} else {
-					this._sphericalDelta.set(0, 0, 0);
-					this._panOffset.set(0, 0, 0);
-				}
-				if (this.zoomToCursor && this._performCursorZoom) {
-					let newRadius = null;
-					if (this.object.isPerspectiveCamera) {
-						const prevRadius = _v.length();
-						newRadius = this._clampDistance(prevRadius * this._scale);
-						const radiusDelta = prevRadius - newRadius;
-						this.object.position.addScaledVector(this._dollyDirection, radiusDelta);
-						this.object.updateMatrixWorld();
-						zoomChanged = !!radiusDelta;
-					} else if (this.object.isOrthographicCamera) {
-						const mouseBefore = new Vector3(this._mouse.x, this._mouse.y, 0);
-						mouseBefore.unproject(this.object);
-						const prevZoom = this.object.zoom;
-						this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
-						this.object.updateProjectionMatrix();
-						zoomChanged = prevZoom !== this.object.zoom;
-						const mouseAfter = new Vector3(this._mouse.x, this._mouse.y, 0);
-						mouseAfter.unproject(this.object);
-						this.object.position.sub(mouseAfter).add(mouseBefore);
-						this.object.updateMatrixWorld();
-						newRadius = _v.length();
-					} else {
-						console.warn("WARNING: OrbitControls.js encountered an unknown camera type - zoom to cursor disabled.");
-						this.zoomToCursor = false;
-					}
-					if (newRadius !== null) {
-						if (this.screenSpacePanning) this.target.set(0, 0, -1).transformDirection(this.object.matrix).multiplyScalar(newRadius).add(this.object.position);
-						else {
-							_ray.origin.copy(this.object.position);
-							_ray.direction.set(0, 0, -1).transformDirection(this.object.matrix);
-							if (Math.abs(this.object.up.dot(_ray.direction)) < _TILT_LIMIT) this.object.lookAt(this.target);
-							else {
-								_plane.setFromNormalAndCoplanarPoint(this.object.up, this.target);
-								_ray.intersectPlane(_plane, this.target);
-							}
-						}
-					}
-				} else if (this.object.isOrthographicCamera) {
-					const prevZoom = this.object.zoom;
-					this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
-					if (prevZoom !== this.object.zoom) {
-						this.object.updateProjectionMatrix();
-						zoomChanged = true;
-					}
-				}
-				this._scale = 1;
-				this._performCursorZoom = false;
-				if (zoomChanged || this._lastPosition.distanceToSquared(this.object.position) > _EPS || 8 * (1 - this._lastQuaternion.dot(this.object.quaternion)) > _EPS || this._lastTargetPosition.distanceToSquared(this.target) > _EPS) {
-					this.dispatchEvent(_changeEvent$1);
-					this._lastPosition.copy(this.object.position);
-					this._lastQuaternion.copy(this.object.quaternion);
-					this._lastTargetPosition.copy(this.target);
-					return true;
-				}
-				return false;
-			}
-			_getAutoRotationAngle(deltaTime) {
-				if (deltaTime !== null) return _twoPI / 60 * this.autoRotateSpeed * deltaTime;
-				else return _twoPI / 60 / 60 * this.autoRotateSpeed;
-			}
-			_getZoomScale(delta) {
-				const normalizedDelta = Math.abs(delta * .01);
-				return Math.pow(.95, this.zoomSpeed * normalizedDelta);
-			}
-			_rotateLeft(angle) {
-				this._sphericalDelta.theta -= angle;
-			}
-			_rotateUp(angle) {
-				this._sphericalDelta.phi -= angle;
-			}
-			_panLeft(distance, objectMatrix) {
-				_v.setFromMatrixColumn(objectMatrix, 0);
-				_v.multiplyScalar(-distance);
-				this._panOffset.add(_v);
-			}
-			_panUp(distance, objectMatrix) {
-				if (this.screenSpacePanning === true) _v.setFromMatrixColumn(objectMatrix, 1);
-				else {
-					_v.setFromMatrixColumn(objectMatrix, 0);
-					_v.crossVectors(this.object.up, _v);
-				}
-				_v.multiplyScalar(distance);
-				this._panOffset.add(_v);
-			}
-			_pan(deltaX, deltaY) {
-				const element = this.domElement;
-				if (this.object.isPerspectiveCamera) {
-					const position = this.object.position;
-					_v.copy(position).sub(this.target);
-					let targetDistance = _v.length();
-					targetDistance *= Math.tan(this.object.fov / 2 * Math.PI / 180);
-					this._panLeft(2 * deltaX * targetDistance / element.clientHeight, this.object.matrix);
-					this._panUp(2 * deltaY * targetDistance / element.clientHeight, this.object.matrix);
-				} else if (this.object.isOrthographicCamera) {
-					this._panLeft(deltaX * (this.object.right - this.object.left) / this.object.zoom / element.clientWidth, this.object.matrix);
-					this._panUp(deltaY * (this.object.top - this.object.bottom) / this.object.zoom / element.clientHeight, this.object.matrix);
-				} else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.");
-					this.enablePan = false;
-				}
-			}
-			_dollyOut(dollyScale) {
-				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale /= dollyScale;
-				else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
-					this.enableZoom = false;
-				}
-			}
-			_dollyIn(dollyScale) {
-				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale *= dollyScale;
-				else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
-					this.enableZoom = false;
-				}
-			}
-			_updateZoomParameters(x, y) {
-				if (!this.zoomToCursor) return;
-				this._performCursorZoom = true;
-				const rect = this.domElement.getBoundingClientRect();
-				const dx = x - rect.left;
-				const dy = y - rect.top;
-				const w = rect.width;
-				const h = rect.height;
-				this._mouse.x = dx / w * 2 - 1;
-				this._mouse.y = -(dy / h) * 2 + 1;
-				this._dollyDirection.set(this._mouse.x, this._mouse.y, 1).unproject(this.object).sub(this.object.position).normalize();
-			}
-			_clampDistance(dist) {
-				return Math.max(this.minDistance, Math.min(this.maxDistance, dist));
-			}
-			_handleMouseDownRotate(event) {
-				this._rotateStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseDownDolly(event) {
-				this._updateZoomParameters(event.clientX, event.clientX);
-				this._dollyStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseDownPan(event) {
-				this._panStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseMoveRotate(event) {
-				this._rotateEnd.set(event.clientX, event.clientY);
-				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
-				const element = this.domElement;
-				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
-				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
-				this._rotateStart.copy(this._rotateEnd);
-				this.update();
-			}
-			_handleMouseMoveDolly(event) {
-				this._dollyEnd.set(event.clientX, event.clientY);
-				this._dollyDelta.subVectors(this._dollyEnd, this._dollyStart);
-				if (this._dollyDelta.y > 0) this._dollyOut(this._getZoomScale(this._dollyDelta.y));
-				else if (this._dollyDelta.y < 0) this._dollyIn(this._getZoomScale(this._dollyDelta.y));
-				this._dollyStart.copy(this._dollyEnd);
-				this.update();
-			}
-			_handleMouseMovePan(event) {
-				this._panEnd.set(event.clientX, event.clientY);
-				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
-				this._pan(this._panDelta.x, this._panDelta.y);
-				this._panStart.copy(this._panEnd);
-				this.update();
-			}
-			_handleMouseWheel(event) {
-				this._updateZoomParameters(event.clientX, event.clientY);
-				if (event.deltaY < 0) this._dollyIn(this._getZoomScale(event.deltaY));
-				else if (event.deltaY > 0) this._dollyOut(this._getZoomScale(event.deltaY));
-				this.update();
-			}
-			_handleKeyDown(event) {
-				let needsUpdate = false;
-				switch (event.code) {
-					case this.keys.UP:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateUp(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(0, this.keyPanSpeed);
-						needsUpdate = true;
-						break;
-					case this.keys.BOTTOM:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateUp(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(0, -this.keyPanSpeed);
-						needsUpdate = true;
-						break;
-					case this.keys.LEFT:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateLeft(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(this.keyPanSpeed, 0);
-						needsUpdate = true;
-						break;
-					case this.keys.RIGHT:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateLeft(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(-this.keyPanSpeed, 0);
-						needsUpdate = true;
-				}
-				if (needsUpdate) {
-					event.preventDefault();
-					this.update();
-				}
-			}
-			_handleTouchStartRotate(event) {
-				if (this._pointers.length === 1) this._rotateStart.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._rotateStart.set(x, y);
-				}
-			}
-			_handleTouchStartPan(event) {
-				if (this._pointers.length === 1) this._panStart.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._panStart.set(x, y);
-				}
-			}
-			_handleTouchStartDolly(event) {
-				const position = this._getSecondPointerPosition(event);
-				const dx = event.pageX - position.x;
-				const dy = event.pageY - position.y;
-				const distance = Math.sqrt(dx * dx + dy * dy);
-				this._dollyStart.set(0, distance);
-			}
-			_handleTouchStartDollyPan(event) {
-				if (this.enableZoom) this._handleTouchStartDolly(event);
-				if (this.enablePan) this._handleTouchStartPan(event);
-			}
-			_handleTouchStartDollyRotate(event) {
-				if (this.enableZoom) this._handleTouchStartDolly(event);
-				if (this.enableRotate) this._handleTouchStartRotate(event);
-			}
-			_handleTouchMoveRotate(event) {
-				if (this._pointers.length == 1) this._rotateEnd.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._rotateEnd.set(x, y);
-				}
-				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
-				const element = this.domElement;
-				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
-				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
-				this._rotateStart.copy(this._rotateEnd);
-			}
-			_handleTouchMovePan(event) {
-				if (this._pointers.length === 1) this._panEnd.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._panEnd.set(x, y);
-				}
-				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
-				this._pan(this._panDelta.x, this._panDelta.y);
-				this._panStart.copy(this._panEnd);
-			}
-			_handleTouchMoveDolly(event) {
-				const position = this._getSecondPointerPosition(event);
-				const dx = event.pageX - position.x;
-				const dy = event.pageY - position.y;
-				const distance = Math.sqrt(dx * dx + dy * dy);
-				this._dollyEnd.set(0, distance);
-				this._dollyDelta.set(0, Math.pow(this._dollyEnd.y / this._dollyStart.y, this.zoomSpeed));
-				this._dollyOut(this._dollyDelta.y);
-				this._dollyStart.copy(this._dollyEnd);
-				const centerX = (event.pageX + position.x) * .5;
-				const centerY = (event.pageY + position.y) * .5;
-				this._updateZoomParameters(centerX, centerY);
-			}
-			_handleTouchMoveDollyPan(event) {
-				if (this.enableZoom) this._handleTouchMoveDolly(event);
-				if (this.enablePan) this._handleTouchMovePan(event);
-			}
-			_handleTouchMoveDollyRotate(event) {
-				if (this.enableZoom) this._handleTouchMoveDolly(event);
-				if (this.enableRotate) this._handleTouchMoveRotate(event);
-			}
-			_addPointer(event) {
-				this._pointers.push(event.pointerId);
-			}
-			_removePointer(event) {
-				delete this._pointerPositions[event.pointerId];
-				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) {
-					this._pointers.splice(i, 1);
-					return;
-				}
-			}
-			_isTrackingPointer(event) {
-				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) return true;
-				return false;
-			}
-			_trackPointer(event) {
-				let position = this._pointerPositions[event.pointerId];
-				if (position === void 0) {
-					position = new Vector2();
-					this._pointerPositions[event.pointerId] = position;
-				}
-				position.set(event.pageX, event.pageY);
-			}
-			_getSecondPointerPosition(event) {
-				const pointerId = event.pointerId === this._pointers[0] ? this._pointers[1] : this._pointers[0];
-				return this._pointerPositions[pointerId];
-			}
-			_customWheelEvent(event) {
-				const mode = event.deltaMode;
-				const newEvent = {
-					clientX: event.clientX,
-					clientY: event.clientY,
-					deltaY: event.deltaY
-				};
-				switch (mode) {
-					case 1:
-						newEvent.deltaY *= 16;
-						break;
-					case 2: newEvent.deltaY *= 100;
-				}
-				if (event.ctrlKey && !this._controlActive) newEvent.deltaY *= 10;
-				return newEvent;
-			}
-		};
-		function onPointerDown$1(event) {
-			if (this.enabled === false) return;
-			if (this._pointers.length === 0) {
-				this.domElement.setPointerCapture(event.pointerId);
-				this.domElement.ownerDocument.addEventListener("pointermove", this._onPointerMove);
-				this.domElement.ownerDocument.addEventListener("pointerup", this._onPointerUp);
-			}
-			if (this._isTrackingPointer(event)) return;
-			this._addPointer(event);
-			if (event.pointerType === "touch") this._onTouchStart(event);
-			else this._onMouseDown(event);
-			if (this._cursorStyle === "grab") this.domElement.style.cursor = "grabbing";
-		}
-		function onPointerMove$1(event) {
-			if (this.enabled === false) return;
-			if (event.pointerType === "touch") this._onTouchMove(event);
-			else this._onMouseMove(event);
-		}
-		function onPointerUp$1(event) {
-			this._removePointer(event);
-			switch (this._pointers.length) {
-				case 0:
-					this.domElement.releasePointerCapture(event.pointerId);
-					this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
-					this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
-					this.dispatchEvent(_endEvent);
-					this.state = _STATE.NONE;
-					if (this._cursorStyle === "grab") this.domElement.style.cursor = "grab";
-					break;
-				case 1:
-					const pointerId = this._pointers[0];
-					const position = this._pointerPositions[pointerId];
-					this._onTouchStart({
-						pointerId,
-						pageX: position.x,
-						pageY: position.y
-					});
-			}
-		}
-		function onMouseDown(event) {
-			let mouseAction;
-			switch (event.button) {
-				case 0:
-					mouseAction = this.mouseButtons.LEFT;
-					break;
-				case 1:
-					mouseAction = this.mouseButtons.MIDDLE;
-					break;
-				case 2:
-					mouseAction = this.mouseButtons.RIGHT;
-					break;
-				default: mouseAction = -1;
-			}
-			switch (mouseAction) {
-				case MOUSE.DOLLY:
-					if (this.enableZoom === false) return;
-					this._handleMouseDownDolly(event);
-					this.state = _STATE.DOLLY;
-					break;
-				case MOUSE.ROTATE:
-					if (event.ctrlKey || event.metaKey || event.shiftKey) {
-						if (this.enablePan === false) return;
-						this._handleMouseDownPan(event);
-						this.state = _STATE.PAN;
-					} else {
-						if (this.enableRotate === false) return;
-						this._handleMouseDownRotate(event);
-						this.state = _STATE.ROTATE;
-					}
-					break;
-				case MOUSE.PAN:
-					if (event.ctrlKey || event.metaKey || event.shiftKey) {
-						if (this.enableRotate === false) return;
-						this._handleMouseDownRotate(event);
-						this.state = _STATE.ROTATE;
-					} else {
-						if (this.enablePan === false) return;
-						this._handleMouseDownPan(event);
-						this.state = _STATE.PAN;
-					}
-					break;
-				default: this.state = _STATE.NONE;
-			}
-			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
-		}
-		function onMouseMove(event) {
-			switch (this.state) {
-				case _STATE.ROTATE:
-					if (this.enableRotate === false) return;
-					this._handleMouseMoveRotate(event);
-					break;
-				case _STATE.DOLLY:
-					if (this.enableZoom === false) return;
-					this._handleMouseMoveDolly(event);
-					break;
-				case _STATE.PAN:
-					if (this.enablePan === false) return;
-					this._handleMouseMovePan(event);
-			}
-		}
-		function onMouseWheel(event) {
-			if (this.enabled === false || this.enableZoom === false || this.state !== _STATE.NONE) return;
-			event.preventDefault();
-			this.dispatchEvent(_startEvent);
-			this._handleMouseWheel(this._customWheelEvent(event));
-			this.dispatchEvent(_endEvent);
-		}
-		function onKeyDown(event) {
-			if (this.enabled === false) return;
-			this._handleKeyDown(event);
-		}
-		function onTouchStart(event) {
-			this._trackPointer(event);
-			switch (this._pointers.length) {
-				case 1:
-					switch (this.touches.ONE) {
-						case TOUCH.ROTATE:
-							if (this.enableRotate === false) return;
-							this._handleTouchStartRotate(event);
-							this.state = _STATE.TOUCH_ROTATE;
-							break;
-						case TOUCH.PAN:
-							if (this.enablePan === false) return;
-							this._handleTouchStartPan(event);
-							this.state = _STATE.TOUCH_PAN;
-							break;
-						default: this.state = _STATE.NONE;
-					}
-					break;
-				case 2:
-					switch (this.touches.TWO) {
-						case TOUCH.DOLLY_PAN:
-							if (this.enableZoom === false && this.enablePan === false) return;
-							this._handleTouchStartDollyPan(event);
-							this.state = _STATE.TOUCH_DOLLY_PAN;
-							break;
-						case TOUCH.DOLLY_ROTATE:
-							if (this.enableZoom === false && this.enableRotate === false) return;
-							this._handleTouchStartDollyRotate(event);
-							this.state = _STATE.TOUCH_DOLLY_ROTATE;
-							break;
-						default: this.state = _STATE.NONE;
-					}
-					break;
-				default: this.state = _STATE.NONE;
-			}
-			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
-		}
-		function onTouchMove(event) {
-			this._trackPointer(event);
-			switch (this.state) {
-				case _STATE.TOUCH_ROTATE:
-					if (this.enableRotate === false) return;
-					this._handleTouchMoveRotate(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_PAN:
-					if (this.enablePan === false) return;
-					this._handleTouchMovePan(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_DOLLY_PAN:
-					if (this.enableZoom === false && this.enablePan === false) return;
-					this._handleTouchMoveDollyPan(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_DOLLY_ROTATE:
-					if (this.enableZoom === false && this.enableRotate === false) return;
-					this._handleTouchMoveDollyRotate(event);
-					this.update();
-					break;
-				default: this.state = _STATE.NONE;
-			}
-		}
-		function onContextMenu(event) {
-			if (this.enabled === false) return;
-			event.preventDefault();
-		}
-		function interceptControlDown(event) {
-			if (event.key === "Control") {
-				this._controlActive = true;
-				this.domElement.getRootNode().addEventListener("keyup", this._interceptControlUp, {
-					passive: true,
-					capture: true
-				});
-			}
-		}
-		function interceptControlUp(event) {
-			if (event.key === "Control") {
-				this._controlActive = false;
-				this.domElement.getRootNode().removeEventListener("keyup", this._interceptControlUp, {
-					passive: true,
-					capture: true
-				});
-			}
-		}
-		//#endregion
-		//#region ../../web/card-base/src/stage3d.ts
-		init_three_module();
-		/** The r3f pointer-events analogue lives on userData.pick (see header). */
-		function findPickCarrier(o) {
-			let cur = o;
-			while (cur !== null) {
-				if (cur.userData !== void 0 && cur.userData.pick !== void 0) return cur;
-				cur = cur.parent;
-			}
-			return null;
-		}
-		/** Skip hits on a TransformControls gizmo subtree (invisible pick planes
-		*  would swallow every click while a gizmo is attached). */
-		function isGizmoHit(o) {
-			let cur = o;
-			while (cur !== null) {
-				if (cur.gizmo !== void 0) return true;
-				cur = cur.parent;
-			}
-			return false;
-		}
-		function mountStage3D(canvas, opts = {}) {
-			let renderer;
-			try {
-				renderer = new WebGLRenderer({
-					canvas,
-					antialias: true,
-					alpha: opts.alpha !== false,
-					preserveDrawingBuffer: opts.preserveDrawingBuffer === true
-				});
-			} catch (e) {
-				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
-				return null;
-			}
-			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-			renderer.shadowMap.enabled = true;
-			renderer.shadowMap.type = 1;
-			renderer.toneMapping = opts.toneMapping ?? 4;
-			const scene = new Scene();
-			scene.background = null;
-			const camera = new PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
-			camera.position.set(...opts.camera ?? [
-				2.2,
-				1.6,
-				2.6
-			]);
-			camera.lookAt(0, .8, 0);
-			const controls = new OrbitControls(camera, canvas);
-			controls.target.set(...opts.target ?? [
-				0,
-				.8,
-				0
-			]);
-			controls.enableDamping = true;
-			controls.dampingFactor = .1;
-			if (opts.minDistance !== void 0) controls.minDistance = opts.minDistance;
-			if (opts.maxDistance !== void 0) controls.maxDistance = opts.maxDistance;
-			if (opts.maxPolarAngle !== void 0) controls.maxPolarAngle = opts.maxPolarAngle;
-			controls.update();
-			const ticks = [];
-			const addTick = (fn) => {
-				ticks.push(fn);
-				return () => {
-					const i = ticks.indexOf(fn);
-					if (i >= 0) ticks.splice(i, 1);
-				};
-			};
-			const raycaster = new Raycaster();
-			const pointer = new Vector2();
-			let hovered = null;
-			let downAt = 0;
-			const threshold = opts.clickVsDragMs ?? 350;
-			const pickAt = (ev) => {
-				const r = canvas.getBoundingClientRect();
-				if (r.width === 0 || r.height === 0) return null;
-				pointer.x = (ev.clientX - r.left) / r.width * 2 - 1;
-				pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
-				raycaster.setFromCamera(pointer, camera);
-				const hits = raycaster.intersectObjects(scene.children, true);
-				for (const hit of hits) {
-					if (isGizmoHit(hit.object)) continue;
-					const carrier = findPickCarrier(hit.object);
-					if (carrier !== null) return {
-						carrier,
-						point: hit.point
-					};
-				}
-				return null;
-			};
-			const onPointerDown = (e) => {
-				downAt = e.timeStamp;
-			};
-			const onPointerMove = (e) => {
-				const found = pickAt(e);
-				const carrier = found?.carrier ?? null;
-				if (carrier !== hovered) {
-					(hovered?.userData.pick)?.out?.(e);
-					document.body.style.cursor = "auto";
-					hovered = carrier;
-					if (carrier !== null && found !== null) carrier.userData.pick.over?.(found.point, e);
-				}
-			};
-			const onPointerLeave = (e) => {
-				if (hovered !== null) {
-					hovered.userData.pick.out?.(e);
-					document.body.style.cursor = "auto";
-					hovered = null;
-				}
-			};
-			const onClick = (e) => {
-				if (e.timeStamp - downAt > threshold) return;
-				const found = pickAt(e);
-				if (found !== null) found.carrier.userData.pick.click?.(found.point, e);
-				else opts.onEmptyClick?.();
-			};
-			canvas.addEventListener("pointerdown", onPointerDown);
-			canvas.addEventListener("pointermove", onPointerMove);
-			canvas.addEventListener("pointerleave", onPointerLeave);
-			canvas.addEventListener("click", onClick);
-			let raf = 0;
-			const clock = new Clock();
-			const frame = () => {
-				raf = requestAnimationFrame(frame);
-				const delta = clock.getDelta();
-				for (const t of ticks) t(delta);
-				controls.update();
-				renderer.render(scene, camera);
-			};
-			frame();
-			const resize = () => {
-				const w = canvas.clientWidth, h = canvas.clientHeight;
-				if (w === 0 || h === 0) return;
-				renderer.setSize(w, h, false);
-				camera.aspect = w / h;
-				camera.updateProjectionMatrix();
-			};
-			resize();
-			const ro = new ResizeObserver(resize);
-			ro.observe(canvas);
-			return {
-				canvas,
-				renderer,
-				scene,
-				camera,
-				controls,
-				addTick,
-				resize,
-				dispose: () => {
-					cancelAnimationFrame(raf);
-					ro.disconnect();
-					canvas.removeEventListener("pointerdown", onPointerDown);
-					canvas.removeEventListener("pointermove", onPointerMove);
-					canvas.removeEventListener("pointerleave", onPointerLeave);
-					canvas.removeEventListener("click", onClick);
-					controls.dispose();
-					renderer.dispose();
-				}
-			};
-		}
-		/** A billboard TEXT label — the drei <Billboard><Text/></Text> analogue:
-		*  canvas-drawn glyphs on a THREE.Sprite (sprites always face the camera,
-		*  which IS the billboard). worldHeight is the label's height in scene
-		*  units (drei Text's fontSize is world units too). */
-		function makeLabelSprite(text, color, worldHeight) {
-			const px = 96;
-			const c = document.createElement("canvas");
-			const ctx = c.getContext("2d");
-			if (ctx !== null) {
-				ctx.font = `600 ${px}px system-ui, sans-serif`;
-				const w = Math.ceil(ctx.measureText(text).width) + 32;
-				c.width = w;
-				c.height = 128;
-				ctx.font = `600 ${px}px system-ui, sans-serif`;
-				ctx.textAlign = "center";
-				ctx.textBaseline = "middle";
-				ctx.fillStyle = color;
-				ctx.fillText(text, w / 2, 64);
-			}
-			const tex = new CanvasTexture(c);
-			tex.minFilter = LinearFilter;
-			const mat = new SpriteMaterial({
-				map: tex,
-				transparent: true
-			});
-			const sprite = new Sprite(mat);
-			const aspect = c.width / c.height;
-			sprite.scale.set(worldHeight * aspect, worldHeight, 1);
-			return sprite;
-		}
-		//#endregion
-		//#region ../../web-kit/formats/src/npz.ts
-		function readU16(d, o) {
-			return d[o] | d[o + 1] << 8;
-		}
-		function readU32(d, o) {
-			return (d[o] | d[o + 1] << 8 | d[o + 2] << 16 | d[o + 3] << 24) >>> 0;
-		}
-		async function inflateRaw(compressed) {
-			const ds = new DecompressionStream("deflate-raw");
-			const stream = new Blob([compressed]).stream().pipeThrough(ds);
-			const buf = await new Response(stream).arrayBuffer();
-			return new Uint8Array(buf);
-		}
-		/** Parse a single .npy file from its raw (decompressed) bytes. */
-		function parseNpy(bytes) {
-			if (bytes.length < 10 || bytes[0] !== 147 || bytes[1] !== 78 || bytes[2] !== 85 || bytes[3] !== 77 || bytes[4] !== 80 || bytes[5] !== 89) throw new Error("Invalid .npy magic bytes");
-			const ver = bytes[6];
-			let headerLen;
-			let headerOff;
-			if (ver <= 1) {
-				headerLen = readU16(bytes, 8);
-				headerOff = 10;
-			} else {
-				headerLen = readU32(bytes, 8);
-				headerOff = 12;
-			}
-			const headerBytes = bytes.subarray(headerOff, headerOff + headerLen);
-			const header = new TextDecoder().decode(headerBytes);
-			const dataBytes = bytes.subarray(headerOff + headerLen);
-			const shapeMatch = header.match(/'shape':\s*\(([^)]*)\)/);
-			const dtypeMatch = header.match(/'descr':\s*'([^']+)'/);
-			if (!shapeMatch || !dtypeMatch) throw new Error(`Unparseable .npy header: ${header.slice(0, 120)}`);
-			const shape = shapeMatch[1].split(",").map((s) => s.trim()).filter((s) => s.length > 0).map(Number);
-			const dtype = dtypeMatch[1].trim();
-			const copy = new Uint8Array(dataBytes.length);
-			copy.set(dataBytes);
-			if (dtype === "<f4" || dtype === "|f4" || dtype === "=f4") return {
-				shape,
-				data: new Float32Array(copy.buffer, 0, Math.floor(copy.length / 4))
-			};
-			if (dtype === "<f8" || dtype === "|f8" || dtype === "=f8") {
-				const f64 = new Float64Array(copy.buffer, 0, Math.floor(copy.length / 8));
-				return {
-					shape,
-					data: new Float32Array(f64)
-				};
-			}
-			if (dtype === "<i4" || dtype === "|i4" || dtype === "=i4") {
-				const i32 = new Int32Array(copy.buffer, 0, Math.floor(copy.length / 4));
-				return {
-					shape,
-					data: new Uint32Array(i32)
-				};
-			}
-			if (dtype === "<i8" || dtype === "|i8" || dtype === "=i8") return {
-				shape,
-				data: new BigInt64Array(copy.buffer, 0, Math.floor(copy.length / 8))
-			};
-			throw new Error(`Unsupported .npy dtype "${dtype}" (float32/64 + int32/64 supported)`);
-		}
-		/** Find the End-of-Central-Directory record, searching backward from EOF. */
-		function findEocd(bytes) {
-			const min = Math.max(0, bytes.length - 22 - 65535);
-			for (let i = bytes.length - 22; i >= min; i--) if (bytes[i] === 80 && bytes[i + 1] === 75 && bytes[i + 2] === 5 && bytes[i + 3] === 6) return i;
-			return -1;
-		}
-		/**
-		* Parse an NPZ file and return a map of array-name → {shape, data}.
-		* Entry names have their `.npy` extension stripped (so `posed_joints.npy`
-		* is keyed as `"posed_joints"`).
-		*/
-		async function parseNpz(bytes) {
-			const out = /* @__PURE__ */ new Map();
-			const eocd = findEocd(bytes);
-			if (eocd < 0) throw new Error("NPZ parse failed: End-of-Central-Directory not found");
-			const cdEntries = readU16(bytes, eocd + 10);
-			let off = readU32(bytes, eocd + 16);
-			for (let i = 0; i < cdEntries; i++) {
-				if (readU32(bytes, off) !== CDFH_SIG) break;
-				const method = readU16(bytes, off + 10);
-				const compSize = readU32(bytes, off + 20);
-				const nameLen = readU16(bytes, off + 28);
-				const extraLen = readU16(bytes, off + 30);
-				const commentLen = readU16(bytes, off + 32);
-				const localOff = readU32(bytes, off + 42);
-				const name = new TextDecoder().decode(bytes.subarray(off + 46, off + 46 + nameLen));
-				const lfhNameLen = readU16(bytes, localOff + 26);
-				const lfhExtraLen = readU16(bytes, localOff + 28);
-				const dataOff = localOff + 30 + lfhNameLen + lfhExtraLen;
-				const compressed = bytes.subarray(dataOff, dataOff + compSize);
-				let raw;
-				if (method === 0) raw = compressed;
-				else if (method === 8) raw = await inflateRaw(compressed);
-				else throw new Error(`NPZ entry "${name}": unsupported compression method ${method}`);
-				if (name.endsWith(".npy")) {
-					const key = name.slice(0, -4);
-					try {
-						out.set(key, parseNpy(raw));
-					} catch {}
-				}
-				off += 46 + nameLen + extraLen + commentLen;
-			}
-			return out;
-		}
-		var CDFH_SIG;
-		var init_npz = __esmMin((() => {
-			CDFH_SIG = 33639248;
-		}));
-		//#endregion
-		//#region ../../web-kit/formats/src/readFile.ts
-		/**
-		* readFile — THE one read path for every slot-shaped attach, ported
-		* native from the retired kit's SlotSquare (2026-09-12, the kit
-		* retirement). A plain FileReader promise — no UI dependency owns a
-		* file read.
-		*/
-		/** Read a File / Blob and resolve its data: URL. */
-		function readAsDataURL(file) {
-			return new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => resolve(reader.result);
-				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
-				reader.readAsDataURL(file);
-			});
-		}
-		var init_readFile = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/api.ts
-		/** The named escape for non-table URLs. Every use is deliberate and
-		* greppable. */
-		function externalUrl(u) {
-			return u;
-		}
-		function shouldRetryStatus(status, method) {
-			return GATEWAY_CODES.has(status) || SAFE_METHODS.has(method) && status >= 500 && status < 600;
-		}
-		function getBackendState() {
-			return state;
-		}
-		/** Subscribe to backend liveness changes. Returns an unsubscribe fn. */
-		function onBackendState(cb) {
-			listeners.add(cb);
-			return () => {
-				listeners.delete(cb);
-			};
-		}
-		function setState(next) {
-			if (next === state) return;
-			state = next;
-			for (const cb of listeners) try {
-				cb(next);
-			} catch {}
-		}
-		/** True if `input` targets our own backend (same-origin or root-relative). */
-		function isBackendUrl(input) {
-			if (input.startsWith("/")) return true;
-			try {
-				return new URL(input, window.location.origin).origin === window.location.origin;
-			} catch {
-				return false;
-			}
-		}
-		function sleep$1(ms, signal) {
-			return new Promise((resolve, reject) => {
-				const t = setTimeout(resolve, ms);
-				signal?.addEventListener("abort", () => {
-					clearTimeout(t);
-					reject(new DOMException("Aborted", "AbortError"));
-				}, { once: true });
-			});
-		}
-		function backoffMs(attempt) {
-			const exp = Math.min(CAP_MS, BASE_MS * 2 ** attempt);
-			return Math.round(exp * (.5 + Math.random() * .5));
-		}
-		/**
-		* Drop-in replacement for `fetch()` with retry, backoff, GET dedup, and a
-		* global liveness signal. Throws only on persistent network failure (after
-		* MAX_RETRIES) or caller AbortError. Returns the Response for any HTTP
-		* status (including 4xx/5xx) so existing `if (!res.ok)` checks keep working.
-		*/
-		async function apiFetch(input, init = {}) {
-			const method = (init.method ?? "GET").toUpperCase();
-			const backend = isBackendUrl(input);
-			const dedupKey = method === "GET" && backend ? input : null;
-			if (dedupKey && inflight.has(dedupKey)) return inflight.get(dedupKey).then((r) => {
-				if (r && typeof r.clone === "function") return r.clone();
-				return r;
-			});
-			const run = async () => {
-				const deadline = Date.now() + TOTAL_BUDGET_MS;
-				let lastErr = null;
-				for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-					if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
-					try {
-						const ctrl = new AbortController();
-						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
-						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
-							if (backend) setState("degraded");
-							await sleep$1(backoffMs(attempt), callerSignal);
-							continue;
-						}
-						if (backend) {
-							consecutiveFail = 0;
-							setState("online");
-						}
-						return res;
-					} catch (err) {
-						if (err instanceof DOMException && err.name === "AbortError") throw err;
-						lastErr = err;
-						if (backend) {
-							consecutiveFail++;
-							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
-						}
-						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep$1(backoffMs(attempt));
-					}
-				}
-				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
-			};
-			const p = run();
-			if (dedupKey) {
-				inflight.set(dedupKey, p);
-				p.then(() => {
-					inflight.delete(dedupKey);
-				}, () => {
-					inflight.delete(dedupKey);
-				});
-			}
-			return p;
-		}
-		/**
-		* Convenience for JSON endpoints. Throws an Error on non-2xx (message
-		* includes status + body excerpt) so callers can use try/catch directly.
-		*/
-		async function apiJson(input, init) {
-			const res = await apiFetch(input, init);
-			if (!res.ok) {
-				let body = "";
-				try {
-					body = await res.text();
-				} catch (readErr) {
-					throw new Error(`${input}: ${res.status} ${res.statusText} (body read failed: ${readErr instanceof Error ? readErr.message : String(readErr)})`);
-				}
-				throw new Error(`${input}: ${res.status} ${res.statusText} ${body.slice(0, 200)}`);
-			}
-			return res.json();
-		}
-		/** Fetch a same-origin artifact URL and re-encode it as a data URL
-		*  (survived the unicananvas client purge 2026-08-21 — the ONE live
-		*  export of that dead module; generic wire utility, so it lives with
-		*  the transport). */
-		async function urlToDataUrl(url, signal) {
-			const res = await fetch(url, { signal });
-			if (!res.ok) throw new Error(`Canvas artifact fetch failed: HTTP ${res.status} for ${url.slice(0, 200)}`);
-			const blob = await res.blob();
-			try {
-				return await readAsDataURL(blob);
-			} catch {
-				throw new Error(`Failed to read ${url.slice(0, 200)} as data URL`);
-			}
-		}
-		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners, inflight;
-		var init_api = __esmMin((() => {
-			init_readFile();
-			MAX_RETRIES = 4;
-			BASE_MS = 400;
-			CAP_MS = 4e3;
-			OFFLINE_THRESHOLD = 3;
-			TOTAL_BUDGET_MS = 15e3;
-			SAFE_METHODS = /* @__PURE__ */ new Set(["GET", "HEAD"]);
-			GATEWAY_CODES = /* @__PURE__ */ new Set([
-				502,
-				503,
-				504
-			]);
-			state = "online";
-			consecutiveFail = 0;
-			listeners = /* @__PURE__ */ new Set();
-			inflight = /* @__PURE__ */ new Map();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContract.ts
-		function validateCatalogContract(catalog) {
-			const violations = [];
-			if (!isObj$1(catalog)) return {
-				valid: false,
-				violations: [{
-					kind: "catalog",
-					message: "Catalog is not an object — this is an error body, not a contract."
-				}]
-			};
-			const families = catalog.families;
-			if (!isObj$1(families)) violations.push({
-				kind: "catalog",
-				message: "Catalog has no `families` record — no family can be located."
-			});
-			const models = catalog.models;
-			if (!isObj$1(models)) violations.push({
-				kind: "catalog",
-				message: "Catalog has no `models` record — no model can be located."
-			});
-			const capabilities = catalog.capabilities;
-			if (capabilities !== void 0 && !isObj$1(capabilities)) violations.push({
-				kind: "catalog",
-				message: "`capabilities` is not a record keyed by id — capability routing is dead."
-			});
-			if (families === void 0 || models === void 0) return {
-				valid: false,
-				violations
-			};
-			if (isObj$1(families)) for (const [id, entry] of Object.entries(families)) {
-				if (!isObj$1(entry)) {
-					violations.push({
-						kind: id,
-						message: `Family ${id} is not an object.`
-					});
-					continue;
-				}
-				if (!isNonEmptyString(entry.label)) violations.push({
-					kind: id,
-					message: `Family ${id} declares no "label" — it would render as an empty picker entry.`
-				});
-				const modifiers = entry.modifiers;
-				if (modifiers !== void 0 && modifiers !== null && !Array.isArray(modifiers)) violations.push({
-					kind: id,
-					message: `Family ${id} declares "modifiers" but it is not an array — modifier capability is unreadable.`
-				});
-				else if (Array.isArray(modifiers)) for (const raw of modifiers) {
-					if (!isObj$1(raw) || typeof raw.kind !== "string") continue;
-					if (raw.kind !== "controlnet" && raw.kind !== "lora") continue;
-					const options = Array.isArray(raw.options) ? raw.options : [];
-					if ((raw.cardinality ?? "list") === "list" && options.length === 0 && !raw.upload_dir) violations.push({
-						kind: id,
-						message: `Family ${id} modifier kind "${raw.kind}" carries ZERO options and no upload_dir — the dropdown would render empty (phantom capability).`
-					});
-				}
-			}
-			if (isObj$1(models)) for (const [id, entry] of Object.entries(models)) {
-				if (!isObj$1(entry)) {
-					violations.push({
-						kind: id,
-						message: `Model ${id} is not an object.`
-					});
-					continue;
-				}
-				const missing = [];
-				if (!isNonEmptyString(entry.family)) missing.push("family");
-				if (!isNonEmptyString(entry.form)) missing.push("form");
-				if (!isNonEmptyString(entry.label)) missing.push("label");
-				if (missing.length > 0) violations.push({
-					kind: id,
-					message: `Model ${id} is missing required key(s) ${missing.join(", ")} — it cannot route or render.`
-				});
-			}
-			if (isObj$1(capabilities)) for (const [id, entry] of Object.entries(capabilities)) {
-				if (!isObj$1(entry)) {
-					violations.push({
-						kind: id,
-						message: `Capability ${id} is not an object.`
-					});
-					continue;
-				}
-				const missing = [];
-				if (!isNonEmptyString(entry.label)) missing.push("label");
-				const declaredFam = entry.default_family;
-				if (declaredFam !== void 0 && !isNonEmptyString(declaredFam)) missing.push("default_family (present but not a string)");
-				const resolved = entry.resolved;
-				if (!(isObj$1(resolved) && isNonEmptyString(resolved.family) && isNonEmptyString(resolved.model)) && !isNonEmptyString(declaredFam)) missing.push("default_family or resolved route");
-				if (!Array.isArray(entry.families) || entry.families.length === 0) missing.push("families");
-				else if (entry.families.some((f) => !isNonEmptyString(f))) missing.push("families (non-string entries)");
-				if (missing.length > 0) violations.push({
-					kind: id,
-					message: `Capability ${id} is missing required key(s) ${missing.join(", ")} — it cannot route.`
-				});
-			}
-			return {
-				valid: violations.length === 0,
-				violations
-			};
-		}
-		var CatalogContractError, isObj$1, isNonEmptyString;
-		var init_catalogContract = __esmMin((() => {
-			CatalogContractError = class extends Error {
-				violations;
-				constructor(violations) {
-					super(`Catalog contract violation (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
-					this.name = "CatalogContractError";
-					this.violations = violations;
-				}
-			};
-			isObj$1 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
-			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/modelCatalog.ts
-		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
-			activeVariantForRoute: () => activeVariantForRoute,
-			axisCellExists: () => axisCellExists,
-			canvasDefaultModel: () => canvasDefaultModel,
-			composeVariantRoute: () => composeVariantRoute,
-			controlnetTypesOf: () => controlnetTypesOf,
-			dropdownModels: () => dropdownModels,
-			ensureCatalog: () => ensureCatalog,
-			familiesForForm: () => familiesForForm,
-			familyAccepts: () => familyAccepts,
-			familyCardSummary: () => familyCardSummary,
-			familyConditioning: () => familyConditioning,
-			familyGenre: () => familyGenre,
-			familyHasVariantAxis: () => familyHasVariantAxis,
-			familyLabel: () => familyLabel,
-			familyOf: () => familyOf,
-			familyOptionalOutputs: () => familyOptionalOutputs,
-			familyPrimaryRoute: () => familyPrimaryRoute,
-			familyTransformMatrix: () => familyTransformMatrix,
-			formOf: () => formOf,
-			getCachedCatalog: () => getCachedCatalog,
-			hiddenFromDropdown: () => hiddenFromDropdown,
-			isCatalogLoaded: () => isCatalogLoaded,
-			loadCatalog: () => loadCatalog,
-			modelDescription: () => modelDescription,
-			modelLabel: () => modelLabel,
-			narrowGenre: () => narrowGenre,
-			onCatalogReady: () => onCatalogReady,
-			presetsForRoute: () => presetsForRoute,
-			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
-			routeCoordinates: () => routeCoordinates,
-			studioOf: () => studioOf,
-			variantLabel: () => variantLabel,
-			variantSiblings: () => variantSiblings,
-			variantsForRoute: () => variantsForRoute
-		});
-		/** Narrow the wire's plain string genre (string | null — the backend
-		* Literal does not survive the wire as a type) onto the view union.
-		* Out-of-vocabulary values return undefined (callers fall back) — never a
-		* silent cast: an unknown genre must NOT masquerade as a known one. */
-		function narrowGenre(g) {
-			return CARD_GENRES.find((genre) => genre === g);
-		}
-		/** CN type keys a family declares — derived from its ``modifiers:`` block
-		* (kind=controlnet options; the ONLY source of truth, Phase A finalé).
-		* ServicePicker advertises CN support per tile from this — the "weird
-		* reason" most models show no CN subcards: only families that declare a
-		* controlnet kind have CN support (DiT models without compatible CN
-		* trainings correctly declare nothing). */
-		function controlnetTypesOf(family) {
-			return ((family?.modifiers ?? []).find((m) => m.kind === "controlnet")?.options ?? []).map((o) => ({
-				type: o.value,
-				label: o.label
-			}));
-		}
-		function _notify() {
-			for (const fn of _listeners$3) try {
-				fn();
-			} catch (e) {
-				console.warn("[modelCatalog] listener error:", e);
-			}
-		}
-		/** Subscribe to catalog readiness. Called when _cache transitions from
-		* null → populated. Returns an unsubscribe fn. */
-		function onCatalogReady(fn) {
-			_listeners$3.add(fn);
-			return () => {
-				_listeners$3.delete(fn);
-			};
-		}
-		/** True after the catalog has been successfully loaded at least once. */
-		function isCatalogLoaded() {
-			return _loaded;
-		}
-		/** Fetch the model catalog. THROWS on non-2xx (no silent empty `{}`).
-		* The caller MUST surface the error. Returning a fake empty catalog here
-		* is what hid every "model dropdown is empty" bug — the user saw nothing
-		* and the console warning was invisible. Loud failure is honest. */
-		/** The ONE ingest gate (2026-08-11): validate BEFORE caching.
-		* A catalog that violates the contract is a BACKEND bug — reported to the
-		* contract store, NEVER cached, and the caller gets a
-		* CatalogContractError (ensureCatalog will not auto-retry it). */
-		function _ingest(data) {
-			const { valid, violations } = validateCatalogContract(data);
-			if (!valid) throw new CatalogContractError(violations);
-			useCatalogContractStore.getState().reportOk();
-			const catalog = data;
-			_cache$2 = catalog;
-			_cacheTime = Date.now();
-			_loaded = true;
-			_notify();
-			return catalog;
-		}
-		async function loadCatalog(opts) {
-			if (_cache$2 && !opts?.force) {
-				if (Date.now() - _cacheTime > _CACHE_TTL_MS && !_inflight$2) _inflight$2 = (async () => {
-					try {
-						_ingest(await apiJson("/v1/model-catalog"));
-					} catch (e) {
-						if (e instanceof CatalogContractError) useCatalogContractStore.getState().reportViolation(e.violations);
-						else useCatalogContractStore.getState().reportError(e instanceof Error ? e.message : String(e));
-					}
-					return _cache$2;
-				})().finally(() => {
-					_inflight$2 = null;
-				});
-				return _cache$2;
-			}
-			if (_inflight$2) return _inflight$2;
-			_inflight$2 = (async () => {
-				try {
-					return _ingest(await apiJson("/v1/model-catalog"));
-				} catch (e) {
-					if (e instanceof CatalogContractError) useCatalogContractStore.getState().reportViolation(e.violations);
-					else useCatalogContractStore.getState().reportError(e instanceof Error ? e.message : String(e));
-					throw e;
-				}
-			})().finally(() => {
-				_inflight$2 = null;
-			});
-			return _inflight$2;
-		}
-		/** Fire-and-forget background load with auto-retry. If the first attempt
-		* fails (gateway reloading, network blip), schedules a retry after 3s.
-		* Keeps trying until the catalog loads, then notifies subscribers.
-		* Safe to call multiple times — collapses into a single inflight request. */
-		function ensureCatalog() {
-			if (_loaded) return;
-			if (_inflight$2) return;
-			loadCatalog().then(() => {
-				if (_bgRetryTimer) {
-					clearTimeout(_bgRetryTimer);
-					_bgRetryTimer = null;
-				}
-			}).catch((e) => {
-				if (e instanceof CatalogContractError) {
-					console.error("[modelCatalog] catalog contract violation — not auto-retrying:", e.message);
-					return;
-				}
-				console.warn("[modelCatalog] load failed, will retry in 3s:", e);
-				if (_bgRetryTimer) clearTimeout(_bgRetryTimer);
-				_bgRetryTimer = setTimeout(() => {
-					_bgRetryTimer = null;
-					ensureCatalog();
-				}, 3e3);
-			});
-		}
-		function getCachedCatalog() {
-			return _cache$2;
-		}
-		/** Seed the cache with pre-fetched data (test utility — production code uses
-		* loadCatalog/ensureCatalog which fetch from the endpoint). Lets tests inject
-		* a fake catalog without going to the network. */
-		function primeCatalog(data) {
-			_cache$2 = data;
-			_loaded = true;
-			_notify();
-		}
-		/**
-		* For route keys that are NOT top-level catalog entries (e.g. a quant-tier
-		* sibling that only appears as a variant route on its parent), find the
-		* parent model that owns the route via its ``variants:`` block.
-		*/
-		function parentModelForRoute(routeKey, cat) {
-			for (const [key, spec] of Object.entries(cat.models)) if ((spec.variants ?? []).some((v) => v.route === routeKey)) return key;
-		}
-		function familyOf(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			if (!cat?.models) return void 0;
-			const own = cat.models[routeKey]?.family;
-			if (own) return own;
-			const parent = parentModelForRoute(routeKey, cat);
-			return parent ? cat.models[parent].family : void 0;
-		}
-		function studioOf(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families?.[fam]?.studio ?? void 0;
-		}
-		/**
-		* The catalog-declared FORM for a route key (the model's ``form`` — the
-		* same id _FORM_CONFIGS keys by on the backend). Resolves variants to
-		* their parent model like familyOf. The tag routes the model's
-		* editor surface (the FORM LAW: a model without a form cannot route
-		* or render). The 2026-09-18 retirement: the retired per-form alias
-		* tables are gone — forms no longer reshape slot keys.
-		*/
-		function formOf(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			if (!cat?.models) return void 0;
-			const own = cat.models[routeKey]?.form;
-			if (own) return own;
-			const parent = parentModelForRoute(routeKey, cat);
-			return parent ? cat.models[parent].form : void 0;
-		}
-		function familyLabel(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return routeKey;
-			return cat.families?.[fam]?.label ?? routeKey;
-		}
-		/**
-		* The family-declared media genre for a route key. Resolves model routes
-		* AND raw family ids (``wan-vace``, ``detect``) — the catalog passthrough
-		* emits ``genre:`` verbatim. Non-catalog services (trellis, kimodo, yaml
-		* brick families) return undefined → callers fall back to their generic
-		* badge. The schema-driven replacement for engine-name substring
-		* classifiers.
-		*/
-		function familyGenre(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			return narrowGenre((fam ? cat.families?.[fam]?.genre : void 0) ?? cat.families?.[routeKey]?.genre);
-		}
-		/**
-		* The source-media types a family declares it ingests (FamilyEntry.accepts,
-		* a closed literal on the backend). Returns the declared list, or
-		* [] when the family declares none / is unknown → the canvas drop handler
-		* treats [] as "not a drop target" (no card spawned, no hard-fail on the
-		* MIME itself — there simply is no input family to receive the drop). The
-		* gate that replaces a free-coded isImageFile prefix check. (2026-08-09)
-		*/
-		function familyAccepts(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			return cat.families?.[fam ?? routeKey]?.accepts ?? [];
-		}
-		/**
-		* The media-type→param applicability matrix for a family's gated source
-		* params: {paramName → [media types it applies to]}. Returns {} when the
-		* family declares no transforms / is unknown. The InputCardEditor gates
-		* field renders on this (no trim control for an image — no time axis) and
-		* applySource strips params whose declared types no longer include the new
-		* source's type — both driven ENTIRELY by this declaration, no hardcoded
-		* image/video/audio branches. ONE source (input_prep.yaml transforms:),
-		* TWO consumers (this editor + backend _validate_params_for_media), zero
-		* drift. (2026-08-09)
-		*/
-		function familyTransformMatrix(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			const transforms = cat.families?.[fam ?? routeKey]?.transforms;
-			if (!transforms) return {};
-			const out = {};
-			for (const t of transforms) out[t.name] = t.applies_to;
-			return out;
-		}
-		/**
-		* The family's declared video conditioning slots ([first_frame,
-		* last_frame] for ltx/wan-vace, [reference, pose, mask] for scail2) —
-		* schema-driven input-wiring labels (no engine-name classifiers).
-		*/
-		/**
-		* The compact card's declared size line (FamilyEntry.card_summary, a
-		* validated block on the backend). Returns {width_param, height_param}
-		* for generation families (rendered "WxH") OR {size_param, size_suffix} for
-		* the Enhance / upscale families (rendered as a single value), or null when
-		* the family declares no size line / is unknown. The CardTile reads whichever
-		* is declared — no free-coded per-family dimension logic in the view.
-		* (2026-08-09; size_param added 2026-08-10.)
-		*/
-		function familyCardSummary(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			return cat.families?.[fam ?? routeKey]?.card_summary ?? null;
-		}
-		function familyConditioning(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families?.[fam]?.video?.conditioning ?? void 0;
-		}
-		/**
-		* The family's declared optional outputs (Option A — the optional-outputs
-		* vocabulary). Empty/undefined when the family declares none (legacy
-		* single-output compat). Consumers render one editor per entry, keyed by
-		* ``genre`` — the input card no longer declares any (mask removed
-		* 2026-08-14), so this is the vocabulary for OTHER families that do.
-		*/
-		function familyOptionalOutputs(familyId, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			return cat.families?.[familyId]?.optional_outputs ?? [];
-		}
-		/**
-		* The catalog-declared Canvas default model route — the model whose entry
-		* carries ``canvas_default: true`` (krea-2). Replaces the hardcoded
-		* CANVAS_DEFAULT_MODEL; returns undefined before the catalog loads (the
-		* caller keeps its own pre-catalog bootstrap value).
-		*/
-		function canvasDefaultModel(cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			return Object.entries(cat.models).find(([, m]) => m.canvas_default)?.[0];
-		}
-		/** Display name for a model within its family variant picker (Turbo / Base / Raw / …). */
-		function variantLabel(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const m = cat.models?.[routeKey];
-			return m?.variant_label ?? m?.label ?? routeKey;
-		}
-		/**
-		* One entry per model family that has dropdown-visible members in the given
-		* form. The primaryRoute is the catalog-declared `default_model` if present
-		* (and visible), else the member whose key equals the family ID, else the
-		* first visible member. Used to drive the family-level dropdown and the
-		* empty-model seed. The default is FULLY catalog-declared — the frontend
-		* never picks a default itself.
-		*/
-		function familiesForForm(formTag, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const visible = dropdownModels(formTag, cat);
-			const seen = /* @__PURE__ */ new Set();
-			const result = [];
-			for (const key of visible) {
-				const fam = cat.models[key]?.family ?? key;
-				if (seen.has(fam)) continue;
-				seen.add(fam);
-				const members = visible.filter((k) => (cat.models[k]?.family ?? k) === fam);
-				const declared = cat.families[fam]?.default_model;
-				const primary = (declared && members.includes(declared) ? declared : void 0) ?? members.find((k) => k === fam) ?? members[0];
-				result.push({
-					familyId: fam,
-					primaryRoute: primary,
-					label: cat.families[fam]?.label ?? fam
-				});
-			}
-			return result;
-		}
-		/**
-		* Given a route key (including quant-tier variants like z-image-sd-q8),
-		* return the family's primary route key — the one to use as the dropdown
-		* value so the dropdown always shows the family even when a sub-variant is
-		* selected.
-		*/
-		function familyPrimaryRoute(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return routeKey;
-			const declared = cat.families[fam]?.default_model;
-			if (declared && cat.models[declared]?.family === fam) return declared;
-			const members = Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
-			return members.find((k) => k === fam) ?? members[0];
-		}
-		function modelLabel(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const m = cat.models[routeKey];
-			if (!m) return routeKey;
-			return m.label ?? cat.families[m.family]?.label ?? routeKey;
-		}
-		/** Description for a model route, or undefined. Callers provide their own
-		* fallback string — this returns `undefined` so `??` works. Reads the
-		* `description:` declared on the model's family in the catalog YAML. */
-		function modelDescription(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families?.[fam]?.description ?? void 0;
-		}
-		function promptGuide(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide ?? void 0;
-		}
-		function dropdownModels(formTag, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const out = [];
-			for (const [key, spec] of Object.entries(cat.models)) {
-				if (spec.hide_from_dropdown) continue;
-				if (formTag) {
-					if (spec.form !== formTag) continue;
-				} else if (spec.edit_only) continue;
-				out.push(key);
-			}
-			return out.sort();
-		}
-		function variantSiblings(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return routeKey ? [routeKey] : [];
-			return Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
-		}
-		/**
-		* Models hidden from the dropdown because they're reachable only via a
-		* variant toggle (e.g. z-image-q5 — picked by clicking the Q5 button).
-		*/
-		function hiddenFromDropdown(cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			return new Set(Object.entries(cat.models).filter(([, m]) => m.hide_from_dropdown).map(([k]) => k));
-		}
-		/**
-		* The ``variants:`` list for a model — resolves through the parent if the
-		* route key is a quant-tier sibling (e.g. z-image-q5 inherits z-image's
-		* variants). Returns ``[]`` for models without variants.
-		*/
-		function variantsForRoute(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const own = cat.models[routeKey]?.variants;
-			if (own) return own;
-			const parent = parentModelForRoute(routeKey, cat);
-			return parent ? cat.models[parent].variants : [];
-		}
-		/**
-		* The route's served recipe presets — the LOAD-TIME per-route merge
-		* (2026-08-18, compose model): every route's ``presets`` dict is the
-		* head base layer (presets/ on the model head) ⊕ the owning variant's
-		* layer (variants/<vid>/presets/), both only_routes-filtered AT LOAD
-		* (variant wins on id collision). Own-only read: the backend attaches
-		* the merged dict to EVERY route, so a fallback chain (tree-head scan,
-		* the retired family-block carve-out) would be a second precedence —
-		* the exact two-sources drift the composer's contract forbids. The
-		* card and the run door read the SAME per-route dict, so the
-		* h3-timeline incident dies by construction. only_routes gating is
-		* not re-derived here — the wire never carries a gated-out preset.
-		*/
-		function presetsForRoute(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const own = cat.models[routeKey]?.presets;
-			return own && typeof own === "object" && Object.keys(own).length > 0 ? own : void 0;
-		}
-		/**
-		* Find the variant whose route matches ``routeKey`` — used to highlight the
-		* active toggle when the form is hydrated from saved state.
-		*/
-		function activeVariantForRoute(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const ownList = variantsForRoute(routeKey, cat);
-			const own = ownList.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? ownList.find((v) => v.route === routeKey);
-			if (own) return own;
-			for (const spec of Object.values(cat.models)) {
-				const list = spec.variants ?? [];
-				const hit = list.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? list.find((v) => v.route === routeKey);
-				if (hit) return hit;
-			}
-		}
-		/**
-		* The matrix coordinates of a route within its family's variant grid —
-		* the values that distinguish it from its siblings. Read from the model
-		* spec's ``variant`` (Turbo / Raw / Distilled / Base …) and ``quant``
-		* (fp8 / q8 / q5 …) fields, resolving the FP8 default's quant through
-		* its variant entries (the default route omits ``quant:`` since it IS
-		* the fp8 tier).
-		*
-		* This is the ONE model for how variant axes compose (2026-08-08): every
-		* axis is a labeled toggle row declared in ``variant_groups``, and the
-		* routes are the cells of the grid. Krea 2 = Variant (Turbo/Raw) × Quant
-		* (FP8/Q8/Q5) → 6 routes. The composer below switches one axis while
-		* preserving the others.
-		*/
-		function routeCoordinates(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const m = cat.models[routeKey];
-			return {
-				variant: m?.variant ?? void 0,
-				quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant ?? void 0
-			};
-		}
-		/**
-		* Resolve the route that combines the clicked variant's axis with the
-		* current route's OTHER axes. Scans the family's routes (including the
-		* ``hide_from_dropdown`` quant siblings) for the coordinate match, so
-		* clicking "Raw" while on Turbo+Q8 lands on Raw+Q8 — never Raw+FP8.
-		*
-		* Group → axis mapping: a ``Quant`` group switches the quant tier (base
-		* variant preserved); a ``Variant`` group switches the base variant (quant
-		* preserved). The vocabulary is closed to Variant/Quant (schema.py
-		* CANONICAL_VARIANT_GROUPS, 2026-08-09 — "Speed" was a duplicate name for
-		* the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
-		* with no ``route:`` never reach here — the caller handles those as draft
-		* overlays.
-		*
-		* Falls back to the clicked entry's own ``route`` when no matrix sibling
-		* matches (single-axis families, or a quant tier with no sibling for the
-		* target variant). This is the ONE composition path — there is no longer
-		* a separate sibling-picker (2026-08-08).
-		*/
-		/** The wanted matrix coordinates after one axis switch — the ONE
-		* derivation shared by the composer and the existence check (a second
-		* copy of this arithmetic would be the exact two-sources drift the
-		* composer's contract forbids). A ``Quant`` click keeps the current
-		* variant and takes the clicked quant; a ``Variant`` click keeps the
-		* current quant and takes the clicked variant. */
-		function axisWants(currentRoute, clicked, cat) {
-			const cur = routeCoordinates(currentRoute, cat);
-			const tgt = routeCoordinates(clicked.route, cat);
-			const switchesQuant = clicked.group === "Quant";
-			return {
-				variant: switchesQuant ? cur.variant : tgt.variant ?? cur.variant,
-				quant: switchesQuant ? clicked.quant ?? tgt.quant : cur.quant
-			};
-		}
-		/** The ONE matrix-cell lookup: the route in ``fam`` whose coordinates are
-		* exactly (variant, quant), or undefined when no such cell exists. */
-		function matrixCell(fam, variant, quant, cat) {
-			for (const [key, spec] of Object.entries(cat.models)) {
-				if ((spec.family ?? key) !== fam) continue;
-				const rc = routeCoordinates(key, cat);
-				if (rc.variant === variant && rc.quant === quant) return key;
-			}
-		}
-		function composeVariantRoute(currentRoute, clicked, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(currentRoute, cat);
-			const clickedRoute = clicked.route;
-			if (!fam || !clickedRoute) return clickedRoute ?? currentRoute;
-			const wants = axisWants(currentRoute, clicked, cat);
-			return matrixCell(fam, wants.variant, wants.quant, cat) ?? clickedRoute;
-		}
-		/**
-		* Only-existing-combinations (2026-08-16 — "ONLY show models combinations
-		* that exist"): does clicking `clicked` from `currentRoute` land on a
-		* REAL catalog cell?
-		*
-		* Derives the SAME wanted coordinates as the composer (axisWants — one
-		* derivation) and asks the matrix directly whether that cell exists
-		* (matrixCell). This is NOT derivable from composeVariantRoute's return:
-		* the composer falls back to ``clicked.route`` when the cell is missing,
-		* so a phantom combo and a real one return the same string — the silent
-		* sibling-axis switch the fallback causes is exactly the phantom
-		* combination this check keeps OUT of the axis dropdowns.
-		*
-		* Patch-only variants (no ``route``) always compose — they layer onto
-		* whatever cell is active, so they always exist. An unresolvable family
-		* (catalog not loaded yet) also passes: without the matrix we cannot
-		* positively know a cell is missing, and the served variants list is
-		* itself catalog-derived — hiding is only correct on positive evidence.
-		*/
-		function axisCellExists(currentRoute, clicked, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			if (!clicked.route) return true;
-			const fam = familyOf(currentRoute, cat);
-			if (!fam) return true;
-			const wants = axisWants(currentRoute, clicked, cat);
-			return matrixCell(fam, wants.variant, wants.quant, cat) !== void 0;
-		}
-		/**
-		* True when the family owns its version axis via a declared ``Variant``
-		* group (Krea 2 Turbo/Raw, …). The legacy sibling-picker defers to the
-		* matrix system in that case so the two never render duplicate rows
-		* (2026-08-08 — one system, not two).
-		*/
-		function familyHasVariantAxis(routeKey, cat = _cache$2 ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
-			return !!groups && "Variant" in groups;
-		}
-		var CARD_GENRES, _cache$2, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$3;
-		var init_modelCatalog = __esmMin((() => {
-			init_api();
-			init_catalogContract();
-			init_catalogContractStore();
-			CARD_GENRES = [
-				"image",
-				"video",
-				"audio",
-				"3d",
-				"motion",
-				"other",
-				"text"
-			];
-			_cache$2 = null;
-			_cacheTime = 0;
-			_CACHE_TTL_MS = 3e4;
-			_inflight$2 = null;
-			_loaded = false;
-			_bgRetryTimer = null;
-			_listeners$3 = /* @__PURE__ */ new Set();
-			/* v8 ignore next -- module warm-load runs only in browser builds, where
-			* MODE is "production"/"development"; under vitest MODE is always "test",
-			* so the taken arm is unreachable here (2026-09-12). */
-			if ({}.env?.MODE !== "test") ensureCatalog();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContractStore.ts
-		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
-		* outage that produced it, so the operator should also see WHEN it fired.
-		* 24h local time, seconds resolution. */
-		function _stamp() {
-			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
-		}
-		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
-		* re-validates + re-reports. Lazy import: modelCatalog imports THIS store
-		* (for CatalogContractError reporting) — a static import would be circular. */
-		function retryCatalog() {
-			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
-		}
-		function _subscribe$1(listener) {
-			_listeners$2.add(listener);
-			return () => {
-				_listeners$2.delete(listener);
-			};
-		}
-		function _setState$1(patch, replace) {
-			const p = typeof patch === "function" ? patch(_state$1) : patch;
-			if (replace === true) _state$1 = p;
-			else _state$1 = {
-				..._state$1,
-				...p
-			};
-			_listeners$2.forEach((l) => l());
-		}
-		function _getState$1() {
-			return _state$1;
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in catalog-contract-store.spec.ts. (2026-09-12) */
-		function _useCatalogContractStoreHook(selector) {
-			return (0, react.useSyncExternalStore)(_subscribe$1, selector ? () => selector(_getState$1()) : () => _getState$1());
-		}
-		var IDLE, _lastToastedOutage, _listeners$2, _state$1, _initialState$1, useCatalogContractStore;
-		var init_catalogContractStore = __esmMin((() => {
-			init_toastStore();
-			IDLE = {
-				state: "idle",
-				violations: [],
-				error: null
-			};
-			_lastToastedOutage = null;
-			_listeners$2 = /* @__PURE__ */ new Set();
-			_state$1 = {
-				record: IDLE,
-				reportOk: () => {
-					const wasOutage = useCatalogContractStore.getState().record.state === "error";
-					_lastToastedOutage = null;
-					_setState$1({ record: {
-						state: "loaded",
-						violations: [],
-						error: null
-					} });
-					if (wasOutage) useToastStore.getState().addToast("info", `Catalog back online (at ${_stamp()}).`);
-				},
-				reportViolation: (violations) => {
-					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
-					_setState$1({ record: {
-						state: "violation",
-						violations,
-						error: null
-					} });
-					const first = violations[0];
-					const msg = first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape";
-					useToastStore.getState().addToast("error", `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
-						label: "Retry",
-						onClick: retryCatalog
-					});
-				},
-				reportError: (message) => {
-					const clean = message.trim();
-					console.error(`[catalogContract] catalog fetch failed (at ${_stamp()}):`, clean);
-					_setState$1({ record: {
-						state: "error",
-						violations: [],
-						error: clean
-					} });
-					if (clean === _lastToastedOutage) return;
-					_lastToastedOutage = clean;
-					useToastStore.getState().addToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
-						label: "Retry",
-						onClick: retryCatalog
-					});
-				},
-				clear: () => {
-					_lastToastedOutage = null;
-					_setState$1({ record: IDLE });
-				}
-			};
-			_initialState$1 = _state$1;
-			useCatalogContractStore = Object.assign(_useCatalogContractStoreHook, {
-				getState: _getState$1,
-				setState: _setState$1,
-				subscribe: _subscribe$1,
-				getInitialState: () => _initialState$1,
-				destroy: () => {}
-			});
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContract.ts
-		/** Validate a status payload against the ONE status-channel contract.
-		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
-		* decides what a violation means on its branch. */
-		function validateRunStatusContract(payload) {
-			const violations = [];
-			if (!isObj(payload)) return {
-				valid: false,
-				violations: [{
-					field: "body",
-					kind: "shape",
-					message: "Status payload is not an object — this is an error body, not a contract."
-				}]
-			};
-			if (typeof payload.run_id !== "string" || !payload.run_id) violations.push({
-				field: "run_id",
-				kind: "missing",
-				message: "Status payload has no run_id — it cannot identify the run."
-			});
-			if (typeof payload.status !== "string" || !RUN_STATUSES.has(payload.status)) violations.push({
-				field: "status",
-				kind: "invalid",
-				message: `Run-level status ${JSON.stringify(payload.status)} is not in the backend vocabulary (${[...RUN_STATUSES].join(", ")}).`
-			});
-			if (!Array.isArray(payload.stages)) violations.push({
-				field: "stages",
-				kind: "missing",
-				message: "Status payload has no stages array — stage progress cannot be located."
-			});
-			else payload.stages.forEach((stage, i) => {
-				if (!isObj(stage)) {
-					violations.push({
-						field: `stages.${i}`,
-						kind: "shape",
-						message: `Stage ${i} is not an object.`
-					});
-					return;
-				}
-				const core = [
-					["id", stage.id],
-					["name", stage.name],
-					["index", stage.index],
-					["status", stage.status]
-				];
-				for (const [field, value] of core) if (field === "index" ? typeof value !== "number" : typeof value !== "string") violations.push({
-					field: `stages.${i}.${field}`,
-					kind: "missing",
-					message: `Stage ${i} has no ${field} — the stage cannot be rendered.`
-				});
-			});
-			return {
-				valid: violations.length === 0,
-				violations
-			};
-		}
-		/** True when a non-ok body carries the backend's contract-violation
-		* signature (flow_status 500s: {error, run_id, violations: [...]}). */
-		function hasViolationsSignature(body) {
-			return isObj(body) && Array.isArray(body.violations);
-		}
-		var _RUN_STATUS_VALUES, RUN_STATUSES, RunStatusContractError, isObj;
-		var init_runStatusContract = __esmMin((() => {
-			_RUN_STATUS_VALUES = [
-				"pending",
-				"running",
-				"completed",
-				"failed",
-				"stopped",
-				"interrupted",
-				"unknown",
-				"queued"
-			];
-			RUN_STATUSES = new Set(_RUN_STATUS_VALUES);
-			RunStatusContractError = class extends Error {
-				violations;
-				constructor(runId, violations) {
-					super(`Run status contract violation for ${runId} (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
-					this.name = "RunStatusContractError";
-					this.violations = violations;
-				}
-			};
-			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
-		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
-		* bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
-		* whole protocol layer; the store only needs it on click. */
-		function repoll(runId) {
-			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
-				maxWaitMs: 3e4,
-				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
-		}
-		function toastVerdict(v) {
-			const toast = useToastStore.getState().addToast;
-			if (v.kind === "violation") {
-				const first = v.violations[0]?.message ?? "the status response did not match the expected shape";
-				toast("error", `Run ${v.runId}: ${v.violations.length} contract issue(s) — ${first}. Retry to re-check, or re-run the card.`, {
-					label: "Retry",
-					onClick: () => repoll(v.runId)
-				});
-			} else toast("error", `Run ${v.runId}: status channel error — ${v.message}. Retry to re-check.`, {
-				label: "Retry",
-				onClick: () => repoll(v.runId)
-			});
-		}
-		function _subscribe(listener) {
-			_listeners$1.add(listener);
-			return () => {
-				_listeners$1.delete(listener);
-			};
-		}
-		function _setState(patch, replace) {
-			const p = typeof patch === "function" ? patch(_state) : patch;
-			if (replace === true) _state = p;
-			else _state = {
-				..._state,
-				...p
-			};
-			_listeners$1.forEach((l) => l());
-		}
-		function _getState() {
-			return _state;
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in run-status-contract-store.spec.ts. (2026-09-12) */
-		function _useRunStatusContractStoreHook(selector) {
-			return (0, react.useSyncExternalStore)(_subscribe, selector ? () => selector(_getState()) : () => _getState());
-		}
-		var _listeners$1, _state, _initialState, useRunStatusContractStore;
-		var init_runStatusContractStore = __esmMin((() => {
-			init_toastStore();
-			_listeners$1 = /* @__PURE__ */ new Set();
-			_state = {
-				verdict: null,
-				reportViolation: (runId, violations) => {
-					console.error("[runStatusContract] status channel violation:", runId, violations);
-					const verdict = {
-						kind: "violation",
-						runId,
-						violations
-					};
-					_setState({ verdict });
-					toastVerdict(verdict);
-				},
-				reportError: (runId, message) => {
-					console.error("[runStatusContract] status channel error:", runId, message);
-					const verdict = {
-						kind: "error",
-						runId,
-						message
-					};
-					_setState({ verdict });
-					toastVerdict(verdict);
-				},
-				clear: () => _setState({ verdict: null })
-			};
-			_initialState = _state;
-			useRunStatusContractStore = Object.assign(_useRunStatusContractStoreHook, {
-				getState: _getState,
-				setState: _setState,
-				subscribe: _subscribe,
-				getInitialState: () => _initialState,
-				destroy: () => {}
-			});
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/card.ts
-		var init_card = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/character.ts
-		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/studio.ts
-		var init_studio = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/stageView.ts
-		var init_stageView = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/stagePreview.ts
-		var init_stagePreview = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/modifierFaces.ts
-		var init_modifierFaces = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/vocab.ts
-		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
-		* metadata, a drag payload) before rendering. */
-		function isProvenance(v) {
-			return typeof v === "string" && PROVENANCE_VALUES.includes(v);
-		}
-		var Provenance, PROVENANCE_VALUES;
-		var init_vocab = __esmMin((() => {
-			Provenance = {
-				agent: "agent",
-				user: "user",
-				imported: "imported"
-			};
-			PROVENANCE_VALUES = Object.values(Provenance);
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/wire.ts
-		var init_wire = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/regions.ts
-		var init_regions = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/timelineTypes.ts
-		/** Coerce an unknown persisted/imported status into the SegmentStatus
-		* union. Anything outside it (e.g. pre-refactor persisted "error") is
-		* normalized to 'empty' — an out-of-union status silently breaks the
-		* failed-state UI (the NLE clip check tests status === 'failed'). */
-		function normalizeSegmentStatus(raw) {
-			return typeof raw === "string" && SEGMENT_STATUSES.includes(raw) ? raw : "empty";
-		}
-		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS;
-		var init_timelineTypes = __esmMin((() => {
-			SEGMENT_STATUSES = [
-				"empty",
-				"pending",
-				"generating",
-				"ready",
-				"failed"
-			];
-			FLF_MODES = [{
-				id: "off",
-				label: "First frame only (standard I2V)"
-			}, {
-				id: "on",
-				label: "First + Last frame (FLF2V)"
-			}];
-			TRACK_COLORS = [
-				"#4ade80",
-				"#facc15",
-				"#fb923c",
-				"#60a5fa",
-				"#f472b6",
-				"#a78bfa",
-				"#34d399",
-				"#fbbf24",
-				"#f87171",
-				"#38bdf8"
-			];
-			DEFAULT_SEGMENT_PARAMS = {
-				seed: 42,
-				width: 640,
-				height: 480,
-				frames: 33,
-				fps: 16,
-				resizeMethod: "crop",
-				samplingSteps: 10,
-				guideScale: 5,
-				model: "wan-vace",
-				profile: "fast",
-				motionAmplitude: 1,
-				flfMode: false,
-				teacacheEnabled: false,
-				teacacheThreshold: .01,
-				progressiveEnabled: false,
-				progressiveLevels: 2,
-				progressiveDelta: .15,
-				progressiveMode: "dct",
-				relayEpsilon: .01,
-				guideStrength: 1,
-				guideCrf: 0,
-				scaleBy: 1,
-				upscaleMethod: "bicubic",
-				useTiledEncode: false,
-				tileSize: 256,
-				tileOverlap: 64,
-				imageAttentionStrength: 1,
-				loras: [],
-				motionVideoB64: null,
-				motionStrength: .7,
-				motionTrimStart: 0,
-				motionTrimEnd: 0,
-				motionOffset: 0,
-				resampleMode: "nearest",
-				retakePrompt: "",
-				retakeStartFrame: 0,
-				retakeEndFrame: -1
-			};
-			DEFAULT_LIPSYNC_FIELDS = {
-				lipSyncedVideoUrl: null,
-				lipSyncPreferOriginal: false
-			};
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/loraTypes.ts
-		var init_loraTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/browserStorage.ts
-		/** Test hook — resets the cached connection + cache + install flag. */
-		function _resetBrowserStorageForTests() {
-			installed = false;
-			cache$1 = /* @__PURE__ */ new Map();
-			dbPromise = null;
-		}
-		function openDb() {
-			if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
-				if (typeof indexedDB === "undefined") {
-					reject(/* @__PURE__ */ new Error("IndexedDB unavailable"));
-					return;
-				}
-				const req = indexedDB.open(DB_NAME, DB_VERSION);
-				req.onupgradeneeded = () => {
-					const db = req.result;
-					if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-				};
-				req.onsuccess = () => resolve(req.result);
-				req.onerror = () => reject(req.error);
-			});
-			return dbPromise;
-		}
-		/** Full dump of the store as [key, value] pairs. */
-		async function idbDump() {
-			const req = (await openDb()).transaction(STORE, "readonly").objectStore(STORE).openCursor();
-			return new Promise((resolve, reject) => {
-				const out = [];
-				req.onsuccess = () => {
-					const cursor = req.result;
-					if (!cursor) {
-						resolve(out);
-						return;
-					}
-					out.push([String(cursor.key), String(cursor.value)]);
-					cursor.continue();
-				};
-				req.onerror = () => reject(req.error);
-			});
-		}
-		async function idbPut(key, value) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).put(value, key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbRemove(key) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).delete(key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbClear() {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).clear();
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		function writeFailure(key, e) {
-			console.error(`[storage] failed to persist '${key}' to IndexedDB:`, e);
-		}
-		/**
-		* Seed the in-memory cache from IndexedDB, migrate any leftover native
-		* localStorage into IDB, then install the facade as the global localStorage.
-		* Called once from main.tsx BEFORE the app is (dynamically) imported, so
-		* every module-eval-time read sees the persisted data. Never throws.
-		*/
-		async function initBrowserStorage() {
-			if (installed) return;
-			try {
-				const entries = await idbDump();
-				for (const [k, v] of entries) cache$1.set(k, v);
-			} catch (e) {
-				console.error("[storage] failed to load IndexedDB cache:", e);
-			}
-			try {
-				const native = globalThis.localStorage;
-				if (native && typeof native.length === "number") {
-					const jobs = [];
-					let anyMigrated = false;
-					let failed = false;
-					for (let i = 0; i < native.length; i++) {
-						const k = native.key(i);
-						if (!k) continue;
-						const v = native.getItem(k);
-						if (v == null || cache$1.has(k)) continue;
-						anyMigrated = true;
-						cache$1.set(k, v);
-						jobs.push(idbPut(k, v).catch(() => {
-							failed = true;
-						}));
-					}
-					if (jobs.length > 0) await Promise.all(jobs);
-					if (anyMigrated && !failed) try {
-						native.clear();
-					} catch {}
-				}
-			} catch (e) {
-				console.error("[storage] failed to migrate native localStorage:", e);
-			}
-			try {
-				Object.defineProperty(globalThis, "localStorage", {
-					value: facade,
-					configurable: true,
-					writable: true
-				});
-				installed = true;
-			} catch (e) {
-				console.error("[storage] failed to install IndexedDB-backed localStorage:", e);
-				installed = true;
-			}
-		}
-		var DB_NAME, DB_VERSION, STORE, dbPromise, cache$1, installed, facade;
-		var init_browserStorage = __esmMin((() => {
-			DB_NAME = "melite:browser-storage:v1";
-			DB_VERSION = 1;
-			STORE = "kv";
-			dbPromise = null;
-			cache$1 = /* @__PURE__ */ new Map();
-			installed = false;
-			facade = {
-				get length() {
-					return cache$1.size;
-				},
-				key(index) {
-					if (index < 0 || index >= cache$1.size) return null;
-					let i = 0;
-					for (const k of cache$1.keys()) {
-						if (i === index) return k;
-						i++;
-					}
-					return null;
-				},
-				getItem(key) {
-					return cache$1.has(key) ? cache$1.get(key) : null;
-				},
-				setItem(key, value) {
-					cache$1.set(key, String(value));
-					idbPut(key, String(value)).catch((e) => writeFailure(key, e));
-				},
-				removeItem(key) {
-					cache$1.delete(key);
-					idbRemove(key).catch((e) => writeFailure(key, e));
-				},
-				clear() {
-					cache$1.clear();
-					idbClear().catch((e) => writeFailure("*", e));
-				}
-			};
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/objectUrlCache.ts
-		/** True iff `s` is a base64 data URL (large enough to benefit from conversion). */
-		function isDataUrl(s) {
-			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
-		}
-		/**
-		* Convert a data URL (or pass through other URL forms) to a cached object URL.
-		*
-		* - `data:…` URLs → converted once, cached, returned.
-		* - `blob:`, `http:`, `https:`, relative paths → returned as-is.
-		* - `null` / `undefined` / empty → returned as-is (caller handles).
-		*
-		* The same input always yields the same output for the lifetime of the
-		* module (until revokeObjectUrlFor or revokeAll is called).
-		*/
-		function dataUrlToObjectUrl(url) {
-			if (url == null || url === "") return null;
-			if (!isDataUrl(url)) return url;
-			const cached = cache.get(url);
-			if (cached) return cached;
-			const obj = createObjectUrlFromDataUrl(url);
-			cache.set(url, obj);
-			return obj;
-		}
-		/** Revoke the object URL associated with `sourceUrl` (the original data URL). */
-		function revokeObjectUrlFor(sourceUrl) {
-			const obj = cache.get(sourceUrl);
-			if (obj) {
-				try {
-					URL.revokeObjectURL(obj);
-				} catch {}
-				cache.delete(sourceUrl);
-			}
-		}
-		/** Revoke every cached object URL. Intended for tests and explicit teardown. */
-		function revokeAll() {
-			for (const obj of cache.values()) try {
-				URL.revokeObjectURL(obj);
-			} catch {}
-			cache.clear();
-		}
-		/** Test-only: how many object URLs are currently cached. */
-		function _cachedCount() {
-			return cache.size;
-		}
-		function createObjectUrlFromDataUrl(dataUrl) {
-			const comma = dataUrl.indexOf(",");
-			if (comma < 0) return dataUrl;
-			const header = dataUrl.slice(0, comma);
-			const payload = dataUrl.slice(comma + 1);
-			const mime = header.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
-			const isBase64 = header.includes(";base64");
-			let bytes;
-			if (isBase64) {
-				let bin;
-				try {
-					bin = atob(payload);
-				} catch {
-					return dataUrl;
-				}
-				bytes = new Uint8Array(bin.length);
-				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-			} else bytes = new TextEncoder().encode(decodeURIComponent(payload));
-			return URL.createObjectURL(new Blob([bytes.slice()], { type: mime }));
-		}
-		var cache;
-		var init_objectUrlCache = __esmMin((() => {
-			cache = /* @__PURE__ */ new Map();
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/FlowTypes.ts
-		var init_FlowTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/modifierSubcards.ts
-		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
-		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
-		* old cards load; the next save rewrites them as id-keyed rows. */
-		function subcardId(kind, entry) {
-			return kind === "controlnet" ? entry.id ?? "" : `lora-${entry.id ?? entry.name ?? ""}`;
-		}
-		/** Normalize a wire lora row: id wins, the fossil `name` key migrates.
-		* An empty id passes through — compose refuses it loudly; the tile still
-		* renders so the operator can see and delete the broken entry. */
-		function loraIdOf(entry) {
-			return String(entry.id ?? entry.name ?? "").trim();
-		}
-		/** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
-		* id-keyed row — ONE shape leaves every boundary (modal draft, bag
-		* commit, run body). The fossil key is dropped, never re-emitted.
-		* A row missing `strength` (never emitted by the pre-flip UI, but a
-		* hand-edited draft may carry one) takes 1.0 — the same house default
-		* the catalog row seeds at compose. */
-		function normalizeLoraEntry(entry) {
-			return {
-				id: loraIdOf(entry),
-				strength: typeof entry.strength === "number" ? entry.strength : 1
-			};
-		}
-		/** Derive the subcard view from the param bag — a pure projection. */
-		function subcardsFromParams(params) {
-			const loras = params.loras ?? [];
-			const cns = params.controlnets ?? [];
-			return [...loras.map((l) => {
-				const lid = loraIdOf(l);
-				return {
-					id: `lora-${lid}`,
-					kind: "lora",
-					label: loraLabel(lid),
-					name: lid,
-					enabled: true,
-					strength: typeof l.strength === "number" ? l.strength : 1,
-					strengthSet: typeof l.strength === "number"
-				};
-			}), ...cns.map((c) => ({
-				id: subcardId("controlnet", c),
-				kind: "controlnet",
-				label: c.type,
-				enabled: c.enabled,
-				strength: c.strength,
-				type: c.type,
-				model: c.model,
-				preprocessor: c.preprocessor,
-				image_b64: c.image_b64,
-				start_percent: c.start_percent,
-				end_percent: c.end_percent
-			}))];
-		}
-		/** Human label for a LoRA entry (file base name, extension stripped). */
-		function loraLabel(name) {
-			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
-		}
-		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
-		function subcardCount(params) {
-			const loras = params.loras ?? [];
-			const cns = params.controlnets ?? [];
-			return loras.length + cns.length;
-		}
-		/** Pure array move — the ONLY way order changes (dragEnd → this). */
-		function moveItem(arr, from, to) {
-			if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
-			const next = [...arr];
-			const [moved] = next.splice(from, 1);
-			next.splice(to, 0, moved);
-			return next;
-		}
-		/**
-		* Resolve which declared kind a draggable subcard id belongs to. Walks each
-		* LIST-kind's wire array (scalar kinds aren't draggable — no reorder
-		* semantics on a single value). Returns the kind spec or null when the id
-		* isn't a known subcard (e.g. a stale drag handle). Generic over arbitrary
-		* kinds — the param_key comes from the spec, not a hardcoded kind→key map.
-		*/
-		function kindForId(params, id, kinds) {
-			for (const kind of kinds) {
-				if (kind.cardinality === "scalar") continue;
-				if ((params[kind.param_key] ?? []).some((e) => subcardId(kind.kind, e) === id)) return kind;
-			}
-			return null;
-		}
-		/**
-		* Apply a drag drop to the param bag. Cross-kind drops are no-ops (each kind
-		* has its own wire array at ``params[kind.param_key]``; a LoRA cannot swap
-		* places with a ControlNet, nor with a clip_skip). Returns the same params
-		* object when nothing moved (stable identity → no re-render).
-		*
-		* The ``kinds`` list is the declared modifier vocabulary (from
-		* modifiersFeatureOf) — the param_key lookup is data-driven, not a hardcoded
-		* ``kind === "lora" ? "loras" : "controlnets"`` ternary. A novel kind's drag
-		* works the day it's declared, with zero code change here.
-		*/
-		function applySubcardDrop(params, activeId, overId, kinds) {
-			const spec = kindForId(params, activeId, kinds);
-			if (!spec) return params;
-			if (kindForId(params, overId, kinds)?.kind !== spec.kind) return params;
-			const arr = params[spec.param_key];
-			const next = moveItem(arr, arr.findIndex((e) => subcardId(spec.kind, e) === activeId), arr.findIndex((e) => subcardId(spec.kind, e) === overId));
-			return next === arr ? params : {
-				...params,
-				[spec.param_key]: next
-			};
-		}
-		function newCnId() {
-			_cnIdCounter += 1;
-			return `cn-${Date.now().toString(36)}-${_cnIdCounter}`;
-		}
-		/**
-		* New ControlNet entry from a schema entry — honors the catalog's declared
-		* defaults (model, preprocessor, default_strength) with ControlNetApplyAdvanced
-		* defaults for the step range. Returns null when the stack is full (max_stack).
-		* Takes the KIND SPEC (the one contract entry) — no parallel feature shape.
-		*/
-		function newControlnetEntry(entries, type, cnKind) {
-			const maxStack = cnKind?.max_stack ?? 3;
-			if (entries.length >= maxStack) return null;
-			const schema = cnEntriesOf(cnKind).find((e) => e.type === type) ?? NO_CN_SCHEMA;
-			const declaredDefault = (cnKind?.fields.find((f) => f.name === "strength"))?.default;
-			const defaultStrength = typeof declaredDefault === "number" ? declaredDefault : .8;
-			return {
-				id: newCnId(),
-				type,
-				model: schema.model,
-				preprocessor: schema.preprocessor,
-				image_b64: "",
-				strength: schema.default_strength ?? defaultStrength,
-				start_percent: 0,
-				end_percent: 1,
-				enabled: true,
-				source: "user"
-			};
-		}
-		/** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
-		* own default when the spec omits it). */
-		function newLoraEntry(id, strength = 1) {
-			return {
-				id,
-				strength
-			};
-		}
-		/**
-		* New generic entry for a NOVEL modifier kind (not lora / controlnet — those
-		* keep their bespoke templates above). Renders from ``kind.fields``: the
-		* selected option's ``defaults`` win over field-level ``default`` over the
-		* raw type zero (0 / "" / false). Returns null when the list is full
-		* (``max_stack``, cardinality=list only). Scalar kinds return a single dict
-		* at ``params[kind.param_key]`` — no id, no stack check.
-		*
-		* This is the proof the user demanded: a YAML block declaring a new kind
-		* (clip_skip, sampler_override, …) gets a working create-template with ZERO
-		* code beyond the catalog edit + the one ``@register`` applier. The generic
-		* grid row + generic modal editor render from the same ``kind.fields``.
-		*/
-		function newGenericEntry(kind, stackLength, optionValue) {
-			if (kind.cardinality === "list") {
-				if (stackLength >= (kind.max_stack ?? 5)) return null;
-			}
-			const option = kind.options?.find((o) => o.value === optionValue);
-			const entry = {};
-			for (const field of kind.fields) {
-				const fromOption = option?.defaults?.[field.name];
-				if (fromOption !== void 0) entry[field.name] = fromOption;
-				else if (field.default !== void 0 && field.default !== null) entry[field.name] = field.default;
-				else entry[field.name] = defaultForType(field.type);
-			}
-			if (kind.cardinality === "list") entry.id = newCnId();
-			if (optionValue !== void 0 && !("value" in entry)) entry.value = optionValue;
-			return entry;
-		}
-		/** The type-correct zero for a modifier field with no declared default. */
-		function defaultForType(type) {
-			switch (type) {
-				case "integer":
-				case "float": return 0;
-				case "boolean": return false;
-				case "select": return "";
-				case "image": return "";
-				case "string": return "";
-			}
-		}
-		/** The lora kind's options as the legacy adapter list — the LoRA dropdown. */
-		function loraAdaptersOf(kind) {
-			if (!kind) return [];
-			return (kind.options ?? []).map((o) => ({
-				name: o.value,
-				filename: o.model ?? o.value,
-				label: o.label,
-				category: o.metadata?.category ?? "LoRA",
-				default_strength: o.defaults?.strength ?? 1,
-				prompt_hint: o.metadata?.prompt_hint ?? null,
-				installed: o.installed ?? true
-			}));
-		}
-		/** The controlnet kind's options as the legacy schema-entry list — the CN dropdown. */
-		function cnEntriesOf(kind) {
-			if (!kind) return [];
-			const strengthField = kind.fields.find((f) => f.name === "strength");
-			return (kind.options ?? []).map((o) => ({
-				type: o.value,
-				label: o.label,
-				tooltip: o.tooltip ?? void 0,
-				model: o.model ?? void 0,
-				default_strength: o.defaults?.strength ?? strengthField?.default ?? .8,
-				preprocessor: o.metadata?.preprocessor ?? void 0,
-				installed: o.installed ?? void 0
-			}));
-		}
-		/** LoRA strength bounds — from the kind's strength field (one source). */
-		function loraStrengthBoundsOf(kind) {
-			const strengthField = kind?.fields.find((f) => f.name === "strength");
-			return {
-				min: strengthField?.min ?? -2,
-				max: strengthField?.max ?? 5,
-				step: strengthField?.step ?? .05
-			};
-		}
-		/**
-		* The generic arbitrary-kind list — the ONE key the frontend reads to decide
-		* which modifier rows to render. Declared-only (Phase A finalé): the backend
-		* emits ``features.modifiers`` from the catalog's ``modifiers:`` block and
-		* nothing else — the legacy client-side projection is deleted (rule 4).
-		* Returns ``[]`` when the family declares no modifier capability.
-		*/
-		function modifiersFeatureOf(formSpec) {
-			const raw = formSpec?.features?.modifiers;
-			return Array.isArray(raw) ? raw : [];
-		}
-		/** The family declares at least one modifier kind. The grid renders iff true. */
-		function hasModifierCapability(formSpec) {
-			return modifiersFeatureOf(formSpec).length > 0;
-		}
-		/** Find a kind's spec by its discriminator — convenience for the grid/modal. */
-		function kindSpecOf(formSpec, kind) {
-			return modifiersFeatureOf(formSpec).find((k) => k.kind === kind) ?? null;
-		}
-		var NO_CN_SCHEMA, _cnIdCounter;
-		var init_modifierSubcards = __esmMin((() => {
-			NO_CN_SCHEMA = {
-				type: "",
-				label: ""
-			};
-			_cnIdCounter = 0;
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/enhanceTypes.ts
-		var init_enhanceTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/mediaTypes.ts
-		var init_mediaTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/index.ts
-		var src_exports$1 = /* @__PURE__ */ __exportAll({
-			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
-			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
-			FLF_MODES: () => FLF_MODES,
-			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
-			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
-			Provenance: () => Provenance,
-			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
-			TRACK_COLORS: () => TRACK_COLORS,
-			_cachedCount: () => _cachedCount,
-			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
-			applySubcardDrop: () => applySubcardDrop,
-			cnEntriesOf: () => cnEntriesOf,
-			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
-			hasModifierCapability: () => hasModifierCapability,
-			initBrowserStorage: () => initBrowserStorage,
-			isDataUrl: () => isDataUrl,
-			isProvenance: () => isProvenance,
-			kindForId: () => kindForId,
-			kindSpecOf: () => kindSpecOf,
-			loraAdaptersOf: () => loraAdaptersOf,
-			loraIdOf: () => loraIdOf,
-			loraLabel: () => loraLabel,
-			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
-			modifiersFeatureOf: () => modifiersFeatureOf,
-			moveItem: () => moveItem,
-			newControlnetEntry: () => newControlnetEntry,
-			newGenericEntry: () => newGenericEntry,
-			newLoraEntry: () => newLoraEntry,
-			normalizeLoraEntry: () => normalizeLoraEntry,
-			normalizeSegmentStatus: () => normalizeSegmentStatus,
-			revokeAll: () => revokeAll,
-			revokeObjectUrlFor: () => revokeObjectUrlFor,
-			subcardCount: () => subcardCount,
-			subcardId: () => subcardId,
-			subcardsFromParams: () => subcardsFromParams
-		});
-		var init_src$2 = __esmMin((() => {
-			init_card();
-			init_character();
-			init_studio();
-			init_stageView();
-			init_stagePreview();
-			init_modifierFaces();
-			init_vocab();
-			init_wire();
-			init_regions();
-			init_timelineTypes();
-			init_loraTypes();
-			init_browserStorage();
-			init_objectUrlCache();
-			init_FlowTypes();
-			init_modifierSubcards();
-			init_enhanceTypes();
-			init_mediaTypes();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyParamContract.ts
-		var familyParamContract_exports = /* @__PURE__ */ __exportAll({
-			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
-			coerceParamsToSchema: () => coerceParamsToSchema,
-			getFamilySchema: () => getFamilySchema,
-			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated,
-			loadFamilySchemas: () => loadFamilySchemas,
-			validateModifierEntries: () => validateModifierEntries,
-			validateParamsAgainstSchema: () => validateParamsAgainstSchema
-		});
-		/**
-		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
-		* level cache, inflight dedup, idempotent. Call at boot (alongside
-		* loadCatalog) so the validator never blocks on a fetch.
-		*
-		* Returns the cached index on subsequent calls (no refetch). Use
-		* { force: true } to bypass the cache.
-		*/
-		async function loadFamilySchemas(opts) {
-			if (_cache$1 && !opts?.force) return _cache$1;
-			if (_inflight$1) return _inflight$1;
-			_inflight$1 = (async () => {
-				try {
-					const data = await apiJson("/v1/flows/families/param-schemas");
-					_cache$1 = data;
-					return data;
-				} finally {
-					_inflight$1 = null;
-				}
-			})();
-			return _inflight$1;
-		}
-		/** Sync lookup — returns the cached schema for a family, or null if the
-		* cache isn't loaded yet or the family is unknown. Pure, no fetch. */
-		function getFamilySchema(familyId) {
-			if (!_cache$1) return null;
-			return _cache$1[familyId] ?? null;
-		}
-		/** Is the schema cache POPULATED (a successful bulk fetch with ≥1
-		* family)? Distinguishes "transmission worked and the family is absent"
-		* (a phantom family — throw) from the cache-cold/failed branch (defer). */
-		function isFamilySchemaCachePopulated() {
-			return !!_cache$1 && Object.keys(_cache$1).length > 0;
-		}
-		function jsonTypeOf(val) {
-			/* v8 ignore next -- defensive: both callers (coerceParamsToSchema,
-			* validateParamsAgainstSchema) route val === null through the defaulted
-			* null path BEFORE calling, so null never reaches here (2026-09-12) */
-			if (val === null) return "null";
-			if (Array.isArray(val)) return "array";
-			const t = typeof val;
-			if (t === "string") return "string";
-			if (t === "boolean") return "boolean";
-			if (t === "number") return Number.isInteger(val) ? "integer" : "number";
-			return "object";
-		}
-		/**
-		* Coerce a params dict to a family's schema types — the TYPED RUN BODY.
-		* Canonical coercions ONLY (2026-09-05 compile-time incident: form state,
-		* stale drafts and legacy editors carry strings for numbers/booleans and
-		* "" for empty arrays — the class admits the canonical forms, so the
-		* boundary normalizes them instead of refusing what the backend takes):
-		*   - integer/number: numbers kept (integer rejects fractions); a trimmed
-		*     canonical numeric string becomes Number; "" means UNSET (falls into
-		*     the null path: default-or-omit — "" is NEVER 0); anything else is
-		*     a violation (never NaN into the wire).
-		*   - boolean: booleans kept; "true"/"false" become bool; else violation.
-		*   - array: arrays kept; "" becomes [] (the unowned picker's empty
-		*     serialization — the class coerces the same); a non-empty string is
-		*     a violation (ambiguous — never a split-guess).
-		*   - string/object: kept on exact type; anything else is a violation
-		*     (never String()-collapse, never JSON.parse-guess).
-		*   - null / UNSET-"": OMITTED when the field declares a default —
-		*     absent rides the backend default (the class's own semantics:
-		*     explicit null refuses on numerics, so the boundary must never
-		*     POST a null the click gate waved through — 2026-09-06
-		*     frontend-impossible incident). A null/UNSET with NO default is
-		*     kept so the validator refuses it loudly. Untyped fields (the
-		*     loras/mask tile bags) pass null through untouched — the class's
-		*     own None-coercion owns them, and it runs on explicit values.
-		*   - fields with NO declared type (the loras/mask tile bags {}): passed
-		*     through untouched — the compose door owns them.
-		* Returns the typed copy + violations against the TYPED values (empty =
-		* the body is exactly what the class admits — the POST must send THIS
-		* body, never the raw draft).
-		*/
-		function coerceParamsToSchema(schema, params, opts = {}) {
-			const out = [];
-			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
-			const typed = {};
-			const props = schema.properties ?? {};
-			for (const [key, val] of Object.entries(params)) {
-				const field = props[key];
-				if (!field || !field.type) {
-					typed[key] = val;
-					continue;
-				}
-				const expected = field.type;
-				if (val === null) {
-					if ("default" in field) continue;
-					typed[key] = val;
-					continue;
-				}
-				const actual = jsonTypeOf(val);
-				if (actual === expected) {
-					typed[key] = val;
-					continue;
-				}
-				if (expected === "number" && actual === "integer") {
-					typed[key] = val;
-					continue;
-				}
-				const coerced = coerceScalar(key, expected, val);
-				if ("value" in coerced) {
-					typed[key] = coerced.value;
-					continue;
-				}
-				if (coerced.unset) {
-					if (field && "default" in field) continue;
-					typed[key] = null;
-					continue;
-				}
-				out.push({
-					path: `${prefix}${key}`,
-					message: `'${key}': expected ${expected}, got ${actual}`
-				});
-				typed[key] = val;
-			}
-			return {
-				params: typed,
-				violations: out
-			};
-		}
-		/** Canonical scalar coercion. ok = coerced value; unset = "" for a
-		* non-string field (the value is UNSET — the caller routes it into the
-		* null path); neither = refuse loudly. */
-		function coerceScalar(_key, expected, val) {
-			if (typeof val === "string") {
-				const t = val.trim();
-				if (t === "") {
-					if (expected === "array") return {
-						ok: true,
-						value: []
-					};
-					return {
-						ok: false,
-						unset: true
-					};
-				}
-				if (expected === "integer" || expected === "number") {
-					const n = Number(t);
-					if (!Number.isFinite(n)) return {
-						ok: false,
-						unset: false
-					};
-					if (expected === "integer" && !Number.isInteger(n)) return {
-						ok: false,
-						unset: false
-					};
-					return {
-						ok: true,
-						value: n
-					};
-				}
-				if (expected === "boolean") {
-					if (t === "true") return {
-						ok: true,
-						value: true
-					};
-					if (t === "false") return {
-						ok: true,
-						value: false
-					};
-					return {
-						ok: false,
-						unset: false
-					};
-				}
-				return {
-					ok: false,
-					unset: false
-				};
-			}
-			return {
-				ok: false,
-				unset: false
-			};
-		}
-		/**
-		* Validate a params dict against a family's param schema. Pure + synchronous.
-		* Returns violations (empty = clean). A null for a field WITH a default is
-		* treated as "use the default" (no violation) — coerce strips such nulls
-		* to absent before this runs, and absent rides the backend default; the
-		* tolerance here is defense-in-depth for direct callers (the boundary
-		* must NEVER POST a null the class would refuse — explicit null 400s
-		* on every numeric row, so coerce omits, it never forwards). A null for
-		* a field WITHOUT a default IS a violation.
-		*
-		* WHAT IT CATCHES (the motion_constraints bug class):
-		*   - TYPE mismatches: a str param sent an object/number/array.
-		*   - EXTRA fields: unknown param names (additionalProperties: false).
-		*   - null for NON-defaulted fields.
-		*
-		* WHAT IT LEAVES TO THE BACKEND (no false positives):
-		*   - REQUIRED-field presence — the frontend doesn't know which keys are
-		*     injected from flow.shared via the consumes axis (comfy_url, model).
-		*     The backend's card phase-1 compose knows the consumes set, so it
-		*     knows. The frontend defers required-checking to the hard wire gate.
-		*/
-		function validateParamsAgainstSchema(schema, params, opts = {}) {
-			const out = [];
-			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
-			const props = schema.properties ?? {};
-			if (Object.keys(props).length === 0) return out;
-			for (const [key, val] of Object.entries(params)) {
-				const field = props[key];
-				if (!field) {
-					if (schema.additionalProperties === false && !WIRE_RELAXED_KEYS.has(key)) out.push({
-						path: `${prefix}${key}`,
-						message: `unknown parameter '${key}' — not in the family signature`
-					});
-					continue;
-				}
-				if (val === null) {
-					if (!("default" in field)) out.push({
-						path: `${prefix}${key}`,
-						message: `'${key}' is null but has no default — provide a value`
-					});
-					continue;
-				}
-				const expected = field.type;
-				if (!expected) continue;
-				const actual = jsonTypeOf(val);
-				if (actual === expected) continue;
-				if (expected === "number" && actual === "integer") continue;
-				out.push({
-					path: `${prefix}${key}`,
-					message: `'${key}': expected ${expected}, got ${actual}`
-				});
-			}
-			return out;
-		}
-		/**
-		* Validate a stage's modifier entries against the family's declared kinds.
-		* Mirrors backend validate_modifier_entries: per declared kind with a
-		* param_key, params[param_key] must honor the cardinality (list kinds take
-		* a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
-		* and each entry's keys/required/type/bounds/select-membership must match
-		* the declared fields. Empty = clean; never throws. No kinds → no-op.
-		*/
-		function validateModifierEntries(kinds, params) {
-			const out = [];
-			if (!kinds) return out;
-			for (const kind of kinds) {
-				const key = kind.param_key;
-				const value = params[key];
-				if (value === void 0 || value === null) continue;
-				const fields = kind.fields ?? [];
-				if ((kind.cardinality ?? "list") === "scalar") {
-					if (typeof value === "object") {
-						out.push({
-							path: key,
-							message: `expected a single scalar value for '${kind.kind}' (cardinality='scalar'), got ${Array.isArray(value) ? "array" : "object"}`
-						});
-						continue;
-					}
-					if (fields.length > 0 && fields[0].name) checkModEntry(out, { [fields[0].name]: value }, fields, kind, key, kind.kind === "controlnet");
-					continue;
-				}
-				if (!Array.isArray(value)) {
-					out.push({
-						path: key,
-						message: `expected a list of entries for '${kind.kind}' (cardinality='list'), got ${typeof value}`
-					});
-					continue;
-				}
-				if (typeof kind.max_stack === "number" && value.length > kind.max_stack) out.push({
-					path: key,
-					message: `stack of ${value.length} exceeds the declared max_stack (${kind.max_stack}) for '${kind.kind}'`
-				});
-				const cnKind = kind.kind === "controlnet";
-				for (let i = 0; i < value.length; i++) {
-					const entry = value[i];
-					const entryPath = `${key}[${i}]`;
-					if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
-						out.push({
-							path: entryPath,
-							message: `expected a dict entry, got ${Array.isArray(entry) ? "array" : typeof entry}`
-						});
-						continue;
-					}
-					checkModEntry(out, entry, fields, kind, entryPath, cnKind);
-				}
-			}
-			return out;
-		}
-		function checkModEntry(out, entry, fields, kind, path, cnKind) {
-			const declared = /* @__PURE__ */ new Map();
-			for (const f of fields) if (f.name) declared.set(f.name, f);
-			const allowed = /* @__PURE__ */ new Set([...declared.keys(), ...EDITOR_MOD_ENTRY_KEYS]);
-			for (const entryKey of Object.keys(entry)) if (!allowed.has(entryKey)) out.push({
-				path: `${path}.${entryKey}`,
-				message: `unknown field '${entryKey}'. Declared fields: ${[...declared.keys()].sort().join(", ")}.`
-			});
-			const kindOptions = (kind.options ?? []).map((o) => o?.value).filter((v) => typeof v === "string");
-			const hasUploadDir = Boolean(kind.upload_dir);
-			for (const f of fields) {
-				const name = f.name;
-				const val = entry[name];
-				if (!(name in entry && val !== null && val !== void 0)) {
-					if (f.default === void 0 && f.type !== "image" && name !== "artifact") out.push({
-						path: `${path}.${name}`,
-						message: `missing required field '${name}'.`
-					});
-					continue;
-				}
-				if (f.type === "integer" || f.type === "float") {
-					if (typeof val !== "number") {
-						out.push({
-							path: `${path}.${name}`,
-							message: `expected a number, got ${typeof val}.`
-						});
-						continue;
-					}
-					if (f.type === "integer" && !Number.isInteger(val)) {
-						out.push({
-							path: `${path}.${name}`,
-							message: `expected an integer, got ${typeof val}.`
-						});
-						continue;
-					}
-					if (typeof f.min === "number" && val < f.min) out.push({
-						path: `${path}.${name}`,
-						message: `value ${val} below the declared minimum ${f.min}.`
-					});
-					if (typeof f.max === "number" && val > f.max) out.push({
-						path: `${path}.${name}`,
-						message: `value ${val} above the declared maximum ${f.max}.`
-					});
-				} else if (f.type === "boolean") {
-					if (typeof val !== "boolean") out.push({
-						path: `${path}.${name}`,
-						message: `expected a boolean, got ${typeof val}.`
-					});
-				} else if (f.type === "string") {
-					if (typeof val !== "string") out.push({
-						path: `${path}.${name}`,
-						message: `expected a string, got ${typeof val}.`
-					});
-					else if (name === "id" && kindOptions.length > 0 && !hasUploadDir && !cnKind) {
-						if (!kindOptions.includes(val)) out.push({
-							path: `${path}.${name}`,
-							message: `unknown adapter '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
-						});
-					}
-				} else if (f.type === "select") {
-					if (typeof val !== "string") {
-						out.push({
-							path: `${path}.${name}`,
-							message: `expected a string, got ${typeof val}.`
-						});
-						continue;
-					}
-					if (f.options && f.options.length > 0) {
-						if (!f.options.includes(val)) out.push({
-							path: `${path}.${name}`,
-							message: `unknown option '${val}'. Allowed: ${[...f.options].sort().join(", ")}.`
-						});
-					} else if (kindOptions.length > 0 && !hasUploadDir && !cnKind) {
-						if (!kindOptions.includes(val)) out.push({
-							path: `${path}.${name}`,
-							message: `unknown option '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
-						});
-					}
-				}
-			}
-		}
-		/**
-		* Pre-submit gate: resolve model → family → schema (from the ONE cache),
-		* validate params, throw on any violation. Called before EVERY GPU-starting
-		* fetch so the crash comes before the button press, not after a round-trip.
-		*
-		* Ensures the schema cache is loaded (loadFamilySchemas) on the first call,
-		* then validates synchronously.
-		*
-		* NO SILENT DEFERS (2026-08-16): the old gate no-op'd when the model was
-		* missing from the catalog or the family had no schema — silently
-		* shipping UNKNOWN params to the backend and calling that "the backend's
-		* backstop". That is the silent-drop class this contract exists to kill:
-		*   - catalog LOADED + model missing → THROW. The picker is showing a
-		*     model that DOES NOT EXIST (the original operator complaint) — the
-		*     catalog is the source of truth and the model is not in it.
-		*   - family resolved + no schema → THROW. The schema transmission is
-		*     broken (bulk fetch dropped it); deferring would validate against
-		*     NOTHING. (The workflow:* exemption died with the workflow lane —
-		*     §12.2; a workflow is a plugin card with a REAL signature now.)
-		* The ONE honest defer left: the catalog cache is still cold at boot
-		* (nothing fetched yet — cannot resolve anything, backend gate decides).
-		*/
-		async function assertParamsMatchFamilySchema(model, params) {
-			let family;
-			let modifiers;
-			let cat;
-			try {
-				const { getCachedCatalog } = await Promise.resolve().then(() => (init_src$1(), src_exports));
-				cat = getCachedCatalog();
-				family = cat?.models?.[model]?.family;
-				modifiers = cat?.families?.[family ?? ""]?.modifiers;
-			} catch {
-				return params;
-			}
-			if (!cat) return params;
-			if (!family) throw new Error(`Parameter validation failed — model '${model}' is not in the catalog. The picker showed a model that DOES NOT EXIST; the catalog is the source of truth and this key is not in it. (The backend wire gate would 400 the same request.)`);
-			try {
-				await loadFamilySchemas();
-			} catch {
-				return params;
-			}
-			const schema = getFamilySchema(family);
-			if (!schema) {
-				if (isFamilySchemaCachePopulated()) throw new Error(`Parameter validation failed — family '${family}' (model '${model}') has no param schema in the populated cache — the backend does not know this family. Refusing to validate against nothing.`);
-				return params;
-			}
-			const coerced = coerceParamsToSchema(schema, params);
-			const violations = [...coerced.violations];
-			violations.push(...validateParamsAgainstSchema(schema, coerced.params));
-			violations.push(...validateModifierEntries(modifiers, params));
-			if (violations.length > 0) {
-				const lines = violations.map((v) => `  - ${v.path}: ${v.message}`).join("\n");
-				throw new Error(`Parameter validation failed — the params do not match the '${family}' family signature. Fix before running:\n${lines}\n\n(The backend's wire gate would reject this same request with 400.)`);
-			}
-			return coerced.params;
-		}
-		var _cache$1, _inflight$1, WIRE_RELAXED_KEYS, EDITOR_MOD_ENTRY_KEYS;
-		var init_familyParamContract = __esmMin((() => {
-			init_api();
-			_cache$1 = null;
-			_inflight$1 = null;
-			WIRE_RELAXED_KEYS = /* @__PURE__ */ new Set([
-				"sampling_steps",
-				"guide_scale",
-				"num_frames",
-				"end_image",
-				"image1",
-				"image2",
-				"image3",
-				"input_image",
-				"first_frame",
-				"last_frame",
-				"input_glb",
-				"prev_motion_artifact",
-				"lanpaint_mask",
-				"source_glb",
-				"outfit_glb",
-				"hair_glb",
-				"motion_npz",
-				"loras",
-				"controlnets",
-				"modifiers",
-				"service",
-				"source",
-				"preset",
-				"reference_audio",
-				"reference_text",
-				"rigged_path",
-				"npz_path",
-				"export_glb",
-				"export_fbx",
-				"export_usd",
-				"export_obj",
-				"detect_mode",
-				"model_name",
-				"t5_name",
-				"vae_name"
-			]);
-			EDITOR_MOD_ENTRY_KEYS = /* @__PURE__ */ new Set([
-				"id",
-				"value",
-				"model",
-				"preprocessor",
-				"enabled",
-				"source"
-			]);
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardBirth.ts
-		var cardBirth_exports = /* @__PURE__ */ __exportAll({
-			composeCard: () => composeCard,
-			ensureDraftId: () => ensureDraftId
-		});
-		/** Mint the card doc for a start body. The doc carries the body
-		*  verbatim (intent/stages/model/params become the card extras —
-		*  see python/editor_runs.py drafts_save), so what the card shows is
-		*  what the run consumed. Throws LOUDLY on any refusal — a refused
-		*  compose never proceeds to a start (no silent cardless runs). */
-		async function composeCard(body, signal) {
-			const res = await fetch("/v1/flows/drafts", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(body),
-				signal
-			});
-			const text = await res.text();
-			if (!res.ok) throw new Error(`card compose refused: HTTP ${res.status}${text ? `: ${text.slice(0, 400)}` : ""}`);
-			let data;
-			try {
-				data = JSON.parse(text);
-			} catch {
-				throw new Error("card compose returned a non-JSON body");
-			}
-			const draftId = data.draftId;
-			if (typeof draftId !== "string" || !draftId) throw new Error("card compose returned no draftId — refusing to start cardless");
-			return draftId;
-		}
-		/** The card-birth half of every run start: return the body's
-		*  declared draft_id when present, else compose the card and return
-		*  the minted id. Stamp the result onto the start envelope BEFORE
-		*  the start fetch:
-		*
-		*    startBody.draft_id = await ensureDraftId(startBody, signal)
-		*/
-		async function ensureDraftId(body, signal) {
-			const declared = body.draft_id;
-			if (typeof declared === "string" && declared !== "") return declared;
-			return composeCard(body, signal);
-		}
-		var init_cardBirth = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowProtocol.ts
-		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({
-			assertNoParamDrops: () => assertNoParamDrops,
-			collectNamedArtifacts: () => collectNamedArtifacts,
-			collectStageUrls: () => collectStageUrls,
-			describeErrorBody: () => describeErrorBody,
-			pollFlowRun: () => pollFlowRun,
-			runCompiledGeneration: () => runCompiledGeneration,
-			sanitizeRevivedResult: () => sanitizeRevivedResult,
-			setRequiredEmptyResolver: () => setRequiredEmptyResolver
-		});
-		/**
-		* Extract the backend's error message from a non-2xx body for surfacing.
-		*
-		* Our backend always answers errors as `{"error": "..."}` — the string
-		* carries REAL newlines once parsed (the wire JSON escapes them), which is
-		* exactly what a multi-line flow doc parse error / validation report
-		* looks like in the drilldown modal. When the body isn't JSON, or has no
-		* string `error` field (proxy error page, unexpected shape), the raw text
-		* is returned unchanged.
-		*
-		* 2026-08-10: the error path used to `slice(0, 200)` the body, which cut
-		* "Validation failed: N violation(s)" reports mid-sentence — the full
-		* error is now surfaced unmodified (user: "full errors in the modals").
-		*/
-		function describeErrorBody(text) {
-			try {
-				const parsed = JSON.parse(text);
-				if (typeof parsed?.error === "string") return parsed.error;
-			} catch {}
-			return text;
-		}
-		/** Collect every artifact URL from a run status (stage.url + gallery).
-		*  The FLAT list — preserves the legacy wire-by-position behavior (the
-		*  primary output is always [0]). Use collectNamedArtifacts when the wire
-		*  needs to address a specific named output (mask, detection, …). */
-		function collectStageUrls(stages) {
-			const urls = [];
-			if (Array.isArray(stages)) for (const s of stages) {
-				if (s.url) urls.push(s.url);
-				if (Array.isArray(s.gallery)) {
-					for (const g of s.gallery) if (g && typeof g.url === "string") urls.push(g.url);
-				}
-			}
-			return urls;
-		}
-		/** Revived/stashed docs are untrusted (written by any client or session):
-		*  artifacts + assetUrls must be STRING-only, or every consumer crashes
-		*  (u.endsWith on undefined — motion card 2026-08-10). Filter instead of
-		*  casting verbatim; callers still hard-error on structural doc junk.
-		*  Missing numeric fields default so downstream guards (assetUrls.length)
-		*  behave — never a null result while the result object is present. */
-		function sanitizeRevivedResult(raw) {
-			if (!raw || typeof raw !== "object") return null;
-			const r = raw;
-			const assetUrls = Array.isArray(r.assetUrls) ? r.assetUrls.filter((u) => typeof u === "string" && !!u) : [];
-			const artifacts = {};
-			if (r.artifacts && typeof r.artifacts === "object" && !Array.isArray(r.artifacts)) {
-				for (const [k, v] of Object.entries(r.artifacts)) if (typeof v === "string" && v) artifacts[k] = v;
-			}
-			return {
-				assetUrls,
-				artifacts,
-				metadata: r.metadata && typeof r.metadata === "object" ? r.metadata : {},
-				completedAt: typeof r.completedAt === "number" ? r.completedAt : Date.now(),
-				durationSec: typeof r.durationSec === "number" ? r.durationSec : 0
-			};
-		}
-		/** Collect named artifacts from a run status → {name: URL}. The NAMED map
-		*  — lets a downstream slot wire a SPECIFIC output (mask → lanpaint_mask)
-		*  rather than only the primary (assetUrls[0]). Falls back to {} when the
-		*  backend didn't send named_urls (legacy runs / single-output bricks). */
-		function collectNamedArtifacts(stages) {
-			const out = {};
-			if (Array.isArray(stages)) {
-				for (const s of stages) if (s.named_urls && typeof s.named_urls === "object") {
-					for (const [name, url] of Object.entries(s.named_urls)) if (typeof url === "string" && url) out[name] = url;
-				}
-			}
-			return out;
-		}
-		/**
-		* Poll a flow run until terminal. Throws on error/timeout/abort.
-		*
-		* Terminal statuses: "completed"/"done" → success; "error"/"failed" →
-		* throws with the run-level error message.
-		*
-		* `onTick(status)` fires after every successful poll — used by the store
-		* to hydrate live KSampler step progress onto the running card BEFORE the
-		* run goes terminal (so the per-card progress bar animates during the
-		* run, 2026-08-08). Not fired on the terminal tick (the final status is
-		* the return value).
-		*/
-		async function pollFlowRun(runId, signal, opts) {
-			const maxWaitMs = opts?.maxWaitMs ?? 36e5;
-			const intervalMs = opts?.intervalMs ?? 2e3;
-			const started = performance.now();
-			while (performance.now() - started < maxWaitMs) {
-				if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-				const resp = await apiFetch(`/v1/flows/status/${runId}`, { signal });
-				if (!resp.ok) {
-					if (resp.status === 404) throw new Error(`Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`);
-					let errorBody = null;
-					try {
-						errorBody = await resp.json();
-					} catch {
-						errorBody = null;
-					}
-					if (hasViolationsSignature(errorBody)) {
-						const violations = errorBody.violations;
-						useRunStatusContractStore.getState().reportViolation(runId, violations);
-						throw new RunStatusContractError(runId, violations);
-					}
-					await new Promise((r) => setTimeout(r, intervalMs));
-					continue;
-				}
-				const data = await resp.json();
-				const { valid, violations } = validateRunStatusContract(data);
-				if (!valid) {
-					useRunStatusContractStore.getState().reportViolation(runId, violations);
-					throw new RunStatusContractError(runId, violations);
-				}
-				if (data.status === "completed") return data;
-				if (data.status === "failed") {
-					const detail = data.error;
-					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
-				}
-				opts?.onTick?.(data);
-				await new Promise((r) => setTimeout(r, intervalMs));
-			}
-			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
-		}
-		/** Register (or clear) the required-empty resolver. */
-		function setRequiredEmptyResolver(fn) {
-			_requiredEmptyResolver = fn;
-		}
-		/**
-		* HARD VALIDATION: no silent parameter drops in the generate request body.
-		*
-		* JSON.stringify silently drops `undefined` values — `{a: 1, b: undefined}`
-		* serializes to `{"a":1}` with ZERO error. This is the TypeScript version
-		* of the Python `**kwargs` absorb pattern: a field that was set in the form
-		* state, survived into the body object, but vanishes on the wire with no
-		* error, no warning. The backend receives defaults and the user sees
-		* degraded output they can't diagnose.
-		*
-		* This function is called before EVERY GPU-starting fetch (generate,
-		* startChain — the run doors) —
-		* it is the universal gate. It catches:
-		*   - `undefined` values (silently dropped by JSON.stringify)
-		*   - `NaN` / `Infinity` (serialized as `null` — a value mutation)
-		*   - `function` / `symbol` / `bigint` values (dropped or thrown by JSON)
-		*   - empty string for known-critical fields (prompt, model)
-		*
-		* SILENT PARAMETER DROPS ARE COMPLETELY UNACCEPTABLE ANYWHERE EVER.
-		*
-		* @param body the request body about to be JSON.stringify'd and POST'd
-		* @throws Error listing every field that would be silently dropped or mutated
-		*/
-		function assertNoParamDrops(body) {
-			const dropped = [];
-			const mutated = [];
-			for (const [key, val] of Object.entries(body)) if (val === void 0) dropped.push(key);
-			else if (typeof val === "number" && !Number.isFinite(val)) mutated.push(`${key} (NaN/Infinity → JSON serializes as null)`);
-			else if (typeof val === "function" || typeof val === "symbol") dropped.push(`${key} (${typeof val} value — JSON.stringify drops it)`);
-			else if (typeof val === "bigint") mutated.push(`${key} (bigint → JSON.stringify throws)`);
-			if (typeof body.model === "string" && _requiredEmptyResolver) {
-				const fields = _requiredEmptyResolver(body.model, body);
-				for (const field of fields ?? []) {
-					const v = body[field];
-					if (typeof v === "string" && v.trim() === "") throw new Error(`'${field}' is empty for '${body.model}' — the model's form declares it required (the engine has no conditioning signal without it). Type it before running. (Backend semantic validator would 400 this same run.)`);
-				}
-			}
-			if (dropped.length > 0 || mutated.length > 0) {
-				const parts = [dropped.length > 0 ? `DROPPED: [${dropped.join(", ")}]` : "", mutated.length > 0 ? `MUTATED: [${mutated.join(", ")}]` : ""].filter(Boolean);
-				throw new Error(`SILENT PARAMETER DROP DETECTED in generate request body — ${parts.join("; ")}. JSON.stringify would silently lose or mutate these values on the wire. SILENT PARAMETER DROPS ARE UNACCEPTABLE. Fix the caller to omit or set these fields explicitly.`);
-			}
-		}
-		/** Append the door's 400 violation envelope ({violations: [{field,
-		* message}]}) as one line per violation — a bare headline would silently
-		* DROP the dotted paths (the whole point of a refusal is seeing WHICH
-		* param failed). ONE construction, both run doors (compile + start). */
-		function violationLines(text) {
-			try {
-				const parsed = JSON.parse(text);
-				if (Array.isArray(parsed.violations)) {
-					const lines = parsed.violations.map((v) => `${String(v.field ?? "?")}: ${String(v.message ?? "")}`).filter((line) => !line.endsWith(": "));
-					if (lines.length > 0) return `\n${lines.join("\n")}`;
-				}
-			} catch {}
-			return "";
-		}
-		async function runCompiledGeneration(body, signal, opts) {
-			if (Array.isArray(body.loras)) {
-				const { normalizeLoraEntry } = await Promise.resolve().then(() => (init_src$2(), src_exports$1));
-				body = {
-					...body,
-					loras: body.loras.map((e) => e && typeof e === "object" ? normalizeLoraEntry(e) : e)
-				};
-			}
-			assertNoParamDrops(body);
-			let typedBody = body;
-			if (typeof body.model === "string") {
-				const { assertParamsMatchFamilySchema } = await Promise.resolve().then(() => (init_familyParamContract(), familyParamContract_exports));
-				const paramOnly = {};
-				for (const [k, v] of Object.entries(body)) {
-					if (k === "model") continue;
-					paramOnly[k] = v;
-				}
-				typedBody = {
-					...await assertParamsMatchFamilySchema(body.model, paramOnly),
-					model: body.model
-				};
-				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth(), cardBirth_exports));
-				typedBody.draft_id = await ensureDraftId(typedBody, signal);
-				const compileRes = await fetch("/v1/flows/validate", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify(typedBody),
-					signal
-				});
-				if (!compileRes.ok) {
-					const text = await compileRes.text();
-					throw new Error(`card failed to compile: HTTP ${compileRes.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`);
-				}
-			}
-			if (typeof typedBody.draft_id !== "string" || typedBody.draft_id === "") {
-				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth(), cardBirth_exports));
-				typedBody.draft_id = await ensureDraftId(typedBody, signal);
-			}
-			const res = await fetch("/v1/flows/start", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(typedBody),
-				signal
-			});
-			const text = await res.text();
-			if (res.ok) {
-				let data;
-				try {
-					data = JSON.parse(text);
-				} catch {
-					throw new Error(`generate failed: /v1/flows/start returned non-JSON body: ${text.slice(0, NON_JSON_BODY_CAP)}`);
-				}
-				const runId = data.run_id;
-				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
-				opts?.onStart?.(runId);
-				const status = await pollFlowRun(runId, signal, {
-					intervalMs: opts?.intervalMs,
-					onTick: opts?.onTick
-				});
-				return {
-					kind: "started",
-					runId,
-					status,
-					urls: collectStageUrls(status.stages)
-				};
-			}
-			throw new Error(`generate failed: HTTP ${res.status}${text ? `: ${describeErrorBody(text)}` : ""}${violationLines(text)}`);
-		}
-		var NON_JSON_BODY_CAP, _requiredEmptyResolver;
-		var init_FlowProtocol = __esmMin((() => {
-			init_api();
-			init_runStatusContract();
-			init_runStatusContractStore();
-			NON_JSON_BODY_CAP = 2e3;
-			_requiredEmptyResolver = null;
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowEvents.ts
-		/**
-		* Open the events stream for one run. Returns immediately; frames land
-		* in `onEvent`. Auto-reconnects with capped backoff until a terminal
-		* `run` frame, an explicit close, or `signal` aborts.
-		*/
-		function streamFlowEvents(runId, onEvent, opts = {}) {
-			let ws = null;
-			let terminal = false;
-			let closed = false;
-			let attempt = 0;
-			let timer = null;
-			const cleanup = () => {
-				if (timer) clearTimeout(timer);
-				timer = null;
-				if (ws) {
-					ws.onmessage = null;
-					ws.onclose = null;
-					ws.onerror = null;
-					try {
-						ws.close();
-					} catch {}
-					ws = null;
-				}
-			};
-			const finish = () => {
-				terminal = true;
-				cleanup();
-			};
-			const connect = () => {
-				/* v8 ignore next -- defensive: close()/finish() always clear the pending reconnect timer, so connect() can never run after close or a terminal frame (2026-09-12) */
-				if (closed || terminal) return;
-				if (typeof WebSocket === "undefined") return;
-				const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws";
-				const host = typeof location !== "undefined" ? location.host : "";
-				try {
-					ws = new WebSocket(`${proto}://${host}/v1/flows/events?run_id=${encodeURIComponent(runId)}`);
-				} catch {
-					return;
-				}
-				ws.onmessage = (ev) => {
-					if (closed || terminal) return;
-					attempt = 0;
-					let frame = null;
-					try {
-						frame = JSON.parse(String(ev.data));
-					} catch {
-						return;
-					}
-					if (!frame || typeof frame !== "object" || typeof frame.type !== "string") return;
-					onEvent(frame);
-					if (frame.type === "run" && TERMINAL.has(String(frame.status))) finish();
-				};
-				ws.onclose = () => {
-					if (closed || terminal) return;
-					const wait = Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt++);
-					timer = setTimeout(connect, wait);
-				};
-				ws.onerror = () => {};
-			};
-			connect();
-			if (opts.signal) opts.signal.addEventListener("abort", () => {
-				closed = true;
-				cleanup();
-			}, { once: true });
-			return {
-				close: () => {
-					closed = true;
-					cleanup();
-				},
-				done: () => terminal
-			};
-		}
-		var TERMINAL, BACKOFF_BASE_MS, BACKOFF_CAP_MS;
-		var init_FlowEvents = __esmMin((() => {
-			TERMINAL = /* @__PURE__ */ new Set([
-				"completed",
-				"failed",
-				"stopped",
-				"unknown"
-			]);
-			BACKOFF_BASE_MS = 500;
-			BACKOFF_CAP_MS = 5e3;
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/tagMap.ts
-		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
-		*  a future server payload) before it enters the store. */
-		function isTagColor(v) {
-			return typeof v === "string" && TAG_COLOR_VALUES.includes(v);
-		}
-		function slugify(name) {
-			return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "tag";
-		}
-		/** Generate a unique tag id from a name, appending -2, -3, … on collision. */
-		function uniqueId(name, existing) {
-			const base = slugify(name);
-			if (!existing.has(base)) return base;
-			let n = 2;
-			while (existing.has(`${base}-${n}`)) n++;
-			return `${base}-${n}`;
-		}
-		/** Cycle through the palette so consecutive new tags get distinct colors. */
-		function nextColor(count) {
-			return TAG_COLOR_VALUES[count % TAG_COLOR_VALUES.length];
-		}
-		/**
-		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
-		* before it enters the store. Drops any tag whose color isn't in the closed
-		* enum, then rebuilds the forward index dropping orphan entries. This is the
-		* front-end mirror of the pydantic TagDocument validator; the server enforces
-		* the same rules on PUT, but we don't trust the wire even from our own server
-		* — defense in depth.
-		*/
-		function validateDocument(parsed) {
-			const empty = {
-				tags: {},
-				map: {}
-			};
-			if (!parsed) return empty;
-			const tags = {};
-			for (const [id, def] of Object.entries(parsed.tags ?? {})) if (def && typeof def.name === "string" && isTagColor(def.color)) tags[id] = {
-				id,
-				name: def.name,
-				color: def.color
-			};
-			const knownIds = new Set(Object.keys(tags));
-			const map = {};
-			for (const [key, ids] of Object.entries(parsed.map ?? {})) if (Array.isArray(ids)) {
-				const clean = ids.filter((id) => typeof id === "string" && knownIds.has(id));
-				if (clean.length > 0) map[key] = clean;
-			}
-			return {
-				tags,
-				map
-			};
-		}
-		function loadPersisted() {
-			if (typeof localStorage === "undefined") return {
-				tags: {},
-				map: {}
-			};
-			try {
-				const raw = localStorage.getItem(STORAGE_KEY);
-				if (!raw) return {
-					tags: {},
-					map: {}
-				};
-				return validateDocument(JSON.parse(raw));
-			} catch {
-				return {
-					tags: {},
-					map: {}
-				};
-			}
-		}
-		/**
-		* Write-through to localStorage (synchronous cache) + schedule a debounced
-		* server PUT. Called from every mutation action. The localStorage write is
-		* unconditional (offline fallback stays fresh); the server PUT is gated by
-		* `serverSyncEnabled`. Failures are swallowed (the local state is still
-		* valid; the next successful mutation retries).
-		*/
-		function scheduleSync(data) {
-			try {
-				localStorage.setItem(STORAGE_KEY, JSON.stringify({
-					tags: data.tags,
-					map: data.map
-				}));
-			} catch {}
-			if (!serverSyncEnabled || typeof fetch === "undefined") return;
-			if (syncTimer) clearTimeout(syncTimer);
-			syncTimer = setTimeout(() => {
-				syncTimer = null;
-				apiFetch("/v1/tags", {
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						tags: data.tags,
-						map: data.map
-					})
-				}).catch((e) => {
-					console.warn("[tagMap] server sync failed:", e);
-				});
-			}, SYNC_DEBOUNCE_MS);
-		}
-		/**
-		* Hydrate the store from the server (canonical) + enable server pushes.
-		* Called once by the app shell on mount. The store already has the
-		* localStorage cache (loaded synchronously at module init), so the UI renders
-		* immediately; this replaces it with the server copy if one exists (the server
-		* wins ties — it's the cross-device source of truth). After this call,
-		* mutations push to the server via the debounced PUT.
-		*
-		* Silent on failure: if the server is unreachable, the store keeps the
-		* localStorage cache and server pushes stay disabled (offline mode).
-		*/
-		async function initTagSync() {
-			if (serverSyncEnabled) return;
-			if (typeof fetch === "undefined") return;
-			try {
-				const res = await apiFetch("/v1/tags");
-				if (!res.ok) return;
-				const doc = validateDocument(await res.json());
-				useTagMap.setState({
-					tags: doc.tags,
-					map: doc.map
-				});
-				serverSyncEnabled = true;
-			} catch {}
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in tag-map.spec.ts. (2026-09-12) */
-		function useTagMapHook() {
-			return (0, react.useSyncExternalStore)((l) => {
-				tagMapListeners.add(l);
-				return () => {
-					tagMapListeners.delete(l);
-				};
-			}, tagMapGetState);
-		}
-		/** Read tagsOf without a React subscription. The useListFilter accessor uses
-		*  this so the filter flow doesn't need to re-subscribe on every item. */
-		function tagsOf(key) {
-			return useTagMap.getState().map[key] ?? [];
-		}
-		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapListeners, tagMapState, notifyTagMap, tagMapSetState, tagMapGetState, useTagMap, tagMapActions;
-		var init_tagMap = __esmMin((() => {
-			init_api();
-			TagColor = {
-				brand: "brand",
-				sky: "sky",
-				violet: "violet",
-				rose: "rose",
-				emerald: "emerald",
-				amber: "amber",
-				cyan: "cyan"
-			};
-			TAG_COLOR_VALUES = Object.values(TagColor);
-			TAG_COLOR_META = {
-				brand: {
-					dot: "bg-brand",
-					pill: "border-brand/30 bg-brand/10 text-brand"
-				},
-				sky: {
-					dot: "bg-sky-500",
-					pill: "border-sky-500/30 bg-sky-500/10 text-sky-400"
-				},
-				violet: {
-					dot: "bg-violet-500",
-					pill: "border-violet-500/30 bg-violet-500/10 text-violet-400"
-				},
-				rose: {
-					dot: "bg-rose-500",
-					pill: "border-rose-500/30 bg-rose-500/10 text-rose-400"
-				},
-				emerald: {
-					dot: "bg-emerald-500",
-					pill: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-				},
-				amber: {
-					dot: "bg-amber-500",
-					pill: "border-amber-500/30 bg-amber-500/10 text-amber-400"
-				},
-				cyan: {
-					dot: "bg-cyan-500",
-					pill: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400"
-				}
-			};
-			STORAGE_KEY = "melite:tag-map:v1";
-			SYNC_DEBOUNCE_MS = 500;
-			serverSyncEnabled = false;
-			syncTimer = null;
-			initial = loadPersisted();
-			tagMapListeners = /* @__PURE__ */ new Set();
-			notifyTagMap = () => {
-				for (const l of tagMapListeners) l();
-			};
-			tagMapSetState = (patch) => {
-				const p = typeof patch === "function" ? patch(tagMapState) : patch;
-				tagMapState = {
-					...tagMapState,
-					...p
-				};
-				notifyTagMap();
-			};
-			tagMapGetState = () => tagMapState;
-			useTagMap = Object.assign(useTagMapHook, {
-				getState: tagMapGetState,
-				setState: tagMapSetState,
-				subscribe: (l) => {
-					tagMapListeners.add(l);
-					return () => {
-						tagMapListeners.delete(l);
-					};
-				}
-			});
-			tagMapActions = (set, get) => ({
-				createTag: (name, color) => {
-					const trimmed = name.trim();
-					if (!trimmed) return "";
-					const id = uniqueId(trimmed, new Set(Object.keys(get().tags)));
-					const c = color ?? nextColor(Object.keys(get().tags).length);
-					set((s) => {
-						const tags = {
-							...s.tags,
-							[id]: {
-								id,
-								name: trimmed,
-								color: c
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-					return id;
-				},
-				renameTag: (id, name) => {
-					const trimmed = name.trim();
-					if (!trimmed) return;
-					set((s) => {
-						const def = s.tags[id];
-						if (!def) return s;
-						const tags = {
-							...s.tags,
-							[id]: {
-								...def,
-								name: trimmed
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-				},
-				recolorTag: (id, color) => {
-					if (!isTagColor(color)) return;
-					set((s) => {
-						const def = s.tags[id];
-						if (!def) return s;
-						const tags = {
-							...s.tags,
-							[id]: {
-								...def,
-								color
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-				},
-				deleteTag: (id) => {
-					set((s) => {
-						if (!s.tags[id]) return s;
-						const tags = { ...s.tags };
-						delete tags[id];
-						const map = {};
-						for (const [key, ids] of Object.entries(s.map)) {
-							const filtered = ids.filter((t) => t !== id);
-							if (filtered.length > 0) map[key] = filtered;
-						}
-						scheduleSync({
-							tags,
-							map
-						});
-						return {
-							tags,
-							map
-						};
-					});
-				},
-				setItemTags: (key, tagIds) => {
-					const known = new Set(Object.keys(get().tags));
-					const clean = [...new Set(tagIds)].filter((id) => known.has(id));
-					set((s) => {
-						const map = { ...s.map };
-						if (clean.length > 0) map[key] = clean;
-						else delete map[key];
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
-					});
-				},
-				addTagToItem: (key, tagId) => {
-					if (!get().tags[tagId]) return;
-					set((s) => {
-						const current = s.map[key] ?? [];
-						if (current.includes(tagId)) return s;
-						const map = {
-							...s.map,
-							[key]: [...current, tagId]
-						};
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
-					});
-				},
-				removeTagFromItem: (key, tagId) => {
-					set((s) => {
-						const current = s.map[key];
-						if (!current || !current.includes(tagId)) return s;
-						const next = current.filter((t) => t !== tagId);
-						const map = { ...s.map };
-						if (next.length > 0) map[key] = next;
-						else delete map[key];
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
-					});
-				},
-				tagsOf: (key) => get().map[key] ?? [],
-				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
-			});
-			tagMapState = {
-				...tagMapActions(tagMapSetState, tagMapGetState),
-				tags: initial.tags,
-				map: initial.map
-			};
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/text-to-pose.ts
-		/** Slice a single frame's vertices out of a multi-frame base64 vertex buffer.
-		*
-		*  Async because decoding the (potentially huge) multi-frame buffer is offloaded
-		*  to the browser's native base64 decoder. Returns a base64 string containing
-		*  just the one frame's float32 positions.
-		*
-		*  @param multiB64    base64-encoded buffer of shape (T, V, 3) float32
-		*  @param frameIdx    which frame to slice (clamped to [0, T-1])
-		*  @param vertexCount V — defaults to the SOMA-77 canonical count
-		*  @returns base64-encoded single-frame buffer, or null on decode failure */
-		async function sliceFrameAsB64(multiB64, frameIdx, vertexCount = SOMA_VERTEX_COUNT) {
-			try {
-				const stride = vertexCount * 3;
-				const buf = await decodeB64ToBuffer(multiB64);
-				const multi = new Float32Array(buf);
-				const totalFrames = Math.floor(multi.length / stride);
-				if (totalFrames < 1) return null;
-				const idx = Math.max(0, Math.min(frameIdx, totalFrames - 1));
-				const singleFlat = new Float32Array(stride);
-				singleFlat.set(multi.subarray(idx * stride, (idx + 1) * stride));
-				return encodeBufferToB64(new Uint8Array(singleFlat.buffer));
-			} catch (e) {
-				console.error("[text-to-pose] sliceFrameAsB64 failed:", e);
-				return null;
-			}
-		}
-		/**
-		* Submit a text-to-pose generation request.
-		* Returns immediately with a job_id — poll via pollJob() or waitForJob().
-		*/
-		async function submitTextToPose(req) {
-			const res = await apiFetch("/poser/text-to-pose", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(req)
-			});
-			const text = await res.text();
-			if (!res.ok) {
-				let detail = text.slice(0, 300);
-				try {
-					detail = JSON.parse(text).error || detail;
-				} catch {}
-				throw new Error(`Submit failed: HTTP ${res.status} — ${detail}`);
-			}
-			try {
-				return JSON.parse(text);
-			} catch (e) {
-				throw new Error(`Submit returned invalid JSON: ${text.slice(0, 200)}`);
-			}
-		}
-		/**
-		* Poll job status once. Returns the current status + result if completed.
-		*/
-		async function pollJob(jobId) {
-			const res = await apiFetch(`/poser/text-to-pose/jobs/${jobId}`);
-			if (res.status === 404) throw new Error(`Job ${jobId} not found`);
-			const text = await res.text();
-			if (!res.ok) throw new Error(`Poll failed: HTTP ${res.status} — ${text.slice(0, 200)}`);
-			try {
-				return JSON.parse(text);
-			} catch (e) {
-				throw new Error(`Poll returned invalid JSON: ${text.slice(0, 200)}`);
-			}
-		}
-		/**
-		* Wait for a job to reach a terminal state (completed/failed/cancelled).
-		* Polls every `intervalMs` until `timeoutMs`.
-		*
-		* Calls `onUpdate` on each poll if provided — useful for progress UI.
-		*/
-		async function waitForJob(jobId, opts = {}) {
-			const interval = opts.intervalMs ?? 500;
-			const timeout = opts.timeoutMs ?? 12e4;
-			const deadline = Date.now() + timeout;
-			while (Date.now() < deadline) {
-				const status = await pollJob(jobId);
-				opts.onUpdate?.(status);
-				if (status.status === "completed" && status.result) return status.result;
-				if (status.status === "failed") throw new Error(status.error || `Job failed (${status.error_class || "unknown"})`);
-				if (status.status === "cancelled") throw new Error("Job was cancelled");
-				await sleep(interval);
-			}
-			throw new Error(`Job ${jobId} timed out after ${timeout}ms`);
-		}
-		async function cancelJob(jobId) {
-			const res = await apiFetch(`/poser/text-to-pose/jobs/${jobId}`, { method: "DELETE" });
-			if (!res.ok && res.status !== 404) throw new Error(`Cancel failed: HTTP ${res.status}`);
-		}
-		/**
-		* Submit a text-to-pose request and wait for the result.
-		* This is the simplest call for UI components that just want the final motion.
-		*/
-		async function generatePose(req, opts) {
-			const { job_id } = await submitTextToPose(req);
-			return waitForJob(job_id, opts);
-		}
-		async function listPoseCache() {
-			const res = await apiFetch("/poser/text-to-pose/cache");
-			if (!res.ok) throw new Error(`Cache list failed: HTTP ${res.status}`);
-			return res.json();
-		}
-		async function deletePoseCacheEntry(hash) {
-			const res = await apiFetch(`/poser/text-to-pose/cache/${hash}`, { method: "DELETE" });
-			if (!res.ok && res.status !== 404) throw new Error(`Cache delete failed: HTTP ${res.status}`);
-		}
-		async function clearPoseCache() {
-			const res = await apiFetch("/poser/text-to-pose/cache/clear", { method: "POST" });
-			if (!res.ok) throw new Error(`Cache clear failed: HTTP ${res.status}`);
-			return (await res.json()).cleared;
-		}
-		async function listModels() {
-			const res = await apiFetch("/poser/text-to-pose/models");
-			if (!res.ok) throw new Error(`Models list failed: HTTP ${res.status}`);
-			return res.json();
-		}
-		async function listRegistry() {
-			const res = await apiFetch("/poser/text-to-pose/registry");
-			if (!res.ok) throw new Error(`Registry fetch failed: HTTP ${res.status}`);
-			return res.json();
-		}
-		async function listExamples(model) {
-			const res = await apiFetch(`/poser/text-to-pose/examples${model ? `?model=${encodeURIComponent(model)}` : ""}`);
-			if (!res.ok) throw new Error(`Examples list failed: HTTP ${res.status}`);
-			return res.json();
-		}
-		async function loadExample(model, exampleId, loadGt = false) {
-			const res = await apiFetch(`/poser/text-to-pose/examples/${model}/${exampleId}${loadGt ? `?load_gt=true` : ""}`);
-			if (!res.ok) throw new Error(`Example load failed: HTTP ${res.status}`);
-			return res.json();
-		}
-		async function exportBVH(framesSoma77, framesRotmat, fps) {
-			const res = await apiFetch("/poser/text-to-pose/export/bvh", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					frames_soma77_3d: framesSoma77,
-					frames_soma77_rotmat: framesRotmat,
-					fps
-				})
-			});
-			if (!res.ok) {
-				const body = await res.json();
-				throw new Error(body.error || `BVH export failed: HTTP ${res.status}`);
-			}
-			return res.json();
-		}
-		/** Download a BVH file from SOMA-77 motion data. */
-		async function downloadBVH(motion, standardTpose = false) {
-			if (!motion.frames_soma77_3d || !motion.frames_soma77_rotmat) throw new Error("Motion data missing SOMA-77 positions or rotations");
-			const res = await apiFetch("/poser/text-to-pose/export/bvh", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					frames_soma77_3d: motion.frames_soma77_3d,
-					frames_soma77_rotmat: motion.frames_soma77_rotmat,
-					fps: motion.fps,
-					standard_tpose: standardTpose
-				})
-			});
-			if (!res.ok) {
-				const body = await res.json();
-				throw new Error(body.error || `BVH export failed: HTTP ${res.status}`);
-			}
-			const { bvh } = await res.json();
-			const blob = new Blob([bvh], { type: "text/plain" });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = `pose_${motion.model}_${Date.now()}.bvh`;
-			a.click();
-			URL.revokeObjectURL(url);
-		}
-		/** Export motion as AMASS NPZ (SMPL-X compatible). */
-		async function downloadAMASSNpz(motion) {
-			if (!motion.frames_soma77_3d || !motion.frames_soma77_rotmat) throw new Error("Motion data missing SOMA-77 positions or rotations");
-			const res = await apiFetch("/poser/text-to-pose/export/amass", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					frames_soma77_3d: motion.frames_soma77_3d,
-					frames_soma77_rotmat: motion.frames_soma77_rotmat,
-					fps: motion.fps
-				})
-			});
-			if (!res.ok) {
-				const body = await res.json();
-				throw new Error(body.error || `AMASS export failed: HTTP ${res.status}`);
-			}
-			const { data_b64 } = await res.json();
-			downloadBase64Payload(data_b64, `pose_amass_${Date.now()}.npz`, "application/octet-stream");
-		}
-		/** Export motion as G1 MuJoCo CSV. */
-		async function downloadG1Csv(motion) {
-			if (!motion.frames_soma77_3d || !motion.frames_soma77_rotmat) throw new Error("Motion data missing SOMA-77 positions or rotations");
-			const res = await apiFetch("/poser/text-to-pose/export/csv", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					frames_soma77_3d: motion.frames_soma77_3d,
-					frames_soma77_rotmat: motion.frames_soma77_rotmat,
-					fps: motion.fps
-				})
-			});
-			if (!res.ok) {
-				const body = await res.json();
-				throw new Error(body.error || `CSV export failed: HTTP ${res.status}`);
-			}
-			const { data_b64 } = await res.json();
-			downloadBase64Payload(data_b64, `pose_g1_${Date.now()}.csv`, "text/csv");
-		}
-		/**
-		* Export motion as a rigged FBX file (Mixamo-compatible joint names).
-		*
-		* The backend renders an FBX 7.4.0 ASCII skeleton with the full 77-joint
-		* hierarchy and baked animation — importable by Blender, Maya, Unity, and
-		* Unreal. Mixamo naming enables automatic retargeting onto Mixamo rigs.
-		*/
-		async function downloadFBX(motion, mixamo = true) {
-			if (!motion.frames_soma77_3d || !motion.frames_soma77_rotmat) throw new Error("Motion data missing SOMA-77 positions or rotations");
-			const res = await apiFetch("/poser/text-to-pose/export/fbx", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					frames_soma77_3d: motion.frames_soma77_3d,
-					frames_soma77_rotmat: motion.frames_soma77_rotmat,
-					fps: motion.fps,
-					mixamo
-				})
-			});
-			if (!res.ok) {
-				const body = await res.json();
-				throw new Error(body.error || `FBX export failed: HTTP ${res.status}`);
-			}
-			const { fbx } = await res.json();
-			const blob = new Blob([fbx], { type: "application/octet-stream" });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = `pose_${motion.model}_${Date.now()}.fbx`;
-			a.click();
-			URL.revokeObjectURL(url);
-		}
-		/**
-		* Render a 2D pose video server-side via matplotlib + imageio.
-		* Higher-quality and browser-independent than client-side MediaRecorder.
-		*/
-		async function renderServerVideo(motion, opts = {}) {
-			const res = await apiFetch("/poser/text-to-pose/export/video", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					frames_flat: motion.frames_flat,
-					fps: motion.fps,
-					width: opts.width ?? 512,
-					height: opts.height ?? 512,
-					background: opts.background ?? "#0d2847"
-				})
-			});
-			if (!res.ok) {
-				const body = await res.json();
-				throw new Error(body.error || `Video render failed: HTTP ${res.status}`);
-			}
-			const { video_b64, mime } = await res.json();
-			const bin = atob(video_b64);
-			const bytes = new Uint8Array(bin.length);
-			for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-			return new Blob([bytes], { type: mime || "video/mp4" });
-		}
-		/** Render and download a server-side 2D pose video. */
-		async function downloadServerVideo(motion, opts) {
-			const blob = await renderServerVideo(motion, opts);
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = `pose_video_${Date.now()}.mp4`;
-			a.click();
-			URL.revokeObjectURL(url);
-		}
-		async function listConstraints() {
-			const res = await apiFetch("/poser/text-to-pose/constraints");
-			if (!res.ok) throw new Error(`Constraints list failed: HTTP ${res.status}`);
-			return (await res.json()).entries ?? [];
-		}
-		async function saveConstraints(name, constraints) {
-			const res = await apiFetch("/poser/text-to-pose/constraints/save", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					name,
-					constraints
-				})
-			});
-			if (!res.ok) {
-				const body = await res.json();
-				throw new Error(body.error || `Save failed: HTTP ${res.status}`);
-			}
-		}
-		async function loadConstraints(filename) {
-			const res = await apiFetch(`/poser/text-to-pose/constraints/${filename}`);
-			if (!res.ok) throw new Error(`Load failed: HTTP ${res.status}`);
-			return (await res.json()).constraints;
-		}
-		async function deleteConstraints(filename) {
-			const res = await apiFetch(`/poser/text-to-pose/constraints/${filename}`, { method: "DELETE" });
-			if (!res.ok && res.status !== 404) throw new Error(`Delete failed: HTTP ${res.status}`);
-		}
-		async function listScenes() {
-			const res = await apiFetch("/poser/text-to-pose/scenes");
-			if (!res.ok) throw new Error(`Scenes list failed: HTTP ${res.status}`);
-			return (await res.json()).entries ?? [];
-		}
-		async function saveScene(name, scene) {
-			const res = await apiFetch("/poser/text-to-pose/scenes/save", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					name,
-					scene
-				})
-			});
-			if (!res.ok) {
-				const body = await res.json();
-				throw new Error(body.error || `Save failed: HTTP ${res.status}`);
-			}
-		}
-		async function loadScene(filename) {
-			const res = await apiFetch(`/poser/text-to-pose/scenes/${filename}`);
-			if (!res.ok) throw new Error(`Load failed: HTTP ${res.status}`);
-			return (await res.json()).scene;
-		}
-		async function deleteScene(filename) {
-			const res = await apiFetch(`/poser/text-to-pose/scenes/${filename}`, { method: "DELETE" });
-			if (!res.ok && res.status !== 404) throw new Error(`Delete failed: HTTP ${res.status}`);
-		}
-		function sleep(ms) {
-			return new Promise((resolve) => setTimeout(resolve, ms));
-		}
-		/**
-		* Pick a specific frame from a PoseMotion's flat keypoints.
-		* Clamps to valid range.
-		*/
-		function pickFrame(motion, idx) {
-			const clamped = Math.max(0, Math.min(idx, motion.frame_count - 1));
-			return motion.frames_flat[clamped];
-		}
-		/**
-		* Format cache size for display.
-		*/
-		function formatBytes(bytes) {
-			if (bytes < 1024) return `${bytes} B`;
-			if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-			return `${(bytes / 1048576).toFixed(1)} MB`;
-		}
-		/**
-		* Fetch the 77-joint SOMA-71 rest-pose (bind-pose) positions for the
-		* requested identity model. Used by Pose Studio's "Load Model" button to
-		* enter Edit Mode WITHOUT generating a motion first — the user can grab
-		* joints and pose the character manually.
-		*
-		* The endpoint accepts both GET (returns the neutral-default joints) and
-		* POST (applies the supplied identity morphs first, returns joints that
-		* match the shaped body). The POST path is the fully-dynamic one: Anny's
-		* height/proportions sliders reshape BOTH the mesh AND the skeleton, so
-		* the edit-mode wires always match the body the user sees. Without it the
-		* skeleton would stay one fixed size (the static SOMA-77 reference) while
-		* the mesh grew/shrank underneath it.
-		*
-		* Calls GET /poser/skin/bind_joints?identity_model=… when no identity spec
-		* is supplied, POST /poser/skin/bind_joints with a JSON body otherwise.
-		*/
-		async function fetchBindJoints(identityModel = "anny", identityCoeffs, localChanges, customTargets) {
-			if (!(identityCoeffs && identityCoeffs.length > 0 || localChanges && Object.keys(localChanges).length > 0 || customTargets && Object.keys(customTargets).length > 0)) {
-				const res = await apiFetch(`/poser/skin/bind_joints?identity_model=${encodeURIComponent(identityModel)}`);
-				if (!res.ok) {
-					const txt = await res.text();
-					throw new Error(`Failed to load bind joints: ${res.status} ${txt}`);
-				}
-				return res.json();
-			}
-			const body = { identity_model: identityModel };
-			if (identityCoeffs && identityCoeffs.length > 0) body.identity_coeffs = identityCoeffs;
-			if (localChanges && Object.keys(localChanges).length > 0) body.local_changes = localChanges;
-			if (customTargets && Object.keys(customTargets).length > 0) body.custom_targets = customTargets;
-			const res = await apiFetch("/poser/skin/bind_joints", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(body)
-			});
-			if (!res.ok) {
-				const txt = await res.text();
-				throw new Error(`Failed to load bind joints: ${res.status} ${txt}`);
-			}
-			return res.json();
-		}
-		/**
-		* Preload (warm up) a model on the GPU so the first Generate is fast.
-		*
-		* NOTE: The old forge /admin/load endpoint was removed in the 3-container
-		* architecture cleanup. The KimodoPoseService singleton inside ComfyUI
-		* now loads lazily on first inference and stays resident, so explicit
-		* preloading is unnecessary. This is kept as a no-op so the frontend's
-		* "Load Model" button doesn't error.
-		*/
-		async function preloadForgeService(_service, _model) {
-			return {
-				status: "ok",
-				service: _service
-			};
-		}
-		/**
-		* Re-skin the mesh for edited SOMA-77 joint positions.
-		* Calls /poser/skin/deform_soma with binary response for speed.
-		* Used during interactive pose editing — debounced by the caller.
-		*
-		* @param joints Float32Array of 77 x 3 joint positions
-		* @param identityModel Which mesh to skin ("soma" | "mhr" | "anny"). Must
-		*   match the mesh the viewer is rendering, otherwise the deformed vertices
-		*   won't match the bind-mesh topology and the pose will look wrong.
-		* @param jointsRot Optional Float32Array of 77 x 9 global rotation matrices
-		*   (row-major 3x3 per joint). When provided, the backend skins directly with
-		*   these exact rotations (most accurate). When omitted, the backend derives
-		*   approximate rotations from bone directions.
-		* @returns base64-encoded float32 deformed vertices (V x 3) for one frame
-		*/
-		async function deformSomaJoints(joints, identityModel = "anny", jointsRot, identityCoeffs, localChanges, customTargets, baseRotmats) {
-			const frames = [];
-			for (let j = 0; j < 77; j++) frames.push([
-				joints[j * 3],
-				joints[j * 3 + 1],
-				joints[j * 3 + 2]
-			]);
-			const body = {
-				frames_soma77_3d: [frames],
-				identity_model: identityModel,
-				binary: true
-			};
-			if (identityCoeffs && identityCoeffs.length > 0) body.identity_coeffs = identityCoeffs;
-			if (localChanges && Object.keys(localChanges).length > 0) body.local_changes = localChanges;
-			if (customTargets && Object.keys(customTargets).length > 0) body.custom_targets = customTargets;
-			if (jointsRot && jointsRot.length === 693) body.frames_soma77_rotmat = [_packRotmats(jointsRot)];
-			if (baseRotmats && baseRotmats.length === 693) body.frames_soma77_base_rotmat = [_packRotmats(baseRotmats)];
-			const res = await apiFetch("/poser/skin/deform_soma", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(body)
-			});
-			if (!res.ok) {
-				const txt = await res.text();
-				throw new Error(`Re-skin failed: ${res.status} ${txt}`);
-			}
-			const data = await res.json();
-			if (data.error) throw new Error(data.error);
-			return data.vertices_b64;
-		}
-		/**
-		* Pack a flat (77×9,) Float32Array of row-major 3×3 rotation matrices into
-		* the (77, 3, 3) nested-array shape the deform_soma endpoint expects.
-		* Shared by the `frames_soma77_rotmat` and `frames_soma77_base_rotmat` fields.
-		*/
-		function _packRotmats(flat) {
-			const rots = [];
-			for (let j = 0; j < 77; j++) {
-				const r = [];
-				for (let row = 0; row < 3; row++) r.push([
-					flat[j * 9 + row * 3],
-					flat[j * 9 + row * 3 + 1],
-					flat[j * 9 + row * 3 + 2]
-				]);
-				rots.push(r);
-			}
-			return rots;
-		}
-		var init_text_to_pose = __esmMin((() => {
-			init_api();
-			init_src();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/serviceForms.ts
-		function notify() {
-			for (const fn of _listeners) try {
-				fn();
-			} catch (e) {
-				console.warn("[serviceForms] listener error:", e);
-			}
-		}
-		async function loadForms(opts) {
-			if (Object.keys(_cache).length > 0 && !opts?.force) return _cache;
-			if (_inflight) return _inflight;
-			_inflight = (async () => {
-				try {
-					const res = await apiFetch("/v1/forms");
-					if (!res.ok) {
-						console.warn("[serviceForms] /v1/forms failed:", res.status);
-						return _cache;
-					}
-					_cache = (await res.json())?.forms ?? {};
-					notify();
-					return _cache;
-				} catch (e) {
-					console.warn("[serviceForms] fetch error:", e);
-					return _cache;
-				} finally {
-					_inflight = null;
-				}
-			})();
-			return _inflight;
-		}
-		function getCachedForms() {
-			return _cache;
-		}
-		function subscribeForms(fn) {
-			_listeners.add(fn);
-			return () => {
-				_listeners.delete(fn);
-			};
-		}
-		/**
-		* Reverse-lookup: given a sidebar_key (the value the rest of the app calls
-		* `selectedService`), return the form-tag it belongs to. This is THE
-		* primitive that drives every render decision in GenerateFormBody.
-		*/
-		function formForSidebarKey(sidebarKey, forms = _cache) {
-			for (const [formTag, entry] of Object.entries(forms)) if (entry.sidebar_key === sidebarKey) return formTag;
-		}
-		/**
-		* Check whether the given sidebar_key belongs to the given form-tag.
-		* Internal — the convenience predicates below are the public API.
-		*/
-		function isForm(sidebarKey, formTag, forms = _cache) {
-			return forms[formTag]?.sidebar_key === sidebarKey;
-		}
-		/** True if the sidebar_key belongs to ANY of the given form-tags. */
-		function isInAnyForm(sidebarKey, formTags, forms = _cache) {
-			return formTags.some((t) => isForm(sidebarKey, t, forms));
-		}
-		/**
-		* True if the sidebar_key belongs to any audio-genre form-tag.
-		* (form_tts, form_voice, form_voice_studio, form_music, form_sound)
-		*/
-		function isAudioForm(sidebarKey, forms = _cache) {
-			return isInAnyForm(sidebarKey, [
-				"form_tts",
-				"form_voice",
-				"form_voice_studio",
-				"form_music",
-				"form_sound"
-			], forms);
-		}
-		/**
-		* The ordered sidebar rows from a forms payload (§16 C-RAIL: /v1/forms is
-		* rail-derived and carries `order`). Grouped by genre, sorted by
-		* (order ?? Infinity, label) within the group — the entry's plugin-
-		* declared order is the law; entries without one (legacy payloads) sort
-		* last, label-alphabetical. Pure: the sidebar + tests share ONE item
-		* builder, no drift between render and pin.
-		*/
-		function formSidebarItems(forms) {
-			const out = {};
-			for (const d of Object.values(forms)) {
-				const genre = d.genre;
-				const key = d.sidebar_key;
-				if (!genre || !key) continue;
-				const order = typeof d.order === "number" ? d.order : Infinity;
-				(out[genre] ??= []).push({
-					name: key,
-					label: d.label || key,
-					genre,
-					order
-				});
-			}
-			for (const items of Object.values(out)) items.sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
-			return out;
-		}
-		var _cache, _inflight, _listeners, isTtsForm, isVoiceForm, isVoiceStudioForm, isMusicForm, isGenerateForm, isEditForm;
-		var init_serviceForms = __esmMin((() => {
-			init_api();
-			_cache = {};
-			_inflight = null;
-			_listeners = /* @__PURE__ */ new Set();
-			isTtsForm = (k) => isForm(k, "form_tts");
-			isVoiceForm = (k) => isForm(k, "form_voice");
-			isVoiceStudioForm = (k) => isForm(k, "form_voice_studio");
-			isMusicForm = (k) => isForm(k, "form_music");
-			isGenerateForm = (k) => isForm(k, "form_generate");
-			isEditForm = (k) => isForm(k, "form_edit");
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/waveform-peaks.ts
-		/** Compute min/max peaks for a single channel of PCM data.
-		*  Exported for unit testing. */
-		function computeMinMaxPeaks(data, numBuckets) {
-			if (numBuckets <= 0 || data.length === 0) return [];
-			const out = new Array(numBuckets);
-			const blockSize = data.length / numBuckets;
-			for (let i = 0; i < numBuckets; i++) {
-				const start = Math.floor(i * blockSize);
-				const end = Math.min(data.length, Math.floor((i + 1) * blockSize));
-				let min = 0;
-				let max = 0;
-				for (let j = start; j < end; j++) {
-					const v = data[j];
-					if (v < min) min = v;
-					if (v > max) max = v;
-				}
-				out[i] = {
-					min,
-					max
-				};
-			}
-			return out;
-		}
-		/** Build all three LODs from raw PCM data. */
-		function computeWaveformLODs(data) {
-			return {
-				low: computeMinMaxPeaks(data, LOD_BUCKETS.low),
-				med: computeMinMaxPeaks(data, LOD_BUCKETS.med),
-				high: computeMinMaxPeaks(data, LOD_BUCKETS.high)
-			};
-		}
-		/** Pick the LOD whose bucket count best matches the available pixels.
-		*  When pixelsAvailable is small, low; when huge, high. The threshold
-		*  is the midpoint (geometric mean) between adjacent LODs. */
-		function selectLOD(pixelsAvailable) {
-			if (pixelsAvailable <= 0) return "low";
-			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.low * LOD_BUCKETS.med)) return "low";
-			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.med * LOD_BUCKETS.high)) return "med";
-			return "high";
-		}
-		/** Resample a min/max peak array to a target output width by picking
-		*  contiguous source buckets per output pixel (or aggregating when
-		*  upscaling is needed). Returns a new array of length `targetWidth`. */
-		function resampleForWidth(peaks, targetWidth) {
-			if (targetWidth <= 0) return [];
-			if (peaks.length === 0) return new Array(targetWidth).fill({
-				min: 0,
-				max: 0
-			});
-			const out = new Array(targetWidth);
-			if (peaks.length >= targetWidth) {
-				const ratio = peaks.length / targetWidth;
-				for (let i = 0; i < targetWidth; i++) {
-					const start = Math.floor(i * ratio);
-					const end = Math.min(peaks.length, Math.floor((i + 1) * ratio));
-					let min = 0;
-					let max = 0;
-					for (let j = start; j < end; j++) {
-						if (peaks[j].min < min) min = peaks[j].min;
-						if (peaks[j].max > max) max = peaks[j].max;
-					}
-					out[i] = {
-						min,
-						max
-					};
-				}
-			} else for (let i = 0; i < targetWidth; i++) {
-				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
-				out[i] = peaks[srcIdx];
-			}
-			return out;
-		}
-		/** Convenience: pick the right LOD + resample to exactly `width` pixels. */
-		function getPeaksForWidth(cache, width) {
-			return resampleForWidth(cache[selectLOD(width)], width);
-		}
-		/** Decode an audio URL into legacy + LOD waveform peaks.
-		*
-		*  Returns null on any failure (fetch error, decode error, etc.).
-		*  The caller should treat null as "use the sine-wave placeholder". */
-		async function decodeAudioPeaks(url) {
-			let ctx = null;
-			try {
-				ctx = new AudioContext();
-				const buf = await (await fetch(url)).arrayBuffer();
-				const audio = await ctx.decodeAudioData(buf);
-				const raw = audio.getChannelData(0);
-				const samplesPerPeak = Math.max(1, Math.floor(raw.length / 80));
-				const legacyPeaks = [];
-				for (let i = 0; i < 80; i++) {
-					let max = 0;
-					for (let j = 0; j < samplesPerPeak; j++) {
-						const val = Math.abs(raw[i * samplesPerPeak + j] || 0);
-						if (val > max) max = val;
-					}
-					legacyPeaks.push(max);
-				}
-				const lod = computeWaveformLODs(raw);
-				return {
-					duration: audio.duration,
-					legacyPeaks,
-					lod
-				};
-			} catch {
-				return null;
-			} finally {
-				if (ctx) ctx.close();
-			}
-		}
-		var LOD_BUCKETS, LOD_ORDER;
-		var init_waveform_peaks = __esmMin((() => {
-			LOD_BUCKETS = {
-				low: 100,
-				med: 500,
-				high: 2e3
-			};
-			LOD_ORDER = [
-				"low",
-				"med",
-				"high"
-			];
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/comfyEvents.ts
-		/**
-		* Open a ComfyUI websocket and forward parsed events to `onEvent`.
-		* `onStatus` fires with `true`/`false` on connect/disconnect.
-		*/
-		function connectComfyEvents(url, onEvent, onStatus) {
-			if (typeof WebSocket === "undefined") return {
-				connected: false,
-				close() {}
-			};
-			let ws = null;
-			let closed = false;
-			let retry = null;
-			let connected = false;
-			const scheduleRetry = () => {
-				if (closed) return;
-				if (retry) clearTimeout(retry);
-				retry = setTimeout(open, RETRY_MS);
-			};
-			function open() {
-				/* v8 ignore next -- defensive: close() always clears the pending retry timer, so open() can never run after close (2026-09-12) */
-				if (closed) return;
-				try {
-					ws = new WebSocket(url);
-				} catch (err) {
-					console.warn("[comfy-events] websocket open failed:", err);
-					scheduleRetry();
-					return;
-				}
-				ws.onopen = () => {
-					connected = true;
-					onStatus?.(true);
-				};
-				ws.onclose = () => {
-					connected = false;
-					onStatus?.(false);
-					scheduleRetry();
-				};
-				ws.onerror = () => {
-					try {
-						ws?.close();
-					} catch {}
-				};
-				ws.onmessage = (ev) => {
-					if (typeof ev.data !== "string") return;
-					try {
-						const msg = JSON.parse(ev.data);
-						onEvent({
-							type: msg.type ?? "raw",
-							data: msg.data ?? {},
-							raw: ev.data
-						});
-					} catch {
-						onEvent({
-							type: "raw",
-							data: {},
-							raw: ev.data
-						});
-					}
-				};
-			}
-			open();
-			return {
-				get connected() {
-					return connected;
-				},
-				close() {
-					closed = true;
-					if (retry) clearTimeout(retry);
-					try {
-						ws?.close();
-					} catch {}
-				}
-			};
-		}
-		var RETRY_MS;
-		var init_comfyEvents = __esmMin((() => {
-			RETRY_MS = 3e3;
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/enhance.ts
-		/**
-		* The card's model picker source (2026-09-06): the LIVE route list
-		* off the proof route — never a restated copy. Null when this
-		* editor is NOT under a DSH host (no picker renders).
-		*/
-		async function fetchEnhanceRoutes() {
-			let res;
-			try {
-				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
-			} catch {
-				return null;
-			}
-			if (!res.ok) return null;
-			try {
-				const data = await res.json();
-				if (!Array.isArray(data.llmRoutes)) return null;
-				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
-				return routes.length > 0 ? routes : null;
-			} catch {
-				return null;
-			}
-		}
-		/** Normalize a display/model name for matching: lowercase, keep
-		* alphanumerics and dots ("GLM 4.7" / "glm-4.7" → "glm4.7"). */
-		function normName(s) {
-			return s.toLowerCase().replace(/[^a-z0-9.]/g, "");
-		}
-		/** Is this editor embedded under the DSH GUI (same-origin parent)?
-		* Standalone → false (no picker exists; the host default serves). */
-		function isEmbedded() {
-			try {
-				return window.parent !== window;
-			} catch {
-				return false;
-			}
-		}
-		/**
-		* Parse the picker trigger's aria-label (the LIVE-PROBED contract,
-		* 2026-09-06: `Select model, current <NAME>, reasoning effort <E>`).
-		* Returns the model display name, or null when the label doesn't
-		* carry a current selection.
-		*/
-		function parsePickerAria(label) {
-			const m = /select model,\s*current\s+(.+?)(?:,\s*reasoning|$)/i.exec(label);
-			if (!m) return null;
-			const name = m[1].trim();
-			return name.length > 0 ? name : null;
-		}
-		/**
-		* Read the GUI picker's CURRENT selection from the parent page
-		* (2026-09-06, operator order: the button auto-follows the model I
-		* have selected). The card iframe is same-origin with the DSH GUI.
-		* Anchor (live-probed on the deployed build): the trigger button's
-		* aria-label "Select model, current <NAME>, reasoning effort …" —
-		* an accessible contract, not a CSS-module hash (the `*modelName*`
-		* class probe found ZERO elements on the real page). Fallback: the
-		* trigger's `*triggerLabel*` span text. Standalone/cross-origin →
-		* null (host default serves).
-		*/
-		function readPickerModel() {
-			try {
-				const parent = window.parent;
-				if (!parent || parent === window) return null;
-				const doc = parent.document;
-				if (!doc) return null;
-				for (const btn of Array.from(doc.querySelectorAll("button[aria-label]"))) {
-					const name = parsePickerAria(btn.getAttribute("aria-label") ?? "");
-					if (name) return name;
-				}
-				const labels = Array.from(doc.querySelectorAll("[class*=\"triggerLabel\"]")).filter((el) => (el.textContent ?? "").trim().length > 0 && el.getClientRects().length > 0);
-				const last = labels[labels.length - 1];
-				return last ? last.textContent.trim() : null;
-			} catch {
-				return null;
-			}
-		}
-		/**
-		* Map the picker's display name onto one LIVE route
-		* ("provider/model"). Exact normalized model equality first, then a
-		* unique prefix ("Muse Spark" → muse-spark-1.3-contributor).
-		* Ambiguous or unmatched → null (never a guess).
-		*/
-		function resolvePickerRoute(routes, pick) {
-			const want = normName(pick);
-			if (want.length === 0) return null;
-			const models = routes.map((r) => {
-				const i = r.indexOf("/");
-				return {
-					route: r,
-					model: normName(i >= 0 ? r.slice(i + 1) : r)
-				};
-			});
-			const exact = models.filter((m) => m.model === want);
-			if (exact.length === 1) return exact[0].route;
-			if (exact.length > 1) return null;
-			const prefix = models.filter((m) => m.model.startsWith(want));
-			if (prefix.length === 1) return prefix[0].route;
-			return null;
-		}
-		/**
-		* THE DeepSeek-harness door (2026-08-22): POST /melite-tools/enhance on the DSH
-		* host — same origin from the chat embed — completes the enhancement with the
-		* harness's OWN model (ctx.llm). NO keystore key involved, so inside the GUI
-		* the Enhance button can never answer "no model". Returns null when this
-		* editor is NOT running under the DSH host (standalone dev :5173 — the
-		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
-		* the keystore flow.
-		*/
-		async function enhanceViaHarness(systemPrompt, prompt, llm) {
-			let res;
-			try {
-				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						system_prompt: systemPrompt,
-						prompt,
-						...llm !== void 0 && llm.length > 0 ? { llm } : {}
-					})
-				});
-			} catch {
-				return null;
-			}
-			const text = await res.text();
-			let data;
-			try {
-				data = JSON.parse(text);
-			} catch {
-				return null;
-			}
-			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
-			if (!res.ok) return null;
-			const positive = String(data.positive ?? "").trim();
-			const negative = String(data.negative ?? "").trim();
-			if (!positive) return null;
-			return {
-				positive,
-				negative,
-				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
-			};
-		}
-		async function enhancePrompt(systemPrompt, prompt, llm) {
-			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
-			if (harnessed !== null) return harnessed;
-			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
-		}
-		/**
-		* AGENT ENHANCE (2026-08-22) — the ✦ Agent Enhance button's wire.
-		* POST /melite-tools/enhance {model, prompt} on the DSH host: the agent
-		* system's orchestration core sweeps EVERY declared enhance field of the
-		* model (each with its own recipe) over the harness model in one press and
-		* returns results keyed by field name. NO keystore key involved. Requires
-		* the DSH app — standalone editors get an honest error.
-		*/
-		async function agentEnhance(model, prompt, temperature, llm) {
-			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					model,
-					prompt,
-					...temperature !== void 0 ? { temperature } : {},
-					...llm !== void 0 && llm.length > 0 ? { llm } : {}
-				})
-			});
-			if (!res.ok) {
-				const body = await res.text();
-				let msg = body.slice(0, 200);
-				try {
-					const parsed = JSON.parse(body);
-					if (typeof parsed.error === "string") msg = parsed.error;
-				} catch {
-					msg = "Agent Enhance runs inside the DeepSeek app — use Enhance here.";
-				}
-				throw new Error(`Agent Enhance failed (${res.status}): ${msg}`);
-			}
-			const data = await res.json();
-			const results = {};
-			for (const [field, v] of Object.entries(data.results ?? {})) results[field] = {
-				positive: String(v?.positive ?? "").trim(),
-				negative: String(v?.negative ?? "").trim(),
-				via: typeof v?.via === "string" && v.via.length > 0 ? v.via : "?"
-			};
-			return results;
-		}
-		var init_enhance = __esmMin((() => {
-			init_api();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardLlm.ts
-		/** Read the preferred card LLM route ("provider/model"), if set. */
-		function getCardLlm() {
-			try {
-				const v = window.localStorage.getItem(CARD_LLM_KEY);
-				return typeof v === "string" && v.length > 0 ? v : null;
-			} catch {
-				return null;
-			}
-		}
-		/** Set (or clear, with null) the preferred card LLM route. */
-		function setCardLlm(route) {
-			try {
-				if (route === null || route.length === 0) window.localStorage.removeItem(CARD_LLM_KEY);
-				else window.localStorage.setItem(CARD_LLM_KEY, route);
-			} catch {}
-		}
-		/**
-		* The `llm` argument shape the enhance wire takes: undefined when
-		* unset (Auto — the server resolves its preference chain).
-		*/
-		function cardLlmArg() {
-			return getCardLlm() ?? void 0;
-		}
-		var CARD_LLM_KEY;
-		var init_cardLlm = __esmMin((() => {
-			CARD_LLM_KEY = "melite:card-llm:v1";
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyProvenance.ts
-		/** Fold runs into per-family provenance. Only status "done" runs count —
-		*  running / interrupted / stopped runs haven't produced anything yet.
-		*  Runs with no families field (pre-provenance sidecars) or a family-less
-		*  brick contribute nothing (backward compatible by construction). */
-		function familyProvenance(runs) {
-			const out = {};
-			for (const run of runs) {
-				if (run.status !== "done") continue;
-				const fams = run.families ?? [];
-				if (fams.length === 0) continue;
-				const at = typeof run.created_at === "number" ? run.created_at * 1e3 : 0;
-				const seen = /* @__PURE__ */ new Set();
-				for (const f of fams) {
-					if (!f || seen.has(f)) continue;
-					seen.add(f);
-					const cur = out[f];
-					if (cur) {
-						cur.count += 1;
-						if (at > cur.lastRunAt) cur.lastRunAt = at;
-					} else out[f] = {
-						count: 1,
-						lastRunAt: at
-					};
-				}
-			}
-			return out;
-		}
-		/** Compact relative time for the tile title — "just now", "5m ago",
-		*  "3h ago", "2d ago", then a short date. Pure; no i18n in scope. */
-		function formatLastRun(at) {
-			if (!at) return "never";
-			const diff = Date.now() - at;
-			if (diff < 6e4) return "just now";
-			if (diff < 36e5) return `${Math.floor(diff / 6e4)}m ago`;
-			if (diff < 864e5) return `${Math.floor(diff / 36e5)}h ago`;
-			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
-			return new Date(at).toLocaleDateString();
-		}
-		var init_familyProvenance = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/uploadToEstate.ts
-		function readUploadFile(file) {
-			return readAsDataURL(file).catch(() => {
-				throw new Error(`The browser could not read "${file.name}" at its source (the drag handed over a file the browser can't open — this happens when the file was moved/deleted, or the drag came from a recent-files list or another app). Drag it from its actual folder, or CLICK the square and browse — the picker path reads through the OS dialog and works.`);
-			});
-		}
-		/** The rail: File → POST /v1/uploads → the estate path. */
-		async function uploadToEstate(file) {
-			if (!IMAGE_TYPES.has(file.type)) throw new UploadRefusedError(`${file.name}: only png / jpeg / webp upload (got ${file.type || "unknown type"})`);
-			const data = await readUploadFile(file);
-			let resp;
-			try {
-				resp = await fetch("/v1/uploads", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						filename: file.name,
-						data
-					})
-				});
-			} catch (e) {
-				throw new Error(`Upload failed (network): ${e.message}`);
-			}
-			const text = await resp.text();
-			let body = {};
-			try {
-				body = JSON.parse(text);
-			} catch {}
-			if (!resp.ok || !body.path) throw new Error(body.error ?? `Upload failed (HTTP ${resp.status})`);
-			return body.path;
-		}
-		/**
-		* estateInputUrl — slot value → a URL an <img> can load (2026-09-06,
-		* operator order: "We need to have an image preview when the card is
-		* drilled out for ANNY and IMAGE->3d").
-		*
-		* The uploads rail returns repo-relative `data/input/<name>` paths —
-		* composable at every door, but no browser tag can load them, so a
-		* drilled-out card showed NO preview of its own source photo after
-		* reload (the fresh object-URL preview is session-local). The input
-		* preview door (GET /v1/assets/inputs/<name>) serves those bytes
-		* back; this maps the param to that URL.
-		*
-		* Already-servable shapes pass through untouched (data:/blob:/
-		* http(s) URLs, and the estate's own /assets, /api, /v1/assets
-		* prefixes — the same vocabulary the assembly viewer uses); anything
-		* else (mount paths like /mnt/...) is NOT previewable → null (the
-		* caller renders the explicit non-preview state, never a doomed
-		* <img>).
-		*/
-		function estateInputUrl(value) {
-			if (/^(data:|blob:|https?:)/i.test(value) || /^\/(assets|api|v1\/assets)\//.test(value)) return value;
-			const m = /^data\/input\/([A-Za-z0-9_-]+\.(?:png|jpe?g|webp))$/i.exec(value);
-			return m ? `/v1/assets/inputs/${m[1]}` : null;
-		}
-		var IMAGE_TYPES, UploadRefusedError;
-		var init_uploadToEstate = __esmMin((() => {
-			init_readFile();
-			IMAGE_TYPES = /* @__PURE__ */ new Set([
-				"image/png",
-				"image/jpeg",
-				"image/webp"
-			]);
-			UploadRefusedError = class extends Error {};
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/index.ts
-		var src_exports = /* @__PURE__ */ __exportAll({
-			CARD_LLM_KEY: () => CARD_LLM_KEY,
-			CatalogContractError: () => CatalogContractError,
-			LOD_BUCKETS: () => LOD_BUCKETS,
-			LOD_ORDER: () => LOD_ORDER,
-			RUN_STATUSES: () => RUN_STATUSES,
-			RunStatusContractError: () => RunStatusContractError,
-			TAG_COLOR_META: () => TAG_COLOR_META,
-			TAG_COLOR_VALUES: () => TAG_COLOR_VALUES,
-			TagColor: () => TagColor,
-			UploadRefusedError: () => UploadRefusedError,
-			activeVariantForRoute: () => activeVariantForRoute,
-			agentEnhance: () => agentEnhance,
-			apiFetch: () => apiFetch,
-			apiJson: () => apiJson,
-			assertNoParamDrops: () => assertNoParamDrops,
-			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
-			axisCellExists: () => axisCellExists,
-			cancelJob: () => cancelJob,
-			canvasDefaultModel: () => canvasDefaultModel,
-			cardLlmArg: () => cardLlmArg,
-			clearPoseCache: () => clearPoseCache,
-			coerceParamsToSchema: () => coerceParamsToSchema,
-			collectNamedArtifacts: () => collectNamedArtifacts,
-			collectStageUrls: () => collectStageUrls,
-			composeCard: () => composeCard,
-			composeVariantRoute: () => composeVariantRoute,
-			computeMinMaxPeaks: () => computeMinMaxPeaks,
-			computeWaveformLODs: () => computeWaveformLODs,
-			connectComfyEvents: () => connectComfyEvents,
-			controlnetTypesOf: () => controlnetTypesOf,
-			decodeAudioPeaks: () => decodeAudioPeaks,
-			deformSomaJoints: () => deformSomaJoints,
-			deleteConstraints: () => deleteConstraints,
-			deletePoseCacheEntry: () => deletePoseCacheEntry,
-			deleteScene: () => deleteScene,
-			describeErrorBody: () => describeErrorBody,
-			downloadAMASSNpz: () => downloadAMASSNpz,
-			downloadBVH: () => downloadBVH,
-			downloadFBX: () => downloadFBX,
-			downloadG1Csv: () => downloadG1Csv,
-			downloadServerVideo: () => downloadServerVideo,
-			dropdownModels: () => dropdownModels,
-			enhancePrompt: () => enhancePrompt,
-			ensureCatalog: () => ensureCatalog,
-			ensureDraftId: () => ensureDraftId,
-			estateInputUrl: () => estateInputUrl,
-			exportBVH: () => exportBVH,
-			externalUrl: () => externalUrl,
-			familiesForForm: () => familiesForForm,
-			familyAccepts: () => familyAccepts,
-			familyCardSummary: () => familyCardSummary,
-			familyConditioning: () => familyConditioning,
-			familyGenre: () => familyGenre,
-			familyHasVariantAxis: () => familyHasVariantAxis,
-			familyLabel: () => familyLabel,
-			familyOf: () => familyOf,
-			familyOptionalOutputs: () => familyOptionalOutputs,
-			familyPrimaryRoute: () => familyPrimaryRoute,
-			familyProvenance: () => familyProvenance,
-			familyTransformMatrix: () => familyTransformMatrix,
-			fetchBindJoints: () => fetchBindJoints,
-			fetchEnhanceRoutes: () => fetchEnhanceRoutes,
-			formForSidebarKey: () => formForSidebarKey,
-			formOf: () => formOf,
-			formSidebarItems: () => formSidebarItems,
-			formatBytes: () => formatBytes,
-			formatLastRun: () => formatLastRun,
-			generatePose: () => generatePose,
-			getBackendState: () => getBackendState,
-			getCachedCatalog: () => getCachedCatalog,
-			getCachedForms: () => getCachedForms,
-			getCardLlm: () => getCardLlm,
-			getFamilySchema: () => getFamilySchema,
-			getPeaksForWidth: () => getPeaksForWidth,
-			hasViolationsSignature: () => hasViolationsSignature,
-			hiddenFromDropdown: () => hiddenFromDropdown,
-			initTagSync: () => initTagSync,
-			isAudioForm: () => isAudioForm,
-			isCatalogLoaded: () => isCatalogLoaded,
-			isEditForm: () => isEditForm,
-			isEmbedded: () => isEmbedded,
-			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated,
-			isGenerateForm: () => isGenerateForm,
-			isMusicForm: () => isMusicForm,
-			isTagColor: () => isTagColor,
-			isTtsForm: () => isTtsForm,
-			isVoiceForm: () => isVoiceForm,
-			isVoiceStudioForm: () => isVoiceStudioForm,
-			listConstraints: () => listConstraints,
-			listExamples: () => listExamples,
-			listModels: () => listModels,
-			listPoseCache: () => listPoseCache,
-			listRegistry: () => listRegistry,
-			listScenes: () => listScenes,
-			loadCatalog: () => loadCatalog,
-			loadConstraints: () => loadConstraints,
-			loadExample: () => loadExample,
-			loadFamilySchemas: () => loadFamilySchemas,
-			loadForms: () => loadForms,
-			loadScene: () => loadScene,
-			modelDescription: () => modelDescription,
-			modelLabel: () => modelLabel,
-			narrowGenre: () => narrowGenre,
-			onBackendState: () => onBackendState,
-			onCatalogReady: () => onCatalogReady,
-			parsePickerAria: () => parsePickerAria,
-			pickFrame: () => pickFrame,
-			pollFlowRun: () => pollFlowRun,
-			pollJob: () => pollJob,
-			preloadForgeService: () => preloadForgeService,
-			presetsForRoute: () => presetsForRoute,
-			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
-			readPickerModel: () => readPickerModel,
-			renderServerVideo: () => renderServerVideo,
-			resampleForWidth: () => resampleForWidth,
-			resolvePickerRoute: () => resolvePickerRoute,
-			routeCoordinates: () => routeCoordinates,
-			runCompiledGeneration: () => runCompiledGeneration,
-			sanitizeRevivedResult: () => sanitizeRevivedResult,
-			saveConstraints: () => saveConstraints,
-			saveScene: () => saveScene,
-			selectLOD: () => selectLOD,
-			setCardLlm: () => setCardLlm,
-			setRequiredEmptyResolver: () => setRequiredEmptyResolver,
-			sliceFrameAsB64: () => sliceFrameAsB64,
-			streamFlowEvents: () => streamFlowEvents,
-			studioOf: () => studioOf,
-			submitTextToPose: () => submitTextToPose,
-			subscribeForms: () => subscribeForms,
-			tagsOf: () => tagsOf,
-			uploadToEstate: () => uploadToEstate,
-			urlToDataUrl: () => urlToDataUrl,
-			useCatalogContractStore: () => useCatalogContractStore,
-			useRunStatusContractStore: () => useRunStatusContractStore,
-			useTagMap: () => useTagMap,
-			validateCatalogContract: () => validateCatalogContract,
-			validateModifierEntries: () => validateModifierEntries,
-			validateParamsAgainstSchema: () => validateParamsAgainstSchema,
-			validateRunStatusContract: () => validateRunStatusContract,
-			variantLabel: () => variantLabel,
-			variantSiblings: () => variantSiblings,
-			variantsForRoute: () => variantsForRoute,
-			waitForJob: () => waitForJob
-		});
-		var init_src$1 = __esmMin((() => {
-			init_api();
-			init_catalogContract();
-			init_catalogContractStore();
-			init_modelCatalog();
-			init_FlowProtocol();
-			init_FlowEvents();
-			init_familyParamContract();
-			init_tagMap();
-			init_runStatusContractStore();
-			init_runStatusContract();
-			init_text_to_pose();
-			init_serviceForms();
-			init_waveform_peaks();
-			init_comfyEvents();
-			init_cardBirth();
-			init_enhance();
-			init_cardLlm();
-			init_familyProvenance();
-			init_uploadToEstate();
-		}));
-		//#endregion
-		//#region ../../web-kit/formats/src/somaSkin.ts
-		/** Invert a 4×4 matrix (column-major-agnostic: stored row-major as 16 floats). */
-		function invert4(m) {
-			const a = Array.from(m);
-			const inv = [
-				1,
-				0,
-				0,
-				0,
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-				1
-			];
-			for (let col = 0; col < 4; col++) {
-				let piv = col, max = Math.abs(a[col * 4 + col]);
-				for (let r = col + 1; r < 4; r++) {
-					const v = Math.abs(a[r * 4 + col]);
-					if (v > max) {
-						max = v;
-						piv = r;
-					}
-				}
-				if (max < 1e-12) continue;
-				if (piv !== col) for (let c = 0; c < 4; c++) {
-					[a[col * 4 + c], a[piv * 4 + c]] = [a[piv * 4 + c], a[col * 4 + c]];
-					[inv[col * 4 + c], inv[piv * 4 + c]] = [inv[piv * 4 + c], inv[col * 4 + c]];
-				}
-				const diag = a[col * 4 + col];
-				for (let c = 0; c < 4; c++) {
-					a[col * 4 + c] /= diag;
-					inv[col * 4 + c] /= diag;
-				}
-				for (let r = 0; r < 4; r++) {
-					if (r === col) continue;
-					const factor = a[r * 4 + col];
-					if (factor === 0) continue;
-					for (let c = 0; c < 4; c++) {
-						a[r * 4 + c] -= factor * a[col * 4 + c];
-						inv[r * 4 + c] -= factor * inv[col * 4 + c];
-					}
-				}
-			}
-			return Float32Array.from(inv);
-		}
-		function asFloat32(arr) {
-			return arr instanceof Float32Array ? arr : new Float32Array(arr);
-		}
-		/** Extract the rest pose from row-major FORWARD bind transforms (J×16):
-		* translation column (tx, ty, tz) = indices 3, 7, 11 of each 4×4, and the
-		* 3×3 rotation block = 0,1,2 / 4,5,6 / 8,9,10. This is the TS equivalent
-		* of Kimodo's neutral_joints — the motion card's pre-inference pose (see
-		* SomaSkin.restJoints doc). Shared by both loaders: the npz carries the
-		* forward binds directly; the GLB adapter inverts glTF boneInverses into
-		* the same row-major forward shape first. */
-		function restPoseFromBind(bindRig, jointCount) {
-			const restJoints = new Float32Array(jointCount * 3);
-			const restRots = new Float32Array(jointCount * 9);
-			for (let j = 0; j < jointCount; j++) {
-				const b = j * 16;
-				restJoints[j * 3] = bindRig[b + 3];
-				restJoints[j * 3 + 1] = bindRig[b + 7];
-				restJoints[j * 3 + 2] = bindRig[b + 11];
-				restRots[j * 9] = bindRig[b + 0];
-				restRots[j * 9 + 1] = bindRig[b + 1];
-				restRots[j * 9 + 2] = bindRig[b + 2];
-				restRots[j * 9 + 3] = bindRig[b + 4];
-				restRots[j * 9 + 4] = bindRig[b + 5];
-				restRots[j * 9 + 5] = bindRig[b + 6];
-				restRots[j * 9 + 6] = bindRig[b + 8];
-				restRots[j * 9 + 7] = bindRig[b + 9];
-				restRots[j * 9 + 8] = bindRig[b + 10];
-			}
-			return {
-				restJoints,
-				restRots
-			};
-		}
-		/** Load + cache the neutral SOMA skin (one fetch per session). */
-		async function loadSomaSkin() {
-			if (_skinPromise) return _skinPromise;
-			_skinPromise = (async () => {
-				const res = await apiFetch(SKIN_URL);
-				if (!res.ok) throw new Error(`Failed to fetch SOMA skin: ${res.status}`);
-				const arrays = await parseNpz(new Uint8Array(await res.arrayBuffer()));
-				const bv = arrays.get("bind_vertices");
-				const fc = arrays.get("faces");
-				const brt = arrays.get("bind_rig_transform");
-				const li = arrays.get("lbs_indices");
-				const lw = arrays.get("lbs_weights");
-				if (!bv || !fc || !brt || !li || !lw) throw new Error(`SOMA skin missing keys (have: ${[...arrays.keys()].join(",")})`);
-				const bindVertices = asFloat32(bv.data);
-				const bindRig = asFloat32(brt.data);
-				const bindRigInv = /* @__PURE__ */ new Float32Array(1232);
-				for (let j = 0; j < J$1; j++) {
-					const m = bindRig.subarray(j * 16, j * 16 + 16);
-					bindRigInv.set(invert4(m), j * 16);
-				}
-				const { restJoints, restRots } = restPoseFromBind(bindRig, J$1);
-				const faceSrc = fc.data instanceof BigInt64Array ? Array.from(fc.data, (x) => Number(x)) : Array.from(fc.data);
-				const faces = Uint32Array.from(faceSrc);
-				return {
-					bindVertices,
-					faces,
-					lbsIndices: li.data instanceof Uint32Array ? li.data : li.data instanceof BigInt64Array ? Uint32Array.from(li.data, (x) => Number(x)) : Uint32Array.from(li.data),
-					lbsWeights: asFloat32(lw.data),
-					bindRigInv,
-					restJoints,
-					restRots,
-					vertexCount: bindVertices.length / 3,
-					faceCount: faces.length / 3,
-					jointCount: J$1,
-					influences: W
-				};
-			})();
-			try {
-				return await _skinPromise;
-			} catch (e) {
-				_skinPromise = null;
-				throw e;
-			}
-		}
-		/**
-		* Build per-joint (3,4) affine matrices for one frame:
-		*   affine[j] = (fk[j] · bindRigInv[j])[:3, :]
-		* fk[j] is the global posed transform (global_rot → rotation, global_pos →
-		* translation). Output is `affines` length J*12 (row-major 3×4 per joint).
-		*/
-		function buildAffines(globalRot, globalPos, bindRigInv, out, jointCount) {
-			for (let j = 0; j < jointCount; j++) {
-				const r = j * 9;
-				const p = j * 3;
-				const bi = j * 16;
-				const a0 = bindRigInv[bi + 0], a1 = bindRigInv[bi + 1], a2 = bindRigInv[bi + 2], a3 = bindRigInv[bi + 3];
-				const a4 = bindRigInv[bi + 4], a5 = bindRigInv[bi + 5], a6 = bindRigInv[bi + 6], a7 = bindRigInv[bi + 7];
-				const a8 = bindRigInv[bi + 8], a9 = bindRigInv[bi + 9], a10 = bindRigInv[bi + 10], a11 = bindRigInv[bi + 11];
-				const fr0 = globalRot[r], fr1 = globalRot[r + 1], fr2 = globalRot[r + 2];
-				const fr3 = globalRot[r + 3], fr4 = globalRot[r + 4], fr5 = globalRot[r + 5];
-				const fr6 = globalRot[r + 6], fr7 = globalRot[r + 7], fr8 = globalRot[r + 8];
-				const o0 = fr0 * a0 + fr1 * a4 + fr2 * a8;
-				const o1 = fr0 * a1 + fr1 * a5 + fr2 * a9;
-				const o2 = fr0 * a2 + fr1 * a6 + fr2 * a10;
-				const o3 = fr0 * a3 + fr1 * a7 + fr2 * a11 + globalPos[p];
-				const o4 = fr3 * a0 + fr4 * a4 + fr5 * a8;
-				const o5 = fr3 * a1 + fr4 * a5 + fr5 * a9;
-				const o6 = fr3 * a2 + fr4 * a6 + fr5 * a10;
-				const o7 = fr3 * a3 + fr4 * a7 + fr5 * a11 + globalPos[p + 1];
-				const o8 = fr6 * a0 + fr7 * a4 + fr8 * a8;
-				const o9 = fr6 * a1 + fr7 * a5 + fr8 * a9;
-				const o10 = fr6 * a2 + fr7 * a6 + fr8 * a10;
-				const o11 = fr6 * a3 + fr7 * a7 + fr8 * a11 + globalPos[p + 2];
-				const o = j * 12;
-				out[o] = o0;
-				out[o + 1] = o1;
-				out[o + 2] = o2;
-				out[o + 3] = o3;
-				out[o + 4] = o4;
-				out[o + 5] = o5;
-				out[o + 6] = o6;
-				out[o + 7] = o7;
-				out[o + 8] = o8;
-				out[o + 9] = o9;
-				out[o + 10] = o10;
-				out[o + 11] = o11;
-			}
-		}
-		/**
-		* Skinning: compute deformed vertex positions for one frame.
-		*   out (V, 3) = Σ_w lbsWeights[v,w] · (affines[lbsIndices[v,w]] · [bindV, 1])
-		*
-		* Mirrors soma_skin.py lbs() exactly. `out` is Float32Array length V*3.
-		*
-		* SKIN-DRIVEN DIMENSIONS (2026-08-15): the joint count and the per-vertex
-		* influence count come from the SKIN (jointCount / influences), not module
-		* constants — the neutral npz skin is J=77/W=8, a glTF character skin is
-		* J=77/W=4 (glTF skins are VEC4). Same LBS math, both substrates; see
-		* lib/glbSkin.ts.
-		*/
-		function deformFrame(globalRot, globalPos, skin, out) {
-			const J_ = skin.jointCount;
-			const W_ = skin.influences;
-			const affines = new Float32Array(J_ * 12);
-			buildAffines(globalRot, globalPos, skin.bindRigInv, affines, J_);
-			const { bindVertices, lbsIndices, lbsWeights } = skin;
-			const V = skin.vertexCount;
-			for (let v = 0; v < V; v++) {
-				const vi = v * 3;
-				const bx = bindVertices[vi], by = bindVertices[vi + 1], bz = bindVertices[vi + 2];
-				let ox = 0, oy = 0, oz = 0;
-				const wi = v * W_;
-				for (let widx = 0; widx < W_; widx++) {
-					const weight = lbsWeights[wi + widx];
-					if (weight === 0) continue;
-					const ai = lbsIndices[wi + widx] * 12;
-					ox += weight * (affines[ai] * bx + affines[ai + 1] * by + affines[ai + 2] * bz + affines[ai + 3]);
-					oy += weight * (affines[ai + 4] * bx + affines[ai + 5] * by + affines[ai + 6] * bz + affines[ai + 7]);
-					oz += weight * (affines[ai + 8] * bx + affines[ai + 9] * by + affines[ai + 10] * bz + affines[ai + 11]);
-				}
-				out[vi] = ox;
-				out[vi + 1] = oy;
-				out[vi + 2] = oz;
-			}
-		}
-		var SKIN_URL, J$1, W, _skinPromise;
-		var init_somaSkin = __esmMin((() => {
-			init_npz();
-			init_src$1();
-			SKIN_URL = "/v1/models/kimodo/provisions/skin_standard.npz";
-			J$1 = 77;
-			W = 8;
-			_skinPromise = null;
-		}));
-		//#endregion
 		//#region ../../web-kit/formats/src/poseCodec.ts
 		/** Encode a Uint8Array to a base64 string.
 		*
@@ -44542,7 +40626,7 @@ void main() {
 								boneInverses.push(mat);
 							} else console.warn("THREE.GLTFLoader: Joint \"%s\" could not be found.", skinDef.joints[i]);
 						}
-						return new Skeleton(bones, boneInverses);
+						return new Skeleton$1(bones, boneInverses);
 					});
 				}
 				/**
@@ -45831,7 +41915,7 @@ void main() {
 			init_api();
 		})), KP;
 		var init_poseTransforms = __esmMin((() => {
-			init_src$1();
+			init_src();
 			KP = {
 				NOSE: 0,
 				NECK: 1,
@@ -46098,14 +42182,14 @@ void main() {
 		//#endregion
 		//#region ../../web-kit/formats/src/capabilityCards.ts
 		var init_capabilityCards = __esmMin((() => {
-			init_src$1();
+			init_src();
 		}));
 		//#endregion
 		//#region ../../web-kit/formats/src/cardMutations.ts
 		var init_cardMutations = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/formats/src/index.ts
-		var init_src = __esmMin((() => {
+		var init_src$1 = __esmMin((() => {
 			init_npz();
 			init_somaSkin();
 			init_motionNpz();
@@ -46130,6 +42214,4923 @@ void main() {
 			init_capabilityCards();
 			init_cardMutations();
 		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/text-to-pose.ts
+		/** Slice a single frame's vertices out of a multi-frame base64 vertex buffer.
+		*
+		*  Async because decoding the (potentially huge) multi-frame buffer is offloaded
+		*  to the browser's native base64 decoder. Returns a base64 string containing
+		*  just the one frame's float32 positions.
+		*
+		*  @param multiB64    base64-encoded buffer of shape (T, V, 3) float32
+		*  @param frameIdx    which frame to slice (clamped to [0, T-1])
+		*  @param vertexCount V — defaults to the SOMA-77 canonical count
+		*  @returns base64-encoded single-frame buffer, or null on decode failure */
+		async function sliceFrameAsB64(multiB64, frameIdx, vertexCount = SOMA_VERTEX_COUNT) {
+			try {
+				const stride = vertexCount * 3;
+				const buf = await decodeB64ToBuffer(multiB64);
+				const multi = new Float32Array(buf);
+				const totalFrames = Math.floor(multi.length / stride);
+				if (totalFrames < 1) return null;
+				const idx = Math.max(0, Math.min(frameIdx, totalFrames - 1));
+				const singleFlat = new Float32Array(stride);
+				singleFlat.set(multi.subarray(idx * stride, (idx + 1) * stride));
+				return encodeBufferToB64(new Uint8Array(singleFlat.buffer));
+			} catch (e) {
+				console.error("[text-to-pose] sliceFrameAsB64 failed:", e);
+				return null;
+			}
+		}
+		/**
+		* Submit a text-to-pose generation request.
+		* Returns immediately with a job_id — poll via pollJob() or waitForJob().
+		*/
+		async function submitTextToPose(req) {
+			const res = await apiFetch("/poser/text-to-pose", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(req)
+			});
+			const text = await res.text();
+			if (!res.ok) {
+				let detail = text.slice(0, 300);
+				try {
+					detail = JSON.parse(text).error || detail;
+				} catch {}
+				throw new Error(`Submit failed: HTTP ${res.status} — ${detail}`);
+			}
+			try {
+				return JSON.parse(text);
+			} catch (e) {
+				throw new Error(`Submit returned invalid JSON: ${text.slice(0, 200)}`);
+			}
+		}
+		/**
+		* Poll job status once. Returns the current status + result if completed.
+		*/
+		async function pollJob(jobId) {
+			const res = await apiFetch(`/poser/text-to-pose/jobs/${jobId}`);
+			if (res.status === 404) throw new Error(`Job ${jobId} not found`);
+			const text = await res.text();
+			if (!res.ok) throw new Error(`Poll failed: HTTP ${res.status} — ${text.slice(0, 200)}`);
+			try {
+				return JSON.parse(text);
+			} catch (e) {
+				throw new Error(`Poll returned invalid JSON: ${text.slice(0, 200)}`);
+			}
+		}
+		/**
+		* Wait for a job to reach a terminal state (completed/failed/cancelled).
+		* Polls every `intervalMs` until `timeoutMs`.
+		*
+		* Calls `onUpdate` on each poll if provided — useful for progress UI.
+		*/
+		async function waitForJob(jobId, opts = {}) {
+			const interval = opts.intervalMs ?? 500;
+			const timeout = opts.timeoutMs ?? 12e4;
+			const deadline = Date.now() + timeout;
+			while (Date.now() < deadline) {
+				const status = await pollJob(jobId);
+				opts.onUpdate?.(status);
+				if (status.status === "completed" && status.result) return status.result;
+				if (status.status === "failed") throw new Error(status.error || `Job failed (${status.error_class || "unknown"})`);
+				if (status.status === "cancelled") throw new Error("Job was cancelled");
+				await sleep(interval);
+			}
+			throw new Error(`Job ${jobId} timed out after ${timeout}ms`);
+		}
+		async function cancelJob(jobId) {
+			const res = await apiFetch(`/poser/text-to-pose/jobs/${jobId}`, { method: "DELETE" });
+			if (!res.ok && res.status !== 404) throw new Error(`Cancel failed: HTTP ${res.status}`);
+		}
+		/**
+		* Submit a text-to-pose request and wait for the result.
+		* This is the simplest call for UI components that just want the final motion.
+		*/
+		async function generatePose(req, opts) {
+			const { job_id } = await submitTextToPose(req);
+			return waitForJob(job_id, opts);
+		}
+		async function listPoseCache() {
+			const res = await apiFetch("/poser/text-to-pose/cache");
+			if (!res.ok) throw new Error(`Cache list failed: HTTP ${res.status}`);
+			return res.json();
+		}
+		async function deletePoseCacheEntry(hash) {
+			const res = await apiFetch(`/poser/text-to-pose/cache/${hash}`, { method: "DELETE" });
+			if (!res.ok && res.status !== 404) throw new Error(`Cache delete failed: HTTP ${res.status}`);
+		}
+		async function clearPoseCache() {
+			const res = await apiFetch("/poser/text-to-pose/cache/clear", { method: "POST" });
+			if (!res.ok) throw new Error(`Cache clear failed: HTTP ${res.status}`);
+			return (await res.json()).cleared;
+		}
+		async function listModels() {
+			const res = await apiFetch("/poser/text-to-pose/models");
+			if (!res.ok) throw new Error(`Models list failed: HTTP ${res.status}`);
+			return res.json();
+		}
+		async function listRegistry() {
+			const res = await apiFetch("/poser/text-to-pose/registry");
+			if (!res.ok) throw new Error(`Registry fetch failed: HTTP ${res.status}`);
+			return res.json();
+		}
+		async function listExamples(model) {
+			const res = await apiFetch(`/poser/text-to-pose/examples${model ? `?model=${encodeURIComponent(model)}` : ""}`);
+			if (!res.ok) throw new Error(`Examples list failed: HTTP ${res.status}`);
+			return res.json();
+		}
+		async function loadExample(model, exampleId, loadGt = false) {
+			const res = await apiFetch(`/poser/text-to-pose/examples/${model}/${exampleId}${loadGt ? `?load_gt=true` : ""}`);
+			if (!res.ok) throw new Error(`Example load failed: HTTP ${res.status}`);
+			return res.json();
+		}
+		async function exportBVH(framesSoma77, framesRotmat, fps) {
+			const res = await apiFetch("/poser/text-to-pose/export/bvh", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					frames_soma77_3d: framesSoma77,
+					frames_soma77_rotmat: framesRotmat,
+					fps
+				})
+			});
+			if (!res.ok) {
+				const body = await res.json();
+				throw new Error(body.error || `BVH export failed: HTTP ${res.status}`);
+			}
+			return res.json();
+		}
+		/** Download a BVH file from SOMA-77 motion data. */
+		async function downloadBVH(motion, standardTpose = false) {
+			if (!motion.frames_soma77_3d || !motion.frames_soma77_rotmat) throw new Error("Motion data missing SOMA-77 positions or rotations");
+			const res = await apiFetch("/poser/text-to-pose/export/bvh", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					frames_soma77_3d: motion.frames_soma77_3d,
+					frames_soma77_rotmat: motion.frames_soma77_rotmat,
+					fps: motion.fps,
+					standard_tpose: standardTpose
+				})
+			});
+			if (!res.ok) {
+				const body = await res.json();
+				throw new Error(body.error || `BVH export failed: HTTP ${res.status}`);
+			}
+			const { bvh } = await res.json();
+			const blob = new Blob([bvh], { type: "text/plain" });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `pose_${motion.model}_${Date.now()}.bvh`;
+			a.click();
+			URL.revokeObjectURL(url);
+		}
+		/** Export motion as AMASS NPZ (SMPL-X compatible). */
+		async function downloadAMASSNpz(motion) {
+			if (!motion.frames_soma77_3d || !motion.frames_soma77_rotmat) throw new Error("Motion data missing SOMA-77 positions or rotations");
+			const res = await apiFetch("/poser/text-to-pose/export/amass", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					frames_soma77_3d: motion.frames_soma77_3d,
+					frames_soma77_rotmat: motion.frames_soma77_rotmat,
+					fps: motion.fps
+				})
+			});
+			if (!res.ok) {
+				const body = await res.json();
+				throw new Error(body.error || `AMASS export failed: HTTP ${res.status}`);
+			}
+			const { data_b64 } = await res.json();
+			downloadBase64Payload(data_b64, `pose_amass_${Date.now()}.npz`, "application/octet-stream");
+		}
+		/** Export motion as G1 MuJoCo CSV. */
+		async function downloadG1Csv(motion) {
+			if (!motion.frames_soma77_3d || !motion.frames_soma77_rotmat) throw new Error("Motion data missing SOMA-77 positions or rotations");
+			const res = await apiFetch("/poser/text-to-pose/export/csv", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					frames_soma77_3d: motion.frames_soma77_3d,
+					frames_soma77_rotmat: motion.frames_soma77_rotmat,
+					fps: motion.fps
+				})
+			});
+			if (!res.ok) {
+				const body = await res.json();
+				throw new Error(body.error || `CSV export failed: HTTP ${res.status}`);
+			}
+			const { data_b64 } = await res.json();
+			downloadBase64Payload(data_b64, `pose_g1_${Date.now()}.csv`, "text/csv");
+		}
+		/**
+		* Export motion as a rigged FBX file (Mixamo-compatible joint names).
+		*
+		* The backend renders an FBX 7.4.0 ASCII skeleton with the full 77-joint
+		* hierarchy and baked animation — importable by Blender, Maya, Unity, and
+		* Unreal. Mixamo naming enables automatic retargeting onto Mixamo rigs.
+		*/
+		async function downloadFBX(motion, mixamo = true) {
+			if (!motion.frames_soma77_3d || !motion.frames_soma77_rotmat) throw new Error("Motion data missing SOMA-77 positions or rotations");
+			const res = await apiFetch("/poser/text-to-pose/export/fbx", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					frames_soma77_3d: motion.frames_soma77_3d,
+					frames_soma77_rotmat: motion.frames_soma77_rotmat,
+					fps: motion.fps,
+					mixamo
+				})
+			});
+			if (!res.ok) {
+				const body = await res.json();
+				throw new Error(body.error || `FBX export failed: HTTP ${res.status}`);
+			}
+			const { fbx } = await res.json();
+			const blob = new Blob([fbx], { type: "application/octet-stream" });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `pose_${motion.model}_${Date.now()}.fbx`;
+			a.click();
+			URL.revokeObjectURL(url);
+		}
+		/**
+		* Render a 2D pose video server-side via matplotlib + imageio.
+		* Higher-quality and browser-independent than client-side MediaRecorder.
+		*/
+		async function renderServerVideo(motion, opts = {}) {
+			const res = await apiFetch("/poser/text-to-pose/export/video", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					frames_flat: motion.frames_flat,
+					fps: motion.fps,
+					width: opts.width ?? 512,
+					height: opts.height ?? 512,
+					background: opts.background ?? "#0d2847"
+				})
+			});
+			if (!res.ok) {
+				const body = await res.json();
+				throw new Error(body.error || `Video render failed: HTTP ${res.status}`);
+			}
+			const { video_b64, mime } = await res.json();
+			const bin = atob(video_b64);
+			const bytes = new Uint8Array(bin.length);
+			for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+			return new Blob([bytes], { type: mime || "video/mp4" });
+		}
+		/** Render and download a server-side 2D pose video. */
+		async function downloadServerVideo(motion, opts) {
+			const blob = await renderServerVideo(motion, opts);
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `pose_video_${Date.now()}.mp4`;
+			a.click();
+			URL.revokeObjectURL(url);
+		}
+		async function listConstraints() {
+			const res = await apiFetch("/poser/text-to-pose/constraints");
+			if (!res.ok) throw new Error(`Constraints list failed: HTTP ${res.status}`);
+			return (await res.json()).entries ?? [];
+		}
+		async function saveConstraints(name, constraints) {
+			const res = await apiFetch("/poser/text-to-pose/constraints/save", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					name,
+					constraints
+				})
+			});
+			if (!res.ok) {
+				const body = await res.json();
+				throw new Error(body.error || `Save failed: HTTP ${res.status}`);
+			}
+		}
+		async function loadConstraints(filename) {
+			const res = await apiFetch(`/poser/text-to-pose/constraints/${filename}`);
+			if (!res.ok) throw new Error(`Load failed: HTTP ${res.status}`);
+			return (await res.json()).constraints;
+		}
+		async function deleteConstraints(filename) {
+			const res = await apiFetch(`/poser/text-to-pose/constraints/${filename}`, { method: "DELETE" });
+			if (!res.ok && res.status !== 404) throw new Error(`Delete failed: HTTP ${res.status}`);
+		}
+		async function listScenes() {
+			const res = await apiFetch("/poser/text-to-pose/scenes");
+			if (!res.ok) throw new Error(`Scenes list failed: HTTP ${res.status}`);
+			return (await res.json()).entries ?? [];
+		}
+		async function saveScene(name, scene) {
+			const res = await apiFetch("/poser/text-to-pose/scenes/save", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					name,
+					scene
+				})
+			});
+			if (!res.ok) {
+				const body = await res.json();
+				throw new Error(body.error || `Save failed: HTTP ${res.status}`);
+			}
+		}
+		async function loadScene(filename) {
+			const res = await apiFetch(`/poser/text-to-pose/scenes/${filename}`);
+			if (!res.ok) throw new Error(`Load failed: HTTP ${res.status}`);
+			return (await res.json()).scene;
+		}
+		async function deleteScene(filename) {
+			const res = await apiFetch(`/poser/text-to-pose/scenes/${filename}`, { method: "DELETE" });
+			if (!res.ok && res.status !== 404) throw new Error(`Delete failed: HTTP ${res.status}`);
+		}
+		function sleep(ms) {
+			return new Promise((resolve) => setTimeout(resolve, ms));
+		}
+		/**
+		* Pick a specific frame from a PoseMotion's flat keypoints.
+		* Clamps to valid range.
+		*/
+		function pickFrame(motion, idx) {
+			const clamped = Math.max(0, Math.min(idx, motion.frame_count - 1));
+			return motion.frames_flat[clamped];
+		}
+		/**
+		* Format cache size for display.
+		*/
+		function formatBytes(bytes) {
+			if (bytes < 1024) return `${bytes} B`;
+			if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+			return `${(bytes / 1048576).toFixed(1)} MB`;
+		}
+		/**
+		* Fetch the 77-joint SOMA-71 rest-pose (bind-pose) positions for the
+		* requested identity model. Used by Pose Studio's "Load Model" button to
+		* enter Edit Mode WITHOUT generating a motion first — the user can grab
+		* joints and pose the character manually.
+		*
+		* The endpoint accepts both GET (returns the neutral-default joints) and
+		* POST (applies the supplied identity morphs first, returns joints that
+		* match the shaped body). The POST path is the fully-dynamic one: Anny's
+		* height/proportions sliders reshape BOTH the mesh AND the skeleton, so
+		* the edit-mode wires always match the body the user sees. Without it the
+		* skeleton would stay one fixed size (the static SOMA-77 reference) while
+		* the mesh grew/shrank underneath it.
+		*
+		* Calls GET /poser/skin/bind_joints?identity_model=… when no identity spec
+		* is supplied, POST /poser/skin/bind_joints with a JSON body otherwise.
+		*/
+		async function fetchBindJoints(identityModel = "anny", identityCoeffs, localChanges, customTargets) {
+			if (!(identityCoeffs && identityCoeffs.length > 0 || localChanges && Object.keys(localChanges).length > 0 || customTargets && Object.keys(customTargets).length > 0)) {
+				const res = await apiFetch(`/poser/skin/bind_joints?identity_model=${encodeURIComponent(identityModel)}`);
+				if (!res.ok) {
+					const txt = await res.text();
+					throw new Error(`Failed to load bind joints: ${res.status} ${txt}`);
+				}
+				return res.json();
+			}
+			const body = { identity_model: identityModel };
+			if (identityCoeffs && identityCoeffs.length > 0) body.identity_coeffs = identityCoeffs;
+			if (localChanges && Object.keys(localChanges).length > 0) body.local_changes = localChanges;
+			if (customTargets && Object.keys(customTargets).length > 0) body.custom_targets = customTargets;
+			const res = await apiFetch("/poser/skin/bind_joints", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body)
+			});
+			if (!res.ok) {
+				const txt = await res.text();
+				throw new Error(`Failed to load bind joints: ${res.status} ${txt}`);
+			}
+			return res.json();
+		}
+		/**
+		* Preload (warm up) a model on the GPU so the first Generate is fast.
+		*
+		* NOTE: The old forge /admin/load endpoint was removed in the 3-container
+		* architecture cleanup. The KimodoPoseService singleton inside ComfyUI
+		* now loads lazily on first inference and stays resident, so explicit
+		* preloading is unnecessary. This is kept as a no-op so the frontend's
+		* "Load Model" button doesn't error.
+		*/
+		async function preloadForgeService(_service, _model) {
+			return {
+				status: "ok",
+				service: _service
+			};
+		}
+		/**
+		* Re-skin the mesh for edited SOMA-77 joint positions.
+		* Calls /poser/skin/deform_soma with binary response for speed.
+		* Used during interactive pose editing — debounced by the caller.
+		*
+		* @param joints Float32Array of 77 x 3 joint positions
+		* @param identityModel Which mesh to skin ("soma" | "mhr" | "anny"). Must
+		*   match the mesh the viewer is rendering, otherwise the deformed vertices
+		*   won't match the bind-mesh topology and the pose will look wrong.
+		* @param jointsRot Optional Float32Array of 77 x 9 global rotation matrices
+		*   (row-major 3x3 per joint). When provided, the backend skins directly with
+		*   these exact rotations (most accurate). When omitted, the backend derives
+		*   approximate rotations from bone directions.
+		* @returns base64-encoded float32 deformed vertices (V x 3) for one frame
+		*/
+		async function deformSomaJoints(joints, identityModel = "anny", jointsRot, identityCoeffs, localChanges, customTargets, baseRotmats) {
+			const frames = [];
+			for (let j = 0; j < 77; j++) frames.push([
+				joints[j * 3],
+				joints[j * 3 + 1],
+				joints[j * 3 + 2]
+			]);
+			const body = {
+				frames_soma77_3d: [frames],
+				identity_model: identityModel,
+				binary: true
+			};
+			if (identityCoeffs && identityCoeffs.length > 0) body.identity_coeffs = identityCoeffs;
+			if (localChanges && Object.keys(localChanges).length > 0) body.local_changes = localChanges;
+			if (customTargets && Object.keys(customTargets).length > 0) body.custom_targets = customTargets;
+			if (jointsRot && jointsRot.length === 693) body.frames_soma77_rotmat = [_packRotmats(jointsRot)];
+			if (baseRotmats && baseRotmats.length === 693) body.frames_soma77_base_rotmat = [_packRotmats(baseRotmats)];
+			const res = await apiFetch("/poser/skin/deform_soma", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body)
+			});
+			if (!res.ok) {
+				const txt = await res.text();
+				throw new Error(`Re-skin failed: ${res.status} ${txt}`);
+			}
+			const data = await res.json();
+			if (data.error) throw new Error(data.error);
+			return data.vertices_b64;
+		}
+		/**
+		* Pack a flat (77×9,) Float32Array of row-major 3×3 rotation matrices into
+		* the (77, 3, 3) nested-array shape the deform_soma endpoint expects.
+		* Shared by the `frames_soma77_rotmat` and `frames_soma77_base_rotmat` fields.
+		*/
+		function _packRotmats(flat) {
+			const rots = [];
+			for (let j = 0; j < 77; j++) {
+				const r = [];
+				for (let row = 0; row < 3; row++) r.push([
+					flat[j * 9 + row * 3],
+					flat[j * 9 + row * 3 + 1],
+					flat[j * 9 + row * 3 + 2]
+				]);
+				rots.push(r);
+			}
+			return rots;
+		}
+		var init_text_to_pose = __esmMin((() => {
+			init_api();
+			init_src$1();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/serviceForms.ts
+		function notify() {
+			for (const fn of _listeners) try {
+				fn();
+			} catch (e) {
+				console.warn("[serviceForms] listener error:", e);
+			}
+		}
+		async function loadForms(opts) {
+			if (Object.keys(_cache).length > 0 && !opts?.force) return _cache;
+			if (_inflight) return _inflight;
+			_inflight = (async () => {
+				try {
+					const res = await apiFetch("/v1/forms");
+					if (!res.ok) {
+						console.warn("[serviceForms] /v1/forms failed:", res.status);
+						return _cache;
+					}
+					_cache = (await res.json())?.forms ?? {};
+					notify();
+					return _cache;
+				} catch (e) {
+					console.warn("[serviceForms] fetch error:", e);
+					return _cache;
+				} finally {
+					_inflight = null;
+				}
+			})();
+			return _inflight;
+		}
+		function getCachedForms() {
+			return _cache;
+		}
+		function subscribeForms(fn) {
+			_listeners.add(fn);
+			return () => {
+				_listeners.delete(fn);
+			};
+		}
+		/**
+		* Reverse-lookup: given a sidebar_key (the value the rest of the app calls
+		* `selectedService`), return the form-tag it belongs to. This is THE
+		* primitive that drives every render decision in GenerateFormBody.
+		*/
+		function formForSidebarKey(sidebarKey, forms = _cache) {
+			for (const [formTag, entry] of Object.entries(forms)) if (entry.sidebar_key === sidebarKey) return formTag;
+		}
+		/**
+		* Check whether the given sidebar_key belongs to the given form-tag.
+		* Internal — the convenience predicates below are the public API.
+		*/
+		function isForm(sidebarKey, formTag, forms = _cache) {
+			return forms[formTag]?.sidebar_key === sidebarKey;
+		}
+		/** True if the sidebar_key belongs to ANY of the given form-tags. */
+		function isInAnyForm(sidebarKey, formTags, forms = _cache) {
+			return formTags.some((t) => isForm(sidebarKey, t, forms));
+		}
+		/**
+		* True if the sidebar_key belongs to any audio-genre form-tag.
+		* (form_tts, form_voice, form_voice_studio, form_music, form_sound)
+		*/
+		function isAudioForm(sidebarKey, forms = _cache) {
+			return isInAnyForm(sidebarKey, [
+				"form_tts",
+				"form_voice",
+				"form_voice_studio",
+				"form_music",
+				"form_sound"
+			], forms);
+		}
+		/**
+		* The ordered sidebar rows from a forms payload (§16 C-RAIL: /v1/forms is
+		* rail-derived and carries `order`). Grouped by genre, sorted by
+		* (order ?? Infinity, label) within the group — the entry's plugin-
+		* declared order is the law; entries without one (legacy payloads) sort
+		* last, label-alphabetical. Pure: the sidebar + tests share ONE item
+		* builder, no drift between render and pin.
+		*/
+		function formSidebarItems(forms) {
+			const out = {};
+			for (const d of Object.values(forms)) {
+				const genre = d.genre;
+				const key = d.sidebar_key;
+				if (!genre || !key) continue;
+				const order = typeof d.order === "number" ? d.order : Infinity;
+				(out[genre] ??= []).push({
+					name: key,
+					label: d.label || key,
+					genre,
+					order
+				});
+			}
+			for (const items of Object.values(out)) items.sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+			return out;
+		}
+		var _cache, _inflight, _listeners, isTtsForm, isVoiceForm, isVoiceStudioForm, isMusicForm, isGenerateForm, isEditForm;
+		var init_serviceForms = __esmMin((() => {
+			init_api();
+			_cache = {};
+			_inflight = null;
+			_listeners = /* @__PURE__ */ new Set();
+			isTtsForm = (k) => isForm(k, "form_tts");
+			isVoiceForm = (k) => isForm(k, "form_voice");
+			isVoiceStudioForm = (k) => isForm(k, "form_voice_studio");
+			isMusicForm = (k) => isForm(k, "form_music");
+			isGenerateForm = (k) => isForm(k, "form_generate");
+			isEditForm = (k) => isForm(k, "form_edit");
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/waveform-peaks.ts
+		/** Compute min/max peaks for a single channel of PCM data.
+		*  Exported for unit testing. */
+		function computeMinMaxPeaks(data, numBuckets) {
+			if (numBuckets <= 0 || data.length === 0) return [];
+			const out = new Array(numBuckets);
+			const blockSize = data.length / numBuckets;
+			for (let i = 0; i < numBuckets; i++) {
+				const start = Math.floor(i * blockSize);
+				const end = Math.min(data.length, Math.floor((i + 1) * blockSize));
+				let min = 0;
+				let max = 0;
+				for (let j = start; j < end; j++) {
+					const v = data[j];
+					if (v < min) min = v;
+					if (v > max) max = v;
+				}
+				out[i] = {
+					min,
+					max
+				};
+			}
+			return out;
+		}
+		/** Build all three LODs from raw PCM data. */
+		function computeWaveformLODs(data) {
+			return {
+				low: computeMinMaxPeaks(data, LOD_BUCKETS.low),
+				med: computeMinMaxPeaks(data, LOD_BUCKETS.med),
+				high: computeMinMaxPeaks(data, LOD_BUCKETS.high)
+			};
+		}
+		/** Pick the LOD whose bucket count best matches the available pixels.
+		*  When pixelsAvailable is small, low; when huge, high. The threshold
+		*  is the midpoint (geometric mean) between adjacent LODs. */
+		function selectLOD(pixelsAvailable) {
+			if (pixelsAvailable <= 0) return "low";
+			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.low * LOD_BUCKETS.med)) return "low";
+			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.med * LOD_BUCKETS.high)) return "med";
+			return "high";
+		}
+		/** Resample a min/max peak array to a target output width by picking
+		*  contiguous source buckets per output pixel (or aggregating when
+		*  upscaling is needed). Returns a new array of length `targetWidth`. */
+		function resampleForWidth(peaks, targetWidth) {
+			if (targetWidth <= 0) return [];
+			if (peaks.length === 0) return new Array(targetWidth).fill({
+				min: 0,
+				max: 0
+			});
+			const out = new Array(targetWidth);
+			if (peaks.length >= targetWidth) {
+				const ratio = peaks.length / targetWidth;
+				for (let i = 0; i < targetWidth; i++) {
+					const start = Math.floor(i * ratio);
+					const end = Math.min(peaks.length, Math.floor((i + 1) * ratio));
+					let min = 0;
+					let max = 0;
+					for (let j = start; j < end; j++) {
+						if (peaks[j].min < min) min = peaks[j].min;
+						if (peaks[j].max > max) max = peaks[j].max;
+					}
+					out[i] = {
+						min,
+						max
+					};
+				}
+			} else for (let i = 0; i < targetWidth; i++) {
+				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
+				out[i] = peaks[srcIdx];
+			}
+			return out;
+		}
+		/** Convenience: pick the right LOD + resample to exactly `width` pixels. */
+		function getPeaksForWidth(cache, width) {
+			return resampleForWidth(cache[selectLOD(width)], width);
+		}
+		/** Decode an audio URL into legacy + LOD waveform peaks.
+		*
+		*  Returns null on any failure (fetch error, decode error, etc.).
+		*  The caller should treat null as "use the sine-wave placeholder". */
+		async function decodeAudioPeaks(url) {
+			let ctx = null;
+			try {
+				ctx = new AudioContext();
+				const buf = await (await fetch(url)).arrayBuffer();
+				const audio = await ctx.decodeAudioData(buf);
+				const raw = audio.getChannelData(0);
+				const samplesPerPeak = Math.max(1, Math.floor(raw.length / 80));
+				const legacyPeaks = [];
+				for (let i = 0; i < 80; i++) {
+					let max = 0;
+					for (let j = 0; j < samplesPerPeak; j++) {
+						const val = Math.abs(raw[i * samplesPerPeak + j] || 0);
+						if (val > max) max = val;
+					}
+					legacyPeaks.push(max);
+				}
+				const lod = computeWaveformLODs(raw);
+				return {
+					duration: audio.duration,
+					legacyPeaks,
+					lod
+				};
+			} catch {
+				return null;
+			} finally {
+				if (ctx) ctx.close();
+			}
+		}
+		var LOD_BUCKETS, LOD_ORDER;
+		var init_waveform_peaks = __esmMin((() => {
+			LOD_BUCKETS = {
+				low: 100,
+				med: 500,
+				high: 2e3
+			};
+			LOD_ORDER = [
+				"low",
+				"med",
+				"high"
+			];
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/comfyEvents.ts
+		/**
+		* Open a ComfyUI websocket and forward parsed events to `onEvent`.
+		* `onStatus` fires with `true`/`false` on connect/disconnect.
+		*/
+		function connectComfyEvents(url, onEvent, onStatus) {
+			if (typeof WebSocket === "undefined") return {
+				connected: false,
+				close() {}
+			};
+			let ws = null;
+			let closed = false;
+			let retry = null;
+			let connected = false;
+			const scheduleRetry = () => {
+				if (closed) return;
+				if (retry) clearTimeout(retry);
+				retry = setTimeout(open, RETRY_MS);
+			};
+			function open() {
+				/* v8 ignore next -- defensive: close() always clears the pending retry timer, so open() can never run after close (2026-09-12) */
+				if (closed) return;
+				try {
+					ws = new WebSocket(url);
+				} catch (err) {
+					console.warn("[comfy-events] websocket open failed:", err);
+					scheduleRetry();
+					return;
+				}
+				ws.onopen = () => {
+					connected = true;
+					onStatus?.(true);
+				};
+				ws.onclose = () => {
+					connected = false;
+					onStatus?.(false);
+					scheduleRetry();
+				};
+				ws.onerror = () => {
+					try {
+						ws?.close();
+					} catch {}
+				};
+				ws.onmessage = (ev) => {
+					if (typeof ev.data !== "string") return;
+					try {
+						const msg = JSON.parse(ev.data);
+						onEvent({
+							type: msg.type ?? "raw",
+							data: msg.data ?? {},
+							raw: ev.data
+						});
+					} catch {
+						onEvent({
+							type: "raw",
+							data: {},
+							raw: ev.data
+						});
+					}
+				};
+			}
+			open();
+			return {
+				get connected() {
+					return connected;
+				},
+				close() {
+					closed = true;
+					if (retry) clearTimeout(retry);
+					try {
+						ws?.close();
+					} catch {}
+				}
+			};
+		}
+		var RETRY_MS;
+		var init_comfyEvents = __esmMin((() => {
+			RETRY_MS = 3e3;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/enhance.ts
+		/**
+		* The card's model picker source (2026-09-06): the LIVE route list
+		* off the proof route — never a restated copy. Null when this
+		* editor is NOT under a DSH host (no picker renders).
+		*/
+		async function fetchEnhanceRoutes() {
+			let res;
+			try {
+				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
+			} catch {
+				return null;
+			}
+			if (!res.ok) return null;
+			try {
+				const data = await res.json();
+				if (!Array.isArray(data.llmRoutes)) return null;
+				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
+				return routes.length > 0 ? routes : null;
+			} catch {
+				return null;
+			}
+		}
+		/** Normalize a display/model name for matching: lowercase, keep
+		* alphanumerics and dots ("GLM 4.7" / "glm-4.7" → "glm4.7"). */
+		function normName(s) {
+			return s.toLowerCase().replace(/[^a-z0-9.]/g, "");
+		}
+		/** Is this editor embedded under the DSH GUI (same-origin parent)?
+		* Standalone → false (no picker exists; the host default serves). */
+		function isEmbedded() {
+			try {
+				return window.parent !== window;
+			} catch {
+				return false;
+			}
+		}
+		/**
+		* Parse the picker trigger's aria-label (the LIVE-PROBED contract,
+		* 2026-09-06: `Select model, current <NAME>, reasoning effort <E>`).
+		* Returns the model display name, or null when the label doesn't
+		* carry a current selection.
+		*/
+		function parsePickerAria(label) {
+			const m = /select model,\s*current\s+(.+?)(?:,\s*reasoning|$)/i.exec(label);
+			if (!m) return null;
+			const name = m[1].trim();
+			return name.length > 0 ? name : null;
+		}
+		/**
+		* Read the GUI picker's CURRENT selection from the parent page
+		* (2026-09-06, operator order: the button auto-follows the model I
+		* have selected). The card iframe is same-origin with the DSH GUI.
+		* Anchor (live-probed on the deployed build): the trigger button's
+		* aria-label "Select model, current <NAME>, reasoning effort …" —
+		* an accessible contract, not a CSS-module hash (the `*modelName*`
+		* class probe found ZERO elements on the real page). Fallback: the
+		* trigger's `*triggerLabel*` span text. Standalone/cross-origin →
+		* null (host default serves).
+		*/
+		function readPickerModel() {
+			try {
+				const parent = window.parent;
+				if (!parent || parent === window) return null;
+				const doc = parent.document;
+				if (!doc) return null;
+				for (const btn of Array.from(doc.querySelectorAll("button[aria-label]"))) {
+					const name = parsePickerAria(btn.getAttribute("aria-label") ?? "");
+					if (name) return name;
+				}
+				const labels = Array.from(doc.querySelectorAll("[class*=\"triggerLabel\"]")).filter((el) => (el.textContent ?? "").trim().length > 0 && el.getClientRects().length > 0);
+				const last = labels[labels.length - 1];
+				return last ? last.textContent.trim() : null;
+			} catch {
+				return null;
+			}
+		}
+		/**
+		* Map the picker's display name onto one LIVE route
+		* ("provider/model"). Exact normalized model equality first, then a
+		* unique prefix ("Muse Spark" → muse-spark-1.3-contributor).
+		* Ambiguous or unmatched → null (never a guess).
+		*/
+		function resolvePickerRoute(routes, pick) {
+			const want = normName(pick);
+			if (want.length === 0) return null;
+			const models = routes.map((r) => {
+				const i = r.indexOf("/");
+				return {
+					route: r,
+					model: normName(i >= 0 ? r.slice(i + 1) : r)
+				};
+			});
+			const exact = models.filter((m) => m.model === want);
+			if (exact.length === 1) return exact[0].route;
+			if (exact.length > 1) return null;
+			const prefix = models.filter((m) => m.model.startsWith(want));
+			if (prefix.length === 1) return prefix[0].route;
+			return null;
+		}
+		/**
+		* THE DeepSeek-harness door (2026-08-22): POST /melite-tools/enhance on the DSH
+		* host — same origin from the chat embed — completes the enhancement with the
+		* harness's OWN model (ctx.llm). NO keystore key involved, so inside the GUI
+		* the Enhance button can never answer "no model". Returns null when this
+		* editor is NOT running under the DSH host (standalone dev :5173 — the
+		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
+		* the keystore flow.
+		*/
+		async function enhanceViaHarness(systemPrompt, prompt, llm) {
+			let res;
+			try {
+				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						system_prompt: systemPrompt,
+						prompt,
+						...llm !== void 0 && llm.length > 0 ? { llm } : {}
+					})
+				});
+			} catch {
+				return null;
+			}
+			const text = await res.text();
+			let data;
+			try {
+				data = JSON.parse(text);
+			} catch {
+				return null;
+			}
+			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
+			if (!res.ok) return null;
+			const positive = String(data.positive ?? "").trim();
+			const negative = String(data.negative ?? "").trim();
+			if (!positive) return null;
+			return {
+				positive,
+				negative,
+				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
+			};
+		}
+		async function enhancePrompt(systemPrompt, prompt, llm) {
+			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
+			if (harnessed !== null) return harnessed;
+			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
+		}
+		/**
+		* AGENT ENHANCE (2026-08-22) — the ✦ Agent Enhance button's wire.
+		* POST /melite-tools/enhance {model, prompt} on the DSH host: the agent
+		* system's orchestration core sweeps EVERY declared enhance field of the
+		* model (each with its own recipe) over the harness model in one press and
+		* returns results keyed by field name. NO keystore key involved. Requires
+		* the DSH app — standalone editors get an honest error.
+		*/
+		async function agentEnhance(model, prompt, temperature, llm) {
+			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					model,
+					prompt,
+					...temperature !== void 0 ? { temperature } : {},
+					...llm !== void 0 && llm.length > 0 ? { llm } : {}
+				})
+			});
+			if (!res.ok) {
+				const body = await res.text();
+				let msg = body.slice(0, 200);
+				try {
+					const parsed = JSON.parse(body);
+					if (typeof parsed.error === "string") msg = parsed.error;
+				} catch {
+					msg = "Agent Enhance runs inside the DeepSeek app — use Enhance here.";
+				}
+				throw new Error(`Agent Enhance failed (${res.status}): ${msg}`);
+			}
+			const data = await res.json();
+			const results = {};
+			for (const [field, v] of Object.entries(data.results ?? {})) results[field] = {
+				positive: String(v?.positive ?? "").trim(),
+				negative: String(v?.negative ?? "").trim(),
+				via: typeof v?.via === "string" && v.via.length > 0 ? v.via : "?"
+			};
+			return results;
+		}
+		var init_enhance = __esmMin((() => {
+			init_api();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/cardLlm.ts
+		/** Read the preferred card LLM route ("provider/model"), if set. */
+		function getCardLlm() {
+			try {
+				const v = window.localStorage.getItem(CARD_LLM_KEY);
+				return typeof v === "string" && v.length > 0 ? v : null;
+			} catch {
+				return null;
+			}
+		}
+		/** Set (or clear, with null) the preferred card LLM route. */
+		function setCardLlm(route) {
+			try {
+				if (route === null || route.length === 0) window.localStorage.removeItem(CARD_LLM_KEY);
+				else window.localStorage.setItem(CARD_LLM_KEY, route);
+			} catch {}
+		}
+		/**
+		* The `llm` argument shape the enhance wire takes: undefined when
+		* unset (Auto — the server resolves its preference chain).
+		*/
+		function cardLlmArg() {
+			return getCardLlm() ?? void 0;
+		}
+		var CARD_LLM_KEY;
+		var init_cardLlm = __esmMin((() => {
+			CARD_LLM_KEY = "melite:card-llm:v1";
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/familyProvenance.ts
+		/** Fold runs into per-family provenance. Only status "done" runs count —
+		*  running / interrupted / stopped runs haven't produced anything yet.
+		*  Runs with no families field (pre-provenance sidecars) or a family-less
+		*  brick contribute nothing (backward compatible by construction). */
+		function familyProvenance(runs) {
+			const out = {};
+			for (const run of runs) {
+				if (run.status !== "done") continue;
+				const fams = run.families ?? [];
+				if (fams.length === 0) continue;
+				const at = typeof run.created_at === "number" ? run.created_at * 1e3 : 0;
+				const seen = /* @__PURE__ */ new Set();
+				for (const f of fams) {
+					if (!f || seen.has(f)) continue;
+					seen.add(f);
+					const cur = out[f];
+					if (cur) {
+						cur.count += 1;
+						if (at > cur.lastRunAt) cur.lastRunAt = at;
+					} else out[f] = {
+						count: 1,
+						lastRunAt: at
+					};
+				}
+			}
+			return out;
+		}
+		/** Compact relative time for the tile title — "just now", "5m ago",
+		*  "3h ago", "2d ago", then a short date. Pure; no i18n in scope. */
+		function formatLastRun(at) {
+			if (!at) return "never";
+			const diff = Date.now() - at;
+			if (diff < 6e4) return "just now";
+			if (diff < 36e5) return `${Math.floor(diff / 6e4)}m ago`;
+			if (diff < 864e5) return `${Math.floor(diff / 36e5)}h ago`;
+			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
+			return new Date(at).toLocaleDateString();
+		}
+		var init_familyProvenance = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/uploadToEstate.ts
+		function readUploadFile(file) {
+			return readAsDataURL$1(file).catch(() => {
+				throw new Error(`The browser could not read "${file.name}" at its source (the drag handed over a file the browser can't open — this happens when the file was moved/deleted, or the drag came from a recent-files list or another app). Drag it from its actual folder, or CLICK the square and browse — the picker path reads through the OS dialog and works.`);
+			});
+		}
+		/** The rail: File → POST /v1/uploads → the estate path. */
+		async function uploadToEstate(file) {
+			if (!IMAGE_TYPES.has(file.type)) throw new UploadRefusedError(`${file.name}: only png / jpeg / webp upload (got ${file.type || "unknown type"})`);
+			const data = await readUploadFile(file);
+			let resp;
+			try {
+				resp = await fetch("/v1/uploads", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						filename: file.name,
+						data
+					})
+				});
+			} catch (e) {
+				throw new Error(`Upload failed (network): ${e.message}`);
+			}
+			const text = await resp.text();
+			let body = {};
+			try {
+				body = JSON.parse(text);
+			} catch {}
+			if (!resp.ok || !body.path) throw new Error(body.error ?? `Upload failed (HTTP ${resp.status})`);
+			return body.path;
+		}
+		/**
+		* estateInputUrl — slot value → a URL an <img> can load (2026-09-06,
+		* operator order: "We need to have an image preview when the card is
+		* drilled out for ANNY and IMAGE->3d").
+		*
+		* The uploads rail returns repo-relative `data/input/<name>` paths —
+		* composable at every door, but no browser tag can load them, so a
+		* drilled-out card showed NO preview of its own source photo after
+		* reload (the fresh object-URL preview is session-local). The input
+		* preview door (GET /v1/assets/inputs/<name>) serves those bytes
+		* back; this maps the param to that URL.
+		*
+		* Already-servable shapes pass through untouched (data:/blob:/
+		* http(s) URLs, and the estate's own /assets, /api, /v1/assets
+		* prefixes — the same vocabulary the assembly viewer uses); anything
+		* else (mount paths like /mnt/...) is NOT previewable → null (the
+		* caller renders the explicit non-preview state, never a doomed
+		* <img>).
+		*/
+		function estateInputUrl(value) {
+			if (/^(data:|blob:|https?:)/i.test(value) || /^\/(assets|api|v1\/assets)\//.test(value)) return value;
+			const m = /^data\/input\/([A-Za-z0-9_-]+\.(?:png|jpe?g|webp))$/i.exec(value);
+			return m ? `/v1/assets/inputs/${m[1]}` : null;
+		}
+		var IMAGE_TYPES, UploadRefusedError;
+		var init_uploadToEstate = __esmMin((() => {
+			init_readFile();
+			IMAGE_TYPES = /* @__PURE__ */ new Set([
+				"image/png",
+				"image/jpeg",
+				"image/webp"
+			]);
+			UploadRefusedError = class extends Error {};
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/index.ts
+		var src_exports = /* @__PURE__ */ __exportAll({
+			CARD_LLM_KEY: () => CARD_LLM_KEY,
+			CatalogContractError: () => CatalogContractError,
+			LOD_BUCKETS: () => LOD_BUCKETS,
+			LOD_ORDER: () => LOD_ORDER,
+			RUN_STATUSES: () => RUN_STATUSES,
+			RunStatusContractError: () => RunStatusContractError,
+			TAG_COLOR_META: () => TAG_COLOR_META,
+			TAG_COLOR_VALUES: () => TAG_COLOR_VALUES,
+			TagColor: () => TagColor,
+			UploadRefusedError: () => UploadRefusedError,
+			activeVariantForRoute: () => activeVariantForRoute,
+			agentEnhance: () => agentEnhance,
+			apiFetch: () => apiFetch,
+			apiJson: () => apiJson,
+			assertNoParamDrops: () => assertNoParamDrops,
+			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
+			axisCellExists: () => axisCellExists,
+			cancelJob: () => cancelJob,
+			canvasDefaultModel: () => canvasDefaultModel,
+			cardLlmArg: () => cardLlmArg,
+			clearPoseCache: () => clearPoseCache,
+			coerceParamsToSchema: () => coerceParamsToSchema,
+			collectNamedArtifacts: () => collectNamedArtifacts,
+			collectStageUrls: () => collectStageUrls,
+			composeCard: () => composeCard,
+			composeVariantRoute: () => composeVariantRoute,
+			computeMinMaxPeaks: () => computeMinMaxPeaks,
+			computeWaveformLODs: () => computeWaveformLODs,
+			connectComfyEvents: () => connectComfyEvents,
+			controlnetTypesOf: () => controlnetTypesOf,
+			decodeAudioPeaks: () => decodeAudioPeaks,
+			deformSomaJoints: () => deformSomaJoints,
+			deleteConstraints: () => deleteConstraints,
+			deletePoseCacheEntry: () => deletePoseCacheEntry,
+			deleteScene: () => deleteScene,
+			describeErrorBody: () => describeErrorBody,
+			downloadAMASSNpz: () => downloadAMASSNpz,
+			downloadBVH: () => downloadBVH,
+			downloadFBX: () => downloadFBX,
+			downloadG1Csv: () => downloadG1Csv,
+			downloadServerVideo: () => downloadServerVideo,
+			dropdownModels: () => dropdownModels,
+			enhancePrompt: () => enhancePrompt,
+			ensureCatalog: () => ensureCatalog,
+			ensureDraftId: () => ensureDraftId,
+			estateInputUrl: () => estateInputUrl,
+			exportBVH: () => exportBVH,
+			externalUrl: () => externalUrl,
+			familiesForForm: () => familiesForForm,
+			familyAccepts: () => familyAccepts,
+			familyCardSummary: () => familyCardSummary,
+			familyConditioning: () => familyConditioning,
+			familyGenre: () => familyGenre,
+			familyHasVariantAxis: () => familyHasVariantAxis,
+			familyLabel: () => familyLabel,
+			familyOf: () => familyOf,
+			familyOptionalOutputs: () => familyOptionalOutputs,
+			familyPrimaryRoute: () => familyPrimaryRoute,
+			familyProvenance: () => familyProvenance,
+			familyTransformMatrix: () => familyTransformMatrix,
+			fetchBindJoints: () => fetchBindJoints,
+			fetchEnhanceRoutes: () => fetchEnhanceRoutes,
+			formForSidebarKey: () => formForSidebarKey,
+			formOf: () => formOf,
+			formSidebarItems: () => formSidebarItems,
+			formatBytes: () => formatBytes,
+			formatLastRun: () => formatLastRun,
+			generatePose: () => generatePose,
+			getBackendState: () => getBackendState,
+			getCachedCatalog: () => getCachedCatalog,
+			getCachedForms: () => getCachedForms,
+			getCardLlm: () => getCardLlm,
+			getFamilySchema: () => getFamilySchema,
+			getPeaksForWidth: () => getPeaksForWidth,
+			hasViolationsSignature: () => hasViolationsSignature,
+			hiddenFromDropdown: () => hiddenFromDropdown,
+			initTagSync: () => initTagSync,
+			isAudioForm: () => isAudioForm,
+			isCatalogLoaded: () => isCatalogLoaded,
+			isEditForm: () => isEditForm,
+			isEmbedded: () => isEmbedded,
+			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated,
+			isGenerateForm: () => isGenerateForm,
+			isMusicForm: () => isMusicForm,
+			isTagColor: () => isTagColor,
+			isTtsForm: () => isTtsForm,
+			isVoiceForm: () => isVoiceForm,
+			isVoiceStudioForm: () => isVoiceStudioForm,
+			listConstraints: () => listConstraints,
+			listExamples: () => listExamples,
+			listModels: () => listModels,
+			listPoseCache: () => listPoseCache,
+			listRegistry: () => listRegistry,
+			listScenes: () => listScenes,
+			loadCatalog: () => loadCatalog,
+			loadConstraints: () => loadConstraints,
+			loadExample: () => loadExample,
+			loadFamilySchemas: () => loadFamilySchemas,
+			loadForms: () => loadForms,
+			loadScene: () => loadScene,
+			modelDescription: () => modelDescription,
+			modelLabel: () => modelLabel,
+			narrowGenre: () => narrowGenre,
+			onBackendState: () => onBackendState,
+			onCatalogReady: () => onCatalogReady,
+			parsePickerAria: () => parsePickerAria,
+			pickFrame: () => pickFrame,
+			pollFlowRun: () => pollFlowRun,
+			pollJob: () => pollJob,
+			preloadForgeService: () => preloadForgeService,
+			presetsForRoute: () => presetsForRoute,
+			primeCatalog: () => primeCatalog,
+			promptGuide: () => promptGuide,
+			readPickerModel: () => readPickerModel,
+			renderServerVideo: () => renderServerVideo,
+			resampleForWidth: () => resampleForWidth,
+			resolvePickerRoute: () => resolvePickerRoute,
+			routeCoordinates: () => routeCoordinates,
+			runCompiledGeneration: () => runCompiledGeneration,
+			sanitizeRevivedResult: () => sanitizeRevivedResult,
+			saveConstraints: () => saveConstraints,
+			saveScene: () => saveScene,
+			selectLOD: () => selectLOD,
+			setCardLlm: () => setCardLlm,
+			setRequiredEmptyResolver: () => setRequiredEmptyResolver,
+			sliceFrameAsB64: () => sliceFrameAsB64,
+			streamFlowEvents: () => streamFlowEvents,
+			studioOf: () => studioOf,
+			submitTextToPose: () => submitTextToPose,
+			subscribeForms: () => subscribeForms,
+			tagsOf: () => tagsOf,
+			uploadToEstate: () => uploadToEstate,
+			urlToDataUrl: () => urlToDataUrl,
+			useCatalogContractStore: () => useCatalogContractStore,
+			useRunStatusContractStore: () => useRunStatusContractStore,
+			useTagMap: () => useTagMap,
+			validateCatalogContract: () => validateCatalogContract,
+			validateModifierEntries: () => validateModifierEntries,
+			validateParamsAgainstSchema: () => validateParamsAgainstSchema,
+			validateRunStatusContract: () => validateRunStatusContract,
+			variantLabel: () => variantLabel,
+			variantSiblings: () => variantSiblings,
+			variantsForRoute: () => variantsForRoute,
+			waitForJob: () => waitForJob
+		});
+		var init_src = __esmMin((() => {
+			init_api();
+			init_catalogContract();
+			init_catalogContractStore();
+			init_modelCatalog();
+			init_FlowProtocol();
+			init_FlowEvents();
+			init_familyParamContract();
+			init_tagMap();
+			init_runStatusContractStore();
+			init_runStatusContract();
+			init_text_to_pose();
+			init_serviceForms();
+			init_waveform_peaks();
+			init_comfyEvents();
+			init_cardBirth();
+			init_enhance();
+			init_cardLlm();
+			init_familyProvenance();
+			init_uploadToEstate();
+		}));
+		//#endregion
+		//#region ../../web/card-base/src/slots.ts
+		function defineStageViewRegistration(key, view, inject) {
+			return (ctx) => {
+				ctx.slots.inject("cards.stage.view", () => {
+					ctx.slots.register({
+						name: "cards.stage.view",
+						key,
+						...inject === void 0 ? {} : { inject }
+					}, view);
+				});
+			};
+		}
+		//#endregion
+		//#region ../../web/card-base/src/toast.tsx
+		init_src$2();
+		/**
+		* ToastViewport — THE RENDERER FACE of the one toast system
+		* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
+		* atom); this file re-exports it so UI users keep the single
+		* `@melite/card-base/toast` import — and mounts the viewport.
+		*
+		* THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
+		* studio shell, the cards console — and the document still renders
+		* toasts exactly ONCE. The first live viewport owns rendering;
+		* every other mounted viewport renders nothing; ownership
+		* re-broadcasts when owners unmount. No studio wires it, no studio
+		* can forget it, no seat can duplicate it.
+		*
+		* Per-seam subpath: `@melite/card-base/toast`.
+		*/
+		init_toastStore();
+		init_toastStore();
+		const liveViewportIds = /* @__PURE__ */ new Set();
+		let viewportEpoch = 0;
+		const viewportListeners = /* @__PURE__ */ new Set();
+		function emitViewportChange() {
+			viewportEpoch++;
+			viewportListeners.forEach((l) => l());
+		}
+		function subscribeViewport(l) {
+			viewportListeners.add(l);
+			return () => {
+				viewportListeners.delete(l);
+			};
+		}
+		function getViewportEpoch() {
+			return viewportEpoch;
+		}
+		let nextViewportId = 1;
+		/** Mount anywhere the system needs a renderer — the studio shell,
+		*  the cards console, any seat. The claim law guarantees exactly one
+		*  live renderer per document: the first-mounted viewport renders,
+		*  others render nothing until the owner unmounts. Renders the live
+		*  entries through the DSH Toast atom (body-portaled banner, owner
+		*  unmounts onDone). */
+		function ToastViewport() {
+			const idRef = (0, react.useRef)(nextViewportId++);
+			(0, react.useEffect)(() => {
+				const id = idRef.current;
+				liveViewportIds.add(id);
+				emitViewportChange();
+				return () => {
+					liveViewportIds.delete(id);
+					emitViewportChange();
+				};
+			}, []);
+			(0, react.useSyncExternalStore)(subscribeViewport, getViewportEpoch, getViewportEpoch);
+			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: toasts.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {
+				text: t.message,
+				holdMs: t.type === "error" ? 15e3 : 5e3,
+				onDone: () => removeToast(t.id)
+			}, t.id)) });
+		}
+		//#endregion
+		//#region ../../web/card-base/src/spec.ts
+		/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
+		*  (krea-2, z-image, euler, comfyui…) render titled — never raw.
+		*  FACES ONLY: option values, param keys, and wire bodies keep the
+		*  verbatim id (the 1:1 law — the eye gets prose, the door gets the
+		*  id). First letter of each separator-bound word upper, the rest
+		*  untouched (INT8 stays INT8); idempotent on titled prose. */
+		function titleCaseId(id) {
+			return id.split(/[-_\s]+/).filter((w) => w !== "").map((w) => w.slice(0, 1).toUpperCase() + w.slice(1)).join(" ");
+		}
+		/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
+		*  resolveValue's first layer; the base never invents one). */
+		function specDefaults(fields) {
+			const out = {};
+			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+			return out;
+		}
+		/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
+		*
+		* One pure projection: serialized schemastery schema -> derived
+		* SpecFields. Every presentation fact lives in the nodes' meta (the
+		* declaration IS the UI contract — the Field.emit law); this
+		* walk reads, never invents. THE ORDER: dict insertion order with
+		* the declared `order` hint as tie-break (a stable sort — equal
+		* keys keep insertion order).
+		*
+		* Families scoping: a node whose extra.families names families the
+		* spec does NOT serve skips (the absorption is family-scoped —
+		* the card serves only the boarded plane).
+		*
+		* Nullable pairs: a union of [X, const(null)] wires as X — the
+		* OUTER meta wins (schemastery's nullable() shape, probed live on
+		* image-gen 2026-09-14).
+		*
+		* Presentation types (the audit's client-side derivation — a view
+		* choice over typed meta, never a server row): extra.wtype wins
+		* (declared presentation); union-of-consts -> select; number ->
+		* step 1 -> seed, any other step -> slider, no step -> slider;
+		* string -> text; boolean -> boolean; array -> loras.
+		*
+		* Option labels: a union's const members carry their own
+		* meta.description (the emitter's label law) — the declared
+		* extra.options override when present. */
+		function fieldsOfEnvelope(env, family) {
+			if (env == null) return [];
+			const root = env.refs[env.uid];
+			return projectDict(env, root?.dict ?? {}, family);
+		}
+		/** The dict projector (the walker's body — one meta path for the
+		*  root, the hybrid element, and the pack-level rows). */
+		function projectDict(env, dict, family) {
+			const out = [];
+			for (const [name, id] of Object.entries(dict)) {
+				let node = env.refs[id];
+				if (node === void 0) continue;
+				if (node.type === "union" && Array.isArray(node.list) && node.list.length === 2) {
+					const a = env.refs[node.list[0]];
+					const b = env.refs[node.list[1]];
+					const nullConst = (r) => r?.type === "const" && r.value === null;
+					if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
+				}
+				const meta = node.meta ?? {};
+				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
+				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
+				if (families !== null && family !== void 0 && !families.includes(family)) continue;
+				if (extra["hidden"] === true) continue;
+				let options;
+				if (node.type === "union" && Array.isArray(node.list)) {
+					const opts = [];
+					for (const mid of node.list) {
+						const m = env.refs[mid];
+						if (m?.type !== "const") continue;
+						const v = m.value;
+						if (v === null || v === void 0) continue;
+						const label = typeof m.meta?.["description"] === "string" ? m.meta["description"] : String(v);
+						if (label === String(v)) opts.push(String(v));
+						else opts.push({
+							value: String(v),
+							label
+						});
+					}
+					if (opts.length > 0) options = opts;
+				}
+				if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
+					value: String(o["value"]),
+					label: String(o["label"])
+				} : String(o));
+				const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
+				let type;
+				if (hint !== "") type = hint;
+				else if (options !== void 0 && node.type === "union") type = "select";
+				else if (node.type === "number") type = String(meta["step"] ?? "") === "1" ? "seed" : "slider";
+				else if (node.type === "string") type = "text";
+				else if (node.type === "boolean") type = "boolean";
+				else if (node.type === "array") type = "loras";
+				else type = node.type ?? "string";
+				const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
+				const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
+				out.push({
+					name,
+					label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
+					order: typeof extra["order"] === "number" ? extra["order"] : void 0,
+					type,
+					default: meta["default"] === void 0 ? void 0 : meta["default"],
+					min: num("min"),
+					max: num("max"),
+					step: type === "seed" ? void 0 : num("step"),
+					options,
+					group: str("group") ?? "",
+					zone: str("zone"),
+					required: extra["required"] === true || meta["required"] === true,
+					placeholder: str("placeholder"),
+					tooltip: str("tooltip"),
+					visible_when: str("visible_when"),
+					columns: typeof extra["columns"] === "number" ? extra["columns"] : void 0,
+					width: typeof extra["width"] === "number" ? extra["width"] : void 0,
+					max_stack: typeof extra["max_stack"] === "number" ? extra["max_stack"] : void 0,
+					media: str("media")
+				});
+			}
+			return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
+		}
+		/** THE EDIT COERCION (the one specPatch duty that survives, moved
+		* to the edit boundary): atoms emit raw strings while typing; a
+		* numeric field's edit rides the user layer as a NUMBER. An
+		* unparseable/empty numeric string rides VERBATIM (display
+		* continuity through clear-and-retype — the bench drill's law; a
+		* blank that reaches the run's schema parse refuses loud, naming
+		* the field — never a silent 0). `v === undefined` stays undefined
+		* (the tri-state's inherit — the caller's unset signal). The
+		* STUDIOS' blank-inherits law lives one door up, at their own edit
+		* verb (useResolvedForm) — each face owns its blank semantics.
+		* PURE. */
+		function coerceFieldEdit(f, v) {
+			if (v === void 0) return void 0;
+			if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+			return v;
+		}
+		/** THE FAMILY-KEY RESOLUTION (the families-DRY law, 2026-09-21):
+		* a field's `families` declares BASE family ids — the card's
+		* boarded ids — while the served model key may be a COMPOSED
+		* catalog row (family-variant-quant, e.g. 'pixal3d-1536-int8').
+		* Resolve the active key to its base against the spec's OWN
+		* boarded-families rows: the longest id matching the key at a
+		* '-' boundary wins (a 'pixal3d' + 'pixal3d-pro' board resolves
+		* to the longer). An unresolved key passes through verbatim —
+		* single-family cards and keys with no boarded base walk
+		* unchanged; the resolution never drops a field, it only widens
+		* what a declared base id covers. */
+		function resolveFamilyKey(spec) {
+			const key = typeof spec.model === "string" ? spec.model : void 0;
+			if (key === void 0 || key === "") return void 0;
+			const boarded = spec.families;
+			if (boarded === void 0) return key;
+			let best;
+			for (const row of boarded) {
+				const exact = key === row.id;
+				const prefixed = key.startsWith(row.id + "-") && (best === void 0 || row.id.length > best.length);
+				if (exact || prefixed) best = row.id;
+			}
+			return best ?? key;
+		}
+		/** The card's own derived fields (the schema envelope walked,
+		* families-scoped to the served family). Memoize at the caller for
+		* hot loops — the walk is pure. */
+		function fieldsOf(spec) {
+			return fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec));
+		}
+		/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
+		* client-side (stroke 34 — the card-recipe layer is dead): schema
+		* defaults <- model defaults <- SERVED STAMPS <- user. The form
+		* SHOWS exactly what a run composes; `user` rides verbatim by key
+		* presence (a PRESENCE is the override mark, never its value — the
+		* settings law). Arrays (lora bags) and nulls in model_defaults
+		* skip, matching the engine's overlay filter.
+		*
+		* THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
+		* stage row's `resolved` map — prepareCardParams' own stamped +
+		* lifted body, served by the drafts doors. It layers UNDER the user
+		* (presence still wins) and OVER model_defaults (the server's own
+		* family/variant stamps replace the client's guesses — variant
+		* resolver_defaults, family defaults, the surface filter). Absent
+		* base = the registry-less lane derive. PURE. */
+		function resolveValue(spec, user, base) {
+			const out = specDefaults(fieldsOf(spec));
+			for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
+				if (v === null || Array.isArray(v)) continue;
+				out[k] = v;
+			}
+			if (base !== void 0) for (const [k, v] of Object.entries(base)) {
+				if (v === null || v === void 0 || Array.isArray(v)) continue;
+				out[k] = v;
+			}
+			for (const [k, v] of Object.entries(user)) {
+				if (v === null || v === void 0) continue;
+				out[k] = v;
+			}
+			for (const kind of spec.features?.modifiers ?? []) {
+				if (kind.marries === void 0) continue;
+				const bag = out[kind.param_key];
+				if (!Array.isArray(bag) || bag.length === 0) continue;
+				const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]));
+				for (const knob of Object.keys(kind.marries)) {
+					const counts = [];
+					for (const row of bag) {
+						const stated = row?.[knob];
+						if (typeof stated === "number" && Number.isFinite(stated)) {
+							counts.push(stated);
+							continue;
+						}
+						const id = typeof row?.["id"] === "string" ? row["id"] : void 0;
+						const fromCatalog = id === void 0 ? void 0 : (catalog.get(id)?.defaults)?.[knob];
+						if (typeof fromCatalog === "number" && Number.isFinite(fromCatalog)) counts.push(fromCatalog);
+					}
+					if (counts.length > 0) out[knob] = Math.max(...counts);
+				}
+			}
+			return out;
+		}
+		/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
+		* one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
+		* (The ONE schema grammar — a field declares its own visibility;
+		* the walker interprets, cards never hand-rolled predicates.) A
+		* field with no visible_when always shows. Unknown guard keys:
+		* show (never hide on a typo). Examples:
+		*   "sharpen_enabled=true"
+		*   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
+		function fieldVisible(f, values) {
+			const rule = f.visible_when;
+			if (typeof rule !== "string" || rule === "") return true;
+			for (const guard of rule.split("&")) {
+				const eq = guard.indexOf("=");
+				if (eq < 0) continue;
+				const key = guard.slice(0, eq);
+				if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
+			}
+			return true;
+		}
+		//#endregion
+		//#region ../../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
+		function r(e) {
+			var t, f, n = "";
+			if ("string" == typeof e || "number" == typeof e) n += e;
+			else if ("object" == typeof e) if (Array.isArray(e)) {
+				var o = e.length;
+				for (t = 0; t < o; t++) e[t] && (f = r(e[t])) && (n && (n += " "), n += f);
+			} else for (f in e) e[f] && (n && (n += " "), n += f);
+			return n;
+		}
+		function clsx() {
+			for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
+			return n;
+		}
+		//#endregion
+		//#region ../../web/card-base/src/chrome.ts
+		/**
+		* Card chrome primitives — the ONE joiner + the ONE file reader
+		* (founded 2026-09-12, debt extermination: anny/ideo cx, motion/h3
+		* clsx-cn, and the four identical readAsDataURL copies collapsed
+		* here). DOM-free, no CSS, no atoms — safe for node and browser.
+		*
+		* Per-seam subpath: `@melite/card-base/chrome`.
+		*/
+		/** Plain classnames joiner (no conflicting utilities to merge —
+		*  plain join is exact). */
+		function cx(...parts) {
+			return parts.filter(Boolean).join(" ");
+		}
+		/** The merging joiner (clsx — objects/arrays/conditionals). */
+		function cn(...inputs) {
+			return clsx(...inputs);
+		}
+		/** Blob → data URL (FileReader promise). */
+		function readAsDataURL(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
+				reader.readAsDataURL(file);
+			});
+		}
+		/** THE ESTATE'S DRAG CONTRACT (2026-09-18, exterminated): the MIME
+		*  under which an upstream asset rides a drop payload — a JSON blob
+		*  {url, name, …} carried by the source's dataTransfer. h3's kit and
+		*  motion's kit each redeclared it; card-base, the card-view's
+		*  CardsTab and input-square already consumed it. One definition
+		*  estate-wide (the drag is a shared contract, not a studio rule). */
+		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
+		function parseAssetDrop(raw) {
+			if (raw === "") return {};
+			let parsed;
+			try {
+				parsed = JSON.parse(raw);
+			} catch {
+				return {};
+			}
+			if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+			const payload = parsed;
+			const url = typeof payload["url"] === "string" && payload["url"] !== "" ? payload["url"] : void 0;
+			const type = typeof payload["type"] === "string" && payload["type"] !== "" ? payload["type"] : void 0;
+			return {
+				...url === void 0 ? {} : { url },
+				...type === void 0 ? {} : { type }
+			};
+		}
+		//#endregion
+		//#region \0dsh-css:card-base/src/card.module.css.mjs
+		const css$9 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_modelAxes>.FRpSCG_specHint{grid-column:1/-1}.FRpSCG_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.FRpSCG_axesPair>*{min-width:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareMesh{pointer-events:none;position:absolute;inset:0}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareEmptyIcon{align-items:center;display:flex}.FRpSCG_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.FRpSCG_squareActions>*{pointer-events:auto}.FRpSCG_squarePick{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.FRpSCG_squareBadge{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_specChips{flex-wrap:wrap;gap:4px;display:flex}.FRpSCG_specChip{border:1px solid var(--dsw-alias-border-l2,#8080804d);background:var(--dsw-alias-bg-base,transparent);color:var(--dsw-alias-label-secondary,inherit);cursor:pointer;border-radius:999px;padding:4px 8px;font-size:11px;line-height:1.2}.FRpSCG_specChipOn{border-color:var(--dsw-alias-accent,#80808099);background:var(--dsw-alias-bg-elevated,#8080801f);color:var(--dsw-alias-label-primary,inherit);font-weight:600}.FRpSCG_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.FRpSCG_modLeafStage{min-width:0}.FRpSCG_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
+		const tagId$9 = "@melite/motion-motion/card.module.css@7ac0a6ba";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$9) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/motion-motion";
+			tag.dataset.pluginCss = tagId$9;
+			tag.textContent = css$9;
+			document.head.appendChild(tag);
+		}
+		var card_module_css_default = {
+			"axesPair": "FRpSCG_axesPair",
+			"ctlRow": "FRpSCG_ctlRow",
+			"ctlRowSm": "FRpSCG_ctlRowSm",
+			"emptyHint": "FRpSCG_emptyHint",
+			"emptyOverlay": "FRpSCG_emptyOverlay",
+			"emptyPane": "FRpSCG_emptyPane",
+			"emptyTitle": "FRpSCG_emptyTitle",
+			"groupTab": "FRpSCG_groupTab",
+			"groupTabActive": "FRpSCG_groupTabActive",
+			"groupTabs": "FRpSCG_groupTabs",
+			"inputRail": "FRpSCG_inputRail",
+			"modAddSquare": "FRpSCG_modAddSquare",
+			"modField": "FRpSCG_modField",
+			"modHead": "FRpSCG_modHead",
+			"modHint": "FRpSCG_modHint",
+			"modLeaf": "FRpSCG_modLeaf",
+			"modLeafActions": "FRpSCG_modLeafActions",
+			"modLeafError": "FRpSCG_modLeafError",
+			"modLeafFields": "FRpSCG_modLeafFields",
+			"modLeafModal": "FRpSCG_modLeafModal",
+			"modLeafSplit": "FRpSCG_modLeafSplit",
+			"modLeafStage": "FRpSCG_modLeafStage",
+			"modRow": "FRpSCG_modRow",
+			"modSection": "FRpSCG_modSection",
+			"modSelect": "FRpSCG_modSelect",
+			"modStageCaption": "FRpSCG_modStageCaption",
+			"modTile": "FRpSCG_modTile",
+			"modTileLabel": "FRpSCG_modTileLabel",
+			"modTileRecipe": "FRpSCG_modTileRecipe",
+			"modTileSteps": "FRpSCG_modTileSteps",
+			"modTileStrength": "FRpSCG_modTileStrength",
+			"modTitle": "FRpSCG_modTitle",
+			"modelAxes": "FRpSCG_modelAxes",
+			"paneHeaderPreview": "FRpSCG_paneHeaderPreview",
+			"paneHeaderStrip": "FRpSCG_paneHeaderStrip",
+			"paneHint": "FRpSCG_paneHint",
+			"paneMeta": "FRpSCG_paneMeta",
+			"paneMetaNum": "FRpSCG_paneMetaNum",
+			"panePulse": "FRpSCG_panePulse",
+			"paneShell": "FRpSCG_paneShell",
+			"paneTitle": "FRpSCG_paneTitle",
+			"pickBtn": "FRpSCG_pickBtn",
+			"pickEmpty": "FRpSCG_pickEmpty",
+			"pickGlyph": "FRpSCG_pickGlyph",
+			"pickLabel": "FRpSCG_pickLabel",
+			"pickList": "FRpSCG_pickList",
+			"pickRow": "FRpSCG_pickRow",
+			"pickThumb": "FRpSCG_pickThumb",
+			"sectionLabel": "FRpSCG_sectionLabel",
+			"sectionLabelTail": "FRpSCG_sectionLabelTail",
+			"sectionLabelText": "FRpSCG_sectionLabelText",
+			"skeleton": "FRpSCG_skeleton",
+			"sourceRow": "FRpSCG_sourceRow",
+			"specChip": "FRpSCG_specChip",
+			"specChipOn": "FRpSCG_specChipOn",
+			"specChips": "FRpSCG_specChips",
+			"specDice": "FRpSCG_specDice",
+			"specDiceOn": "FRpSCG_specDiceOn",
+			"specField": "FRpSCG_specField",
+			"specFieldHead": "FRpSCG_specFieldHead",
+			"specFieldKey": "FRpSCG_specFieldKey",
+			"specForm": "FRpSCG_specForm",
+			"specGrid": "FRpSCG_specGrid",
+			"specGroup": "FRpSCG_specGroup",
+			"specGroupTitle": "FRpSCG_specGroupTitle",
+			"specHint": "FRpSCG_specHint",
+			"specInfo": "FRpSCG_specInfo",
+			"specLinkBtn": "FRpSCG_specLinkBtn",
+			"specRequired": "FRpSCG_specRequired",
+			"specSelect": "FRpSCG_specSelect",
+			"specSlider": "FRpSCG_specSlider",
+			"specSliderRow": "FRpSCG_specSliderRow",
+			"specSliderValue": "FRpSCG_specSliderValue",
+			"specSlotCell": "FRpSCG_specSlotCell",
+			"specSlotRow": "FRpSCG_specSlotRow",
+			"specStack": "FRpSCG_specStack",
+			"specTextarea": "FRpSCG_specTextarea",
+			"squareActions": "FRpSCG_squareActions",
+			"squareBadge": "FRpSCG_squareBadge",
+			"squareBox": "FRpSCG_squareBox",
+			"squareEmptyIcon": "FRpSCG_squareEmptyIcon",
+			"squareFileInput": "FRpSCG_squareFileInput",
+			"squareGlyph": "FRpSCG_squareGlyph",
+			"squareLabel": "FRpSCG_squareLabel",
+			"squareMesh": "FRpSCG_squareMesh",
+			"squareMetric": "FRpSCG_squareMetric",
+			"squareOff": "FRpSCG_squareOff",
+			"squareOver": "FRpSCG_squareOver",
+			"squarePick": "FRpSCG_squarePick",
+			"squareThumb": "FRpSCG_squareThumb",
+			"squareWrap": "FRpSCG_squareWrap",
+			"squareX": "FRpSCG_squareX",
+			"sz14": "FRpSCG_sz14",
+			"tileDragging": "FRpSCG_tileDragging",
+			"tipAnchor": "FRpSCG_tipAnchor",
+			"wireDialog": "FRpSCG_wireDialog",
+			"wireEmpty": "FRpSCG_wireEmpty",
+			"wireIdx": "FRpSCG_wireIdx",
+			"wireList": "FRpSCG_wireList",
+			"wireMeta": "FRpSCG_wireMeta",
+			"wireOption": "FRpSCG_wireOption",
+			"wireOut": "FRpSCG_wireOut",
+			"wireSelected": "FRpSCG_wireSelected",
+			"wireSub": "FRpSCG_wireSub",
+			"wireThumb": "FRpSCG_wireThumb",
+			"wireThumbFallback": "FRpSCG_wireThumbFallback",
+			"wireTitle": "FRpSCG_wireTitle",
+			"wireUnwire": "FRpSCG_wireUnwire",
+			"wiredTag": "FRpSCG_wiredTag"
+		};
+		//#endregion
+		//#region ../../web/card-base/src/layout.tsx
+		function Tip$1({ tip, children }) {
+			if (tip === void 0) return children;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+				label: tip,
+				side: "top",
+				delayMs: 300,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: card_module_css_default.tipAnchor,
+					children
+				})
+			});
+		}
+		/** Skeleton — the quiet loading block (promoted 2026-09-18 from
+		*  motion's kit, where it was the estate's only copy): a bare div
+		*  with the estate pulse. EmptyState is the pane's empty face;
+		*  Skeleton is its loading face. */
+		function Skeleton({ className, ...props }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				"data-slot": "skeleton",
+				className: cn(card_module_css_default.skeleton, className),
+				...props
+			});
+		}
+		function PaneHeader({ title, meta, hint, lead, variant = "strip", className }) {
+			if (variant === "preview") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-slot": "pane-header",
+				"data-variant": "preview",
+				className: cn(card_module_css_default.paneHeaderPreview, className),
+				children: [
+					lead,
+					title != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.paneTitle,
+						children: title
+					}) : null,
+					meta != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.paneMeta,
+						children: meta
+					}) : null,
+					hint
+				]
+			});
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-slot": "pane-header",
+				"data-variant": "strip",
+				className: cn(card_module_css_default.paneHeaderStrip, className),
+				children: [
+					lead,
+					title != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.paneTitle,
+						children: title
+					}) : null,
+					meta != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.paneMetaNum,
+						children: meta
+					}) : null,
+					hint != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.paneHint,
+						children: hint
+					}) : null
+				]
+			});
+		}
+		function PaneShell({ children, className }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				"data-slot": "pane-shell",
+				className: cn(card_module_css_default.paneShell, className),
+				children
+			});
+		}
+		//#endregion
+		//#region ../../web/card-base/src/icons.tsx
+		function Svg$1({ className, style, children, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
+				xmlns: "http://www.w3.org/2000/svg",
+				width: 24,
+				height: 24,
+				viewBox: "0 0 24 24",
+				fill: "none",
+				stroke: "currentColor",
+				strokeWidth: 2,
+				strokeLinecap: "round",
+				strokeLinejoin: "round",
+				"aria-hidden": "true",
+				focusable: "false",
+				className,
+				style,
+				...rest,
+				children
+			});
+		}
+		function X$1({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 6 6 18" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 6 12 12" })]
+			});
+		}
+		function ChevronLeft({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 18-6-6 6-6" })
+			});
+		}
+		function ChevronRight({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 18 6-6-6-6" })
+			});
+		}
+		function Upload$1({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17 8-5-5-5 5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v12" })
+				]
+			});
+		}
+		function PersonStanding({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "12",
+						cy: "5",
+						r: "1"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 20 3-6 3 6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 8 6 2 6-2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 10v4" })
+				]
+			});
+		}
+		function User({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+					cx: "12",
+					cy: "7",
+					r: "4"
+				})]
+			});
+		}
+		function Link2({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 17H7A5 5 0 0 1 7 7h2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 7h2a5 5 0 1 1 0 10h-2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 12h8" })
+				]
+			});
+		}
+		function Plus({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 5v14" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5 12h14" })]
+			});
+		}
+		function Check({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M20 6 9 17l-5-5" })
+			});
+		}
+		function Box({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 8.5v7a2 2 0 0 1-1 1.73l-6 3.5a2 2 0 0 1-2 0l-6-3.5A2 2 0 0 1 5 15.5v-7a2 2 0 0 1 1-1.73l6-3.5a2 2 0 0 1 2 0l6 3.5a2 2 0 0 1 1 1.73Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m5.3 7.3 6.7 3.9 6.7-3.9" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 22V11" })
+				]
+			});
+		}
+		function Layers({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m12 2 9 4.9-9 4.9-9-4.9L12 2Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 11.9 9 4.9 9-4.9" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 16.9 9 4.9 9-4.9" })
+				]
+			});
+		}
+		function Palette({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "13.5",
+						cy: "6.5",
+						r: "1"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "17.5",
+						cy: "10.5",
+						r: "1"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "8.5",
+						cy: "7.5",
+						r: "1"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "6.5",
+						cy: "12.5",
+						r: "1"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.26-.29-.43-.68-.43-1.12A1.68 1.68 0 0 1 14.46 16h2.08A5.46 5.46 0 0 0 22 10.5C21.94 5.75 17.5 2 12 2Z" })
+				]
+			});
+		}
+		function Move({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m5 9-3 3 3 3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 5 3-3 3 3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 19-3 3-3-3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m19 9 3 3-3 3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2 12h20" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 2v20" })
+				]
+			});
+		}
+		function AlertTriangle({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 9v4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 17h.01" })
+				]
+			});
+		}
+		function Info({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "12",
+						cy: "12",
+						r: "10"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 16v-4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 8h.01" })
+				]
+			});
+		}
+		function Pause({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+					x: "14",
+					y: "4",
+					width: "4",
+					height: "16",
+					rx: "1"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+					x: "6",
+					y: "4",
+					width: "4",
+					height: "16",
+					rx: "1"
+				})]
+			});
+		}
+		function Download({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m7 10 5 5 5-5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 15V3" })
+				]
+			});
+		}
+		function EyeOff({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9.88 9.88a3 3 0 1 0 4.24 4.24" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10.73 5.08A10.4 10.4 0 0 1 12 5c7 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.7 9.7 0 0 0 5.39-1.61" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m2 2 20 20" })
+				]
+			});
+		}
+		function RefreshCw({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 3v5h-5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 21v-5h5" })
+				]
+			});
+		}
+		function RotateCw({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 3v5h-5" })]
+			});
+		}
+		function RotateCcw({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 3v5h5" })]
+			});
+		}
+		function Target({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "12",
+						cy: "12",
+						r: "10"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "12",
+						cy: "12",
+						r: "6"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "12",
+						cy: "12",
+						r: "2"
+					})
+				]
+			});
+		}
+		function ImagePlus({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 5h6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 2v6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "9",
+						cy: "9",
+						r: "2"
+					})
+				]
+			});
+		}
+		function Camera({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+					cx: "12",
+					cy: "13",
+					r: "3"
+				})]
+			});
+		}
+		function FileBox({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14 2v4a2 2 0 0 0 2 2h4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 9H8" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 13H8" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 17H8" })
+				]
+			});
+		}
+		function Film$1({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+						x: "3",
+						y: "3",
+						width: "18",
+						height: "18",
+						rx: "2"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7 3v18" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 7.5h4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12h18" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 16.5h4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 3v18" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 7.5h4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 16.5h4" })
+				]
+			});
+		}
+		function Crop({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 2v14a2 2 0 0 0 2 2h14" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 22V8a2 2 0 0 0-2-2H2" })]
+			});
+		}
+		function Frame({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 6H2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 18H2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 2v20" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 2v20" })
+				]
+			});
+		}
+		/** Motion's simplified eye variant. */
+		function EyeAlt({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+					cx: "12",
+					cy: "12",
+					r: "3"
+				})]
+			});
+		}
+		/** Motion's sharp-corner play variant. */
+		function PlayAlt({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg$1, {
+				className,
+				style,
+				...rest,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 4l14 8-14 8V4z" })
+			});
+		}
+		//#endregion
+		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/OrbitControls.js
+		init_three_module();
+		/**
+		* Fires when the camera has been transformed by the controls.
+		*
+		* @event OrbitControls#change
+		* @type {Object}
+		*/
+		const _changeEvent$1 = { type: "change" };
+		/**
+		* Fires when an interaction was initiated.
+		*
+		* @event OrbitControls#start
+		* @type {Object}
+		*/
+		const _startEvent = { type: "start" };
+		/**
+		* Fires when an interaction has finished.
+		*
+		* @event OrbitControls#end
+		* @type {Object}
+		*/
+		const _endEvent = { type: "end" };
+		const _ray = new Ray();
+		const _plane = new Plane();
+		const _TILT_LIMIT = Math.cos(70 * MathUtils.DEG2RAD);
+		const _v = new Vector3();
+		const _twoPI = 2 * Math.PI;
+		const _STATE = {
+			NONE: -1,
+			ROTATE: 0,
+			DOLLY: 1,
+			PAN: 2,
+			TOUCH_ROTATE: 3,
+			TOUCH_PAN: 4,
+			TOUCH_DOLLY_PAN: 5,
+			TOUCH_DOLLY_ROTATE: 6
+		};
+		const _EPS = 1e-6;
+		/**
+		* Orbit controls allow the camera to orbit around a target.
+		*
+		* OrbitControls performs orbiting, dollying (zooming), and panning. Unlike {@link TrackballControls},
+		* it maintains the "up" direction `object.up` (+Y by default).
+		*
+		* - Orbit: Left mouse / touch: one-finger move.
+		* - Zoom: Middle mouse, or mousewheel / touch: two-finger spread or squish.
+		* - Pan: Right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move.
+		*
+		* ```js
+		* const controls = new OrbitControls( camera, renderer.domElement );
+		*
+		* // controls.update() must be called after any manual changes to the camera's transform
+		* camera.position.set( 0, 20, 100 );
+		* controls.update();
+		*
+		* function animate() {
+		*
+		* 	// required if controls.enableDamping or controls.autoRotate are set to true
+		* 	controls.update();
+		*
+		* 	renderer.render( scene, camera );
+		*
+		* }
+		* ```
+		*
+		* @augments Controls
+		* @three_import import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+		*/
+		var OrbitControls = class extends Controls {
+			/**
+			* Constructs a new controls instance.
+			*
+			* @param {Object3D} object - The object that is managed by the controls.
+			* @param {?HTMLElement} domElement - The HTML element used for event listeners.
+			*/
+			constructor(object, domElement = null) {
+				super(object, domElement);
+				this.state = _STATE.NONE;
+				/**
+				* The focus point of the controls, the `object` orbits around this.
+				* It can be updated manually at any point to change the focus of the controls.
+				*
+				* @type {Vector3}
+				*/
+				this.target = new Vector3();
+				/**
+				* The focus point of the `minTargetRadius` and `maxTargetRadius` limits.
+				* It can be updated manually at any point to change the center of interest
+				* for the `target`.
+				*
+				* @type {Vector3}
+				*/
+				this.cursor = new Vector3();
+				/**
+				* How far you can dolly in (perspective camera only).
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minDistance = 0;
+				/**
+				* How far you can dolly out (perspective camera only).
+				*
+				* @type {number}
+				* @default Infinity
+				*/
+				this.maxDistance = Infinity;
+				/**
+				* How far you can zoom in (orthographic camera only).
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minZoom = 0;
+				/**
+				* How far you can zoom out (orthographic camera only).
+				*
+				* @type {number}
+				* @default Infinity
+				*/
+				this.maxZoom = Infinity;
+				/**
+				* How close you can get the target to the 3D `cursor`.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minTargetRadius = 0;
+				/**
+				* How far you can move the target from the 3D `cursor`.
+				*
+				* @type {number}
+				* @default Infinity
+				*/
+				this.maxTargetRadius = Infinity;
+				/**
+				* How far you can orbit vertically, lower limit. Range is `[0, Math.PI]` radians.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minPolarAngle = 0;
+				/**
+				* How far you can orbit vertically, upper limit. Range is `[0, Math.PI]` radians.
+				*
+				* @type {number}
+				* @default Math.PI
+				*/
+				this.maxPolarAngle = Math.PI;
+				/**
+				* How far you can orbit horizontally, lower limit. If set, the interval `[ min, max ]`
+				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
+				*
+				* @type {number}
+				* @default -Infinity
+				*/
+				this.minAzimuthAngle = -Infinity;
+				/**
+				* How far you can orbit horizontally, upper limit. If set, the interval `[ min, max ]`
+				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
+				*
+				* @type {number}
+				* @default -Infinity
+				*/
+				this.maxAzimuthAngle = Infinity;
+				/**
+				* Set to `true` to enable damping (inertia), which can be used to give a sense of weight
+				* to the controls. Note that if this is enabled, you must call `update()` in your animation
+				* loop.
+				*
+				* @type {boolean}
+				* @default false
+				*/
+				this.enableDamping = false;
+				/**
+				* The damping inertia used if `enableDamping` is set to `true`.
+				*
+				* Note that for this to work, you must call `update()` in your animation loop.
+				*
+				* @type {number}
+				* @default 0.05
+				*/
+				this.dampingFactor = .05;
+				/**
+				* Enable or disable zooming (dollying) of the camera.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enableZoom = true;
+				/**
+				* Speed of zooming / dollying.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.zoomSpeed = 1;
+				/**
+				* Enable or disable horizontal and vertical rotation of the camera.
+				*
+				* Note that it is possible to disable a single axis by setting the min and max of the
+				* `minPolarAngle` or `minAzimuthAngle` to the same value, which will cause the vertical
+				* or horizontal rotation to be fixed at that value.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enableRotate = true;
+				/**
+				* Speed of rotation.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.rotateSpeed = 1;
+				/**
+				* How fast to rotate the camera when the keyboard is used.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.keyRotateSpeed = 1;
+				/**
+				* Enable or disable camera panning.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enablePan = true;
+				/**
+				* Speed of panning.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.panSpeed = 1;
+				/**
+				* Defines how the camera's position is translated when panning. If `true`, the camera pans
+				* in screen space. Otherwise, the camera pans in the plane orthogonal to the camera's up
+				* direction.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.screenSpacePanning = true;
+				/**
+				* How fast to pan the camera when the keyboard is used in
+				* pixels per keypress.
+				*
+				* @type {number}
+				* @default 7
+				*/
+				this.keyPanSpeed = 7;
+				/**
+				* Setting this property to `true` allows to zoom to the cursor's position.
+				*
+				* @type {boolean}
+				* @default false
+				*/
+				this.zoomToCursor = false;
+				/**
+				* Set to true to automatically rotate around the target
+				*
+				* Note that if this is enabled, you must call `update()` in your animation loop.
+				* If you want the auto-rotate speed to be independent of the frame rate (the refresh
+				* rate of the display), you must pass the time `deltaTime`, in seconds, to `update()`.
+				*
+				* @type {boolean}
+				* @default false
+				*/
+				this.autoRotate = false;
+				/**
+				* How fast to rotate around the target if `autoRotate` is `true`. The default  equates to 30 seconds
+				* per orbit at 60fps.
+				*
+				* Note that if `autoRotate` is enabled, you must call `update()` in your animation loop.
+				*
+				* @type {number}
+				* @default 2
+				*/
+				this.autoRotateSpeed = 2;
+				/**
+				* This object contains references to the keycodes for controlling camera panning.
+				*
+				* ```js
+				* controls.keys = {
+				* 	LEFT: 'ArrowLeft', //left arrow
+				* 	UP: 'ArrowUp', // up arrow
+				* 	RIGHT: 'ArrowRight', // right arrow
+				* 	BOTTOM: 'ArrowDown' // down arrow
+				* }
+				* ```
+				* @type {Object}
+				*/
+				this.keys = {
+					LEFT: "ArrowLeft",
+					UP: "ArrowUp",
+					RIGHT: "ArrowRight",
+					BOTTOM: "ArrowDown"
+				};
+				/**
+				* This object contains references to the mouse actions used by the controls.
+				*
+				* ```js
+				* controls.mouseButtons = {
+				* 	LEFT: THREE.MOUSE.ROTATE,
+				* 	MIDDLE: THREE.MOUSE.DOLLY,
+				* 	RIGHT: THREE.MOUSE.PAN
+				* }
+				* ```
+				* @type {Object}
+				*/
+				this.mouseButtons = {
+					LEFT: MOUSE.ROTATE,
+					MIDDLE: MOUSE.DOLLY,
+					RIGHT: MOUSE.PAN
+				};
+				/**
+				* This object contains references to the touch actions used by the controls.
+				*
+				* ```js
+				* controls.mouseButtons = {
+				* 	ONE: THREE.TOUCH.ROTATE,
+				* 	TWO: THREE.TOUCH.DOLLY_PAN
+				* }
+				* ```
+				* @type {Object}
+				*/
+				this.touches = {
+					ONE: TOUCH.ROTATE,
+					TWO: TOUCH.DOLLY_PAN
+				};
+				/**
+				* Used internally by `saveState()` and `reset()`.
+				*
+				* @type {Vector3}
+				*/
+				this.target0 = this.target.clone();
+				/**
+				* Used internally by `saveState()` and `reset()`.
+				*
+				* @type {Vector3}
+				*/
+				this.position0 = this.object.position.clone();
+				/**
+				* Used internally by `saveState()` and `reset()`.
+				*
+				* @type {number}
+				*/
+				this.zoom0 = this.object.zoom;
+				this._cursorStyle = "auto";
+				this._domElementKeyEvents = null;
+				this._lastPosition = new Vector3();
+				this._lastQuaternion = new Quaternion();
+				this._lastTargetPosition = new Vector3();
+				this._quat = new Quaternion().setFromUnitVectors(object.up, new Vector3(0, 1, 0));
+				this._quatInverse = this._quat.clone().invert();
+				this._spherical = new Spherical();
+				this._sphericalDelta = new Spherical();
+				this._scale = 1;
+				this._panOffset = new Vector3();
+				this._rotateStart = new Vector2();
+				this._rotateEnd = new Vector2();
+				this._rotateDelta = new Vector2();
+				this._panStart = new Vector2();
+				this._panEnd = new Vector2();
+				this._panDelta = new Vector2();
+				this._dollyStart = new Vector2();
+				this._dollyEnd = new Vector2();
+				this._dollyDelta = new Vector2();
+				this._dollyDirection = new Vector3();
+				this._mouse = new Vector2();
+				this._performCursorZoom = false;
+				this._pointers = [];
+				this._pointerPositions = {};
+				this._controlActive = false;
+				this._onPointerMove = onPointerMove$1.bind(this);
+				this._onPointerDown = onPointerDown$1.bind(this);
+				this._onPointerUp = onPointerUp$1.bind(this);
+				this._onContextMenu = onContextMenu.bind(this);
+				this._onMouseWheel = onMouseWheel.bind(this);
+				this._onKeyDown = onKeyDown.bind(this);
+				this._onTouchStart = onTouchStart.bind(this);
+				this._onTouchMove = onTouchMove.bind(this);
+				this._onMouseDown = onMouseDown.bind(this);
+				this._onMouseMove = onMouseMove.bind(this);
+				this._interceptControlDown = interceptControlDown.bind(this);
+				this._interceptControlUp = interceptControlUp.bind(this);
+				if (this.domElement !== null) this.connect(this.domElement);
+				this.update();
+			}
+			/**
+			* Defines the visual representation of the cursor.
+			*
+			* @type {('auto'|'grab')}
+			* @default 'auto'
+			*/
+			set cursorStyle(type) {
+				this._cursorStyle = type;
+				if (type === "grab") this.domElement.style.cursor = "grab";
+				else this.domElement.style.cursor = "auto";
+			}
+			get cursorStyle() {
+				return this._cursorStyle;
+			}
+			connect(element) {
+				super.connect(element);
+				this.domElement.addEventListener("pointerdown", this._onPointerDown);
+				this.domElement.addEventListener("pointercancel", this._onPointerUp);
+				this.domElement.addEventListener("contextmenu", this._onContextMenu);
+				this.domElement.addEventListener("wheel", this._onMouseWheel, { passive: false });
+				this.domElement.getRootNode().addEventListener("keydown", this._interceptControlDown, {
+					passive: true,
+					capture: true
+				});
+				this.domElement.style.touchAction = "none";
+			}
+			disconnect() {
+				this.domElement.removeEventListener("pointerdown", this._onPointerDown);
+				this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
+				this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
+				this.domElement.removeEventListener("pointercancel", this._onPointerUp);
+				this.domElement.removeEventListener("wheel", this._onMouseWheel);
+				this.domElement.removeEventListener("contextmenu", this._onContextMenu);
+				this.stopListenToKeyEvents();
+				this.domElement.getRootNode().removeEventListener("keydown", this._interceptControlDown, { capture: true });
+				this.domElement.style.touchAction = "";
+			}
+			dispose() {
+				this.disconnect();
+			}
+			/**
+			* Get the current vertical rotation, in radians.
+			*
+			* @return {number} The current vertical rotation, in radians.
+			*/
+			getPolarAngle() {
+				return this._spherical.phi;
+			}
+			/**
+			* Get the current horizontal rotation, in radians.
+			*
+			* @return {number} The current horizontal rotation, in radians.
+			*/
+			getAzimuthalAngle() {
+				return this._spherical.theta;
+			}
+			/**
+			* Returns the distance from the camera to the target.
+			*
+			* @return {number} The distance from the camera to the target.
+			*/
+			getDistance() {
+				return this.object.position.distanceTo(this.target);
+			}
+			/**
+			* Adds key event listeners to the given DOM element.
+			* `window` is a recommended argument for using this method.
+			*
+			* @param {HTMLElement} domElement - The DOM element
+			*/
+			listenToKeyEvents(domElement) {
+				domElement.addEventListener("keydown", this._onKeyDown);
+				this._domElementKeyEvents = domElement;
+			}
+			/**
+			* Removes the key event listener previously defined with `listenToKeyEvents()`.
+			*/
+			stopListenToKeyEvents() {
+				if (this._domElementKeyEvents !== null) {
+					this._domElementKeyEvents.removeEventListener("keydown", this._onKeyDown);
+					this._domElementKeyEvents = null;
+				}
+			}
+			/**
+			* Save the current state of the controls. This can later be recovered with `reset()`.
+			*/
+			saveState() {
+				this.target0.copy(this.target);
+				this.position0.copy(this.object.position);
+				this.zoom0 = this.object.zoom;
+			}
+			/**
+			* Reset the controls to their state from either the last time the `saveState()`
+			* was called, or the initial state.
+			*/
+			reset() {
+				this.target.copy(this.target0);
+				this.object.position.copy(this.position0);
+				this.object.zoom = this.zoom0;
+				this.object.updateProjectionMatrix();
+				this.dispatchEvent(_changeEvent$1);
+				this.update();
+				this.state = _STATE.NONE;
+			}
+			/**
+			* Programmatically pan the camera.
+			*
+			* @param {number} deltaX - The horizontal pan amount in pixels.
+			* @param {number} deltaY - The vertical pan amount in pixels.
+			*/
+			pan(deltaX, deltaY) {
+				this._pan(deltaX, deltaY);
+				this.update();
+			}
+			/**
+			* Programmatically dolly in (zoom in for perspective camera).
+			*
+			* @param {number} dollyScale - The dolly scale factor.
+			*/
+			dollyIn(dollyScale) {
+				this._dollyIn(dollyScale);
+				this.update();
+			}
+			/**
+			* Programmatically dolly out (zoom out for perspective camera).
+			*
+			* @param {number} dollyScale - The dolly scale factor.
+			*/
+			dollyOut(dollyScale) {
+				this._dollyOut(dollyScale);
+				this.update();
+			}
+			/**
+			* Programmatically rotate the camera left (around the vertical axis).
+			*
+			* @param {number} angle - The rotation angle in radians.
+			*/
+			rotateLeft(angle) {
+				this._rotateLeft(angle);
+				this.update();
+			}
+			/**
+			* Programmatically rotate the camera up (around the horizontal axis).
+			*
+			* @param {number} angle - The rotation angle in radians.
+			*/
+			rotateUp(angle) {
+				this._rotateUp(angle);
+				this.update();
+			}
+			update(deltaTime = null) {
+				const position = this.object.position;
+				_v.copy(position).sub(this.target);
+				_v.applyQuaternion(this._quat);
+				this._spherical.setFromVector3(_v);
+				if (this.autoRotate && this.state === _STATE.NONE) this._rotateLeft(this._getAutoRotationAngle(deltaTime));
+				if (this.enableDamping) {
+					this._spherical.theta += this._sphericalDelta.theta * this.dampingFactor;
+					this._spherical.phi += this._sphericalDelta.phi * this.dampingFactor;
+				} else {
+					this._spherical.theta += this._sphericalDelta.theta;
+					this._spherical.phi += this._sphericalDelta.phi;
+				}
+				let min = this.minAzimuthAngle;
+				let max = this.maxAzimuthAngle;
+				if (isFinite(min) && isFinite(max)) {
+					if (min < -Math.PI) min += _twoPI;
+					else if (min > Math.PI) min -= _twoPI;
+					if (max < -Math.PI) max += _twoPI;
+					else if (max > Math.PI) max -= _twoPI;
+					if (min <= max) this._spherical.theta = Math.max(min, Math.min(max, this._spherical.theta));
+					else this._spherical.theta = this._spherical.theta > (min + max) / 2 ? Math.max(min, this._spherical.theta) : Math.min(max, this._spherical.theta);
+				}
+				this._spherical.phi = Math.max(this.minPolarAngle, Math.min(this.maxPolarAngle, this._spherical.phi));
+				this._spherical.makeSafe();
+				if (this.enableDamping === true) this.target.addScaledVector(this._panOffset, this.dampingFactor);
+				else this.target.add(this._panOffset);
+				this.target.sub(this.cursor);
+				this.target.clampLength(this.minTargetRadius, this.maxTargetRadius);
+				this.target.add(this.cursor);
+				let zoomChanged = false;
+				if (this.zoomToCursor && this._performCursorZoom || this.object.isOrthographicCamera) this._spherical.radius = this._clampDistance(this._spherical.radius);
+				else {
+					const prevRadius = this._spherical.radius;
+					this._spherical.radius = this._clampDistance(this._spherical.radius * this._scale);
+					zoomChanged = prevRadius != this._spherical.radius;
+				}
+				_v.setFromSpherical(this._spherical);
+				_v.applyQuaternion(this._quatInverse);
+				position.copy(this.target).add(_v);
+				this.object.lookAt(this.target);
+				if (this.enableDamping === true) {
+					this._sphericalDelta.theta *= 1 - this.dampingFactor;
+					this._sphericalDelta.phi *= 1 - this.dampingFactor;
+					this._panOffset.multiplyScalar(1 - this.dampingFactor);
+				} else {
+					this._sphericalDelta.set(0, 0, 0);
+					this._panOffset.set(0, 0, 0);
+				}
+				if (this.zoomToCursor && this._performCursorZoom) {
+					let newRadius = null;
+					if (this.object.isPerspectiveCamera) {
+						const prevRadius = _v.length();
+						newRadius = this._clampDistance(prevRadius * this._scale);
+						const radiusDelta = prevRadius - newRadius;
+						this.object.position.addScaledVector(this._dollyDirection, radiusDelta);
+						this.object.updateMatrixWorld();
+						zoomChanged = !!radiusDelta;
+					} else if (this.object.isOrthographicCamera) {
+						const mouseBefore = new Vector3(this._mouse.x, this._mouse.y, 0);
+						mouseBefore.unproject(this.object);
+						const prevZoom = this.object.zoom;
+						this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
+						this.object.updateProjectionMatrix();
+						zoomChanged = prevZoom !== this.object.zoom;
+						const mouseAfter = new Vector3(this._mouse.x, this._mouse.y, 0);
+						mouseAfter.unproject(this.object);
+						this.object.position.sub(mouseAfter).add(mouseBefore);
+						this.object.updateMatrixWorld();
+						newRadius = _v.length();
+					} else {
+						console.warn("WARNING: OrbitControls.js encountered an unknown camera type - zoom to cursor disabled.");
+						this.zoomToCursor = false;
+					}
+					if (newRadius !== null) {
+						if (this.screenSpacePanning) this.target.set(0, 0, -1).transformDirection(this.object.matrix).multiplyScalar(newRadius).add(this.object.position);
+						else {
+							_ray.origin.copy(this.object.position);
+							_ray.direction.set(0, 0, -1).transformDirection(this.object.matrix);
+							if (Math.abs(this.object.up.dot(_ray.direction)) < _TILT_LIMIT) this.object.lookAt(this.target);
+							else {
+								_plane.setFromNormalAndCoplanarPoint(this.object.up, this.target);
+								_ray.intersectPlane(_plane, this.target);
+							}
+						}
+					}
+				} else if (this.object.isOrthographicCamera) {
+					const prevZoom = this.object.zoom;
+					this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
+					if (prevZoom !== this.object.zoom) {
+						this.object.updateProjectionMatrix();
+						zoomChanged = true;
+					}
+				}
+				this._scale = 1;
+				this._performCursorZoom = false;
+				if (zoomChanged || this._lastPosition.distanceToSquared(this.object.position) > _EPS || 8 * (1 - this._lastQuaternion.dot(this.object.quaternion)) > _EPS || this._lastTargetPosition.distanceToSquared(this.target) > _EPS) {
+					this.dispatchEvent(_changeEvent$1);
+					this._lastPosition.copy(this.object.position);
+					this._lastQuaternion.copy(this.object.quaternion);
+					this._lastTargetPosition.copy(this.target);
+					return true;
+				}
+				return false;
+			}
+			_getAutoRotationAngle(deltaTime) {
+				if (deltaTime !== null) return _twoPI / 60 * this.autoRotateSpeed * deltaTime;
+				else return _twoPI / 60 / 60 * this.autoRotateSpeed;
+			}
+			_getZoomScale(delta) {
+				const normalizedDelta = Math.abs(delta * .01);
+				return Math.pow(.95, this.zoomSpeed * normalizedDelta);
+			}
+			_rotateLeft(angle) {
+				this._sphericalDelta.theta -= angle;
+			}
+			_rotateUp(angle) {
+				this._sphericalDelta.phi -= angle;
+			}
+			_panLeft(distance, objectMatrix) {
+				_v.setFromMatrixColumn(objectMatrix, 0);
+				_v.multiplyScalar(-distance);
+				this._panOffset.add(_v);
+			}
+			_panUp(distance, objectMatrix) {
+				if (this.screenSpacePanning === true) _v.setFromMatrixColumn(objectMatrix, 1);
+				else {
+					_v.setFromMatrixColumn(objectMatrix, 0);
+					_v.crossVectors(this.object.up, _v);
+				}
+				_v.multiplyScalar(distance);
+				this._panOffset.add(_v);
+			}
+			_pan(deltaX, deltaY) {
+				const element = this.domElement;
+				if (this.object.isPerspectiveCamera) {
+					const position = this.object.position;
+					_v.copy(position).sub(this.target);
+					let targetDistance = _v.length();
+					targetDistance *= Math.tan(this.object.fov / 2 * Math.PI / 180);
+					this._panLeft(2 * deltaX * targetDistance / element.clientHeight, this.object.matrix);
+					this._panUp(2 * deltaY * targetDistance / element.clientHeight, this.object.matrix);
+				} else if (this.object.isOrthographicCamera) {
+					this._panLeft(deltaX * (this.object.right - this.object.left) / this.object.zoom / element.clientWidth, this.object.matrix);
+					this._panUp(deltaY * (this.object.top - this.object.bottom) / this.object.zoom / element.clientHeight, this.object.matrix);
+				} else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.");
+					this.enablePan = false;
+				}
+			}
+			_dollyOut(dollyScale) {
+				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale /= dollyScale;
+				else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
+					this.enableZoom = false;
+				}
+			}
+			_dollyIn(dollyScale) {
+				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale *= dollyScale;
+				else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
+					this.enableZoom = false;
+				}
+			}
+			_updateZoomParameters(x, y) {
+				if (!this.zoomToCursor) return;
+				this._performCursorZoom = true;
+				const rect = this.domElement.getBoundingClientRect();
+				const dx = x - rect.left;
+				const dy = y - rect.top;
+				const w = rect.width;
+				const h = rect.height;
+				this._mouse.x = dx / w * 2 - 1;
+				this._mouse.y = -(dy / h) * 2 + 1;
+				this._dollyDirection.set(this._mouse.x, this._mouse.y, 1).unproject(this.object).sub(this.object.position).normalize();
+			}
+			_clampDistance(dist) {
+				return Math.max(this.minDistance, Math.min(this.maxDistance, dist));
+			}
+			_handleMouseDownRotate(event) {
+				this._rotateStart.set(event.clientX, event.clientY);
+			}
+			_handleMouseDownDolly(event) {
+				this._updateZoomParameters(event.clientX, event.clientX);
+				this._dollyStart.set(event.clientX, event.clientY);
+			}
+			_handleMouseDownPan(event) {
+				this._panStart.set(event.clientX, event.clientY);
+			}
+			_handleMouseMoveRotate(event) {
+				this._rotateEnd.set(event.clientX, event.clientY);
+				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
+				const element = this.domElement;
+				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
+				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
+				this._rotateStart.copy(this._rotateEnd);
+				this.update();
+			}
+			_handleMouseMoveDolly(event) {
+				this._dollyEnd.set(event.clientX, event.clientY);
+				this._dollyDelta.subVectors(this._dollyEnd, this._dollyStart);
+				if (this._dollyDelta.y > 0) this._dollyOut(this._getZoomScale(this._dollyDelta.y));
+				else if (this._dollyDelta.y < 0) this._dollyIn(this._getZoomScale(this._dollyDelta.y));
+				this._dollyStart.copy(this._dollyEnd);
+				this.update();
+			}
+			_handleMouseMovePan(event) {
+				this._panEnd.set(event.clientX, event.clientY);
+				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
+				this._pan(this._panDelta.x, this._panDelta.y);
+				this._panStart.copy(this._panEnd);
+				this.update();
+			}
+			_handleMouseWheel(event) {
+				this._updateZoomParameters(event.clientX, event.clientY);
+				if (event.deltaY < 0) this._dollyIn(this._getZoomScale(event.deltaY));
+				else if (event.deltaY > 0) this._dollyOut(this._getZoomScale(event.deltaY));
+				this.update();
+			}
+			_handleKeyDown(event) {
+				let needsUpdate = false;
+				switch (event.code) {
+					case this.keys.UP:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateUp(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(0, this.keyPanSpeed);
+						needsUpdate = true;
+						break;
+					case this.keys.BOTTOM:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateUp(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(0, -this.keyPanSpeed);
+						needsUpdate = true;
+						break;
+					case this.keys.LEFT:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateLeft(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(this.keyPanSpeed, 0);
+						needsUpdate = true;
+						break;
+					case this.keys.RIGHT:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateLeft(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(-this.keyPanSpeed, 0);
+						needsUpdate = true;
+				}
+				if (needsUpdate) {
+					event.preventDefault();
+					this.update();
+				}
+			}
+			_handleTouchStartRotate(event) {
+				if (this._pointers.length === 1) this._rotateStart.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._rotateStart.set(x, y);
+				}
+			}
+			_handleTouchStartPan(event) {
+				if (this._pointers.length === 1) this._panStart.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._panStart.set(x, y);
+				}
+			}
+			_handleTouchStartDolly(event) {
+				const position = this._getSecondPointerPosition(event);
+				const dx = event.pageX - position.x;
+				const dy = event.pageY - position.y;
+				const distance = Math.sqrt(dx * dx + dy * dy);
+				this._dollyStart.set(0, distance);
+			}
+			_handleTouchStartDollyPan(event) {
+				if (this.enableZoom) this._handleTouchStartDolly(event);
+				if (this.enablePan) this._handleTouchStartPan(event);
+			}
+			_handleTouchStartDollyRotate(event) {
+				if (this.enableZoom) this._handleTouchStartDolly(event);
+				if (this.enableRotate) this._handleTouchStartRotate(event);
+			}
+			_handleTouchMoveRotate(event) {
+				if (this._pointers.length == 1) this._rotateEnd.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._rotateEnd.set(x, y);
+				}
+				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
+				const element = this.domElement;
+				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
+				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
+				this._rotateStart.copy(this._rotateEnd);
+			}
+			_handleTouchMovePan(event) {
+				if (this._pointers.length === 1) this._panEnd.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._panEnd.set(x, y);
+				}
+				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
+				this._pan(this._panDelta.x, this._panDelta.y);
+				this._panStart.copy(this._panEnd);
+			}
+			_handleTouchMoveDolly(event) {
+				const position = this._getSecondPointerPosition(event);
+				const dx = event.pageX - position.x;
+				const dy = event.pageY - position.y;
+				const distance = Math.sqrt(dx * dx + dy * dy);
+				this._dollyEnd.set(0, distance);
+				this._dollyDelta.set(0, Math.pow(this._dollyEnd.y / this._dollyStart.y, this.zoomSpeed));
+				this._dollyOut(this._dollyDelta.y);
+				this._dollyStart.copy(this._dollyEnd);
+				const centerX = (event.pageX + position.x) * .5;
+				const centerY = (event.pageY + position.y) * .5;
+				this._updateZoomParameters(centerX, centerY);
+			}
+			_handleTouchMoveDollyPan(event) {
+				if (this.enableZoom) this._handleTouchMoveDolly(event);
+				if (this.enablePan) this._handleTouchMovePan(event);
+			}
+			_handleTouchMoveDollyRotate(event) {
+				if (this.enableZoom) this._handleTouchMoveDolly(event);
+				if (this.enableRotate) this._handleTouchMoveRotate(event);
+			}
+			_addPointer(event) {
+				this._pointers.push(event.pointerId);
+			}
+			_removePointer(event) {
+				delete this._pointerPositions[event.pointerId];
+				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) {
+					this._pointers.splice(i, 1);
+					return;
+				}
+			}
+			_isTrackingPointer(event) {
+				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) return true;
+				return false;
+			}
+			_trackPointer(event) {
+				let position = this._pointerPositions[event.pointerId];
+				if (position === void 0) {
+					position = new Vector2();
+					this._pointerPositions[event.pointerId] = position;
+				}
+				position.set(event.pageX, event.pageY);
+			}
+			_getSecondPointerPosition(event) {
+				const pointerId = event.pointerId === this._pointers[0] ? this._pointers[1] : this._pointers[0];
+				return this._pointerPositions[pointerId];
+			}
+			_customWheelEvent(event) {
+				const mode = event.deltaMode;
+				const newEvent = {
+					clientX: event.clientX,
+					clientY: event.clientY,
+					deltaY: event.deltaY
+				};
+				switch (mode) {
+					case 1:
+						newEvent.deltaY *= 16;
+						break;
+					case 2: newEvent.deltaY *= 100;
+				}
+				if (event.ctrlKey && !this._controlActive) newEvent.deltaY *= 10;
+				return newEvent;
+			}
+		};
+		function onPointerDown$1(event) {
+			if (this.enabled === false) return;
+			if (this._pointers.length === 0) {
+				this.domElement.setPointerCapture(event.pointerId);
+				this.domElement.ownerDocument.addEventListener("pointermove", this._onPointerMove);
+				this.domElement.ownerDocument.addEventListener("pointerup", this._onPointerUp);
+			}
+			if (this._isTrackingPointer(event)) return;
+			this._addPointer(event);
+			if (event.pointerType === "touch") this._onTouchStart(event);
+			else this._onMouseDown(event);
+			if (this._cursorStyle === "grab") this.domElement.style.cursor = "grabbing";
+		}
+		function onPointerMove$1(event) {
+			if (this.enabled === false) return;
+			if (event.pointerType === "touch") this._onTouchMove(event);
+			else this._onMouseMove(event);
+		}
+		function onPointerUp$1(event) {
+			this._removePointer(event);
+			switch (this._pointers.length) {
+				case 0:
+					this.domElement.releasePointerCapture(event.pointerId);
+					this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
+					this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
+					this.dispatchEvent(_endEvent);
+					this.state = _STATE.NONE;
+					if (this._cursorStyle === "grab") this.domElement.style.cursor = "grab";
+					break;
+				case 1:
+					const pointerId = this._pointers[0];
+					const position = this._pointerPositions[pointerId];
+					this._onTouchStart({
+						pointerId,
+						pageX: position.x,
+						pageY: position.y
+					});
+			}
+		}
+		function onMouseDown(event) {
+			let mouseAction;
+			switch (event.button) {
+				case 0:
+					mouseAction = this.mouseButtons.LEFT;
+					break;
+				case 1:
+					mouseAction = this.mouseButtons.MIDDLE;
+					break;
+				case 2:
+					mouseAction = this.mouseButtons.RIGHT;
+					break;
+				default: mouseAction = -1;
+			}
+			switch (mouseAction) {
+				case MOUSE.DOLLY:
+					if (this.enableZoom === false) return;
+					this._handleMouseDownDolly(event);
+					this.state = _STATE.DOLLY;
+					break;
+				case MOUSE.ROTATE:
+					if (event.ctrlKey || event.metaKey || event.shiftKey) {
+						if (this.enablePan === false) return;
+						this._handleMouseDownPan(event);
+						this.state = _STATE.PAN;
+					} else {
+						if (this.enableRotate === false) return;
+						this._handleMouseDownRotate(event);
+						this.state = _STATE.ROTATE;
+					}
+					break;
+				case MOUSE.PAN:
+					if (event.ctrlKey || event.metaKey || event.shiftKey) {
+						if (this.enableRotate === false) return;
+						this._handleMouseDownRotate(event);
+						this.state = _STATE.ROTATE;
+					} else {
+						if (this.enablePan === false) return;
+						this._handleMouseDownPan(event);
+						this.state = _STATE.PAN;
+					}
+					break;
+				default: this.state = _STATE.NONE;
+			}
+			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
+		}
+		function onMouseMove(event) {
+			switch (this.state) {
+				case _STATE.ROTATE:
+					if (this.enableRotate === false) return;
+					this._handleMouseMoveRotate(event);
+					break;
+				case _STATE.DOLLY:
+					if (this.enableZoom === false) return;
+					this._handleMouseMoveDolly(event);
+					break;
+				case _STATE.PAN:
+					if (this.enablePan === false) return;
+					this._handleMouseMovePan(event);
+			}
+		}
+		function onMouseWheel(event) {
+			if (this.enabled === false || this.enableZoom === false || this.state !== _STATE.NONE) return;
+			event.preventDefault();
+			this.dispatchEvent(_startEvent);
+			this._handleMouseWheel(this._customWheelEvent(event));
+			this.dispatchEvent(_endEvent);
+		}
+		function onKeyDown(event) {
+			if (this.enabled === false) return;
+			this._handleKeyDown(event);
+		}
+		function onTouchStart(event) {
+			this._trackPointer(event);
+			switch (this._pointers.length) {
+				case 1:
+					switch (this.touches.ONE) {
+						case TOUCH.ROTATE:
+							if (this.enableRotate === false) return;
+							this._handleTouchStartRotate(event);
+							this.state = _STATE.TOUCH_ROTATE;
+							break;
+						case TOUCH.PAN:
+							if (this.enablePan === false) return;
+							this._handleTouchStartPan(event);
+							this.state = _STATE.TOUCH_PAN;
+							break;
+						default: this.state = _STATE.NONE;
+					}
+					break;
+				case 2:
+					switch (this.touches.TWO) {
+						case TOUCH.DOLLY_PAN:
+							if (this.enableZoom === false && this.enablePan === false) return;
+							this._handleTouchStartDollyPan(event);
+							this.state = _STATE.TOUCH_DOLLY_PAN;
+							break;
+						case TOUCH.DOLLY_ROTATE:
+							if (this.enableZoom === false && this.enableRotate === false) return;
+							this._handleTouchStartDollyRotate(event);
+							this.state = _STATE.TOUCH_DOLLY_ROTATE;
+							break;
+						default: this.state = _STATE.NONE;
+					}
+					break;
+				default: this.state = _STATE.NONE;
+			}
+			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
+		}
+		function onTouchMove(event) {
+			this._trackPointer(event);
+			switch (this.state) {
+				case _STATE.TOUCH_ROTATE:
+					if (this.enableRotate === false) return;
+					this._handleTouchMoveRotate(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_PAN:
+					if (this.enablePan === false) return;
+					this._handleTouchMovePan(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_DOLLY_PAN:
+					if (this.enableZoom === false && this.enablePan === false) return;
+					this._handleTouchMoveDollyPan(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_DOLLY_ROTATE:
+					if (this.enableZoom === false && this.enableRotate === false) return;
+					this._handleTouchMoveDollyRotate(event);
+					this.update();
+					break;
+				default: this.state = _STATE.NONE;
+			}
+		}
+		function onContextMenu(event) {
+			if (this.enabled === false) return;
+			event.preventDefault();
+		}
+		function interceptControlDown(event) {
+			if (event.key === "Control") {
+				this._controlActive = true;
+				this.domElement.getRootNode().addEventListener("keyup", this._interceptControlUp, {
+					passive: true,
+					capture: true
+				});
+			}
+		}
+		function interceptControlUp(event) {
+			if (event.key === "Control") {
+				this._controlActive = false;
+				this.domElement.getRootNode().removeEventListener("keyup", this._interceptControlUp, {
+					passive: true,
+					capture: true
+				});
+			}
+		}
+		//#endregion
+		//#region ../../web/card-base/src/stage3d.ts
+		init_three_module();
+		/** The r3f pointer-events analogue lives on userData.pick (see header). */
+		function findPickCarrier(o) {
+			let cur = o;
+			while (cur !== null) {
+				if (cur.userData !== void 0 && cur.userData.pick !== void 0) return cur;
+				cur = cur.parent;
+			}
+			return null;
+		}
+		/** Skip hits on a TransformControls gizmo subtree (invisible pick planes
+		*  would swallow every click while a gizmo is attached). */
+		function isGizmoHit(o) {
+			let cur = o;
+			while (cur !== null) {
+				if (cur.gizmo !== void 0) return true;
+				cur = cur.parent;
+			}
+			return false;
+		}
+		function mountStage3D(canvas, opts = {}) {
+			let renderer;
+			try {
+				renderer = new WebGLRenderer({
+					canvas,
+					antialias: true,
+					alpha: opts.alpha !== false,
+					preserveDrawingBuffer: opts.preserveDrawingBuffer === true
+				});
+			} catch (e) {
+				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
+				return null;
+			}
+			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = 1;
+			renderer.toneMapping = opts.toneMapping ?? 4;
+			const scene = new Scene();
+			scene.background = null;
+			const camera = new PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
+			camera.position.set(...opts.camera ?? [
+				2.2,
+				1.6,
+				2.6
+			]);
+			camera.lookAt(0, .8, 0);
+			const controls = new OrbitControls(camera, canvas);
+			controls.target.set(...opts.target ?? [
+				0,
+				.8,
+				0
+			]);
+			controls.enableDamping = true;
+			controls.dampingFactor = .1;
+			if (opts.minDistance !== void 0) controls.minDistance = opts.minDistance;
+			if (opts.maxDistance !== void 0) controls.maxDistance = opts.maxDistance;
+			if (opts.maxPolarAngle !== void 0) controls.maxPolarAngle = opts.maxPolarAngle;
+			controls.update();
+			const ticks = [];
+			const addTick = (fn) => {
+				ticks.push(fn);
+				return () => {
+					const i = ticks.indexOf(fn);
+					if (i >= 0) ticks.splice(i, 1);
+				};
+			};
+			const raycaster = new Raycaster();
+			const pointer = new Vector2();
+			let hovered = null;
+			let downAt = 0;
+			const threshold = opts.clickVsDragMs ?? 350;
+			const pickAt = (ev) => {
+				const r = canvas.getBoundingClientRect();
+				if (r.width === 0 || r.height === 0) return null;
+				pointer.x = (ev.clientX - r.left) / r.width * 2 - 1;
+				pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+				raycaster.setFromCamera(pointer, camera);
+				const hits = raycaster.intersectObjects(scene.children, true);
+				for (const hit of hits) {
+					if (isGizmoHit(hit.object)) continue;
+					const carrier = findPickCarrier(hit.object);
+					if (carrier !== null) return {
+						carrier,
+						point: hit.point
+					};
+				}
+				return null;
+			};
+			const onPointerDown = (e) => {
+				downAt = e.timeStamp;
+			};
+			const onPointerMove = (e) => {
+				const found = pickAt(e);
+				const carrier = found?.carrier ?? null;
+				if (carrier !== hovered) {
+					(hovered?.userData.pick)?.out?.(e);
+					document.body.style.cursor = "auto";
+					hovered = carrier;
+					if (carrier !== null && found !== null) carrier.userData.pick.over?.(found.point, e);
+				}
+			};
+			const onPointerLeave = (e) => {
+				if (hovered !== null) {
+					hovered.userData.pick.out?.(e);
+					document.body.style.cursor = "auto";
+					hovered = null;
+				}
+			};
+			const onClick = (e) => {
+				if (e.timeStamp - downAt > threshold) return;
+				const found = pickAt(e);
+				if (found !== null) found.carrier.userData.pick.click?.(found.point, e);
+				else opts.onEmptyClick?.();
+			};
+			canvas.addEventListener("pointerdown", onPointerDown);
+			canvas.addEventListener("pointermove", onPointerMove);
+			canvas.addEventListener("pointerleave", onPointerLeave);
+			canvas.addEventListener("click", onClick);
+			let raf = 0;
+			const clock = new Clock();
+			const frame = () => {
+				raf = requestAnimationFrame(frame);
+				const delta = clock.getDelta();
+				for (const t of ticks) t(delta);
+				controls.update();
+				renderer.render(scene, camera);
+			};
+			frame();
+			const resize = () => {
+				const w = canvas.clientWidth, h = canvas.clientHeight;
+				if (w === 0 || h === 0) return;
+				renderer.setSize(w, h, false);
+				camera.aspect = w / h;
+				camera.updateProjectionMatrix();
+			};
+			resize();
+			const ro = new ResizeObserver(resize);
+			ro.observe(canvas);
+			return {
+				canvas,
+				renderer,
+				scene,
+				camera,
+				controls,
+				addTick,
+				resize,
+				dispose: () => {
+					cancelAnimationFrame(raf);
+					ro.disconnect();
+					canvas.removeEventListener("pointerdown", onPointerDown);
+					canvas.removeEventListener("pointermove", onPointerMove);
+					canvas.removeEventListener("pointerleave", onPointerLeave);
+					canvas.removeEventListener("click", onClick);
+					controls.dispose();
+					renderer.dispose();
+				}
+			};
+		}
+		/** A billboard TEXT label — the drei <Billboard><Text/></Text> analogue:
+		*  canvas-drawn glyphs on a THREE.Sprite (sprites always face the camera,
+		*  which IS the billboard). worldHeight is the label's height in scene
+		*  units (drei Text's fontSize is world units too). */
+		function makeLabelSprite(text, color, worldHeight) {
+			const px = 96;
+			const c = document.createElement("canvas");
+			const ctx = c.getContext("2d");
+			if (ctx !== null) {
+				ctx.font = `600 ${px}px system-ui, sans-serif`;
+				const w = Math.ceil(ctx.measureText(text).width) + 32;
+				c.width = w;
+				c.height = 128;
+				ctx.font = `600 ${px}px system-ui, sans-serif`;
+				ctx.textAlign = "center";
+				ctx.textBaseline = "middle";
+				ctx.fillStyle = color;
+				ctx.fillText(text, w / 2, 64);
+			}
+			const tex = new CanvasTexture(c);
+			tex.minFilter = LinearFilter;
+			const mat = new SpriteMaterial({
+				map: tex,
+				transparent: true
+			});
+			const sprite = new Sprite(mat);
+			const aspect = c.width / c.height;
+			sprite.scale.set(worldHeight * aspect, worldHeight, 1);
+			return sprite;
+		}
+		//#endregion
+		//#region \0dsh-css:card-base/src/preview.module.css.mjs
+		const css$8 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.ClEuBa_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.ClEuBa_thumbVideoBtn:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.ClEuBa_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.ClEuBa_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.ClEuBa_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_thumbFace{box-sizing:content-box;border:1px solid var(--dsw-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.ClEuBa_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_layerRow{flex:none;gap:6px;display:flex}.ClEuBa_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.ClEuBa_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.ClEuBa_reportCard{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.ClEuBa_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.ClEuBa_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.ClEuBa_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.ClEuBa_reportChips{flex-wrap:wrap;gap:4px;display:flex}.ClEuBa_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.ClEuBa_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.ClEuBa_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.ClEuBa_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.ClEuBa_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.ClEuBa_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
+		const tagId$8 = "@melite/motion-motion/preview.module.css@bf1f1d7d";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$8) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/motion-motion";
+			tag.dataset.pluginCss = tagId$8;
+			tag.textContent = css$8;
+			document.head.appendChild(tag);
+		}
+		var preview_module_css_default = {
+			"empty": "ClEuBa_empty",
+			"figureError": "ClEuBa_figureError",
+			"hero": "ClEuBa_hero",
+			"heroAudio": "ClEuBa_heroAudio",
+			"heroImg": "ClEuBa_heroImg",
+			"heroIncoming": "ClEuBa_heroIncoming",
+			"historyBlock": "ClEuBa_historyBlock",
+			"historyTile": "ClEuBa_historyTile",
+			"historyTileActive": "ClEuBa_historyTileActive",
+			"historyTitle": "ClEuBa_historyTitle",
+			"layerChip": "ClEuBa_layerChip",
+			"layerRow": "ClEuBa_layerRow",
+			"reportCard": "ClEuBa_reportCard",
+			"reportChip": "ClEuBa_reportChip",
+			"reportChips": "ClEuBa_reportChips",
+			"reportHead": "ClEuBa_reportHead",
+			"reportKey": "ClEuBa_reportKey",
+			"reportRow": "ClEuBa_reportRow",
+			"reportRows": "ClEuBa_reportRows",
+			"reportStatus": "ClEuBa_reportStatus",
+			"reportTitle": "ClEuBa_reportTitle",
+			"reportVal": "ClEuBa_reportVal",
+			"stageCanvas": "ClEuBa_stageCanvas",
+			"stagePreview": "ClEuBa_stagePreview",
+			"staleBadge": "ClEuBa_staleBadge",
+			"strip": "ClEuBa_strip",
+			"stripLink": "ClEuBa_stripLink",
+			"thumb": "ClEuBa_thumb",
+			"thumbFace": "ClEuBa_thumbFace",
+			"thumbRow": "ClEuBa_thumbRow",
+			"thumbVideo": "ClEuBa_thumbVideo",
+			"thumbVideoActive": "ClEuBa_thumbVideoActive",
+			"thumbVideoBtn": "ClEuBa_thumbVideoBtn",
+			"thumbVideoName": "ClEuBa_thumbVideoName"
+		};
+		//#endregion
+		//#region ../../web/card-base/src/glb-stage.tsx
+		/**
+		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
+		* claim, hour 14 2026-09-13). Grown from img-to-mesh's GlbViewport
+		* (the raw-three substrate, verbatim) + the old @melite-plugin/3d
+		* Stage's multi-asset contract (assets/selection/per-asset errors —
+		* the four props anny's assembly actually uses; drop-placement
+		* gizmos and mixers stay unported until a consumer ports them, the
+		* promotion law).
+		*
+		* SUBSTRATE LAW (verbatim, the 2026-09-12 boot-crash lesson): RAW
+		* three.js — imperative scene in a useEffect, NO @react-three. r3f's
+		* bundled react-reconciler reads the seeded React 19 internals by
+		* minified single-letter fields and a version-skew throws at boot
+		* ("reading 'S' of undefined"). three is a pure leaf library: no
+		* React entanglement, mounts like any imperative canvas lib.
+		*
+		* THE PREVIEW-PORT INTERACTION LAW (the operator's catch, hour 14:
+		* "Anny and Trellis are close to the same, but the way they interact
+		* with the preview port is different"): ONE stage component serves
+		* both — selection + per-asset errors are the stage's own uniform
+		* interaction surface; studio chrome (anchors, badges, in-card
+		* actions like anny's HMR fit-body) docks AROUND it, never inside.
+		*/
+		init_three_module();
+		init_GLTFLoader();
+		init_DRACOLoader();
+		let draco = null;
+		function loader() {
+			if (draco === null) {
+				draco = new DRACOLoader();
+				draco.setDecoderPath("/draco/gltf/");
+			}
+			const l = new GLTFLoader();
+			l.setDRACOLoader(draco);
+			return l;
+		}
+		/** Normalize a loaded scene to a known viewing size — the
+		*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
+		*  dimension to targetHeight, feet on y=0. Mutates the root in place.
+		*  (Meshes arrive at wildly different scales; this is the ONE place
+		*  that reconciles them so every viewport frames identically.) */
+		function autoFitToHeight(root, targetHeight = 1.6) {
+			const box = new Box3().setFromObject(root);
+			const size = new Vector3();
+			box.getSize(size);
+			const largest = Math.max(size.x, size.y, size.z);
+			if (largest > 0) root.scale.multiplyScalar(targetHeight / largest);
+			root.updateMatrixWorld(true);
+			const box2 = new Box3().setFromObject(root);
+			const center = new Vector3();
+			box2.getCenter(center);
+			root.position.x -= center.x;
+			root.position.z -= center.z;
+			root.position.y -= box2.min.y;
+			root.updateMatrixWorld(true);
+			const box3 = new Box3().setFromObject(root);
+			const size3 = new Vector3();
+			box3.getSize(size3);
+			return {
+				box: box3,
+				height: size3.y
+			};
+		}
+		/** The imperative three scene — BUILT ON THE SHARED STAGE CORE
+		*  (stage3d.ts): the core owns renderer/camera/controls/rAF/resize/picking;
+		*  this adds the glb-stage's own light rig + floor grid and maps the core's
+		*  pick semantics onto the stage-asset id (group.userData.pick → clickSink,
+		*  empty click → clickSink(null)). A drag-orbit never reads as a click. */
+		function mountScene(canvas, onFail) {
+			let clickSink = () => {};
+			const stage = mountStage3D(canvas, {
+				fov: 40,
+				camera: [
+					2.2,
+					1.6,
+					2.6
+				],
+				target: [
+					0,
+					.8,
+					0
+				],
+				toneMapping: 0,
+				onContextFailure: onFail,
+				onEmptyClick: () => clickSink(null)
+			});
+			if (stage === null) return null;
+			const scene = stage.scene;
+			scene.add(new HemisphereLight(16777215, 9079434, 1.4));
+			const key = new DirectionalLight(16777215, 2.2);
+			key.position.set(3, 5, 2);
+			scene.add(key);
+			const fill = new DirectionalLight(16777215, .6);
+			fill.position.set(-3, 2, -2);
+			scene.add(fill);
+			const grid = new GridHelper(6, 24, 12303291, 14540253);
+			const gridMat = grid.material;
+			gridMat.transparent = true;
+			gridMat.opacity = .35;
+			scene.add(grid);
+			return {
+				scene,
+				setClickSink: (fn) => {
+					clickSink = fn;
+				},
+				addTick: stage.addTick,
+				dispose: () => {
+					grid.geometry.dispose();
+					stage.dispose();
+				}
+			};
+		}
+		/** The selection tint — emissive lift on the selected group's meshes
+		*  (the old Stage's highlight, the DOM-free way; lifted meshes read
+		*  at any theme because emissive adds, never replaces). */
+		function tint(root, on) {
+			root.traverse((o) => {
+				const m = o.material;
+				if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
+			});
+		}
+		/** Flip the wireframe flag on every wireframe-capable material under
+		*  the root (mesh materials; points/lines have no such flag and are
+		*  left alone). Idempotent — loads mint fresh materials, so no
+		*  original-flag bookkeeping is owed. */
+		function applyWireframe(root, on) {
+			root.traverse((o) => {
+				const m = o.material;
+				if (m !== void 0 && m !== null && "wireframe" in m) m.wireframe = on;
+			});
+		}
+		/** A bone-visualization overlay for one loaded group — null when
+		*  the group carries no bones (unrigged meshes seat no overlay, the
+		*  honest absence). The caller adds the helper to the scene and owns
+		*  its visibility + disposal. */
+		function skeletonHelperFor(group) {
+			const bones = [];
+			group.traverse((o) => {
+				if (o.isBone === true) bones.push(o);
+			});
+			if (bones.length === 0) return null;
+			return new SkeletonHelper(group);
+		}
+		/** THE TURNTABLE SPEED (radians/sec) — one revolution every ~12.5s,
+		*  the gentle review idle; fast enough to read as motion in a
+		*  glance, slow enough to inspect. */
+		const TURNTABLE_SPEED = .5;
+		/** One turntable frame: rotate every group about its OWN Y axis
+		*  (each spins in place — the row layout's positions stand). Pure —
+		*  the stage's tick seam calls it with the rAF delta; a 0 delta is
+		*  a no-op. Declared per-asset rotation rides along (the spin adds
+		*  to the current angle, never resets it). */
+		function turntableTick(groups, delta) {
+			if (delta === 0) return;
+			const d = TURNTABLE_SPEED * delta;
+			for (const g of groups) g.rotation.y += d;
+		}
+		/** ── THE WEIGHTS HEAT OVERLAY (primitive ②, fourth slice) ───────────
+		*
+		* Per-vertex skin-weight heat: a skinned mesh's dominant-bone weight
+		* (the max of its skinWeight components, ∈ [0.25,1] under 4
+		* influences) paints a blue→red ramp through vertex colors. Unskinned
+		* meshes are untouched (no skinWeight attribute — no lane, no paint).
+		* OFF restores each geometry's ORIGINAL color attribute (cached the
+		* first time we touch it — absent means we delete ours) and the
+		* material's vertexColors flag. Idempotent both ways. */
+		/** The heat ramp — 5 stops (blue→cyan→green→yellow→red), t clamped.
+		*  Pure: the same ramp every stage paints, the wall pins the stops. */
+		function heatColor(t) {
+			const x = Math.min(1, Math.max(0, t));
+			const stops = [
+				[
+					0,
+					0,
+					1
+				],
+				[
+					0,
+					1,
+					1
+				],
+				[
+					0,
+					1,
+					0
+				],
+				[
+					1,
+					1,
+					0
+				],
+				[
+					1,
+					0,
+					0
+				]
+			];
+			const s = x * (stops.length - 1);
+			const i = Math.min(stops.length - 2, Math.floor(s));
+			const f = s - i;
+			const a = stops[i], b = stops[i + 1];
+			return [
+				a[0] + (b[0] - a[0]) * f,
+				a[1] + (b[1] - a[1]) * f,
+				a[2] + (b[2] - a[2]) * f
+			];
+		}
+		const weightColorCache = /* @__PURE__ */ new WeakMap();
+		function applyWeightsHeat(root, on) {
+			root.traverse((o) => {
+				const mesh = o;
+				const geo = mesh.geometry;
+				if (geo === void 0) return;
+				const mat = mesh.material;
+				if (mat === void 0 || mat === null || Array.isArray(mat)) return;
+				const sw = geo.getAttribute("skinWeight");
+				if (sw === void 0) return;
+				const pos = geo.getAttribute("position");
+				if (pos === void 0) return;
+				const sm = mat;
+				if (on) {
+					if (!weightColorCache.has(geo)) weightColorCache.set(geo, geo.getAttribute("color") ?? null);
+					const colors = new Float32Array(pos.count * 3);
+					const comps = Math.min(4, sw.itemSize);
+					for (let i = 0; i < pos.count; i++) {
+						let w = sw.getX(i);
+						for (let c = 1; c < comps; c++) {
+							const v = c === 1 ? sw.getY(i) : c === 2 ? sw.getZ(i) : sw.getW(i);
+							if (v > w) w = v;
+						}
+						const [r, g, b] = heatColor(w);
+						colors[i * 3] = r;
+						colors[i * 3 + 1] = g;
+						colors[i * 3 + 2] = b;
+					}
+					geo.setAttribute("color", new BufferAttribute(colors, 3));
+					sm.vertexColors = true;
+					sm.needsUpdate = true;
+				} else {
+					const orig = weightColorCache.get(geo);
+					if (orig === null) geo.deleteAttribute("color");
+					else if (orig !== void 0) geo.setAttribute("color", orig);
+					if (sm.vertexColors === true) {
+						sm.vertexColors = false;
+						sm.needsUpdate = true;
+					}
+				}
+			});
+		}
+		/** ── NAMED MESH SLOTS (primitive ②, third slice) ────────────────────
+		* A comparison seat: assets may declare a SLOT (`slot: 'source'` /
+		* `'result'`, body/garment, donor/target, LOD names) — the stage
+		* paints the slot's label above the asset (a billboard sprite, the
+		* stage3d makeLabelSprite). Unslotted assets seat unlabeled, as
+		* ever. Pure derivation, mount-side paint (the WebGL-exempt arm). */
+		function slotLabelOf(asset) {
+			return typeof asset.slot === "string" && asset.slot !== "" ? asset.slot : null;
+		}
+		/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
+		*  row, click to select, per-asset load failures reported upward).
+		*  No assets → the honest empty state; the canvas mounts when the
+		*  first asset lands. */
+		function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label, layers, onLayers, turntable }) {
+			const canvasRef = (0, react.useRef)(null);
+			const sceneRef = (0, react.useRef)(null);
+			const skeletonHelpers = (0, react.useRef)([]);
+			const slotLabels = (0, react.useRef)([]);
+			const [loaded, setLoaded] = (0, react.useState)([]);
+			const [failed, setFailed] = (0, react.useState)(null);
+			const [ready, setReady] = (0, react.useState)(false);
+			const selectRef = (0, react.useRef)(onSelect);
+			selectRef.current = onSelect;
+			const key = assets.map((a) => a.id + "@" + a.url).join("|");
+			const errRef = (0, react.useRef)(onAssetError);
+			errRef.current = onAssetError;
+			const groupsRef = (0, react.useRef)([]);
+			groupsRef.current = loaded.map((l) => l.group);
+			const turntableRef = (0, react.useRef)(turntable === true);
+			turntableRef.current = turntable === true;
+			(0, react.useEffect)(() => {
+				setLoaded([]);
+				setFailed(null);
+				setReady(false);
+				if (assets.length === 0) return;
+				let alive = true;
+				let pending = assets.length;
+				const settle = () => {
+					if (alive && pending === 0) setReady(true);
+				};
+				for (const a of assets) loader().load(a.url, (g) => {
+					if (!alive) return;
+					autoFitToHeight(g.scene);
+					const group = new Group();
+					group.userData.stageId = a.id;
+					group.userData.pick = { click: () => selectRef.current?.(a.id) };
+					group.add(g.scene);
+					if (a.scale !== void 0) group.scale.multiplyScalar(a.scale);
+					if (a.rotation !== void 0) group.rotation.set(a.rotation[0], a.rotation[1], a.rotation[2]);
+					if (a.position !== void 0) group.position.set(a.position[0], a.position[1], a.position[2]);
+					setLoaded((prev) => [...prev, {
+						asset: a,
+						group
+					}]);
+					errRef.current?.(a.id, null);
+					pending -= 1;
+					settle();
+				}, void 0, (e) => {
+					if (!alive) return;
+					errRef.current?.(a.id, e instanceof Error ? e.message : "glb load failed");
+					pending -= 1;
+					settle();
+				});
+				return () => {
+					alive = false;
+				};
+			}, [key]);
+			(0, react.useEffect)(() => {
+				if (!ready || loaded.length === 0) return;
+				const canvas = canvasRef.current;
+				const mounted = mountScene(canvas, (m) => setFailed(m));
+				if (mounted === null) return;
+				sceneRef.current = mounted;
+				mounted.setClickSink((id) => selectRef.current?.(id));
+				let x = 0;
+				for (const { asset, group } of loaded) {
+					mounted.scene.add(group);
+					if (asset.position === void 0) {
+						const box = new Box3().setFromObject(group);
+						const size = new Vector3();
+						box.getSize(size);
+						group.position.x += x + size.x / 2;
+						x += size.x + .4;
+					}
+				}
+				const helpers = [];
+				for (const { group } of loaded) {
+					const helper = skeletonHelperFor(group);
+					if (helper !== null) {
+						helper.visible = false;
+						mounted.scene.add(helper);
+						helpers.push(helper);
+					}
+				}
+				skeletonHelpers.current = helpers;
+				const labels = [];
+				for (const { asset, group } of loaded) {
+					const text = slotLabelOf(asset);
+					if (text === null) continue;
+					const sprite = makeLabelSprite(text, "#1c1f26", .05);
+					const box = new Box3().setFromObject(group);
+					sprite.position.set(group.position.x, box.max.y + .06, 0);
+					mounted.scene.add(sprite);
+					labels.push(sprite);
+				}
+				slotLabels.current = labels;
+				mounted.addTick((dt) => {
+					if (!turntableRef.current) return;
+					turntableTick(groupsRef.current, dt);
+				});
+				return () => {
+					for (const helper of skeletonHelpers.current) {
+						mounted.scene.remove(helper);
+						helper.dispose();
+					}
+					skeletonHelpers.current = [];
+					for (const sprite of slotLabels.current) {
+						mounted.scene.remove(sprite);
+						const mat = sprite.material;
+						mat.map?.dispose();
+						mat.dispose();
+					}
+					slotLabels.current = [];
+					sceneRef.current = null;
+					mounted.dispose();
+				};
+			}, [ready, loaded]);
+			(0, react.useEffect)(() => {
+				for (const { asset, group } of loaded) tint(group, asset.id === selectedId);
+			}, [loaded, selectedId]);
+			const wireframe = layers?.wireframe ?? false;
+			(0, react.useEffect)(() => {
+				for (const { group } of loaded) applyWireframe(group, wireframe);
+			}, [loaded, wireframe]);
+			const skeleton = layers?.skeleton ?? false;
+			(0, react.useEffect)(() => {
+				for (const helper of skeletonHelpers.current) helper.visible = skeleton;
+			}, [loaded, skeleton]);
+			const weights = layers?.weights === true;
+			(0, react.useEffect)(() => {
+				for (const { group } of loaded) applyWeightsHeat(group, weights);
+			}, [loaded, weights]);
+			return (0, react.createElement)("div", {
+				className: preview_module_css_default.stagePreview,
+				"data-viewport": label ?? "glb-stage"
+			}, assets.length === 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, emptyHint ?? "Run the card to see the mesh") : failed !== null ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "viewport failed: " + failed) : !ready ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "loading mesh…") : (0, react.createElement)("canvas", {
+				ref: canvasRef,
+				className: preview_module_css_default.stageCanvas,
+				"data-testid": "stage-preview-glb"
+			}), onLayers !== void 0 && assets.length > 0 ? (0, react.createElement)("div", {
+				className: preview_module_css_default.layerRow,
+				role: "group",
+				"aria-label": "mesh layers"
+			}, (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.layerChip,
+				"aria-pressed": !wireframe,
+				onClick: () => {
+					onLayers({
+						wireframe: false,
+						skeleton,
+						weights
+					});
+				}
+			}, "Shaded"), (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.layerChip,
+				"aria-pressed": wireframe,
+				onClick: () => {
+					onLayers({
+						wireframe: true,
+						skeleton,
+						weights
+					});
+				}
+			}, "Wireframe"), (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.layerChip,
+				"aria-pressed": skeleton,
+				onClick: () => {
+					onLayers({
+						wireframe,
+						skeleton: !skeleton,
+						weights
+					});
+				}
+			}, "Skeleton"), (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.layerChip,
+				"aria-pressed": weights,
+				onClick: () => {
+					onLayers({
+						wireframe,
+						skeleton,
+						weights: !weights
+					});
+				}
+			}, "Weights")) : null);
+		}
+		//#endregion
+		//#region ../../web/card-base/src/square.tsx
+		/**
+		* square.tsx — InputSquare, THE ONE square for any slot-shaped value
+		* — the base's default input component. Ported from the old system's
+		* SlotSquare law (packages/web-kit/ui/SlotSquare.tsx, 2026-08-08:
+		* "the look for it will be reused for the sub-card system") onto the
+		* DSH substrate: ui-primitives glyphs, module CSS under the
+		* web-styling chrome laws, no lucide/cn/tip.
+		*
+		* THE PLUS LAW (2026-09-13, the operator): the empty square
+		* carries the PLUS — "add a source" — and the click opens the
+		* three-entry source menu (From flow / From media / From file) in
+		* the provider; a bare square without a picker still files.
+		* THE OLD LAW, KEPT — a square thumbnail with label + badge
+		* + the THREE source verbs (operator, 2026-09-12: "we rendered a
+		* square and gave the option to do 1 of 3 things"):
+		*   a) from previous card  → onClick (the host opens the wire picker;
+		*                            badge = the upstream card's title)
+		*   b) from file upload    → onPickFile/onDropFile (hidden input +
+		*                            OS drop — the ONE read path readAsDataURL)
+		*   c) from media bar      → onDropAsset (the ASSET_DRAG_MIME contract
+		*                            the drop surface already serves)
+		* plus the X (detach). The consumer owns the doors — this shell only
+		* voices them (ui-attachment's own law: presentation registers, the
+		* service seams stay with their owners).
+		*
+		* THE CONSTRUCTION LAW (2026-09-12, the card-base founding): a card
+		* package EMITS an image input → the base constructs THIS square
+		* automatically. One input component; no card hand-rolls its own
+		* file field ever again.
+		*/
+		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
+		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
+		*  artifact URLs. Every slot-shaped value renders the same way. */
+		function isImageUrl(value) {
+			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+		}
+		/** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
+		*  the base-gaps primitive ③): a .glb/.gltf value — an estate path
+		*  ('data/input/x.glb') or a run artifact URL — renders the ONE
+		*  square with the inline GLB thumb (the mini GlbStagePreview), the
+		*  same square grammar as images: never a bespoke mesh picker. */
+		function isMeshUrl(value) {
+			return /^data:model\/gltf-binary[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
+		}
+		const MESH_SQUARE_ACCEPT = ".glb,.gltf";
+		function InputSquare(props) {
+			const { label, value, metric, disabled } = props;
+			const seat = props.ariaLabel ?? label;
+			const fileRef = (0, react.useRef)(null);
+			const boxRef = (0, react.useRef)(null);
+			const [over, setOver] = (0, react.useState)(false);
+			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
+			const mesh = thumb === null && typeof value === "string" && value !== "" && isMeshUrl(value) ? value : null;
+			const empty = thumb === null && mesh === null;
+			const acceptsDrop = (event) => {
+				if (event.dataTransfer.getData("application/tech-noir-asset") !== "" || event.dataTransfer.files.length > 0) return true;
+				const types = event.dataTransfer.types;
+				if (types === void 0 || types === null) return false;
+				return types.includes("application/tech-noir-asset") || types.includes("Files");
+			};
+			const pick = () => {
+				if (disabled) return;
+				if (props.onPick !== void 0) props.onPick(boxRef.current);
+				else if (empty && props.onFile !== void 0) fileRef.current?.click();
+			};
+			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
+				ref: boxRef,
+				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
+				role: "button",
+				tabIndex: 0,
+				"data-slot-square": true,
+				"aria-label": (seat || "source") + (seat !== "" ? " source" : ""),
+				onClick: pick,
+				onKeyDown: (e) => {
+					if (e.key === "Enter") pick();
+				},
+				onDragOver: (e) => {
+					if (disabled || !acceptsDrop(e)) return;
+					e.preventDefault();
+					setOver(true);
+				},
+				onDragLeave: () => {
+					setOver(false);
+				},
+				onDrop: (e) => {
+					setOver(false);
+					if (disabled || !acceptsDrop(e)) return;
+					e.preventDefault();
+					const asset = parseAssetDrop(e.dataTransfer.getData(ASSET_DRAG_MIME$1));
+					if (asset.url !== void 0 && props.onAsset !== void 0) {
+						props.onAsset(asset.url);
+						return;
+					}
+					const file = e.dataTransfer.files[0];
+					if (file !== void 0 && props.onFile !== void 0) props.onFile(file);
+				}
+			}, thumb !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default.squareThumb,
+				src: thumb,
+				alt: label
+			}) : mesh !== null ? (0, react.createElement)("div", { className: card_module_css_default.squareMesh }, (0, react.createElement)(GlbStagePreview, {
+				assets: [{
+					id: "square-mesh",
+					url: mesh
+				}],
+				label: "square-mesh"
+			})) : props.emptyIcon === void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }) : (0, react.createElement)("span", { className: card_module_css_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? (0, react.createElement)("span", {
+				className: card_module_css_default.squareActions,
+				onClick: (event) => {
+					event.stopPropagation();
+				}
+			}, props.actions) : null, !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
+				className: card_module_css_default.squareX,
+				type: "button",
+				title: "Detach",
+				"aria-label": "Detach " + (seat || "source"),
+				onClick: (e) => {
+					e.stopPropagation();
+					props.onClear();
+				}
+			}, "✕") : null, props.showFileAction === true && props.onFile !== void 0 && !disabled ? (0, react.createElement)("button", {
+				className: card_module_css_default.squarePick,
+				type: "button",
+				title: `Pick a file for ${label}`,
+				"aria-label": `Pick a file for ${label}`,
+				"data-slot-pick": true,
+				onClick: (event) => {
+					event.stopPropagation();
+					fileRef.current?.click();
+				}
+			}, (0, react.createElement)(Upload$1, { "aria-hidden": true })) : null), label !== "" ? (0, react.createElement)("span", {
+				className: card_module_css_default.squareLabel,
+				"data-slot-label": true
+			}, label) : null, props.badge === void 0 ? null : (0, react.createElement)("span", {
+				className: card_module_css_default.squareBadge,
+				"data-slot-badge": true
+			}, props.badge), metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+				ref: fileRef,
+				type: "file",
+				accept: props.accept ?? "image/png,image/jpeg,image/webp",
+				className: card_module_css_default.squareFileInput,
+				"data-slot-input": true,
+				"aria-hidden": true,
+				tabIndex: -1,
+				onChange: (e) => {
+					const file = e.target.files?.[0];
+					if (file !== void 0 && file !== null) props.onFile?.(file);
+					if (fileRef.current !== null) fileRef.current.value = "";
+				}
+			}) : null);
+		}
+		//#endregion
+		//#region ../../web/card-base/src/wirePicker.tsx
+		/** The wire picker — prior stages by ARRAY INDEX, including ones that
+		* haven't run yet ("not run yet" — wire BEFORE the upstream runs).
+		*
+		* Named outputs: when an upstream stage produced >1 named artifact
+		* (input_prep → media + mask), it expands into ONE ROW PER output so the
+		* user can wire mask → lanpaint_mask specifically. Upstreams with 0–1
+		* named artifacts render as a single row (legacy — primary via
+		* assetUrls[0]). The output name rides onPick → setSlotInput →
+		* inputOutputs → collectUpstreamResults. */
+		function WirePickerModal({ slot, priorStages, currentId, currentOutput, onPick, onUnwire, onClose }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose,
+				title: `Wire ${slot} from an earlier card`,
+				closeLabel: "Close wire picker",
+				className: card_module_css_default.wireDialog,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					"data-wire-modal": true,
+					children: [currentId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+						type: "button",
+						onClick: onUnwire,
+						"data-wire-unwire": true,
+						className: card_module_css_default.wireUnwire,
+						children: "Unwire — this slot will ask for a file or wire again"
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("ul", {
+						className: card_module_css_default.wireList,
+						children: [priorStages.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
+							className: card_module_css_default.wireEmpty,
+							children: "No earlier cards yet — add a card before this one to wire from it."
+						}), priorStages.map((u, i) => {
+							const named = u.result?.artifacts ?? {};
+							const namedEntries = Object.entries(named);
+							const multi = namedEntries.length > 1;
+							return (multi ? namedEntries.map(([name, url]) => ({
+								outputName: name,
+								thumb: url,
+								label: name
+							})) : [{
+								outputName: null,
+								thumb: u.result?.assetUrls[0],
+								label: "primary"
+							}]).map((row, ri) => {
+								const selected = u.id === currentId && (currentOutput ?? null) === (row.outputName ?? null);
+								return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+									type: "button",
+									onClick: () => onPick(u.id, row.outputName),
+									"data-wire-option": row.outputName ?? "primary",
+									className: clsx(card_module_css_default.wireOption, selected && card_module_css_default.wireSelected),
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: card_module_css_default.wireIdx,
+											children: String(i + 1).padStart(2, "0")
+										}),
+										row.thumb && isImageUrl(row.thumb) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+											src: row.thumb,
+											alt: "",
+											className: card_module_css_default.wireThumb
+										}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+											className: card_module_css_default.wireThumbFallback,
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Link2, { className: card_module_css_default.sz14 })
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+											className: card_module_css_default.wireMeta,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+												className: card_module_css_default.wireTitle,
+												children: [u.title, multi && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+													className: card_module_css_default.wireOut,
+													children: ["· ", row.label]
+												})]
+											}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+												className: card_module_css_default.wireSub,
+												children: u.result ? row.thumb ?? "no artifacts" : "not run yet"
+											})]
+										}),
+										selected && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: card_module_css_default.wiredTag,
+											children: "wired"
+										})
+									]
+								}) }, u.id + (ri > 0 ? `:${row.outputName}` : ""));
+							});
+						})]
+					})]
+				})
+			});
+		}
+		//#endregion
+		//#region ../../web/card-base/src/wire.ts
+		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
+		*  own error text when present). */
+		async function v1Get(path, signal) {
+			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
+			const body = await res.json().catch(() => null);
+			if (!res.ok) {
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
+			}
+			return body;
+		}
+		/** /v1/form-spec?model=<family> — the card family's emission (the
+		*  serialized schema envelope + model defaults + the declared edges
+		*  + the mod kinds and their envelopes). */
+		async function fetchFormSpec(model, signal) {
+			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
+			const env = doc["schema"];
+			if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
+			return doc;
+		}
+		//#endregion
+		//#region ../../web/card-base/src/square-provider.tsx
+		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		//#endregion
+		//#region ../../web/card-base/src/atoms.tsx
+		/** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
+		*  promoted from h3's studio-local TriControl (same semantics, same
+		*  option order). Serves schema-bound fields of type 'tri' AND the
+		*  standalone rail rows that hand-rolled the select before. */
+		function TriStateAtom({ label, value, onEdit, name, disabled }) {
+			return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"aria-label": label,
+				disabled: disabled === true,
+				value: value === void 0 ? "" : String(value),
+				onChange: (e) => {
+					const v = e.target.value;
+					onEdit(name, v === "" ? void 0 : v === "true");
+				}
+			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
+		}
+		/** The slider's local display during a drag (the settle law's
+		*  carrier): local owns the bubble while dragging; an external move
+		*  of the backing value (agent write, revive, another card opened)
+		*  reclaims the display. */
+		function useLocalSliderValue(value) {
+			const num = typeof value === "number" ? value : Number(value);
+			const [local, setLocal] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				setLocal(null);
+			}, [num]);
+			return {
+				value: local !== null ? local : Number.isFinite(num) ? num : null,
+				set: setLocal
+			};
+		}
+		/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
+		*  mask-studio's draft absorber, 2026-08-10): a drag fires input
+		*  60×/sec; if every step wrote to the card, updateStageParams →
+		*  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
+		*  the editor. The atom shows the drag locally and persists ONCE on
+		*  settle (the change event = release / keyboard step). External
+		*  writes (agent, revive) re-sync the display when the backing
+		*  value actually moves. */
+		function SpecSliderAtom({ f, value, onEdit }) {
+			const shown = useLocalSliderValue(value);
+			if (shown.value === null) return (0, react.createElement)("span", {
+				className: card_module_css_default.specSliderRow,
+				"data-refused": f.name
+			}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value) + " — REFUSED: not a number"));
+			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
+				className: card_module_css_default.specSlider,
+				type: "range",
+				min: f.min ?? 0,
+				max: f.max ?? 10,
+				step: f.step ?? .1,
+				value: shown.value,
+				onInput: (e) => {
+					shown.set(Number(e.target.value));
+				},
+				onChange: (e) => {
+					onEdit(f.name, e.target.value);
+				},
+				"aria-label": f.label
+			}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value)));
+		}
+		/** One spec atom — typed by the declaration, edited as a raw string
+		*  while typing (decimal dots survive; coercion happens once at patch). */
+		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }) {
+			if ((f.type === "image" || f.type === "file" || f.type === "mesh") && square !== void 0) {
+				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
+				return (0, react.createElement)(InputSquare, {
+					label: f.label !== "" ? f.label : f.name,
+					value: shown !== null && (isImageUrl(shown) || isMeshUrl(shown)) ? shown : null,
+					metric: typeof value === "string" && value !== "" && !isImageUrl(value) && !isMeshUrl(value) ? value : void 0,
+					...square.verbs
+				});
+			}
+			if (f.type === "select" && f.multi === true && Array.isArray(f.options) && f.options.length > 0) {
+				const rows = f.options.map((o) => typeof o === "string" ? {
+					value: o,
+					label: o
+				} : o);
+				const held = new Set(String(value ?? "").split(",").map((w) => w.trim()).filter((w) => w !== ""));
+				return (0, react.createElement)("div", {
+					className: card_module_css_default.specChips,
+					role: "group",
+					"aria-label": f.label,
+					...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+				}, rows.map((row) => {
+					const on = held.has(row.value);
+					return (0, react.createElement)("button", {
+						type: "button",
+						key: row.value,
+						className: card_module_css_default.specChip + (on ? " " + card_module_css_default.specChipOn : ""),
+						"aria-pressed": on,
+						"data-chip": row.value,
+						onClick: () => {
+							const next = new Set(held);
+							if (on) next.delete(row.value);
+							else next.add(row.value);
+							onEdit(f.name, rows.filter((r) => next.has(r.value)).map((r) => r.value).join(","));
+						}
+					}, titleCaseId(row.label));
+				}));
+			}
+			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				value: String(value ?? ""),
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			}, ghost !== void 0 ? (0, react.createElement)("option", { value: "" }, ghost) : null, f.options.map((o) => {
+				const row = typeof o === "string" ? {
+					value: o,
+					label: o
+				} : o;
+				return (0, react.createElement)("option", {
+					key: row.value,
+					value: row.value
+				}, titleCaseId(row.label));
+			}));
+			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
+				f,
+				value,
+				onEdit
+			});
+			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
+				label: f.label !== "" ? f.label : f.name,
+				value: value === void 0 || value === null ? void 0 : value === true || value === "true",
+				onEdit,
+				name: f.name
+			});
+			if (f.type === "switch" || f.type === "boolean") {
+				if (value !== void 0 && value !== null && typeof value !== "boolean" && value !== "true" && value !== "false") return (0, react.createElement)("span", {
+					className: card_module_css_default.specField,
+					"data-refused": f.name
+				}, f.label + ": " + String(value) + " — REFUSED: not a boolean");
+				const on = value === true || value === "true";
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+					label: f.label,
+					checked: on,
+					onChange: (next) => {
+						onEdit(f.name, next);
+					}
+				});
+			}
+			if (f.type === "textarea") {
+				const fitStable = (0, react.useCallback)((el) => {
+					if (el === null) return;
+					el.style.height = "auto";
+					el.style.height = Math.max(el.scrollHeight, 44) + "px";
+				}, []);
+				const fitEl = (0, react.useRef)(null);
+				(0, react.useEffect)(() => {
+					const el = fitEl.current;
+					el.style.height = "auto";
+					el.style.height = Math.max(el.scrollHeight, 44) + "px";
+				}, [String(value ?? "")]);
+				return (0, react.createElement)("textarea", {
+					className: card_module_css_default.specTextarea,
+					rows: 2,
+					value: String(value ?? ""),
+					placeholder: f.placeholder ?? "",
+					ref: (el) => {
+						const ta = el ?? null;
+						fitEl.current = ta;
+						fitStable(ta);
+					},
+					onChange: (e) => {
+						const el = e.target;
+						fitStable(el);
+						onEdit(f.name, el.value);
+					},
+					"aria-label": f.label
+				});
+			}
+			if (f.type === "number") return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				min: f.min,
+				max: f.max,
+				step: f.step,
+				value: String(value ?? ""),
+				placeholder: placeholder ?? f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			});
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				value: String(value ?? ""),
+				placeholder: placeholder ?? f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label,
+				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+			});
+		}
+		/** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
+		*  plus ONE SELECT PER SERVED AXIS GROUP — Variant, Quant, Recipe,
+		*  Precision, … the declaration's whole vocabulary, NEVER a hardcoded
+		*  list (the operator's lane proof caught the hardcoded Quant-only
+		*  list dropping seedvr2's and qwen's other axes). Order: the door's
+		*  variant_groups contract, else first-seen. Chain: an axis' options
+		*  are the rows composing with the axes above (the row's `owner`).
+		*  Each pick applies the row's defaults overlay through onEdit — the
+		*  values (model + every axis key + overlay keys) ride the caller's
+		*  map and pass along at Run. Renders nothing when the spec declares
+		*  no matrix. */
+		//#endregion
+		//#region ../../web/card-base/src/rows.tsx
+		/** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE INFO GLYPH (hour 21): the field's declared help prose (the
+		*  schema's extra.tooltip) rides a hover (i) beside the label — one
+		*  definition for every card; absent prose, no glyph. The text is
+		*  aria-carried (the DSH Tooltip is hover-only). */
+		function infoGlyph(f) {
+			if (f.tooltip === void 0 || f.tooltip === "") return null;
+			return (0, react.createElement)(Tip$1, {
+				tip: f.tooltip,
+				children: (0, react.createElement)("span", {
+					className: card_module_css_default.specInfo,
+					role: "note",
+					"aria-label": `info: ${f.tooltip}`
+				}, "i")
+			});
+		}
+		/** THE SEED DICE (stroke 39 — the operator's QOL law): the seed
+		*  knob carries the RANDOM sentinel -1 (GATE S: -1 mints a fresh
+		*  seed in the lane, EVERY run). The dice sits at the key line's
+		*  right end, across from the field's name: FILLED pips = random
+		*  (a new seed every run), HOLLOW pips = fixed (this exact seed
+		*  re-runs). The state DERIVES from the resolved value alone — no
+		*  hidden mode to drift; the click writes the value: fixed → -1
+		*  (random), random → a minted concrete int (the kit's own mint
+		*  law, Math.floor(random * 2147483647)). Typing a number while
+		*  random fixes it — the dice unfills by derivation, one source
+		*  of truth. The input never paints the sentinel: random shows
+		*  the placeholder, never "-1". */
+		function SeedDice({ random, onToggle }) {
+			return (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specDice + (random ? " " + card_module_css_default.specDiceOn : ""),
+				"data-seed-dice": random ? "random" : "fixed",
+				"aria-pressed": random,
+				"aria-label": "seed dice",
+				title: random ? "Random — a new seed every run. Click to fix one." : "Fixed seed — this exact seed re-runs. Click for a new one every run.",
+				onClick: onToggle
+			}, (0, react.createElement)("svg", {
+				width: 14,
+				height: 14,
+				viewBox: "0 0 16 16",
+				fill: "none",
+				xmlns: "http://www.w3.org/2000/svg",
+				"aria-hidden": "true"
+			}, (0, react.createElement)("rect", {
+				x: 1.4,
+				y: 1.4,
+				width: 13.2,
+				height: 13.2,
+				rx: 3.2,
+				stroke: "currentColor",
+				strokeWidth: 1.3
+			}), (0, react.createElement)("circle", {
+				cx: 5,
+				cy: 5,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 11,
+				cy: 5,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 8,
+				cy: 8,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 5,
+				cy: 11,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			}), (0, react.createElement)("circle", {
+				cx: 11,
+				cy: 11,
+				r: 1.35,
+				...random ? { fill: "currentColor" } : {
+					stroke: "currentColor",
+					strokeWidth: 1
+				}
+			})));
+		}
+		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
+			const seedKnob = f.name === "seed";
+			const seedRandom = seedKnob && (value === -1 || value === "-1");
+			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SeedDice, {
+				random: seedRandom,
+				onToggle: () => {
+					if (seedRandom) onEdit(f.name, Math.floor(Math.random() * 2147483647));
+					else onEdit(f.name, -1);
+				}
+			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SpecAtom, {
+				f,
+				value: seedRandom ? void 0 : value,
+				...seedRandom ? { placeholder: "random — new every run" } : {},
+				onEdit,
+				square,
+				...wireCandidates !== void 0 ? { wireCandidates } : {}
+			}));
+		}
+		//#endregion
+		//#region ../../web/card-base/src/axes.tsx
+		/** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). Each field renders through the
+		*  claimed atom for its emitted type when the caller passes one;
+		*  the base's built-in atom is the default.
+		*
+		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
+		*  img-to-mesh input component — you are not using it around — you
+		*  are hardcoding"): an emitted image/file/mesh input constructs THE ONE
+		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
+		*  square provider — no call site wires it, no call site can forget
+		*  it. The caller hands only the WIRE (picker candidates), never the
+		*  component; a caller that passes its own `square` fn overrides (the
+		*  host-claim seam), but the default is the constructor's own. */
+		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
+		*  required star, hint) around the atom — CardForm's own row, opened
+		*  to rail sections that render served fields outside a whole form
+		*  (mask's TuneSection). The claim seam stays CardForm's; this row
+		*  takes the resolved atom inputs. */
+		//#endregion
+		//#region ../../web/card-base/src/use-form-spec.ts
+		/** use-form-spec.ts — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
+		*  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
+		*  img-to-mesh's client, ideogram4's client) each hand-copied the
+		*  same fetch-once + abort dance. One spelling now: fetches
+		*  /v1/form-spec?model=<id> when the id is non-empty, aborts the
+		*  in-flight fetch on unmount or id change, and hands back the doc
+		*  (null until it lands) + the refusal message (null unless the door
+		*  refused — loud consumers render it, silent ones ignore it).
+		*  Consumer-specific derivations (field filters, value seeding) stay
+		*  at the call site as reactions to `spec`. */
+		function useFormSpec(modelId) {
+			const [spec, setSpec] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const id = typeof modelId === "string" && modelId !== "" ? modelId : null;
+			(0, react.useEffect)(() => {
+				if (id === null) return;
+				const ctl = new AbortController();
+				setSpec(null);
+				setError(null);
+				fetchFormSpec(id, ctl.signal).then((doc) => {
+					setSpec(doc);
+				}).catch((e) => {
+					setError(e instanceof Error ? e.message : "form-spec failed");
+				});
+				return () => {
+					ctl.abort();
+				};
+			}, [id]);
+			return {
+				spec,
+				error
+			};
+		}
+		//#endregion
+		//#region ../../web/card-base/src/spec-panel.tsx
+		/** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
+		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE DYNAMIC PARAMETER PANEL (2026-09-17, the operator's shared-
+		* component law): sections of the SERVED form-spec's rows at their
+		* wire names — ONE mechanism every card seats, never a per-card
+		* re-walk. The card owns POLICY through the DECLARATION (which
+		* fields exist, their visible_when leaves); the base owns MECHANISM
+		* (fetch → walker → row atoms → visibility grammar → the error
+		* law). A row the door never declared renders NOTHING (no ghost,
+		* no twin); a refused spec renders AS an error — never a thinner
+		* panel. */
+		function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: errorProp }) {
+			const owned = useFormSpec(model);
+			const spec = specProp !== void 0 ? specProp : owned.spec;
+			const error = specProp !== void 0 ? errorProp ?? null : owned.error;
+			if (error !== null) return (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				role: "alert",
+				"data-testid": "spec-panel-error"
+			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, "form-spec failed — parameters unavailable"), (0, react.createElement)("div", { className: card_module_css_default.specHint }, error));
+			if (spec === null) return null;
+			const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]));
+			const guardModel = resolveFamilyKey(spec) ?? model;
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, sections.map((sec) => (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				key: sec.title,
+				...sec.testid !== void 0 ? { "data-testid": sec.testid } : {}
+			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
+				const f = byName.get(row.name);
+				if (f === void 0) return null;
+				if (!fieldVisible(f, {
+					...values,
+					model: guardModel
+				})) return null;
+				return (0, react.createElement)(SpecFieldRow, {
+					key: row.name,
+					f,
+					value: values[row.name],
+					onEdit
+				});
+			}))));
+		}
+		//#endregion
+		//#region ../../web/card-base/src/form.tsx
+		/**
+		* form.tsx — @melite/card-base: THE CONSTRUCTOR (the godfile
+		* split, hour 15: the seams live in their own files now —
+		* use-form-spec.ts, square-provider.tsx, atoms.tsx, rows.tsx,
+		* spec-panel.tsx, axes.tsx — this file is the CardForm
+		* composition + the stable re-export surface).
+		*
+		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
+		* construct the card ui should see that the card package emits an
+		* image input, then constructs the input component automatically"):
+		* the base reads the card package's EMISSION — the served form-spec
+		* (the schema envelope, declared input/output edges, mod kinds) —
+		* and constructs the surface. The resolved value derives per render
+		* (resolveValue — the engine's compose cascade mirrored); every
+		* image/file/mesh field gets THE ONE square (square.tsx) with the
+		* three source verbs; no card ever hand-rolls an input component.
+		*
+		* THE SEAM (slots.ts): each field renders through the field-atom seam
+		* keyed by its emitted wire type — the caller may pass claimed atoms
+		* (the composition consults the slot machinery and hands them in);
+		* the base's built-in atom is the default (the ui-tool built-ins
+		* pattern). A whole-form takeover replaces CardForm itself.
+		*
+		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
+		* atoms the primitives set lacks (select, slider, textarea) are
+		* layout-only module CSS over native elements, every color an
+		* inherited --dsw-alias-* token (the package's documented pattern).
+		*/
+		//#endregion
+		//#region ../../web/card-base/src/mods.tsx
+		/**
+		* mods.tsx — THE MOD SYSTEM, CORE (the old SubcardGrid, ported 1:1 —
+		* and moved into the base package 2026-09-12 after the operator's
+		* law: "MOD SYSTEM IS CORE. NEVER HARDCODED. The LORAS should not be
+		* on cards, the MOD SYSTEM SHOULD").
+		*
+		* The laws this section enforces:
+		*  - mods NEVER ride the card's param form. The estate serves the
+		*    OPEN kind vocabulary (features.modifiers); the constructor
+		*    (CardForm) renders THIS section itself and excludes every
+		*    mod-owned name from the flat groups — no surface wires it, no
+		*    surface can forget it (the construction law, same as the
+		*    square).
+		*  - THE WIRE IS THE STORAGE: params[param_key] holds the bag; the
+		*    same bag runs and the agent reads/writes it.
+		*  - commits persist immediately (the old onSaveParams law — never
+		*    deferred to Run): onEdit rides the caller's values map AND
+		*    onPatch (when present) persists to the domain on the spot.
+		*  - apply order = array order; the drag rewrites the bag.
+		*  - THREE kind shapes, all first-class (the leaf switches on the
+		*    SERVED entry mode, never the kind name):
+		*      OPTION kinds (lora): served catalog rows + strength; the
+		*        entry is { id, strength } — the row's own defaults seed the
+		*        strength.
+		*      HYBRID kinds (controlnet): served catalog rows AND entry
+		*        fields; the entry is the bag element keyed by its option_key
+		*        (type) — the leaf stamps the row's resolved facts (model +
+		*        preprocessor) onto new entries so the run record carries the
+		*        retired wire shape; the lane re-validates them, never trusts
+		*        them. Pack-level scalars (the strength floor) render as the
+		*        section's own rows above the tiles.
+		*      OPTION kinds (lora): served catalog rows + strength; the
+		*        entry is { id, strength } — the row's own defaults seed the
+		*        strength.
+		*      FIELD kinds (mask): the kind's own spec fields (image squares,
+		*        selects, sliders); the entry IS the params object. The leaf
+		*        renders kind.fields through the same constructor atoms —
+		*        the fields NEVER render flat on the card form.
+		*/
+		//#endregion
+		//#region ../../web/card-base/src/use-resolved.ts
+		/**
+		* use-resolved.ts — THE STUDIO SEAM, ONE UNIVERSAL DEFAULT SYSTEM
+		* (operator, 2026-09-18: "there is no universal default system
+		* right?"). ONE resolver composes EVERY layer — schema defaults <-
+		* model_defaults <- base (the persisted/bench layer) <- user — and
+		* the surface reads THE ONE resolved map. Never a hand `??` ladder
+		* at a call site: a ladder IS a second resolver, and every extra
+		* arm is a place the truth forks.
+		*
+		* PRE-FETCH LAW: the spec arrives async, but the resolved map is
+		* STILL the layer composition — base under user, verbatim — so a
+		* synchronous render shows the document's own held values; the
+		* fetch landing fills the declared defaults under them (the same
+		* one map, richer). Nothing renders blank, nothing flickers, no
+		* call site branches on spec-null.
+		*
+		* THE EDIT LAW: `undefined` is the tri-state's inherit signal (the
+		* unset) — it rides verbatim, the caller's write owns what it
+		* means. Edits coerce at the SCHEMA BOUNDARY (coerceFieldEdit):
+		* numeric strings ride as numbers, unparseable strings ride
+		* verbatim for the run's schema parse to refuse LOUD, and keys the
+		* spec never declared (the mod bag) ride verbatim — the mod plane
+		* owns their validation.
+		*/
+		/** The resolved studio seam: spec + error from the door, values
+		* resolved through the ONE cascade, edits coerced at the schema
+		* boundary. `user` is the surface's explicit layer (a document's
+		* params — sparse by design); `base` is the persisted layer under
+		* it (the bench/stage row's params), when the surface has one. */
+		function useResolvedForm(family, user, onWrite, base) {
+			const { spec, error } = useFormSpec(family);
+			const resolved = (0, react.useMemo)(() => resolveValueLayered(spec, base, user), [
+				spec,
+				base,
+				user
+			]);
+			const fieldOf = (0, react.useCallback)((name) => spec !== null ? fieldsOf(spec).find((f) => f.name === name) : void 0, [spec]);
+			return {
+				spec,
+				error,
+				resolved,
+				edit: (0, react.useCallback)((name, v) => {
+					const f = fieldOf(name);
+					if (v === "" && f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider")) {
+						onWrite(name, void 0);
+						return;
+					}
+					onWrite(name, coerceFieldEdit(f, v));
+				}, [fieldOf, onWrite]),
+				fieldOf
+			};
+		}
+		/** The layer composition — PURE, exported for the seam's own wall:
+		* with a spec it is exactly resolveValue (schema <- model_defaults
+		* <- base <- user); without one (the pre-fetch render, the dead
+		* door) it is still the LAYERS — base under user, verbatim — so
+		* every surface reads the same shape at every moment. */
+		function resolveValueLayered(spec, base, user) {
+			if (spec === null) {
+				const out = { ...base ?? {} };
+				for (const [k, v] of Object.entries(user)) {
+					if (v === null || v === void 0) continue;
+					out[k] = v;
+				}
+				return out;
+			}
+			return resolveValue(spec, user, base);
+		}
 		//#endregion
 		//#region ../../web/card-base/src/studioRail.tsx
 		/**
@@ -46173,13 +47174,13 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/shell.module.css.mjs
-		const css$8 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
-		const tagId$8 = "@melite/motion-motion/shell.module.css@62658dc6";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$8) + "]") === null) {
+		const css$7 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:0;max-height:none;overflow:visible}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
+		const tagId$7 = "@melite/motion-motion/shell.module.css@147bff9d";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$7) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$8;
-			tag.textContent = css$8;
+			tag.dataset.pluginCss = tagId$7;
+			tag.textContent = css$7;
 			document.head.appendChild(tag);
 		}
 		var shell_module_css_default = {
@@ -46242,14 +47243,41 @@ void main() {
 			return Object.freeze(declaration);
 		}
 		//#endregion
-		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/motion/motion/src/ui/studio/component.module.css.mjs
-		const css$7 = "@keyframes U-ygCG_motionSpin{to{transform:rotate(360deg)}}.U-ygCG_shellPad{gap:8px;padding:12px 16px}.U-ygCG_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.U-ygCG_railGroupLabel{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 40%, transparent);grid-column:span 2;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_contents{display:contents}.U-ygCG_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);color:var(--dsw-alias-label-secondary,#5b6470)}.U-ygCG_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.U-ygCG_stampBtn:disabled{opacity:.5}.U-ygCG_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_reposeBtn:disabled{opacity:.5}.U-ygCG_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_hiddenInput{display:none}.U-ygCG_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.U-ygCG_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.U-ygCG_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.U-ygCG_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.U-ygCG_wireBtn:hover,.U-ygCG_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent)}.U-ygCG_centerRow{flex:1;gap:8px;min-height:0;display:flex}.U-ygCG_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.U-ygCG_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.U-ygCG_ovBg{z-index:0}.U-ygCG_ovCam{z-index:30}.U-ygCG_ovDrop{pointer-events:none;z-index:20}.U-ygCG_ovRect{pointer-events:none;z-index:40}.U-ygCG_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.U-ygCG_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.U-ygCG_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.U-ygCG_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_skelAvatar{border-radius:999px;width:96px;height:96px}.U-ygCG_skelAvatarSm{border-radius:999px;width:80px;height:80px}.U-ygCG_skelLine{width:112px;height:12px}.U-ygCG_stageVeil{width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);background:#0e0e1a99;flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.U-ygCG_veilText{font-size:12px}.U-ygCG_camPill{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);backdrop-filter:blur(4px);border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_camBtn{width:28px;height:28px;color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 80%, transparent);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.U-ygCG_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_frameBtnIdle{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 55%, transparent)}.U-ygCG_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.U-ygCG_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.U-ygCG_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.U-ygCG_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.U-ygCG_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.U-ygCG_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.U-ygCG_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.U-ygCG_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.U-ygCG_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary,#0f1115);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_playBtn:hover{background:#fff3}.U-ygCG_playBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_playIcon{width:14px;height:14px;margin-left:2px}.U-ygCG_timeWrap{flex-shrink:0;font-size:11px}.U-ygCG_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 80%, transparent);font-family:ui-monospace,monospace}.U-ygCG_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);align-items:center;gap:4px;display:flex}.U-ygCG_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.U-ygCG_fpsChip{display:block}}.U-ygCG_hintWrap{align-items:center;gap:8px;display:flex}.U-ygCG_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.U-ygCG_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.U-ygCG_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.U-ygCG_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.U-ygCG_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 80%, transparent)}.U-ygCG_i12{width:12px;height:12px}.U-ygCG_i14{width:14px;height:14px}.U-ygCG_spinIcon{width:14px;height:14px;animation:1s linear infinite U-ygCG_motionSpin}";
-		const tagId$7 = "@melite/motion-motion/component.module.css@c15e8a96";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$7) + "]") === null) {
+		//#region \0dsh-css:card-base/src/studio.module.css.mjs
+		const css$6 = "._0RY71q_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}._0RY71q_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}._0RY71q_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}._0RY71q_studioGroup{flex-direction:column;gap:6px;display:flex}._0RY71q_studioGroupTitle{letter-spacing:.04em;text-transform:uppercase;opacity:.65;margin:0;font-size:11px;font-weight:600}._0RY71q_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}";
+		const tagId$6 = "@melite/motion-motion/studio.module.css@7e793118";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$6) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$7;
-			tag.textContent = css$7;
+			tag.dataset.pluginCss = tagId$6;
+			tag.textContent = css$6;
+			document.head.appendChild(tag);
+		}
+		//#endregion
+		//#region ../../web/card-base/src/studio.tsx
+		/** studio.tsx — THE DECLARATIVE STUDIO (primitive ④, 2026-09-21):
+		*  the stage view owns ORGANIZATION over the SAME form-spec SSOT —
+		*  and organization is now DATA, not a client half. A card declares
+		*  its group partition (expose/fold + titles) and its preview kind;
+		*  the base renders everything else: spec fetch, value seeding +
+		*  resolved layering, the square provider, the patch-first run law,
+		*  the bindRun ref dispatch, run polling, the envelope lift,
+		*  error/loading faces, StudioShell composition.
+		*
+		*  A studio client half survives ONLY as a declaration + seam
+		*  registration (img-to-mesh is the first: ~30 lines, zero react
+		*  machinery, zero three, zero css). A TRUE takeover — content no
+		*  renderer can declare (motion's timeline, h3's call-card strip) —
+		*  rides beside this renderer as an extra pane, never a fork. */
+		//#endregion
+		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/motion/motion/src/ui/studio/component.module.css.mjs
+		const css$5 = "@keyframes U-ygCG_motionSpin{to{transform:rotate(360deg)}}.U-ygCG_shellPad{gap:8px;padding:12px 16px}.U-ygCG_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.U-ygCG_railGroupLabel{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 40%, transparent);grid-column:span 2;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_contents{display:contents}.U-ygCG_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);color:var(--dsw-alias-label-secondary,#5b6470)}.U-ygCG_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.U-ygCG_stampBtn:disabled{opacity:.5}.U-ygCG_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_reposeBtn:disabled{opacity:.5}.U-ygCG_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_hiddenInput{display:none}.U-ygCG_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.U-ygCG_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.U-ygCG_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.U-ygCG_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.U-ygCG_wireBtn:hover,.U-ygCG_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent)}.U-ygCG_centerRow{flex:1;gap:8px;min-height:0;display:flex}.U-ygCG_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.U-ygCG_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.U-ygCG_ovBg{z-index:0}.U-ygCG_ovCam{z-index:30}.U-ygCG_ovDrop{pointer-events:none;z-index:20}.U-ygCG_ovRect{pointer-events:none;z-index:40}.U-ygCG_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.U-ygCG_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.U-ygCG_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.U-ygCG_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_skelAvatar{border-radius:999px;width:96px;height:96px}.U-ygCG_skelAvatarSm{border-radius:999px;width:80px;height:80px}.U-ygCG_skelLine{width:112px;height:12px}.U-ygCG_stageVeil{width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);background:#0e0e1a99;flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.U-ygCG_veilText{font-size:12px}.U-ygCG_camPill{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);backdrop-filter:blur(4px);border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_camBtn{width:28px;height:28px;color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 80%, transparent);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.U-ygCG_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_frameBtnIdle{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 55%, transparent)}.U-ygCG_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.U-ygCG_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.U-ygCG_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.U-ygCG_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.U-ygCG_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.U-ygCG_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.U-ygCG_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.U-ygCG_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.U-ygCG_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary,#0f1115);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_playBtn:hover{background:#fff3}.U-ygCG_playBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_playIcon{width:14px;height:14px;margin-left:2px}.U-ygCG_timeWrap{flex-shrink:0;font-size:11px}.U-ygCG_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 80%, transparent);font-family:ui-monospace,monospace}.U-ygCG_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);align-items:center;gap:4px;display:flex}.U-ygCG_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.U-ygCG_fpsChip{display:block}}.U-ygCG_hintWrap{align-items:center;gap:8px;display:flex}.U-ygCG_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.U-ygCG_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.U-ygCG_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.U-ygCG_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.U-ygCG_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 80%, transparent)}.U-ygCG_i12{width:12px;height:12px}.U-ygCG_i14{width:14px;height:14px}.U-ygCG_spinIcon{width:14px;height:14px;animation:1s linear infinite U-ygCG_motionSpin}";
+		const tagId$5 = "@melite/motion-motion/component.module.css@c15e8a96";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$5) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/motion-motion";
+			tag.dataset.pluginCss = tagId$5;
+			tag.textContent = css$5;
 			document.head.appendChild(tag);
 		}
 		var component_module_css_default = {
@@ -46326,79 +47354,8 @@ void main() {
 			"wireBtnOn": "U-ygCG_wireBtnOn"
 		};
 		//#endregion
-		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/motion/motion/src/ui/studio/kit.module.css.mjs
-		const css$6 = ".XMVuyW_slotCol{flex-direction:column;align-items:center;gap:4px;display:flex}.XMVuyW_slotSquare{border:1px solid #0000;border-radius:8px;justify-content:center;align-items:center;transition:all .12s;display:flex;position:relative;overflow:hidden}.XMVuyW_slotSm{width:36px;height:36px}.XMVuyW_slotMd{width:80px;height:80px}.XMVuyW_slotHot{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent)}.XMVuyW_slotFilled{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 6%, transparent)}.XMVuyW_slotEmpty{border-style:dashed;border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent)}.XMVuyW_slotHover:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent)}.XMVuyW_slotDisabled{opacity:.5}.XMVuyW_hiddenInput{display:none}.XMVuyW_slotImg{object-fit:cover;width:100%;height:100%}.XMVuyW_slotUrl{text-overflow:ellipsis;white-space:nowrap;max-width:100%;color:var(--dsw-alias-label-secondary,#5b6470);padding:0 4px;font-family:ui-monospace,monospace;font-size:8px;overflow:hidden}.XMVuyW_slotEmptyGlyph{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 30%, transparent)}.XMVuyW_slotActions{align-items:center;gap:2px;display:flex;position:absolute;bottom:2px;right:2px}.XMVuyW_slotClear{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 90%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);cursor:pointer;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;display:flex;position:absolute;top:2px;right:2px}.XMVuyW_slotClear:hover{color:var(--dsw-alias-danger,#dc2626)}.XMVuyW_slotPick{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 90%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);cursor:pointer;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;display:flex;position:absolute;bottom:2px;left:2px}.XMVuyW_slotPick:hover{color:var(--dsw-alias-accent,#3b82f6)}.XMVuyW_slotLabel{text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;letter-spacing:.025em;max-width:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);font-size:10px;font-weight:500;overflow:hidden}.XMVuyW_slotLabelSm{font-size:8px}.XMVuyW_slotBadge{text-overflow:ellipsis;white-space:nowrap;max-width:100%;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 90%, transparent);font-size:9px;line-height:1.25;overflow:hidden}.XMVuyW_slotMetric{text-overflow:ellipsis;white-space:nowrap;max-width:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 50%, transparent);font-family:ui-monospace,monospace;font-size:8px;overflow:hidden}.XMVuyW_sz12{width:12px;height:12px}.XMVuyW_sz20{width:20px;height:20px}";
-		const tagId$6 = "@melite/motion-motion/kit.module.css@693ca993";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$6) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$6;
-			tag.textContent = css$6;
-			document.head.appendChild(tag);
-		}
-		var kit_module_css_default = {
-			"hiddenInput": "XMVuyW_hiddenInput",
-			"slotActions": "XMVuyW_slotActions",
-			"slotBadge": "XMVuyW_slotBadge",
-			"slotClear": "XMVuyW_slotClear",
-			"slotCol": "XMVuyW_slotCol",
-			"slotDisabled": "XMVuyW_slotDisabled",
-			"slotEmpty": "XMVuyW_slotEmpty",
-			"slotEmptyGlyph": "XMVuyW_slotEmptyGlyph",
-			"slotFilled": "XMVuyW_slotFilled",
-			"slotHot": "XMVuyW_slotHot",
-			"slotHover": "XMVuyW_slotHover",
-			"slotImg": "XMVuyW_slotImg",
-			"slotLabel": "XMVuyW_slotLabel",
-			"slotLabelSm": "XMVuyW_slotLabelSm",
-			"slotMd": "XMVuyW_slotMd",
-			"slotMetric": "XMVuyW_slotMetric",
-			"slotPick": "XMVuyW_slotPick",
-			"slotSm": "XMVuyW_slotSm",
-			"slotSquare": "XMVuyW_slotSquare",
-			"slotUrl": "XMVuyW_slotUrl",
-			"sz12": "XMVuyW_sz12",
-			"sz20": "XMVuyW_sz20"
-		};
-		//#endregion
-		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$5 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{flex-direction:column;flex:none;gap:4px;padding-top:4px;display:flex}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}";
-		const tagId$5 = "@melite/motion-motion/preview.module.css@d7eb1a43";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$5) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$5;
-			tag.textContent = css$5;
-			document.head.appendChild(tag);
-		}
-		//#endregion
-		//#region ../../web/card-base/src/glb-stage.tsx
-		/**
-		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
-		* claim, hour 14 2026-09-13). Grown from img-to-mesh's GlbViewport
-		* (the raw-three substrate, verbatim) + the old @melite-plugin/3d
-		* Stage's multi-asset contract (assets/selection/per-asset errors —
-		* the four props anny's assembly actually uses; drop-placement
-		* gizmos and mixers stay unported until a consumer ports them, the
-		* promotion law).
-		*
-		* SUBSTRATE LAW (verbatim, the 2026-09-12 boot-crash lesson): RAW
-		* three.js — imperative scene in a useEffect, NO @react-three. r3f's
-		* bundled react-reconciler reads the seeded React 19 internals by
-		* minified single-letter fields and a version-skew throws at boot
-		* ("reading 'S' of undefined"). three is a pure leaf library: no
-		* React entanglement, mounts like any imperative canvas lib.
-		*
-		* THE PREVIEW-PORT INTERACTION LAW (the operator's catch, hour 14:
-		* "Anny and Trellis are close to the same, but the way they interact
-		* with the preview port is different"): ONE stage component serves
-		* both — selection + per-asset errors are the stage's own uniform
-		* interaction surface; studio chrome (anchors, badges, in-card
-		* actions like anny's HMR fit-body) docks AROUND it, never inside.
-		*/
-		//#endregion
 		//#region ../../web-kit/formats/src/poserSkin.ts
-		init_src$1();
+		init_src();
 		//#endregion
 		//#region ../../web/card-base/src/poser-figure.tsx
 		/**
@@ -46424,6 +47381,17 @@ void main() {
 		* collapses identical shapes. The SCENE mounts once per card; shape
 		* commits SWAP THE GEOMETRY in place — no canvas flicker per drag.
 		*/
+		//#endregion
+		//#region ../../web/card-base/src/report-view.tsx
+		/** report-view.tsx — THE REPORT ATOM (ROADMAP 11e, primitive ①):
+		* the default face for a result row's machine-readable verdicts.
+		* A run may write named `reports` (kind 'report' — the contract's
+		* BenchReport) beside its media; the result row claims ONE default
+		* atom per entry and THIS is it: the DSH StateDot semantic (pass →
+		* done, warn → warning, fail → error) + the status word, the title
+		* (or the entry's own name), the check chips, and the key-value
+		* rows. The agent loop reads the same object the row renders — the
+		* machine-readable gate and its human face are ONE shape. */
 		//#endregion
 		//#region \0dsh-css:card-base/src/viewportChrome.module.css.mjs
 		const css$4 = "._8t0iwG_frame{border:1px solid var(--dsw-alias-border,#e2e4e9);background:#0e0e1a;border-radius:8px;flex:1;min-height:340px;position:relative;overflow:hidden}._8t0iwG_dockTopRight{position:absolute;top:8px;right:8px}._8t0iwG_dockTopLeft{position:absolute;top:8px;left:8px}._8t0iwG_dockBottomRight{position:absolute;bottom:8px;right:8px}._8t0iwG_dockBottomLeft{position:absolute;bottom:8px;left:8px}._8t0iwG_dockBottomCenter{position:absolute;bottom:8px;left:50%;transform:translate(-50%)}._8t0iwG_dockBottom{position:absolute;bottom:10px;left:10px;right:10px}._8t0iwG_dockFill{position:absolute;inset:0}._8t0iwG_dockEdgeRight{position:absolute;top:0;bottom:0;right:0}._8t0iwG_dockEdgeLeft{position:absolute;top:0;bottom:0;left:0}._8t0iwG_badge{pointer-events:none;border:1px solid var(--dsw-alias-border,#e2e4e9);backdrop-filter:blur(4px);background:#0e0e1ae6;border-radius:6px;width:112px;margin:0;overflow:hidden;box-shadow:0 8px 24px #00000059}._8t0iwG_badgeImg{object-fit:contain;width:100%;height:112px}._8t0iwG_badgeCaption{text-align:center;text-transform:uppercase;letter-spacing:.12em;color:var(--dsw-alias-label-tertiary,#8a93a0);padding:2px 6px;font-size:8px;font-weight:500}";
@@ -46497,162 +47465,6 @@ void main() {
 		*/
 		//#endregion
 		//#region src/ui/studio/kit.tsx
-		/**
-		* Motion studio kit — the DSH-pure replacement for the
-		* shared-chrome pieces the studio consumed from the old kit.
-		*
-		* WHAT LIVES HERE (and why):
-		*   • DSH atoms are imported DIRECTLY at the call sites (Button,
-		*     Input, Toast from @deepseek-ai/dsh-client-ui-primitives) —
-		*     never re-exported through here.
-		*   • SlotSquare — the POSE-SHAPE square (verbatim drop logic +
-		*     data-slot-* hooks). NOT a duplicate of @melite/card-base's
-		*     SourceRow: the pose square is a thumbnail shell for a mesh
-		*     or a pose file, with drag-over highlight, a detach affordance
-		*     and a wire affordance — its own domain, so it stays local.
-		*   • useMotionThumbStore — the client-side motion thumbnail cache
-		*     (same selector API + localStorage persistence, zustand-free).
-		*   • EVERYTHING ELSE WAS PROMOTED (2026-09-18, the operator's
-		*     ruling: "DSH does not work via two separate skeletons"). The
-		*     kit re-declared, byte-for-byte, pieces the estate already
-		*     owned: ASSET_DRAG_MIME (card-base/chrome — the estate's drag
-		*     contract, consumed by card-base, CardsTab and input-square),
-		*     isImageUrl, Tip, Skeleton, ViewportAnchor, ViewportFrame,
-		*     PaneHeader, PaneShell, Skeleton and WirePickerModal — all now
-		*     re-exported from @melite/card-base (Skeleton promoted 2026-09-18
-		*     into layout.tsx, the pane grammar's loading face; motion's was
-		*     the estate's only copy). ViewportAnchor / ViewportFrame re-export
-		*     from the @melite/card-base/preview subpath (the seam body,
-		*     img-to-mesh and CardsTab already ride). Their CSS was
-		*     byte-identical too (the dock/frame classes diffed clean against
-		*     viewportChrome.module.css), so the duplicate module died with
-		*     the code.
-		*/
-		function SlotSquare({ label, value, badge, metric, actions, onPickFile, onDropFile, onDropAsset, onClear, onClick, disabled = false, selected = false, emptyIcon, size = "md", className }) {
-			const fileRef = (0, react.useRef)(null);
-			const [dragOver, setDragOver] = (0, react.useState)(false);
-			const interactive = !disabled && (onPickFile || onDropFile || onDropAsset || onClick || onClear);
-			function handleDrop(e) {
-				e.preventDefault();
-				setDragOver(false);
-				if (disabled) return;
-				const asset = e.dataTransfer.getData(ASSET_DRAG_MIME$2);
-				if (asset) try {
-					const payload = JSON.parse(asset);
-					if (payload.url && onDropAsset) {
-						onDropAsset(payload.url);
-						return;
-					}
-				} catch {}
-				const file = e.dataTransfer.files?.[0];
-				if (file && onDropFile) onDropFile(file);
-			}
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: cn(kit_module_css_default.slotCol, className),
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						"data-slot-square": true,
-						onClick: disabled ? void 0 : onClick,
-						onDragOver: (e) => {
-							if (disabled) return;
-							if (e.dataTransfer.types.includes("application/tech-noir-asset") || e.dataTransfer.types.includes("Files")) {
-								e.preventDefault();
-								setDragOver(true);
-							}
-						},
-						onDragLeave: () => setDragOver(false),
-						onDrop: handleDrop,
-						className: cn(kit_module_css_default.slotSquare, size === "sm" ? kit_module_css_default.slotSm : kit_module_css_default.slotMd, dragOver || selected ? kit_module_css_default.slotHot : value ? kit_module_css_default.slotFilled : kit_module_css_default.slotEmpty, interactive && (onClick || onPickFile) && !dragOver && kit_module_css_default.slotHover, disabled && kit_module_css_default.slotDisabled),
-						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-								ref: fileRef,
-								type: "file",
-								className: kit_module_css_default.hiddenInput,
-								"data-slot-input": true,
-								onChange: (e) => {
-									const file = e.target.files?.[0];
-									e.target.value = "";
-									if (file && onPickFile) onPickFile(file);
-								}
-							}),
-							value ? isImageUrl(value) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-								src: value,
-								alt: label,
-								className: kit_module_css_default.slotImg
-							}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: value,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: kit_module_css_default.slotUrl,
-									children: value.startsWith("data:") ? `${value.slice(0, 16)}…` : value.split("/").pop()
-								})
-							}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: kit_module_css_default.slotEmptyGlyph,
-								children: emptyIcon ?? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Upload, {
-									className: size === "md" ? kit_module_css_default.sz20 : kit_module_css_default.sz12,
-									"aria-hidden": true
-								})
-							}),
-							actions && !disabled && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: kit_module_css_default.slotActions,
-								children: actions
-							}),
-							onClear && value && !disabled && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: "Detach",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-									type: "button",
-									onClick: (e) => {
-										e.stopPropagation();
-										onClear();
-									},
-									"aria-label": "Detach",
-									className: kit_module_css_default.slotClear,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X$1, {
-										className: kit_module_css_default.sz12,
-										"aria-hidden": true
-									})
-								})
-							}),
-							onPickFile && !disabled && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: `Pick a file for ${label}`,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-									type: "button",
-									onClick: (e) => {
-										e.stopPropagation();
-										fileRef.current?.click();
-									},
-									"aria-label": `Pick a file for ${label}`,
-									"data-slot-pick": true,
-									className: kit_module_css_default.slotPick,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Upload, {
-										className: kit_module_css_default.sz12,
-										"aria-hidden": true
-									})
-								})
-							})
-						]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-						tip: label,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: cn(kit_module_css_default.slotLabel, size === "sm" && kit_module_css_default.slotLabelSm),
-							"data-slot-label": true,
-							children: label
-						})
-					}),
-					badge !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-						tip: typeof badge === "string" ? badge : void 0,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: kit_module_css_default.slotBadge,
-							children: badge
-						})
-					}),
-					metric && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: kit_module_css_default.slotMetric,
-						children: metric
-					})
-				]
-			});
-		}
 		const THUMB_STORAGE_KEY = "motion-card-thumbnails";
 		function loadThumbs() {
 			try {
@@ -46660,13 +47472,15 @@ void main() {
 				if (!raw) return {};
 				const parsed = JSON.parse(raw);
 				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
-			} catch {}
+			} catch {
+				return {};
+			}
 			return {};
 		}
 		let thumbState = loadThumbs();
 		const thumbListeners = /* @__PURE__ */ new Set();
 		function emitThumbs() {
-			thumbListeners.forEach((l) => l());
+			thumbListeners.forEach((listener) => listener());
 		}
 		function subscribeThumbs(listener) {
 			thumbListeners.add(listener);
@@ -46680,7 +47494,9 @@ void main() {
 		function persistThumbs() {
 			try {
 				localStorage.setItem(THUMB_STORAGE_KEY, JSON.stringify(thumbState));
-			} catch {}
+			} catch {
+				return;
+			}
 		}
 		function setThumbnail(stageId, dataUrl) {
 			thumbState = {
@@ -46841,7 +47657,7 @@ void main() {
 		* DESTINATION: browser download — the ONE delivery path.
 		*/
 		init_three_module();
-		init_src();
+		init_src$1();
 		/** Long-edge PRESETS are GONE (2026-08-15 round 4, "do we need resolution
 		*  presets anymore when we type the pixel resolutions?"): the typed px
 		*  inputs are the one size UI — nothing shadows them. */
@@ -47285,13 +48101,13 @@ void main() {
 									{
 										id: "single",
 										label: "Single view",
-										icon: Camera$1,
+										icon: Camera,
 										desc: "The framed rectangle"
 									},
 									{
 										id: "batch",
 										label: "8-angle batch",
-										icon: Layers$1,
+										icon: Layers,
 										desc: "Same rect, the ring — automated"
 									},
 									{
@@ -47439,7 +48255,7 @@ void main() {
 										className: export_dialog_module_css_default.secHead,
 										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 											className: export_dialog_module_css_default.secTitle,
-											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Layers$1, { className: export_dialog_module_css_default.i12 }), " Render modes"]
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Layers, { className: export_dialog_module_css_default.i12 }), " Render modes"]
 										}), noModes && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: export_dialog_module_css_default.modesWarn,
 											children: "pick at least one"
@@ -47591,7 +48407,7 @@ void main() {
 		*  A REAL wire-level param, NOT UI-only: kimodo_motion's family signature
 		*  declares it (the card lane's input kind → glb, form_motion_kimodo
 		*  input slot), so the agent can set it headlessly. In the studio it renders as
-		*  an INPUT SUBCARD (a SlotSquare — the same square the image inputs use,
+		*  an INPUT SUBCARD (a InputSquare — the same square the image inputs use,
 		*  per the user directive): file pick / asset drop / OS drop / WIRE to an
 		*  upstream 3D card's GLB output (wired XOR attached — the SlotGrid
 		*  contract). Holds a data: URL (upload) or an asset URL. */
@@ -47740,8 +48556,7 @@ void main() {
 		*/
 		init_three_module();
 		init_src$1();
-		init_src();
-		function useMotionMedia({ stage, upstreams, onSave, onWireSlot, toast, bodyGlb, setBodyGlbState, setBodyNotice, skin, setSkin, npz, setNpz, allVertsM, setAllVertsM, setError, setLoading, setFrameIdx, setPlaying, setEditMode, setKeptEdit, setEditedDeformedB64, threeCtxRef, npzUrl, bgImage, setBgImage, setBgDragOver }) {
+		function useMotionMedia({ stage, upstreams, onSave, onWireSlot, runCompiledGeneration, toast, bodyGlb, setBodyGlbState, setBodyNotice, skin, setSkin, npz, setNpz, allVertsM, setAllVertsM, setError, setLoading, setFrameIdx, setPlaying, setEditMode, setKeptEdit, setEditedDeformedB64, threeCtxRef, npzUrl, bgImage, setBgImage, setBgDragOver }) {
 			const setBodyGlb = (0, react.useCallback)((url) => {
 				setBodyGlbState(url);
 				setBodyNotice(null);
@@ -47751,8 +48566,25 @@ void main() {
 				setBodyGlbState,
 				setBodyNotice
 			]);
-			const bodySlotIdx = (0, react.useMemo)(() => stage.params["preview_glb"] !== void 0 ? (getCachedCatalog()?.models?.[stage.service]?.input_slots ?? []).indexOf(MOTION_PREVIEW_GLB_PARAM) : -1, [stage.params, stage.service]);
-			const bodyWiredId = bodySlotIdx >= 0 ? stage.inputs[bodySlotIdx] : "";
+			const bodyBinding = (0, react.useMemo)(() => stage.inputBindings?.find((binding) => binding.slot === MOTION_PREVIEW_GLB_PARAM), [stage.inputBindings]);
+			const bodySlotIdx = (0, react.useMemo)(() => {
+				const slots = stage.inputSlots ?? [];
+				const bindingIndex = bodyBinding === void 0 ? -1 : slots.indexOf(bodyBinding.slot);
+				const declaredIndex = stage.params["preview_glb"] === void 0 ? -1 : slots.indexOf(MOTION_PREVIEW_GLB_PARAM);
+				return Math.max(bindingIndex, declaredIndex);
+			}, [
+				bodyBinding,
+				stage.inputSlots,
+				stage.params
+			]);
+			const bodyWiredId = (0, react.useMemo)(() => {
+				if (bodyBinding !== void 0) return "stage" in bodyBinding.source ? bodyBinding.source.stage : "";
+				return bodySlotIdx >= 0 ? stage.inputs[bodySlotIdx] ?? "" : "";
+			}, [
+				bodyBinding,
+				bodySlotIdx,
+				stage.inputs
+			]);
 			const bodyWiredUpstream = bodyWiredId ? upstreams.find((u) => u.id === bodyWiredId) : void 0;
 			const bodyWired = !!bodyWiredUpstream;
 			const bodyWiredUrl = bodyWiredUpstream?.result ? [...Object.values(bodyWiredUpstream.result.artifacts ?? {}), ...bodyWiredUpstream.result.assetUrls].find((u) => typeof u === "string" && /\.(glb|gltf)(\?|#|$)/i.test(u)) ?? null : null;
@@ -47768,6 +48600,7 @@ void main() {
 			]);
 			(0, react.useEffect)(() => {
 				let cancelled = false;
+				const abortController = new AbortController();
 				setSkin(null);
 				if (!bodySrc) {
 					loadSomaSkin().then((s) => {
@@ -47777,6 +48610,7 @@ void main() {
 					});
 					return () => {
 						cancelled = true;
+						abortController.abort();
 					};
 				}
 				loadGlbSkin(bodySrc).then((s) => {
@@ -47786,62 +48620,48 @@ void main() {
 					if (e instanceof NotSomaxGlbError) {
 						setBodyNotice(`Body isn't SOMAX-rigged — converting through the queue… (${e.message})`);
 						try {
-							const somaxBody = {
+							const result = await runCompiledGeneration({
 								flow: "body-to-somax",
 								glb: bodySrc
-							};
-							somaxBody.draft_id = await ensureDraftId(somaxBody);
-							const res = await fetch("/v1/flows/start", {
-								method: "POST",
-								headers: { "Content-Type": "application/json" },
-								body: JSON.stringify(somaxBody)
-							});
-							const text = await res.text();
-							if (!res.ok) throw new Error(`body-to-somax queue refused: HTTP ${res.status}${text ? `: ${text.slice(0, 300)}` : ""}`);
-							let data;
-							try {
-								data = JSON.parse(text);
-							} catch {
-								throw new Error("body-to-somax queue returned a non-JSON body");
-							}
-							const runId = data.run_id;
-							if (typeof runId !== "string" || !runId) throw new Error("body-to-somax queue returned no run_id");
-							const rigged = collectStageUrls((await pollFlowRun(runId, void 0, { onTick: () => void 0 })).stages).find((u) => /\.glb(\?|#|$)/i.test(u)) ?? null;
-							if (!rigged) throw new Error(`body-to-somax run ${runId} produced no rigged GLB`);
-							const s2 = await loadGlbSkin(rigged);
+							}, abortController.signal);
+							const rigged = result.urls.find(isMeshUrl) ?? null;
+							if (rigged === null) throw new Error(`body-to-somax run ${result.runId} produced no rigged GLB`);
+							const converted = await loadGlbSkin(rigged);
 							if (cancelled) return;
-							setSkin(s2);
+							setSkin(converted);
 							setBodyNotice(null);
 							toast("success", "Body converted to SOMAX rig — previewing your character.");
 							return;
-						} catch (e2) {
+						} catch (conversionError) {
 							if (cancelled) return;
-							const msg2 = e2 instanceof Error ? e2.message : String(e2);
-							setBodyNotice(`auto-convert failed — ${msg2}`);
-							toast("error", `SOMAX conversion failed — ${msg2}. Showing the neutral mannequin.`);
+							const detail = conversionError instanceof Error ? conversionError.message : String(conversionError);
+							setBodyNotice(`auto-convert failed — ${detail}`);
+							toast("error", `SOMAX conversion failed — ${detail}. Showing the neutral mannequin.`);
 							loadSomaSkin().then((s) => {
 								if (!cancelled) setSkin(s);
-							}).catch((e3) => {
-								if (!cancelled) setError(e3 instanceof Error ? e3.message : /* v8 ignore next -- DOMException instanceof Error === true (probe 2026-09-19) */ "Failed to load skin");
+							}).catch((fallbackError) => {
+								if (!cancelled) setError(fallbackError instanceof Error ? fallbackError.message : /* v8 ignore next -- DOMException instanceof Error === true (probe 2026-09-19) */ "Failed to load skin");
 							});
 							return;
 						}
 					}
-					/* v8 ignore next 1 -- line 158's branch diverts every NotSomaxGlbError; DOMException instanceof Error === true in happy-dom and the fetch lane wraps all else (probe 2026-09-19) */
+					/* v8 ignore next 1 -- the branch above diverts every NotSomaxGlbError; DOMException instanceof Error === true in happy-dom and the fetch lane wraps all else (probe 2026-09-19) */
 					const msg = e instanceof NotSomaxGlbError ? e.message : e instanceof Error ? e.message : "Failed to load character GLB";
 					setBodyNotice(msg);
 					toast("error", `Preview body not loaded — ${msg}. Showing the neutral mannequin.`);
 					loadSomaSkin().then((s) => {
 						if (!cancelled) setSkin(s);
-					}).catch((e2) => {
-						if (!cancelled) setError(e2 instanceof Error ? e2.message : /* v8 ignore next -- DOMException instanceof Error === true (probe 2026-09-19) */ "Failed to load skin");
+					}).catch((fallbackError) => {
+						if (!cancelled) setError(fallbackError instanceof Error ? fallbackError.message : /* v8 ignore next -- DOMException instanceof Error === true (probe 2026-09-19) */ "Failed to load skin");
 					});
 				});
 				return () => {
 					cancelled = true;
+					abortController.abort();
 				};
 			}, [
 				bodySrc,
+				runCompiledGeneration,
 				toast,
 				setSkin,
 				setError,
@@ -47933,7 +48753,7 @@ void main() {
 						ctx.gl.render(ctx.scene, ctx.camera);
 						ctx.gl.domElement.toBlob((blob) => {
 							if (!blob || blob.size < 100) return;
-							readAsDataURL$1(blob).then((url) => {
+							readAsDataURL(blob).then((url) => {
 								if (url.length > 100) {
 									thumbCapturedForUrl.current = npzUrl;
 									setThumb(stage.id, url);
@@ -47961,29 +48781,25 @@ void main() {
 			}, [stage.id, setBgImage]);
 			const handleBgFile = (0, react.useCallback)((file) => {
 				if (!file) return;
-				readAsDataURL$1(file).then(setBg);
+				readAsDataURL(file).then(setBg);
 			}, [setBg]);
 			const attachBody = (0, react.useCallback)((url) => {
 				if (url) onWireSlot?.(MOTION_PREVIEW_GLB_PARAM, null, null);
 				setBodyGlb(url);
 			}, [onWireSlot, setBodyGlb]);
-			const isGlbUrl = (0, react.useCallback)((u) => /\.(glb|gltf)(\?|#|$)/i.test(u), []);
 			const handleStageDrop = (0, react.useCallback)((e) => {
 				e.preventDefault();
 				setBgDragOver(false);
-				const asset = e.dataTransfer.getData(ASSET_DRAG_MIME$2);
-				if (asset) try {
-					const payload = JSON.parse(asset);
-					if (payload.url) {
-						if (isGlbUrl(payload.url)) attachBody(payload.url);
-						else setBg(payload.url);
-						return;
-					}
-				} catch {}
+				const asset = parseAssetDrop(e.dataTransfer.getData(ASSET_DRAG_MIME$1));
+				if (asset.url !== void 0) {
+					if (isMeshUrl(asset.url)) attachBody(asset.url);
+					else setBg(asset.url);
+					return;
+				}
 				const file = e.dataTransfer.files?.[0];
 				if (!file) return;
-				if (/\.glb$/i.test(file.name) || file.type === "model/gltf-binary") {
-					readAsDataURL$1(file).then(attachBody);
+				if (/\.(?:glb|gltf)$/i.test(file.name) || file.type === "model/gltf-binary") {
+					readAsDataURL(file).then(attachBody);
 					return;
 				}
 				handleBgFile(file);
@@ -47991,20 +48807,16 @@ void main() {
 				setBg,
 				handleBgFile,
 				attachBody,
-				isGlbUrl,
 				setBgDragOver
 			]);
 			const handleBodyFile = (0, react.useCallback)((file) => {
-				if (!/\.glb$/i.test(file.name) && file.type !== "model/gltf-binary") {
-					toast("error", "Preview body must be a .glb (SOMAX-rigged character).");
+				if (!/\.(?:glb|gltf)$/i.test(file.name) && file.type !== "model/gltf-binary") {
+					toast("error", "Preview body must be a .glb or .gltf (SOMAX-rigged character).");
 					return;
 				}
-				readAsDataURL$1(file).then(attachBody).catch((err) => toast("error", `Could not read GLB: ${err instanceof Error ? err.message : String(err)}`));
+				readAsDataURL(file).then(attachBody).catch((err) => toast("error", `Could not read GLB: ${err instanceof Error ? err.message : String(err)}`));
 			}, [attachBody, toast]);
-			const priorStages = (0, react.useMemo)(() => {
-				const idx = upstreams.findIndex((s) => s.id === stage.id);
-				return idx === -1 ? upstreams : upstreams.slice(0, idx);
-			}, [upstreams, stage.id]);
+			const priorStages = upstreams;
 			const bgTexRef = (0, react.useRef)(null);
 			(0, react.useEffect)(() => {
 				const ctx = threeCtxRef.current;
@@ -48034,7 +48846,6 @@ void main() {
 				bodyWiredUrl,
 				bodySrc,
 				attachBody,
-				isGlbUrl,
 				handleBodyFile,
 				priorStages,
 				setBg,
@@ -48053,7 +48864,7 @@ void main() {
 		* it owns the memos, verbs, and the client-side re-skin effect.
 		* Free-variable reads became explicit hook args. Behavior is IDENTICAL.
 		*/
-		init_src();
+		init_src$1();
 		init_motionConstraints();
 		function usePoseEditing({ effectiveNpz, frameIdx, tlKeyframes: _tlKeyframes, constraintPayloads, keptEdit, currentJointsM, fullbodyKfAtFrame, pushUndo, toast, skin, onSave, editMode, setEditMode, editableJoints, setEditableJoints, editableJointsRef, setSelectedJoint, setEditedDeformedB64, reposing: _reposing, setReposing, setKeptEdit, setPlaying, setConstraintPayloads }) {
 			const toggleEdit = () => {
@@ -48692,6 +49503,19 @@ void main() {
 				]
 			});
 		}
+		/** (2026-09-22, the lane-picker law) the gutter's add-door glyph —
+		*  same stroke vocabulary, lucide upload path data. */
+		function Upload({ className, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				...base("upload", className),
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17 8-5-5-5 5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v12" })
+				]
+			});
+		}
 		function X({ className, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
 				...base("x", className),
@@ -48728,6 +49552,29 @@ void main() {
 						y2: "11"
 					})
 				]
+			});
+		}
+		function Mic({ className, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				...base("mic", className),
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 10v2a7 7 0 0 1-14 0v-2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("line", {
+						x1: "12",
+						x2: "12",
+						y1: "19",
+						y2: "22"
+					})
+				]
+			});
+		}
+		function Zap({ className, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
+				...base("zap", className),
+				...rest,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("polygon", { points: "13 2 3 14 12 14 11 22 21 10 12 10 13 2" })
 			});
 		}
 		function ZoomOut({ className, ...rest }) {
@@ -48770,8 +49617,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/web-kit/timeline/timeline/timeline.module.css.mjs
-		const css$2 = ".E4_1PW_root{user-select:none;display:flex}.E4_1PW_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.E4_1PW_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.E4_1PW_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.E4_1PW_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.E4_1PW_zoomBtn svg{width:14px;height:14px}.E4_1PW_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.E4_1PW_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.E4_1PW_laneHead,.E4_1PW_laneHeadBeats{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneHead>svg,.E4_1PW_laneHeadBeats>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.E4_1PW_laneHeadBeats>svg{color:var(--dsw-alias-brand-primary)}.E4_1PW_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_audioHead{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_audioHead>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary);flex:none}.E4_1PW_gutterLabelDim{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.E4_1PW_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_detachBtn svg{width:10px;height:10px}.E4_1PW_laneRow{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneRow:last-child{border-bottom:0}.E4_1PW_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.E4_1PW_laneName{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;overflow:hidden}.E4_1PW_contentWrap{flex:1;min-width:0;position:relative}.E4_1PW_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.E4_1PW_scroller::-webkit-scrollbar{height:8px}.E4_1PW_scroller::-webkit-scrollbar-track{background:0 0}.E4_1PW_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.E4_1PW_content{position:relative}.E4_1PW_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);cursor:ew-resize;touch-action:none;position:relative}.E4_1PW_tick{position:absolute;top:0;bottom:0}.E4_1PW_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.E4_1PW_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.E4_1PW_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.E4_1PW_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_canAdd{cursor:copy}.E4_1PW_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.E4_1PW_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.E4_1PW_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.E4_1PW_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.E4_1PW_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeDead{cursor:default;opacity:.35}.E4_1PW_edgeDead:hover{background:0 0}.E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_promptClip:hover .E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.E4_1PW_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.E4_1PW_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeWide{width:16px}.E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.E4_1PW_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.E4_1PW_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.E4_1PW_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.E4_1PW_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.E4_1PW_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.E4_1PW_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.E4_1PW_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.E4_1PW_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.E4_1PW_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.E4_1PW_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.E4_1PW_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.E4_1PW_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.E4_1PW_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.E4_1PW_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.E4_1PW_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.E4_1PW_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_promptClip:hover .E4_1PW_promptDelete{opacity:1}.E4_1PW_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_beatsAdd{cursor:crosshair}.E4_1PW_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.E4_1PW_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.E4_1PW_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.E4_1PW_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.E4_1PW_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_audioClip:active{cursor:grabbing}.E4_1PW_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.E4_1PW_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.E4_1PW_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.E4_1PW_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.E4_1PW_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_audioClip:hover .E4_1PW_audioClipDelete{display:flex}.E4_1PW_audioClipDelete svg{width:8px;height:8px}.E4_1PW_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.E4_1PW_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.E4_1PW_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_kfLane:last-child{border-bottom:0}.E4_1PW_laneHint{color:var(--dsw-alias-label-tertiary);pointer-events:none;align-items:center;padding-left:12px;font-size:10px;display:flex;position:absolute;inset:0}.E4_1PW_kfWrap{position:absolute;top:0;bottom:0}.E4_1PW_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.E4_1PW_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.E4_1PW_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.E4_1PW_kfMoving{transform:rotate(45deg)scale(1.25)}.E4_1PW_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.E4_1PW_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_kfWrap:hover .E4_1PW_kfDelete{opacity:1}.E4_1PW_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_playhead{z-index:40;pointer-events:none;position:absolute;top:0;bottom:0}.E4_1PW_playheadCap{border:1px solid var(--dsw-alias-border-l4);border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.E4_1PW_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.E4_1PW_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.E4_1PW_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.E4_1PW_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.E4_1PW_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.E4_1PW_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.E4_1PW_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.E4_1PW_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}";
-		const tagId$2 = "@melite/motion-motion/timeline.module.css@b5c69b6a";
+		const css$2 = ".E4_1PW_root{user-select:none;display:flex}.E4_1PW_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.E4_1PW_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.E4_1PW_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.E4_1PW_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.E4_1PW_zoomBtn svg{width:14px;height:14px}.E4_1PW_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.E4_1PW_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.E4_1PW_laneHead,.E4_1PW_laneHeadBeats{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneHead>svg,.E4_1PW_laneHeadBeats>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.E4_1PW_laneHeadBeats>svg{color:var(--dsw-alias-brand-primary)}.E4_1PW_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_audioHead{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_audioHead>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary);flex:none}.E4_1PW_gutterLabelDim{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.E4_1PW_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_detachBtn svg{width:10px;height:10px}.E4_1PW_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.E4_1PW_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.E4_1PW_uploadBtn svg{width:10px;height:10px}.E4_1PW_laneRow{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneRow:last-child{border-bottom:0}.E4_1PW_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.E4_1PW_laneName{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;overflow:hidden}.E4_1PW_contentWrap{flex:1;min-width:0;position:relative}.E4_1PW_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.E4_1PW_scroller::-webkit-scrollbar{height:8px}.E4_1PW_scroller::-webkit-scrollbar-track{background:0 0}.E4_1PW_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.E4_1PW_content{position:relative}.E4_1PW_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);cursor:ew-resize;touch-action:none;position:relative}.E4_1PW_tick{position:absolute;top:0;bottom:0}.E4_1PW_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.E4_1PW_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.E4_1PW_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.E4_1PW_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_canAdd{cursor:copy}.E4_1PW_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.E4_1PW_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.E4_1PW_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.E4_1PW_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.E4_1PW_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeDead{cursor:default;opacity:.35}.E4_1PW_edgeDead:hover{background:0 0}.E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_promptClip:hover .E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.E4_1PW_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.E4_1PW_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeWide{width:16px}.E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.E4_1PW_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.E4_1PW_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.E4_1PW_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.E4_1PW_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.E4_1PW_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.E4_1PW_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.E4_1PW_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.E4_1PW_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.E4_1PW_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.E4_1PW_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.E4_1PW_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.E4_1PW_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.E4_1PW_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.E4_1PW_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.E4_1PW_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.E4_1PW_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_promptClip:hover .E4_1PW_promptDelete{opacity:1}.E4_1PW_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_beatsAdd{cursor:crosshair}.E4_1PW_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.E4_1PW_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.E4_1PW_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.E4_1PW_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.E4_1PW_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_audioClip:active{cursor:grabbing}.E4_1PW_audioCard{border-radius:6px;top:3px;bottom:3px}.E4_1PW_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.E4_1PW_audioCardIcon svg{width:13px;height:13px}.E4_1PW_audioCard .E4_1PW_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.E4_1PW_audioCard .E4_1PW_audioTime{margin-left:0}.E4_1PW_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.E4_1PW_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.E4_1PW_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.E4_1PW_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.E4_1PW_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_audioClip:hover .E4_1PW_audioClipDelete{display:flex}.E4_1PW_audioClipDelete svg{width:8px;height:8px}.E4_1PW_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.E4_1PW_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.E4_1PW_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_kfLane:last-child{border-bottom:0}.E4_1PW_laneHint{color:var(--dsw-alias-label-tertiary);pointer-events:none;align-items:center;padding-left:12px;font-size:10px;display:flex;position:absolute;inset:0}.E4_1PW_kfWrap{position:absolute;top:0;bottom:0}.E4_1PW_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.E4_1PW_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.E4_1PW_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.E4_1PW_kfMoving{transform:rotate(45deg)scale(1.25)}.E4_1PW_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.E4_1PW_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_kfWrap:hover .E4_1PW_kfDelete{opacity:1}.E4_1PW_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_playhead{z-index:40;pointer-events:none;position:absolute;top:0;bottom:0}.E4_1PW_playheadCap{border:1px solid var(--dsw-alias-border-l4);border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.E4_1PW_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.E4_1PW_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.E4_1PW_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.E4_1PW_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.E4_1PW_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.E4_1PW_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.E4_1PW_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.E4_1PW_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}";
+		const tagId$2 = "@melite/motion-motion/timeline.module.css@c0351638";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
@@ -48780,6 +49627,8 @@ void main() {
 			document.head.appendChild(tag);
 		}
 		var timeline_module_css_default = {
+			"audioCard": "E4_1PW_audioCard",
+			"audioCardIcon": "E4_1PW_audioCardIcon",
 			"audioClip": "E4_1PW_audioClip",
 			"audioClipDelete": "E4_1PW_audioClipDelete",
 			"audioClipLabel": "E4_1PW_audioClipLabel",
@@ -48865,6 +49714,7 @@ void main() {
 			"tickLine": "E4_1PW_tickLine",
 			"timecode": "E4_1PW_timecode",
 			"truncate": "E4_1PW_truncate",
+			"uploadBtn": "E4_1PW_uploadBtn",
 			"zoomBtn": "E4_1PW_zoomBtn",
 			"zoomPct": "E4_1PW_zoomPct",
 			"zoomRow": "E4_1PW_zoomRow"
@@ -48881,7 +49731,7 @@ void main() {
 		/** The pinned label gutter (bar line 820): the zoom cluster + lane
 		*  heads. The Fit pin reads the live scale — the body is the bar's. */
 		function TimelineGutter(props) {
-			const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks } = props;
+			const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards } = props;
 			const { zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf } = scale;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: timeline_module_css_default.gutter,
@@ -48948,26 +49798,45 @@ void main() {
 							children: beatsLabel
 						})]
 					}),
-					audioLayers?.map((L) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: timeline_module_css_default.audioHead,
-						style: { height: 26 },
-						title: L.stem ? `${L.stem} — one bed under every cut; each window hears its own slice in time` : "drop an audio / music track — sliced to each window in time",
-						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, { "aria-hidden": true }),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: timeline_module_css_default.gutterLabelDim,
-								children: L.label
-							}),
-							(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
-								size: "sm",
-								onClick: () => onAudioDetach(L.id),
-								"aria-label": `Detach ${L.label}`,
-								className: timeline_module_css_default.detachBtn,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, { "aria-hidden": true })
-							})
-						]
-					}, L.id)),
+					audioLayers?.map((L) => {
+						const Glyph = L.icon === "mic" ? Mic : L.icon === "zap" ? Zap : Music;
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: timeline_module_css_default.audioHead,
+							"data-audio-icon": L.icon ?? "music",
+							style: {
+								height: audioClipCards ? 44 : 26,
+								...L.accent ? { color: L.accent } : {}
+							},
+							title: L.stem ? `${L.stem} — one bed under every cut; each window hears its own slice in time` : "drop an audio / music track — sliced to each window in time",
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, { "aria-hidden": true }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: timeline_module_css_default.gutterLabelDim,
+									children: L.label
+								}),
+								L.onUpload && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									"data-audio-upload": L.id,
+									"aria-label": `Add ${L.label} clip`,
+									title: `Add a ${L.label} clip — from flow, from media, or from file`,
+									className: timeline_module_css_default.uploadBtn,
+									onClick: (e) => {
+										L.onUpload?.(e.currentTarget);
+									},
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Upload, { "aria-hidden": true })
+								}),
+								(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									onClick: () => onAudioDetach(L.id),
+									"aria-label": `Detach ${L.label}`,
+									className: timeline_module_css_default.detachBtn,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X, { "aria-hidden": true })
+								})
+							]
+						}, L.id);
+					}),
 					tracks.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: timeline_module_css_default.laneRow,
 						style: { height: 24 },
@@ -49384,16 +50253,19 @@ void main() {
 		}
 		/** Native audio tracks, same scroll + scale (bar line 1316). */
 		function TimelineAudioLanes(props) {
-			const { audioLayers, prompts, fps, frameToPx, xToFrame, startDrag, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete } = props;
+			const { audioLayers, prompts, fps, frameToPx, xToFrame, startDrag, audioClipCards, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete } = props;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: audioLayers?.map((L) => {
 				const clips = L.clips ?? [];
+				const Glyph = L.icon === "mic" ? Mic : L.icon === "zap" ? Zap : Music;
+				const accent = L.accent;
 				return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 					"data-audio-layer": L.id,
 					"data-wired": L.stem ? "true" : "false",
 					"data-clips": clips.length ? "true" : "false",
+					"data-lane-cards": audioClipCards ? "true" : "false",
 					className: timeline_module_css_default.audioLane,
 					style: {
-						height: 26,
+						height: audioClipCards ? 44 : 26,
 						background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)"
 					},
 					onDragOver: (e) => e.preventDefault(),
@@ -49419,11 +50291,18 @@ void main() {
 						const b = ((c.start_frame + c.dur_frames) / Math.max(1, fps)).toFixed(1);
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							"data-audio-clip": c.id,
+							"data-card": audioClipCards ? "true" : void 0,
 							title: `${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`,
-							className: timeline_module_css_default.audioClip,
+							className: clsx(timeline_module_css_default.audioClip, audioClipCards && timeline_module_css_default.audioCard),
 							style: {
 								left: frameToPx(c.start_frame),
-								width: `max(6px, ${frameToPx(Math.max(1, c.dur_frames))}px)`
+								width: `max(6px, ${frameToPx(Math.max(1, c.dur_frames))}px)`,
+								...audioClipCards && accent ? {
+									background: `linear-gradient(135deg, color-mix(in srgb, ${accent} 32%, transparent), color-mix(in srgb, ${accent} 10%, transparent))`,
+									borderColor: `color-mix(in srgb, ${accent} 45%, transparent)`,
+									borderLeftColor: accent,
+									borderLeftWidth: 3
+								} : {}
 							},
 							onPointerDown: (e) => {
 								if (!onAudioClipMove) return;
@@ -49438,6 +50317,12 @@ void main() {
 								});
 							},
 							children: [
+								audioClipCards && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									"aria-hidden": true,
+									className: timeline_module_css_default.audioCardIcon,
+									style: accent ? { color: accent } : void 0,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, {})
+								}),
 								c.gain != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									"aria-hidden": true,
 									className: timeline_module_css_default.gainFill,
@@ -49622,7 +50507,7 @@ void main() {
 		const PLAYHEAD = "var(--dsw-alias-brand-primary)";
 		/** Unified background for the timeline bar and its sticky timecode chip. */
 		const BAR_BG = "var(--dsw-alias-bg-layer-1)";
-		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = "Prompts", laneHint = "Double-click a lane to pin a pose constraint at the playhead", packed = false, emptyPromptsHint = "No prompt cards — the Add button carves one", promptsHeight = 36, beats, beatsLabel = "Beats", beatsHeight = 26, beatsHint = "double-click to add a beat — prompt segments join into the call's one prompt", onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, className, style, theme }) {
+		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = "Prompts", laneHint = "Double-click a lane to pin a pose constraint at the playhead", packed = false, emptyPromptsHint = "No prompt cards — the Add button carves one", promptsHeight = 36, beats, beatsLabel = "Beats", beatsHeight = 26, beatsHint = "double-click to add a beat — prompt segments join into the call's one prompt", onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, audioClipCards = false, className, style, theme }) {
 			const barBg = theme?.barBg ?? BAR_BG;
 			const playhead = theme?.playhead ?? PLAYHEAD;
 			const scrollRef = (0, react.useRef)(null);
@@ -49675,7 +50560,8 @@ void main() {
 					beatsHeight,
 					audioLayers,
 					onAudioDetach,
-					tracks
+					tracks,
+					audioClipCards
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(TimelineContent, {
 					scrollRef,
 					contentW: scale.contentW,
@@ -49726,6 +50612,7 @@ void main() {
 							audioLayers,
 							prompts,
 							fps,
+							audioClipCards,
 							frameToPx: scale.frameToPx,
 							xToFrame: scale.xToFrame,
 							startDrag: drag.startDrag,
@@ -49845,7 +50732,7 @@ void main() {
 		* Free-variable reads became explicit hook args; the memo + verbs +
 		* framing state/handlers are returned. Behavior is IDENTICAL.
 		*/
-		init_src();
+		init_src$1();
 		init_motionConstraints();
 		function useMotionStage({ effectiveNpz, keptEdit, editableJoints, frameIdx, fullbodyKfAtFrame, toast, pushUndo, setKeptEdit, setEditedDeformedB64, setConstraintPayloads, setTlKeyframes, exportOpen, stageRect, setStageRect }) {
 			const jointsFlatCm = (0, react.useMemo)(() => {
@@ -50380,7 +51267,7 @@ void main() {
 		}
 		//#endregion
 		//#region src/ui/studio/MotionRail.tsx
-		function MotionRail({ effectiveNpz, showSkeleton, setShowSkeleton, inPlace, setInPlace, editMode, toggleEdit, fullbodyKfAtFrame, frameIdx, stampConstraintAtFrame, editableJoints, handleRepose, reposing, keptEdit, discardKeptEdit, kimodoSpec, kimodoError, paramValues, onParamEdit, exportOpen, setExportOpen, bgImage, bgInputRef, handleBgFile, setBg, bodySrc, bodyWired, bodyWiredUpstream, bodyWiredUrl, handleBodyFile, isGlbUrl, toast, attachBody, onWireSlot, bodySlotIdx, onSave, stage, setBodyWireOpen, bodyNotice }) {
+		function MotionRail({ effectiveNpz, showSkeleton, setShowSkeleton, inPlace, setInPlace, editMode, toggleEdit, fullbodyKfAtFrame, frameIdx, stampConstraintAtFrame, editableJoints, handleRepose, reposing, keptEdit, discardKeptEdit, kimodoSpec, kimodoError, paramValues, onParamEdit, exportOpen, setExportOpen, bgImage, bgInputRef, handleBgFile, setBg, bodySrc, bodyWired, bodyWiredUpstream, bodyWiredUrl, handleBodyFile, toast, attachBody, onWireSlot, bodySlotIdx, onSave, stage, setBodyWireOpen, bodyNotice }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: component_module_css_default.railGrid,
 				children: [
@@ -50546,18 +51433,18 @@ void main() {
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						"data-motion-body": true,
 						className: component_module_css_default.bodySquareWrap,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SlotSquare, {
-							size: "md",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(InputSquare, {
 							label: MOTION_PREVIEW_GLB_PARAM,
 							value: bodySrc || void 0,
 							badge: bodyWired ? bodyWiredUpstream.title : void 0,
 							metric: bodyWired && !bodyWiredUrl ? "waiting for upstream" : void 0,
 							emptyIcon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PersonStanding, { className: component_module_css_default.bodyEmptyIcon }),
-							onPickFile: (f) => handleBodyFile(f),
-							onDropFile: (f) => handleBodyFile(f),
-							onDropAsset: (url) => {
-								if (!isGlbUrl(url)) {
-									toast("error", "Preview body must be a .glb (SOMAX-rigged character).");
+							accept: MESH_SQUARE_ACCEPT,
+							showFileAction: true,
+							onFile: handleBodyFile,
+							onAsset: (url) => {
+								if (!isMeshUrl(url)) {
+									toast("error", "Preview body must be a .glb or .gltf (SOMAX-rigged character).");
 									return;
 								}
 								attachBody(url);
@@ -50650,7 +51537,7 @@ void main() {
 		//#endregion
 		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageSkeleton.ts
 		init_three_module();
-		init_src();
+		init_src$1();
 		/** Centimeters → meters. SOMA-X/ANNY joints arrive in cm; the Three.js scene
 		*  is authored in meters. Applied at every display boundary. The drag handler
 		*  converts gizmo.position back to cm so IK/FK math stays in the native cm
@@ -50736,7 +51623,7 @@ void main() {
 		}
 		//#endregion
 		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageCamera.ts
-		init_src();
+		init_src$1();
 		function cameraPosFor(view) {
 			switch (view) {
 				case "side": return [
@@ -50810,7 +51697,7 @@ void main() {
 		//#endregion
 		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageMesh.ts
 		init_three_module();
-		init_src$1();
+		init_src();
 		const FLOOR_LIFT_Y = .02;
 		/** Compute the Y-offset that places the mesh's lowest point at FLOOR_LIFT_Y. */
 		function computeMeshLiftY(meshData) {
@@ -50874,7 +51761,7 @@ void main() {
 		//#endregion
 		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageCarriers.ts
 		init_three_module();
-		init_src();
+		init_src$1();
 		function createSkinCarrier(liftGroup) {
 			return {
 				mesh: null,
@@ -50913,7 +51800,7 @@ void main() {
 						this.mat.color.set(p.color);
 						this.mat.opacity = opacity;
 						this.mat.transparent = opacity < 1;
-						this.mat.wireframe = p.wireframe;
+						this.mat.wireframe = p.layers.wireframe;
 					}
 				},
 				setData(deformedFlat) {
@@ -52797,7 +53684,7 @@ void main() {
 		//#endregion
 		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageManipulators.ts
 		init_three_module();
-		init_src();
+		init_src$1();
 		const JOINT_RADIUS = {};
 		for (let i = 0; i < 77; i++) JOINT_RADIUS[i] = .02;
 		for (const j of [
@@ -53215,7 +54102,7 @@ void main() {
 		//#endregion
 		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageOverlays.ts
 		init_three_module();
-		init_src();
+		init_src$1();
 		function createLightingOrbs(deps) {
 			const { stage, scene } = deps;
 			const orbs = {
@@ -53681,7 +54568,7 @@ void main() {
 		//#endregion
 		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageReference.ts
 		init_three_module();
-		init_src();
+		init_src$1();
 		function createReferenceCarrier(deps) {
 			const { liftGroup, refManip } = deps;
 			return {
@@ -54015,7 +54902,7 @@ void main() {
 					orbs.onSelectOrb = p.onSelectOrb;
 					orbs.update(p.lightingOrbs, p.selectedOrb);
 				}
-				skeleton.update(p.showSkeleton && !p.editMode ? p.editableJoints ?? p.soma77JointsFlat : null, p.frameIdx);
+				skeleton.update(p.layers.skeleton && !p.editMode ? p.editableJoints ?? p.soma77JointsFlat : null, p.frameIdx);
 				if (p.editMode && !p.editRefMode && !!p.editableJoints) {
 					manip.ensure(liftGroup);
 					manip.active = true;
@@ -54135,6 +55022,13 @@ void main() {
 		* The old @react-three/fiber JSX tree and the drei components live on only
 		* as their imperative analogues in poseStage.ts (the 2026-09-13 port).
 		*/
+		/** The layers default (the altSamples law's twin): a hoisted shared
+		*  OFF state — a per-render `= {}` default would give every omitting
+		*  render a NEW identity and re-sync the stage for nothing. */
+		const NO_LAYERS = {
+			wireframe: false,
+			skeleton: false
+		};
 		const NUM_VERTS = 18056;
 		const ALT_NUM_VERTS = 18056;
 		/** The altSamples default (stroke 77 bug fix): a hoisted shared
@@ -54144,7 +55038,7 @@ void main() {
 		*  by the motion burn-down's effect census). One stable identity,
 		*  never mutated. */
 		const NO_ALT_SAMPLES = [];
-		function PoseViewer3DImpl({ deformedVerticesB64, deformedVertsDirect, frameIdx, onFrameChange, animate = false, cameraView = "demo", cameraFraming = "full", height = "100%", opacity = 1, wireframe = false, color = "#98bdf7", fps = 30, forceBindPose = false, soma77Joints = null, soma77JointsFlat: soma77JointsFlatProp = null, showSkeleton = false, editMode = false, editableJoints = null, selectedJoint = null, onSelectJoint, onSelectChain, onJointMove, selectedChain = null, kinematicMode = "fk", gizmoMode = "rotate", editedDeformedB64 = null, lightingOrbs = [], onLightingOrbsChange, selectedOrb = null, onSelectOrb, ghostJoints = null, cameraFov = 45, darkMode = true, playbackSpeed = 1, identityModel = "anny", identityCoeffs = null, localChanges = null, customTargets = null, footContacts = null, showFootContacts = false, showStartingDirection = false, altSamples = NO_ALT_SAMPLES, onCommitSample = () => {}, root2dPoints = [], endEffectorPoints = [], showConstraintLabels = true, selectedEEId = null, onSelectEE, onChangeEEPoint, placingEE = false, eePlaceJointIdx, onPlaceEE, referenceMesh = null, refPlaybackFrameIdx, editRefMode = false, refEditableJoints, onRefJointMove, onCanvasReady, threeCtxRef, inPlace = false, customBindMesh = null }) {
+		function PoseViewer3DImpl({ deformedVerticesB64, deformedVertsDirect, frameIdx, onFrameChange, animate = false, cameraView = "demo", cameraFraming = "full", height = "100%", opacity = 1, layers = NO_LAYERS, color = "#98bdf7", fps = 30, forceBindPose = false, soma77Joints = null, soma77JointsFlat: soma77JointsFlatProp = null, editMode = false, editableJoints = null, selectedJoint = null, onSelectJoint, onSelectChain, onJointMove, selectedChain = null, kinematicMode = "fk", gizmoMode = "rotate", editedDeformedB64 = null, lightingOrbs = [], onLightingOrbsChange, selectedOrb = null, onSelectOrb, ghostJoints = null, cameraFov = 45, darkMode = true, playbackSpeed = 1, identityModel = "anny", identityCoeffs = null, localChanges = null, customTargets = null, footContacts = null, showFootContacts = false, showStartingDirection = false, altSamples = NO_ALT_SAMPLES, onCommitSample = () => {}, root2dPoints = [], endEffectorPoints = [], showConstraintLabels = true, selectedEEId = null, onSelectEE, onChangeEEPoint, placingEE = false, eePlaceJointIdx, onPlaceEE, referenceMesh = null, refPlaybackFrameIdx, editRefMode = false, refEditableJoints, onRefJointMove, onCanvasReady, threeCtxRef, inPlace = false, customBindMesh = null }) {
 			const [meshData, setMeshData] = (0, react.useState)(null);
 			const [meshLoading, setMeshLoading] = (0, react.useState)(true);
 			const [meshError, setMeshError] = (0, react.useState)(null);
@@ -54366,11 +55260,10 @@ void main() {
 					animate,
 					showBindPose,
 					opacity,
-					wireframe,
+					layers,
 					color,
 					fps,
 					soma77JointsFlat,
-					showSkeleton,
 					editMode,
 					editableJoints,
 					selectedJoint,
@@ -54449,10 +55342,10 @@ void main() {
 		const PoseViewer3D = (0, react.memo)(PoseViewer3DImpl);
 		//#endregion
 		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/PoseEditMode.tsx
-		init_src();
+		init_src$1();
 		//#endregion
 		//#region src/ui/studio/MotionStageView.tsx
-		init_src();
+		init_src$1();
 		function MotionStageView({ stageBoxRef, bgDragOver, setBgDragOver, handleStageDrop, bgImage, skin, allVertsM, restB64, editedDeformedB64, frameIdx, setFrameIdx, npz, playing, editMode, cameraView, framing, jointsFlatCm, showSkeleton, effectiveNpz, customBindMesh, inPlace, threeCtxRef, editableJoints, selectedJoint, setSelectedJoint, handleJointMove, loading, error, setCameraView, setFraming, exportOpen, stageRect, beginRectDrag, onRectPointerMove, endRectDrag, setExportOpen, npzUrl, stage, setPlaying, displayJointsM, liftY, setStageRect, exportOut, handleOutSize, handleFramePreset }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: component_module_css_default.centerRow,
@@ -54500,7 +55393,10 @@ void main() {
 							cameraView,
 							cameraFraming: framing,
 							soma77JointsFlat: jointsFlatCm,
-							showSkeleton: /* v8 ignore next -- viewer renders only under skin ⟹ restNpz/effectiveNpz/restB64 non-null (probe 2026-09-19) */ effectiveNpz ? showSkeleton && !editMode : false,
+							layers: {
+								wireframe: false,
+								skeleton: /* v8 ignore next -- viewer renders only under skin ⟹ restNpz/effectiveNpz/restB64 non-null (probe 2026-09-19) */ effectiveNpz ? showSkeleton && !editMode : false
+							},
 							customBindMesh,
 							identityModel: "soma",
 							inPlace,
@@ -54518,7 +55414,7 @@ void main() {
 							"aria-busy": "true",
 							"aria-label": "Loading mannequin",
 							className: component_module_css_default.stageLoading,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton$1, { className: component_module_css_default.skelAvatar }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton$1, { className: component_module_css_default.skelLine })]
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelAvatar }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelLine })]
 						}),
 						loading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
 							dock: "fill",
@@ -54527,7 +55423,7 @@ void main() {
 								"aria-busy": "true",
 								"aria-label": "Loading motion",
 								className: component_module_css_default.stageVeil,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton$1, { className: component_module_css_default.skelAvatarSm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton$1, { className: component_module_css_default.skelLine })]
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelAvatarSm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelLine })]
 							})
 						}),
 						error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
@@ -54844,8 +55740,8 @@ void main() {
 		* useTimelineAuthoring (timeline CRUD verbs), and the MotionRail /
 		* MotionStageView / MotionTimelineSection panels. Behavior is IDENTICAL.
 		*/
-		init_src();
-		function MotionCardEditor({ stage, onSave, upstreams = [], onWireSlot }) {
+		init_src$1();
+		function MotionCardEditor({ stage, onSave, upstreams = [], onWireSlot, runCompiledGeneration }) {
 			const toast = useToastStore((s) => s.addToast);
 			const { spec: kimodoSpec, error: kimodoError, resolved: paramValues, edit: onParamEdit } = useResolvedForm("kimodo", typeof stage.params === "object" && stage.params !== null ? stage.params : {}, (name, value) => {
 				onSave({ [name]: value });
@@ -54946,11 +55842,12 @@ void main() {
 			(0, react.useEffect)(() => {
 				onSave({ prompt: firstNonEmptyCardText });
 			}, [firstNonEmptyCardText]);
-			const { bodySlotIdx, bodyWiredId, bodyWiredUpstream, bodyWired, bodyWiredUrl, bodySrc, attachBody, isGlbUrl, handleBodyFile, priorStages, setBg, handleBgFile, handleStageDrop } = useMotionMedia({
+			const { bodySlotIdx, bodyWiredId, bodyWiredUpstream, bodyWired, bodyWiredUrl, bodySrc, attachBody, handleBodyFile, priorStages, setBg, handleBgFile, handleStageDrop } = useMotionMedia({
 				stage,
 				upstreams,
 				onSave,
 				onWireSlot,
+				runCompiledGeneration,
 				toast,
 				bodyGlb,
 				setBodyGlbState,
@@ -55098,7 +55995,6 @@ void main() {
 					bodyWiredUpstream,
 					bodyWiredUrl,
 					handleBodyFile,
-					isGlbUrl,
 					toast,
 					attachBody,
 					onWireSlot,
@@ -55217,94 +56113,42 @@ void main() {
 		* stage.params; writes ride onSave → onPatch (patchStageParams'
 		* partial merge); the run rides the host drill's own Run row.
 		*/
-		/** The bench row → the tenant's CardStage. id/title/kind ride
-		* verbatim; service names the card ('motion' — the family's join
-		* key); params IS the document; result's artifact name→url map feeds
-		* the NPZ resolver + the preview body's asset reads. */
-		function toCardStage(props) {
-			const row = props.row;
-			const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : {};
-			const result = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : {};
-			const artifacts = {};
-			const arts = typeof result["artifacts"] === "object" && result["artifacts"] !== null ? result["artifacts"] : {};
-			for (const [name, val] of Object.entries(arts)) if (typeof val === "string" && val !== "") artifacts[name] = val;
-			const assetUrls = Array.isArray(result["assetUrls"]) ? result["assetUrls"].filter((u) => typeof u === "string") : [];
-			const metadata = typeof result["metadata"] === "object" && result["metadata"] !== null ? result["metadata"] : {};
-			const card = typeof row["card"] === "string" ? row["card"] : "";
-			const title = typeof row["title"] === "string" && row["title"] !== "" ? row["title"] : card !== "" ? card : props.stageId;
-			const runStatus = typeof row["runStatus"] === "string" ? row["runStatus"] : "";
-			const cardResult = Object.keys(artifacts).length > 0 || assetUrls.length > 0 ? {
-				artifacts,
-				assetUrls,
-				metadata
-			} : null;
-			return {
-				id: props.stageId,
-				title,
-				kind: card !== "" ? card : "motion",
-				service: card !== "" ? card : "motion",
-				genre: "motion",
-				params,
-				inputs: [],
-				inputIndices: [],
-				result: cardResult,
-				status: runStatus === "done" ? "done" : runStatus === "failed" ? "error" : runStatus === "running" || runStatus === "queued" ? "running" : "ready"
-			};
-		}
-		/** Upstream rows → read-only CardStages (the preview body's wire
-		* picker restricts to indices BEFORE this card — never a write
-		* channel). */
-		function toUpstreams(props) {
-			const upstream = props.upstream;
-			if (upstream === void 0 || upstream.length === 0) return [];
-			return upstream.map((u) => ({
-				id: u.id,
-				title: u.title,
-				kind: "image",
-				service: u.title,
-				params: {},
-				inputs: [],
-				inputIndices: [],
-				status: "done",
-				result: {
-					artifacts: { [u.title]: u.url },
-					assetUrls: [u.url],
-					metadata: {}
-				}
-			}));
-		}
+		init_src();
 		/** The built-in registration (the ui-tool law, verbatim — the module
 		* namespace IS the plugin: the loader consumes name/inject/apply). */
 		const name = "motionStudio";
 		const inject = ["slots"];
-		function apply(ctx) {
-			ctx.slots.inject("cards.stage.view", () => ctx.slots.register({
-				name: "cards.stage.view",
-				key: "motion"
-			}, MotionStudio));
+		const apply = defineStageViewRegistration("motion", MotionStudio, () => ({ runCompiledGeneration }));
+		function motionUpstreamStages(props) {
+			const priorIds = props.priorStageIds === void 0 ? null : new Set(props.priorStageIds);
+			return projectUpstreamStages(props).filter((upstream) => priorIds === null || priorIds.has(upstream.id));
 		}
 		/** The motion surface — registered under key 'motion'. The ADAPTER:
 		* the tenant mounted verbatim, one translate layer, zero paraphrase.
 		* onWireSlot stays OMITTED (the tenant's own contract: omitting
 		* hides the wire affordance — the bench slot has no wire door). */
 		function MotionStudio(props) {
-			const stage = toCardStage(props);
-			const upstreams = toUpstreams(props);
+			const stage = projectStageView(props, { genre: "motion" });
+			const upstreams = motionUpstreamStages(props);
 			return (0, react.createElement)(MotionCardEditor, {
 				stage,
 				onSave: (params) => {
 					props.onPatch(params);
 				},
-				upstreams
+				onWireSlot: props.onWireSlot,
+				upstreams,
+				runCompiledGeneration: props.runCompiledGeneration
 			});
 		}
 		//#endregion
 		exports.MotionStudio = MotionStudio;
 		exports.apply = apply;
 		exports.inject = inject;
+		exports.motionUpstreamStages = motionUpstreamStages;
 		exports.name = name;
 		return module.exports;
 	}
 });
 
 //# sourceMappingURL=client.js.map
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="4ba052d2ca804ef0b7cdd4eba080774211210d21";
