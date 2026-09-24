@@ -1975,3 +1975,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="1e5636abe6c480d666ca050a304b458573f48112";
