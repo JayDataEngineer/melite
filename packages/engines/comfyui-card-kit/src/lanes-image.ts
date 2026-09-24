@@ -4,6 +4,7 @@ import type { ModelFacts } from './facts.ts'
 import { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks/render-kit.ts'
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from './mods/guard.ts'
 import { mintSeed } from './graph-helpers.ts'
+import { IMPACT_DETECTORS } from './impact.ts'
 
 // ── archetype I: the image-diffuse family ───────────────────────────
 // Loader chain → lora stack → text pair → controlnet stack → latent
@@ -264,20 +265,23 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
  * that would refuse at execute time. */
 function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: OutputHandle, maskPath: string): OutputHandle {
   const detector = (region.mask_detector ?? 'off') as string
-  const segm = detector === 'person'
   const expand = ((region.mask_grow ?? 8) as number) + ((region.mask_context_pad ?? 64) as number)
   if (detector !== 'off') {
-    const weight = segm
-      ? 'segm/person_yolov8m-seg.pt'
-      : detector === 'face' ? 'bbox/face_yolov8m.pt' : 'bbox/hand_yolov8s.pt'
-    const found = g.node('UltralyticsDetectorProvider', { model_name: weight }).out(segm ? 1 : 0)
+    // person rides the segm facts, face its bbox facts, everything
+    // else (hand, unknown words) the hand bbox facts — the pre-stroke
+    // ternary's exact graph, pack facts for pins (same law as the
+    // sam2 lane's word→facts map above).
+    const facts = detector === 'person' ? IMPACT_DETECTORS.person
+      : detector === 'face' ? IMPACT_DETECTORS.face : IMPACT_DETECTORS.hand
+    const found = g.node(facts.providerNode, { model_name: facts.graphPath }).out(facts.providerOutput)
     const regionArgs = {
       image, threshold: (region.mask_detector_threshold ?? 0.5) as number,
       dilation: expand, crop_factor: 3.0, drop_size: 10, labels: 'all',
     }
-    return segm
-      ? g.node('SegmDetectorSEGS', { segm_detector: found, ...regionArgs }).out()
-      : g.node('BboxDetectorSEGS', { bbox_detector: found, ...regionArgs }).out()
+    return g.node(facts.detectorNode, {
+      [facts.detectorInput]: found,
+      ...regionArgs,
+    }).out()
   }
   let m = g.node('LoadImageMask', { image: maskPath, channel: 'alpha' }).out()
   if (expand !== 0) m = g.node('GrowMask', { mask: m, expand, tapered_corners: true }).out()

@@ -34,6 +34,17 @@ export { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks
 export { isItemWrapped, unwrapItemArrays, coerceWireArrays, coerceWireNumbers, wireTypeLedger } from './coerceWireArrays.ts'
 export { mintSeed, voiceLockSeed } from './graph-helpers.ts'
 export {
+  IMPACT_DETECTOR_IDS,
+  IMPACT_DETECTORS,
+  IMPACT_DETECTOR_PROVISIONS,
+  IMPACT_PACKS,
+  impactArmNames,
+  impactDetector,
+  type ImpactDetectorFacts,
+  type ImpactDetectorId,
+  type ImpactProvision,
+} from './impact.ts'
+export {
   IMAGE_GEN_STRIP,
   finalizeImageGen,
   imageT2I,

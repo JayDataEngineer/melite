@@ -124,7 +124,7 @@ describe("maskT1 (the selection lane's arms)", () => {
       ["BboxDetectorSEGS", "SAMDetectorCombined", "SAMLoader", "UltralyticsDetectorProvider"], "the full impact chain rides");
     assert.ok(!classes(row).includes("CLIPTextEncode"), "the sam2 arm never touches the CLIP text lane");
     const face = Object.values(row).find((n) => n.class_type === "UltralyticsDetectorProvider")!;
-    assert.equal(face.inputs.model_name, "bbox/face_pin.pt", "the card's FACE pin rides (never a caller string)");
+    assert.equal(face.inputs.model_name, "bbox/face_yolov8m.pt", "the pack's OWN face detector rides (caller pins retired — the Impact Pack examples' specialized model)");
     const det = Object.values(row).find((n) => n.class_type === "BboxDetectorSEGS")!;
     assert.equal(det.inputs.labels, "face,hand", "the labels set rides");
     assert.equal(det.inputs.threshold, 0.6, "the detection threshold rides verbatim");
@@ -144,7 +144,7 @@ describe("maskT1 (the selection lane's arms)", () => {
     assert.ok(segmDet, "person-only routes the SEGMENTATION detector");
     assert.ok(!Object.values(row).some((n) => n.class_type === "BboxDetectorSEGS"), "never both detectors for one payload");
     const providers = Object.values(row).filter((n) => n.class_type === "UltralyticsDetectorProvider");
-    assert.ok(providers.some((n) => n.inputs.model_name === "segm/person_pin.pt"), "the SEGMENTATION pin rides");
+    assert.ok(providers.some((n) => n.inputs.model_name === "segm/person_yolov8m-seg.pt"), "the pack's OWN segmentation detector rides");
     assert.ok(Object.values(row).some((n) => n.class_type === "SEGSToImageList"), "SEGSToImageList unwraps the crops");
     const cropSave = Object.values(row).find((n) => n.class_type === "SaveImage" && String(n.inputs.filename_prefix).endsWith("instance"));
     assert.ok(cropSave, "the per-instance crops save under the run dir");

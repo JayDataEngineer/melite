@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/kit.ts",
     "./graph": "./src/graph.ts",
+    "./impact": "./src/impact.ts",
     "./facts": "./src/facts.ts",
     "./fields": "./src/fields.ts",
     "./vocab": "./src/vocab.ts",

@@ -2,6 +2,11 @@ import { GraphBuilder, OutputHandle, stripAutofill } from './graph.ts'
 import type { NodeInputs, NodeRef, PromptGraph, StripTable } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
 import { mintSeed } from './graph-helpers.ts'
+import { impactDetector } from './impact.ts'
+
+const personDetector = impactDetector('person')
+const faceDetector = impactDetector('face')
+const handDetector = impactDetector('hand')
 
 // ── the mask selection lane ─────────────────────────────────────────
 // RT-DETR proposes, SAM3 refines; loaders are lazy (reachability —
@@ -26,7 +31,7 @@ export type EntryTune = { threshold?: number; refine?: number; dilation?: number
  *  impact-pack arm (sam2 + the pack's own specialized detectors —
  *  person on segm, face/hand on their bbox models — the detector
  *  proposes, SAM2 refines). */
-export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; unet: string; sam2: string; segm: string; face: string; hand: string }, g: GraphBuilder, runId: string): void {
+export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; unet: string; sam2: string }, g: GraphBuilder, runId: string): void {
   const li = pins          // the ACTION CARD owns its pins (no model row — mask-studio is a tool, not weights)
   const prefix = `${runId}/mask`        // the arm's "%s/mask" % run_id
   const samThreshold = p.sam_threshold as number
@@ -135,11 +140,11 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     // wiring it into SegmDetectorSEGS.segm_detector 400s the run
     // with return_type_mismatch; the provider's own output list
     // is ["BBOX_DETECTOR", "SEGM_DETECTOR"]).
-    (segmH ??= g.node('UltralyticsDetectorProvider', { model_name: li.segm as string }).out(1))
+    (segmH ??= g.node(personDetector.providerNode, { model_name: personDetector.graphPath }).out(personDetector.providerOutput))
   const faceProvider = (): OutputHandle =>
-    (faceH ??= g.node('UltralyticsDetectorProvider', { model_name: li.face as string }).out(0))
+    (faceH ??= g.node(faceDetector.providerNode, { model_name: faceDetector.graphPath }).out(faceDetector.providerOutput))
   const handProvider = (): OutputHandle =>
-    (handH ??= g.node('UltralyticsDetectorProvider', { model_name: li.hand as string }).out(0))
+    (handH ??= g.node(handDetector.providerNode, { model_name: handDetector.graphPath }).out(handDetector.providerOutput))
   // ONE DETECTOR FAMILY PER ENTRY (the operator's 2026-10-09 order:
   // "ONLY the ones shown in the Impact Pack examples" — person,
   // face, hand, each on the pack's OWN specialized detector, exactly
@@ -163,10 +168,17 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     // labels-filtering test workflow (detailer-pipe-test.json)
     // wires BboxDetectorSEGS + SAMDetectorCombined exactly as
     // this lane does.)
+    // THE WORD→FACTS MAP (the stroke's pin law, verbatim shape):
+    // person rides the segm facts, face its bbox facts, EVERYTHING
+    // else (hand, the 'all' wildcard, unstated words) the hand bbox
+    // facts with labels verbatim — the pre-stroke ternary's exact
+    // graph, only the pin source moved (caller strings → pack facts).
+    const detector = segmLane ? personDetector
+      : words[0] === 'face' ? faceDetector : handDetector
     const provider = segmLane ? segmProvider()
       : words[0] === 'face' ? faceProvider() : handProvider()
-    const segs = g.node(segmLane ? 'SegmDetectorSEGS' : 'BboxDetectorSEGS', {
-      [segmLane ? 'segm_detector' : 'bbox_detector']: provider,
+    const segs = g.node(detector.detectorNode, {
+      [detector.detectorInput]: provider,
       image: img(),
       threshold: (tune?.detection_threshold ?? (p.detection_threshold as number | undefined) ?? 0.5),
       dilation: tune?.detection_dilation ?? detectionDilation,
