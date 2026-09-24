@@ -55,8 +55,12 @@ export const DECL: ModelDecl = {
       "description": "preset personas with optional instruct-text style control (the 1.7B instruct lane — upstream reserves instruction control for the large checkpoint)",
       "group": "Variant",
       "route": "qwen3-tts-voicedesign",
+      // THE SNAPSHOT ADDRESS (transcript-014's sibling hole): the
+      // 1.7B CustomVoice weights ship only as the HF cache snapshot
+      // (top-level safetensors one level down) — the lane points at
+      // the real weights, never at a name nothing provisioned.
       "lane_inputs": {
-        "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice",
+        "model_path": "qwen3-tts/hf/models--Qwen--Qwen3-TTS-12Hz-1.7B-CustomVoice/snapshots/0c0e3051f131929182e2c023b9537f8b1c68adfe",
         "synth_lane": "speak",
       },
       "resolver_defaults": {
@@ -104,9 +108,11 @@ export const DECL: ModelDecl = {
       "route": "qwen3-tts-voicedesign-base",
       // THE CLONE INTERCEPT (the 0.6B family's fold, mirrored):
       // the clone checkpoint address + the clone lane key ride the
-      // variant — merged base ← variant at the derived read.
+      // variant — merged base ← variant at the derived read. Same
+      // snapshot law as the customvoice lane above: real weights,
+      // real address.
       "lane_inputs": {
-        "model_path": "Qwen3-TTS-12Hz-1.7B-Base",
+        "model_path": "qwen3-tts/hf/models--Qwen--Qwen3-TTS-12Hz-1.7B-Base/snapshots/fd4b254389122332181a7c3db7f27e918eec64e3",
         "synth_lane": "clone",
       },
       // THE RE-POINT + NULL STAMP: a variant pick resolves to this
@@ -145,7 +151,7 @@ export const DECL: ModelDecl = {
     "clip_vision": "",
     "family": "qwen3_tts",
     "latent_node": "EmptySD3LatentImage",
-    "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice",
+    "model_path": "qwen3-tts/hf/models--Qwen--Qwen3-TTS-12Hz-1.7B-CustomVoice/snapshots/0c0e3051f131929182e2c023b9537f8b1c68adfe",
     "sampling_shift": 0,
     "synth_lane": "speak",
     "text_encoder": "",

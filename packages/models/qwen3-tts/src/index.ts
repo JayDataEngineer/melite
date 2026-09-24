@@ -67,9 +67,12 @@ export const DECL: ModelDecl = {
       // THE CLONE INTERCEPT (the fold: the dead family's lane truth
       // rides the variant — merged base ← variant at the derived
       // read, byte-identical graphs): the clone checkpoint address
-      // + the clone lane key.
+      // + the clone lane key. The address points INTO the hf tree
+      // (transcript-014: the bare container dir 'qwen3-tts' holds
+      // only hf/ — the C++ load gate refuses it; the 0.6B Base
+      // weights sit one level down with top-level safetensors).
       "lane_inputs": {
-        "model_path": "qwen3-tts",
+        "model_path": "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
         "synth_lane": "clone",
       },
       // THE RE-POINT (krea-2-raw precedent): a variant pick

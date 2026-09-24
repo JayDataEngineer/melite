@@ -105,6 +105,21 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.throws(() => mergedDefaults("krea-2", "no-such-variant"), ModelError);
   });
 
+  it("FIRST SELF-ROUTE WINS when two variants claim the family head (the 1.7B head theft, transcript-014: customvoice declares first, voicedesign second — the second claimant must never silently flip the family default)", (): void => {
+    // the derived head view composes through the FIRST head-claiming
+    // variant in declaration order — the same default law as the
+    // resolving pick at registration (declaration order IS intent)
+    const head = getModel("qwen3-tts-voicedesign");
+    assert.equal((head.defaults as Record<string, unknown>).variant, "customvoice", "the head serves the family default (customvoice), not the last claimant");
+    assert.equal((head.lane_inputs as Record<string, unknown>).synth_lane, "speak", "the head lane is the default variant's lane — THE FLOW's lane");
+    // the design lane stays reachable through its STATED variant (the
+    // stamp overlay + the variant's own lane truth), and the clone
+    // lane through its own flat route
+    const clone = getModel("qwen3-tts-voicedesign-base");
+    assert.equal((clone.lane_inputs as Record<string, unknown>).synth_lane, "clone");
+    assert.equal((clone.defaults as Record<string, unknown>).variant, "base");
+  });
+
   it("variant matrices ride (the hierarchy: 48 serving variants — yue2's int8 cell, 2026-09-20; the qwen 2.1 pair adds its quant tiers, 2026-09-21)", (): void => {
     // registry plane: serving variants (cells > 0) and quant cells;
     // recipe rows are routing recipes, not serving variants

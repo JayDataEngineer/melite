@@ -177,10 +177,19 @@ export class ModelsService extends Service {
     for (const claim of claims) {
       // a SELF-ROUTE (the claim equals the model's own id) is the
       // model's composed head — it SUPERSEDES any alias a sibling
-      // model's variant laid on the same flat id
+      // model's variant laid on the same flat id. FIRST SELF-ROUTE
+      // WINS (the 1.7B head theft, transcript-014: customvoice and
+      // voicedesign both claim 'qwen3-tts-voicedesign' — the
+      // unconditional set let the SECOND claimant silently flip the
+      // head to the design lane, contradicting the declaration-
+      // order default law two lines up; a second head claim of the
+      // SAME model is a shared-address alias, never a default flip)
       if (claim.route === decl.id) {
-        this.routes.set(claim.route, { modelId: decl.id, variantId: claim.variantId, cellRoute: claim.cellRoute })
-        continue
+        const priorHead = this.routes.get(claim.route);
+        if (priorHead === undefined || priorHead.modelId !== decl.id) {
+          this.routes.set(claim.route, { modelId: decl.id, variantId: claim.variantId, cellRoute: claim.cellRoute });
+        }
+        continue;
       }
       // a route that IS a registered model's id belongs to that
       // model (its own self-route); the sibling variant's claim on

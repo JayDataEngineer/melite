@@ -32,14 +32,16 @@ describe("the qwen3-tts-voicedesign model plugin (1.7B, the full 1:1 flavor matr
     const byId = Object.fromEntries(DECL.variants.map((v) => [v.id, v]));
     assert.deepEqual([...ids].sort(), ["base", "customvoice", "voicedesign"], "upstream's three 1.7B flavors, nothing invented");
     const cv = byId["customvoice"]!;
-    assert.equal((cv.lane_inputs as Record<string, unknown>)["model_path"], "Qwen3-TTS-12Hz-1.7B-CustomVoice");
+    // THE SNAPSHOT LAW (transcript-014): the 1.7B CustomVoice weights ship only as the
+    // HF cache snapshot — the lane names the real, loadable address, never the phantom dir.
+    assert.equal((cv.lane_inputs as Record<string, unknown>)["model_path"], "qwen3-tts/hf/models--Qwen--Qwen3-TTS-12Hz-1.7B-CustomVoice/snapshots/0c0e3051f131929182e2c023b9537f8b1c68adfe");
     assert.equal((cv.lane_inputs as Record<string, unknown>)["synth_lane"], "speak");
     const vd = byId["voicedesign"]!;
     assert.equal((vd.lane_inputs as Record<string, unknown>)["model_path"], "Qwen3-TTS-12Hz-1.7B-VoiceDesign");
     assert.equal((vd.lane_inputs as Record<string, unknown>)["synth_lane"], "design");
     assert.equal(vd.route, "qwen3-tts-voicedesign", "the address never moves (no draft migration)");
     const base = byId["base"]!;
-    assert.equal((base.lane_inputs as Record<string, unknown>)["model_path"], "Qwen3-TTS-12Hz-1.7B-Base");
+    assert.equal((base.lane_inputs as Record<string, unknown>)["model_path"], "qwen3-tts/hf/models--Qwen--Qwen3-TTS-12Hz-1.7B-Base/snapshots/fd4b254389122332181a7c3db7f27e918eec64e3");
     assert.equal((base.lane_inputs as Record<string, unknown>)["synth_lane"], "clone");
     assert.equal(base.route, "qwen3-tts-voicedesign-base", "the clone lane's OWN flat route (the 0.6B family owns 'qwen3-tts-base' — one owner per route id)");
     assert.deepEqual(base.resolver_defaults, { model: "qwen3-tts-voicedesign", variant: "base", voice: null }, "the clone pick nulls the persona stamp");
@@ -51,6 +53,6 @@ describe("the qwen3-tts-voicedesign model plugin (1.7B, the full 1:1 flavor matr
     const d = DECL.defaults ?? {};
     assert.equal(d.variant, "customvoice");
     assert.equal(d.mode, "tts");
-    assert.equal((DECL.lane_inputs as Record<string, unknown>)["model_path"], "Qwen3-TTS-12Hz-1.7B-CustomVoice", "the family-level artifact is the default lane's own");
+    assert.equal((DECL.lane_inputs as Record<string, unknown>)["model_path"], "qwen3-tts/hf/models--Qwen--Qwen3-TTS-12Hz-1.7B-CustomVoice/snapshots/0c0e3051f131929182e2c023b9537f8b1c68adfe", "the family-level artifact is the default lane's own");
   });
 });

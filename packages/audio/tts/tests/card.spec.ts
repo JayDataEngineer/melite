@@ -222,7 +222,10 @@ describe("the base clone lane (reference in, the speaker's voice out — no pers
     // it, the form's visible_when rows included)
     const loader = g.toJSON()["LoadAudiocoreModel.0"];
     assert.ok(loader, "the loader rides");
-    assert.equal(loader.inputs.model_path, "qwen3-tts", "the clone checkpoint address, verbatim from the dead family");
+    // THE HF-TREE ADDRESS (transcript-014, stage 3): the bare container dir
+    // held only hf/ — the engine's C++ load gate refused it live. The clone
+    // lane names the loadable weights, one level down.
+    assert.equal(loader.inputs.model_path, "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base", "the clone checkpoint address — the real 0.6B Base weights inside the hf tree");
     assert.equal(loader.inputs.extras, JSON.stringify({ variant: "base" }), "the .6 base lane steers its stamped variant (the missing-audio-input fix: an unstamped lane rendered no reference rows)");
   });
   it("a missing reference refuses loud (clone needs its 3 seconds)", () => {
@@ -307,14 +310,24 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     assert.equal(studio.inputs.seed, 7, "the entry's seed wires");
     const loader = graph["LoadAudiocoreModel.0"];
     assert.ok(loader, "the loader rides");
-    assert.equal(loader.inputs.extras, JSON.stringify({ variant: "voicedesign" }), "design declares its variant");
+    // THE HEAD FLIP (first-self-route-wins, transcript-014): the head serves
+    // the family DEFAULT (customvoice/speak) — the save still fires from any
+    // lane (the studio's exporter loads its own variants); the loader stamps
+    // the lane it rides.
+    assert.equal(loader.inputs.extras, JSON.stringify({ variant: "customvoice" }), "the loader declares the lane it rides (the head's default variant — the export is lane-legal anywhere)");
   });
-  it("no stated Design entry refuses loud (design without a persona is meaningless)", () => {
+  it("a lonely persona description refuses loud (the export needs BOTH halves — the head flip made bare text a lawful perform)", () => {
     const designModel = facts.models["qwen3-tts-voicedesign"]!;
     assert.throws(
-      () => def.compose(def.schema({ text: "the words" }), designModel, new GraphBuilder(), "r_nodesign"),
-      /voice_name|design_prompt|Design|Persona/i,
+      () => def.compose(def.schema({ text: "the words", design_prompt: "a warm voice" }), designModel, new GraphBuilder(), "r_nodesign"),
+      /design_prompt|voice_name/i,
     );
+    // and the flip's own law: bare text at the head COMPOSES (the family
+    // default is the everyday CustomVoice perform lane — the operator's
+    // large-model default, never a forced design)
+    const g2 = new GraphBuilder();
+    def.compose(def.schema({ text: "the words" }), designModel, g2, "r_perform");
+    assert.ok(g2.toJSON()["AudiocoreTTS.0"], "bare text performs on the default lane");
   });
   it("a stale style_instruction on the design lane refuses loud (emotion styling rides the CustomVoice lane — never one knob)", () => {
     const designModel = facts.models["qwen3-tts-voicedesign"]!;

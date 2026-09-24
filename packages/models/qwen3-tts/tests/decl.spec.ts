@@ -54,7 +54,12 @@ describe("the qwen3-tts model plugin (0.6B, two variants)", () => {
     const base = DECL.variants.find((v) => v.id === "base")!;
     const li = base.lane_inputs as Record<string, unknown>;
     assert.equal(li["synth_lane"], "clone", "the lane branch reads data, never the family id");
-    assert.equal(li["model_path"], "qwen3-tts", "the clone checkpoint address, verbatim from the dead family");
+    // THE HF-TREE ADDRESS (transcript-014, stage 3): the bare
+    // container dir 'qwen3-tts' holds only hf/ — the C++ load gate
+    // refused it (RuntimeError: Failed to load qwen3_tts). The
+    // 0.6B Base weights sit one level down with top-level
+    // safetensors; the lane names the loadable address.
+    assert.equal(li["model_path"], "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base", "the clone checkpoint address — the real weights inside the hf tree, not the bare container the engine refuses");
     const resolver = base.resolver_defaults as Record<string, unknown>;
     assert.equal(resolver["model"], "qwen3-tts-base", "the re-point stamp (krea-2-raw precedent) resolves variant picks server-side");
     assert.equal(resolver["voice"], null, "the NULL stamp unsets the inherited persona (the clone takes no voice)");
