@@ -14,11 +14,17 @@ export const schema = z.object({
   // either size. voice = the CustomVoice speaker (upstream's 9
   // premium timbres — a CustomVoice call REQUIRES one; the other
   // lanes have no speaker at all, so the row hides there — voice is
-  // never forced on). style_instruction = instruct-text, an
-  // UPSTREAM 1.7B-CustomVoice capability (the 0.6B-CustomVoice
-  // table row has NO instruction control — a stated instruct on
-  // the small CustomVoice refuses at admission below).
-  voice: vocabulary(["ryan", "serena", "vivian", "aiden", "eric", "dylan", "sohee", "ono_anna", "uncle_fu"]).description("Preset Speaker").default("ryan").extra('extra', { order: null, tooltip: "One of the 9 built-in CustomVoice speakers (Ryan, Vivian, …) — the timbre that reads the text. The other lanes take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select', visible_when: 'variant=customvoice' }),
+  // never forced on). "none" = NO preset (operator 2026-09-24: "you
+  // didn't even add an option to turn off the forced voice like
+  // Vivian"): the node normalizes it to an EMPTY speaker so the
+  // loaded .qvoice owns the timbre; no qvoice riding refuses loud
+  // at the engine ("requires speaker or voice reference") — never a
+  // silent fallback to a default preset. style_instruction =
+  // instruct-text, an UPSTREAM 1.7B-CustomVoice capability (the
+  // 0.6B-CustomVoice table row has NO instruction control — a
+  // stated instruct on the small CustomVoice refuses at admission
+  // below).
+  voice: vocabulary(["none", "ryan", "serena", "vivian", "aiden", "eric", "dylan", "sohee", "ono_anna", "uncle_fu"]).description("Preset Speaker").default("ryan").extra('extra', { order: null, tooltip: "none = no preset — the loaded .qvoice owns the timbre (refuses loud if no voice rides). Otherwise one of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). The other lanes take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select', visible_when: 'variant=customvoice' }),
   // THE TASK-NAMED LABEL LAW (operator 2026-09-23: "they are
   // SPECIFIC TASKS, not INSTRUCT"): every instruction-ish row is
   // labeled by the TASK it performs on its lane, never the upstream
