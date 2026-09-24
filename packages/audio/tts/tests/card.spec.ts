@@ -366,4 +366,32 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
       /qvoice|VoiceDesign|persona/i,
     );
   });
+  it("THE EXACT-MISSING VOICE (029 self-critique #2): the refusal names ONLY the absent half — never the stated key", () => {
+    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    // design_prompt without voice_name never reaches the pairing
+    // check — the earlier wall owns it and already names the
+    // pairing exactly.
+    assert.throws(
+      () => def.compose(def.schema({
+        text: "the sample",
+        design_prompt: "a warm voice",
+      }), designModel, new GraphBuilder(), "r_noname"),
+      /without 'voice_name'/,
+    );
+    // voice_name without design_prompt reaches the pairing check —
+    // it names ONLY the absent description.
+    const noDesc = (): void => {
+      def.compose(def.schema({
+        text: "the sample",
+        voice_name: "Cherry",
+      }), designModel, new GraphBuilder(), "r_nodesc");
+    };
+    assert.throws(noDesc, /'design_prompt' missing or empty/);
+    try {
+      noDesc();
+      assert.fail('must refuse');
+    } catch (e) {
+      assert.ok(!(e as Error).message.includes("'voice_name' missing"), 'the stated name is never named missing');
+    }
+  });
 });

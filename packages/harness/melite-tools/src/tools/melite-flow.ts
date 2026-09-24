@@ -741,6 +741,18 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       if (modes > 1) {
         return jsonClean({ error: 'exactly one composition per call: bench | card | flow | stages — never combined' }) as FlowResult;
       }
+      // THE UNKNOWN-ARG VOICE (029's self-critique #1, 2026-09-24):
+      // a card param at FLOW top-level (qvoice_save beside card)
+      // used to drop SILENTLY — the bag only spreads known keys —
+      // and the maker paid a generic missing-params refusal instead
+      // of the pointed one. Unknown top-level keys refuse HERE,
+      // naming the seat (card params ride INSIDE params).
+      const KNOWN_FLOW_ARGS = ['bench', 'card', 'model', 'flow', 'stages', 'connects', 'prompt', 'params', 'id', 'description', 'test'] as const;
+      const known = new Set<string>(KNOWN_FLOW_ARGS);
+      const stray = Object.keys((args ?? {}) as Record<string, unknown>).filter((k) => !known.has(k));
+      if (stray.length > 0) {
+        return jsonClean({ error: 'unknown melite_flow arg(s) ' + JSON.stringify(stray) + ' — card params (text, voice_name, qvoice, variant, …) ride INSIDE params, never top-level; top-level carries only bench | card (+model) | flow | stages (+connects/id/description/test)' }) as FlowResult;
+      }
       // THE ONE-BENCH LAW (§22, 2026-09-22): flow lands on the
       // CALLER's conversation bench (benchKeyOfExec — the agent's own
       // session), never the hardcoded main — construct binds the same

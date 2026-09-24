@@ -174,8 +174,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // no surface (the Design entry is FLAT).
       const saveIntent = lane === 'design' || !blank(doc.voice_name)
       if (saveIntent) {
-        if (blank(doc.voice_name) || blank(doc.design_prompt)) {
-          throw new Error("required Design params 'voice_name' + 'design_prompt' missing or empty on the tts card (the export needs the persona description + the Design mod's name — state both; the save fires from any lane)")
+        // THE EXACT-MISSING VOICE (029's self-critique #2,
+        // 2026-09-24): naming BOTH keys when only one is blank sends
+        // the maker doubting the key it already stated — refuse with
+        // the actually-missing names only.
+        const missing = ['voice_name', 'design_prompt'].filter((k) => blank(doc[k]))
+        if (missing.length > 0) {
+          throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the export needs the persona description + the Design mod's name — state both; the save fires from any lane)")
         }
         if (!blank(doc.style_instruction)) {
           throw new Error("param 'style_instruction' fires nothing on a Design export (the persona description designs the speaker — drop the delivery style, or style the exported voice on the CustomVoice lane after the save)")

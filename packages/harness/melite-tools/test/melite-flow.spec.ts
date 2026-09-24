@@ -590,6 +590,18 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
     assert.ok(desc.includes('SINGLE mode ONLY'), 'card mode is excluded by name')
     assert.ok(desc.includes('INSIDE params'), 'the card seat is stated')
   })
+
+  test('THE UNKNOWN-ARG VOICE (029 self-critique #1): a card param at flow top-level refuses loud — never silently dropped', async () => {
+    // 029's maker passed qvoice_save beside card (not inside
+    // params); the bag spread dropped it and the maker paid a
+    // generic missing-params refusal instead of the pointed one.
+    const seen = mockFetch([okBench, okValidate])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ card: 'tts', model: 'm', qvoice_save: [{ voice_name: 'x' }] } as never, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    assert.ok(String(out.error).includes('qvoice_save'), 'the stray key is named')
+    assert.ok(String(out.error).includes('INSIDE params'), 'the seat is stated')
+    assert.equal(seen.calls.length, 0, 'nothing starts on a stray arg')
+  })
 })
 
 describe('melite_flow presentCall/render/meta — the faces', () => {
