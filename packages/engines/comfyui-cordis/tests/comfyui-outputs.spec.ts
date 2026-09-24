@@ -11,8 +11,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   viewTimeoutMs,
+  fetchOutputArtifacts,
   fetchOutputs,
   publishOutputChannels,
+  assertPublishedOutputChannels,
   qvoicePathsOf,
   mapHistoryEntry,
   normalizeTimeoutS,
@@ -75,6 +77,20 @@ describe("fetchOutputs (the harvest matrix)", () => {
     expect(fileOf(arts[0] ?? "")).toBe("n1_a.png");
     expect(fileOf(arts[1] ?? "")).toBe("b.json");
     expect(readFileSync(join(runDir, "n1_a.png"), "utf8")).toBe("b:a.png");
+  });
+  it("semantic records retain producer node provenance", async () => {
+    const runDir = join(DIR, "records");
+    const client = clientWith(() => ({ body: "x", ct: "application/octet-stream" }));
+    const records = await fetchOutputArtifacts(client, runDir, {
+      outputs: {
+        pose: { three_model: [{ filename: "motion.npz", subfolder: "run", type: "output" }] },
+        glb: { "3d": [{ filename: "rigged.glb", subfolder: "run", type: "output" }] },
+      },
+    });
+    expect(records).toEqual([
+      { nodeId: "pose", path: join(runDir, "pose_motion.npz"), kind: "three_model" },
+      { nodeId: "glb", path: join(runDir, "glb_rigged.glb"), kind: "3d" },
+    ]);
   });
   it("tuple rows harvest (filename, subfolder, type) with tolls", async () => {
     const runDir = join(DIR, "tuple");
@@ -218,6 +234,23 @@ describe("publishOutputChannels (the declared-channel law)", () => {  it("first 
       ["/r/mask_combined_00001_.png", "/r/render.png"],
     );
     expect(both).toEqual({ hero: "/r/mask_combined_00001_.png", preview: "/r/render.png" });
+  });
+  it("declared node bindings publish semantic producers without extension guessing", () => {
+    const records = [
+      { nodeId: "video", path: "/r/final.mp4", kind: "video" },
+      { nodeId: "pose", path: "/r/motion.npz", kind: "three_model" },
+    ];
+    const outputs = { final: "video", motion_npz: "data" };
+    const bindings = { final: "video", motion_npz: "pose" };
+    const published = publishOutputChannels(outputs, records.map((record) => record.path), bindings, records);
+    expect(published).toEqual({ final: "/r/final.mp4", motion_npz: "/r/motion.npz" });
+    expect(() => assertPublishedOutputChannels(outputs, published, bindings)).not.toThrow();
+  });
+  it("a declared producer with no harvested artifact refuses loudly", () => {
+    const outputs = { motion_npz: "data" };
+    const bindings = { motion_npz: "pose" };
+    const published = publishOutputChannels(outputs, [], bindings, []);
+    expect(() => assertPublishedOutputChannels(outputs, published, bindings)).toThrow(/motion_npz/);
   });
 });
 

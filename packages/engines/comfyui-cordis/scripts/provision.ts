@@ -19,9 +19,10 @@
 //                  vendored manager's own custom-node-list.json cache;
 //                  url+ref clones directly); vendor packs symlinked
 //                  from vendor/comfyui_extensions.
-//   models         estate TS streaming downloads per declaration
+//   models         ComfyUI-Manager's install_model queue per declaration
 //                  provision row (the engine's provisionsByFamily —
-//                  DECL + card-owned rows), sha256-verified after.
+//                  DECL + card-owned rows), followed by shared TS
+//                  sha256 presence verification.
 //   all            extensions + models.
 //
 // Config is read TS-natively: inference.config.json at the repo root

@@ -6,7 +6,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
-import { ComfyUIService, ComposeRefusal, cardWireName } from "../src/service.ts";
+import { ComfyUIService, ComposeRefusal, cardWireName, resolveCardFlowOutputs } from "../src/service.ts";
 import type { CardDefinition, ModFields } from "../src/service.ts";
 import type { FactsFile, ModelFacts } from "@melite/comfyui-card-kit/facts";
 
@@ -209,6 +209,52 @@ describe("registerCard (one card, one plugin)", () => {
     );
     drop();
     assert.equal(svc.getCardDef("card1"), undefined);
+  });
+
+  it("flow input ports must exist in the card schema", async () => {
+    const svc = await boot();
+    assert.throws(
+      () => svc.registerCard(card({
+        flowKinds: { inputs: { missing: "text" }, outputs: { default: "image" }, requiresModel: true },
+      })),
+      (error: unknown) => error instanceof ComposeRefusal && error.code === "flow-port" && /missing/.test(error.message),
+    );
+  });
+
+  it("semantic output bindings resolve only selected producers and verify node classes", () => {
+    const def = card({
+      flowKinds: { inputs: {}, outputs: { image: "image", audio: "audio" }, requiresModel: true },
+      flowOutputBindings: [
+        { channel: "image", node: "SaveImage.0", nodeClass: "SaveImage", when: (params) => params["mode"] !== "audio" },
+        { channel: "audio", node: "SaveAudio.0", nodeClass: "SaveAudio", when: (params) => params["mode"] === "audio" },
+      ],
+    });
+    const graph = {
+      "SaveImage.0": { class_type: "SaveImage", inputs: {} },
+      "SaveAudio.0": { class_type: "SaveAudio", inputs: {} },
+    };
+    assert.deepEqual(resolveCardFlowOutputs(def, { mode: "image" }, graph), {
+      outputs: { image: "image" },
+      outputNodes: { image: "SaveImage.0" },
+    });
+    assert.deepEqual(resolveCardFlowOutputs(def, { mode: "audio" }, graph), {
+      outputs: { audio: "audio" },
+      outputNodes: { audio: "SaveAudio.0" },
+    });
+    assert.throws(
+      () => resolveCardFlowOutputs(def, { mode: "image" }, { "SaveImage.0": { class_type: "Wrong" } }),
+      (error: unknown) => error instanceof ComposeRefusal && error.code === "flow-output",
+    );
+  });
+
+  it("output bindings cannot name channels absent from flowKinds", async () => {
+    const svc = await boot();
+    assert.throws(
+      () => svc.registerCard(card({
+        flowOutputBindings: [{ channel: "ghost", node: "Save.0", nodeClass: "SaveImage" }],
+      })),
+      (error: unknown) => error instanceof ComposeRefusal && error.code === "flow-output",
+    );
   });
 
   it("a second boarder of a taken family refuses (ledger #40: the sketch stole krea-2's form)", async () => {

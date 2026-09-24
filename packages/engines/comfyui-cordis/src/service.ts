@@ -182,6 +182,42 @@ export interface DeclaredModifierKind {
   requires?: readonly string[]
 }
 
+export interface CardFlowOutputBinding {
+  channel: string
+  node: string
+  nodeClass: string
+  when?: (params: Record<string, unknown>) => boolean
+}
+
+export function resolveCardFlowOutputs(
+  def: Pick<CardDefinition, 'id' | 'flowKinds' | 'flowOutputBindings'>,
+  params: Record<string, unknown>,
+  graph: Record<string, unknown>,
+): { outputs: Record<string, string>; outputNodes: Record<string, string> } {
+  const outputs: Record<string, string> = {}
+  const outputNodes: Record<string, string> = {}
+  for (const binding of def.flowOutputBindings ?? []) {
+    if (binding.when !== undefined && !binding.when(params)) continue
+    if (outputs[binding.channel] !== undefined) {
+      throw new ComposeRefusal('flow-output', `card '${def.id}' selected output '${binding.channel}' from more than one producer`)
+    }
+    const kind = def.flowKinds.outputs[binding.channel]
+    if (kind === undefined) {
+      throw new ComposeRefusal('flow-output', `card '${def.id}' binds undeclared output '${binding.channel}'`)
+    }
+    const node = graph[binding.node]
+    const nodeClass = typeof node === 'object' && node !== null && !Array.isArray(node)
+      ? (node as Record<string, unknown>)['class_type']
+      : undefined
+    if (nodeClass !== binding.nodeClass) {
+      throw new ComposeRefusal('flow-output', `card '${def.id}' output '${binding.channel}' expects ${binding.node} as ${binding.nodeClass}, got ${String(nodeClass ?? 'missing')}`)
+    }
+    outputs[binding.channel] = kind
+    outputNodes[binding.channel] = binding.node
+  }
+  return { outputs, outputNodes }
+}
+
 export interface CardDefinition {
   id: string
   /** Stage-row id the compose emits (retired compose.skeleton=
@@ -327,6 +363,7 @@ export interface CardDefinition {
     outputs: Record<string, string>
     requiresModel: boolean
   }
+  flowOutputBindings?: readonly CardFlowOutputBinding[]
   /** THE DECLARED HERO (the mask hero defect, 2026-10-09): the
    *  artifact filename STEM that leads the stage gallery (the
    *  history/preview hero is gallery[0] — engine completion order,
@@ -338,6 +375,34 @@ export interface CardDefinition {
    *  stem + extension). Generic mechanism, card-owned data — the
    *  engine-film lead is the precedent. Absent = engine order. */
   primaryFile?: string
+}
+
+function assertFlowContract(def: CardDefinition): void {
+  if (def.flowKinds === undefined) {
+    throw new ComposeRefusal('flow-contract', `card '${def.id}' declares no flowKinds contract`)
+  }
+  const carrier = (def.schemaCarrier ?? def.schema) as unknown as { dict?: Record<string, unknown> }
+  const names = new Set(Object.keys(carrier.dict ?? {}))
+  const missingInputs = Object.keys(def.flowKinds.inputs).filter((name) => !names.has(name))
+  if (missingInputs.length > 0) {
+    throw new ComposeRefusal('flow-port', `card '${def.id}' flow inputs ${missingInputs.join(', ')} are absent from its schema`)
+  }
+  const unconditional = new Set<string>()
+  for (const binding of def.flowOutputBindings ?? []) {
+    const kind = def.flowKinds.outputs[binding.channel]
+    if (kind === undefined) {
+      throw new ComposeRefusal('flow-output', `card '${def.id}' output binding '${binding.channel}' is absent from flowKinds.outputs`)
+    }
+    if (binding.node === '' || binding.nodeClass === '') {
+      throw new ComposeRefusal('flow-output', `card '${def.id}' output '${binding.channel}' needs a node and nodeClass`)
+    }
+    if (binding.when === undefined) {
+      if (unconditional.has(binding.channel)) {
+        throw new ComposeRefusal('flow-output', `card '${def.id}' output '${binding.channel}' has duplicate unconditional producers`)
+      }
+      unconditional.add(binding.channel)
+    }
+  }
 }
 
 declare module '@deepseek-ai/cordis' {
@@ -375,6 +440,7 @@ export class ComfyUIService extends Service {
     if (this.cards.has(def.id)) {
       throw new ComposeRefusal('duplicate-card', `card '${def.id}' registered twice — one card, one plugin`)
     }
+    assertFlowContract(def)
     // THE FAMILY-TAKEN GATE (ledger #40, the operator's outage: a
     // profile insert's sketch boarded krea-2 and the lane served
     // its 2-field envelope as image-gen). A DROP-IN THAT BOARDS A

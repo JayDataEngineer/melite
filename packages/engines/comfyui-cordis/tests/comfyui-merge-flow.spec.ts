@@ -20,10 +20,18 @@ vi.mock("../src/comfyui-upload.ts", () => ({
   uploadReferenced: async (_c: unknown, graph: unknown) => ({ graph }),
 }));
 vi.mock("../src/comfyui-outputs.ts", () => ({
-  fetchOutputs: async (_c: unknown, dir: unknown) => [String(dir) + "/out.png"],
+  // THE HARVEST SPELLING (outputs-stroke): merge rides
+  // fetchOutputArtifacts (records with .path), not fetchOutputs.
+  fetchOutputArtifacts: async (_c: unknown, dir: unknown) => [
+    { nodeId: "save", path: String(dir) + "/out.png", kind: "images" },
+  ],
   mapHistoryEntry: () => ({ kind: "completed" }),
   normalizeTimeoutS: (v: unknown) => (typeof v === "number" && v > 0 ? v : 2400),
   publishOutputChannels: (_o: unknown, arts: unknown) => ({ image: arts }),
+  // THE PUBLISH ASSERT (outputs-stroke): merge asserts the published
+  // channels — the loud-refusal arms live in comfyui-outputs.spec,
+  // here the assert is pinned pass-through.
+  assertPublishedOutputChannels: () => undefined,
   // THE QVOICE CHANNEL: pass-through (own wall in comfyui-outputs.spec)
   qvoicePathsOf: () => "",
 }));

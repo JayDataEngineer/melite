@@ -6,7 +6,7 @@ import { ACTIVE, ComfyError } from "./comfyui-types.ts";
 import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { uploadReferenced } from "./comfyui-upload.ts";
-import { fetchOutputs, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
+import { assertPublishedOutputChannels, fetchOutputArtifacts, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
 import { hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.ts";
 import { sdkClient } from "./comfyui-transport.ts";
 import type { ExecuteOpts } from "./comfyui-execute.ts";
@@ -385,10 +385,23 @@ export async function executeFlowInner(
         if (k.startsWith(prefix)) subOutputs[k.slice(prefix.length)] = v;
       }
       const stageDir: string = join(String(runDir), r.stageId);
-      const arts: string[] = await fetchOutputs(client, stageDir, {
+      const records = await fetchOutputArtifacts(client, stageDir, {
         outputs: subOutputs,
       }, r.params["timeout_s"]);
-      const outputs: Record<string, EngineJson> = publishOutputChannels(r.outputs, arts);
+      const arts: string[] = records.map((record) => record.path);
+      // THE OPTIONAL BINDINGS (the plan path's own law, line ~178:
+      // outputNodes ?? {} — a row without bindings harvests
+      // unbound, never crashes the merge).
+      const nodeBindings = Object.fromEntries(
+        Object.entries(r.outputNodes ?? {}).map(([channel, node]) => [channel, String(node)]),
+      );
+      const outputs: Record<string, EngineJson> = publishOutputChannels(
+        r.outputs,
+        arts,
+        nodeBindings,
+        records,
+      );
+      assertPublishedOutputChannels(r.outputs, outputs, nodeBindings);
       // THE QVOICE CHANNEL (the export FULL PATH): the minted path
       // rides the stage result verbatim — same law as the single
       // path, the merge just walks per-stage subOutputs.

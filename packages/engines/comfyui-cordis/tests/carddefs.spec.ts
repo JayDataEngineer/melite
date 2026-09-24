@@ -132,6 +132,8 @@ describe("refreshCardDefs (the #39 hot re-projection)", () => {
             tags: ["image"],
             identity: { label: "Wall Hot Card", description: "the refresh wall", genre: "image" },
             sidebar: { key: "image", order: 999, hidden: true },
+            schema: (value: unknown) => value as Record<string, unknown>,
+            flowKinds: { inputs: {}, outputs: { default: "image" }, requiresModel: false },
             compose(): void { throw new Error("never composed") },
           } as never);
           return () => { off() };
@@ -165,6 +167,8 @@ describe("refreshCardDefs (the #39 hot re-projection)", () => {
       skeleton: "generate",
       boarded: [],
       tags: ["image"],
+      schema: (value: unknown) => value as Record<string, unknown>,
+      flowKinds: { inputs: {}, outputs: { default: "image" }, requiresModel: false },
       compose(): void { throw new Error("never composed") },
     } as never);
     try {

@@ -27,17 +27,23 @@ export function viewTimeoutMs(timeoutS: EngineJson | undefined): number {
  *  callers pass the same value the deadline used) — the /view
  *  fetch honors it via viewTimeoutMs. Absent = the formula's own
  *  default (normalize undefined -> 2400 -> the budget arm). */
-export async function fetchOutputs(
+export interface FetchedOutputArtifact {
+  nodeId: string
+  path: string
+  kind: string
+}
+
+export async function fetchOutputArtifacts(
   client: Client,
   runDir: string,
   entry: Record<string, EngineJson>,
   timeoutS?: EngineJson,
-): Promise<string[]> {
+): Promise<FetchedOutputArtifact[]> {
   mkdirSync(runDir, { recursive: true });
-  const arts: string[] = [];
+  const artifacts: FetchedOutputArtifact[] = [];
   const outputs = entry["outputs"];
   if (typeof outputs !== "object" || outputs === null || Array.isArray(outputs)) {
-    return arts;
+    return artifacts;
   }
   const viewTimeout: number = viewTimeoutMs(timeoutS);
   for (const [nodeId, nodeOut] of Object.entries(
@@ -111,14 +117,23 @@ export async function fetchOutputs(
             }
           }
           writeFileSync(dest, blob);
-          arts.push(dest);
+          artifacts.push({ nodeId, path: dest, kind });
         } catch {
           /* one unreachable artifact never kills the harvest */
         }
       }
     }
   }
-  return arts;
+  return artifacts;
+}
+
+export async function fetchOutputs(
+  client: Client,
+  runDir: string,
+  entry: Record<string, EngineJson>,
+  timeoutS?: EngineJson,
+): Promise<string[]> {
+  return (await fetchOutputArtifacts(client, runDir, entry, timeoutS)).map((artifact) => artifact.path)
 }
 
 // ── channel publish (native 438-458) ──
@@ -169,16 +184,26 @@ export function qvoicePathsOf(
 export function publishOutputChannels(
   outputs: Record<string, EngineJson>,
   artifacts: string[],
+  bindings: Record<string, string> = {},
+  records: readonly FetchedOutputArtifact[] = [],
 ): Record<string, EngineJson> {
   const published: Record<string, EngineJson> = {};
-  const claimed: Set<string> = new Set();
+  const claimed = new Set<string>();
   for (const [channel, kind] of Object.entries(outputs ?? {})) {
-    const exts: readonly string[] | undefined =
-      CHANNEL_EXTS[String(kind)];
+    const nodeId = bindings[channel];
+    if (nodeId !== undefined) {
+      const artifact = records.find((record) => record.nodeId === nodeId)
+      if (artifact !== undefined) {
+        published[channel] = artifact.path;
+        claimed.add(artifact.path);
+      }
+      continue;
+    }
+    const exts = CHANNEL_EXTS[String(kind)];
     if (!exts) continue;
     for (const art of artifacts ?? []) {
       if (claimed.has(art)) continue;
-      if (exts.some((e: string): boolean => art.toLowerCase().endsWith(e))) {
+      if (exts.some((extension: string): boolean => art.toLowerCase().endsWith(extension))) {
         published[channel] = art;
         claimed.add(art);
         break;
@@ -186,6 +211,25 @@ export function publishOutputChannels(
     }
   }
   return published;
+}
+
+export function assertPublishedOutputChannels(
+  outputs: Record<string, EngineJson>,
+  published: Record<string, EngineJson>,
+  bindings: Record<string, string>,
+): void {
+  const missing = Object.keys(bindings).filter((channel) => published[channel] === undefined)
+  if (missing.length > 0) {
+    throw new Error(`declared output node(s) ${missing.join(', ')} produced no artifact`)
+  }
+  for (const channel of Object.keys(outputs)) {
+    if (bindings[channel] === undefined && published[channel] === undefined) {
+      const kind = String(outputs[channel])
+      if (CHANNEL_EXTS[kind] !== undefined) {
+        throw new Error(`declared ${kind} output '${channel}' produced no artifact`)
+      }
+    }
+  }
 }
 
 // ── status mapping (the poll loop's shared read) ──
