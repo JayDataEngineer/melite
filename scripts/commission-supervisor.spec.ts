@@ -29,10 +29,10 @@ const TRANSIENT_ERR = 'dsh: RATE_LIMIT: OpenAI API error (429): {"code":"rate_li
 /** The dead-key quota body (the KEY SOURCE receipt, runbook). */
 const QUOTA_ERR = 'dsh: RATE_LIMIT: 429 Go usage limit exceeded (admin cap); reset 2026-09-24 09:00:00'
 
-type Arm = 'transient' | 'transient2' | 'quota' | 'both' | 'boom' | 'ok'
+type Arm = 'transient' | 'transient2' | 'quota' | 'both' | 'boom' | 'ok' | 'flake' | 'flake2'
 
-/** A stub that dies (or succeeds) with the named arm's shape. */
-function stubFor(arm: Arm): string {
+/** The arm bodies (exit code + stderr text). */
+function stubBody(arm: Arm): { code: number, err: string } {
   const bodies: Record<Arm, { code: number, err: string }> = {
     transient: { code: 1, err: TRANSIENT_ERR },
     transient2: { code: 1, err: TRANSIENT_ERR },
@@ -40,13 +40,21 @@ function stubFor(arm: Arm): string {
     both: { code: 1, err: TRANSIENT_ERR + '\n' + QUOTA_ERR },
     boom: { code: 2, err: 'engine exploded' },
     ok: { code: 0, err: '' },
-    // THE BOOT FLAKE (035 attempts 7+10): a CLEAN exit whose log
-    // names absent doors — the infra moment the supervisor now
-    // relaunches past.
-    flake: { code: 0, err: 'I cannot lawfully execute the commission: the requested `read` tool is not available on my callable tool surface.' },
+    // THE BOOT FLAKE (035 attempts 7/10/11): a CLEAN exit with NO
+    // transcript — the phrasing varies, the absence is the law.
+    flake: { code: 0, err: 'this session does not expose the required read or bash tools (any wording)' },
+    flake2: { code: 0, err: 'completely different words entirely' },
   }
-  const b = bodies[arm]!
-  return 'process.stderr.write(' + JSON.stringify(b.err) + ');process.exit(' + String(b.code) + ');\n'
+  return bodies[arm]!
+}
+
+/** A stub that dies (or succeeds) with the named arm's shape. */
+function stubFor(arm: Arm): string {
+  const b = stubBody(arm)
+  const wt = arm === 'ok'
+    ? 'require("node:fs").writeFileSync(__dirname + "/transcript.md", "final report\\n");\n'
+    : ''
+  return wt + 'process.stderr.write(' + JSON.stringify(b.err) + ');process.exit(' + String(b.code) + ');\n'
 }
 
 function stage(arms: Arm[]): { dir: string, prompt: string, prefix: string } {
@@ -62,7 +70,7 @@ function stage(arms: Arm[]): { dir: string, prompt: string, prefix: string } {
     + 'const map = ' + JSON.stringify({
       transient: stubFor('transient'), transient2: stubFor('transient2'),
       quota: stubFor('quota'), both: stubFor('both'),
-      boom: stubFor('boom'), ok: stubFor('ok'), flake: stubFor('flake'),
+      boom: stubFor('boom'), ok: stubFor('ok'), flake: stubFor('flake'), flake2: stubFor('flake2'),
     }) + ';\n'
     + 'const k = Number(readFileSync(__dirname + "/seq-index", "utf8").trim() || "0") + 1;\n'
     + 'writeFileSync(__dirname + "/seq-index", String(k));\n'
@@ -81,6 +89,7 @@ function run(dir: string, prompt: string, prefix: string): number {
         SUPERVISOR_DSH_BIN: join(dir, 'seq.js'),
         SUPERVISOR_BACKOFF_S: '0',
         SUPERVISOR_MAX_ATTEMPTS: '3',
+        SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'),
       },
       timeout: 30_000,
       stdio: 'pipe',
@@ -137,11 +146,18 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
     assert.ok(!existsSync(prefix + '-resume.token.md'))
   })
 
-  it('a BOOT FLAKE (exit 0 naming absent doors) relaunches: second attempt succeeds, two attempt logs', () => {
+  it('a BOOT FLAKE (exit 0, no transcript) relaunches: second attempt succeeds, two attempt logs', () => {
     const { dir, prompt, prefix } = stage(['flake', 'ok'])
     assert.equal(run(dir, prompt, prefix), 0)
     assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log', 'commission-attempt2.log'])
     assert.ok(!existsSync(prefix + '-resume.token.md'), 'no token for a flake recovery')
+    assert.ok(existsSync(join(dir, 'transcript.md')), 'the recovered attempt wrote the transcript')
+  })
+
+  it('the flake gate is WORDING-AGNOSTIC (attempt-11 receipt: a clean exit with any words and no transcript relaunches)', () => {
+    const { dir, prompt, prefix } = stage(['flake2', 'ok'])
+    assert.equal(run(dir, prompt, prefix), 0)
+    assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log', 'commission-attempt2.log'])
   })
 
   it('a CLEAN exit with a healthy log never relaunches (the gate matches door-absence words only)', () => {

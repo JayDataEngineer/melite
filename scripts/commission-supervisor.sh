@@ -54,10 +54,20 @@ quota_wall() {
 }
 
 boot_flake() {
-  # The dead-tool signatures from the two flaked boots (attempts 7
-  # and 10): the maker reports the absent doors by name. Match the
-  # VARIANTS both transcripts used, never a specific tool only.
-  grep -qiE 'not available on my callable tool surface|cannot make an absent tool available|the requested .(read|bash). tool is not available' "$1"
+  # THE STRUCTURAL LAW (035 attempts 7, 10, 11 — 2026-09-24): the
+  # flake's WORDING varies ("not available on my callable tool
+  # surface", "does not expose the required read or bash tools",
+  # "don't have a file-reading or shell tool") — phrasing-greps
+  # whiffed on attempt 11. The INVARIANT: a lawful commission
+  # ALWAYS writes its transcript (the brief's own contract); a
+  # flaked boot never mints runs and never writes it. Exit 0 with
+  # the done-marker ABSENT = boot flake, relaunch. (The legacy
+  # door-absence greps stay as a belt for marker-less callers.)
+  if [ -n "${SUPERVISOR_DONE_MARKER:-}" ]; then
+    [ ! -f "${SUPERVISOR_DONE_MARKER}" ]
+    return $?
+  fi
+  grep -qiE 'not available on my callable tool surface|cannot make an absent tool available|does not expose the required|file-reading or shell tool' "$1"
 }
 
 transient_gate() {
