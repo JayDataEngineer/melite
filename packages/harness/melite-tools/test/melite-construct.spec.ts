@@ -931,3 +931,23 @@ describe("add_stage — the empty-stage drop (035 attempt-14 Probe-A strand)", (
     assert.match(String(out['error']), /assigns its own stage id/)
   })
 });
+
+describe("read — the params summary (035 attempt-15 gap #3)", () => {
+  test("stage rows carry model + array shapes for probe verification", async () => {
+    const seen = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') {
+        return {
+          rev: 2, draft_id: 'd1',
+          stages: [{ id: 's_0', card: 'h3-timeline', engine: 'comfyui', params: { model: 'h3', ref_images: ['/a.png', '/b.png'], prompt: 'x' } }],
+        }
+      }
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: [], count: 0 }
+      return undefined
+    })
+    const tool = meliteConstruct(seen.request)
+    const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const row = (out['stages'] as Array<Record<string, unknown>>)[0]!
+    assert.equal(row['model'], 'h3')
+    assert.deepEqual(row['arrays'], { ref_images: 'array[2]' })
+  })
+});

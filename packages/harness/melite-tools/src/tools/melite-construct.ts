@@ -164,7 +164,7 @@ async function withLastRun(
     return {
       stages: stages.map((s): unknown => {
         if (typeof s !== 'object' || s === null || Array.isArray(s)) return s
-        return { ...(s as Record<string, unknown>), last_run: null }
+        return { ...(s as Record<string, unknown>), ...paramsSummary(s), last_run: null }
       }),
       runs: facts(0),
     }
@@ -189,10 +189,35 @@ async function withLastRun(
   return {
     stages: stages.map((s): unknown => {
       if (typeof s !== 'object' || s === null || Array.isArray(s)) return s
-      return { ...(s as Record<string, unknown>), last_run: lastRun }
+      return { ...(s as Record<string, unknown>), ...paramsSummary(s), last_run: lastRun }
     }),
     runs: facts(mine.length),
   }
+}
+
+/** THE PARAMS SUMMARY (035 attempt-15's gap #3, 2026-09-24): the
+ *  read's stage rows carried card/engine/last_run but NOT the
+ *  resolved model or the array-shape facts a probe needs to verify
+ *  its own landing — the maker had to read the raw draft doc
+ *  separately. Every stage row now carries `model` (when a param
+ *  states it) and `arrays` (key=shape for every array-valued
+ *  param: true-array vs wrapped — the Probe-B receipt shape). */
+function paramsSummary(s: unknown): Record<string, unknown> {
+  if (typeof s !== 'object' || s === null || Array.isArray(s)) return {}
+  const rec = s as Record<string, unknown>
+  const params: unknown = rec['params']
+  if (typeof params !== 'object' || params === null || Array.isArray(params)) return {}
+  const p = params as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+  const model: unknown = p['model']
+  if (typeof model === 'string' && model !== '') out['model'] = model
+  const arrays: Record<string, string> = {}
+  for (const [k, v] of Object.entries(p)) {
+    if (Array.isArray(v)) arrays[k] = 'array[' + String(v.length) + ']'
+    else if (typeof v === 'object' && v !== null && Object.prototype.hasOwnProperty.call(v, 'item')) arrays[k] = 'wrapped{item}'
+  }
+  if (Object.keys(arrays).length > 0) out['arrays'] = arrays
+  return out
 }
 
 /** Record guard for verb args the doors admit as maps (expected,
