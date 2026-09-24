@@ -1,0 +1,271 @@
+import { afterEach, describe, expect, test } from "vitest";
+import assert from "node:assert/strict";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  ComfyUiManagerHttpClient,
+  ComfyUiManagerProvider,
+  FileOperationStore,
+  InMemoryOperationStore,
+  ManagerClientError,
+  PinnedGitExtensionProvider,
+  type GitCommandRunner,
+  type ManagerInstallRequest,
+  type PinnedGitExtensionPort,
+  type ProvisionOperation,
+} from "../src/index.ts";
+
+const roots: string[] = [];
+
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
+
+function root(): string {
+  const value = mkdtempSync(join(tmpdir(), "estate-provisioning-runtime-"));
+  roots.push(value);
+  return value;
+}
+
+function json(value: unknown, status = 200): Response {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function operation(): ProvisionOperation {
+  return {
+    operationId: "op-persisted",
+    ref: { kind: "extension", id: "example-pack" },
+    state: "active",
+    outcome: "active",
+    items: [{ key: "extension:example-pack", kind: "extension", state: "active" }],
+    startedAt: 100,
+    finishedAt: 200,
+    detail: "persisted",
+  };
+}
+
+describe("ComfyUI-Manager HTTP client", () => {
+  test("surfaces HTTP refusal as a typed error", async () => {
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      requestTimeoutMs: 100,
+      fetch: async (): Promise<Response> => json({ error: "allow_git_url_install" }, 403),
+    });
+    await assert.rejects(
+      client.getJson("/customnode/installed"),
+      (error: unknown) => error instanceof ManagerClientError
+        && error.code === "http-refused"
+        && error.status === 403
+        && error.detail.includes("allow_git_url_install"),
+    );
+  });
+
+  test("fails queue polling at the deadline", async () => {
+    let polls = 0;
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      requestTimeoutMs: 20,
+      fetch: async (): Promise<Response> => {
+        polls += 1;
+        return json({ total_count: 1, done_count: 0, in_progress_count: 0, is_processing: true });
+      },
+    });
+    await assert.rejects(
+      client.waitForQueue({ timeoutMs: 15, pollIntervalMs: 1 }),
+      (error: unknown) => error instanceof ManagerClientError && error.code === "queue-timeout",
+    );
+    expect(polls).toBeGreaterThan(0);
+  });
+});
+
+describe("ManagerPort provider", () => {
+  test("installs the declared registry version without a latest fallback", async () => {
+    const repository = "https://github.com/example/pack.git";
+    const calls: Array<{ readonly path: string; readonly body: unknown }> = [];
+    let queuePolls = 0;
+    const fetcher: typeof globalThis.fetch = async (input, init): Promise<Response> => {
+      const path = new URL(String(input)).pathname + new URL(String(input)).search;
+      const body = typeof init?.body === "string" ? JSON.parse(init.body) as unknown : undefined;
+      calls.push({ path, body });
+      if (path === "/customnode/getlist?mode=cache&skip_update=true") {
+        return json({
+          channel: "default",
+          node_packs: {
+            "comfy.org/example": {
+              id: "comfy.org/example",
+              version: "1.0.0",
+              repository,
+              files: [repository],
+              channel: "default",
+              pip: [],
+            },
+          },
+        });
+      }
+      if (path === "/customnode/versions/comfy.org%2Fexample") {
+        return json([{ version: "1.0.0" }, { version: "2.0.0" }]);
+      }
+      if (path === "/manager/queue/install") return new Response(null, { status: 200 });
+      if (path === "/manager/queue/start") return new Response(null, { status: 200 });
+      if (path === "/manager/queue/status") {
+        queuePolls += 1;
+        return json({
+          total_count: 1,
+          done_count: queuePolls === 1 ? 0 : 1,
+          in_progress_count: queuePolls === 1 ? 1 : 0,
+          is_processing: queuePolls === 1,
+        });
+      }
+      return json({ error: "not found" }, 404);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({ baseUrl: "http://127.0.0.1:8188", fetch: fetcher }),
+      { queue: { timeoutMs: 100, pollIntervalMs: 1 } },
+    );
+    const request: ManagerInstallRequest = {
+      id: "example-pack",
+      url: repository,
+      registry: "comfy.org/example",
+      version: "2.0.0",
+    };
+    expect(await provider.canInstall(request)).toBe(true);
+    const result = await provider.install(request);
+    const queued = calls.find((call) => call.path === "/manager/queue/install");
+    assert.equal(result.installed, true);
+    assert.deepEqual(queued?.body, {
+      id: "comfy.org/example",
+      version: "1.0.0",
+      selected_version: "2.0.0",
+      channel: "default",
+      mode: "cache",
+      ui_id: "example-pack",
+      repository,
+      files: [repository],
+      pip: [],
+      skip_post_install: false,
+    });
+  });
+
+  test("refuses an unavailable exact version before queueing", async () => {
+    let queued = false;
+    const fetcher: typeof globalThis.fetch = async (input): Promise<Response> => {
+      const path = new URL(String(input)).pathname;
+      if (path === "/customnode/getlist") {
+        return json({
+          node_packs: {
+            pack: {
+              id: "comfy.org/example",
+              version: "1.0.0",
+              repository: "https://github.com/example/pack.git",
+            },
+          },
+        });
+      }
+      if (path === "/customnode/versions/comfy.org%2Fexample") {
+        return json([{ version: "1.0.0" }]);
+      }
+      if (path === "/manager/queue/install") queued = true;
+      return json({}, 200);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({ baseUrl: "http://127.0.0.1:8188", fetch: fetcher }),
+    );
+    const supported = await provider.canInstall({
+      id: "example-pack",
+      url: "https://github.com/example/pack.git",
+      registry: "comfy.org/example",
+      version: "2.0.0",
+    });
+    expect(supported).toBe(false);
+    expect(queued).toBe(false);
+  });
+
+  test("routes a requested ref only to the pinned git provider", async () => {
+    let httpCalls = 0;
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      fetch: async (): Promise<Response> => {
+        httpCalls += 1;
+        return json({}, 500);
+      },
+    });
+    let received: ManagerInstallRequest | undefined;
+    const git: PinnedGitExtensionPort = {
+      canInstall: async (request): Promise<boolean> => request.ref === "release/2.0.0",
+      install: async (request): Promise<{ installed: boolean; detail: string }> => {
+        received = request;
+        return { installed: true, detail: "pinned" };
+      },
+    };
+    const provider = new ComfyUiManagerProvider(client, { git });
+    const request: ManagerInstallRequest = {
+      id: "example-pack",
+      url: "https://github.com/example/pack.git",
+      ref: "release/2.0.0",
+      registry: "comfy.org/example",
+    };
+    expect(await provider.canInstall(request)).toBe(true);
+    expect((await provider.install(request)).installed).toBe(true);
+    expect(received?.ref).toBe("release/2.0.0");
+    expect(httpCalls).toBe(0);
+  });
+
+  test("fetches a URL/ref row at that exact ref", async () => {
+    const customNodesRoot = join(root(), "custom_nodes");
+    const calls: string[][] = [];
+    const runner: GitCommandRunner = {
+      run: async (args): Promise<{ stdout: string; stderr: string }> => {
+        calls.push([...args]);
+        if (args[0] === "init") {
+          const temporary = args.at(-1);
+          assert.ok(temporary);
+          mkdirSync(temporary);
+        }
+        return {
+          stdout: args.includes("rev-parse") ? "a".repeat(40) : "",
+          stderr: "",
+        };
+      },
+    };
+    const provider = new PinnedGitExtensionProvider({ customNodesRoot, runner });
+    const result = await provider.install({
+      id: "example-pack",
+      url: "https://github.com/example/pack.git",
+      ref: "release/2.0.0",
+    });
+    expect(result.installed).toBe(true);
+    expect(existsSync(join(customNodesRoot, "example-pack"))).toBe(true);
+    const fetch = calls.find((args) => args.includes("fetch"));
+    expect(fetch).toContain("release/2.0.0");
+    expect(calls.flat()).not.toContain("latest");
+    expect(calls.flat()).not.toContain("master");
+  });
+});
+
+describe("operation stores", () => {
+  test("persists an operation across file-store instances", async () => {
+    const storeRoot = join(root(), "operations");
+    const first = new FileOperationStore(storeRoot);
+    const saved = operation();
+    await first.save(saved);
+    const loaded = await new FileOperationStore(storeRoot).load(saved.operationId);
+    expect(loaded).toEqual(saved);
+    Reflect.set(saved.items[0]!, "detail", "mutated");
+    const isolated = await first.load(saved.operationId);
+    expect(isolated?.items[0]?.detail).toBeUndefined();
+  });
+
+  test("keeps in-memory operation snapshots isolated", async () => {
+    const store = new InMemoryOperationStore();
+    const saved = operation();
+    await store.save(saved);
+    const loaded = await store.load(saved.operationId);
+    expect(loaded).toEqual(saved);
+    await store.remove(saved.operationId);
+    expect(await store.load(saved.operationId)).toBeNull();
+  });
+});

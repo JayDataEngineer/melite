@@ -4,18 +4,14 @@ import {
   ProvisioningError,
   VerifiedArtifactWriter,
   newOperationId,
-  type ArtifactInspection,
   type ArtifactWriterPort,
   type VerifiedArtifactResult,
 } from "./artifact-writer.ts";
 import {
-  PROVISION_OUTCOMES,
-  PROVISION_STATES,
   resourceKey,
   sameResourceRef,
   type ActivateOptions,
   type EnsureOptions,
-  type ExtensionProvisionPlanItem,
   type ExternalProvisionRequest,
   type ModelProvisionPlanItem,
   type ProvisionItemResult,
@@ -34,7 +30,6 @@ import type {
   ArtifactResponse,
   DeclarationPort,
   InspectorPort,
-  InspectorResult,
   LifecyclePort,
   ManagerInstallRequest,
   ManagerPort,
@@ -73,10 +68,10 @@ const TRANSITIONS: Readonly<Record<ProvisionState, readonly ProvisionState[]>> =
   unknown: ["absent", "acquiring", "installed", "restart_required", "active", "failed", "blocked"],
   absent: ["acquiring", "verifying", "installed", "restart_required", "active", "failed", "blocked"],
   acquiring: ["verifying", "installed", "restart_required", "active", "failed", "blocked", "absent"],
-  verifying: ["installed", "restart_required", "active", "failed", "blocked", "acquiring"],
-  installed: ["active", "restart_required", "failed", "blocked", "absent"],
-  restart_required: ["active", "failed", "blocked", "absent"],
-  active: ["absent", "restart_required", "failed", "blocked"],
+  verifying: ["installed", "restart_required", "active", "failed", "blocked", "acquiring", "absent"],
+  installed: ["acquiring", "verifying", "active", "restart_required", "failed", "blocked", "absent"],
+  restart_required: ["acquiring", "verifying", "active", "failed", "blocked", "absent"],
+  active: ["acquiring", "verifying", "absent", "restart_required", "failed", "blocked"],
   failed: ["acquiring", "verifying", "installed", "restart_required", "active", "failed", "blocked", "absent"],
   blocked: ["acquiring", "verifying", "installed", "restart_required", "active", "failed", "absent"],
 };
@@ -179,13 +174,15 @@ function copyPlan(plan: ProvisionPlan, ref: ResourceRef): ProvisionPlan {
         throw new Error("declaration port returned an invalid model source");
       }
       if (item.sha256 !== undefined && !/^[0-9a-f]{64}$/i.test(item.sha256)) {
-        throw new Error("declaration port returned a malformed model digest");
+        throw new ItemRefusal("blocked", "artifact/invalid-digest", "declaration port returned a malformed model digest");
       }
       if (item.sizeBytes !== undefined && (!Number.isSafeInteger(item.sizeBytes) || item.sizeBytes < 0)) {
         throw new Error("declaration port returned an invalid model size");
       }
-    } else if (item.url.trim() === "") {
+    } else if (item.url !== undefined && item.url.trim() === "") {
       throw new Error("declaration port returned an invalid extension source");
+    } else if (item.url === undefined && (item.registry ?? "").trim() === "" && item.provider !== "local") {
+      throw new Error("declaration port returned an extension without a source");
     }
   }
   return {
@@ -200,12 +197,6 @@ function isAbortError(error: unknown, signal?: AbortSignal): boolean {
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-function errorCode(error: unknown): string {
-  if (error instanceof ProvisioningError) return error.code;
-  if (error instanceof ItemRefusal) return error.code;
-  return "provisioning/failed";
 }
 
 function refusalFor(error: unknown, signal?: AbortSignal): ItemRefusal {
@@ -322,6 +313,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
   private readonly inspector: InspectorPort | undefined;
   private readonly lifecycle: LifecyclePort | undefined;
   private readonly operationStore: OperationStorePort | undefined;
+  private readonly writeGuard: () => boolean;
   private readonly operationIdFactory: () => string;
   private readonly records = new Map<string, ResourceRecord>();
   private readonly locks = new Map<string, LockedOperation>();
@@ -340,6 +332,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     this.inspector = config.inspector;
     this.lifecycle = config.lifecycle;
     this.operationStore = config.operationStore;
+    this.writeGuard = config.writeGuard ?? ((): boolean => true);
     this.operationIdFactory = config.operationIdFactory ?? newOperationId;
     this.ctx.effect(() => async (): Promise<void> => {
       const operations = [...this.locks.values()];
@@ -466,11 +459,14 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
             throw new ItemRefusal("failed", "manager/inspect-failed", errorText(error));
           });
       if (inspection !== undefined && inspection.installed) {
-        return await this.activateExtension(ref, plan, operationId, operationSignal, options);
+        this.move(ref, operationId, "installed");
+        const activated = await this.activateExtension(ref, plan, operationId, operationSignal, options);
+        return this.complete(ref, operationId, activated);
       }
       const ensured = await this.executeEnsure(ref, {}, operationId, operationSignal, true);
       if (ensured.state !== "restart_required" && ensured.state !== "active") return ensured;
-      return await this.activateExtension(ref, plan, operationId, operationSignal, options);
+      const activated = await this.activateExtension(ref, plan, operationId, operationSignal, options);
+      return this.complete(ref, operationId, activated);
     });
   }
 
@@ -485,6 +481,9 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     const lockKey = `external:${request.kind}:${request.url}`;
     return await this.runLocked(ref, signal, async (operationId, operationSignal) => {
       this.begin(ref, operationId);
+      if (!this.writeGuard()) {
+        return this.complete(ref, operationId, this.blockedResult(ref, operationId, "provisioning/byo", "this endpoint is read-only for estate provisioning"));
+      }
       if (options.operatorConfirmed !== true) {
         return this.complete(ref, operationId, this.blockedResult(ref, operationId, "external/not-confirmed", "external acquisition requires operator confirmation"));
       }
@@ -509,11 +508,12 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
             root: this.writerRoot,
             relativePath,
             expectedSha256: request.sha256,
-            operationId,
-            source: response.body,
-            ...(request.sizeBytes === undefined ? {} : { sizeBytes: request.sizeBytes }),
-          }, operationSignal);
-          const result = itemResult({ kind: "model", key: operationId, owner: "card", id: "external-model", name: relativePath, folder: "", url: request.url, sha256: request.sha256, required: true, provider: "external" }, "active", "active", { path: written.path, sha256: written.sha256 });
+             operationId,
+             source: response.body,
+             ...(request.sizeBytes === undefined ? {} : { sizeBytes: request.sizeBytes }),
+           }, operationSignal);
+           this.move(ref, operationId, "installed");
+           const result = itemResult({ kind: "model", key: operationId, owner: "card", id: "external-model", name: relativePath, folder: "", url: request.url, sha256: request.sha256, required: true, provider: "external" }, "active", "active", { path: written.path, sha256: written.sha256 });
           return this.complete(ref, operationId, makeResult(ref, operationId, "active", "active", [result]));
         } catch (error: unknown) {
           return this.complete(ref, operationId, this.failureResult(ref, operationId, error, operationSignal));
@@ -525,6 +525,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       try {
         const result = await this.manager.install({ id: ref.id, url: request.url, ...(request.ref === undefined ? {} : { ref: request.ref }) }, operationSignal);
         if (!result.installed) throw new ItemRefusal("failed", "manager/install-failed", result.detail ?? "manager did not install the extension");
+        this.move(ref, operationId, "installed");
         const item = itemResult({ kind: "extension", key: operationId, id: ref.id, url: request.url, required: true, provider: "external" }, "restart_required", "restart_required", result.detail === undefined ? {} : { detail: result.detail });
         return this.complete(ref, operationId, makeResult(ref, operationId, "restart_required", "restart_required", [item]));
       } catch (error: unknown) {
@@ -563,11 +564,24 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     alreadyBegun = false,
   ): Promise<ProvisionResult> {
     if (!alreadyBegun) this.begin(ref, operationId);
+    if (!this.writeGuard()) {
+      return this.complete(ref, operationId, this.blockedResult(ref, operationId, "provisioning/byo", "this endpoint is read-only for estate provisioning"));
+    }
     let plan: ProvisionPlan;
     try {
       plan = await this.plan(ref);
     } catch (error: unknown) {
       return this.complete(ref, operationId, this.failureResult(ref, operationId, error, signal));
+    }
+    if (options.items !== undefined) {
+      const requested = new Set(options.items);
+      plan = {
+        ...plan,
+        items: plan.items.filter((item) => requested.has(item.kind === "model" ? item.name : item.id)),
+      };
+      if (plan.items.length === 0) {
+        return this.complete(ref, operationId, this.blockedResult(ref, operationId, "provisioning/item-not-found", "requested provision item is not declared"));
+      }
     }
     if (plan.items.length === 0) {
       return this.complete(ref, operationId, this.failureResult(ref, operationId, new Error("resource has no provision plan items"), signal));
@@ -611,6 +625,16 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     signal: AbortSignal,
   ): Promise<ProvisionItemResult> {
     if (item.kind === "model") return await this.acquireModel(ref, item, operationId, signal);
+    if (item.provider === "local") {
+      if (this.inspector === undefined) {
+        throw new ItemRefusal("blocked", "extension/inspect-unavailable", "local extension requires an engine inspector");
+      }
+      const inspection = await this.inspector.inspect(ref, signal);
+      if (!inspection.active) {
+        throw new ItemRefusal("blocked", "extension/not-active", inspection.detail ?? "local extension is not active on the engine");
+      }
+      return itemResult(item, "active", "active", inspection.detail === undefined ? {} : { detail: inspection.detail });
+    }
     if (this.manager === undefined) {
       throw new ItemRefusal("blocked", "manager/unavailable", "no ManagerPort is configured");
     }
@@ -631,6 +655,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     if (!installed.installed) {
       throw new ItemRefusal("failed", "manager/install-failed", installed.detail ?? "manager did not install the extension");
     }
+    this.move(ref, operationId, "installed");
     return itemResult(item, "restart_required", "restart_required", installed.detail === undefined ? {} : { detail: installed.detail });
   }
 
@@ -647,6 +672,19 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       throw new ItemRefusal("blocked", "artifact/writer-unavailable", "no artifact writer is configured");
     }
     const relativePath = relativeArtifactPath(item.folder, item.name);
+    if (this.writer.inspect !== undefined) {
+      const existing = await this.writer.inspect({
+        root: this.writerRoot,
+        relativePath,
+        expectedSha256: item.sha256,
+      }, signal);
+      if (existing.present) {
+        return itemResult(item, "active", "active", {
+          ...(existing.path === undefined ? {} : { path: existing.path }),
+          ...(existing.sha256 === undefined ? {} : { sha256: existing.sha256 }),
+        });
+      }
+    }
     this.move(ref, operationId, "verifying");
     const response = await this.fetcher(item.url, signal);
     this.assertResponse(response);
@@ -659,6 +697,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       source: response.body,
       ...(item.sizeBytes === undefined ? {} : { sizeBytes: item.sizeBytes }),
     }, signal);
+    this.move(ref, operationId, "installed");
     return itemResult(item, "active", "active", { path: written.path, sha256: written.sha256 });
   }
 
@@ -711,6 +750,11 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       }, signal);
       if (!inspection.present) return itemResult(item, "absent", "blocked", inspection.path === undefined ? {} : { path: inspection.path, sha256: inspection.sha256 });
       return itemResult(item, "active", "active", inspection.path === undefined ? {} : { path: inspection.path, sha256: inspection.sha256 });
+    }
+    if (item.provider === "local") {
+      if (this.inspector === undefined) return itemResult(item, "unknown", "blocked", { errorCode: "extension/inspect-unavailable" });
+      const inspection = await this.inspector.inspect({ kind: "extension", id: item.id }, signal);
+      return itemResult(item, inspection.active ? "active" : "absent", inspection.active ? "active" : "blocked", inspection.detail === undefined ? {} : { detail: inspection.detail });
     }
     if (this.manager?.inspect !== undefined) {
       const inspection = await this.manager.inspect(item.id, signal);

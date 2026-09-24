@@ -47,6 +47,7 @@ import type { Context } from "@deepseek-ai/cordis";
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from "@deepseek-ai/dsh-host-webserver";
 import { bootModels } from "@melite/comfyui-cordis/models-service";
+import type { ProvisioningServiceDefinition } from "@melite/estate-provisioning";
 import type {
   ModelDecl,
   ProvisionRow,
@@ -423,6 +424,7 @@ export interface DoorDeps {
   storeRoot: () => string;
   provisions: (family: string) => Promise<ProvisionRow[]>;
   fetchFn: FetchFn;
+  provisioning?: ProvisioningServiceDefinition;
 }
 
 export interface DoorRequest {
@@ -499,21 +501,40 @@ export async function serveTarget(
   } catch {
     present = false;
   }
-  if (!present) {
-    // The grace path: materialize the DECL row from its own pinned
-    // distribution (a refusal throws LOUD + `provision models` —
-    // never a forward, never a fallback).
-    await acquireRow(row, dest, deps.fetchFn);
-  }
-  if (!checkSha(sha, dest)) {
-    // Drifted mount bytes: drop + re-materialize ONCE (the
-    // materialization's own sha gate throws LOUD on bad bytes —
-    // only sha-matching bytes ever land, only landed bytes serve).
-    // The re-check marks the verified cache (a successful land
-    // always matches — downloadRow renames nothing else).
-    rmSync(dest, { force: true });
-    await acquireRow(row, dest, deps.fetchFn);
-    checkSha(sha, dest);
+  if (!present || !checkSha(sha, dest)) {
+    if (deps.provisioning !== undefined) {
+      const result = await deps.provisioning.ensure(
+        { kind: "model", owner: "family", id: target.family },
+        { items: [row.name] },
+      );
+      if (result.state !== "active") {
+        throw new ModelsDoorError(
+          502,
+          `models/provision-${result.state}`,
+          result.detail ?? `provision '${row.name}' did not become active`,
+        );
+      }
+      if (!checkSha(sha, dest)) {
+        throw new ModelsDoorError(
+          502,
+          "models/sha-mismatch",
+          `provision '${row.name}' did not produce the declared bytes`,
+        );
+      }
+    } else {
+      if (!present) await acquireRow(row, dest, deps.fetchFn);
+      if (!checkSha(sha, dest)) {
+        rmSync(dest, { force: true });
+        await acquireRow(row, dest, deps.fetchFn);
+        if (!checkSha(sha, dest)) {
+          throw new ModelsDoorError(
+            502,
+            "models/sha-mismatch",
+            `provision '${row.name}' did not produce the declared bytes`,
+          );
+        }
+      }
+    }
   }
   const bytes = readFileSync(dest);
   res.writeHead(200, {
@@ -618,6 +639,7 @@ export function apply(ctx: Context): void {
     );
     return;
   }
+  const provisioning = ctx.get("provisioning", false) as ProvisioningServiceDefinition | undefined;
   ctx.effect(() =>
     webServer.register(
       {
@@ -627,6 +649,7 @@ export function apply(ctx: Context): void {
           storeRoot: liveStoreRoot,
           provisions: provisionsForFamily,
           fetchFn: liveFetchDirect,
+          ...(provisioning === undefined ? {} : { provisioning }),
         }),
       },
       "estate-models: family provision files route",

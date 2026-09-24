@@ -16,8 +16,12 @@ import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { endpointConfigPath, loadEndpointConfig, runtimeModelsRoot } from "@melite/comfyui-cordis";
-import { isCatalogMiss, loadCardDefs, resolveArtifactRows } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
+import type {
+  ProvisionResult,
+  ProvisioningServiceDefinition,
+  ResourceRef,
+} from "@melite/estate-provisioning";
 import { ManagerApiError, managerBase, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
 import { probeEndpoint, activeRuns, managerSecurity } from "./manageProbe.ts";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, downloadIntoModelsTree, systemctl, guardLifecycle, COMFY_UNIT } from "./manageOps.ts";
@@ -77,6 +81,7 @@ export interface ManageCtx {
    *  optional: a door without its catalog is a miswire, and the
    *  type error at the construction site is the loudest refusal). */
   models: ModelsService;
+  provisioning: ProvisioningServiceDefinition;
   /** The timer-service seat (ctx.timeout from the door's Cordis
    *  context — cordis-plugin-timer): REQUIRED so a library caller
    *  can never silently fall back to a bare setTimeout (the
@@ -237,62 +242,105 @@ async function hSearch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   return ok(req.action, hits.length + " hit(s) for '" + req.query + "'", hits);
 }
 
+function safeProvisionItems(result: ProvisionResult): Array<Record<string, unknown>> {
+  return result.items.map((item) => ({
+    key: item.key,
+    kind: item.kind,
+    state: item.state,
+    ...(item.errorCode === undefined ? {} : { errorCode: item.errorCode }),
+    ...(item.detail === undefined ? {} : { detail: item.detail }),
+  }));
+}
+
+function provisionEnvelope(
+  action: string,
+  result: ProvisionResult,
+  extra: Record<string, unknown> = {},
+): [number, ManageEnvelope] {
+  const success = result.state === "active" || result.state === "restart_required";
+  const code = success ? 200 : result.state === "blocked" || result.state === "cancelled" ? 409 : 500;
+  const detail = result.detail ?? `${result.state} (${result.items.length} item(s))`;
+  const errors = result.items
+    .filter((item) => item.errorCode !== undefined)
+    .map((item) => ({ file: item.key, error: item.detail ?? item.errorCode ?? "failed" }));
+  return [
+    code,
+    {
+      action,
+      ok: success,
+      detail,
+      data: {
+        ...extra,
+        operation_id: result.operationId,
+        state: result.state,
+        items: safeProvisionItems(result),
+        restart_required: result.restartRequired,
+        ...(errors.length === 0 ? {} : { errors }),
+      },
+    },
+  ];
+}
+
+function mergeProvisionResults(results: readonly ProvisionResult[]): {
+  readonly state: ProvisionResult["state"];
+  readonly operationId: string;
+  readonly items: ProvisionResult["items"];
+  readonly restartRequired: boolean;
+  readonly detail?: string;
+} {
+  const items = results.flatMap((result) => result.items);
+  const state = results.every((result) => result.state === "active")
+    ? "active"
+    : results.every((result) => result.state === "restart_required")
+      ? "restart_required"
+      : results.some((result) => result.state === "active" || result.state === "restart_required")
+        ? "partial"
+        : results.every((result) => result.state === "blocked")
+          ? "blocked"
+          : results.some((result) => result.state === "cancelled")
+            ? "cancelled"
+            : "failed";
+  return {
+    state,
+    operationId: results[0]?.operationId ?? "none",
+    items,
+    restartRequired: results.some((result) => result.restartRequired),
+  };
+}
+
 async function hInstallExtension(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   if (req.nodes.length === 0) throw badRequest("install_extension requires: nodes");
-  const cfg = ctx.endpoint();
-  estateOnly(req, cfg);
-  // The vendor's own UI path: getlist (cache) rows matched by name,
-  // queued per-pack, then the worker starts.
-  let rows: Array<Record<string, unknown>>;
-  try {
-    const doc = (await managerGet(base(ctx), "/customnode/getlist?mode=cache", {
-      ctx, timeoutMs: 30_000,
-    })) as { custom_nodes?: Array<Record<string, unknown>> };
-    rows = Array.isArray(doc["custom_nodes"]) ? (doc["custom_nodes"] as Array<Record<string, unknown>>) : [];
-  } catch (e) {
-    throw mapRail(e, req.action);
-  }
-  const queued: string[] = [];
+  estateOnly(req, ctx.endpoint());
+  const results: ProvisionResult[] = [];
   const misses: string[] = [];
-  for (const want of req.nodes) {
-    const w = want.toLowerCase();
-    const row = rows.find((r) => {
-      const title = String(r["title"] ?? "").toLowerCase();
-      const cnr = String(r["cnr_id"] ?? r["id"] ?? "").toLowerCase();
-      const ver = String(r["ver"] ?? "").toLowerCase();
-      return title === w || cnr === w || ver === w || title.startsWith(w);
-    });
-    if (row === undefined) {
-      misses.push(want);
-      continue;
-    }
+  for (const node of req.nodes) {
+    const ref: ResourceRef = { kind: "extension", id: node };
     try {
-      await managerPost(base(ctx), "/manager/queue/install", {
-        id: row["cnr_id"] ?? row["id"] ?? row["title"],
-        version: row["version"] ?? "cnr",
-        selected_version: "latest",
-        channel: "default",
-        mode: "cache",
-      }, { ctx, timeoutMs: 15_000 });
-    } catch (e) {
-      throw mapRail(e, req.action);
+      await ctx.provisioning.plan(ref);
+      results.push(await ctx.provisioning.ensure(ref));
+    } catch (error: unknown) {
+      misses.push(node + ": " + (error instanceof Error ? error.message : String(error)));
     }
-    queued.push(String(row["title"] ?? want));
   }
-  if (misses.length > 0 && queued.length === 0) {
-    throw notFound("not found in registry cache: " + misses.join(", "));
-  }
-  let queue: unknown = null;
-  try {
-    await managerPost(base(ctx), "/manager/queue/start", {}, { ctx, timeoutMs: 10_000 });
-    queue = await awaitQueueDrained(ctx, req);
-  } catch (e) {
-    throw mapRail(e, req.action);
-  }
-  const detail = "queued " + queued.length + " pack(s): " + queued.join(", ") +
-    (misses.length > 0 ? "; not in cache: " + misses.join(", ") : "") +
-    " — restart required to load new nodes";
-  return ok(req.action, detail, { queued, misses, queue, restart_required: true });
+  if (results.length === 0) throw notFound("extension is not declared: " + misses.join(", "));
+  const merged = mergeProvisionResults(results);
+  const result: ProvisionResult = {
+    operationId: merged.operationId,
+    ref: { kind: "extension", id: req.nodes.join(",") },
+    state: merged.state,
+    outcome: merged.state,
+    operationState: merged.state === "partial"
+      ? "installed"
+      : merged.state === "cancelled"
+        ? "failed"
+        : merged.state,
+    items: merged.items,
+    restartRequired: merged.restartRequired,
+  };
+  return provisionEnvelope(req.action, result, {
+    queued: merged.items.filter((item) => item.state === "restart_required" || item.state === "active").map((item) => item.key),
+    misses,
+  });
 }
 
 async function hInstallExtensionUrl(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
@@ -319,85 +367,38 @@ async function hDownloadModel(req: Req, ctx: ManageCtx): Promise<[number, Manage
   return ok(req.action, "downloaded " + dest.split("/").pop() + " → " + dest, { path: dest });
 }
 
-interface CatalogRow {
-  name: string;
-  url: string;
-  relative_path: string;
-  filename?: string;
-}
-
-/** The models-plane catalog (stroke 4a, DSH-AS-LANGUAGE LAW): the
- *  SEAM is ctx.models (ModelsService, injected by the bridges door
- *  from the engine-model-catalog provider row). Estate downloads
- *  land through the same TS path as download_model — no vendor
- *  dependency, no whitelist mismatch. */
-/** Card-owned provision rows as download rows (the card-id half of
- *  provision_model): the card set boots once (module-cached,
- *  deterministic) and the card's DECL provisions resolve through the
- *  CATALOG's own row gate (resolveArtifactRows — the name/url
- *  non-empty law, one spelling, pinned by the catalog's walls).
- *  Null when no card carries the id or it declares no rows — the
- *  caller rethrows the catalog miss (never a wrong install). */
-async function resolveCardArtifact(cardId: string): Promise<CatalogRow[] | null> {
-  const defs = await loadCardDefs();
-  const declared = defs.get(cardId)?.provisions;
-  if (!declared?.length) return null;
-  return resolveArtifactRows(
-    [{ id: cardId, genre: "card", provisions: declared, variants: [] }],
-    cardId,
-  );
-}
-
-async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {  need(req, "model");
-  let rows: CatalogRow[];
+async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
+  need(req, "model");
+  const family: ResourceRef = {
+    kind: "model",
+    owner: "family",
+    id: req.model,
+    ...(req.variant === "" ? {} : { variant: req.variant }),
+    ...(req.quant === "" ? {} : { quant: req.quant }),
+  };
+  let ref = family;
   try {
-    rows = ctx.models.resolveCatalogArtifact(req.model, req.variant, req.quant, ctx.repoRoot);
-  } catch (e) {
-    // THE CARD-OWNED FALLBACK (the mask SAM2 law, 2026-09-19 —
-    // the operator: "declared, then auto provisioned"): model-less
-    // tool cards (boarded: []) carry their own weight rows on the
-    // card DECL (provisionsByFamily serves them under the CARD id).
-    // A catalog miss re-resolves against the card set — the run
-    // rescue names the card, the DECL owns the URLs either way.
-    if (!isCatalogMiss(e)) throw notFound((e as Error).message);
-    const cardRows = await resolveCardArtifact(req.model);
-    if (cardRows === null) throw notFound((e as Error).message);
-    rows = cardRows;
-  }
-  const done: string[] = [];
-  const present: string[] = [];
-  const errs: Array<{ file: string; error: string }> = [];
-  for (const row of rows) {
-    if (ctx.models.checkModelPresent(row.relative_path, row.name, ctx.repoRoot) !== null) {
-      present.push(row.name);
-      continue;
-    }
+    await ctx.provisioning.plan(family);
+  } catch (error: unknown) {
+    ref = {
+      kind: "model",
+      owner: "card",
+      id: req.model,
+      ...(req.variant === "" ? {} : { variant: req.variant }),
+      ...(req.quant === "" ? {} : { quant: req.quant }),
+    };
     try {
-      await downloadIntoModelsTree(ctx, {
-        url: row.url,
-        relative_path: row.relative_path,
-        filename: row.filename ?? row.name,
-      }, railMs(req));
-      done.push(row.name);
-    } catch (e) {
-      errs.push({ file: row.name, error: String(e).slice(0, 200) });
+      await ctx.provisioning.plan(ref);
+    } catch {
+      throw notFound(error instanceof Error ? error.message : String(error));
     }
   }
-  const parts: string[] = [];
-  if (present.length > 0) parts.push("present: " + present.length);
-  if (done.length > 0) parts.push("downloaded: " + done.join(", "));
-  let detail = parts.length > 0 ? parts.join("; ") : "no files landed";
-  if (errs.length > 0) detail += "; errors: " + errs.length;
-  const code = done.length > 0 || present.length > 0 ? 200 : 500;
-  return [
-    code,
-    {
-      action: req.action,
-      ok: done.length > 0 || present.length > 0,
-      detail,
-      data: { model: req.model, files: done, present, errors: errs.length > 0 ? errs : null },
-    },
-  ];
+  const result = await ctx.provisioning.ensure(ref);
+  return provisionEnvelope(req.action, result, {
+    model: req.model,
+    files: result.items.filter((item) => item.state === "active").map((item) => item.key),
+    present: result.items.filter((item) => item.state === "active").map((item) => item.key),
+  });
 }
 
 async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {

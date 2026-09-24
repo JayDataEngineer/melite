@@ -19,7 +19,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --project node tests"
+    "test": "pnpm --dir ../../.. exec vitest run --project node packages/estate/provisioning/tests"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2"

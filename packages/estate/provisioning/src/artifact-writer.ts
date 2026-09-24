@@ -99,6 +99,10 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+export function isValidSha256(value: string): boolean {
+  return SHA256.test(value.trim());
+}
+
 function normalizeDigest(value: string): string {
   const digest = value.trim().toLowerCase();
   if (!SHA256.test(digest)) {
@@ -185,12 +189,40 @@ async function assertNoSymlink(root: string, destination: string): Promise<void>
   }
 }
 
+async function createConfinedDirectory(root: string, directory: string): Promise<void> {
+  const rel = relative(root, directory);
+  if (rel === "") return;
+  const segments = rel.split(sep);
+  let current = root;
+  for (const segment of segments) {
+    current = join(current, segment);
+    let kind = await existingKind(current);
+    if (kind === "symlink") {
+      throw new ProvisioningError("invalid-path", "artifact path traverses a symbolic link");
+    }
+    if (kind === "missing") {
+      try {
+        await mkdir(current);
+      } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      }
+      kind = await existingKind(current);
+    }
+    if (kind === "symlink") {
+      throw new ProvisioningError("invalid-path", "artifact path traverses a symbolic link");
+    }
+    if (kind !== "directory") {
+      throw new ProvisioningError("invalid-path", "artifact path traverses a non-directory");
+    }
+  }
+}
+
 async function preparePath(root: string, destination: string): Promise<string> {
   const rootPath = resolve(root);
   await mkdir(rootPath, { recursive: true });
   const realRoot = await realpath(rootPath);
   const parent = dirname(destination);
-  await mkdir(parent, { recursive: true });
+  await createConfinedDirectory(rootPath, parent);
   await assertNoSymlink(rootPath, destination);
   const realParent = await realpath(parent);
   if (!within(realRoot, realParent)) {

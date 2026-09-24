@@ -20,6 +20,7 @@ import type { Context } from "@deepseek-ai/cordis";
 import type { TimerService } from "@deepseek-ai/cordis-plugin-timer";
 import { loadEndpointConfig, resolveRepoRoot, modelsService } from "@melite/comfyui-cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
+import type { ProvisioningServiceDefinition } from "@melite/estate-provisioning";
 import { dispatchManage } from "./managePlane.ts";
 import type { ManageCtx, ManageEnvelope } from "./managePlane.ts";
 
@@ -37,7 +38,7 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
 
 // ROLE (cookbook adding-a-package role table): Gateway: adapts the external comfy-manager API to the local manage lane. Key "manage" unchanged.
 export class ManageGatewayService extends Service {
-  static inject = ["timer"];
+  static inject = ["timer", "provisioning"];
 
   constructor(ctx: Context) {
     super(ctx, "manage");
@@ -51,6 +52,7 @@ export class ManageGatewayService extends Service {
       endpoint: (): Record<string, unknown> =>
         loadEndpointConfig() as Record<string, unknown>,
       models: modelsService(),
+      provisioning: this.ctx.get("provisioning") as ProvisioningServiceDefinition,
       // TWO-CORDIS TOPOLOGY: the timer plugin's Context augmentation
       // lands on ITS cordis copy (structural, never instanceof
       // across copies — the documented law); the seat reads the

@@ -26,6 +26,7 @@
     "@melite/estate-manage": "workspace:*",
     "@melite/estate-media": "workspace:*",
     "@melite/estate-models": "workspace:*",
+    "@melite/estate-provisioning": "workspace:*",
     "@melite/estate-queue": "workspace:*",
     "@melite/estate-runs": "workspace:*"
   },

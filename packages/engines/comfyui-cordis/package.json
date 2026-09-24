@@ -15,6 +15,7 @@
     "./catalog-registry": "./src/entries/catalog-registry.ts",
     "./comfyui-host": "./src/entries/comfyui-host.ts",
     "./comfyui-engine": "./src/entries/comfyui-engine.ts",
+    "./provisioning-manifest": "./scripts/provision-extensions-manifest.ts",
     "./package.json": "./package.json",
     "./model-contract": "./src/models/families/contract.ts",
     "./models-service": "./src/models/service.ts"

@@ -35,7 +35,7 @@ export interface DeclarationPort {
 
 export interface ManagerInstallRequest {
   readonly id: string;
-  readonly url: string;
+  readonly url?: string;
   readonly ref?: string;
   readonly version?: string;
   readonly registry?: string;
@@ -104,6 +104,7 @@ export interface ProvisioningConfig {
   readonly inspector?: InspectorPort;
   readonly lifecycle?: LifecyclePort;
   readonly operationStore?: OperationStorePort;
+  readonly writeGuard?: () => boolean;
   readonly operationIdFactory?: () => string;
   readonly onTransition?: ProvisionTransitionListener;
 }
@@ -141,6 +142,7 @@ export type ProvisioningPorts = {
   readonly inspector?: InspectorPort;
   readonly lifecycle?: LifecyclePort;
   readonly operationStore?: OperationStorePort;
+  readonly writeGuard?: () => boolean;
 };
 
 export type ArtifactWritePort = ArtifactWriterPort;

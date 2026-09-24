@@ -7,16 +7,24 @@ import assert from "node:assert/strict";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { resourceKey } from "@melite/estate-provisioning";
+import type {
+  ModelProvisionPlanItem,
+  ProvisionItemResult,
+  ProvisionOutcome,
+  ProvisionPlan,
+  ProvisionPlanItem,
+  ProvisionResult,
+  ProvisioningServiceDefinition,
+  ProvisionState,
+  ResourceRef,
+  ResourceStatus,
+} from "@melite/estate-provisioning";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
 
 const realFetch = globalThis.fetch;
 const realPath = process.env.PATH ?? "";
-afterEach(() => {
-  globalThis.fetch = realFetch;
-  process.env.PATH = realPath;
-  delete process.env.COMFYUI_ENDPOINT_CONFIG;
-});
 
 const json = (v: unknown, status = 200): Response =>
   new Response(JSON.stringify(v), { status });
@@ -26,23 +34,180 @@ const text = (v: string, status = 200): Response =>
 // ── harness ─────────────────────────────────────────────────────────
 let ROOT = "";
 const seenTimeouts: number[] = [];
-const fakeModels = {
-  rows: [] as Array<{ url: string; relative_path: string; filename?: string; name: string }>,
-  poison: null as null | string | Error,
-  present: new Set<string>(),
-  resolveCatalogArtifact: (..._a: unknown[]) => {
-    if (fakeModels.poison instanceof Error) throw fakeModels.poison;
-    if (fakeModels.poison !== null) throw new Error(fakeModels.poison);
-    return fakeModels.rows;
-  },
-  checkModelPresent: (rel: string, name: string) =>
-    fakeModels.present.has(rel + "/" + name) ? "/hit" : null,
+type ModelRef = Extract<ResourceRef, { kind: "model" }>;
+type ExtensionRef = Extract<ResourceRef, { kind: "extension" }>;
+type ExtensionItem = Extract<ProvisionPlanItem, { kind: "extension" }>;
+type FakeOutcome = ProvisionResult | Error | string;
+type FakeProvisioning = ProvisioningServiceDefinition & {
+  plans: Map<string, ProvisionPlan>;
+  outcomes: Map<string, FakeOutcome>;
+  planCalls: ResourceRef[];
+  ensureCalls: ResourceRef[];
+  reset: () => void;
 };
+
+const modelRef = (
+  id: string,
+  owner: "family" | "card" = "family",
+  variant?: string,
+  quant?: string,
+): ModelRef => ({
+  kind: "model",
+  owner,
+  id,
+  ...(variant === undefined ? {} : { variant }),
+  ...(quant === undefined ? {} : { quant }),
+});
+const extensionRef = (id: string): ExtensionRef => ({ kind: "extension", id });
+const undeclared = (ref: ResourceRef): Error =>
+  new Error(
+    ref.kind === "extension"
+      ? `extension "${ref.id}" is not declared`
+      : `model "${ref.id}" is not declared`,
+  );
+const modelItem = (
+  ref: ModelRef,
+  over: Partial<ModelProvisionPlanItem> = {},
+): ModelProvisionPlanItem => {
+  const name = over.name ?? `${ref.id}.safetensors`;
+  return {
+    kind: "model",
+    key: `model:${ref.owner}:${ref.id}:${ref.variant ?? ""}:${ref.quant ?? ""}:${name}`,
+    owner: ref.owner,
+    id: ref.id,
+    name,
+    folder: "checkpoints",
+    url: `https://example.invalid/${name}`,
+    sha256: "a".repeat(64),
+    required: true,
+    provider: "direct",
+    ...over,
+  };
+};
+const modelPlan = (
+  ref: ModelRef,
+  items: readonly ModelProvisionPlanItem[] = [modelItem(ref)],
+): ProvisionPlan => ({ ref, items });
+const extensionItem = (id: string, over: Partial<ExtensionItem> = {}): ExtensionItem => ({
+  kind: "extension",
+  key: `extension:${id}`,
+  id,
+  required: true,
+  provider: "manager",
+  registry: "comfy.org/example",
+  version: "1.0.0",
+  ...over,
+});
+const extensionPlan = (id: string, over: Partial<ExtensionItem> = {}): ProvisionPlan => ({
+  ref: extensionRef(id),
+  items: [extensionItem(id, over)],
+});
+const resultItem = (
+  item: ProvisionPlanItem,
+  state: ProvisionState = "active",
+  over: Partial<ProvisionItemResult> = {},
+): ProvisionItemResult => {
+  const outcome: ProvisionOutcome =
+    state === "active" || state === "restart_required"
+      ? state
+      : state === "blocked"
+        ? "blocked"
+        : "failed";
+  return {
+    key: item.key,
+    kind: item.kind,
+    state,
+    outcome,
+    ...over,
+  };
+};
+const resultFor = (
+  ref: ResourceRef,
+  state: ProvisionOutcome,
+  items: readonly ProvisionItemResult[],
+  detail?: string,
+): ProvisionResult => {
+  const operationState: ProvisionState =
+    state === "partial" ? "installed" : state === "cancelled" ? "failed" : state;
+  return {
+    operationId: `op-${ref.kind}-${ref.id}`,
+    ref,
+    state,
+    outcome: state,
+    operationState,
+    items,
+    restartRequired: state === "restart_required" || items.some((item) => item.state === "restart_required"),
+    ...(detail === undefined ? {} : { detail }),
+  };
+};
+const resultForPlan = (ref: ResourceRef, plan: ProvisionPlan): ProvisionResult => {
+  const state: ProvisionOutcome = ref.kind === "extension" ? "restart_required" : "active";
+  return resultFor(
+    ref,
+    state,
+    plan.items.map((item) => resultItem(item, ref.kind === "extension" ? "restart_required" : "active")),
+  );
+};
+
+const provisioningPlans = new Map<string, ProvisionPlan>();
+const provisioningOutcomes = new Map<string, FakeOutcome>();
+const provisioningPlanCalls: ResourceRef[] = [];
+const provisioningEnsureCalls: ResourceRef[] = [];
+const resetFakeProvisioning = (): void => {
+  provisioningPlans.clear();
+  provisioningOutcomes.clear();
+  provisioningPlanCalls.length = 0;
+  provisioningEnsureCalls.length = 0;
+};
+const planRef = async (ref: ResourceRef): Promise<ProvisionPlan> => {
+  provisioningPlanCalls.push(ref);
+  const plan = provisioningPlans.get(resourceKey(ref));
+  if (plan === undefined) throw undeclared(ref);
+  return plan;
+};
+const ensureRef = async (ref: ResourceRef): Promise<ProvisionResult> => {
+  provisioningEnsureCalls.push(ref);
+  const configured = provisioningOutcomes.get(resourceKey(ref));
+  if (configured instanceof Error) throw configured;
+  if (typeof configured === "string") throw configured;
+  if (configured !== undefined) return configured;
+  const plan = provisioningPlans.get(resourceKey(ref));
+  if (plan === undefined) throw undeclared(ref);
+  return resultForPlan(ref, plan);
+};
+const fakeProvisioning: FakeProvisioning = {
+  plans: provisioningPlans,
+  outcomes: provisioningOutcomes,
+  planCalls: provisioningPlanCalls,
+  ensureCalls: provisioningEnsureCalls,
+  reset: resetFakeProvisioning,
+  inspect: async (ref): Promise<ResourceStatus> => ({ ref, state: "unknown", items: [] }),
+  plan: planRef,
+  ensure: ensureRef,
+  activate: async (ref): Promise<ProvisionResult> => await ensureRef(ref),
+  acquireExternal: async (): Promise<ProvisionResult> => {
+    throw new Error("external provisioning is not used");
+  },
+  reconcile: async (): Promise<ResourceStatus[]> => [],
+  stateOf: (): ProvisionState => "unknown",
+  operationOf: () => undefined,
+  isLocked: () => false,
+  subscribe: () => () => {},
+};
+
+afterEach(() => {
+  globalThis.fetch = realFetch;
+  process.env.PATH = realPath;
+  delete process.env.COMFYUI_ENDPOINT_CONFIG;
+  fakeProvisioning.reset();
+});
+
 const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
   ({
     repoRoot: ROOT,
     endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
-    models: fakeModels,
+    models: {} as ManageCtx["models"],
+    provisioning: fakeProvisioning,
     timeout: (cb: () => void, ms: number): (() => void) => {
       seenTimeouts.push(ms);
       cb();
@@ -131,7 +296,7 @@ describe("parse law", () => {
       assert.equal(env.action, "status");
       const [code2, env2] = await manage({ action: "install_extension", nodes: [0, "", 5] });
       assert.equal(code2, 404);
-      assert.match(env2.detail, /not found in registry cache: 0/);
+      assert.match(env2.detail, /extension is not declared: 0/);
     } finally {
       rmRoot();
     }
@@ -351,77 +516,110 @@ describe("hSearch", () => {
 });
 
 describe("hInstallExtension", () => {
-  const LIST = {
-    custom_nodes: [
-      { title: "Pack", cnr_id: "c1", version: "v1", ver: "1.0" },
-      { title: "Second", id: "s2" },
-      { ver: "3.0" },
-      { title: "NoTitle" },
-    ],
-  };
-
-  it("needs nodes and the estate (misses 404)", async () => {
+  it("needs nodes and the estate; undeclared names are 404", async () => {
     mkRoot();
     try {
       const [, e0] = await manage({ action: "install_extension", nodes: [] });
       assert.match(e0.detail, /install_extension requires: nodes/);
       const [, e1] = await manage({ action: "install_extension", nodes: ["x"] }, CTX({ endpoint: () => ({}) }));
       assert.match(e1.detail, /byo endpoint/);
-      route(() => json({ custom_nodes: [] }));
       const [c2, e2] = await manage({ action: "install_extension", nodes: ["ghost"] });
       assert.equal(c2, 404);
-      assert.match(e2.detail, /not found in registry cache: ghost/);
+      assert.equal(e2.ok, false);
+      assert.match(e2.detail, /extension is not declared: ghost/);
+      assert.deepEqual(fakeProvisioning.ensureCalls, []);
     } finally {
       rmRoot();
     }
   });
 
-  it("matches title/cnr/ver/prefix, queues, drains, reports misses", async () => {
+  it("uses declared plans and reports misses without a latest fallback", async () => {
     mkRoot();
     try {
-      let polls = 0;
-      route((url) => {
-        if (url.includes("/customnode/getlist")) return json(LIST);
-        if (url.includes("/manager/queue/status")) {
-          polls++;
-          return json(polls > 1
-            ? { is_processing: false, in_progress_count: 0, total_count: 2, done_count: 2 }
-            : { is_processing: true, in_progress_count: 1, total_count: 2, done_count: 0 });
-        }
+      const packPlan = extensionPlan("pack", { version: "1.2.3" });
+      fakeProvisioning.plans.set(resourceKey(extensionRef("pack")), packPlan);
+      let railCalls = 0;
+      route(() => {
+        railCalls++;
         return json({});
       });
-      const [code, env] = await manage({ action: "install_extension", nodes: ["PACK", "3.0", "ghost"] });
+      const [code, env] = await manage({ action: "install_extension", nodes: ["pack", "ghost"] });
       assert.equal(code, 200);
-      assert.match(env.detail, /queued 2 pack\(s\).*not in cache: ghost/);
-      const data = env.data as { queued: string[]; misses: string[]; restart_required: boolean };
+      assert.equal(env.ok, true);
+      assert.equal(env.detail, "restart_required (1 item(s))");
+      const data = env.data as {
+        queued: string[];
+        misses: string[];
+        restart_required: boolean;
+        state: string;
+      };
+      assert.equal(data.state, "restart_required");
       assert.equal(data.restart_required, true);
-      assert.deepEqual(data.misses, ["ghost"]);
+      assert.deepEqual(data.queued, ["extension:pack"]);
+      assert.deepEqual(data.misses, ['ghost: extension "ghost" is not declared']);
+      assert.equal(railCalls, 0);
+      assert.deepEqual(fakeProvisioning.planCalls.map((ref) => ref.id), ["pack", "ghost"]);
+      assert.deepEqual(fakeProvisioning.ensureCalls.map((ref) => ref.id), ["pack"]);
+      const packItem = packPlan.items[0];
+      assert.equal(packItem?.kind, "extension");
+      if (packItem?.kind !== "extension") throw new Error("expected extension plan item");
+      assert.equal(packItem.version, "1.2.3");
+      assert.equal(JSON.stringify(packPlan).includes("latest"), false);
     } finally {
       rmRoot();
     }
   });
 
-  it("install refusals map; queue-start transports 500", async () => {
+  it("maps manager refusal, activation, and partial provisioning results", async () => {
     mkRoot();
     try {
-      route((url) => {
-        if (url.includes("/customnode/getlist")) return json(LIST);
-        if (url.includes("/queue/install")) return text("sec", 403);
-        return json({});
-      });
+      const ref = extensionRef("pack");
+      const plan = extensionPlan("pack");
+      fakeProvisioning.plans.set(resourceKey(ref), plan);
+      const failed = resultFor(
+        ref,
+        "failed",
+        [resultItem(plan.items[0]!, "failed", { errorCode: "manager/install-failed", detail: "manager refused install_extension" })],
+        "manager refused install_extension",
+      );
+      fakeProvisioning.outcomes.set(resourceKey(ref), failed);
       const [c1, e1] = await manage({ action: "install_extension", nodes: ["pack"] });
-      assert.equal(c1, 403);
-      assert.match(e1.detail, /manager refused install_extension/);
-      route((url) => {
-        if (url.includes("/customnode/getlist")) return json(LIST);
-        if (url.includes("/queue/start")) {
-          throw new TypeError("cut");
-        }
-        return json({});
-      });
+      assert.equal(c1, 500);
+      assert.equal(e1.ok, false);
+      assert.match(e1.detail, /failed \(1 item\(s\)\)/);
+      assert.deepEqual((e1.data as { errors: Array<{ file: string }> }).errors.map((row) => row.file), ["extension:pack"]);
+
+      fakeProvisioning.outcomes.set(
+        resourceKey(ref),
+        resultFor(ref, "blocked", [resultItem(plan.items[0]!, "blocked", { errorCode: "manager/can-install", detail: "manager refused activation" })], "manager refused activation"),
+      );
       const [c2, e2] = await manage({ action: "install_extension", nodes: ["pack"] });
-      assert.equal(c2, 503);
-      assert.match(e2.detail, /management plane unavailable/);
+      assert.equal(c2, 409);
+      assert.equal(e2.ok, false);
+      assert.match(e2.detail, /blocked \(1 item\(s\)\)/);
+
+      fakeProvisioning.outcomes.set(
+        resourceKey(ref),
+        resultFor(ref, "active", [resultItem(plan.items[0]!)]),
+      );
+      const [c3, e3] = await manage({ action: "install_extension", nodes: ["pack"] });
+      assert.equal(c3, 200);
+      assert.equal(e3.ok, true);
+      assert.equal((e3.data as { state: string }).state, "active");
+
+      const otherRef = extensionRef("other");
+      const otherPlan = extensionPlan("other");
+      fakeProvisioning.plans.set(resourceKey(otherRef), otherPlan);
+      fakeProvisioning.outcomes.set(resourceKey(ref), resultFor(ref, "active", [resultItem(plan.items[0]!)]));
+      fakeProvisioning.outcomes.set(
+        resourceKey(otherRef),
+        resultFor(otherRef, "failed", [resultItem(otherPlan.items[0]!, "failed", { errorCode: "manager/install-failed", detail: "one item failed" })]),
+      );
+      const [c4, e4] = await manage({ action: "install_extension", nodes: ["pack", "other"] });
+      assert.equal(c4, 500);
+      assert.equal(e4.ok, false);
+      assert.equal((e4.data as { state: string }).state, "partial");
+      assert.deepEqual((e4.data as { queued: string[] }).queued, ["extension:pack"]);
     } finally {
       rmRoot();
     }
@@ -498,85 +696,118 @@ describe("hDownloadModel", () => {
 });
 
 describe("hProvisionModel", () => {
-  const ROW = (over: Record<string, unknown> = {}) => ({
-    url: "http://h/m.bin",
-    relative_path: "checkpoints",
-    name: "m.bin",
-    ...over,
-  });
-
-  it("needs a model; catalog misses 404", async () => {
+  it("needs a model; undeclared names are 404", async () => {
     mkRoot();
     try {
       const [, e0] = await manage({ action: "provision_model" });
       assert.match(e0.detail, /provision_model requires: model/);
-      fakeModels.poison = "no such model";
-      const [c1, e1] = await manage({ action: "provision_model", model: "x" });
+      const [c1, e1] = await manage({ action: "provision_model", model: "ghost" });
       assert.equal(c1, 404);
-      assert.match(e1.detail, /no such model/);
+      assert.equal(e1.ok, false);
+      assert.match(e1.detail, /model "ghost" is not declared/);
+      assert.deepEqual(fakeProvisioning.ensureCalls, []);
     } finally {
-      fakeModels.poison = null;
       rmRoot();
     }
   });
 
-  it("a catalog miss re-resolves against CARD-owned DECL rows (the mask SAM2 law)", async () => {
-    const { CatalogMiss } = await import("@melite/comfyui-cordis");
+  it("re-resolves a family miss against a declared card plan", async () => {
     mkRoot();
     try {
-      fakeModels.poison = new CatalogMiss('model "mask" not found in catalog');
-      route(() => new Response("BYTES"));
-      const [c1, e1] = await manage({ action: "provision_model", model: "mask" });
-      assert.equal(c1, 200);
-      assert.match(e1.detail, /downloaded: sam3\.1_multiplex_fp16\.safetensors, sam2\.1_hiera_large\.pt, person_yolov8m-seg\.pt, face_yolov8m\.pt, hand_yolov8n\.pt/);
-      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "sams", "sam2.1_hiera_large.pt"), "utf8"), "BYTES");
-      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "ultralytics", "segm", "person_yolov8m-seg.pt"), "utf8"), "BYTES");
-      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "ultralytics", "bbox", "face_yolov8m.pt"), "utf8"), "BYTES");
-      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "ultralytics", "bbox", "hand_yolov8n.pt"), "utf8"), "BYTES");
-      assert.equal((e1.data as { model: string }).model, "mask");
-      // an unknown id stays a 404 (never a wrong install)
-      fakeModels.poison = new CatalogMiss('model "ghost" not found in catalog');
-      const [c2, e2] = await manage({ action: "provision_model", model: "ghost" });
-      assert.equal(c2, 404);
-      assert.match(e2.detail, /not found in catalog/);
-      // a KNOWN card with no provisions stays a 404 (nothing declared, nothing fetched)
-      fakeModels.poison = new CatalogMiss('model "tts" not found in catalog');
-      const [c3, e3] = await manage({ action: "provision_model", model: "tts" });
-      assert.equal(c3, 404);
-      assert.match(e3.detail, /not found in catalog/);
+      const family = modelRef("mask", "family", "fp16", "q4");
+      const card = modelRef("mask", "card", "fp16", "q4");
+      const plan = modelPlan(card, [
+        modelItem(card, { key: "mask:sam3", name: "sam3.1_multiplex_fp16.safetensors", folder: "sams" }),
+        modelItem(card, { key: "mask:sam2", name: "sam2.1_hiera_large.pt", folder: "sams" }),
+      ]);
+      fakeProvisioning.plans.set(resourceKey(card), plan);
+      fakeProvisioning.outcomes.set(
+        resourceKey(card),
+        resultFor(card, "active", plan.items.map((item) => resultItem(item)), "verified card provisions"),
+      );
+      let railCalls = 0;
+      route(() => {
+        railCalls++;
+        return json({});
+      });
+      const [code, env] = await manage({
+        action: "provision_model",
+        model: "mask",
+        variant: "fp16",
+        quant: "q4",
+      });
+      assert.equal(code, 200);
+      assert.equal(env.ok, true);
+      assert.equal(env.detail, "verified card provisions");
+      const data = env.data as { model: string; state: string; files: string[]; present: string[]; operation_id: string };
+      assert.equal(data.model, "mask");
+      assert.equal(data.state, "active");
+      assert.deepEqual(data.files, ["mask:sam3", "mask:sam2"]);
+      assert.deepEqual(data.present, ["mask:sam3", "mask:sam2"]);
+      assert.equal(data.operation_id, "op-model-mask");
+      assert.equal(railCalls, 0);
+      assert.deepEqual(fakeProvisioning.planCalls, [family, card]);
+      assert.deepEqual(fakeProvisioning.ensureCalls, [card]);
     } finally {
-      fakeModels.poison = null;
       rmRoot();
     }
   });
 
-  it("present, downloaded, failed and empty rows shape the envelope", async () => {
+  it("maps verified, failed, and partial model result envelopes", async () => {
     mkRoot();
     try {
-      fakeModels.rows = [ROW(), ROW({ name: "n.bin" })];
-      fakeModels.present = new Set(["checkpoints/m.bin"]);
-      route(() => text("x", 500));
+      const ref = modelRef("m");
+      const plan = modelPlan(ref, [
+        modelItem(ref, { key: "good", name: "good.bin" }),
+        modelItem(ref, { key: "bad", name: "bad.bin" }),
+      ]);
+      fakeProvisioning.plans.set(resourceKey(ref), plan);
+      fakeProvisioning.outcomes.set(
+        resourceKey(ref),
+        resultFor(ref, "active", plan.items.map((item) => resultItem(item)), "verified"),
+      );
       const [c1, e1] = await manage({ action: "provision_model", model: "m" });
       assert.equal(c1, 200);
-      assert.match(e1.detail, /present: 1; errors: 1/);
-      assert.deepEqual((e1.data as { present: string[] }).present, ["m.bin"]);
-      assert.ok((e1.data as { errors: unknown }).errors !== null);
-      route(() => new Response("BYTES"));
+      assert.equal(e1.ok, true);
+      assert.equal(e1.detail, "verified");
+      assert.deepEqual((e1.data as { state: string; files: string[]; present: string[] }).files, ["good", "bad"]);
+      assert.deepEqual((e1.data as { state: string; files: string[]; present: string[] }).present, ["good", "bad"]);
+
+      fakeProvisioning.outcomes.set(
+        resourceKey(ref),
+        resultFor(
+          ref,
+          "failed",
+          [resultItem(plan.items[0]!, "failed", { errorCode: "artifact/http-refused", detail: "artifact refused" })],
+          "artifact acquisition failed",
+        ),
+      );
       const [c2, e2] = await manage({ action: "provision_model", model: "m" });
-      assert.equal(c2, 200);
-      assert.match(e2.detail, /present: 1; downloaded: n\.bin/);
-      assert.equal(readFileSync(join(ROOT, "data", "runtime", "comfyui", "models", "checkpoints", "n.bin"), "utf8"), "BYTES");
-      fakeModels.present = new Set();
+      assert.equal(c2, 500);
+      assert.equal(e2.ok, false);
+      assert.equal(e2.detail, "artifact acquisition failed");
+      assert.deepEqual((e2.data as { errors: Array<{ file: string; error: string }> }).errors, [
+        { file: "good", error: "artifact refused" },
+      ]);
+
+      fakeProvisioning.outcomes.set(
+        resourceKey(ref),
+        resultFor(
+          ref,
+          "partial",
+          [
+            resultItem(plan.items[0]!),
+            resultItem(plan.items[1]!, "failed", { errorCode: "artifact/http-refused", detail: "bad artifact refused" }),
+          ],
+          "partial (2 item(s))",
+        ),
+      );
       const [c3, e3] = await manage({ action: "provision_model", model: "m" });
-      assert.equal(c3, 200);
-      assert.equal((e3.data as { errors: unknown }).errors, null);
-      fakeModels.rows = [];
-      const [c4, e4] = await manage({ action: "provision_model", model: "m" });
-      assert.equal(c4, 500);
-      assert.match(e4.detail, /no files landed/);
+      assert.equal(c3, 500);
+      assert.equal(e3.ok, false);
+      assert.equal((e3.data as { state: string }).state, "partial");
+      assert.deepEqual((e3.data as { files: string[] }).files, ["good"]);
     } finally {
-      fakeModels.rows = [];
-      fakeModels.present = new Set();
       rmRoot();
     }
   });
@@ -669,18 +900,14 @@ describe("hUpdate + hSwitchVersion", () => {
 
   it("a string throw softens through the generic envelope", async () => {
     mkRoot();
-    const realCheck = fakeModels.checkModelPresent;
-    fakeModels.checkModelPresent = () => {
-      throw "plain-string-fail";
-    };
     try {
-      fakeModels.rows = [{ url: "http://h/m.bin", relative_path: "checkpoints", name: "m.bin" }];
+      const ref = modelRef("m");
+      fakeProvisioning.plans.set(resourceKey(ref), modelPlan(ref));
+      fakeProvisioning.outcomes.set(resourceKey(ref), "plain-string-fail");
       const [code, env] = await manage({ action: "provision_model", model: "m" });
       assert.equal(code, 500);
       assert.equal(env.detail, "plain-string-fail");
     } finally {
-      fakeModels.checkModelPresent = realCheck;
-      fakeModels.rows = [];
       rmRoot();
     }
   });
@@ -872,7 +1099,7 @@ describe("residual arms", () => {
     }
   });
 
-  it("download string-throws; guard passes empty roots; install covers all matchers", async () => {
+  it("download string-throws; guard passes empty roots; install uses declared plans", async () => {
     mkRoot();
     try {
       route(() => {
@@ -886,56 +1113,46 @@ describe("residual arms", () => {
       const [c2, e2] = await manage({ action: "stop" });
       assert.equal(c2, 200);
       assert.match(e2.detail, /stop issued/);
-      let polls = 0;
-      route((url) => {
-        if (url.includes("/customnode/getlist")) {
-          return json({
-            custom_nodes: [
-              { title: "Pack", cnr_id: "c1", version: "v1", ver: "1.0" },
-              { id: "s2" },
-              { ver: "3.0" },
-            ],
-          });
-        }
-        if (url.includes("/manager/queue/status")) {
-          polls++;
-          return json(polls > 1
-            ? { is_processing: false, in_progress_count: 0, total_count: 0, done_count: 0 }
-            : { is_processing: true, in_progress_count: 1, total_count: 0, done_count: 0 });
-        }
-        return json({});
-      });
-      const [c3, e3] = await manage({ action: "install_extension", nodes: ["c1", "pa", "3.0"] });
+      fakeProvisioning.plans.set(resourceKey(extensionRef("c1")), extensionPlan("c1"));
+      fakeProvisioning.plans.set(resourceKey(extensionRef("pack")), extensionPlan("pack"));
+      const [c3, e3] = await manage({ action: "install_extension", nodes: ["c1", "pack", "ghost"] });
       assert.equal(c3, 200);
-      assert.match(e3.detail, /queued 3 pack\(s\): Pack, Pack, 3\.0/);
+      assert.match(e3.detail, /restart_required \(2 item\(s\)\)/);
       const data = e3.data as { queued: string[]; misses: string[] };
-      assert.deepEqual(data.misses, []);
+      assert.deepEqual(data.queued, ["extension:c1", "extension:pack"]);
+      assert.deepEqual(data.misses, ['ghost: extension "ghost" is not declared']);
       const [c4, e4] = await manage({ action: "install_extension", nodes: ["pack"] });
       assert.equal(c4, 200);
       assert.ok(!e4.detail.includes("not in cache"));
-      route(() => json({}));
-      const [c5, e5] = await manage({ action: "install_extension", nodes: ["ghost"] });
+      const [c5, e5] = await manage({ action: "install_extension", nodes: ["3.0"] });
       assert.equal(c5, 404);
-      assert.match(e5.detail, /not found in registry cache: ghost/);
+      assert.match(e5.detail, /extension is not declared: 3\.0/);
     } finally {
       rmRoot();
     }
   });
 
-  it("rail catches fire on every lane (install/getlist, list, snapshots, restore)", async () => {
+  it("declared install bypasses the legacy rail; list, snapshots, restore still map", async () => {
     mkRoot();
     try {
+      let railCalls = 0;
       route((url) => {
-        if (url.includes("/customnode/getlist")) return text("sec", 403);
-        return json({});
-      });
-      const [c1, e1] = await manage({ action: "install_extension", nodes: ["x"] });
-      assert.equal(c1, 403);
-      assert.match(e1.detail, /manager refused install_extension/);
-      route((url) => {
+        railCalls++;
         if (url.includes("/customnode/installed")) return text("sec", 403);
         return json({});
       });
+      const ref = extensionRef("x");
+      const plan = extensionPlan("x");
+      fakeProvisioning.plans.set(resourceKey(ref), plan);
+      fakeProvisioning.outcomes.set(
+        resourceKey(ref),
+        resultFor(ref, "failed", [resultItem(plan.items[0]!, "failed", { errorCode: "manager/install-failed", detail: "manager refused install_extension" })], "manager refused install_extension"),
+      );
+      const [c1, e1] = await manage({ action: "install_extension", nodes: ["x"] });
+      assert.equal(c1, 500);
+      assert.equal(e1.ok, false);
+      assert.match(e1.detail, /failed \(1 item\(s\)\)/);
+      assert.equal(railCalls, 0);
       const [c2] = await manage({ action: "list_extensions" });
       assert.equal(c2, 403);
       route((url) => {

@@ -60,7 +60,7 @@ export interface ExtensionProvisionPlanItem {
   readonly kind: "extension";
   readonly key: string;
   readonly id: string;
-  readonly url: string;
+  readonly url?: string;
   readonly required: boolean;
   readonly provider: string;
   readonly ref?: string;
@@ -124,6 +124,7 @@ export interface ProvisionOperation {
 }
 
 export interface EnsureOptions {
+  readonly items?: readonly string[];
   readonly activate?: boolean;
   readonly activateIfIdle?: boolean;
   readonly force?: boolean;

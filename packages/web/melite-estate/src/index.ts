@@ -82,6 +82,7 @@ import mediaPlugin from "@melite/estate-media";
 // from the booted models table + the weights mount — no remotes,
 // no proxies (the 2026-09-12 motion-skin 502).
 import modelsPlugin from "@melite/estate-models";
+import provisioningComposition from "./provisioning.ts";
 
 /** The estate composition: the engine tier, the drafts service,
  *  the serial run queue, and the runs plane (REBUILD-5/9). A
@@ -345,6 +346,7 @@ const rows: readonly Plugin[] = [
   // inline and the card door). The registry gates on the queue +
   // drafts + cards seats — mount order is load order here.
   cardRegistryProvider,
+  provisioningComposition,
   // The disclosure seat (REBUILD-14): discover over both planes,
   // derived live — gates on the card registry seat (its inject).
   discloseProvider,
