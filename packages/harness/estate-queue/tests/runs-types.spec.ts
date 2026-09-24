@@ -130,6 +130,26 @@ describe("settlePersist", () => {
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.deepEqual(sidecar["compose_echo"], echo);
   });
+
+  it("THE EXPORT-NAME STAMP (023's self-critique #4/#6): a stage voice_name rides the settled _flow.json + the record", () => {
+    const runDir = join(dir, "rexp");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({ dir: runDir, params: [{ voice_name: "night-keeper" } as never] });
+    settlePersist(run, dir);
+    assert.equal(run.exportName, "night-keeper");
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(sidecar["export_name"], "night-keeper");
+  });
+
+  it("runs without a voice_name stamp nothing (no export_name key)", () => {
+    const runDir = join(dir, "rnoexp");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({ dir: runDir, params: [{ text: "hi" } as never] });
+    settlePersist(run, dir);
+    assert.equal(run.exportName, undefined);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.ok(!("export_name" in sidecar));
+  });
 });
 
 describe("runLogTail", () => {

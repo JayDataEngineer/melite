@@ -623,6 +623,17 @@ export class RunsRuntimeService extends Service {
       // THE SOURCE ECHO, SERVED (same law: the run's sources ride
       // the live row too — additive, same spelling as the sidecar).
       ...(run.sourceEcho !== undefined ? { source_echo: run.sourceEcho } : {}),
+      // THE EXPORT NAME, SERVED (023's self-critique #4/#6: the
+      // design lane's mint rides the live row too — additive,
+      // same spelling as the sidecar; absent on non-export runs.
+      // The disk fallback below spreads the sidecar row, which
+      // carries it).
+      ...(run.exportName !== undefined && run.exportName !== "" ? { export_name: run.exportName } : {}),
+      // THE TEST FLAG, SERVED (023's self-critique #3): the
+      // agent-facing receipt canonicalizes route-relative artifact
+      // paths against the out root — test runs live under
+      // test-output/, and the row is what names it. Additive.
+      test: run.testFlag,
       queue_position: this.core.queuePosition(run.runId),
     };
     // THE TERMINAL-HUSK RECOVERY (F-5's second face): a live row that

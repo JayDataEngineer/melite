@@ -68,6 +68,8 @@ type RunStatusResult = {
   planned_stages?: Record<string, JsonValue>[];
   card?: string;
   run_age_s?: number;
+  export_name?: string;
+  test?: boolean;
 } & Record<string, JsonValue>;
 
 export function runStatus(request: EstateRequest): ToolDefinition {
@@ -146,7 +148,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
           run_id?: string; status?: string; stages?: Array<{ status?: string }>;
           artifacts?: unknown[]; error?: string; queue_position?: number;
           planned_stages?: Array<{ id?: string }>; card?: string; run_age_s?: number;
-          wait_expired?: boolean; waited_s?: number
+          wait_expired?: boolean; waited_s?: number; export_name?: string; test?: boolean
         }
         if (v && v.error) {
           return [{ type: 'text', text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + ' — ' + v.error }]
@@ -185,11 +187,34 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         const artPaths = terminal ? artifacts.slice(0, 4).map((a) => {
           const p = typeof a === 'string' ? a
             : (typeof (a as { path?: unknown })?.path === 'string' ? (a as { path: string }).path : '')
-          return p
+          // THE CANONICAL RECEIPT PATH (023's self-critique #3,
+          // 2026-09-24): the live row serves route-relative
+          // `<run-id>/<rel>` while disk rows serve absolute — the
+          // form changes across restarts, and neither joins blindly.
+          // The receipt canonicalizes to a directly-usable
+          // filesystem path: absolute stays; `./` strips; a row-led
+          // `<run-id>/…` gains its out root (test runs live under
+          // test-output/). The wire keeps the browser's spelling —
+          // the canonical form lives only in this agent-facing text.
+          if (p.startsWith('/')) return p
+          const bare = p.startsWith('./') ? p.slice(2) : p
+          const rid = typeof v.run_id === 'string' ? v.run_id : ''
+          if (rid !== '' && (bare === rid || bare.startsWith(rid + '/'))) {
+            return (v.test === true ? 'test-output/' : 'output/') + bare
+          }
+          return bare
         }).filter(Boolean) : []
         const artVoice = artPaths.length
           ? '\nartifacts: ' + artPaths.join('\n  ')
             + (artifacts.length > 4 ? `\n  (+${artifacts.length - 4} more)` : '')
+          : ''
+        // THE EXPORT-NAME VOICE (023's self-critique #4/#6): a
+        // design/export lane's receipt names the mint — the preview
+        // flac is near-empty BY DESIGN, and the deliverable .qvoice
+        // (collision-numbered, newest match wins) rides no artifact
+        // list. One line kills the voices-dir timestamp correlation.
+        const exportVoice = terminal && typeof v.export_name === 'string' && v.export_name !== ''
+          ? `\nexport: '${v.export_name}' — preview media near-empty by design; the deliverable .qvoice is the newest ${v.export_name}_*.qvoice under the voices root`
           : ''
         return [{
           type: 'text',
@@ -202,7 +227,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
             // another wait; waited_s proves the single call absorbed the poll.
             + (v.wait_expired ? ' · wait expired (budget spent, not terminal — wait again)' : '')
             + (typeof v.waited_s === 'number' ? ' · waited ' + v.waited_s + 's' : '')
-            + stageVoice + artVoice,
+            + stageVoice + artVoice + exportVoice,
         }]
       },
     },
@@ -279,6 +304,11 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         planned_stages: Array.isArray(res.planned_stages) ? res.planned_stages : undefined,
         card: typeof res.card === 'string' ? res.card : undefined,
         run_age_s: typeof res.run_age_s === 'number' ? res.run_age_s : undefined,
+        // THE EXPORT NAME, THREADED (023's self-critique #4/#6) +
+        // the test flag (the canonical receipt path needs the out
+        // root). Additive — older consumers ignore both.
+        export_name: typeof res.export_name === 'string' ? res.export_name : undefined,
+        test: typeof res.test === 'boolean' ? res.test : undefined,
       }) as RunStatusResult
     },
   });

@@ -182,8 +182,14 @@ export function meliteLoad(
             modLines.push(p.kind + '[] (' + p.cardinality + '; fields: ' + p.fields.join(', ') + ')')
           }
           if (modLines.length > 0) {
+            // THE CARD-MODE ENVELOPE (023's self-critique #2,
+            // 2026-09-24): the maker guessed arrays-vs-flat and paid
+            // a refusal-oracle turn on `qvoice_save`. Card-mode
+            // melite_flow takes the absorbed mod FIELDS flat
+            // top-level beside params — never under the pack key.
             out.push('mods: ' + modLines.join(', ')
-              + ' — pass arrays under the kind keys (the bag lives at param_key when it differs); ordered kinds stack in array order, standalone kinds each provide their own output')
+              + ' — pass arrays under the kind keys (the bag lives at param_key when it differs); ordered kinds stack in array order, standalone kinds each provide their own output'
+              + ' — card-mode envelope: mod FIELDS ride flat top-level (e.g. voice_name, qvoice), never keyed under the pack name')
             const keyed = packSeats.filter((p) => p.param_key !== p.kind)
             if (keyed.length > 0) {
               out.push('mod param_keys: ' + keyed.map((p) => p.kind + ' → ' + p.param_key + ' (entries: {' + p.fields.join(', ') + '})').join('; '))

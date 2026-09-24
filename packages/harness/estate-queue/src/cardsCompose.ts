@@ -143,6 +143,12 @@ export function admissionRefusal(
     // the service; scope = declaring ∩ boarded, filtered to THIS
     // run's family exactly as the emission scopes).
     let modNames: Set<string> = new Set()
+    // THE PACK-NAME HINTS (023's self-critique #2, 2026-09-24): an
+    // unknown key that NAMES a mod pack gets a pointed refusal
+    // naming the flat fields (the maker burned a refusal-oracle
+    // turn on `qvoice_save` — the pack rides fields, never its own
+    // key). Pack → its family-scoped field names, same fold.
+    const packFields = new Map<string, string[]>()
     /* v8 ignore start -- theService() boots in the engine fiber, never
        the test fiber (always throws here): the mod surface stays empty
        in tests; knobs+admits still gate (2026-09-12) */
@@ -156,12 +162,12 @@ export function admissionRefusal(
       // refused at the base route pre-fold). Atoms pass through
       // unchanged (owningAtom: routes.get(id)?.modelId ?? id).
       const envelopeAtom: string = owningAtom(fam)
-      modNames = new Set(
-        theService()
-          .cardModFields(card)
-          .filter((a) => a.families.includes(envelopeAtom))
-          .flatMap((a) => Object.keys(a.fields.dict ?? {})),
-      )
+      for (const a of theService().cardModFields(card)) {
+        if (!a.families.includes(envelopeAtom)) continue
+        const names = Object.keys(a.fields.dict ?? {})
+        for (const n of names) modNames.add(n)
+        if (!packFields.has(a.pack)) packFields.set(a.pack, names)
+      }
       /* v8 ignore stop */
     } catch {
       // card defs not booted in this fiber — the mod surface is
@@ -173,10 +179,14 @@ export function admissionRefusal(
       admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))))
     const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort()
     if (unknown.length > 0) {
+      const hints = unknown
+        .filter((k) => packFields.has(k))
+        .map((k) => " '" + k + "' is the '" + k + "' mod pack — it takes no key of its own; its fields ride flat top-level: " + (packFields.get(k) ?? []).join(", "))
       throw phaseRefusal(
         phase,
         "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
-          " (admission is the declared surface — knobs + contract admits; see the card's TS definition)",
+          " (admission is the declared surface — knobs + contract admits; see the card's TS definition)" +
+          (hints.length > 0 ? " Mod-pack keys:" + hints.join(";") : ""),
       )
     }
   }

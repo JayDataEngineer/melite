@@ -85,6 +85,14 @@ export interface RunRecord {
    *  start door — the film lane's VRAM-pressure warn): served on
    *  run_status rows, never a refusal. Absent means none. */
   warnings?: string[];
+  /** THE EXPORT NAME (023's self-critique #4/#6, 2026-09-24): the
+   *  voice_name a design/export lane minted — the run-dir preview
+   *  flac is near-empty BY DESIGN, and the deliverable .qvoice
+   *  (collision-numbered under the voices root) rides no artifact
+   *  list. Stamped at settle from the stage params; served on
+   *  run_status rows so the receipt names the mint. Absent on
+   *  non-export runs. */
+  exportName?: string;
   /** THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23):
    *  what the ENGINE actually received at start — the seam values
    *  of the composed calls + the bench revision the compose read.
@@ -138,6 +146,20 @@ export function settlePersist(
   run: RunRecord,
   stateRoot: string,
 ): void {
+  // THE EXPORT-NAME STAMP (023's self-critique #4/#6): a
+  // design/export lane's voice_name rides the stage params — lift
+  // the first non-empty one onto the row so the receipt names the
+  // mint (the preview flac is near-empty by design; the .qvoice
+  // is the deliverable and rides no artifact list).
+  let exportName: string | undefined
+  for (const p of run.params ?? []) {
+    const v: unknown = (p as Record<string, unknown>)?.["voice_name"]
+    if (typeof v === "string" && v.trim() !== "") {
+      exportName = v.trim()
+      run.exportName = exportName
+      break
+    }
+  }
   try {
     atomicWriteJson(
       join(run.dir, "_flow.json"),
@@ -174,6 +196,7 @@ export function settlePersist(
         // THE SOURCE ECHO rides the settle rewrite too (a terminal
         // disk row keeps the files that created it).
         sourceEcho: run.sourceEcho,
+        exportName,
       }),
     );
   } catch {

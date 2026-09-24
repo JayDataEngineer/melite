@@ -346,4 +346,30 @@ describe('run_status render — the human line', () => {
       'run r completed — 1/1 stage(s) · waited 5s\nstages: ?:completed',
     )
   })
+
+  test('THE CANONICAL RECEIPT PATH (023 self-critique #3): route-relative gains its out root, absolute + repo-relative pass', () => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    assert.equal(
+      text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/tts/f.flac'] }),
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts: output/run-abc/tts/f.flac',
+    )
+    assert.equal(
+      text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/tts/f.flac'], test: true }),
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts: test-output/run-abc/tts/f.flac',
+    )
+    assert.equal(
+      text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: [{ path: './output/run-abc/tts/f.flac' }] }),
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts: output/run-abc/tts/f.flac',
+    )
+  })
+
+  test('THE EXPORT-NAME VOICE (023 self-critique #4/#6): the design receipt names the mint, never the silent hole', () => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    const out = text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['/repo/output/run-abc/tts/f.flac'], export_name: 'night-keeper' })
+    assert.ok(out.includes("export: 'night-keeper'"), 'the mint is named')
+    assert.ok(out.includes('near-empty by design'), 'the preview stops looking like a silent hole')
+    assert.ok(out.includes('night-keeper_*.qvoice'), 'the voices-root glob is spelled')
+  })
 })

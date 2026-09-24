@@ -62,6 +62,10 @@ export function sidecarDoc(args: {
    *  status row spells it `source_echo` too. Absent on sourceless
    *  runs. */
   sourceEcho?: { refs: Array<{ url: string; file: string }> };
+  /** THE EXPORT NAME (023's self-critique #4/#6): the voice_name
+   *  the design/export lane minted. The status row spells it
+   *  `export_name` too. Absent on non-export runs. */
+  exportName?: string;
 }): Record<string, unknown> {
   return {
     // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
@@ -77,6 +81,7 @@ export function sidecarDoc(args: {
     test: args.testFlag,
     draft_id: args.draftId,
     pipeline: args.pipeline,
+    ...(args.exportName !== undefined && args.exportName !== "" ? { export_name: args.exportName } : {}),
     error:
       args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
     stages: args.stages,

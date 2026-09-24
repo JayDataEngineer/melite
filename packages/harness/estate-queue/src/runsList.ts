@@ -384,6 +384,9 @@ export function runRowOrNull(
     artifacts: Record<string, unknown>[];
     params: Record<string, unknown>;
     draft_id: string;
+    /** THE EXPORT NAME (023's self-critique #4/#6): optional —
+     *  older sidecars predate it, and only export lanes stamp it. */
+    export_name?: string;
   },
 ): Record<string, unknown> | null {
   if (!RUN_ID_RE.test(row.run_id)) return null;
@@ -405,6 +408,7 @@ export function runRowOrNull(
     artifacts: row.artifacts,
     params: row.params,
     draft_id: row.draft_id,
+    ...(typeof row.export_name === "string" && row.export_name !== "" ? { export_name: row.export_name } : {}),
   };
 }
 
@@ -508,6 +512,7 @@ async function buildRunCard(
   let pipeline = "";
   let prompt = "";
   let draft = "";
+  let exported = "";
   let seed = -1;
   let created: number = ent.created;
   const rawBytes: Uint8Array =
@@ -530,6 +535,10 @@ async function buildRunCard(
     pipeline = sidecarStr(rawBytes, "pipeline", 64);
     prompt = sidecarStr(rawBytes, "prompt", 2048);
     draft = sidecarStr(rawBytes, "draft_id", 96);
+    // THE EXPORT NAME, LISTED (023's self-critique #4/#6): the
+    // design lane's mint rides the list row too — additive, same
+    // spelling as the sidecar; absent on non-export runs.
+    exported = sidecarStr(rawBytes, "export_name", 128);
     seed = sidecarNum(buf, "seed", -1);
     const at: number = buf.indexOf('"created_at":');
     if (at >= 0) created = parseLeadingInt(buf.slice(at + 13));
@@ -551,6 +560,7 @@ async function buildRunCard(
     artifacts: runArtifacts(runDir, literal),
     params: { seed },
     draft_id: draft,
+    ...(exported !== "" ? { export_name: exported } : {}),
   });
   return row; // null = RESILIENCE LAW loud skip
 }
