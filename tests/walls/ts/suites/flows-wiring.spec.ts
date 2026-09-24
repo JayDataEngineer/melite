@@ -71,16 +71,22 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
   // declared — the hand-written expected is the override for
   // initials the card cannot know, never a mirror the registry
   // hand-copies and rots.
+  // THE MIGRATED CHANNEL (2026-09-25: the tts card's ports went
+  // knob-aligned — `text`, per the flow-contract law that pins port
+  // keys ⊆ schema keys (service-plane.spec's flow-port arm). The
+  // probe wired the pre-migration `prompt` declaration and went
+  // stale; it now wires the migrated channel. The LAW under test —
+  // derive-when-declared, refuse-when-contradicted — is unchanged.
   const ttsCardStage = (expected: Record<string, string>): Record<string, unknown> => ({
     id: "tts",
     engine: "comfyui",
     card: "tts",
     description: "the derivation probe (roadmap §12 wall)",
-    inputs: { prompt: { initial: "prompt" } },
+    inputs: { text: { initial: "the words to speak" } },
     outputs: {},
     card_io: { wav: "audio" },
     expected,
-    params: { model: "qwen3-tts", text: "$prompt", seed: 42 },
+    params: { model: "qwen3-tts", text: "$text", seed: 42 },
   });
 
   it("a card-declared input with NO hand-written kind derives from the card's own port map (200, never 'wired but untyped')", () => {
@@ -92,7 +98,7 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
       },
     }, cards);
     assert.equal(answer.status, 200,
-      `a prompt input the tts card declares as 'text' derives — no mirror owed. Got: ${String(answer.payload["error"] ?? "?")}`);
+      `a text input the tts card declares as 'text' derives — no mirror owed. Got: ${String(answer.payload["error"] ?? "?")}`);
   });
 
   it("a hand-written kind the card CONTRADICTS refuses LOUD (never compiles a lie)", () => {
@@ -100,13 +106,13 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
       flow_inline: {
         id: "probe-contradiction",
         description: "roadmap §12 contradiction probe",
-        stages: [ttsCardStage({ prompt: "image" })],
+        stages: [ttsCardStage({ text: "image" })],
       },
     }, cards);
     assert.notEqual(answer.status, 200, "a contradictory hand-written kind must refuse");
     assert.match(
       String(answer.payload["error"] ?? ""),
-      /prompt.*contradicts card.*tts.*declares.*text/s,
+      /input "text": expected kind "image" contradicts card "tts" \(the card declares "text"\)/,
       "the refusal names the card, the port, and the card's own kind",
     );
   });

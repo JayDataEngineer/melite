@@ -114,10 +114,22 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: 'audio', order: 3 },
     flowKinds: {
-      inputs: { prompt: 'text' },
+      // THE KNOB-ALIGNED PORTS (the flow-contract law:
+      // assertFlowContract pins port keys ⊆ schema keys — the knob
+      // here is `text`, so the port is `text`; the §12 wall probe
+      // wires the migrated channel).
+      inputs: { text: 'text' },
       outputs: { default: 'audio' },
       requiresModel: true,
     },
+    flowOutputBindings: [
+      {
+        channel: 'default',
+        node: 'SaveAudio.0',
+        nodeClass: 'SaveAudio',
+        when: (params) => typeof params['voice_name'] !== 'string' || params['voice_name'] === '',
+      },
+    ],
     // Load + TTS ride the authored Audiocore pack; SaveAudio is core.
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,

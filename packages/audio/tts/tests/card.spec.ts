@@ -76,6 +76,17 @@ describe("the tts compose gate", () => {
     assert.ok(save, "the audio save rides");
     assert.equal(save.inputs.filename_prefix, "run_4/tts");
   });
+
+  it("flow ports and semantic outputs name text and SaveAudio", () => {
+    // knob-aligned ports (the flow-contract law): port = `text`.
+    assert.deepEqual(def.flowKinds.inputs, { text: "text" });
+    assert.deepEqual(def.flowKinds.outputs, { default: "audio" });
+    assert.equal(def.flowOutputBindings?.[0]?.channel, "default");
+    assert.equal(def.flowOutputBindings?.[0]?.node, "SaveAudio.0");
+    assert.equal(def.flowOutputBindings?.[0]?.nodeClass, "SaveAudio");
+    assert.equal(def.flowOutputBindings?.[0]?.when?.({ text: "hello" }), true);
+    assert.equal(def.flowOutputBindings?.[0]?.when?.({ voice_name: "saved" }), false);
+  });
 });
 
 describe("the lane-bespoke leaves (the model guard — the persona knobs render on the CustomVoice variant only; instruction control differs per variant, never one shared knob)", () => {

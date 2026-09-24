@@ -447,6 +447,11 @@ test("§3.1 REVERTIBLE, every registration: card/pack/verb disposers retract (no
     boarded: [],
     schema: z.object({}) as never,
     compose: (): void => {},
+    // THE EMPTY CONTRACT (the flow-contract law: registration pins
+    // every card's flowKinds — this arm's subject is disposal, not
+    // contracts, so the probe declares the empty one; the contract's
+    // own walls live in flows-wiring + service-plane).
+    flowKinds: { inputs: {}, outputs: {} },
   } as never);
   assert.ok(svc.cardIds().includes("wall-probe-card"));
   retractCard();
