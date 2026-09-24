@@ -224,6 +224,19 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
             hint: 'clamped — narrow with tags/q, or detail=true for every line',
           })
         }
+        // THE EMPTY-AND HINT (attempt-4's gap, verified 2026-09-24:
+        // tags=image,video,audio → 0 because tags is an AND — no card
+        // carries all three). A zero row with a multi-tag query names
+        // the law; one tag per search is the idiom.
+        if (flows.length === 0 && cards.length === 0) {
+          const tagCount = typeof a.tags === 'string' ? a.tags.split(',').filter((t) => t.trim() !== '').length : 0
+          if (tagCount > 1) {
+            return jsonClean<DiscoverResult>({
+              counts: { flows: 0, cards: 0 },
+              hint: '0 rows — tags is an AND: a card must carry EVERY listed tag. One tag per search (e.g. tags=video), or detail the vocabulary with lookup=cards.',
+            })
+          }
+        }
         return jsonClean(res) as DiscoverResult;
       } catch (e) {
         const err = e as { body?: unknown; message?: string };

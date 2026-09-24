@@ -286,3 +286,18 @@ describe('melite_discover render — the counts line', () => {
     )
   })
 })
+
+describe('melite_discover — the empty-AND hint (attempt-4 gap, verified)', () => {
+  test('a zero result with MULTI-tag query names the AND law', async () => {
+    const seen = mockRequest(() => ({ flows: [], cards: [] }))
+    const tool = meliteDiscover(seen.request)
+    const out = await tool.execute({ tags: 'image,video,audio' }, { signal: AbortSignal.timeout(4000) }) as Record<string, unknown>
+    assert.match(String(out['hint']), /tags is an AND/)
+  })
+  test('a zero result with a SINGLE tag stays the gateway answer (no nag)', async () => {
+    const seen = mockRequest(() => ({ flows: [], cards: [] }))
+    const tool = meliteDiscover(seen.request)
+    const out = await tool.execute({ tags: 'video' }, { signal: AbortSignal.timeout(4000) }) as Record<string, unknown>
+    assert.equal(out['hint'], undefined)
+  })
+});
