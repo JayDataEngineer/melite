@@ -580,6 +580,16 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
     assert.ok(String(out.error).includes('non-empty array'), String(out.error))
     assert.equal(seen.calls.length, 0)
   })
+
+  test('THE CARD-MODE PROMPT SEAT (027 self-critique #2): the prompt field states SINGLE-only + the params seat', () => {
+    // 027's maker reached for top-level prompt in card mode (the
+    // schema advertised it generically) and paid a refusal turn —
+    // the card admission rejects it (tts wants `text` in params).
+    const tool = meliteFlow(mockFetch([]).request) as unknown as { parameters: { properties: Record<string, { description?: string }> } }
+    const desc = tool.parameters.properties.prompt.description ?? ''
+    assert.ok(desc.includes('SINGLE mode ONLY'), 'card mode is excluded by name')
+    assert.ok(desc.includes('INSIDE params'), 'the card seat is stated')
+  })
 })
 
 describe('melite_flow presentCall/render/meta — the faces', () => {

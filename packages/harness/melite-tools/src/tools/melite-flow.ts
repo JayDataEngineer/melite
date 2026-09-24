@@ -634,7 +634,12 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       },
       prompt: {
         type: 'string',
-        description: 'SINGLE mode: the generation prompt (wins over params.prompt).',
+        // THE CARD-MODE PROMPT SEAT (027's self-critique #2,
+        // 2026-09-24): top-level prompt merges into the card body
+        // where the card's admission rejects it (tts wants `text`
+        // inside params) — state the seat so card mode never
+        // reaches for this field.
+        description: 'SINGLE mode ONLY: the generation prompt (wins over params.prompt). Card mode takes its text key (e.g. text) INSIDE params — top-level prompt on a card refuses as an unknown param.',
       },
       params: {
         type: 'object',
