@@ -147,13 +147,20 @@ export function settlePersist(
   stateRoot: string,
 ): void {
   // THE EXPORT-NAME STAMP (023's self-critique #4/#6): a
-  // design/export lane's voice_name rides the stage params — lift
+  // design/export lane's voice_name rides the submitted body — lift
   // the first non-empty one onto the row so the receipt names the
   // mint (the preview flac is near-empty by design; the .qvoice
-  // is the deliverable and rides no artifact list).
+  // is the deliverable and rides no artifact list). The compiled
+  // stage params are engine-shaped (the compose may consume card
+  // keys into the workflow — 024 proved voice_name missing there),
+  // so the card snapshot (the exact submitted body) is the fallback.
   let exportName: string | undefined
-  for (const p of run.params ?? []) {
-    const v: unknown = (p as Record<string, unknown>)?.["voice_name"]
+  const bodies: unknown[] = [...(run.params ?? [])]
+  const snap = run.cardSnapshot as { params?: unknown } | undefined
+  if (snap !== undefined && snap !== null && typeof snap === "object") bodies.push(snap.params)
+  for (const p of bodies) {
+    if (p === null || typeof p !== "object" || Array.isArray(p)) continue
+    const v: unknown = (p as Record<string, unknown>)["voice_name"]
     if (typeof v === "string" && v.trim() !== "") {
       exportName = v.trim()
       run.exportName = exportName

@@ -604,9 +604,15 @@ export class RunsRuntimeService extends Service {
       // answer (a leading-/ path rides toRunMediaUrl verbatim). The
       // stage rows' `url` spelling is the truth: <run-id>/<rel>,
       // computed from the same outRoot the record lives under.
+      // THE RUN-DIR RELATIVE (024's self-critique #2, 2026-09-24 —
+      // the same doubling 023 quoted): relative() off the OUT ROOT
+      // returns `<run-id>/<rel>` (the run dir rides inside), so
+      // prefixing runId again served `<run-id>/<run-id>/<rel>` —
+      // the receipt printed a path that exists nowhere. Relativize
+      // off the RUN DIR: the join restores exactly <run-id>/<rel>.
       artifacts: [...run.artifacts].map((a: string): string =>
         a.startsWith("/")
-          ? [run.runId, relative(outRootFor(this.ctx.queue.stateRoot, run.testFlag), a)].join("/")
+          ? [run.runId, relative(join(outRootFor(this.ctx.queue.stateRoot, run.testFlag), run.runId), a)].join("/")
           : a,
       ),
       error: run.error,

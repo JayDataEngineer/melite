@@ -176,6 +176,11 @@ async function withLastRun(
     created_at: win['created_at'],
     thumbnail: win['thumbnail'],
     artifacts: win['artifacts'],
+    // THE RECEIPT DETAIL (024's self-critique #5, 2026-09-24): the
+    // read is bench bookkeeping without the mint + first artifact —
+    // project the list row's export_name through so the render can
+    // voice which .qvoice the draft's latest run minted.
+    ...(typeof win['export_name'] === 'string' && win['export_name'] !== '' ? { export_name: win['export_name'] } : {}),
   }
   return {
     stages: stages.map((s): unknown => {
@@ -188,9 +193,21 @@ async function withLastRun(
 
 /** Record guard for verb args the doors admit as maps (expected,
  *  outputs): plain objects only — null, arrays, and scalars would
- *  die silently at the bench's isRecord, so the tool sheds them. */
-function isRecordArg(v: unknown): v is Record<string, unknown> {
+ *  die silently at the bench's isRecord, so the tool sheds them. */function isRecordArg(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
+}
+
+/** First artifact's usable path (024's self-critique #5): string
+ *  rows print verbatim; object rows print their path; list-row
+ *  `./output/…` strips to repo-relative. Route-relative rows stay
+ *  as-served here (the bench read names no out root) — run_status
+ *  is the canonical receipt door. */
+function firstArtifactPath(artifacts: unknown[]): string {
+  const a = artifacts[0]
+  const p = typeof a === 'string' ? a
+    : (typeof a === 'object' && a !== null && typeof (a as { path?: unknown }).path === 'string'
+      ? (a as { path: string }).path : '')
+  return p.startsWith('./') ? p.slice(2) : p
 }
 
 /** Project bench stage rows onto the flow_inline wire contract
@@ -351,11 +368,19 @@ export function meliteConstruct(
               // promised last_run in the description and saw nothing,
               // then paid a turn confirming the bench is not a
               // receipt source. The render now voices what it holds.
-              const lr = s.last_run as { run_id?: unknown; status?: unknown; artifacts?: unknown } | null | undefined
+              const lr = s.last_run as { run_id?: unknown; status?: unknown; artifacts?: unknown; export_name?: unknown } | null | undefined
               let suffix = ''
               if (lr !== null && lr !== undefined && typeof lr.run_id === 'string' && lr.run_id !== '') {
                 const arts = Array.isArray(lr.artifacts) ? lr.artifacts.length : 0
-                suffix = ` — last_run ${lr.run_id} (${String(lr.status ?? '?')}${arts ? ', ' + arts + ' artifact(s)' : ''})`
+                // THE RECEIPT DETAIL (024#5): the first artifact path
+                // + the mint ride the suffix — the read answers which
+                // .qvoice the draft holds, not just that a run exists.
+                // String artifacts print verbatim (absolute); object
+                // rows print their path; route-relative rows gain
+                // their out root (the run_status canonical law).
+                const first = Array.isArray(lr.artifacts) ? firstArtifactPath(lr.artifacts) : ''
+                const exp = typeof lr.export_name === 'string' && lr.export_name !== '' ? `, export '${lr.export_name}'` : ''
+                suffix = ` — last_run ${lr.run_id} (${String(lr.status ?? '?')}${arts ? ', ' + arts + ' artifact(s)' : ''}${exp}${first !== '' ? ', ' + first : ''})`
               } else if (lr === null) {
                 suffix = ' — last_run null (draft has no run in the window)'
               }

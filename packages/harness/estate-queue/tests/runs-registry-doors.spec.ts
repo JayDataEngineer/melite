@@ -483,7 +483,12 @@ describe("status + stop", () => {
     }
     // The strict branch: in-tree absolute paths rewrite under the run id.
     assert.match(arts[0] as string, /^run-[0-9a-f]+-[A-Za-z0-9_-]+\//);
-    assert.ok((arts[1] as string).startsWith(runId + "/"), arts[1] as string);
+    // THE RUN-DIR RELATIVE (024's self-critique #2): exactly one
+    // run-id segment — the out-root-relative join doubled it
+    // (`<run>/<run>/…`, a path that exists nowhere) until the
+    // relativize moved onto the run dir.
+    assert.equal(arts[0], runId + "/o.png");
+    assert.equal(arts[1], runId + "/stage/v.mp4");
     // The bare relative passes through verbatim.
     assert.equal(arts[2], "note.png");
   });

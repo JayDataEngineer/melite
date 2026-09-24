@@ -199,10 +199,16 @@ export function runStatus(request: EstateRequest): ToolDefinition {
           if (p.startsWith('/')) return p
           const bare = p.startsWith('./') ? p.slice(2) : p
           const rid = typeof v.run_id === 'string' ? v.run_id : ''
-          if (rid !== '' && (bare === rid || bare.startsWith(rid + '/'))) {
-            return (v.test === true ? 'test-output/' : 'output/') + bare
+          // THE LEGACY-DOUBLE COLLAPSE (024's self-critique #2):
+          // rows served before the run-dir-relative fix (or by an
+          // older worker) spell `<run-id>/<run-id>/…` — collapse
+          // the stencil before prefixing the out root.
+          const single = rid !== '' && bare.startsWith(rid + '/' + rid + '/')
+            ? rid + bare.slice((rid + '/' + rid).length) : bare
+          if (rid !== '' && (single === rid || single.startsWith(rid + '/'))) {
+            return (v.test === true ? 'test-output/' : 'output/') + single
           }
-          return bare
+          return single
         }).filter(Boolean) : []
         const artVoice = artPaths.length
           ? '\nartifacts: ' + artPaths.join('\n  ')

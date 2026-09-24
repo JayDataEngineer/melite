@@ -150,6 +150,20 @@ describe("settlePersist", () => {
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.ok(!("export_name" in sidecar));
   });
+
+  it("THE SNAPSHOT FALLBACK (024's post-mortem): compiled stage params may consume card keys — the card snapshot still names the mint", () => {
+    const runDir = join(dir, "rsnap");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({
+      dir: runDir,
+      params: [{ workflow: {} } as never],
+      cardSnapshot: { card: "qwen3-tts", params: { voice_name: "night-keeper", text: "hi" } },
+    });
+    settlePersist(run, dir);
+    assert.equal(run.exportName, "night-keeper");
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(sidecar["export_name"], "night-keeper");
+  });
 });
 
 describe("runLogTail", () => {

@@ -372,4 +372,13 @@ describe('run_status render — the human line', () => {
     assert.ok(out.includes('near-empty by design'), 'the preview stops looking like a silent hole')
     assert.ok(out.includes('night-keeper_*.qvoice'), 'the voices-root glob is spelled')
   })
+
+  test('THE LEGACY-DOUBLE COLLAPSE (024 self-critique #2): rows served pre-fix spell <run>/<run>/… — the receipt collapses the stencil', () => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    assert.equal(
+      text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/run-abc/tts/f.flac'] }),
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts: output/run-abc/tts/f.flac',
+    )
+  })
 })

@@ -539,6 +539,30 @@ describe('melite_construct render — refused or revved', () => {
     )
   })
 
+  // THE RECEIPT DETAIL (024's self-critique #5, 2026-09-24): the
+  // last_run suffix voices the mint + first artifact — the read
+  // answers which .qvoice the draft holds, not just that a run
+  // exists. String rows print verbatim; object rows print path;
+  // ./ prefixes strip; null stays the honest never-ran line.
+  test('read voices last_run mint + first artifact in the suffix', () => {
+    const tool = meliteConstruct(stubRequest())
+    const parts = tool.output.render(
+      { verb: 'read' },
+      {
+        verb: 'read', bench: 'main', ok: true, rev: 47,
+        stages: [
+          { id: 's_1', card: 'qwen3-tts', engine: 'comfyui', last_run: { run_id: 'run-abc', status: 'completed', artifacts: ['output/run-abc/tts/f.flac'], export_name: 'night-keeper' } },
+          { id: 's_2', card: 'qwen3-tts', engine: 'comfyui', last_run: { run_id: 'run-def', status: 'completed', artifacts: [{ path: './output/run-def/tts/f.flac' }] } },
+          { id: 's_3', card: 'image-gen', engine: 'comfyui', last_run: null },
+        ],
+      } as never,
+    ) as Array<{ text?: string }>
+    assert.equal(
+      parts.map((p) => p?.text ?? '').join('\n'),
+      'bench read → rev 47\nstages: 3\n  s_1 — qwen3-tts [comfyui] — last_run run-abc (completed, 1 artifact(s), export \'night-keeper\', output/run-abc/tts/f.flac)\n  s_2 — qwen3-tts [comfyui] — last_run run-def (completed, 1 artifact(s), output/run-def/tts/f.flac)\n  s_3 — image-gen [comfyui] — last_run null (draft has no run in the window)',
+    )
+  })
+
   test('an empty bench says so — never silence', () => {
     const tool = meliteConstruct(stubRequest())
     const parts = tool.output.render(
