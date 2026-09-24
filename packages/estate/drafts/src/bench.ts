@@ -12,6 +12,7 @@
 //   APPEND-ONLY LOG — load appends a revert-carrying entry; history
 //   is never rewritten (patch/undo arms land in later strokes).
 //   AUTHORSHIP — every entry carries author ("agent"|"user").
+import { unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
@@ -187,6 +188,9 @@ function normalizeStages(
       if (typeof row["engine"] !== "string" || row["engine"] === "")
         row["engine"] = "comfyui";
       if (!isRecord(row["inputs"])) row["inputs"] = {};
+      // the load arm's rows cross the same remote encoding — the
+      // store-seat unwrap applies here too (wireParams law)
+      row["params"] = wireParams(row["params"]);
       if (!isRecord(row["params"])) row["params"] = {};
       if (!isRecord(row["outputs"])) row["outputs"] = { default: "image" };
       if (row["provenance"] !== "user") row["provenance"] = author;
@@ -595,7 +599,7 @@ export async function patchBench(
     : "agent";
   const before: Record<string, unknown> = {};
   const added: string[] = [];
-  const paramsIn: unknown = body["params"];
+  const paramsIn: unknown = wireParams(body["params"]);
   if (paramsIn !== undefined) {
     if (!isRecord(paramsIn)) {
       throw new RemoteError("bench/bad-body", "params must be an object", {});
@@ -698,6 +702,17 @@ export type StageAdmission = (
   params: Record<string, unknown>,
   provenance: unknown,
 ) => void;
+
+
+/** THE WIRE UNWRAP AT THE STORE SEAT (attempt-035's Probe B
+ * receipt, 2026-09-24): the remote transport encodes free-form
+ * arrays as `{item:[…]}` — the tool seat unwraps what IT sees, but
+ * the encoded shape re-forms crossing the remote boundary and
+ * storage held the wrap (the live bench read showed it verbatim).
+ * Every params-bearing WRITE walks the unwrap — the doc stores
+ * clean, reads and compose never see the poison, Probe B reads a
+ * true array. */
+const wireParams = (v: unknown): unknown => (isRecord(v) ? unwrapItemArrays(v) : v)
 
 function admitStage(
   admit: StageAdmission | undefined,
@@ -891,7 +906,7 @@ export async function addStageBench(
       typeof body["engine"] === "string" && body["engine"] !== ""
         ? body["engine"]
         : "comfyui",
-    params: isRecord(body["params"]) ? body["params"] : {},
+    params: isRecord(wireParams(body["params"])) ? wireParams(body["params"]) as Record<string, unknown> : {},
     inputs: isRecord(body["inputs"]) ? body["inputs"] : {},
     outputs: isRecord(body["outputs"]) ? body["outputs"] : { default: "image" },
     provenance: author,

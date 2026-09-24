@@ -1,6 +1,7 @@
 // runsValidateStages.ts — stage-row + flow-construction validators split from
 // runsValidate.ts (pure move, zero logic changes): strict-body admission,
 // stage rows, wires, the card gate, kinds, engines, flow_from_body.
+import { coerceWireArrays, coerceWireNumbers, unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { engineIdOk } from "@melite/engine-contract";
 import type { CardDefinition } from "@melite/comfyui-cordis";
 import { checkStrictBody } from "./runsGates.ts";
@@ -250,7 +251,19 @@ export function cardGate(
     );
   }
   try {
-    def.schema(st.params);
+    // THE WIRE-COERCION FAMILY AT THE LATTICE SEAT (attempt-035's
+    // bench receipts, 2026-09-24): `$.duration expected number but
+    // got 12` and `$.ref_images expected array but got [object
+    // Object]` — the same corruption the compose door already
+    // guards. The lattice runs the SAME validator compose runs;
+    // it now reads through the SAME coercion (shape unwrap →
+    // schema-derived array fill → schema-derived numeric fill).
+    const carrier = (def.schemaCarrier ?? def.schema) as unknown as {
+      dict?: Record<string, { type?: string }>
+    }
+    def.schema(
+      coerceWireNumbers(carrier, coerceWireArrays(carrier, unwrapItemArrays(st.params))),
+    );
   } catch (exc) {
     const msg = exc instanceof Error ? exc.message : String(exc);
     throw new FlowError(
