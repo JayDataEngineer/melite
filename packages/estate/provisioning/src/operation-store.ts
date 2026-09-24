@@ -57,6 +57,7 @@ function copyItem(item: ResourceStatusItem): ResourceStatusItem {
     state: item.state,
     ...(item.path === undefined ? {} : { path: item.path }),
     ...(item.sha256 === undefined ? {} : { sha256: item.sha256 }),
+    ...(item.integrity === undefined ? {} : { integrity: item.integrity }),
     ...(item.errorCode === undefined ? {} : { errorCode: item.errorCode }),
     ...(item.detail === undefined ? {} : { detail: item.detail }),
   };
@@ -89,6 +90,7 @@ function validItem(value: unknown): value is ResourceStatusItem {
   if (typeof value["key"] !== "string" || value["key"] === "") return false;
   if (value["kind"] !== "model" && value["kind"] !== "extension") return false;
   if (!hasValue(PROVISION_STATES, value["state"])) return false;
+  if (value["integrity"] !== undefined && value["integrity"] !== "declared-sha256" && value["integrity"] !== "operator-unverified") return false;
   for (const key of ["path", "sha256", "errorCode", "detail"] as const) {
     if (value[key] !== undefined && typeof value[key] !== "string") return false;
   }

@@ -1,6 +1,8 @@
 import type {
   ManagerInstallRequest,
   ManagerInstallResult,
+  ManagerModelInstallRequest,
+  ManagerModelInstallResult,
   ManagerPort,
 } from "./ports.ts";
 import {
@@ -67,23 +69,31 @@ function normalizedRepository(value: string): string {
 }
 
 function catalogRows(value: unknown): readonly RegistryRow[] {
-  if (!record(value) || !record(value["node_packs"])) {
+  if (!record(value)) {
+    throw new ManagerProviderError("invalid-request", "ComfyUI-Manager custom-node catalog has an invalid shape");
+  }
+  const source = record(value["node_packs"])
+    ? Object.entries(value["node_packs"])
+    : Array.isArray(value["custom_nodes"])
+      ? value["custom_nodes"].map((raw, index): [string, unknown] => [String(index), raw])
+      : [];
+  if (source.length === 0 && !record(value["node_packs"]) && !Array.isArray(value["custom_nodes"])) {
     throw new ManagerProviderError("invalid-request", "ComfyUI-Manager custom-node catalog has an invalid shape");
   }
   const rows: RegistryRow[] = [];
-  for (const [key, raw] of Object.entries(value["node_packs"])) {
+  for (const [key, raw] of source) {
     if (!record(raw)) continue;
-    const id = stringValue(raw["id"]) ?? stringValue(raw["cnr_id"]) ?? key;
-    const version = stringValue(raw["version"]);
-    const repository = stringValue(raw["repository"]);
-    if (version === undefined || version === "unknown" || repository === undefined) continue;
+    const id = stringValue(raw["id"]) ?? stringValue(raw["cnr_id"]) ?? stringValue(raw["name"]) ?? (record(value["node_packs"]) ? key : undefined);
+    const version = stringValue(raw["version"]) ?? stringValue(raw["selected_version"]) ?? "unknown";
+    const repository = stringValue(raw["repository"]) ?? stringValue(raw["reference"]) ?? stringValue(raw["git_url"]) ?? stringValue(raw["url"]);
+    if (id === undefined || repository === undefined) continue;
     rows.push({
       id,
       version,
       repository,
       channel: stringValue(raw["channel"]) ?? "default",
       files: stringArray(raw["files"]),
-      pip: stringArray(raw["pip"]),
+      pip: stringArray(raw["pip"]).length > 0 ? stringArray(raw["pip"]) : stringArray(raw["requirements"]),
     });
   }
   return rows;
@@ -130,13 +140,18 @@ async function assertVersionAvailable(
   const value = await client.getJson(`/customnode/versions/${encodeURIComponent(registry)}`, {
     ...(signal === undefined ? {} : { signal }),
   });
-  if (!Array.isArray(value)) {
+  const entries = Array.isArray(value)
+    ? value
+    : record(value) && Array.isArray(value["versions"])
+      ? value["versions"]
+      : undefined;
+  if (entries === undefined) {
     throw new ManagerProviderError(
       "pin-mismatch",
       `ComfyUI-Manager returned no version list for ${registry}`,
     );
   }
-  const available = value.some((entry) => record(entry) && entry["version"] === version);
+  const available = entries.some((entry) => record(entry) && entry["version"] === version);
   if (!available) {
     throw new ManagerProviderError(
       "pin-mismatch",
@@ -157,6 +172,9 @@ export class ComfyUiManagerProvider implements ManagerPort {
   }
 
   async canInstall(request: ManagerInstallRequest, signal?: AbortSignal): Promise<boolean> {
+    if (request.url !== undefined && request.registry === undefined && request.ref === undefined && request.version === undefined) {
+      return request.url.trim() !== "";
+    }
     if (request.ref !== undefined) {
       if (request.version !== undefined || this.git === undefined) return false;
       return await this.git.canInstall(request, signal);
@@ -171,6 +189,15 @@ export class ComfyUiManagerProvider implements ManagerPort {
   }
 
   async install(request: ManagerInstallRequest, signal?: AbortSignal): Promise<ManagerInstallResult> {
+    if (request.url !== undefined && request.registry === undefined && request.ref === undefined && request.version === undefined) {
+      if (request.url.trim() === "") {
+        throw new ManagerProviderError("invalid-request", "Declared extension repository URL must not be empty");
+      }
+      await this.client.postText("/customnode/install/git_url", request.url, {
+        ...(signal === undefined ? {} : { signal }),
+      });
+      return { installed: true, detail: "git URL submitted to ComfyUI-Manager" };
+    }
     if (request.ref !== undefined) {
       if (request.version !== undefined || this.git === undefined) {
         throw new ManagerProviderError(
@@ -207,6 +234,47 @@ export class ComfyUiManagerProvider implements ManagerPort {
     return {
       installed: true,
       detail: `installed ${resolved.id}@${version}; queue ${String(status.doneCount)}/${String(status.totalCount)}`,
+    };
+  }
+
+  async installModel(
+    request: ManagerModelInstallRequest,
+    signal?: AbortSignal,
+  ): Promise<ManagerModelInstallResult> {
+    const savePathValue = request.savePath.trim().replace(/^models\//u, "");
+    const savePath = savePathValue === "" || savePathValue === "models" ? "default" : savePathValue;
+    if (
+      request.url.trim() === ""
+      || request.filename.trim() === ""
+      || request.filename.includes("/")
+      || request.filename.includes("\\")
+      || request.filename.includes("..")
+      || (savePath !== "default" && (savePath.startsWith("/") || savePath.includes("..") || savePath.includes("\\")))
+    ) {
+      throw new ManagerProviderError("invalid-request", "Manager model destination or source is invalid");
+    }
+    const payload: Record<string, unknown> = {
+      name: request.name,
+      type: request.type,
+      base: request.base ?? "default",
+      save_path: savePath,
+      url: request.url,
+      filename: request.filename,
+      ui_id: request.id,
+    };
+    await this.client.post("/manager/queue/install_model", payload, {
+      ...(signal === undefined ? {} : { signal }),
+    });
+    await this.client.post("/manager/queue/start", {}, {
+      ...(signal === undefined ? {} : { signal }),
+    });
+    const status = await this.client.waitForQueue({
+      ...this.queue,
+      ...(signal === undefined ? {} : { signal }),
+    });
+    return {
+      installed: true,
+      detail: `queued model ${request.name}; queue ${String(status.doneCount)}/${String(status.totalCount)}`,
     };
   }
 

@@ -39,7 +39,7 @@ export class ProvisioningError extends Error {
 export interface VerifiedArtifactRequest {
   readonly root: string;
   readonly relativePath: string;
-  readonly expectedSha256: string;
+  readonly expectedSha256?: string;
   readonly operationId: string;
   readonly source: ArtifactInput;
   readonly sizeBytes?: number;
@@ -49,6 +49,7 @@ export interface VerifiedArtifactResult {
   readonly path: string;
   readonly sha256: string;
   readonly sizeBytes: number;
+  readonly integrity: "declared-sha256" | "operator-unverified";
 }
 
 export interface ArtifactInspectionRequest {
@@ -370,7 +371,9 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
     request: VerifiedArtifactRequest,
     signal?: AbortSignal,
   ): Promise<VerifiedArtifactResult> {
-    const expectedSha256 = normalizeDigest(request.expectedSha256);
+    const expectedSha256 = request.expectedSha256 === undefined
+      ? undefined
+      : normalizeDigest(request.expectedSha256);
     const operationId = safeOperationId(request.operationId);
     const destination = resolveConfinedPath(request.root, request.relativePath);
     await preparePath(request.root, destination);
@@ -399,7 +402,7 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
       handle = undefined;
       throwIfAborted(signal);
       const temporarySha256 = await sha256File(temporary, signal);
-      if (temporarySha256 !== expectedSha256) {
+      if (expectedSha256 !== undefined && temporarySha256 !== expectedSha256) {
         throw new ProvisioningError(
           "hash-mismatch",
           `artifact SHA-256 mismatch: expected ${expectedSha256}, got ${temporarySha256}`,
@@ -420,14 +423,19 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
         throw new ProvisioningError("landing-failed", "artifact destination is not a file after landing");
       }
       const finalSha256 = await sha256File(destination, signal);
-      if (finalSha256 !== expectedSha256) {
+      if (expectedSha256 !== undefined && finalSha256 !== expectedSha256) {
         throw new ProvisioningError("landing-failed", "artifact destination changed after landing");
       }
       const finalStat = await stat(destination);
       if (request.sizeBytes !== undefined && finalStat.size !== request.sizeBytes) {
         throw new ProvisioningError("landing-failed", "artifact destination size changed after landing");
       }
-      return { path: destination, sha256: finalSha256, sizeBytes: finalStat.size };
+      return {
+        path: destination,
+        sha256: finalSha256,
+        sizeBytes: finalStat.size,
+        integrity: expectedSha256 === undefined ? "operator-unverified" : "declared-sha256",
+      };
     } catch (error: unknown) {
       if (handle !== undefined) {
         await handle.close().catch(() => undefined);

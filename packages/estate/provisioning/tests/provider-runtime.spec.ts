@@ -150,7 +150,100 @@ describe("ManagerPort provider", () => {
     });
   });
 
-  test("refuses an unavailable exact version before queueing", async () => {
+  test("accepts the Manager custom_nodes catalog shape", async () => {
+    const repository = "https://github.com/example/legacy-pack.git";
+    const fetcher: typeof globalThis.fetch = async (input): Promise<Response> => {
+      const path = new URL(String(input)).pathname;
+      if (path === "/customnode/getlist") {
+        return json({
+          custom_nodes: [{
+            id: "comfy.org/legacy",
+            reference: repository,
+            version: "1.2.3",
+            requirements: ["numpy"],
+          }],
+        });
+      }
+      if (path === "/customnode/versions/comfy.org%2Flegacy") {
+        return json({ versions: [{ version: "1.2.3" }] });
+      }
+      return json({}, 404);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({ baseUrl: "http://127.0.0.1:8188", fetch: fetcher }),
+    );
+    expect(await provider.canInstall({
+      id: "legacy-pack",
+      url: repository,
+      registry: "comfy.org/legacy",
+      version: "1.2.3",
+    })).toBe(true);
+  });
+
+  test("routes an operator git URL through the Manager git endpoint", async () => {
+    const calls: Array<{ path: string; body: unknown; contentType: string | undefined }> = [];
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({
+        baseUrl: "http://127.0.0.1:8188",
+        fetch: async (input, init): Promise<Response> => {
+          calls.push({
+            path: new URL(String(input)).pathname,
+            body: init?.body,
+            contentType: init?.headers?.["content-type"] as string | undefined,
+          });
+          return new Response(null, { status: 200 });
+        },
+      }),
+    );
+    expect(await provider.canInstall({ id: "operator-pack", url: "https://github.com/example/operator-pack.git" })).toBe(true);
+    expect((await provider.install({ id: "operator-pack", url: "https://github.com/example/operator-pack.git" })).installed).toBe(true);
+    assert.deepEqual(calls, [{
+      path: "/customnode/install/git_url",
+      body: "https://github.com/example/operator-pack.git",
+      contentType: "text/plain",
+    }]);
+  });
+
+  test("installs a model through the Manager queue API", async () => {
+    const calls: Array<{ readonly path: string; readonly body: unknown; readonly contentType: string | undefined }> = [];
+    let queuePolls = 0;
+    const fetcher: typeof globalThis.fetch = async (input, init): Promise<Response> => {
+      const path = new URL(String(input)).pathname;
+      const body = typeof init?.body === "string" ? init.body : undefined;
+      calls.push({ path, body, contentType: init?.headers?.["content-type"] as string | undefined });
+      if (path === "/manager/queue/install_model") return new Response(null, { status: 200 });
+      if (path === "/manager/queue/start") return new Response(null, { status: 200 });
+      if (path === "/manager/queue/status") {
+        queuePolls += 1;
+        return json({ total_count: 1, done_count: queuePolls === 1 ? 0 : 1, in_progress_count: queuePolls === 1 ? 1 : 0, is_processing: queuePolls === 1 });
+      }
+      return json({}, 404);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({ baseUrl: "http://127.0.0.1:8188", fetch: fetcher }),
+      { queue: { timeoutMs: 100, pollIntervalMs: 1 } },
+    );
+    const result = await provider.installModel({
+      id: "model:family:one",
+      name: "one.safetensors",
+      type: "checkpoints",
+      savePath: "checkpoints",
+      url: "https://example.invalid/one.safetensors",
+      filename: "one.safetensors",
+    });
+    assert.equal(result.installed, true);
+    const queued = calls.find((call) => call.path === "/manager/queue/install_model");
+    assert.deepEqual(JSON.parse(String(queued?.body)), {
+      name: "one.safetensors",
+      type: "checkpoints",
+      base: "default",
+      save_path: "checkpoints",
+      url: "https://example.invalid/one.safetensors",
+      filename: "one.safetensors",
+      ui_id: "model:family:one",
+    });
+    assert.equal(queued?.contentType, "application/json");
+  });  test("refuses an unavailable exact version before queueing", async () => {
     let queued = false;
     const fetcher: typeof globalThis.fetch = async (input): Promise<Response> => {
       const path = new URL(String(input)).pathname;

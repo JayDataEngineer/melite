@@ -48,6 +48,21 @@ export interface ManagerInstallResult {
   readonly detail?: string;
 }
 
+export interface ManagerModelInstallRequest {
+  readonly id: string;
+  readonly name: string;
+  readonly type: string;
+  readonly base?: string;
+  readonly savePath: string;
+  readonly url: string;
+  readonly filename: string;
+}
+
+export interface ManagerModelInstallResult {
+  readonly installed: boolean;
+  readonly detail?: string;
+}
+
 export interface ManagerInspection {
   readonly installed: boolean;
   readonly active: boolean;
@@ -60,6 +75,10 @@ export interface ManagerPort {
     request: ManagerInstallRequest,
     signal?: AbortSignal,
   ): Promise<ManagerInstallResult>;
+  installModel?(
+    request: ManagerModelInstallRequest,
+    signal?: AbortSignal,
+  ): Promise<ManagerModelInstallResult>;
   inspect?(id: string, signal?: AbortSignal): Promise<ManagerInspection>;
 }
 
@@ -98,7 +117,6 @@ export type ProvisionTransitionListener = (transition: ProvisionTransition) => v
 export interface ProvisioningConfig {
   readonly declaration: DeclarationPort;
   readonly artifactWriter?: ArtifactWriterPort;
-  readonly artifactFetcher?: ArtifactFetcher;
   readonly storeRoot?: string;
   readonly manager?: ManagerPort;
   readonly inspector?: InspectorPort;
@@ -137,7 +155,6 @@ export type ProvisioningServiceDefinition = {
 export type ProvisioningPorts = {
   readonly declaration: DeclarationPort;
   readonly artifactWriter?: ArtifactWriterPort;
-  readonly artifactFetcher?: ArtifactFetcher;
   readonly manager?: ManagerPort;
   readonly inspector?: InspectorPort;
   readonly lifecycle?: LifecyclePort;

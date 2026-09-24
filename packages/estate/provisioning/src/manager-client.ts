@@ -52,6 +52,7 @@ export interface ComfyUiManagerClientOptions {
 export interface ManagerRequestOptions {
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
+  readonly bodyFormat?: "json" | "text";
 }
 
 export interface ManagerQueueStatus {
@@ -260,6 +261,10 @@ export class ComfyUiManagerHttpClient {
     return await this.request("POST", path, body, options);
   }
 
+  async postText(path: string, body: string, options: ManagerRequestOptions = {}): Promise<unknown> {
+    return await this.request("POST", path, body, { ...options, bodyFormat: "text" });
+  }
+
   async getJson<T = unknown>(path: string, options: ManagerRequestOptions = {}): Promise<T> {
     const value = await this.get(path, options);
     if (value === null || typeof value !== "object") {
@@ -358,20 +363,27 @@ export class ComfyUiManagerHttpClient {
     }
     let encodedBody: string | undefined;
     if (body !== undefined) {
-      try {
-        encodedBody = JSON.stringify(body);
-      } catch (error: unknown) {
-        throw new ManagerClientError("invalid-request", "ComfyUI-Manager request body is not JSON serializable", {
-          method,
-          path,
-          cause: error,
-        });
-      }
-      if (encodedBody === undefined) {
-        throw new ManagerClientError("invalid-request", "ComfyUI-Manager request body is not JSON serializable", {
-          method,
-          path,
-        });
+      if (options.bodyFormat === "text") {
+        if (typeof body !== "string") {
+          throw new ManagerClientError("invalid-request", "ComfyUI-Manager text body must be a string", { method, path });
+        }
+        encodedBody = body;
+      } else {
+        try {
+          encodedBody = JSON.stringify(body);
+        } catch (error: unknown) {
+          throw new ManagerClientError("invalid-request", "ComfyUI-Manager request body is not JSON serializable", {
+            method,
+            path,
+            cause: error,
+          });
+        }
+        if (encodedBody === undefined) {
+          throw new ManagerClientError("invalid-request", "ComfyUI-Manager request body is not JSON serializable", {
+            method,
+            path,
+          });
+        }
       }
       const bytes = new TextEncoder().encode(encodedBody).byteLength;
       if (bytes > this.maxRequestBytes) {
@@ -399,7 +411,7 @@ export class ComfyUiManagerHttpClient {
       try {
         response = await this.fetcher(url, {
           method,
-          headers: encodedBody === undefined ? undefined : { "content-type": "application/json" },
+          headers: encodedBody === undefined ? undefined : { "content-type": options.bodyFormat === "text" ? "text/plain" : "application/json" },
           body: encodedBody,
           signal: controller.signal,
         });

@@ -5,7 +5,6 @@ import {
   VerifiedArtifactWriter,
   newOperationId,
   type ArtifactWriterPort,
-  type VerifiedArtifactResult,
 } from "./artifact-writer.ts";
 import {
   resourceKey,
@@ -26,8 +25,6 @@ import {
   type ResourceStatusItem,
 } from "./contracts.ts";
 import type {
-  ArtifactFetcher,
-  ArtifactResponse,
   DeclarationPort,
   InspectorPort,
   LifecyclePort,
@@ -94,6 +91,7 @@ function copyItem(item: ResourceStatusItem): ResourceStatusItem {
     state: item.state,
     ...(item.path === undefined ? {} : { path: item.path }),
     ...(item.sha256 === undefined ? {} : { sha256: item.sha256 }),
+    ...(item.integrity === undefined ? {} : { integrity: item.integrity }),
     ...(item.errorCode === undefined ? {} : { errorCode: item.errorCode }),
     ...(item.detail === undefined ? {} : { detail: item.detail }),
   };
@@ -262,11 +260,6 @@ function makeResult(
   };
 }
 
-async function defaultArtifactFetcher(url: string, signal?: AbortSignal): Promise<ArtifactResponse> {
-  const response = await fetch(url, signal === undefined ? {} : { signal });
-  return { status: response.status, body: response.body };
-}
-
 function relativeArtifactPath(folder: string, filename: string): string {
   if (filename.trim() === "" || filename.includes("/") || filename.includes("\\") || filename === "." || filename === "..") {
     throw new ItemRefusal("blocked", "artifact/invalid-filename", "model filename must be one path segment");
@@ -276,6 +269,38 @@ function relativeArtifactPath(folder: string, filename: string): string {
   }
   const cleanFolder = folder.replace(/^\/+|\/+$/g, "");
   return cleanFolder === "" ? filename : `${cleanFolder}/${filename}`;
+}
+
+export function managerModelType(folder: string): string {
+  const withoutRoot = folder.replace(/^\/+|\/+$/gu, "").replace(/^models\//u, "");
+  const first = withoutRoot.split("/")[0]?.toLowerCase() ?? "";
+  const types: Record<string, string> = {
+    checkpoints: "checkpoints",
+    checkpoint: "checkpoints",
+    unclip: "checkpoints",
+    text_encoders: "text_encoders",
+    text_encoder: "text_encoders",
+    clip: "text_encoders",
+    vae: "vae",
+    loras: "lora",
+    lora: "lora",
+    controlnet: "controlnet",
+    "t2i-adapter": "t2i-adapter",
+    "t2i-style": "t2i-style",
+    clip_vision: "clip_vision",
+    embeddings: "embedding",
+    embedding: "embedding",
+    upscale_models: "upscale",
+    upscale: "upscale",
+    diffusion_models: "diffusion_model",
+    diffusion_model: "diffusion_model",
+  };
+  return types[first] ?? "etc";
+}
+
+export function managerSavePath(folder: string): string {
+  const clean = folder.replace(/^\/+|\/+$/gu, "").replace(/^models\//u, "");
+  return clean === "" || clean === "models" ? "default" : clean;
 }
 
 function itemFailure(item: ProvisionPlanItem, refusal: ItemRefusal): ProvisionItemResult {
@@ -308,7 +333,6 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
   private readonly declaration: DeclarationPort;
   private readonly writer: ArtifactWriterPort | undefined;
   private readonly writerRoot: string;
-  private readonly fetcher: ArtifactFetcher;
   private readonly manager: ManagerPort | undefined;
   private readonly inspector: InspectorPort | undefined;
   private readonly lifecycle: LifecyclePort | undefined;
@@ -327,7 +351,6 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     this.declaration = config.declaration;
     this.writer = config.artifactWriter ?? (config.storeRoot === undefined ? undefined : new VerifiedArtifactWriter(config.storeRoot));
     this.writerRoot = config.storeRoot ?? (config.artifactWriter as { root?: unknown } | undefined)?.root as string ?? "";
-    this.fetcher = config.artifactFetcher ?? defaultArtifactFetcher;
     this.manager = config.manager;
     this.inspector = config.inspector;
     this.lifecycle = config.lifecycle;
@@ -488,32 +511,57 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         return this.complete(ref, operationId, this.blockedResult(ref, operationId, "external/not-confirmed", "external acquisition requires operator confirmation"));
       }
       if (request.kind === "model") {
-        if (request.sha256 === undefined) {
-          return this.complete(ref, operationId, this.blockedResult(ref, operationId, "artifact/invalid-digest", "external model acquisition requires a SHA-256 digest"));
+        if (this.writer?.inspect === undefined) {
+          return this.complete(ref, operationId, this.blockedResult(ref, operationId, "artifact/inspect-unavailable", "external model acquisition requires the configured model store inspector"));
         }
-        if (this.writer === undefined) {
-          return this.complete(ref, operationId, this.blockedResult(ref, operationId, "artifact/writer-unavailable", "no artifact writer is configured"));
+        if (this.manager?.installModel === undefined) {
+          return this.complete(ref, operationId, this.blockedResult(ref, operationId, "manager/model-unavailable", "external model acquisition requires ComfyUI-Manager model installation"));
         }
         try {
-          const relativePath = request.relativePath === undefined
-            ? request.filename ?? "download.bin"
-            : request.filename === undefined
-              ? request.relativePath
-              : `${request.relativePath.replace(/\/+$/g, "")}/${request.filename}`;
+          const filename = request.filename ?? "download.bin";
+          const folder = request.relativePath === undefined ? "" : request.relativePath;
+          const relativePath = relativeArtifactPath(folder, filename);
+          const parts = relativePath.split("/");
+          const landedName = parts[parts.length - 1] ?? filename;
+          const landedFolder = parts.slice(0, -1).join("/");
           this.move(ref, operationId, "verifying");
-          const response = await this.fetcher(request.url, operationSignal);
-          this.assertResponse(response);
-          if (response.body === null) throw new ItemRefusal("failed", "artifact/no-body", "artifact source returned no body");
-          const written = await this.writer.write({
+          const installed = await this.manager.installModel({
+            id: relativePath,
+            name: landedName,
+            type: managerModelType(landedFolder),
+            base: "default",
+            savePath: managerSavePath(landedFolder),
+            url: request.url,
+            filename: landedName,
+          }, operationSignal);
+          if (!installed.installed) {
+            throw new ItemRefusal("failed", "manager/model-install-failed", installed.detail ?? "ComfyUI-Manager did not install the model");
+          }
+          const landed = await this.writer.inspect({
             root: this.writerRoot,
             relativePath,
-            expectedSha256: request.sha256,
-             operationId,
-             source: response.body,
-             ...(request.sizeBytes === undefined ? {} : { sizeBytes: request.sizeBytes }),
-           }, operationSignal);
-           this.move(ref, operationId, "installed");
-           const result = itemResult({ kind: "model", key: operationId, owner: "card", id: "external-model", name: relativePath, folder: "", url: request.url, sha256: request.sha256, required: true, provider: "external" }, "active", "active", { path: written.path, sha256: written.sha256 });
+            ...(request.sha256 === undefined ? {} : { expectedSha256: request.sha256 }),
+          }, operationSignal);
+          if (!landed.present) {
+            throw new ItemRefusal(
+              "failed",
+              landed.sha256 === undefined ? "manager/model-not-landed" : "artifact/hash-mismatch",
+              landed.sha256 === undefined
+                ? "ComfyUI-Manager queue completed but the requested model path is absent"
+                : "ComfyUI-Manager landed bytes that do not match the requested SHA-256",
+            );
+          }
+          this.move(ref, operationId, "installed");
+          const result = itemResult(
+            { kind: "model", key: operationId, owner: "card", id: "external-model", name: relativePath, folder: "", url: request.url, sha256: request.sha256, required: true, provider: "external" },
+            "active",
+            "active",
+            {
+              path: landed.path,
+              sha256: landed.sha256,
+              integrity: request.sha256 === undefined ? "operator-unverified" : "declared-sha256",
+            },
+          );
           return this.complete(ref, operationId, makeResult(ref, operationId, "active", "active", [result]));
         } catch (error: unknown) {
           return this.complete(ref, operationId, this.failureResult(ref, operationId, error, operationSignal));
@@ -668,37 +716,55 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     if (item.sha256 === undefined || item.sha256.trim() === "") {
       throw new ItemRefusal("blocked", "artifact/invalid-digest", "model acquisition requires a declared SHA-256 digest");
     }
-    if (this.writer === undefined) {
-      throw new ItemRefusal("blocked", "artifact/writer-unavailable", "no artifact writer is configured");
+    if (this.writer === undefined || this.writer.inspect === undefined) {
+      throw new ItemRefusal("blocked", "artifact/inspect-unavailable", "model acquisition requires the configured model store inspector");
+    }
+    if (this.manager?.installModel === undefined) {
+      throw new ItemRefusal("blocked", "manager/model-unavailable", "model acquisition requires ComfyUI-Manager model installation");
     }
     const relativePath = relativeArtifactPath(item.folder, item.name);
-    if (this.writer.inspect !== undefined) {
-      const existing = await this.writer.inspect({
-        root: this.writerRoot,
-        relativePath,
-        expectedSha256: item.sha256,
-      }, signal);
-      if (existing.present) {
-        return itemResult(item, "active", "active", {
-          ...(existing.path === undefined ? {} : { path: existing.path }),
-          ...(existing.sha256 === undefined ? {} : { sha256: existing.sha256 }),
-        });
-      }
-    }
-    this.move(ref, operationId, "verifying");
-    const response = await this.fetcher(item.url, signal);
-    this.assertResponse(response);
-    if (response.body === null) throw new ItemRefusal("failed", "artifact/no-body", "artifact source returned no body");
-    const written: VerifiedArtifactResult = await this.writer.write({
+    const existing = await this.writer.inspect({
       root: this.writerRoot,
       relativePath,
       expectedSha256: item.sha256,
-      operationId,
-      source: response.body,
-      ...(item.sizeBytes === undefined ? {} : { sizeBytes: item.sizeBytes }),
     }, signal);
+    if (existing.present) {
+      return itemResult(item, "active", "active", {
+        ...(existing.path === undefined ? {} : { path: existing.path }),
+        ...(existing.sha256 === undefined ? {} : { sha256: existing.sha256 }),
+        integrity: "declared-sha256",
+      });
+    }
+    this.move(ref, operationId, "verifying");
+    const installed = await this.manager.installModel({
+      id: item.key,
+      name: item.name,
+      type: managerModelType(item.folder),
+      base: "default",
+      savePath: managerSavePath(item.folder),
+      url: item.url,
+      filename: item.name,
+    }, signal);
+    if (!installed.installed) {
+      throw new ItemRefusal("failed", "manager/model-install-failed", installed.detail ?? "ComfyUI-Manager did not install the model");
+    }
+    const landed = await this.writer.inspect({
+      root: this.writerRoot,
+      relativePath,
+      expectedSha256: item.sha256,
+    }, signal);
+    if (!landed.present) {
+      const code = landed.sha256 === undefined ? "manager/model-not-landed" : "artifact/hash-mismatch";
+      throw new ItemRefusal("failed", code, landed.sha256 === undefined
+        ? "ComfyUI-Manager queue completed but the declared model path is absent"
+        : "ComfyUI-Manager landed bytes that do not match the declared SHA-256");
+    }
     this.move(ref, operationId, "installed");
-    return itemResult(item, "active", "active", { path: written.path, sha256: written.sha256 });
+    return itemResult(item, "active", "active", {
+      path: landed.path,
+      sha256: landed.sha256,
+      integrity: "declared-sha256",
+    });
   }
 
   private async activateExtension(
@@ -749,7 +815,11 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         expectedSha256: item.sha256,
       }, signal);
       if (!inspection.present) return itemResult(item, "absent", "blocked", inspection.path === undefined ? {} : { path: inspection.path, sha256: inspection.sha256 });
-      return itemResult(item, "active", "active", inspection.path === undefined ? {} : { path: inspection.path, sha256: inspection.sha256 });
+      return itemResult(item, "active", "active", {
+        ...(inspection.path === undefined ? {} : { path: inspection.path }),
+        ...(inspection.sha256 === undefined ? {} : { sha256: inspection.sha256 }),
+        integrity: "declared-sha256",
+      });
     }
     if (item.provider === "local") {
       if (this.inspector === undefined) return itemResult(item, "unknown", "blocked", { errorCode: "extension/inspect-unavailable" });
@@ -767,12 +837,6 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       return itemResult(item, inspection.active ? "active" : "absent", inspection.active ? "active" : "blocked", inspection.detail === undefined ? {} : { detail: inspection.detail });
     }
     return itemResult(item, "unknown", "blocked", { errorCode: "extension/inspect-unavailable" });
-  }
-
-  private assertResponse(response: ArtifactResponse): void {
-    if (response.status < 200 || response.status >= 300) {
-      throw new ItemRefusal("failed", "artifact/http-refused", `artifact source refused HTTP ${String(response.status)}`);
-    }
   }
 
   private begin(ref: ResourceRef, operationId: string): void {

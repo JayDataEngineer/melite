@@ -85,6 +85,7 @@ export interface ResourceStatusItem {
   readonly state: ProvisionState;
   readonly path?: string;
   readonly sha256?: string;
+  readonly integrity?: "declared-sha256" | "operator-unverified";
   readonly errorCode?: string;
   readonly detail?: string;
 }

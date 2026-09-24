@@ -21,8 +21,8 @@ import {
   writeVerifiedArtifact,
 } from "../src/index.ts";
 import type {
-  ArtifactResponse,
   DeclarationPort,
+  ManagerPort,
   ModelProvisionPlanItem,
   ProvisionPlan,
   ProvisionPlanItem,
@@ -44,24 +44,24 @@ function root(): string {
   return value;
 }
 
+function managerWriting(store: string, onInstall?: (url: string) => void | Promise<void>): ManagerPort {
+  return {
+    installModel: async (request): Promise<{ installed: boolean; detail?: string }> => {
+      await onInstall?.(request.url);
+      if (request.url.endsWith("bad") || request.url.endsWith("fail")) return { installed: false, detail: "bad model" };
+      const destination = join(store, request.savePath === "default" ? "" : request.savePath, request.filename);
+      mkdirSync(join(store, request.savePath === "default" ? "" : request.savePath), { recursive: true });
+      writeFileSync(destination, BYTES);
+      return { installed: true };
+    },
+  };
+}
 function source(bytes: Uint8Array = BYTES): AsyncIterable<Uint8Array> {
   return {
     async *[Symbol.asyncIterator]() {
       yield bytes.subarray(0, Math.ceil(bytes.length / 2));
       yield bytes.subarray(Math.ceil(bytes.length / 2));
     },
-  };
-}
-
-function response(bytes: Uint8Array = BYTES, status = 200): ArtifactResponse {
-  return {
-    status,
-    body: new ReadableStream<Uint8Array>({
-      start(controller): void {
-        controller.enqueue(bytes);
-        controller.close();
-      },
-    }),
   };
 }
 
@@ -108,21 +108,20 @@ function declarationFor(plan: ProvisionPlan): DeclarationPort {
 }
 
 describe("verified artifact writer", () => {
-  test("hash success lands bytes and removes the temporary file", async () => {
+  test("operator-unverified artifacts land with an explicit integrity state", async () => {
     const store = root();
-    const destination = join(store, "checkpoints", "one.bin");
+    const destination = join(store, "checkpoints", "operator.bin");
     const result = await writeVerifiedArtifact({
       root: store,
-      relativePath: "checkpoints/one.bin",
-      expectedSha256: SHA,
-      operationId: "op-success",
+      relativePath: "checkpoints/operator.bin",
+      operationId: "op-unverified",
       source: source(),
     });
     assert.equal(result.sha256, SHA);
-    assert.equal(result.sizeBytes, BYTES.length);
+    assert.equal(result.integrity, "operator-unverified");
     assert.deepEqual(readFileSync(destination), BYTES);
-    assert.equal(existsSync(`${destination}.part-op-success`), false);
   });
+
 
   test("hash mismatch removes the temporary file and refuses the destination", async () => {
     const store = root();
@@ -229,12 +228,29 @@ describe("verified artifact writer", () => {
 });
 
 describe("provisioning service", () => {
+  test("external model acquisition can be operator-unverified without losing the digest", async () => {
+    const store = root();
+    const ctx = new Context();
+    const service = new ProvisioningService(ctx, {
+      declaration: declarationFor({ ref: modelRef(), items: [] }),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      manager: managerWriting(store),
+    });
+    const result = await service.acquireExternal(
+      { kind: "model", url: "https://example.invalid/operator.bin", relativePath: "checkpoints", filename: "operator.bin" },
+      { operatorConfirmed: true },
+    );
+    assert.equal(result.state, "active");
+    assert.equal(result.items[0]?.integrity, "operator-unverified");
+    assert.equal(result.items[0]?.sha256, SHA);
+    assert.deepEqual(readFileSync(join(store, "checkpoints", "operator.bin")), BYTES);
+  });
   test("deduplicates concurrent operations per resource", async () => {
     const store = root();
     const ref = modelRef();
     const item = modelItem();
     const plan: ProvisionPlan = { ref, items: [item] };
-    let fetches = 0;
+    let installs = 0;
     let release!: () => void;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
@@ -243,18 +259,14 @@ describe("provisioning service", () => {
     const service = new ProvisioningService(ctx, {
       declaration: declarationFor(plan),
       artifactWriter: new VerifiedArtifactWriter(store),
-      artifactFetcher: async (): Promise<ArtifactResponse> => {
-        fetches += 1;
-        await gate;
-        return response();
-      },
+      manager: managerWriting(store, async () => { installs += 1; await gate; }),
       operationIdFactory: () => "op-dedupe",
     });
     const first = service.ensure(ref);
     const second = service.ensure(ref);
     release();
     const [left, right] = await Promise.all([first, second]);
-    assert.equal(fetches, 1);
+    assert.equal(installs, 1);
     assert.equal(left.operationId, right.operationId);
     assert.equal(left.state, "active");
     assert.equal(service.isLocked(ref), false);
@@ -270,9 +282,7 @@ describe("provisioning service", () => {
     const service = new ProvisioningService(ctx, {
       declaration: declarationFor(plan),
       artifactWriter: new VerifiedArtifactWriter(store),
-      artifactFetcher: async (url): Promise<ArtifactResponse> => url.endsWith("bad")
-        ? { status: 503, body: null }
-        : response(),
+      manager: managerWriting(store),
     });
     const result = await service.ensure(ref);
     assert.equal(result.state, "partial");
@@ -292,7 +302,7 @@ describe("provisioning service", () => {
     const service = new ProvisioningService(ctx, {
       declaration: declarationFor(plan),
       artifactWriter: new VerifiedArtifactWriter(store),
-      artifactFetcher: async (): Promise<ArtifactResponse> => response(),
+      manager: managerWriting(store),
       onTransition: (transition): void => transitions.push(transition),
     });
     assert.equal(ctx.provisioning.name, "provisioning");
@@ -315,7 +325,7 @@ describe("provisioning service", () => {
     const service = new ProvisioningService(ctx, {
       declaration: declarationFor(plan),
       artifactWriter: new VerifiedArtifactWriter(store),
-      artifactFetcher: async (): Promise<ArtifactResponse> => ({ status: 503, body: null }),
+      manager: managerWriting(store),
     });
     const result = await service.ensure(ref);
     assert.equal(result.state, "failed");
