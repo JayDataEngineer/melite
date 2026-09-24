@@ -211,6 +211,10 @@ interface StageResolver {
     card: string,
     model: unknown,
   ): { ok: true } | { ok: false; error: string; offered: string[] };
+  /** THE SCHEMA-MASTER REPAIR (2026-09-24): the registry's longest
+   *  boarded-family dash-prefix repair for era model ids. Nullable —
+   *  no match means no repair, the original refusal stands. */
+  repairStageModel?(card: string, model: string): { model: string; variant?: string } | null;
 }
 
 function resolverOf(ctx: Context): StageResolver | null {
@@ -231,18 +235,62 @@ function resolverOf(ctx: Context): StageResolver | null {
  *  boarded model the machine has not downloaded — the moment it
  *  would land on the bench (add/patch/load), with the offered list
  *  in the error. Registry-less lanes admit everything (the local
- *  derive; never a silent throw on the serve path). */
-function admissionOf(ctx: Context): ((card: string, params: Record<string, unknown>) => void) | undefined {
+ *  derive; never a silent throw on the serve path).
+ *
+ *  THE RESTORE REPAIR (operator law 2026-09-24 — receipt: loading
+ *  run-257737552c00's history refused "unknown model
+ *  'qwen3-tts-voicedesign-design'"; the era's compose wrote ids
+ *  today's registry never boarded, so the whole archive died at
+ *  the load door). A RESTORED row (provenance 'restored' — the
+ *  bench-load wand's stamp on every restore arm) whose model
+ *  refuses gets ONE schema-master repair: the registry's longest
+ *  boarded-family dash-prefix wins, a declared-variant suffix
+ *  restores the variant coordinate, era junk strips. The repair
+ *  mutates the row's params IN PLACE (the load lands repaired);
+ *  a repair that still refuses rethrows the ORIGINAL refusal. A
+ *  live-composed row (no provenance) never repairs — the loud
+ *  refusal with the board is the composer's teaching surface.
+ *  Exported for the wall (a pure factory over the resolver seat). */
+export function admissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined {
   const reg = resolverOf(ctx);
   if (reg === null || reg.admitStageModel === undefined) return undefined;
-  return (card: string, params: Record<string, unknown>): void => {
-    const verdict = reg.admitStageModel!(card, params["model"]);
-    if (!verdict.ok) {
-      throw new RemoteError(
-        "bench/bad-model",
-        verdict.error,
-        { card, offered: verdict.offered },
-      );
+  return (card: string, params: Record<string, unknown>, provenance: unknown): void => {
+    const admitOnce = (): void => {
+      const verdict = reg.admitStageModel!(card, params["model"]);
+      if (!verdict.ok) {
+        throw new RemoteError(
+          "bench/bad-model",
+          verdict.error,
+          { card, offered: verdict.offered },
+        );
+      }
+    };
+    try {
+      admitOnce();
+      return;
+    } catch (original) {
+      if (
+        provenance !== "restored"
+        || typeof params["model"] !== "string"
+        || params["model"] === ""
+        || reg.repairStageModel === undefined
+      ) throw original;
+      const fix = reg.repairStageModel(card, params["model"]);
+      if (fix === null) throw original;
+      params["model"] = fix.model;
+      if (
+        fix.variant !== undefined
+        && (params["variant"] === undefined || params["variant"] === "")
+      ) {
+        params["variant"] = fix.variant;
+      }
+      try {
+        admitOnce();
+      } catch {
+        // the repair did not clear admission — the ORIGINAL refusal
+        // is the honest voice, never the repair's shadow error
+        throw original;
+      }
     }
   };
 }

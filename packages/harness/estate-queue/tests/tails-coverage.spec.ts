@@ -5,7 +5,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { CardArmError, phaseRefusal } from "../src/cardsArmError.ts";
 import { inlineEdge, inlineSkip, inlineKind } from "../src/runsValidateInline.ts";
-import { stateRoots, resolveArtifactFile, refLocations, findDanglingRefs } from "../src/runsValidateArtifacts.ts";
+import { resolveArtifactFile, refLocations, findDanglingRefs } from "../src/runsValidateArtifacts.ts";
+import { sweepOutputRoots } from "../src/cardsDangling.ts";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -56,10 +57,10 @@ describe("inlineKind (the kind voice)", () => {
 
 describe("the artifact rim (tolls and roots)", () => {
   const ROOT = mkdtempSync(join(tmpdir(), "melite-tails-"));
-  it("stateRoots serves the canonical pair", () => {
-    const { outRoot, testOutRoot } = stateRoots();
-    expect(outRoot).toContain("output");
-    expect(testOutRoot.endsWith(join("data", "runs", "test-output"))).toBe(true);
+  it("sweepOutputRoots serves the canonical pair (§23 manifest: output then test-output)", () => {
+    const roots = sweepOutputRoots();
+    expect(roots[0]).toContain("output");
+    expect(roots[1].endsWith(join("data", "runs", "test-output"))).toBe(true);
   });
   it("malformed URLs refuse with the want voice; traversal refuses", () => {
     expect(() => resolveArtifactFile("/v1/assets/runs/", ROOT)).toThrow(/malformed artifact URL/);
@@ -80,7 +81,7 @@ describe("the artifact rim (tolls and roots)", () => {
     ], "stack-DFS order rides, sorted here for the assert");
   });
   it("findDanglingRefs quotes the primary root lookup; a live file rides clean", () => {
-    const { outRoot } = stateRoots();
+    const outRoot = sweepOutputRoots()[0];
     mkdirSync(join(outRoot, "run-tails"), { recursive: true });
     writeFileSync(join(outRoot, "run-tails", "live.png"), "x");
     try {

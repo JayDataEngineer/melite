@@ -626,8 +626,9 @@ export async function patchBench(
     }
     // admission on the MERGED view (the row's card + the params the
     // NEXT run would compose — a patch that lands poison is as bad
-    // as an add that lands it)
-    admitStage(admit, st["card"], cur);
+    // as an add that lands it); the row's own provenance rides (a
+    // restored row patches under restore law)
+    admitStage(admit, st["card"], cur, st["provenance"]);
     // THE WIRING ADMISSION (phantom-wire cure): a params patch can
     // orphan a spell (drop the $image binding while the wire stays)
     // or strand a wire (introduce $image with no channel) — the
@@ -683,16 +684,26 @@ export interface BenchStageRow {
  *  pure (tests inject nothing and every model passes). A refusal
  *  throws bench/bad-model AT WRITE TIME — the writer (agent or
  *  human patch) learns the model is not offered/downloaded the
- *  moment it lands, never at run time. */
+ *  moment it lands, never at run time.
+ *
+ *  THE PROVENANCE COORDINATE (2026-09-24, the schema-master law):
+ *  the third arg names the row's provenance — an admission may
+ *  REPAIR a restored row (provenance 'restored') whose era model id
+ *  predates today's registry, while a live-composed row (no
+ *  provenance) still gets the loud refusal. The repair law lives
+ *  in the injected admission (remote.ts); the domain only carries
+ *  the coordinate. */
 export type StageAdmission = (
   card: string,
   params: Record<string, unknown>,
+  provenance: unknown,
 ) => void;
 
 function admitStage(
   admit: StageAdmission | undefined,
   card: unknown,
   params: unknown,
+  provenance: unknown = undefined,
 ): void {
   if (admit === undefined) return;
   if (typeof card !== "string" || card === "") return;
@@ -700,7 +711,7 @@ function admitStage(
   // add sailed past admission entirely) — admit the card against
   // empty params; the model check passes vacuous, the card check
   // still bites.
-  admit(card, isRecord(params) ? params : {});
+  admit(card, isRecord(params) ? params : {}, provenance);
 }
 
 /** Admission over a wholesale stage list (the load arm — every row
@@ -709,7 +720,7 @@ function admitStages(admit: StageAdmission | undefined, stages: unknown): void {
   if (admit === undefined || !Array.isArray(stages)) return;
   for (const s of stages) {
     if (!isRecord(s)) continue;
-    admitStage(admit, s["card"], s["params"]);
+    admitStage(admit, s["card"], s["params"], s["provenance"]);
   }
 }
 

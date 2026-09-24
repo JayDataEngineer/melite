@@ -348,3 +348,45 @@ describe("the provider (fiber-owned prime)", () => {
     await Promise.resolve();
   });
 });
+
+describe("repairStageModel — THE SCHEMA-MASTER REPAIR (operator law 2026-09-24)", () => {
+  // Receipt: restoring the design-era history refused "unknown
+  // model 'qwen3-tts-voicedesign-design'" at the bench load door
+  // (live reproduction: bench/bad-model "is not offered by card
+  // 'tts'" on a pre-VARIANT_ADDRESSES build; the registryModel
+  // "(registered: …)" voice is the same poison at another site).
+  it("THE RECEIPT: the design route id repairs to family + the DECL's own variant (route ladder)", () => {
+    expect(svc.repairStageModel("tts", "qwen3-tts-voicedesign-design")).toEqual({
+      model: "qwen3-tts-voicedesign",
+      variant: "voicedesign",
+    });
+  });
+  it("a variant-id suffix repairs via the prefix ladder (family + variant)", () => {
+    expect(svc.repairStageModel("tts", "qwen3-tts-voicedesign-voicedesign")).toEqual({
+      model: "qwen3-tts-voicedesign",
+      variant: "voicedesign",
+    });
+  });
+  it("an era-junk suffix strips to the LONGEST boarded family (no variant guess)", () => {
+    // both qwen3-tts and qwen3-tts-voicedesign prefix — longest wins
+    expect(svc.repairStageModel("tts", "qwen3-tts-voicedesign-mystery")).toEqual({
+      model: "qwen3-tts-voicedesign",
+    });
+    expect(svc.repairStageModel("tts", "qwen3-tts-mystery")).toEqual({
+      model: "qwen3-tts",
+    });
+  });
+  it("no boarded dash-prefix and no route match → null (never a fuzzy guess)", () => {
+    expect(svc.repairStageModel("tts", "mystery-thing")).toBeNull();
+    // a REAL family another card boards is not this card's repair
+    expect(svc.repairStageModel("tts", "z-image-design")).toBeNull();
+  });
+  it("an unknown card repairs nothing", () => {
+    expect(svc.repairStageModel("no-such-card", "qwen3-tts-voicedesign-design")).toBeNull();
+  });
+  it("the repaired coordinate passes admission (the load lands, not just the id)", () => {
+    const fix = svc.repairStageModel("tts", "qwen3-tts-voicedesign-design");
+    expect(fix).not.toBeNull();
+    expect(svc.admitStageModel("tts", fix!.model)).toEqual({ ok: true });
+  });
+});

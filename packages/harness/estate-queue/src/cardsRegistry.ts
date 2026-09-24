@@ -489,6 +489,62 @@ export class CardRegistryService extends Service {
     return { ok: true };
   }
 
+  /** THE SCHEMA-MASTER REPAIR (operator law 2026-09-24 — receipt:
+   *  restoring the design-era history refused "unknown model
+   *  'qwen3-tts-voicedesign-design'" at the load door; the era's
+   *  compose wrote route-address ids the running board never
+   *  offered, so the archive died at the restore gesture). ONE
+   *  repair law, namespaced to RESTORES (the admission caller
+   *  gates on provenance 'restored' — a live composer's typo still
+   *  gets the loud refusal with the board). Two ladders, first
+   *  match wins:
+   *  1. THE ROUTE LADDER (the DECL's own truth): a facts variant
+   *     or cell whose ROUTE equals the poisoned id folds to its
+   *     family + its variant id (receipt: route
+   *     qwen3-tts-voicedesign-design → family qwen3-tts-voicedesign
+   *     + variant 'voicedesign' — the DECL's
+   *     resolver_defaults, never a string guess).
+   *  2. THE PREFIX LADDER (era junk): the LONGEST boarded family
+   *     that prefixes the id at a '-' boundary wins; a suffix
+   *     naming a declared variant restores the variant coordinate;
+   *     any other suffix strips.
+   *  No match on either → null (the caller rethrows the original
+   *  refusal — never a fuzzy guess across boards). */
+  repairStageModel(card: string, model: string): { model: string; variant?: string } | null {
+    const def: CardDefinition | undefined = this.defsSync().get(card);
+    if (def === undefined) return null;
+    const facts: Record<string, ModelFactsRow> = this.modelFacts();
+    // Ladder 1 — the route table (the facts' own address rows and
+    // the owning family's variants BOTH carry the route; the owner
+    // with the variant that DECLARES the route wins over a bare
+    // address-row default).
+    for (const [fam, row] of Object.entries(facts)) {
+      for (const v of row.variants ?? []) {
+        if (v.route === model && def.boarded.includes(fam)) {
+          return { model: fam, variant: v.id };
+        }
+        for (const c of v.cells ?? []) {
+          if (c.route === model && def.boarded.includes(fam)) {
+            return { model: fam, variant: v.id };
+          }
+        }
+      }
+    }
+    // Ladder 2 — the boarded-family dash-prefix (era junk suffix).
+    const candidates: string[] = def.boarded
+      .filter((fam: string): boolean => model.startsWith(fam + "-"))
+      .sort((a: string, b: string): number => b.length - a.length);
+    const fam: string | undefined = candidates[0];
+    if (fam === undefined) return null;
+    const suffix: string = model.slice(fam.length + 1);
+    const variant: string | undefined = (facts[fam]?.variants ?? []).some(
+      (v): boolean => v.id === suffix,
+    )
+      ? suffix
+      : undefined;
+    return variant === undefined ? { model: fam } : { model: fam, variant };
+  }
+
   /** The seated mcp:<server> engine ids, sorted — the generic MCP
    * card's LIVE board (the same census the catalog/forms folds
    * serve). The same lane-read spelling runsRegistry's flow_inline

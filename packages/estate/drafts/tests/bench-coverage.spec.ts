@@ -183,3 +183,87 @@ test("rewire tolerates a junk params cell when the channel deletes (no spell lef
     {},
   );
 });
+
+// ── THE RESTORE REPAIR (operator law 2026-09-24 — receipt: loading
+// run-257737552c00's history refused "unknown model
+// 'qwen3-tts-voicedesign-design'"; an era's compose wrote ids
+// today's registry never boarded, so the archive died at the load
+// door). Two walls: the provenance coordinate flows through the
+// domain's admission, and the remote's admission closure repairs
+// restores (never live rows) per the schema-master law.
+import { admissionOf } from "../src/remote.ts";
+
+test("the admission carries the provenance coordinate (restored rows ride restore law, live adds pass undefined)", async () => {
+  const drafts = await boot();
+  const seen: Array<{ card: string; provenance: unknown }> = [];
+  const admit = (card: string, _params: Record<string, unknown>, provenance: unknown): void => {
+    seen.push({ card, provenance });
+  };
+  await ensureBench(drafts, {
+    session: "prov",
+    stages: [{ id: "a", card: "tts", provenance: "restored", params: {} }],
+  }, admit);
+  await addStageBench(drafts, "prov", { card: "sfx", expect_rev: 0 }, admit);
+  assert.deepEqual(seen, [
+    { card: "tts", provenance: "restored" },
+    { card: "sfx", provenance: undefined },
+  ]);
+});
+
+// The resolver stub: admission admits only the repaired family;
+// the repair owns the family-prefix law (the registry's own
+// repairStageModel is walled in estate-queue's cards-registry
+// spec against the REAL defs/facts).
+interface CtxLike { get(name: string, optional?: boolean): unknown }
+function ctxWithResolver(resolver: unknown): CtxLike {
+  return { get: (name: string): unknown => (name === "cardRegistry" ? resolver : undefined) };
+}
+const RESOLVER = {
+  resolveStageParams: (): null => null,
+  admitStageModel: (card: string, model: unknown) =>
+    card === "tts" && model === "qwen3-tts-voicedesign"
+      ? { ok: true as const }
+      : { ok: false as const, error: "model '" + String(model) + "' is not offered", offered: ["qwen3-tts-voicedesign"] },
+  repairStageModel: (card: string, model: string) =>
+    card === "tts" && model.startsWith("qwen3-tts-voicedesign-")
+      ? { model: "qwen3-tts-voicedesign" }
+      : null,
+};
+
+test("a RESTORED row with a poisoned model repairs in place and lands", () => {
+  const admit = admissionOf(ctxWithResolver(RESOLVER) as never);
+  assert.ok(admit !== undefined);
+  const params: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design" };
+  admit("tts", params, "restored");
+  assert.equal(params["model"], "qwen3-tts-voicedesign");
+});
+
+test("a LIVE row with the same poison refuses loud (the composer's teaching surface)", () => {
+  const admit = admissionOf(ctxWithResolver(RESOLVER) as never);
+  assert.ok(admit !== undefined);
+  const params: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design" };
+  assert.throws(() => admit("tts", params, undefined), /is not offered/);
+  assert.equal(params["model"], "qwen3-tts-voicedesign-design", "a live refusal never mutates");
+});
+
+test("a restored row with NO repairable prefix rethrows the original refusal", () => {
+  const admit = admissionOf(ctxWithResolver(RESOLVER) as never);
+  assert.ok(admit !== undefined);
+  assert.throws(
+    () => admit("tts", { model: "mystery-thing" }, "restored"),
+    /is not offered/,
+  );
+});
+
+test("a repair that still refuses rethrows the ORIGINAL refusal", () => {
+  // the board refuses even the repaired family (the stub admits
+  // only on card 'tts' — a card mismatch survives repair):
+  const admit = admissionOf(ctxWithResolver(RESOLVER) as never);
+  assert.ok(admit !== undefined);
+  const params: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design" };
+  assert.throws(() => admit("sfx", params, "restored"), /is not offered/);
+});
+
+test("a registry-less lane admits nothing (no admission closure)", () => {
+  assert.equal(admissionOf(ctxWithResolver(undefined) as never), undefined);
+});

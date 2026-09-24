@@ -25,6 +25,7 @@ data/delivery/
 data/input/
 output/
 productions/
+test-output/
 
 # === Media artifacts (queue output) ===
 *.mp4
