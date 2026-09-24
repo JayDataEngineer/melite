@@ -156,10 +156,10 @@ describe('media: slot resolution + neutral skin', () => {
   // every JS environment (verified: `instanceof Error === true` under
   // happy-dom). No test-only fetch behavior can produce a non-Error here,
   // so those arms are reported dead, not driven by a row.
-  test('a service without a catalog slot falls back to manual attach', async () => {
+  test('a row without a declared input seat falls back to manual attach', async () => {
     stubLoads()
     mountEditor(
-      { service: 'nope', params: { preview_glb: 'https://host/x.glb' } },
+      { service: 'nope', inputSlots: [], params: { preview_glb: 'https://host/x.glb' } },
       { onWireSlot: vi.fn() },
     )
     await waitForText('No motion yet')

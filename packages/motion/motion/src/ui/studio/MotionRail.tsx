@@ -15,10 +15,11 @@ import {
 } from "@melite/card-base/icons"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { SpecPanel } from "@melite/card-base"
+import { InputSquare, MESH_SQUARE_ACCEPT, isMeshUrl } from "@melite/card-base/square"
 import type { CardStage } from "@melite/contracts"
 import type { MotionNpz } from "@melite/formats"
 import type { TimelineKeyframe } from "@melite-plugin/timeline/ui/timeline"
-import { SlotSquare, Tip } from "./kit"
+import { Tip } from "./kit"
 import { cn } from "@melite/card-base/chrome"
 import s from "./component.module.css"
 import { MOTION_PREVIEW_GLB_PARAM } from "./motionParams"
@@ -55,7 +56,6 @@ export interface MotionRailProps {
   bodyWiredUpstream: CardStage | undefined
   bodyWiredUrl: string | null
   handleBodyFile: (file: File) => void
-  isGlbUrl: (u: string) => boolean
   toast: ToastFn
   attachBody: (url: string | null) => void
   onWireSlot?: (slotKey: string, upstreamId: string | null, outputName?: string | null) => void
@@ -73,7 +73,7 @@ export function MotionRail({
   kimodoSpec, kimodoError, paramValues, onParamEdit,
   exportOpen, setExportOpen, bgImage, bgInputRef, handleBgFile, setBg,
   bodySrc, bodyWired, bodyWiredUpstream, bodyWiredUrl, handleBodyFile,
-  isGlbUrl, toast, attachBody, onWireSlot, bodySlotIdx, onSave, stage,
+  toast, attachBody, onWireSlot, bodySlotIdx, onSave, stage,
   setBodyWireOpen, bodyNotice,
 }: MotionRailProps) {
   return (
@@ -265,49 +265,49 @@ className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
  {/* Preview body (2026-08-15 character import) — an INPUT SUBCARD, the
      same square the image inputs render (the user directive: "that has
      to be an input subcard just like the image input has subcards").
-     One SlotSquare for the preview_glb slot: pick (bottom-left ⬆), asset/
+      One InputSquare for the preview_glb slot: pick (bottom-left ⬆), asset/
      OS drop, detach (top-right ✕), and WIRE to an upstream 3D card
      (bottom-right ⛓ — a genre:"3d" producer feeds it; canWireSlot guards
      the type). The stage drop (GLB→body / image→bg) stays. A failed
      import leaves the amber notice; the mannequin keeps rendering. */}
  <span className={s.railGroupLabelMt}>Preview body</span>
  <div data-motion-body className={s.bodySquareWrap}>
- <SlotSquare
- size="md"
- label={MOTION_PREVIEW_GLB_PARAM}
- value={bodySrc || undefined}
- badge={bodyWired ? bodyWiredUpstream!.title : undefined}
- metric={bodyWired && !bodyWiredUrl ? "waiting for upstream" : undefined}
- emptyIcon={<PersonStanding className={s.bodyEmptyIcon} />}
- onPickFile={(f) => handleBodyFile(f)}
- onDropFile={(f) => handleBodyFile(f)}
- onDropAsset={(url) => {
- if (!isGlbUrl(url)) {
- toast("error", "Preview body must be a .glb (SOMAX-rigged character).")
- return
- }
- attachBody(url)
- }}
- onClear={bodyWired
- ? () => {
- onWireSlot?.(MOTION_PREVIEW_GLB_PARAM, null, null)
- onSave({ ...stage.params, [MOTION_PREVIEW_GLB_PARAM]: null })
- }
- : () => attachBody(null)}
- actions={onWireSlot && bodySlotIdx >= 0 && (
- <Tip tip="Wire from an earlier card's GLB output">
- <Button variant="ghost"
- type="button"
- onClick={(e) => { e.stopPropagation(); setBodyWireOpen(true) }}
- aria-label="Wire the preview body from an earlier card"
- data-motion-body-wire
+  <InputSquare
+  label={MOTION_PREVIEW_GLB_PARAM}
+  value={bodySrc || undefined}
+  badge={bodyWired ? bodyWiredUpstream!.title : undefined}
+  metric={bodyWired && !bodyWiredUrl ? "waiting for upstream" : undefined}
+  emptyIcon={<PersonStanding className={s.bodyEmptyIcon} />}
+  accept={MESH_SQUARE_ACCEPT}
+  showFileAction
+  onFile={handleBodyFile}
+  onAsset={(url) => {
+  if (!isMeshUrl(url)) {
+  toast("error", "Preview body must be a .glb or .gltf (SOMAX-rigged character).")
+  return
+  }
+  attachBody(url)
+  }}
+  onClear={bodyWired
+  ? () => {
+  onWireSlot?.(MOTION_PREVIEW_GLB_PARAM, null, null)
+  onSave({ ...stage.params, [MOTION_PREVIEW_GLB_PARAM]: null })
+  }
+  : () => attachBody(null)}
+  actions={onWireSlot && bodySlotIdx >= 0 && (
+  <Tip tip="Wire from an earlier card's GLB output">
+  <Button variant="ghost"
+  type="button"
+  onClick={(e) => { e.stopPropagation(); setBodyWireOpen(true) }}
+  aria-label="Wire the preview body from an earlier card"
+  data-motion-body-wire
 className={cn(s.wireBtn, bodyWired ? s.wireBtnOn : s.wireBtnOff)}
- >
- <Link2 className={s.i12} />
- </Button>
- </Tip>
- )}
- />
+  >
+  <Link2 className={s.i12} />
+  </Button>
+  </Tip>
+  )}
+  />
  </div>
  {bodyNotice && (
  <p

@@ -182,7 +182,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     mountEditor({ params: { preview_glb: 'https://host/bare.glb' } })
     await waitForText('No motion yet')
     await vi.waitFor(() => {
-      const failed = useToastStore.getState().toasts.some((t) => t.message.includes('queue refused: HTTP 500'))
+      const failed = useToastStore.getState().toasts.some((t) => t.message.includes('generate failed: HTTP 500'))
       if (!failed) throw new Error('no empty-refusal toast yet')
     }, { timeout: 20000 })
   }, 30000)
@@ -223,7 +223,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     mountEditor({ params: { preview_glb: 'https://host/bare.glb' } })
     await waitForText('No motion yet')
     await vi.waitFor(() => {
-      const failed = useToastStore.getState().toasts.some((t) => t.message.includes('queue refused: HTTP 500'))
+      const failed = useToastStore.getState().toasts.some((t) => t.message.includes('generate failed: HTTP 500'))
       if (!failed) throw new Error('no refused toast yet')
     }, { timeout: 20000 })
   }, 30000)

@@ -16,7 +16,8 @@ import type { SomaSkin } from "@melite/formats"
 import { stepAzimuth } from "@melite/formats"
 import { PoseViewer3D, type CameraFraming } from "@melite-plugin/motion/ui/viewer3d"
 import type { JointMoveEvent } from "@melite-plugin/motion/ui/viewer3d"
-import { ASSET_DRAG_MIME, Skeleton, Tip, ViewportAnchor, ViewportFrame } from "./kit"
+import { Skeleton, Tip, ViewportAnchor, ViewportFrame } from "./kit"
+import { ASSET_DRAG_MIME } from "@melite/card-base/chrome"
 import { cn } from "@melite/card-base/chrome"
 import s from "./component.module.css"
 import { MotionExportDialog, type StageRect, type ThreeCtx } from "./MotionExportDialog"
@@ -112,7 +113,7 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  )}
  {/* Drop overlay — visible only while an asset/file is dragged over
      the stage. The ring on the parent div + this label tell the user
-     what a drop does (mirrors SlotSquare's dragOver highlight). z-20
+     what a drop does (mirrors InputSquare's dragOver highlight). z-20
      sits above the bg <img> but below the viewer's error overlays. */}
  {bgDragOver && (
  <ViewportAnchor dock="fill" className={s.ovDrop}>

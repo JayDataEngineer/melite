@@ -127,12 +127,12 @@ describe('background + body slot (drops / picks / wire)', () => {
     await mountedNoRun()
     fireEvent.drop(slotSquare(), { dataTransfer: assetTransfer('https://host/slot.glb') })
     await vi.waitFor(() => {
-      if (!document.body.querySelector('[aria-label="Detach"]')) throw new Error('no detach yet')
+      if (!document.body.querySelector('[aria-label="Detach preview_glb"]')) throw new Error('no detach yet')
       // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared dom loop); 30s still tripped under the 2026-09-17 full gate — 90s keeps the evidence point load-robust
     }, { timeout: 90000 })
-    fireEvent.click(document.body.querySelector('[aria-label="Detach"]') as HTMLButtonElement)
+    fireEvent.click(document.body.querySelector('[aria-label="Detach preview_glb"]') as HTMLButtonElement)
     await vi.waitFor(() => {
-      if (document.body.querySelector('[aria-label="Detach"]')) throw new Error('detach did not clear yet')
+      if (document.body.querySelector('[aria-label="Detach preview_glb"]')) throw new Error('detach did not clear yet')
     }, { timeout: 10000 })
   })
 
@@ -254,10 +254,10 @@ describe('background + body slot (drops / picks / wire)', () => {
       { onWireSlot, upstreams: [up1({ artifacts: { rig: 'https://host/up.glb' }, assetUrls: [] })] },
     )
     await vi.waitFor(() => {
-      if (!document.body.querySelector('[aria-label="Detach"]')) throw new Error('no detach yet')
+      if (!document.body.querySelector('[aria-label="Detach preview_glb"]')) throw new Error('no detach yet')
       // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared dom loop); 30s still tripped under the 2026-09-17 full gate — 90s keeps the evidence point load-robust
     }, { timeout: 90000 })
-    fireEvent.click(document.body.querySelector('[aria-label="Detach"]') as HTMLButtonElement)
+    fireEvent.click(document.body.querySelector('[aria-label="Detach preview_glb"]') as HTMLButtonElement)
     expect(onWireSlot).toHaveBeenCalledWith('preview_glb', null, null)
     expect(onSave.mock.calls.some(([p]) => (p as Record<string, unknown>).preview_glb === null)).toBe(true)
   })
@@ -297,6 +297,31 @@ describe('preview body (attach / convert / fall back)', () => {
     expect(document.body.textContent).toContain('No motion yet')
   }, 30000)
 
+  test('conversion delegates the exact flow body and abort signal to the shared runner', async () => {
+    stubLoads({ bodies: { 'bare.glb': 'glb' } })
+    const runCompiledGeneration = vi.fn(async (
+      _body: Record<string, unknown>,
+      _signal?: AbortSignal,
+    ) => ({
+      kind: 'started' as const,
+      runId: 'run-shared',
+      status: {},
+      urls: [],
+    }))
+    mountEditor(
+      { params: { preview_glb: 'https://host/bare.glb' } },
+      { runCompiledGeneration },
+    )
+    await vi.waitFor(() => {
+      expect(runCompiledGeneration).toHaveBeenCalledTimes(1)
+    }, { timeout: 20000 })
+    expect(runCompiledGeneration.mock.calls[0]?.[0]).toEqual({
+      flow: 'body-to-somax',
+      glb: 'https://host/bare.glb',
+    })
+    expect(runCompiledGeneration.mock.calls[0]?.[1]).toBeInstanceOf(AbortSignal)
+  })
+
   test('a refused queue start surfaces the refusal', async () => {
     stubLoads({ bodies: { 'bare.glb': 'glb' }, startStatus: 500 })
     mountEditor({ params: { preview_glb: 'https://host/bare.glb' } })
@@ -305,7 +330,7 @@ describe('preview body (attach / convert / fall back)', () => {
       const failed = useToastStore.getState().toasts.some((t) => t.message.includes('SOMAX conversion failed'))
       if (!failed) throw new Error('no convert-failure toast yet')
     }, { timeout: 20000 })
-    await waitForText('queue refused')
+    await waitForText('generate failed')
   }, 30000)
 
   test('a failed convert run surfaces the run error', async () => {

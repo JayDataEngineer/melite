@@ -98,6 +98,19 @@ describe("the motion compose gate", () => {
     assert.equal(pose.inputs.prev_motion_npz, "/m/prev.npz");
   });
 
+  it("flow ports and semantic outputs name the real NPZ and optional GLB producers", () => {
+    assert.deepEqual(def.flowKinds.inputs, { prompt: "text", motion_npz: "data" });
+    assert.deepEqual(def.flowKinds.outputs, { motion_npz: "data", animated_glb: "mesh" });
+    assert.equal(def.flowOutputBindings?.[0]?.channel, "motion_npz");
+    assert.equal(def.flowOutputBindings?.[0]?.node, "KimodoTextToPose.0");
+    assert.equal(def.flowOutputBindings?.[0]?.nodeClass, "KimodoTextToPose");
+    assert.equal(def.flowOutputBindings?.[1]?.channel, "animated_glb");
+    assert.equal(def.flowOutputBindings?.[1]?.node, "RaySomaxBake.0");
+    assert.equal(def.flowOutputBindings?.[1]?.nodeClass, "RaySomaxBake");
+    assert.equal(def.flowOutputBindings?.[1]?.when?.({ preview_glb: "/m/rig.glb" }), true);
+    assert.equal(def.flowOutputBindings?.[1]?.when?.({ preview_glb: "" }), false);
+  });
+
   it("finalize is the kit's strip (identity of the declared finalize)", () => {
     assert.equal(typeof def.finalize, "function");
     const g = new GraphBuilder();

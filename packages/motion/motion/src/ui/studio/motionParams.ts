@@ -22,7 +22,7 @@ export const MOTION_BG_IMAGE_PARAM = "motion_bg_image"
  *  A REAL wire-level param, NOT UI-only: kimodo_motion's family signature
  *  declares it (the card lane's input kind → glb, form_motion_kimodo
  *  input slot), so the agent can set it headlessly. In the studio it renders as
- *  an INPUT SUBCARD (a SlotSquare — the same square the image inputs use,
+ *  an INPUT SUBCARD (a InputSquare — the same square the image inputs use,
  *  per the user directive): file pick / asset drop / OS drop / WIRE to an
  *  upstream 3D card's GLB output (wired XOR attached — the SlotGrid
  *  contract). Holds a data: URL (upload) or an asset URL. */

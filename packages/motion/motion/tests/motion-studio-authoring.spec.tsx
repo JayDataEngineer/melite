@@ -17,6 +17,7 @@ import { createRoot } from 'react-dom/client'
 import { MotionCardEditor } from '../src/ui/studio/component.tsx'
 import { useToastStore } from '@melite/card-base/toast'
 import { schemaEnvelope } from '@melite/card-base'
+import { runCompiledGeneration } from '@melite/catalog'
 import { waitForText } from './harness.tsx'
 import { SKIN_URL, MOTION_URL, skinResponse, motionResponse } from './fixtures.ts'
 import { resetStudio, mounted, mkStage, stubLoads, mountEditor } from './helpers.ts'
@@ -364,7 +365,11 @@ describe('timeline (prompts + keyframes)', () => {
     const root = createRoot(container)
     mounted.push(root)
     const render = (res: unknown) =>
-      root.render(h(MotionCardEditor, { stage: mkStage(res as Record<string, unknown> | undefined), onSave: vi.fn() } as never))
+      root.render(h(MotionCardEditor, {
+        stage: mkStage(res as Record<string, unknown> | undefined),
+        onSave: vi.fn(),
+        runCompiledGeneration,
+      } as never))
     render({ result: { artifacts: { motion_npz: MOTION_URL } } })
     // the doc sits at the DEFAULT duration (150 frames); the card spans it
     await vi.waitFor(() => {

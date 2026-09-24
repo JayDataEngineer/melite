@@ -13,7 +13,7 @@ import { MotionCardEditor } from '../src/ui/studio/component.tsx'
 import { useToastStore } from '@melite/card-base/toast'
 import { schemaEnvelope } from '@melite/card-base'
 import { SKIN_URL, MOTION_URL, skinResponse, motionResponse } from './fixtures.ts'
-import { primeCatalog } from '@melite/catalog'
+import { runCompiledGeneration } from '@melite/catalog'
 
 export const mounted: Root[] = []
 
@@ -29,7 +29,7 @@ export function resetStudio(): void {
 export function mkStage(over: Record<string, unknown> = {}): CardStage {
   return {
     id: 'm1', title: 'Motion', kind: 'motion', service: 'kimodo_motion',
-    params: {}, inputs: [], inputIndices: [], result: null,
+    params: {}, inputSlots: ['preview_glb'], inputs: [], inputIndices: [], result: null,
     ...over,
   } as unknown as CardStage
 }
@@ -65,14 +65,10 @@ export function stubLoads(opts: {
   motionT?: number; motionStatus?: number; skinStatus?: number;
   bodies?: Record<string, 'glb' | number>;
   draftsStatus?: number; startStatus?: number; startRaw?: string; startEmptyBody?: boolean;
+  validateStatus?: number; validateRaw?: string;
   flow?: 'completed' | 'completed-noglb' | 'failed' | 'slow' | number;
 } = {}): void {
   let statusCalls = 0
-  // The wire affordance is catalog-derived (useMotionMedia: no
-  // catalog = no wire, honest no-truth) — seed the service row the
-  // studio spec's stages sit on, with the preview-glb input slot.
-  primeCatalog({ models: { kimodo_motion: { input_slots: ['preview_glb'] } } } as unknown as Parameters<typeof primeCatalog>[0])
-
   vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
     const u = typeof input === 'string' ? input : (input as Request).url ?? String(input)
     // RULE B: the kimodo form-spec door — the rail's SpecPanel fetches
@@ -122,6 +118,13 @@ export function stubLoads(opts: {
       if (opts.startRaw !== undefined) return new Response(opts.startRaw)
       return jsonResponse({ run_id: 'r1' })
     }
+    // COMPILE FIRST (pipe-carry retirement): runCompiledGeneration
+    // validates at POST /v1/flows/validate before any start — the stub
+    // seats the compile door beside the start door (same opt shape).
+    if (u.includes('/v1/flows/validate')) {
+      if (opts.validateStatus) return new Response(opts.validateRaw ?? 'bad', { status: opts.validateStatus })
+      return jsonResponse({ ok: true })
+    }
     if (u.includes('/v1/flows/status/')) {
       statusCalls += 1
       if (opts.flow === 'slow' && statusCalls === 1) {
@@ -157,6 +160,11 @@ export function mountEditor(over: Record<string, unknown> = {}, props: Record<st
   document.body.appendChild(container)
   const root = createRoot(container)
   mounted.push(root)
-  root.render(h(MotionCardEditor, { stage, onSave, ...props } as never))
+  root.render(h(MotionCardEditor, {
+    stage,
+    onSave,
+    runCompiledGeneration,
+    ...props,
+  } as never))
   return { container, onSave, stage }
 }

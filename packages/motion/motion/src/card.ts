@@ -63,10 +63,19 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     sidebar: { key: 'motion', order: 9 },
     surface: { size: 'huge', layout: 'studio' },
     flowKinds: {
-      inputs: { prompt: 'text' },
-      outputs: { default: 'video' },
+      inputs: { prompt: 'text', motion_npz: 'data' },
+      outputs: { motion_npz: 'data', animated_glb: 'mesh' },
       requiresModel: false,
     },
+    flowOutputBindings: [
+      { channel: 'motion_npz', node: 'KimodoTextToPose.0', nodeClass: 'KimodoTextToPose' },
+      {
+        channel: 'animated_glb',
+        node: 'RaySomaxBake.0',
+        nodeClass: 'RaySomaxBake',
+        when: (params) => typeof params['preview_glb'] === 'string' && params['preview_glb'] !== '',
+      },
+    ],
     requires: ['melite-kimodo-nodes', 'melite-poser-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g) {

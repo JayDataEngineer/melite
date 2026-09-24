@@ -94,13 +94,14 @@ interface MotionCardEditorProps {
     upstreamId: string | null,
     outputName?: string | null,
   ) => void
+  runCompiledGeneration: typeof import("@melite/catalog").runCompiledGeneration
 }
 
 // Accepts {stage, onSave, upstreams?, onWireSlot?} — assignable to
 // StudioTenantProps (E1); `running` is shell business now (the rail's Stop
 // button owns the interrupt).
 export function MotionCardEditor({
-  stage, onSave, upstreams = [], onWireSlot,
+  stage, onSave, upstreams = [], onWireSlot, runCompiledGeneration,
 }: MotionCardEditorProps) {
   const toast = useToastStore((s) => s.addToast)
   // RULE B — THE FORM LAW (operator, 2026-09-18: "All Cards must be
@@ -259,10 +260,10 @@ export function MotionCardEditor({
   // ── Seams (verbs + effects; state stays orchestrated above) ─────────────
   const {
     bodySlotIdx, bodyWiredId, bodyWiredUpstream, bodyWired, bodyWiredUrl,
-    bodySrc, attachBody, isGlbUrl, handleBodyFile, priorStages,
+    bodySrc, attachBody, handleBodyFile, priorStages,
     setBg, handleBgFile, handleStageDrop,
   } = useMotionMedia({
-    stage, upstreams, onSave, onWireSlot, toast,
+    stage, upstreams, onSave, onWireSlot, runCompiledGeneration, toast,
     bodyGlb, setBodyGlbState, setBodyNotice,
     skin, setSkin, npz, setNpz, allVertsM, setAllVertsM, setError, setLoading,
     setFrameIdx, setPlaying, setEditMode, setKeptEdit, setEditedDeformedB64,
@@ -343,7 +344,7 @@ export function MotionCardEditor({
           bgImage={bgImage} bgInputRef={bgInputRef} handleBgFile={handleBgFile} setBg={setBg}
           bodySrc={bodySrc} bodyWired={bodyWired} bodyWiredUpstream={bodyWiredUpstream}
           bodyWiredUrl={bodyWiredUrl} handleBodyFile={handleBodyFile}
-          isGlbUrl={isGlbUrl} toast={toast} attachBody={attachBody}
+          toast={toast} attachBody={attachBody}
           onWireSlot={onWireSlot} bodySlotIdx={bodySlotIdx} onSave={onSave} stage={stage}
           setBodyWireOpen={setBodyWireOpen} bodyNotice={bodyNotice}
         />
