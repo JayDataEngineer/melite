@@ -416,3 +416,18 @@ describe('run_status render — the human line', () => {
     )
   })
 })
+
+describe('run_status render — the live-age law (§36.6 progress-UX)', () => {
+  const text = (v: unknown): string => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    return (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0]!.text ?? ''
+  }
+  test('a STAGED live row renders its age (the long-render liveness signal)', () => {
+    const line = text({ run_id: 'run-x', status: 'running', stages: [{ id: 'h3-film', status: 'running' }], run_age_s: 612 })
+    assert.match(line, /0\/1 stage\(s\) · age 612s/)
+  })
+  test('a terminal row never renders age', () => {
+    const line = text({ run_id: 'run-x', status: 'completed', stages: [{ id: 'h3-film', status: 'completed' }], run_age_s: 900 })
+    assert.ok(!line.includes('age '), 'terminal rows stay receipt-shaped')
+  })
+});

@@ -747,12 +747,22 @@ export class RunsRuntimeService extends Service {
         engine: g.type,
       }));
       payload["card"] = run.cardId ?? run.pipeline;
-      if (run.createdAt > 0) {
-        payload["run_age_s"] = Math.max(
-          0,
-          Math.round(Date.now() / 1000 - run.createdAt),
-        );
-      }
+    }
+    // THE LIVE-AGE LAW (§36.6's progress-UX, 2026-09-24 — 035
+    // attempts 14/16's receipts: a long single-stage h3 render shows
+    // "running — 0/1 stage(s)" for ten-plus minutes and the maker
+    // cannot tell progress from stuck): every LIVE row carries
+    // run_age_s, planned or staged — age is the honest liveness
+    // signal the executor owns without asking the engine.
+    if (
+      (run.status === "queued" || run.status === "running" ||
+        run.status === "stopping") &&
+      run.createdAt > 0
+    ) {
+      payload["run_age_s"] = Math.max(
+        0,
+        Math.round(Date.now() / 1000 - run.createdAt),
+      );
     }
     if (includeLog) payload["log_tail"] = runLogTail(payload as never);
     return payload;

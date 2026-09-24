@@ -167,8 +167,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         // never the bare "0/0" that sent agents to tail logs with bash.
         const plan = total === 0 && Array.isArray(v.planned_stages) && v.planned_stages.length > 0
           ? ' · plan: ' + v.planned_stages.length + ' stage(s)' +
-            (typeof v.card === 'string' && v.card ? ' (' + v.card + ')' : '') +
-            (typeof v.run_age_s === 'number' ? ' · age ' + v.run_age_s + 's' : '')
+            (typeof v.card === 'string' && v.card ? ' (' + v.card + ')' : '')
           : ''
         // THE RECEIPT-PATH LAW (022's self-critique #1, 2026-09-24):
         // a completed row that names only COUNTS forces the agent to
@@ -177,7 +176,15 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         // rows render their artifact paths (up to 4, as served) and
         // per-stage status rows; live rows stay one-line (counts +
         // plan + age — nothing to receipt yet).
-        const terminal = v.status === 'completed' || v.status === 'failed'
+        const terminal = v.status === 'completed' || v.status === 'failed' || v.status === 'stopped'
+        // THE LIVE-AGE VOICE (§36.6's progress-UX): every live row —
+        // planned OR staged — renders its age, the honest liveness
+        // signal (a 10-minute h3 render reads "running · age 612s",
+        // never a bare 0/1 that looks stuck).
+        const age = !terminal && typeof v.run_age_s === 'number'
+          ? ' · age ' + v.run_age_s + 's'
+          : ''
+
         const stageVoice = terminal && stages.length
           ? '\nstages: ' + stages.map((s) => {
             const row = s as { id?: unknown; name?: unknown; error?: unknown }
@@ -245,7 +252,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         return [{
           type: 'text',
           text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + pos
-            + ' — ' + done + '/' + total + ' stage(s)' + plan
+            + ' — ' + done + '/' + total + ' stage(s)' + plan + age
             // hoisted above: the consequent's second ?? could never see
             // nullish (length-truthy implies defined) — same text (2026-09-12).
             + (artifacts.length ? ' · ' + artifacts.length + ' artifact(s)' : '')
