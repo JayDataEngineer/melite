@@ -7,10 +7,11 @@
 // hand-copied GatewayError blocks; this absorbs the tool shape).
 //
 // WHAT THE BUILDER OWNS (identical for every card tool):
-//   the flow-envelope OUTPUT_SCHEMA, the two-door execute
-//   (drafts → start + the {model:} lift), the GatewayError
-//   mapping, the presentation projections (render/presentationMeta/
-//   presentResult), the presentCall preview row.
+//   the flow-envelope OUTPUT_SCHEMA, declared JSON-array param
+//   normalization, the two-door execute (drafts → start + the
+//   {model:} lift), the GatewayError mapping, the presentation
+//   projections (render/presentationMeta/presentResult), and the
+//   presentCall preview row.
 // WHAT THE CARD STILL OWNS (the spec surface below): the tool-plane
 //   name + flow id, the identity prose, the emitted params spec
 //   (emitParamsSpec + any extra knobs), the default model, and the
@@ -47,9 +48,10 @@ export type CardToolEnvelope = InferValue<typeof CARD_TOOL_OUTPUT>
  *  presentCall preview reads ('prompt' or 'text') — or `previewValue`
  *  overrides the field part whole (h3 previews a shot COUNT, not a
  *  slice). The model= prefix stays the builder's either way.
- *  `prepare` is the per-card params transform at execute start —
- *  h3 unwraps a JSON-STRING calls to the array (DSH tool law: json
- *  params arrive as the raw string; the card gate wants the array). */
+ *  `jsonArrayParams` names JSON-typed parameters whose value is an
+ *  array. The builder unwraps JSON strings before both doors; malformed
+ *  strings and JSON non-arrays ride untouched for the card gate to
+ *  refuse. `prepare` owns any remaining card-specific transform. */
 export interface CardToolSpec {
   name: string
   flow: string
@@ -57,10 +59,21 @@ export interface CardToolSpec {
   description: string
   parameters: ParameterSchemaSpec
   defaultModel: string
+  jsonArrayParams?: readonly string[]
   previewField?: string
   previewValue?: (a: Record<string, unknown>) => string
   prepare?: (params: Record<string, unknown>) => void
   timeoutMs?: number
+}
+
+function jsonArrayValue(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : value
+  } catch {
+    return value
+  }
 }
 
 /** Build a card's tool face over the shared skeleton. Behavior is
@@ -142,9 +155,12 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
       const model = typeof a.model === 'string' ? a.model : DEFAULT_MODEL
       const params: Record<string, unknown> = {}
       for (const [k, v] of Object.entries(a)) if (k !== 'model') params[k] = v
-      // the per-card transform (json-string unwraps and kin) rides
-      // BEFORE both doors — the draft params and the start lift see
-      // the same normalized shape.
+      // Declared JSON arrays and the per-card transform ride BEFORE
+      // both doors; the draft params and start lift see the same body.
+      for (const key of spec.jsonArrayParams ?? []) {
+        const value = params[key]
+        if (value !== undefined) params[key] = jsonArrayValue(value)
+      }
       spec.prepare?.(params)
       try {
         // DOOR ONE (compose — CARD BIRTH LAW): the stage doc names

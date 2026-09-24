@@ -784,6 +784,25 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       text = text.replace(/\s+$/, '') +
         `\n\nnon_diegetic_music:\n${stamps.music.text}`
     }
+    // THE NO-SPEECH INDICATOR (2026-09-24, the operator's gibberish
+    // law, paid for on the BRIEF9 films): unless the model is told
+    // 'no speech' OR given speech-carrying audio, it INVENTS random
+    // gibberish dialogue. A window with no dialogue stamp and no
+    // live ref audios is exactly that window — an sfx/music bed does
+    // NOT count (the first BRIEF9 window carried the bed on the sfx
+    // lane and still gibberished; only the dialogue-conditioned
+    // window came out clean). The card stamps the indicator itself:
+    // model memory is not a seat. Ref audios count as audio input
+    // only when the door guard leaves them live (an unstamped
+    // window); an authored indication of any spelling ('no speech',
+    // 'no dialogue', 'no voice') is honored, never doubled.
+    const voicePinnedHere = stamps.dialogue !== undefined || stamps.sfx !== undefined
+    const hearsRefAudio = !voicePinnedHere
+      && (wireList(p.ref_audios).length > 0 || wireList(rb.audios).length > 0)
+    if (stamps.dialogue === undefined && !hearsRefAudio && !/\bno[\s_-]*(speech|dialogue|voice)/i.test(text)) {
+      text = text.replace(/\s+$/, '') +
+        '\n\noverall_soundscape:\nNo speech or dialogue in this shot — ambient and effects only; nobody speaks on screen and there is no voice-over.'
+    }
     const stanza: Record<string, unknown> = { ...p, ...knobs, prompt: text, k }
     const anyStamp = stamps.dialogue !== undefined || stamps.sfx !== undefined || stamps.music !== undefined
     stanza.variant = (guide !== '' || hasRefs || anyStamp) ? 't4r' : chainLike ? 't4_chain' : 't4_open'

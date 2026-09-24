@@ -14,6 +14,7 @@ const tool = buildH3TimelineTool(async () => {
 // (defineTool validates args before presenters run — prompt AND
 // calls are both required on this surface)
 const ARGS = { prompt: "the courier pushes off", calls: [{ text: "the courier pushes off", start_frame: 0, end_frame: 56 }] };
+const CLIP = { src: "/v1/assets/runs/r1/line.flac", start_frame: 0, dur_frames: 48, text: "the line" };
 
 describe("the h3-timeline tool face", () => {
   it("names itself on the tool plane (plain id, no _card suffix)", () => {
@@ -55,11 +56,7 @@ describe("the h3-timeline tool face", () => {
     assert.equal(view?.title, "Generate Video [h3-timeline] → r9");
   });
 
-  it("a JSON-STRING calls unwraps to the array before the estate sees it (DSH json-param law)", async () => {
-    // the LLM serializer delivers type:'json' params as raw strings;
-    // the card gate wants the ARRAY (card.ts:171) — the face
-    // normalizes (live-lane receipt 2026-09-12: string calls refused
-    // "no calls to compose").
+  it("JSON-STRING calls and audio_clips unwrap before either estate door", async () => {
     const posts: Array<{ path: string; body: Record<string, unknown> }> = [];
     const transport = buildH3TimelineTool(async (_m, path, body) => {
       posts.push({ path, body: (body ?? {}) as Record<string, unknown> });
@@ -67,17 +64,23 @@ describe("the h3-timeline tool face", () => {
       return { run_id: "r-str", status: "queued" };
     });
     const out = await transport.execute?.(
-      { prompt: "p", model: "h3-timeline", calls: JSON.stringify(ARGS.calls) } as never,
+      {
+        prompt: "p",
+        model: "h3-timeline",
+        calls: JSON.stringify(ARGS.calls),
+        audio_clips: JSON.stringify([CLIP]),
+      } as never,
       { signal: undefined } as never,
     );
     assert.equal((out as { run_id?: string }).run_id, "r-str");
     const start = posts.find((p) => p.path === "/v1/flows/start");
     assert.ok(start, "the start door was dialed");
-    assert.ok(Array.isArray(start.body["calls"]), "calls rode as the ARRAY");
-    assert.equal((start.body["calls"] as Array<{ text: string }>)[0]?.text, "the courier pushes off");
+    assert.deepEqual(start.body["calls"], ARGS.calls);
+    assert.deepEqual(start.body["audio_clips"], [CLIP]);
     const draft = posts.find((p) => p.path === "/v1/flows/drafts");
-    const stage = (draft?.body["stages"] as Array<{ params?: { calls?: unknown } }>)[0];
-    assert.ok(Array.isArray(stage?.params?.calls), "the draft stage carried the array too");
+    const stage = (draft?.body["stages"] as Array<{ params?: { calls?: unknown; audio_clips?: unknown } }>)[0];
+    assert.deepEqual(stage?.params?.calls, ARGS.calls);
+    assert.deepEqual(stage?.params?.audio_clips, [CLIP]);
   });
 
   it("a calls STRING parsing to a non-array rides on — the estate refuses, never coerced", async () => {

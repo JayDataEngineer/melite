@@ -105,6 +105,15 @@ latent chain IS the seam — the plan refuses the conflict).
   (give each line its own window).
 - Every conditioned clip ducks the generated voice -14dB under it at
   film time; the clean source overlays verbatim on top.
+- THE NO-SPEECH LAW (2026-09-24, the operator's catch, paid for on
+  the BRIEF9 films): the H3 model INVENTS random gibberish speech in
+  any window that has neither a dialogue conditioning nor an explicit
+  'no speech' indication — an sfx/music bed does NOT save it (the
+  bed-conditioned first window gibberished; the dialogue-conditioned
+  second was clean). The CARD stamps the indicator itself on every
+  window without a dialogue stamp or live ref audios; author the
+  speechless shots as ambient-only and never rely on the model
+  staying silent on its own.
 - THE THREE CLASSES (`class`: dialogue | sfx | music; auto when
   omitted — text -> dialogue, else music). All three go INTO the
   model (its 3 audio inputs, one per class): dialogue's `text` = the

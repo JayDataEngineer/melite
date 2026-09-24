@@ -919,6 +919,53 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     id: "c1", name: "line1.wav", src: "data:audio/wav;base64,AAA", start_frame: 100, dur_frames: 48, ...over,
   });
 
+  it("THE NO-SPEECH INDICATOR (2026-09-24, the operator's gibberish law): a window with no dialogue stamp and no live ref audios carries the card's own 'no speech' marking — model memory is not a seat", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        audio_clips: [CLIP({ text: "finish it, please." })],
+      }),
+      model, g, "run_no_speech",
+    );
+    const out = graphOf(g);
+    const w1 = scoped(out, "window1_", "MiniMaxH3ReferenceToVideo")[0]!;
+    const w2 = scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]!;
+    const p1 = String(w1[1].inputs.prompt);
+    const p2 = String(w2[1].inputs.prompt);
+    // window 1: no dialogue reaches it (the clip starts at 100) — the
+    // card stamps the indicator itself.
+    assert.ok(/No speech or dialogue in this shot/.test(p1), "the speechless window carries the indicator");
+    assert.ok(p1.includes("overall_soundscape:"), "it rides the soundscape field");
+    // window 2: dialogue-conditioned — the <d> tag, NEVER the marker.
+    assert.ok(p2.includes("<d>"), "the dialogue window keeps its tag");
+    assert.ok(!/No speech or dialogue in this shot/.test(p2), "the conditioned window is not marked speechless");
+  });
+
+  it("an authored indication is honored, never doubled; live ref audios count as audio input", () => {
+    // authored spelling → no second stamp
+    const g1 = new GraphBuilder();
+    def.compose(
+      def.schema({ calls: [SHOT({ text: "a quiet street, no dialogue, wind only" }), SHOT({ start_frame: 56, end_frame: 124 })] }),
+      model, g1, "run_no_speech_authored",
+    );
+    const out1 = graphOf(g1);
+    const pr1 = String(scoped(out1, "window1_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.prompt);
+    assert.equal(pr1.match(/No speech or dialogue/g)?.length ?? 0, 0, "an authored 'no dialogue' is never doubled");
+    // ref audios live on the unstamped window → audio input provided
+    const g2 = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT(), SHOT({ start_frame: 56, end_frame: 124 })],
+        ref_audios: ["data:audio/wav;base64,REF"],
+      }),
+      model, g2, "run_no_speech_refs",
+    );
+    const out2 = graphOf(g2);
+    const pr2 = String(scoped(out2, "window1_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.prompt);
+    assert.ok(!/No speech or dialogue in this shot/.test(pr2), "a ref-audio window hears speech input — no marker");
+  });
+
   it("the owning window HEARS the clip: a generation-time slice rides its ref_audios lane (carry-aware)", () => {
     const g = new GraphBuilder();
     def.compose(

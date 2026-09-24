@@ -14,11 +14,10 @@
 // flow-envelope schema, the two-door execute (drafts → start + the
 // {model:} lift), the GatewayError mapping, and every presentation
 // projection. This face owns ONLY the card's own seams: the carrier
-// params + THIS plane's own `calls` SHOTS node (the DSL's lossless
-// json node — the item shape is documented in the description, the
-// laws are the card gate's at execute time), and the shot-COUNT
-// preview (calls may be the array OR its serialized JSON string —
-// the annotation-only json param accepts both).
+// params + THIS plane's own `calls` and `audio_clips` JSON nodes (the
+// item shapes are documented in the descriptions, the laws are the
+// card gate's at execute time), and the shot-count preview. The shared
+// builder unwraps both JSON-array params before either estate door.
 import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
 import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
@@ -55,22 +54,6 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition =>
       },
     } as ParameterSchemaSpec,
     defaultModel: BOARDED[0],
+    jsonArrayParams: ['calls', 'audio_clips'],
     previewValue: (a) => `shots=${Array.isArray(a.calls) ? (a.calls as unknown[]).length : 0}`,
-    // JSON-TYPED params arrive as the RAW STRING (DSH tool law) and
-    // the card gate wants the ARRAY (card.ts — a string calls reads
-    // as "no calls to compose"). Normalize the shots both ways:
-    // native array senders pass through, string senders (the LLM
-    // serializer's default) unwrap here. Live-lane receipt
-    // 2026-09-12: a legal chat call refused on exactly this seam.
-    prepare(params) {
-      if (typeof params['calls'] === 'string') {
-        try {
-          const parsed: unknown = JSON.parse(params['calls'] as string)
-          if (Array.isArray(parsed)) params['calls'] = parsed
-        } catch {
-          // a malformed string rides on — the card gate refuses with
-          // its own named error.
-        }
-      }
-    },
   })

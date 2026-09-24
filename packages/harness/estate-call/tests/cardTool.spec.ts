@@ -137,27 +137,50 @@ describe("the card-tool builder", () => {
     await assert.rejects(() => aborted.execute({ prompt: "p" }, { signal: AbortSignal.abort() }))
   })
 
-  it("the prepare transform rides BEFORE both doors (h3's json-string unwrap law)", async () => {
+  it("declared JSON-array params normalize before both doors", async () => {
     let phase = 0
     respond = () => { phase += 1; return phase === 1 ? { draftId: "d1" } : { run_id: "r8" } }
     const unwrapping = defineCardTool(call, {
       name: "h3", flow: "h3", label: "H3", description: "d",
-      parameters: { calls: { type: "json", required: true } } as never,
-      defaultModel: "h3", // the checkpoint id (survivor-id correction 2026-09-22)
+      parameters: {
+        calls: { type: "json", required: true },
+        clips: { type: "json" },
+      } as never,
+      defaultModel: "h3",
+      jsonArrayParams: ["calls", "clips"],
       previewValue: (a) => `shots=${Array.isArray(a.calls) ? (a.calls as unknown[]).length : 0}`,
-      prepare(params) {
-        if (typeof params["calls"] === "string") {
-          try {
-            const parsed: unknown = JSON.parse(params["calls"] as string)
-            if (Array.isArray(parsed)) params["calls"] = parsed
-          } catch { /* the card gate refuses with its own named error */ }
-        }
-      },
     })
-    const out = await unwrapping.execute({ calls: '[{"text":"a"}]' }, undefined) as Record<string, unknown>
+    const out = await unwrapping.execute({
+      calls: '[{"text":"a"}]',
+      clips: '[{"src":"line.flac"}]',
+    }, undefined) as Record<string, unknown>
     assert.equal(out.run_id, "r8")
-    assert.ok(Array.isArray(draftBody.stages?.[0]?.params?.calls), "the draft door saw the ARRAY")
-    assert.ok(Array.isArray(startBody.calls), "the start door saw the ARRAY")
-    assert.equal((startBody.calls as Array<{ text: string }>)[0]?.text, "a")
+    assert.deepEqual(draftBody.stages?.[0]?.params?.calls, [{ text: "a" }])
+    assert.deepEqual(draftBody.stages?.[0]?.params?.clips, [{ src: "line.flac" }])
+    assert.deepEqual(startBody.calls, [{ text: "a" }])
+    assert.deepEqual(startBody.clips, [{ src: "line.flac" }])
+  })
+
+  it("declared JSON-array params leave native arrays and invalid JSON strings untouched", async () => {
+    let phase = 0
+    respond = () => { phase += 1; return phase === 1 ? { draftId: "d1" } : { run_id: "r9" } }
+    const arrays = defineCardTool(call, {
+      name: "h3", flow: "h3", label: "H3", description: "d",
+      parameters: { calls: { type: "json", required: true }, clips: { type: "json" } } as never,
+      defaultModel: "h3",
+      jsonArrayParams: ["calls", "clips"],
+    })
+    const nativeCalls = [{ text: "native" }]
+    const nativeClips = [{ src: "native.flac" }]
+    await arrays.execute({ calls: nativeCalls, clips: nativeClips }, undefined)
+    assert.deepEqual(startBody.calls, nativeCalls)
+    assert.deepEqual(startBody.clips, nativeClips)
+
+    phase = 0
+    const objectJson = '{"text":"not an array"}'
+    const malformed = '[{"src":'
+    await arrays.execute({ calls: objectJson, clips: malformed }, undefined)
+    assert.equal(startBody.calls, objectJson)
+    assert.equal(startBody.clips, malformed)
   })
 })
