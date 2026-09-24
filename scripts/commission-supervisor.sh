@@ -39,6 +39,14 @@ OUT_PREFIX="${2:-/tmp/commission}"
 DSH_BIN="${SUPERVISOR_DSH_BIN:-/home/user/.local/bin/dsh}"
 PROFILE="${SUPERVISOR_PROFILE:-melite-headless}"
 STATE_ROOT="${SUPERVISOR_STATE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+# §23 CROSS-ROOTS (the media-tab catch, 2026-09-24): the maker mints
+# under STATE_ROOT/output while the user's 3088 GUI estate serves
+# data/runs/output — two trees, ONE manifest. Without this env the
+# maker's run doors (status/list/view) answer unknown-run for the
+# user-lane's runs, and (the operator's catch) the GUI's media tab
+# never lists the maker's films. Own root always leads; extras name
+# the user's tree explicitly (roots are named, never inferred).
+export MELITE_STATE_ROOTS="${SUPERVISOR_STATE_ROOTS:-${STATE_ROOT}/data/runs}"
 MAX_ATTEMPTS="${SUPERVISOR_MAX_ATTEMPTS:-3}"
 BACKOFF_S="${SUPERVISOR_BACKOFF_S:-60}"
 export PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$PATH"

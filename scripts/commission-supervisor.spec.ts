@@ -182,3 +182,42 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
     assert.ok(!existsSync(prefix + '-resume.token.md'))
   })
 })
+
+describe('commission-supervisor — the cross-roots manifest env', () => {
+  it('exports MELITE_STATE_ROOTS naming the user lane tree (the media-tab catch)', () => {
+    const { dir, prompt, prefix } = stage([])
+    // a dumper stub: exit 0 with the transcript carrying the env it
+    // received — the supervisor's own env export is the wall's target.
+    writeFileSync(join(dir, 'seq.js'),
+      'require("node:fs").writeFileSync(__dirname + "/transcript.md", '
+      + '"roots=" + (process.env.MELITE_STATE_ROOTS ?? "UNSET") + "\\n");\n'
+      + 'process.exit(0);\n')
+    const code = run(dir, prompt, prefix)
+    assert.equal(code, 0, 'the dumper arm exits clean')
+    const out = readFileSync(join(dir, 'transcript.md'), 'utf8')
+    // default: the user lane's tree under the state root's data/runs
+    assert.ok(out.startsWith('roots=/'), 'roots env exported, got: ' + out.trim())
+    assert.ok(out.includes('/data/runs'), 'the user lane tree named, got: ' + out.trim())
+  })
+  it('honors SUPERVISOR_STATE_ROOTS as the override', () => {
+    const { dir, prompt, prefix } = stage([])
+    writeFileSync(join(dir, 'seq.js'),
+      'require("node:fs").writeFileSync(__dirname + "/transcript.md", '
+      + '"roots=" + (process.env.MELITE_STATE_ROOTS ?? "UNSET") + "\\n");\n'
+      + 'process.exit(0);\n')
+    try {
+      execFileSync('bash', [SCRIPT, prompt, prefix], {
+        env: {
+          ...process.env,
+          SUPERVISOR_DSH_BIN: join(dir, 'seq.js'),
+          SUPERVISOR_STATE_ROOTS: '/custom/shared:tree',
+          SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'),
+        },
+        timeout: 30_000,
+        stdio: 'pipe',
+      })
+    } catch { /* the exit code is not this wall's target */ }
+    const out = readFileSync(join(dir, 'transcript.md'), 'utf8')
+    assert.equal(out.trim(), 'roots=/custom/shared:tree')
+  })
+})
