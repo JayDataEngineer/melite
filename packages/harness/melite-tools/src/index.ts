@@ -30,7 +30,7 @@
  *
  * @module @melite/harness-tools
  */
-import { installExpansion, clearExpansion } from './expansion.ts'
+import { installExpansion, clearExpansion, expandEstateDoors } from './expansion.ts'
 import type { Context } from '@deepseek-ai/cordis'
 // THE CARD PACKAGES' TOOL FACES (M2′ + the registrar retirement,
 // 2026-09-09): a card tool is IMPORTED from its package — the
@@ -241,6 +241,17 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     )
   })
   c.effect(() => () => { clearExpansion() })
+
+  // HEADLESS SEATS EAGER (transcript-016 audit, operator 2026-09-24:
+  // "the tool should be as simple to use as possible"): the headless
+  // runner's tool catalog is FIXED AT BOOT — mid-session registrations
+  // never reach its function list, so the deferred doors were promised
+  // in every eager tool's description yet unreachable, and the maker
+  // burned nine catalog hunts plus whole reasoning spirals planning
+  // around a comfy_manage it could never call. A maker has a job of
+  // known depth (view artifacts, read skills, tail the ledger) — the
+  // disclosure tax buys nothing headless. Seat at boot.
+  if (headless) expandEstateDoors()
 
   // HEADLESS run doors — the delegated operator (QUEUE LANE LAW: the
   // queue's own registration door, models named explicitly, never a

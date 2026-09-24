@@ -125,18 +125,20 @@ beforeAll(async () => {
 }, 60_000);
 
 describe("the melite tool faces answer over the live composition", () => {
-  it("every base + headless + card tool registers (deferred five seat on the catalog touch)", async () => {
-    // THE EXPANSION LAW (operator 2026-10-08): apply seats ONLY the
-    // eager trio; the deferred estate doors seat the first time
-    // discover or load executes. The touch below is this wall's own
-    // first catalog use — after it, every door must be present.
-    const deferred = ["melite_view", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
-    for (const name of tools.registered.map((d) => d.name)) {
-      if (deferred.includes(name)) {
-        assert.fail(`${name} seated at apply — the expansion law defers it to the first catalog touch`);
-      }
+  it("every base + headless + card tool registers (headless seats the estate doors AT APPLY — the maker law)", async () => {
+    // THE EXPANSION LAW (operator 2026-10-08): BROWSER apply seats
+    // only the eager trio; the deferred estate doors seat on the
+    // first catalog touch. THE MAKER LAW (transcript-016 audit,
+    // operator 2026-09-24): HEADLESS runners fix their tool catalog
+    // at boot, so headless apply seats the deferred five immediately
+    // — promised-but-unreachable doors burned nine catalog hunts and
+    // whole reasoning spirals. This composition opts into headless
+    // (the run doors + card faces), so the five sit at apply; the
+    // browser-side deferral stays pinned in melite-tools' index.spec.
+    const makerDoors = ["melite_view", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
+    for (const name of makerDoors) {
+      assert.ok(tools.registered.some((d) => d.name === name), `${name} seated at apply (the maker law)`);
     }
-    await drive("melite_discover", { lookup: "all" });
     const names = tools.registered.map((d) => d.name).sort();
     for (const want of [
       "melite_discover", "melite_construct", "melite_load", "comfy_manage",

@@ -148,8 +148,14 @@ describe('apply headless interface', () => {
     await apply(f.ctx as unknown as Context, {})
     const names = f.registered.map((r) => r.name)
     for (const h of HEADLESS) assert.ok(names.includes(h), 'missing run door ' + h)
+    // THE MAKER SEATS EAGER (transcript-016 audit): headless runners
+    // fix their tool catalog at boot — deferred doors must sit at
+    // apply or they are promised-but-unreachable for the whole maker
+    // session (nine catalog hunts + reasoning spirals around doors
+    // the maker could never call).
+    for (const d of DEFERRED_TOOL_NAMES) assert.ok(names.includes(d), 'maker door never seated at boot: ' + d)
     // headless agent rig: card faces stay gated off there too
-    assert.equal(names.length, EAGER_TOOL_NAMES.length + HEADLESS.length)
+    assert.equal(names.length, EAGER_TOOL_NAMES.length + DEFERRED_TOOL_NAMES.length + HEADLESS.length)
     assert.ok(String(f.logs[0][1]).includes('HEADLESS'))
     assert.equal(f.logs[0][3], HEADLESS.length)
   })
@@ -161,6 +167,9 @@ describe('apply headless interface', () => {
     await apply(f.ctx as unknown as Context, { headless: true })
     assert.ok(f.registered.some((r) => r.name === 'melite_flow'))
     assert.ok(f.registered.some((r) => r.name === 'run_status'))
+    // the maker seats eager through the config path too (one law,
+    // two arming spells)
+    for (const d of DEFERRED_TOOL_NAMES) assert.ok(f.registered.some((r) => r.name === d), 'config-path door never seated: ' + d)
   })
 
   test('config headless:false stays browser', async () => {
