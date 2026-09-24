@@ -660,7 +660,14 @@ export function meliteView(ctx: Context): ToolDefinition {
       if (data.byteLength > byteCap) {
         throw new Error('cannot view "' + row.name + '": the file exceeds the ' + String(byteCap) + '-byte image cap; downscale and retry')
       }
-      const mediaType = declared ?? sniffImageMediaType(data)
+      // THE BYTES-ARE-TRUTH LAW (035 attempt-16's gap #5, 2026-09-24):
+      // the signature SNIFF outranks the declared extension — a
+      // receipt reported mediaType image/jpeg for a PNG artifact
+      // when the two seats disagreed. The sniff runs first; the
+      // extension fills only when the bytes match no known
+      // signature; an explicit disagreement still voices the sniff.
+      const sniffed = sniffImageMediaType(data)
+      const mediaType = sniffed ?? declared
       if (mediaType === undefined) {
         throw new Error('cannot view "' + row.name + '": the file content is not a supported image format (PNG/JPEG/WebP/GIF)')
       }

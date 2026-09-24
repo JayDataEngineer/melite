@@ -722,3 +722,20 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
     )
   })
 })
+
+describe('melite_view — the bytes-are-truth law (035 attempt-16 gap #5)', () => {
+  beforeAll(() => {
+    // a JPEG-bytes file under a .png name — the exact disagreement shape
+    const edge = join(root, 'output', 'run-abcd99-mix')
+    writeFileSync(join(edge, 'liar.png'), new Uint8Array([255, 216, 255, 224, 0, 0]))
+    utimesSync(join(edge, 'liar.png'), new Date('2026-01-04T00:00:00Z'), new Date('2026-01-04T00:00:00Z'))
+  })
+
+  test('a signature disagreeing with the extension voices the SNIFF (bytes are truth)', async () => {
+    const { ctx, attachments } = fakeCtx()
+    const tool = meliteView(ctx)
+    const out = await tool.execute({ run_id: 'run-abcd99-mix', artifact: 'liar.png' }, visualExec as never) as ViewedImageValue
+    assert.equal(out.image.mediaType, 'image/jpeg')
+    assert.equal(attachments.saved[0]!.mediaType, 'image/jpeg')
+  })
+});
