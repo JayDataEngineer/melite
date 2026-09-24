@@ -54,6 +54,19 @@ describe("the compose door — the numeric-string fill (commission 035)", () => 
     assert.equal(typeof seen, "number");
   });
 
+  it("THE MODEL PATH RE-SPREAD: the coerced body survives the defaults merge (attempt-035's live escape — the raw re-spread re-poisoned merged past the wrap)", async () => {
+    const svc = await boot();
+    let seen: unknown;
+    const card = { ...numCard(), boarded: ["fam"], compose: (p: Record<string, unknown>, _m: unknown, g: { node: (n: string, v: Record<string, unknown>) => void }) => { seen = p["width"]; g.node("TestNode", { width: p["width"] }); } } as CardDefinition;
+    svc.registerCard(card);
+    svc.setFacts({ models: { fam: { card: "numeric", defaults: { prompt: "model default" }, variants: {}, requires: [] } } } as never);
+    // the model arm: a family present + modelId named drives the
+    // merge path — the RAW params re-spread once defeated the fill
+    svc.compose("numeric", "fam", { width: "768" }, "run-wire-num3");
+    assert.equal(seen, 768);
+    assert.equal(typeof seen, "number");
+  });
+
   it("a genuinely non-numeric string still REFUSES (the bounds voice stays honest)", async () => {
     const svc = await boot();
     svc.registerCard(numCard());

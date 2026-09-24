@@ -744,14 +744,21 @@ export class ComfyUIService extends Service {
     // rail selection resolves this model row; arrays never ride) ←
     // explicit params. The merge below IS the whole law.
     let merged: Record<string, unknown>
+    // THE NUMERIC-STRING FILL — the model path shares the same
+    // seat (see the model-less arm above for the receipt). Coerced
+    // ONCE into a local: the defaults merge below re-spreads THE
+    // COERCED body — spreading raw params here re-introduced the
+    // stringified number AFTER the walk and a downstream walk
+    // refused it bare-voiced (attempt-035's live receipt: walk
+    // passed, merge poisoned, `$.width expected number but got
+    // 768` surfaced from past the wrap — 2026-09-24).
+    const coerced = coerceWireNumbers((def.schemaCarrier ?? def.schema) as unknown as Schema, params) as Record<string, unknown>
     try {
-      // THE NUMERIC-STRING FILL — the model path shares the same
-      // seat (see the model-less arm above for the receipt).
-      merged = def.schema(coerceWireNumbers((def.schemaCarrier ?? def.schema) as unknown as Schema, params))
+      merged = def.schema(coerced)
     } catch (e) {
       throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}` + wireTypeLedger((def.schemaCarrier ?? def.schema) as unknown as Schema, params))
     }
-    merged = { ...merged, ...Object.fromEntries(Object.entries(model.defaults).filter(([, v]) => v !== null && !Array.isArray(v))), ...((params ?? {}) as Record<string, unknown>) }
+    merged = { ...merged, ...Object.fromEntries(Object.entries(model.defaults).filter(([, v]) => v !== null && !Array.isArray(v))), ...(coerced ?? {}) }
     assertNoCheat(cardId, def, merged, params)
 
     // LORA WIRE RESOLUTION (2026-09-10 — the id/name split): the UI
