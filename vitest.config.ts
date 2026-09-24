@@ -376,7 +376,6 @@ export default defineConfig({
         'packages/web/melite-card-view/src/client/FlowCards.tsx',
         'packages/web/melite-card-view/src/client/zoom.tsx',
         'packages/web/melite-card-view/src/client/draft.ts',
-        'packages/web/melite-card-view/src/invariant.ts',
         'packages/web/infer-gallery/src/client/MediaPanel.tsx',
         'packages/web/infer-gallery/src/index.ts',
         'packages/web/melite-card-deck/src/client/assets-tab.tsx',

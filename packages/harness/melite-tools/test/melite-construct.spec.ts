@@ -951,3 +951,36 @@ describe("read — the params summary (035 attempt-15 gap #3)", () => {
     assert.deepEqual(row['arrays'], { ref_images: 'array[2]' })
   })
 });
+
+describe("read — the params summary guard paths", () => {
+  test("a wrapped {item} array is named 'wrapped{item}' (the Probe-B receipt shape)", async () => {
+    const seen = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') {
+        return {
+          rev: 2, draft_id: 'd1',
+          stages: [{ id: 's_0', card: 'h3', params: { ref_images: { item: ['/a.png'] } } }],
+        }
+      }
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: [], count: 0 }
+      return undefined
+    })
+    const tool = meliteConstruct(seen.request)
+    const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const row = (out['stages'] as Array<Record<string, unknown>>)[0]!
+    assert.deepEqual(row['arrays'], { ref_images: 'wrapped{item}' })
+  })
+  test("a stage with no params record carries no summary keys", async () => {
+    const seen = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') {
+        return { rev: 2, draft_id: 'd1', stages: [{ id: 's_0', card: 'h3', params: 'not-a-record' }] }
+      }
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: [], count: 0 }
+      return undefined
+    })
+    const tool = meliteConstruct(seen.request)
+    const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const row = (out['stages'] as Array<Record<string, unknown>>)[0]!
+    assert.equal(row['model'], undefined)
+    assert.equal(row['arrays'], undefined)
+  })
+});
