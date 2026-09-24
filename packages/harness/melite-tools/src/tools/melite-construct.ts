@@ -487,6 +487,15 @@ export function meliteConstruct(
           // names no stage — ids are assigned (s_0, s_1, ...) and the
           // answer carries the assigned id. A `stage` here was a
           // silent no-op that burned a patch cycle downstream.
+          // THE EMPTY-STAGE DROP (035 attempt-14's Probe-A strand,
+          // 2026-09-24): the tool's SHARED schema exposes a stage
+          // slot for every verb — generated add_stage calls rode
+          // `stage: ""` (noise, never intent) and the full refusal
+          // stopped the probe sequence cold. An EMPTY string is
+          // dropped silent; a NON-EMPTY stage on add_stage stays the
+          // loud refusal (real addressing intent on a verb that
+          // mints its own id).
+          if (typeof a.stage === 'string' && a.stage.trim() === '') a.stage = undefined
           if (a.stage !== undefined) return out({ error: 'add_stage assigns its own stage id (s_0, s_1, ...) — the answer carries it; patch/remove_stage/rewire take {stage}. Drop the stage arg.' })
           const r = await request( 'POST', `/v1/bench/${bench}/add_stage`,
             {

@@ -910,3 +910,24 @@ describe('melite_construct execute — the array wire guard', () => {
     )
   })
 })
+
+describe("add_stage — the empty-stage drop (035 attempt-14 Probe-A strand)", () => {
+  test("a shared-schema stage:'' rides dropped (never the full refusal)", async () => {
+    const seen = mockRequest((method, path, body) => {
+      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, stages: [] }
+      if (path.endsWith('/add_stage')) return { rev: 2, stage: 's_0' }
+      return undefined
+    })
+    const tool = meliteConstruct(seen.request)
+    const out = await tool.execute({ verb: 'add_stage', card: 'image-gen', stage: '', params: { prompt: 'x' }, expect_rev: 1 }, exec()) as Record<string, unknown>
+    assert.equal(out['stage'], 's_0')
+    const add = seen.seen.find((c) => c.path.endsWith('/add_stage'))
+    assert.equal((add!.body as Record<string, unknown>)['stage'], undefined)
+  })
+  test("a NON-EMPTY stage on add_stage still refuses loud (addressing intent)", async () => {
+    const seen = mockRequest(() => undefined)
+    const tool = meliteConstruct(seen.request)
+    const out = await tool.execute({ verb: 'add_stage', card: 'image-gen', stage: 's_9', params: { prompt: 'x' } }, exec()) as Record<string, unknown>
+    assert.match(String(out['error']), /assigns its own stage id/)
+  })
+});
