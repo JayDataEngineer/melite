@@ -313,7 +313,7 @@
     ]
   },
   "meta": {
-    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) — this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types. mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
+    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) \u2014 this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types. mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
     "wall": "tests/walls/ts/suites/models-flows.test.ts (AGREE + derivation)"
   },
   "rows": {
@@ -1667,8 +1667,28 @@
       "card_knobs": [
         {
           "card": "text",
-          "inject": "AudiocoreVoiceStudio.0.sample_text",
+          "inject": "AudiocoreTTS.0.prompt",
           "kind": "s"
+        },
+        {
+          "card": "voice",
+          "inject": "AudiocoreTTS.0.voice",
+          "kind": "s"
+        },
+        {
+          "card": "style_instruction",
+          "inject": "AudiocoreTTS.0.instruct",
+          "kind": "s"
+        },
+        {
+          "card": "temperature",
+          "inject": "AudiocoreTTS.0.temperature",
+          "kind": "n"
+        },
+        {
+          "card": "seed",
+          "inject": "AudiocoreTTS.0.seed",
+          "kind": "n"
         }
       ]
     },
@@ -1964,6 +1984,41 @@
           "card": "scheduler",
           "inject": "KSampler.0.scheduler",
           "kind": "s"
+        }
+      ]
+    },
+    "qwen3-tts-voicedesign-design": {
+      "card": "tts",
+      "card_knobs": [
+        {
+          "card": "text",
+          "inject": "AudiocoreVoiceStudio.0.sample_text",
+          "kind": "s"
+        }
+      ]
+    },
+    "qwen3-tts-voicedesign-base": {
+      "card": "tts",
+      "card_knobs": [
+        {
+          "card": "text",
+          "inject": "AudiocoreTTS.0.prompt",
+          "kind": "s"
+        },
+        {
+          "card": "ref_audio",
+          "inject": "AudiocoreTTS.0.reference_audio",
+          "kind": "s"
+        },
+        {
+          "card": "ref_text",
+          "inject": "AudiocoreTTS.0.reference_text",
+          "kind": "s"
+        },
+        {
+          "card": "temperature",
+          "inject": "AudiocoreTTS.0.temperature",
+          "kind": "n"
         }
       ]
     }
