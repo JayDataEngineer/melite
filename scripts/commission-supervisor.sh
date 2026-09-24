@@ -53,6 +53,13 @@ quota_wall() {
   grep -qiE 'usage[ _-]?limit|quota|resource_exhausted|GoUsageLimit' "$1"
 }
 
+boot_flake() {
+  # The dead-tool signatures from the two flaked boots (attempts 7
+  # and 10): the maker reports the absent doors by name. Match the
+  # VARIANTS both transcripts used, never a specific tool only.
+  grep -qiE 'not available on my callable tool surface|cannot make an absent tool available|the requested .(read|bash). tool is not available' "$1"
+}
+
 transient_gate() {
   # A rate limit with no quota language — the moment. The message
   # itself sanctions the retry ("Please retry after a brief wait").
@@ -90,6 +97,20 @@ while :; do
   CODE=$?
 
   if [ "$CODE" -eq 0 ]; then
+    # THE BOOT-FLAKE GATE (035 attempts 7+10, 2026-09-24): a maker
+    # that booted WITHOUT its file doors exits 0 with a blocked
+    # report ("not available on my callable tool surface") — a
+    # clean exit masking an infra moment, not a commission verdict.
+    # Same class as a transient rate gate: relaunch, capped.
+    if boot_flake "${LOG}"; then
+      if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+        echo "commission-supervisor: boot flake capped at ${ATTEMPT} attempt(s) -- passing the last log through" >&2
+        exit 0
+      fi
+      echo "commission-supervisor: boot flake (attempt ${ATTEMPT}) -- relaunching in ${BACKOFF_S}s" >&2
+      sleep "${BACKOFF_S}"
+      continue
+    fi
     exit 0
   fi
 

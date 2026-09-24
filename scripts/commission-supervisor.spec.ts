@@ -40,6 +40,10 @@ function stubFor(arm: Arm): string {
     both: { code: 1, err: TRANSIENT_ERR + '\n' + QUOTA_ERR },
     boom: { code: 2, err: 'engine exploded' },
     ok: { code: 0, err: '' },
+    // THE BOOT FLAKE (035 attempts 7+10): a CLEAN exit whose log
+    // names absent doors — the infra moment the supervisor now
+    // relaunches past.
+    flake: { code: 0, err: 'I cannot lawfully execute the commission: the requested `read` tool is not available on my callable tool surface.' },
   }
   const b = bodies[arm]!
   return 'process.stderr.write(' + JSON.stringify(b.err) + ');process.exit(' + String(b.code) + ');\n'
@@ -58,7 +62,7 @@ function stage(arms: Arm[]): { dir: string, prompt: string, prefix: string } {
     + 'const map = ' + JSON.stringify({
       transient: stubFor('transient'), transient2: stubFor('transient2'),
       quota: stubFor('quota'), both: stubFor('both'),
-      boom: stubFor('boom'), ok: stubFor('ok'),
+      boom: stubFor('boom'), ok: stubFor('ok'), flake: stubFor('flake'),
     }) + ';\n'
     + 'const k = Number(readFileSync(__dirname + "/seq-index", "utf8").trim() || "0") + 1;\n'
     + 'writeFileSync(__dirname + "/seq-index", String(k));\n'
@@ -131,6 +135,19 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
     assert.equal(run(dir, prompt, prefix), 2)
     assert.equal(attemptLogs(prefix).length, 1)
     assert.ok(!existsSync(prefix + '-resume.token.md'))
+  })
+
+  it('a BOOT FLAKE (exit 0 naming absent doors) relaunches: second attempt succeeds, two attempt logs', () => {
+    const { dir, prompt, prefix } = stage(['flake', 'ok'])
+    assert.equal(run(dir, prompt, prefix), 0)
+    assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log', 'commission-attempt2.log'])
+    assert.ok(!existsSync(prefix + '-resume.token.md'), 'no token for a flake recovery')
+  })
+
+  it('a CLEAN exit with a healthy log never relaunches (the gate matches door-absence words only)', () => {
+    const { dir, prompt, prefix } = stage(['ok'])
+    assert.equal(run(dir, prompt, prefix), 0)
+    assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log'])
   })
 
   it('success on attempt 1: exit 0, one log, no token', () => {
