@@ -73,7 +73,10 @@ boot_flake() {
 transient_gate() {
   # A rate limit with no quota language — the moment. The message
   # itself sanctions the retry ("Please retry after a brief wait").
-  grep -qiE 'rate[ _-]?limit|overloaded|429' "$1"
+  # THE EMPTY-RESPONSE ARM (035 attempt-13, 2026-09-24):
+  # PI_AI_ERROR: Provider returned an empty response — a provider
+  # moment, no quota language, retryable.
+  grep -qiE 'rate[ _-]?limit|overloaded|429|provider returned an empty response' "$1"
 }
 
 write_token() {

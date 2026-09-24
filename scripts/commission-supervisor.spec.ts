@@ -29,7 +29,7 @@ const TRANSIENT_ERR = 'dsh: RATE_LIMIT: OpenAI API error (429): {"code":"rate_li
 /** The dead-key quota body (the KEY SOURCE receipt, runbook). */
 const QUOTA_ERR = 'dsh: RATE_LIMIT: 429 Go usage limit exceeded (admin cap); reset 2026-09-24 09:00:00'
 
-type Arm = 'transient' | 'transient2' | 'quota' | 'both' | 'boom' | 'ok' | 'flake' | 'flake2'
+type Arm = 'transient' | 'transient2' | 'quota' | 'both' | 'boom' | 'ok' | 'flake' | 'flake2' | 'empty'
 
 /** The arm bodies (exit code + stderr text). */
 function stubBody(arm: Arm): { code: number, err: string } {
@@ -44,6 +44,9 @@ function stubBody(arm: Arm): { code: number, err: string } {
     // transcript — the phrasing varies, the absence is the law.
     flake: { code: 0, err: 'this session does not expose the required read or bash tools (any wording)' },
     flake2: { code: 0, err: 'completely different words entirely' },
+    // THE EMPTY RESPONSE (035 attempt-13): a provider moment —
+    // retryable, no quota language.
+    empty: { code: 1, err: 'dsh: PI_AI_ERROR: Provider returned an empty response' },
   }
   return bodies[arm]!
 }
@@ -70,7 +73,7 @@ function stage(arms: Arm[]): { dir: string, prompt: string, prefix: string } {
     + 'const map = ' + JSON.stringify({
       transient: stubFor('transient'), transient2: stubFor('transient2'),
       quota: stubFor('quota'), both: stubFor('both'),
-      boom: stubFor('boom'), ok: stubFor('ok'), flake: stubFor('flake'), flake2: stubFor('flake2'),
+      boom: stubFor('boom'), ok: stubFor('ok'), flake: stubFor('flake'), flake2: stubFor('flake2'), empty: stubFor('empty'),
     }) + ';\n'
     + 'const k = Number(readFileSync(__dirname + "/seq-index", "utf8").trim() || "0") + 1;\n'
     + 'writeFileSync(__dirname + "/seq-index", String(k));\n'
@@ -152,6 +155,12 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
     assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log', 'commission-attempt2.log'])
     assert.ok(!existsSync(prefix + '-resume.token.md'), 'no token for a flake recovery')
     assert.ok(existsSync(join(dir, 'transcript.md')), 'the recovered attempt wrote the transcript')
+  })
+
+  it('a PROVIDER EMPTY RESPONSE relaunches like a transient rate gate (035 attempt-13 receipt)', () => {
+    const { dir, prompt, prefix } = stage(['empty', 'ok'])
+    assert.equal(run(dir, prompt, prefix), 0)
+    assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log', 'commission-attempt2.log'])
   })
 
   it('the flake gate is WORDING-AGNOSTIC (attempt-11 receipt: a clean exit with any words and no transcript relaunches)', () => {
