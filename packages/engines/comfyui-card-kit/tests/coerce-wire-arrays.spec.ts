@@ -147,3 +147,33 @@ describe("coerceWireArrays — the single-element arm (035 attempt-008)", () => 
     assert.deepEqual(out.ref_images, { item: "/a.png", x: 1 });
   });
 });
+
+describe("coerceWireNumbers — the deep element fill (035 attempt-8's last disease)", () => {
+  const schema = Schema.object({
+    audio_clips: Schema.array(Schema.object({
+      start_frame: Schema.number(),
+      dur_frames: Schema.number(),
+      text: Schema.string(),
+    })),
+    top: Schema.number(),
+  });
+  it("stringified nested numerics inside true-array elements restore", () => {
+    const out = coerceWireNumbers(schema, {
+      audio_clips: [
+        { start_frame: "144", dur_frames: "134", text: "Rain's done." },
+        { start_frame: 0, dur_frames: "10", text: "gulls" },
+      ],
+      top: "768",
+    }) as Record<string, unknown>;
+    assert.deepEqual(out.audio_clips, [
+      { start_frame: 144, dur_frames: 134, text: "Rain's done." },
+      { start_frame: 0, dur_frames: 10, text: "gulls" },
+    ]);
+    assert.equal(out.top, 768);
+  });
+  it("elements that need no fill ride verbatim (same-reference rows)", () => {
+    const rows = [{ start_frame: 1, dur_frames: 2, text: "x" }];
+    const out = coerceWireNumbers(schema, { audio_clips: rows }) as Record<string, unknown>;
+    assert.equal(out.audio_clips, rows);
+  });
+});

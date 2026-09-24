@@ -152,6 +152,34 @@ export function coerceWireNumbers(
       out[key] = v.valueOf()
     }
   }
+  // THE DEEP ELEMENT FILL (attempt-035/008's last wire disease,
+  // 2026-09-24): NESTED numbers stringify even when the array
+  // arrives true — audio_clips/calls rows landed
+  // `{start_frame: "144"}` and the schema refused
+  // `start_frame is required (int frames — text alone is not a
+  // shot)`. The element declaration rides `inner.inner.dict`
+  // (Schemastery's array-of-object shape) — each element walks
+  // the SAME numeric fill, recursively (an element may nest
+  // arrays itself). Runs INDEPENDENT of the top-level fills — a
+  // coerced top-level number must not mask a poisoned element.
+  for (const [key, inner] of Object.entries(dict)) {
+    if (inner?.type !== 'array' || !Array.isArray(rec[key])) continue
+    const el = (inner as { inner?: { dict?: Record<string, { type?: string }> } }).inner
+    if (el?.dict === undefined) continue
+    let elOut: unknown[] | null = null
+    const rows = rec[key] as unknown[]
+    for (let i = 0; i < rows.length; i++) {
+      const filled = coerceWireNumbers(el as { dict?: Record<string, { type?: string }> }, rows[i])
+      if (filled !== rows[i]) {
+        elOut = elOut ?? [...rows]
+        elOut[i] = filled
+      }
+    }
+    if (elOut !== null) {
+      out = out ?? { ...rec }
+      out[key] = elOut
+    }
+  }
   return out ?? raw
 }
 
