@@ -187,9 +187,15 @@ export function meliteLoad(
             // a refusal-oracle turn on `qvoice_save`. Card-mode
             // melite_flow takes the absorbed mod FIELDS flat
             // top-level beside params — never under the pack key.
+            // THE VARIANT SEAT (025's self-critique #4, 2026-09-24):
+            // the maker guessed variant-in-params and got lucky —
+            // state it: `variant`/`quant` ride INSIDE card-mode
+            // params (the compose selects the lane off the body;
+            // the engine never sees them).
             out.push('mods: ' + modLines.join(', ')
               + ' — pass arrays under the kind keys (the bag lives at param_key when it differs); ordered kinds stack in array order, standalone kinds each provide their own output'
-              + ' — card-mode envelope: mod FIELDS ride flat top-level (e.g. voice_name, qvoice), never keyed under the pack name')
+              + ' — card-mode envelope: mod FIELDS ride flat top-level (e.g. voice_name, qvoice), never keyed under the pack name'
+              + '; card-mode lane select: `variant`/`quant` ride INSIDE params (e.g. params {variant: \'customvoice\'}) — the compose reads them off the body, the engine never sees them')
             const keyed = packSeats.filter((p) => p.param_key !== p.kind)
             if (keyed.length > 0) {
               out.push('mod param_keys: ' + keyed.map((p) => p.kind + ' → ' + p.param_key + ' (entries: {' + p.fields.join(', ') + '})').join('; '))

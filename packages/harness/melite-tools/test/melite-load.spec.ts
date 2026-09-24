@@ -292,6 +292,10 @@ test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)
   // compose grammar the maker had to grep card.ts for.
   assert.ok(text.includes('mods: sam3[] (standalone; fields: prompt), draw[] (ordered; fields: payload)'), 'the kinds + categories + fields ride')
   assert.ok(text.includes('ordered kinds stack in array order, standalone kinds each provide their own output'), 'the stacking law names itself')
+  // THE VARIANT SEAT (025's self-critique #4): the lane select
+  // rides inside card-mode params — stated, never guessed.
+  assert.ok(text.includes('card-mode lane select'), 'the variant seat is stated')
+  assert.ok(text.includes("params {variant: 'customvoice'}"), 'the seat shape is spelled')
   // kindless cards stay line-less (never an empty mods line)
   const plain = tool.output.render(
     { name: 'c', inference_type: 'card' },
