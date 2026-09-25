@@ -1,33 +1,40 @@
 ---
 name: grid-authoring
-description: Frame-exact multi-window timeline authoring on the 17k+5 grid — tiling, seams, soundscape layering (the CARD surface; the model-level timeline-craft skill covers window planning math)
+description: "Current H3 frame-grid guidance with the card's unvalidated cross-call gaps made explicit"
 genre: video
 ---
 
-# Grid Authoring (the calls document)
+# H3 grid authoring
 
-The timeline is a calls document tiling the frame axis EXACTLY.
+The source of truth for the grid is
+`packages/video/h3-timeline/src/timelineContract.ts` and the card's
+`schema()` implementation. Do not infer additional refusal rules from this
+short guide.
 
-## Grid law
+## Current grid
 
-H3 delivers tiles on a 17k+5 frame grid at 24fps. Plan the FIRST call's
-span as 17k+5 (56, 73, 90, 107, 124...) and every LATER call's span as a
-multiple of 17 (68, 85, 102, 119...). Off-grid spans snap — you lose the
-seam you wrote.
+The carried path uses the shared generated-frame grid (`22 + 17k` values such
+as 56, 124, and 362 frames). The card has separate snapping/refusal paths
+for other spans; a single off-grid value is not a promise of uniform
+acceptance or refusal.
 
-## Tiling law
+## Intended call layout
 
-- Call 0 starts at frame 0
-- end_frame is EXCLUSIVE — the next call starts exactly there
-- No gaps, no overlaps
+The intended film uses:
 
-## Soundscape law
+- call 0 at frame 0;
+- an exclusive `end_frame` equal to the next call's `start_frame`;
+- no gaps or overlaps;
+- a call's own text and the declared transition on its incoming seam.
 
-Repeat the ambient soundscape verbatim in EVERY window. Add exactly one
-new layer where the story needs it. Windows are rendered independently —
-only verbatim repetition sounds continuous.
+The current implementation validates calls independently and does not yet
+enforce cross-call adjacency. A gap or overlap can therefore survive compile;
+the authoring result is defective until the plan/artifact is checked and the
+document is repaired.
 
-## Seam law
+## Continuation
 
-The motion-context seam carries the last frames of the prior window.
-Same seed across a shot's re-rolls keeps the world texture consistent.
+Omit `transition` for the automatic carried continuation. Use
+`transition: "cut"` when the new call must begin independently. A stable seed
+helps preserve world texture across re-rolls; it does not replace visual
+continuity or a valid timeline.

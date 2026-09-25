@@ -1,27 +1,26 @@
-# AGENTS.md — sprite-sheet (agent lane notes)
+# sprite-sheet — authoring notes
 
-> This file was `flow.yaml` until 2026-09-05. The yaml flow format is
-> RETIRED estate-wide (the /v1/flows/yaml/* door family died with it);
-> this content survives as agent-facing LANE DOCUMENTATION only. It is
-> NOT a runtime flow format — the runtime doors are `flows/<name>/flow.py`
-> ({flow:name}), `{flow_inline}`, and `{model}`.
+Status: **AUTHORING LEAF — not an executable named flow**. This directory
+documents sprite-sheet intent. No row named `sprite-sheet` is currently
+present in the authoritative TypeScript flow registry. Discover the live
+cards/flows with `melite_discover`.
 
-name: sprite-sheet
-api: true
-description: "Sprite sheet pipeline — generate character action frames via image-gen, remove backgrounds, assemble into grid"
+## Intended composition
 
-steps:
-  - id: frames
-    type: image-gen
-    plugin: comfyui
-    description: "Generate one image-gen frame per action pose (z-image pixel art)"
+Generate the requested action frames → edit/remove backgrounds through the
+declared image card → assemble the sheet through the declared card/flow stage.
+The live loaded bundle owns the actual node and script names.
 
-  - id: cleanup
-    type: image-edit
-    plugin: comfyui
-    description: "Remove background from each frame (rembg or image-edit inpaint)"
+## Agent contract
 
-  - id: assemble
-    type: script
-    script: assemble_sheet.py
-    description: "Assemble clean frames into a grid sprite sheet PNG"
+Use `melite_discover` → `melite_load` → `melite_construct`. The user presses
+Run in browser mode. A headless commission may use `melite_flow` and
+`run_status`. Do not call raw estate endpoints, use a retired YAML lane, or
+hand-build a ComfyUI graph.
+
+## Review rules
+
+- Keep frame order and action naming explicit in the card parameters.
+- Verify every referenced frame is a real artifact before assembly.
+- Inspect the final sheet dimensions, transparency, and pose order against the
+  brief.

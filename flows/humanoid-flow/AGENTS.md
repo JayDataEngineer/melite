@@ -1,33 +1,27 @@
-# AGENTS.md — humanoid-flow (agent lane notes)
+# humanoid-flow — authoring notes
 
-> This file was `flow.yaml` until 2026-09-05. The yaml flow format is
-> RETIRED estate-wide (the /v1/flows/yaml/* door family died with it);
-> this content survives as agent-facing LANE DOCUMENTATION only. It is
-> NOT a runtime flow format — the runtime doors are `flows/<name>/flow.py`
-> ({flow:name}), `{flow_inline}`, and `{model}`.
+Status: **AUTHORING LEAF — not an executable named flow**. This directory
+documents humanoid intent. No row named `humanoid-flow` is currently present
+in the authoritative TypeScript flow registry. Discover the live
+cards/flows with `melite_discover`; do not assume this leaf is loadable by
+name.
 
-name: humanoid-flow
-api: true
-description: "Humanoid character pipeline — ANNY body sculpt → SOMAX rig → textured asset → 8 review views"
+## Intended composition
 
-steps:
-  - id: body
-    type: script
-    script: build_anny_person.py
-    plugin: anny
-    description: "Sculpt character mesh via ANNY Body Studio (build_anny_person.py: POST /poser/skin/mesh → /poser/skin/bind_pose → bare GLB)"
+Humanoid body/asset construction → rig → texture projection → review views.
+The exact cards, MCP or ComfyUI providers, and parameters are discovered from
+the live catalog.
 
-  - id: rig
-    type: somax
-    plugin: comfyui
-    description: "Apply SOMAX body rig to the ANNY mesh"
+## Agent contract
 
-  - id: texture
-    type: texture_project
-    plugin: comfyui
-    description: "Project textures onto the rigged mesh"
+Use `melite_discover` → `melite_load` → `melite_construct`. Browser sessions
+compose only and the user presses Run. Headless commissions may use
+`melite_flow` and `run_status` through the sanctioned runbook. Do not use a
+retired YAML flow, a direct gateway call, or a hand-built graph.
 
-  - id: views
-    type: render_views
-    plugin: comfyui
-    description: "Render 8 views for quality gate"
+## Review rules
+
+- Start from the declared character/preset contract.
+- Finalize the body before a rig stage when the loaded schema requires it.
+- Keep parameter order and identity data owned by the card/model declaration.
+- Inspect the declared review views before delivery.

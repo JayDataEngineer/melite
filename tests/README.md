@@ -1,68 +1,87 @@
 # tests/
 
-The estate's proof tree (2026-09-10: the gateway kill retired the
-pytest plane — `conftest.py`, `_bootstrap.py`, `unit/`, `routes/`,
-and the scratch-gateway rig died with the gateway app).
+The current proof tree is Vitest-based. The Python gateway, pytest planes,
+scratch-gateway fixture layer, and legacy per-package runner conventions are
+historical; their filenames may remain in dated audits, but they are not
+current gates.
 
-## Layout (DSH seven tiers — no legacy plane)
+## Root runner
 
-2026-09-11: the legacy node:test/bun:test plane is REMOVED (ledger
-§TEST-4). Every spec runs under root vitest; no per-package `test`
-scripts, no walls runner, no `.test.*` files remain.
+The root `package.json` owns the test tiers:
 
-    vitest.config.ts           UNIT (all projects; per-file 100% gate on models DECL)
-    vitest.e2e.config.ts       REAL-API e2e (tests/e2e/*.e2e.ts, self-skip without key)
-    vitest.expected.config.ts  OWNER-LOCAL expected (tests/expected/*.expected.e2e.ts)
-    vitest.bench.config.ts     BENCH (benchmarks/*.bench.ts)
-    vitest.snapshot.config.ts  SNAPSHOT (snapshots/session|acp|sdk)
-    vitest.web.config.ts       WEB snapshot (snapshots/web + packages/web/tests/expected)
+| Command | Scope |
+| --- | --- |
+| `pnpm run test` | root Vitest projects: node, DOM, DOM18, and deck lanes |
+| `pnpm run test:coverage` | the same unit/wall inventory with coverage thresholds |
+| `pnpm run test:e2e` | live/e2e configuration in `tests/e2e/` |
+| `pnpm run test:expected` | owner-local expected fixtures in `tests/expected/` |
+| `pnpm run test:bench` | benchmark fixtures |
+| `pnpm run test:snapshot` | recorded-session snapshots |
+| `pnpm run test:web` | web snapshot fixtures |
+| `pnpm run test:web:browser` | Playwright suites for the card-view and card-deck packages |
 
-    tests/
-      harness.ts               SHARED fixtures (never another *.e2e.ts)
-      helpers/launch.ts        dual-mode launcher (lib vs src) + launch-probe.mjs
-      unit/                    cross-cutting unit specs (registry HMR lives with its owner)
-      e2e/                     with-key smokes (estate-smoke.e2e.ts)
-      expected/                assembled expectations (smoke.expected.e2e.ts)
-      walls/ts/                the wall suites, now vitest-native
-                               (disclose, runs-remote,
-                               gallery-host, ledger-tail, drafts-remote,
-                               queue-service, models-*, families-*,
-                               card/form/params/mod/engine/s4 walls)
-        suites/                *.spec.ts under the root node project
-                               (forks: the file isolation run.mjs
-                               used to provide)
-      (golden_cordis + golden_http deleted 2026-09-18 — the parity referees died)
-      integration/             live integration material
-      data/ fixtures/ helpers/ shared wall fixtures + helpers
+The root Vitest config partitions specs into isolated node, DOM, DOM18, and
+React-18 deck projects. Package-local `typecheck` commands may still exist;
+they are not a second test runner.
 
-Package specs live with their packages (`packages/*/*/tests/`,
-`packages/*/*/test/`, the editor's `src/__tests__/` + card-deck's
-`src/client/__tests__/`); the root config partitions them into
-node/dom/dom18/deck projects (deck = the card-deck client's own
-React-18 universe). Manual rigs (not specs, not in CI):
+## Current layout
 
-    packages/harness/melite-tools/test/smoke.mjs              (in-process estate)
-    packages/harness/melite-tools/test/estate-drive.mjs       (the headless job-server proof)
+```text
+tests/
+  unit/                  cross-cutting TypeScript unit specs
+  e2e/                   live/e2e specs with their own prerequisite gates
+  expected/              owner-local expected e2e fixtures
+  integration/           integration assets/materials
+  walls/ts/              cross-cutting Vitest walls
+    suites/*.spec.ts
+  helpers/               launch and shared wall helpers
+  harness.ts             shared fixtures
+  global-sweep.ts        temporary-root cleanup hook
+```
 
-## Conventions
+Package behavior specs live beside their owners under `packages/*/*/tests/`
+or `packages/*/*/test/`. The current H3 timeline specs, for example, live at
+`packages/video/h3-timeline/tests/`; queue and management specs live under
+`packages/harness/estate-queue/tests/` and
+`packages/harness/melite-tools/test/`.
 
-* suites boot the real seats in-process (timer, queue, storage,
-  drafts, cards, disclose/manage/skills/load, runs) — no HTTP rig,
-  no second process, no hand-rolled Popen loops;
-* every boot mints fresh sandbox dirs (`MELITE_STATE_ROOT` + fixture
-  repo root) — a suite never touches the real tree, the live engine
-  (`INFERENCE_TEST_SANDBOX=1` pins manage lifecycle arms), or PROD
-  `:3080`;
-* assertions are plain `node:assert/strict`; managed seats throw LOUD
-  (`RemoteError` with named codes) — walls pin the voices;
-* a refusal is a value or a named throw per the seat's contract —
-  never an absorbed fallback.
+The editor's former Python and node:test test planes are not part of the
+current runner. See [`docs/testing/index.md`](../docs/testing/index.md) for
+gate interpretation and [`docs/testing/chaos-tests.md`](../docs/testing/chaos-tests.md)
+for focused failure/recovery commands.
 
-## The laws the tests pin
+## Running focused specs
 
-* CARD BIRTH LAW — every run is born from an action card draft
-* CAS LAW — drafts/bench persist across runs; clients read-modify-write on live revs
-* QUEUE LANE LAW — no fallbacks; unknown lanes refuse with the door's voice
-* INJECT LAW — optional seats probe with `ctx.get` at the use site
-* COMPILE-TIME GATES — pin sweep + initial_validators refuse before any run registers
-* SECRETS SAFETY — no keystore material is ever committed
+```sh
+node_modules/.bin/vitest run tests/walls/ts/suites/flows-wiring.spec.ts
+node_modules/.bin/vitest run packages/harness/estate-queue/tests/queue-core.spec.ts
+node_modules/.bin/vitest run packages/harness/estate-queue/tests/queue-lock-sweep.spec.ts
+node_modules/.bin/vitest run packages/harness/melite-tools/test/doors-errors.spec.ts
+node_modules/.bin/vitest run packages/estate/provisioning/tests
+```
+
+The root Vitest config is the authority for project selection. A focused
+spec proves only its named contract.
+
+## Sandbox discipline
+
+Suites should mount real seats in-process where practical and use fresh
+roots. A wall must not mutate a live ComfyUI instance, the operator's DSH
+home, or the production run tree unless it is explicitly an owner-local live
+gate. `INFERENCE_TEST_SANDBOX=1` is the management-plane safety pin.
+
+## Test laws
+
+- **Card birth law** — a run is born from an action-card draft.
+- **CAS law** — drafts and benches use live revisions and refuse stale writes.
+- **Queue lane law** — unknown or missing seats refuse loudly; no fallback
+  runtime is created.
+- **Inject law** — optional services are probed with `ctx.get` at the use
+  site.
+- **Compile-time gates** — declared pins, kinds, and initial validators are
+  checked before a run is registered.
+- **Secrets safety** — credentials and machine secrets never enter fixtures,
+  snapshots, or source control.
+
+A self-skip is not a pass. Record its exact prerequisite when a live gate is
+required, and keep the overall receipt open until that class of proof runs.

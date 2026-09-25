@@ -1,105 +1,42 @@
-# hot/ — drop-in mods + basic cards for the RUNNING estate
+# hot/ — DSH live drop-ins
 
-THE HOT DOOR (#39). Write a drop-in here, add one `insert` row to the
-profile's `cordis.patch.yml`, and the RUNNING lane mounts it — no
-restart, no rebuild, no bundle. Remove the row and the lane disposes
-the fiber and the registration reverts.
+`hot/` contains experimental drop-in plugins for a running Melite DSH
+composition. A drop-in is an ordinary Cordis plugin mounted by a profile patch
+row; DSH owns watching, fiber disposal, and reload. The estate does not add a
+second watcher.
 
-This directory rides **DSH's own native machinery, zero custom
-watcher code**: custom profiles default `patchReload: "live"`, so
-dsh itself watches the profile patch file (`hmr.registerConfig` →
-the root include's `entry.update`) and the **loader** mounts /
-disposes the inserted plugins as fibers. The estate only owns the
-seams that make hot registrations SERVE (below).
+## Contract
 
-## The contract
+A drop-in should:
 
-A drop-in is an ordinary cordis plugin file (`*.plugin.ts`,
-TypeScript, Node's native type stripping — avoid enums, namespaces,
-parameter properties):
+- export `apply(ctx)`;
+- register only through an owning service and an effect/disposer;
+- refresh the relevant live projection when its registration changes;
+- refuse duplicate or invalid rows rather than partially serving them;
+- live under this package or a declared workspace package so imports resolve
+  through the package's dependencies.
 
-```ts
-import type { Context } from '@deepseek-ai/cordis'
-import { refreshCardDefs, theService } from '@melite/comfyui-cordis'
+Read the current examples and the DSH reference before adding a new service
+dependency. A hot drop-in is an experiment surface, not a replacement for a
+stable card/model package.
 
-export function apply(ctx: Context): void {
-  ctx.effect(() => {
-    const off = theService().registerFlavor({ ... })   // mods rows
-    // and/or theService().registerCard({ ... })        // a card
-    refreshCardDefs()                                   // cards serve
-    return () => { off(); refreshCardDefs() }           // revert + re-project
-  })
-}
-```
+## Mounting
 
-Laws:
+A rendered profile's `cordis.patch.yml` names the drop-in explicitly. The
+patch file is the load list; no implicit directory glob mounts every file.
+The profile renderer writes a user layer that is intentionally minimal, so
+the operator can add a row without editing the provisioner.
 
-- **Do NOT `inject: ['comfyui']`** — a drop-in loads at the ROOT
-  include level where `comfyui` binds `ComfyUIHostService`, not the
-  card plane. Talk to the card-plane **singleton by import**
-  (`theService()` from `@melite/comfyui-cordis`) — the same module
-  instance the estate's doors serve from.
-- **Files live under this directory** (or anywhere inside the
-  `@melite/melite-estate` package): drop-in imports resolve through
-  THIS package's node_modules. A repo-root dir would see pnpm's
-  strict root and resolve nothing. The authoring seams
-  (`@deepseek-ai/schemastery`, `@melite/comfyui-card-kit`,
-  `@melite/comfyui-cordis`) are the estate's declared deps for
-  exactly this reason.
-- **The patch file is the SSOT of what loads** — no implicit glob.
-  A drop-in mounts only while a patch `insert` row names it, so
-  `examples/` is documentation BY CONFIG, not by directory magic.
-  Every patch save reconciles: inserted fibers cycle
-  (dispose + recreate) — the dsh loader's own diffing.
-- **Mods rows serve on the next form-spec request** (the spec reads
-  the singleton's flavors live). **Cards ride the defs snapshot
-  cache** — call `refreshCardDefs()` after registering AND inside
-  the disposer (the #39 re-projection seam).
-- **THE FLAVOR MERGE (#39)**: several flavors may board one
-  `(pack, family)` — the family's own table plus hot rows MERGE
-  (id-keyed, family rows first). Before #39 a second flavor was
-  invisible behind the first.
-- **Boarded families are id strings** in drop-ins
-  (`boarded: ['krea-2', 'z-image']`): a packaged card imports the
-  family DECL for tsc-time spelling; a drop-in rides the runtime
-  family gate instead (unknown ids refuse loud) — the price of
-  zero-install authoring.
-- **The registration gates own every refusal**: duplicate card ids,
-  unprovisioned rows, bad shapes refuse LOUD in the lane log; the
-  watcher survives; nothing half-serves.
+## Live projection
 
-## The mount row
+Mods are projected from the owning service on the next form/spec read. Cards
+may require an explicit definition refresh after registration and disposal.
+The current implementation and examples under `examples/` are the source of
+truth.
 
-`data/runtime/dsh-harness-home/profiles/melite-test/cordis.patch.yml`:
+## When to graduate a drop-in
 
-```yaml
-- insert:
-    - name: ../../../../../packages/web/melite-estate/hot/examples/real-mod.plugin.ts
-- insert:
-    - name: ../../../../../packages/web/melite-estate/hot/examples/real-card.plugin.ts
-```
-
-Relative names anchor beside the patch file (the loader converts
-them to `file://` URLs).
-
-## Live receipts (2026-09-19, the running lane, no restarts)
-
-- `[hot] probe.plugin.ts LIVE — mounted by the dsh native patch reload`
-  → `hot_probe_row` served in `/v1/form-spec?model=h3-timeline`
-  BESIDE the family rows (the merge); row removed → fiber disposed →
-  row stopped serving.
-- `real-mod.plugin.ts`: `h3_silu_temb_grid.safetensors` — provisioned
-  on the estate, linked in the family provisions, served live by a
-  drop-in.
-- `real-card.plugin.ts`: the `hot-sketch` card (full CardDefinition,
-  card-kit `imageT2I` recipe, moss boarding — ledger #40: a
-  drop-in boards ONLY unboarded families) — served in
-  `/v1/forms`, spec'd at `/v1/form-spec?model=hot-sketch`, and
-  `POST /v1/flows/validate` returned `{"ok":true,"flow":"hot-sketch"}`.
-
-## When a drop-in grows up
-
-A hot file is the seed of a package, not its replacement: when a
-card or mod row stabilizes, it moves to its own package
-(`make-card` / `make-model`) and its `cardPackages` / family row —
-the hot door stays for the next experiment.
+When a card or mod becomes stable, move it into its own package and explicit
+composition table, then add the package's focused tests. Keep the hot door
+for the next experiment; do not make a hot file a hidden production
+dependency.

@@ -1,35 +1,22 @@
----
-name: sprite-sheet-flow
-description: Author a sprite-sheet run — one prompt, one generate stage, queue-native
----
+# sprite-sheet pipeline — current authoring guidance
 
-# Sprite-Sheet Flow Skill
+Status: **CURRENT authoring guidance**. Use the live sprite-sheet/image cards
+and the shared bench.
 
-> Door truth (2026-09-07): the `{"yaml": ...}` door RETIRED
-> 2026-09-04 — a start naming it is a 4xx. The live doors are
-> `{"flow": "<name>"}` (a `flows/<name>/flow.py` declaration),
-> `{"flow_inline": {...}}`, or `{"model": "<card-id>"}` — and every
-> start is compose-first: `POST /v1/flows/drafts` mints the card doc,
-> the start rides its `draft_id` (CARD BIRTH LAW; draftless starts
-> are 4xx). Gateway: `http://127.0.0.1:33081` (:18090 is retired —
-> nothing may serve there).
+## Agent loop
 
-## Run shape
-
-```json
-{
-  "model": "image-gen",
-  "prompt": "<subject and style>",
-  "seed": 7
-}
+```text
+melite_discover → melite_load → melite_construct
 ```
 
-## Loop
+Use `melite_construct` to author frame generation, background edit, and sheet
+assembly stages declared by the loaded flow. Browser sessions stop at the
+user's Run press. A sanctioned headless commission may use `melite_flow` and
+`run_status`.
 
-1. Compose the card: `POST /v1/flows/drafts` with the run body
-   verbatim → `{"draftId": "..."}`.
-2. Start: `POST /v1/flows/start` with the SAME body plus
-   `"draft_id": "<draftId>"`.
-3. Poll the queue (`GET /v1/flows/status/<run_id>`) until terminal.
-4. Fetch artifacts from the run directory — frames land as
-   `generate_image_*.png` beside the sidecar.
+## Verification
+
+Give each frame an explicit pose/order identity. Confirm every input artifact
+before assembly, then inspect the final sheet's dimensions, transparency, and
+frame order. Do not call raw estate HTTP, use a retired YAML lane, or invent
+an assembly script path.

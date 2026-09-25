@@ -1,3 +1,5 @@
+> **HISTORICAL VERIFICATION RECEIPT.** This record predates the gateway kill and documents an older DSH overlay. Current card-view proof is in the package tests, `tests/walls/ts/`, and the studio lane runbook.
+
 # W3 VERIFICATION — @melite-plugin/dsh-card-view
 
 > KILL-ERA NOTE (2026-09-10): this record predates the gateway kill —

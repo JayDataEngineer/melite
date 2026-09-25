@@ -1,62 +1,65 @@
-# @infer/dsh-provisioner
+# @melite/harness-provisioner
 
-Load the inference.cpp media stack into a **vanilla DSH** — extensions,
-profiles, and tools, one command each.
+The provisioner mounts the Melite estate into a vanilla DSH installation and
+renders ready-to-boot profiles. It is an integrator, not a gateway or a
+second application.
 
-## What it mounts (the bundle)
+## What it mounts
 
-`cordis.patch.yml` (the `dsh.bundle.patch`) inserts into any profile:
+The workspace-linked bundle mounts the estate host row and its DSH surfaces:
 
-| row | package | role |
-|---|---|---|
-| `infer-estate` | `@melite-plugin/melite-estate` | the estate row: card registry, runs registry + Typert remotes, disclose/manage/skills/load seats, serial queue |
-| `infer-tools` | `@melite-plugin/dsh-tools` | tool registry: `melite_discover`, `melite_load`, `melite_construct`, `comfy_manage`, `melite_skill_index`, `melite_skill_read`, `ledger_tail` (+ headless run doors `melite_flow`, `run_status`) |
-| `infer-card-view-host/client` | `@melite-plugin/dsh-card-view` | editable action cards in the conversation |
-| `infer-card-deck` | `@melite-plugin/dsh-card-deck` | sidebar deck: lanes, drafts, past cards |
-| `infer-gallery-host` | `@infer-media/dsh-gallery` | the runs gallery |
+| Surface | Current package |
+| --- | --- |
+| Estate composition | `@melite-plugin/dsh-estate` (the package manifest; a legacy `@melite-plugin/melite-estate` link/row may remain as a compatibility alias until the composition rename is completed) |
+| Tool plane | `@melite/harness-tools` |
+| Card view | `@melite-plugin/dsh-card-view` |
+| Card deck | `@melite-plugin/dsh-card-deck` |
+| Gallery | `@melite-plugin/dsh-gallery` |
+| Card and model packages | linked through the estate and engine packages |
 
-All rows name PACKAGES (pnpm `link:` back into this repo) — no baked
-absolute paths, so the checkout can move without re-provisioning.
-There is no gateway endpoint to configure (the kill, 2026-09-10):
-the tools answer in-process over the estate row's ctx seats.
+The package's own `cordis.patch.yml` and the packages' self-registration rows
+own the Cordis composition. This README does not duplicate those rows.
 
-## Install into an existing profile
+## Render profiles
 
-    dsh plugin --profile <name> add /path/to/inference.cpp/packages/harness/dsh/provisioner
+```sh
+node packages/harness/provisioner/bin/infer-provision.mjs all
+node packages/harness/provisioner/bin/infer-provision.mjs profile inference
+node packages/harness/provisioner/bin/infer-provision.mjs profile headless --dsh-home /tmp/melite-dsh
+```
 
-`dsh plugin` runs pnpm, sees the `dsh.bundle` declaration, and joins
-the layer stack automatically. Reboot the profile and the tools are live.
+`all` renders `inference`, `headless`, `estate`, and `melite-test`, then runs
+pnpm in each rendered profile. The output is machine-local state; the source
+of truth is this package and the workspace.
 
-## Provision profiles into any DSH_HOME
+## Interfaces
 
-    pnpm --dir /path/to/inference.cpp/packages/harness/dsh/provisioner exec infer-provision all
-    # or after a global link:
-    infer-provision all            # renders every profile (inference, headless, estate) + preset
-    infer-provision profile headless --dsh-home /tmp/vanilla
-    infer-provision profile estate --dsh-home /tmp/vanilla
+- `inference` and `melite-test` mount the web app and the browser card UI.
+- `headless` mounts the DSH headless app. `MELITE_HEADLESS=1` selects the
+  delegated run interface.
+- `estate` mounts the SDK app and the headless tool interface.
 
-Rendered profiles keep an EMPTY user layer — every row lives in this
-bundle, so `dsh plugin add` and rendered profiles can never drift.
+The tool transport is in-process through the mounted estate row. Do not add a
+`MELITE_GATEWAY` setting or a second HTTP service.
 
-## The two profiles
+## Requirements
 
-- **inference** — the studio: dsh-base + dsh-web-app + this bundle. Boot:
-  `dsh web --profile inference`. Pick "Inference Studio" in the preset
-  dropdown (installed by `infer-provision preset`).
-- **headless** — the agent server: this bundle over the plain base. Boot:
-  `dsh --profile headless "<task>"` — a one-shot agent with the full
-  estate tool surface in-process. For persistent serving wrap it
-  (systemd per task, or the task-board cron).
-- **estate** — the SDK job server: the estate row over the SDK app.
-  Boot: `dsh --profile estate` (driven over stdio JSON-RPC — the
-  estate-drive proof).
+- Node.js and pnpm;
+- a DSH installation with the referenced DSH packages available;
+- a checkout whose workspace links are installed.
 
-## Laws honored
+For framework changes, obtain the external DSH reference checkout described
+in [`../../../references/README.md`](../../../references/README.md). The rendered
+profile is not a substitute for reading that reference.
 
-- **INFERENCE LAW**: DSH is only the harness — all inference rides the
-  estate's serial GPU queue; cards in, stop door out.
-- **ENDPOINT LAW**: no second process, no hardcoded endpoints, no
-  `MELITE_GATEWAY` — the tools answer over ctx seats in-process.
-- Cards/compose live in the engine + estate packages
-  (`packages/engines/comfyui-cordis`, `packages/harness/estate-queue`),
-  never in DSH-side code.
+## Verification
+
+```sh
+pnpm --dir packages/harness/provisioner exec infer-provision profile headless --dsh-home /tmp/melite-dsh
+pnpm run test
+pnpm run lint
+```
+
+The profile renderer and its package links are the source of truth for profile
+membership; the current documentation index points here for the operator
+workflow.

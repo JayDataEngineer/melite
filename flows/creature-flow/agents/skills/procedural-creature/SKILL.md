@@ -1,77 +1,36 @@
-# procedural-creature — Route B creature lane (anyCreature in the card system)
+# procedural-creature — current authoring guidance
 
-> Operator law 2026-08-25: characters have TWO PATHS. (a) HUMANOID = the
-> mesh lanes (frozen body prefix + attachment lanes). (b) NON-humanoid =
-> THIS skill — the upstream anyCreature engine as a flow-native
-> family. Never hand-roll creatures through somax (W12: the SOMA-77
-> template destroys quadrupeds); never treat the monolith as a creature
-> maker.
+Status: **CURRENT**. Use this guidance only when the live catalog exposes the
+creature/anyCreature capability. The exact card, provider, model, and skill
+are discovered at runtime.
 
-## What it is
+## When it fits
 
-A thin shim family (`plugins/melite-3d/families/anycreature.ts`,
-`builder: null` — same contract as verify_glb) over the upstream engine:
-`node engine/cli.js spec.json out.glb`. CPU-only, seconds-fast, zero GPU
-dependence — usable while the GPU is busy or OOM'd. One JSON spec (joints
--> chains -> tube-volumes -> parts -> keyframe anims) compiles to a
-skinned, vertex-colored, AO-baked GLB. Clone:
-`references/anycreature` (gitignored; github.com/Ariescar/anyCreature,
-MIT). Spec authoring doctrine: the clone's `cards/SYNTAX.md` + the
-`example/wolf.json` _template (anchor numbers, then DEVIATE on purpose).
+Use for articulated non-humanoid creatures when the loaded contract supports
+the requested rig or mesh. Humanoids belong to their own lane. Do not invent
+an engine id or a local spec path from this file.
 
-## When to use
+## Agent loop
 
-- Articulated, keyframe-animated NON-humanoid creatures (beasts, bugs,
-  constructs). Humanoids belong to the mesh lanes.
-- Stylized/low-poly art direction (vertex colors, no textures) wanted.
-- The GPU is unavailable — this lane is CPU end-to-end except the final
-  turntable renders (Blender headless).
+```text
+melite_discover → melite_load → melite_construct
+```
 
-## Run loop
+In a browser session, stop after the user presses Run. In a headless
+commission, use `melite_flow` and monitor with `run_status` under the 3088
+runbook. Never shell out to a creature CLI or hand-build a graph as a
+substitute for the loaded card.
 
-1. Author or pick the spec. Default lane uses the upstream wolf anchor;
-   a new creature is a spec OBJECT (never a string; the family BLOCKS
-   strings) carried on the `anycreature` card run — `data/flows/*.yaml`
-   is documentation since the yaml door retired 2026-09-04.
-2. Compose-first: `POST /v1/flows/drafts` with
-   `{"model":"anycreature","spec":{...}}` → `{"draftId":"..."}`.
-3. Start the SAME body plus `"draft_id"` -> poll
-   `GET /v1/flows/status/{run_id}`.
-4. Steps: anycreature (build) -> verify_glb (ADVISORY: fail_on never,
-   stages structural/weights/deformation/visual — no arm_hand on beasts;
-   tighten only after calibrating floors on a known-good anyCreature GLB)
-   -> render_glb_views (8-angle turntable).
+## Authoring rules
 
-## Gate loop (AGENT EYES — blind_read retired 2026-08-25 by operator)
+- Carry the exact loaded parameter names; do not send an undeclared `spec`,
+  script, or engine field.
+- Preserve the declared review views and validation gates.
+- If the loaded contract has no rig or review capability, report that fact
+  instead of substituting another creature lane.
+- Read the returned run artifacts and report the concrete structural or visual
+  result.
 
-For EACH render view: call `describe_image` with a NEUTRAL factual
-prompt ("Describe this render: subject, silhouette, materials. If there
-is no clear subject, say so."). Never lead the witness with the spec's
-creature name. On empty extraction (~10% flake) retry once, then treat
-as unread. Cross-check: all views must agree on ONE subject — mutual
-inconsistency means a broken build, not a borderline one. Record the
-verdict + view-by-view extraction in session notes. If the reads say
-"a blob"/"a shape": regenerate with a BOLDER silhouette (push the spec's
-exaggeration vector — limb girth, mass thirds, head share). NEVER lower
-the bar.
-
-## Pitfalls
-
-- `spec` and `spec_path` are mutually exclusive — supplying both or
-  neither BLOCKS (no silent precedence).
-- The engine is the only spec validator; a semantic error surfaces as
-  the upstream's own error text in the step error. Read it; do not
-  paraphrase it away.
-- Provenance: the exact spec that ran lands beside the GLB as
-  `anycreature/spec.json` — cite it when iterating, not your memory of
-  the edit.
-- verify_glb DEFORMATION stage chokes on anyCreature output (zero-norm
-  quaternions in anim channels — invalid per glTF, written by the upstream
-  engine; scipy raises "Found zero norm quaternions"). This lane runs
-  structural/weights/visual only (run pmt8fy5cn2ljx8w, 2026-08-25). Do not
-  re-add deformation until the quats are fixed upstream or the harness grows
-  a tolerant reader — and fail_on stays "never" until floors are calibrated
-  on a known-good anyCreature GLB.
-- The GLB is vertex-colored by default; texture_project/step1x are NOT
-  part of this lane. If a textured creature is wanted, that is a NEW
-  lane (route it explicitly; do not grow this one silently).
+A CPU helper or external delivery script may be part of a separately approved
+operator workflow, but it is not automatically an estate card or a current
+runtime door.

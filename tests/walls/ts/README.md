@@ -37,8 +37,10 @@ rig, no second process.
   cross-host pin, artifact confinement, sidecar law).
 - `suites/ledger-tail.spec.ts` — the queue journal tail (matched/shown,
   clamp, prefix, lane).
-- `suites/drafts-remote.spec.ts`, `suites/queue-service.spec.ts` — the
-  drafts remote (CAS law) and the serial queue service.
+- `suites/drafts-remote.spec.ts` — the drafts remote (CAS law).
+- `suites/runs-remote.spec.ts` and the package-local
+  `packages/harness/estate-queue/tests/queue-core.spec.ts` — the runs
+  remote and serial queue service.
 - `suites/models-*.spec.ts`, `suites/families-*.spec.ts` — the model
   DECLs, catalog, cascade, and golden pins.
 - `suites/card-kinds-chain.spec.ts`, `suites/form-spec-parity.spec.ts`,

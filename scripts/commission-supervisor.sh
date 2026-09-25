@@ -26,7 +26,7 @@
 #   [out-prefix]          attempt logs land at <prefix>-attempt<k>.log
 # Knobs (tests stub the binary + zero the backoff):
 #   SUPERVISOR_DSH_BIN       (default /home/user/.local/bin/dsh)
-#   SUPERVISOR_PROFILE       (default melite-headless)
+#   SUPERVISOR_PROFILE       (default headless)
 #   SUPERVISOR_STATE_ROOT    (default the repo root)
 #   SUPERVISOR_MAX_ATTEMPTS  (default 3)
 #   SUPERVISOR_BACKOFF_S     (default 60)
@@ -37,7 +37,7 @@ set -uo pipefail
 PROMPT_FILE="${1:?usage: commission-supervisor.sh <launch-prompt-file> [out-prefix]}"
 OUT_PREFIX="${2:-/tmp/commission}"
 DSH_BIN="${SUPERVISOR_DSH_BIN:-/home/user/.local/bin/dsh}"
-PROFILE="${SUPERVISOR_PROFILE:-melite-headless}"
+PROFILE="${SUPERVISOR_PROFILE:-headless}"
 STATE_ROOT="${SUPERVISOR_STATE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 # §23 CROSS-ROOTS (the media-tab catch, 2026-09-24): the maker mints
 # under STATE_ROOT/output while the user's 3088 GUI estate serves

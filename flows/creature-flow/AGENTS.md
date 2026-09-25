@@ -1,64 +1,31 @@
-# AGENTS.md — creature-flow (agent lane notes)
+# creature-flow — authoring notes
 
-> This file was `flow.yaml` until 2026-09-05. The yaml flow format is
-> RETIRED estate-wide (the /v1/flows/yaml/* door family died with it);
-> this content survives as agent-facing LANE DOCUMENTATION only. It is
-> NOT a runtime flow format — the runtime doors are `flows/<name>/flow.py`
-> ({flow:name}), `{flow_inline}`, and `{model}`.
+Status: **AUTHORING LEAF — not an executable named flow**. This directory
+documents the non-humanoid creature intent. No row named `creature-flow` is
+currently present in the authoritative TypeScript flow registry. Discover
+the live cards/flows with `melite_discover`; do not address this leaf by an
+assumed flow name.
 
-name: creature-flow
-api: true
-description: >-
-  Non-humanoid creature flow — concept image → Pixal3D mesh via
-  ComfyUI native nodes → AutoRemesher quad budget (20K) → UltraShape
-  refinement → optional anyCreature skeleton bridge → turntable review.
-  NOTE: humanoid creatures use humanoid-flow, NOT this flow.
+## Intended composition
 
-# Plugin-field law: the plugin names the UPSTREAM SOURCE that owns
-# the compute — comfyui for every GPU node run (Pixal3D, UltraShape,
-# the /poser/bridge_creature rig endpoint in melite-poser-nodes),
-# melite-3d for its own flow-native CPU engines (autoremesher).
+Concept image → mesh generation → asset-class remesh budget → optional mesh
+refinement → optional creature rig bridge → turntable review. The exact
+provider, card, model, and parameter names must come from the live discovery
+catalog.
 
-steps:
-  - id: concept
-    type: image-gen
-    plugin: comfyui
-    description: Generate or provide a concept image
+## Agent contract
 
-  - id: mesh
-    type: pixal3d_native
-    plugin: comfyui
-    description: Generate textured 3D mesh via ComfyUI native Pixal3D nodes
+Use `melite_discover` to find the current flow/card, `melite_load` to read its
+contract, and `melite_construct` to author the shared bench. In browser mode
+the user presses Run. A headless commission may submit through
+`melite_flow` under the 3088 runbook. Do not use the retired file-based
+flow syntax, raw HTTP, or hand-built ComfyUI graphs.
 
-  - id: remesh
-    type: autoremesher
-    plugin: melite-3d
-    description: >-
-      Quad remesh to the asset-class budget. Default preset: creature
-      (20K). Multi-part anatomy (dragons, bosses): preset:
-      complex_creature (50K). One-off override: target_quads.
-    params:
-      preset: creature
+## Review rules
 
-  - id: refine
-    type: mesh_refine
-    plugin: comfyui
-    description: UltraShape image-guided mesh refinement (optional)
-    optional: true
-
-  - id: rig
-    type: creature_rig_bridge
-    plugin: comfyui
-    description: >-
-      Optional: skin the static mesh onto an anyCreature species skeleton
-      (species baked idle/move animations). The bridge POSTs to ComfyUI's
-      /poser/bridge_creature endpoint (melite-poser-nodes, CPU Blender
-      subprocess). Pass creature_path to the species GLB — breed one via
-      the anyCreature lane (procedural_creature.yaml) or pick from
-      references/anycreature example specs.
-    optional: true
-
-  - id: views
-    type: render_views
-    plugin: comfyui
-    description: Render 8 turntable views for quality gate
+- Use this leaf for creatures; use the humanoid leaf for humanoids.
+- Treat the concept image and declared mesh budget as the shape contract.
+- Refine before rigging when a rig is part of the composition.
+- Inspect the declared review views before delivery.
+- A source declaration or node name not present in the loaded bundle is not a
+  valid parameter.

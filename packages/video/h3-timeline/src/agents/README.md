@@ -1,27 +1,43 @@
-# agents/ — the h3-timeline card's LLM-facing instruction surface.
+# H3 timeline agent surface
 
-- `AGENT.md` — the card agent. Compose via `melite_construct` `add_stage`.
-- `prompts.yaml` — render-time prompt framing declaration (loaded by graph.py).
-- `skills/timeline-craft/` — general timelines authoring skill.
-- `skills/video-timeline/` — h3-timeline skill (draft→queue→fix loop, seam law, continuation).
+This directory contains the model-facing instructions for the current
+`h3-timeline` card. They are documentation and skills, not the executable
+renderer.
 
-## File diagram
+## Files
 
-```
-agents/
-├── AGENT.md                          # card agent
-├── prompts.yaml                      # render-time prompt framing declaration
-└── skills/
-    ├── timeline-craft/SKILL.md       # general timeline authoring
-    └── video-timeline/SKILL.md       # h3-timeline specific video skill
-```
+- `AGENT.md` — card-level composition and execution contract
+- `prompts.yaml` — card prompt framing data
+- `skills/directing/` — current human-like direction and seam guidance
+- `skills/video-timeline/` — timeline-specific composition guidance
+- `skills/grid-authoring/` — span/grid authoring details
 
-## What goes here
+The executable sources are `../card.ts`, `../timelineContract.ts`, and the
+shared card kit. If prose disagrees with those files, the source wins and the
+skill needs correction.
 
-Instructions for the composing model. The card's utility bootstraps in `agent.card.ts` and reads all files in this folder automatically. No Python code lives here. Schema, data, and task flows live in `python/`.
+## Current contract
 
-## THE ACTION CARD LAW (2026-09-04)
+- Browser/chat agents call `melite_discover`, `melite_load`, and
+  `melite_construct`; the user presses Run.
+- Headless commissions may call `melite_flow` and `run_status` through the
+  runbook.
+- A multi-call H3 document is one queue run and one film.
+- `params.calls` and `params.audio_clips` are the declared array surface;
+  malformed non-array containers refuse after the card's wire normalization,
+  while the declared wrapper/empty-array compatibility forms are normalized.
+- `transition` belongs on the incoming call: omitted means automatic carry;
+  `"cut"` requests a fresh window.
+- The current film tail saves each window, places unload boundaries, and
+  concatenates saved files in-graph. Historical Python graph paths are not
+  instructions.
 
-Action cards produce ONE ComfyUI workflow — ONE skeleton node, ONE `native.execute` call, ONE queue submission. See docs/cards/h3-timeline.md (repo root) for the full picture.
+## Authoring discipline
 
-The compose flow (`graph.py:emit_run_graph`) builds one massive workflow containing all windows chained in series. The skeleton has one node: `h3-film`. The gateway calls `native.execute` once. ComfyUI runs the multi-window film as one submission.
+Describe motion, sound, and continuity in prose. State only parameters that
+the loaded card actually declares. Read the current `melite_load` bundle and
+the focused skill; do not quote a model id, sampler, or hidden backend knob
+as if it were a user parameter.
+
+For a live commission, follow the repository runbook and inspect the final
+artifact. A window render or graph snapshot is not a film receipt.

@@ -1,6 +1,6 @@
 ---
 name: make-model
-description: Use when authoring a new model family package (a downloadable model declared as a family DECL under packages/models/), or when a family fails the law-hygiene declaration wall or the families-golden wall. Covers the DECL shape, the mods/ tree, the plugin registration seam, and the gates.
+description: Use when authoring a new model family package (a downloadable model declared as a family DECL under packages/models/), or when a family fails the law-hygiene or registry walls. Covers the DECL shape, the mods/ tree, the plugin registration seam, and the gates.
 ---
 
 # Make a model family
@@ -60,14 +60,13 @@ export const family: Plugin = {
   refuse; the models-flows wall).
 - `resolve()` — returns the DOWNLOAD ARTIFACT (url + sha256 + size),
   never a bare boolean.
-- enhance recipes — NO authoring path yet (known gap, 2026-09-09):
-  the disclosure bundle serves per-family enhance guidance from the
-  FROZEN form-spec capture (10/115 spec keys declare
-  enhance_prompt(s)); new families fall back to the kernel
-  `GENERIC_ENHANCE_RECIPE` (gateway-core schema/promptGuide.ts).
-  Do NOT invent a DECL field for recipes — the capture is the truth
-  until the gap is worked. (A different "recipe": the RECIPE LAW
-  variant rows below — never conflate the two.)
+- enhance recipes — the model package may provide
+  `agents/skills/prompt-enhance/SKILL.md`; the current loader
+  `packages/engines/comfyui-cordis/src/models/enhanceRecipes.ts`
+  composes it into the form-spec recipe seat. A recipe-less model falls back
+  to the generic enhance path; do not invent a DECL field for recipes. (A
+  different "recipe": the RECIPE LAW variant rows below — never conflate
+  the two.)
 
 ## 1b. RULE A — THE RECIPE LAW (2026-09-18)
 
@@ -145,9 +144,10 @@ The walls are vitest specs under `tests/walls/ts/suites/` (the old
 
 ```sh
 pnpm install
-node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/families-golden.spec.ts
+node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/families-transaction.spec.ts
 node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/models-registry.spec.ts
 node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/models-against-cards.spec.ts
+node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/models-flows.spec.ts
 # or all walls at once (plus every typecheck-owning package's tsc —
 # the battery DERIVES its package list from the manifests):
 node tools/hook-full-battery.mjs
@@ -155,19 +155,17 @@ cd packages/models/<family> && pnpm run typecheck
 node node_modules/vitest/vitest.mjs run packages/models/<family>/tests/decl.spec.ts
 ```
 
-A new family means NEW GOLDEN ROWS — the families-golden wall will
-fail until the golden snapshots are regenerated (that is the wall
-working; update the goldens, never the comparison). A family whose
-DECL touched the Recipe axis also re-checks the served pills on the
-live lane (`/v1/form-spec?model=<family>` — the pill defaults ARE
-the stamps; the lane needs a `tsdown` rebuild of melite-tools +
-service restart before the wire tells the truth).
+A new family must satisfy the live family registry, transaction, flow, and
+against-cards walls. The current proof set has no standalone
+`families-golden.spec.ts`; use the package-local `decl.spec.ts` and the
+registry/spec walls that exist in this checkout. A family whose DECL touched
+the Recipe axis also re-checks the served form spec through the normal
+`melite_load`/estate tool path; do not curl a guessed HTTP route.
 
 ## 4. Prove the family (no gateway — it died 2026-09-10)
 
-The family's proof is the walls above (families-golden ≡ the table,
-models-registry's resolve artifact, the transactional boot count)
-plus the live lane's catalog doors on the DSH lane (:3088) — the
-composition serves model discovery through the estate row, and the
-engine loads weights through `melite-comfyui.service` (:8188). Never
-restart a gateway; there is none.
+The family's proof is the walls above (the registry/spec comparisons
+and the transactional boot count) plus the live lane's catalog tools. The
+composition serves model discovery through the estate row, and the engine
+loads weights through the configured ComfyUI service. Never restart a
+retired gateway; there is none.

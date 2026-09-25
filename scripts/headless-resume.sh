@@ -16,14 +16,14 @@
 #
 # Knobs (tests stub the binary; operators inherit the recipe):
 #   HEADLESS_DSH_BIN  the dsh binary (default: the recipe path)
-#   HEADLESS_PROFILE  the headless profile (default: melite-headless)
+#   HEADLESS_PROFILE  the headless profile (default: headless)
 set -uo pipefail
 
 BRIEF="${1:?usage: headless-resume.sh <brief-file> [out-prefix] [timeout-s]}"
 OUT="${2:-/tmp/chat}"
 TIMEOUT_S="${3:-540}"
 DSH_BIN="${HEADLESS_DSH_BIN:-/home/user/.local/bin/dsh}"
-PROFILE="${HEADLESS_PROFILE:-melite-headless}"
+PROFILE="${HEADLESS_PROFILE:-headless}"
 export PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$PATH"
 
 OUT_TXT="${OUT}-out.txt"

@@ -1,119 +1,112 @@
-# Melite
+# Melite Repository Instructions
 
-This code repository is known Melite, an agent media creation kit.
+Melite is an agent media-creation kit. This repository has three layers:
 
-This creation kit features three distinct layers 
+## Layer A — DSH/Cordis harness, tools, and UI
 
-## Layer A: Harness, API-Call constructor, and UI Kit: Cordis
+Cordis is the sole composition framework for Layer A. DSH hosts the web app,
+headless app, SDK/job-server composition, services, remotes, and UI packages.
+Use the DSH/Cordis reference before implementing lifecycle, service, tool, or
+remote behavior:
 
-Cordis is the sole framework and architecture of layer A, any deviation from this is incorrect.
+- `references/cordis.pdf` and its tracked text extraction;
+- the external `references/deepseek-harness/` checkout;
+- `docs/dsh-homolog/` for the local mapping and doctrine.
 
-* Cordis servers as the constructor for UI elements, and the agenic harness through Deepseek Harness integration. The ideal goal of Layer A is to remain small code over DSH cordis; never an invented system.
-* Never assume how Cordis functions. There are two documents that define how you should interact with Cordis. DO NOT rely on memory, or assumptions. Always understand and apply the sources.
-	* The core document is this pdf file references/cordis-paper.txt, this describes how to use cordis to build apps
-	* Functional and up to date cordis usage can be found in
-		* references/deepseek-harness/docs/
-		* references/deepseek-harness/docs/cordis-tutorial/
-		* references/deepseek-harness/docs/cordis-api/
-		* references/deepseek-harness/docs/cookbook/
-  * A complete cordis application you should be mirroring: references/deepseek-harness
-  
+The DSH reference checkout is external and intentionally untracked. A fresh
+checkout that needs framework implementation context must obtain the pinned
+reference; do not invent a substitute from memory.
 
-## Layer B: The Engine: Comfyui, MCP servers
-* Layer A exists to call Layer B. 
-* The current phase of the project is currently focused on Comfyui.
-  * Layer A directly calls the ComfyUI Api as well as ComfyUI Manager API to infer and manage based on ComfyUI
-* The next phase is adding in the MCP servers of Unity, Blender, and AutoRemesh.
+## Layer B — Engines
 
-## Layer C: Engine Extensions
-	* This layer features the VENDORED tooling that the engines use, that extend engine capabilites without touching engine source code.
-	* In this phase, this is exclusively done though ComfyUI Extensions.
-		* Most are taken from upstream, but a few must live coded here.
+Layer A calls engines through the `engines` contract. ComfyUI is the primary
+engine. MCP-backed Blender and Unity lanes are mounted through the DSH MCP
+client and generic MCP engine provider. AutoRemesh is currently exposed as a
+ComfyUI/Layer C capability rather than as a new Layer A plugin.
 
+Layer A may call a Layer B API or a Layer C declared capability. It does not
+modify an engine's source in place.
 
-# Commands
+## Layer C — Engine extensions
+
+Layer C contains vendored first-party ComfyUI packs under
+`vendor/comfyui_extensions/` and declared external resources resolved through
+the provisioning/Manager path. A card or model declares what it requires; a
+missing required capability must refuse rather than silently fall back.
+
+## Commands
 
 ```sh
-pnpm install            # pnpm workspaces
-pnpm run test           # unit (vitest, all projects)
-pnpm run test:coverage  # CI coverage gate: per-file 100% on gated src (models DECL; ledger TEST-2 owns the exempt debt)
-pnpm run test:e2e       # real-API e2e; self-skips without DEEPSEEK_API_KEY
-pnpm run test:expected  # owner-local process expectations
-pnpm run test:bench     # performance benchmarks
-pnpm run test:snapshot  # keyless recorded-session replay
-pnpm run test:web       # web browser snapshot (replay); test:web:browser owns playwright
+pnpm install
+pnpm run test
+pnpm run test:coverage
+pnpm run test:e2e
+pnpm run test:expected
+pnpm run test:bench
+pnpm run test:snapshot
+pnpm run test:web
+pnpm run test:web:browser
+pnpm run lint
 ```
 
-Testing policy — `references/deepseek-harness/docs/testing.md`. Every
-non-trivial model- or product-user-visible change updates a keyless
-recorded-session snapshot in the same PR. `test:coverage`, not `test`,
-is the CI coverage gate.
+The e2e tier is mixed. Individual suites declare their own key, engine, lane,
+feature, or browser prerequisites; a self-skip is not a pass. `test:coverage`
+is the coverage command, but inspect the report because a failing or flaky
+suite can prevent coverage from being emitted. The full layout is in
+`tests/README.md` and `docs/testing/index.md`.
 
-THE 3088 AGENT LOOP (operator law 2026-09-23, paid for — never forget):
-generation-commission testing = ONE human-like task prompt to the headless
-maker on the 3088 lane, then the coding session ANALYZES THE LOGS. The exact
-recipe: `docs/RUNBOOK-3088-AGENT.md`. Read it before any "run the loop /
-test the system / commission" task. Never hand-drive the estate doors as a
-substitute; never spawn 3080 subagents for it; never ask the operator for
-details the runbook already holds.
+A non-trivial model- or product-user-visible change updates the relevant
+keyless recorded-session snapshot. Use the DSH testing policy in the external
+reference checkout when available.
 
-# Hard Rules
+## The 3088 agent loop
 
-## AGENT MODE — the media compose contract (chat sessions on the Melite lane)
+Generation commissioning is one human-like task prompt to the headless maker
+on the 3088 lane, followed by analysis of its transcript, run records, and
+artifacts. Read `docs/RUNBOOK-3088-AGENT.md` before any commission or
+end-to-end generation test. Never hand-drive the estate doors as a substitute,
+never use 3080 for the maker, and never ask the operator for information the
+runbook already specifies.
 
-You may be a CHAT session serving a user on this lane (not a coding
-session in the repo). If the user asks for media — an image, a video,
-audio, a mesh, an edit — you compose it on the estate; you never
-hand-roll the engine. THE FLOW, in order:
+## Agent mode
 
-1. `melite_discover` — find the card or flow for the request.
-2. `melite_load` — open it: params, models, skills.
-3. `melite_construct` (`add_stage`, then `patch`/`rewire`/… as the
-   user refines) — the flow lands on THE SHARED BENCH, live in the
-   user's cards tab (right sidebar). The user watches it land and
-   edits alongside you.
+A browser/chat agent serving a user composes on the shared bench:
 
-Your contract ENDS there — but the editing does not: keep refining
-the bench state as the user asks. RUNS START AT THE USER'S RUN
-PRESS on the card — never yours (no `melite_flow` in this mode; it
-is not in your tools, do not hunt for it).
+1. `melite_discover` — find the relevant card or flow;
+2. `melite_load` — open its contract, models, and skills;
+3. `melite_construct` — read and edit the shared bench with `add_stage`,
+   `patch`, `rewire`, and related verbs.
 
-NEVER, in agent mode: shell out to ComfyUI (no Bash curls to
-:8188, no hand-built graphs), no raw `/v1/flows/*` HTTP — the
-estate tools above own every door. `comfy_manage` is for checking
-server/pack state, not for generating.
+The flow is visible in the user's Cards tab. The user presses **Run**. The
+agent may continue editing as requested but must not execute in browser mode.
+A headless commission may use `melite_flow` and `run_status` through the same
+queue and draft-backed registration path.
 
-(The sections below govern coding sessions in this repository.)
+In agent mode, never shell out to ComfyUI, hand-build a graph, or use raw
+estate HTTP as a substitute for the tools. `comfy_manage` is for status and
+declared resource management, not generation.
 
-## LAW 1: ARCHITECTURAL INTEGRITY
+## Architectural integrity
 
-In order for the codebase to remain cohesive, you must always follow the three layered architecture
-* Layer A: The driver is always cordis, typescript, following the manifests and documents of references/cordis-paper.txt and references/deepseek-harness/*, never handrolled typescript or python. If CORDIS doesn't do a task in a certain way, as outlined by the documents, then the codebase cannot go around this.
-  - YOU ALWAYS READ THE DOCUMENATION, RATHER THAN DECIDING FOR YOURSELF.
-  - There is always potential for drift from the Cordis Golden Path, either in the codebase or repository specific documenation. This drift should be treated as degenerate, rather than a guide on what to do.
-* Layer B is not ours to modify through Layer A or Layer B directly. The only way to enhance what Layer B can do is done through Layer C. Layer A can only ever make API calls to B.
+- Keep Layer A in Cordis and TypeScript. Do not add a parallel Python core,
+  gateway application, plugin loader, or hand-rolled service framework.
+- Keep engine-specific graph and creative policy in the owning card or engine
+  package. Keep generic transport, queue, and lifecycle mechanics in the
+  shared seats.
+- Prefer the DSH/Cordis shape when it can express the requirement. Record a
+  justified divergence in `docs/CONFORMANCE_LEDGER.md`; silence is drift.
+- Use small changes with focused tests. Do not hide a failure behind a
+  fallback, compatibility shim, or broad exemption.
 
-## LAW 2: NO HACKS, NO SHORTCUTS
+## Documentation and status
 
-In large code pushes, it is tempting to follow degenerate behavior and create guidelines that make the task easier. This is even more critical at the grainular level.
+`docs/ROADMAP.md` is the forward-looking index of owed work and must be read
+before planning a new goal. `docs/CONFORMANCE_LEDGER.md` is the dated record
+of landed conformance and historical receipts. `docs/README.md` defines which
+documents are current, runbooks, design records, or historical evidence.
 
-For example, using 'unkwown' typing, writing legacy adapters instead of porting code, creating principals based on the 'easy' path - that then become enshrined. 
-
-The correct way to handle difficult work is to make a small change, make a quick test, and see if the new code works in isolatation, even if it does not yet match the entire codebase. This slow, sure method is more disirable then rushing to a 'complete' state where things run, but, are based on unprofessional code.
-  - This method is employed to prevent the issue of: establishing a code pattern, finding that it breaks all tests, then adding in hacks so it has a brigde to pass the old tests in a cycle of degeneration.
-
-## LAW 3: DOCUMENTATION
-
-Another method employed used to prevent degenerate code is to maintain a ledger and living record for law conformance: docs/CONFORMANCE_LEDGER.md
-This document holds a record of the mechanics of the code repository for an up to date accountment of where the mechanic falls:
-  * What is in alignment with DSH Cordis though importing DSH Cordis packages with reasoning.
-  * What is in alignment based on DSH Cordis principals, but features handrolls with reasoning.
-  * What is non in alignment with DSH Cordis with reasoning.
-
-By keeping track of this document, it can be shown where to code needs to better conform to the ideals outlined in this document.
-
-The forward-looking index of OWED work is docs/ROADMAP.md — the
-ledger archives what landed; the roadmap holds what is owed, each
-item with its evidence and gates. READ IT FIRST on any new session
-or goal round, before planning work: it survives context compaction
-(this is the compact law, operator 2026-09-20).
+Current documentation describes the DSH/Cordis implementation. Retired
+Python, gateway, C, and old ComfyUI seam material may remain as history only
+when clearly labeled. Update the owning declaration, current documentation,
+tests, and the relevant recorded-session snapshot together. Never commit
+credentials or machine secrets.

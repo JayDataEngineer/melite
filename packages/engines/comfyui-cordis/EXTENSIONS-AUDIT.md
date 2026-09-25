@@ -1,3 +1,5 @@
+> **HISTORICAL AUDIT.** This is a dated extension/management audit. Current extension declarations and provisioning are documented in `docs/design/provisioning-service.md` and `docs/comfyui/setup.md`.
+
 # custom_nodes audit — need / replace / retire
 
 2026-09-03. Method: three-way cross-reference —

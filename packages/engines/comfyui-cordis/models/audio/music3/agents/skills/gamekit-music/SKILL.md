@@ -1,25 +1,28 @@
 ---
 name: gamekit-music
-description: Survival theme music via music3 - three-section structured caption; draft_short iterate, final_long deliver.
+description: Gameplay music through the declared Music3 card and shared bench
 ---
 
-Deploy: `./setup.sh extensions` (declared packs: registry via comfy-mcp `install_node`; vendor packs symlinked from `vendor/comfyui_extensions/`). No `sync.sh` — the EXTENSION LAW (extensions DECLARED, never vendored) replaces the C-era `sync.sh` ritual.
+# gamekit-music
 
-## Caption contract (90% of quality)
-Plain `Label: text` lines, exactly three sections:
-Genre (2-4 tags + era) / Vocal Details (or "instrumental, no vocals") /
-Arrangement (instrumentation timeline, bpm, key).
+## Provisioning
 
-## Run
-Compose with `melite_construct` `add_stage`, `card="music",
-model="music3"` + your caption and `preset` (no curl); the run starts at the user's Run
-press, the progress rides the card.
-Iterate ONLY on `preset: draft_short`; render `final_long` once the caption
-is locked. Variations = same caption, new seeds.
+Use the current provisioning/management contract for declared resources. The
+skill does not own a downloader, a `sync.sh`, or a separate Manager client.
 
-## Gotcha
-`run_status` may list NO artifacts while the FLAC lands in the run dir -
-trust disk (`ls data/runs/<run_id>/`).
+## Compose and run
 
-## Deliver
-FLAC -> `data/delivery/unity/audio/music/`, manifest row appended.
+Use `melite_discover` → `melite_load` → `melite_construct`. Add the Music3
+card with the loaded caption and preset fields. Browser sessions stop at the
+user's Run press; a sanctioned headless commission may use `melite_flow` and
+`run_status`.
+
+The caption remains the primary creative control. Use the loaded schema for
+section structure, preset names, seeds, and duration. Do not infer a missing
+preset or silently substitute another music lane.
+
+## Gate and delivery
+
+Verify the returned audio artifact through the run/media surface and report
+its name, seed, and duration. An external game-kit copy/manifest step is
+separate and must have its own verification receipt.

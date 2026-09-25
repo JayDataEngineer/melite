@@ -1,3 +1,5 @@
+> **HISTORICAL VERIFICATION RECEIPT.** This is a dated gateway-era record. Current enhance/tool behavior is defined by the DSH source and current Vitest walls; do not copy its old routes or environment.
+
 # melite-tools — enhance on THE HARNESS MODEL (2026-08-22, rev 3)
 
 > KILL-ERA NOTE (2026-09-10): this record predates the gateway kill.

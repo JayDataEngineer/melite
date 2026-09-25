@@ -1,26 +1,35 @@
 ---
 name: gamekit-sfx
-description: Gameplay SFX wave via moss-sfx - five-event lane (combat, creature, foley, ambience); serial execution law.
+description: Gameplay SFX wave through the declared Moss SFX card and shared bench
 ---
 
-Deploy: `./setup.sh extensions` (declared packs: registry via comfy-mcp `install_node`; vendor packs symlinked from `vendor/comfyui_extensions/`). No `sync.sh`, no `data/flows/` — the EXTENSION LAW (extensions DECLARED, never vendored) replaces the C-era `sync.sh` ritual.
+# gamekit-sfx
 
-## Run
-Compose with `melite_construct` `add_stage`, `card="sfx",
-model="moss-sfx"` + your params (no curl). The run starts at the user's Run press; the
-progress rides the card. Five bricks
-run serially ON PURPOSE
-(concurrent audio model loads contend and fail).
+## Provisioning
 
-## Prompting law
-- Describe the SOUND, not the scene. "machete blade impact into rotten wood" not "epic battle".
-- ONE event per brick. Compound sounds = separate bricks.
-- 5-15 word prompts. Material + action + space ("wet mud footsteps, close mic").
+Use `./setup.sh verify` and `./setup.sh extensions` for declared resources.
+The current management/provisioning contract is documented in
+`docs/tools/comfy-manage.md`; do not invoke a separate downloader or assume a
+registry tool from this skill.
 
-## Gate
-No blind audio gate exists - judge by ear via the artifact URLs. Present a
-contact table (name / seed / duration) to the operator.
+## Compose and run
 
-## Deliver
-Copy FLACs to `data/delivery/unity/audio/sfx/` with descriptive names, then
-append rows to `data/delivery/unity/MANIFEST.json` (see unity-delivery/).
+Use `melite_discover` → `melite_load` → `melite_construct`. Add the SFX card
+with only the parameters returned by its bundle. Browser sessions stop at the
+user's Run press. A sanctioned headless commission may use `melite_flow` and
+`run_status`.
+
+The five-event set is intentionally serial. Do not start concurrent audio
+model runs or invent a bypass.
+
+## Prompting
+
+Describe one sound per stage: material, action, and space. Use a short,
+concrete phrase such as “wet mud footsteps, close microphone.” Read the
+current schema for seed, duration, and variation fields.
+
+## Gate and delivery
+
+Judge the returned audio artifact and report its name, seed, and duration.
+An external game-kit copy/manifest step is separate from the estate run and
+must use its own current verification contract.

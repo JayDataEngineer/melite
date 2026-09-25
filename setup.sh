@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
-# setup.sh — thin POSIX wrapper around the ONE provisioning orchestrator.
-#
-# One path, one truth, every platform: all logic lives in
-# packages/engines/comfyui-cordis/scripts/provision.ts, run on node
-# --experimental-strip-types (NO-ESTATE-PYTHON cut, 2026-09-08: the
-# management plane is reached through APIs — ComfyUI HTTP + the
-# comfy-mcp MCP server over stdio — never through in-process
-# python packages).
-#   Linux/macOS/Windows: ./setup.sh <command>   (verify | extensions | models | all | …)
+# setup.sh — thin POSIX wrapper around the TypeScript provisioning CLI.
+# The implementation lives in packages/engines/comfyui-cordis/scripts/provision.ts.
+# It provisions the configured ComfyUI instance and declared resources; the
+# estate host itself is DSH/Cordis and is started with a rendered profile.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 

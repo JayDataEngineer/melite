@@ -1,6 +1,6 @@
 ---
 name: make-flow
-description: Use when authoring a new multi-stage flow (a named pipeline of card stages served at /v1/flows/validate), or when a flow fails form-spec parity or the registry walls. Covers the REGISTRY declaration in estate-queue's flowsData.ts, the flows/ leaf (tool.json + agent docs), and the gates.
+description: Use when authoring a new multi-stage flow (a named pipeline of card stages served by the runs registry's validation path), or when a flow fails form-spec parity or the registry walls. Covers the REGISTRY declaration in estate-queue's flowsData.ts, the flows/ leaf (tool.json + agent docs), and the gates.
 ---
 
 # Make a flow
@@ -98,10 +98,8 @@ cd packages/harness/estate-queue && pnpm run typecheck
 
 ```sh
 MELITE_STATE_ROOT=$(mktemp -d) node test/estate-drive.mjs   # the live lane
-# or against the running lane's door:
-curl -s -X POST http://127.0.0.1:3088/v1/flows/validate \
-  -H 'content-type: application/json' \
-  -d '{"id":"<flow>","stages":[]}'
+# In an agent lane, prove the same contract through melite_load/melite_construct
+# validation. Do not curl a raw estate route.
 ```
 
 A validate with your stages expanded (and the honest refusal from
