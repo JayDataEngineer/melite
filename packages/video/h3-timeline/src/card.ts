@@ -821,8 +821,12 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     }
     if (stamps.dialogue !== undefined && stamps.dialogue.text !== '') {
       const t = stampClock(stamps.dialogue.delay_seconds)
+      // SPEAKER-NEUTRAL (attempt-019 maker finding): the stamp once
+      // hard-coded "She says" — a plainly male harbourmaster got a
+      // female pronoun in his own mouth. The speaker is whoever the
+      // window shows; the stamp never genders them.
       text = text.replace(/\s+$/, '') +
-        `\n\noverall_soundscape:\nAt ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nShe says: <d>[English] ${stamps.dialogue.text}</d>`
+        `\n\noverall_soundscape:\nAt ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nThe line: <d>[English] ${stamps.dialogue.text}</d>`
     }
     if (stamps.sfx !== undefined && stamps.sfx.text !== '') {
       // THE ONE-CLOCK LAW (2026-09-24): an authored sfx text that already
