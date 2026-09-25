@@ -76,16 +76,34 @@ describe("the schema gate arms", () => {
     );
   });
 
+  it("call spans must tile without gaps or overlaps", () => {
+    assert.throws(
+      () => def.schema({ calls: [SHOT(), SHOT({ text: "gap", start_frame: 57, end_frame: 124 })] }),
+      /calls\[1\]: start_frame 57 must equal previous end_frame 56/,
+    );
+    assert.throws(
+      () => def.schema({ calls: [SHOT(), SHOT({ text: "overlap", start_frame: 39, end_frame: 124 })] }),
+      /calls\[1\]: start_frame 39 must equal previous end_frame 56/,
+    );
+  });
+
+  it("unknown per-call keys refuse instead of riding inert", () => {
+    assert.throws(
+      () => def.schema({ calls: [SHOT({ unexpected: true })] }),
+      /calls\[0\]: unknown per-call key\(s\): unexpected/,
+    );
+  });
+
   it("wire-stringified call spans restore (the 035/009 stop-law receipt — calls is undeclared, the card owns the int law)", () => {
     const out = def.schema({
       calls: [
         { text: "morning roll", start_frame: "0", end_frame: "141" },
-        { text: "sign-on", start_frame: "141", end_frame: "282" },
+        { text: "sign-on", start_frame: "141", end_frame: "294" },
       ],
     }) as Record<string, unknown>;
     assert.deepEqual(out.calls, [
       { text: "morning roll", start_frame: 0, end_frame: 141 },
-      { text: "sign-on", start_frame: 141, end_frame: 282 },
+      { text: "sign-on", start_frame: 141, end_frame: 294 },
     ]);
   });
 
@@ -239,8 +257,12 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     // stays fresh, and the file tail gives every save its own
     // MeliteUnload boundary (the §20 ordering law).
     const g = new GraphBuilder();
+    // THE UNIFORM SPAN GATE, legal authored geometry: window 1 is
+    // 22+17k (56f), every carried window is 17k (68f, 153f, 119f) so
+    // its generated span+carry lands on 22+17k.
+    const CHAIN: ReadonlyArray<readonly [number, number]> = [[0, 56], [56, 124], [124, 277], [277, 396]];
     const shot = (i: number): Record<string, unknown> =>
-      SHOT({ text: `window ${i + 1} of the film`, start_frame: i * 56, end_frame: (i + 1) * 56 + 12 });
+      SHOT({ text: `window ${i + 1} of the film`, start_frame: CHAIN[i]![0], end_frame: CHAIN[i]![1] });
     def.compose(
       def.schema({ calls: [shot(0), shot(1), shot(2), shot(3)] }),
       model, g, "run_standing_seam",
@@ -289,7 +311,7 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "a hard cut", start_frame: 56, end_frame: 124, transition: "cut" })],
+        calls: [SHOT(), SHOT({ text: "a hard cut", start_frame: 56, end_frame: 129, transition: "cut" })],
       }),
       model, g, "run_hard_cut",
     );
@@ -380,6 +402,73 @@ describe("the render grid gate (roadmap §26 — zero-GPU refusal, never a sampl
   it("an on-grid pin rides the walk untouched", () => {
     const out = def.schema({ calls: [SHOT({ knobs: { length: 124 } })] }) as Record<string, unknown>;
     assert.equal(((out.calls as Array<Record<string, unknown>>)[0]!.knobs as Record<string, unknown>).length, 124);
+  });
+
+  it("a legal carried multi-call span keeps its authored end and grid length", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT({ end_frame: 124 }), SHOT({ text: "then a turn", start_frame: 124, end_frame: 277 })],
+      }),
+      model, g, "run_grid_legal_carried",
+    );
+    const out = graphOf(g);
+    assert.equal(scoped(out, "window2_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.length, 175);
+    assert.equal(scoped(out, "window2_", "MiniMaxH3FiniteSegmentFinalize")[0]![1].inputs.overlap_frames, 22);
+  });
+
+  it("an illegal carried multi-call span refuses at schema with the exact range and neighbors", () => {
+    assert.throws(
+      () => def.schema({
+        calls: [SHOT({ end_frame: 124 }), SHOT({ text: "then a turn", start_frame: 124, end_frame: 282 })],
+      }),
+      /calls\[1\]: authored range 124→282 cannot land on the 22\+17k carried grid; generated snapped range 102→277; legal neighboring end frames 277 and 294/,
+    );
+  });
+
+  it("the renderer repeats the carried-grid refusal when a walked document is stale", () => {
+    const walked = def.schema({
+      calls: [SHOT({ end_frame: 124 }), SHOT({ text: "then a turn", start_frame: 124, end_frame: 277 })],
+    }) as Record<string, unknown>;
+    ((walked.calls as Array<Record<string, unknown>>)[1]!.end_frame) = 282;
+    assert.throws(
+      () => def.compose(walked, model, new GraphBuilder(), "run_grid_illegal_carried"),
+      /h3-timeline window 2: authored range 124→282 cannot land on the 22\+17k carried grid; generated snapped range 102→277; legal neighboring end frames 277 and 294/,
+    );
+  });
+
+  it("the uniform span gate: single and cut windows refuse off-grid spans like carried ones", () => {
+    // THE TWO-LAW GAP, CLOSED: 282f was silently snapped to 277f for a
+    // first/cut window while a carried window refused. One law now.
+    assert.throws(
+      () => def.schema({ calls: [SHOT({ start_frame: 0, end_frame: 282 })] }),
+      /calls\[0\]: authored range 0→282 has length 282f, which cannot land on the 22\+17k grid \(nearest legal: 277f\)/,
+    );
+    const onGrid = def.schema({ calls: [SHOT({ start_frame: 0, end_frame: 277 })] }) as Record<string, unknown>;
+    assert.equal(onGrid.length, 277, "an admitted single window keeps its authored length, unsnapped");
+    const cut = def.schema({
+      calls: [SHOT({ end_frame: 124 }), SHOT({ start_frame: 124, end_frame: 282, transition: "cut" })],
+    }) as Record<string, unknown>;
+    assert.equal(cut.variant, "t4_chain");
+    // the cut span 158f IS 22+17k, so the refusal above was about the
+    // single window's 282f span, not about cut geometry
+    assert.throws(
+      () => def.schema({
+        calls: [SHOT({ end_frame: 124 }), SHOT({ start_frame: 124, end_frame: 268, transition: "cut" })],
+      }),
+      /calls\[1\]: authored range 124→268 has length 144f, which cannot land on the 22\+17k grid/,
+    );
+  });
+
+  it("the compose carrier repeats the uniform span refusal for a stale opener", () => {
+    // the film door re-rides the same law the walk admitted under:
+    // a mutated opener span refuses before any node is built
+    const walked = def.schema({ calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })] }) as Record<string, unknown>;
+    ((walked.calls as Array<Record<string, unknown>>)[0]!).end_frame = 68;
+    assert.throws(
+      () => def.compose(walked, model, new GraphBuilder(), "run_grid_illegal_opener"),
+      /h3-timeline window 1: authored range 0→68 has length 68f, which cannot land on the 22\+17k grid/,
+    );
   });
 
   it("an off-grid pin smuggled past the walk refuses at the film loop with the span voice", () => {
@@ -728,7 +817,7 @@ describe("the overlays cannot go around Schemaster", () => {
       def.schema({
         calls: [
           { text: "first push", start_frame: 0, end_frame: 90, knobs: { fps_seconds: 4 } },
-          { text: "second push", start_frame: 90, end_frame: 180 },
+          { text: "second push", start_frame: 90, end_frame: 192 },
         ],
       }),
       model, g, "run_nobed_pin",
@@ -892,17 +981,27 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     );
   });
 
-  it("a src-less row is skipped; a src without start_frame REFUSES loud (never a silent misplacement)", () => {
+  it("a positioned source-less row refuses at the mix door; a src without start_frame refuses loud", () => {
+    assert.throws(
+      () => def.compose(
+        def.schema({
+          calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+          audio_clips: [{ id: "junk", name: "", src: "", start_frame: 10 }],
+        }),
+        model, new GraphBuilder(), "run_clips_positioned_junk",
+      ),
+      /audio_clips: a positioned clip row has no src/,
+    );
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
-        audio_clips: [{ id: "junk", name: "", src: "", start_frame: 10 }],
+        audio_clips: [{ noSrc: true }],
       }),
       model, g, "run_clips_junk",
     );
     const out = graphOf(g);
-    assert.equal(ofClass(out, "LoadAudio").length, 0, "a src-less junk row rides nowhere");
+    assert.equal(ofClass(out, "LoadAudio").length, 0, "an unpositioned junk row rides nowhere");
     assert.equal(ofClass(out, "MeliteAudioSlice").length, 0);
     const g2 = new GraphBuilder();
     assert.throws(
@@ -1160,6 +1259,31 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
       assert.ok(/At 00:02\.750,/.test(pr), "timed at the stamp's local clock (delay 2.75s)");
       const w1r2v = scoped(out, "window1_", "MiniMaxH3ReferenceToVideo")[0]!;
       assert.ok(!String(w1r2v[1].inputs.prompt).includes("<d>"), "window1 (no stamp) carries no tag");
+    }
+    // THE ONE-CLOCK LAW (2026-09-24, the BRIEF9 cosmetic): an authored
+    // sfx text that opens with its own "At MM:SS.mmm," clock must never
+    // ride doubled — the stamp's clock is canonical, the authored one
+    // is trimmed at the seam.
+    {
+      const gs = new GraphBuilder();
+      def.compose(
+        def.schema({
+          calls: [SHOT(), SHOT({ start_frame: 56, end_frame: 124 })],
+          audio_clips: [CLIP({
+            class: "sfx",
+            text: "At 00:09.500, the crane horn blasts twice across the yard",
+          })],
+        }),
+        model, gs, "run_one_clock",
+      );
+      const outs = graphOf(gs);
+      const r2v = scoped(outs, "window2_", "MiniMaxH3ReferenceToVideo")[0]!;
+      const prompt = String(r2v[1].inputs.prompt);
+      const soundscape = prompt.slice(prompt.indexOf("overall_soundscape:"));
+      assert.ok(/At 00:02\.750, the crane horn blasts twice/.test(soundscape),
+        "the stamp's clock leads the trimmed authored text");
+      assert.ok(!soundscape.includes("At 00:09.500"), "the authored clock never doubles");
+      assert.equal((soundscape.match(/At 00:/g) ?? []).length, 1, "exactly one clock in the field");
     }
     // THE PINNED GUIDE (rewired 2026-09-22): the slice rides an
     // audio-only MiniMaxH3AddGuide keyframe at the clip's

@@ -228,13 +228,13 @@ const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
   ({
     repoRoot: ROOT,
     endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
-    models: {} as ManageCtx["models"],
+     models: { allDecls: () => [] } as unknown as ManageCtx["models"],
     provisioning: fakeProvisioning,
-    timeout: (cb: () => void, ms: number): (() => void) => {
-      seenTimeouts.push(ms);
-      cb();
-      return () => {};
-    },
+     timeout: (cb: () => void, ms: number): (() => void) => {
+       seenTimeouts.push(ms);
+       const timer = setTimeout(cb, ms);
+       return () => { clearTimeout(timer); };
+     },
     ...over,
   }) as unknown as ManageCtx;
 
@@ -340,15 +340,17 @@ describe("hStatus", () => {
       assert.equal(env.detail, "server not reachable");
       const data = env.data as {
         endpoint: { reachable: boolean; reason: string };
-        manager: { reachable: boolean; reason: string; security: string };
-        active_runs: unknown[];
-        routing: { mode: string };
-      };
-      assert.equal(data.endpoint.reachable, false);
+         manager: { reachable: boolean; reason: string; security: string };
+         active_runs: unknown[];
+         routing: { mode: string };
+         next_action: string;
+       };
+       assert.equal(data.endpoint.reachable, false);
       assert.equal(data.manager.reason, "endpoint not reachable");
       assert.match(data.manager.security, /unpinned/);
-      assert.deepEqual(data.active_runs, []);
-      assert.equal(data.routing.mode, "byo");
+       assert.deepEqual(data.active_runs, []);
+       assert.equal(data.routing.mode, "byo");
+       assert.equal(data.next_action, "endpoint_set");
     } finally {
       rmRoot();
     }
@@ -400,6 +402,64 @@ describe("hStatus", () => {
       assert.match(data.manager.security, /security_level=normal\+ \+git_url/);
       assert.deepEqual(data.active_runs, ["run-a", "run-b"]);
       assert.equal(data.routing.mode, "managed");
+      // THE ENGINE-BOOT RECEIPT (no-more-gaps law): with no receipt on
+      // disk the status names the blindness honestly; a written receipt
+      // surfaces age — the maker's /proc-invisible preflight instrument.
+      const boot0 = (env.data as { engine_boot: Record<string, unknown> }).engine_boot;
+      assert.equal(boot0.known, false);
+      assert.match(String(boot0.note), /age unknown/u);
+      const receiptDir = join(ROOT, "data", "runtime", "comfyui");
+      mkdirSync(receiptDir, { recursive: true });
+      writeFileSync(
+        join(receiptDir, ".estate-engine-boot.json"),
+        JSON.stringify({ boot_at: Date.now() - 93_000, source: "estate restart" }) + "\n",
+        "utf8",
+      );
+      const [, env2] = await manage({ action: "status" });
+      const boot1 = (env2.data as { engine_boot: Record<string, unknown> }).engine_boot;
+      assert.equal(boot1.known, true);
+      assert.equal(boot1.source, "estate restart");
+      assert.equal(typeof boot1.age_seconds, "number");
+      assert.ok((boot1.age_seconds as number) >= 93);
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("serves declared model coordinates and ComfyUI version tags", async () => {
+    mkRoot();
+    try {
+      const declaration = {
+        id: "wan",
+        label: "Wan",
+        genre: "video",
+        engine: "comfyui",
+        variants: [{
+          id: "preview",
+          label: "Preview",
+          cells: [
+            { quant: "fp8", label: "FP8" },
+            { quant: "q4", label: "Q4" },
+          ],
+        }],
+      };
+      route((url) => {
+        if (url.endsWith("/system_stats")) return json({ system: { comfyui_version: "9.9" }, devices: [] });
+        if (url.endsWith("/manager/version")) return json({ version: "3.0" });
+        if (url.endsWith("/comfyui_manager/comfyui_versions")) return json({ versions: [{ version: "v0.9", tag: "stable" }, "nightly"] });
+        return json({ is_processing: false, total_count: 0, done_count: 0 });
+      });
+      const ctx = CTX({ models: { allDecls: () => [declaration] } as unknown as ManageCtx["models"] });
+      const [, env] = await manage({ action: "status" }, ctx);
+      const data = env.data as {
+        model_options: Array<{ id: string; variants: Array<{ id: string; quants: Array<{ id: string }> }> }>;
+        comfyui_versions: Array<{ id: string; label: string; tag?: string }>;
+      };
+      assert.deepEqual(data.model_options[0]?.variants[0]?.quants.map((quant) => quant.id), ["fp8", "q4"]);
+      assert.deepEqual(data.comfyui_versions, [
+        { id: "v0.9", label: "v0.9 — stable", version: "v0.9", tag: "stable" },
+        { id: "nightly", label: "nightly" },
+      ]);
     } finally {
       rmRoot();
     }
@@ -469,6 +529,29 @@ describe("lifecycle guard + orchestration", () => {
   });
 });
 
+describe("hLifecycle cancellation", () => {
+  it("cancels an in-flight systemctl action", async () => {
+    mkRoot();
+    const bin = mkdtempSync(join(tmpdir(), "manage-cancel-"));
+    try {
+      const script = join(bin, "systemctl");
+      writeFileSync(script, "#!/bin/sh\nsleep 5\n", "utf8");
+      chmodSync(script, 0o755);
+      process.env.PATH = bin + ":" + realPath;
+      const controller = new AbortController();
+      const pending = manage({ action: "stop", force: true }, CTX({ signal: controller.signal }));
+      setTimeout(() => { controller.abort(); }, 10);
+      await assert.rejects(pending, (error: unknown) => {
+        assert.equal((error as Error).name, "AbortError");
+        return true;
+      });
+    } finally {
+      rmSync(bin, { recursive: true, force: true });
+      rmRoot();
+    }
+  });
+});
+
 describe("hLogs", () => {
   it("tails the journal (clamped) and degrades without it", async () => {
     mkRoot();
@@ -482,6 +565,46 @@ describe("hLogs", () => {
       const [c2, e2] = await manage({ action: "logs" });
       assert.equal(c2, 503);
       assert.match(e2.detail, /need the estate deployment's journal/);
+    } finally {
+      rmRoot();
+    }
+  });
+});
+
+describe("hStatus operations", () => {
+  it("normalizes status from the correlated operation before choosing next action", async () => {
+    mkRoot();
+    try {
+      const ref = extensionRef("pack");
+      const resource: ResourceStatus = {
+        ref,
+        state: "active",
+        items: [{ key: "extension:pack", kind: "extension", state: "active" }],
+      };
+      route((url) => {
+        if (url.endsWith("/system_stats")) return json({ system: { comfyui_version: "9.9" }, devices: [] });
+        if (url.endsWith("/manager/version")) return json({ version: "3.0" });
+        return json({ is_processing: false, total_count: 0, done_count: 0 });
+      });
+      const ctx = CTX({
+        provisioning: {
+          ...fakeProvisioning,
+          reconcile: async (): Promise<ResourceStatus[]> => [resource],
+          operationOf: () => ({
+            operationId: "op-current",
+            ref,
+            state: "restart_required",
+            items: [{ key: "extension:pack", kind: "extension", state: "restart_required" }],
+            startedAt: Date.now(),
+          }),
+        },
+      });
+      const [, env] = await manage({ action: "status" }, ctx);
+      const data = env.data as { next_action: string; resources: Array<{ state: string; operation_id: string }>; operations: Array<{ state: string }> };
+      assert.equal(data.resources[0]?.state, "restart_required");
+      assert.equal(data.resources[0]?.operation_id, "op-current");
+      assert.equal(data.operations[0]?.state, "restart_required");
+      assert.equal(data.next_action, "restart");
     } finally {
       rmRoot();
     }
@@ -565,18 +688,18 @@ describe("hInstallExtension", () => {
         railCalls++;
         return json({});
       });
-      const [code, env] = await manage({ action: "install_extension", nodes: ["pack", "ghost"] });
-      assert.equal(code, 200);
-      assert.equal(env.ok, true);
-      assert.equal(env.detail, "restart_required (1 item(s))");
+       const [code, env] = await manage({ action: "install_extension", nodes: ["pack", "ghost"] });
+       assert.equal(code, 500);
+       assert.equal(env.ok, false);
+       assert.equal(env.detail, "partial (1/2 extension(s) succeeded)");
       const data = env.data as {
         queued: string[];
         misses: string[];
         restart_required: boolean;
         state: string;
       };
-      assert.equal(data.state, "restart_required");
-      assert.equal(data.restart_required, true);
+       assert.equal(data.state, "partial");
+       assert.equal(data.restart_required, true);
       assert.deepEqual(data.queued, ["extension:pack"]);
       assert.deepEqual(data.misses, ['ghost: extension "ghost" is not declared']);
       assert.equal(railCalls, 0);
@@ -587,6 +710,50 @@ describe("hInstallExtension", () => {
       if (packItem?.kind !== "extension") throw new Error("expected extension plan item");
       assert.equal(packItem.version, "1.2.3");
       assert.equal(JSON.stringify(packPlan).includes("latest"), false);
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("keeps mixed successful packs restart-required without calling them partial", async () => {
+    mkRoot();
+    try {
+      const activeRef = extensionRef("active-pack");
+      const restartRef = extensionRef("restart-pack");
+      const activePlan = extensionPlan("active-pack");
+      const restartPlan = extensionPlan("restart-pack");
+      fakeProvisioning.plans.set(resourceKey(activeRef), activePlan);
+      fakeProvisioning.plans.set(resourceKey(restartRef), restartPlan);
+      fakeProvisioning.outcomes.set(resourceKey(activeRef), resultFor(activeRef, "active", [resultItem(activePlan.items[0]!)]));
+      fakeProvisioning.outcomes.set(resourceKey(restartRef), resultFor(restartRef, "restart_required", [resultItem(restartPlan.items[0]!, "restart_required")]));
+      const [code, env] = await manage({ action: "install_extension", nodes: ["active-pack", "restart-pack"] });
+      assert.equal(code, 200);
+      assert.equal(env.ok, true);
+      const data = env.data as { state: string; operation_id: string; next_action: string; operations: unknown[] };
+      assert.equal(data.state, "restart_required");
+      assert.match(data.operation_id, /^aggregate:/);
+      assert.equal(data.next_action, "restart");
+      assert.equal(data.operations.length, 2);
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("does not call a declared pack undeclared when ensure throws", async () => {
+    mkRoot();
+    try {
+      const ref = extensionRef("broken-pack");
+      const plan = extensionPlan("broken-pack");
+      fakeProvisioning.plans.set(resourceKey(ref), plan);
+      fakeProvisioning.outcomes.set(resourceKey(ref), new Error("manager install exploded"));
+      const [code, env] = await manage({ action: "install_extension", nodes: ["broken-pack"] });
+      assert.equal(code, 500);
+      assert.equal(env.ok, false);
+      assert.match(env.detail, /failed \(1 item\(s\)\)/);
+      const data = env.data as { missed: string[]; misses: string[]; operations: unknown[] };
+      assert.deepEqual(data.missed, ["broken-pack"]);
+      assert.match(data.misses[0] ?? "", /manager install exploded/);
+      assert.equal(data.operations.length, 1);
     } finally {
       rmRoot();
     }
@@ -759,6 +926,60 @@ describe("hProvisionModel", () => {
     }
   });
 
+  it("a declared family refusal does not masquerade as an unknown card", async () => {
+    mkRoot();
+    try {
+      const models = { allDecls: () => [{ id: "anima", variants: [] }] } as unknown as ManageCtx["models"];
+      const [code, env] = await manage(
+        { action: "provision_model", model: "anima" },
+        CTX({ models }),
+      );
+      assert.equal(code, 404);
+      assert.equal(env.ok, false);
+      assert.match(env.detail, /model "anima"/);
+      assert.doesNotMatch(env.detail, /unknown card/);
+      assert.deepEqual(fakeProvisioning.planCalls, [modelRef("anima")]);
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("recognizes declared variant and cell routes before card fallback", async () => {
+    mkRoot();
+    try {
+      const models = {
+        allDecls: () => [{ id: "family", variants: [{ route: "family-route", cells: [{ route: "family-cell" }] }] }],
+      } as unknown as ManageCtx["models"];
+      for (const id of ["family-route", "family-cell"]) {
+        const [code, env] = await manage({ action: "provision_model", model: id }, CTX({ models }));
+        assert.equal(code, 404);
+        assert.doesNotMatch(env.detail, /unknown card/);
+      }
+      assert.deepEqual(fakeProvisioning.planCalls, [modelRef("family-route"), modelRef("family-cell")]);
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("preserves a non-Error family-plan refusal", async () => {
+    mkRoot();
+    try {
+      const models = { allDecls: () => [{ id: "family", variants: [] }] } as unknown as ManageCtx["models"];
+      const provisioning = {
+        ...fakeProvisioning,
+        plan: async () => { throw "raw family refusal"; },
+      } as unknown as ManageCtx["provisioning"];
+      const [code, env] = await manage(
+        { action: "provision_model", model: "family" },
+        CTX({ models, provisioning }),
+      );
+      assert.equal(code, 404);
+      assert.equal(env.detail, "raw family refusal");
+    } finally {
+      rmRoot();
+    }
+  });
+
   it("maps verified, failed, and partial model result envelopes", async () => {
     mkRoot();
     try {
@@ -841,10 +1062,20 @@ describe("hRestart", () => {
       route(() => {
         throw new Error("boom");
       });
-      const [c5, e5] = await manage({ action: "restart", force: true });
-      assert.equal(c5, 503);
-      assert.match(e5.detail, /management plane unavailable/);
-      const [, e6] = await manage({ action: "restart", force: true }, CTX({ endpoint: () => ({}) }));
+       const [c5, e5] = await manage({ action: "restart", force: true });
+       assert.equal(c5, 503);
+       assert.match(e5.detail, /management plane unavailable/);
+       route((_url, init) => {
+         if (init?.signal?.aborted) return Promise.reject(new DOMException("aborted", "AbortError"));
+         return new Promise<Response>(() => {});
+       });
+       const [cTimeout, eTimeout] = await manage(
+         { action: "restart", force: true },
+         CTX({ timeout: (cb: () => void) => { cb(); return () => {}; } }),
+       );
+       assert.equal(cTimeout, 504);
+       assert.match(eTimeout.detail, /timed out/);
+       const [, e6] = await manage({ action: "restart", force: true }, CTX({ endpoint: () => ({}) }));
       assert.match(e6.detail, /byo endpoint/);
     } finally {
       rmRoot();
@@ -1027,13 +1258,13 @@ describe("lists + snapshots", () => {
       route(() => json({}));
       const [, e1b] = await manage({ action: "snapshot_list" });
       assert.deepEqual(e1b.data, []);
-      route((url) => (url.includes("/snapshot/save") ? json({}) : json({ items: ["fresh"] })));
+       route((url) => (url.includes("/snapshot/save") ? json({ snapshot: "fresh" }) : json({ items: ["fresh"] })));
       const [c2, e2] = await manage({ action: "snapshot_save" });
       assert.equal(c2, 200);
       assert.match(e2.detail, /snapshot saved: fresh/);
       route((url) => (url.includes("/snapshot/save") ? json({}) : json({ items: [] })));
-      const [, e2b] = await manage({ action: "snapshot_save" });
-      assert.match(e2b.detail, /snapshot saved: \?/);
+       const [, e2b] = await manage({ action: "snapshot_save" });
+       assert.match(e2b.detail, /snapshot save completed without a verifiable snapshot name/);
       route(() => text("bad", 500));
       const [c2c] = await manage({ action: "snapshot_save" });
       assert.equal(c2c, 502);
@@ -1053,10 +1284,10 @@ describe("lists + snapshots", () => {
     try {
       route(() => json({ is_processing: true, in_progress_count: 1, total_count: 1, done_count: 0 }));
       const t0 = Date.now();
-      const [code, env] = await manage({ action: "update", force: true, timeout_seconds: 0 });
-      assert.equal(code, 200);
-      assert.ok(Date.now() - t0 >= 900);
-      assert.match(env.detail, /update\(comfy\) queued/);
+       const [code, env] = await manage({ action: "update", force: true, timeout_seconds: 0 });
+       assert.equal(code, 504);
+       assert.ok(Date.now() - t0 >= 900);
+       assert.match(env.detail, /queue did not drain/);
     } finally {
       rmRoot();
     }
@@ -1124,9 +1355,9 @@ describe("residual arms", () => {
       assert.match(e2.detail, /stop issued/);
       fakeProvisioning.plans.set(resourceKey(extensionRef("c1")), extensionPlan("c1"));
       fakeProvisioning.plans.set(resourceKey(extensionRef("pack")), extensionPlan("pack"));
-      const [c3, e3] = await manage({ action: "install_extension", nodes: ["c1", "pack", "ghost"] });
-      assert.equal(c3, 200);
-      assert.match(e3.detail, /restart_required \(2 item\(s\)\)/);
+       const [c3, e3] = await manage({ action: "install_extension", nodes: ["c1", "pack", "ghost"] });
+       assert.equal(c3, 500);
+       assert.match(e3.detail, /partial \(2\/3 extension\(s\) succeeded\)/);
       const data = e3.data as { queued: string[]; misses: string[] };
       assert.deepEqual(data.queued, ["extension:c1", "extension:pack"]);
       assert.deepEqual(data.misses, ['ghost: extension "ghost" is not declared']);
@@ -1196,8 +1427,8 @@ describe("residual arms", () => {
       assert.equal(c2, 404);
       assert.match(e2.detail, /have: …/);
       route((url) => (url.includes("/snapshot/save") ? json({}) : json({})));
-      const [, e3] = await manage({ action: "snapshot_save" });
-      assert.match(e3.detail, /snapshot saved: \?/);
+       const [, e3] = await manage({ action: "snapshot_save" });
+       assert.match(e3.detail, /snapshot save completed without a verifiable snapshot name/);
     } finally {
       rmRoot();
     }

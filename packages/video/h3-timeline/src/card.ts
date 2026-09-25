@@ -42,7 +42,8 @@ import {
   IMAGE_BUS_SLOTS,
   REF_CAPS,
   assertGridLength,
-  gridSnap,
+  assertSpanGrid,
+  CALL_KEYS,
   imageReferenceCap,
   mergeDeclaredRefs,
   normalizeDeclaredRefs,
@@ -52,7 +53,7 @@ import {
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 
-export { assertGridLength, gridSnap } from './timelineContract.ts'
+export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from './timelineContract.ts'
 
 // inputs the t4 family templates OMIT whose pin defaults comfy-script
 // would auto-fill at serialization — the strip set lives in src/kit.ts
@@ -96,6 +97,7 @@ const SHARPEN_DEFAULTS = { method: 'rcas', strength: 0.3, radius: 1.0, threshold
 // t4r opener / t4_open window / t4_chain window).
 const FAMILIES = ['t4r', 't4_open', 't4_chain'] as const
 type Family = (typeof FAMILIES)[number]
+export const JSON_ARRAY_PARAMS = ['calls', 'audio_clips'] as const
 
 // family-conditional admission (the production renderer's explicit-set
 // gate on the renderer vocabulary: t4r openers reject the post-ladder
@@ -361,6 +363,12 @@ const coerceWireBoolean = (raw: Record<string, unknown>): Record<string, unknown
 
 export function schema(v: unknown): Record<string, unknown> {
   const raw = (v ?? {}) as Record<string, unknown>
+  if (raw.calls !== undefined && !Array.isArray(raw.calls)) {
+    throw new Error('h3-timeline: calls must be an array of shot rows')
+  }
+  if (raw.audio_clips !== undefined && !Array.isArray(raw.audio_clips)) {
+    throw new Error('h3-timeline: audio_clips must be an array of clip rows')
+  }
   // length null SURVIVES this walk on purpose (the walk-shadow fix:
   // multi-call docs keep null — per-window spans compute at compose).
   // THE ARRAY WIRE GUARD (P2, 2026-09-24): the schema's own dict
@@ -434,6 +442,10 @@ export function schema(v: unknown): Record<string, unknown> {
     // automatic, never user-authored lane physics)
     for (let i = 0; i < calls.length; i++) {
       const c = (calls[i] ?? {}) as Record<string, unknown>
+      const unknown = Object.keys(c).filter((key) => !CALL_KEYS.has(key)).sort()
+      if (unknown.length > 0) {
+        throw new Error(`calls[${i}]: unknown per-call key(s): ${unknown.join(', ')}`)
+      }
       for (const name of ['start_frame', 'end_frame'] as const) {
         const v = c[name]
         if (v === undefined || v === null || typeof v !== 'number' || !Number.isInteger(v)) {
@@ -443,6 +455,15 @@ export function schema(v: unknown): Record<string, unknown> {
       if ((c.end_frame as number) <= (c.start_frame as number)) {
         throw new Error(`calls[${i}]: end_frame ${c.end_frame} <= start_frame ${c.start_frame} — a reversed or empty span is not a shot`)
       }
+      if (i > 0) {
+        // the previous row was already validated as an int-span object
+        // (a hole at i-1 refused at its own iteration), so no fallback
+        const previous = calls[i - 1] as Record<string, unknown>
+        if (c.start_frame !== previous.end_frame) {
+          throw new Error(`calls[${i}]: start_frame ${String(c.start_frame)} must equal previous end_frame ${String(previous.end_frame)} — calls tile the film timeline; gaps and overlaps are refused`)
+        }
+      }
+      const transition = typeof c.transition === 'string' ? c.transition : undefined
       // THE GRID GATE (§26, the walk arm): a call's knobs.length pin
       // bypasses every snap arm downstream — validate at the walk so
       // `validate` refuses what the engine would kill at GPU cost.
@@ -450,6 +471,14 @@ export function schema(v: unknown): Record<string, unknown> {
       if (cknobs.length !== undefined && cknobs.length !== null) {
         assertGridLength(cknobs.length, `calls[${i}].knobs.length`)
       }
+      // THE UNIFORM SPAN GATE: one grid law for every window shape —
+      // carried windows (i>0, non-cut) generate span+22, first/cut
+      // windows generate their span, and an off-grid authored span is
+      // refused at admission instead of silently snapped.
+      assertSpanGrid({
+        start: c.start_frame as number,
+        end: c.end_frame as number,
+      }, `calls[${i}]`, i > 0 ? transitionOverlap(transition) : 0)
     }
     // (the shot-law loop above guarantees every row is a shaped
     // object with pinned int spans — no gap-arms needed here)
@@ -510,7 +539,7 @@ export function schema(v: unknown): Record<string, unknown> {
       const ef = rows[0].end_frame as number
       // (the shot laws above guarantee valid int spans — every
       // single-call doc rides the snap arm; no defensive else)
-      out.length = gridSnap(ef! - sf!)
+      out.length = (ef as number) - (sf as number)
     }
     // rows.length !== 1: the walked default stands (56 fresh-card,
     // inert for multi-call chains — spans own the film)
@@ -796,8 +825,13 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
         `\n\noverall_soundscape:\nAt ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nShe says: <d>[English] ${stamps.dialogue.text}</d>`
     }
     if (stamps.sfx !== undefined && stamps.sfx.text !== '') {
+      // THE ONE-CLOCK LAW (2026-09-24): an authored sfx text that already
+      // opens with its own "At MM:SS.mmm," clock must not carry two clocks —
+      // the stamp's clock is canonical, the authored one is trimmed.
+      const sfxText = stamps.sfx.text
+        .replace(/^\s*at\s+\d{1,2}:\d{2}(?:\.\d{1,3})?\s*[,-]\s*/i, '')
       text = text.replace(/\s+$/, '') +
-        `\n\noverall_soundscape:\nAt ${stampClock(stamps.sfx.delay_seconds)}, ${stamps.sfx.text}`
+        `\n\noverall_soundscape:\nAt ${stampClock(stamps.sfx.delay_seconds)}, ${sfxText}`
     }
     if (stamps.music !== undefined && stamps.music.text !== '') {
       text = text.replace(/\s+$/, '') +
@@ -838,6 +872,13 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       : call.refs
     if (guide !== '') stanza.image = guide
     else delete stanza.image
+    if (sf !== null && ef !== null && ef > sf) {
+      // THE UNIFORM SPAN GATE, second door: a stale or hand-built
+      // document re-rides the same law the walk admitted under, so
+      // the compose carrier refuses an off-grid span before any node
+      // is built (zero GPU) instead of trusting the render snap.
+      assertSpanGrid(spans[i]!, `h3-timeline window ${k}`, chainLike ? overlap : 0)
+    }
     // per-window length: the span rider law, unless the call's knobs pin one
     if (sf !== null && ef !== null && ef > sf && knobs.length === undefined) {
       // THE CARRY IS GENERATION (fixed 2026-09-23): the stanza
@@ -923,7 +964,6 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
   //      (IMAGE+AUDIO+fps) — CPU-side, strictly after every save;
   //   4. CreateVideo → SaveVideo h3_t4_film. The film is a graph
   //      output; the estate's engineFilmName presents it first.
-  //      (No clips ⇒ the duck/overlay loops below compose nothing.)
   //
   //   AUDIO-CARRYING films (the valve's SECOND ARM, 2026-09-24 — the
   //   VRAM-leak fix, operator law: WE USE COMFYUI, NEVER FFMPEG for
@@ -1030,84 +1070,12 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     })
     return
   }
-  // THE CLIPS-FREE ARM (byte-frozen — the 27-film precedent): the
-  // file tail assembles the film in-graph from the saved window
-  // files. The duck/overlay loops below iterate empty placements
-  // and compose nothing.
   const concat = g.node('MeliteConcatVideos', {
     videos: calls.map((_c, i): string => `h3_t4_w${i + 1}`).join(','),
     after,
   })
-  // THE DUCK MATRIX (D-M-E, 2026-09-22, the manifest's voice): the
-  // film's generated audio yields (duck_depth_db, 20ms ramps)
-  // during every clip that CONDITIONED a window — the doubling case
-  // (the model reproduces what it hears pinned: voice, blast,
-  // score). The MUSIC-class placements duck under the dialogue and
-  // sfx spans (the score yields to speech and impacts); dialogue
-  // and sfx ride at unity — an explosion bows to no whisper.
-  // (Clips-carrying films return through the second arm above, so
-  // this arm's loops iterate empty placements — the matrix lives in
-  // MeliteFilmAudioMix now; the loops stay as the arm's general
-  // mechanism, composing nothing.)
-  let filmAudio = concat.out(1)
-  if (manifest.duckSpans.length > 0) {
-    filmAudio = g.node('MeliteAudioDuck', {
-      audio: filmAudio, segments: manifest.duckSpanString,
-      // attack fast (20ms), release slow (350ms — the console law;
-      // a 20ms both-edges duck popped the bed back like a gate,
-      // operator catch c 2026-09-22)
-      gain_db: manifest.duckDb, ramp_ms: 20, release_ms: 350,
-    }).out(0)
-  }
-  // music-class placements pre-mix and duck BEFORE joining the film
-  // track (their own sub-bus); dialogue/sfx place straight onto the
-  // film track at unity. (LoadAudio: the submit-time upload walk
-  // stages data: URLs and asset URLs to input-dir names. Delay:
-  // head silence to the film seat, exact duration fit. Mix:
-  // length_mode 'base' — a clip never extends the cut.)
-  let musicBus: OutputHandle | undefined
-  for (const pl of manifest.placements) {
-    if (pl.cls === 'music') continue
-    const clip = clips[pl.clip]!
-    const loaded = g.node('LoadAudio', { audio: clip.src }).out()
-    const placed = g.node('MeliteAudioDelay', {
-      audio: loaded, delay_seconds: pl.filmSec,
-      duration_seconds: pl.durSec > 0
-        ? Math.round((pl.filmSec + pl.durSec) * 1000) / 1000
-        : 0,
-    }).out(0)
-    filmAudio = g.node('MeliteAudioMix', {
-      audio1: filmAudio, audio2: placed, length_mode: 'base',
-    }).out(0)
-  }
-  for (const pl of manifest.placements) {
-    if (pl.cls !== 'music') continue
-    const clip = clips[pl.clip]!
-    const loaded = g.node('LoadAudio', { audio: clip.src }).out()
-    const placed = g.node('MeliteAudioDelay', {
-      audio: loaded, delay_seconds: pl.filmSec,
-      duration_seconds: pl.durSec > 0
-        ? Math.round((pl.filmSec + pl.durSec) * 1000) / 1000
-        : 0,
-    }).out(0)
-    musicBus = musicBus === undefined ? placed : g.node('MeliteAudioMix', {
-      audio1: musicBus, audio2: placed, length_mode: 'base',
-    }).out(0)
-  }
-  if (musicBus !== undefined) {
-    if (manifest.musicDuckSpans.length > 0) {
-      musicBus = g.node('MeliteAudioDuck', {
-        audio: musicBus, segments: manifest.musicDuckSpanString,
-        gain_db: manifest.duckDb, ramp_ms: 20, release_ms: 350,
-      }).out(0)
-    }
-    filmAudio = g.node('MeliteAudioMix', {
-      audio1: filmAudio, audio2: musicBus, length_mode: 'base',
-    }).out(0)
-  }
   const filmCreated = g.node('CreateVideo', {
-    images: concat.out(0), audio: filmAudio, fps: concat.out(2), bit_depth: 8,
-    // color_space: pin autofill "sRGB"
+    images: concat.out(0), audio: concat.out(1), fps: concat.out(2), bit_depth: 8,
   })
   g.node('SaveVideo', {
     video: filmCreated.out(), filename_prefix: 'h3_t4_film',
@@ -1806,6 +1774,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       outputs: { default: 'video' },
       requiresModel: false,
     },
+    flowOutputBindings: [{ channel: 'default', node: '*', nodeClass: 'SaveVideo' }],
     // ADMISSION EXTRAS (the class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file —
@@ -1816,6 +1785,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // admission covers the card's own served surface, image-gen's
     // recipe-knob law).
     admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'motion_*', 'noise_seed', 'quant', 'recipe', 'ref_image_size', 'sla_*', 'variant'],
+    jsonArrayParams: JSON_ARRAY_PARAMS,
     // the packs the window graph rides (EXTENSION LAW) + the film
     // tail's file boundary (melite-utility-nodes: MeliteUnload +
     // MeliteConcatVideos) + the film audio (melite-audio-nodes: the
