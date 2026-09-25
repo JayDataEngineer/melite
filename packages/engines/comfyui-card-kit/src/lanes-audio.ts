@@ -102,21 +102,58 @@ export function yue2T1(p: Record<string, unknown>, model: ModelFacts, g: GraphBu
 // synth node → SaveAudio. The pin AUTOFILLs ride verbatim; per-card
 // param wiring is the only difference between the three lanes.
 
-/** The qvoice USE read (the LOAD half): the mod bag's first entry
- *  wins (max_stack 1) — its .qvoice path + identity strength. A
- *  flat string still rides (pre-seat drafts naming the bare
- *  path). Absent/blank = undefined — the persona branch renders
- *  (a preset timbre, never a clone). */
-function qvoiceUse(p: Record<string, unknown>): { path: string; strength: unknown } | undefined {
-  const bag = p.qvoice
-  if (Array.isArray(bag)) {
-    const first = bag[0] as Record<string, unknown> | undefined
-    const raw = first?.qvoice
-    const path = typeof raw === 'string' ? raw.trim() : ''
-    return path ? { path, strength: first?.voice_strength } : undefined
+export interface QVoiceUse {
+  path: string
+  strength: number | undefined
+}
+
+const QVOICE_NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/
+
+function qvoiceStrength(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const n = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && QVOICE_NUMBER.test(value.trim())
+      ? Number(value.trim())
+      : Number.NaN
+  if (!Number.isFinite(n) || n < 0 || n > 2) {
+    throw new Error("qvoice voice_strength must be a finite number from 0 to 2")
   }
-  const flat = typeof bag === 'string' ? bag.trim() : ''
-  return flat ? { path: flat, strength: undefined } : undefined
+  return n
+}
+
+function qvoiceRow(value: unknown, fallbackStrength: unknown): QVoiceUse | undefined {
+  if (value === undefined || value === null) return undefined
+  if (typeof value === 'string') {
+    const path = value.trim()
+    return path ? { path, strength: qvoiceStrength(fallbackStrength) } : undefined
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return undefined
+    if (value.length !== 1) throw new Error('qvoice accepts one media entry')
+    return qvoiceRow(value[0], fallbackStrength)
+  }
+  if (typeof value !== 'object') {
+    throw new Error('qvoice must be a path or one-entry qvoice bag')
+  }
+  const record = value as Record<string, unknown>
+  if (Object.keys(record).length === 1 && Object.prototype.hasOwnProperty.call(record, 'item')) {
+    const item = record['item']
+    if (Array.isArray(item) && item.length === 0) return undefined
+    return qvoiceRow(item, fallbackStrength)
+  }
+  const pathValue = record['qvoice']
+  if (typeof pathValue !== 'string') {
+    throw new Error('qvoice bag entry requires a string qvoice path')
+  }
+  const path = pathValue.trim()
+  if (!path) return undefined
+  const strength = record['voice_strength'] ?? fallbackStrength
+  return { path, strength: qvoiceStrength(strength) }
+}
+
+export function qvoiceUse(p: Record<string, unknown>): QVoiceUse | undefined {
+  return qvoiceRow(p['qvoice'], p['voice_strength'])
 }
 
 /** The tts_t1 block — the shared speak-text lane (moved verbatim
@@ -259,6 +296,19 @@ export function ttsDesignT1(p: Record<string, unknown>, model: ModelFacts, g: Gr
     seed,
   })
   saveAudio(g, studio.out(), `${runId}/design`)
+  // THE QVOICE PERSISTENCE LAW (operator 2026-09-25: ".qvoice files are
+  // preserved like the other media"): the studio mints the voice on the
+  // engine's models mount — every other run artifact persists in the
+  // run's own tree where run_status rows, artifact routes, and the
+  // cross-roots media tab serve it; the .qvoice alone stayed outside.
+  // One copy node lands it at <runId>/voices/<name>.qvoice (the mount
+  // original stays for the clone lanes). Order rides the studio's own
+  // audio output — never read, only proof the mint preceded the copy.
+  g.node('MeliteQVoiceCopy', {
+    voice_name: (p.voice_name as string).trim(),
+    dest_prefix: `${runId}/voices`,
+    audio: studio.out(),
+  })
 }
 
 /** The sfx_t1 block — the sound-effect lane (moved verbatim from the

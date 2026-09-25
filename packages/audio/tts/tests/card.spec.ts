@@ -87,6 +87,82 @@ describe("the tts compose gate", () => {
     assert.equal(def.flowOutputBindings?.[0]?.when?.({ text: "hello" }), true);
     assert.equal(def.flowOutputBindings?.[0]?.when?.({ voice_name: "saved" }), false);
   });
+
+  it("rejects a qvoice path in the preset speaker row with the lawful seat named", () => {
+    assert.throws(
+      () => def.compose({ text: "hello", voice: "/voices/old.qvoice" }, ttsModel, new GraphBuilder(), "r_path"),
+      /qvoice mod bag/,
+    );
+  });
+
+  it("a non-string lane marker falls back to the speak admission", () => {
+    const model = {
+      ...ttsModel,
+      lane_inputs: { ...ttsModel.lane_inputs, synth_lane: 7 },
+    } as ModelFacts;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "hello" }), model, g, "r_lane");
+    assert.ok(g.toJSON()["AudiocoreTTS.0"]);
+  });
+
+  it("a design export refuses reference inputs and a saved persona", () => {
+    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    assert.throws(
+      () => def.compose(def.schema({
+        text: "sample",
+        voice_name: "Cherry",
+        design_prompt: "warm",
+        ref_audio: "reference.wav",
+      }), designModel, new GraphBuilder(), "r_design_ref"),
+      /ref_audio|ref_text/,
+    );
+    assert.throws(
+      () => def.compose(def.schema({
+        text: "sample",
+        voice_name: "Cherry",
+        design_prompt: "warm",
+        qvoice: [{ qvoice: "Old.qvoice" }],
+      }), designModel, new GraphBuilder(), "r_design_qvoice"),
+      /qvoice|persona/,
+    );
+  });
+
+  it("THE QVOICE PERSISTENCE LAW: the design lane copies the minted .qvoice into the run tree", () => {
+    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    const g = new GraphBuilder();
+    def.compose(def.schema({
+      text: "sample",
+      voice_name: "harbourmaster",
+      design_prompt: "gravelly, warm, unhurried",
+    }), designModel, g, "r_qvoice_copy");
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown>; class_type: string }>;
+    const copies = Object.entries(graph).filter(([, n]) => n.class_type === "MeliteQVoiceCopy");
+    assert.equal(copies.length, 1, "exactly one copy node on the design lane");
+    const inputs = copies[0]![1].inputs;
+    assert.equal(inputs.voice_name, "harbourmaster", "the export's name is the search key");
+    assert.equal(inputs.dest_prefix, "r_qvoice_copy/voices", "the copy lands in the run's own tree");
+    assert.ok(Array.isArray(inputs.audio), "order rides the studio's audio wire");
+  });
+
+  it("the 0.6B CustomVoice lane refuses an instruction control", () => {
+    assert.throws(
+      () => def.compose(def.schema({ text: "hello", style_instruction: "warmly" }), ttsModel, new GraphBuilder(), "r_small_style"),
+      /style_instruction|0\.6B/,
+    );
+  });
+
+  it("instruction capability follows lane data when model.id names the opposite checkpoint", () => {
+    const smallLane = { ...ttsModel, id: "qwen3-tts-voicedesign" };
+    assert.throws(
+      () => def.compose(def.schema({ text: "hello", style_instruction: "warmly" }), smallLane, new GraphBuilder(), "r_wrong_large_id"),
+      /style_instruction|instruction_control/,
+    );
+
+    const instructionLane = { ...facts.models["qwen3-tts-voicedesign"]!, id: "qwen3-tts" };
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "hello", style_instruction: "warmly" }), instructionLane, g, "r_wrong_small_id");
+    assert.equal(g.toJSON()["AudiocoreTTS.0"]?.inputs.instruct, "warmly");
+  });
 });
 
 describe("the lane-bespoke leaves (the model guard — the persona knobs render on the CustomVoice variant only; instruction control differs per variant, never one shared knob)", () => {
@@ -133,6 +209,40 @@ describe("the lane-bespoke leaves (the model guard — the persona knobs render 
 });
 
 describe("the qvoice USE lane (the voice-lock LOAD half — a stated .qvoice performs the text through the studio's clone pipeline)", () => {
+  it("restores the singleton transport wrapper and keeps the saved media path", () => {
+    const model = facts.models["qwen3-tts-voicedesign"]!;
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        text: "The last light is ours.",
+        voice: "none",
+        style_instruction: "quietly affectionate",
+        qvoice: { item: { qvoice: "lastlight-keeper-v1.qvoice", voice_strength: "1" } },
+      }),
+      model,
+      g,
+      "run_wrapped",
+    );
+    const graph = g.toJSON();
+    const studio = graph["AudiocoreVoiceStudio.0"];
+    assert.ok(studio, "the wrapped qvoice reaches VoiceStudio");
+    assert.equal(studio.inputs.qvoice_path, "lastlight-keeper-v1.qvoice");
+    assert.equal(studio.inputs.voice_strength, 1);
+    assert.equal(studio.inputs.instruct, "quietly affectionate");
+    assert.equal(graph["AudiocoreTTS.0"], undefined, "the dead persona synth never replaces the saved voice");
+  });
+
+  it("keeps a flat qvoice path's top-level strength", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ text: "the words", qvoice: "Cherry.qvoice", voice_strength: 1.4 }),
+      ttsModel,
+      g,
+      "run_flat_strength",
+    );
+    assert.equal(g.toJSON()["AudiocoreVoiceStudio.0"]?.inputs.voice_strength, 1.4);
+  });
+
   it("a stated bag fires VoiceStudio generate with the artifact; the persona synth never rides", () => {
     const g = new GraphBuilder();
     def.compose(
