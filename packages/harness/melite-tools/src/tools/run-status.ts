@@ -132,7 +132,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         properties: {
           run_id: { type: 'string', required: true },
           status: { type: 'string' },
-          stages: { type: 'array', description: 'Per-stage rows: id/name, status, error when present.' },
+          stages: { type: 'array', description: 'Per-stage rows: id/name, status, error, declared output channels in [brackets] when present.' },
           artifacts: { type: 'array', description: 'Landed artifact rows (path, bytes). Empty until completed.' },
           error: { type: 'string', description: 'The EXACT failure string when status is error/failed, or the refusal text when the fetch refused.' },
           queue_position: { type: 'number', description: '0 = active; >0 = waiting in the FIFO.' },
@@ -187,11 +187,19 @@ export function runStatus(request: EstateRequest): ToolDefinition {
 
         const stageVoice = terminal && stages.length
           ? '\nstages: ' + stages.map((s) => {
-            const row = s as { id?: unknown; name?: unknown; error?: unknown }
+            const row = s as { id?: unknown; name?: unknown; error?: unknown; outputs?: unknown }
             const id = typeof row.id === 'string' ? row.id : (typeof row.name === 'string' ? row.name : '?')
             const st = typeof s?.status === 'string' ? s.status : '?'
             const err = typeof row.error === 'string' && row.error !== '' ? ' ! ' + row.error : ''
-            return id + ':' + st + err
+            // THE CHANNEL DOOR (commission 020's self-critique,
+            // 2026-09-25): the stage row has always carried its
+            // declared `outputs` (channel -> kind) — the render never
+            // said it, so the maker had no door to enumerate what a
+            // run publishes without reading the sidecar raw.
+            const outs = row.outputs !== null && typeof row.outputs === 'object' && !Array.isArray(row.outputs)
+              ? Object.keys(row.outputs as Record<string, unknown>)
+              : []
+            return id + ':' + st + err + (outs.length > 0 ? ' [' + outs.join(',') + ']' : '')
           }).join(', ')
           : ''
         const artPaths = terminal ? artifacts.slice(0, 4).map((a) => {

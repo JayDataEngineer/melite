@@ -116,6 +116,16 @@ describe('run_status execute — the run monitor', () => {
     assert.equal(out.queue_position, 0)
   })
 
+  test('the rich receipt fields project through the execute result', async () => {
+    const { request } = mockRequest(() => ({
+      run_id: 'r', status: 'completed', export_name: 'voice', export_path: '/voice.qvoice', test: true,
+    }))
+    const out = await runStatus(request).execute({ runId: 'r' }, exec) as Record<string, unknown>
+    assert.equal(out.export_name, 'voice')
+    assert.equal(out.export_path, '/voice.qvoice')
+    assert.equal(out.test, true)
+  })
+
   test('a gateway {error} refuses without a status', async () => {
     const { request } = mockRequest(() => ({ error: 'queue forgot this run' }))
     const tool = runStatus(request)
@@ -331,6 +341,22 @@ describe('run_status render — the human line', () => {
     )
   })
 
+  test('THE CHANNEL DOOR (commission 020): a terminal row voices its declared output channels', () => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    // the design lane's two channels, rendered — the maker can
+    // enumerate what a run publishes from the status line alone
+    assert.match(
+      text({ run_id: 'r1', status: 'completed', stages: [{ id: 'tts', status: 'completed', outputs: { default: 'audio', voices: 'voice' } }] }),
+      /tts:completed \[default,voices\]/,
+    )
+    // empty outputs stay silent (a plain run reads as before)
+    assert.doesNotMatch(
+      text({ run_id: 'r2', status: 'completed', stages: [{ id: 'tts', status: 'completed', outputs: {} }] }),
+      /\[/,
+    )
+  })
+
   test('the wait receipts render: expiry asks for another wait, waited_s proves absorption (Fix 5)', () => {
     const tool = runStatus((async () => ({})) as EstateRequest)
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
@@ -429,5 +455,46 @@ describe('run_status render — the live-age law (§36.6 progress-UX)', () => {
   test('a terminal row never renders age', () => {
     const line = text({ run_id: 'run-x', status: 'completed', stages: [{ id: 'h3-film', status: 'completed' }], run_age_s: 900 })
     assert.ok(!line.includes('age '), 'terminal rows stay receipt-shaped')
+  })
+
+  test('receipt rendering handles every stage and artifact spelling', () => {
+    const sparse = text({
+      run_id: 7,
+      status: 'failed',
+      stages: [
+        { name: 'named', status: 4, error: 'bad stage' },
+        { id: 'identified', status: 'completed', error: '' },
+        { id: 9, status: null, error: null },
+      ],
+      artifacts: ['/absolute/a.png', './relative/b.png', { path: 'object/c.png' }, { path: 8 }, 'plain.txt'],
+    })
+    assert.ok(sparse.includes('named:? ! bad stage'))
+    assert.ok(sparse.includes('identified:completed'))
+    assert.ok(sparse.includes('?:?'))
+    assert.ok(sparse.includes('/absolute/a.png'))
+    assert.ok(sparse.includes('relative/b.png'))
+    assert.ok(sparse.includes('object/c.png'))
+
+    const expanded = text({
+      run_id: 'run-abc',
+      status: 'completed',
+      stages: [{ id: 's', status: 'completed' }],
+      artifacts: ['run-abc', 'run-abc/one.flac', 'run-abc/run-abc/two.flac', './run-abc/three.flac', 'other/four.flac'],
+    })
+    assert.ok(expanded.includes('output/run-abc'))
+    assert.ok(expanded.includes('test-output/') === false)
+    assert.ok(expanded.includes('(+1 more)'))
+  })
+
+  test('test runs select the test output root and the exact run directory arm', () => {
+    const line = text({
+      run_id: 'run-abc',
+      status: 'completed',
+      stages: [],
+      artifacts: ['run-abc', 'run-abc/file.flac'],
+      test: true,
+    })
+    assert.ok(line.includes('test-output/run-abc'))
+    assert.ok(line.includes('test-output/run-abc/file.flac'))
   })
 });

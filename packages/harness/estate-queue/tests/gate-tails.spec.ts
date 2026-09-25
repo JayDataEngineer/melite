@@ -13,7 +13,9 @@ import { join } from "node:path";
 import { QueueService } from "../src/service.ts";
 import { envelopeRefusal } from "../src/runsStart.ts";
 import { inlineEdge } from "../src/runsValidateInline.ts";
-import { modelValidateArm } from "../src/runsValidateArms.ts";
+import { modelValidateArm, validate } from "../src/runsValidateArms.ts";
+import { CardArmError } from "../src/cardsArmError.ts";
+import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 
 describe("QueueService's unpinned-root law", () => {
   it("no repoRoot and no MELITE_STATE_ROOT refuses at boot, loud", async () => {
@@ -77,6 +79,91 @@ describe("modelValidateArm (the model envelope)", () => {
     expect(payload.model).toBe("mask");
     expect(payload.card).toBe(true);
     await ctx.fiber.dispose();
+  });
+
+  // THE ONE-ADMISSION LAW (commission 018's self-critique,
+  // 2026-09-25): the inline validate arm composes card stages
+  // through the registry's phase1Card — the same walk the start
+  // door rides. A schema pass is no longer a runnable promise.
+  const cardStage = (params: Record<string, unknown>): Record<string, unknown> => ({
+    id: "s_0", engine: "comfyui", inputs: {}, outputs: { out: "image" }, expected: {},
+    card: "tts", card_io: { out: "image" }, skip_when: null, params, description: "d",
+  });
+  const regWith = (phase1Card: unknown, prime: boolean): Record<string, unknown> => ({
+    defsSync: (): unknown => new Map([
+      ["tts", { requiresModel: true, schema: (p: unknown): unknown => p }],
+    ]),
+    primeObjectInfo: (): Promise<boolean> => Promise.resolve(prime),
+    phase1Card,
+  });
+
+  it("a schema-passing stage that refuses at compose fails VALIDATE with the stage's voice (018's law)", async () => {
+    const ctx = new Context();
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
+      (): Promise<unknown> => Promise.reject(
+        new CardArmError(400, "card_compose phase 1: $.ref_audio resolves to no estate file", "card_compose"),
+      ),
+      true,
+    );
+    try {
+      await expect(validate(
+        { flow_inline: { id: "bench", stages: [cardStage({ model: "qwen3-tts", text: "hi", ref_audio: "/v1/assets/runs/run-x/ghost.flac" })] } },
+        new AbortController().signal,
+        ctx,
+      )).rejects.toMatchObject({
+        message: expect.stringContaining('"s_0"'),
+      });
+      // the refusal voice carries the compose law, not just schema
+      await validate(
+        { flow_inline: { id: "bench", stages: [cardStage({ model: "qwen3-tts", text: "hi", ref_audio: "/v1/assets/runs/run-x/ghost.flac" })] } },
+        new AbortController().signal,
+        ctx,
+      ).catch((e: unknown) => {
+        expect((e as Error).message).toContain("resolves to no estate file");
+      });
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+
+  it("an unreachable engine degrades to the named note, never a closed refusal (bench seat law)", async () => {
+    const ctx = new Context();
+    let composed = false;
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
+      (): Promise<unknown> => { composed = true; return Promise.resolve({}); },
+      false,
+    );
+    try {
+      const out = await validate(
+        { flow_inline: { id: "bench", stages: [cardStage({ model: "qwen3-tts", text: "hi" })] } },
+        new AbortController().signal,
+        ctx,
+      ) as Record<string, unknown>;
+      expect(out["ok"]).toBe(true);
+      expect(String(out["note"])).toContain("compose walk skipped");
+      expect(composed).toBe(false);
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+
+  it("a clean compose answers the plain 200 payload (no note key)", async () => {
+    const ctx = new Context();
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
+      (): Promise<unknown> => Promise.resolve({}),
+      true,
+    );
+    try {
+      const out = await validate(
+        { flow_inline: { id: "bench", stages: [cardStage({ model: "qwen3-tts", text: "hi" })] } },
+        new AbortController().signal,
+        ctx,
+      ) as Record<string, unknown>;
+      expect(out["ok"]).toBe(true);
+      expect(out["note"]).toBeUndefined();
+    } finally {
+      await ctx.fiber.dispose();
+    }
   });
 
   it("an unknown id keeps the catalog voice (the card-aware arm widens nothing)", async () => {

@@ -83,7 +83,26 @@ export async function validate(
     // named debt the flow test surfaced (2026-09-13): a bench stage
     // could run but never validate.
     const answer: FlowsValidateAnswer = inlineArm(liveDoc, ctx.cardRegistry);
-    if (answer.status === 200) return answer.payload;
+    if (answer.status === 200) {
+      // THE ONE-ADMISSION LAW (commission 018's sharpest
+      // self-critique, 2026-09-25): a green compile was never a
+      // runnable promise — the start door composes card stages
+      // through phase1Card (overlay → admission → lane presence →
+      // spell pool → composeOnce) and that walk refused params the
+      // lattice's schema alone passed (attempt-018: the directory
+      // default died at the compose guard, validate said green).
+      // Validate now runs the SAME walk per card stage. One honest
+      // degradation: an unreachable engine keeps validate usable —
+      // the payload NAMES the skipped walk instead of refusing
+      // closed (the {model:} arm's composeValidateCard keeps its
+      // stricter closed voice; the bench seat must validate on
+      // engine-less boxes).
+      const note = await composeCardStagesAtValidate(liveDoc, ctx.cardRegistry);
+      if (typeof note === "string" && note.startsWith("REFUSED ")) {
+        throw new RemoteError("runs/invalid-request", note.slice(8), { loc: "stages" });
+      }
+      return note === null ? answer.payload : { ...answer.payload, note };
+    }
     const p = answer.payload as {
       error: string;
       code: string;
@@ -105,6 +124,57 @@ export async function validate(
       loc: p["loc"],
       errors: p["errors"],
     });
+  }
+
+
+
+  /** THE ONE-ADMISSION LAW's inline half: compose every card stage
+   *  through the registry's phase1Card — the SAME walk the start
+   *  door rides ($spell bodies skip the graph by their own law).
+   *  null = composed clean, no note. A string starting "REFUSED "
+   *  carries the refusal voice; any other string is a degradation
+   *  note (engine unreachable — the schema-only verdict stands,
+   *  named). */
+  async function composeCardStagesAtValidate(
+    liveDoc: unknown,
+    svc: unknown,
+  ): Promise<string | null> {
+    const seat = svc as {
+      phase1Card?: unknown;
+      primeObjectInfo?: unknown;
+    } | null;
+    if (seat === null ||
+        typeof seat.phase1Card !== "function" ||
+        typeof seat.primeObjectInfo !== "function") return null;
+    const doc = liveDoc as { flow_inline?: { stages?: unknown[] } };
+    const stages: unknown[] = Array.isArray(doc?.flow_inline?.stages) ? (doc.flow_inline.stages as unknown[]) : [];
+    const cardStages = stages.filter((st): st is Record<string, unknown> =>
+      st !== null && typeof st === "object" && !Array.isArray(st) &&
+      typeof (st as Record<string, unknown>)["card"] === "string" && (st as Record<string, unknown>)["card"] !== "");
+    if (cardStages.length === 0) return null;
+    if (!(await (seat as unknown as { primeObjectInfo(): Promise<boolean> }).primeObjectInfo())) {
+      return "compose walk skipped: engine unreachable (schema-only verdict — the start door composes before queuing)";
+    }
+    for (const st of cardStages) {
+      const params: Record<string, unknown> =
+        st["params"] !== null && typeof st["params"] === "object" && !Array.isArray(st["params"])
+          ? { ...(st["params"] as Record<string, unknown>) }
+          : {};
+      const mid: string = typeof params["model"] === "string" && params["model"] !== ""
+        ? params["model"] : String(st["card"]);
+      const body: Record<string, unknown> = { ...params, model: mid };
+      try {
+        await (seat as unknown as {
+          phase1Card(body: Record<string, unknown>, mid: string): Promise<unknown>;
+        }).phase1Card(body, mid);
+      } catch (e) {
+        if (e instanceof CardArmError) {
+          return "REFUSED stage " + JSON.stringify(String(st["id"] ?? st["card"])) + ": " + e.message;
+        }
+        throw e;
+      }
+    }
+    return null;
   }
 
   /** Map a CardArmError onto the refusal envelope (door-verbatim:
