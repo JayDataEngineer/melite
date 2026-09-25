@@ -4,35 +4,42 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { Req, ManageCtx } from "./managePlane.ts";
+import { sweepOutputRoots } from "./cardsDangling.ts";
 
 // ── runs / security / probe (TS-native) ────────────────────────────
 const STATUS_RE = /"status"\s*:\s*"([a-z]+)"/;
 
 /** Sidecar scan: run dirs whose _flow.json reads running|queued.
- *  Anchored at the REPO data tree (inherited behavior — the scan
- *  follows the estate, not the state root). Conservative: a stale
- *  "running" sidecar refuses the restart (safe). */
-export function activeRuns(repoRoot: string): string[] {
-  const dir = join(repoRoot, "data", "runs", "output");
-  let names: string[];
-  try {
-    names = readdirSync(dir);
-  } catch {
-    return [];
-  }
+ *  THE ROOTS UNIFICATION (2026-09-25, the handoff item): the scan
+ *  walks the SAME roots manifest as every run-resolving door — own
+ *  state root first, then MELITE_STATE_ROOTS extras (§23) — so a
+ *  live run under the maker's tree guards the restart exactly like
+ *  one under the estate's own tree. Before, a maker-lane run was
+ *  invisible to the restart guard (status said idle, restart tore
+ *  a live render). Conservative as ever: a stale "running" sidecar
+ *  refuses the restart (safe). */
+export function activeRuns(): string[] {
   const out: string[] = [];
-  for (const name of names) {
-    if (!name.startsWith("run-")) continue;
-    let buf: string;
+  for (const dir of sweepOutputRoots()) {
+    let names: string[];
     try {
-      buf = readFileSync(join(dir, name, "_flow.json"), "utf-8").slice(0, 8191);
+      names = readdirSync(dir);
     } catch {
       continue;
     }
-    const m = STATUS_RE.exec(buf);
-    if (m && (m[1] === "running" || m[1] === "queued")) out.push(name);
+    for (const name of names) {
+      if (!name.startsWith("run-")) continue;
+      let buf: string;
+      try {
+        buf = readFileSync(join(dir, name, "_flow.json"), "utf-8").slice(0, 8191);
+      } catch {
+        continue;
+      }
+      const m = STATUS_RE.exec(buf);
+      if (m && (m[1] === "running" || m[1] === "queued")) out.push(name);
+    }
   }
-  return out.sort();
+  return [...new Set(out)].sort();
 }
 
 /** The manager's live security view (READ ONLY — the manager reads
@@ -78,6 +85,10 @@ export async function probeEndpoint(mctx: ManageCtx): Promise<EndpointView> {
   const url = typeof cfg["url"] === "string" ? (cfg["url"] as string).replace(/\/+$/, "") : "";
   if (url === "") return { reachable: false, reason: "no url in endpoint config" };
   const ctrl = new AbortController();
+  const caller = mctx.signal;
+  const onCallerAbort = (): void => ctrl.abort(caller?.reason);
+  if (caller?.aborted === true) onCallerAbort();
+  else caller?.addEventListener("abort", onCallerAbort, { once: true });
   const t = mctx.timeout((): void => ctrl.abort(), 5000);
   try {
     const r = await fetch(url + "/system_stats", { signal: ctrl.signal });
@@ -90,8 +101,12 @@ export async function probeEndpoint(mctx: ManageCtx): Promise<EndpointView> {
     }));
     return { reachable: true, url, comfyui_version: sysinfo["comfyui_version"], devices };
   } catch (e) {
+    if (caller?.aborted === true) {
+      throw caller.reason instanceof Error ? caller.reason : new DOMException("The operation was aborted", "AbortError");
+    }
     return { reachable: false, url, reason: String(e).slice(0, 120) };
   } finally {
+    caller?.removeEventListener("abort", onCallerAbort);
     t();
   }
 }

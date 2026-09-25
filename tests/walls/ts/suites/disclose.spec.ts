@@ -71,7 +71,7 @@ async function boot(): Promise<{ ctx: Context; disclose: DiscloseService }> {
   await ctx.plugin(discloseProvider as never);
   const disclose = ctx.get("disclose", false) as DiscloseService | undefined;
   assert.ok(disclose, "the disclose seat is live");
-  return { ctx, disclose };
+  return { ctx, disclose, root };
 }
 
 test("discover — both planes, live rows, the door's voices", async () => {
@@ -165,9 +165,12 @@ test("the manage seat — the door's vocabulary + refusal envelope (REBUILD-15)"
   //    can never reach the live engine (provision≠managed → the BYO
   //    estateOnly refusal fires before any rail call). Forge an
   //    active sidecar in the repo data tree the scan reads.
-  const { resolveRepoRoot } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const { mkdirSync, writeFileSync, rmSync } = await import("node:fs");
-  const outDir = join(resolveRepoRoot(), "data", "runs", "output", "run-manage-guard-test");
+  // THE ROOTS UNIFICATION (2026-09-25): the restart guard reads the
+  // roots manifest (this test's OWN pinned state root), never the
+  // repo tree — forge the live sidecar where the estate's execution
+  // also lives.
+  const outDir = join(root, "output", "run-manage-guard-test");
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "_flow.json"), '{"status": "running"}');
   const hadSandbox = process.env["INFERENCE_TEST_SANDBOX"];

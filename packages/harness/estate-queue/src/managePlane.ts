@@ -468,7 +468,7 @@ function versionOptions(doc: unknown): VersionOption[] {
 async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   const cfg = ctx.endpoint();
   const endpoint = await probeEndpoint(ctx);
-  const active = activeRuns(ctx.repoRoot);
+  const active = activeRuns();
   const routing = { mode: cfg["provision"] === "managed" ? "managed" : "byo" };
   let manager: Record<string, unknown> = {};
   let comfyuiVersions: VersionOption[] = [];

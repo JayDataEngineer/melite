@@ -2,12 +2,14 @@
 // managePlane.ts, the god-file cut): the vendor manager rail +
 // refusals folding, estate model downloads, and the systemd
 // lifecycle verbs.
-import { spawnSync } from "node:child_process";
-import { join } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { activeRuns } from "./manageProbe.ts";
-import { ManagerApiError, managerBase, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
+import { ManagerApiError, managerBase, managerGet } from "./managerRail.ts";
 import { Refused } from "./managePlane.ts";
 import type { ManageCtx, ManageEnvelope, Req } from "./managePlane.ts";
+
+const execFileAsync = promisify(execFile);
 
 // ── the manager rail (vendor HTTP — see manager-api.ts) ────────────
 export function base(ctx: ManageCtx): string {
@@ -26,6 +28,7 @@ export function mapManagerRefused(e: ManagerApiError, action: string): Refused {
     );
   }
   if (e.status === 404) return new Refused(404, "manager has no such target: " + e.text.slice(0, 200));
+  if (e.status === 504) return new Refused(504, "manager request timed out: " + e.text.slice(0, 200));
   return new Refused(502, "manager api error " + e.status + ": " + e.text.slice(0, 200));
 }
 
@@ -46,21 +49,50 @@ export function railMs(req: Req): number {
 /** Poll the vendor's task queue until drained (install arms: the
  *  vendor returns 202-semantics — queue accepted — and processes
  *  asynchronously; the poll bounds the AI door's wait). */
+function abortReason(signal: AbortSignal): unknown {
+  return signal.reason instanceof Error ? signal.reason : new DOMException("The operation was aborted", "AbortError");
+}
+
 export async function awaitQueueDrained(ctx: ManageCtx, req: Req): Promise<Record<string, unknown>> {
   const deadline = Date.now() + railMs(req);
   for (;;) {
-    const st = (await managerGet(base(ctx), "/manager/queue/status", {
-      ctx, timeoutMs: 10_000,
-    })) as Record<string, unknown>;
+    if (ctx.signal?.aborted === true) throw abortReason(ctx.signal);
+    if (Date.now() >= deadline) return { timed_out: true };
+    let st: Record<string, unknown>;
+    try {
+      st = await managerGet(base(ctx), "/manager/queue/status", {
+        ctx, timeoutMs: Math.min(10_000, Math.max(1, deadline - Date.now())),
+      }) as Record<string, unknown>;
+    } catch (error: unknown) {
+      if (Date.now() >= deadline) return { timed_out: true };
+      throw error;
+    }
     const processing = st["is_processing"] === true;
     const pending = Number(st["in_progress_count"] ?? 0) + Number(st["total_count"] ?? 0) - Number(st["done_count"] ?? 0);
     if (!processing && pending <= 0) return st;
-    if (Date.now() >= deadline) return st;
-    await new Promise<void>((res) => {
-      const t = ctx.timeout((): void => res(), 1000);
-      void t;
-    });
+    if (Date.now() >= deadline) return { ...st, timed_out: true };
+    await waitForQueuePoll(ctx);
   }
+}
+
+function waitForQueuePoll(ctx: ManageCtx): Promise<void> {
+  const signal = ctx.signal;
+  if (signal?.aborted === true) return Promise.reject(abortReason(signal));
+  return new Promise<void>((resolvePromise, rejectPromise) => {
+    let settled = false;
+    let dispose: () => void = () => {};
+    const finish = (fn: () => void): void => {
+      if (settled) return;
+      settled = true;
+      signal?.removeEventListener("abort", onAbort);
+      dispose();
+      fn();
+    };
+    const onAbort = (): void => finish(() => rejectPromise(abortReason(signal as AbortSignal)));
+    signal?.addEventListener("abort", onAbort, { once: true });
+    dispose = ctx.timeout((): void => finish(resolvePromise), 1000);
+    if (signal?.aborted === true) onAbort();
+  });
 }
 
 /** BYO guard: estate-orchestration legs (systemd, workspace reads)
@@ -76,24 +108,31 @@ export function estateOnly(req: Req, cfg: Record<string, unknown>): void {
 // ── systemd orchestration (estate deployment — TS-native) ──────────
 export const COMFY_UNIT = process.env["MELITE_COMFYUI_UNIT"] ?? "melite-comfyui.service";
 
-export function systemctl(req: Req, verb: "start" | "stop"): [number, ManageEnvelope] {
-  const out = spawnSync("systemctl", ["--user", verb, COMFY_UNIT], {
-    timeout: 30 * 1000,
-    encoding: "utf8",
-  });
-  if (out.error !== undefined || out.status !== 0) {
-    // (stderr is "" (not nullish) on a clean spawn, so the last
-    // fallback only guards the type — spawn failures always carry
-    // one of the first two)
-    const why = String(out.stderr ?? out.error?.message).trim().slice(0, 200);
+export async function systemctl(req: Req, verb: "start" | "stop", signal?: AbortSignal): Promise<[number, ManageEnvelope]> {
+  try {
+    await execFileAsync("systemctl", ["--user", verb, COMFY_UNIT], {
+      timeout: 30 * 1000,
+      encoding: "utf8",
+      signal,
+    });
+  } catch (error: unknown) {
+    if (signal?.aborted === true) throw abortReason(signal);
+    const value = error as { stderr?: unknown; message: unknown };
+    const why = String(value.stderr ?? value.message).trim().slice(0, 200);
     return [500, { action: req.action, ok: false, detail: "systemctl " + verb + " " + COMFY_UNIT + " failed: " + why }];
   }
-  return [200, { action: req.action, ok: true, detail: verb + " issued for " + COMFY_UNIT }];
+  return [200, {
+    action: req.action,
+    ok: true,
+    detail: verb + " issued for " + COMFY_UNIT,
+    next_action: verb === "stop" ? "launch" : "status",
+    data: { next_action: verb === "stop" ? "launch" : "status" },
+  }];
 }
 
 export function guardLifecycle(req: Req, ctx: ManageCtx): void {
   if (req.force) return;
-  const active = activeRuns(ctx.repoRoot);
+  const active = activeRuns();
   if (active.length > 0) {
     throw new Refused(
       409,

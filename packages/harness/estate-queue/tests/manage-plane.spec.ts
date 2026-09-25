@@ -245,10 +245,19 @@ const runFlow = (name: string, status: string | null, pad = ""): void => {
 };
 const mkRoot = (): string => {
   ROOT = mkdtempSync(join(tmpdir(), "manage-"));
+  // THE ROOTS UNIFICATION (2026-09-25): activeRuns walks the roots
+  // manifest now — the fixture pins its own temp root as the state
+  // root so the scan reads the fixture tree, never the real repo.
+  // the production default shape verbatim: the state root is
+  // <repo>/data/runs when MELITE_STATE_ROOT is unset — pin the same
+  // tree so the fixture runs sit where the manifest walk reads them.
+  process.env.MELITE_STATE_ROOT = join(ROOT, "data", "runs");
   return ROOT;
 };
 const rmRoot = (): void => {
   rmSync(ROOT, { recursive: true, force: true });
+  delete process.env.MELITE_STATE_ROOT;
+  delete process.env.MELITE_STATE_ROOTS;
 };
 
 type Route = (url: string, init: RequestInit | undefined) => Response | Promise<Response>;
@@ -421,6 +430,34 @@ describe("hStatus", () => {
       assert.equal(boot1.source, "estate restart");
       assert.equal(typeof boot1.age_seconds, "number");
       assert.ok((boot1.age_seconds as number) >= 93);
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("THE ROOTS UNIFICATION: a live run under an EXTRA state root guards the restart census", async () => {
+    mkRoot();
+    try {
+      // own root: quiet; extra root: a live render (the maker lane)
+      const extra = mkdtempSync(join(tmpdir(), "manage-extra-"));
+      process.env.MELITE_STATE_ROOTS = extra;
+      mkdirSync(join(extra, "output", "run-maker-live"), { recursive: true });
+      writeFileSync(
+        join(extra, "output", "run-maker-live", "_flow.json"),
+        JSON.stringify({ status: "running" }),
+      );
+      route((url) => {
+        if (url.endsWith("/system_stats")) {
+          return json({ system: { comfyui_version: "9.9" }, devices: [{ name: "cuda:0", vram_total: 1, vram_free: 2 }] });
+        }
+        if (url.endsWith("/manager/version")) return json({ v: 1 });
+        return json({ is_processing: false, in_progress_count: 0, total_count: 0, done_count: 0 });
+      });
+      const [code, env] = await manage({ action: "status" });
+      assert.equal(code, 200);
+      const data = env.data as { active_runs: string[] };
+      assert.deepEqual(data.active_runs, ["run-maker-live"], "the maker tree's live run is visible to the restart guard");
+      rmSync(extra, { recursive: true, force: true });
     } finally {
       rmRoot();
     }
