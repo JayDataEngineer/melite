@@ -4,7 +4,7 @@
 // get(name) answers the seat or undefined (seatless).
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
-import { makeEstateRequest, asEstateCall, type EstateRequest } from '../src/estate.ts'
+import { makeEstateRequest, asEstateCall, seatFamilyForPath, type EstateRequest } from '../src/estate.ts'
 
 function ctxWith(seats: Record<string, unknown>): unknown {
   return { get: (name: string) => seats[name] }
@@ -190,6 +190,9 @@ describe('card compose lane (POST /v1/flows/drafts)', () => {
       },
     })
     await r('POST', '/v1/flows/drafts', { intent: 'my idea' }, SIG, 1000)
+    // intent stays the identity key verbatim (the studio consult
+    // keys off it); the tool-mint provenance rides the snapshot's
+    // bench_head instead (runsStart's write, walled there).
     assert.equal(ensured['intent'], 'my idea')
     assert.equal('expect_rev' in ensured, false)
     await r('POST', '/v1/flows/drafts', {}, SIG, 1000)
@@ -409,10 +412,34 @@ describe('disclose/manage/skills/load/ledger lanes', () => {
     )
     assert.deepEqual(await r('GET', '/v1/ledger', undefined, SIG, 1000), ['50', ''])
     assert.deepEqual(seen, ['50', ''])
-    // A seatless queue is an ABSENT journal, not an impossible lane
-    // (the gateway lane fallback died 2026-09-10; the hard refusal
-    // surfaced as a crash-toast over seatless web profiles' card
-    // benches while the mesh viewport kept rendering).
     assert.deepEqual(await req({})('GET', '/v1/ledger', undefined, SIG, 1000), [])
+  })
+
+  test('the ledger family is named directly even when its optional seat answers empty', () => {
+    assert.deepEqual(seatFamilyForPath('/v1/ledger'), { family: 'queue', probeNames: ['queue'] })
+  })
+
+  test('a non-conflict compose refusal propagates without a retry', async () => {
+    const r = req({ benchRemote: {
+      get: async () => undefined,
+      ensure: async () => { throw new Error('ensure exploded') },
+    } })
+    await assert.rejects(r('POST', '/v1/flows/drafts', {}, SIG, 1000), /ensure exploded/)
+  })
+
+  test('a conflict retry accepts a fresh bench without a revision', async () => {
+    let gets = 0
+    const r = req({ benchRemote: {
+      get: async () => { gets += 1; return gets === 1 ? { rev: 1 } : undefined },
+      ensure: async () => {
+        if (gets === 1) {
+          const error = new Error('moved') as Error & { code?: string }
+          error.code = 'bench/cas-conflict'
+          throw error
+        }
+        return { draft_id: 'd-retry' }
+      },
+    } })
+    assert.deepEqual(await r('POST', '/v1/flows/drafts', {}, SIG, 1000), { draftId: 'd-retry' })
   })
 })

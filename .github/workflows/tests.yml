@@ -67,6 +67,16 @@ jobs:
         run: DSH_SNAPSHOT=replay pnpm run test:snapshot
       - name: Web snapshot replay (read-only)
         run: DSH_SNAPSHOT=replay pnpm run test:web
+      # THE BROWSER-WALL CI SEAT (roadmap §9, fresh-checkout repair
+      # 2026-09-25): the studio lane boots from the TRACKED portable
+      # seed (packages/web/melite-card-view/e2e/profile-seed —
+      # relative links, deps materialized at boot) and runs in
+      # REQUIRE mode: a missing prerequisite FAILS the seat, a
+      # self-skip can never green it. Playwright browsers first.
+      - name: Install Playwright browsers (the studio lane's own)
+        run: pnpm --filter @melite-plugin/dsh-card-view exec playwright install --with-deps chromium
+      - name: Studio browser wall (tracked seed, REQUIRE mode)
+        run: E2E_STUDIO_REQUIRE=1 pnpm run test:e2e:studio
 
   # No walls job: the wall suites run inside `unit` (root vitest
   # node project). Live GPU inference stays opt-in locally — it needs

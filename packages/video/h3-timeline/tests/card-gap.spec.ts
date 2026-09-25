@@ -926,7 +926,14 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     const saves = ofClass(out, "SaveAudio");
     assert.equal(saves.length, 1, "the film's audio saves once");
     assert.equal(saves[0]![1].inputs.filename_prefix, "h3_t4_film_audio", "under the film-audio name");
-    assert.deepEqual(saves[0]![1].inputs.audio, [mixes[0]![0], 0], "the save carries the mix node's output");
+    // THE METER TAP (§39, 2026-09-25): a passthrough MeliteLoudness
+    // sits between the mix and its consumers — the save (and the
+    // film mux below) carry the METER's output, which is the mix's
+    // AUDIO unchanged plus the loudness_lufs reading in the UI dict.
+    const meters = ofClass(out, "MeliteLoudness");
+    assert.equal(meters.length, 1, "exactly one loudness meter");
+    assert.deepEqual(meters[0]![1].inputs.audio, [mixes[0]![0], 0], "the meter taps the mix");
+    assert.deepEqual(saves[0]![1].inputs.audio, [meters[0]![0], 0], "the save carries the meter's passthrough (the mix's audio)");
   });
 
   it("two clips ride one mix node in doc order (clips_json keeps doc order, seats verbatim)", () => {
@@ -1141,7 +1148,10 @@ describe("the valve's second arm (audio-carrying films free per-window)", () => 
     const created = ofClass(out, "CreateVideo").filter(([id]) => !id.startsWith("window"));
     assert.equal(created.length, 1, "exactly one film-level CreateVideo");
     assert.deepEqual(created[0]![1].inputs.images, [joins[0]![0], 0], "the picture is the join's decoded images");
-    assert.deepEqual(created[0]![1].inputs.audio, [mixes[0]![0], 0], "the film's audio is the MIX output — never the raw concat audio");
+    const meters = ofClass(out, "MeliteLoudness");
+    assert.equal(meters.length, 1, "one passthrough loudness meter rides the mix arm");
+    assert.deepEqual(meters[0]![1].inputs.audio, [mixes[0]![0], 0], "the meter taps the mix's output");
+    assert.deepEqual(created[0]![1].inputs.audio, [meters[0]![0], 0], "the film's audio is the METER's passthrough (the mix's audio) — never the raw concat audio");
     assert.deepEqual(created[0]![1].inputs.fps, [joins[0]![0], 2], "the clock is the join's fps");
     assert.equal(created[0]![1].inputs.bit_depth, 8, "8-bit, per the clips-free arm");
     const filmSaves = Object.entries(out).filter(

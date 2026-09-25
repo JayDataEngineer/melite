@@ -1054,8 +1054,17 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       duck_db: manifest.duckDb,
       film_seconds: manifest.filmSec,
     })
+    // THE LOUDNESS METER (§39's owed Layer C node, 2026-09-25): a
+    // passthrough tap between the mix and its consumers — the film's
+    // integrated loudness (BS.1770-4, K-weighted + gated) rides the
+    // history UI dict as loudness_lufs, so every surface REPORTS the
+    // number instead of re-deriving it from the encoded file. The
+    // AUDIO dict rides out unchanged (meter taps, never transforms);
+    // calibrated against ffmpeg's ebur128 to within 0.1 LU on tones,
+    // noise, gating, and mono.
+    const meter = g.node('MeliteLoudness', { audio: mix.out(0) })
     g.node('SaveAudio', {
-      audio: mix.out(0), filename_prefix: 'h3_t4_film_audio',
+      audio: meter.out(0), filename_prefix: 'h3_t4_film_audio',
     })
     // THE FILM MP4 (GAP 1): the same file-tail video join the
     // clips-free arm rides — container mux only (CreateVideo +
@@ -1066,7 +1075,7 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       after,
     })
     const filmCreated = g.node('CreateVideo', {
-      images: join.out(0), audio: mix.out(0), fps: join.out(2), bit_depth: 8,
+      images: join.out(0), audio: meter.out(0), fps: join.out(2), bit_depth: 8,
     })
     g.node('SaveVideo', {
       video: filmCreated.out(), filename_prefix: 'h3_t4_film',

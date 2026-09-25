@@ -298,6 +298,41 @@ describe("registerCompiledRun", () => {
     assert.deepEqual(flow["bench_snapshot"], { stages: benchDoc.stages, intent: "the beach flow" });
   });
 
+  it("THE PROVENANCE HEAD (2026-09-25): a bench with a log rides its head on the snapshot; a log-less doc rides no fabricated label", () => {
+    const root = tmp();
+    const body = { model: "m" };
+    // the bench's OWN log head — who wrote the bench the run was
+    // born from (tool-minted vs hand-composed is READ from the
+    // domain row, never synthesized by the writer)
+    const logged = {
+      stages: [{ id: "s_0", card: "tts" }],
+      intent: "tts",
+      log: [{ rev: 1, at: 1758841200, author: "tool", kind: "ensure", stage: "s_0", summary: "card birth" }],
+    };
+    const { run } = mustRegister({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 3,
+      door: { runId: "run-head", pipeline: "m", cardId: "tts", requestBody: body, benchDoc: logged },
+    });
+    assert.deepEqual((run.benchSnapshot as Record<string, unknown>)["bench_head"], {
+      rev: 1, at: 1758841200, author: "tool", kind: "ensure", stage: "s_0", summary: "card birth",
+    });
+    // the log-less arm: the key rides ABSENT, never a guessed label
+    const bare = { stages: [{ id: "s", card: "c" }], intent: "" };
+    const { run: run2 } = mustRegister({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 3,
+      door: { runId: "run-bare", pipeline: "m", cardId: "c", requestBody: body, benchDoc: bare },
+    });
+    assert.equal("bench_head" in (run2.benchSnapshot as Record<string, unknown>), false);
+  });
+
   it("THE VARIANT AT BIRTH (commission 033's self-critique #5): the lane stamps the row, the queued sidecar, and the queued ledger row", () => {
     const root = tmp();
     // a film body (calls present): the ECHO queued-row arm carries

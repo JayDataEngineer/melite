@@ -2,7 +2,7 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { ttsDesignT1, ttsT1 } from '@melite/comfyui-card-kit'
+import { qvoiceUse, ttsDesignT1, ttsT1 } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
@@ -119,7 +119,14 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // here is `text`, so the port is `text`; the §12 wall probe
       // wires the migrated channel).
       inputs: { text: 'text' },
-      outputs: { default: 'audio' },
+      // THE VOICES CHANNEL (2026-09-25, the optional-channel law):
+      // a design run publishes BOTH its artifacts — the preview
+      // flac (default) AND the persisted .qvoice (voices). The
+      // bindings are complementary (`when` on voice_name), so a
+      // plain run resolves default only and a design run resolves
+      // voices (the resolved set — resolveCardFlowOutputs — is what
+      // the stage carries; the static record declares the union).
+      outputs: { default: 'audio', voices: 'voice' },
       requiresModel: true,
     },
     flowOutputBindings: [
@@ -128,6 +135,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         node: 'SaveAudio.0',
         nodeClass: 'SaveAudio',
         when: (params) => typeof params['voice_name'] !== 'string' || params['voice_name'] === '',
+      },
+      {
+        channel: 'voices',
+        node: 'MeliteQVoiceCopy.0',
+        nodeClass: 'MeliteQVoiceCopy',
+        when: (params) => typeof params['voice_name'] === 'string' && params['voice_name'] !== '',
       },
     ],
     // Load + TTS ride the authored Audiocore pack; SaveAudio is core.
@@ -167,12 +180,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         ? (model.lane_inputs as Record<string, unknown>).synth_lane as string
         : '';
       const blank = (v: unknown): boolean => !(typeof v === 'string' ? v.trim() : v);
-      const qvoiceStated = (doc: Record<string, unknown>): boolean => {
-        const bag = doc.qvoice as Array<Record<string, unknown>> | string | undefined;
-        return Array.isArray(bag)
-          ? bag.some((e) => !blank((e as Record<string, unknown>)?.qvoice))
-          : !blank(bag);
-      }
+      const qvoiceStated = (doc: Record<string, unknown>): boolean => qvoiceUse(doc) !== undefined
       // THE SAVE INTENT (operator 2026-09-23, the full qvoice law:
       // SAVE and LOAD across ALL qwen3-tts): a stated voice_name (the
       // Design mod's export name) is the save signal — the studio
@@ -230,13 +238,8 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
           throw new Error("param 'design_prompt' without 'voice_name' fires nothing on the tts card (the persona description exports a voice only with the Design mod's name — state voice_name too, or drop the description)")
         }
       }
-      // THE 0.6B INSTRUCT WALL (upstream capability table: the
-      // 0.6B-CustomVoice row has NO instruction control — instruct
-      // is the 1.7B lane's capability): a stated instruct on the
-      // small CustomVoice refuses loud, never silently drops.
-      // (the export path returned above — every lane here performs.)
-      if (!blank(doc.style_instruction) && model.id === 'qwen3-tts') {
-        throw new Error("param 'style_instruction' fires nothing on the 0.6B CustomVoice lane (instruction control is the 1.7B checkpoint's capability upstream — switch to the 1.7B family's CustomVoice variant or drop the instruction)")
+      if (!blank(doc.style_instruction) && model.lane_inputs.instruction_control !== true) {
+        throw new Error("param 'style_instruction' fires nothing on the resolved TTS lane (lane_inputs.instruction_control is not true — choose a lane with instruction control or drop the instruction)")
       }
       ttsT1(doc, model, g, runId)
     },

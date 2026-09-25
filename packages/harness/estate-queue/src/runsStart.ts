@@ -22,7 +22,7 @@ import {
   checkFlowInlineTop,
   checkFlowStage,
 } from "./runsGates.ts";
-import { appendLedger, atomicWriteJson, newRunId, outRootFor, refusal, sidecarDoc, variantOfBodies } from "./queue.ts";
+import { appendLedger, atomicWriteJson, newRunId, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies } from "./queue.ts";
 import type { QueueRefusal } from "./queue.ts";
 import { rootsManifest } from "./rootsManifest.ts";
 import { collectSourceRefs, resolveSourceRefs } from "./runsSourceEcho.ts";
@@ -380,32 +380,33 @@ export function registerCompiledRun(args: {
   }
   const dir: string = join(outRootFor(stateRoot, testFlag), runId);
   mkdirSync(dir, { recursive: true });
-  const st: CompiledStage = compiled.stages[0] as CompiledStage;
+  // THE MULTI-STAGE ROW (2026-09-25, the curated-lane lift): every
+  // compiled stage rides the run row — one GraphRow + one StageRow +
+  // one params/outputNodes slot each, input_names carrying the
+  // cross-stage wiring the merged walk consumes. The single-stage
+  // shape is the N=1 case of this SAME loop (byte-identical row for
+  // the one-stage docs the gateway served before).
   const createdAt: number = Date.now() / 1000;
-  const graphRows: GraphRow[] = [
-    {
-      id: st.id,
-      type: st.engine,
-      input_from: [],
-      input_names: {},
-      outputs: { ...st.outputs },
-      params: { ...st.params },
-    },
-  ];
+  const graphRows: GraphRow[] = compiled.stages.map((st: CompiledStage): GraphRow => ({
+    id: st.id,
+    type: st.engine,
+    input_from: [],
+    input_names: { ...st.inputNames },
+    outputs: { ...st.outputs },
+    params: { ...st.params },
+  }));
   const run: RunRecord = {
     runId,
     status: "queued",
-    stages: [
-      {
-        id: st.id,
-        name: st.id,
-        index: 0,
-        status: "pending",
-        engine: st.engine,
-        outputs: { ...st.outputs },
-        expected: { ...st.expected },
-      },
-    ],
+    stages: compiled.stages.map((st: CompiledStage, i: number) => ({
+      id: st.id,
+      name: st.id,
+      index: i,
+      status: "pending",
+      engine: st.engine,
+      outputs: { ...st.outputs },
+      expected: { ...st.expected },
+    })),
     skippedStages: [],
     artifacts: [],
     error: "",
@@ -413,13 +414,15 @@ export function registerCompiledRun(args: {
     dir,
     testFlag,
     stopFlag: false,
-    params: [st.params],
+    params: compiled.stages.map((st: CompiledStage): Record<string, EngineJson> => ({ ...st.params })),
     createdAt,
     pipeline: "flow_inline",
     graphRows,
-    outputNodes: [st.outputNodes],
+    outputNodes: compiled.stages.map((st: CompiledStage): Record<string, EngineJson> => ({ ...st.outputNodes })),
   };
-  run.inputNames = { [st.id]: st.inputNames };
+  run.inputNames = Object.fromEntries(
+    compiled.stages.map((st: CompiledStage): [string, Record<string, string>] => [st.id, { ...st.inputNames }]),
+  );
   if (args.warnings !== undefined && args.warnings.length > 0) {
     run.warnings = [...args.warnings];
   }
@@ -443,11 +446,28 @@ export function registerCompiledRun(args: {
       ? door.benchDoc?.["stages"]
       : undefined;
     if (benchStages !== undefined && (benchStages as unknown[]).length > 0) {
+      // THE PROVENANCE HEAD (2026-09-25, the maker's fabrication
+      // finding): card-mode runs MINT their bench (the CARD BIRTH
+      // law wants a doc-backed draft) while a studio user HAND-
+      // COMPOSES one through melite_construct — and the snapshot
+      // alone could not tell them apart. The bench's OWN log head
+      // can: its author + kind say who wrote the bench the run was
+      // born from, verbatim from the domain row (never a synthesized
+      // label, never a guess — absent log, the key rides undefined
+      // and the snapshot says only what was provably read).
+      const benchLog: unknown = door.benchDoc?.["log"];
+      const head: Record<string, unknown> | undefined =
+        Array.isArray(benchLog) && benchLog.length > 0 &&
+        typeof benchLog[0] === "object" && benchLog[0] !== null &&
+        !Array.isArray(benchLog[0])
+          ? { ...(benchLog[0] as Record<string, unknown>) }
+          : undefined;
       run.benchSnapshot = {
         stages: benchStages,
         intent: typeof door.benchDoc?.["intent"] === "string"
           ? door.benchDoc?.["intent"]
           : "",
+        ...(head !== undefined ? { bench_head: head } : {}),
       };
     }
   }
@@ -535,14 +555,7 @@ function sidecarDocFor(run: RunRecord): Record<string, unknown> {
     runId: run.runId,
     status: "queued",
     error: "",
-    stages: run.stages.map((s) => ({
-      id: s.id,
-      name: s.name,
-      index: s.index,
-      status: s.status,
-      outputs: { ...(s.outputs as Record<string, unknown>) },
-      expected: { ...(s.expected as Record<string, unknown>) },
-    })),
+    stages: run.stages.map((s) => sidecarStageOf(s)),
     skippedStages: [],
     artifacts: [],
     createdAt: run.createdAt,

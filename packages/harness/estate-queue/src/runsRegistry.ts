@@ -68,6 +68,7 @@ import {
 } from "./runsTypes.ts";
 import type { RunRecord } from "./runsTypes.ts";
 import { runOne, runEngine as runEngineOf } from "./runsExecute.ts";
+import { engineFilmName } from "./filmLead.ts";
 import { validate as validateArm, modelValidateArm } from "./runsValidateArms.ts";
 
 // CROSS-COPY LAW (the estate's documented topology): the engine
@@ -131,6 +132,35 @@ declare module "@deepseek-ai/cordis" {
  *  protocol's vocabulary — a literal table, no dynamic key. */
 
 
+
+function enrichDiskRow(row: Record<string, unknown>): Record<string, unknown> {
+  const stages = Array.isArray(row['stages']) ? row['stages'] : []
+  const artifacts = Array.isArray(row['artifacts'])
+    ? row['artifacts'].filter((value): value is string => typeof value === 'string' && value !== '')
+    : []
+  if (stages.length !== 1 || artifacts.length === 0) return row
+  const stage = stages[0]
+  if (stage === null || typeof stage !== 'object' || Array.isArray(stage)) return row
+  const runId = typeof row['run_id'] === 'string' ? row['run_id'] : ''
+  const relative = (value: string): string => {
+    const marker = `/${runId}/`
+    const at = value.lastIndexOf(marker)
+    return at >= 0 ? value.slice(at + marker.length) : value.replace(/^\/+/, '')
+  }
+  const names = [...new Set(artifacts.map(relative))]
+    .filter((name) => /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mkv|avi|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(name))
+  if (names.length === 0) return row
+  const hero = engineFilmName(names) ?? names[0]!
+  const current = stage as Record<string, unknown>
+  return {
+    ...row,
+    stages: [{
+      ...current,
+      ...(typeof current['url'] === 'string' && current['url'] !== '' ? {} : { url: hero }),
+      ...(Array.isArray(current['gallery']) ? {} : { gallery: names.map((name) => ({ name })) }),
+    }],
+  }
+}
 
 /** The runs registry seat: `ctx.runs`. The estate-runs adapters
  *  (Typert) delegate here; the door's registry/pump semantics ride
@@ -518,13 +548,36 @@ export class RunsRuntimeService extends Service {
       | QueueRefusal = compileFlowInline(inline, knownEngines);
     if ("payload" in compiled) throw toRemoteError(compiled);
     if (compiled.stages.length !== 1) {
-      throw toRemoteError(
-        refusePreview(
-          "this gateway serves single-stage flow_inline runs only (" +
-            compiled.stages.length +
-            " stages) — multi-stage graphs are unported",
-        ),
-      );
+      // THE CURATED-LANE LIFT (2026-09-25, the multi-stage boundary
+      // resolved): the merged worker was ALWAYS multi-stage — the
+      // engine's merge walk namespaces stages, links cross-stage
+      // channels, rewrites $spells, and harvests per-stage (the
+      // ROW-4 file-slot gate included); only this gateway gate held
+      // the line. A HAND-AUTHORED multi-stage flow_inline stays
+      // refused (unported, exactly the old voice); a doc whose id
+      // names a REGISTRY flow is curated — its stages compile under
+      // the registry walls and the validate one-admission walk — so
+      // it drives (image-upscale: make → polish through ONE merged
+      // submit).
+      const inlineId: unknown =
+        typeof (inline as Record<string, unknown> | null) === "object" &&
+        inline !== null &&
+        !Array.isArray(inline)
+          ? (inline as Record<string, unknown>)["id"]
+          : undefined;
+      const curated: boolean =
+        typeof inlineId === "string" && getRegistryFlow(inlineId) !== undefined;
+      if (!curated) {
+        throw toRemoteError(
+          refusePreview(
+            "this gateway serves single-stage flow_inline runs only (" +
+              compiled.stages.length +
+              " stages) — multi-stage graphs are unported " +
+              "(curated registry flows except: name a registry flow id, " +
+              "or drive {flow: '<name>'})",
+          ),
+        );
+      }
     }
     const reg = registerCompiledRun({
       compiled,
@@ -646,7 +699,7 @@ export class RunsRuntimeService extends Service {
           { runId },
         );
       }
-      return { ...disk.row, from_disk: true, queue_position: 0, served_from: disk.root };
+      return { ...enrichDiskRow(disk.row), from_disk: true, queue_position: 0, served_from: disk.root };
     }
     const payload: Record<string, unknown> = {
       run_id: run.runId,
@@ -729,7 +782,7 @@ export class RunsRuntimeService extends Service {
       const diskStages = disk !== undefined && Array.isArray(disk.row["stages"]) ? (disk.row["stages"] as unknown[]).length : 0;
       const diskArts = disk !== undefined && Array.isArray(disk.row["artifacts"]) ? (disk.row["artifacts"] as unknown[]).length : 0;
       if (disk !== undefined && (diskStages > 0 || diskArts > 0)) {
-        return { ...disk.row, from_disk: true, queue_position: payload["queue_position"], served_from: disk.root };
+        return { ...enrichDiskRow(disk.row), from_disk: true, queue_position: payload["queue_position"], served_from: disk.root };
       }
     }
     // THE LIVE-ROW PLAN (efficiency review 002, Fix 2, 2026-09-22):

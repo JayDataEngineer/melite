@@ -80,12 +80,21 @@ describe("the tts compose gate", () => {
   it("flow ports and semantic outputs name text and SaveAudio", () => {
     // knob-aligned ports (the flow-contract law): port = `text`.
     assert.deepEqual(def.flowKinds.inputs, { text: "text" });
-    assert.deepEqual(def.flowKinds.outputs, { default: "audio" });
+    // THE VOICES CHANNEL (the optional-channel law, 2026-09-25): the
+    // static union declares both; the resolved set per run picks by
+    // voice_name (a design run resolves voices, a plain run default).
+    assert.deepEqual(def.flowKinds.outputs, { default: "audio", voices: "voice" });
     assert.equal(def.flowOutputBindings?.[0]?.channel, "default");
     assert.equal(def.flowOutputBindings?.[0]?.node, "SaveAudio.0");
     assert.equal(def.flowOutputBindings?.[0]?.nodeClass, "SaveAudio");
     assert.equal(def.flowOutputBindings?.[0]?.when?.({ text: "hello" }), true);
     assert.equal(def.flowOutputBindings?.[0]?.when?.({ voice_name: "saved" }), false);
+    const voices = def.flowOutputBindings?.[1];
+    assert.equal(voices?.channel, "voices");
+    assert.equal(voices?.node, "MeliteQVoiceCopy.0");
+    assert.equal(voices?.nodeClass, "MeliteQVoiceCopy");
+    assert.equal(voices?.when?.({ voice_name: "saved" }), true);
+    assert.equal(voices?.when?.({ text: "hello" }), false);
   });
 
   it("rejects a qvoice path in the preset speaker row with the lawful seat named", () => {

@@ -178,6 +178,30 @@ export function qvoicePathsOf(
   return "";
 }
 
+/** THE LOUDNESS RECEIPT (§39's law, 2026-09-25): the MeliteLoudness
+ *  passthrough meter stamps its reading into the node's history UI
+ *  dict (loudness_lufs / peak_db — BS.1770-4 integrated, K-weighted
+ *  + gated, calibrated within 0.1 LU of ffmpeg's ebur128). Collect
+ *  the first finite reading so the stage's result_outputs carry the
+ *  number — every surface REPORTS it instead of re-deriving it from
+ *  the encoded file. Pure: shared by both harvest seats. */
+export function loudnessOf(
+  outputs: EngineJson | undefined,
+): { loudness_lufs: number; peak_db: number } | null {
+  if (typeof outputs !== "object" || outputs === null || Array.isArray(outputs)) return null;
+  for (const nodeOut of Object.values(outputs as Record<string, EngineJson>)) {
+    if (typeof nodeOut !== "object" || nodeOut === null || Array.isArray(nodeOut)) continue;
+    const row = nodeOut as Record<string, EngineJson>;
+    const lufs = row["loudness_lufs"];
+    const peak = row["peak_db"];
+    if (typeof lufs === "number" && Number.isFinite(lufs) &&
+        typeof peak === "number" && Number.isFinite(peak)) {
+      return { loudness_lufs: lufs, peak_db: peak };
+    }
+  }
+  return null;
+}
+
 /** Harvested paths -> {channel: path} for the FILE-kind channels
  *  the stage DECLARED. First unmatched artifact wins per channel,
  *  declaration order. */

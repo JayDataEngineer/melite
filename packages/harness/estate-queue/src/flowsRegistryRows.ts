@@ -125,7 +125,9 @@ export const AUDIO_NATIVE_TTS: RegistryFlow = {
   description:
     "Phase 1b gate: Qwen3-TTS 12Hz CustomVoice via the live melite-audio-nodes " +
     "island pack in the serving ComfyUI container (pure-ComfyUI audio lane; " +
-    "retires the C audio engine for TTS).",
+    "retires the C audio engine for TTS). VALIDATE-ONLY on the queue's " +
+    "{flow:} door (2026-09-25 multi-stage boundary stamp): card= stages " +
+    "refuse at start — drive the tts card through the bench or {model:}.",
   stages: [
     plainStage({
       id: "tts",
@@ -401,7 +403,9 @@ export const IMAGE_UPSCALE: RegistryFlow = {
   description:
     "Prompt → image → 1080p SeedVR2 upscale, one card per stroke (the first " +
     "two-card flow: image-gen + upscale-tools card= stages; image_model picks " +
-    "the generator).",
+    "the generator). VALIDATE-ONLY on the queue's {flow:} door (2026-09-25 " +
+    "multi-stage boundary stamp): card= stages refuse at start — drive the " +
+    "cards through the bench (construct chaining) or the {model:} door.",
   stages: [
     plainStage({
       id: "make",
@@ -535,7 +539,10 @@ export const MUSIC_NATIVE: RegistryFlow = {
     "card (MiniMax Music 3, the boarded row; see GET /v1/models). Repointed " +
     "at the mono-engine law by the wiring wall 2026-09-20: the row still " +
     "named the retired audio_cpp tier and a card id that no longer exists — " +
-    "a fossil only the live validate path ever tripped.",
+    "a fossil only the live validate path ever tripped. VALIDATE-ONLY on " +
+    "the queue's {flow:} door (2026-09-25 multi-stage boundary stamp): " +
+    "card= stages refuse at start — drive the music card through the " +
+    "bench or {model:}.",
   stages: [
     plainStage({
       id: "music",

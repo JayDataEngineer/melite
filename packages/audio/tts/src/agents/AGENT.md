@@ -58,7 +58,12 @@ every line of the character is the same voice under any direction.
 - **Design (qvoice_save)** — the SAVE half: voice_name + the
   CHARACTER instruct (design_prompt) export a .qvoice persona
   through the 1.7B VoiceDesign checkpoint. One save per character;
-  the name is the character's voice forever.
+  the name is the character's voice forever. NAMES ARE
+  SINGLE-TENANT across sessions: reusing an earlier session's
+  voice_name makes the newest-wins copy pick fight across mounts —
+  the run receipt stamps `reused_existing: true` when the winning
+  .qvoice predates the run (read the copy node's UI row), and a NEW
+  character always takes a fresh name.
 - **Voice (qvoice)** — the INFERENCE half: a stated .qvoice performs
   the text through the clone pipeline, with the EMOTION instruct
   (style_instruction) riding on top on the CustomVoice lane. THIS IS

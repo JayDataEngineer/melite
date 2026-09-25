@@ -13,7 +13,7 @@ import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { sdkClient } from "./comfyui-transport.ts";
 import { spliceWorkflow, uploadReferenced } from "./comfyui-upload.ts";
 import { isTransportDownError } from "./supervisor.ts";
-import { fetchOutputs, mapHistoryEntry, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
+import { fetchOutputs, loudnessOf, mapHistoryEntry, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
 
 export interface ExecuteOpts {
   /** Seconds; the estate's own budget (default 2400). */
@@ -245,6 +245,10 @@ export function hookProgress(
       if (d.node === undefined || d.node === null) return;
       report({ activity: "node " + String(d.node) });
     }),
+    client.on("progress_text", (d): void => {
+      if (typeof d.text !== "string" || d.text === "") return;
+      report({ activity: d.text });
+    }),
   ];
   return (): void => {
     for (const off of offs) off();
@@ -290,6 +294,10 @@ export async function executeSingleInner(
     // hardcode, no /view fetch: the file lives in the voices root).
     const qvoice: string = qvoicePathsOf(entry["outputs"]);
     if (qvoice !== "") outputs["qvoice_path"] = qvoice;
+    // THE LOUDNESS RECEIPT (§39): the meter's reading rides the stage
+    // result alongside the qvoice path — same collector law.
+    const loud = loudnessOf(entry["outputs"]);
+    if (loud !== null) outputs["loudness"] = loud;
     return { outputs, artifacts: arts, promptId };
   } finally {
     unhook?.();

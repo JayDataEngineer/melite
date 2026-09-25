@@ -343,6 +343,31 @@ describe("status + stop", () => {
     assert.equal((await remote(() => s.svc.stop("run-x", sig()))).code, "runs/run-unknown");
   });
 
+  it("status serves source and export stamps while empty stamps stay absent", async () => {
+    const s = seat();
+    const id = live(s, {
+      runId: "run-status-stamps",
+      sourceEcho: { refs: [{ url: "/x", file: "/tmp/x" }] },
+      exportName: "Cherry_17",
+      exportPath: "/voices/Cherry_17.qvoice",
+      variant: "customvoice",
+    } as Partial<RunRecord>);
+    const got = await s.svc.status(id, sig());
+    assert.deepEqual(got["source_echo"], { refs: [{ url: "/x", file: "/tmp/x" }] });
+    assert.equal(got["export_name"], "Cherry_17");
+    assert.equal(got["export_path"], "/voices/Cherry_17.qvoice");
+    assert.equal(got["variant"], "customvoice");
+
+    const emptyId = live(s, {
+      runId: "run-status-empty-stamps",
+      exportName: "",
+      exportPath: "",
+    } as Partial<RunRecord>);
+    const empty = await s.svc.status(emptyId, sig());
+    assert.equal("export_name" in empty, false);
+    assert.equal("export_path" in empty, false);
+  });
+
   it("status serves the row (log tail rides along on request)", async () => {
     const s = seat();
     const id = live(s, { error: "bad", stages: [{ id: "s", status: "failed" }] });
@@ -380,8 +405,78 @@ describe("status + stop", () => {
     const got = await s.svc.status(runId, sig());
     assert.equal(got["status"], "completed");
     assert.equal(got["from_disk"], true);
-    assert.deepEqual(got["stages"], [{ id: "s1", status: "completed" }]);
+     assert.deepEqual(got["stages"], [{
+       id: "s1",
+       status: "completed",
+       url: "run.png",
+       gallery: [{ name: "run.png" }],
+     }]);
     assert.deepEqual(got["artifacts"], ["run.png"]);
+  });
+
+  it("disk fallback reconstructs a film hero from legacy H3 artifacts", async () => {
+    const s = seat();
+    const runId = "run-f5h3disk123456-00000005";
+    const dir = join(s.state, "output", runId);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      run_id: runId,
+      status: "completed",
+      stages: [{ id: "h3-film", status: "completed" }],
+      artifacts: [
+        `${dir}/h3-film/h3_t4_w1_00001_.mp4`,
+        `${dir}/h3-film/h3_t4_film_audio_00001.flac`,
+        `${dir}/h3-film/h3_t4_film_00002_.mp4`,
+      ],
+    }));
+    const got = await s.svc.status(runId, sig());
+    const stage = (got["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.equal(stage["url"], "h3-film/h3_t4_film_00002_.mp4");
+    assert.deepEqual(stage["gallery"], [
+      { name: "h3-film/h3_t4_w1_00001_.mp4" },
+      { name: "h3-film/h3_t4_film_audio_00001.flac" },
+      { name: "h3-film/h3_t4_film_00002_.mp4" },
+    ]);
+  });
+
+  it("disk enrichment refuses malformed rows and preserves explicit presentation", async () => {
+    const s = seat();
+    const write = (runId: string, row: Record<string, unknown>): void => {
+      const dir = join(s.state, "output", runId);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "_flow.json"), JSON.stringify(row));
+    };
+    const multi = "run-multi-stage-00000001";
+    write(multi, { status: "completed", stages: [{ id: "a" }, { id: "b" }], artifacts: ["a.mp4"] });
+    assert.deepEqual((await s.svc.status(multi, sig()))["stages"], [{ id: "a" }, { id: "b" }]);
+
+    const empty = "run-empty-artifact-00000001";
+    write(empty, { status: "completed", stages: [{ id: "a" }], artifacts: [] });
+    assert.deepEqual((await s.svc.status(empty, sig()))["stages"], [{ id: "a" }]);
+
+    const badStage = "run-bad-stage-00000001";
+    write(badStage, { status: "completed", stages: [null], artifacts: ["a.mp4"] });
+    assert.deepEqual((await s.svc.status(badStage, sig()))["stages"], [null]);
+
+    const badName = "run-bad-name-00000001";
+    write(badName, { status: "completed", stages: [{ id: "a" }], artifacts: ["notes.txt", 4, ""] });
+    assert.deepEqual((await s.svc.status(badName, sig()))["stages"], [{ id: "a" }]);
+
+    const badArrays = "run-bad-arrays-00000001";
+    write(badArrays, { status: "completed", stages: "bad", artifacts: "bad" });
+    const badArrayRow = await s.svc.status(badArrays, sig());
+    assert.equal(badArrayRow["stages"], "bad");
+    assert.equal(badArrayRow["artifacts"], "bad");
+
+    const explicit = "run-explicit-stage-00000001";
+    write(explicit, {
+      status: "completed",
+      stages: [{ id: "a", url: "custom.mp4", gallery: [{ name: "custom.png" }] }],
+      artifacts: ["h3_t4_film_00001_.mp4"],
+    });
+    assert.deepEqual((await s.svc.status(explicit, sig()))["stages"], [{
+      id: "a", url: "custom.mp4", gallery: [{ name: "custom.png" }],
+    }]);
   });
 
   it("a terminal husk in memory defers to a richer disk row; a queued-empty row stays live; unknown with no disk still refuses", async () => {
@@ -410,6 +505,25 @@ describe("status + stop", () => {
 
     // Unknown + no disk row → the door's refusal, unchanged.
     assert.equal((await remote(() => s.svc.status("run-f5none123456-00000004", sig()))).code, "runs/unknown-run");
+  });
+
+  it("terminal empty rows stay live when disk is absent or has no usable arrays", async () => {
+    const s = seat();
+    const noDisk = live(s, { runId: "run-terminal-no-disk", status: "completed" } as Partial<RunRecord>);
+    const liveNoDisk = await s.svc.status(noDisk, sig());
+    assert.equal(liveNoDisk["from_disk"], undefined);
+
+    const malformedId = "run-terminal-malformed";
+    const malformedDir = join(s.state, "output", malformedId);
+    mkdirSync(malformedDir, { recursive: true });
+    writeFileSync(join(malformedDir, "_flow.json"), JSON.stringify({
+      status: "completed",
+      stages: "not-an-array",
+      artifacts: "not-an-array",
+    }));
+    live(s, { runId: malformedId, dir: malformedDir, status: "completed" } as Partial<RunRecord>);
+    const malformed = await s.svc.status(malformedId, sig());
+    assert.equal(malformed["from_disk"], undefined);
   });
 
   it("THE LIVE-ROW PLAN (efficiency Fix 2): a queued/running row with no stage rows projects its registered plan + card + age — never a bare 0/0", async () => {
@@ -624,6 +738,83 @@ describe("film admission warn (F-6b)", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length gate; card flows stay validate-only)", () => {
+  it("a HAND-AUTHORED multi-stage flow_inline still refuses, now naming the curated exception", async () => {
+    const s = seat();
+    const err = await remote(() =>
+      s.svc.start(
+        inlineBody({
+          flow_inline: {
+            id: "hand-authored",
+            stages: [
+              { id: "a", engine: "comfyui" },
+              { id: "b", engine: "comfyui" },
+            ],
+          },
+        }),
+        sig(),
+      ),
+    );
+    assert.equal(err.code, "runs/preview-scope");
+    assert.match(err.message, /single-stage flow_inline runs only \(2 stages\)/);
+    assert.match(err.message, /curated registry flows except/);
+  });
+
+  it("the curated-lane MECHANIC: an inline doc whose id names a registry flow passes the length gate (drives 2 merged rows)", async () => {
+    // NOT a claim about image-upscale's own stages (they are card=
+    // stages and refuse at the card gate, walled below) — this pins
+    // the gate mechanic itself: the id-name check is what lifts the
+    // single-stage policy for curated docs, and the merged worker
+    // receives BOTH rows with the cross-stage wiring intact.
+    const s = seat();
+    const engine = engineSeat(s);
+    // the engines SEAT (stroke 53's dispatch law — runOne reads
+    // ctx.get("engines").resolve(id).executor, never a raw inject)
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as Record<string, unknown>)["engines"] = {
+      ids: (): string[] => ["comfyui"],
+      resolve: (): { executor: FakeEngine } => ({ executor: engine }),
+    };
+    let seenRows: MergeRow[] | null = null;
+    let seenNames: Record<string, Record<string, string>> | null = null;
+    engine.onFlow = async (rows, _dir, inputNames): Promise<FlowResult> => {
+      seenRows = rows;
+      seenNames = inputNames;
+      return { stages: {}, promptId: "p2" };
+    };
+    const r = (await s.svc.start(
+      inlineBody({
+        flow_inline: {
+          id: "image-upscale",
+          stages: [
+            { id: "make", engine: "comfyui", params: WF, outputs: { image: "image" } },
+            { id: "polish", engine: "comfyui", params: WF, inputs: { image: { stage: "make", output: "image" } } },
+          ],
+        },
+      }),
+      sig(),
+    )) as { run_id?: string };
+    const run = await settleWait(s, String(r["run_id"]));
+    assert.equal(run.status, "completed", "the 2-stage curated doc drives the merged worker");
+    assert.equal(run.stages.length, 2);
+    assert.deepEqual(run.stages.map((st) => st.id), ["make", "polish"]);
+    assert.equal(seenRows !== null ? seenRows.length : 0, 2, "BOTH rows land in the one merged submit");
+    assert.equal(
+      seenNames !== null && seenNames["polish"] !== undefined ? seenNames["polish"]["image"] : "",
+      "make.image",
+      "the cross-stage wiring rides inputNames",
+    );
+  });
+
+  it("the registry's CARD flows are validate-only on the {flow:} door — card= stages refuse at start, loud", async () => {
+    const s = seat();
+    const err = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, flow: "image-upscale" }, sig()),
+    );
+    assert.match(err.message, /card= stages are unported/);
   });
 });
 

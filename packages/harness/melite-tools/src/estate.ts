@@ -167,6 +167,11 @@ async function trySeats(
     const intentSrc = typeof bag['prompt'] === 'string' && bag['prompt'] !== ''
       ? bag['prompt'] as string
       : typeof bag['intent'] === 'string' ? bag['intent'] as string : 'card'
+    // NOTE (2026-09-25, the fabrication finding): intent stays the
+    // IDENTITY key verbatim (the studio consult keys cardName off
+    // it — never the prompt, never a label); the tool-mint
+    // provenance rides bench_snapshot.bench_head instead (the
+    // bench's own log head, stamped by runsStart).
     const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + '…' : intentSrc
     const params: Record<string, unknown> = { ...(bag['params'] as Record<string, unknown> ?? {}) }
     if (typeof bag['prompt'] === 'string' && bag['prompt'] !== '') params['prompt'] = bag['prompt']

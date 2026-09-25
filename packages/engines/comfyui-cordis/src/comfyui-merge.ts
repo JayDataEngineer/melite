@@ -6,7 +6,7 @@ import { ACTIVE, ComfyError } from "./comfyui-types.ts";
 import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { uploadReferenced } from "./comfyui-upload.ts";
-import { assertPublishedOutputChannels, fetchOutputArtifacts, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
+import { assertPublishedOutputChannels, fetchOutputArtifacts, loudnessOf, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
 import { hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.ts";
 import { sdkClient } from "./comfyui-transport.ts";
 import type { ExecuteOpts } from "./comfyui-execute.ts";
@@ -407,6 +407,11 @@ export async function executeFlowInner(
       // path, the merge just walks per-stage subOutputs.
       const qvoice: string = qvoicePathsOf(subOutputs);
       if (qvoice !== "") outputs["qvoice_path"] = qvoice;
+      // THE LOUDNESS RECEIPT (§39): same law as the single seat —
+      // the merge walks per-stage subOutputs, the reading rides the
+      // stage's result rows verbatim.
+      const loud = loudnessOf(subOutputs);
+      if (loud !== null) outputs["loudness"] = loud;
       results[r.stageId] = {
         outputs,
         artifacts: arts,

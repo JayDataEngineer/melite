@@ -16,6 +16,7 @@ import {
   publishOutputChannels,
   assertPublishedOutputChannels,
   qvoicePathsOf,
+  loudnessOf,
   mapHistoryEntry,
   normalizeTimeoutS,
   CHANNEL_EXTS,
@@ -252,6 +253,12 @@ describe("publishOutputChannels (the declared-channel law)", () => {  it("first 
     const published = publishOutputChannels(outputs, [], bindings, []);
     expect(() => assertPublishedOutputChannels(outputs, published, bindings)).toThrow(/motion_npz/);
   });
+  it("an unbound declared file channel refuses when no artifact was published", () => {
+    expect(() => assertPublishedOutputChannels({ hero: "image" }, {}, {})).toThrow(
+      /declared image output 'hero' produced no artifact/,
+    );
+    expect(() => assertPublishedOutputChannels({ mystery: "unknown" }, {}, {})).not.toThrow();
+  });
 });
 
 describe("mapHistoryEntry (the verdict)", () => {
@@ -297,6 +304,47 @@ describe("mapHistoryEntry (the verdict)", () => {
     });
     expect(v).toEqual({ kind: "failed", detail: "execution failed @ 7 (?)" });
   });
+  it("non-object execution_error payloads use the bounded JSON voice", () => {
+    const v = mapHistoryEntry({
+      status: { status_str: "error", messages: [["execution_error", "plain failure"]] },
+    });
+    expect(v).toEqual({ kind: "failed", detail: '"plain failure"' });
+  });
+  it("execution errors name missing nodes and single-field causes", () => {
+    const missing = mapHistoryEntry({
+      status: { status_str: "error", messages: [["execution_error", { exception_type: "TypeOnly" }]] },
+    });
+    expect((missing as { detail: string }).detail).toBe("TypeOnly @ ? (?)");
+    const message = mapHistoryEntry({
+      status: { status_str: "error", messages: [["execution_error", { exception_message: "MessageOnly" }]] },
+    });
+    expect((message as { detail: string }).detail).toBe("ExecutionError: MessageOnly @ ? (?)");
+  });
+  it("execution errors trim a long traceback and bound a long rendered cause", () => {
+    const longTrace = mapHistoryEntry({
+      status: {
+        status_str: "error",
+        messages: [["execution_error", {
+          node_id: "n1",
+          node_type: "Node",
+          exception_type: "Boom",
+          exception_message: "failed",
+          traceback: "x".repeat(601),
+        }]],
+      },
+    });
+    expect((longTrace as { detail: string }).detail).toContain("traceback tail: …");
+    const longCause = mapHistoryEntry({
+      status: {
+        status_str: "error",
+        messages: [["execution_error", {
+          node_id: "n1",
+          exception_message: "m".repeat(2100),
+        }]],
+      },
+    });
+    expect((longCause as { detail: string }).detail.length).toBeLessThanOrEqual(2001);
+  });
   it("non-array message rows ride the whole-rec voice too", () => {
     const v = mapHistoryEntry({
       status: { status_str: "error", messages: ["plain", { o: 1 }, ["x"]] },
@@ -312,6 +360,24 @@ describe("mapHistoryEntry (the verdict)", () => {
   it("completed only on the true flag", () => {
     expect(mapHistoryEntry({ status: { completed: true } })).toEqual({ kind: "completed" });
     expect(mapHistoryEntry({ status: { completed: "yes" } })).toEqual({ kind: "pending" });
+  });
+});
+
+describe("loudnessOf (§39's loudness receipt — the meter's reading rides the stage result)", () => {
+  it("lifts the first finite lufs+peak pair from the history ui shape", () => {
+    expect(loudnessOf({
+      "42": { loudness_lufs: -18.42, peak_db: -1.2, sample_rate: [48000] },
+    })).toEqual({ loudness_lufs: -18.42, peak_db: -1.2 });
+  });
+  it("first finite across nodes; non-numeric and half-pairs skip", () => {
+    expect(loudnessOf({
+      a: { loudness_lufs: "loud", peak_db: -1 },
+      b: { loudness_lufs: -20 },
+      c: { loudness_lufs: -14.0, peak_db: -0.5 },
+    })).toEqual({ loudness_lufs: -14.0, peak_db: -0.5 });
+    expect(loudnessOf({ a: { loudness_lufs: Number.NaN } })).toBe(null);
+    expect(loudnessOf(undefined)).toBe(null);
+    expect(loudnessOf([])).toBe(null);
   });
 });
 
