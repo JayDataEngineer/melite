@@ -26,7 +26,15 @@ export default defineConfig({
     pool: 'forks',
     execArgv: vitestExecArgv,
     setupFiles: [PROXY_SETUP],
-    include: ['packages/*/*/tests/**/*.e2e.ts', 'tests/e2e/**/*.e2e.ts'],
+    include: [
+      'packages/*/*/tests/**/*.e2e.ts',
+      'tests/e2e/**/*.e2e.ts',
+      // The 3088 lane harness's LIVE gate: it judges the video and 3D
+      // (non-Unity) paths against the real estate (the maker's run tree
+      // + the engine), and writes a machine-readable verdict that names
+      // a blocked prerequisite — a self-skip is not a pass.
+      'tests/lane/**/*.e2e.ts',
+    ],
     exclude: ['**/*.expected.e2e.ts', 'node_modules/**'],
     testTimeout: 120_000,
     hookTimeout: 30_000,

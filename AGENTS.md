@@ -47,6 +47,9 @@ pnpm run test:snapshot
 pnpm run test:web
 pnpm run test:web:browser
 pnpm run test:web:mesh
+pnpm run test:lane
+pnpm run test:lane:analyse
+pnpm run test:lane:commission
 pnpm run lint
 ```
 
@@ -56,6 +59,15 @@ WebGL context, a real glTF parse and non-uniform pixels in Chromium. It
 boots no lane and needs no token, but it does need an artifact — by
 default the img-to-mesh run under `data/probe-img-to-mesh-0102`, or
 `MESH_DOOR_GLB=<path>`; a self-skip is not a pass.
+
+`test:lane*` is the 3088 media-maker harness: it commissions a real headless
+maker through `scripts/commission-supervisor.sh` and analyses what the
+commission left — the run tree, the run's sidecars, and the artifact bytes.
+It judges the video path (the assembled `h3_t4_film_*.mp4`; a per-window
+render is not a film receipt) and the 3D path, non-Unity (the mesh cards and
+flows; `.glb`/`.gltf`/`.obj`). `test:lane` writes a machine-readable verdict
+to `data/lane-harness/verdict.json`; `LANE_STRICT=1` makes it a gate. A
+blocked prerequisite is reported as blocked, never as a pass.
 
 The e2e tier is mixed. Individual suites declare their own key, engine, lane,
 feature, or browser prerequisites; a self-skip is not a pass. `test:coverage`

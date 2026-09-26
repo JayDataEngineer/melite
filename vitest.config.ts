@@ -139,6 +139,9 @@ export default defineConfig({
             'tests/unit/**/*.spec.ts',
             'scripts/**/*.spec.ts',
             'tests/walls/ts/suites/**/*.spec.ts',
+            // The 3088 lane harness's analyst walls (tests/lane/): the
+            // fixture proof behind the live lane spec's analysis.
+            'tests/lane/**/*.spec.ts',
           ],
           exclude: [
             ...DOM_SPEC_TREES,
