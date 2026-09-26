@@ -6,11 +6,22 @@
  * close rails.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 
 import { MediaDrilldown, type MediaDrilldownItem } from '../src/drilldown.tsx'
+
+// The 3D viewport is mocked HERE so this file stays about the
+// drilldown's composition (the model face must MOUNT the viewer); the
+// viewer's own contract is mesh-view.spec.tsx. Without the mock, jsdom's
+// missing WebGL would make every model-face assertion a failure-copy
+// assertion, which is a different test.
+vi.mock('../src/client/mesh-view.tsx', () => ({
+  MeshView: ({ url, file }: { url: string, file: string }) => (
+    <div data-testid="mesh-view" data-url={url} data-file={file} />
+  ),
+}))
 
 afterEach(() => {
   cleanup()
@@ -97,8 +108,19 @@ describe('MediaDrilldown — the kind-switched face', () => {
   })
 })
 
-describe('MediaDrilldown — the 3D sidebar door', () => {
+describe('MediaDrilldown — the 3D visual door', () => {
   const MODEL: MediaDrilldownItem = { ...IMAGE, kind: 'model', file: 'mesh.glb' }
+
+  it('RENDERS THE MESH IN THE MODAL (the 2026-09-26 hook: a .glb is viewable, not just a link)', () => {
+    // THE DEFECT THIS PINS: the model face used to render NO 3D at all
+    // — only an "open 3D view in sidebar" hand-off and a download. A
+    // mesh artifact was reachable but never viewable in the product, so
+    // the media plane had no visual door for the 3D lane.
+    renderDrilldown(MODEL)
+    const view = screen.getByTestId('mesh-view')
+    expect(view.getAttribute('data-url')).toBe(MODEL.url)
+    expect(view.getAttribute('data-file')).toBe('mesh.glb')
+  })
 
   it('opens the sidebar artifact on click and on Enter/Space (never on other keys)', async () => {
     const user = userEvent.setup()
@@ -296,9 +318,10 @@ describe('MediaDrilldown — delete + rename buttons', () => {
     renderDrilldown(IMAGE, { onDelete: async () => { calls += 1; await gate } })
     await user.click(screen.getByTestId('drill-delete'))
     const confirm = screen.getByTestId('drill-delete-confirm')
-    // two rapid clicks before the gate releases — the second is held.
-    fireEvent.click(confirm)
-    fireEvent.click(confirm)
+    act(() => {
+      confirm.click()
+      confirm.click()
+    })
     expect(calls).toBe(1)
     expect(screen.getByText('Deleting…')).toBeTruthy()
     release()
@@ -315,6 +338,42 @@ describe('MediaDrilldown — delete + rename buttons', () => {
     await user.click(screen.getByTestId('drill-rename-save'))
     expect(await screen.findByTestId('drill-op-error')).toBeTruthy()
     expect(screen.getByText('rename failed (already_exists)')).toBeTruthy()
+  })
+
+  it('holds a same-turn double rename confirmation', async () => {
+    const user = userEvent.setup()
+    let calls = 0
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    renderDrilldown(IMAGE, { onRename: async () => { calls += 1; await gate } })
+    await user.click(screen.getByTestId('drill-rename'))
+    const input = screen.getByTestId('drill-rename-input') as HTMLInputElement
+    await user.clear(input)
+    await user.type(input, 'renamed.png')
+    const save = screen.getByTestId('drill-rename-save')
+    act(() => {
+      save.click()
+      save.click()
+    })
+    expect(calls).toBe(1)
+    release()
+    await screen.findByTestId('drill-rename')
+  })
+
+  it('surfaces non-Error operation failures', async () => {
+    const user = userEvent.setup()
+    renderDrilldown(IMAGE, { onDelete: async () => { throw 'delete foreign' } })
+    await user.click(screen.getByTestId('drill-delete'))
+    await user.click(screen.getByTestId('drill-delete-confirm'))
+    expect((await screen.findByTestId('drill-op-error')).textContent).toBe('delete foreign')
+    cleanup()
+    renderDrilldown(IMAGE, { onRename: async () => { throw 'rename foreign' } })
+    await user.click(screen.getByTestId('drill-rename'))
+    const input = screen.getByTestId('drill-rename-input') as HTMLInputElement
+    await user.clear(input)
+    await user.type(input, 'renamed.png')
+    await user.click(screen.getByTestId('drill-rename-save'))
+    expect((await screen.findByTestId('drill-op-error')).textContent).toBe('rename foreign')
   })
 
   it('only the passed verbs paint (delete without rename and vice versa)', async () => {

@@ -14,13 +14,17 @@ import { type SpecField } from './spec.ts'
 import css from './card.module.css'
 
 /** The media-kind the picker fetches for a field: image fields name
- *  image; mesh fields name mesh (the library boards meshes only when
- *  the media namespace serves them — an honest empty until then);
- *  file fields take the whole library (their accept narrows
- *  client-side per row). */
+ *  image; mesh fields name the MEDIA vocabulary's kind for 3D, which
+ *  is `model` — NOT `mesh`. `mesh` is the client PREVIEW kind
+ *  (preview-kinds.ts), a different vocabulary; the media list door
+ *  admits image/audio/video/model/all and refuses anything else with
+ *  `media/kind`, so asking it for `mesh` was a guaranteed refusal that
+ *  the picker swallowed into an empty list (the "From media" row was
+ *  empty for every mesh field, with no error anywhere). file fields
+ *  take the whole library (their accept narrows client-side per row). */
 function mediaKindForField(f: SpecField): string {
   if (f.type === 'image') return 'image'
-  if (f.type === 'mesh') return 'mesh'
+  if (f.type === 'mesh') return 'model'
   return 'all'
 }
 
@@ -56,6 +60,8 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   // OS dialog answers — the field rides a ref from the menu click.
   const fieldRef = useRef<SpecField | null>(null)
   const [mediaRows, setMediaRows] = useState<Array<{ id: string; label: string; url: string }> | null>(null)
+  // the refusal that emptied it (null = the list is honest-empty)
+  const [mediaErr, setMediaErr] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const onFile = useCallback(async (f: SpecField, file: File): Promise<void> => {
     if (wire.onFile !== undefined) { wire.onFile(file); return }
@@ -152,8 +158,13 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     const ctrl = new AbortController()
     setMediaRows(null)
     loadMedia(mediaKindForField(modalAt.field), ctrl.signal)
-      .then((items) => { setMediaRows(items.map((it) => ({ id: it.url, label: it.name, url: it.url }))) })
-      .catch(() => { setMediaRows([]) })
+      .then((items) => { setMediaRows(items.map((it) => ({ id: it.url, label: it.name, url: it.url }))); setMediaErr(null) })
+      // A REFUSAL IS NOT AN EMPTY LIBRARY. The old arm caught into
+      // setMediaRows([]), which rendered "nothing to pick yet" for a
+      // door that had actually refused (the `mesh`-vs-`model` kind
+      // mismatch shipped exactly that: an empty picker, no error). The
+      // message rides the empty state so a broken list is legible.
+      .catch((e: unknown) => { setMediaRows([]); setMediaErr(e instanceof Error ? e.message : String(e)) })
     return () => { ctrl.abort() }
   }, [modalAt, loadMedia])
   const pickerModal = modalAt === null ? null : (() => {
@@ -177,7 +188,14 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     },
       candidates.length === 0
         ? h('p', { className: css.pickEmpty },
-            modalAt.mode === 'media' && mediaRows === null ? 'loading\u2026' : 'nothing to pick yet')
+            modalAt.mode === 'media' && mediaRows === null
+              ? 'loading\u2026'
+              // the door REFUSED — say so. An empty list that is really
+              // a refusal is how the mesh picker stayed mysteriously
+              // empty for a release (the mesh/model kind mismatch).
+              : mediaErr !== null
+                ? 'media library unavailable \u2014 ' + mediaErr
+                : 'nothing to pick yet')
         : h('ul', { className: css.pickList },
             candidates.map((c) => h('li', { key: c.id, className: css.pickRow },
               h('button', {

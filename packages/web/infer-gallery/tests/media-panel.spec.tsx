@@ -306,7 +306,12 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
     })
     fireEvent.click(tile)
     fireEvent.click(screen.getByText(/open 3D view in sidebar/))
-    expect(await screen.findByText(/3D view unavailable/)).toBeTruthy()
+    // TWO honest absences can now be on screen at once (2026-09-26):
+    // the sidebar-tab door's missing tab service, AND the inline viewer's
+    // own refusal (jsdom has no WebGL, which is exactly the arm that
+    // must speak). Both are matched; the sidebar one is the subject.
+    await waitFor(() => { expect(screen.getAllByText(/3D view unavailable/).length).toBeGreaterThanOrEqual(1) })
+    expect(screen.getAllByText(/sidebar tab service is not loaded/).length).toBeGreaterThanOrEqual(1)
     // The download fallback still carries the artifact.
     expect(screen.getByText(/download scene\.glb/)).toBeTruthy()
   })

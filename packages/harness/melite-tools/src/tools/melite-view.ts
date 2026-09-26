@@ -38,6 +38,10 @@ import type { Context } from '@deepseek-ai/cordis'
 import { AttachmentError, AttachmentId } from '@deepseek-ai/dsh-attachment'
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
+import { probeMedia } from './mp4Probe.ts'
+import type { ProbedStream } from './mp4Probe.ts'
+import { meshVoice, summarizeMesh } from './glbSummary.ts'
+import type { MeshSummary } from './glbSummary.ts'
 import { listMedia } from '@melite/estate-media'
 import type { MediaListRow } from '@melite/estate-media'
 import { rootsManifest, searchedVoice } from '@melite/estate-queue'
@@ -49,7 +53,7 @@ import type { JsonValue, ToolDefinition } from '../types.ts'
  *  writes win); a miss names every searched root. */
 const firstRootWithRun = async (
   seat: { stateRoot: string },
-  kind: 'image' | 'video' | 'audio',
+  kind: 'image' | 'video' | 'audio' | 'model',
   runId: string,
 ): Promise<{ own: MediaListRow[]; root: string } | null> => {
   for (const root of rootsManifest(seat.stateRoot)) {
@@ -123,7 +127,7 @@ export interface ViewedImageValue {
     file: string
     duration_s?: number
     size_bytes?: number
-    streams: Array<{ codec: string, width?: number, height?: number, fps?: string, frames?: number }>
+    streams: Array<{ codec: string, codec_type?: string, width?: number, height?: number, fps?: string, frames?: number }>
     sheet_of: number
   }
   /** THE AUDIO ARM (§33 gap-6): the observed artifact is audio —
@@ -135,66 +139,27 @@ export interface ViewedImageValue {
     file: string
     duration_s?: number
     size_bytes?: number
-    streams: Array<{ codec: string, sample_rate?: number, channels?: number }>
+    streams: Array<{ codec: string, codec_type?: string, sample_rate?: number, channels?: number }>
     waveform_of: boolean
   }
+  /** THE MESH ARM (2026-09-26, the 3D-into-media hook): the observed
+   *  artifact is a 3D model. The viewed image IS the mesh's own raster
+   *  poster when the run emitted one next to the `.glb`
+   *  (`<stem>_poster.png` — the same sibling contract the media
+   *  sidebar reads), and this row carries the artifact's structural
+   *  verdict either way: glTF counts, vertex/triangle totals, whether
+   *  it is UV-mapped, and its bounds. Absent on the image/film/audio
+   *  paths. A mesh with NO poster refuses (see the arm) — it never
+   *  returns a fabricated image. */
+  mesh?: MeshSummary & { poster?: string }
 }
 
-/** A probed film stream (ffprobe's row, narrowed). */
-/** (the audio arm shares this row: sample_rate/channels ride on
- *  audio streams, geometry on video — one summary shape, both
- *  probes). */
-export interface FilmStreamSummary {
-  codec: string
-  width?: number
-  height?: number
-  fps?: string
-  frames?: number
-  sample_rate?: number
-  channels?: number
-}
-
-/** THE FILM PROBE (§24, the byte-cheap flags the skill prescribes):
- *  format duration/size + per-stream codec/geometry/rate/count —
- *  never a decode, never a full stream dump. Pure: static strings
- *  pin every arm (the binary only delivers the text). */
-export function parseProbeSummary(jsonText: string): { duration_s?: number, size_bytes?: number, streams: FilmStreamSummary[] } {
-  let doc: unknown
-  try {
-    doc = JSON.parse(jsonText) as unknown
-  } catch {
-    throw new Error('the film probe returned unparsable output — the file may be truncated or corrupt')
-  }
-  if (typeof doc !== 'object' || doc === null) {
-    throw new Error('the film probe returned unparsable output — the file may be truncated or corrupt')
-  }
-  const rec = doc as Record<string, unknown>
-  const format = (typeof rec['format'] === 'object' && rec['format'] !== null ? rec['format'] : {}) as Record<string, unknown>
-  const streamsRaw = Array.isArray(rec['streams']) ? rec['streams'] as unknown[] : []
-  const streams: FilmStreamSummary[] = []
-  for (const raw of streamsRaw) {
-    if (typeof raw !== 'object' || raw === null) continue
-    const s = raw as Record<string, unknown>
-    if (typeof s['codec_name'] !== 'string') continue
-    const row: FilmStreamSummary = { codec: s['codec_name'] as string }
-    if (typeof s['width'] === 'number') row.width = s['width'] as number
-    if (typeof s['height'] === 'number') row.height = s['height'] as number
-    if (typeof s['r_frame_rate'] === 'string') row.fps = s['r_frame_rate'] as string
-    if (typeof s['nb_frames'] === 'string' && s['nb_frames'] !== '' && Number.isFinite(Number(s['nb_frames']))) row.frames = Number(s['nb_frames'])
-    if (typeof s['sample_rate'] === 'number') row.sample_rate = s['sample_rate']
-    else if (typeof s['sample_rate'] === 'string' && s['sample_rate'] !== '' && Number.isFinite(Number(s['sample_rate']))) row.sample_rate = Number(s['sample_rate'])
-    if (typeof s['channels'] === 'number') row.channels = s['channels']
-    else if (typeof s['channels'] === 'string' && s['channels'] !== '' && Number.isFinite(Number(s['channels']))) row.channels = Number(s['channels'])
-    streams.push(row)
-  }
-  if (streams.length === 0) {
-    throw new Error('the film probe found no streams — the file may be truncated or corrupt')
-  }
-  const out: { duration_s?: number, size_bytes?: number, streams: FilmStreamSummary[] } = { streams }
-  if (typeof format['duration'] === 'string' && Number.isFinite(Number(format['duration']))) out.duration_s = Number(format['duration'])
-  if (typeof format['size'] === 'string' && Number.isFinite(Number(format['size']))) out.size_bytes = Number(format['size'])
-  return out
-}
+/** A probed stream row (mp4Probe's row, narrowed to what the view
+ *  publishes). The audio arm shares this shape: sample_rate/channels
+ *  ride on audio streams, geometry on video — one summary, both arms.
+ *  Read from the CONTAINER BYTES in TypeScript; the harness spawns
+ *  no binary to look at a file. */
+export interface FilmStreamSummary extends ProbedStream {}
 
 /** Contact-sheet plan: four timestamps across the film's span (a
  *  beginning, two middles, near the end — the observe arm wants the
@@ -235,7 +200,36 @@ export const defaultFilmProc: FilmProc = async (bin, args, signal) => {
   return { stdout: out.stdout }
 }
 
-/** View a film artifact: ffprobe summary + a contact sheet committed
+/** Read one artifact's stream facts from its container bytes. The
+ *  refusal keeps the door's voice: a file the in-repo parser cannot
+ *  read names ITSELF and the parser's reason, never a throw-through. */
+/** The read seam the probe rides (the same shape the ffmpeg calls had,
+ *  so a raced/unreadable artifact is pinnable without a POSIX-only
+ *  permission trick). */
+export type BytesReader = (absPath: string) => Promise<Uint8Array>
+
+export const defaultBytesReader: BytesReader = async (absPath) => new Uint8Array(await readFile(absPath))
+
+async function probeFile(
+  absPath: string,
+  name: string,
+  kind: 'film' | 'audio',
+  read: BytesReader = defaultBytesReader,
+): Promise<{ duration_s?: number, size_bytes: number, streams: FilmStreamSummary[] }> {
+  let bytes: Uint8Array
+  try {
+    bytes = await read(absPath)
+  } catch (error) {
+    throw new Error('cannot view the ' + kind + ' "' + name + '": the artifact could not be read (' + (error instanceof Error ? error.message : String(error)) + ')', { cause: error })
+  }
+  try {
+    return probeMedia(bytes)
+  } catch (error) {
+    throw new Error('cannot view the ' + kind + ' "' + name + '": ' + String((error as Error).message), { cause: error })
+  }
+}
+
+/** View a film artifact: the container summary + a contact sheet committed
  *  as the viewed image (the §24 gate — one view artifact, stream
  *  summary + frames the model can SEE). Containment rides the walk's
  *  own row (absPath built from runId + name, never caller text); the
@@ -249,6 +243,7 @@ export async function viewFilmArtifact(
   ctx: { get(name: string): unknown },
   attachments: AttachmentsSeam,
   proc: FilmProc = defaultFilmProc,
+  read: BytesReader = defaultBytesReader,
 ): Promise<ViewedImageValue> {
   // §23 CROSS-ROOTS: the video walk spans the manifest (own root
   // first); the miss names every searched tree.
@@ -267,20 +262,9 @@ export async function viewFilmArtifact(
   const row = picked[0]!
   await assertImageCapableRoute(ctx, exec, runId)
   const absPath = join(found.root, 'output', row.runId, row.name)
-  let probe: { duration_s?: number, size_bytes?: number, streams: FilmStreamSummary[] }
-  try {
-    const { stdout } = await proc('ffprobe', [
-      '-v', 'error',
-      '-show_entries', 'format=duration,size:stream=codec_name,width,height,r_frame_rate,nb_frames',
-      '-of', 'json', absPath,
-    ], exec.signal)
-    probe = parseProbeSummary(stdout)
-  } catch (error) {
-    if (error instanceof Error && (error as { code?: unknown }).code === 'ENOENT') {
-      throw new Error('cannot view the film "' + row.name + '": ffprobe is not installed on the estate host — images remain viewable', { cause: error })
-    }
-    throw new Error('cannot view the film "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error })
-  }
+  // THE PROBE IS TYPESCRIPT: the container is a box tree, so its facts
+  // are read from bytes. No ffprobe, no host binary, no subprocess.
+  const probe = await probeFile(absPath, row.name, 'film', read)
   const stamps = sheetPlan(probe.duration_s)
   const work = await mkdtemp(join(tmpdir(), 'melite-view-'))
   try {
@@ -333,8 +317,8 @@ export async function viewFilmArtifact(
       film: {
         file: row.name,
         ...(probe.duration_s === undefined ? {} : { duration_s: probe.duration_s }),
-        ...(probe.size_bytes === undefined ? {} : { size_bytes: probe.size_bytes }),
-        streams: probe.streams.map((s) => ({ codec: s.codec, ...(s.width === undefined ? {} : { width: s.width }), ...(s.height === undefined ? {} : { height: s.height }), ...(s.fps === undefined ? {} : { fps: s.fps }), ...(s.frames === undefined ? {} : { frames: s.frames }) })),
+        size_bytes: probe.size_bytes,
+        streams: probe.streams.map((s: FilmStreamSummary) => ({ codec: s.codec, ...(s.codec_type === undefined ? {} : { codec_type: s.codec_type }), ...(s.width === undefined ? {} : { width: s.width }), ...(s.height === undefined ? {} : { height: s.height }), ...(s.fps === undefined ? {} : { fps: s.fps }), ...(s.frames === undefined ? {} : { frames: s.frames }) })),
         sheet_of: stamps.length,
       },
     }
@@ -361,6 +345,7 @@ export async function viewAudioArtifact(
   ctx: { get(name: string): unknown },
   attachments: AttachmentsSeam,
   proc: FilmProc = defaultFilmProc,
+  read: BytesReader = defaultBytesReader,
 ): Promise<ViewedImageValue> {
   const found = await firstRootWithRun(seat, 'audio', runId)
   if (found === null) {
@@ -374,20 +359,8 @@ export async function viewAudioArtifact(
   const row = picked[0]!
   await assertImageCapableRoute(ctx, exec, runId)
   const absPath = join(found.root, 'output', row.runId, row.name)
-  let probe: { duration_s?: number, size_bytes?: number, streams: FilmStreamSummary[] }
-  try {
-    const { stdout } = await proc('ffprobe', [
-      '-v', 'error',
-      '-show_entries', 'format=duration,size:stream=codec_name,sample_rate,channels',
-      '-of', 'json', absPath,
-    ], exec.signal)
-    probe = parseProbeSummary(stdout)
-  } catch (error) {
-    if (error instanceof Error && (error as { code?: unknown }).code === 'ENOENT') {
-      throw new Error('cannot view the audio "' + row.name + '": ffprobe is not installed on the estate host', { cause: error })
-    }
-    throw new Error('cannot view the audio "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error })
-  }
+  // THE PROBE IS TYPESCRIPT (the film's twin): bytes, not a binary.
+  const probe = await probeFile(absPath, row.name, 'audio', read)
   const work = await mkdtemp(join(tmpdir(), 'melite-view-'))
   try {
     const sheet = join(work, 'waveform.png')
@@ -422,8 +395,8 @@ export async function viewAudioArtifact(
       audio: {
         file: row.name,
         ...(probe.duration_s === undefined ? {} : { duration_s: probe.duration_s }),
-        ...(probe.size_bytes === undefined ? {} : { size_bytes: probe.size_bytes }),
-        streams: probe.streams.map((s) => ({ codec: s.codec, ...(s.sample_rate === undefined ? {} : { sample_rate: s.sample_rate }), ...(s.channels === undefined ? {} : { channels: s.channels }) })),
+        size_bytes: probe.size_bytes,
+        streams: probe.streams.map((s: FilmStreamSummary) => ({ codec: s.codec, ...(s.codec_type === undefined ? {} : { codec_type: s.codec_type }), ...(s.sample_rate === undefined ? {} : { sample_rate: s.sample_rate }), ...(s.channels === undefined ? {} : { channels: s.channels }) })),
         waveform_of: true,
       },
     }
@@ -508,8 +481,16 @@ function viewedContent(value: ViewedImageValue): ContentBlock[] {
     return [
       { type: 'text', text: 'melite_view audio: ' + value.url + ' (' + a.file
         + (a.duration_s !== undefined ? ', ' + String(a.duration_s) + 's' : '')
-        + (a.size_bytes !== undefined ? ', ' + String(a.size_bytes) + ' bytes' : '')
+        + ', ' + String(a.size_bytes) + ' bytes'
         + ', streams: ' + streams + '; waveform sheet: ' + value.image.mediaType + ' ' + String(value.image.width) + 'x' + String(value.image.height) + ')' },
+      { type: 'image', attachment: imageRefFromValue(value.image) },
+    ]
+  }
+  if (value.mesh !== undefined) {
+    const m = value.mesh
+    return [
+      { type: 'text', text: 'melite_view mesh: ' + value.url + ' (' + meshVoice(m)
+        + (m.poster === undefined ? '; NO raster poster beside the mesh — this is the structural read, not a picture' : '; poster: ' + m.poster) + ')' },
       { type: 'image', attachment: imageRefFromValue(value.image) },
     ]
   }
@@ -517,6 +498,100 @@ function viewedContent(value: ViewedImageValue): ContentBlock[] {
     { type: 'text', text: 'melite_view: ' + value.url + ' (' + value.image.mediaType + ', ' + String(value.image.width) + 'x' + String(value.image.height) + ', ' + String(value.image.bytes) + ' bytes)' },
     { type: 'image', attachment: imageRefFromValue(value.image) },
   ]
+}
+
+/** The mesh a poster sibling belongs to, or null when the image is the
+ *  run's own. `<dir>/<stem>_poster.png` → `<dir>/<stem>.glb|gltf`. The
+ *  check is the same directory + stem the media sidebar's POSTER_STEMS
+ *  contract reads, so the door and the sidebar agree on what a poster
+ *  is. A directory walk (no bytes read) — the caller has already
+ *  decided to observe this run. */
+async function meshBesidePoster(seat: QueueSeatSeam, runId: string, imageName: string): Promise<string | null> {
+  const m = /^(.*)_poster\.(?:png|jpe?g|webp)$/i.exec(imageName)
+  if (m === null) return null
+  const stem = m[1] as string
+  const models = (await listMedia(seat.stateRoot, 'model')).items.filter((i) => i.runId === runId)
+  const hit = models.find((i) => i.name === stem + '.glb' || i.name === stem + '.gltf')
+  return hit === undefined ? null : hit.name
+}
+
+/** THE MESH ARM (2026-09-26). A `.glb`/`.gltf` has no raster, so the
+ *  door serves the mesh two ways, in this order:
+ *
+ *  1. THE POSTER: when the run emitted `<stem>_poster.png` beside the
+ *     mesh (the sibling contract the media sidebar already reads), the
+ *     model SEES the render and the `mesh` row carries the structural
+ *     verdict alongside it.
+ *  2. THE STRUCTURAL READ: with no poster there is nothing to attach,
+ *     and this arm refuses — but it refuses WITH THE FACTS (meshes,
+ *     vertices, triangles, materials, textures, UV-map, bounds,
+ *     bytes) instead of the old "no image artifacts" dead end, and it
+ *     names the upstream fix (the 3D lane emits no poster). It never
+ *     fabricates an image to satisfy the schema: a fake picture of a
+ *     mesh is worse than an honest structural answer. */
+export async function viewModelArtifact(
+  seat: QueueSeatSeam,
+  runId: string,
+  artifact: string,
+  exec: ViewExec,
+  ctx: { get(name: string): unknown },
+  attachments: AttachmentsSeam,
+  read: BytesReader = defaultBytesReader,
+): Promise<ViewedImageValue> {
+  const found = await firstRootWithRun(seat, 'model', runId)
+  if (found === null) {
+    // THE VOICE IS ADDITIVE (2026-09-26): the historical miss sentence
+    // is pinned by walls and by every agent that has read it, so the
+    // mesh truth is APPENDED to it rather than replacing it — a run
+    // with nothing in it still hears the sentence it always heard,
+    // plus the fact that no mesh was there either.
+    throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film or audio — the run holds no image/video/audio artifacts either) (and no mesh: the run holds no .glb/.gltf artifact either) ' + searchedVoice(rootsManifest(seat.stateRoot)))
+  }
+  const own = found.own
+  const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own
+  if (picked.length === 0) {
+    throw new Error('run "' + runId + '" has no mesh artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot)))
+  }
+  const row = picked[0]!
+  const absPath = join(found.root, 'output', row.runId, row.name)
+  const data = await read(absPath)
+  const summary = summarizeMesh(data, row.name)
+
+  // THE POSTER SIBLING: same directory, `<stem>_poster.png`.
+  const slash = row.name.lastIndexOf('/')
+  const dir = slash < 0 ? '' : row.name.slice(0, slash + 1)
+  const stem = row.name.slice(slash + 1).replace(/\.(glb|gltf)$/i, '')
+  const posterName = dir + stem + '_poster.png'
+  const poster = (await listMedia(found.root, 'image')).items.find(
+    (i) => i.runId === runId && i.name === posterName,
+  )
+  if (poster === undefined) {
+    throw new Error(
+      'run "' + runId + '" holds the mesh "' + row.name + '" (' + meshVoice(summary) + ') '
+      + 'but no raster poster beside it (' + posterName + ' is absent), so there is no image to show you. '
+      + 'The 3D lane emits no poster today: read the numbers above, or open the mesh in the app\'s media drilldown, '
+      + 'which renders it in 3D. ' + searchedVoice(rootsManifest(seat.stateRoot)),
+    )
+  }
+
+  await assertImageCapableRoute(ctx, exec, runId)
+  const posterPath = join(found.root, 'output', poster.runId, poster.name)
+  const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes)
+  const bytes = await read(posterPath)
+  if (bytes.byteLength > byteCap) {
+    throw new Error('cannot view "' + poster.name + '": the file exceeds the ' + String(byteCap) + '-byte image cap; downscale and retry')
+  }
+  const mediaType = sniffImageMediaType(bytes) ?? imageMediaTypeForPath(poster.name)
+  if (mediaType === undefined) {
+    throw new Error('cannot view the mesh poster "' + poster.name + '": the file content is not a supported image format (PNG/JPEG/WebP/GIF)')
+  }
+  const ref = await attachments.saveImage({ data: bytes, mediaType, name: basename(poster.name) })
+  return {
+    runId,
+    url: row.url,
+    image: { attachmentId: ref.attachmentId as string, mediaType, bytes: ref.bytes as number, width: ref.width as number, height: ref.height as number, name: basename(poster.name) },
+    mesh: { ...summary, poster: posterName },
+  }
 }
 
 /** Build the melite_view tool against the live cordis context (the
@@ -619,6 +694,15 @@ export function meliteView(ctx: Context): ToolDefinition {
         const heard = await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments)
         return heard as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
       }
+      // THE MESH ARM (2026-09-26): a 3D artifact names its intent the
+      // same way audio does — BEFORE the image walk, because a 3D run
+      // (img-to-mesh, quad-remesh) holds no images at all and would
+      // otherwise walk the whole miss chain before reaching the mesh.
+      const MODEL_EXTENSIONS = new Set(['.glb', '.gltf'])
+      if (artifact !== '' && MODEL_EXTENSIONS.has(extname(artifact).toLowerCase())) {
+        const meshed = await viewModelArtifact(seat, runId, artifact, exec, ctx, attachments)
+        return meshed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+      }
       const found = await firstRootWithRun(seat, 'image', runId)
       if (found === null) {
         // THE FILM ARM (§24): a film run holds no images — observe
@@ -635,8 +719,21 @@ export function meliteView(ctx: Context): ToolDefinition {
           // film-arm refusal (a real probe failure on a real film)
           // rethrows — the chain never masks a working arm's error.
           if (!(filmMiss instanceof Error && /produced no image artifacts/.test(filmMiss.message))) throw filmMiss
-          const heard = await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments)
-          return heard as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+          try {
+            const heard = await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments)
+            return heard as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+          } catch (audioMiss) {
+            // THE MESH-ONLY RUN (2026-09-26): a 3D lane's run holds a
+            // .glb and nothing else, so the image walk, the film arm and
+            // the audio arm all miss before the mesh is even considered.
+            // The mesh arm is LAST in the chain and only claims the miss
+            // when the run really has no image/video/audio — a run whose
+            // film or audio arm failed for its OWN reason rethrows that
+            // reason untouched (the chain never masks a working arm).
+            if (!(audioMiss instanceof Error && /produced no image artifacts/.test(audioMiss.message))) throw audioMiss
+            const meshed = await viewModelArtifact(seat, runId, artifact, exec, ctx, attachments)
+            return meshed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+          }
         }
       }
       const own = found.own
@@ -645,6 +742,21 @@ export function meliteView(ctx: Context): ToolDefinition {
         throw new Error('run "' + runId + '" has no image artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', '))
       }
       const row = picked[0]!
+
+      // THE POSTER IS NOT AN INDEPENDENT IMAGE (2026-09-26): a 3D
+      // lane's raster sibling (`<stem>_poster.png`) IS the mesh's
+      // picture, so serving it through the plain image arm told the
+      // model "here is your image" and taught it NOTHING about the
+      // mesh the run actually produced — the 3D lane stayed invisible
+      // to the agent even once it emitted a poster. When the picked
+      // image is a poster sibling of a mesh in the same run, the mesh
+      // arm owns the observation (it attaches this same poster AND
+      // reports the structure). A run's own images are untouched.
+      const meshOfPoster = await meshBesidePoster(seat, runId, row.name)
+      if (meshOfPoster !== null) {
+        const meshed = await viewModelArtifact(seat, runId, meshOfPoster, exec, ctx, attachments)
+        return meshed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+      }
 
       // CONTAINMENT BY CONSTRUCTION: the absolute path is built from
       // the walk's own root + runId + name — caller text never

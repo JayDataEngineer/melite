@@ -18,6 +18,7 @@
     "./chrome": "./src/chrome.ts",
     "./toast": "./src/toast.tsx",
     "./preview": "./src/preview.tsx",
+    "./stage3d": "./src/stage3d.ts",
     "./toast-store": "./src/toastStore.ts",
     "./estate-remote": "./src/estate-remote.ts",
     "./runs-policy": "./src/runs-policy.ts",

@@ -16,6 +16,7 @@ import * as React from 'react'
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 
 import css from './client/overlay.module.css'
+import { MeshView } from './client/mesh-view.tsx'
 import { bgBase1, labelPrimary2, stateBusinessPrimary, stateWarnPrimary1, textTertiary3 } from './client/ui.tokens'
 
 /** The drilldown's own currency — everything the face reads, nothing
@@ -28,16 +29,24 @@ export interface MediaDrilldownItem {
   time: string
 }
 
-/** 3D artifact view — hands the artifact to the sidebar as a RESOURCE
- *  (estate-artifact address, claimed by a viewer tab type; the mesh
- *  renders in the right panel, orbitable beside the run list).
- *  The download link stays: when the viewer plugin is absent no tab
- *  type claims the address and openResource is a no-op — the artifact
- *  must still be reachable. openArtifact is OPTIONAL: a surface with
- *  no sidebar door (the card zoom) simply hides the link. */
+/** 3D artifact view — THE MESH RENDERS HERE, IN THE MODAL (the
+ *  operator's 2026-09-26 order: the 3D lane is hooked into the media
+ *  plane with a real visual door). `MeshView` mounts the estate's shared
+ *  stage core + the shared GLB loader, so a `.glb` is orbitable in the
+ *  drilldown exactly as an image is visible in the drilldown — no
+ *  sidebar round-trip required to see the artifact.
+ *
+ *  The two links under the canvas stay, and both are load-bearing:
+ *  the sidebar hand-off (an estate-artifact RESOURCE address claimed by
+ *  a viewer tab type — a bigger, docked orbit beside the run list) and
+ *  the download (when WebGL or the decode refuses, or the viewer plugin
+ *  is absent, the artifact must still be reachable). openArtifact is
+ *  OPTIONAL: a surface with no sidebar door (the card zoom) hides that
+ *  link and keeps the canvas + the download. */
 function ModelView({ item, openArtifact }: { item: MediaDrilldownItem; openArtifact?: (item: MediaDrilldownItem) => void }): React.JSX.Element {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', width: '100%' }}>
+      <MeshView url={item.url} file={item.file} />
       {openArtifact !== undefined
         ? (
             <a
@@ -183,11 +192,11 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
       .catch((e: unknown) => { setOpError(e instanceof Error ? e.message : String(e)) })
       .finally(() => { inflight.current = false; setBusy(false); setMode('idle') })
   }
-  const actionBtn = (label: string, verb: () => void, opts?: { danger?: boolean; testid?: string; aria?: string }): React.JSX.Element => (
+  const actionBtn = (label: string, verb: () => void, opts: { danger?: boolean; testid: string; aria: string }): React.JSX.Element => (
     <button
       type="button"
-      aria-label={opts?.aria ?? label}
-      data-testid={opts?.testid ?? label}
+      aria-label={opts.aria}
+      data-testid={opts.testid}
       disabled={busy}
       onClick={(e) => { e.stopPropagation(); verb() }}
       style={{

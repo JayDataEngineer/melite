@@ -987,6 +987,14 @@ describe("stroke-82 walls: the content-type table + query", () => {
       ["f.ogg", "audio/ogg"],
       ["f.m4a", "audio/mp4"],
       ["f.aac", "audio/aac"],
+      // THE 3D ROWS (2026-09-26): the media route serves mesh bytes for
+      // the modal's viewer, so the served content type is pinned here
+      // like every other kind. Without these two rows the table's
+      // 3D arm was untested at the route and a drift to octet-stream
+      // would have shipped silently (the leaf assertion existed; the
+      // route's own wall did not).
+      ["m.glb", "model/gltf-binary"],
+      ["m.gltf", "model/gltf+json"],
       ["f.json", "application/json; charset=utf-8"],
       ["f.txt", "text/plain; charset=utf-8"],
     ];
@@ -1162,6 +1170,12 @@ describe("the card-build handshake", () => {
     // the strip is byte-exact both ways (no newline drift)
     assert.equal(once.replace(stampLine(stampOf(code)), ""), code);
   });
+
+  test("the stamp line at the start of the bundle is stripped too", () => {
+    const line = stampLine("a".repeat(40)).slice(1)
+    assert.equal(unstamped(line), "")
+    assert.equal(stampOf(line), stampOf(""))
+  })
 
   test("THE GUILLOTINE WALL: an inert marker mid-file is never stripped", () => {
     // the night's live breakage: a bundle inlining this module's

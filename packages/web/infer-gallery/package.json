@@ -38,6 +38,7 @@
     "@types/node": "^22.20.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^18.3.5",
+    "@types/three": "^0.184.1",
     "lightningcss": "^1.30.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -49,6 +50,9 @@
     "react": "^18.2.0"
   },
   "dependencies": {
-    "@melite/contracts": "workspace:*"
+    "@melite/card-base": "workspace:*",
+    "@melite/contracts": "workspace:*",
+    "@melite/formats": "workspace:*",
+    "three": "^0.184.0"
   }
 }

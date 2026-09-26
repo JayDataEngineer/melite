@@ -122,7 +122,13 @@ test('THE MESH HOOK: a mesh field is slot-shaped and retargets the file dialog t
   expect(providerFileInput().getAttribute('accept')).toBe('.glb,.gltf')
 })
 
-test('FROM MEDIA: a mesh field names the mesh lane (never the whole library)', async () => {
+test('FROM MEDIA: a mesh field asks the list door for the MODEL kind', async () => {
+  // THE KIND SPELLING (2026-09-26): the media list door admits
+  // image/audio/video/model/all and refuses anything else. `mesh` is
+  // the client PREVIEW kind, a different vocabulary — asking the door
+  // for it guaranteed a `media/kind` refusal, which the picker caught
+  // into an empty list, so every mesh field's "From media" was
+  // mysteriously empty with no error anywhere.
   const seen: string[] = []
   const loadMedia = async (kind: string, _signal: AbortSignal): Promise<Array<{ url: string; name: string }>> => {
     seen.push(kind)
@@ -132,8 +138,22 @@ test('FROM MEDIA: a mesh field names the mesh lane (never the whole library)', a
   const host = cap().square(MESH) as { verbs: { onPick: () => void } }
   act(() => { host.verbs.onPick() })
   fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
-  expect(await screen.findByText(/runs library \(mesh\)/)).not.toBeNull()
-  expect(seen).toEqual(['mesh'])
+  expect(await screen.findByText(/runs library \(model\)/)).not.toBeNull()
+  expect(seen).toEqual(['model'])
+})
+
+test('FROM MEDIA: a door REFUSAL is stated, not rendered as an empty library', async () => {
+  // The no-silent-drop arm: the catch used to swallow the refusal into
+  // "nothing to pick yet", which is how the kind mismatch above shipped
+  // unnoticed. A refusal must be legible in the picker.
+  const loadMedia = async (): Promise<Array<{ url: string; name: string }>> => {
+    throw new Error('no seat on this lane serves GET /v1/media/list')
+  }
+  const { cap } = captureProvider({ candidates: [], loadMedia })
+  const host = cap().square(MESH) as { verbs: { onPick: () => void } }
+  act(() => { host.verbs.onPick() })
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+  expect(await screen.findByText(/media library unavailable/)).not.toBeNull()
 })
 
 test('MESH UPLOADS: no extension-less data-URL mirror; the named estate path lands', async () => {
@@ -269,13 +289,18 @@ test('FROM MEDIA: the library rows — thumbs for images, glyphs for the rest; t
   }
 })
 
-test('FROM MEDIA: a refused door lists nothing (never a stuck spinner)', async () => {
+test('FROM MEDIA: a refused door STATES the refusal (never a stuck spinner, never a fake empty)', async () => {
+  // THE CONTRACT CHANGED (2026-09-26), deliberately: this test used to
+  // pin "a refused door lists nothing", which is how a broken media
+  // list looked identical to an empty one — the mesh picker's
+  // `mesh`-vs-`model` refusal shipped as a silently empty picker. The
+  // anti-spinner intent is kept; the refusal is now legible.
   bindMedia(undefined, 'media/list refused')
   try {
     render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit: () => {}, loadMedia: fetchMediaLibrary }))
     fireEvent.click(screen.getByRole('button', { name: 'Input source' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
-    await screen.findByText('nothing to pick yet')
+    expect(await screen.findByText(/media library unavailable/)).not.toBeNull()
   } finally {
     unbindEstateRemote()
   }
