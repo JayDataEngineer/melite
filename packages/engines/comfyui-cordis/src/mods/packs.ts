@@ -156,14 +156,16 @@ const MaskFields = z.object({
     }),
   input_mask: z.string().role('path').description('Region Mask')
     .extra('extra', {
-      // THE INPUT-MOD LAW (operator, 2026-10-10, restated from the
-      // original order — never a deviation): Region Mask IS an
-      // input mod — 1:1 to the image input card's own face. It
-      // rides the INPUTS zone with the image input's exact widget
-      // mechanics (a path-role image picker), ordered AFTER the
-      // Input Images list (order 0 under the list's -1) — never a
-      // mods-zone artifact floating above the real inputs.
-      wtype: 'image', group: 'input', zone: 'inputs', order: 0,
+      // THE MOD-MODAL LAW (operator, 2026-10-10, final form): the
+      // image mask IS a mod — its row renders INSIDE the mask mod's
+      // own modal, 1:1 with the lanpaint mod's image1 on image-gen
+      // (THE reference image the operator pointed at): a mod field
+      // styled as the mod's input seat — wtype image, group input,
+      // zone inputs, order -1, width 1, columns 3. NEVER a card-face
+      // inputs-section row of its own. The li stroke that pulled it
+      // onto the card face was the deviation — erased to the
+      // template, letter for letter.
+      wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, columns: 3,
       tooltip: 'RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with the input images, the builder switches to the lanpaint sampler.',
     }),
   mask_mode: z.union([z.const('auto'), z.const('crop_stitch'), z.const('full_frame')]).default('crop_stitch').description('Edit Scope')
