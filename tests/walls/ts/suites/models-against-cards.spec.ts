@@ -124,6 +124,61 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     assert.ok(checked.length >= 24, `expected ≥24 checked pairs (wan-vace/scail2 retired 2026-09-21), got ${checked.length}`);
   });
 
+  // THE STARVING-FIELD LAW (2026-10-09, the empty-form burn): a
+  // numeric PARAM knob with NO schema .default() and NO owning
+  // family DECL default renders EMPTY on the form while the lane
+  // may silently hardcode its fallback — the width/height burn
+  // (image-edit rendered empty fields for months while only the
+  // LANE knew `?? 1024`). The invariant this wall enforces:
+  // every numeric params-zone field carries EXACTLY ONE default
+  // owner — the schema (meta.default) or the visible_when-named
+  // family's DECL defaults row. Strings are exempt (a prompt's
+  // emptiness is honest); booleans and sliders default in-schema.
+  // Lose an owner, lose the build — the wolf walks through the
+  // front door no more.
+  it("NO STARVING FIELD: every numeric params field has a default owner (schema or the owning family's DECL)", async (): Promise<void> => {
+    const defs = await loadCardDefs();
+    const starving: string[] = [];
+    for (const [cardId, def] of defs) {
+      const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ??
+        (def as { schema?: unknown }).schema;
+      const dict = (carrier as { dict?: Record<string, { type?: string; meta?: { default?: unknown; extra?: { zone?: string; visible_when?: string } } }> | undefined })?.dict;
+      if (dict === undefined) continue; // hand-written carriers exempt (h3 precedent)
+      for (const [name, field] of Object.entries(dict)) {
+        const meta = field?.meta;
+        const zone = meta?.extra?.zone;
+        const guard = meta?.extra?.visible_when;
+        if (zone !== "params") continue;
+        if (field.type !== "number") continue; // strings' emptiness is honest
+        if (meta?.default !== undefined) continue; // the schema owns it
+        if (typeof guard === "string" && guard.startsWith("model=")) {
+          // family-SCOPED knob: the named family is the one owner
+          const fam = guard.slice("model=".length);
+          const decl = registryModel(fam);
+          if (decl === undefined) {
+            starving.push(`${cardId}.${name}: visible_when names unknown family '${fam}'`);
+          } else if ((decl.defaults as Record<string, unknown> | undefined)?.[name] === undefined) {
+            starving.push(`${cardId}.${name}: scoped to family '${fam}' whose DECL declares no default for it — the form starves (the width/height burn)`);
+          }
+          continue;
+        }
+        // UNSCOPED knob: EVERY family boarded on the card owns a
+        // default for it — a family that boards without declaring
+        // starves its own users (the law the first cut missed:
+        // image-gen.width is fine on krea-2 and empty on any
+        // family that boards without a resolution)
+        for (const fam of def.boarded) {
+          const decl = registryModel(fam);
+          if (decl === undefined) continue; // unknown families refuse elsewhere
+          if ((decl.defaults as Record<string, unknown> | undefined)?.[name] === undefined) {
+            starving.push(`${cardId}.${name}: unscoped but family '${fam}' declares no default — that family's form starves`);
+          }
+        }
+      }
+    }
+    assert.deepEqual(starving, [], "starving fields found:\n  " + starving.join("\n  "));
+  });
+
   // THE VARIANT-STAMP LAW (operator 2026-09-23, "base doesn't even
   // have the audio input — where is the audit?"): the form's
   // visible_when guards key `variant=` against the RESOLVED
