@@ -58,25 +58,20 @@ const CTX = (over: Record<string, unknown> = {}, info: unknown = null, engineFai
     ...over,
   } as unknown as ManageCtx) as ManageCtx & { __info?: unknown; __fails?: boolean };
 
-const realFetch = globalThis.fetch;
-afterEach(() => { globalThis.fetch = realFetch; });
-
-/** Stub the engine's /object_info with a real LoraLoaderModelOnly doc. */
-function stubEngine(names: string[] | null): void {
-  globalThis.fetch = (async (input: unknown): Promise<unknown> => {
-    const url = String(input);
-    if (!url.includes("/object_info/")) throw new Error("unexpected fetch: " + url);
-    if (names === null) return { ok: false, status: 503, json: async () => ({}) };
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({
-        LoraLoaderModelOnly: {
-          input: { required: { lora_name: [names, {}] } },
-        },
-      }),
-    };
-  }) as unknown as typeof fetch;
+/**
+ * THE ENGINE ANSWER, through the plane's own seam (ManageCtx.objectInfo
+ * — absent means the estate's `liveObjectInfo`). The walls read the
+ * REAL `LoraLoaderModelOnly` declaration shape, so they prove the
+ * reader against the engine's own contract, not against a mock of my
+ * own fetching.
+ */
+function engineAnswer(names: string[] | null): () => Promise<unknown> {
+  return async (): Promise<unknown> => {
+    if (names === null) throw new Error("engine unreachable");
+    // the estate's reader answers the WHOLE doc (one key per node) —
+    // the seam mirrors that shape exactly
+    return { LoraLoaderModelOnly: { input: { required: { lora_name: [names, {}] } } } };
+  };
 }
 
 const OBJECT_INFO = ["h3/one.safetensors", "z-image/two.safetensors"];
@@ -89,13 +84,12 @@ function run(doc: Record<string, unknown>, ctx: ManageCtx): Promise<[number, { o
 
 describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabulary)", () => {
   it("lora_list serves the engine's own names plus the user's rows", async () => {
-    stubEngine(OBJECT_INFO);
+    const ctx = CTX({ objectInfo: engineAnswer(OBJECT_INFO) });
     const rowsPath = join(tempRoot("lane-rows-"), "user-loras.json");
     writeFileSync(rowsPath, JSON.stringify([
       { id: "mine", filename: "z-image/two.safetensors", families: ["z-image"], label: "Mine" },
     ]), "utf8");
-    const ctx = CTX();
-    const [code, res] = await run({ action: "lora_list" }, CTX({}, null) as ManageCtx);
+    const [code, res] = await run({ action: "lora_list" }, ctx);
     assert.equal(code, 200);
     assert.equal(res.ok, true);
     const data = res.data as Record<string, unknown>;
@@ -109,7 +103,7 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
   });
 
   it("lora_list names the rows the ENGINE lacks, here and not at /prompt", async () => {
-    stubEngine(["h3/one.safetensors"]);
+    const ctx = CTX({ objectInfo: engineAnswer(["h3/one.safetensors"]) });
     const rowsFile = join(tempRoot("lane-rows2-"), "u.json");
     writeFileSync(rowsFile, JSON.stringify([
       { id: "known", filename: "h3/one.safetensors", families: ["h3"] },
@@ -118,7 +112,7 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     const prev = process.env["MELITE_USER_LORAS"];
     process.env["MELITE_USER_LORAS"] = rowsFile;
     try {
-      const [code, res] = await run({ action: "lora_list" }, CTX());
+      const [code, res] = await run({ action: "lora_list" }, ctx);
       assert.equal(code, 200);
       const data = res.data as Record<string, unknown>;
       assert.equal((data["user_rows"] as unknown[]).length, 2);
@@ -133,7 +127,7 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
   });
 
   it("an unreachable engine proves nothing and refuses nothing (never a throw across the sidebar)", async () => {
-    stubEngine(null);
+    const ctx = CTX({ objectInfo: engineAnswer(null) });
     const rowsFile = join(tempRoot("lane-rows3-"), "u.json");
     writeFileSync(rowsFile, JSON.stringify([
       { id: "ghost", filename: "mine/never.safetensors", families: ["h3"] },
@@ -141,7 +135,7 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     const prev = process.env["MELITE_USER_LORAS"];
     process.env["MELITE_USER_LORAS"] = rowsFile;
     try {
-      const [code, res] = await run({ action: "lora_list" }, CTX());
+      const [code, res] = await run({ action: "lora_list" }, ctx);
       assert.equal(code, 200);
       const data = res.data as Record<string, unknown>;
       assert.deepEqual(data["engine_loras"], []);
@@ -153,7 +147,7 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
   });
 
   it("lora_install COPIES the operator's own file and names the restart it needs", async () => {
-    stubEngine(["h3/one.safetensors"]); // the new file is NOT in the combo yet
+    const ctx = CTX({ objectInfo: engineAnswer(["h3/one.safetensors"]) }); // the new file is NOT in the combo yet
     const src = join(tempRoot("lane-src-"), "my_lora.safetensors");
     writeFileSync(src, Buffer.alloc(64, 7));
     const dir = join(tempRoot("lane-loras-"), "loras");
@@ -162,7 +156,7 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     try {
       const [code, res] = await run(
         { action: "lora_install", path: src, families: ["h3"] },
-        CTX(),
+        ctx,
       );
       assert.equal(code, 200);
       const data = res.data as Record<string, unknown>;
@@ -186,8 +180,8 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
   });
 
   it("lora_install refuses loudly: no path, a missing file, a non-LoRA", async () => {
-    stubEngine(OBJECT_INFO);
-    const [noPath] = await run({ action: "lora_install" }, CTX());
+    const ctx = CTX({ objectInfo: engineAnswer(OBJECT_INFO) });
+    const [noPath] = await run({ action: "lora_install" }, ctx);
     assert.equal(noPath, 422);
     const dir = join(tempRoot("lane-loras2-"), "loras");
     const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
@@ -195,14 +189,14 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     try {
       const [missing, res] = await run(
         { action: "lora_install", path: join(tempRoot("lane-none-"), "nope.safetensors") },
-        CTX(),
+        ctx,
       );
       assert.equal(missing, 422);
       assert.equal(res.ok, false);
       assert.match(res.detail, /no such file/);
       const png = join(tempRoot("lane-png-"), "not.png");
       writeFileSync(png, "x");
-      const [wrong, wres] = await run({ action: "lora_install", path: png }, CTX());
+      const [wrong, wres] = await run({ action: "lora_install", path: png }, ctx);
       assert.equal(wrong, 422);
       assert.match(wres.detail, /not a LoRA file/);
     } finally {

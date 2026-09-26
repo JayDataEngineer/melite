@@ -14,7 +14,12 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { endpointConfigPath, loadEndpointConfig } from "@melite/comfyui-cordis";
+import {
+  endpointConfigPath,
+  liveObjectInfo,
+  loadEndpointConfig,
+  resolveEngineBaseUrl,
+} from "@melite/comfyui-cordis";
 import {
   installUserLora,
   installUserLoraBytes,
@@ -123,6 +128,15 @@ export interface ManageCtx {
    *  conformance stroke 2026-09-10). */
   timeout: (callback: () => void, delay: number) => () => void;
   signal?: AbortSignal;
+  /** THE ENGINE-TRUTH SEAM (2026-09-26, the LoRA doors): the WHOLE
+   *  node-definitions document, exactly what the estate's
+   *  `liveObjectInfo` returns (cached per engine, refuses closed on a
+   *  malformed body). Absent = that reader; present = a caller's
+   *  stand-in, which is how these walls prove the engine's answer
+   *  without a live engine and without a second spelling of the
+   *  truth. The seam is the reader, not one node: a stand-in that
+   *  answered a single node would be a different contract. */
+  objectInfo?: () => Promise<unknown>;
 }
 
 export interface Req {
@@ -1246,17 +1260,6 @@ async function hSnapshotRestore(req: Req, ctx: ManageCtx): Promise<[number, Mana
 // ── THE LORA DOORS (the operator's 2026-09-26 order: custom LoRAs
 // belong in the ComfyUI Manager sidebar, not a dev-only drop-in).
 
-/** The engine's base URL (the endpoint config the whole manage plane
- *  routes through — never a second spelling of the address). */
-function engineBase(ctx: ManageCtx): string {
-  const cfg = ctx.endpoint() as { url?: unknown; host?: unknown; port?: unknown }
-  if (typeof cfg.url === 'string' && cfg.url !== '') return cfg.url
-  if (typeof cfg.host === 'string' && cfg.host !== '') {
-    return 'http://' + cfg.host + ':' + String(cfg.port ?? 8188)
-  }
-  return 'http://127.0.0.1:8188'
-}
-
 /** The engine's own LoRA directory, as ComfyUI's folder_paths would
  *  resolve it: the endpoint's model root + `loras`. A declared override
  *  wins (a box whose models live elsewhere), and the copy lands where
@@ -1277,8 +1280,7 @@ function engineLorasDir(cfg: Record<string, unknown>): string {
 async function hLoraList(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
-  const info = await objectInfoOf(ctx, 'LoraLoaderModelOnly')
-  const combo = loraNamesFromObjectInfo(info)
+  const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx))
   const file = readUserLoraRows(process.env['MELITE_USER_LORAS'] ?? './data/loras/user-loras.json')
   const unboarded = unboardedRows(file.rows, combo)
   return ok(
@@ -1311,7 +1313,10 @@ async function hLoraInstall(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
   // THE BYTES ARM: a browser upload (the civit flow) needs no path
   if (req.data !== '') {
     if (req.filename === '') throw new Refused(422, 'lora_install with bytes requires filename')
-    const landed = installUserLoraBytes(req.filename, req.data, dir)
+    // the declared length rides along so the door answers the cap
+    // BEFORE decoding a 500MB base64 string (the transport knows the
+    // length; a copy must not have to measure by decoding)
+    const landed = installUserLoraBytes(req.filename, req.data, dir, req.data.length)
     if (!landed.ok) throw new Refused(422, landed.reason, { filename: req.filename, install_dir: dir })
     return loraInstalled(req, ctx, dir, landed, 'uploaded')
   }
@@ -1337,7 +1342,7 @@ async function loraInstalled(
   result: { filename: string, bytes: number },
   verb: 'copied' | 'uploaded',
 ): Promise<[number, ManageEnvelope]> {
-  const combo = loraNamesFromObjectInfo(await objectInfoOf(ctx, 'LoraLoaderModelOnly'))
+  const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx))
   const visible = combo.includes(result.filename)
   return ok(
     req.action,
@@ -1361,16 +1366,21 @@ async function loraInstalled(
   )
 }
 
-/** The engine's node declaration, or an empty record when the engine
- *  is unreachable (the cross-check then proves nothing and refuses
- *  nothing — never a throw across the sidebar). */
-async function objectInfoOf(ctx: ManageCtx, node: string): Promise<unknown> {
+/** The engine's node declaration, or null when the engine is
+ *  unreachable (the cross-check then proves nothing and refuses
+ *  nothing — never a throw across the sidebar). ONE reader, the
+ *  estate's own: `liveObjectInfo` is cached per engine for the
+ *  process life and refuses closed on a malformed body — a second
+ *  spelling here would be a second truth about the engine. */
+/** The engine's WHOLE node-definitions doc, or null when the engine
+ *  is unreachable. It is the doc (not one node) because the reader
+ *  that turns it into the LoRA list is the reader's own job, and a
+ *  per-node hop here would make the two spellings drift. */
+async function objectInfoDoc(ctx: ManageCtx): Promise<unknown> {
   try {
-    const res = await fetch(new URL('/object_info/' + node, engineBase(ctx)), {
-      signal: AbortSignal.timeout(30_000),
-    })
-    if (!res.ok) return null
-    return (await res.json()) as unknown
+    return ctx.objectInfo !== undefined
+      ? await ctx.objectInfo()
+      : await liveObjectInfo(resolveEngineBaseUrl())
   } catch {
     return null
   }
