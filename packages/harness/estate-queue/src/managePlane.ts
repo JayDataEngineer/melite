@@ -201,6 +201,14 @@ export interface Req {
   extra_args: string[];
   force: boolean;
   snapshot: string;
+  // THE LORA DOORS' ROWS (the interface drift the tsc gate caught,
+  // 2026-10-10: the normalizer below has set these since the doors
+  // landed — path for the copy arm, data for the bytes arm,
+  // families for the row suggestion — while the interface never
+  // declared them)
+  path: string;
+  data: string;
+  families: string[];
 }
 
 type Handler = (req: Req, ctx: ManageCtx) => Promise<[number, ManageEnvelope]>;
@@ -289,7 +297,6 @@ export function parseReq(doc: unknown): Req {
     nodes: Array.isArray(d["nodes"]) ? (d["nodes"] as unknown[]).map(String).filter((s) => s !== "") : [],
     url: str("url"),
     relative_path: str("relative_path"),
-    filename: str("filename"),
     wait: typeof d["wait"] === "boolean" ? (d["wait"] as boolean) : null,
     timeout_seconds: num("timeout_seconds", 300),
     model: str("model"),

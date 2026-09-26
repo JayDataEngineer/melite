@@ -129,7 +129,7 @@ export const emitKnob = (s: Schema): Record<string, unknown> => {
   // .default([]) serves its [] (the served bytes carry it). The
   // marker disambiguates from schemastery's auto-default []: arrays
   // ALWAYS carry meta.default [], so an empty array serves its
-  // default ONLY when extra.serveDefault is set (reference_images).
+  // default ONLY when extra.serveDefault is set (input_images).
   if (im.default !== undefined && !(Array.isArray(im.default) && im.default.length === 0 && !iex.serveDefault)) {
     out.default = stringified && (typeof im.default === 'number' || typeof im.default === 'boolean')
       ? String(im.default)

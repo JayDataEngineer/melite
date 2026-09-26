@@ -953,7 +953,7 @@ describe("the residual lane arms", () => {
         image2: "/m/2.png", reference_images: ["/m/s1.png", "/m/s2.png"],
         seed: 5,
       }, model, new GraphBuilder(), "run_5x"),
-      /'reference_images' fires .*\(this lane takes 2 references/,
+      /'input_images' fires .*\(this lane takes 3 input images total/,
     );
   });
 
@@ -968,7 +968,7 @@ describe("the residual lane arms", () => {
         reference_images: ["/m/s1.png"],
         seed: 5,
       }, lying, new GraphBuilder(), "run_5lie"),
-      /'reference_images' fires .*stock TextEncodeQwenImageEditPlus.*max_images 99/,
+      /'input_images' fires .*stock TextEncodeQwenImageEditPlus.*max_images 99/,
       "the arm serves the 3-input stock node — a roomier DECL is a bug, refused LOUD",
     );
   });

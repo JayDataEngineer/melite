@@ -177,8 +177,10 @@ export function sheetPlan(duration_s: number | undefined): number[] {
 }
 
 /** Re-brand the structured outcome into the durable reference an
- * ImageBlock carries (read_image's imageRefFromValue, copied). */
-export function imageRefFromValue(image: ViewedImageValue['image']): ImageAttachmentRef {
+ * ImageBlock carries (read_image's imageRefFromValue, copied). The
+ * parameter is the PRESENT image — callers assert presence (the
+ * text-only observe arm never reaches here). */
+export function imageRefFromValue(image: NonNullable<ViewedImageValue['image']>): ImageAttachmentRef {
   return {
     attachmentId: AttachmentId(image.attachmentId),
     mediaType: image.mediaType,
@@ -734,8 +736,7 @@ export function meliteView(ctx: Context): ToolDefinition {
           image: {
             type: 'object',
             additionalProperties: true,
-            description: 'The durable attachment metadata (attachmentId, mediaType, bytes, width, height). On the film path this IS the contact sheet.',
-            required: true,
+            description: 'The durable attachment metadata (attachmentId, mediaType, bytes, width, height). On the film path this IS the contact sheet. ABSENT on the text-only observe arm (a route with no image input gets textObservation instead — one of the two rides every result).',
           },
           film: {
             type: 'object',

@@ -9,7 +9,7 @@
 // stated width/height on the 2511 lane refuses field-named.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { imageT2I, imageEdit, refuseImageEditFiring, editImageCap, editRefs } from "../src/kit.ts";
+import { imageT2I, imageEdit, refuseImageEditFiring, editImageCap, editRefs, orderedInputImages } from "../src/kit.ts";
 import { GraphBuilder } from "../src/graph.ts";
 
 const FACTS_21 = {
@@ -245,19 +245,52 @@ describe("the 2.1 edit lane — the reference stack (upstream: the node opens im
         FACTS_21, g, "probeceiling",
       ),
       (err: unknown): boolean =>
-        err instanceof Error && err.message.includes("'reference_images'") && err.message.includes("16"),
+        err instanceof Error && err.message.includes("'input_images'") && err.message.includes("17"),
     );
   });
-  it("THE CEILING counts the unified order (a 16-entry stack alone refuses — anchor + 16 past 16)", () => {
+  it("THE CEILING counts the whole list (a 16-entry list plus the anchor refuses — 17 past 16)", () => {
     const g = new GraphBuilder({});
     assert.throws(
       () => imageEdit(
-        { prompt: "stack too tall", image1: "in.png", reference_images: Array.from({ length: 16 }, (_, i) => `s${i}.png`), ...SOLVER },
+        { prompt: "stack too tall", input_images: ["in.png", ...Array.from({ length: 16 }, (_, i) => `s${i}.png`)], ...SOLVER },
         FACTS_21, g, "probeceilingstack",
       ),
       (err: unknown): boolean =>
-        err instanceof Error && err.message.includes("'reference_images'") && err.message.includes("16"),
+        err instanceof Error && err.message.includes("'input_images'") && err.message.includes("17"),
     );
+  });
+  it("THE MERGE (2026-10-10): input_images IS the list — anchor position 0, refs contiguous from image_2, same graph as the legacy spelling", () => {
+    const canonical = new GraphBuilder({});
+    imageEdit(
+      { prompt: "one list", input_images: ["in.png", "r2.png", "r3.png", "s4.png"], ...SOLVER },
+      FACTS_21, canonical, "probemerge",
+    );
+    const legacy = new GraphBuilder({});
+    imageEdit(
+      { prompt: "one list", image1: "in.png", image2: "r2.png", image3: "r3.png", reference_images: ["s4.png"], ...SOLVER },
+      FACTS_21, legacy, "probemerge",
+    );
+    const c = encOf(canonical).enc.inputs;
+    const l = encOf(legacy).enc.inputs;
+    for (const k of ["images.image_1", "images.image_2", "images.image_3", "images.image_4"]) {
+      assert.ok(c[k], `canonical rides ${k}`);
+      assert.deepEqual(c[k], l[k], `canonical and legacy agree on ${k} — ONE list, two spellings`);
+    }
+  });
+  it("THE MERGE refuses mixed vocabularies loud (input_images + any legacy key — the order would be a guess)", () => {
+    const g = new GraphBuilder({});
+    assert.throws(
+      () => imageEdit(
+        { prompt: "both spellings", input_images: ["in.png", "r.png"], image1: "in.png", ...SOLVER },
+        FACTS_21, g, "probemix",
+      ),
+      /two vocabularies|legacy image key/,
+    );
+    assert.throws(
+      () => orderedInputImages({ input_images: ["in.png"], reference_images: ["r.png"] }),
+      /two vocabularies|legacy image key/,
+    );
+    assert.deepEqual(orderedInputImages({ input_images: ["in.png", "  ", "r.png"] }), ["in.png", "r.png"], "blanks drop quietly from the canonical list");
   });
   it("exactly 16 total composes (the boundary rides)", () => {
     const g = new GraphBuilder({});
@@ -311,11 +344,13 @@ describe("editImageCap (the max_images law — the lane rides the DECL, never a 
     assert.deepEqual(editRefs({ image2: "", image3: "  ", reference_images: [] }), [], "blanks still drop quietly");
   });
 
-  it("the gate holds the absent-model law verbatim (any stated ref refuses with no model pinned)", () => {
-    assert.throws(() => refuseImageEditFiring({ reference_images: ["/m/a.png"] }),
-      /'reference_images' fires .*no model pinned/, "one stack ref with no model refuses");
-    assert.throws(() => refuseImageEditFiring({ image2: "/m/garment.png" }),
-      /'reference_images' fires .*no model pinned/, "one legacy named ref with no model refuses");
+  it("the gate holds the absent-model law (any stated REFERENCE refuses with no model pinned — the anchor alone is lane-agnostic)", () => {
+    assert.throws(() => refuseImageEditFiring({ input_images: ["/m/in.png", "/m/a.png"] }),
+      /'input_images' fires .*no model pinned/, "anchor + one ref with no model refuses");
+    assert.throws(() => refuseImageEditFiring({ image1: "/m/in.png", image2: "/m/garment.png" }),
+      /'input_images' fires .*no model pinned/, "anchor + one legacy named ref with no model refuses");
+    refuseImageEditFiring({ input_images: ["/m/in.png"] });
+    refuseImageEditFiring({ image1: "/m/in.png" });
     refuseImageEditFiring({ mask: [{ input_mask: "m.png" }] });
   });
 });

@@ -16,15 +16,16 @@ describe("the image-edit tool face", () => {
     assert.equal(tool.name, "image_edit");
   });
 
-  it("THE HIDDEN-ALIAS LAW (2026-09-26): the tool face serves ONE image-input concept — the anchor + the reference list, never the legacy aliases", () => {
-    // the operator's rework: "reference images and input images are
-    // the same thing" — image2/image3 are validation keys for old
-    // drafts (hidden), and a hidden knob is UNSERVED on every
-    // projection; before this they rode the tool params beside
-    // Reference Images: one concept spelled twice.
+  it("THE ONE-LIST LAW (2026-10-10, the merge): the tool face serves ONE image-input concept — input_images, the ordered list — never a legacy spelling", () => {
+    // the operator's merge, ordered three times: input images and
+    // reference images are ONE concept — the node's own image_1..N
+    // list, position 0 = the image being edited. input_images is the
+    // one served face; image1/image2/image3/reference_images are
+    // validation-only aliases (hidden = unserved on every plane).
     const props = (tool.parameters as { properties?: Record<string, unknown> }).properties ?? {};
-    assert.ok("image1" in props, "the anchor serves");
-    assert.ok("reference_images" in props, "the reference list serves");
+    assert.ok("input_images" in props, "the one list serves");
+    assert.ok(!("image1" in props), "the legacy anchor never serves the tool face");
+    assert.ok(!("reference_images" in props), "the legacy stack never serves the tool face");
     assert.ok(!("image2" in props), "the hidden alias never serves the tool face");
     assert.ok(!("image3" in props), "the hidden alias never serves the tool face");
     assert.ok(!("input_mask" in props), "the hidden mask-seat gate key never serves the tool face (the region arrives via the mask pack's row / the flow seat, never a second tool param)");

@@ -7155,7 +7155,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  through untouched: retrying those would be a fallback. */
 		function isCasConflict$1(e) {
 			const msg = e instanceof Error ? e.message : String(e);
-			return msg.includes("moved: rev is") || msg.includes("cas-conflict");
+			return msg.includes("moved: rev is") || msg.includes("moved under the patch") || msg.includes("cas-conflict");
 		}
 		/** One drafts/patch round trip; throws the door's named refusal. The
 		*  generated signature is (draftId, stageId, patch, expectRev:
@@ -7219,23 +7219,31 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		/** The CAS dance (the run-start face law, 2026-09-14): write with the
 		*  held rev; on the door's cas-conflict RE-READ the rev and re-apply
-		*  ONCE (the server message's own instruction — "re-read and
-		*  re-apply"). A second conflict, a missing rev, or any non-CAS
-		*  refusal throws LOUD — never a silent drop, never a blind write. */
+		*  — BOUNDED (2026-10-09: the once-law died under a live bench with
+		*  a second author — the agent session or a late-landing keystroke
+		*  patch — bumping the rev between the re-read and the retry; one
+		*  re-apply refused the run a second time and the operator hit the
+		*  wall). Up to PATCH_ATTEMPTS total tries, a fresh rev between
+		*  each; exhaustion, a missing rev, or any non-CAS refusal throws
+		*  LOUD — never a silent drop, never a blind write. */
+		const PATCH_ATTEMPTS = 3;
 		async function patchWithRebase(draftId, stageId, patch, expectRev) {
 			let rev = expectRev;
 			if (rev === void 0) {
 				rev = await fetchDraftRev(draftId) ?? void 0;
 				if (rev === void 0) throw new Error("drafts/patch: no bench rev to write against (draft " + draftId + ")");
 			}
-			try {
+			let last;
+			for (let i = 0; i < PATCH_ATTEMPTS; i++) try {
 				return await patchOnce(draftId, stageId, patch, rev);
 			} catch (e) {
 				if (!isCasConflict$1(e)) throw e;
+				last = e;
 				const fresh = await fetchDraftRev(draftId) ?? void 0;
 				if (fresh === void 0) throw e;
-				return await patchOnce(draftId, stageId, patch, fresh);
+				rev = fresh;
 			}
+			throw last;
 		}
 		/** Edit one stage's params — the REAL door, reborn 2026-09-11: the
 		*  drafts remote's `drafts/patch` write arm over the drafts domain
@@ -50350,14 +50358,18 @@ void main() {
 		*  "bench moved: rev is…"). THE MATCHER LAW (2026-09-15): match the
 		*  REAL words — the first cut matched 'bench moved' against 'bench
 		*  MAIN moved' and matched nothing; dead matchers make dead
-		*  rebases, and dead rebases make stuck tabs. */
+		*  rebases, and dead rebases make stuck tabs. THE THIRD VOICE
+		*  (2026-10-09, the run-refusal burn): the drafts/patch door says
+		*  "moved under the patch" — an arm per DOOR VOICE, all three. */
 		function isCasConflict(e) {
 			const msg = e instanceof Error ? e.message : String(e);
-			return msg.includes("moved: rev is") || msg.includes("cas-conflict");
+			return msg.includes("moved: rev is") || msg.includes("moved under the patch") || msg.includes("cas-conflict");
 		}
 		/** One typed bench verb with the rebase dance: try the held rev; on
 		*  the door's cas-conflict re-read the rev (the SAME session) and
-		*  re-apply ONCE with it. */
+		*  re-apply — bounded (3 tries, a fresh rev between each; the
+		*  once-law died under a live second author, 2026-10-09). */
+		const BENCH_ATTEMPTS = 3;
 		async function withRebase(verb, doc, sessionKey, signal) {
 			const ns = estateRemote().bench;
 			const attempt = (expectRev) => unwrapRemote(ns[verb](sessionKey, {
@@ -50365,15 +50377,19 @@ void main() {
 				expect_rev: expectRev
 			}, signal), "bench/" + verb).then((row) => row);
 			const held = doc["expect_rev"];
-			try {
-				if (typeof held !== "number") throw new Error("bench/" + verb + ": no expect_rev to write against");
-				return await attempt(held);
+			if (typeof held !== "number") throw new Error("bench/" + verb + ": no expect_rev to write against");
+			let rev = held;
+			let last;
+			for (let i = 0; i < BENCH_ATTEMPTS; i++) try {
+				return await attempt(rev);
 			} catch (e) {
 				if (!isCasConflict(e)) throw e;
+				last = e;
 				const fresh = await benchRev(sessionKey, signal);
 				if (fresh === void 0) throw e;
-				return await attempt(fresh);
+				rev = fresh;
 			}
+			throw last;
 		}
 		/** The bench add-stage verb caller (the tab's add-card path). The
 		*  doc holds card/author/engine/params/expect_rev. */
@@ -58939,7 +58955,7 @@ void main() {
 				const edge = (spec.inputs ?? []).find((e) => e.name === f.name);
 				if (edge === void 0) return candidates;
 				const kind = edge.kind;
-				const accepts = (out) => out === kind || kind === "image_list" && out === "image";
+				const accepts = (out) => out !== void 0 && (out === kind || out + "_list" === kind);
 				return candidates.filter((c) => {
 					const row = others.find((s) => s.id === c.id);
 					const cardId = String(row?.card ?? "");
@@ -60441,4 +60457,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="145347de1b7aa71998707f574d9421f0293d01ce";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="ca40cc3f06039d3fd1851ebefa95c8f55ffd9f90";

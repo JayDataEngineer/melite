@@ -46,10 +46,10 @@ describe("the image-edit compose gate", () => {
     );
   });
 
-  it("a missing anchor image1 refuses", () => {
+  it("a missing anchor refuses — the ONE list must carry position 0 (THE MERGE, 2026-10-10)", () => {
     assert.throws(
       () => def.compose(def.schema({ prompt: "make it night" }), model, new GraphBuilder(), "r1"),
-      /required param 'image1' missing on the image-edit card/,
+      /required param 'input_images' missing on the image-edit card \(the first image is the one being edited/,
     );
   });
 
@@ -117,9 +117,9 @@ describe("the image-edit compose gate", () => {
 
   it("the firing refusals name the unbuildable graph (no silent plain-edit)", () => {
     const arms: Array<[Record<string, unknown>, RegExp]> = [
-      // the unification's narrow end: 2511's DECL caps at 3 — the
-      // THIRD reference refuses loud (one or two ride the stock slots).
-      [{ reference_images: ["/m/a.png", "/m/b.png", "/m/c.png"] }, /'reference_images' fires .*\(this lane takes 2 references/],
+      // the merge's own door: input_images beside a legacy key
+      // refuses — two vocabularies for one list, order a guess.
+      [{ input_images: ["/m/in.png", "/m/a.png"] }, /'input_images' fires .*legacy image key/],
       [{ double_reference: true }, /'double_reference' fires .*\(the second encode/],
       // forcing the sampler with no region stated refuses —
       // there is nothing to regenerate.
@@ -152,6 +152,12 @@ describe("the image-edit compose gate", () => {
         voice,
       );
     }
+    // THE NARROW END, canonical spelling (no legacy key): 2511's
+    // DECL caps at 3 — a FOURTH list entry refuses loud.
+    assert.throws(
+      () => def.compose(def.schema({ prompt: "x", input_images: ["/m/in.png", "/m/a.png", "/m/b.png", "/m/c.png"] }), model, new GraphBuilder(), "r1"),
+      /'input_images' fires .*\(this lane takes 3 input images total/,
+    );
   });
 
   it("a stated region switches to the lanpaint sampler (the revived arm)", () => {
@@ -532,13 +538,20 @@ describe("the lane-bespoke leaves (the model guard — the naming law's visibili
     assert.equal(leaf("prompt"), undefined, "the shared surface never carries a model guard");
     assert.equal(leaf("image1"), undefined, "the anchor is every edit lane's surface");
     assert.equal(leaf("seed"), undefined);
-    // THE UNIFICATION (image inputs and reference images are ONE
-    // concept): the stack rides BOTH lanes unguarded; the CAP rides
-    // the boarded DECLs (roomiest max_images minus the anchor — 15
-    // today); each lane refuses past its own DECL cap LOUD at compose.
-    assert.equal(leaf("reference_images"), undefined, "the stack carries no model guard — one row, both lanes");
-    const refId = root!.dict!["reference_images"];
-    assert.equal(json.refs[refId]?.meta?.extra?.max_stack, 15, "the stack caps at the roomiest boarded DECL (2.1's 16 minus the anchor)");
+    // THE MERGE (2026-10-10 — image inputs and reference images are
+    // ONE concept): input_images is THE one visible face — an ordered
+    // list, anchor at position 0 — riding BOTH lanes unguarded; the
+    // CAP rides the boarded DECLs (roomiest max_images, anchor
+    // included — 16 today); each lane refuses past its own DECL cap
+    // LOUD at compose.
+    assert.equal(leaf("input_images"), undefined, "the one list carries no model guard — one row, both lanes");
+    const listId = root!.dict!["input_images"];
+    assert.equal(json.refs[listId]?.meta?.extra?.max_stack, 16, "the list caps at the roomiest boarded DECL (2.1's 16, anchor included)");
+    // every legacy spelling is HIDDEN — no form row, no seat, ever.
+    for (const alias of ["image1", "image2", "image3", "reference_images"]) {
+      const id: number | undefined = root?.dict?.[alias];
+      assert.equal(json.refs[id as number]?.meta?.extra?.hidden, true, `${alias} rides hidden:true — the alias validates, the face never offers it`);
+    }
     // THE DECL CAPS (the max_images law): each lane's own node truth
     // rides its DECL into the runtime facts — the gate and the lane
     // read them, never a hardcoded count.
@@ -577,33 +590,40 @@ describe("the lane-bespoke leaves (the model guard — the naming law's visibili
     const ports = def.flowKinds.inputs as Record<string, string>;
     assert.deepEqual(
       Object.keys(ports).sort(),
-      ["image1", "input_mask", "prompt", "reference_images"],
-      "the input category names the text seat, the two image seats, and the mask seat — no numbered mix",
+      ["input_images", "input_mask", "prompt"],
+      "the input category names the text seat, the ONE image-list seat, and the mask seat — no numbered mix, no second image row",
     );
-    assert.equal(ports.reference_images, "image_list", "reference_images is a wireable input port (the inputs category)");
-    assert.equal(ports.image1, "image", "the anchor stays the image port");
+    assert.equal(ports.input_images, "image_list", "input_images is a wireable input port (the inputs category)");
     assert.equal(ports.input_mask, "seg", "the mask seat takes the mask card's seg producer");
+    // THE MERGE (2026-10-10): every legacy spelling rides
+    // legacyAliases — kinds still derive, so old graphs wiring
+    // image1/reference_images keep validating; no seat, no rail
+    // square, no form row.
+    const aliases = def.flowKinds.legacyAliases as Record<string, string>;
+    assert.deepEqual(
+      Object.keys(aliases).sort(),
+      ["image1", "image2", "image3", "reference_images"],
+      "all four legacy spellings ride legacyAliases",
+    );
+    assert.equal(aliases.image1, "image", "the legacy anchor keeps its kind");
+    assert.equal(aliases.reference_images, "image_list", "the legacy stack keeps its kind");
     // THE MASK-SEAT GATE KEY: the seat names a carrier key (the
     // strict contract gate reads the card's own carrier only), and
     // that key is hidden — validation-only, never a face.
     const maskId: number | undefined = root?.dict?.["input_mask"];
     assert.ok(maskId !== undefined, "input_mask stays declared for the flow seat + compose");
     assert.equal(json.refs[maskId]?.meta?.extra?.hidden, true, "input_mask never renders — the mask pack owns the visible row");
-    const aliases = (def.flowKinds.legacyAliases ?? {}) as Record<string, string>;
-    assert.equal(aliases.image2, "image", "the legacy alias derives its kind at the lattice, never a seat");
-    assert.equal(aliases.image3, "image", "the legacy alias derives its kind at the lattice, never a seat");
-    // THE FACE LABEL: the anchor is named for its CONCEPT, not the
-    // stock node's slot number — "Input Image", never "Image 1".
-    const anchor = json.refs[root!.dict!["image1"]] as {
-      meta?: { description?: unknown };
+    // THE FACE LABEL: the ONE list is named for its CONCEPT —
+    // "Input Images", never a slot number or a second vocabulary.
+    const listRef = json.refs[root!.dict!["input_images"]] as {
+      meta?: { description?: unknown; extra?: { zone?: unknown } };
     } | undefined;
-    assert.equal(anchor?.meta?.description, "Input Image", "the anchor's label speaks the concept (no numbered slots)");
-    // the zone spell matches the anchor's — one input zone
-    assert.equal(
-      json.refs[root!.dict!["reference_images"]]?.meta?.extra?.zone,
-      "inputs",
-      "the stack declares the inputs zone like the anchor",
-    );
+    assert.equal(listRef?.meta?.description, "Input Images", "the one list's label speaks the concept");
+    assert.equal(listRef?.meta?.extra?.zone, "inputs", "the one list declares the inputs zone");
+    // the aliases never render a zone or an order — hidden means
+    // unserved, on every projection.
+    assert.equal(json.refs[root!.dict!["reference_images"]]?.meta?.extra?.zone, undefined, "the legacy stack carries no zone — hidden, unserved");
+    assert.equal(json.refs[root!.dict!["image1"]]?.meta?.extra?.zone, undefined, "the legacy anchor carries no zone — hidden, unserved");
   });
 
   it("a 2-entry stack RIDES the 2511 lane through the card door (the narrow end, no refusal)", () => {

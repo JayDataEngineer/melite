@@ -151,6 +151,33 @@ export function editRefs(p: Record<string, unknown>): string[] {
   return out
 }
 
+/** THE ONE LIST (the operator's merge, ordered three times, landed
+ *  2026-10-10: input images and reference images are ONE concept —
+ *  the node's own image_1..image_N autogrow slots, position 0 = the
+ *  image being edited, the rest = references the prompt can cite.
+ *  input_images IS the ordered list. The legacy spellings (image1
+ *  the anchor, image2/image3 the numbered slots, reference_images
+ *  the stack) merge into the SAME list — anchor first, numbered
+ *  next, stack after — so old drafts recompose byte-stable. Stating
+ *  input_images TOGETHER with any legacy image key refuses LOUD:
+ *  two vocabularies for one list, and the order would be a guess. */
+export function orderedInputImages(p: Record<string, unknown>): string[] {
+  const canon = p.input_images
+  if (canon !== undefined && canon !== null && (!Array.isArray(canon) || canon.some((s) => typeof s !== 'string'))) {
+    throw new Error(`'input_images' fires on the image-edit card (expected a list of image path strings, got ${Array.isArray(canon) ? 'a list with non-strings' : typeof canon}) — the TS plane maps every stated image to a slot, never drops one quietly`)
+  }
+  const legacy = editRefs(p)
+  if (Array.isArray(canon) && canon.length > 0) {
+    const anchorStated = typeof p.image1 === 'string' && p.image1.trim() !== ''
+    if (anchorStated || legacy.length > 0) {
+      throw new Error(`'input_images' fires on the image-edit card (stated together with a legacy image key — image1/image2/image3/reference_images; one vocabulary per draft: input_images alone, or the legacy keys alone — never both, the order would be a guess)`)
+    }
+    return canon.filter((s) => s.trim() !== '')
+  }
+  const anchor = typeof p.image1 === 'string' ? p.image1.trim() : ''
+  return (anchor ? [anchor] : []).concat(legacy)
+}
+
 /** The firing gate (the MOD FIRING LAW, ported 1:1
  *  moved verbatim from the image-edit card): lane-promise values ride
  *  inert; anything that would change the graph refuses field-named
@@ -172,13 +199,13 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
       throw new Error(`'${key}' fires on the image-edit card (${why}) — the TS plane builds the stock plain-edit graph only; refusing instead of silently plain-editing`)
     }
   }
-  const refs = editRefs(p)
+  const list = orderedInputImages(p)
   // THE ABSENT-MODEL LAW (verbatim pre-unification behavior): with
   // no model pinned the gate cannot know the lane's cap, so ANY
-  // stated ref refuses — direct lane callers pin the model.
-  fire('reference_images', model === undefined && refs.length > 0, 'no model pinned — direct lane callers pin the model (the gate reads the lane cap off lane_inputs.max_images)')
+  // stated reference refuses — direct lane callers pin the model.
+  fire('input_images', model === undefined && list.length > 1, 'no model pinned — direct lane callers pin the model (the gate reads the lane cap off lane_inputs.max_images)')
   const cap = editImageCap(model)
-  fire('reference_images', refs.length > cap - 1, `this lane takes ${cap - 1} references (anchor + ${cap - 1} = max_images ${cap}) — drop ${refs.length - (cap - 1)} or switch the model lane`)
+  fire('input_images', list.length > cap, `this lane takes ${cap} input images total (the first is the one being edited, ${cap - 1} references — max_images ${cap}); drop ${list.length - cap}`)
   fire('double_reference', p.double_reference === true, 'the second encode needs nodes this plane does not build')
   // THE LANPAINT LAW (revived 2026-09-15 — the arm above builds it):
   // a stated region switches to the lanpaint sampler; forcing it
@@ -356,21 +383,28 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   // tensor slots verbatim and the merge lands the producer link
   // there; files/URLs/estate paths keep the LoadImage handoff (the
   // per-stage disk path owns those).
-  const image: TensorRef = isSpell(String(p.image1))
-    ? String(p.image1)
-    : g.node('LoadImage', { image: p.image1, upload: 'image' }).out(0)
-  // THE REFERENCES (the unification — ONE order for both arms):
-  // legacy named slots first, then the stack, blanks dropped.
-  // THE SHARED CEILING (the max_images law — ONE check, both arms)
-  // runs BEFORE any ref loads: anchor + refs past the DECL cap
-  // refuses field-named, never drops quiet and never orphans
-  // LoadImages. The gate pins the same ceiling at the compose
-  // door; this re-pin covers direct lane callers.
-  const refs = editRefs(p)
-  const cap = editImageCap(model)
-  if (1 + refs.length > cap) {
-    throw new Error(`'reference_images' fires on the image-edit card (this lane takes ${cap - 1} references — anchor + refs count ${1 + refs.length}, max_images ${cap}; drop ${1 + refs.length - cap}) — the TS plane maps every stated image to a slot, never drops one quietly`)
+  // THE ONE LIST (the merge): orderedInputImages refuses mixed
+  // vocabularies loud; the anchor is position 0, the references are
+  // the rest. THE SHARED CEILING (the max_images law — ONE check,
+  // both arms) counts the WHOLE list (anchor included) against the
+  // DECL cap before any image loads — never drops quiet, never
+  // orphans LoadImages. The gate pins the same ceiling at the
+  // compose door; this re-pin covers direct lane callers.
+  const list = orderedInputImages(p)
+  if (list.length === 0) {
+    throw new Error(`required param 'input_images' missing on the image-edit card (the first image is the one being edited — the list cannot be empty; legacy drafts may state image1 alone instead)`)
   }
+  const cap = editImageCap(model)
+  if (list.length > cap) {
+    throw new Error(`'input_images' fires on the image-edit card (this lane takes ${cap} input images total — the first is the one being edited, ${cap - 1} references — but the list counts ${list.length}; drop ${list.length - cap}) — the TS plane maps every stated image to a slot, never drops one quietly`)
+  }
+  // THE SPELL ARM rides the anchor verbatim (the wired-tensor law
+  // below); files/URLs/estate paths keep the LoadImage handoff.
+  const anchor = list[0]
+  const refs = list.slice(1)
+  const image: TensorRef = isSpell(anchor)
+    ? anchor
+    : g.node('LoadImage', { image: anchor, upload: 'image' }).out(0)
   // Each stated ref loads ahead of the encodes (creation order IS
   // node-id order); blank refs contribute no input at all (stable).
   // A spelled ref ($name) rides verbatim — same wired-tensor law as
@@ -477,7 +511,7 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   // keep blank refs out of the inputs entirely (byte-stable plain
   // graphs).
   if (cap > 3) {
-    throw new Error(`'reference_images' fires on the image-edit card (this lane routes to the stock TextEncodeQwenImageEditPlus node — image1/2/3 and nothing else — but declares max_images ${cap}; fix the DECL) — the TS plane maps every stated image to a slot, never drops one quietly`)
+    throw new Error(`'input_images' fires on the image-edit card (this lane routes to the stock TextEncodeQwenImageEditPlus node — 3 image slots and nothing else — but declares max_images ${cap}; fix the DECL) — the TS plane maps every stated image to a slot, never drops one quietly`)
   }
   const ref2 = loaded[0] ?? null
   const ref3 = loaded[1] ?? null

@@ -435,6 +435,7 @@ describe("THE SPELL ARM: wired stage inputs ride tensor slots, never loaders (th
     assert.equal(out[vidLink[0]].class_type, "LoadVideo");
     assert.equal((out[vidLink[0]].inputs as Record<string, unknown>)["file"], "/m/guide.mp4");
     const audLink = out[b].inputs["input_16"] as [string, number] | undefined;
+    assert.ok(Array.isArray(audLink), "the audio rides a LoadAudio tensor link");
     assert.equal(out[audLink[0]].class_type, "LoadAudio");
     assert.equal((out[audLink[0]].inputs as Record<string, unknown>)["audio"], "/m/tone.flac");
   });

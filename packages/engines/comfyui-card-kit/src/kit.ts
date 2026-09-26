@@ -53,6 +53,7 @@ export {
   refuseImageEditFiring,
   imageEdit,
   editRefs,
+  orderedInputImages,
   editImageCap,
 } from './lanes-image.ts'
 export {

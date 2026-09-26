@@ -16,9 +16,10 @@
 // with `?? ''` / `?? []` normalization — never a TS-pinned ''/0/[].
 //
 // WIRING (kit: imageEdit over render-kit.ts — loadTextPair,
-// decodeSave, stackLoras): the lane merges ONE reference order —
-// legacy image2/image3 (hidden aliases, old drafts/agents/flows)
-// FIRST, then the reference_images stack — and maps it per lane:
+// decodeSave, stackLoras): the lane reads ONE ordered list —
+// input_images verbatim, else the legacy merge (image1 the anchor,
+// then image2/image3, then the reference_images stack) — and
+// maps it per lane:
 // 2511 onto the STOCK node's native image2/image3 optionals (blank
 // refs stay out of the inputs entirely, so plain and legacy-only
 // graphs are byte-stable); 2.1 contiguously onto the encoder's
@@ -46,6 +47,7 @@ import {
   imageEdit,
   impactArmNames,
   IMPACT_DETECTOR_PROVISIONS,
+  orderedInputImages,
   refuseImageEditFiring,
 } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
@@ -56,7 +58,7 @@ import { DECL as qwenImgEdit2511Decl } from '@melite/models-qwen-img-edit-2511'
 
 // THE STACK CAP (the max_images law — the card RIDES the models'
 // DECLs, never a hardcoded count): the roomiest boarded lane's
-// total image inputs minus the anchor. A boarded family WITHOUT
+// total image inputs, anchor included. A boarded family WITHOUT
 // max_images breaks card registration LOUD (fail-loud over the
 // degenerate 1 — a missing cap is a DECL bug, and the degenerate
 // floor would silently disagree with the lane's narrow end).
@@ -65,7 +67,7 @@ export const declCap = (d: { id: string; lane_inputs?: Record<string, unknown> }
   if (typeof v === 'number' && Number.isFinite(v) && v >= 1) return Math.floor(v)
   throw new Error(`image-edit card: boarded family '${d.id}' declares no lane_inputs.max_images (the max_images law — the node's own image-input count)`)
 }
-const EDIT_STACK_CAP = Math.max(declCap(qwenImgEdit2511Decl), declCap(qwenImgEdit21Decl)) - 1
+const EDIT_LIST_CAP = Math.max(declCap(qwenImgEdit2511Decl), declCap(qwenImgEdit21Decl))
 
 export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): declaration
   // order = the field order. image1 IS THE PLAIN ANCHOR (2026-09-21,
@@ -89,30 +91,22 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // seat must name a carrier key. Hidden = unserved: no form
   // row (the mask pack owns the visible Region Mask row), no
   // tool param — the seat lives on flowKinds.inputs alone.
-  image1: z.string().role('path').description("Input Image").extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image', tooltip: 'The image to edit.' }),
-  // THE LEGACY ALIASES (the naming law, 2026-10-09: "reference
-  // image" and "image input" are ONE concept — every Qwen edit
-  // lane takes the same ordered list of input images — so the FACE
-  // speaks ONE vocabulary: Input Image (the one being edited) +
-  // Reference Images (the rest). image2/image3 were the stock
-  // node's NUMBERED slot names — a second vocabulary for the same
-  // thing, the eternal mix the operator caught. They stay DECLARED
-  // with hidden:true (validation-only gate keys; compose merges
-  // them to the FRONT of the reference order) and ride
-  // flowKinds.legacyAliases so OLD graphs still validate — but no
-  // face offers them: never a form row, never a picker seat, never
-  // a tool param.
+  // THE ONE LIST (the operator's merge, ordered three times, landed
+  // 2026-10-10): input images and reference images are ONE concept —
+  // the node's own image_1..image_N slots, position 0 = the image
+  // being edited, the rest = references the prompt cites as
+  // <image2>, <image3>… ONE visible face speaks it. The legacy
+  // spellings (image1 the anchor, image2/image3 the numbered slots,
+  // reference_images the stack) stay DECLARED hidden:true —
+  // validation-only aliases merging into the SAME ordered list
+  // (anchor first, numbered next, stack after) so old drafts, flow
+  // edges, and spells keep validating and recompose byte-stable —
+  // but no face offers them: never a form row, never a picker seat.
+  input_images: z.array(z.string().role('path')).description("Input Images").default([]).extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image_list', max_stack: EDIT_LIST_CAP, serveDefault: true, tooltip: 'Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly.' }),
+  image1: z.string().role('path').description("Input Image").extra('extra', { hidden: true }),
   image2: z.string().role('path').description("Image 2").extra('extra', { hidden: true }),
   image3: z.string().role('path').description("Image 3").extra('extra', { hidden: true }),
-  // reference_images is THE reference stack — ONE row, both lanes
-  // (the unification: no visible_when, no second input concept).
-  // The cap RIDES the boarded DECLs (EDIT_STACK_CAP above — the
-  // roomiest lane's max_images minus the anchor); each lane refuses
-  // past its own DECL cap LOUD at compose (the firing law, never a
-  // silent drop). The tooltip speaks the CONCEPT (extra input
-  // images, in order) — node-slot mechanics are the engine's
-  // business, not the user's.
-  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", zone: 'inputs', max_stack: EDIT_STACK_CAP, tooltip: "Extra input images the edit consults — the model sees them alongside the input image, in order. Capacity follows the boarded model; more than it admits refuses loudly.", wtype: 'image_list' }),
+  reference_images: z.array(z.string()).description("Reference Images").extra('extra', { hidden: true }),
   // THE MASK-SEAT GATE KEY (2026-10-09 — the gap the operator's
   // rework caught: the mask card's seg producer had no seat on
   // this card, so mask→edit could not wire). input_mask's VISIBLE
@@ -161,8 +155,8 @@ export const identity = {
   genre: 'image',
   icon: 'edit',
   principles: [
-    'image1 is required — the edit is anchored on it (image2/image3 are hidden legacy aliases merging to the reference front; input_image is the retired alias)',
-    'references are ONE concept with the input images — Reference Images is a wireable input port (kind image_list, in the inputs category everywhere) riding both lanes up to each lane DECL max_images (the roomiest boarded cap sizes the form face); there is no second input row for the same concept',
+    'ONE ordered input list (the merge, 2026-10-10): input_images — the FIRST image is the one being edited, the rest are references the prompt cites as <image2>, <image3>…; image1/image2/image3/reference_images are hidden legacy aliases merging into the same list (anchor, numbered, then stack) so old drafts recompose byte-stable',
+    'the list capacity rides each lane DECL\'s max_images (2.1: 16 total, 2511: 3 total — anchor included); a list past the lane cap refuses loudly, never drops quietly',
     'Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0',
     'Without a mask modifier, image editing is whole-image by default; a mask modifier opts into masked-region editing',
     'An input_mask alongside image1 in auto switches the 2511 lane to the LanPaint inpaint sampler (the masked region regenerates, the rest is preserved); the 2.1 lane refuses auto+mask field-named — state crop_stitch there',
@@ -221,21 +215,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: 'image-edit', order: 2 },
     flowKinds: {
-      // THE INPUT SIGNATURE (the naming law, 2026-10-09: BOTH Qwen
-      // edit lanes take the same thing — an ordered list of input
-      // images — so the face declares exactly the two seats a user
-      // can mean: the input image and the reference stack. The
-      // numbered spellings (image2/image3) were the stock node's
-      // slot vocabulary leaking into the picker as extra seats for
-      // the same concept — THE MIX. They leave `inputs` (no seat,
-      // no rail square, no form row) and ride legacyAliases: the
-      // lattice still derives their kind, so old graphs wiring them
-      // keep validating, and compose still merges them to the
-      // reference front.
+      // THE INPUT SIGNATURE (the merge, 2026-10-10): ONE seat for
+      // the ONE concept — the ordered input list (first = the image
+      // being edited, rest = references). Every legacy spelling
+      // (image1, image2/image3, reference_images) leaves `inputs`
+      // and rides legacyAliases: the lattice still derives kinds,
+      // so old graphs wiring them keep validating, and compose
+      // merges them into the same ordered list.
       inputs: {
         prompt: 'text',
-        image1: 'image',
-        reference_images: 'image_list',
+        input_images: 'image_list',
         // THE MASK SEAT (2026-10-09 — the gap the operator's
         // rework caught): the mask card's seg producer feeds
         // input_mask — the mask→edit inpaint chain. The seat's
@@ -247,8 +236,10 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         input_mask: 'seg',
       },
       legacyAliases: {
+        image1: 'image',
         image2: 'image',
         image3: 'image',
+        reference_images: 'image_list',
       },
       outputs: { default: 'image' },
       requiresModel: false,
@@ -266,8 +257,14 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing or empty on the image-edit card (WHAT to change, not the whole image)")
       }
-      if (!doc.image1 || !(doc.image1 as string).trim()) {
-        throw new Error("required param 'image1' missing on the image-edit card (the edit is anchored on it)")
+      // THE ANCHOR GATE (the merge): ONE list, position 0 = the
+      // image being edited. The gate reads the MERGED order —
+      // input_images verbatim, else the legacy keys (image1 first,
+      // image2/3, then reference_images) — and refuses a list with
+      // no anchor. orderedInputImages refuses mixed vocabularies
+      // loud; the lane re-pins the same laws for direct callers.
+      if (orderedInputImages(doc).length === 0) {
+        throw new Error("required param 'input_images' missing on the image-edit card (the first image is the one being edited — an ordered list; legacy drafts may state image1 alone instead)")
       }
       refuseImageEditFiring(doc, model)
       imageEdit(doc, model, g, runId)
