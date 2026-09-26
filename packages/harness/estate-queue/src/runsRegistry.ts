@@ -31,7 +31,7 @@ import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadEndpointConfig } from "@melite/comfyui-cordis";
 import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.ts";
 import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
-import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger } from "./queue.ts";
+import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal } from "./queue.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
 import { coerceSnapshotBody } from "./runsValidateStages.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
@@ -453,6 +453,88 @@ export class RunsRuntimeService extends Service {
       }
       const graph: Record<string, unknown> = composed.graph;
       const skeleton: string = p1.skeleton;
+      // THE CARD-DOOR SPELL GATE (2026-10-10, the operator's
+      // extermination order: NO SILENT BEHAVIOR — ever). The card
+      // arm composes ONE stage and resolves NOTHING: inputNames is
+      // {} by construction and the merged worker's initials ride
+      // empty — so a $spell anywhere in the composed graph is a
+      // PROMISE THIS DOOR CANNOT KEEP. Until now such a spell
+      // passed the door and died at the merge with a stranger's
+      // voice ('workflow carries $name' from rewriteSpells) — the
+      // exact silent seam that ate a wired bench run (run
+      // 880aaa85d928: bench wired input_images from s_0, the
+      // client's Run built a single-card body, the wire vanished,
+      // the spell reached the merge unresolved). THE DOOR COVERS
+      // WHAT THE RUN WILL DO (the flow_inline gate's own law,
+      // runsStart.ts THE SPELL GATE): refuse here, in the door's
+      // voice, naming every spell.
+      const spellSweep = (v: unknown, found: Set<string>): void => {
+        if (typeof v === "string") {
+          if (v.startsWith("$") && v.length > 1) found.add(v.slice(1));
+        } else if (Array.isArray(v)) {
+          for (const x of v) spellSweep(x, found);
+        } else if (typeof v === "object" && v !== null) {
+          for (const x of Object.values(v as Record<string, unknown>)) {
+            spellSweep(x, found);
+          }
+        }
+      };
+      const spells: Set<string> = new Set();
+      spellSweep(graph, spells);
+      spellSweep(body, spells);
+      if (spells.size > 0) {
+        throw toRemoteError(
+          refusal(
+            400,
+            "params carry " +
+              JSON.stringify([...spells].sort().map((n): string => "$" + n)) +
+              " but a single-card run resolves no wires and no initials — the merge would refuse them at run time. Wire the input (run the bench flow so FromStage links ride) or replace the $spell with a concrete value.",
+            "invalid_request",
+          ),
+        );
+      }
+      // THE BENCH-WIRE DISCARD GATE (same order): the bench doc this
+      // run was born from may wire stage inputs (FromStage links).
+      // The card arm composes ONE stage with inputNames: {} — every
+      // such wire would be DISCARDED SILENTLY (the run's graph row
+      // stamped input_names: {} while the bench wired input_images
+      // from s_0). A wire that cannot ride refuses HERE, named —
+      // never dropped.
+      const wiredRows: string[] = [];
+      if (benchDoc !== undefined && Array.isArray(benchDoc["stages"])) {
+        for (const st of benchDoc["stages"] as unknown[]) {
+          if (typeof st !== "object" || st === null) continue;
+          const ins = (st as Record<string, unknown>)["inputs"];
+          if (typeof ins !== "object" || ins === null || Array.isArray(ins)) {
+            continue;
+          }
+          for (const [name, ref] of Object.entries(
+            ins as Record<string, unknown>,
+          )) {
+            const rr = ref as Record<string, unknown>;
+            if (
+              typeof rr === "object" && rr !== null &&
+              typeof rr["stage"] === "string"
+            ) {
+              wiredRows.push(
+                name + " <- " + String(rr["stage"]) +
+                  (typeof rr["output"] === "string" ? "." + String(rr["output"]) : ""),
+              );
+            }
+          }
+        }
+      }
+      if (wiredRows.length > 0) {
+        throw toRemoteError(
+          refusal(
+            400,
+            "the bench wires " +
+              JSON.stringify(wiredRows) +
+              " but a single-card run carries no FromStage links — the wires would be discarded. Run the bench flow (the wires ride as stage inputs) or clear the wiring.",
+            "invalid_request",
+          ),
+        );
+      }
       const cardStage: CompiledStage = {
         id: skeleton,
         // The {model:} card door's engine (the compose plane is

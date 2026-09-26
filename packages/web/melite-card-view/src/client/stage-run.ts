@@ -105,16 +105,71 @@ export async function runCardStage(
       draftId,
     })
   }
+  // THE WIRE RESOLUTION LAW (2026-10-10, the operator's
+  // extermination order — NO SILENT BEHAVIOR): the bench's own
+  // wiring law (admitWiring) REQUIRES every wired input to carry a
+  // matching $spell in params — but the {model:} door composes ONE
+  // stage and resolves NOTHING. Until now a wired stage's Run sent
+  // the spell verbatim: the door accepted, the merge died with a
+  // stranger's voice ('workflow carries $input_images'), and the
+  // wire was silently discarded (run 880aaa85d928). THE WIRE MEANS
+  // ONE THING: this input IS that stage's output. Running the stage
+  // ALONE resolves the wire to the upstream's LAST RESULT —
+  // result.url, the media-route currency the tiles already trade —
+  // and sends the CONCRETE value. An upstream with no output yet
+  // REFUSES HERE, naming the wire — never a doomed run, never a
+  // silent drop.
+  const wires = typeof src.inputs === 'object' && src.inputs !== null && !Array.isArray(src.inputs)
+    ? src.inputs as Record<string, unknown>
+    : {}
+  let resolved = params
+  const wireNames = Object.keys(wires)
+  if (wireNames.length > 0) {
+    resolved = { ...params }
+    for (const name of wireNames) {
+      const ref = wires[name] as Record<string, unknown> | null
+      const isStageWire = typeof ref === 'object' && ref !== null
+        && typeof ref['stage'] === 'string' && typeof ref['output'] === 'string'
+      if (!isStageWire) {
+        return { refused: 'input ' + JSON.stringify(name) + ' is neither {stage, output} nor a resolvable binding — the single-stage run maps only stage wires (got ' + JSON.stringify(ref ?? null) + ')' }
+      }
+      const upstreamId = String(ref!['stage'])
+      const upstream = await freshStageRow(draftId, upstreamId)
+      const res = typeof upstream?.result === 'object' && upstream.result !== null
+        ? upstream.result as Record<string, unknown> : {}
+      const url = typeof res['url'] === 'string' && res['url'] !== '' ? res['url'] : ''
+      if (url === '') {
+        return {
+          refused: 'input ' + JSON.stringify(name) + ' is wired to stage ' + JSON.stringify(upstreamId)
+            + ' which has no output yet — run it first (or clear the wire). The single-stage run resolves wires to the upstream\'s last result; it never drops them.',
+        }
+      }
+      // substitute EVERY occurrence of the spell: a bare string or
+      // inside arrays (input_images: ["$input_images"] → [url])
+      const spell = '$' + name
+      const substitute = (v: unknown): unknown => {
+        if (v === spell) return url
+        if (Array.isArray(v)) return v.map(substitute)
+        if (typeof v === 'object' && v !== null) {
+          const out: Record<string, unknown> = {}
+          for (const [k, x] of Object.entries(v as Record<string, unknown>)) out[k] = substitute(x)
+          return out
+        }
+        return v
+      }
+      for (const k of Object.keys(resolved)) resolved[k] = substitute(resolved[k])
+    }
+  }
   // the declared surface spells SELECT options as strings; a legacy
   // row may hold the matching number — normalize through the spec
   // (only when the stringified value IS a declared option; anything
   // else rides verbatim and the door refuses honestly)
-  let doc = params
+  let doc = resolved
   try {
     const spec = await fetchFormSpec(card)
     const selects = fieldsOf(spec).filter((f) => f.type === 'select' && Array.isArray(f.options))
     if (selects.length > 0) {
-      doc = { ...params }
+      doc = { ...resolved }
       for (const f of selects) {
         const v = doc[f.name]
         if (typeof v === 'number') {

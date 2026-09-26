@@ -304,6 +304,99 @@ describe("validate", () => {
     assert.match(out.message, /outside the cordis plane/);
   });
 
+  // ── THE EXTERMINATION WALLS (2026-10-10, the operator's order: NO
+  //    SILENT BEHAVIOR — run 880aaa85d928 proved the seam: the bench
+  //    wired input_images from s_0, the client's Run sent a
+  //    single-card body, the door stamped inputNames: {} while
+  //    composing a graph carrying $input_images, and the wire was
+  //    silently discarded — the run died at the MERGE with a
+  //    stranger's voice). The door now covers what the run will do. ──
+
+  /** The model-door seat with a phase1/phase2 compose pair: the
+   *  graph rides verbatim (the wall sweeps it). */
+  const modelDoorSeat = (
+    graph: Record<string, unknown>,
+    d1Doc: Record<string, unknown> = {},
+  ): Seat =>
+    seat(
+      {
+        modelFacts: (): unknown => ({ m1: {} }),
+        resolveCardFamily: (): unknown => "m1",
+        modelMids: (): unknown => new Set<string>(),
+        overlayCardParams: async (): Promise<unknown> => ({}),
+        phase1Card: async (): Promise<unknown> => ({ skeleton: "edit", card: "image-edit" }),
+        phase2Card: async (): Promise<unknown> => ({
+          graph,
+          outputs: {},
+          outputNodes: {},
+        }),
+      },
+      d1Doc,
+    );
+
+  it("THE CARD-DOOR SPELL GATE: a $spell in the composed graph refuses AT THE DOOR — never the merge's stranger voice", async () => {
+    const s = modelDoorSeat({
+      "TextEncodeQwenImage21.0": {
+        class_type: "TextEncodeQwenImage21",
+        inputs: { image_1: "$input_images" },
+      },
+    });
+    const err = await remote(() =>
+      s.svc.start(
+        {
+          draft_id: "d1",
+          test: false,
+          model: "m1",
+          params: { input_images: ["$input_images"] },
+        },
+        sig(),
+      ),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    // names the spell, names the fix
+    assert.match(err.message, /\$input_images/);
+    assert.match(err.message, /resolves no wires/);
+    // NEVER REGISTERED — nothing queues, nothing runs
+    assert.equal(s.core.runs.size, 0);
+  });
+
+  it("THE BENCH-WIRE DISCARD GATE: a bench wiring inputs refuses the single-card run — named, never dropped", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: {} } },
+      {
+        stages: [
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    const err = await remote(() =>
+      s.svc.start(
+        { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+        sig(),
+      ),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /input_images <- s_0\.default/);
+    assert.match(err.message, /no FromStage links/);
+    assert.equal(s.core.runs.size, 0);
+  });
+
+  it("CLEAN SINGLE-CARD: no spells, no wires — the walls never false-alarm, the run registers", async () => {
+    const s = modelDoorSeat({
+      SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } },
+    });
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "a cat" } },
+      sig(),
+    )) as Record<string, unknown>;
+    assert.match(String(ans["run_id"]), /^run-/);
+  });
+
   it("overlay failures fold CardArmErrors and rethrow the rest", async () => {
     const arm = seat({
       modelFacts: (): unknown => ({ m1: {} }),

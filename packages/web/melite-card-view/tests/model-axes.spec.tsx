@@ -232,6 +232,120 @@ test('runCardStage composes the HELD model; the default family is only the resti
   }
 })
 
+// ── THE WIRE RESOLUTION LAW (2026-10-10, the operator's
+//    extermination order: NO SILENT BEHAVIOR — run 880aaa85d928
+//    proved the seam: the bench wired input_images from s_0, the
+//    stage's Run sent the $spell through the {model:} door, the
+//    wire was silently discarded, the merge died with a stranger's
+//    voice). The single-stage run resolves wires to the upstream's
+//    LAST RESULT or refuses naming them — never drops them. ──────
+
+/** The operator's exact bench shape: s_0 (image-gen, RAN — a result
+ *  url) + the wired edit stage carrying the mandated $spell. */
+function wiredBenchStages(s0Result: Record<string, unknown> | null): Array<Record<string, unknown>> {
+  return [
+    { id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { prompt: 'a cat' }, ...(s0Result === null ? {} : { result: s0Result }) },
+    {
+      id: 's_1', card: 'image-edit', title: 'edit', engine: 'comfyui',
+      params: { input_images: ['$input_images'], prompt: 'make the hair crimson', model: 'krea-2' },
+      inputs: { input_images: { stage: 's_0', output: 'default' } },
+    },
+  ]
+}
+
+test('THE WIRE RESOLUTION: a wired stage runs on the upstream\'s last result — the $spell never crosses to the {model:} door', async () => {
+  const { runCardStage } = await import('../src/client/CardsTab.tsx')
+  const { mountEstateFakes } = await import('./estate-harness.ts')
+  const artifact = '/melite-media/runs/run-880aaa85d928-dfa2dc59/generate/SaveImage.0_gen_00001_.png'
+  const fakes = mountEstateFakes({ draftStages: wiredBenchStages({ url: artifact }) })
+  const realFetch = globalThis.fetch
+  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
+    if (String(url).includes('/v1/form-spec')) return { ok: true, json: async () => KREA }
+    throw new Error('estate door on the fetch lane: ' + String(url))
+  }
+  try {
+    const res = await runCardStage('bench-main', {
+      id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
+      params: { input_images: ['$input_images'], prompt: 'make the hair crimson' },
+      inputs: { input_images: { stage: 's_0', output: 'default' } },
+      result: null,
+    })
+    expect(res).toEqual({ runId: 'run-1' })
+    const start = fakes.calls.find((c) => c.method === 'runs/start')
+    const doc = (start?.args['doc'] as Record<string, unknown>) ?? {}
+    // THE CONCRETE VALUE: the spell resolved to the upstream's url
+    expect(doc['input_images']).toEqual([artifact])
+    expect(JSON.stringify(doc)).not.toContain('$input_images')
+  } finally {
+    ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
+    fakes.unmount()
+  }
+})
+
+test('THE WIRE RESOLUTION: an upstream with no output REFUSES at the press — named, never a doomed run', async () => {
+  const { runCardStage } = await import('../src/client/CardsTab.tsx')
+  const { mountEstateFakes } = await import('./estate-harness.ts')
+  const fakes = mountEstateFakes({ draftStages: wiredBenchStages(null) })
+  const realFetch = globalThis.fetch
+  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
+    if (String(url).includes('/v1/form-spec')) return { ok: true, json: async () => KREA }
+    throw new Error('estate door on the fetch lane: ' + String(url))
+  }
+  try {
+    const res = await runCardStage('bench-main', {
+      id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
+      params: { input_images: ['$input_images'], prompt: 'make the hair crimson' },
+      inputs: { input_images: { stage: 's_0', output: 'default' } },
+      result: null,
+    })
+    if (!('refused' in res)) throw new Error('expected a refusal, got ' + JSON.stringify(res))
+    expect(res.refused).toContain('input_images')
+    expect(res.refused).toContain('s_0')
+    // THE NEVER-DOOMED LAW: the start door was never called
+    expect(fakes.calls.some((c) => c.method === 'runs/start')).toBe(false)
+  } finally {
+    ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
+    fakes.unmount()
+  }
+})
+
+test('THE WIRE RESOLUTION: a wire row of an unknown shape REFUSES naming it — never a silent skip', async () => {
+  const { runCardStage } = await import('../src/client/CardsTab.tsx')
+  const { mountEstateFakes } = await import('./estate-harness.ts')
+  const fakes = mountEstateFakes({
+    draftStages: [
+      { id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { prompt: 'a cat' } },
+      {
+        id: 's_1', card: 'image-edit', title: 'edit', engine: 'comfyui',
+        params: { input_images: ['$input_images'] },
+        inputs: { input_images: { weird: true } },
+      },
+    ],
+  })
+  const realFetch = globalThis.fetch
+  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
+    if (String(url) === '/v1/model-catalog') {
+      return { ok: true, json: async () => ({ cards: { 'image-edit': { id: 'image-edit', families: ['krea-2'] } } }) }
+    }
+    if (String(url).includes('/v1/form-spec')) return { ok: true, json: async () => KREA }
+    throw new Error('estate door on the fetch lane: ' + String(url))
+  }
+  try {
+    const res = await runCardStage('bench-main', {
+      id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
+      params: { input_images: ['$input_images'] },
+      inputs: { input_images: { weird: true } },
+      result: null,
+    })
+    if (!('refused' in res)) throw new Error('expected a refusal, got ' + JSON.stringify(res))
+    expect(res.refused).toContain('input_images')
+    expect(fakes.calls.some((c) => c.method === 'runs/start')).toBe(false)
+  } finally {
+    ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
+    fakes.unmount()
+  }
+})
+
 // ── the multi-axis law (operator lane proof 2026-09-12: the hardcoded
 //    Quant-only list dropped seedvr2's Recipe axis and qwen's — the
 //    axes are the SERVED GROUPS, ALL of them, chained by owner). ──────
