@@ -32,6 +32,7 @@
     "@melite/audio-tts": "workspace:*",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
+    "@melite/contracts": "workspace:*",
     "@melite/engine-agent": "workspace:*",
     "@melite/engine-craft": "workspace:*",
     "@melite/engine-mcp": "workspace:*",

@@ -7,6 +7,7 @@ import z from '@deepseek-ai/schemastery'
 import { inputPrepLane } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
+import { bag } from '@melite/contracts/extraKeys'
 
 const schema = z.object({
   // the staged source filename (the arm stages uploads/artifacts into
@@ -14,15 +15,15 @@ const schema = z.object({
   // the declaration carries ONLY source — media_type/crop/scale ride the
   // door's explicit-params overlay (non-strict object) so old drafts
   // keep parsing, but they are never declared knobs.
-  source: z.string().role('path').description("Source file").extra('extra', { order: 0, group: "input", tooltip: "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).", required: true, wtype: 'file', }),
-  media_type: vocabulary(["image", "audio"]).description("Media type").default("image").extra('extra', { order: 1, group: "input", width: 1, wtype: 'select' }),
-  crop_x: z.number().description("Crop X").min(-1).step(1).default(-1).extra('extra', { order: 0, group: "transform", wtype: 'number', visible_when: 'media_type=image' }),
-  crop_y: z.number().description("Crop Y").min(-1).step(1).default(-1).extra('extra', { order: 1, group: "transform", wtype: 'number', visible_when: 'media_type=image' }),
-  crop_width: z.number().description("Crop Width").min(-1).step(1).default(-1).extra('extra', { order: 2, group: "transform", wtype: 'number', visible_when: 'media_type=image' }),
-  crop_height: z.number().description("Crop Height").min(-1).step(1).default(-1).extra('extra', { order: 3, group: "transform", wtype: 'number', visible_when: 'media_type=image' }),
-  scale_width: z.number().description("Scale Width").min(-1).step(1).default(-1).extra('extra', { order: 4, group: "transform", wtype: 'number', visible_when: 'media_type=image' }),
-  scale_height: z.number().description("Scale Height").min(-1).step(1).default(-1).extra('extra', { order: 5, group: "transform", wtype: 'number', visible_when: 'media_type=image' }),
-  scale_method: z.string().description("Scale Method").default("lanczos").extra('extra', { order: 6, group: "transform", wtype: 'text', visible_when: 'media_type=image' }),
+  source: z.string().role('path').description("Source file").extra('extra', bag({ order: 0, group: "input", tooltip: "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).", required: true, wtype: 'file', })),
+  media_type: vocabulary(["image", "audio"]).description("Media type").default("image").extra('extra', bag({ order: 1, group: "input", width: 1, wtype: 'select' })),
+  crop_x: z.number().description("Crop X").min(-1).step(1).default(-1).extra('extra', bag({ order: 0, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
+  crop_y: z.number().description("Crop Y").min(-1).step(1).default(-1).extra('extra', bag({ order: 1, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
+  crop_width: z.number().description("Crop Width").min(-1).step(1).default(-1).extra('extra', bag({ order: 2, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
+  crop_height: z.number().description("Crop Height").min(-1).step(1).default(-1).extra('extra', bag({ order: 3, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
+  scale_width: z.number().description("Scale Width").min(-1).step(1).default(-1).extra('extra', bag({ order: 4, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
+  scale_height: z.number().description("Scale Height").min(-1).step(1).default(-1).extra('extra', bag({ order: 5, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
+  scale_method: z.string().description("Scale Method").default("lanczos").extra('extra', bag({ order: 6, group: "transform", wtype: 'text', visible_when: 'media_type=image' })),
 })
 
 export const inject = ['comfyui']

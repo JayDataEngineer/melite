@@ -101,6 +101,13 @@ export function schemaEnvelope(dict: Record<string, SchemaRef & { consts?: unkno
 }
 
 
+// THE ONE VOCABULARY (2026-10-10): the extra-bag contract lives at
+// the floor (@melite/contracts/extraKeys — zero deps, one spelling
+// shared by the web tier, the engine tier, and every card
+// declaration; before it, the form spelled visible_when while the
+// tool face spelled visibleWhen — a dead read for every card).
+import { extraOf, type ExtraBag, type ExtraKey } from '@melite/contracts/extraKeys'
+
 /** One DERIVED form field (fieldsOfEnvelope's output — the client's
  *  presentation descriptor, never a wire row): every fact reads off
  *  the schema node's meta (native wins, the extra bag fills), the
@@ -578,11 +585,15 @@ function projectDict(
       }
     }
     const meta: Record<string, unknown> = node.meta ?? {}
-    const extra: Record<string, unknown> =
-      typeof meta['extra'] === 'object' && meta['extra'] !== null && !Array.isArray(meta['extra'])
-        ? meta['extra'] as Record<string, unknown> : {}
-    const families = Array.isArray(extra['families'])
-      ? extra['families'] as unknown[] : null
+    // ONE VOCABULARY (2026-10-10, the operator's law: "literally
+    // impossible to speak two vocabularies"): the bag narrows
+    // through the floor's typed read — every key below spells the
+    // contract's own constant spelling, never a second string
+    // literal (the visible_when/visibleWhen dead-read crime's
+    // structural cure).
+    const extra: Partial<ExtraBag> = extraOf(node)
+    const families = Array.isArray(extra.families)
+      ? extra.families as unknown[] : null
     if (families !== null && family !== undefined
         && !families.includes(family)) continue
     // THE HIDDEN ARM (2026-09-21, the blank-rows catch): a field
@@ -593,7 +604,7 @@ function projectDict(
     // legacy aliases (interp_switch), and renderer spellings
     // (image_name) are gate keys, not surface fields. A blank
     // default-less row on the form face is a lie.
-    if (extra['hidden'] === true) continue
+    if (extra.hidden === true) continue
     // union options: const members, labels from their meta.description
     let options: Array<string | { value: string; label: string }> | undefined
     if (node.type === 'union' && Array.isArray(node.list)) {
@@ -610,15 +621,15 @@ function projectDict(
       }
       if (opts.length > 0) options = opts
     }
-    if (Array.isArray(extra['options'])) {
-      options = (extra['options'] as unknown[]).map((o) =>
+    if (Array.isArray(extra.options)) {
+      options = (extra.options as unknown[]).map((o) =>
         typeof o === 'string' ? o
           : typeof o === 'object' && o !== null && 'value' in (o as Record<string, unknown>) && 'label' in (o as Record<string, unknown>)
             ? { value: String((o as Record<string, unknown>)['value']), label: String((o as Record<string, unknown>)['label']) }
             : String(o))
     }
     // presentation type: declared hint wins, else derive
-    const hint = typeof extra['wtype'] === 'string' ? extra['wtype'] : ''
+    const hint = typeof extra.wtype === 'string' ? extra.wtype : ''
     let type: string
     if (hint !== '') type = hint
     else if (options !== undefined && node.type === 'union') type = 'select'
@@ -629,14 +640,20 @@ function projectDict(
     else type = node.type ?? 'string'
     const num = (k: string): number | undefined =>
       typeof meta[k] === 'number' ? meta[k] as number : undefined
-    const str = (k: string): string | undefined =>
-      typeof extra[k] === 'string' ? extra[k] as string
-        : typeof meta[k] === 'string' ? meta[k] as string : undefined
+    // the str() reads ride the TYPED bag first (the contract's own
+    // spelling), the raw meta as the schemastery-native fallback
+    // (description-class keys) — one vocabulary, two layers
+    const str = (k: ExtraKey, m?: string): string | undefined => {
+      const b = extra[k]
+      if (typeof b === 'string') return b
+      const mk = m ?? k
+      return typeof meta[mk] === 'string' ? meta[mk] as string : undefined
+    }
     out.push({
       name,
       label: typeof meta['description'] === 'string' && meta['description'] !== ''
         ? meta['description'] as string : name,
-      order: typeof extra['order'] === 'number' ? extra['order'] : undefined,
+      order: typeof extra.order === 'number' ? extra.order : undefined,
       type,
       default: meta['default'] === undefined ? undefined : meta['default'],
       min: num('min'), max: num('max'),
@@ -644,13 +661,13 @@ function projectDict(
       options,
       group: str('group') ?? '',
       zone: str('zone'),
-      required: extra['required'] === true || meta['required'] === true,
+      required: extra.required === true || meta['required'] === true,
       placeholder: str('placeholder'),
       tooltip: str('tooltip'),
       visible_when: str('visible_when'),
-      columns: typeof extra['columns'] === 'number' ? extra['columns'] as number : undefined,
-      width: typeof extra['width'] === 'number' ? extra['width'] as number : undefined,
-      max_stack: typeof extra['max_stack'] === 'number' ? extra['max_stack'] as number : undefined,
+      columns: typeof extra.columns === 'number' ? extra.columns as number : undefined,
+      width: typeof extra.width === 'number' ? extra.width as number : undefined,
+      max_stack: typeof extra.max_stack === 'number' ? extra.max_stack as number : undefined,
       media: str('media'),
     })
   }

@@ -19,6 +19,7 @@
     "@deepseek-ai/schemastery": "*",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
+    "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
     "@melite/models-qwen-img-edit-21": "workspace:*",
     "@melite/models-qwen-img-edit-2511": "workspace:*"
@@ -28,5 +29,5 @@
     "typescript": "^5.9.3"
   },
   "name": "@melite/image-image-edit",
-  "description": "the image-edit card (the image lane) — one card one package: card.ts host face + ui/ studio + agents/ context"
+  "description": "the image-edit card (the image lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"
 }

@@ -9113,7 +9113,50 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, t.id)) });
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/extraKeys.ts
+		/** THE TYPED WRITE — declarations pass their literal through this
+		*  so an unknown key fails BOTH walls: tsc at the literal, this
+		*  throw at runtime (spread arms). Never a silently dead write. */
+		function bag(b) {
+			for (const key of Object.keys(b)) if (!EXTRA_KEY_SET.has(key)) throw new Error("extra bag carries '" + key + "' — not in the contract's vocabulary (packages/web-kit/contracts/src/extraKeys.ts). A key outside the table has no reader spelling and would be a silent dead write. Add it to EXTRA_KEYS with its type and owners, or fix the spelling.");
+			return b;
+		}
+		/** THE TYPED READ — one getter for every face. `extraOf(node)`
+		*  narrows a serialized ref node's meta.extra to the bag type;
+		*  faces read keys off the result, never off a bare record. */
+		function extraOf(node) {
+			const raw = node?.meta?.["extra"];
+			return typeof raw === "object" && raw !== null && !Array.isArray(raw) ? raw : {};
+		}
+		var EXTRA_KEYS, EXTRA_KEY_SET;
+		var init_extraKeys = __esmMin((() => {
+			EXTRA_KEYS = [
+				"order",
+				"group",
+				"zone",
+				"wtype",
+				"width",
+				"columns",
+				"visible_when",
+				"tooltip",
+				"required",
+				"hidden",
+				"families",
+				"max_stack",
+				"media",
+				"placeholder",
+				"options",
+				"optionsFrom",
+				"serveDefault",
+				"min",
+				"max",
+				"default"
+			];
+			EXTRA_KEY_SET = new Set(EXTRA_KEYS);
+		}));
+		//#endregion
 		//#region ../card-base/src/spec.ts
+		init_extraKeys();
 		/** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
 		*  served modifier kind owns — its fields' names plus its param_key
 		*  (the bag storage). CardForm EXCLUDES these from the flat param
@@ -9234,10 +9277,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
 				}
 				const meta = node.meta ?? {};
-				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
-				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
+				const extra = extraOf(node);
+				const families = Array.isArray(extra.families) ? extra.families : null;
 				if (families !== null && family !== void 0 && !families.includes(family)) continue;
-				if (extra["hidden"] === true) continue;
+				if (extra.hidden === true) continue;
 				let options;
 				if (node.type === "union" && Array.isArray(node.list)) {
 					const opts = [];
@@ -9255,11 +9298,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}
 					if (opts.length > 0) options = opts;
 				}
-				if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
+				if (Array.isArray(extra.options)) options = extra.options.map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
 					value: String(o["value"]),
 					label: String(o["label"])
 				} : String(o));
-				const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
+				const hint = typeof extra.wtype === "string" ? extra.wtype : "";
 				let type;
 				if (hint !== "") type = hint;
 				else if (options !== void 0 && node.type === "union") type = "select";
@@ -9269,11 +9312,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				else if (node.type === "array") type = "loras";
 				else type = node.type ?? "string";
 				const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
-				const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
+				const str = (k, m) => {
+					const b = extra[k];
+					if (typeof b === "string") return b;
+					const mk = m ?? k;
+					return typeof meta[mk] === "string" ? meta[mk] : void 0;
+				};
 				out.push({
 					name,
 					label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
-					order: typeof extra["order"] === "number" ? extra["order"] : void 0,
+					order: typeof extra.order === "number" ? extra.order : void 0,
 					type,
 					default: meta["default"] === void 0 ? void 0 : meta["default"],
 					min: num("min"),
@@ -9282,13 +9330,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					options,
 					group: str("group") ?? "",
 					zone: str("zone"),
-					required: extra["required"] === true || meta["required"] === true,
+					required: extra.required === true || meta["required"] === true,
 					placeholder: str("placeholder"),
 					tooltip: str("tooltip"),
 					visible_when: str("visible_when"),
-					columns: typeof extra["columns"] === "number" ? extra["columns"] : void 0,
-					width: typeof extra["width"] === "number" ? extra["width"] : void 0,
-					max_stack: typeof extra["max_stack"] === "number" ? extra["max_stack"] : void 0,
+					columns: typeof extra.columns === "number" ? extra.columns : void 0,
+					width: typeof extra.width === "number" ? extra.width : void 0,
+					max_stack: typeof extra.max_stack === "number" ? extra.max_stack : void 0,
 					media: str("media")
 				});
 			}
@@ -52648,6 +52696,8 @@ void main() {
 		var src_exports$1 = /* @__PURE__ */ __exportAll({
 			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
 			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
+			EXTRA_KEYS: () => EXTRA_KEYS,
+			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
 			FLF_MODES: () => FLF_MODES,
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
 			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
@@ -52657,10 +52707,12 @@ void main() {
 			_cachedCount: () => _cachedCount,
 			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
 			applySubcardDrop: () => applySubcardDrop,
+			bag: () => bag,
 			benchResultDefects: () => benchResultDefects,
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
 			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
+			extraOf: () => extraOf,
 			hasModifierCapability: () => hasModifierCapability,
 			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
@@ -52689,6 +52741,7 @@ void main() {
 			subcardsFromParams: () => subcardsFromParams
 		});
 		var init_src$2 = __esmMin((() => {
+			init_extraKeys();
 			init_FlowTypes();
 			init_benchResult();
 			init_browserStorage();
@@ -60484,4 +60537,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="88e895dec37d26f831bcb1efefaedd10d2a61ff7";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="fb6698f8a8b97b3c5d1885c12bfee6df094b4b6a";

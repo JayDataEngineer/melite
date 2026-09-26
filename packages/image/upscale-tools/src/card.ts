@@ -7,9 +7,10 @@ import z from '@deepseek-ai/schemastery'
 import { upscaleLane } from '@melite/comfyui-card-kit'
 import { resolveLinkedInput } from '@melite/comfyui-cordis/linked'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { bag } from '@melite/contracts/extraKeys'
 
 const schema = z.object({
-  input_image: z.string().role('path').description("Input image").extra('extra', { order: 0, group: "input", width: 1, tooltip: "The frame to restore. Absolute mount path.", required: true, wtype: 'image', }),
+  input_image: z.string().role('path').description("Input image").extra('extra', bag({ order: 0, group: "input", width: 1, tooltip: "The frame to restore. Absolute mount path.", required: true, wtype: 'image', })),
   // ride-the-model keys (ABSENT: no schema default — the
   // compose-door cascade overlays model defaults, then explicit
   // params): resolution/max_resolution/batch_size ride the seedvr2_ema
@@ -19,10 +20,10 @@ const schema = z.object({
   // ride-keys carry HINT-ONLY ranges via extra (the served editor
   // floors) so the cascade stays authoritative; only schema-defaulted
   // knobs (seed) get validating min/max.
-  resolution: z.number().description("Target short side").min(256).max(2160).step(2).extra('extra', { order: 0, group: "target", columns: 2, width: 1, tooltip: "1080 = FHD rail. SeedVR2 redraws detail at this size.", wtype: 'number' }),
-  max_resolution: z.number().description("Max resolution").min(512).max(4096).step(64).extra('extra', { order: 1, group: "target", columns: 2, width: 1, tooltip: "The hard ceiling — inputs already past it pass through.", wtype: 'number' }),
-  batch_size: z.number().description("Batch size").min(1).max(16).step(1).extra('extra', { order: 0, group: "run", width: 1, tooltip: "Video frames ride batches; images are batch 1.", wtype: 'number' }),
-  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 1, group: "run", width: 1 }),
+  resolution: z.number().description("Target short side").min(256).max(2160).step(2).extra('extra', bag({ order: 0, group: "target", columns: 2, width: 1, tooltip: "1080 = FHD rail. SeedVR2 redraws detail at this size.", wtype: 'number' })),
+  max_resolution: z.number().description("Max resolution").min(512).max(4096).step(64).extra('extra', bag({ order: 1, group: "target", columns: 2, width: 1, tooltip: "The hard ceiling — inputs already past it pass through.", wtype: 'number' })),
+  batch_size: z.number().description("Batch size").min(1).max(16).step(1).extra('extra', bag({ order: 0, group: "run", width: 1, tooltip: "Video frames ride batches; images are batch 1.", wtype: 'number' })),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: 1, group: "run", width: 1 })),
   // NO dit_model/vae_model (card declares no such knobs — the
   // weights ride lane_inputs.unet/vae; old drafts naming them still
   // parse via the door's non-strict overlay but compose never reads

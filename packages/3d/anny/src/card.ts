@@ -27,6 +27,7 @@ import z from '@deepseek-ai/schemastery'
 import { annyLane, finalizeAnny } from '@melite/comfyui-card-kit'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from '@melite/comfyui-card-kit/morphs'
+import { bag } from '@melite/contracts/extraKeys'
 
 /** The served identity space's 11 dims, in its label order (the
  *  bake validator names the same eleven — gender/age/muscle/weight/
@@ -37,22 +38,22 @@ const PHENOTYPE_DIMS = [
 ] as const
 
 const schema = z.object({
-  body_glb: z.string().role('path').description("Body GLB").extra('extra', { order: 0, group: "body", columns: 1, tooltip: "Optional — attach a rigged body GLB to render as-is. Empty bakes the body FROM the identity sliders (parametric end-to-end; the neutral body is the all-defaults bake). Photo→body estimation is the 'Estimate body from photo' verb.", wtype: 'mesh' }),
+  body_glb: z.string().role('path').description("Body GLB").extra('extra', bag({ order: 0, group: "body", columns: 1, tooltip: "Optional — attach a rigged body GLB to render as-is. Empty bakes the body FROM the identity sliders (parametric end-to-end; the neutral body is the all-defaults bake). Photo→body estimation is the 'Estimate body from photo' verb.", wtype: 'mesh' })),
   ...Object.fromEntries(PHENOTYPE_DIMS.map((dim, i) => [dim,
     z.number().description(dim.charAt(0).toUpperCase() + dim.slice(1)).min(0).max(1)
-      .extra('extra', { order: i, group: "identity", width: 1, wtype: 'slider', columns: 2, tooltip: `Identity dim ${i + 1}/11 — ${dim} (0..1, neutral 0.5; served by the poser's identity space).` }),
+      .extra('extra', bag({ order: i, group: "identity", width: 1, wtype: 'slider', columns: 2, tooltip: `Identity dim ${i + 1}/11 — ${dim} (0..1, neutral 0.5; served by the poser's identity space).` })),
   ])),
   ...Object.fromEntries(ANNY_MORPH_LABELS.map((label, i) => [label,
     z.number().description(label).default(ANNY_MORPH_DEFAULT).min(ANNY_MORPH_RANGE[0]).max(ANNY_MORPH_RANGE[1])
-      .extra('extra', { order: 1000 + i, group: "morph", width: 1, wtype: 'slider', columns: 2, tooltip: `Morph ${i + 1}/254 — ${label} (${ANNY_MORPH_RANGE[0]}..${ANNY_MORPH_RANGE[1]}, neutral 0; the poser's local-changes vocabulary).` }),
+      .extra('extra', bag({ order: 1000 + i, group: "morph", width: 1, wtype: 'slider', columns: 2, tooltip: `Morph ${i + 1}/254 — ${label} (${ANNY_MORPH_RANGE[0]}..${ANNY_MORPH_RANGE[1]}, neutral 0; the poser's local-changes vocabulary).` })),
   ])),
-  resolution: z.number().description("View resolution").min(256).max(2048).step(64).default(768).extra('extra', { order: 0, group: "turnaround", width: 1, tooltip: "Pixel size of each turnaround view." }),
-  framing: z.number().description("Framing").min(1).max(3).step(0.05).default(1.2).extra('extra', { order: 1, group: "turnaround", width: 1, tooltip: "Camera distance factor — larger frames the whole body looser." }),
-  focal_length: z.number().description("Focal length (mm)").min(10).max(400).step(1).default(50).extra('extra', { order: 2, group: "turnaround", width: 1, tooltip: "Lens focal length — lower = wider perspective.", wtype: 'slider' }),
-  samples: z.number().description("Samples").min(1).max(4096).step(1).default(64).extra('extra', { order: 3, group: "turnaround", width: 1, tooltip: "Render samples per view — more = cleaner but slower.", wtype: 'number' }),
+  resolution: z.number().description("View resolution").min(256).max(2048).step(64).default(768).extra('extra', bag({ order: 0, group: "turnaround", width: 1, tooltip: "Pixel size of each turnaround view." })),
+  framing: z.number().description("Framing").min(1).max(3).step(0.05).default(1.2).extra('extra', bag({ order: 1, group: "turnaround", width: 1, tooltip: "Camera distance factor — larger frames the whole body looser." })),
+  focal_length: z.number().description("Focal length (mm)").min(10).max(400).step(1).default(50).extra('extra', bag({ order: 2, group: "turnaround", width: 1, tooltip: "Lens focal length — lower = wider perspective.", wtype: 'slider' })),
+  samples: z.number().description("Samples").min(1).max(4096).step(1).default(64).extra('extra', bag({ order: 3, group: "turnaround", width: 1, tooltip: "Render samples per view — more = cleaner but slower.", wtype: 'number' })),
   // bool or the Select's "true"/"false" wire string (the loose anny
   // law coerces in compose — python step-doc: str(x) != "false")
-  transparent: vocabulary(["true", "false"]).description("Background").default("true").extra('extra', { order: 4, group: "turnaround", width: 1, tooltip: "Transparent turnaround background (for compositing into sheets).", wtype: 'select' }),
+  transparent: vocabulary(["true", "false"]).description("Background").default("true").extra('extra', bag({ order: 4, group: "turnaround", width: 1, tooltip: "Transparent turnaround background (for compositing into sheets).", wtype: 'select' })),
 })
 
 export const inject = ['comfyui']

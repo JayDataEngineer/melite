@@ -38,6 +38,7 @@
 //    knob from the card's boarded array: enum boarded, default
 //    boarded[0] — one source, two projections.
 import type z from '@deepseek-ai/schemastery'
+import { extraOf } from '@melite/contracts/extraKeys'
 import type { DeclaredModifierKind } from './service.ts'
 
 /** The carrier dict shape (shared with the no-cheat door). */
@@ -60,7 +61,12 @@ export type ParamsSchema = {
  *  this — one spelling, never a second projector). */
 export const emitKnob = (s: Schema): Record<string, unknown> => {
   const m = (s.meta ?? {}) as Record<string, any>
-  const ex = (m.extra ?? {}) as Record<string, any>
+  // THE ONE VOCABULARY (2026-10-10): the bag narrows through the
+  // floor's typed read — @melite/contracts/extraKeys owns every
+  // spelling; this face reads property names off the typed bag,
+  // never a second string literal (the visibleWhen dead read died
+  // here).
+  const ex = extraOf(s as { meta?: Record<string, unknown> }) as Record<string, any>
 
   // union resolution
   let type = s.type
@@ -94,7 +100,7 @@ export const emitKnob = (s: Schema): Record<string, unknown> => {
     // inner number branch — merge with outer as fallback
     ? ({ ...m, ...Object.fromEntries(Object.entries((inner.meta ?? {})).filter(([, v]) => v !== undefined)) } as Record<string, any>)
     : m
-  const iex = inner ? ((im.extra ?? m.extra ?? {}) as Record<string, any>) : ex
+  const iex = inner ? (extraOf({ meta: im } as never) as Record<string, any>) : ex
 
   // extra.options ⇒ wire-coerced Select class regardless of TS atom:
   // served type "string", enum + default stringified (compose coerces)

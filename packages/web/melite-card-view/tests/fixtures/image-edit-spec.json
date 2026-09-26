@@ -68,9 +68,9 @@
   "loader_info": null,
   "mod_schemas": {
     "mask": {
-      "uid": 3265,
+      "uid": 3275,
       "refs": {
-        "3199": {
+        "3209": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -83,7 +83,7 @@
             }
           }
         },
-        "3203": {
+        "3213": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -99,22 +99,22 @@
             "description": "Region Mask"
           }
         },
-        "3204": {
+        "3214": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3205": {
+        "3215": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3206": {
+        "3216": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3210": {
+        "3220": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -139,32 +139,32 @@
             }
           },
           "list": [
-            3204,
-            3205,
-            3206
+            3214,
+            3215,
+            3216
           ]
         },
-        "3211": {
+        "3221": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3212": {
+        "3222": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3213": {
+        "3223": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3214": {
+        "3224": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3218": {
+        "3228": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -185,13 +185,13 @@
             }
           },
           "list": [
-            3211,
-            3212,
-            3213,
-            3214
+            3221,
+            3222,
+            3223,
+            3224
           ]
         },
-        "3225": {
+        "3235": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -209,7 +209,7 @@
             }
           }
         },
-        "3232": {
+        "3242": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -227,7 +227,7 @@
             }
           }
         },
-        "3239": {
+        "3249": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -245,7 +245,7 @@
             }
           }
         },
-        "3246": {
+        "3256": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -263,7 +263,7 @@
             }
           }
         },
-        "3250": {
+        "3260": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -278,7 +278,7 @@
             }
           }
         },
-        "3257": {
+        "3267": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -296,7 +296,7 @@
             }
           }
         },
-        "3264": {
+        "3274": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -314,23 +314,23 @@
             }
           }
         },
-        "3265": {
+        "3275": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3199,
-            "input_mask": 3203,
-            "mask_mode": 3210,
-            "mask_detector": 3218,
-            "mask_context_pad": 3225,
-            "mask_grow": 3232,
-            "mask_feather": 3239,
-            "mask_threshold": 3246,
-            "mask_invert": 3250,
-            "mask_detail_size": 3257,
-            "mask_denoise": 3264
+            "mask": 3209,
+            "input_mask": 3213,
+            "mask_mode": 3220,
+            "mask_detector": 3228,
+            "mask_context_pad": 3235,
+            "mask_grow": 3242,
+            "mask_feather": 3249,
+            "mask_threshold": 3256,
+            "mask_invert": 3260,
+            "mask_detail_size": 3267,
+            "mask_denoise": 3274
           }
         }
       }

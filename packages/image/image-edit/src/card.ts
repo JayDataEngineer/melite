@@ -55,6 +55,7 @@ import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
 import { DECL as qwenImgEdit2511Decl } from '@melite/models-qwen-img-edit-2511'
+import { bag } from '@melite/contracts/extraKeys'
 
 // THE STACK CAP (the max_images law — the card RIDES the models'
 // DECLs, never a hardcoded count): the roomiest boarded lane's
@@ -102,11 +103,11 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // (anchor first, numbered next, stack after) so old drafts, flow
   // edges, and spells keep validating and recompose byte-stable —
   // but no face offers them: never a form row, never a picker seat.
-  input_images: z.array(z.string()).description("Input Images").default([]).extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image_list', max_stack: EDIT_LIST_CAP, serveDefault: true, tooltip: 'Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly.' }),
-  image1: z.string().role('path').description("Input Image").extra('extra', { hidden: true }),
-  image2: z.string().role('path').description("Image 2").extra('extra', { hidden: true }),
-  image3: z.string().role('path').description("Image 3").extra('extra', { hidden: true }),
-  reference_images: z.array(z.string()).description("Reference Images").extra('extra', { hidden: true }),
+  input_images: z.array(z.string()).description("Input Images").default([]).extra('extra', bag({ order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image_list', max_stack: EDIT_LIST_CAP, serveDefault: true, tooltip: 'Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly.' })),
+  image1: z.string().role('path').description("Input Image").extra('extra', bag({ hidden: true })),
+  image2: z.string().role('path').description("Image 2").extra('extra', bag({ hidden: true })),
+  image3: z.string().role('path').description("Image 3").extra('extra', bag({ hidden: true })),
+  reference_images: z.array(z.string()).description("Reference Images").extra('extra', bag({ hidden: true })),
   // THE MASK-SEAT GATE KEY (2026-10-09 — the gap the operator's
   // rework caught: the mask card's seg producer had no seat on
   // this card, so mask→edit could not wire). input_mask's VISIBLE
@@ -115,12 +116,12 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // card's own carrier — packs compose after cards) admits the
   // input_mask: 'seg' seat below. Hidden = unserved: never a form
   // row, never a tool param — one concept, one visible name.
-  input_mask: z.string().role('path').description("Region Mask").extra('extra', { hidden: true }),
-  prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
-  negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
-  width: z.number().description("Width").extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
-  height: z.number().description("Height").extra('extra', { order: 1, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
-  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "sampling", width: 1, zone: 'params' }),
+  input_mask: z.string().role('path').description("Region Mask").extra('extra', bag({ hidden: true })),
+  prompt: z.string().description("Prompt").extra('extra', bag({ order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', })),
+  negative_prompt: z.string().description("Negative Prompt").extra('extra', bag({ order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' })),
+  width: z.number().description("Width").extra('extra', bag({ order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' })),
+  height: z.number().description("Height").extra('extra', bag({ order: 1, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' })),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: 4, group: "sampling", width: 1, zone: 'params' })),
   // RIDE-THE-MODEL (operator catch e, 2026-09-22): steps/cfg carry
   // NO schema default — a default here is one lane's recipe served
   // as universal (4/1 is the LIGHTNING recipe; standard weights
@@ -132,8 +133,8 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   cfg: z.number().description("Guidance Scale").min(0.1).max(10).step(0.1).extra('extra', samplingExtra('cfg', { tooltip: "Qwen-Image-Edit uses low CFG (flow-matching); leave unset — the model's own recipe is the default." })),
   sampler: SAMPLERS.description("Sampler").extra('extra', samplingExtra('sampler')),
   scheduler: SCHEDULERS.description("Scheduler").extra('extra', samplingExtra('scheduler')),
-  use_stock_nodes: z.boolean().description("Use Stock Nodes").default(false).extra('extra', { order: 1, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' }),
-  double_reference: z.boolean().description("Double Reference").default(false).extra('extra', { order: 2, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' }),
+  use_stock_nodes: z.boolean().description("Use Stock Nodes").default(false).extra('extra', bag({ order: 1, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' })),
+  double_reference: z.boolean().description("Double Reference").default(false).extra('extra', bag({ order: 2, group: "edit_tuning", width: 1, visible_when: 'model=qwen-img-edit-2511', tooltip: "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' })),
 })
 
 // THE BOARDING (2026-09-21, the naming law; order flipped 2026-09-22,

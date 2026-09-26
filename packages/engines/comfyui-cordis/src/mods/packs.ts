@@ -18,9 +18,10 @@
 // docs/design/mods-as-mutations-2026-09-08.md).
 //
 // The Cordis contract shape: fields ARE a Schemastery object
-// schema, wire types + UI meta on .extra('extra', {...}).
+// schema, wire types + UI meta on .extra('extra', bag({...})).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { bag } from '@melite/contracts/extraKeys'
 
 export const inject = ['comfyui']
 
@@ -37,10 +38,10 @@ const LorasFields = z.object({
     strength: z.number(),
     steps: z.number().min(1).max(100).step(1)
       .description('Steps applied')
-      .extra('extra', { wtype: 'number', group: 'loras_controlnet', zone: 'mods', order: 1, width: 1, step: 1 }),
+      .extra('extra', bag({ wtype: 'number', group: 'loras_controlnet', zone: 'mods', order: 1, width: 1 })),
   }))
     .description('LoRAs')
-    .extra('extra', { wtype: 'loras', group: 'loras_controlnet', zone: 'mods', default: null, order: 0 }),
+    .extra('extra', bag({ wtype: 'loras', group: 'loras_controlnet', zone: 'mods', default: null, order: 0 })),
 })
 
 // ── CONTROLNET (the ControlNetMod + the z-image flavor's
@@ -57,35 +58,35 @@ const LorasFields = z.object({
 // the discovery table per pack (z-image: 5, the declaration). ──
 const ControlNetEntryFields = z.object({
   type: z.string().description('Type')
-    .extra('extra', { wtype: 'text', group: 'controlnet', zone: 'mods', order: 0, width: 1 }),
+    .extra('extra', bag({ wtype: 'text', group: 'controlnet', zone: 'mods', order: 0, width: 1 })),
   image_b64: z.string().description('Conditioning')
-    .extra('extra', {
+    .extra('extra', bag({
       wtype: 'image', group: 'controlnet', zone: 'mods', order: 1, width: 2,
       tooltip: 'The conditioning map image (uploaded — the square stages it; a pipeline artifact name wins when set below).',
-    }),
+    })),
   artifact: z.string().default('').description('Artifact')
-    .extra('extra', {
+    .extra('extra', bag({
       wtype: 'text', group: 'controlnet', zone: 'mods', order: 2, width: 2,
       tooltip: 'Pipeline-wired conditioning source — the ctx artifact name (e.g. front_pose) produced by an upstream brick. Takes precedence over the Conditioning image at run time: when the artifact is present in ctx, the brick uploads THAT file as the conditioning image.',
-    }),
+    })),
   strength: z.number().min(0).max(2).step(0.05).default(0.7).description('Strength')
-    .extra('extra', { wtype: 'slider', group: 'controlnet', zone: 'mods', order: 3, width: 1 }),
+    .extra('extra', bag({ wtype: 'slider', group: 'controlnet', zone: 'mods', order: 3, width: 1 })),
   start_percent: z.number().min(0).max(1).step(0.05).default(0).description('Start')
-    .extra('extra', { wtype: 'slider', group: 'controlnet', zone: 'mods', order: 4, width: 1 }),
+    .extra('extra', bag({ wtype: 'slider', group: 'controlnet', zone: 'mods', order: 4, width: 1 })),
   end_percent: z.number().min(0).max(1).step(0.05).default(1).description('End')
-    .extra('extra', { wtype: 'slider', group: 'controlnet', zone: 'mods', order: 5, width: 1 }),
+    .extra('extra', bag({ wtype: 'slider', group: 'controlnet', zone: 'mods', order: 5, width: 1 })),
   enabled: z.boolean().default(true).description('Enabled')
-    .extra('extra', { wtype: 'boolean', group: 'controlnet', zone: 'mods', order: 6, width: 1 }),
+    .extra('extra', bag({ wtype: 'boolean', group: 'controlnet', zone: 'mods', order: 6, width: 1 })),
 })
 const ControlNetFields = z.object({
   controlnets: z.array(ControlNetEntryFields)
     .description('ControlNet')
-    .extra('extra', { wtype: 'controlnets', group: 'loras_controlnet', zone: 'mods', default: null, order: 1 }),
+    .extra('extra', bag({ wtype: 'controlnets', group: 'loras_controlnet', zone: 'mods', default: null, order: 1 })),
   controlnet_strength_floor: z.number().min(0).max(1).step(0.05).default(0).description('ControlNet Strength Floor')
-    .extra('extra', {
+    .extra('extra', bag({
       wtype: 'slider', group: 'loras_controlnet', zone: 'mods', order: 2, width: 1,
       tooltip: 'Minimum strength any ControlNet in the stack may apply at. Entries below this are clamped UP (with a log line). 0.0 = no floor. Raise this when stacking many weak ControlNets that cost VRAM without visual benefit.',
-    }),
+    })),
 })
 
 // ── IP-ADAPTER (the IpAdapterMod, the ray ip_adapters/mod.yaml,
@@ -101,61 +102,61 @@ const ControlNetFields = z.object({
 // declaration, byte-1:1) — never fetch targets. ──
 const IPAdapterEntryFields = z.object({
   image: z.string().description('Reference Image')
-    .extra('extra', {
+    .extra('extra', bag({
       wtype: 'image', group: 'ip_adapter', zone: 'mods', order: 0, width: 2,
       tooltip: 'The reference image. The IP-Adapter lane is not executable in this plane — any stated entry refuses loud at run time.',
-    }),
+    })),
   kind: z.string().default('style').description('Mode')
-    .extra('extra', { wtype: 'text', group: 'ip_adapter', zone: 'mods', order: 1, width: 1 }),
+    .extra('extra', bag({ wtype: 'text', group: 'ip_adapter', zone: 'mods', order: 1, width: 1 })),
   weight: z.number().min(0).max(2).step(0.05).default(1).description('Weight')
-    .extra('extra', { wtype: 'slider', group: 'ip_adapter', zone: 'mods', order: 2, width: 1 }),
+    .extra('extra', bag({ wtype: 'slider', group: 'ip_adapter', zone: 'mods', order: 2, width: 1 })),
 })
 const IPAdapterFields = z.object({
   ip_adapters: z.array(IPAdapterEntryFields)
     .description('IP-Adapter')
-    .extra('extra', { wtype: 'ip_adapters', group: 'ip_adapter', zone: 'mods', default: null, order: 3 }),
+    .extra('extra', bag({ wtype: 'ip_adapters', group: 'ip_adapter', zone: 'mods', default: null, order: 3 })),
 })
 
 // ── LAN-INPAINT (the LanPaintMod + the qwen flavor's image1
 // override, inlined — see the seam note above) ──
 const LanpaintFields = z.object({
   image1: z.string().role('path').description('Image 1')
-    .extra('extra', { wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, columns: 3, required: true }),
+    .extra('extra', bag({ wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, columns: 3, required: true })),
   lanpaint_enabled: z.boolean().default(false).description('Force LanPaint')
-    .extra('extra', { wtype: 'boolean', group: 'lanpaint', visible_when: 'image1 != null', order: 1 }),
-  lanpaint_num_steps: z.number().min(1).max(100).default(20).description('Num Steps')
-    .extra('extra', { wtype: 'number', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 2, width: 1, step: 1 }),
-  lanpaint_step_size: z.number().min(0.1).max(2).default(1.0).description('Step Size')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 3, width: 1, step: 0.1 }),
-  lanpaint_lambda: z.number().min(0).max(2).default(0.5).description('Lambda')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 4, width: 1, step: 0.05 }),
-  lanpaint_beta: z.number().min(0).max(2).default(0.5).description('Beta')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 5, width: 1, step: 0.05 }),
-  lanpaint_friction: z.number().min(0).max(2).default(0.5).description('Friction')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 6, width: 1, step: 0.05 }),
+    .extra('extra', bag({ wtype: 'boolean', group: 'lanpaint', visible_when: 'image1 != null', order: 1 })),
+  lanpaint_num_steps: z.number().min(1).max(100).step(1).default(20).description('Num Steps')
+    .extra('extra', bag({ wtype: 'number', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 2, width: 1 })),
+  lanpaint_step_size: z.number().min(0.1).max(2).step(0.1).default(1.0).description('Step Size')
+    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 3, width: 1 })),
+  lanpaint_lambda: z.number().min(0).max(2).step(0.05).default(0.5).description('Lambda')
+    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 4, width: 1 })),
+  lanpaint_beta: z.number().min(0).max(2).step(0.05).default(0.5).description('Beta')
+    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 5, width: 1 })),
+  lanpaint_friction: z.number().min(0).max(2).step(0.05).default(0.5).description('Friction')
+    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 6, width: 1 })),
   lanpaint_prompt_mode: z.union([z.const('negative'), z.const('positive')]).default('negative').description('Prompt Mode')
-    .extra('extra', { wtype: 'select', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 7, width: 1, options: ['negative', 'positive'] }),
-  outpaint_top: z.number().min(0).max(512).default(0).description('Expand Top')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 8, width: 1, step: 8 }),
-  outpaint_right: z.number().min(0).max(512).default(0).description('Expand Right')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 9, width: 1, step: 8 }),
-  outpaint_bottom: z.number().min(0).max(512).default(0).description('Expand Bottom')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 10, width: 1, step: 8 }),
-  outpaint_left: z.number().min(0).max(512).default(0).description('Expand Left')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 11, width: 1, step: 8 }),
-  outpaint_overlap: z.number().min(0).max(64).default(16).description('Overlap')
-    .extra('extra', { wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 8, width: 1, step: 1 }),
+    .extra('extra', bag({ wtype: 'select', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 7, width: 1, options: ['negative', 'positive'] })),
+  outpaint_top: z.number().min(0).max(512).step(8).default(0).description('Expand Top')
+    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 8, width: 1 })),
+  outpaint_right: z.number().min(0).max(512).step(8).default(0).description('Expand Right')
+    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 9, width: 1 })),
+  outpaint_bottom: z.number().min(0).max(512).step(8).default(0).description('Expand Bottom')
+    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 10, width: 1 })),
+  outpaint_left: z.number().min(0).max(512).step(8).default(0).description('Expand Left')
+    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 11, width: 1 })),
+  outpaint_overlap: z.number().min(0).max(64).step(1).default(16).description('Overlap')
+    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 8, width: 1 })),
 })
 
 // ── MASK (the MaskMod): the region-modality contract ──
 const MaskFields = z.object({
   mask: z.any().description('Region Mask')
-    .extra('extra', {
+    .extra('extra', bag({
       wtype: 'mask', group: 'mask', zone: 'mods', order: -1,
       tooltip: 'Add the mask mod, then drop an RGBA PNG whose alpha channel marks the region.',
-    }),
+    })),
   input_mask: z.string().role('path').description('Region Mask')
-    .extra('extra', {
+    .extra('extra', bag({
       // THE MOD-MODAL LAW (operator, 2026-10-10, final form): the
       // image mask IS a mod — its row renders INSIDE the mask mod's
       // own modal, 1:1 with the lanpaint mod's image1 on image-gen
@@ -167,36 +168,36 @@ const MaskFields = z.object({
       // template, letter for letter.
       wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, columns: 3,
       tooltip: 'RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with the input images, the builder switches to the lanpaint sampler.',
-    }),
+    })),
   mask_mode: z.union([z.const('auto'), z.const('crop_stitch'), z.const('full_frame')]).default('crop_stitch').description('Edit Scope')
-    .extra('extra', {
+    .extra('extra', bag({
       wtype: 'select', group: 'mask', zone: 'mods', order: 1, width: 1,
       options: [
         { value: 'auto', label: 'Whole image (default)' },
         { value: 'crop_stitch', label: 'Masked region (crop + stitch)' },
       ],
       tooltip: 'No mask modifier = whole-image editing by default. Add a mask modifier to choose Masked region (crop + stitch): crop the region, edit it, and composite it back.',
-    }),
+    })),
   mask_detector: z.union([z.const('off'), z.const('person'), z.const('face'), z.const('hand')]).default('off').description('Region Detector')
-    .extra('extra', {
+    .extra('extra', bag({
       wtype: 'select', group: 'mask', zone: 'mods', order: 2, width: 1,
       options: ['off', 'person', 'face', 'hand'],
       tooltip: 'Automated region source for crop_stitch (the Impact detectors): person = segmentation silhouette, face/hand = boxes. off = use the Region Mask.',
-    }),
+    })),
   mask_context_pad: z.number().min(0).max(256).step(8).default(64).description('Context Padding')
-    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 3, width: 1, tooltip: 'Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.' }),
+    .extra('extra', bag({ wtype: 'slider', group: 'mask', zone: 'mods', order: 3, width: 1, tooltip: 'Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.' })),
   mask_grow: z.number().min(-32).max(32).step(1).default(8).description('Grow / Shrink')
-    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 4, width: 1, tooltip: 'Expand (+) or shrink (−) the region by an exact pixel disk before the run. Applied host-side.' }),
+    .extra('extra', bag({ wtype: 'slider', group: 'mask', zone: 'mods', order: 4, width: 1, tooltip: 'Expand (+) or shrink (−) the region by an exact pixel disk before the run. Applied host-side.' })),
   mask_feather: z.number().min(0).max(32).step(1).default(8).description('Feather')
-    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 5, width: 1, tooltip: 'Gaussian falloff the composite blends through — kills the pasted-on rectangle edge.' }),
+    .extra('extra', bag({ wtype: 'slider', group: 'mask', zone: 'mods', order: 5, width: 1, tooltip: 'Gaussian falloff the composite blends through — kills the pasted-on rectangle edge.' })),
   mask_threshold: z.number().min(0).max(1).step(0.05).default(0).description('Re-threshold')
-    .extra('extra', { wtype: 'slider', group: 'mask', zone: 'mods', order: 6, width: 1, tooltip: 'Re-binarize the feathered mask at this level. 0 = keep the soft falloff.' }),
+    .extra('extra', bag({ wtype: 'slider', group: 'mask', zone: 'mods', order: 6, width: 1, tooltip: 'Re-binarize the feathered mask at this level. 0 = keep the soft falloff.' })),
   mask_invert: z.boolean().default(false).description('Invert')
-    .extra('extra', { wtype: 'boolean', group: 'mask', zone: 'mods', order: 7, width: 1, tooltip: 'Work OUTSIDE the painted region instead.' }),
+    .extra('extra', bag({ wtype: 'boolean', group: 'mask', zone: 'mods', order: 7, width: 1, tooltip: 'Work OUTSIDE the painted region instead.' })),
   mask_detail_size: z.number().min(64).max(16384).step(8).default(512).description('Region Detail Size')
-    .extra('extra', { wtype: 'number', group: 'mask', zone: 'mods', order: 8, width: 1, tooltip: 'Working size the region detailer scales each region toward (DetailerForEach guide_size with bbox sizing, capped by the canonical max 1024).' }),
+    .extra('extra', bag({ wtype: 'number', group: 'mask', zone: 'mods', order: 8, width: 1, tooltip: 'Working size the region detailer scales each region toward (DetailerForEach guide_size with bbox sizing, capped by the canonical max 1024).' })),
   mask_denoise: z.number().min(0.05).max(1).step(0.05).default(0.5).description('Region Denoise')
-    .extra('extra', { wtype: 'number', group: 'mask', zone: 'mods', order: 9, width: 1, tooltip: 'How strongly the region is reworked (DetailerForEach denoise): 0.5 keeps structure, 1 fully rewrites the crop.' }),
+    .extra('extra', bag({ wtype: 'number', group: 'mask', zone: 'mods', order: 9, width: 1, tooltip: 'How strongly the region is reworked (DetailerForEach denoise): 0.5 keeps structure, 1 fully rewrites the crop.' })),
 })
 
 // ── QVOICE (the qvoice pack): a saved persona artifact — the
@@ -208,15 +209,15 @@ const MaskFields = z.object({
 // ABI, speaker_embedding hard-fails in build_speech_request). ──
 const QvoiceFields = z.object({
   qvoice: z.string().role('path').description('Voice (.qvoice)')
-    .extra('extra', {
+    .extra('extra', bag({
       wtype: 'file', group: 'qvoice', zone: 'mods', order: 0,
       tooltip: 'A saved .qvoice persona (the Design mod exports these). Present = this voice performs the text (codec-level clone through the studio pipeline) instead of the preset timbre.',
-    }),
+    })),
   voice_strength: z.number().description('Voice Strength').min(0).max(2).step(0.05).default(1)
-    .extra('extra', {
+    .extra('extra', bag({
       wtype: 'number', group: 'qvoice', zone: 'mods', order: 1,
       tooltip: 'Identity intensity of the loaded persona — below 1 pulls toward neutral, above 1 exaggerates it (the clone pipeline scales the embedding).',
-    }),
+    })),
 })
 
 // ── QVOICE SAVE (the qvoice_save pack): design a voice from a
@@ -227,25 +228,25 @@ const QvoiceFields = z.object({
 // VoiceDesign family fires it. ──
 const QvoiceSaveFields = z.object({
   voice_name: z.string().description('Voice Name')
-    .extra('extra', {
+    .extra('extra', bag({
       wtype: 'text', group: 'qvoice_save', zone: 'mods', order: 0, required: true,
       tooltip: 'Name for the designed persona — becomes the .qvoice filename stem. Reused across every future TTS render.',
-    }),
+    })),
   // THE PROMPT MOVED TO THE LANE (operator 2026-09-23, three
   // variants three inputs): the design prompt is the VoiceDesign
   // lane's own required input — the card's task-named row
   // (design_prompt, "Voice Persona & Timbre"), visible on that
   // variant only. One knob, one owner: never restated here.
   temperature: z.number().description('Temperature').min(0).max(2).step(0.05).default(0.7)
-    .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 2, tooltip: 'Design sampling temperature.' }),
+    .extra('extra', bag({ group: 'qvoice_save', zone: 'mods', order: 2, tooltip: 'Design sampling temperature.' })),
   top_p: z.number().description('Top-P').min(0).max(1).step(0.01).default(0.9)
-    .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 3, tooltip: 'Design sampling top-p.' }),
+    .extra('extra', bag({ group: 'qvoice_save', zone: 'mods', order: 3, tooltip: 'Design sampling top-p.' })),
   speed: z.number().description('Speed').min(0.5).max(2).step(0.1).default(1)
-    .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 4, tooltip: 'Design sampling speed.' }),
+    .extra('extra', bag({ group: 'qvoice_save', zone: 'mods', order: 4, tooltip: 'Design sampling speed.' })),
   repetition_penalty: z.number().description('Repetition Penalty').min(0.8).max(2).step(0.01).default(1.05)
-    .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 5, tooltip: 'Design sampling repetition penalty.' }),
+    .extra('extra', bag({ group: 'qvoice_save', zone: 'mods', order: 5, tooltip: 'Design sampling repetition penalty.' })),
   seed: z.number().description('Seed').step(1).default(-1)
-    .extra('extra', { group: 'qvoice_save', zone: 'mods', order: 6, tooltip: 'Design seed (-1 = random).' }),
+    .extra('extra', bag({ group: 'qvoice_save', zone: 'mods', order: 6, tooltip: 'Design seed (-1 = random).' })),
 })
 
 export function apply(ctx: Context): void {

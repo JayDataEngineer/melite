@@ -19,6 +19,7 @@
     "@deepseek-ai/schemastery": "*",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
+    "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*"
   },
   "devDependencies": {
@@ -26,5 +27,5 @@
     "typescript": "^5.9.3"
   },
   "name": "@melite/audio-music",
-  "description": "the music card (the audio lane) — one card one package: card.ts host face + ui/ studio + agents/ context"
+  "description": "the music card (the audio lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"
 }

@@ -8,16 +8,17 @@ import z from '@deepseek-ai/schemastery'
 import { musicT1, yue2T1 } from '@melite/comfyui-card-kit'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { bag } from '@melite/contracts/extraKeys'
 
 export const schema = z.object({
-  prompt: z.string().description("Tags / Description").extra('extra', { order: 0, group: "prompt", columns: 1, tooltip: "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.", required: true, wtype: 'textarea', }),
-  lyrics: z.string().description("Lyrics").extra('extra', { order: 1, group: "prompt", tooltip: "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental.", wtype: 'textarea' }),
-  duration: z.number().description("Duration (s)").min(5).max(360).step(1).default(30).extra('extra', { order: 0, group: "generation", width: 1, tooltip: "Target audio length in seconds (5-360). music3: exact length; YuE2: max length (the song may end earlier).", wtype: 'slider' }),
-  mode: vocabulary(["full", "melody", "off"]).description("ABC Planning").default("full").extra('extra', { order: 1, group: "generation", width: 1, tooltip: "YuE2 only: plan a symbolic score before generating. full = melody + chords; melody = melody only (cover-recommended); off = direct generation.", wtype: 'select', visible_when: 'model=yue2' }),
-  guidance_scale: z.number().description("CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', { order: 2, group: "generation", width: 1, tooltip: "Classifier-free guidance (KSampler cfg). 1.7 = lane default.", visible_when: 'model=music3' }),
-  n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(200).step(1).default(30).extra('extra', { order: 3, group: "generation", width: 1, tooltip: "Denoising steps. 30 = lane default. Never 0.", wtype: 'number' }),
-  lm_cfg_scale: z.number().description("LM CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', { order: 4, group: "generation", width: 1, tooltip: "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = lane default.", visible_when: 'model=music3' }),
-  seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 0, group: "seed", width: 1 }),
+  prompt: z.string().description("Tags / Description").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.", required: true, wtype: 'textarea', })),
+  lyrics: z.string().description("Lyrics").extra('extra', bag({ order: 1, group: "prompt", tooltip: "Lyrics with structure tags: [verse], [chorus], [bridge]. Empty = instrumental.", wtype: 'textarea' })),
+  duration: z.number().description("Duration (s)").min(5).max(360).step(1).default(30).extra('extra', bag({ order: 0, group: "generation", width: 1, tooltip: "Target audio length in seconds (5-360). music3: exact length; YuE2: max length (the song may end earlier).", wtype: 'slider' })),
+  mode: vocabulary(["full", "melody", "off"]).description("ABC Planning").default("full").extra('extra', bag({ order: 1, group: "generation", width: 1, tooltip: "YuE2 only: plan a symbolic score before generating. full = melody + chords; melody = melody only (cover-recommended); off = direct generation.", wtype: 'select', visible_when: 'model=yue2' })),
+  guidance_scale: z.number().description("CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 2, group: "generation", width: 1, tooltip: "Classifier-free guidance (KSampler cfg). 1.7 = lane default.", visible_when: 'model=music3' })),
+  n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(200).step(1).default(30).extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "Denoising steps. 30 = lane default. Never 0.", wtype: 'number' })),
+  lm_cfg_scale: z.number().description("LM CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 4, group: "generation", width: 1, tooltip: "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = lane default.", visible_when: 'model=music3' })),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: 0, group: "seed", width: 1 })),
 })
 
 export const BOARDED: string[] = ['music3', 'yue2']

@@ -17,6 +17,7 @@ import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
 import { DECL as animaDecl } from '@melite/models-anima'
 import { DECL as qwenImg21Decl } from '@melite/models-qwen-img-21'
+import { bag } from '@melite/contracts/extraKeys'
 
 /** The card's boarding — where the card gets its models: THE AI
  *  MODELS' own plugin declarations (packages/models/*), each
@@ -34,11 +35,11 @@ export const schema = z.object({
   // absorption (mods/loras.ts; the interlock). compose still
   // consumes p.loras (kit.ts stackLoras) — the user bag, however
   // it was filled (a family Recipe macro may have stamped it).
-  prompt: z.string().description('Prompt').extra('extra', { order: 0, group: 'prompt', columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea' }),
-  negative_prompt: z.string().description('Negative Prompt').extra('extra', { order: 1, group: 'prompt', width: 1, zone: 'params', wtype: 'textarea' }),
-  width: z.number().description('Width').min(256).max(2048).step(16).extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number' }),
-  height: z.number().description('Height').min(256).max(2048).step(16).extra('extra', { order: 1, group: 'resolution', width: 1, zone: 'params', wtype: 'number' }),
-  seed: z.number().description('Seed').step(1).default(-1).extra('extra', { order: 4, group: 'sampling', width: 1, zone: 'params' }),
+  prompt: z.string().description('Prompt').extra('extra', bag({ order: 0, group: 'prompt', columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea' })),
+  negative_prompt: z.string().description('Negative Prompt').extra('extra', bag({ order: 1, group: 'prompt', width: 1, zone: 'params', wtype: 'textarea' })),
+  width: z.number().description('Width').min(256).max(2048).step(16).extra('extra', bag({ order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number' })),
+  height: z.number().description('Height').min(256).max(2048).step(16).extra('extra', bag({ order: 1, group: 'resolution', width: 1, zone: 'params', wtype: 'number' })),
+  seed: z.number().description('Seed').step(1).default(-1).extra('extra', bag({ order: 4, group: 'sampling', width: 1, zone: 'params' })),
   steps: z.number().description('Steps').min(1).max(100).step(1).extra('extra', samplingExtra('steps')),
   cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).default(4.5).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),
   sampler: SAMPLERS.description('Sampler').extra('extra', samplingExtra('sampler')),

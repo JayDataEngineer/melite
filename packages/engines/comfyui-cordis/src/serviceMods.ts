@@ -4,6 +4,7 @@
 // resolution. No Service state; the seat calls these.
 import { ComposeRefusal } from "./service.ts";
 import { assertControlNetSchedule } from "@melite/comfyui-card-kit/guard";
+import { bag } from '@melite/contracts/extraKeys'
 // ── THE MOD/VERB SYSTEM (melite_cards dsl.py port, 2026-09-08) ──
 //
 // The interlock: Model classes declared mods (fields + catalog
@@ -15,8 +16,8 @@ import { assertControlNetSchedule } from "@melite/comfyui-card-kit/guard";
 
 /** A mod's field contract: a Schemastery OBJECT schema (the
  *  dual-declaration pattern — the same z.object({...}) style the
- *  cards declare; UI meta rides .extra('extra', {group, zone,
- *  order, visible_when}) exactly like card fields). ONE meta path
+ *  cards declare; UI meta rides .extra('extra', bag({group, zone,
+ *  order, visible_when})) exactly like card fields). ONE meta path
  *  walks both card and mod surfaces; same-pack flavor merging is
  *  Schema.intersect semantics (constraints merge per key). */
 export type ModFields = {

@@ -52,6 +52,7 @@ import {
 } from './timelineContract.ts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
+import { bag } from '@melite/contracts/extraKeys'
 
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from './timelineContract.ts'
 
@@ -131,8 +132,8 @@ const T4_ONLY_KEYS = [
 // omitted key back to null so the body resolves the family's literal
 // (t4 INT 8 / t4r 8.0 — the served structural values).
 const paramSchema = z.object({
-  prompt: z.string().description("Prompt").extra('extra', { order: null, wtype: 'textarea', placeholder: "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out", tooltip: "The window's text (single-call shape). A film's calls carry their own text — a textless call refuses at compose; this field never substitutes for one." }),
-  image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', { order: null, wtype: 'image', tooltip: "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline." }),
+  prompt: z.string().description("Prompt").extra('extra', bag({ order: null, wtype: 'textarea', placeholder: "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out", tooltip: "The window's text (single-call shape). A film's calls carry their own text — a textless call refuses at compose; this field never substitutes for one." })),
+  image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline." })),
   // THE INPUT SURFACE (the H3 architecture truth — two DIFFERENT
   // mechanics, the FL2VA latent anchors vs the Ref2VA conditioning
   // bus): first_frame/last_frame are PIXEL anchors (bundle inputs
@@ -145,10 +146,10 @@ const paramSchema = z.object({
   // `expected array length <= 8`), never rides silent. The legacy
   // `refs` stanza bag keeps its compose-side wireList readers; the
   // declared fields are the primary surface.
-  last_frame: z.string().role('path').description("Last frame (end anchor)").extra('extra', { order: null, wtype: 'image', tooltip: "FL2VA end anchor — bundle input 2. Locks the final frame's pixels; H3 generates the motion between the two anchors." }),
-  ref_images: z.array(z.string().role('path')).description("Reference images").max(REF_CAPS.images).extra('extra', { order: null, wtype: 'image_list', max_stack: REF_CAPS.images, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." }),
-  ref_videos: z.array(z.string().role('path')).description("Reference videos").max(REF_CAPS.videos).extra('extra', { order: null, wtype: 'image_list', media: 'video', max_stack: REF_CAPS.videos, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." }),
-  ref_audios: z.array(z.string().role('path')).description("Reference audios").max(REF_CAPS.audios).extra('extra', { order: null, wtype: 'image_list', media: 'audio', max_stack: REF_CAPS.audios, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." }),
+  last_frame: z.string().role('path').description("Last frame (end anchor)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "FL2VA end anchor — bundle input 2. Locks the final frame's pixels; H3 generates the motion between the two anchors." })),
+  ref_images: z.array(z.string().role('path')).description("Reference images").max(REF_CAPS.images).extra('extra', bag({ order: null, wtype: 'image_list', max_stack: REF_CAPS.images, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." })),
+  ref_videos: z.array(z.string().role('path')).description("Reference videos").max(REF_CAPS.videos).extra('extra', bag({ order: null, wtype: 'image_list', media: 'video', max_stack: REF_CAPS.videos, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." })),
+  ref_audios: z.array(z.string().role('path')).description("Reference audios").max(REF_CAPS.audios).extra('extra', bag({ order: null, wtype: 'image_list', media: 'audio', max_stack: REF_CAPS.audios, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." })),
   // (THE BED IS GONE — operator 2026-09-22: "We have Audio Bed
   // input. We don't use that, that is a bug that is there." Film
   // music rides the D-M-E lanes' MUSIC clips, pinned per window;
@@ -158,10 +159,10 @@ const paramSchema = z.object({
   // generated voice yields under a conditioned clip at its film
   // span. −14dB is the natural mix-desk default; deeper for dense
   // dialogue, shallower when the generated voice should hold.
-  duck_depth_db: z.number().description("Duck depth (dB)").min(-48).max(0).step(1).default(-14).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1, tooltip: "How far the generated voice ducks under a dialogue clip (−14 is the mix-desk default)." }),
-  seed: z.number().description("Seed").step(1).default(42).extra('extra', { order: null, columns: 2, width: 1, tooltip: "Same seed across re-rolls = same world texture" }),
-  width: z.number().description("Width").min(448).max(1344).step(64).default(1344).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1 }),
-  height: z.number().description("Height").min(448).max(768).step(64).default(768).extra('extra', { order: null, wtype: 'number', columns: 2, width: 1 }),
+  duck_depth_db: z.number().description("Duck depth (dB)").min(-48).max(0).step(1).default(-14).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1, tooltip: "How far the generated voice ducks under a dialogue clip (−14 is the mix-desk default)." })),
+  seed: z.number().description("Seed").step(1).default(42).extra('extra', bag({ order: null, columns: 2, width: 1, tooltip: "Same seed across re-rolls = same world texture" })),
+  width: z.number().description("Width").min(448).max(1344).step(64).default(1344).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1 })),
+  height: z.number().description("Height").min(448).max(768).step(64).default(768).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1 })),
   // length (the grid-law fix, 2026-09-13): the row's old validators
   // (min 21, step 5) contradicted the card's own declared law — the
   // 17k+5 frame grid (identity principle + tooltip: 56/90/124/362).
@@ -173,7 +174,7 @@ const paramSchema = z.object({
   // explicit 90 passes the walk. 56 (the declared
   // default) is on-grid; the omitted-key path normalizes to null in
   // schema() so the body computes the family's frame budget.
-  length: z.number().description("Frames").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', { order: null, columns: 2, width: 1, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
+  length: z.number().description("Frames").min(GRID_BASE_FRAMES).max(GRID_MAX_FRAMES).step(GRID_STEP_FRAMES).default(56).extra('extra', bag({ order: null, columns: 2, width: 1, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' })),
   steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', samplingExtra('steps', { tooltip: "12 for draft; 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
   // THE SECOND-PASS MASTER (2026-09-22, operator: "Second Pass also
   // needs an on/off switch, it is very unclear if it is on or off"):
@@ -181,9 +182,9 @@ const paramSchema = z.object({
   // is inert: the leaves hide AND the compose gates hard (sharpen,
   // interp, VSR, refine all read the master FIRST — a legacy doc
   // with leaves set but no master renders the plain pass).
-  second_pass_enabled: z.boolean().description("Second pass").default(false).extra('extra', { order: null, group: 'second_pass', wtype: 'boolean', tooltip: "Master switch for the entire post chain — FSR sharpening, FILM interpolation, SeedVR2 super-res, and the refine lora. Off (default) = the film lands straight from the sampler. On = the pass controls below arm." }),
-  sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
-  sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true", tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
+  second_pass_enabled: z.boolean().description("Second pass").default(false).extra('extra', bag({ order: null, group: 'second_pass', wtype: 'boolean', tooltip: "Master switch for the entire post chain — FSR sharpening, FILM interpolation, SeedVR2 super-res, and the refine lora. Off (default) = the film lands straight from the sampler. On = the pass controls below arm." })),
+  sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." })),
+  sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true", tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' })),
   // interpolate_enabled: HONEST DEFAULT (hour 20): the card's
   // `bool = False` — `default(false)`, not the "false"-as-boolean
   // cast-lie. An absent key now fills the boolean NATIVELY (no
@@ -193,7 +194,7 @@ const paramSchema = z.object({
   // coerceWireBoolean below — because schemastery field transforms
   // classify as type 'json' in the served taxonomy (the
   // knob-freshness wall pins the honest 'boolean').
-  interpolate_enabled: z.boolean().description("FILM Interpolation").default(false).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'boolean', tooltip: "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time." }),
+  interpolate_enabled: z.boolean().description("FILM Interpolation").default(false).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'boolean', tooltip: "Apply FILM (Feature-aware Interpolation for Large Motion) frame interpolation to double the frame rate. Doubles render time." })),
   // ── THE ENGINE TRUTH ROWS (2026-09-17, the Layer A/B law stroke):
   // every key the compose READS rides the declared surface at its
   // exact wire name — the studio's historical spellings
@@ -208,7 +209,7 @@ const paramSchema = z.object({
   // the shifts) declare the SAME layout facts inline (card-owned
   // kinds, one place each). The 2-column grid seats sampler +
   // scheduler side by side on EVERY face that honors the grammar.
-  denoise: z.number().description("Denoise").min(0).max(1).step(0.05).default(1.0).extra('extra', { order: 4, group: 'sampling', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: "How much of the latent the sampler rewrites. 1.0 = full denoise (fresh windows); lower inherits structure." }),
+  denoise: z.number().description("Denoise").min(0).max(1).step(0.05).default(1.0).extra('extra', bag({ order: 4, group: 'sampling', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: "How much of the latent the sampler rewrites. 1.0 = full denoise (fresh windows); lower inherits structure." })),
   // CLOSED TYPES (hour 22 incident): these were
   // z.string() with a DECORATIVE extra options list — the gate accepted
   // any string (no membership refusal), the face showed the hand-stamped
@@ -239,9 +240,9 @@ const paramSchema = z.object({
   // refine_lora picks the instrument; strength/steps default from
   // THE ROW (no silent overrides); the pass rides the doc's own
   // sampler/scheduler.
-  refine_lora: z.string().description("Refine lora").default("").extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'select', optionsFrom: 'loras', tooltip: "Catalog id of a refiner lora (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row. LORAS ARE ONLY MODS — the pick serves from the loras flavor rows, never a hand-spelled id (the compose door refuses unknown ids loud)." }),
-  refine_strength: z.number().description("Refine strength").min(0).max(2).step(0.05).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's strength. Rides only when refine_lora is set." }),
-  refine_steps: z.number().description("Refine steps").min(1).max(10).step(1).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's step count (taomate: 3). Rides only when refine_lora is set." }),
+  refine_lora: z.string().description("Refine lora").default("").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'select', optionsFrom: 'loras', tooltip: "Catalog id of a refiner lora (e.g. h3_taomate_3step). Empty = no refine pass. Strength/steps default from the row. LORAS ARE ONLY MODS — the pick serves from the loras flavor rows, never a hand-spelled id (the compose door refuses unknown ids loud)." })),
+  refine_strength: z.number().description("Refine strength").min(0).max(2).step(0.05).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's strength. Rides only when refine_lora is set." })),
+  refine_steps: z.number().description("Refine steps").min(1).max(10).step(1).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "Override the refiner row's step count (taomate: 3). Rides only when refine_lora is set." })),
   // ── THE ATTENTION BACKEND (roadmap item 3; the h3_attention
   // "sage/sol" folklore was FICTION — no such knob, and the engine
   // enumerates only 'pytorch attention' on ModelAttentionBackend;
@@ -250,11 +251,11 @@ const paramSchema = z.object({
   // estate-proven literal (plaguekind's template value, silicon
   // receipts on the t4 arm); 'pytorch attention' is the engine's
   // own enumeration. Values the engine refuses are NOT offered.
-  attention_backend: vocabulary(["comfy kitchen attention", "pytorch attention"]).description("Attention backend").default("comfy kitchen attention").extra('extra', { order: null, group: 'sampling', wtype: 'select', tooltip: "The non-SLA arm's ModelAttentionBackend — used when the SLA sparse attention switch (Sla group) is OFF. ck-kitchen is the estate-proven default; pytorch is the engine's enumerated literal." }),
-  interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
-  interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." }),
-  sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", tooltip: "Upscale the final film through SeedVR2 before saving." }),
-  sr_resolution: z.number().description("Super-Res target").min(720).max(2160).step(360).default(1080).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'number', tooltip: "The SeedVR2 output height in px." }),
+  attention_backend: vocabulary(["comfy kitchen attention", "pytorch attention"]).description("Attention backend").default("comfy kitchen attention").extra('extra', bag({ order: null, group: 'sampling', wtype: 'select', tooltip: "The non-SLA arm's ModelAttentionBackend — used when the SLA sparse attention switch (Sla group) is OFF. ck-kitchen is the estate-proven default; pytorch is the engine's enumerated literal." })),
+  interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." })),
+  interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." })),
+  sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", tooltip: "Upscale the final film through SeedVR2 before saving." })),
+  sr_resolution: z.number().description("Super-Res target").min(720).max(2160).step(360).default(1080).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'number', tooltip: "The SeedVR2 output height in px." })),
   // CLOSED FILE SURFACE (the operator's dropdown law — a free-text
   // weights row is a guess box): the two SeedVR2 DiT files the estate
   // actually runs (both proven in shipped _flow.json receipts: the fp16
@@ -262,12 +263,12 @@ const paramSchema = z.object({
   // dropdown AND the membership refusal (an off-set value fails at the
   // schema door, never as a ComfyUI 400). Gated behind sr_switch like
   // every other post leaf.
-  sr_model: vocabulary(["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]).description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'select', tooltip: "SeedVR2 weights (models/upscale_models/): fp16 3B default, fp8_e4m3fn 3B leaner." }),
+  sr_model: vocabulary(["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]).description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'select', tooltip: "SeedVR2 weights (models/upscale_models/): fp16 3B default, fp8_e4m3fn 3B leaner." })),
   // the R2V COMBO size mode — the literals OR a concrete WxH dimension
   // ("704x1280" rides in real runs; a number or a typo refuses LOUD at
   // the gate now, not as a ComfyUI 400). The select face serves the
   // two literals; WxH stays reachable by patch, exactly as before.
-  ref_image_size: z.union([z.const("match"), z.const("max"), z.string().pattern(/^\d+x\d+$/).description("WxH")]).description("Ref size").default("match").extra('extra', { order: null, group: 'sampling', wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor, take the max edge, or an explicit WxH." }),
+  ref_image_size: z.union([z.const("match"), z.const("max"), z.string().pattern(/^\d+x\d+$/).description("WxH")]).description("Ref size").default("match").extra('extra', bag({ order: null, group: 'sampling', wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor, take the max edge, or an explicit WxH." })),
   // NO SILENT RESOLUTION LAW (2026-09-20, the operator's order):
   // one truth, one owner. shift_video is a NUMBER, default 8, served
   // and walked identically. The old z.const(null) arm — the
@@ -277,8 +278,8 @@ const paramSchema = z.object({
   // LOUD at the walk. The hour-22 double-default (same 8 spelled on
   // the union and the inner arm) never made the walk fill 8; it
   // bought the face a number while the call kept the body literal.
-  shift_video: z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: 5, group: 'sampling', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: "Timestep shift for video attention. Higher = more coherent motion." }),
-  shift_audio: z.number().description("Audio Shift").min(1).max(10).step(0.5).default(3).extra('extra', { order: 6, group: 'sampling', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: "Timestep shift for audio attention. Lower = more detailed sound.", }),
+  shift_video: z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', bag({ order: 5, group: 'sampling', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: "Timestep shift for video attention. Higher = more coherent motion." })),
+  shift_audio: z.number().description("Audio Shift").min(1).max(10).step(0.5).default(3).extra('extra', bag({ order: 6, group: 'sampling', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: "Timestep shift for audio attention. Lower = more detailed sound.", })),
   // ── the SLA family (hour 16, item 3): compose-read knobs, now
   // EMITTED — the studio's advanced panel rides the served spec
   // (SpecFieldRow) instead of hand-rolled rows. Defaults are the
@@ -289,26 +290,26 @@ const paramSchema = z.object({
   // one boolean heads the sla group; every tuning leaf below rides
   // visible_when behind it. Default true = today's behavior for
   // every existing doc (absent = on at compose).
-  sla_enabled: z.boolean().description("SLA sparse attention").default(true).extra('extra', { order: null, group: "sla", tooltip: "Block-sparse attention on the DiT (the primary speed arm, ~1.75x). Off falls back to the Attention backend row." }),
-  sla_sparsity: z.number().description("SLA sparsity").min(0).max(0.95).step(0.05).default(0.9).extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'slider', tooltip: "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss." }),
-  sla_block_size: vocabulary(["32", "64", "128"]).description("SLA block size").default("32").extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select', tooltip: "64 = clean audio; 128 = faster, robotic." }),
-  sla_min_seq_len: z.number().description("SLA min seq length").min(512).step(512).default(12288).extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Sequences shorter than this skip sparsity." }),
-  sla_dense_last_steps: z.number().description("SLA dense last steps").min(0).max(10).step(1).default(1).extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Final steps run dense for convergence." }),
-  sla_dense_steps: z.string().description("SLA dense steps (explicit)").default("0").extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "e.g. 0,1 or 0-2 — explicit dense step indices." }),
-  sla_dense_backend: vocabulary(["comfy_kitchen", "pytorch", "auto"]).description("SLA dense backend").default("comfy_kitchen").extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select' }),
-  sla_reference_protection: vocabulary(["Off", "Light", "Heavy Enforcement"]).description("SLA ref protection").default("Heavy Enforcement").extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select', tooltip: "Protects reference frames from sparse-attention drift." }),
-  sla_protect_audio: z.boolean().description("SLA protect audio").default(true).extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Keep the audio stream out of the sparse path." }),
-  sla_stabilize_motion: z.boolean().description("SLA stabilize motion").extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Default on except t4r openers (the family-conditional compose fallback stays the truth at run)." }),
-  sla_disable_fp16_accum: z.boolean().description("SLA full-precision accum").default(true).extra('extra', { order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Full-precision accumulation inside the sparse kernel." }),
+  sla_enabled: z.boolean().description("SLA sparse attention").default(true).extra('extra', bag({ order: null, group: "sla", tooltip: "Block-sparse attention on the DiT (the primary speed arm, ~1.75x). Off falls back to the Attention backend row." })),
+  sla_sparsity: z.number().description("SLA sparsity").min(0).max(0.95).step(0.05).default(0.9).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'slider', tooltip: "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss." })),
+  sla_block_size: vocabulary(["32", "64", "128"]).description("SLA block size").default("32").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select', tooltip: "64 = clean audio; 128 = faster, robotic." })),
+  sla_min_seq_len: z.number().description("SLA min seq length").min(512).step(512).default(12288).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Sequences shorter than this skip sparsity." })),
+  sla_dense_last_steps: z.number().description("SLA dense last steps").min(0).max(10).step(1).default(1).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'number', tooltip: "Final steps run dense for convergence." })),
+  sla_dense_steps: z.string().description("SLA dense steps (explicit)").default("0").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "e.g. 0,1 or 0-2 — explicit dense step indices." })),
+  sla_dense_backend: vocabulary(["comfy_kitchen", "pytorch", "auto"]).description("SLA dense backend").default("comfy_kitchen").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select' })),
+  sla_reference_protection: vocabulary(["Off", "Light", "Heavy Enforcement"]).description("SLA ref protection").default("Heavy Enforcement").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", wtype: 'select', tooltip: "Protects reference frames from sparse-attention drift." })),
+  sla_protect_audio: z.boolean().description("SLA protect audio").default(true).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Keep the audio stream out of the sparse path." })),
+  sla_stabilize_motion: z.boolean().description("SLA stabilize motion").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Default on except t4r openers (the family-conditional compose fallback stays the truth at run)." })),
+  sla_disable_fp16_accum: z.boolean().description("SLA full-precision accum").default(true).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Full-precision accumulation inside the sparse kernel." })),
   // ── the sharpen leaves (compose: only EXPLICITLY-set leaves patch
   // ImageSharpenKJ's grouped dict — bare emission defaults do NOT
   // change a run that never sets them). VISIBILITY rides the
   // declaration's own visible_when grammar (&-ANDed guards, |-SET
   // values) — no hand-rolled predicates anywhere.
-  sharpen_method: vocabulary(["rcas", "adaptive_usm", "high_pass", "deconvolution"]).description("Sharpen Method").extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true", wtype: 'select' }),
-  sharpen_radius: z.number().description("Sharpen Radius").min(0.5).max(5).step(0.5).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass|deconvolution", wtype: 'number', tooltip: "adaptive_usm / high_pass / deconvolution only." }),
-  sharpen_threshold: z.number().description("Sharpen Noise Gate").min(0).max(1).step(0.05).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=adaptive_usm", wtype: 'number', tooltip: "adaptive_usm only." }),
-  sharpen_iterations: z.number().description("Sharpen Iterations").min(1).max(100).step(1).extra('extra', { order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=deconvolution", wtype: 'number', tooltip: "deconvolution only." }),
+  sharpen_method: vocabulary(["rcas", "adaptive_usm", "high_pass", "deconvolution"]).description("Sharpen Method").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true", wtype: 'select' })),
+  sharpen_radius: z.number().description("Sharpen Radius").min(0.5).max(5).step(0.5).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass|deconvolution", wtype: 'number', tooltip: "adaptive_usm / high_pass / deconvolution only." })),
+  sharpen_threshold: z.number().description("Sharpen Noise Gate").min(0).max(1).step(0.05).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=adaptive_usm", wtype: 'number', tooltip: "adaptive_usm only." })),
+  sharpen_iterations: z.number().description("Sharpen Iterations").min(1).max(100).step(1).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true&sharpen_method=deconvolution", wtype: 'number', tooltip: "deconvolution only." })),
   // NOTE: the calls[] SHOTS surface is deliberately NOT a carrier
   // knob — the carrier feeds the studio's frozen form-spec (the
   // studio owns its own shots editor, ui/studio/docModel) and the
@@ -326,16 +327,16 @@ const paramSchema = z.object({
   // THE FACE (2026-09-21, the operator's catch — "WHAT IS WINDOW
   // INDEX, WHY IS IT BLANK"): validation-only keys never render; a
   // default-less blank row on the form is a lie.
-  k: z.number().description("Window index (film vocabulary)").step(1).extra('extra', { hidden: true }),
-  noise_seed: z.number().description("Per-window noise seed").step(1).extra('extra', { hidden: true }),
-  fps_seconds: z.number().description("Clip seconds (fps rail)").min(1).max(60).default(10).extra('extra', { order: null, wtype: 'number', tooltip: "The clip's duration in seconds (the fps rail's duration primitive)." }),
+  k: z.number().description("Window index (film vocabulary)").step(1).extra('extra', bag({ hidden: true })),
+  noise_seed: z.number().description("Per-window noise seed").step(1).extra('extra', bag({ hidden: true })),
+  fps_seconds: z.number().description("Clip seconds (fps rail)").min(1).max(60).default(10).extra('extra', bag({ order: null, wtype: 'number', tooltip: "The clip's duration in seconds (the fps rail's duration primitive)." })),
   // THE LEGACY ALIASES (renderer-era spellings of the mod switches)
   // — gate-admitted for old drafts, never user surface: the MODS
   // own the switches (the operator's law), one face each.
-  interp_switch: z.boolean().description("Interpolate switch (legacy alias)").extra('extra', { hidden: true }),
-  sharpen_switch: z.boolean().description("Sharpen switch (legacy alias)").extra('extra', { hidden: true }),
-  sla_switch: z.boolean().description("SLA switch (legacy alias)").extra('extra', { hidden: true }),
-  image_name: z.string().role('path').description("Guide image (renderer alias)").extra('extra', { hidden: true, wtype: 'image', tooltip: "The renderer's guide-image spelling — gate-admitted for old docs; the rail's First frame is the user face." }),
+  interp_switch: z.boolean().description("Interpolate switch (legacy alias)").extra('extra', bag({ hidden: true })),
+  sharpen_switch: z.boolean().description("Sharpen switch (legacy alias)").extra('extra', bag({ hidden: true })),
+  sla_switch: z.boolean().description("SLA switch (legacy alias)").extra('extra', bag({ hidden: true })),
+  image_name: z.string().role('path').description("Guide image (renderer alias)").extra('extra', bag({ hidden: true, wtype: 'image', tooltip: "The renderer's guide-image spelling — gate-admitted for old docs; the rail's First frame is the user face." })),
 })
 
 /** Schemastery objects are lenient (unknown/missing keys ride); the

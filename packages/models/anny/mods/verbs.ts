@@ -6,9 +6,10 @@
 // (SubActionMod law — verbs own their knobs; they ride the verb's
 // own invocation doc). The Cordis contract shape: every verb's
 // KNOBS are a Schemastery object schema (the tool-contract
-// pattern), wire types on .extra('extra', {wtype}).
+// pattern), wire types on .extra('extra', bag({wtype})).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { bag } from '@melite/contracts/extraKeys'
 
 export const inject = ['comfyui']
 
@@ -25,7 +26,7 @@ export function apply(ctx: Context): void {
     requires: ['melite-kimodo-nodes'],
     fields: z.object({
       person_index: z.number().min(0).step(1).default(0).description('Person')
-        .extra('extra', { wtype: 'number', tooltip: 'Which detected person to fit (0 = the most confident detection).' }),
+        .extra('extra', bag({ wtype: 'number', tooltip: 'Which detected person to fit (0 = the most confident detection).' })),
     }) as never,
   }))
 
@@ -38,7 +39,7 @@ export function apply(ctx: Context): void {
     requires: [],
     fields: z.object({
       name: z.string().description('Preset name')
-        .extra('extra', { wtype: 'text', required: true, tooltip: 'Label for the saved character row.' }),
+        .extra('extra', bag({ wtype: 'text', required: true, tooltip: 'Label for the saved character row.' })),
     }) as never,
   }))
 
@@ -51,7 +52,7 @@ export function apply(ctx: Context): void {
     requires: ['melite-kimodo-nodes'],
     fields: z.object({
       preset_id: z.string().description('Preset')
-        .extra('extra', { wtype: 'text', required: true, tooltip: 'Estate archetype id or user row id (user-N).' }),
+        .extra('extra', bag({ wtype: 'text', required: true, tooltip: 'Estate archetype id or user row id (user-N).' })),
     }) as never,
   }))
   const seatFields = (o: {
@@ -61,31 +62,31 @@ export function apply(ctx: Context): void {
     fitRatioTooltip: string; seatRatioTooltip: string; targetWidthTooltip: string
   }) => z.object({
     prop: z.string().description(o.propLabel)
-      .extra('extra', { wtype: 'text', required: true, tooltip: o.propTooltip }),
+      .extra('extra', bag({ wtype: 'text', required: true, tooltip: o.propTooltip })),
     model_name: z.string().description('Prop name')
-      .extra('extra', { wtype: 'text', tooltip: "Unity lookup name — the chip fills the outfit filename stem; empty seats as 'prop'." }),
+      .extra('extra', bag({ wtype: 'text', tooltip: "Unity lookup name — the chip fills the outfit filename stem; empty seats as 'prop'." })),
     bone: z.string().default(o.bone).description('Bone')
-      .extra('extra', { wtype: 'text', tooltip: 'Which bone carries the outfit (coat: Spine, hat: mixamorig:Head).' }),
+      .extra('extra', bag({ wtype: 'text', tooltip: 'Which bone carries the outfit (coat: Spine, hat: mixamorig:Head).' })),
     align: z.union([z.const('socket'), z.const('fit'), z.const('grip')]).default(o.align).description('Law')
-      .extra('extra', { wtype: 'select', options: ['socket', 'fit', 'grip'], tooltip: 'socket: hang (coat); fit: measure + scale (hat); grip: hand-lock (weapon — the prop verb\'s default).' }),
+      .extra('extra', bag({ wtype: 'select', options: ['socket', 'fit', 'grip'], tooltip: 'socket: hang (coat); fit: measure + scale (hat); grip: hand-lock (weapon — the prop verb\'s default).' })),
     position: z.string().default('0,0,0').description('Offset')
-      .extra('extra', { wtype: 'text', tooltip: 'x,y,z meters added after the law (grip forbids non-zero).' }),
+      .extra('extra', bag({ wtype: 'text', tooltip: 'x,y,z meters added after the law (grip forbids non-zero).' })),
     rotation: z.string().default('0,0,0').description('Rotation')
-      .extra('extra', { wtype: 'text', tooltip: 'x,y,z Unity degrees applied pre-seat (grip forbids non-zero).' }),
+      .extra('extra', bag({ wtype: 'text', tooltip: 'x,y,z Unity degrees applied pre-seat (grip forbids non-zero).' })),
     fit_ratio: z.number().min(0).step(0.01).default(0).description('Fit ratio')
-      .extra('extra', { wtype: 'number', tooltip: o.fitRatioTooltip }),
+      .extra('extra', bag({ wtype: 'number', tooltip: o.fitRatioTooltip })),
     fit_ref_bone: z.string().description('Measure to')
-      .extra('extra', { wtype: 'text', tooltip: 'fit law: the span\'s far bone (required when fit_ratio > 0).' }),
+      .extra('extra', bag({ wtype: 'text', tooltip: 'fit law: the span\'s far bone (required when fit_ratio > 0).' })),
     fit_ref_bone2: z.string().description('Measure from')
-      .extra('extra', { wtype: 'text', tooltip: 'fit law: the span\'s near bone (hat: mixamorig:Neck).' }),
+      .extra('extra', bag({ wtype: 'text', tooltip: 'fit law: the span\'s near bone (hat: mixamorig:Neck).' })),
     seat_ratio: z.number().min(0).max(1).step(0.01).default(0.22).description('Seat ratio')
-      .extra('extra', { wtype: 'number', tooltip: o.seatRatioTooltip }),
+      .extra('extra', bag({ wtype: 'number', tooltip: o.seatRatioTooltip })),
     finger_bone: z.string().description('Finger bone')
-      .extra('extra', { wtype: 'text', tooltip: 'grip law: the blade-axis finger (weapon: mixamorig:RightHandMiddle1).', ...(o.fingerBone !== undefined ? { default: o.fingerBone } : {}) }),
+      .extra('extra', bag({ wtype: 'text', tooltip: 'grip law: the blade-axis finger (weapon: mixamorig:RightHandMiddle1).', ...(o.fingerBone !== undefined ? { default: o.fingerBone } : {}) })),
     thumb_bone: z.string().description('Thumb bone')
-      .extra('extra', { wtype: 'text', tooltip: 'grip law: the clamp thumb (weapon: mixamorig:RightHandThumb1).', ...(o.thumbBone !== undefined ? { default: o.thumbBone } : {}) }),
+      .extra('extra', bag({ wtype: 'text', tooltip: 'grip law: the clamp thumb (weapon: mixamorig:RightHandThumb1).', ...(o.thumbBone !== undefined ? { default: o.thumbBone } : {}) })),
     target_width: z.number().min(0).step(0.01).default(o.targetWidth ?? 0).description('Target width')
-      .extra('extra', { wtype: 'number', tooltip: o.targetWidthTooltip }),
+      .extra('extra', bag({ wtype: 'number', tooltip: o.targetWidthTooltip })),
   }) as never
 
   ctx.effect(() => ctx.comfyui.registerVerb({

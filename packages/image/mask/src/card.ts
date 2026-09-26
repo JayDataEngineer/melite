@@ -47,6 +47,7 @@ import {
   impactArmNames,
 } from '@melite/comfyui-card-kit'
 import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
+import { bag } from '@melite/contracts/extraKeys'
 
 // THE ACTION CARD OWNS ITS SAM PINS (the studio's law, shared —
 // the same weights, the same lane). The three Impact detector
@@ -157,7 +158,7 @@ const figuresOf = (e: Record<string, unknown>, key: string, primary: boolean): n
 // INPUT ONLY). Every source knob — thresholds, instances, refine,
 // dilation, the manifest — is mod-owned bag state.
 const schema = z.object({
-  input_image: z.string().role('path').description('Input').extra('extra', { order: 1, group: 'input', width: 2, tooltip: 'The image every mask selects FROM.', wtype: 'image' }),
+  input_image: z.string().role('path').description('Input').extra('extra', bag({ order: 1, group: 'input', width: 2, tooltip: 'The image every mask selects FROM.', wtype: 'image' })),
 })
 
 // The optional search REGION's four entry fields (the EMBEDDED region

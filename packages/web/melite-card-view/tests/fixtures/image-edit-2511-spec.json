@@ -362,7 +362,7 @@
   "loader_info": null,
   "mod_schemas": {
     "lanpaint": {
-      "uid": 3196,
+      "uid": 3206,
       "refs": {
         "3125": {
           "type": "string",
@@ -393,11 +393,12 @@
             }
           }
         },
-        "3135": {
+        "3136": {
           "type": "number",
           "meta": {
             "min": 1,
             "max": 100,
+            "step": 1,
             "default": 20,
             "description": "Num Steps",
             "extra": {
@@ -405,16 +406,16 @@
               "group": "lanpaint",
               "visible_when": "lanpaint_enabled=true",
               "order": 2,
-              "width": 1,
-              "step": 1
+              "width": 1
             }
           }
         },
-        "3141": {
+        "3143": {
           "type": "number",
           "meta": {
             "min": 0.1,
             "max": 2,
+            "step": 0.1,
             "default": 1,
             "description": "Step Size",
             "extra": {
@@ -422,16 +423,16 @@
               "group": "lanpaint",
               "visible_when": "lanpaint_enabled=true",
               "order": 3,
-              "width": 1,
-              "step": 0.1
+              "width": 1
             }
           }
         },
-        "3147": {
+        "3150": {
           "type": "number",
           "meta": {
             "min": 0,
             "max": 2,
+            "step": 0.05,
             "default": 0.5,
             "description": "Lambda",
             "extra": {
@@ -439,16 +440,16 @@
               "group": "lanpaint",
               "visible_when": "lanpaint_enabled=true",
               "order": 4,
-              "width": 1,
-              "step": 0.05
+              "width": 1
             }
           }
         },
-        "3153": {
+        "3157": {
           "type": "number",
           "meta": {
             "min": 0,
             "max": 2,
+            "step": 0.05,
             "default": 0.5,
             "description": "Beta",
             "extra": {
@@ -456,16 +457,16 @@
               "group": "lanpaint",
               "visible_when": "lanpaint_enabled=true",
               "order": 5,
-              "width": 1,
-              "step": 0.05
+              "width": 1
             }
           }
         },
-        "3159": {
+        "3164": {
           "type": "number",
           "meta": {
             "min": 0,
             "max": 2,
+            "step": 0.05,
             "default": 0.5,
             "description": "Friction",
             "extra": {
@@ -473,22 +474,21 @@
               "group": "lanpaint",
               "visible_when": "lanpaint_enabled=true",
               "order": 6,
-              "width": 1,
-              "step": 0.05
+              "width": 1
             }
           }
         },
-        "3160": {
+        "3165": {
           "type": "const",
           "meta": {},
           "value": "negative"
         },
-        "3161": {
+        "3166": {
           "type": "const",
           "meta": {},
           "value": "positive"
         },
-        "3165": {
+        "3170": {
           "type": "union",
           "meta": {
             "default": "negative",
@@ -506,15 +506,16 @@
             }
           },
           "list": [
-            3160,
-            3161
+            3165,
+            3166
           ]
         },
-        "3171": {
+        "3177": {
           "type": "number",
           "meta": {
             "min": 0,
             "max": 512,
+            "step": 8,
             "default": 0,
             "description": "Expand Top",
             "extra": {
@@ -522,16 +523,16 @@
               "group": "lanpaint",
               "visible_when": "image1 != null",
               "order": 8,
-              "width": 1,
-              "step": 8
+              "width": 1
             }
           }
         },
-        "3177": {
+        "3184": {
           "type": "number",
           "meta": {
             "min": 0,
             "max": 512,
+            "step": 8,
             "default": 0,
             "description": "Expand Right",
             "extra": {
@@ -539,16 +540,16 @@
               "group": "lanpaint",
               "visible_when": "image1 != null",
               "order": 9,
-              "width": 1,
-              "step": 8
+              "width": 1
             }
           }
         },
-        "3183": {
+        "3191": {
           "type": "number",
           "meta": {
             "min": 0,
             "max": 512,
+            "step": 8,
             "default": 0,
             "description": "Expand Bottom",
             "extra": {
@@ -556,16 +557,16 @@
               "group": "lanpaint",
               "visible_when": "image1 != null",
               "order": 10,
-              "width": 1,
-              "step": 8
+              "width": 1
             }
           }
         },
-        "3189": {
+        "3198": {
           "type": "number",
           "meta": {
             "min": 0,
             "max": 512,
+            "step": 8,
             "default": 0,
             "description": "Expand Left",
             "extra": {
@@ -573,16 +574,16 @@
               "group": "lanpaint",
               "visible_when": "image1 != null",
               "order": 11,
-              "width": 1,
-              "step": 8
+              "width": 1
             }
           }
         },
-        "3195": {
+        "3205": {
           "type": "number",
           "meta": {
             "min": 0,
             "max": 64,
+            "step": 1,
             "default": 16,
             "description": "Overlap",
             "extra": {
@@ -590,12 +591,11 @@
               "group": "lanpaint",
               "visible_when": "image1 != null",
               "order": 8,
-              "width": 1,
-              "step": 1
+              "width": 1
             }
           }
         },
-        "3196": {
+        "3206": {
           "type": "object",
           "meta": {
             "default": {}
@@ -603,17 +603,17 @@
           "dict": {
             "image1": 3125,
             "lanpaint_enabled": 3129,
-            "lanpaint_num_steps": 3135,
-            "lanpaint_step_size": 3141,
-            "lanpaint_lambda": 3147,
-            "lanpaint_beta": 3153,
-            "lanpaint_friction": 3159,
-            "lanpaint_prompt_mode": 3165,
-            "outpaint_top": 3171,
-            "outpaint_right": 3177,
-            "outpaint_bottom": 3183,
-            "outpaint_left": 3189,
-            "outpaint_overlap": 3195
+            "lanpaint_num_steps": 3136,
+            "lanpaint_step_size": 3143,
+            "lanpaint_lambda": 3150,
+            "lanpaint_beta": 3157,
+            "lanpaint_friction": 3164,
+            "lanpaint_prompt_mode": 3170,
+            "outpaint_top": 3177,
+            "outpaint_right": 3184,
+            "outpaint_bottom": 3191,
+            "outpaint_left": 3198,
+            "outpaint_overlap": 3205
           }
         }
       }
@@ -641,8 +641,7 @@
               "group": "loras_controlnet",
               "zone": "mods",
               "order": 1,
-              "width": 1,
-              "step": 1
+              "width": 1
             }
           }
         },
@@ -684,9 +683,9 @@
       }
     },
     "mask": {
-      "uid": 3265,
+      "uid": 3275,
       "refs": {
-        "3199": {
+        "3209": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -699,7 +698,7 @@
             }
           }
         },
-        "3203": {
+        "3213": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -715,22 +714,22 @@
             "description": "Region Mask"
           }
         },
-        "3204": {
+        "3214": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3205": {
+        "3215": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3206": {
+        "3216": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3210": {
+        "3220": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -755,32 +754,32 @@
             }
           },
           "list": [
-            3204,
-            3205,
-            3206
+            3214,
+            3215,
+            3216
           ]
         },
-        "3211": {
+        "3221": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3212": {
+        "3222": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3213": {
+        "3223": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3214": {
+        "3224": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3218": {
+        "3228": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -801,13 +800,13 @@
             }
           },
           "list": [
-            3211,
-            3212,
-            3213,
-            3214
+            3221,
+            3222,
+            3223,
+            3224
           ]
         },
-        "3225": {
+        "3235": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -825,7 +824,7 @@
             }
           }
         },
-        "3232": {
+        "3242": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -843,7 +842,7 @@
             }
           }
         },
-        "3239": {
+        "3249": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -861,7 +860,7 @@
             }
           }
         },
-        "3246": {
+        "3256": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -879,7 +878,7 @@
             }
           }
         },
-        "3250": {
+        "3260": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -894,7 +893,7 @@
             }
           }
         },
-        "3257": {
+        "3267": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -912,7 +911,7 @@
             }
           }
         },
-        "3264": {
+        "3274": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -930,23 +929,23 @@
             }
           }
         },
-        "3265": {
+        "3275": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3199,
-            "input_mask": 3203,
-            "mask_mode": 3210,
-            "mask_detector": 3218,
-            "mask_context_pad": 3225,
-            "mask_grow": 3232,
-            "mask_feather": 3239,
-            "mask_threshold": 3246,
-            "mask_invert": 3250,
-            "mask_detail_size": 3257,
-            "mask_denoise": 3264
+            "mask": 3209,
+            "input_mask": 3213,
+            "mask_mode": 3220,
+            "mask_detector": 3228,
+            "mask_context_pad": 3235,
+            "mask_grow": 3242,
+            "mask_feather": 3249,
+            "mask_threshold": 3256,
+            "mask_invert": 3260,
+            "mask_detail_size": 3267,
+            "mask_denoise": 3274
           }
         }
       }

@@ -37,6 +37,7 @@ import type {
   ModelDecl,
 } from '@melite/comfyui-cordis'
 import { agentFormDoc } from '@melite/engine-agent'
+import type { ExtraBag } from '@melite/contracts/extraKeys'
 import { faceStamp } from './faceStamp.ts'
 
 /** The boarded map (family -> the card that boards it, first-seen).
@@ -471,7 +472,10 @@ function familyFace(fam: string): string {
  * serializes per call, so no shared carrier is touched. */
 interface StampNode {
   dict?: Record<string, unknown>
-  meta?: { default?: unknown; extra?: Record<string, unknown> }
+  // THE ONE VOCABULARY: the bag's shape owns the floor contract
+  // (@melite/contracts/extraKeys) — optionsFrom reads and options
+  // writes spell the same keys every other face spells.
+  meta?: { default?: unknown; extra?: Partial<ExtraBag> & Record<string, unknown> }
 }
 interface StampEnv {
   uid?: number | string

@@ -22,19 +22,20 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { quadRemeshLane } from '@melite/comfyui-card-kit'
+import { bag } from '@melite/contracts/extraKeys'
 
 const schema = z.object({
   // This card is model-less, so its six numeric defaults live in the
   // card schema; input remains required at compose.
   // RANGE RULE: schema min/max mirrors the live AutoRemesher input
   // contract, so the editor and the node refuse the same values.
-  input: z.string().role('path').description("Input mesh").extra('extra', { order: null, tooltip: "GLB path or artifact-ref from a previous card", required: true, wtype: 'mesh', }),
-  target_quads: z.number().description("Target quads").min(0).max(200000).default(50000).extra('extra', { order: null, tooltip: "Target quad count", min: 0, max: 200000 }),
-  edge_scaling: z.number().description("Edge scaling").min(0).max(4).default(1).extra('extra', { order: null, min: 0, max: 4.0 }),
-  sharp_edge: z.number().description("Sharp edge").min(0).max(180).default(90).extra('extra', { order: null, min: 0.0, max: 180.0 }),
-  smooth_normal: z.number().description("Smooth normal").min(0).max(1).default(0).extra('extra', { order: null, min: 0.0, max: 1.0 }),
-  adaptivity: z.number().description("Adaptivity").min(0).max(2).default(1).extra('extra', { order: null, min: 0, max: 2.0 }),
-  anisotropy: z.number().description("Anisotropy").min(0).max(4).default(1).extra('extra', { order: null, min: 0, max: 4.0 }),
+  input: z.string().role('path').description("Input mesh").extra('extra', bag({ order: null, tooltip: "GLB path or artifact-ref from a previous card", required: true, wtype: 'mesh', })),
+  target_quads: z.number().description("Target quads").min(0).max(200000).default(50000).extra('extra', bag({ order: null, tooltip: "Target quad count", min: 0, max: 200000 })),
+  edge_scaling: z.number().description("Edge scaling").min(0).max(4).default(1).extra('extra', bag({ order: null, min: 0, max: 4.0 })),
+  sharp_edge: z.number().description("Sharp edge").min(0).max(180).default(90).extra('extra', bag({ order: null, min: 0.0, max: 180.0 })),
+  smooth_normal: z.number().description("Smooth normal").min(0).max(1).default(0).extra('extra', bag({ order: null, min: 0.0, max: 1.0 })),
+  adaptivity: z.number().description("Adaptivity").min(0).max(2).default(1).extra('extra', bag({ order: null, min: 0, max: 2.0 })),
+  anisotropy: z.number().description("Anisotropy").min(0).max(4).default(1).extra('extra', bag({ order: null, min: 0, max: 4.0 })),
   // NO preset (the card has no preset field — the node budget class
   // is ALWAYS "" here; explicit knobs rule) and NO filename_prefix
   // (compose stamps `<runId>/remeshed` internally, never a knob).
