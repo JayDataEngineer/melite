@@ -50253,11 +50253,38 @@ void main() {
 					draftId
 				});
 			}
-			let doc = params;
+			const wires = typeof src.inputs === "object" && src.inputs !== null && !Array.isArray(src.inputs) ? src.inputs : {};
+			let resolved = params;
+			const wireNames = Object.keys(wires);
+			if (wireNames.length > 0) {
+				resolved = { ...params };
+				for (const name of wireNames) {
+					const ref = wires[name];
+					if (!(typeof ref === "object" && ref !== null && typeof ref["stage"] === "string" && typeof ref["output"] === "string")) return { refused: "input " + JSON.stringify(name) + " is neither {stage, output} nor a resolvable binding — the single-stage run maps only stage wires (got " + JSON.stringify(ref ?? null) + ")" };
+					const upstreamId = String(ref["stage"]);
+					const upstream = await freshStageRow(draftId, upstreamId);
+					const res = typeof upstream?.result === "object" && upstream.result !== null ? upstream.result : {};
+					const url = typeof res["url"] === "string" && res["url"] !== "" ? res["url"] : "";
+					if (url === "") return { refused: "input " + JSON.stringify(name) + " is wired to stage " + JSON.stringify(upstreamId) + " which has no output yet — run it first (or clear the wire). The single-stage run resolves wires to the upstream's last result; it never drops them." };
+					const spell = "$" + name;
+					const substitute = (v) => {
+						if (v === spell) return url;
+						if (Array.isArray(v)) return v.map(substitute);
+						if (typeof v === "object" && v !== null) {
+							const out = {};
+							for (const [k, x] of Object.entries(v)) out[k] = substitute(x);
+							return out;
+						}
+						return v;
+					};
+					for (const k of Object.keys(resolved)) resolved[k] = substitute(resolved[k]);
+				}
+			}
+			let doc = resolved;
 			try {
 				const selects = fieldsOf(await fetchFormSpec(card)).filter((f) => f.type === "select" && Array.isArray(f.options));
 				if (selects.length > 0) {
-					doc = { ...params };
+					doc = { ...resolved };
 					for (const f of selects) {
 						const v = doc[f.name];
 						if (typeof v === "number") {
@@ -60457,4 +60484,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="39a8003af9452ee572b2c3d0f3e97bf320136eda";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="88e895dec37d26f831bcb1efefaedd10d2a61ff7";
