@@ -156,8 +156,15 @@ const MaskFields = z.object({
     }),
   input_mask: z.string().role('path').description('Region Mask')
     .extra('extra', {
-      wtype: 'image', group: 'mask', zone: 'mods', order: 0,
-      tooltip: 'RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with image1, the builder switches to the lanpaint sampler.',
+      // THE INPUT-MOD LAW (operator, 2026-10-10, restated from the
+      // original order — never a deviation): Region Mask IS an
+      // input mod — 1:1 to the image input card's own face. It
+      // rides the INPUTS zone with the image input's exact widget
+      // mechanics (a path-role image picker), ordered AFTER the
+      // Input Images list (order 0 under the list's -1) — never a
+      // mods-zone artifact floating above the real inputs.
+      wtype: 'image', group: 'input', zone: 'inputs', order: 0,
+      tooltip: 'RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with the input images, the builder switches to the lanpaint sampler.',
     }),
   mask_mode: z.union([z.const('auto'), z.const('crop_stitch'), z.const('full_frame')]).default('crop_stitch').description('Edit Scope')
     .extra('extra', {
