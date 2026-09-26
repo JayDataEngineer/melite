@@ -46,8 +46,16 @@ pnpm run test:bench
 pnpm run test:snapshot
 pnpm run test:web
 pnpm run test:web:browser
+pnpm run test:web:mesh
 pnpm run lint
 ```
+
+`test:web:mesh` is the 3D media door's browser wall: it builds the harness
+that mounts the real `MeshView` against a real `.glb` and asserts a live
+WebGL context, a real glTF parse and non-uniform pixels in Chromium. It
+boots no lane and needs no token, but it does need an artifact — by
+default the img-to-mesh run under `data/probe-img-to-mesh-0102`, or
+`MESH_DOOR_GLB=<path>`; a self-skip is not a pass.
 
 The e2e tier is mixed. Individual suites declare their own key, engine, lane,
 feature, or browser prerequisites; a self-skip is not a pass. `test:coverage`

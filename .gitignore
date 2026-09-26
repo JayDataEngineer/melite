@@ -167,3 +167,6 @@ data/runtime/comfyui/
 vendor/cordis_plugins/*/lib/
 test-results/
 packages/harness/estate-queue/dist/
+
+# the 3D door browser wall harness bundle (built by `pnpm run test:web:mesh`)
+packages/web/infer-gallery/e2e/mesh-door/dist/

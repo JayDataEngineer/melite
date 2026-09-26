@@ -101,6 +101,18 @@ describe('MeshView — the visual door renders the mesh in place', () => {
     expect(scene.children.some((c) => c instanceof THREE.DirectionalLight)).toBe(true)
   })
 
+  it('a refused ENVIRONMENT probe still renders (an enhancement is never a dependency)', async () => {
+    // The stage fake carries no real WebGLRenderer, so the PMREM probe
+    // throws — which is exactly the constrained-WebGL case. The door
+    // must come up anyway: flatter metals, working canvas. (This is the
+    // arm that caught the unguarded probe crashing the whole effect.)
+    render(<MeshView url={URL_GLB} file="m.glb" />)
+    await waitFor(() => { expect(screen.queryByTestId('mesh-view-loading')).toBeNull() })
+    expect(screen.getByTestId('mesh-view-canvas')).toBeTruthy()
+    expect(screen.queryByTestId('mesh-view-failure')).toBeNull()
+    expect(loadGLB).toHaveBeenCalledWith(URL_GLB)
+  })
+
   it('unmount disposes the stage AND the mesh buffers (the modal walks artifacts)', async () => {
     const gltf = fakeGltf()
     loadGLB.mockResolvedValue(gltf)

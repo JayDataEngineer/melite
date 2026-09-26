@@ -29,6 +29,7 @@
  */
 import * as React from 'react'
 import * as THREE from 'three'
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { mountStage3D, type Stage3D } from '@melite/card-base/stage3d'
 import { autoFitToHeight, loadGLB } from '@melite/formats/glbLoad'
 
@@ -122,6 +123,7 @@ export function MeshView({ url, file, height = '52vh' }: MeshViewProps): React.J
     let stage: Stage3D | null = null
     let root: THREE.Object3D | null = null
     let cancelled = false
+    let disposeEnv: (() => void) | null = null
 
     stage = mountStage3D(canvas, {
       fov: 40,
@@ -141,6 +143,38 @@ export function MeshView({ url, file, height = '52vh' }: MeshViewProps): React.J
     const key = new THREE.DirectionalLight(0xffffff, 2.2)
     key.position.set(3, 5, 2)
     stage.scene.add(key)
+
+    // THE ENVIRONMENT (2026-09-26, the browser wall's receipt): the 3D
+    // lane's own artifacts are `metallic: 1.0, roughness: 1.0` with a
+    // baseColorTexture and NO environment anywhere in the estate — a
+    // fully metallic surface has no diffuse term, so two lights alone
+    // render it flatter than it is. (Honest correction: the first frame
+    // of the real 33MB artifact proved the img-to-mesh output's own
+    // albedo is a grey/cream atlas, so the env map is NOT what makes
+    // that mesh look grey — this is about metals reading correctly in
+    // general, not about that frame.) Scene content is the consumer's
+    // own — the substrate law says so — so the room probe lives here,
+    // not in the shared core.
+    //
+    // IT IS AN ENHANCEMENT, NOT A DEPENDENCY: a PMREM probe can fail on
+    // a constrained or flaky WebGL implementation, and it must never
+    // take the viewer down with it. A refused probe means "no
+    // environment" — flatter metals, still a working door. (The jsdom
+    // wall proved this the hard way: an unguarded probe crashed the
+    // effect and took the canvas with it.)
+    try {
+      const pmrem = new THREE.PMREMGenerator(stage.renderer)
+      const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04)
+      stage.scene.environment = envRT.texture
+      stage.scene.environmentIntensity = 0.85
+      disposeEnv = () => {
+        if (stage !== null) stage.scene.environment = null
+        envRT.dispose()
+        pmrem.dispose()
+      }
+    } catch {
+      disposeEnv = null
+    }
 
     loadGLB(url).then(
       (gltf) => {
@@ -170,6 +204,7 @@ export function MeshView({ url, file, height = '52vh' }: MeshViewProps): React.J
         stage?.scene.remove(root)
         disposeRoot(root)
       }
+      disposeEnv?.()
       stage?.dispose()
     }
   }, [url, file])
