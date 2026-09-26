@@ -182,6 +182,18 @@ artifact path of the deliverable and the run id that produced it.
 `
 }
 
+/** THE AGENT-ENGINE SEAT (a live commission's finding, 2026-09-26):
+ *  the estate seats its agent engine ONLY when MELITE_AGENT_ROUTE names
+ *  a brain — every commission so far logged `engine 'agent' NOT
+ *  seated`, so a card that needs a subagent brain refused at the door
+ *  for a reason that had nothing to do with the card. The lane's
+ *  commissions therefore carry a working route by default (verified:
+ *  booting this profile with it seats `engine 'agent' seated: brain
+ *  zai/glm-5.3 + skill reader`), while an operator-set route in the
+ *  environment always wins — the env is the explicit, the default is
+ *  the fallback, and the receipt names which one ran. */
+export const DEFAULT_AGENT_ROUTE = 'zai/glm-5.3'
+
 export interface CommissionOptions {
   path: PathName
   /** a human-readable slug for the transcript (the collision-law name) */
@@ -226,6 +238,12 @@ export function laneBootGaps(logText: string): string[] {
 export interface CommissionResult {
   /** the estate's boot decisions from this commission's own logs */
   lane_gaps: string[]
+  /** the brain route this commission ran under (the agent engine's
+   *  seat) — a receipt names the route, never leaves it implied */
+  agent_route: string
+  /** the env the launch carried (diagnostics; a receipt, not a secret
+   *  store: the credential keys never ride here) */
+  env?: Record<string, string>
   path: PathName
   slug: string
   boot_ms: number
@@ -262,6 +280,23 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
   const stateRoot = opts.stateRoot ?? REPO_ROOT
   const transcriptDir = opts.transcriptDir ?? join(REPO_ROOT, 'data/agent-video-test')
 
+  // THE LAUNCH ENV: the profile, the pinned state root, the brain
+  // route (explicit env > the verified default), and the transcript's
+  // collision-law done-GLOB.
+  const env: Record<string, string> = {
+    ...(process.env as Record<string, string>),
+    ...(opts.env ?? {}),
+    SUPERVISOR_PROFILE: opts.profile ?? 'headless',
+    SUPERVISOR_STATE_ROOT: stateRoot,
+    MELITE_AGENT_ROUTE:
+      (opts.env ?? {})['MELITE_AGENT_ROUTE']
+      ?? process.env['MELITE_AGENT_ROUTE']
+      ?? DEFAULT_AGENT_ROUTE,
+    SUPERVISOR_DONE_GLOB: join(transcriptDir, `transcript-${opts.slug}-*.md`),
+  }
+  if (opts.maxAttempts !== undefined) env['SUPERVISOR_MAX_ATTEMPTS'] = String(opts.maxAttempts)
+  if (opts.lockWaitS !== undefined) env['SUPERVISOR_LOCK_WAIT_S'] = String(opts.lockWaitS)
+
   if (opts.execute === false) {
     return {
       path: opts.path,
@@ -271,24 +306,14 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
       prompt_path: promptPath,
       log_prefix: logPrefix,
       lane_gaps: [],
+      agent_route: env['MELITE_AGENT_ROUTE'] as string,
+      env,
       exit_code: null,
-    output_tail: '',
+      output_tail: '',
       state_root: stateRoot,
       transcript_dir: transcriptDir,
     }
   }
-
-  const env: Record<string, string> = {
-    ...(process.env as Record<string, string>),
-    ...(opts.env ?? {}),
-    SUPERVISOR_PROFILE: opts.profile ?? 'headless',
-    SUPERVISOR_STATE_ROOT: stateRoot,
-    // THE COLLISION LAW: the done marker is a GLOB (the maker mints
-    // the <HHMM> name at finish), filtered by the supervisor's boot.
-    SUPERVISOR_DONE_GLOB: join(transcriptDir, `transcript-${opts.slug}-*.md`),
-  }
-  if (opts.maxAttempts !== undefined) env['SUPERVISOR_MAX_ATTEMPTS'] = String(opts.maxAttempts)
-  if (opts.lockWaitS !== undefined) env['SUPERVISOR_LOCK_WAIT_S'] = String(opts.lockWaitS)
 
   const result = await new Promise<{ code: number | null; output: string }>((resolvePromise) => {
     const child = spawn('bash', [SUPERVISOR, promptPath, logPrefix], { env, cwd: stateRoot })
@@ -311,6 +336,8 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
     prompt_path: promptPath,
     log_prefix: logPrefix,
     lane_gaps: laneBootGaps(attemptLogText(logPrefix)),
+    agent_route: env['MELITE_AGENT_ROUTE'] as string,
+    env,
     exit_code: result.code,
     output_tail: tail(result.output),
     state_root: stateRoot,
@@ -318,10 +345,6 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
   }
 }
 
-/** The attempt logs the supervisor wrote beside its out-prefix (the
- *  analyst reads them; the harness never invents a receipt). */
-/** The concatenated attempt logs of one commission (the analyst's
- *  own read; the supervisor's death words are in the same files). */
 export function attemptLogText(logPrefix: string): string {
   const dir = dirname(logPrefix)
   if (!existsSync(dir)) return ''

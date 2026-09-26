@@ -465,6 +465,51 @@ describe('the analyst — the PATH verdicts (the runbook refusals, as code)', ()
     expect(verdict.reasons[0]).toMatch(/ComfyUI engine not reachable/)
   })
 
+  it('THE SILENCE WITNESS: a wired film with no loudness receipt is a NOTE (an audio STREAM is not a sound)', () => {
+    const root = tempRoot()
+    // a completed run whose _flow.json carries no loudness row
+    mintRun(root, { runId: 'run-unmeasured', status: 'completed', files: { 'h3/h3_t4_film_00001_.mp4': realFilm } })
+    const verdict = assessPath('video', scanRunTree([root]), { requireAudio: true })
+    // the film is still a receipt (it parses, it has sound) …
+    expect(verdict.state).toBe('pass')
+    // … and the unmeasured sound is said out loud
+    expect(verdict.notes.join(' ')).toMatch(/no loudness receipt|unmeasured/i)
+  })
+
+  it('a loudness-stamped wired film carries no such note (the estate measured it)', () => {
+    const root = tempRoot()
+    const dir = mintRun(root, { runId: 'run-measured', status: 'completed', files: { 'h3/h3_t4_film_00001_.mp4': realFilm } })
+    writeFileSync(
+      join(dir, '_flow.json'),
+      JSON.stringify({
+        run_id: 'run-measured',
+        status: 'completed',
+        loudness: { loudness_lufs: -23.4, peak_db: -2.1 },
+        stages: [{ id: 's_0', name: 'h3-film', status: 'completed' }],
+      }),
+    )
+    const verdict = assessPath('video', scanRunTree([root]), { requireAudio: true })
+    expect(verdict.state).toBe('pass')
+    expect(verdict.notes).toEqual([])
+  })
+
+  it('the fidelity note rides EVERY passing receipt (mesh and film alike)', () => {
+    const root = tempRoot()
+    mintRun(root, { runId: 'run-m', status: 'completed', files: { 'm.glb': bytes(REAL_RIG) } })
+    mintRun(root, { runId: 'run-f', status: 'completed', files: { 'h3_t4_film_00001_.mp4': bytes(REAL_FILM) } })
+    const receipts = scanRunTree([root])
+    const text = renderReport({
+      boot_ms: Date.now(),
+      roots: [root],
+      runs_scanned: receipts.length,
+      runs: receipts,
+      transcript: discoverTranscript(root, 'none-such-slug', Date.now()),
+      paths: [assessPath('3d', receipts), assessPath('video', receipts)],
+      blocked: [],
+    })
+    expect((text.match(/subject match is UNVERIFIED/g) ?? []).length).toBe(2)
+  })
+
   it('an empty tree fails both paths with the no-artifact reason', () => {
     const receipts: RunReceipt[] = []
     expect(assessPath('video', receipts).state).toBe('fail')

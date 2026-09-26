@@ -553,7 +553,8 @@ export function analyzeGltfJsonBytes(bytes: Uint8Array): MeshVerdict {
  *  scene, is the operator's eye (or an image-capable model's). The claim
  *  is stated on every mesh receipt so a reader can never mistake "it
  *  opens" for "it is right". */
-export const FIDELITY_NOTE = 'structure proven by the analyst; subject match is UNVERIFIED here (the operator\'s eye, or an image-capable model)'
+export const FIDELITY_NOTE =
+  'structure proven by the analyst (bytes, streams, geometry); subject match is UNVERIFIED here — the operator\'s eye, or an image-capable model, owns that claim'
 
 export function analyzeArtifactBytes(
   kind: ArtifactKind,
@@ -714,6 +715,17 @@ export function assessPath(
     if (receipt.sidecars.length === 0) {
       reasons.push(`${receipt.run_id}: no durable sidecar (_request.json/_flow.json) — the run left no receipt of what it sent`)
     }
+    // THE SILENCE WITNESS (the wired-film law's other half): an audio
+    // STREAM is a container fact; whether anything is audible in it is
+    // the estate's own loudness measurement, which rides the run's
+    // _flow.json. A wired film whose run stamped no loudness receipt
+    // has an unmeasured sound track — said out loud, never assumed
+    // audible and never assumed silent.
+    if (name === 'video' && receipt.loudness === undefined && receipt.status === 'completed') {
+      notes.push(
+        `${receipt.run_id}: the film carries an audio stream but the run stamped NO loudness receipt — the sound is unmeasured here (a present-but-silent track would pass the container check)`,
+      )
+    }
     for (const row of held) {
       // THE FILM-TAIL LAW: a per-window render is a real video that
       // parses, so it is reported as NOT a receipt rather than
@@ -829,7 +841,7 @@ export function renderReport(report: LaneReport): string {
     )
     for (const art of verdict.artifacts.slice(0, ARTS_SHOWN)) {
       lines.push(`      ${art.verdict_ok ? 'ok  ' : 'BAD '} ${art.run_id}/${art.rel} (${art.bytes} bytes)${art.reasons.length === 0 ? '' : ` — ${art.reasons.join('; ')}`}`)
-      if (art.verdict_ok && verdict.path === '3d') {
+      if (art.verdict_ok) {
         lines.push(`           ↳ ${FIDELITY_NOTE}`)
       }
     }

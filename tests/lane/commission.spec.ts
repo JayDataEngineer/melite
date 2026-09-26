@@ -25,6 +25,7 @@ import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import {
+  DEFAULT_AGENT_ROUTE,
   PATH_TABLE,
   attemptLogs,
   briefFor,
@@ -278,6 +279,34 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     assert.match(gaps[1] as string, /not mounted/)
     // never a maker's line
     assert.equal(gaps.join(' ').includes('in its own voice'), false)
+  })
+
+  it('THE AGENT-ENGINE SEAT: a commission carries a working brain route by default, and an explicit one always wins', async () => {
+    // the default: the estate seats the agent engine with it (verified
+    // by booting this profile: "engine 'agent' seated: brain
+    // zai/glm-5.3 + skill reader"). Without a route, every card that
+    // needs a subagent brain refused for a reason unrelated to the card.
+    const dry = await commission({ path: 'video', slug: 'lane-seat', execute: false })
+    assert.equal(dry.agent_route, DEFAULT_AGENT_ROUTE)
+    assert.equal(dry.env?.['MELITE_AGENT_ROUTE'], DEFAULT_AGENT_ROUTE)
+    // the explicit wins: the operator's environment is the authority
+    const explicit = await commission({
+      path: 'video',
+      slug: 'lane-seat2',
+      execute: false,
+      env: { MELITE_AGENT_ROUTE: 'opencode-go/some-model' },
+    })
+    assert.equal(explicit.agent_route, 'opencode-go/some-model')
+  })
+
+  it('the launch env keeps the collision-law glob and the pinned state root beside the route', async () => {
+    const dry = await commission({ path: '3d', slug: 'lane-env', execute: false, stateRoot: '/tmp/lane-state-x' })
+    assert.equal(dry.env?.['SUPERVISOR_PROFILE'], 'headless')
+    assert.equal(dry.env?.['SUPERVISOR_STATE_ROOT'], '/tmp/lane-state-x')
+    assert.match(String(dry.env?.['SUPERVISOR_DONE_GLOB']), /transcript-lane-env-\*\.md$/)
+    // a receipt never carries a credential: the env it reports is the
+    // launch's own, and the store stays the source of truth
+    assert.equal(Object.keys(dry.env ?? {}).some((k) => /KEY|TOKEN|SECRET/i.test(k)), false)
   })
 
   it('a clean boot log reports no gaps (never a manufactured one)', () => {
