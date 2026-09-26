@@ -176,6 +176,27 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     assert.equal(typeOf("ref_audios"), "image_list");
   });
 
+  it("THE NAMING LAW (2026-10-09): the reference buses are REAL flow input seats — declared, wireable, kinded; the renderer spelling is the legacy alias", () => {
+    // "fix it all": before this wall the rail declared only the two
+    // pixel anchors — ref_images/ref_videos/ref_audios sat OUTSIDE
+    // the input category (the picker could not offer them, the
+    // lattice refused the wire) while image-edit had already made
+    // its reference stack a first-class seat. The video face now
+    // speaks the same law: one seat per concept, list kinds carry
+    // the producer vocabulary (image_list ← image, video_list ←
+    // video, audio_list ← audio).
+    assert.deepEqual(def.flowKinds.inputs, {
+      image: "image",
+      last_frame: "image",
+      ref_images: "image_list",
+      ref_videos: "video_list",
+      ref_audios: "audio_list",
+    });
+    // the renderer's guide-image spelling rides the alias table:
+    // lattice-derivable for old graphs, offered by no face.
+    assert.deepEqual(def.flowKinds.legacyAliases, { image_name: "image" });
+  });
+
   it("the refine lora pick is a CATALOG-FED SELECT — the freeform lora id is dead (LORAS ARE ONLY MODS)", () => {
     const ff = fieldsOfEnvelope(
       ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
@@ -353,5 +374,68 @@ describe("THE BED IS GONE (2026-09-22, the operator: \"that is a bug that is the
     assert.deepEqual(out[r2vId].inputs["ref_audios.ref_audio_0"], [bundleOutId, 15], "<Audio 1> is the user's");
     assert.deepEqual(out[r2vId].inputs["ref_audios.ref_audio_1"], [bundleOutId, 16], "<Audio 2> is the user's");
     assert.deepEqual(out[r2vId].inputs["ref_audios.ref_audio_2"], [bundleOutId, 17], "<Audio 3> is the user's — no shift, no clobber");
+  });
+});
+
+describe("THE SPELL ARM: wired stage inputs ride tensor slots, never loaders (the naming law's merge half, 2026-10-09)", () => {
+  it("a spelled anchor/last-frame/reference rides verbatim — the merge lands the producer tensor; no Load* is built for a spell", () => {
+    // Before the arm, the ports validated green at the lattice and
+    // the graph still built LoadImage("$gen") — the merge's ROW-4
+    // refused the producer link in the file slot (the
+    // validate-said-nothing disease). Now a '$name' IS the tensor:
+    // the resizer's image input carries the raw spell, and the
+    // graph holds NO LoadImage/LoadVideo/LoadAudio for it.
+    const out = graphOf({
+      image: "$gen",
+      last_frame: "$end",
+      ref_images: ["$refimg"],
+      ref_videos: ["$refvid"],
+      ref_audios: ["$refaud"],
+      calls: [SHOT()],
+    }, "run_spells");
+    const b = bundleIn(out);
+    // input_1 (the anchor) traces to the RAW spell, not a loader
+    const anchorLink = out[b].inputs["input_1"] as unknown;
+    const anchorSrc = (out[Array.isArray(anchorLink) ? anchorLink[0] : ""]?.inputs ?? {})["image"];
+    assert.equal(anchorSrc, "$gen", "the anchor rides the producer tensor (the raw spell)");
+    // the spelled end anchor and image ref ride the resizer's image input
+    for (const slot of ["input_2", "input_3"]) {
+      const link = out[b].inputs[slot] as [string, number];
+      const resizer = out[link[0]];
+      assert.equal(resizer?.class_type, "UnifiedResizeImageMask", `${slot} still resizes`);
+      assert.equal(resizer.inputs["image"], slot === "input_2" ? "$end" : "$refimg", `${slot} rides the spell, not a loader`);
+    }
+    // the spelled motion guide rides GetVideoComponents' video input
+    const comp = Object.values(out).find((n) => n.class_type === "GetVideoComponents");
+    assert.ok(comp, "the video components node builds");
+    assert.equal(comp.inputs["video"], "$refvid", "the motion guide rides the producer's video tensor");
+    // the spelled sound reference rides the bundle's audio seat directly
+    assert.equal(out[b].inputs["input_16"], "$refaud", "the sound reference rides the producer's audio tensor");
+    // NO loader anywhere carries a spell (the ROW-4 death is structurally gone)
+    for (const n of Object.values(out)) {
+      if (n.class_type.startsWith("Load")) {
+        for (const v of Object.values(n.inputs)) {
+          assert.equal(typeof v === "string" && v.startsWith("$"), false, `no spell in a ${n.class_type} slot`);
+        }
+      }
+    }
+  });
+
+  it("file paths keep the Load* disk handoff (the per-stage path owns those)", () => {
+    const out = graphOf({
+      image: "/m/first.png",
+      ref_videos: ["/m/guide.mp4"],
+      ref_audios: ["/m/tone.flac"],
+      calls: [SHOT()],
+    }, "run_paths");
+    const b = bundleIn(out);
+    const comp = Object.values(out).find((n) => n.class_type === "GetVideoComponents");
+    const vidLink = comp?.inputs["video"] as [string, number] | undefined;
+    assert.ok(Array.isArray(vidLink), "the path loads through a LoadVideo tensor link");
+    assert.equal(out[vidLink[0]].class_type, "LoadVideo");
+    assert.equal((out[vidLink[0]].inputs as Record<string, unknown>)["file"], "/m/guide.mp4");
+    const audLink = out[b].inputs["input_16"] as [string, number] | undefined;
+    assert.equal(out[audLink[0]].class_type, "LoadAudio");
+    assert.equal((out[audLink[0]].inputs as Record<string, unknown>)["audio"], "/m/tone.flac");
   });
 });

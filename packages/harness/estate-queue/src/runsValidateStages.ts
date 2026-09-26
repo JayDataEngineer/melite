@@ -456,7 +456,13 @@ export function kindsOk(
       }
       const upstreamKind: string = upstream.get(inp.edge.output) as string; // the has() above proves presence
       const receivingKind: string = effectiveExpected.get(inp.name) as string; // the match above proves presence
-      if (upstreamKind !== receivingKind) {
+      // THE LIST LAW (the naming law's lattice half, 2026-10-09): a
+      // `_list` seat ACCUMULATES producers of its singular kind —
+      // an image producer feeds an image_list port, a video producer
+      // a video_list, an audio producer an audio_list (the picker's
+      // own edge law, stated at the lattice too; before this, the
+      // strict equality refused exactly the wire the picker offers).
+      if (upstreamKind !== receivingKind && upstreamKind + "_list" !== receivingKind) {
         throw new FlowError(
           "flow " +
             JSON.stringify(flowId) +

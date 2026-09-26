@@ -237,10 +237,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // artifact to the list. Without this arm the exact-kind match
     // below emptied the picker the day the port was declared (no
     // stage outputs kind image_list); with raw-candidates fallback
-    // it would list VIDEO stages as image references. A list seat
-    // accepts the singular kind, nothing else.
+    // it would list VIDEO stages as image references. THE
+    // GENERALIZED FORM (2026-10-09, the naming-law census): EVERY
+    // `_list` seat accepts its singular kind — video_list accepts
+    // video producers (h3's ref_videos), audio_list audio
+    // producers (h3's ref_audios). Nothing else.
     const accepts = (out: string | undefined): boolean =>
-      out === kind || (kind === 'image_list' && out === 'image')
+      out !== undefined && (out === kind || out + '_list' === kind)
     return candidates.filter((c) => {
       const row = others.find((s) => s.id === c.id)
       const cardId = String(row?.card ?? '')

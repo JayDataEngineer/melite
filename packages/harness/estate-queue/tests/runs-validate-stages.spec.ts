@@ -203,6 +203,39 @@ describe("kindsOk (the kind-matching passes)", () => {
     expect(() => kindsOk("f1", [gen, liar], { comfyui: "image" }, namedCards as never))
       .toThrow(/input "image2".*contradicts card/);
   });
+  it("THE LIST LAW (the naming law's lattice half): a _list seat accepts its singular producer — video feeds video_list, image feeds image_list — and the wrong singular still refuses loud", () => {
+    // "fix it all" (2026-10-09): the picker's edge law finally
+    // generalized, the lattice refused the exact wire it offered —
+    // h3's ref_videos could never be fed by a video stage. The
+    // receiving kind `X_list` accepts producer kind `X`.
+    const namedCards = {
+      defsSync: () => new Map([["film-card", {
+        requiresModel: false,
+        schema: (): void => undefined,
+        flowKinds: {
+          inputs: { image: "image", ref_images: "image_list", ref_videos: "video_list", ref_audios: "audio_list" },
+          outputs: { default: "video" },
+          requiresModel: false,
+        },
+      }]]),
+    };
+    const filmInputs = (over: Record<string, { stage: string; output: string }>): StageRow =>
+      kstage("film", { card: "film-card", inputs: over });
+    const img = kstage("img", { outputs: { default: "image" } });
+    const vid = kstage("vid", { outputs: { default: "video" } });
+    const aud = kstage("aud", { outputs: { default: "audio" } });
+    // every list seat accepts its singular producer
+    expect(() => kindsOk("f1", [img, vid, aud, filmInputs({
+      ref_images: { stage: "img", output: "default" },
+      ref_videos: { stage: "vid", output: "default" },
+      ref_audios: { stage: "aud", output: "default" },
+    })], { comfyui: "image" }, namedCards as never)).not.toThrow();
+    // the WRONG singular refuses loud (an image is not a motion guide)
+    expect(() => kindsOk("f1", [img, filmInputs({
+      ref_videos: { stage: "img", output: "default" },
+    })], { comfyui: "image" }, namedCards as never))
+      .toThrow(/expected video_list, got image.*must be video_list/);
+  });
   it("matched kinds pass; mismatched kinds refuse with the must-be voice", () => {
     const a = kstage("a", { outputs: { out: "image" } });
     const b = kstage("b", { inputs: { img: { stage: "a", output: "out" } }, expected: { img: "image" } });

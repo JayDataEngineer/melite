@@ -99,7 +99,10 @@ describe("the motion compose gate", () => {
   });
 
   it("flow ports and semantic outputs name the real NPZ and optional GLB producers", () => {
-    assert.deepEqual(def.flowKinds.inputs, { prompt: "text", motion_npz: "data" });
+    // preview_glb joins (the naming-law census, 2026-10-09): the
+    // skinned character is a REAL wire seat — a prior motion
+    // stage's animated_glb (mesh) chains straight in.
+    assert.deepEqual(def.flowKinds.inputs, { prompt: "text", motion_npz: "data", preview_glb: "mesh" });
     assert.deepEqual(def.flowKinds.outputs, { motion_npz: "data", animated_glb: "mesh" });
     assert.equal(def.flowOutputBindings?.[0]?.channel, "motion_npz");
     assert.equal(def.flowOutputBindings?.[0]?.node, "KimodoTextToPose.0");

@@ -63,7 +63,11 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     sidebar: { key: 'motion', order: 9 },
     surface: { size: 'huge', layout: 'studio' },
     flowKinds: {
-      inputs: { prompt: 'text', motion_npz: 'data' },
+      // preview_glb joins the ports (the naming law's census,
+      // 2026-10-09): the character the motion skins onto is a REAL
+      // wire seat — a prior motion stage's animated_glb (mesh)
+      // chains straight in (motion → motion re-skinning).
+      inputs: { prompt: 'text', motion_npz: 'data', preview_glb: 'mesh' },
       outputs: { motion_npz: 'data', animated_glb: 'mesh' },
       requiresModel: false,
     },

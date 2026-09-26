@@ -79,7 +79,10 @@ describe("the tts compose gate", () => {
 
   it("flow ports and semantic outputs name text and SaveAudio", () => {
     // knob-aligned ports (the flow-contract law): port = `text`.
-    assert.deepEqual(def.flowKinds.inputs, { text: "text" });
+    // ref_audio joins (the naming-law census, 2026-10-09): the clone
+    // slot is a REAL wire seat — a music/sfx stage's audio output
+    // can voice it (variant-conditional at compose, loud).
+    assert.deepEqual(def.flowKinds.inputs, { text: "text", ref_audio: "audio" });
     // THE VOICES CHANNEL (the optional-channel law, 2026-09-25): the
     // static union declares both; the resolved set per run picks by
     // voice_name (a design run resolves voices, a plain run default).

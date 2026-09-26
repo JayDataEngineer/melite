@@ -1277,10 +1277,26 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     const refImages = refImagesAll.slice(0, imageCap)
     const refVideos = mergeDeclaredRefs(declaredVideos, wireList(refBag.videos)).slice(0, REF_CAPS.videos)
     const refAudios = mergeDeclaredRefs(declaredAudios, wireList(refBag.audios)).slice(0, REF_CAPS.audios)
-    const bundleInputs: Record<string, OutputHandle> = {}
-    let anchorRaw: OutputHandle | undefined
+    // a tensor carrier: a node's output handle, or the spell arm's
+    // raw '$name' wire value (the lanes-image grammar, local)
+    type TensorRef = OutputHandle | string
+    const bundleInputs: Record<string, TensorRef> = {}
+    // THE SPELL ARM (the naming law's merge half, 2026-10-09 — "fix
+    // it all"): a '$name' value names a WIRED STAGE INPUT, never a
+    // file on disk — the merge (rewriteSpells) lands the upstream
+    // producer's tensor link wherever the spell rides, and ROW-4
+    // refuses producer links in Load* file slots. So a spelled
+    // anchor/last-frame/reference rides its TENSOR slot verbatim
+    // and NEVER builds a loader; files/URLs/estate paths keep the
+    // Load* disk handoff (the per-stage path owns those). Before
+    // this arm the ports validated green at the lattice and died
+    // at the merge — the validate-said-nothing disease.
+    const isSpell = (s: string): boolean => s.startsWith('$')
+    const imageRef = (src: string): TensorRef =>
+      isSpell(src) ? src : g.node('LoadImage', { image: src }).out()
+    let anchorRaw: TensorRef | undefined
     if (guideImage !== '') {
-      anchorRaw = g.node('LoadImage', { image: guideImage }).out()
+      anchorRaw = imageRef(guideImage)
       bundleInputs.input_1 = g.node('UnifiedResizeImageMask', {
         image: anchorRaw, scale_mode: 'Shorter Side',
         aspect_ratio: 'Auto (Input Image)', long_side_target: 1024.0,
@@ -1293,7 +1309,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // i2v branch reads out(0)/out(1) as first/last frame verbatim.
     // Without an end anchor, refs ride from input_2 (legacy shelf).
     const resizeRef = (src: string): OutputHandle => g.node('UnifiedResizeImageMask', {
-      image: g.node('LoadImage', { image: src }).out(), scale_mode: 'Shorter Side',
+      image: imageRef(src), scale_mode: 'Shorter Side',
       aspect_ratio: 'Auto (Input Image)', long_side_target: 1024.0,
       short_side_target: 2048.0, width: 1024.0, height: 1024.0,
       multiplier: 1.0, megapixels: 1.0, upscale_method: 'lanczos',
@@ -1302,7 +1318,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     if (lastFrame !== '') bundleInputs.input_2 = resizeRef(lastFrame)
     const firstFreeSlot = lastFrame !== '' ? 3 : 2
     refImages.forEach((src, i) => {
-      const img = g.node('LoadImage', { image: src }).out()
+      const img = imageRef(src)
       if (anchorRaw === undefined && i === 0) anchorRaw = img
       bundleInputs[`input_${firstFreeSlot + i}`] = g.node('UnifiedResizeImageMask', {
         image: img, scale_mode: 'Shorter Side',
@@ -1313,13 +1329,21 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       }).out()
     })
     refVideos.forEach((src, i) => {
-      const vid = g.node('LoadVideo', { file: src }).out()
+      // the spelled motion guide rides GetVideoComponents' tensor
+      // input directly (the producer's pre-save video tensor); a
+      // path keeps the LoadVideo disk handoff.
+      const vid: TensorRef = isSpell(src) ? src : g.node('LoadVideo', { file: src }).out()
       const comp = g.node('GetVideoComponents', { video: vid })
       bundleInputs[`input_${10 + 2 * i}`] = comp.out(0)
       bundleInputs[`input_${11 + 2 * i}`] = comp.out(1)
     })
     refAudios.forEach((src, i) => {
-      bundleInputs[`input_${16 + i}`] = g.node('LoadAudio', { audio: src }).out()
+      // the spelled sound reference rides the bundle's audio seat
+      // directly (the producer's audio tensor); a path keeps
+      // LoadAudio.
+      bundleInputs[`input_${16 + i}`] = isSpell(src)
+        ? src
+        : g.node('LoadAudio', { audio: src }).out()
     })
     // the geometry resizer (i2v's dead branch): fed by the anchor, or
     // the first ref image, or — anchorless and imageless — pinned to
@@ -1792,9 +1816,27 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     surface: { size: 'huge', layout: 'studio' },
     flowKinds: {
       // THE RAIL (the operator's law, 2026-09-20): first frame +
-      // last frame + audio bed — one shared rail; the kinds are the
-      // SLOT kinds (the rail seats image/file slots, never names)
-      inputs: { image: 'image', last_frame: 'image' },
+      // last frame + the reference buses — one shared rail; the
+      // kinds are the SLOT kinds (the rail seats image/file slots,
+      // never names). THE NAMING LAW rider (2026-10-09, "fix it
+      // all"): the reference stacks are REAL input seats on the
+      // flow — ref_images accumulates image producers
+      // (image_list), ref_videos video producers (video_list),
+      // ref_audios audio producers (audio_list: a music/sfx/tts
+      // stage can voice the film). Before this the ports sat
+      // outside the input category entirely — the picker could
+      // not offer them and the lattice refused the wire. The
+      // renderer's guide-image spelling (image_name) is the
+      // retired alias: lattice-derivable for old graphs, offered
+      // by no face.
+      inputs: {
+        image: 'image',
+        last_frame: 'image',
+        ref_images: 'image_list',
+        ref_videos: 'video_list',
+        ref_audios: 'audio_list',
+      },
+      legacyAliases: { image_name: 'image' },
       outputs: { default: 'video' },
       requiresModel: false,
     },

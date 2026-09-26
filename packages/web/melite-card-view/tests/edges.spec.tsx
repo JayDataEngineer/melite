@@ -33,8 +33,10 @@ function edgeNarrow(
   return (f) => {
     const edge = spec.inputs.find((e) => e.name === f.name)
     if (edge === undefined) return rows.map(({ id, label, url }) => ({ id, label, url }))
+    // THE GENERALIZED LIST-SEAT LAW (2026-10-09): every `_list`
+    // seat accepts its singular kind — the production mirror.
     const accepts = (out: string): boolean =>
-      out === edge.kind || (edge.kind === 'image_list' && out === 'image')
+      out === edge.kind || out + '_list' === edge.kind
     return rows
       .filter((r) => {
         const outs = edgeMeta[r.card]?.outputs
@@ -204,4 +206,34 @@ test('THE LIST-SEAT LAW: the reference stack IS an input — its cells narrow by
   await waitFor(() => {
     expect(hostEdit).toHaveBeenCalledWith('reference_images', ['/melite-media/runs/r8/img/gen_00001_.png'])
   })
+})
+
+test('THE GENERALIZED LIST LAW: video_list accepts the film stage, audio_list the music stage — the wrong singular never serves (2026-10-09)', () => {
+  // the naming-law census: h3's ref_videos/ref_audios declare
+  // video_list/audio_list — the picker must offer the PRODUCERS of
+  // those singular kinds (a film feeds a motion guide, a music
+  // stage feeds a sound reference) and still refuse the wrong
+  // genre (an image is not a motion guide).
+  const spec = {
+    inputs: [
+      { name: 'ref_videos', kind: 'video_list' },
+      { name: 'ref_audios', kind: 'audio_list' },
+    ],
+  }
+  const edgeMeta = {
+    'image-gen': { outputs: { default: 'image' } },
+    'h3-timeline': { outputs: { default: 'video' } },
+    'music': { outputs: { default: 'audio' } },
+  }
+  const rows = [
+    { id: 's_img', card: 'image-gen', label: 'image-gen', url: '/melite-media/runs/r8/img/gen_00001_.png' },
+    { id: 's_vid', card: 'h3-timeline', label: 'h3-timeline', url: '/melite-media/runs/r9/h3/h3_t4_film_00001_.mp4' },
+    { id: 's_aud', card: 'music', label: 'music', url: '/melite-media/runs/r10/music/music_00001_.flac' },
+  ]
+  const candidatesFor = edgeNarrow(spec, edgeMeta, rows)
+  const names = (f: { name: string }): string[] => candidatesFor(f).map((c) => c.label)
+  expect(names({ name: 'ref_videos' })).toEqual(['h3-timeline'])
+  expect(names({ name: 'ref_audios' })).toEqual(['music'])
+  // the undeclared field keeps the raw list (the legacy arm)
+  expect(names({ name: 'unknown' })).toEqual(['image-gen', 'h3-timeline', 'music'])
 })

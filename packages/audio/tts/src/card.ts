@@ -118,7 +118,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // assertFlowContract pins port keys ⊆ schema keys — the knob
       // here is `text`, so the port is `text`; the §12 wall probe
       // wires the migrated channel).
-      inputs: { text: 'text' },
+      // ref_audio joins the ports (the naming law's census,
+      // 2026-10-09): the clone slot is a REAL wire seat — a
+      // music/sfx stage's audio output can voice it. The knob is
+      // variant-conditional (base only) — the wire is legal, the
+      // variant mismatch refuses loud at compose, never silently.
+      inputs: { text: 'text', ref_audio: 'audio' },
       // THE VOICES CHANNEL (2026-09-25, the optional-channel law):
       // a design run publishes BOTH its artifacts — the preview
       // flac (default) AND the persisted .qvoice (voices). The
