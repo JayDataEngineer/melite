@@ -18,6 +18,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { mediaVocab } from "./mediaKinds.ts";
+import { engineFilmName } from "./filmLead.ts";
 
 /** Leading-int read (sidecar tails): optional space, optional
  *  sign, then digits; 0 when no digits lead. */
@@ -243,7 +244,13 @@ export function runArtifacts(
   if (mediaTotal > listed) {
     arts.push({ truncated: true, listed, total: mediaTotal });
   }
-  return arts;
+  const marker = arts.find((art): boolean => art['truncated'] === true)
+  const named = arts.filter((art): boolean => art !== marker)
+  const film = engineFilmName(named.map((art) => art['name'] as string))
+  const ordered = film === null
+    ? named
+    : [named.find((art) => art['name'] === film)!, ...named.filter((art) => art['name'] !== film)]
+  return marker === undefined ? ordered : [...ordered, marker]
 }
 
 /** _run_thumbnail (editor_runs.433-444): cached poster wins, else

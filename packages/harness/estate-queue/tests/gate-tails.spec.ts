@@ -89,6 +89,16 @@ describe("modelValidateArm (the model envelope)", () => {
     id: "s_0", engine: "comfyui", inputs: {}, outputs: { out: "image" }, expected: {},
     card: "tts", card_io: { out: "image" }, skip_when: null, params, description: "d",
   });
+  // a legal stage row that is NOT a card stage: the walk's filter
+  // must skip it (plain engine stages compose through the engine)
+  const plainStage = (): Record<string, unknown> => {
+    const row = cardStage({});
+    row["id"] = "s_plain";
+    delete row["card"];
+    delete row["card_io"];
+    delete row["skip_when"];
+    return row;
+  };
   const regWith = (phase1Card: unknown, prime: boolean): Record<string, unknown> => ({
     defsSync: (): unknown => new Map([
       ["tts", { requiresModel: true, schema: (p: unknown): unknown => p }],
@@ -144,6 +154,109 @@ describe("modelValidateArm (the model envelope)", () => {
       expect(composed).toBe(false);
     } finally {
       await ctx.fiber.dispose();
+    }
+  });
+
+  it("THE WALK-SHAPE LAWS: non-card rows, a non-string model, a foreign throw, and an uncomposable seat each say what they did", async () => {
+    // 1. legal NON-card stages are skipped, never composed
+    {
+      const ctx = new Context();
+      let composed = false;
+      (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
+        (): Promise<unknown> => { composed = true; return Promise.resolve({}); },
+        true,
+      );
+      try {
+        const out = await validate(
+          { flow_inline: { id: "bench", stages: [plainStage(), { ...plainStage(), id: "s_blank", card: "" }] } },
+          new AbortController().signal,
+          ctx,
+        ) as Record<string, unknown>;
+        expect(out["ok"]).toBe(true);
+        expect(out["note"]).toBeUndefined();
+        expect(composed).toBe(false);
+        // and a NON-object row refuses in the DOOR's own voice, never a
+        // TypeError over it (2026-09-25: Object.keys(null) crashed)
+        for (const bad of [null, 42, "text", ["s"]]) {
+          await expect(validate(
+            { flow_inline: { id: "bench", stages: [bad] } },
+            new AbortController().signal,
+            ctx,
+          )).rejects.toThrow(/is not an object|must be an object/);
+        }
+        expect(composed).toBe(false);
+      } finally {
+        await ctx.fiber.dispose();
+      }
+    }
+    // 2. a NON-STRING model row (the card gate only demands presence)
+    // composes against the CARD name, never an empty or numeric mid
+    {
+      const ctx = new Context();
+      const mids: string[] = [];
+      (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
+        (body: Record<string, unknown>, mid: string): Promise<unknown> => {
+          mids.push(mid);
+          expect(body["model"]).toBe("tts");
+          return Promise.resolve({});
+        },
+        true,
+      );
+      try {
+        const out = await validate(
+          { flow_inline: { id: "bench", stages: [cardStage({ model: 5 })] } },
+          new AbortController().signal,
+          ctx,
+        ) as Record<string, unknown>;
+        expect(out["ok"]).toBe(true);
+        expect(mids).toEqual(["tts"]);
+      } finally {
+        await ctx.fiber.dispose();
+      }
+    }
+    // 3. a FOREIGN throw (not a CardArmError) is re-thrown as itself —
+    // the walk never rewrites another layer's bug as a refusal
+    {
+      const ctx = new Context();
+      (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
+        (): Promise<unknown> => Promise.reject(new TypeError("compose blew up")),
+        true,
+      );
+      try {
+        await expect(validate(
+          { flow_inline: { id: "bench", stages: [cardStage({ model: "qwen3-tts" })] } },
+          new AbortController().signal,
+          ctx,
+        )).rejects.toBeInstanceOf(TypeError);
+      } finally {
+        await ctx.fiber.dispose();
+      }
+    }
+    // 4. a registry that cannot compose (no phase1Card, or no
+    // primeObjectInfo) leaves validate usable: the walk reports
+    // nothing rather than refusing a bench seat. (A registry that
+    // cannot even DEFINE the schema is the door's own LOUD miswire —
+    // inlineArm refuses it before the walk is reached.)
+    const defs = (): unknown => new Map([
+      ["tts", { requiresModel: true, schema: (p: unknown): unknown => p }],
+    ]);
+    for (const reg of [
+      { defsSync: defs, primeObjectInfo: () => Promise.resolve(true) },
+      { defsSync: defs, phase1Card: () => Promise.resolve({}) },
+    ]) {
+      const ctx = new Context();
+      (ctx as unknown as { cardRegistry: unknown }).cardRegistry = reg;
+      try {
+        const out = await validate(
+          { flow_inline: { id: "bench", stages: [cardStage({ model: "qwen3-tts" })] } },
+          new AbortController().signal,
+          ctx,
+        ) as Record<string, unknown>;
+        expect(out["ok"]).toBe(true);
+        expect(out["note"]).toBeUndefined();
+      } finally {
+        await ctx.fiber.dispose();
+      }
     }
   });
 

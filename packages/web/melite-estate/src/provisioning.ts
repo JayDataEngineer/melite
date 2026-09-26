@@ -7,6 +7,7 @@ import {
   PinnedGitExtensionProvider,
   VerifiedArtifactWriter,
   ProvisioningService,
+  postManagerPip,
   type DeclarationPort,
   type ManagerInstallRequest,
   type ManagerModelInstallRequest,
@@ -75,6 +76,23 @@ function extensionKey(id: string): string {
   return `extension:${id}`;
 }
 
+function routeCoordinates(
+  ref: Extract<ResourceRef, { kind: "model" }>,
+  decl: ModelDecl,
+): { variant: string | null, quant: string | null } {
+  let variant = ref.variant ?? null;
+  let quant = ref.quant ?? null;
+  for (const candidate of decl.variants) {
+    if (variant === null && candidate.route === ref.id) variant = candidate.id;
+    for (const cell of candidate.cells) {
+      if (cell.route !== ref.id) continue;
+      if (variant === null) variant = candidate.id;
+      if (quant === null) quant = cell.quant;
+    }
+  }
+  return { variant, quant };
+}
+
 function familyPlan(
   ref: Extract<ResourceRef, { kind: "model" }>,
   decl: ModelDecl,
@@ -86,23 +104,29 @@ function familyPlan(
       items: rows.map((row) => modelPlanItem(ref, row, "direct")),
     };
   }
-  const resolved = modelsService().resolve(
-    ref.id,
-    ref.variant ?? null,
-    ref.quant ?? null,
-  );
+  const coordinates = routeCoordinates(ref, decl);
+  const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
   const artifact = resolved.cell?.artifact;
   if (artifact === undefined || artifact === null) {
     throw new Error(`model "${ref.id}" declares no downloadable provisions`);
   }
   const row: ProvisionRow = {
-    name: artifact.source_url.split("/").pop() ?? "",
+    name: artifact.source_url.split("/").pop() as string,
     url: artifact.source_url,
     folder: artifact.dest_sub,
     sha256: artifact.sha256,
     size_bytes: artifact.size_bytes,
   };
-  return { ref, items: [modelPlanItem(ref, row, "direct", ref.variant, ref.quant)] };
+  return {
+    ref,
+    items: [modelPlanItem(
+      ref,
+      row,
+      "direct",
+      coordinates.variant as string,
+      coordinates.quant as string,
+    )],
+  };
 }
 
 function modelPlanItem(
@@ -195,13 +219,9 @@ function lazyManager(): ManagerPort {
     });
     const git = new PinnedGitExtensionProvider({
       customNodesRoot: join(runtimeModelsRoot(resolveRepoRoot()).replace(/\/models$/u, ""), "custom_nodes"),
-       postInstall: async ({ requirements, signal }: { requirements: readonly string[]; signal?: AbortSignal }): Promise<void> => {
-         if (requirements.length > 0) {
-           await client.postText("/customnode/install/pip", requirements.join("\n"), {
-             ...(signal === undefined ? {} : { signal }),
-           });
-         }
-       },
+      postInstall: async ({ requirements, signal }: { requirements: readonly string[]; signal?: AbortSignal }): Promise<void> => {
+        await postManagerPip(client, requirements, signal);
+      },
     });
     provider = new ComfyUiManagerProvider(client, { git });
     return provider;
@@ -294,7 +314,7 @@ function declarationPort(ctx: Context): DeclarationPort {
             items: rows.map((row) => modelPlanItem(ref, row, "direct")),
           };
         }
-        return familyPlan(ref, modelsService().registryModel(ref.id));
+        return familyPlan(ref, modelsService().getModel(ref.id));
       }
       const row = extensionManifest(repoRoot).get(ref.id);
       if (row === undefined) throw new Error(`extension "${ref.id}" is not declared`);

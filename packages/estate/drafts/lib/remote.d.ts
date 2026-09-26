@@ -106,6 +106,28 @@ export declare function resultOutputUrls(result: unknown): string[];
  * url sets are equal — a re-run landing the same urls is not a new
  * history entry (the operator's "when it is unique"). */
 export declare function sameResultOutputs(a: unknown, b: unknown): boolean;
+/** THE WRITE-TIME MODEL ADMISSION (the no-silent-drop law's door):
+ *  the registry refuses a model the card does not offer — or a
+ *  boarded model the machine has not downloaded — the moment it
+ *  would land on the bench (add/patch/load), with the offered list
+ *  in the error. Registry-less lanes admit everything (the local
+ *  derive; never a silent throw on the serve path).
+ *
+ *  THE RESTORE REPAIR (operator law 2026-09-24 — receipt: loading
+ *  run-257737552c00's history refused "unknown model
+ *  'qwen3-tts-voicedesign-design'"; the era's compose wrote ids
+ *  today's registry never boarded, so the whole archive died at
+ *  the load door). A RESTORED row (provenance 'restored' — the
+ *  bench-load wand's stamp on every restore arm) whose model
+ *  refuses gets ONE schema-master repair: the registry's longest
+ *  boarded-family dash-prefix wins, a declared-variant suffix
+ *  restores the variant coordinate, era junk strips. The repair
+ *  mutates the row's params IN PLACE (the load lands repaired);
+ *  a repair that still refuses rethrows the ORIGINAL refusal. A
+ *  live-composed row (no provenance) never repairs — the loud
+ *  refusal with the board is the composer's teaching surface.
+ *  Exported for the wall (a pure factory over the resolver seat). */
+export declare function admissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
 /** The drafts Remote owner: list/get over the storage domain. */
 export declare class DraftsRemoteService extends TypertRemoteService {
     constructor(ctx: Context);

@@ -202,6 +202,24 @@ describe("start inline arm", () => {
     assert.match(err.message, /single-stage/);
   });
 
+  it("an inline dead source refuses before registration", async () => {
+    const s = seat();
+    const dead = "/melite-media/runs/run-aaaa1111-bb22cc33/edit/gone.png";
+    const err = await remote(() => s.svc.start(inlineBody({
+      flow_inline: {
+        id: "x",
+        stages: [{
+          id: "s",
+          engine: "comfyui",
+          params: { workflow: { n: { class_type: "LoadImage", inputs: { image: dead } } } },
+        }],
+      },
+    }), sig()));
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /gone\.png/);
+    assert.equal(s.core.runs.size, 0);
+  });
+
   it("runEngine: pre-seam rows (no engine stamp) read comfyui; stamped rows read their engine", async () => {
     const preSeam = { stages: [{ id: "s", name: "s", index: 0, status: "pending", outputs: {}, expected: {} }] } as unknown as RunRecord;
     const stamped = { stages: [{ id: "s", name: "s", index: 0, status: "pending", engine: "mcp:blender", outputs: {}, expected: {} }] } as unknown as RunRecord;
@@ -338,6 +356,21 @@ describe("start model arm", () => {
     params: {},
     spell: null,
   };
+  it("a dead source in a composed card refuses before registration", async () => {
+    const dead = "/melite-media/runs/run-aaaa1111-bb22cc33/edit/gone.png";
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => p1,
+      phase2Card: async (): Promise<unknown> => ({
+        graph: { n: { class_type: "LoadImage", inputs: { image: dead } } },
+        outputNodes: {},
+      }),
+    });
+    const err = await remote(() => s.svc.start({ draft_id: "d1", test: false, model: "m" }, sig()));
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /gone\.png/);
+    assert.equal(s.core.runs.size, 0);
+  });
+
   it("a model key with a NULLISH value rides the empty-mid coerce", async () => {
     // String(undefined ?? "") — the door's model-less card body:
     // phase-1 still probes with the coerced "" mid (a refusal

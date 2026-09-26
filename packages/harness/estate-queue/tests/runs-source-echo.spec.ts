@@ -12,6 +12,7 @@ import {
   parseMediaRef,
   parseSourceRef,
   resolveSourceRefs,
+  resolveMediaRefs,
 } from "../src/runsSourceEcho.ts";
 import { registerCompiledRun } from "../src/runsStart.ts";
 import type { CompiledStage } from "../src/runsStart.ts";
@@ -117,6 +118,12 @@ describe("collectSourceRefs (every face the stager stages)", () => {
       [],
     );
   });
+
+  it("does not revisit a cyclic params object", () => {
+    const cycle: Record<string, unknown> = {};
+    cycle["self"] = cycle;
+    assert.deepEqual(collectSourceRefs(cycle), []);
+  });
 });
 
 describe("parseMediaRef", () => {
@@ -154,6 +161,16 @@ describe("parseSourceRef (faces + the servable fence)", () => {
       "_poster.jpg",
     );
   });
+
+  it("refuses invalid run heads, confined segments, NUL absolutes, and non-run media", () => {
+    assert.throws(() => parseSourceRef("not-a-run/file.png"), /not a source pointer/);
+    assert.throws(() => parseSourceRef("%zz/file.png"), /not a source pointer/);
+    assert.throws(() => parseSourceRef("/melite-media/runs/run-aaaa1111-bb22cc33/./x.png"), /traversal/);
+    assert.throws(() => parseSourceRef("/melite-media/runs/run-aaaa1111-bb22cc33/a%00.png"), /traversal/);
+    assert.throws(() => parseSourceRef("/melite-media/runs/run-aaaa1111-bb22cc33//x.png"), /traversal/);
+    assert.throws(() => parseSourceRef("/tmp/a\0.png"), /NUL/);
+    assert.throws(() => parseMediaRef("/tmp/a.png"), /not a run source/);
+  });
 });
 
 describe("resolveSourceRefs", () => {
@@ -182,6 +199,20 @@ describe("resolveSourceRefs", () => {
         e.message.includes("gone.flac") &&
         e.message.includes(root),
     );
+  });
+
+  it("a parse refusal joins the aggregate dead-source voice", () => {
+    const root = tmp();
+    assert.throws(
+      () => resolveSourceRefs(["not-a-run/file.png"], [root]),
+      (e: Error) => /resolve nowhere/.test(e.message) && /not a source pointer/.test(e.message),
+    );
+  });
+
+  it("the media wrapper resolves the same run faces", () => {
+    const root = rooted("run-aaaa1111-bb22cc33", "edit/a.png");
+    const rows = resolveMediaRefs(["/melite-media/runs/run-aaaa1111-bb22cc33/edit/a.png"], [root]);
+    assert.equal(rows[0]?.file, join(root, "output", "run-aaaa1111-bb22cc33", "edit/a.png"));
   });
 
   it("a run dir without the file is a miss (the dir alone proves nothing)", () => {

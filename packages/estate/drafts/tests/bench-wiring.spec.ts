@@ -1,6 +1,6 @@
 import { describe, test } from "vitest";
 import assert from "node:assert/strict";
-import { ensureBench, getBench, patchBench, addStageBench, rewireBench } from "../src/bench.ts";
+import { ensureBench, getBench, patchBench, addStageBench, rewireBench, removeStageBench } from "../src/bench.ts";
 import { boot, codeOf } from "./bench-helpers.ts";
 
 // ── the wiring admission (2026-09-15, the phantom-wire cure) ─────
@@ -203,3 +203,46 @@ describe("the wiring admission (phantom wires refuse at write time)", () => {
     const params = (b as unknown as { params: Record<string, unknown> }).params;
     assert.equal(params.image1, "$image", "spell unchanged");
   });
+
+// ── the intent heuristic's three shapes (2026-09-26) ────────────
+// syncIntent keeps the bench's INTENT pointing at a card the bench
+// still holds: a remove that takes the intent card re-points it at a
+// card that remains, and a remove that does not leaves it alone. A
+// bench that never declared an intent ("bench") is not sync'd at all.
+describe("the intent heuristic (a removed intent re-points, a kept one stands)", () => {
+  test("remove the intent card and the intent walks back to a card that remains", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    await addStageBench(drafts, "s", { card: "image-edit", expect_rev: 1 });
+    // the LOAD arm is the door that re-points a live bench's intent
+    const cur = getBench(drafts, "s");
+    await ensureBench(drafts, { session: "s", stages: cur.stages, intent: "image-gen", overwrite: true, expect_rev: cur.rev });
+    assert.equal(getBench(drafts, "s").intent, "image-gen");
+    await removeStageBench(drafts, "s", { stage: "s_0", expect_rev: getBench(drafts, "s").rev });
+    assert.equal(
+      getBench(drafts, "s").intent,
+      "image-edit",
+      "the intent card is gone — it names a card the bench still holds",
+    );
+  });
+
+  test("removing a card the intent does not name leaves the intent alone", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    await addStageBench(drafts, "s", { card: "image-edit", expect_rev: 1 });
+    const cur = getBench(drafts, "s");
+    await ensureBench(drafts, { session: "s", stages: cur.stages, intent: "image-edit", overwrite: true, expect_rev: cur.rev });
+    await removeStageBench(drafts, "s", { stage: "s_0", expect_rev: getBench(drafts, "s").rev });
+    assert.equal(getBench(drafts, "s").intent, "image-edit");
+  });
+
+  test("a bench that never declared an intent is left as it was", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    assert.equal(getBench(drafts, "s").intent, "bench");
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    assert.equal(getBench(drafts, "s").intent, "bench");
+  });
+});

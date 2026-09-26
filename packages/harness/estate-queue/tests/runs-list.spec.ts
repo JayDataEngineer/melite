@@ -14,6 +14,7 @@ import {
   artifactType,
   firstQuery,
   listRuns,
+  listRunsAcross,
   mediaCandidates,
   parseIntOrNull,
   runArtifacts,
@@ -271,6 +272,21 @@ describe("runArtifacts", () => {
     assert.equal(img["bytes"], 3);
   });
 
+  it("the engine film leads H3 media before audio and window artifacts", () => {
+    const root = tmp();
+    for (const name of [
+      "h3_t4_w1_00001_.mp4",
+      "h3_t4_film_audio_00001.flac",
+      "h3_t4_film_00002_.mp4",
+    ]) writeFileSync(join(root, name), name);
+    const arts = runArtifacts(root, "run-x") as Record<string, unknown>[];
+    assert.deepEqual(arts.map((art) => art["name"]), [
+      "h3_t4_film_00002_.mp4",
+      "h3_t4_film_audio_00001.flac",
+      "h3_t4_w1_00001_.mp4",
+    ]);
+  });
+
   it("the literal without a slash rides whole; dangling links DROP (a dead artifact never kills the row)", () => {
     const root = tmp();
     writeFileSync(join(root, "b.png"), "bb");
@@ -466,6 +482,45 @@ describe("listRuns envelope", () => {
       count: 0,
       runs: [],
     });
+  });
+
+  it("carries export stamps when the sidecar declares them", async () => {
+    const state = tmp();
+    const dir = join(state, "output", "run-export");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      status: "completed",
+      pipeline: "voice",
+      prompt: "hello",
+      seed: 7,
+      created_at: 100,
+      export_name: "night-keeper",
+      export_path: "/mnt/voices/night-keeper.qvoice",
+    }));
+    const { runs } = await listRuns(state, 10, async () => true);
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0]!["export_name"], "night-keeper");
+    assert.equal(runs[0]!["export_path"], "/mnt/voices/night-keeper.qvoice");
+  });
+
+  it("serves the first manifest row when run ids collide", async () => {
+    const first = tmp();
+    const second = tmp();
+    for (const [state, pipeline] of [[first, "first"], [second, "second"]] as const) {
+      const dir = join(state, "output", "run-same");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+        status: "completed",
+        pipeline,
+        seed: 1,
+        created_at: 1,
+      }));
+    }
+    const result = await listRunsAcross([first, second], 10, async () => true);
+    assert.equal(result.count, 2);
+    assert.equal(result.runs.length, 1);
+    assert.equal(result.runs[0]!["flow"], "first");
+    assert.equal(result.runs[0]!["served_from"], first);
   });
 
   it("the media ent sorts first even when it reads first (the comparator's b road)", async () => {

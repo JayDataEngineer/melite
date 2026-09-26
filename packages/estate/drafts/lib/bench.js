@@ -12,6 +12,7 @@
 //   APPEND-ONLY LOG — load appends a revert-carrying entry; history
 //   is never rewritten (patch/undo arms land in later strokes).
 //   AUTHORSHIP — every entry carries author ("agent"|"user").
+import { unwrapItemArrays } from '@melite/comfyui-card-kit';
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 /** Session key gate: same charset family as draft ids, capped so
  * "bench-" + session always clears the 96-char draft ceiling. */
@@ -77,6 +78,9 @@ function normalizeStages(stagesIn, author) {
             row["engine"] = "comfyui";
         if (!isRecord(row["inputs"]))
             row["inputs"] = {};
+        // the load arm's rows cross the same remote encoding — the
+        // store-seat unwrap applies here too (wireParams law)
+        row["params"] = wireParams(row["params"]);
         if (!isRecord(row["params"]))
             row["params"] = {};
         if (!isRecord(row["outputs"]))
@@ -115,11 +119,27 @@ export async function ensureBench(drafts, body, admit) {
     if (rec === undefined) {
         const stagesIn = Array.isArray(body["stages"]) ? body["stages"] : [];
         admitStages(admit, stagesIn);
-        admitWiringList(normalizeStages(stagesIn, author), session);
+        // A BENCH IS BORN CLEAN OF ARCHIVES (the cross-bench history
+        // leak, 2026-09-23 — live proof bench-session-2bd2a61f): the
+        // wand restores onto fresh sessions carrying stage rows from a
+        // FOREIGN bench's run snapshot; archives (history,
+        // resultParams, runStatus, resolved — the observe state THIS
+        // bench's own runs earn) never survive a birth. The one lawful
+        // birth memory is `result` — the wand's preview stamp for the
+        // ran card. The LOAD arm keeps the stage memory law whole
+        // (same-id carry + fill-never-clobber).
+        const born = normalizeStages(stagesIn, author);
+        for (const row of born) {
+            delete row["history"];
+            delete row["resultParams"];
+            delete row["runStatus"];
+            delete row["resolved"];
+        }
+        admitWiringList(born, session);
         const doc = {
             draft_id: draftId,
             intent: typeof body["intent"] === "string" ? body["intent"] : "bench",
-            stages: normalizeStages(stagesIn, author),
+            stages: born,
             status: "ready",
             createdAt: Date.now(),
             completedAt: null,
@@ -343,7 +363,7 @@ export async function patchBench(drafts, session, body, admit) {
         : "agent";
     const before = {};
     const added = [];
-    const paramsIn = body["params"];
+    const paramsIn = wireParams(body["params"]);
     if (paramsIn !== undefined) {
         if (!isRecord(paramsIn)) {
             throw new RemoteError("bench/bad-body", "params must be an object", {});
@@ -360,12 +380,27 @@ export async function patchBench(drafts, session, body, admit) {
                 before[k] = cur[k];
             else
                 added.push(k);
-            cur[k] = paramsIn[k];
+            // THE NULL-UNSET ARM (2026-09-24, commission 033's gap: "patch
+            // can't unset a param — a lane switch forced remove_stage +
+            // add_stage where one clear-semantics patch would do"). The
+            // drafts door has ALWAYS deleted null keys (JSON Merge Patch
+            // law, draft.ts's own doc: "null params values ride VERBATIM —
+            // the door's JSON Merge Patch arm deletes those keys"); this
+            // door landed them as literal nulls instead — a key that could
+            // never be cleared, only overwritten. Null now deletes here
+            // too: one law, two doors. The inverse restores from
+            // params_before, so undo resurrects a deleted key.
+            const v = paramsIn[k];
+            if (v === null)
+                delete cur[k];
+            else
+                cur[k] = v;
         }
         // admission on the MERGED view (the row's card + the params the
         // NEXT run would compose — a patch that lands poison is as bad
-        // as an add that lands it)
-        admitStage(admit, st["card"], cur);
+        // as an add that lands it); the row's own provenance rides (a
+        // restored row patches under restore law)
+        admitStage(admit, st["card"], cur, st["provenance"]);
         // THE WIRING ADMISSION (phantom-wire cure): a params patch can
         // orphan a spell (drop the $image binding while the wire stays)
         // or strand a wire (introduce $image with no channel) — the
@@ -395,7 +430,16 @@ export async function patchBench(drafts, session, body, admit) {
     };
 }
 const ADD_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expected", "expect_rev", "author"];
-function admitStage(admit, card, params) {
+/** THE WIRE UNWRAP AT THE STORE SEAT (attempt-035's Probe B
+ * receipt, 2026-09-24): the remote transport encodes free-form
+ * arrays as `{item:[…]}` — the tool seat unwraps what IT sees, but
+ * the encoded shape re-forms crossing the remote boundary and
+ * storage held the wrap (the live bench read showed it verbatim).
+ * Every params-bearing WRITE walks the unwrap — the doc stores
+ * clean, reads and compose never see the poison, Probe B reads a
+ * true array. */
+const wireParams = (v) => (isRecord(v) ? unwrapItemArrays(v) : v);
+function admitStage(admit, card, params, provenance = undefined) {
     if (admit === undefined)
         return;
     if (typeof card !== "string" || card === "")
@@ -404,7 +448,7 @@ function admitStage(admit, card, params) {
     // add sailed past admission entirely) — admit the card against
     // empty params; the model check passes vacuous, the card check
     // still bites.
-    admit(card, isRecord(params) ? params : {});
+    admit(card, isRecord(params) ? params : {}, provenance);
 }
 /** Admission over a wholesale stage list (the load arm — every row
  *  passes the same door an add passes). */
@@ -414,7 +458,7 @@ function admitStages(admit, stages) {
     for (const s of stages) {
         if (!isRecord(s))
             continue;
-        admitStage(admit, s["card"], s["params"]);
+        admitStage(admit, s["card"], s["params"], s["provenance"]);
     }
 }
 // ── THE WIRING ADMISSION (2026-09-15, the phantom-wire cure) ───────
@@ -542,7 +586,7 @@ export async function addStageBench(drafts, session, body, admit) {
         engine: typeof body["engine"] === "string" && body["engine"] !== ""
             ? body["engine"]
             : "comfyui",
-        params: isRecord(body["params"]) ? body["params"] : {},
+        params: isRecord(wireParams(body["params"])) ? wireParams(body["params"]) : {},
         inputs: isRecord(body["inputs"]) ? body["inputs"] : {},
         outputs: isRecord(body["outputs"]) ? body["outputs"] : { default: "image" },
         provenance: author,

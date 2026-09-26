@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { lanePackFolders, lanePresenceRefusal } from "../src/cardsLanes.ts";
+import { laneFilesStatus, lanePackFolders, lanePresenceRefusal } from "../src/cardsLanes.ts";
 import { getModel } from "@melite/comfyui-cordis";
 
 const DIR = join(tmpdir(), "melite-lanes-" + process.pid);
@@ -64,6 +64,16 @@ describe("lanePackFolders (the pack homes, one truth with the mount leg)", () =>
     writeFileSync(CFG, "{not json");
     process.env["COMFYUI_ENDPOINT_CONFIG"] = CFG;
     assert.deepEqual([...lanePackFolders()], []);
+  });
+});
+
+describe("laneFilesStatus", () => {
+  it("uses the endpoint store when no checker is supplied", () => {
+    arm(null);
+    const dir = join(MODELS, "checkpoints");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "present.bin"), "x");
+    assert.equal(laneFilesStatus({ lane_inputs: { checkpoint: "present.bin" } }), true);
   });
 });
 

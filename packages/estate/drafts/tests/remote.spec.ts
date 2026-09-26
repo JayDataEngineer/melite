@@ -558,6 +558,20 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     assert.equal((doc["bench"] as Record<string, unknown>)["rev"], 0);
   });
 
+  test("an empty params object logs the stable params summary", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, {
+      session: "empty-params",
+      stages: [{ id: "s_0", params: { keep: 1 } }],
+    });
+    const svc = new DraftsRemoteService(ctx);
+    const answer = await svc.patch("bench-empty-params", "s_0", { params: {} }, null, sig);
+    assert.equal(answer.rev, 1);
+    const doc = await svc.get("bench-empty-params", sig);
+    const bench = doc["bench"] as { log: Array<Record<string, unknown>> };
+    assert.equal(bench.log.at(-1)?.["summary"], "params");
+  });
+
   test("THE TELEMETRY LAW: a runStatus-only patch lands the status and NEVER bumps rev nor logs (operator 2026-10-08: rev kept ticking while merely generating)", async () => {
     const { ctx, domain } = await bootCtx();
     await ensureBench(domain, { session: "rs", stages: [{ id: "s_0" }] });

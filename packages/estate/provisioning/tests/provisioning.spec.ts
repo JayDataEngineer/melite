@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import {
+  ManagerProviderError,
   ProvisioningError,
   ProvisioningService,
   VerifiedArtifactWriter,
@@ -291,6 +292,104 @@ describe("provisioning service", () => {
     assert.equal(result.items[1]?.outcome, "failed");
     assert.equal(existsSync(join(store, "checkpoints", "good.bin")), true);
     assert.equal(existsSync(join(store, "checkpoints", "bad.bin")), false);
+  });
+
+  test("surfaces the Manager model-unregistered refusal as the named blocked item", async () => {
+    const store = root();
+    const ref = modelRef({ id: "mask" });
+    const item = modelItem({
+      key: "model:card:mask:rt_detr_v4-x-hgnet_fp32.safetensors",
+      owner: "card",
+      name: "rt_detr_v4-x-hgnet_fp32.safetensors",
+      folder: "diffusion_models",
+      url: "https://huggingface.co/Comfy-Org/SDPose/resolve/main/diffusion_models/rt_detr_v4-x-hgnet_fp32.safetensors",
+    });
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor({ ref, items: [item] }),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      manager: {
+        install: async () => ({ installed: true }),
+        installModel: async () => {
+          throw new ManagerProviderError(
+            "model-unregistered",
+            "ComfyUI-Manager external-model catalog does not contain exactly one row for diffusion_models/rt_detr_v4-x-hgnet_fp32.safetensors",
+          );
+        },
+      },
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "blocked");
+    assert.equal(result.items[0]?.outcome, "blocked");
+    assert.equal(result.items[0]?.errorCode, "manager/model-unregistered");
+    assert.equal(existsSync(join(store, "diffusion_models", item.name)), false);
+  });
+
+  test("rejects Manager-landed bytes that fail the declared digest after the queue", async () => {
+    const store = root();
+    const ref = modelRef({ id: "sam2" });
+    const item = modelItem({
+      id: "sam2",
+      name: "sam2.1_hiera_large.pt",
+      folder: "sams",
+      url: "https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt",
+    });
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor({ ref, items: [item] }),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      manager: {
+        install: async () => ({ installed: true }),
+        installModel: async (request) => {
+          const destination = join(store, request.savePath, request.filename);
+          mkdirSync(join(store, request.savePath), { recursive: true });
+          writeFileSync(destination, Buffer.from("wrong bytes"));
+          return { installed: true };
+        },
+      },
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "failed");
+    assert.equal(result.items[0]?.errorCode, "artifact/hash-mismatch");
+  });
+
+  test("keeps Manager model metadata out of the service request and verifies declared size after the queue", async () => {
+    const store = root();
+    const ref = modelRef({ id: "sam2" });
+    const item = modelItem({
+      key: "model:card:sam2:sam2.1_hiera_large.pt",
+      owner: "card",
+      id: "sam2",
+      name: "sam2.1_hiera_large.pt",
+      folder: "sams",
+      url: "https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt",
+      sizeBytes: BYTES.length + 1,
+    });
+    let received: unknown;
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor({ ref, items: [item] }),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      manager: {
+        install: async () => ({ installed: true }),
+        installModel: async (request) => {
+          received = request;
+          const destination = join(store, request.savePath, request.filename);
+          mkdirSync(join(store, request.savePath), { recursive: true });
+          writeFileSync(destination, BYTES);
+          return { installed: true };
+        },
+      },
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "failed");
+    assert.equal(result.items[0]?.errorCode, "artifact/size-mismatch");
+    const inspected = await service.inspect(ref);
+    assert.equal(inspected.items[0]?.errorCode, "artifact/size-mismatch");
+    assert.deepEqual(received, {
+      id: item.key,
+      name: item.name,
+      savePath: item.folder,
+      url: item.url,
+      filename: item.name,
+    });
   });
 
   test("records legal service state transitions and registers under provisioning", async () => {

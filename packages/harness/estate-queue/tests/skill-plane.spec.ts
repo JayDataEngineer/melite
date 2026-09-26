@@ -347,6 +347,23 @@ describe("buildSkillIndex + findSkill", () => {
     }
   });
 
+  it("orders selected family and card vocabulary by id", () => {
+    mkEstate();
+    const restore = seedBench([
+      { model: "m3" }, { model: "m1" }, { card: "c2" }, { card: "c1" },
+    ]);
+    try {
+      const idx = buildSkillIndex(ROOT) as {
+        families: Array<{ id: string }>;
+        cards: Array<{ id: string }>;
+      };
+      assert.deepEqual(idx.families.map((row) => row.id), ["m1", "m3"]);
+      assert.deepEqual(idx.cards.map((row) => row.id), ["c1", "c2"]);
+    } finally {
+      restore();
+    }
+  });
+
   it("envelope refusals rethrow; alien failures wrap", () => {
     mkEstate();
     const E = join(ROOT, "packages", "engines", "eng-a");

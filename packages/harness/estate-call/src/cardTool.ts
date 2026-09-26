@@ -76,6 +76,18 @@ function jsonArrayValue(value: unknown): unknown {
   }
 }
 
+export function normalizeJsonArrayParams(
+  params: Record<string, unknown>,
+  keys: readonly string[] | undefined,
+): Record<string, unknown> {
+  const normalized = { ...params }
+  for (const key of keys ?? []) {
+    const value = normalized[key]
+    if (value !== undefined) normalized[key] = jsonArrayValue(value)
+  }
+  return normalized
+}
+
 /** Build a card's tool face over the shared skeleton. Behavior is
  *  the six faces' verbatim common core — their tool.spec.ts walls
  *  pin it and must stay green unchanged. `timeoutMs` is left
@@ -155,20 +167,18 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
       const model = typeof a.model === 'string' ? a.model : DEFAULT_MODEL
       const params: Record<string, unknown> = {}
       for (const [k, v] of Object.entries(a)) if (k !== 'model') params[k] = v
+      const normalizedParams = normalizeJsonArrayParams(params, spec.jsonArrayParams)
       // Declared JSON arrays and the per-card transform ride BEFORE
       // both doors; the draft params and start lift see the same body.
-      for (const key of spec.jsonArrayParams ?? []) {
-        const value = params[key]
-        if (value !== undefined) params[key] = jsonArrayValue(value)
-      }
-      spec.prepare?.(params)
+      const preparedParams = normalizedParams
+      spec.prepare?.(preparedParams)
       try {
         // DOOR ONE (compose — CARD BIRTH LAW): the stage doc names
         // the model as the stage's service; the params carry the
         // card's own surface.
         const draft = await gw( 'POST', '/v1/flows/drafts', {
           intent: FLOW,
-          stages: [{ title: label, kind: 'generation', service: model, params }],
+          stages: [{ title: label, kind: 'generation', service: model, params: preparedParams }],
         }, exec?.signal, timeoutMs)
         const draftId = typeof draft.draftId === 'string' ? draft.draftId : ''
         if (draftId === '') return { flow: FLOW, model, error: 'gateway draft POST returned no draftId' }
@@ -181,7 +191,7 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
         // envelope as the ONE params stanza. A params-less body
         // composes defaults only and refuses on required fields.
         const started = await gw( 'POST', '/v1/flows/start', {
-          ...params,
+          ...preparedParams,
           model,
           draft_id: draftId,
         }, exec?.signal, timeoutMs)

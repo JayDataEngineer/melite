@@ -180,9 +180,6 @@ async function pathKind(path: string): Promise<"missing" | "directory" | "file" 
 }
 
 async function confinedRoot(value: string): Promise<string> {
-  if (value.trim() === "") {
-    throw new PinnedGitError("invalid-request", "Custom-node root is required");
-  }
   await mkdir(value, { recursive: true });
   if (await pathKind(value) !== "directory") {
     throw new PinnedGitError("invalid-request", "Custom-node root must be a real directory");
@@ -254,14 +251,8 @@ export class PinnedGitExtensionProvider implements ManagerPort, PinnedGitExtensi
         }
       }
       if (validated.requirements.length > 0) {
-        if (postInstall === undefined) {
-          throw new PinnedGitError(
-            "invalid-request",
-            "Declared git requirements require a post-install adapter",
-          );
-        }
         try {
-          await postInstall({
+          await postInstall!({
             directory: destination,
             requirements: validated.requirements,
             ...(signal === undefined ? {} : { signal }),

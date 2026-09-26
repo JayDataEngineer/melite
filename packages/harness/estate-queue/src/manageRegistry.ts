@@ -31,6 +31,7 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
     "manage/refused": {
       readonly action?: string;
       readonly status?: number;
+      readonly code?: string;
       readonly data?: unknown;
     };
   }
@@ -61,14 +62,16 @@ export class ManageGatewayService extends Service {
         (this.ctx as unknown as {
           timeout(cb: () => void, ms: number): () => void;
         }).timeout(callback, delay),
+      signal,
     };
-    const [status, envelope] = await dispatchManage(doc, mctx);
+    const [status, envelope] = await dispatchManage(doc, mctx, signal);
     if (envelope.ok) return envelope;
     // A refusal IS the answer's shape: carry the envelope in the
     // RemoteError — the lane surfaces it as the tool's value.
     throw new RemoteError("manage/refused", envelope.detail, {
       action: envelope.action,
       status,
+      code: envelope.code,
       data: envelope.data,
     });
   }

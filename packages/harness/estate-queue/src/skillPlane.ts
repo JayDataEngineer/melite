@@ -193,7 +193,6 @@ export function buildSkillIndex(repo: string): Record<string, unknown> {
     const selectionEmpty = pickedCards.size === 0 && pickedModels.size === 0;
     // flows ride ONLY from the bench — and bench stages carry cards,
     // never flows; flow discovery is melite_discover's paid plane
-    const flows: { row: SkillRow }[] = [];
     if (selectionEmpty) {
       return {
         count: 0,
@@ -225,18 +224,17 @@ export function buildSkillIndex(repo: string): Record<string, unknown> {
         cards.set(cname, cell);
       }
     }
-    count += flows.length;
     const famRows: BindingRow[] = [...families.entries()]
       .map(([id, c]) => ({ id, genre: c.genre, skills: c.skills, entrance: c.entrance }))
-      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      .sort((a, b) => a.id.localeCompare(b.id));
     const cardRowsOut: BindingRow[] = [...cards.entries()]
       .map(([id, c]) => ({ id, genre: c.genre, skills: c.skills, entrance: c.entrance }))
-      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      .sort((a, b) => a.id.localeCompare(b.id));
     return {
       count,
       families: famRows,
       cards: cardRowsOut,
-      flows: { count: flows.length, ids: flows.map((f) => f.row.id) },
+      flows: { count: 0, ids: [] },
       note: "skills bind to their owner — open a card or family with melite_load to see its tier-1 skill lines; this index never lists skill rows",
     };
   } catch (e) {

@@ -9,6 +9,8 @@ import {
   FileOperationStore,
   InMemoryOperationStore,
   ManagerClientError,
+  ManagerProviderError,
+  postManagerPip,
   PinnedGitExtensionProvider,
   type GitCommandRunner,
   type ManagerInstallRequest,
@@ -199,18 +201,49 @@ describe("ManagerPort provider", () => {
     expect((await provider.install({ id: "operator-pack", url: "https://github.com/example/operator-pack.git" })).installed).toBe(true);
     assert.deepEqual(calls, [{
       path: "/customnode/install/git_url",
-      body: "https://github.com/example/operator-pack.git",
-      contentType: "text/plain",
+      body: JSON.stringify({ url: "https://github.com/example/operator-pack.git" }),
+      contentType: "application/json",
     }]);
   });
 
-  test("installs a model through the Manager queue API", async () => {
+  test("posts declared pip requirements as the Manager JSON body", async () => {
+    const calls: Array<{ path: string; body: unknown; contentType: string | undefined }> = [];
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      fetch: async (input, init): Promise<Response> => {
+        calls.push({
+          path: new URL(String(input)).pathname,
+          body: init?.body,
+          contentType: init?.headers?.["content-type"] as string | undefined,
+        });
+        return new Response(null, { status: 200 });
+      },
+    });
+    await postManagerPip(client, ["numpy==2.0.0", "safetensors"]);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.path, "/customnode/install/pip");
+    assert.deepEqual(JSON.parse(String(calls[0]?.body)), { packages: "numpy==2.0.0 safetensors" });
+    assert.equal(calls[0]?.contentType, "application/json");
+  });
+
+  test("installs the exact catalog-registered RT-DETR FP32 artifact through the Manager queue API", async () => {
+    const url = "https://huggingface.co/Comfy-Org/SDPose/resolve/main/diffusion_models/rt_detr_v4-x-hgnet_fp32.safetensors";
+    const catalogRow = {
+      name: "Comfy-Org/SDPose RT-DETRv4 X FP32",
+      type: "diffusion_model",
+      base: "SDPose",
+      save_path: "diffusion_models",
+      url,
+      filename: "rt_detr_v4-x-hgnet_fp32.safetensors",
+    };
     const calls: Array<{ readonly path: string; readonly body: unknown; readonly contentType: string | undefined }> = [];
     let queuePolls = 0;
     const fetcher: typeof globalThis.fetch = async (input, init): Promise<Response> => {
-      const path = new URL(String(input)).pathname;
+      const requestUrl = new URL(String(input));
+      const path = requestUrl.pathname + requestUrl.search;
       const body = typeof init?.body === "string" ? init.body : undefined;
       calls.push({ path, body, contentType: init?.headers?.["content-type"] as string | undefined });
+      if (path === "/externalmodel/getlist?mode=cache") return json({ models: [catalogRow] });
       if (path === "/manager/queue/install_model") return new Response(null, { status: 200 });
       if (path === "/manager/queue/start") return new Response(null, { status: 200 });
       if (path === "/manager/queue/status") {
@@ -224,26 +257,177 @@ describe("ManagerPort provider", () => {
       { queue: { timeoutMs: 100, pollIntervalMs: 1 } },
     );
     const result = await provider.installModel({
-      id: "model:family:one",
-      name: "one.safetensors",
-      type: "checkpoints",
-      savePath: "checkpoints",
-      url: "https://example.invalid/one.safetensors",
-      filename: "one.safetensors",
+      id: "model:card:mask:rt_detr_v4-x-hgnet_fp32.safetensors",
+      name: "rt_detr_v4-x-hgnet_fp32.safetensors",
+      savePath: "diffusion_models",
+      url,
+      filename: "rt_detr_v4-x-hgnet_fp32.safetensors",
     });
     assert.equal(result.installed, true);
     const queued = calls.find((call) => call.path === "/manager/queue/install_model");
     assert.deepEqual(JSON.parse(String(queued?.body)), {
-      name: "one.safetensors",
-      type: "checkpoints",
-      base: "default",
-      save_path: "checkpoints",
-      url: "https://example.invalid/one.safetensors",
-      filename: "one.safetensors",
-      ui_id: "model:family:one",
+      name: catalogRow.name,
+      type: catalogRow.type,
+      base: catalogRow.base,
+      save_path: catalogRow.save_path,
+      url,
+      filename: catalogRow.filename,
+      ui_id: "model:card:mask:rt_detr_v4-x-hgnet_fp32.safetensors",
     });
     assert.equal(queued?.contentType, "application/json");
-  });  test("refuses an unavailable exact version before queueing", async () => {
+  });
+
+  test("refuses the unregistered RT-DETR FP32 artifact before queueing, even when only FP16 is listed", async () => {
+    let queued = false;
+    const fetcher: typeof globalThis.fetch = async (input): Promise<Response> => {
+      const path = new URL(String(input)).pathname;
+      if (path === "/externalmodel/getlist") {
+        return json({
+          models: [{
+            name: "Comfy-Org/SDPose RT-DETRv4 X FP16",
+            type: "diffusion_model",
+            base: "SDPose",
+            save_path: "diffusion_models",
+            url: "https://huggingface.co/Comfy-Org/SDPose/resolve/main/diffusion_models/rt_detr_v4-x-hgnet_fp16.safetensors",
+            filename: "rt_detr_v4-x-hgnet_fp16.safetensors",
+          }],
+        });
+      }
+      if (path === "/manager/queue/install_model") queued = true;
+      return json({}, 200);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({ baseUrl: "http://127.0.0.1:8188", fetch: fetcher }),
+    );
+    await assert.rejects(
+      provider.installModel({
+        id: "model:card:mask:rt_detr_v4-x-hgnet_fp32.safetensors",
+        name: "rt_detr_v4-x-hgnet_fp32.safetensors",
+        savePath: "diffusion_models",
+        url: "https://huggingface.co/Comfy-Org/SDPose/resolve/main/diffusion_models/rt_detr_v4-x-hgnet_fp32.safetensors",
+        filename: "rt_detr_v4-x-hgnet_fp32.safetensors",
+      }),
+      (error: unknown) => error instanceof ManagerProviderError
+        && error.code === "model-unregistered"
+        && /diffusion_models\/rt_detr_v4-x-hgnet_fp32\.safetensors/u.test(error.message),
+    );
+    assert.equal(queued, false, "no direct or queue download is attempted for an unregistered artifact");
+  });
+
+  test("queues the Manager SAM2 row for the declared official Hugging Face URL", async () => {
+    const declaredUrl = "https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt";
+    const catalogUrl = "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt";
+    const catalogRow = {
+      name: "sam2.1_hiera_large.pt",
+      type: "sam2.1",
+      base: "SAM",
+      save_path: "sams",
+      url: catalogUrl,
+      filename: "sam2.1_hiera_large.pt",
+    };
+    const calls: Array<{ path: string; body: unknown }> = [];
+    const fetcher: typeof globalThis.fetch = async (input, init): Promise<Response> => {
+      const requestUrl = new URL(String(input));
+      const path = requestUrl.pathname + requestUrl.search;
+      calls.push({ path, body: typeof init?.body === "string" ? JSON.parse(init.body) as unknown : undefined });
+      if (path === "/externalmodel/getlist?mode=cache") return json({ models: [catalogRow] });
+      if (path === "/manager/queue/install_model") return new Response(null, { status: 200 });
+      if (path === "/manager/queue/start") return new Response(null, { status: 200 });
+      if (path === "/manager/queue/status") {
+        return json({ total_count: 1, done_count: 1, in_progress_count: 0, is_processing: false });
+      }
+      return json({}, 404);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({ baseUrl: "http://127.0.0.1:8188", fetch: fetcher }),
+      { queue: { timeoutMs: 100, pollIntervalMs: 1 } },
+    );
+    const result = await provider.installModel({
+      id: "model:card:mask:sam2.1_hiera_large.pt",
+      name: "sam2.1_hiera_large.pt",
+      savePath: "models//sams/",
+      url: declaredUrl,
+      filename: "sam2.1_hiera_large.pt",
+    });
+    assert.equal(result.installed, true);
+    assert.deepEqual(calls.find((call) => call.path === "/manager/queue/install_model")?.body, {
+      name: catalogRow.name,
+      type: "sam2.1",
+      base: "SAM",
+      save_path: "sams",
+      url: catalogUrl,
+      filename: catalogRow.filename,
+      ui_id: "model:card:mask:sam2.1_hiera_large.pt",
+    });
+  });
+
+  test("refuses an ambiguous external-model identity before queueing", async () => {
+    let queued = false;
+    const row = {
+      name: "sam2.1_hiera_large.pt",
+      type: "sam2.1",
+      base: "SAM",
+      save_path: "sams",
+      url: "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt",
+      filename: "sam2.1_hiera_large.pt",
+    };
+    const fetcher: typeof globalThis.fetch = async (input): Promise<Response> => {
+      const path = new URL(String(input)).pathname + new URL(String(input)).search;
+      if (path === "/externalmodel/getlist?mode=cache") {
+        return json({ models: [row, { ...row, base: "SAM2" }] });
+      }
+      if (path === "/manager/queue/install_model") queued = true;
+      return json({}, 200);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({ baseUrl: "http://127.0.0.1:8188", fetch: fetcher }),
+    );
+    await assert.rejects(
+      provider.installModel({
+        id: "model:card:mask:sam2.1_hiera_large.pt",
+        name: row.filename,
+        savePath: "sams",
+        url: row.url,
+        filename: row.filename,
+      }),
+      (error: unknown) => error instanceof ManagerProviderError && error.code === "model-unregistered",
+    );
+    assert.equal(queued, false);
+  });
+
+  test("refuses incomplete catalog metadata before queueing", async () => {
+    let queued = false;
+    const fetcher: typeof globalThis.fetch = async (input): Promise<Response> => {
+      const path = new URL(String(input)).pathname + new URL(String(input)).search;
+      if (path === "/externalmodel/getlist?mode=cache") {
+        return json({ models: [{
+          name: "sam2.1_hiera_large.pt",
+          type: "sam2.1",
+          save_path: "sams",
+          url: "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt",
+          filename: "sam2.1_hiera_large.pt",
+        }] });
+      }
+      if (path === "/manager/queue/install_model") queued = true;
+      return json({}, 200);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({ baseUrl: "http://127.0.0.1:8188", fetch: fetcher }),
+    );
+    await assert.rejects(
+      provider.installModel({
+        id: "model:card:mask:sam2.1_hiera_large.pt",
+        name: "sam2.1_hiera_large.pt",
+        savePath: "sams",
+        url: "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt",
+        filename: "sam2.1_hiera_large.pt",
+      }),
+      (error: unknown) => error instanceof ManagerProviderError && error.code === "model-metadata",
+    );
+    assert.equal(queued, false);
+  });
+
+  test("refuses an unavailable exact version before queueing", async () => {
     let queued = false;
     const fetcher: typeof globalThis.fetch = async (input): Promise<Response> => {
       const path = new URL(String(input)).pathname;

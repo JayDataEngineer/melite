@@ -4,6 +4,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { checkModelPresent, getModel, loadEndpointConfig, resolveRepoRoot } from "@melite/comfyui-cordis";
+import type { ModelDecl } from "@melite/comfyui-cordis";
 import { CardArmError } from "./cardsArmError.ts";
 
 // ── THE LANE PRESENCE GATE (2026-09-13, the one-pattern law) ───────
@@ -83,12 +84,15 @@ export function lanePresenceRefusal(fam: string): CardArmError | null {
  *  walk lanePresenceRefusal gates with, env-deferral stripped — the
  *  caller (the GPU receipt rows) decides what a miss means (a skip,
  *  never a cost signal). One loop, two seats, no divergence. */
-export function lanePresenceMiss(fam: string): CardArmError | null {
-  const decl = getModel(fam);
-  // fused guard (2026-09-19): non-string and blank lane rows skip
-  // in ONE v8-visible ternary — the old continue-chain reported
-  // dark under the v8 provider even while executing (instrument-
-  // proved mid-coverage-run); this shape keeps one truth.
+type LaneCheck = (folder: string, name: string) => string | null;
+
+type LaneMiss = {
+  readonly key: string;
+  readonly name: string;
+  readonly folders: readonly string[];
+};
+
+function firstLaneMiss(decl: Pick<ModelDecl, "lane_inputs">, check: LaneCheck): LaneMiss | null {
   const li = (decl.lane_inputs ?? {}) as Record<string, unknown>;
   const packs = lanePackFolders();
   for (const [key, stock] of Object.entries(LANE_FOLDERS)) {
@@ -99,18 +103,35 @@ export function lanePresenceMiss(fam: string): CardArmError | null {
       ...stock,
       ...packs.filter((p) => !stock.includes(p)),
     ];
-    const hit = folders.some(
-      (folder) => checkModelPresent("models/" + folder, name) !== null,
-    );
-    if (hit) continue;
-    const prov = (decl.provisions ?? []).find((p) => p.name === name);
-    return new CardArmError(
-      400,
-      "lane presence: family '" + fam + "' declares " + key + " '" + name +
-        "' but no store copy exists (folders checked: " + folders.join(", ") + ")" +
-        (prov !== undefined ? " — fetch it: " + prov.url : ""),
-      "lane_input_missing",
-    );
+    if (folders.some((folder) => check(folder, name) !== null)) continue;
+    return { key, name, folders };
   }
   return null;
+}
+
+export function laneFilesStatus(
+  decl: Pick<ModelDecl, "lane_inputs">,
+  check: LaneCheck = (folder, name) => checkModelPresent("models/" + folder, name),
+): boolean | null {
+  const li = (decl.lane_inputs ?? {}) as Record<string, unknown>;
+  const hasRows = Object.keys(LANE_FOLDERS).some((key) => {
+    const raw: unknown = li[key];
+    return typeof raw === "string" && raw.trim() !== "";
+  });
+  if (!hasRows) return null;
+  return firstLaneMiss(decl, check) === null;
+}
+
+export function lanePresenceMiss(fam: string): CardArmError | null {
+  const decl = getModel(fam);
+  const miss = firstLaneMiss(decl, (folder, name) => checkModelPresent("models/" + folder, name));
+  if (miss === null) return null;
+  const prov = (decl.provisions ?? []).find((p) => p.name === miss.name);
+  return new CardArmError(
+    400,
+    "lane presence: family '" + fam + "' declares " + miss.key + " '" + miss.name +
+      "' but no store copy exists (folders checked: " + miss.folders.join(", ") + ")" +
+      (prov !== undefined ? " — fetch it: " + prov.url : ""),
+    "lane_input_missing",
+  );
 }

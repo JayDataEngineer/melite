@@ -51,8 +51,6 @@ export interface ManagerInstallResult {
 export interface ManagerModelInstallRequest {
   readonly id: string;
   readonly name: string;
-  readonly type: string;
-  readonly base?: string;
   readonly savePath: string;
   readonly url: string;
   readonly filename: string;

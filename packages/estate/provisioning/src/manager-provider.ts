@@ -11,7 +11,11 @@ import {
   type ManagerQueueWaitOptions,
 } from "./manager-client.ts";
 
-export type ManagerProviderErrorCode = "invalid-request" | "pin-mismatch";
+export type ManagerProviderErrorCode =
+  | "invalid-request"
+  | "pin-mismatch"
+  | "model-unregistered"
+  | "model-metadata";
 
 export class ManagerProviderError extends Error {
   readonly code: ManagerProviderErrorCode;
@@ -42,6 +46,21 @@ interface RegistryRow {
   readonly pip: readonly string[];
 }
 
+interface ModelCatalogCandidate {
+  readonly savePath: string;
+  readonly filename: string;
+  readonly raw: Record<string, unknown>;
+}
+
+interface ModelCatalogRow {
+  readonly name: string;
+  readonly type: string;
+  readonly base: string;
+  readonly savePath: string;
+  readonly url: string;
+  readonly filename: string;
+}
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -66,6 +85,95 @@ function normalizedRepository(value: string): string {
   } catch {
     return trimmed;
   }
+}
+
+function normalizedModelSavePath(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (trimmed.startsWith("/") || trimmed.startsWith("\\") || trimmed.includes("\0")) {
+    return undefined;
+  }
+  const segments = trimmed.replace(/\\/gu, "/").split("/");
+  const clean = segments.filter((segment) => segment !== "" && segment !== ".");
+  if (clean.some((segment) => segment === "..")) return undefined;
+  const withoutRoot = clean[0] === "models" ? clean.slice(1) : clean;
+  const normalized = withoutRoot.join("/");
+  return normalized === "" || normalized === "models" ? "default" : normalized;
+}
+
+function normalizedModelFilename(value: string): string | undefined {
+  const normalized = value.trim();
+  if (
+    normalized === ""
+    || normalized === "."
+    || normalized === ".."
+    || normalized.includes("/")
+    || normalized.includes("\\")
+    || normalized.includes("\0")
+  ) {
+    return undefined;
+  }
+  return normalized;
+}
+
+function modelCatalogCandidates(value: unknown): readonly ModelCatalogCandidate[] {
+  if (!record(value) || !Array.isArray(value["models"])) {
+    throw new ManagerProviderError(
+      "model-metadata",
+      "ComfyUI-Manager external-model catalog has an invalid shape",
+    );
+  }
+  const candidates: ModelCatalogCandidate[] = [];
+  for (const raw of value["models"]) {
+    if (!record(raw)) continue;
+    const savePath = stringValue(raw["save_path"]);
+    const filename = stringValue(raw["filename"]);
+    if (savePath === undefined || filename === undefined) continue;
+    const normalizedSavePath = normalizedModelSavePath(savePath);
+    const normalizedFilename = normalizedModelFilename(filename);
+    if (normalizedSavePath === undefined || normalizedFilename === undefined) continue;
+    candidates.push({ savePath: normalizedSavePath, filename: normalizedFilename, raw });
+  }
+  return candidates;
+}
+
+function findModelCatalogRow(
+  value: unknown,
+  savePath: string,
+  filename: string,
+): ModelCatalogRow {
+  const matches = modelCatalogCandidates(value).filter(
+    (candidate) => candidate.savePath === savePath && candidate.filename === filename,
+  );
+  if (matches.length !== 1) {
+    throw new ManagerProviderError(
+      "model-unregistered",
+      `ComfyUI-Manager external-model catalog does not contain exactly one row for ${savePath}/${filename}`,
+    );
+  }
+  const raw = matches[0].raw;
+  const savePathValue = stringValue(raw["save_path"]);
+  const name = stringValue(raw["name"]);
+  const type = stringValue(raw["type"]);
+  const base = stringValue(raw["base"]);
+  const url = stringValue(raw["url"]);
+  if (savePathValue === undefined || name === undefined || type === undefined || base === undefined || url === undefined) {
+    throw new ManagerProviderError(
+      "model-metadata",
+      `ComfyUI-Manager external-model catalog row for ${savePath}/${filename} is missing required metadata`,
+    );
+  }
+  return { name, type, base, savePath: savePathValue, url, filename };
+}
+
+export async function postManagerPip(
+  client: ComfyUiManagerHttpClient,
+  requirements: readonly string[],
+  signal?: AbortSignal,
+): Promise<void> {
+  if (requirements.length === 0) return;
+  await client.post("/customnode/install/pip", { packages: requirements.join(" ") }, {
+    ...(signal === undefined ? {} : { signal }),
+  });
 }
 
 function catalogRows(value: unknown): readonly RegistryRow[] {
@@ -193,7 +301,7 @@ export class ComfyUiManagerProvider implements ManagerPort {
       if (request.url.trim() === "") {
         throw new ManagerProviderError("invalid-request", "Declared extension repository URL must not be empty");
       }
-      await this.client.postText("/customnode/install/git_url", request.url, {
+      await this.client.post("/customnode/install/git_url", { url: request.url }, {
         ...(signal === undefined ? {} : { signal }),
       });
       return { installed: true, detail: "git URL submitted to ComfyUI-Manager" };
@@ -241,25 +349,26 @@ export class ComfyUiManagerProvider implements ManagerPort {
     request: ManagerModelInstallRequest,
     signal?: AbortSignal,
   ): Promise<ManagerModelInstallResult> {
-    const savePathValue = request.savePath.trim().replace(/^models\//u, "");
-    const savePath = savePathValue === "" || savePathValue === "models" ? "default" : savePathValue;
-    if (
-      request.url.trim() === ""
-      || request.filename.trim() === ""
-      || request.filename.includes("/")
-      || request.filename.includes("\\")
-      || request.filename.includes("..")
-      || (savePath !== "default" && (savePath.startsWith("/") || savePath.includes("..") || savePath.includes("\\")))
-    ) {
+    const savePath = typeof request.savePath === "string"
+      ? normalizedModelSavePath(request.savePath)
+      : undefined;
+    const filename = typeof request.filename === "string"
+      ? normalizedModelFilename(request.filename)
+      : undefined;
+    if (stringValue(request.name) === undefined || savePath === undefined || filename === undefined || stringValue(request.url) === undefined) {
       throw new ManagerProviderError("invalid-request", "Manager model destination or source is invalid");
     }
+    const catalog = await this.client.getJson("/externalmodel/getlist?mode=cache", {
+      ...(signal === undefined ? {} : { signal }),
+    });
+    const row = findModelCatalogRow(catalog, savePath, filename);
     const payload: Record<string, unknown> = {
-      name: request.name,
-      type: request.type,
-      base: request.base ?? "default",
-      save_path: savePath,
-      url: request.url,
-      filename: request.filename,
+      name: row.name,
+      type: row.type,
+      base: row.base,
+      save_path: row.savePath,
+      url: row.url,
+      filename: row.filename,
       ui_id: request.id,
     };
     await this.client.post("/manager/queue/install_model", payload, {
@@ -274,7 +383,7 @@ export class ComfyUiManagerProvider implements ManagerPort {
     });
     return {
       installed: true,
-      detail: `queued model ${request.name}; queue ${String(status.doneCount)}/${String(status.totalCount)}`,
+      detail: `queued model ${row.name}; queue ${String(status.doneCount)}/${String(status.totalCount)}`,
     };
   }
 

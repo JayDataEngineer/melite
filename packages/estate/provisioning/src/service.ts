@@ -6,6 +6,7 @@ import {
   newOperationId,
   type ArtifactWriterPort,
 } from "./artifact-writer.ts";
+import { ManagerProviderError } from "./manager-provider.ts";
 import {
   resourceKey,
   sameResourceRef,
@@ -202,9 +203,15 @@ function refusalFor(error: unknown, signal?: AbortSignal): ItemRefusal {
     return new ItemRefusal("cancelled", "provisioning/cancelled", "operation cancelled");
   }
   if (error instanceof ItemRefusal) return error;
+  if (error instanceof ManagerProviderError) {
+    return new ItemRefusal("blocked", `manager/${error.code}`, error.message);
+  }
   if (error instanceof ProvisioningError) {
     if (error.code === "invalid-digest" || error.code === "invalid-path") {
       return new ItemRefusal("blocked", error.code, error.message);
+    }
+    if (error.code === "size-mismatch") {
+      return new ItemRefusal("failed", "artifact/size-mismatch", error.message);
     }
     return new ItemRefusal("failed", error.code, error.message);
   }
@@ -217,8 +224,7 @@ function aggregateState(items: readonly ProvisionItemResult[]): ProvisionState {
   if (items.some((item) => item.state === "failed")) return "failed";
   if (items.every((item) => item.state === "active")) return "active";
   if (items.every((item) => item.state === "restart_required")) return "restart_required";
-  if (items.every((item) => item.state === "installed")) return "installed";
-  if (items.some((item) => item.state === "installed" || item.state === "restart_required")) {
+  if (items.some((item) => item.state === "restart_required")) {
     return "installed";
   }
   if (items.some((item) => item.state === "active")) return "active";
@@ -226,7 +232,6 @@ function aggregateState(items: readonly ProvisionItemResult[]): ProvisionState {
 }
 
 function aggregateOutcome(items: readonly ProvisionItemResult[]): ProvisionOutcome {
-  if (items.length === 0) return "failed";
   if (items.some((item) => item.outcome === "cancelled")) return "cancelled";
   const failed = items.filter((item) => item.outcome === "failed" || item.outcome === "blocked");
   const succeeded = items.filter((item) => item.outcome === "active" || item.outcome === "restart_required");
@@ -269,38 +274,6 @@ function relativeArtifactPath(folder: string, filename: string): string {
   }
   const cleanFolder = folder.replace(/^\/+|\/+$/g, "");
   return cleanFolder === "" ? filename : `${cleanFolder}/${filename}`;
-}
-
-export function managerModelType(folder: string): string {
-  const withoutRoot = folder.replace(/^\/+|\/+$/gu, "").replace(/^models\//u, "");
-  const first = withoutRoot.split("/")[0]?.toLowerCase() ?? "";
-  const types: Record<string, string> = {
-    checkpoints: "checkpoints",
-    checkpoint: "checkpoints",
-    unclip: "checkpoints",
-    text_encoders: "text_encoders",
-    text_encoder: "text_encoders",
-    clip: "text_encoders",
-    vae: "vae",
-    loras: "lora",
-    lora: "lora",
-    controlnet: "controlnet",
-    "t2i-adapter": "t2i-adapter",
-    "t2i-style": "t2i-style",
-    clip_vision: "clip_vision",
-    embeddings: "embedding",
-    embedding: "embedding",
-    upscale_models: "upscale",
-    upscale: "upscale",
-    diffusion_models: "diffusion_model",
-    diffusion_model: "diffusion_model",
-  };
-  return types[first] ?? "etc";
-}
-
-export function managerSavePath(folder: string): string {
-  const clean = folder.replace(/^\/+|\/+$/gu, "").replace(/^models\//u, "");
-  return clean === "" || clean === "models" ? "default" : clean;
 }
 
 function itemFailure(item: ProvisionPlanItem, refusal: ItemRefusal): ProvisionItemResult {
@@ -405,7 +378,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       plan = await this.plan(ref);
     } catch (error: unknown) {
       const refusal = refusalFor(error, signal);
-      this.move(ref, undefined, refusal.outcome === "blocked" ? "blocked" : "failed", refusal.code);
+      this.move(ref, undefined, refusal.outcome === "blocked" ? "blocked" : "failed");
       return {
         ref: copyRef(ref),
         state: refusal.outcome === "blocked" ? "blocked" : "failed",
@@ -522,15 +495,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
           const folder = request.relativePath === undefined ? "" : request.relativePath;
           const relativePath = relativeArtifactPath(folder, filename);
           const parts = relativePath.split("/");
-          const landedName = parts[parts.length - 1] ?? filename;
+          const landedName = parts[parts.length - 1] as string;
           const landedFolder = parts.slice(0, -1).join("/");
           this.move(ref, operationId, "verifying");
           const installed = await this.manager.installModel({
             id: relativePath,
             name: landedName,
-            type: managerModelType(landedFolder),
-            base: "default",
-            savePath: managerSavePath(landedFolder),
+            savePath: landedFolder,
             url: request.url,
             filename: landedName,
           }, operationSignal);
@@ -549,6 +520,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
               landed.sha256 === undefined
                 ? "ComfyUI-Manager queue completed but the requested model path is absent"
                 : "ComfyUI-Manager landed bytes that do not match the requested SHA-256",
+            );
+          }
+          if (request.sizeBytes !== undefined && landed.sizeBytes !== request.sizeBytes) {
+            throw new ItemRefusal(
+              "failed",
+              "artifact/size-mismatch",
+              `ComfyUI-Manager landed a model with size ${String(landed.sizeBytes ?? "unknown")}, expected ${String(request.sizeBytes)}`,
             );
           }
           this.move(ref, operationId, "installed");
@@ -729,6 +707,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       expectedSha256: item.sha256,
     }, signal);
     if (existing.present) {
+      if (item.sizeBytes !== undefined && existing.sizeBytes !== item.sizeBytes) {
+        throw new ItemRefusal(
+          "failed",
+          "artifact/size-mismatch",
+          `the declared model has size ${String(existing.sizeBytes ?? "unknown")}, expected ${String(item.sizeBytes)}`,
+        );
+      }
       return itemResult(item, "active", "active", {
         ...(existing.path === undefined ? {} : { path: existing.path }),
         ...(existing.sha256 === undefined ? {} : { sha256: existing.sha256 }),
@@ -739,9 +724,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     const installed = await this.manager.installModel({
       id: item.key,
       name: item.name,
-      type: managerModelType(item.folder),
-      base: "default",
-      savePath: managerSavePath(item.folder),
+      savePath: item.folder,
       url: item.url,
       filename: item.name,
     }, signal);
@@ -758,6 +741,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       throw new ItemRefusal("failed", code, landed.sha256 === undefined
         ? "ComfyUI-Manager queue completed but the declared model path is absent"
         : "ComfyUI-Manager landed bytes that do not match the declared SHA-256");
+    }
+    if (item.sizeBytes !== undefined && landed.sizeBytes !== item.sizeBytes) {
+      throw new ItemRefusal(
+        "failed",
+        "artifact/size-mismatch",
+        `ComfyUI-Manager landed a model with size ${String(landed.sizeBytes ?? "unknown")}, expected ${String(item.sizeBytes)}`,
+      );
     }
     this.move(ref, operationId, "installed");
     return itemResult(item, "active", "active", {
@@ -815,6 +805,12 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         expectedSha256: item.sha256,
       }, signal);
       if (!inspection.present) return itemResult(item, "absent", "blocked", inspection.path === undefined ? {} : { path: inspection.path, sha256: inspection.sha256 });
+      if (item.sizeBytes !== undefined && inspection.sizeBytes !== item.sizeBytes) {
+        return itemResult(item, "failed", "failed", {
+          errorCode: "artifact/size-mismatch",
+          detail: `the declared model has size ${String(inspection.sizeBytes ?? "unknown")}, expected ${String(item.sizeBytes)}`,
+        });
+      }
       return itemResult(item, "active", "active", {
         ...(inspection.path === undefined ? {} : { path: inspection.path }),
         ...(inspection.sha256 === undefined ? {} : { sha256: inspection.sha256 }),
@@ -864,7 +860,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         ...(result.detail === undefined ? {} : { detail: result.detail }),
       };
     }
-    this.move(ref, operationId, result.operationState, undefined, result.items);
+    this.move(ref, operationId, result.operationState, result.items);
     this.persist(record);
     return result;
   }
@@ -928,7 +924,6 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     ref: ResourceRef,
     operationId: string | undefined,
     next: ProvisionState,
-    errorCode?: string,
     items?: readonly ProvisionItemResult[],
   ): void {
     const record = this.record(ref);
@@ -944,7 +939,6 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         ...record.operation,
         state: next,
         items: items === undefined ? record.operation.items : items.map(copyItem),
-        ...(errorCode === undefined ? {} : { detail: errorCode }),
       };
     }
     if (previous !== next) {
@@ -993,7 +987,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       .then(() => body(id, operationSignal))
       .catch((error: unknown) => this.completeUnstarted(ref, id, error, operationSignal))
       .finally(() => {
-        if (this.locks.get(key)?.promise === promise) this.locks.delete(key);
+        this.locks.delete(key);
       });
     this.locks.set(key, { id, controller, promise });
     return await promise;

@@ -211,18 +211,19 @@ export type SettleFn = (run: RunRecord) => void;
           // harness's only job — film first, windows after. No mux,
           // no mix, never a shell ffmpeg: composition belongs to the
           // engine (the film-assemble stage's model-free workflow).
-          const engineFilm = engineFilmName(names);
-          if (engineFilm !== null) {
-            names = [engineFilm, ...names.filter((n): boolean => n !== engineFilm)];
+          const semanticNames = new Set(
+            Object.values(row.outputs)
+              .filter((value): value is string => typeof value === 'string' && value !== '')
+              .map((value): string => runRel(run, value)),
+          );
+          const semantic = names.find((name): boolean => semanticNames.has(name));
+          if (semantic !== undefined) {
+            names = [semantic, ...names.filter((name): boolean => name !== semantic)];
           }
-          // THE DECLARED PRIMARY LEADS (the mask hero defect,
-          // 2026-10-09): the run's card declares its product stem
-          // (mask: 'mask_combined') — the match moves first so the
-          // history/preview hero is the product, not whichever
-          // same-kind artifact the engine finished first. Inline
-          // flows (no cardId) and undeclared cards keep engine
-          // order; loadCardDefs is module-cached (the manage door
-          // reads the same table).
+          const engineFilm = engineFilmName(names);
+          if (engineFilm !== null && names[0] !== engineFilm) {
+            names = [engineFilm, ...names.filter((name): boolean => name !== engineFilm)];
+          }
           const stem = run.cardId !== undefined
             ? (await loadCardDefs()).get(run.cardId)?.primaryFile
             : undefined;

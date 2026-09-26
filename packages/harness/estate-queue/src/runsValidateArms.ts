@@ -142,25 +142,34 @@ export async function validate(
     const seat = svc as {
       phase1Card?: unknown;
       primeObjectInfo?: unknown;
-    } | null;
-    if (seat === null ||
-        typeof seat.phase1Card !== "function" ||
+    };
+    // (a null registry is the door's own LOUD miswire — inlineArm
+    // refuses it before the walk is reached; only a registry that
+    // cannot COMPOSE lands here)
+    if (typeof seat.phase1Card !== "function" ||
         typeof seat.primeObjectInfo !== "function") return null;
-    const doc = liveDoc as { flow_inline?: { stages?: unknown[] } };
-    const stages: unknown[] = Array.isArray(doc?.flow_inline?.stages) ? (doc.flow_inline.stages as unknown[]) : [];
+    // THE DOOR OWNS THE SHAPE (2026-09-25): runsValidateStages refuses
+    // a non-object stage, a non-object params, an empty id and a
+    // missing model BEFORE this walk reads them — every stage here is
+    // an object with a non-empty id and an object params. The
+    // re-checking branches this walk used to carry were unreachable
+    // (a wall for an unreachable arm is a lie), so they are gone; a
+    // body that skipped the door now fails loud instead of quietly
+    // composing nothing.
+    const stages = (liveDoc as { flow_inline: { stages: unknown[] } }).flow_inline.stages;
+    // a legal NON-card stage (a plain engine stage) is not this
+    // walk's business: it composes through the engine
     const cardStages = stages.filter((st): st is Record<string, unknown> =>
-      st !== null && typeof st === "object" && !Array.isArray(st) &&
       typeof (st as Record<string, unknown>)["card"] === "string" && (st as Record<string, unknown>)["card"] !== "");
     if (cardStages.length === 0) return null;
     if (!(await (seat as unknown as { primeObjectInfo(): Promise<boolean> }).primeObjectInfo())) {
       return "compose walk skipped: engine unreachable (schema-only verdict — the start door composes before queuing)";
     }
     for (const st of cardStages) {
-      const params: Record<string, unknown> =
-        st["params"] !== null && typeof st["params"] === "object" && !Array.isArray(st["params"])
-          ? { ...(st["params"] as Record<string, unknown>) }
-          : {};
-      const mid: string = typeof params["model"] === "string" && params["model"] !== ""
+      const params = st["params"] as Record<string, unknown>;
+      // a non-string model row (the door's card gate only demands
+      // presence) composes against the CARD name — the arm is live
+      const mid: string = typeof params["model"] === "string"
         ? params["model"] : String(st["card"]);
       const body: Record<string, unknown> = { ...params, model: mid };
       try {
@@ -169,7 +178,7 @@ export async function validate(
         }).phase1Card(body, mid);
       } catch (e) {
         if (e instanceof CardArmError) {
-          return "REFUSED stage " + JSON.stringify(String(st["id"] ?? st["card"])) + ": " + e.message;
+          return "REFUSED stage " + JSON.stringify(String(st["id"])) + ": " + e.message;
         }
         throw e;
       }

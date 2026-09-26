@@ -7,7 +7,54 @@
 // runOne glue reads the run's cardId against the cached defs.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { declaredPrimaryFirst } from "../src/runsExecute.ts";
+import { Context } from "@deepseek-ai/cordis";
+import { ComfyUIHostService } from "@melite/comfyui-cordis";
+import type { EngineJson, FlowResult, MergeRow } from "@melite/comfyui-cordis";
+import type { RunRecord } from "../src/runsTypes.ts";
+import { declaredPrimaryFirst, runOne } from "../src/runsExecute.ts";
+
+class FakeEngine extends ComfyUIHostService {
+  onFlow: (
+    rows: MergeRow[],
+    runDir: string,
+    inputNames: Record<string, Record<string, string>>,
+    initials: Record<string, EngineJson>,
+    opts: { shouldStop?: () => boolean; report?: (updates: Record<string, EngineJson>) => void },
+  ) => Promise<FlowResult> = async () => ({ stages: {}, promptId: "p" });
+
+  constructor(ctx: Context) {
+    super(ctx, {});
+  }
+
+  override executeFlow(
+    rows: MergeRow[],
+    runDir: string,
+    inputNames: Record<string, Record<string, string>>,
+    initials: Record<string, EngineJson>,
+    opts: { shouldStop?: () => boolean; report?: (updates: Record<string, EngineJson>) => void } = {},
+  ): Promise<FlowResult> {
+    return this.onFlow(rows, runDir, inputNames, initials, opts);
+  }
+}
+
+const runWithCard = (cardId: string): RunRecord => ({
+  runId: "run-hero-00000000-00000000",
+  status: "queued",
+  stages: [{ id: "s", name: "s", index: 0, status: "pending", outputs: {}, expected: {} }],
+  skippedStages: [],
+  artifacts: [],
+  error: "",
+  draftId: "d",
+  dir: "/tmp/run-hero",
+  testFlag: false,
+  stopFlag: false,
+  params: [{ workflow: { "1": { class_type: "X", inputs: {} } } }],
+  outputNodes: [{}],
+  createdAt: 1,
+  pipeline: "flow_inline",
+  graphRows: [],
+  cardId,
+});
 
 describe("declaredPrimaryFirst (the declared hero)", () => {
   it("the declared stem moves first (the mask shape: manifest finished first, product leads)", () => {
@@ -75,5 +122,44 @@ describe("declaredPrimaryFirst (the declared hero)", () => {
     assert.equal(union[0], "SaveImage.1_mask_combined_00001_.png", "prefixed union never steals");
     // stem as a bare token still matches (no prefix, no counter)
     assert.equal(declaredPrimaryFirst(["x.png", "mask_combined.png"], "mask_combined")[0], "mask_combined.png", "bare stem + ext");
+  });
+});
+
+describe("runOne declared-card artifact ordering", () => {
+  it("a semantic output binding leads the gallery over engine completion order", async () => {
+    const ctx = new Context();
+    const engine = new FakeEngine(ctx);
+    engine.onFlow = async () => ({
+      stages: {
+        s: {
+          outputs: { default: "/tmp/run-hero/film.mp4" },
+          artifacts: ["/tmp/run-hero/mix.flac", "/tmp/run-hero/window.mp4", "/tmp/run-hero/film.mp4"],
+        },
+      },
+      promptId: "p",
+    });
+    const run = runWithCard("h3-timeline");
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "completed");
+    assert.equal(run.stages[0]?.url, "film.mp4");
+    assert.equal((run.stages[0]?.gallery as Array<{ name: string }>)[0]?.name, "film.mp4");
+  });
+
+  it("reads the card declaration when a run carries a card id", async () => {
+    const ctx = new Context();
+    const engine = new FakeEngine(ctx);
+    engine.onFlow = async () => ({
+      stages: {
+        s: {
+          outputs: {},
+          artifacts: ["mask_manifest_00001_.png", "mask_combined_00001_.png"],
+        },
+      },
+      promptId: "p",
+    });
+    const run = runWithCard("mask");
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "completed");
+    assert.equal(run.stages[0]?.url, "mask_combined_00001_.png");
   });
 });

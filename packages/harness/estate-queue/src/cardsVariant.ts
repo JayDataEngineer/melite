@@ -57,8 +57,31 @@ export function selectCardVariant(
   phase: string,
 ): VariantSelection {
   const variants: VariantRow[] = famRow.variants ?? [];
-  const configured: VariantRow[] = variants.filter((v) => v.group !== "Recipe");
-  const pool: VariantRow[] = configured.length > 0 ? configured : variants;
+  const offered: VariantRow[] = variants.filter((v) => v.hide_from_dropdown !== true);
+  const hiddenRoute = variants.find((v) => v.hide_from_dropdown === true && (
+    v.route === mid || v.id === mid || (v.cells ?? []).some((c) => c.route === mid)
+  ));
+  const hiddenCellRoute = variants.some((v) => (v.cells ?? []).some((c) =>
+    c.hide_from_dropdown === true && c.route === mid
+  ));
+  if (hiddenRoute !== undefined || hiddenCellRoute) {
+    throw new CardArmError(
+      400,
+      "card_compose phase " + phase + ": model " + JSON.stringify(mid) +
+        " is not offered (the variant route is hidden from the dropdown)",
+      "card_compose",
+    );
+  }
+  const configured: VariantRow[] = offered.filter((v) => v.group !== "Recipe");
+  const pool: VariantRow[] = configured.length > 0 ? configured : offered;
+  if (pool.length === 0 && variants.length > 0) {
+    throw new CardArmError(
+      400,
+      "card_compose phase " + phase + ": model " + JSON.stringify(mid) +
+        " has no offered variants",
+      "card_compose",
+    );
+  }
   const rawVariant: unknown = body["variant"];
   const rawQuant: unknown = body["quant"];
   let variant: VariantRow | undefined;
@@ -73,7 +96,16 @@ export function selectCardVariant(
         "card_compose",
       );
     }
-    variant = variants.find((v) => v.id === rawVariant || v.route === rawVariant);
+    const requested = variants.find((v) => v.id === rawVariant || v.route === rawVariant);
+    if (requested?.hide_from_dropdown === true) {
+      throw new CardArmError(
+        400,
+        "card_compose phase " + phase + ": variant " + JSON.stringify(rawVariant) +
+          " is not offered for model " + JSON.stringify(mid),
+        "card_compose",
+      );
+    }
+    variant = offered.find((v) => v.id === rawVariant || v.route === rawVariant);
     if (variant === undefined) {
       throw new CardArmError(
         400,
@@ -93,7 +125,9 @@ export function selectCardVariant(
         "card_compose",
       );
     }
-    const cells: VariantCellRow[] = variant !== undefined ? (variant.cells ?? []) : [];
+    const cells: VariantCellRow[] = variant !== undefined
+      ? (variant.cells ?? []).filter((c) => c.hide_from_dropdown !== true)
+      : [];
     const hit: VariantCellRow | undefined = cells.find((c) => c.quant === rawQuant);
     if (hit === undefined) {
       const known: string = cells.map((c) => c.quant).join(", ");
@@ -107,8 +141,9 @@ export function selectCardVariant(
       );
     }
     quant = hit.quant;
-  } else if (variant !== undefined && (variant.cells ?? []).length > 0) {
-    quant = String((variant.cells as VariantCellRow[])[0]?.quant ?? "");
+  } else if (variant !== undefined) {
+    const cells = (variant.cells ?? []).filter((c) => c.hide_from_dropdown !== true);
+    if (cells.length > 0) quant = String(cells[0]?.quant ?? "");
   }
   return {
     variantId: variant !== undefined ? variant.id : "",

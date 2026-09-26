@@ -48,7 +48,9 @@ const UNDERSCORE_SERVABLE: ReadonlySet<string> = new Set(["_poster.jpg"]);
 /** One confined rel segment: not empty, not dot/dotdot
  *  (traversal), no NUL — the server's segmentOk twin. */
 function segmentOk(seg: string): boolean {
-  if (seg === "" || seg === "." || seg === "..") return false;
+  if (seg === "" || seg === "." || seg === "..") {
+    return false;
+  }
   if (seg.includes("\0")) return false;
   return true;
 }

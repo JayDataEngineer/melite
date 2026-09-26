@@ -101,6 +101,25 @@ describe("selectCardVariant (the R1 wire contract)", () => {
       expect((e as Error).message).toMatch(/the variant declares no cells/);
     }
   });
+  it("hidden variants and cells never enter the offered coordinate space", () => {
+    const hidden = row({
+      variants: [
+        { id: "legacy", group: "", hide_from_dropdown: true, route: "legacy-route", cells: [{ quant: "fp8" }] },
+        { id: "base", group: "", cells: [{ quant: "fp16" }, { quant: "bf16", hide_from_dropdown: true }, { quant: "fp8" }] },
+      ],
+    });
+    expect(selectCardVariant("m", hidden, {}, "1").variantId).toBe("base");
+    expect(selectCardVariant("m", hidden, {}, "1").quant).toBe("fp16");
+    expect(() => selectCardVariant("m", hidden, { variant: "legacy" }, "1")).toThrow(/not offered/);
+    expect(() => selectCardVariant("m", hidden, { variant: "legacy-route" }, "1")).toThrow(/not offered/);
+    expect(() => selectCardVariant("m", hidden, { variant: "base", quant: "bf16" }, "1")).toThrow(/unknown quant/);
+    expect(() => selectCardVariant("legacy-route", hidden, {}, "1")).toThrow(/not offered/);
+  });
+  it("a family with only hidden variants refuses instead of selecting none", () => {
+    const allHidden = row({ variants: [{ id: "hidden", group: "", hide_from_dropdown: true, cells: [{ quant: "fp8" }] }] });
+    expect(() => selectCardVariant("m", allHidden, {}, "1")).toThrow(/has no offered variants/);
+  });
+
   it("a legal quant lands its cell", () => {
     expect(selectCardVariant("m", row(), { quant: "fp8" }, "1").quant).toBe("fp8");
   });
@@ -123,6 +142,32 @@ describe("selectCardVariant (the R1 wire contract)", () => {
     const bare2 = row({ defaults: undefined, variants: [{ id: "bare" }] });
     const out = stampCardOverlay({}, bare2, decl(), selectCardVariant("m", bare2, {}, "1"));
     expect(Object.keys(out)).toEqual([]);
+  });
+  it("normalizes malformed, reversed, and one-axis envelopes", () => {
+    const malformed = row({
+      variants: [{
+        id: "bad", group: "", cells: [], resolver_defaults: {},
+        sampler_envelope: { steps: [1], cfg: [2, 1] },
+      } as never],
+    });
+    expect(selectCardVariant("m", malformed, { variant: "bad" }, "1").samplerEnvelope)
+      .toBeNull();
+    const onlySteps = row({
+      variants: [{
+        id: "steps", group: "", cells: [], resolver_defaults: {},
+        sampler_envelope: { steps: [1, 2], cfg: "bad" },
+      } as never],
+    });
+    expect(selectCardVariant("m", onlySteps, { variant: "steps" }, "1").samplerEnvelope)
+      .toEqual({ steps: [1, 2], cfg: undefined });
+    const onlyCfg = row({
+      variants: [{
+        id: "cfg", group: "", cells: [], resolver_defaults: {},
+        sampler_envelope: { steps: "bad", cfg: [1, 2] },
+      } as never],
+    });
+    expect(selectCardVariant("m", onlyCfg, { variant: "cfg" }, "1").samplerEnvelope)
+      .toEqual({ steps: undefined, cfg: [1, 2] });
   });
 });
 
@@ -223,5 +268,24 @@ describe("THE ROUTE ENVELOPE (compose-side guard)", () => {
   it("a variant with NO envelope never refuses (opt-in per route)", () => {
     const bare = selectCardVariant("m", turboRow, { variant: "base" }, "1");
     expect(() => stampCardOverlay({ steps: 25 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), bare)).not.toThrow();
+  });
+
+  it("skips an absent bound and refuses a routeless, unmarried variant", () => {
+    const open = row({
+      variants: [{
+        id: "open", route: "", cells: [], resolver_defaults: {},
+        sampler_envelope: { cfg: [1, 2] },
+      } as never],
+    });
+    const sel = selectCardVariant("m", open, { variant: "open" }, "1");
+    try {
+      stampCardOverlay({ cfg: 9 }, open, decl({ schemaNames: ["cfg"] }), sel);
+      expect.unreachable();
+    } catch (e) {
+      const message = String((e as Error).message);
+      expect(message).toContain("cfg 9");
+      expect(message).not.toContain(" (route ");
+      expect(message).not.toContain("married to");
+    }
   });
 });

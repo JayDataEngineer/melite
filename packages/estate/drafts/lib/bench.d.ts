@@ -160,8 +160,16 @@ export interface BenchStageRow {
  *  pure (tests inject nothing and every model passes). A refusal
  *  throws bench/bad-model AT WRITE TIME — the writer (agent or
  *  human patch) learns the model is not offered/downloaded the
- *  moment it lands, never at run time. */
-export type StageAdmission = (card: string, params: Record<string, unknown>) => void;
+ *  moment it lands, never at run time.
+ *
+ *  THE PROVENANCE COORDINATE (2026-09-24, the schema-master law):
+ *  the third arg names the row's provenance — an admission may
+ *  REPAIR a restored row (provenance 'restored') whose era model id
+ *  predates today's registry, while a live-composed row (no
+ *  provenance) still gets the loud refusal. The repair law lives
+ *  in the injected admission (remote.ts); the domain only carries
+ *  the coordinate. */
+export type StageAdmission = (card: string, params: Record<string, unknown>, provenance: unknown) => void;
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
 export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchStageRow>;

@@ -66,9 +66,9 @@ export function buildStageRow(i: number, st: unknown): StageRow {
     )
     : [];
   if (rawExtras.length > 0) {
-    if (typeof st !== "object" || st === null || Array.isArray(st)) {
-      throw new TypeError(where + " must be an object");
-    }
+    // (a non-object row cannot reach here: isRow gated the keys walk,
+    // so rawExtras is empty for it and the object gate below owns its
+    // voice — the TypeError guard that used to sit here was dead)
     const rawId: unknown = (st as Record<string, unknown>)["id"] ?? "<no id>";
     throw new FlowError(
       where +

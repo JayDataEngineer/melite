@@ -16,6 +16,7 @@ import type { CardRegistryService } from "./cardsRegistry.ts";
 import { getRegistryFlow } from "./flowsData.ts";
 import { toolBaseRows } from "./toolProjection.ts";
 import { modelRows, cardRows, engineDirs, flowRows, wireSkill, findSkill } from "./skillPlane.ts";
+import { laneFilesStatus } from "./cardsLanes.ts";
 
 /** A card id → its package dir. The cardPackages rows are package
  *  NAMES ('@melite/<genre>-<card>'); the id is the row's tail past
@@ -318,17 +319,27 @@ export function loadCard(
   if (def === undefined) throw new Error(`disclose: unknown card '${cardId}'`);
   const rows = toolBaseRows(defs);
   const pkgDir: string = resolveCardPackageDir(repo, cardId);
-  const decls = new Map(models.allDecls().map((d): [string, { id: string; label: string; description: string }] => [d.id, { id: d.id, label: d.label, description: d.description ?? "" }]));
+  const decls = new Map(models.allDecls().map((d): [string, { id: string; label: string; description: string; lane_inputs?: Record<string, unknown> }] => [d.id, { id: d.id, label: d.label, description: d.description ?? "", ...(d.lane_inputs === undefined ? {} : { lane_inputs: d.lane_inputs }) }]));
   const hints: Array<Record<string, unknown>> = [];
   for (const fam of (def as { boarded: readonly string[] }).boarded) {
     const d = decls.get(fam);
     if (d === undefined) continue;
     let present = false;
-    try {
-      const rows = models.resolveCatalogArtifact(fam, "", "", repo);
-      present = rows.length > 0 && rows.every((row) => models.checkModelPresent(row.relative_path, row.name, repo) !== null);
-    } catch {
-      present = false;
+    const lanePath = typeof (d as { lane_inputs?: Record<string, unknown> }).lane_inputs?.["model_path"] === "string"
+      ? String((d as { lane_inputs?: Record<string, unknown> }).lane_inputs?.["model_path"]).trim()
+      : "";
+    const filesPresent = typeof models.checkModelPresent === "function"
+      ? laneFilesStatus(d, (folder, name) => models.checkModelPresent("models/" + folder, name, repo))
+      : null;
+    if ((lanePath !== "" && typeof models.checkModelPathPresent === "function" && models.checkModelPathPresent(lanePath, repo) !== null) || filesPresent === true) {
+      present = true;
+    } else {
+      try {
+        const rows = models.resolveCatalogArtifact(fam, "", "", repo);
+        present = rows.length > 0 && rows.every((row) => models.checkModelPresent(row.relative_path, row.name, repo) !== null);
+      } catch {
+        present = false;
+      }
     }
     hints.push({ id: d.id, label: d.label, description: d.description, present });
   }

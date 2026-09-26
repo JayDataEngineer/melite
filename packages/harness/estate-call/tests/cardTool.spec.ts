@@ -7,7 +7,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GatewayError, type EstateCall } from "../src/estateCall.ts";
-import { defineCardTool } from "../src/cardTool.ts";
+import { defineCardTool, normalizeJsonArrayParams } from "../src/cardTool.ts";
 
 // ── the fake lane: every call the builder makes, answered per test ──
 let draftBody: Record<string, unknown> = {}
@@ -182,5 +182,80 @@ describe("the card-tool builder", () => {
     await arrays.execute({ calls: objectJson, clips: malformed }, undefined)
     assert.equal(startBody.calls, objectJson)
     assert.equal(startBody.clips, malformed)
+  })
+
+  it("normalizes declared JSON arrays without mutating the input", () => {
+    const input = Object.freeze({
+      calls: '[{"text":"a"}]',
+      clips: '{"src":"not-an-array"}',
+      native: [{ src: 'line.flac' }],
+      malformed: '[{"src":',
+      empty: '',
+      unlisted: '[1,2]',
+    })
+    const out = normalizeJsonArrayParams(input, ['calls', 'clips', 'native', 'malformed', 'empty', 'absent'])
+    assert.notStrictEqual(out, input)
+    assert.deepEqual(out.calls, [{ text: 'a' }])
+    assert.equal(out.clips, '{"src":"not-an-array"}')
+    assert.deepEqual(out.native, [{ src: 'line.flac' }])
+    assert.equal(out.malformed, '[{"src":')
+    assert.equal(out.empty, '')
+    assert.equal(Object.hasOwn(out, 'absent'), false)
+    assert.equal(out.unlisted, '[1,2]')
+    assert.equal(input.calls, '[{"text":"a"}]')
+    assert.deepEqual(normalizeJsonArrayParams({}, undefined), {})
+  })
+
+  it("uses a custom preview projection when the card owns one", () => {
+    const custom = defineCardTool(call, {
+      name: "custom", flow: "custom", label: "Custom", description: "d",
+      parameters: { prompt: { type: "string", required: true } } as never,
+      defaultModel: "default", previewValue: (args) => `shot=${String(args.prompt)}`,
+    })
+    const out = custom.presentCall?.({ prompt: "hero" }) as Record<string, unknown>
+    assert.equal(out.rawInput, "model=default shot=hero")
+  })
+
+  it("projection helpers use their empty-value fallbacks", () => {
+    const fallback = defineCardTool(call, {
+      name: "fallback", flow: "fallback", label: "Fallback", description: "d",
+      parameters: { other: { type: "string" } } as never,
+      defaultModel: "default", previewField: "missing",
+    })
+    const preview = fallback.presentCall?.({ other: "x" }) as Record<string, unknown>
+    assert.equal(preview.rawInput, "model=default missing=")
+    const meta = tool.output.presentationMeta?.(undefined, undefined) as Record<string, unknown>
+    assert.deepEqual(meta, { flow: 'music', model: '?' })
+    const fullMeta = tool.output.presentationMeta?.(undefined, {
+      flow: 'music', model: 'music3', run_id: '', draft_id: 'd', status: 'queued', error: 'no',
+    }) as Record<string, unknown>
+    assert.deepEqual(fullMeta, { flow: 'music', model: 'music3', draft_id: 'd', status: 'queued', error: 'no' })
+    const rendered = tool.output.render?.(undefined, undefined) as Array<{ text?: string }>
+    assert.deepEqual(rendered, [{ type: 'text', text: 'music [?] → ? — poll with run_status' }])
+    const result = tool.presentResult?.({ prompt: 'p' }, { meta: {} }) as Record<string, unknown>
+    assert.deepEqual(result, { card: 'generic', title: 'Music [?] → ?' })
+  })
+
+  it('an omitted JSON-array parameter leaves the declared key absent', async () => {
+    let phase = 0
+    respond = () => { phase += 1; return phase === 1 ? { draftId: 'd1' } : { run_id: 'r1' } }
+    const partial = defineCardTool(call, {
+      name: 'partial', flow: 'partial', label: 'Partial', description: 'd',
+      parameters: { calls: { type: 'json' }, clips: { type: 'json' } } as never,
+      defaultModel: 'default', jsonArrayParams: ['calls', 'clips'],
+    })
+    const out = await partial.execute({ calls: '[]' }, undefined) as Record<string, unknown>
+    assert.equal(out.run_id, 'r1')
+  })
+
+  it('non-string envelope members take the defensive refusal and success arms', async () => {
+    respond = () => ({ draftId: 42 })
+    const noDraft = await tool.execute({ prompt: 'p' }, undefined) as Record<string, unknown>
+    assert.match(String(noDraft.error), /no draftId/)
+    let phase = 0
+    respond = () => { phase += 1; return phase === 1 ? { draftId: 'd1' } : { error: 7, run_id: 'r1' } }
+    const started = await tool.execute({ prompt: 'p' }, undefined) as Record<string, unknown>
+    assert.equal(started.run_id, 'r1')
+    assert.equal(started.error, undefined)
   })
 })

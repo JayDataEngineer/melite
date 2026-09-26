@@ -15,11 +15,13 @@ import type { CardDefinition } from "@melite/comfyui-cordis";
 export interface VariantCellRow {
   readonly quant: string;
   readonly route: string;
+  readonly hide_from_dropdown?: boolean;
 }
 
 export interface VariantRow {
   readonly id: string;
   readonly group: string;
+  readonly hide_from_dropdown?: boolean;
   readonly route: string;
   readonly resolver_defaults: Record<string, unknown>;
   /** THE ROUTE ENVELOPE (the compose-side guard): closed bounds a

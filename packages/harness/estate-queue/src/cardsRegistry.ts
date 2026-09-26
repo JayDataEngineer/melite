@@ -172,6 +172,8 @@ export class CardRegistryService extends Service {
   private defs: Map<string, CardDefinition> | null = null;
   /** The frozen model facts (lazy — strict load, throws LOUD). */
   private facts: Record<string, ModelFactsRow> | null = null;
+  /** Route address → family owner from the registry-derived facts. */
+  private owners: Record<string, string> = {};
   /** Registry reads for the row derivation (primed with the models boot). */
   private reads: FactsReads | null = null;
   /** The decl projection (lazy — derived from defs + facts). */
@@ -205,6 +207,7 @@ export class CardRegistryService extends Service {
     await bootModels();
     this.reads = { getModel, registryIds, registryModel };
     this.facts = null;
+    this.owners = {};
     // ARM THE SINGLETON for the presence reads (stroke 18): the
     // compose path builds a FRESH service per run (armed with the
     // live doc below), but the serving surfaces (the spec's packs
@@ -229,6 +232,7 @@ export class CardRegistryService extends Service {
   resetForTests(): void {
     this.defs = null;
     this.facts = null;
+    this.owners = {};
     this.reads = null;
     this.decls = null;
     this.oi = null;
@@ -272,6 +276,7 @@ export class CardRegistryService extends Service {
     // derivation is the single matrix — no frozen spelling).
     const doc: FactsFile = loadFacts(factsPath(), this.readsSync());
     this.facts = doc.models as unknown as Record<string, ModelFactsRow>;
+    this.owners = { ...doc.owners };
     return this.facts;
   }
 
@@ -339,6 +344,10 @@ export class CardRegistryService extends Service {
    *  own (the validate door's degraded read). */
   resolveCardFamily(mid: string, facts?: Record<string, ModelFactsRow>): string {
     const table: Record<string, ModelFactsRow> = facts ?? this.modelFacts();
+    if (facts === undefined || facts === this.facts) {
+      const owner = this.owners[mid];
+      if (owner !== undefined && owner !== mid && owner in table) return owner;
+    }
     if (mid in table) {
       // THE ROUTE-ADDRESS FOLD (ROADMAP §36.5, 2026-09-24 — the
       // operator's "(registered: …)" receipt's twin): the facts

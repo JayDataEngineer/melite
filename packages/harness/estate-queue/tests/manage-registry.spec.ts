@@ -3,6 +3,9 @@
 // return, and the provider row mounts.
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { ManageGatewayService, manageProvider } from "../src/manageRegistry.ts";
@@ -41,9 +44,37 @@ describe("ManageGatewayService", () => {
         (e: unknown) => e as InstanceType<typeof RemoteError>,
       );
     assert.ok(err instanceof RemoteError);
-    const details = err.details as { action?: string; status?: number };
+    const details = err.details as { action?: string; status?: number; code?: string };
     assert.equal(details.action, "bogus");
     assert.equal(details.status, 422);
+    assert.equal(details.code, "manage/refused");
+  });
+
+  it("propagates caller abort into the manager fetch", async () => {
+    const root = mkdtempSync(join(tmpdir(), "manage-abort-"));
+    const endpointPath = join(root, "endpoint.json");
+    writeFileSync(endpointPath, JSON.stringify({ provision: "managed", url: "http://engine:8188" }));
+    process.env.COMFYUI_ENDPOINT_CONFIG = endpointPath;
+    const { ctx, svc } = seat();
+    (ctx as unknown as { timeout: unknown }).timeout = (_cb: () => void, _ms: number): (() => void) => () => {};
+    let signal: AbortSignal | undefined;
+    globalThis.fetch = ((_url: unknown, init: RequestInit | undefined) => new Promise<Response>((_resolve, reject) => {
+      signal = init?.signal ?? undefined;
+      signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+    })) as typeof fetch;
+    const controller = new AbortController();
+    try {
+      const pending = svc.act({ action: "status" }, controller.signal);
+      controller.abort();
+      await assert.rejects(pending, (error: unknown) => {
+        assert.equal((error as Error).name, "AbortError");
+        return true;
+      });
+      assert.equal(signal?.aborted, true);
+    } finally {
+      delete process.env.COMFYUI_ENDPOINT_CONFIG;
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("ok envelopes return (status through the routed rail)", async () => {

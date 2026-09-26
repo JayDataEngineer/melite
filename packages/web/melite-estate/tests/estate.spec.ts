@@ -145,7 +145,7 @@ describe('dispatch — mount order is load order', () => {
       failOnStartupError: false,
     })
     const mcpRow = ctx.plugins.find((p) => p.name === 'melite-engine-mcp-row')
-    expect(mcpRow?.cfg).toEqual({ engines: ['mcp:blender', 'mcp:unity'] })
+     expect(mcpRow?.cfg).toEqual({ engines: ['mcp:blender'] })
   })
 
   it('applies bare rows naked and defaults the config face', () => {
@@ -270,85 +270,10 @@ describe('mcp-client-blender row — the witnessed bridge apply', () => {
   })
 })
 
-describe('mcp-client-unity row — the witnessed bridge apply', () => {
-  it('seats the stdio relay config (serverName unity, never blender)', () => {
+describe('Unity MCP row — intentionally not composed', () => {
+  it('is absent from the estate composition', () => {
     const ctx = mount({ repoRoot: '/tmp/pin' })
-    const unity = ctx.plugins.find((p) => p.name === 'mcp-client-unity')
-    expect(unity?.cfg).toMatchObject({
-      transport: 'stdio',
-      serverName: 'unity',
-      failOnStartupError: false,
-      env: { XDG_CACHE_HOME: '/tmp/uv-cache', XDG_DATA_HOME: '/tmp/uv-data' },
-    })
-  })
-
-  it('a sync bridge apply rides through untouched', () => {
-    mcpBridge.mode = 'sync'
-    const { fn, cfg } = rowApply('mcp-client-unity')
-    expect(fn(toolsCtx().ctx, cfg)).toBe('sync-value')
-  })
-
-  it('an undefined bridge apply rides through untouched', () => {
-    mcpBridge.mode = 'undefined'
-    const { fn, cfg } = rowApply('mcp-client-unity')
-    expect(fn(toolsCtx().ctx, cfg)).toBe(undefined)
-  })
-
-  it('a settled bridge censuses the unity namespace (absent seats read absent)', async () => {
-    mcpBridge.mode = 'resolve'
-    mcpBridge.calls = []
-    const lines = silence()
-    try {
-      const { fn, cfg } = rowApply('mcp-client-unity')
-      await expect(fn(toolsCtx().ctx, cfg)).resolves.toBe('bridge-value')
-      expect(mcpBridge.calls[0]?.cfg).toMatchObject({ transport: 'stdio', serverName: 'unity' })
-      expect(lines.join('\n')).toContain(
-        '[melite-estate] mcp-client-unity ready: mcp__unity__manage_scene=absent mcp__unity__read_console=absent',
-      )
-    } finally {
-      vi.restoreAllMocks()
-    }
-  })
-
-  it('a partially published namespace censuses PRESENT per tool', async () => {
-    mcpBridge.mode = 'resolve'
-    const lines = silence()
-    try {
-      const { fn, cfg } = rowApply('mcp-client-unity')
-      await expect(
-        fn(toolsCtx({ mcp__unity__manage_scene: {} }).ctx, cfg),
-      ).resolves.toBe('bridge-value')
-      expect(lines.join('\n')).toContain('mcp__unity__manage_scene=PRESENT mcp__unity__read_console=absent')
-    } finally {
-      vi.restoreAllMocks()
-    }
-  })
-
-  it('a rejected bridge logs its cause chain, then rethrows identical', async () => {
-    const lines = silence()
-    try {
-      const { fn, cfg } = rowApply('mcp-client-unity')
-      const nested = new Error('outer', {
-        cause: { message: 'mid', cause: { cause: { message: 'deep' } } },
-      } as ErrorOptions)
-      mcpBridge.mode = 'reject'
-      mcpBridge.reason = nested
-      await expect(fn(toolsCtx().ctx, cfg)).rejects.toBe(nested)
-      expect(lines.join('\n')).toContain('REJECTED: outer | caused by: mid | caused by: [object Object]')
-
-      mcpBridge.reason = new Error('x', { cause: null } as ErrorOptions)
-      await expect(fn(toolsCtx().ctx, cfg)).rejects.toBe(mcpBridge.reason)
-      expect(lines.join('\n')).toContain('REJECTED: x | caused by: ')
-
-      mcpBridge.reason = 'bare string failure'
-      await expect(fn(toolsCtx().ctx, cfg)).rejects.toBe('bare string failure')
-      expect(lines.join('\n')).toContain('REJECTED: bare string failure')
-
-      mcpBridge.reason = 42
-      await expect(fn(toolsCtx().ctx, cfg)).rejects.toBe(42)
-    } finally {
-      vi.restoreAllMocks()
-    }
+    expect(ctx.plugins.find((p) => p.name === 'mcp-client-unity')).toBeUndefined()
   })
 })
 
@@ -359,8 +284,8 @@ describe('melite-engine-mcp-row — the gated seat read', () => {
       const { fn, cfg } = rowApply('melite-engine-mcp-row')
       const ctx = toolsCtx().ctx
       fn(ctx, cfg)
-      expect(lines.join('\n')).toContain('[melite-estate] mcp row applying with config {"engines":["mcp:blender","mcp:unity"]}')
-      expect(vi.mocked(mcpEngines)).toHaveBeenCalledWith(ctx, { engines: ['mcp:blender', 'mcp:unity'] })
+       expect(lines.join('\n')).toContain('[melite-estate] mcp row applying with config {"engines":["mcp:blender"]}')
+       expect(vi.mocked(mcpEngines)).toHaveBeenCalledWith(ctx, { engines: ['mcp:blender'] })
     } finally {
       vi.restoreAllMocks()
     }

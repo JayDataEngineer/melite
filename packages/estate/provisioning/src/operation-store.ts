@@ -257,7 +257,7 @@ export class FileOperationStore implements OperationStorePort {
   private async enqueue(operationId: string, task: () => Promise<void>): Promise<void> {
     const filename = operationFile(operationId);
     const previous = this.pending.get(filename) ?? Promise.resolve();
-    const next = previous.catch(() => undefined).then(task);
+    const next = previous.then(task);
     const settled = next.then(() => undefined, () => undefined);
     this.pending.set(filename, settled);
     void settled.then(() => {

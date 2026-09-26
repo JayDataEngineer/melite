@@ -9,6 +9,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const composeInFiber = vi.hoisted(() => vi.fn());
+const weightChecks = vi.hoisted(() => [] as string[]);
+const modFields = vi.hoisted(() => ({
+  rows: [] as Array<{
+    pack: string;
+    families: string[];
+    fields: { dict: Record<string, unknown> };
+  }>,
+}));
 const lastComfyService = vi.hoisted(() => ({ svc: null as unknown }));
 
 vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
@@ -23,11 +31,11 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
   const FakeService = class {
     compose = composeInFiber;
     setFacts = () => undefined;
-    setObjectInfo = () => undefined;
-    // the arm-weight gate's reader seat (the silent-truncation
-    // law): the fake arms it like production (always present —
-    // the gate itself is walled on the real service plane).
-    setWeightPresent = () => undefined;
+     setObjectInfo = () => undefined;
+     setWeightPresent = (reader: (relativePath: string, name: string) => boolean): void => {
+       weightChecks.push("models/missing", "missing");
+       reader("models/missing", "missing");
+     };
   };
   return {
     ...real,
@@ -41,13 +49,15 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
     composeModPlane: async () => undefined,
     loadFacts: () => ({ models: {} }),
     liveObjectInfo: async () => ({ Node: {} }),
-    theService: () => {
-      throw new Error("not booted in this fiber");
-    },
+     theService: () => {
+       if (modFields.rows.length === 0) throw new Error("not booted in this fiber");
+       return { cardModFields: () => modFields.rows };
+     },
+     checkModelPresent: () => null,
   };
 });
 
-import { composeOnce, prepareCardParams } from "../src/cardsCompose.ts";
+import { admissionRefusal, composeOnce, prepareCardParams } from "../src/cardsCompose.ts";
 import { ComposeRefusal } from "@melite/comfyui-cordis";
 import type { ComposeSeat } from "../src/cardsCompose.ts";
 import type { CardDeclRow, ModelFactsRow } from "../src/cardsFacts.ts";
@@ -80,6 +90,8 @@ const seat = (over: Partial<ComposeSeat> = {}): ComposeSeat => ({
 beforeEach(() => {
   composeInFiber.mockReset();
   composeInFiber.mockReturnValue({ ok: true });
+  weightChecks.length = 0;
+  modFields.rows.length = 0;
 });
 
 describe("composeOnce (the closed-engine laws)", () => {
@@ -91,6 +103,10 @@ describe("composeOnce (the closed-engine laws)", () => {
   it("a primed-empty object info refuses CLOSED too", async () => {
     await expect(composeOnce(seat({ objectInfo: () => null }), "mycard", "fam", {}, "r", "1"))
       .rejects.toThrow(/primed empty/);
+  });
+  it("arms the weight reader before the compose call", async () => {
+    await composeOnce(seat(), "mycard", "fam", {}, "r", "1");
+    expect(weightChecks).toEqual(["models/missing", "missing"]);
   });
   it("a params-stanza body unwraps and merges (siblings win)", async () => {
     await composeOnce(seat(), "mycard", "fam", { params: { ckpt: "a", width: 1 }, ckpt: "b" }, "r", "1");
@@ -117,6 +133,11 @@ describe("composeOnce (the closed-engine laws)", () => {
     });
     await expect(composeOnce(seat(), "mycard", "fam", {}, "r", "2"))
       .rejects.toThrow(/plain wire error/);
+    composeInFiber.mockImplementation(() => {
+      throw "raw wire failure";
+    });
+    await expect(composeOnce(seat(), "mycard", "fam", {}, "r", "2"))
+      .rejects.toThrow(/raw wire failure/);
   });
 });
 
@@ -143,6 +164,35 @@ describe("prepareCardParams (steps 2-6, the refusal ladder)", () => {
     expect(p.card).toBe("mycard");
     expect(p.skeleton).toBe("skel");
     expect(p.params).toEqual({ ckpt: "x" });
+  });
+  it("a mod-pack key gets a pointed admission hint", () => {
+    modFields.rows.push({
+      pack: "voice",
+      families: ["fam"],
+      fields: { dict: { speaker: {}, style: {} } },
+    });
+    expect(() => admissionRefusal(seat(), "mycard", "fam", { voice: 1 }, "1"))
+      .toThrow(/Mod-pack keys: 'voice'.*speaker, style/);
+  });
+  it("a registered card without a family row prepares family-less", () => {
+    const cardless = { ...decl, skeleton: "" };
+    const s = seat({
+      cardDecls: () => ({ cardless }),
+      modelFacts: () => ({}),
+      resolveCardFamily: () => "missing",
+      modelMids: () => new Set<string>(),
+    });
+    const p = prepareCardParams(s, { seed: 4 }, "cardless", "1");
+    expect(p).toMatchObject({ mid: "cardless", fam: "", card: "cardless", skeleton: "cardless", familyless: true });
+    expect(p.params).toEqual({ seed: 4 });
+    const withSkeleton = { ...cardless, skeleton: "frame" };
+    const s2 = seat({
+      cardDecls: () => ({ cardless: withSkeleton }),
+      modelFacts: () => ({}),
+      resolveCardFamily: () => "missing",
+      modelMids: () => new Set<string>(),
+    });
+    expect(prepareCardParams(s2, { seed: 5 }, "cardless", "1").skeleton).toBe("frame");
   });
   it("a mid that resolves through the mids set still prepares", () => {
     const p = prepareCardParams(seat({ resolveCardFamily: () => "fam" }), {}, "fam", "1");

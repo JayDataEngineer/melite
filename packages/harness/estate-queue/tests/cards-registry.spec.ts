@@ -98,6 +98,22 @@ describe("resolveCardFamily (the route lens)", () => {
     expect(svc.resolveCardFamily(one)).toBe(one);
     expect(svc.resolveCardFamily("ghost-mid")).toBe("ghost-mid");
   });
+  it("the live H3 timeline route folds to the h3 family row", () => {
+    expect(svc.resolveCardFamily("h3-timeline")).toBe("h3");
+  });
+
+  it("a route row folds only through a declared owner", () => {
+    const table = {
+      route: { defaults: { model: "owner" } },
+      owner: { defaults: {} },
+      self: { defaults: { model: "self" } },
+      ghost: { defaults: { model: "missing" } },
+    } as never;
+    expect(svc.resolveCardFamily("route", table)).toBe("owner");
+    expect(svc.resolveCardFamily("self", table)).toBe("self");
+    expect(svc.resolveCardFamily("ghost", table)).toBe("ghost");
+  });
+
   it("caller-supplied facts govern: variant-less rows and cell-less variants walk clean", () => {
     const crafted: Record<string, never | { variants?: unknown[] }> = {
       "bare-family": {},
@@ -272,6 +288,81 @@ describe("overlayCardParams (the validate overlay, phase-1 voice)", () => {
     expect(typeof out.card).toBe("string");
     expect(typeof out.params).toBe("object");
   });
+
+  it("a family-less card id uses the card-unit marker", () => {
+    const out = svc.overlayCardParams({ model: "mask", input_image: "/m/p.png" }, "mask");
+    expect(out.fam).toBe("");
+    expect(out.card).toBe("mask");
+    expect(out.params["model"]).toBeUndefined();
+  });
+
+  it("an unregistered model id does not become a family-less card", () => {
+    expect(() => svc.overlayCardParams({}, "not-a-card")).toThrow(/composes outside the cordis plane/);
+  });
+
+  it("a catalog id that resolves through a route still uses the family row", () => {
+    const out = svc.overlayCardParams({}, "h3-fl2va");
+    expect(out.fam).toBe("h3");
+    expect(out.card).toBe("h3-timeline");
+  });
+
+  it("the timeline route prepares as the h3 family, not a second family", () => {
+    const out = svc.overlayCardParams({ prompt: "x" }, "h3-timeline");
+    expect(out.fam).toBe("h3");
+  });
+
+  it("a catalog id that is not a family row does not enter the family-less arm", () => {
+    const view = svc as unknown as {
+      modelMids: () => Set<string>;
+      resolveCardFamily: (mid: string, facts?: unknown) => string;
+    };
+    const originalMids = svc.modelMids.bind(svc);
+    const originalResolve = svc.resolveCardFamily.bind(svc);
+    view.modelMids = () => new Set([...originalMids(), "mask"]);
+    view.resolveCardFamily = (mid: string): string => mid === "mask" ? "h3" : originalResolve(mid);
+    try {
+      const out = svc.overlayCardParams({ model: "mask" }, "mask");
+      expect(out.fam).toBe("h3");
+    } finally {
+      view.modelMids = originalMids;
+      view.resolveCardFamily = originalResolve;
+    }
+  });
+});
+
+describe("phase2Card output resolution", () => {
+  it("refuses an unknown card after composition", async () => {
+    composeOnce.mockResolvedValueOnce({} as never);
+    const p1 = { mid: "m", fam: "f", card: "ghost", skeleton: "s", decl: {}, params: {}, spell: null } as never;
+    await expect(svc.phase2Card(p1, "r-unknown")).rejects.toMatchObject({ code: "card_compose" });
+  });
+
+  it("maps a declared output producer refusal to a card-compose error", async () => {
+    composeOnce.mockResolvedValueOnce({} as never);
+    const p1 = { mid: "m", fam: "f", card: "tts", skeleton: "s", decl: {}, params: {}, spell: null } as never;
+    await expect(svc.phase2Card(p1, "r-missing-producer")).rejects.toMatchObject({ code: "card_compose" });
+  });
+
+  it("rethrows a non-ComposeRefusal producer error unchanged", async () => {
+    const defs = svc.defsSync();
+    const original = defs.get("tts")!;
+    defs.set("tts", {
+      ...original,
+      flowOutputBindings: [{
+        channel: "default",
+        node: "SaveAudio.0",
+        nodeClass: "SaveAudio",
+        when: () => { throw new Error("producer exploded"); },
+      }],
+    });
+    try {
+      composeOnce.mockResolvedValueOnce({} as never);
+      const p1 = { mid: "m", fam: "f", card: "tts", skeleton: "s", decl: {}, params: {}, spell: null } as never;
+      await expect(svc.phase2Card(p1, "r-producer-throw")).rejects.toThrow("producer exploded");
+    } finally {
+      defs.set("tts", original);
+    }
+  });
 });
 
 describe("composeValidateCard (the validate refusal voice)", () => {
@@ -397,6 +488,35 @@ describe("repairStageModel — THE SCHEMA-MASTER REPAIR (operator law 2026-09-24
     const fix = svc.repairStageModel("tts", "qwen3-tts-voicedesign-design");
     expect(fix).not.toBeNull();
     expect(svc.admitStageModel("tts", fix!.model)).toEqual({ ok: true });
+  });
+
+  it("walks missing variant/cell rows and the prefix identity fallback", () => {
+    const view = svc as unknown as { modelFacts: () => Record<string, unknown> };
+    const original = view.modelFacts;
+    view.modelFacts = () => ({
+      bare: {},
+      "not-boarded": {
+        variants: [{ id: "foreign", route: "foreign", cells: [{ route: "cell-route" }] }],
+      },
+      "qwen3-tts-voicedesign": {
+        variants: [
+          { id: "no-cells", route: "not-a-cell" },
+          { id: "cell", route: "also-not", cells: [{ route: "cell-route" }] },
+        ],
+      },
+    });
+    try {
+      expect(svc.repairStageModel("tts", "cell-route")).toEqual({
+        model: "qwen3-tts-voicedesign",
+        variant: "cell",
+      });
+      view.modelFacts = () => ({});
+      expect(svc.repairStageModel("tts", "qwen3-tts-voicedesign-mystery")).toEqual({
+        model: "qwen3-tts-voicedesign",
+      });
+    } finally {
+      view.modelFacts = original;
+    }
   });
 });
 

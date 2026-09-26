@@ -181,7 +181,7 @@ export function admissionRefusal(
     if (unknown.length > 0) {
       const hints = unknown
         .filter((k) => packFields.has(k))
-        .map((k) => " '" + k + "' is the '" + k + "' mod pack — it takes no key of its own; its fields ride flat top-level: " + (packFields.get(k) ?? []).join(", "))
+        .map((k) => " '" + k + "' is the '" + k + "' mod pack — it takes no key of its own; its fields ride flat top-level: " + packFields.get(k)!.join(", "))
       throw phaseRefusal(
         phase,
         "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +

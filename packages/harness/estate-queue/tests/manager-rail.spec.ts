@@ -100,7 +100,7 @@ describe("managerGet", () => {
     );
   });
 
-  it("an aborting timeout settles the plane-unavailable template", async () => {
+  it("an internal timeout maps to a manager timeout", async () => {
     globalThis.fetch = (async (_url: unknown, init: RequestInit | undefined) => {
       if (init?.signal?.aborted) throw new DOMException("aborted", "AbortError");
       return { status: 200, text: async () => "{}" } as unknown as Response;
@@ -114,8 +114,33 @@ describe("managerGet", () => {
     } as unknown as ManageCtx;
     await assert.rejects(
       managerGet("http://h", "/r", { timeoutMs: 5, ctx: aborting }),
-      /management plane unavailable/,
+      /manager request timed out/,
     );
+  });
+
+  it("propagates a caller abort to the fetch", async () => {
+    const controller = new AbortController();
+    let requestSignal: AbortSignal | undefined;
+    globalThis.fetch = (async (_url: unknown, init: RequestInit | undefined) => {
+      requestSignal = init?.signal;
+      return await new Promise<Response>((_resolve, reject) => {
+        requestSignal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+      });
+    }) as typeof fetch;
+    const pending = managerGet("http://h", "/r", {
+      timeoutMs: 5_000,
+      ctx: {
+        endpoint: () => ({ url: "http://h" }),
+        timeout: () => () => {},
+        signal: controller.signal,
+      } as unknown as ManageCtx,
+    });
+    controller.abort();
+    await assert.rejects(pending, (error: unknown) => {
+      assert.equal((error as Error).name, "AbortError");
+      return true;
+    });
+    assert.equal(requestSignal?.aborted, true);
   });
 
   it("GET sends no body headers; the cancel always releases", async () => {

@@ -85,7 +85,7 @@ function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function normalizedBaseUrl(value: string): { readonly href: string; readonly origin: string } {
+function normalizedBaseUrl(value: string): { readonly href: string } {
   let parsed: URL;
   try {
     parsed = new URL(value);
@@ -99,7 +99,7 @@ function normalizedBaseUrl(value: string): { readonly href: string; readonly ori
     throw new ManagerClientError("invalid-request", "ComfyUI-Manager base URL must not contain credentials");
   }
   const href = value.trim().replace(/\/+$/u, "");
-  return { href, origin: parsed.origin };
+  return { href };
 }
 
 function errorMessage(error: unknown): string {
@@ -238,13 +238,11 @@ export class ComfyUiManagerHttpClient {
   readonly pollIntervalMs: number;
   readonly maxRequestBytes: number;
   readonly maxResponseBytes: number;
-  private readonly origin: string;
   private readonly fetcher: typeof globalThis.fetch;
 
   constructor(options: ComfyUiManagerClientOptions) {
     const base = normalizedBaseUrl(options.baseUrl);
     this.baseUrl = base.href;
-    this.origin = base.origin;
     this.fetcher = options.fetch ?? globalThis.fetch;
     this.requestTimeoutMs = positiveInteger(options.requestTimeoutMs, DEFAULT_REQUEST_TIMEOUT_MS, "requestTimeoutMs");
     this.queueTimeoutMs = positiveInteger(options.queueTimeoutMs, DEFAULT_QUEUE_TIMEOUT_MS, "queueTimeoutMs");
@@ -345,22 +343,7 @@ export class ComfyUiManagerHttpClient {
         path,
       });
     }
-    let url: URL;
-    try {
-      url = new URL(`${this.baseUrl}${path}`);
-    } catch (error: unknown) {
-      throw new ManagerClientError("invalid-request", "ComfyUI-Manager request URL is invalid", {
-        method,
-        path,
-        cause: error,
-      });
-    }
-    if (url.origin !== this.origin) {
-      throw new ManagerClientError("invalid-request", "ComfyUI-Manager request path changes origin", {
-        method,
-        path,
-      });
-    }
+    const url = new URL(`${this.baseUrl}${path}`);
     let encodedBody: string | undefined;
     if (body !== undefined) {
       if (options.bodyFormat === "text") {

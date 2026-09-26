@@ -236,6 +236,27 @@ describe("loadCard", () => {
     assert.match(String(b["digest"]), /^[0-9a-f]{16}$/);
   });
 
+  it("marks a local model path present without a downloadable catalog row", () => {
+    const def = DEF({ boarded: ["local-fam"] });
+    const cardsLocal = {
+      defsSync: () => new Map([["image-gen", def]]),
+      modelMids: () => new Set(["local-fam"]),
+    };
+    const modelsLocal = {
+      allDecls: () => [{
+        id: "local-fam",
+        label: "Local",
+        lane_inputs: { model_path: "audio/Qwen3-TTS" },
+      }],
+      checkModelPathPresent: (path: string) => path === "audio/Qwen3-TTS" ? "/models/audio/Qwen3-TTS" : null,
+      resolveCatalogArtifact: () => {
+        throw new Error("no downloadable provisions");
+      },
+    };
+    const b = loadCard(REPO, cardsLocal as never, modelsLocal as never, "image-gen");
+    assert.deepEqual(b["model_hints"], [{ id: "local-fam", label: "Local", description: "", present: true }]);
+  });
+
   it("pack_hints carry the declared packs with the gate's presence marks", () => {
     // a DEF declaring requires + a family slice — presence rides the
     // engine read (the booted singleton: unknown marks in this

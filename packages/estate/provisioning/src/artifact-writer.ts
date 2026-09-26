@@ -143,10 +143,6 @@ export function resolveConfinedPath(root: string, relativePath: string): string 
   }
   const rootPath = resolve(root);
   const destination = resolve(rootPath, ...segments);
-  const rel = relative(rootPath, destination);
-  if (rel === "" || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
-    throw new ProvisioningError("invalid-path", "artifact path escapes its configured root");
-  }
   return destination;
 }
 
@@ -170,7 +166,7 @@ async function existingKind(path: string): Promise<"missing" | "file" | "directo
 
 async function assertNoSymlink(root: string, destination: string): Promise<void> {
   const rel = relative(root, destination);
-  const segments = rel === "" ? [] : rel.split(sep);
+  const segments = rel.split(sep);
   let current = root;
   for (const segment of segments) {
     current = join(current, segment);
@@ -202,11 +198,7 @@ async function createConfinedDirectory(root: string, directory: string): Promise
       throw new ProvisioningError("invalid-path", "artifact path traverses a symbolic link");
     }
     if (kind === "missing") {
-      try {
-        await mkdir(current);
-      } catch (error: unknown) {
-        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-      }
+      await mkdir(current, { recursive: true });
       kind = await existingKind(current);
     }
     if (kind === "symlink") {
@@ -230,16 +222,13 @@ async function preparePath(root: string, destination: string): Promise<string> {
     throw new ProvisioningError("invalid-path", "artifact destination escapes its root");
   }
   const destinationKind = await existingKind(destination);
-  if (destinationKind === "symlink") {
-    throw new ProvisioningError("invalid-path", "artifact destination is a symbolic link");
-  }
   if (destinationKind === "directory" || destinationKind === "other") {
     throw new ProvisioningError("invalid-path", "artifact destination is not a file");
   }
   return realRoot;
 }
 
-function iteratorFor(input: ArtifactInput): AsyncIterableIterator<Uint8Array> {
+function iteratorFor(input: ArtifactInput): AsyncIterator<Uint8Array> {
   if (typeof input === "object" && input !== null) {
     const asyncIterable = input as AsyncIterable<Uint8Array>;
     if (typeof asyncIterable[Symbol.asyncIterator] === "function") {
@@ -249,9 +238,6 @@ function iteratorFor(input: ArtifactInput): AsyncIterableIterator<Uint8Array> {
         return: async (): Promise<IteratorResult<Uint8Array>> => {
           if (iterator.return !== undefined) await iterator.return();
           return { done: true, value: undefined };
-        },
-        [Symbol.asyncIterator](): AsyncIterableIterator<Uint8Array> {
-          return this;
         },
       };
     }
@@ -264,9 +250,6 @@ function iteratorFor(input: ArtifactInput): AsyncIterableIterator<Uint8Array> {
           if (iterator.return !== undefined) iterator.return();
           return { done: true, value: undefined };
         },
-        [Symbol.asyncIterator](): AsyncIterableIterator<Uint8Array> {
-          return this;
-        },
       };
     }
     const stream = input as ReadableStream<Uint8Array>;
@@ -277,9 +260,6 @@ function iteratorFor(input: ArtifactInput): AsyncIterableIterator<Uint8Array> {
         return: async (): Promise<IteratorResult<Uint8Array>> => {
           await reader.cancel();
           return { done: true, value: undefined };
-        },
-        [Symbol.asyncIterator](): AsyncIterableIterator<Uint8Array> {
-          return this;
         },
       };
     }
@@ -305,9 +285,7 @@ async function nextChunk(
     };
     const onAbort = (): void => {
       finish(() => {
-        if (iterator.return !== undefined) {
-          void Promise.resolve(iterator.return()).catch(() => undefined);
-        }
+        void Promise.resolve(iterator.return!()).catch(() => undefined);
         rejectPromise(abortError(signal));
       });
     };
@@ -322,9 +300,8 @@ async function nextChunk(
 }
 
 async function closeIterator(iterator: AsyncIterator<Uint8Array>): Promise<void> {
-  if (iterator.return === undefined) return;
   try {
-    await iterator.return();
+    await iterator.return!();
   } catch {
     return;
   }
@@ -449,7 +426,7 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
       }
       throw new ProvisioningError("write-failed", `artifact write failed: ${errorMessage(error)}`, error);
     } finally {
-      await closeIterator(iterator).catch(() => undefined);
+      await closeIterator(iterator);
     }
   }
 
@@ -460,7 +437,7 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
     const destination = resolveConfinedPath(request.root, request.relativePath);
     await preparePath(request.root, destination);
     const kind = await existingKind(destination);
-    if (kind !== "file") return { present: false, path: destination };
+    if (kind === "missing") return { present: false, path: destination };
     const sha256 = await sha256File(destination, signal);
     if (request.expectedSha256 !== undefined && normalizeDigest(request.expectedSha256) !== sha256) {
       return { present: false, path: destination, sha256 };

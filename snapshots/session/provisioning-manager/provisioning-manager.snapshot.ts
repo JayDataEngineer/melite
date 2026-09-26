@@ -10,9 +10,9 @@ describe('comfy_manage provisioning result replay', () => {
       assert.equal(path, '/v1/manage')
       assert.deepEqual(body, { action: 'install_extension', nodes: ['pack'] })
       return {
-        ok: true,
+        ok: false,
         action: 'install_extension',
-        detail: 'restart required',
+        detail: 'partial',
         data: {
           state: 'partial',
           operation_id: 'op-extension-1',
@@ -26,12 +26,36 @@ describe('comfy_manage provisioning result replay', () => {
       { action: 'install_extension', nodes: ['pack'] },
       { signal: AbortSignal.timeout(5000) },
     ) as Record<string, unknown>
-    assert.equal(result.ok, true)
+    assert.equal(result.ok, false)
     assert.equal(result.action, 'install_extension')
     assert.equal(result.state, 'partial')
     assert.equal(result.partial, true)
     assert.equal(result.operation_id, 'op-extension-1')
     assert.equal(result.restart_required, true)
     assert.deepEqual(result.items, [{ key: 'extension:pack', state: 'restart_required' }])
+  })
+
+  it('replays URL-free model and ComfyUI version catalogs', async () => {
+    const request = (async (method: string, path: string, body: unknown) => {
+      assert.equal(method, 'POST')
+      assert.equal(path, '/v1/manage')
+      assert.deepEqual(body, { action: 'status' })
+      return {
+        ok: true,
+        action: 'status',
+        detail: 'server up',
+        data: {
+          model_options: [{ id: 'wan', label: 'Wan', variants: [{ id: 'preview', quants: [{ id: 'fp8', label: 'FP8' }] }] }],
+          comfyui_versions: [{ id: 'v0.9', label: 'v0.9 — stable', tag: 'stable' }],
+        },
+      }
+    }) as unknown as EstateRequest
+    const tool = comfyManage(request)
+    const result = await tool.execute(
+      { action: 'status' },
+      { signal: AbortSignal.timeout(5000) },
+    ) as Record<string, unknown>
+    assert.deepEqual((result.data as { model_options: unknown }).model_options, [{ id: 'wan', label: 'Wan', variants: [{ id: 'preview', quants: [{ id: 'fp8', label: 'FP8' }] }] }])
+    assert.deepEqual((result.data as { comfyui_versions: unknown }).comfyui_versions, [{ id: 'v0.9', label: 'v0.9 — stable', tag: 'stable' }])
   })
 })

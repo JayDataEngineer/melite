@@ -10,7 +10,7 @@
 // tests.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -51,6 +51,25 @@ describe("findCardDangling (the deep walk)", () => {
     assert.ok(Array.isArray(out));
     assert.equal((out as unknown[])[1], "/v1/assets/runs/run-9/ghost.png");
     assert.match(String((out as unknown[])[2]), /run-9/);
+  });
+
+  it("dedupes lexically identical manifest output roots", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-dangling-roots-"));
+    const previousRoot = process.env["MELITE_STATE_ROOT"];
+    const previousExtras = process.env["MELITE_STATE_ROOTS"];
+    process.env["MELITE_STATE_ROOT"] = root;
+    process.env["MELITE_STATE_ROOTS"] = root + "/./";
+    try {
+      const roots = sweepOutputRoots();
+      assert.equal(new Set(roots).size, roots.length);
+      assert.deepEqual(roots, [join(root, "output"), join(root, "test-output")]);
+    } finally {
+      if (previousRoot === undefined) delete process.env["MELITE_STATE_ROOT"];
+      else process.env["MELITE_STATE_ROOT"] = previousRoot;
+      if (previousExtras === undefined) delete process.env["MELITE_STATE_ROOTS"];
+      else process.env["MELITE_STATE_ROOTS"] = previousExtras;
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("THE RECEIPT WALL (transcript-034 step 18): a live ref under MELITE_STATE_ROOT/output, BOTH spellings, rides — and a miss names every searched tree", () => {

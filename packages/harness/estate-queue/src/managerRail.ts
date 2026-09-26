@@ -65,7 +65,17 @@ export interface CallOpts {
  *  may be either; parse defensively). */
 async function call(base: string, path: string, opts: CallOpts): Promise<unknown> {
   const ctrl = new AbortController();
-  const t = opts.ctx.timeout((): void => ctrl.abort(), opts.timeoutMs);
+  const caller = opts.ctx.signal;
+  let timedOut = false;
+  const onCallerAbort = (): void => {
+    ctrl.abort(caller?.reason);
+  };
+  if (caller?.aborted === true) onCallerAbort();
+  else caller?.addEventListener("abort", onCallerAbort, { once: true });
+  const t = opts.ctx.timeout((): void => {
+    timedOut = true;
+    ctrl.abort();
+  }, opts.timeoutMs);
   try {
     const r = await fetch(base + path, {
       method: opts.method,
@@ -74,6 +84,10 @@ async function call(base: string, path: string, opts: CallOpts): Promise<unknown
       signal: ctrl.signal,
     });
     const text: string = await r.text();
+    if (caller?.aborted === true) {
+      throw new DOMException("The operation was aborted", "AbortError");
+    }
+    if (timedOut) throw new ManagerApiError(504, "manager request timed out");
     if (!(r.status >= 200 && r.status < 300)) {
       throw new ManagerApiError(r.status, text);
     }
@@ -84,11 +98,14 @@ async function call(base: string, path: string, opts: CallOpts): Promise<unknown
       return text;
     }
   } catch (e) {
+    if (caller?.aborted === true) {
+      throw caller.reason instanceof Error ? caller.reason : new DOMException("The operation was aborted", "AbortError");
+    }
+    if (timedOut) throw new ManagerApiError(504, "manager request timed out");
     if (e instanceof ManagerApiError) throw e;
-    // Transport failure (ECONNREFUSED, abort, dns): the plane is
-    // down — one template, never a raw TypeError in an envelope.
     throw planeUnavailable(base, e instanceof Error ? e.message : String(e));
   } finally {
+    caller?.removeEventListener("abort", onCallerAbort);
     t();
   }
 }

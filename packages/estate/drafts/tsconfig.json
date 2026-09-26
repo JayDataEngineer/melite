@@ -19,7 +19,8 @@
       "node"
     ],
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": false,
+    "rewriteRelativeImportExtensions": true
   },
   "include": [
     "src/**/*.ts"

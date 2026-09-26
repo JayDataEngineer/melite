@@ -430,6 +430,7 @@ describe("pump + engine", () => {
     const b = await s.svc.start(wfBody({ name_hint: "second" }), sig());
     assert.equal((s.core.runs.get(b.run_id) as RunRecord).status, "queued");
     // TEARDOWN: the fiber's own dispose (the cordis effect verb)
+    engine.stopFails = true;
     const ctx = (s.svc as unknown as { ctx: Context }).ctx;
     await ctx.fiber.dispose();
     await parked; // the engine arm observed the stop and returned
@@ -447,6 +448,35 @@ describe("pump + engine", () => {
     assert.equal(s.svc.tearingDown, true); // the PUBLIC gate a next claim consults
     assert.equal(s.svc.pumping, false);
     void release;
+  });
+
+  it("teardown without a cached engine still presses the live stop flag", async () => {
+    const s = seat();
+    const runId = "run-teardown-fallback";
+    const dir = join(s.state, "output", runId);
+    mkdirSync(dir, { recursive: true });
+    const row = {
+      runId,
+      status: "running",
+      stages: [],
+      skippedStages: [],
+      artifacts: [],
+      error: "",
+      draftId: "d1",
+      dir,
+      testFlag: false,
+      stopFlag: false,
+      params: [],
+      createdAt: 1,
+      pipeline: "flow_inline",
+      graphRows: [],
+      outputNodes: [],
+    } as RunRecord;
+    s.core.runs.set(runId, row);
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    await ctx.fiber.dispose();
+    assert.equal(row.stopFlag, true);
+    assert.equal(s.svc.tearingDown, true);
   });
 
   it("THE VARIANT, SERVED (commission 033's self-critique #5): the live status row serves the lane the row holds; variant-less rows serve no key", async () => {
