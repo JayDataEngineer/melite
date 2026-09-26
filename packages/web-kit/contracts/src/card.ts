@@ -116,6 +116,7 @@ export interface CardStage {
   * adapter so the card stays store-free. */
   inputIndices: number[]
   result: CardResult | null
+  history?: unknown[]
   status: CardStatus
   error?: string | null
   /** Run-level log tail (YAML surfaces). Rendered in the detail console. */

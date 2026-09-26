@@ -66,6 +66,14 @@ test('cardResultFromRecord normalizes artifacts, media, metadata, gallery, and p
   })).toEqual({ artifacts: { video: '/video' }, assetUrls: [], metadata: {} })
 })
 
+test('cardResultFromRecord omits empty gallery and preview collections', () => {
+  expect(cardResultFromRecord({
+    artifacts: { video: '/video' },
+    gallery: [null, {}, { name: '', url: '/no-name' }, { name: 'no-url', url: '' }],
+    motionPreviews: [null, {}, { label: '', artifact: 'no-label' }, { label: 'no-artifact', artifact: '' }],
+  })).toEqual({ artifacts: { video: '/video' }, assetUrls: [], metadata: {} })
+})
+
 test('projectStageView preserves effective identity, wiring, results, and host context', () => {
   const props = owner({
     card: '',
@@ -79,12 +87,13 @@ test('projectStageView preserves effective identity, wiring, results, and host c
       initial: { initial: 'image' },
       invalid: { stage: 3 },
     },
-    result: {
-      artifacts: { video: '/video', empty: '', count: 3 },
-      assetUrls: ['/video', '', 7],
-      metadata: { error: 'failed in metadata', runId: 'run-meta' },
-    },
-    tags: ['ai_generated', 'other'],
+     result: {
+       artifacts: { video: '/video', empty: '', count: 3 },
+       assetUrls: ['/video', '', 7],
+       metadata: { error: 'failed in metadata', runId: 'run-meta' },
+     },
+     history: [{ run_id: 'run-old', url: '/old.mp4' }],
+     tags: ['ai_generated', 'other'],
     saveToAssets: false,
   }, {
     runStatus: 'done',
@@ -117,12 +126,13 @@ test('projectStageView preserves effective identity, wiring, results, and host c
     inputs: ['s_0', 's_2'],
     inputOutputs: [null, 'mask', null],
     inputIndices: [0, 1],
-    result: {
-      artifacts: { video: '/video' },
-      assetUrls: ['/video'],
-      metadata: { error: 'failed in metadata', runId: 'run-meta' },
-    },
-    status: 'done',
+     result: {
+       artifacts: { video: '/video' },
+       assetUrls: ['/video'],
+       metadata: { error: 'failed in metadata', runId: 'run-meta' },
+     },
+     history: [{ run_id: 'run-old', url: '/old.mp4' }],
+     status: 'done',
     error: 'failed in metadata',
     runId: 'run-meta',
     saveToAssets: false,
@@ -179,6 +189,16 @@ test('projectStageView falls back through row identity and permits an explicit n
   })
   expect(projectStageView(owner({ resolved: { model: 'resolved-only' } })).model).toBe('resolved-only')
   expect(projectStageView(owner({})).model).toBe('motion')
+})
+
+test('projectStageView uses stage identity when the owner has no card name', () => {
+  expect(projectStageView(owner({}, { cardName: '' }))).toMatchObject({
+    id: 's_1',
+    title: 's_1',
+    kind: 'stage',
+    service: 'stage',
+    model: 'stage',
+  })
 })
 
 test('projectStageView maps every run status and result run identity', () => {

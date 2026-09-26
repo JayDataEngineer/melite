@@ -43,6 +43,7 @@ interface ImportRow {
   path: string;
   line: number;
   mod: string;
+  resolved?: string;
 }
 
 function* iterSourceFiles(root: string): Generator<[string, string]> {
@@ -107,8 +108,9 @@ function* collectImports(path: string,
       if (!spec) continue;
       const line = text.slice(0, m.index).split("\n").length;
       if (spec.startsWith(".")) {
-        const top = topGroup(resolve(dirname(path), spec));
-        if (top) yield { path, line, mod: top + "/<relative>" };
+        const target = resolve(dirname(path), spec);
+        const top = topGroup(target);
+        if (top) yield { path, line, mod: top + "/<relative>", resolved: target };
       } else {
         yield { path, line, mod: spec };
       }
@@ -206,13 +208,14 @@ function contractVendorPacksIsolated(rows: ImportRow[]): ImportRow[] {
     if (topGroup(resolve(r.path)) !== "vendor") continue;
     const mine = vendorPack(resolve(r.path));
     if (!mine) continue;
-    if (r.mod.endsWith("/<relative>")) {
-      const other = r.mod.split("/")[0];
-      if (other && other !== mine &&
-          r.path.includes("comfyui_extensions")) {
+    if (r.mod.endsWith("/<relative>") && r.resolved !== undefined) {
+      const target = real(r.resolved);
+      const rel = relative(join(REPO, "vendor", "comfyui_extensions", mine), target);
+      if (rel === ".." || rel.startsWith(".." + sep)) {
+        const other = vendorPack(target);
         out.push({ path: r.path, line: r.line,
           mod: "vendor packs isolated: relative import from pack " +
-            JSON.stringify(mine) + " into " + JSON.stringify(other) });
+            JSON.stringify(mine) + " into " + JSON.stringify(other ?? target) });
       }
     }
   }

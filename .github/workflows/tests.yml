@@ -9,11 +9,22 @@ on:
 permissions:
   contents: read
 
+# THE PORTABILITY SEAT (2026-09-25): the unit battery runs on all three
+# runner families. That is only possible because the media probe is
+# TypeScript — `melite_view` reads a container's boxes in-repo
+# (packages/harness/melite-tools/src/tools/mp4Probe.ts) instead of
+# shelling out to ffprobe, so the suite declares no host binary and no
+# Linux-only package. If a future change reintroduces a subprocess, this
+# matrix is what catches it.
 jobs:
   unit:
-    name: unit (vitest)
-    runs-on: ubuntu-latest
+    name: unit (vitest, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
