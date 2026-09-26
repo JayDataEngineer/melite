@@ -30,6 +30,20 @@
 #   SUPERVISOR_STATE_ROOT    (default the repo root)
 #   SUPERVISOR_MAX_ATTEMPTS  (default 3)
 #   SUPERVISOR_BACKOFF_S     (default 60)
+#   SUPERVISOR_LOCK_WAIT_S   (default 1800) the pre-launch turn-wait
+#                             on the queue lock (two makers, one
+#                             queue: the second WAITS, never demotes)
+#   SUPERVISOR_DONE_MARKER   exact transcript path (the legacy law)
+#   SUPERVISOR_DONE_GLOB     transcript glob (the collision-law
+#                             names): a file matching it whose mtime
+#                             is NEWER than this supervisor's boot
+#                             counts as the done marker — the maker
+#                             mints transcript-<slug>-<HHMM>.md at
+#                             FINISH time, so a caller-predicted
+#                             exact path never matches (the 2026-09-26
+#                             mismatchint: two successful commissions
+#                             read as boot flakes and burned duplicate
+#                             attempts)
 # Exit: 0 commission exited 0; 75 rate-wall (token written); any
 #   other code is the commission's own, passed through loud.
 set -uo pipefail
@@ -39,6 +53,10 @@ OUT_PREFIX="${2:-/tmp/commission}"
 DSH_BIN="${SUPERVISOR_DSH_BIN:-/home/user/.local/bin/dsh}"
 PROFILE="${SUPERVISOR_PROFILE:-headless}"
 STATE_ROOT="${SUPERVISOR_STATE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+LOCK_WAIT_S="${SUPERVISOR_LOCK_WAIT_S:-1800}"
+# THE GLOB LAW'S CLOCK ZERO: any transcript minted from NOW on is
+# THIS supervisor's — an older same-pattern file never satisfies it.
+BOOT_TS="$(date +%s)"
 # §23 CROSS-ROOTS (the media-tab catch, 2026-09-24): the maker mints
 # under STATE_ROOT/output while the user's 3088 GUI estate serves
 # data/runs/output — two trees, ONE manifest. Without this env the
@@ -61,6 +79,25 @@ quota_wall() {
   grep -qiE 'usage[ _-]?limit|quota|resource_exhausted|GoUsageLimit' "$1"
 }
 
+marker_present() {
+  # the exact path (legacy) — a plain -f
+  if [ -n "${SUPERVISOR_DONE_MARKER:-}" ] && [ -f "${SUPERVISOR_DONE_MARKER}" ]; then
+    return 0
+  fi
+  # the glob (collision-law names): any file matching the pattern
+  # whose mtime is at or after BOOT_TS — the supervisor's own mint,
+  # not a sibling session's older transcript in the shared namespace
+  if [ -n "${SUPERVISOR_DONE_GLOB:-}" ]; then
+    local f mt
+    for f in ${SUPERVISOR_DONE_GLOB}; do
+      [ -f "$f" ] || continue
+      mt="$(stat -c %Y "$f" 2>/dev/null || echo 0)"
+      if [ "${mt:-0}" -ge "${BOOT_TS}" ]; then return 0; fi
+    done
+  fi
+  return 1
+}
+
 boot_flake() {
   # THE STRUCTURAL LAW (035 attempts 7, 10, 11 — 2026-09-24): the
   # flake's WORDING varies ("not available on my callable tool
@@ -71,11 +108,53 @@ boot_flake() {
   # flaked boot never mints runs and never writes it. Exit 0 with
   # the done-marker ABSENT = boot flake, relaunch. (The legacy
   # door-absence greps stay as a belt for marker-less callers.)
-  if [ -n "${SUPERVISOR_DONE_MARKER:-}" ]; then
-    [ ! -f "${SUPERVISOR_DONE_MARKER}" ]
-    return $?
+  if [ -n "${SUPERVISOR_DONE_MARKER:-}" ] || [ -n "${SUPERVISOR_DONE_GLOB:-}" ]; then
+    if marker_present; then return 1; fi
+    return 0
   fi
-  grep -qiE 'not available on my callable tool surface|cannot make an absent tool available|does not expose the required|file-reading or shell tool' "$1"
+  grep -qiE 'not available on my callable tool surface|cannot make an absent tool available|does not expose the required|can.t access the (required|requested)|cannot access the (required|requested)|unable to access the (required|requested)|file-reading or shell tool' "$1"
+}
+
+lock_holder_alive() {
+  # the maker lane's queue lock: STATE_ROOT/gateway.lock holds the
+  # owning pid (queueLock.acquireLock). A live holder (kill -0
+  # answers, EPERM included) means a sibling maker OWNS the queue —
+  # the queue is the serializer, the lock is the turn signal.
+  local lock="$1" pid
+  [ -f "$lock" ] || return 1
+  pid="$(cat "$lock" 2>/dev/null | tr -d '[:space:]')"
+  case "$pid" in ''|*[!0-9]*) return 1 ;; esac
+  kill -0 "$pid" 2>/dev/null
+}
+
+wait_for_queue_lock() {
+  # TWO MAKERS, ONE QUEUE (the operator's law, 2026-09-26: "two
+  # makers shouldn't be a problem with the queue system" — and with
+  # the turn-wait they are not): a second supervisor over the same
+  # state root does NOT race its maker into a seatless boot (the
+  # demotion chain: QueueService throws on the live-pid lock →
+  # RunsRuntimeService's hard inject on "queue" is unsatisfied →
+  # the runs seat never mounts → every runs-family call answers
+  # the chat-lane voice — receipts: transcripts 0014/0015/0025,
+  # 2026-09-26). It WAITS its turn at the lock, then launches into
+  # a fully-seated lane. Bound: LOCK_WAIT_S; on expiry it launches
+  # anyway and the maker's own loud refusal (never a silent demote)
+  # rides the transient gate's relaunch.
+  local lock="${STATE_ROOT}/gateway.lock" waited=0
+  while [ "${LOCK_WAIT_S}" -gt 0 ] && lock_holder_alive "$lock"; do
+    if [ "$waited" -eq 0 ]; then
+      echo "commission-supervisor: queue lock held by a live sibling maker — waiting our turn (bound ${LOCK_WAIT_S}s)" >&2
+    elif [ $((waited % 30)) -eq 0 ]; then
+      echo "commission-supervisor: still waiting on the queue lock (${waited}s / ${LOCK_WAIT_S}s)" >&2
+    fi
+    sleep 5
+    waited=$((waited + 5))
+    if [ "$waited" -ge "$LOCK_WAIT_S" ]; then
+      echo "commission-supervisor: lock wait expired after ${waited}s — launching; the maker's own boot gate refuses loud if the sibling still holds it" >&2
+      return 0
+    fi
+  done
+  return 0
 }
 
 transient_gate() {
@@ -84,7 +163,11 @@ transient_gate() {
   # THE EMPTY-RESPONSE ARM (035 attempt-13, 2026-09-24):
   # PI_AI_ERROR: Provider returned an empty response — a provider
   # moment, no quota language, retryable.
-  grep -qiE 'rate[ _-]?limit|overloaded|429|provider returned an empty response' "$1"
+  # THE LOCK-EXPIRY ARM (2026-09-26): the estate queue's own loud
+  # refusal ("estate-queue: gateway.lock held by live pid" /
+  # "[gateway] REFUSING TO START") is a TURN problem, not a
+  # commission death — relaunch under the same bounded policy.
+  grep -qiE 'rate[ _-]?limit|overloaded|429|provider returned an empty response|gateway\.lock held by live pid|REFUSING TO START' "$1"
 }
 
 write_token() {
@@ -112,6 +195,8 @@ ATTEMPT=0
 while :; do
   ATTEMPT=$((ATTEMPT + 1))
   LOG="${OUT_PREFIX}-attempt${ATTEMPT}.log"
+  # THE TURN-WAIT: never launch a maker into a lock its sibling owns
+  wait_for_queue_lock
   MELITE_HEADLESS=1 MELITE_STATE_ROOT="${STATE_ROOT}" \
     node "${DSH_BIN}" --profile "${PROFILE}" "$(cat "${PROMPT_FILE}")" \
     >"${LOG}" 2>&1

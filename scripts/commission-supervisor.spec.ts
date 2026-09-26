@@ -16,8 +16,8 @@
  */
 import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, writeFileSync, existsSync, readdirSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -29,7 +29,7 @@ const TRANSIENT_ERR = 'dsh: RATE_LIMIT: OpenAI API error (429): {"code":"rate_li
 /** The dead-key quota body (the KEY SOURCE receipt, runbook). */
 const QUOTA_ERR = 'dsh: RATE_LIMIT: 429 Go usage limit exceeded (admin cap); reset 2026-09-24 09:00:00'
 
-type Arm = 'transient' | 'transient2' | 'quota' | 'both' | 'boom' | 'ok' | 'flake' | 'flake2' | 'empty'
+type Arm = 'transient' | 'transient2' | 'quota' | 'both' | 'boom' | 'ok' | 'flake' | 'flake2' | 'flake3' | 'flake4' | 'empty' | 'lockrefused'
 
 /** The arm bodies (exit code + stderr text). */
 function stubBody(arm: Arm): { code: number, err: string } {
@@ -44,9 +44,14 @@ function stubBody(arm: Arm): { code: number, err: string } {
     // transcript — the phrasing varies, the absence is the law.
     flake: { code: 0, err: 'this session does not expose the required read or bash tools (any wording)' },
     flake2: { code: 0, err: 'completely different words entirely' },
+    flake3: { code: 0, err: "I can't access the required read/bash tool" },
+    flake4: { code: 0, err: "I'm unable to access the requested BRIEF12.md or the file/command tools" },
     // THE EMPTY RESPONSE (035 attempt-13): a provider moment —
     // retryable, no quota language.
     empty: { code: 1, err: 'dsh: PI_AI_ERROR: Provider returned an empty response' },
+    // THE LOCK-EXPIRY ARM (2026-09-26): the estate queue's own loud
+    // refusal after a turn-wait expiry — a turn problem, relaunchable.
+    lockrefused: { code: 1, err: 'estate-queue: gateway.lock held by live pid 424242 (state root /repo)' },
   }
   return bodies[arm]!
 }
@@ -73,7 +78,7 @@ function stage(arms: Arm[]): { dir: string, prompt: string, prefix: string } {
     + 'const map = ' + JSON.stringify({
       transient: stubFor('transient'), transient2: stubFor('transient2'),
       quota: stubFor('quota'), both: stubFor('both'),
-      boom: stubFor('boom'), ok: stubFor('ok'), flake: stubFor('flake'), flake2: stubFor('flake2'), empty: stubFor('empty'),
+      boom: stubFor('boom'), ok: stubFor('ok'), flake: stubFor('flake'), flake2: stubFor('flake2'), flake3: stubFor('flake3'), flake4: stubFor('flake4'), empty: stubFor('empty'), lockrefused: stubFor('lockrefused'),
     }) + ';\n'
     + 'const k = Number(readFileSync(__dirname + "/seq-index", "utf8").trim() || "0") + 1;\n'
     + 'writeFileSync(__dirname + "/seq-index", String(k));\n'
@@ -93,6 +98,26 @@ function run(dir: string, prompt: string, prefix: string): number {
         SUPERVISOR_BACKOFF_S: '0',
         SUPERVISOR_MAX_ATTEMPTS: '3',
         SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'),
+      },
+      timeout: 30_000,
+      stdio: 'pipe',
+    })
+    return 0
+  } catch (e) {
+    assert.ok(e !== null && typeof e === 'object' && 'status' in e, 'an exec failure, got ' + String(e))
+    return (e as { status: number | null }).status ?? -1
+  }
+}
+
+function runWithoutDoneMarker(dir: string, prompt: string, prefix: string): number {
+  try {
+    execFileSync('bash', [SCRIPT, prompt, prefix], {
+      env: {
+        ...process.env,
+        SUPERVISOR_DSH_BIN: join(dir, 'seq.js'),
+        SUPERVISOR_BACKOFF_S: '0',
+        SUPERVISOR_MAX_ATTEMPTS: '3',
+        SUPERVISOR_DONE_MARKER: '',
       },
       timeout: 30_000,
       stdio: 'pipe',
@@ -169,6 +194,18 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
     assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log', 'commission-attempt2.log'])
   })
 
+  it('the no-marker classifier catches the required read/bash access wording', () => {
+    const { dir, prompt, prefix } = stage(['flake3', 'ok'])
+    assert.equal(runWithoutDoneMarker(dir, prompt, prefix), 0)
+    assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log', 'commission-attempt2.log'])
+  })
+
+  it('the no-marker classifier catches unable-to-access requested-file wording', () => {
+    const { dir, prompt, prefix } = stage(['flake4', 'ok'])
+    assert.equal(runWithoutDoneMarker(dir, prompt, prefix), 0)
+    assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log', 'commission-attempt2.log'])
+  })
+
   it('a CLEAN exit with a healthy log never relaunches (the gate matches door-absence words only)', () => {
     const { dir, prompt, prefix } = stage(['ok'])
     assert.equal(run(dir, prompt, prefix), 0)
@@ -180,6 +217,93 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
     assert.equal(run(dir, prompt, prefix), 0)
     assert.equal(attemptLogs(prefix).length, 1)
     assert.ok(!existsSync(prefix + '-resume.token.md'))
+  })
+})
+
+describe('commission-supervisor — the done-marker glob (the mismatchint fix, 2026-09-26)', () => {
+  function runGlob(dir: string, prompt: string, prefix: string, env: Record<string, string>): { code: number, stderr: string } {
+    const r = spawnSync('bash', [SCRIPT, prompt, prefix], {
+      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', ...env },
+      timeout: 30_000, encoding: 'utf8',
+    })
+    return { code: r.status ?? -1, stderr: (r.stderr ?? '') + (r.stdout ?? '') }
+  }
+
+  it('a collision-law transcript name (globe-matched, minted fresh) satisfies the done marker — no duplicate attempt', () => {
+    const { dir, prompt, prefix } = stage([])
+    // the stub mints a FINISH-TIME name the caller could not predict
+    // (escape-free source: String.fromCharCode(10) — no backslash
+    // layers between python-heredoc, TS string, and the stub file)
+    const NL = 'String.fromCharCode(10)'
+    writeFileSync(join(dir, 'seq.js'),
+      'require("node:fs").writeFileSync(__dirname + "/transcript-tide-20300101-0405.md", "final report" + ' + NL + ');'
+      + 'process.exit(0);' + NL + ';')
+const r = runGlob(dir, prompt, prefix, { SUPERVISOR_DONE_GLOB: join(dir, 'transcript-tide-*.md'), SUPERVISOR_DONE_MARKER: '' })
+    assert.equal(r.code, 0, 'stderr: ' + r.stderr.slice(0, 200))
+    assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log'], 'the glob law saw the fresh mint — one attempt only')
+  })
+
+  it('a PRE-EXISTING same-pattern transcript (older than boot) never satisfies the glob — a flaked boot still relaunches', () => {
+    const { dir, prompt, prefix } = stage(['flake'])
+    // an old transcript from a sibling session, mtime forced old
+    const old = join(dir, 'transcript-tide-20200101-0000.md')
+    writeFileSync(old, 'stale sibling transcript\\n')
+    utimesSync(old, new Date(Date.now() - 86_400_000), new Date(Date.now() - 86_400_000))
+    const r = runGlob(dir, prompt, prefix, { SUPERVISOR_DONE_GLOB: join(dir, 'transcript-tide-*.md'), SUPERVISOR_DONE_MARKER: '' })
+    assert.equal(r.code, 0)
+    // the flake stub never mints; the cap is 3 under this env
+    assert.deepEqual(attemptLogs(prefix),
+      ['commission-attempt1.log', 'commission-attempt2.log', 'commission-attempt3.log'],
+      'the stale file did not count — the flake path ran its full cap')
+  })
+
+  it('the exact marker still wins when both knobs are set (the legacy law unchanged)', () => {
+    const { dir, prompt, prefix } = stage(['ok'])
+    const r = runGlob(dir, prompt, prefix, { SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'), SUPERVISOR_DONE_GLOB: join(dir, 'nomatch-*.md') })
+    assert.equal(r.code, 0)
+    assert.equal(attemptLogs(prefix).length, 1)
+  })
+})
+
+describe('commission-supervisor — the queue-lock turn-wait (two makers, one queue)', () => {
+  function runLock(dir: string, prompt: string, prefix: string, env: Record<string, string>): { code: number, stderr: string } {
+    const r = spawnSync('bash', [SCRIPT, prompt, prefix], {
+      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'), ...env },
+      timeout: 30_000, encoding: 'utf8',
+    })
+    return { code: r.status ?? -1, stderr: (r.stderr ?? '') + (r.stdout ?? '') }
+  }
+
+  it('a live sibling holding gateway.lock makes the supervisor WAIT ITS TURN, then launch (one seated attempt)', () => {
+    const { dir, prompt, prefix } = stage(['ok'])
+    // THIS test process is alive — the supervisor must see it hold
+    writeFileSync(join(dir, 'gateway.lock'), String(process.pid))
+    const t0 = Date.now()
+    const r = runLock(dir, prompt, prefix, { SUPERVISOR_STATE_ROOT: dir, SUPERVISOR_LOCK_WAIT_S: '7' })
+    const took = Date.now() - t0
+    assert.equal(r.code, 0)
+    assert.equal(attemptLogs(prefix).length, 1, 'the launch happened after the wait')
+    assert.ok(took >= 5_000, 'the wait actually waited (5s cadence), took ' + took + 'ms')
+    assert.match(r.stderr, /waiting our turn/, 'the turn is announced on stderr')
+  }, 20_000)
+
+  it('a DEAD pid in the lock is not a holder — the launch is immediate (the steal is the queue\'s own law)', () => {
+    const { dir, prompt, prefix } = stage(['ok'])
+    writeFileSync(join(dir, 'gateway.lock'), '4000000')
+    const t0 = Date.now()
+    const r = runLock(dir, prompt, prefix, { SUPERVISOR_STATE_ROOT: dir, SUPERVISOR_LOCK_WAIT_S: '7' })
+    const took = Date.now() - t0
+    assert.equal(r.code, 0)
+    assert.equal(attemptLogs(prefix).length, 1)
+    assert.ok(took < 5_000, 'no turn-wait for a dead holder, took ' + took + 'ms')
+    assert.doesNotMatch(r.stderr, /waiting our turn/)
+  })
+
+  it('a lock refusal at expiry rides the transient gate (relaunch, capped) — never a silent demotion', () => {
+    const { dir, prompt, prefix } = stage(['lockrefused', 'ok'])
+    const r = runLock(dir, prompt, prefix, { SUPERVISOR_STATE_ROOT: dir, SUPERVISOR_LOCK_WAIT_S: '0' })
+    assert.equal(r.code, 0)
+    assert.deepEqual(attemptLogs(prefix), ['commission-attempt1.log', 'commission-attempt2.log'])
   })
 })
 
