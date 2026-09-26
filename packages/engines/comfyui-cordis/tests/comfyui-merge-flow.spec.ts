@@ -43,6 +43,15 @@ vi.mock("../src/comfyui-outputs.ts", () => ({
     const lufs = row?.loudness_lufs;
     return Array.isArray(lufs) && typeof lufs[0] === "number" ? { loudness_lufs: lufs[0]!, peak_db: -16.3 } : null;
   },
+  qvoiceFreshnessOf: (outputs: unknown): { reused_existing: boolean; voice_file: string } | null => {
+    // same stripped-prefix law: the save row's ui keys
+    const row = (outputs as { save?: { reused_existing?: unknown; voice_file?: unknown } } | undefined)?.save;
+    const reused = row?.reused_existing;
+    const file = row?.voice_file;
+    return Array.isArray(reused) && typeof reused[0] === "boolean" && Array.isArray(file) && typeof file[0] === "string"
+      ? { reused_existing: reused[0]!, voice_file: file[0]! }
+      : null;
+  },
 }));
 vi.mock("../src/comfyui-config.ts", () => ({
   resolveEngineBaseUrl: () => "http://config-resolved:8188",
@@ -63,7 +72,7 @@ vi.mock("../src/comfyui-execute.ts", () => ({
         : outputsShape === "none"
           ? undefined
           : {
-              "gen::save": { images: ["a.png"], ...(qvoiceShape ? { qvoice_path: ["/voices/test.qvoice"] } : {}), ...(loudShape ? { loudness_lufs: [-20.0] } : {}) },
+              "gen::save": { images: ["a.png"], ...(qvoiceShape ? { qvoice_path: ["/voices/test.qvoice"] } : {}), ...(loudShape ? { loudness_lufs: [-20.0] } : {}), ...(freshShape ? { reused_existing: [true], voice_file: ["stale_2.qvoice"] } : {}) },
               "up::up": { images: ["b.png"] },
             },
     };
@@ -76,6 +85,7 @@ vi.mock("../src/comfyui-execute.ts", () => ({
 let closed = false;
 let qvoiceShape = false;
 let loudShape = false;
+let freshShape = false;
 let outputsShape: "staged" | "flat" | "none" = "staged";
 
 import { executeFlow } from "../src/comfyui-merge.ts";
@@ -151,6 +161,18 @@ describe("executeFlow (the merged submit)", () => {
       expect("loudness" in (r.stages["up"]?.outputs ?? {})).toBe(false);
     } finally {
       loudShape = false;
+    }
+  });
+
+  it("the voice freshness receipt reaches the stage result (the per-stage loudness sibling)", async () => {
+    freshShape = true;
+    try {
+      const r = await executeFlow(rows, "/tmp/run-fresh", { up: { src: "gen.image" } }, {});
+      expect(r.stages["gen"]?.outputs["voice_freshness"]).toEqual({ reused_existing: true, voice_file: "stale_2.qvoice" });
+      // the freshness-free stage carries no fabricated receipt
+      expect("voice_freshness" in (r.stages["up"]?.outputs ?? {})).toBe(false);
+    } finally {
+      freshShape = false;
     }
   });
 

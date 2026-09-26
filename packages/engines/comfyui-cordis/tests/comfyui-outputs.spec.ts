@@ -17,6 +17,7 @@ import {
   assertPublishedOutputChannels,
   qvoicePathsOf,
   loudnessOf,
+  qvoiceFreshnessOf,
   mapHistoryEntry,
   normalizeTimeoutS,
   CHANNEL_EXTS,
@@ -360,6 +361,27 @@ describe("mapHistoryEntry (the verdict)", () => {
   it("completed only on the true flag", () => {
     expect(mapHistoryEntry({ status: { completed: true } })).toEqual({ kind: "completed" });
     expect(mapHistoryEntry({ status: { completed: "yes" } })).toEqual({ kind: "pending" });
+  });
+});
+
+describe("qvoiceFreshnessOf (the freshness receipt — which voice won, and did it predate the run)", () => {
+  it("lifts the first coherent reused+file pair from the history ui shape", () => {
+    expect(qvoiceFreshnessOf({
+      "7": { reused_existing: [false], voice_file: ["harbour_2.qvoice"], voice_mtime: [1758900000.5] },
+    })).toEqual({ reused_existing: false, voice_file: "harbour_2.qvoice" });
+  });
+  it("THE UI LIST LAW both ways: bare scalars lift too; incoherent or half pairs skip; first coherent across nodes wins", () => {
+    expect(qvoiceFreshnessOf({ a: { reused_existing: true, voice_file: "old.qvoice" } }))
+      .toEqual({ reused_existing: true, voice_file: "old.qvoice" });
+    expect(qvoiceFreshnessOf({
+      a: { reused_existing: "yes", voice_file: "x.qvoice" },
+      b: { reused_existing: [true] },
+      c: { voice_file: ["orphan.qvoice"] },
+      d: { reused_existing: [true], voice_file: ["won.qvoice"] },
+    })).toEqual({ reused_existing: true, voice_file: "won.qvoice" });
+    expect(qvoiceFreshnessOf({ a: { reused_existing: [], voice_file: [] } })).toBe(null);
+    expect(qvoiceFreshnessOf(undefined)).toBe(null);
+    expect(qvoiceFreshnessOf([])).toBe(null);
   });
 });
 

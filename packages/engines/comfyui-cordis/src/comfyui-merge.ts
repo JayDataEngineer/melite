@@ -6,7 +6,7 @@ import { ACTIVE, ComfyError } from "./comfyui-types.ts";
 import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { uploadReferenced } from "./comfyui-upload.ts";
-import { assertPublishedOutputChannels, fetchOutputArtifacts, loudnessOf, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
+import { assertPublishedOutputChannels, fetchOutputArtifacts, loudnessOf, normalizeTimeoutS, publishOutputChannels, qvoiceFreshnessOf, qvoicePathsOf } from "./comfyui-outputs.ts";
 import { hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.ts";
 import { sdkClient } from "./comfyui-transport.ts";
 import type { ExecuteOpts } from "./comfyui-execute.ts";
@@ -412,6 +412,9 @@ export async function executeFlowInner(
       // stage's result rows verbatim.
       const loud = loudnessOf(subOutputs);
       if (loud !== null) outputs["loudness"] = loud;
+      // THE FRESHNESS RECEIPT (the loudness sibling), per-stage law.
+      const fresh = qvoiceFreshnessOf(subOutputs);
+      if (fresh !== null) outputs["voice_freshness"] = fresh;
       results[r.stageId] = {
         outputs,
         artifacts: arts,

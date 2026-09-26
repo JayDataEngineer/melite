@@ -21,8 +21,63 @@ export interface SidecarStage {
   readonly name: string;
   readonly index: number;
   readonly status: string;
+  readonly engine?: string;
+  readonly url?: string;
+  readonly gallery?: Array<{ name: string }>;
+  readonly result_outputs?: Record<string, unknown>;
+  readonly error?: string;
+  readonly merged?: boolean;
   readonly outputs: Record<string, unknown>;
   readonly expected: Record<string, unknown>;
+}
+
+export function sidecarStageOf(stage: {
+  readonly id: string;
+  readonly name: string;
+  readonly index: number;
+  readonly status: string;
+  readonly engine?: string;
+  readonly outputs?: Record<string, unknown>;
+  readonly expected?: Record<string, unknown>;
+  readonly [key: string]: unknown;
+}): SidecarStage {
+  const out: {
+    id: string;
+    name: string;
+    index: number;
+    status: string;
+    engine?: string;
+    url?: string;
+    gallery?: Array<{ name: string }>;
+    result_outputs?: Record<string, unknown>;
+    error?: string;
+    merged?: boolean;
+    outputs: Record<string, unknown>;
+    expected: Record<string, unknown>;
+  } = {
+    id: stage.id,
+    name: stage.name,
+    index: stage.index,
+    status: stage.status,
+    outputs: stage.outputs ?? {},
+    expected: stage.expected ?? {},
+  };
+  if (typeof stage.engine === 'string') out.engine = stage.engine;
+  if (typeof stage.url === 'string') out.url = stage.url;
+  if (Array.isArray(stage.gallery)) {
+    const gallery = stage.gallery.filter((entry): entry is { name: string } =>
+      typeof entry === 'object' && entry !== null && !Array.isArray(entry)
+      && typeof (entry as { name?: unknown }).name === 'string'
+      && (entry as { name: string }).name !== '',
+    );
+    if (gallery.length > 0) out.gallery = gallery;
+  }
+  if (typeof stage.result_outputs === 'object' && stage.result_outputs !== null && !Array.isArray(stage.result_outputs)) {
+    out.result_outputs = stage.result_outputs as Record<string, unknown>;
+  }
+  if (typeof stage.error === 'string') out.error = stage.error;
+  if (stage.merged === true) out.merged = true;
+  return out;
 }
 
 /** THE VARIANT LIFT (commission 033's self-critique #5, 2026-09-24):
@@ -96,6 +151,11 @@ export function sidecarDoc(args: {
    *  status row spells it `variant` too. Absent on variant-less
    *  runs (the lift found no non-empty variant string). */
   variant?: string;
+  /** THE LOUDNESS + FRESHNESS STAMPS (2026-09-26): the meter's
+   *  reading and the voice-mint receipt — one spelling on disk and
+   *  on the wire (`loudness`, `voice_freshness`). */
+  loudness?: { loudness_lufs: number; peak_db: number };
+  voiceFreshness?: { reused_existing: boolean; voice_file: string };
 }): Record<string, unknown> {
   return {
     // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
@@ -114,6 +174,8 @@ export function sidecarDoc(args: {
     ...(args.exportName !== undefined && args.exportName !== "" ? { export_name: args.exportName } : {}),
     ...(args.exportPath !== undefined && args.exportPath !== "" ? { export_path: args.exportPath } : {}),
     ...(args.variant !== undefined && args.variant !== "" ? { variant: args.variant } : {}),
+    ...(args.loudness !== undefined ? { loudness: args.loudness } : {}),
+    ...(args.voiceFreshness !== undefined ? { voice_freshness: args.voiceFreshness } : {}),
     error:
       args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
     stages: args.stages,

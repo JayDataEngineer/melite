@@ -14,6 +14,7 @@ import {
   runLogTail,
 } from "../src/runsTypes.ts";
 import { variantOfBodies } from "../src/queue.ts";
+import { sidecarStageOf } from "../src/queueSidecar.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
 
 let dir = "";
@@ -42,6 +43,63 @@ function record(over: Partial<RunRecord> = {}): RunRecord {
     ...over,
   };
 }
+
+describe("sidecarStageOf", () => {
+  it("defaults core maps and filters presentation rows", () => {
+    assert.deepEqual(sidecarStageOf({ id: "s", name: "n", index: 0, status: "queued" }), {
+      id: "s",
+      name: "n",
+      index: 0,
+      status: "queued",
+      outputs: {},
+      expected: {},
+    })
+    assert.deepEqual(sidecarStageOf({
+      id: "s",
+      name: "n",
+      index: 0,
+      status: "completed",
+      engine: "comfyui",
+      url: "out.mp4",
+      gallery: [{ name: "film.mp4" }, null, [], { name: "" }, { name: 4 }, { name: "audio.flac" }],
+      result_outputs: { prompt_id: "p" },
+      error: "none",
+      merged: true,
+      outputs: { default: "video" },
+      expected: { default: "video" },
+    }), {
+      id: "s",
+      name: "n",
+      index: 0,
+      status: "completed",
+      engine: "comfyui",
+      url: "out.mp4",
+      gallery: [{ name: "film.mp4" }, { name: "audio.flac" }],
+      result_outputs: { prompt_id: "p" },
+      error: "none",
+      merged: true,
+      outputs: { default: "video" },
+      expected: { default: "video" },
+    })
+    const empty = sidecarStageOf({
+      id: "s",
+      name: "n",
+      index: 0,
+      status: "failed",
+      engine: 4,
+      url: "",
+      gallery: [],
+      result_outputs: [],
+      error: 4,
+      merged: false,
+    } as never)
+    assert.equal("engine" in empty, false)
+    assert.equal("gallery" in empty, false)
+    assert.equal("result_outputs" in empty, false)
+    assert.equal("error" in empty, false)
+    assert.equal("merged" in empty, false)
+  })
+});
 
 describe("runRel", () => {
   const run = record({ dir: "/runs/r1" });
@@ -113,6 +171,42 @@ describe("settlePersist", () => {
     const ledger = readFileSync(join(dir, "output", "_ledger.jsonl"), "utf8");
     assert.match(ledger, /"event":"run\.failed"/);
     assert.match(ledger, /"run_id":"r1"/);
+  });
+
+  it("preserves terminal stage presentation metadata in the sidecar", () => {
+    const runDir = join(dir, "rstagemeta");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({
+      dir: runDir,
+      stages: [{
+        id: "s1",
+        name: "first",
+        index: 0,
+        status: "completed",
+        engine: "comfyui",
+        outputs: { default: "video" },
+        expected: {},
+        url: "h3-film/h3_t4_film_00001_.mp4",
+        gallery: [{ name: "h3-film/h3_t4_film_00001_.mp4" }, { name: "h3-film/h3_t4_film_audio_00001.flac" }],
+        result_outputs: { default: "/run/h3-film/h3_t4_film_00001_.mp4" },
+        merged: true,
+      } as never],
+    });
+    settlePersist(run, dir);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as { stages: Array<Record<string, unknown>> };
+    assert.deepEqual(sidecar.stages[0], {
+      id: "s1",
+      name: "first",
+      index: 0,
+      status: "completed",
+      engine: "comfyui",
+      url: "h3-film/h3_t4_film_00001_.mp4",
+      gallery: [{ name: "h3-film/h3_t4_film_00001_.mp4" }, { name: "h3-film/h3_t4_film_audio_00001.flac" }],
+      result_outputs: { default: "/run/h3-film/h3_t4_film_00001_.mp4" },
+      merged: true,
+      outputs: { default: "video" },
+      expected: {},
+    });
   });
 
   it("a persist failure never unmakes the in-memory truth", () => {
@@ -188,6 +282,72 @@ describe("settlePersist", () => {
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(sidecar["export_path"], mint);
     assert.equal(sidecar["export_name"], "night-keeper");
+  });
+
+  it("THE LOUDNESS + FRESHNESS STAMPS (2026-09-26 — the compact-row chip's data): the meter reading and the voice-mint receipt lift off the stage result_outputs onto the record + sidecar", () => {
+    const runDir = join(dir, "rloudfresh");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({
+      dir: runDir,
+      stages: [{
+        id: "h3-film",
+        name: "h3-film",
+        index: 0,
+        status: "completed",
+        outputs: { default: "video" },
+        expected: {},
+        result_outputs: {
+          default: "/run/h3-film/h3_t4_film_00034_.mp4",
+          loudness: { loudness_lufs: -24.72274663827507, peak_db: -6.366579627483562 },
+        },
+      } as never,
+      {
+        id: "tts",
+        name: "tts",
+        index: 1,
+        status: "completed",
+        outputs: { voices: "voice" },
+        expected: {},
+        result_outputs: {
+          qvoice_path: "/voices/tide_2.qvoice",
+          voice_freshness: { reused_existing: false, voice_file: "tide_2.qvoice" },
+        },
+      } as never],
+    });
+    settlePersist(run, dir);
+    // the meter's pair lifts whole (no re-derivation, no rounding here)
+    assert.deepEqual(run.loudness, { loudness_lufs: -24.72274663827507, peak_db: -6.366579627483562 });
+    assert.deepEqual(run.voiceFreshness, { reused_existing: false, voice_file: "tide_2.qvoice" });
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.deepEqual(sidecar["loudness"], { loudness_lufs: -24.72274663827507, peak_db: -6.366579627483562 });
+    assert.deepEqual(sidecar["voice_freshness"], { reused_existing: false, voice_file: "tide_2.qvoice" });
+  });
+
+  it("unmetered, voiceless runs stamp neither (no fabricated receipts), and incoherent shapes skip", () => {
+    const runDir = join(dir, "rnofab");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({
+      dir: runDir,
+      stages: [{
+        id: "s1",
+        name: "s1",
+        index: 0,
+        status: "completed",
+        outputs: {},
+        expected: {},
+        // garbage arms: a string, a half-pair, an array
+        result_outputs: {
+          loudness: "loud",
+          voice_freshness: { reused_existing: true },
+        },
+      } as never],
+    });
+    settlePersist(run, dir);
+    assert.equal(run.loudness, undefined);
+    assert.equal(run.voiceFreshness, undefined);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.ok(!("loudness" in sidecar));
+    assert.ok(!("voice_freshness" in sidecar));
   });
 
   it("runs whose engine minted nothing stamp no export_path (load lanes)", () => {

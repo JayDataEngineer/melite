@@ -409,6 +409,39 @@ describe('run_status render — the human line', () => {
     assert.ok(!out.includes('_*.qvoice'), 'the glob hint retires when the path rode')
   })
 
+  test('THE LOUDNESS CHIP (roadmap OWED 2026-09-26 — transcript-0034 #2): the meter reading rides the terminal line, no sidecar read needed', () => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    const out = text({
+      run_id: 'run-425', status: 'completed', stages: [{ id: 'h3-film', status: 'completed' }], artifacts: [],
+      loudness: { loudness_lufs: -24.72274663827507, peak_db: -6.366579627483562 },
+    })
+    assert.ok(out.includes('· -24.72 LUFS / -6.37 dBTP'), 'the compact chip prints the receipt pair at 2 decimals: ' + out.split(String.fromCharCode(10))[0])
+    // unmetered runs carry no fabricated chip
+    const bare = text({ run_id: 'run-x', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: [] })
+    assert.ok(!bare.includes('LUFS'), 'no chip without a reading')
+    // a non-terminal row never chips (the reading is a receipt, not a promise)
+    const live = text({ run_id: 'run-y', status: 'running', stages: [], artifacts: [], loudness: { loudness_lufs: -20, peak_db: -3 } })
+    assert.ok(!live.includes('LUFS'), 'terminal only')
+  })
+
+  test('THE FRESHNESS VOICE (the loudness sibling): the voice-mint receipt names the winner and stamps reuse loud', () => {
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    const stale = text({
+      run_id: 'run-e', status: 'completed', stages: [{ id: 'tts', status: 'completed' }], artifacts: [],
+      voice_freshness: { reused_existing: true, voice_file: 'harbour_watchman_2.qvoice' },
+    })
+    assert.ok(stale.includes('· voice harbour_watchman_2.qvoice (REUSED'), 'a stale mint names the law: ' + stale.split(String.fromCharCode(10))[0])
+    const freshMint = text({
+      run_id: 'run-f', status: 'completed', stages: [{ id: 'tts', status: 'completed' }], artifacts: [],
+      voice_freshness: { reused_existing: false, voice_file: 'tide_14.qvoice' },
+    })
+    assert.ok(freshMint.includes('· voice tide_14.qvoice (fresh mint)'), 'a fresh mint says so')
+    const voiceless = text({ run_id: 'run-g', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: [] })
+    assert.ok(!voiceless.includes('· voice '), 'no fabricated receipt on voiceless runs')
+  })
+
   test('THE VARIANT VOICE (commission 033 self-critique #5): the lane rides the first line — design reads apart from performing at a glance', () => {
     const tool = runStatus((async () => ({})) as EstateRequest)
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''

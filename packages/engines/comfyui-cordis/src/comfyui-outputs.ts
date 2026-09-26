@@ -213,6 +213,45 @@ export function loudnessOf(
   return null;
 }
 
+/** THE FRESHNESS RECEIPT (the loudness sibling, 2026-09-26): the
+ *  MeliteQVoiceCopy node stamps which voice file won and whether
+ *  that mint predates the run (reused_existing) into its history UI
+ *  dict — under THE UI LIST LAW every entry a 1-list. That flag is
+ *  the ONLY signal guarding the single-tenant voice-name law, and
+ *  until this collector it was minted and thrown away (the BRIEF14
+ *  commission derived it by hand from the winning file's mtime —
+ *  transcript-0034's finding). Collect the first coherent pair so
+ *  the stage's result_outputs carry the fact every surface can
+ *  report. Pure: shared by both harvest seats. */
+const boolOf = (v: EngineJson | undefined): boolean | undefined => {
+  if (typeof v === "boolean") return v;
+  if (Array.isArray(v) && v.length > 0 && typeof v[0] === "boolean") return v[0];
+  return undefined;
+};
+const stringOf = (v: EngineJson | undefined): string | undefined => {
+  if (typeof v === "string" && v.trim() !== "") return v.trim();
+  if (Array.isArray(v) && v.length > 0 && typeof v[0] === "string" && v[0].trim() !== "") {
+    return v[0].trim();
+  }
+  return undefined;
+};
+
+export function qvoiceFreshnessOf(
+  outputs: EngineJson | undefined,
+): { reused_existing: boolean; voice_file: string } | null {
+  if (typeof outputs !== "object" || outputs === null || Array.isArray(outputs)) return null;
+  for (const nodeOut of Object.values(outputs as Record<string, EngineJson>)) {
+    if (typeof nodeOut !== "object" || nodeOut === null || Array.isArray(nodeOut)) continue;
+    const row = nodeOut as Record<string, EngineJson>;
+    const reused = boolOf(row["reused_existing"]);
+    const file = stringOf(row["voice_file"]);
+    if (reused !== undefined && file !== undefined) {
+      return { reused_existing: reused, voice_file: file };
+    }
+  }
+  return null;
+}
+
 /** Harvested paths -> {channel: path} for the FILE-kind channels
  *  the stage DECLARED. First unmatched artifact wins per channel,
  *  declaration order. */

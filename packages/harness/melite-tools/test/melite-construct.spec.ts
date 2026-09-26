@@ -257,10 +257,13 @@ describe('melite_construct validate — compile, no GPU', () => {
     // card RIDES (the phantom-refusal cure): the kinds pass derives
     // wired-input kinds from the card's flowKinds — the doors admit
     // card (STAGE_KEYS), only provenance/runStatus/result/title strip.
+    // THE CARD-PORTS LAW (2026-09-26): outputs stay {} on a card
+    // stage (channels derive from the card's own ports at compile —
+    // the fabricated image default mis-kinded video/tts cards).
     assert.deepEqual(validate.body, {
       flow_inline: {
         id: 'bench',
-        stages: [{ id: 'a', engine: 'comfyui', params: { p: 1 }, inputs: {}, outputs: { default: 'image' }, card: 'c' }],
+        stages: [{ id: 'a', engine: 'comfyui', params: { p: 1 }, inputs: {}, outputs: {}, card: 'c' }],
       },
     })
   })
@@ -969,18 +972,125 @@ describe("read — the params summary guard paths", () => {
     const row = (out['stages'] as Array<Record<string, unknown>>)[0]!
     assert.deepEqual(row['arrays'], { ref_images: 'wrapped{item}' })
   })
-  test("a stage with no params record carries no summary keys", async () => {
+})
+
+describe('read enrichment defensive paths', () => {
+  test('empty stages and absent draft ids skip the run lookup', async () => {
     const seen = mockRequest((method, path) => {
-      if (method === 'GET' && path === '/v1/bench/main') {
-        return { rev: 2, draft_id: 'd1', stages: [{ id: 's_0', card: 'h3', params: 'not-a-record' }] }
-      }
-      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: [], count: 0 }
-      return undefined
+      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, stages: [] }
+      throw new Error('unexpected ' + method + ' ' + path)
     })
-    const tool = meliteConstruct(seen.request)
-    const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
-    const row = (out['stages'] as Array<Record<string, unknown>>)[0]!
-    assert.equal(row['model'], undefined)
-    assert.equal(row['arrays'], undefined)
+    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.deepEqual(out.stages, [])
+    assert.equal(seen.seen.length, 1)
+    const second = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, draft_id: '', stages: [{ id: 's' }] }
+      throw new Error('unexpected ' + method + ' ' + path)
+    })
+    const out2 = await meliteConstruct(second.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.deepEqual(out2.stages, [{ id: 's' }])
+    assert.equal(second.seen.length, 1)
   })
-});
+
+  test('malformed run rows and stage rows degrade to explicit null receipts', async () => {
+    const seen = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return {
+        rev: 1, draft_id: 'd1', stages: [null, 'bad', { id: 's', params: { model: 'm', list: [1], wrapped: { item: [] } } }],
+      }
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return {
+        count: 5, runs: [null, [], { draft_id: 'other' }, { draft_id: 'd1', created_at: 'old' }],
+      }
+      throw new Error('unexpected ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.deepEqual(out.runs, { checked: 4, total: 5, matched: 1 })
+    const rows = out.stages as unknown[]
+    assert.equal(rows[0], null)
+    assert.equal(rows[1], 'bad')
+    assert.deepEqual((rows[2] as Record<string, unknown>).arrays, { list: 'array[1]', wrapped: 'wrapped{item}' })
+    assert.equal((rows[2] as Record<string, unknown>).model, 'm')
+  })
+
+  test('non-array run envelopes and nonnumeric totals use the honest fallback', async () => {
+    const badRows = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, draft_id: 'd1', stages: [{ id: 's' }] }
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: {}, count: 4 }
+      throw new Error('unexpected ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(badRows.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.deepEqual(out.stages, [{ id: 's' }])
+    assert.equal('runs' in out, false)
+    const badTotal = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, draft_id: 'd1', stages: [{ id: 's' }] }
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: [], count: 'many' }
+      throw new Error('unexpected ' + method + ' ' + path)
+    })
+    const out2 = await meliteConstruct(badTotal.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.deepEqual(out2.runs, { checked: 0, total: 0, matched: 0 })
+  })
+
+  test('a no-match read preserves malformed stage rows and exercises no-match summaries', async () => {
+    const seen = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, draft_id: 'd1', stages: [null, 'bad', { id: 's', params: null }] }
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return { runs: [{ draft_id: 'other' }], count: 1 }
+      throw new Error('unexpected ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.deepEqual(out.stages, [null, 'bad', { id: 's', params: null, last_run: null }])
+  })
+
+  test('the newest matching run carries export fields and skips malformed stages', async () => {
+    const seen = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return {
+        rev: 1, draft_id: 'd1', stages: [null, { id: 's', params: { model: 'm' } }],
+      }
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return {
+        count: 2, runs: [
+          { draft_id: 'd1', run_id: 'old', created_at: 1 },
+          { draft_id: 'd1', run_id: 'new', created_at: 2, status: 'done', artifacts: ['a'], export_name: 'voice', export_path: '/voice.qvoice' },
+        ],
+      }
+      throw new Error('unexpected ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const rows = out.stages as unknown[]
+    assert.equal(rows[0], null)
+    assert.deepEqual((rows[1] as Record<string, unknown>).last_run, {
+      run_id: 'new', status: 'done', created_at: 2, artifacts: ['a'], export_name: 'voice', export_path: '/voice.qvoice',
+    })
+  })
+})
+
+describe('construct render defensive paths', () => {
+  test('renders sparse stage receipts and run-window facts', () => {
+    const tool = meliteConstruct(stubRequest())
+    const render = (stages: unknown[], runs: unknown): string => (tool.output.render({}, {
+      verb: 'read', rev: 2, stages, runs,
+    } as never) as Array<{ text?: string }>).map((part) => part.text ?? '').join('\n')
+    const text = render([
+      { id: 's', card: 'c', engine: 'e', last_run: { run_id: 'r', status: '', artifacts: [], export_name: '', export_path: '' } },
+    ], { checked: 1, total: 3, matched: 0 })
+    assert.ok(text.includes('runs window: checked 1, total 3, matched 0'))
+    assert.ok(text.includes('last_run r ()'))
+    const noArtifacts = render([{ id: 's', last_run: { run_id: 'r' } }], {})
+    assert.ok(noArtifacts.includes('last_run r (?)'))
+    const nameOnly = render([{ id: 's', last_run: { run_id: 'r', export_name: 'name' } }], {})
+    assert.ok(nameOnly.includes("export 'name'"))
+    const pathOnly = render([{ id: 's', last_run: { run_id: 'r', export_path: '/p' } }], {})
+    assert.ok(pathOnly.includes('export /p'))
+    const missingFacts = render([], {})
+    assert.ok(missingFacts.includes('checked ?, total ?, matched ?'))
+  })
+
+  test('validate accepts a non-string bench intent and supplies the fallback flow id', async () => {
+    const seen = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return { rev: 1, intent: 7, stages: [{ id: 's' }] }
+      if (method === 'POST' && path === '/v1/flows/validate') return { ok: true }
+      throw new Error('unexpected ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(seen.request).execute({ verb: 'validate' }, exec()) as Record<string, unknown>
+    assert.equal(out.compiles, true)
+    const post = seen.seen.find((row) => row.path === '/v1/flows/validate')
+    assert.equal((post!.body as { flow_inline: { id: string } }).flow_inline.id, 'bench')
+  })
+})

@@ -385,6 +385,23 @@ describe("status + stop", () => {
     assert.equal("export_path" in empty, false);
   });
 
+  it("status serves the loudness + freshness stamps while unmetered runs stay bare (the compact chip's data)", async () => {
+    const s = seat();
+    const id = live(s, {
+      runId: "run-status-loud",
+      loudness: { loudness_lufs: -24.72274663827507, peak_db: -6.366579627483562 },
+      voiceFreshness: { reused_existing: true, voice_file: "harbour_2.qvoice" },
+    } as Partial<RunRecord>);
+    const got = await s.svc.status(id, sig());
+    assert.deepEqual(got["loudness"], { loudness_lufs: -24.72274663827507, peak_db: -6.366579627483562 });
+    assert.deepEqual(got["voice_freshness"], { reused_existing: true, voice_file: "harbour_2.qvoice" });
+
+    const bareId = live(s, { runId: "run-status-bare" });
+    const bare = await s.svc.status(bareId, sig());
+    assert.equal("loudness" in bare, false);
+    assert.equal("voice_freshness" in bare, false);
+  });
+
   it("status serves the row (log tail rides along on request)", async () => {
     const s = seat();
     const id = live(s, { error: "bad", stages: [{ id: "s", status: "failed" }] });

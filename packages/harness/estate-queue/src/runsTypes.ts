@@ -15,6 +15,7 @@ import {
   appendLedger,
   atomicWriteJson,
   sidecarDoc,
+  sidecarStageOf,
   variantOfBodies,
 } from "./queue.ts";
 import type { GraphRow } from "./queue.ts";
@@ -113,6 +114,21 @@ export interface RunRecord {
    *  performing run on the same pipeline read apart. Absent on
    *  variant-less runs. */
   variant?: string;
+  /** THE LOUDNESS STAMP (roadmap OWED 2026-09-26 — the compact-row
+   *  chip): the engine's meter reading lifted off the stage
+   *  result_outputs.loudness at settle (BS.1770-4 integrated +
+   *  true peak, minted by MeliteLoudness into the history ui,
+   *  harvested by the engine seat). Served on run_status rows so
+   *  the terminal line carries the meter's number without a
+   *  sidecar read. Absent on unmetered runs. */
+  loudness?: { loudness_lufs: number; peak_db: number };
+  /** THE VOICE-FRESHNESS STAMP (the loudness sibling, 2026-09-26):
+   *  which .qvoice won and whether that mint predates the run
+   *  (MeliteQVoiceCopy's ui receipt, harvested with the meter's own
+   *  collector law) — the single-tenant voice-name law's only
+   *  signal, served instead of thrown away. Absent on voiceless
+   *  runs. */
+  voiceFreshness?: { reused_existing: boolean; voice_file: string };
   /** THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23):
    *  what the ENGINE actually received at start — the seam values
    *  of the composed calls + the bench revision the compose read.
@@ -211,6 +227,35 @@ export function settlePersist(
       break
     }
   }
+  // THE LOUDNESS + FRESHNESS STAMPS (2026-09-26): lift the meter's
+  // reading and the voice-mint receipt off the stage result_outputs
+  // — same law as the export path (the engine's harvest carries
+  // them; the run row serves them). First coherent pair wins.
+  for (const st of run.stages) {
+    const ro: unknown = st["result_outputs"]
+    if (ro === null || typeof ro !== "object" || Array.isArray(ro)) continue
+    const rec = ro as Record<string, unknown>
+    if (run.loudness === undefined) {
+      const loud: unknown = rec["loudness"]
+      if (loud !== null && typeof loud === "object" && !Array.isArray(loud)) {
+        const l = (loud as Record<string, unknown>)["loudness_lufs"]
+        const pk = (loud as Record<string, unknown>)["peak_db"]
+        if (typeof l === "number" && Number.isFinite(l) && typeof pk === "number" && Number.isFinite(pk)) {
+          run.loudness = { loudness_lufs: l, peak_db: pk }
+        }
+      }
+    }
+    if (run.voiceFreshness === undefined) {
+      const fresh: unknown = rec["voice_freshness"]
+      if (fresh !== null && typeof fresh === "object" && !Array.isArray(fresh)) {
+        const reused = (fresh as Record<string, unknown>)["reused_existing"]
+        const file = (fresh as Record<string, unknown>)["voice_file"]
+        if (typeof reused === "boolean" && typeof file === "string" && file.trim() !== "") {
+          run.voiceFreshness = { reused_existing: reused, voice_file: file.trim() }
+        }
+      }
+    }
+  }
   try {
     atomicWriteJson(
       join(run.dir, "_flow.json"),
@@ -218,14 +263,7 @@ export function settlePersist(
         runId: run.runId,
         status: run.status,
         error: run.error,
-        stages: run.stages.map((st) => ({
-          id: st.id,
-          name: st.name,
-          index: st.index,
-          status: st.status,
-          outputs: { ...(st.outputs as Record<string, unknown>) },
-          expected: { ...(st.expected as Record<string, unknown>) },
-        })),
+        stages: run.stages.map((st) => sidecarStageOf(st)),
         skippedStages: [...run.skippedStages],
         artifacts: [...run.artifacts],
         createdAt: run.createdAt,
@@ -250,6 +288,8 @@ export function settlePersist(
         exportName,
         exportPath,
         variant,
+        loudness: run.loudness,
+        voiceFreshness: run.voiceFreshness,
       }),
     );
   } catch {

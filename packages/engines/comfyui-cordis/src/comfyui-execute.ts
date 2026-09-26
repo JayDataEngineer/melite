@@ -13,7 +13,7 @@ import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { sdkClient } from "./comfyui-transport.ts";
 import { spliceWorkflow, uploadReferenced } from "./comfyui-upload.ts";
 import { isTransportDownError } from "./supervisor.ts";
-import { fetchOutputs, loudnessOf, mapHistoryEntry, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
+import { fetchOutputs, loudnessOf, qvoiceFreshnessOf, mapHistoryEntry, normalizeTimeoutS, publishOutputChannels, qvoicePathsOf } from "./comfyui-outputs.ts";
 
 export interface ExecuteOpts {
   /** Seconds; the estate's own budget (default 2400). */
@@ -298,6 +298,11 @@ export async function executeSingleInner(
     // result alongside the qvoice path — same collector law.
     const loud = loudnessOf(entry["outputs"]);
     if (loud !== null) outputs["loudness"] = loud;
+    // THE FRESHNESS RECEIPT (the loudness sibling): which voice file
+    // won and whether it predates this run — the single-tenant
+    // voice-name law's only signal, stamped not thrown away.
+    const fresh = qvoiceFreshnessOf(entry["outputs"]);
+    if (fresh !== null) outputs["voice_freshness"] = fresh;
     return { outputs, artifacts: arts, promptId };
   } finally {
     unhook?.();

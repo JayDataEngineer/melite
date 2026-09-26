@@ -257,6 +257,25 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         const variantVoice = typeof v.variant === 'string' && v.variant !== ''
           ? ' · variant ' + v.variant
           : ''
+        // THE LOUDNESS CHIP (roadmap OWED 2026-09-26 — transcript-0034
+        // #2): the meter's reading rode the sidecar only; the
+        // compact terminal line now carries it (BS.1770-4 integrated
+        // + true peak, 2 decimals) so the receipt is visible without
+        // melite_read. Absent on unmetered runs.
+        const loud = (v as { loudness?: { loudness_lufs?: unknown; peak_db?: unknown } }).loudness
+        const loudVoice = terminal && loud !== null && typeof loud === 'object'
+          && typeof loud.loudness_lufs === 'number' && Number.isFinite(loud.loudness_lufs)
+          && typeof loud.peak_db === 'number' && Number.isFinite(loud.peak_db)
+          ? ` · ${loud.loudness_lufs.toFixed(2)} LUFS / ${loud.peak_db.toFixed(2)} dBTP`
+          : ''
+        // THE FRESHNESS VOICE (the loudness sibling): the voice-mint
+        // receipt — which .qvoice won and whether it predates the
+        // run (the single-tenant voice-name law's only signal).
+        const fresh = (v as { voice_freshness?: { reused_existing?: unknown; voice_file?: unknown } }).voice_freshness
+        const freshVoice = terminal && fresh !== null && typeof fresh === 'object'
+          && typeof fresh.reused_existing === 'boolean' && typeof fresh.voice_file === 'string'
+          ? ` · voice ${fresh.voice_file}${fresh.reused_existing ? ' (REUSED — a stale name won; mint a fresh one)' : ' (fresh mint)'}`
+          : ''
         return [{
           type: 'text',
           text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + pos
@@ -268,7 +287,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
             // another wait; waited_s proves the single call absorbed the poll.
             + (v.wait_expired ? ' · wait expired (budget spent, not terminal — wait again)' : '')
             + (typeof v.waited_s === 'number' ? ' · waited ' + v.waited_s + 's' : '')
-            + variantVoice
+            + variantVoice + loudVoice + freshVoice
             + stageVoice + artVoice + exportVoice,
         }]
       },

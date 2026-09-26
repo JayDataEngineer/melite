@@ -759,6 +759,12 @@ export class RunsRuntimeService extends Service {
       // sidecar; the disk fallback spreads the sidecar row, which
       // carries it. Absent on variant-less runs.
       ...(run.variant !== undefined && run.variant !== "" ? { variant: run.variant } : {}),
+      // THE LOUDNESS + FRESHNESS STAMPS, SERVED (2026-09-26): the
+      // compact receipt's data — additive, same spelling as the
+      // sidecar; the disk fallback below spreads the sidecar row,
+      // which carries them.
+      ...(run.loudness !== undefined ? { loudness: run.loudness } : {}),
+      ...(run.voiceFreshness !== undefined ? { voice_freshness: run.voiceFreshness } : {}),
       // THE TEST FLAG, SERVED (023's self-critique #3): the
       // agent-facing receipt canonicalizes route-relative artifact
       // paths against the out root — test runs live under

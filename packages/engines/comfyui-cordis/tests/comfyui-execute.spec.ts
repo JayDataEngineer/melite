@@ -14,6 +14,7 @@ import { describe, it, expect, vi } from "vitest";
 let interruptCalls = 0;
 let qvoicePath = "";
 let loudReading: { loudness_lufs: number; peak_db: number } | null = null;
+let freshReading: { reused_existing: boolean; voice_file: string } | null = null;
 
 vi.mock("../src/comfyui-transport.ts", () => ({
   sdkClient: (server: string) => ({
@@ -52,6 +53,7 @@ vi.mock("../src/comfyui-outputs.ts", () => ({
   // fixtures; the "" arm is the exercised one).
   qvoicePathsOf: () => qvoicePath,
   loudnessOf: () => loudReading,
+  qvoiceFreshnessOf: () => freshReading,
 }));
 
 vi.mock("../src/comfyui-config.ts", () => ({
@@ -412,6 +414,15 @@ describe("executeSingle (the non-plugin face)", () => {
       expect((r.outputs as Record<string, unknown>)["loudness"]).toEqual(loudReading);
     } finally {
       loudReading = null;
+    }
+  });
+  it("stamps the voice freshness receipt onto the outputs (the loudness sibling — reused_existing never thrown away again)", async () => {
+    freshReading = { reused_existing: false, voice_file: "tide_meter_14_harbour_watchman_2.qvoice" };
+    try {
+      const r = await executeSingle("/tmp/run-fresh", {}, {}, {}, "http://override:8188");
+      expect((r.outputs as Record<string, unknown>)["voice_freshness"]).toEqual(freshReading);
+    } finally {
+      freshReading = null;
     }
   });
 });

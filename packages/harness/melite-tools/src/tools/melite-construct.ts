@@ -202,9 +202,8 @@ async function withLastRun(
  *  separately. Every stage row now carries `model` (when a param
  *  states it) and `arrays` (key=shape for every array-valued
  *  param: true-array vs wrapped — the Probe-B receipt shape). */
-function paramsSummary(s: unknown): Record<string, unknown> {
-  if (typeof s !== 'object' || s === null || Array.isArray(s)) return {}
-  const rec = s as Record<string, unknown>
+function paramsSummary(s: Record<string, unknown>): Record<string, unknown> {
+  const rec = s
   const params: unknown = rec['params']
   if (typeof params !== 'object' || params === null || Array.isArray(params)) return {}
   const p = params as Record<string, unknown>
@@ -257,8 +256,17 @@ export function projectStages(stages: unknown): Record<string, unknown>[] {
           ? s['params'] : {},
         inputs: typeof s['inputs'] === 'object' && s['inputs'] !== null && !Array.isArray(s['inputs'])
           ? s['inputs'] : {},
+        // THE CARD-PORTS LAW (roadmap OWED 2026-09-26): a stage
+        // carrying a card DERIVES its output channels from the
+        // card's own ports at compile — fabricating the image
+        // default here mis-kinded every video/tts card stage (a
+        // film read as an image producer on the wire). Absent
+        // outputs on a card stage stay ABSENT (the drops-absent
+        // law, add_stage's own); the default fills only card-less
+        // stages (the engine DEFAULT_OUTPUT shape).
         outputs: typeof s['outputs'] === 'object' && s['outputs'] !== null && !Array.isArray(s['outputs'])
-          ? s['outputs'] : { default: 'image' },
+          ? s['outputs']
+          : (typeof s['card'] === 'string' && s['card'] !== '' ? {} : { default: 'image' }),
       }
       // card RIDES (see the docstring): the kinds pass derives
       // wired-input kinds from the card's flowKinds — without it
