@@ -102,7 +102,7 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // (anchor first, numbered next, stack after) so old drafts, flow
   // edges, and spells keep validating and recompose byte-stable —
   // but no face offers them: never a form row, never a picker seat.
-  input_images: z.array(z.string().role('path')).description("Input Images").default([]).extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image_list', max_stack: EDIT_LIST_CAP, serveDefault: true, tooltip: 'Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly.' }),
+  input_images: z.array(z.string()).description("Input Images").default([]).extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image_list', max_stack: EDIT_LIST_CAP, serveDefault: true, tooltip: 'Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly.' }),
   image1: z.string().role('path').description("Input Image").extra('extra', { hidden: true }),
   image2: z.string().role('path').description("Image 2").extra('extra', { hidden: true }),
   image3: z.string().role('path').description("Image 3").extra('extra', { hidden: true }),

@@ -115,11 +115,25 @@ describe("the image-edit compose gate", () => {
     assert.equal(doc.lanpaint_num_steps, 20, "the undeclared lanpaint knob survives the gate");
   });
 
+  it("THE MIGRATION LAW: a stated input_images folds the legacy keys away (the operator's old drafts run forward)", () => {
+    // The refusal fired on the operator's own history — a draft
+    // written pre-merge carries image1 under the hidden face while
+    // the new list collects entries. The one list WINS.
+    const doc = def.schema({
+      prompt: "x", image1: "/m/stale.png", reference_images: ["/m/stale-ref.png"], input_images: ["/m/in.png", "/m/r.png"],
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(doc, model, g, "migrate1");
+    const files = Object.values(g.toJSON()).map((n) => (n.inputs as Record<string, unknown>)["image"]).filter((v) => typeof v === "string") as string[];
+    assert.ok(files.includes("/m/in.png") && files.includes("/m/r.png"), "the canonical list reaches the graph");
+    assert.ok(!files.includes("/m/stale.png") && !files.includes("/m/stale-ref.png"), "the stale legacy values never reach a slot — folded, not refused");
+  });
+
   it("the firing refusals name the unbuildable graph (no silent plain-edit)", () => {
     const arms: Array<[Record<string, unknown>, RegExp]> = [
-      // the merge's own door: input_images beside a legacy key
-      // refuses — two vocabularies for one list, order a guess.
-      [{ input_images: ["/m/in.png", "/m/a.png"] }, /'input_images' fires .*legacy image key/],
+      // (the merge's old mixed-vocab refusal is RETIRED — the
+      // migration law folds legacy keys under a stated input_images;
+      // pinned in its own test below)
       [{ double_reference: true }, /'double_reference' fires .*\(the second encode/],
       // forcing the sampler with no region stated refuses —
       // there is nothing to regenerate.

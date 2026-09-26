@@ -277,18 +277,26 @@ describe("the 2.1 edit lane — the reference stack (upstream: the node opens im
       assert.deepEqual(c[k], l[k], `canonical and legacy agree on ${k} — ONE list, two spellings`);
     }
   });
-  it("THE MERGE refuses mixed vocabularies loud (input_images + any legacy key — the order would be a guess)", () => {
+  it("THE MIGRATION LAW: a stated input_images WINS over legacy keys still riding an old draft", () => {
+    // The refusal was the wrong law — it fired on the operator's
+    // own drafts (image1 hidden under the new face, input_images
+    // added on top). The one list wins; legacy folds away.
+    const folded = orderedInputImages({ input_images: ["in.png"], reference_images: ["r.png"], image1: "stale.png" });
+    assert.deepEqual(folded, ["in.png"], "canonical wins — legacy keys fold away, never co-serve");
     const g = new GraphBuilder({});
-    assert.throws(
-      () => imageEdit(
-        { prompt: "both spellings", input_images: ["in.png", "r.png"], image1: "in.png", ...SOLVER },
-        FACTS_21, g, "probemix",
-      ),
-      /two vocabularies|legacy image key/,
+    imageEdit(
+      { prompt: "both spellings", input_images: ["in.png", "r.png"], image1: "stale.png", ...SOLVER },
+      FACTS_21, g, "probemix",
     );
-    assert.throws(
-      () => orderedInputImages({ input_images: ["in.png"], reference_images: ["r.png"] }),
-      /two vocabularies|legacy image key/,
+    const pure = new GraphBuilder({});
+    imageEdit(
+      { prompt: "both spellings", input_images: ["in.png", "r.png"], ...SOLVER },
+      FACTS_21, pure, "probemix",
+    );
+    assert.deepEqual(
+      Object.keys(encOf(g).enc.inputs).filter((k) => k.startsWith("images.")),
+      Object.keys(encOf(pure).enc.inputs).filter((k) => k.startsWith("images.")),
+      "the mixed row composes the exact canonical graph — the stale anchor never reaches a slot",
     );
     assert.deepEqual(orderedInputImages({ input_images: ["in.png", "  ", "r.png"] }), ["in.png", "r.png"], "blanks drop quietly from the canonical list");
   });

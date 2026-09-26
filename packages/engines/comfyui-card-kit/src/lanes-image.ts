@@ -158,9 +158,10 @@ export function editRefs(p: Record<string, unknown>): string[] {
  *  input_images IS the ordered list. The legacy spellings (image1
  *  the anchor, image2/image3 the numbered slots, reference_images
  *  the stack) merge into the SAME list — anchor first, numbered
- *  next, stack after — so old drafts recompose byte-stable. Stating
- *  input_images TOGETHER with any legacy image key refuses LOUD:
- *  two vocabularies for one list, and the order would be a guess. */
+ *  next, stack after — so old drafts recompose byte-stable. A
+ *  stated input_images WINS over any legacy keys still riding an
+ *  old draft: the legacy spellings fold away (the migration law —
+ *  the operator's own history must run forward, never refuse). */
 export function orderedInputImages(p: Record<string, unknown>): string[] {
   const canon = p.input_images
   if (canon !== undefined && canon !== null && (!Array.isArray(canon) || canon.some((s) => typeof s !== 'string'))) {
@@ -168,10 +169,12 @@ export function orderedInputImages(p: Record<string, unknown>): string[] {
   }
   const legacy = editRefs(p)
   if (Array.isArray(canon) && canon.length > 0) {
-    const anchorStated = typeof p.image1 === 'string' && p.image1.trim() !== ''
-    if (anchorStated || legacy.length > 0) {
-      throw new Error(`'input_images' fires on the image-edit card (stated together with a legacy image key — image1/image2/image3/reference_images; one vocabulary per draft: input_images alone, or the legacy keys alone — never both, the order would be a guess)`)
-    }
+    // THE MIGRATION LAW (2026-10-10, the operator's own history):
+    // a draft written before the merge still carries image1/
+    // reference_images while the NEW face collects input_images.
+    // The one list WINS — legacy keys fold away, never a refusal
+    // (the old wall fired on the operator's own drafts; migration
+    // is the law, not rejection). Both vocabularies never co-serve.
     return canon.filter((s) => s.trim() !== '')
   }
   const anchor = typeof p.image1 === 'string' ? p.image1.trim() : ''
