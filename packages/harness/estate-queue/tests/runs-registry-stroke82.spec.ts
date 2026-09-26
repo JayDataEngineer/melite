@@ -242,7 +242,14 @@ describe("stroke-82 terminal settle read-back", () => {
     ) as Record<string, unknown>;
     assert.equal(flow["status"], "completed");
     assert.deepEqual(flow["card_snapshot"], { card: "c", params: body });
-    assert.deepEqual(flow["bench_snapshot"], { stages: benchDoc.stages, intent: "the beach flow" });
+    // THE CONTRACTED STAMP (2026-09-26): the sidecar's snapshot
+    // rides through the save contract — provenance restored, run
+    // memory stripped — so the load side parses it 100% (the
+    // operator's schemamaster order; see benchSnapshot.ts).
+    assert.deepEqual(flow["bench_snapshot"], {
+      stages: [{ id: "s", card: "c", provenance: "restored" }],
+      intent: "the beach flow",
+    });
     const ledger = readFileSync(join(s.state, "output", "_ledger.jsonl"), "utf8");
     assert.ok(ledger.includes("run.completed"), "the terminal row lands in the ledger");
     assert.ok(ledger.includes(ans.run_id), "the terminal row names the run");

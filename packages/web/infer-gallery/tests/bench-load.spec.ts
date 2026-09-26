@@ -251,6 +251,50 @@ describe('loadRunOntoBench — the run record wins', () => {
     }
   }
 
+  it('THE SNAPSHOT CONTRACT: an unloadable bench_snapshot refuses with the row named and never posts to the door', async () => {
+    // (the operator's order, 2026-09-26: "the saving should 100% be
+    // a schemamaster contract" — the reader judges bench_snapshot
+    // through the same contract the writer stamps; a snapshot that
+    // fails parse is refused with the exact problem, never a
+    // best-effort post of coerced junk to the bench. The card arm
+    // is NOT a fallback for a corrupt bench arm — a silent partial
+    // restore is the fabrication this law kills.)
+    const { calls } = stubFetch(runWith({
+      run_id: 'r1',
+      flow: {
+        card_snapshot: { card: 'image-gen', params: { prompt: 'ran prompt' } },
+        bench_snapshot: { stages: [{ id: 'ok', card: 'image-gen' }, null], intent: 'x' },
+      },
+    }))
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([
+      'this run keeps an unloadable bench snapshot (bench_snapshot.stages[1]: not an object)',
+    ])
+    expect(calls.some((c) => c.url === '/v1/bench/ensure')).toBe(false)
+    expect(d.opened).toEqual([])
+  })
+
+  it('THE SNAPSHOT CONTRACT, card face: a cardless or junk-params card_snapshot refuses by name (never a coerced restore)', async () => {
+    // params:'not-an-object' used to coerce to {} and "restore
+    // bare" — a fabricated input record riding the bench as if it
+    // were the ran workflow. The contract names it and refuses.
+    stubFetch(runWith({ run_id: 'r2', flow: { card_snapshot: { params: { prompt: 'x' } } } }))
+    const d = deps('s1')
+    await loadRunOntoBench('r2', d)
+    expect(d.errors).toEqual([
+      'this run keeps an unloadable card snapshot (card_snapshot.card: must be a non-empty string)',
+    ])
+
+    stubFetch(runWith({ run_id: 'r2b', flow: { card_snapshot: { card: 'image-gen', params: 'not-an-object' } } }))
+    const e = deps('s1')
+    await loadRunOntoBench('r2b', e)
+    expect(e.errors).toEqual([
+      'this run keeps an unloadable card snapshot (card_snapshot.params: must be an object)',
+    ])
+    expect(e.opened).toEqual([])
+  })
+
   function ensuredBody(calls: Array<{ url: string; init?: RequestInit }>): Record<string, unknown> {
     return JSON.parse(String(calls.find((c) => c.url === '/v1/bench/ensure')?.init?.body)) as Record<string, unknown>
   }
@@ -478,11 +522,15 @@ describe('loadRunOntoBench — the run record wins', () => {
   })
 
   it('a snapshot without a preview or prompt restores bare (no result key, default intent)', async () => {
+    // (the junk-params coercion this wall used to pin —
+    // params:'not-an-object' → {} — died with THE SNAPSHOT
+    // CONTRACT above; the bare-restore law keeps its purpose with a
+    // well-formed params record.)
     const side = {
       run_id: 'r3',
       flow: {
         artifacts: ['notes.txt'],
-        card_snapshot: { card: 'image-gen', params: 'not-an-object' },
+        card_snapshot: { card: 'image-gen', params: { seed: 3 } },
       },
     }
     const { calls } = stubFetch(runWith(side))
@@ -490,7 +538,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     await loadRunOntoBench('r3', d)
     expect(d.errors).toEqual([])
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
-    expect(stages[0]).toEqual({ id: 's_0', engine: 'comfyui', card: 'image-gen', params: {}, provenance: 'restored' })
+    expect(stages[0]).toEqual({ id: 's_0', engine: 'comfyui', card: 'image-gen', params: { seed: 3 }, provenance: 'restored' })
     expect(ensuredBody(calls).intent).toBe('restored run')
   })
 
@@ -583,6 +631,31 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(result['assetUrls']).toHaveLength(3)
   })
 
+  it('a window-only gallery uses its first clip and skips paths outside a run directory', async () => {
+    const side = {
+      run_id: 'r-window',
+      flow: {
+        artifacts: [
+          '/data/run-r-window/h3_t4_w1_00001_.mp4',
+          '/outside/h3_t4_w2_00001_.mp4',
+        ],
+        card_snapshot: { card: 'h3-timeline', params: { prompt: 'window only' } },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r-window', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    const result = stages[0]?.['result'] as Record<string, unknown>
+    const route = (path: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(path)
+    expect(result).toMatchObject({
+      url: route('run-r-window/h3_t4_w1_00001_.mp4'),
+      artifacts: { 'run-r-window/h3_t4_w1_00001_.mp4': route('run-r-window/h3_t4_w1_00001_.mp4') },
+      assetUrls: [route('run-r-window/h3_t4_w1_00001_.mp4')],
+    })
+  })
+
   it('a model artifact stamps the run preview', async () => {
     const side = {
       run_id: 'rm',
@@ -631,21 +704,26 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect('result' in stages[0]!).toBe(false)
   })
 
-  it('a shapeless bench_snapshot falls through to the card arm', async () => {
-    const side = {
+  it('a shapeless bench_snapshot refuses by name (THE SNAPSHOT CONTRACT killed the silent fall-through to the card arm)', async () => {
+    // stages:'nope' used to fall through to the card arm and
+    // restore ONE stage of a multi-stage workflow as if that were
+    // the run — a silent partial restore. The contract names the
+    // corruption and refuses; the ran card is never presented as
+    // the workflow that made the media.
+    const { calls } = stubFetch(runWith({
       run_id: 'r10',
       flow: {
         card_snapshot: { card: 'image-gen', params: { prompt: 'shapeless' } },
         bench_snapshot: { stages: 'nope', intent: 'ignored' },
       },
-    }
-    const { calls } = stubFetch(runWith(side))
+    }))
     const d = deps('s1')
     await loadRunOntoBench('r10', d)
-    expect(d.errors).toEqual([])
-    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
-    expect(stages).toHaveLength(1)
-    expect(stages[0]).toMatchObject({ id: 's_0', engine: 'comfyui', card: 'image-gen' })
+    expect(d.errors).toEqual([
+      'this run keeps an unloadable bench snapshot (bench_snapshot.stages: must be an array)',
+    ])
+    expect(calls.some((c) => c.url === '/v1/bench/ensure')).toBe(false)
+    expect(d.opened).toEqual([])
   })
 
   it('a run_id-less sidecar still restores (the id defaults empty)', async () => {

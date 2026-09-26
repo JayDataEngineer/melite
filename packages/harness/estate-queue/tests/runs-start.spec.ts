@@ -279,6 +279,42 @@ describe("registerCompiledRun", () => {
     assert.ok(existsSync(join(run.dir, "_flow.json")));
   });
 
+  it("THE SNAPSHOT CONTRACT (the operator's order, 2026-09-26): the writer stamps a CONTRACTED stage list — junk rows drop with named warnings, the loadable row rides with provenance restored", () => {
+    // "the saving should 100% be a schemamaster contract, that way
+    // we know 100% if it will load again": whatever the bench held,
+    // what PERSISTS parses on the load side. A null and a scalar
+    // row are unloadable — they DROP, each drop rides the sidecar's
+    // warnings row (visible loss, never silent), and the good row
+    // rides contracted (run memory stripped, provenance restored).
+    // Never a crash: the contract's save face always answers. (The
+    // verbatim law this wall replaces — "not ours to interpret" —
+    // is what let an unloadable snapshot reach disk in the first
+    // place; the reader then posted coerced junk to the door.)
+    const root = tmp();
+    const body = { model: "m" };
+    const benchDoc = { stages: [null, "scalar", { id: "s", card: "c" }], intent: "mixed rows" };
+    const { run } = mustRegister({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 3,
+      door: { runId: "run-nonlist", pipeline: "m", cardId: "c", requestBody: body, benchDoc },
+    });
+    const snap = run.benchSnapshot as { stages: Array<Record<string, unknown>>; intent: string };
+    assert.equal(snap.intent, "mixed rows");
+    assert.equal(snap.stages.length, 1, "only the loadable row persisted");
+    assert.deepEqual(snap.stages[0], { id: "s", card: "c", provenance: "restored" });
+    const drops = (run.warnings ?? []).filter((w) => w.startsWith("bench snapshot: dropped"));
+    assert.equal(drops.length, 2, "each junk row's drop is named");
+    const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.ok(
+      Array.isArray(flow["warnings"]) &&
+        (flow["warnings"] as string[]).some((w) => w.includes("dropped unloadable stage")),
+      "the drops ride the sidecar's warnings row",
+    );
+  });
+
   it("the card door stamps the snapshots (the wand restores from these, never the living bench)", () => {
     const root = tmp();
     const body = { model: "m" };
@@ -292,10 +328,20 @@ describe("registerCompiledRun", () => {
       door: { runId: "run-snap", pipeline: "m", cardId: "c", requestBody: body, benchDoc },
     });
     assert.deepEqual(run.cardSnapshot, { card: "c", params: body });
-    assert.deepEqual(run.benchSnapshot, { stages: benchDoc.stages, intent: "the beach flow" });
+    // THE CONTRACTED STAMP: the row rides with provenance restored
+    // (the admission repair law's coordinate), and the persisted
+    // snapshot PARSES on the load side — the round-trip guarantee,
+    // pinned at the writer (save → parse never fails).
+    assert.deepEqual(run.benchSnapshot, {
+      stages: [{ id: "s", card: "c", provenance: "restored" }],
+      intent: "the beach flow",
+    });
     const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.deepEqual(flow["card_snapshot"], { card: "c", params: body });
-    assert.deepEqual(flow["bench_snapshot"], { stages: benchDoc.stages, intent: "the beach flow" });
+    assert.deepEqual(flow["bench_snapshot"], {
+      stages: [{ id: "s", card: "c", provenance: "restored" }],
+      intent: "the beach flow",
+    });
   });
 
   it("THE PROVENANCE HEAD (2026-09-25): a bench with a log rides its head on the snapshot; a log-less doc rides no fabricated label", () => {
@@ -421,7 +467,7 @@ describe("registerCompiledRun", () => {
       enqueue: () => 3,
       door: { ...doorBase, runId: "run-nointent", benchDoc: { stages, intent: 7 } },
     });
-    assert.deepEqual(run2.benchSnapshot, { stages, intent: "" });
+    assert.deepEqual(run2.benchSnapshot, { stages: [{ id: "s", provenance: "restored" }], intent: "" });
   });
 
   // THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23: the

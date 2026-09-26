@@ -21,6 +21,8 @@
  * surface as honest caller-side errors, never thrown past React.
  */
 
+import { parseBenchSnapshot, parseCardSnapshot } from '@melite/contracts/benchSnapshot'
+
 /** One bench session key — 'main' only for unattributed seats
  *  (stroke 44: the bench belongs to the conversation; the gallery's
  *  load writes the ACTIVE session's bench, never a stranger's). */
@@ -80,7 +82,8 @@ function resultOfRun(
   const arts = flow?.['artifacts']
   if (!Array.isArray(arts)) return undefined
   const isMedia = (a: unknown): a is string =>
-    typeof a === 'string' && /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(a)
+    typeof a === 'string' && /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mkv|avi|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(a)
+  const isVideo = (p: string): boolean => /\.(mp4|webm|mov|m4v|mkv|avi)$/i.test(p)
   // THE FULL GALLERY RIDES THE STAMP (the operator's catch,
   // 2026-09-23: "reload card history, open the timeline card — the
   // preview shows ONE of the three clips"): the old stamp carried
@@ -88,19 +91,17 @@ function resultOfRun(
   // one window and the drill walk had one item. The stamp mirrors
   // the estate's terminal outcome: hero url + the artifacts map
   // (every clip, keyed by its run-relative name) + assetUrls.
-  // THE HERO IS THE PRODUCT: a video WITHOUT a window suffix (the
-  // concatenated film) beats any window clip. THE REAL SPELLING:
-  // estate video lanes emit `<stem>_w<N>_<seq>_.mp4` — hex/decimal
-  // sequence then a TRAILING UNDERSCORE before the extension
-  // (live proof, BRIEF4: h3_t4_w1_00005_.mp4 vs
-  // h3_t4_film_00021_.mp4). The window-suffix law is MediaPanel's
-  // WINDOW_FILM, restated corrected here (client bundles cannot
-  // import across plugins — the parity site is named in this
-  // file's header).
+  // THE HERO IS THE PRODUCT: a film-shaped video beats a window;
+  // a generic video beats audio/image outputs. Never let the first
+  // FLAC in the engine order become a video card's hero.
   const WINDOW_FILM = /_w\d+_\w+_?\.mp4$/i
   const media = arts.filter(isMedia)
   if (media.length === 0) return undefined
-  const hero = media.find((p: string): boolean => !WINDOW_FILM.test(p)) ?? media[0]
+  const film = media.find((p: string): boolean =>
+    /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(p) && !WINDOW_FILM.test(p),
+  )
+  const video = media.find((p: string): boolean => isVideo(p) && !WINDOW_FILM.test(p))
+  const hero = film ?? video ?? media.find((p: string): boolean => !WINDOW_FILM.test(p)) ?? media[0]
   const tailOf = (p: string): string | undefined => /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(p)?.[1]
   const heroTail = tailOf(hero)
   if (heroTail === undefined) return undefined
@@ -239,10 +240,19 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       ? (flow as Record<string, unknown>)['bench_snapshot']
       : undefined
     if (typeof benchSnap === 'object' && benchSnap !== null) {
-      const bs = benchSnap as Record<string, unknown>
-      const bsStages = Array.isArray(bs['stages'])
-        ? (bs['stages'] as unknown[]).map((st) => ({ ...(st as Record<string, unknown>) }))
-        : []
+      // THE SNAPSHOT CONTRACT (the operator's order, 2026-09-26):
+      // the restore judges bench_snapshot through the SAME contract
+      // the writer stamps — a snapshot that fails parse refuses with
+      // the exact problem named, never a best-effort post to the
+      // door (a silent partial restore is the fabrication the
+      // contract exists to kill).
+      const parsedBench = parseBenchSnapshot(benchSnap)
+      if (!parsedBench.ok) {
+        deps.onError('this run keeps an unloadable bench snapshot (' + parsedBench.problems.join('; ') + ')')
+        return
+      }
+      const bs = parsedBench.value
+      const bsStages = bs.stages.map((st) => ({ ...(st as Record<string, unknown>) }))
       if (bsStages.length > 1) {
         const ranCard = typeof snap === 'object' && snap !== null
           ? (snap as Record<string, unknown>)['card'] : undefined
@@ -266,17 +276,20 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
           if (ranCard !== undefined && st['card'] === ranCard && result !== undefined) st['result'] = result
           st['provenance'] = 'restored'
         }
-        const bsIntent = typeof bs['intent'] === 'string' && (bs['intent'] as string) !== '' ? bs['intent'] as string : 'restored run'
+        const bsIntent = bs.intent !== '' ? bs.intent : 'restored run'
         await loadStagesOntoBench(bsStages, bsIntent.slice(0, 77), deps)
         return
       }
     }
-    if (typeof snap === 'object' && snap !== null
-      && typeof (snap as Record<string, unknown>)['card'] === 'string') {
-      const card = (snap as Record<string, unknown>)['card'] as string
-      const rawParams = (snap as Record<string, unknown>)['params']
-      const params = typeof rawParams === 'object' && rawParams !== null
-        ? { ...(rawParams as Record<string, unknown>) } : {}
+    if (typeof snap === 'object' && snap !== null) {
+      // THE SNAPSHOT CONTRACT, card face: same law, same judge.
+      const parsedCard = parseCardSnapshot(snap)
+      if (!parsedCard.ok) {
+        deps.onError('this run keeps an unloadable card snapshot (' + parsedCard.problems.join('; ') + ')')
+        return
+      }
+      const card = parsedCard.value.card
+      const params = { ...parsedCard.value.params }
       delete params['draft_id']; delete params['test']
       // THE SELF-NAMING MODEL STRIP (the mask-recovery break, live
       // proof run-ffbabb558cb8: the era's compose wire stamped

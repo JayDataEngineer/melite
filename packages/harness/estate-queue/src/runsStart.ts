@@ -25,6 +25,7 @@ import {
 import { appendLedger, atomicWriteJson, newRunId, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies } from "./queue.ts";
 import type { QueueRefusal } from "./queue.ts";
 import { rootsManifest } from "./rootsManifest.ts";
+import { saveBenchSnapshotStages } from "@melite/contracts/benchSnapshot";
 import { collectSourceRefs, resolveSourceRefs } from "./runsSourceEcho.ts";
 import type { SourceEchoRef } from "./runsSourceEcho.ts";
 import type { GraphRow } from "./queue.ts";
@@ -462,13 +463,33 @@ export function registerCompiledRun(args: {
         !Array.isArray(benchLog[0])
           ? { ...(benchLog[0] as Record<string, unknown>) }
           : undefined;
-      run.benchSnapshot = {
-        stages: benchStages,
-        intent: typeof door.benchDoc?.["intent"] === "string"
-          ? door.benchDoc?.["intent"]
-          : "",
-        ...(head !== undefined ? { bench_head: head } : {}),
-      };
+      // THE SNAPSHOT CONTRACT (the operator's order, 2026-09-26:
+      // "the saving should 100% be a schemamaster contract, that
+      // way we know 100% if it will load again"): the writer stamps
+      // bench_snapshot THROUGH the shared contract in
+      // @melite/contracts/benchSnapshot, never raw — run memory and
+      // the era's self-naming model strip AT SAVE, provenance rides
+      // 'restored' (the admission repair law's coordinate), and a
+      // row that cannot load is DROPPED with a warning on the
+      // sidecar (visible loss, never persisted-unloadable). The
+      // guarantee is exact: everything saved under the contract
+      // parses on the load side.
+      const contracted = saveBenchSnapshotStages(benchStages);
+      if (contracted.warnings.length > 0) {
+        run.warnings = [
+          ...(run.warnings ?? []),
+          ...contracted.warnings.map((w: string): string => `bench snapshot: ${w}`),
+        ];
+      }
+      if (contracted.stages.length > 0) {
+        run.benchSnapshot = {
+          stages: contracted.stages,
+          intent: typeof door.benchDoc?.["intent"] === "string"
+            ? door.benchDoc?.["intent"]
+            : "",
+          ...(head !== undefined ? { bench_head: head } : {}),
+        };
+      }
     }
   }
   // R3 durable queue (submit 1317-1351): the request rides

@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./browserStorage": "./src/browserStorage.ts",
     "./card": "./src/card.ts",
+    "./benchSnapshot": "./src/benchSnapshot.ts",
     "./character": "./src/character.ts",
     "./enhanceTypes": "./src/enhanceTypes.ts",
     "./formSpec": "./src/formSpec.ts",

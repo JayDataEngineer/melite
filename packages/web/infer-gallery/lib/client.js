@@ -39578,6 +39578,86 @@ void main() {
 			return box;
 		}
 		//#endregion
+		//#region src/client/artifact-ops.ts
+		/**
+		* artifact-ops — the modal's delete + rename wires (the media
+		* sidebar's popup modal on media stuff).
+		*
+		* Both doors ride the gallery host's SAME-ORIGIN mutating routes
+		* (POST /infer-gallery/artifact-delete {path},
+		* POST /infer-gallery/artifact-rename {path, name}) — the read
+		* artifact route stays read-only, so a prefetcher can never mutate
+		* by URL. Failures surface as thrown Errors carrying the door's
+		* `error` code, never silent.
+		*/
+		/** The artifact's FILE NAME behind an artifact URL — THE ONE LAW
+		*  (the operator's 2026-09-26 report: a real .glb was refused as
+		*  `"artifact" is not a .glb/.gltf artifact`, because the media route
+		*  serves `/infer-gallery/artifact?path=<run>/<file>` and the caller
+		*  read the ROUTE's last path segment). `?path=` first, the plain URL
+		*  path second (a directly-served file has no query). */
+		function artifactNameOf(url) {
+			const path = artifactPathOfUrl(url) ?? url.split("?")[0] ?? "";
+			return path.split("/").pop() ?? path;
+		}
+		/** The run-relative artifact path behind one same-origin artifact
+		*  URL (`/infer-gallery/artifact?path=run-<id>/<file>`) — null when
+		*  the URL rides no such path (foreign URLs, card previews). */
+		function artifactPathOfUrl(url) {
+			try {
+				const target = new URL(url, "http://artifact-ops.invalid").searchParams.get("path");
+				return target !== null && target !== "" ? target : null;
+			} catch {
+				return null;
+			}
+		}
+		async function refusalOf$1(res, answer) {
+			const err = answer?.["error"];
+			return typeof err === "string" && err !== "" ? err : "HTTP " + String(res.status);
+		}
+		/** Unlink one run-relative artifact file. */
+		async function deleteArtifact(path) {
+			let res;
+			try {
+				res = await fetch("/infer-gallery/artifact-delete", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ path })
+				});
+			} catch (e) {
+				throw new Error("delete failed — " + (e instanceof Error ? e.message : String(e)));
+			}
+			if (!res.ok) {
+				const answer = await res.json().catch(() => null);
+				throw new Error("delete failed (" + await refusalOf$1(res, answer) + ")");
+			}
+		}
+		/** Rename one artifact inside its own directory — resolves the new
+		*  run-relative path + its same-origin URL (the preview re-points). */
+		async function renameArtifact(path, name) {
+			let res;
+			try {
+				res = await fetch("/infer-gallery/artifact-rename", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						path,
+						name
+					})
+				});
+			} catch (e) {
+				throw new Error("rename failed — " + (e instanceof Error ? e.message : String(e)));
+			}
+			const answer = await res.json().catch(() => null);
+			if (!res.ok) throw new Error("rename failed (" + await refusalOf$1(res, answer) + ")");
+			const row = answer ?? {};
+			if (typeof row.path !== "string" || typeof row.url !== "string") throw new Error("rename failed (bad_rename_answer)");
+			return {
+				path: row.path,
+				url: row.url
+			};
+		}
+		//#endregion
 		//#region src/client/ui.tokens.ts
 		/**
 		* Design tokens — every var(--dsw-alias-…) string in the media family
@@ -39641,7 +39721,7 @@ void main() {
 		*  artifact route does not serve next to it — so the copy below names
 		*  the case rather than letting the fetch fail as a decode error. */
 		function unsupportedCopy(url) {
-			const path = url.split("?")[0] ?? "";
+			const path = artifactPathOfUrl(url) ?? url.split("?")[0] ?? "";
 			if (/\.gltf$/i.test(path)) return "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.";
 			if (!/\.(glb|gltf)$/i.test(path)) return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
 			return null;
@@ -40346,7 +40426,7 @@ void main() {
 			};
 		}
 		/** The error message an !ok JSON response carries, else HTTP n. */
-		async function refusalOf$1(res, answer) {
+		async function refusalOf(res, answer) {
 			const err = answer?.["error"];
 			return typeof err === "string" && err !== "" ? err : "HTTP " + String(res.status);
 		}
@@ -40379,7 +40459,7 @@ void main() {
 				});
 				const answer = await ensureRes.json().catch(() => null);
 				if (!ensureRes.ok) {
-					deps.onError("the bench refused the load (" + await refusalOf$1(ensureRes, answer) + ")");
+					deps.onError("the bench refused the load (" + await refusalOf(ensureRes, answer) + ")");
 					return;
 				}
 				deps.openResource(cardsBenchAddress(deps.sessionId));
@@ -40395,7 +40475,7 @@ void main() {
 				const docRes = await fetch("/v1/flows/drafts/" + encodeURIComponent(draftId), { headers: { accept: "application/json" } });
 				const doc = await docRes.json().catch(() => null);
 				if (!docRes.ok || typeof doc !== "object" || doc === null) {
-					deps.onError("could not read that card (" + await refusalOf$1(docRes, doc) + ")");
+					deps.onError("could not read that card (" + await refusalOf(docRes, doc) + ")");
 					return;
 				}
 				const stages = doc["stages"];
@@ -40423,7 +40503,7 @@ void main() {
 				const sideRes = await fetch("/infer-gallery/flow?run_id=" + encodeURIComponent(runId), { headers: { accept: "application/json" } });
 				const side = await sideRes.json().catch(() => null);
 				if (!sideRes.ok || typeof side !== "object" || side === null) {
-					deps.onError("that run keeps no readable sidecar (" + await refusalOf$1(sideRes, side) + ")");
+					deps.onError("that run keeps no readable sidecar (" + await refusalOf(sideRes, side) + ")");
 					return;
 				}
 				const flow = side["flow"];
@@ -40500,76 +40580,6 @@ void main() {
 			} catch (e) {
 				deps.onError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 			}
-		}
-		//#endregion
-		//#region src/client/artifact-ops.ts
-		/**
-		* artifact-ops — the modal's delete + rename wires (the media
-		* sidebar's popup modal on media stuff).
-		*
-		* Both doors ride the gallery host's SAME-ORIGIN mutating routes
-		* (POST /infer-gallery/artifact-delete {path},
-		* POST /infer-gallery/artifact-rename {path, name}) — the read
-		* artifact route stays read-only, so a prefetcher can never mutate
-		* by URL. Failures surface as thrown Errors carrying the door's
-		* `error` code, never silent.
-		*/
-		/** The run-relative artifact path behind one same-origin artifact
-		*  URL (`/infer-gallery/artifact?path=run-<id>/<file>`) — null when
-		*  the URL rides no such path (foreign URLs, card previews). */
-		function artifactPathOfUrl(url) {
-			try {
-				const target = new URL(url, "http://artifact-ops.invalid").searchParams.get("path");
-				return target !== null && target !== "" ? target : null;
-			} catch {
-				return null;
-			}
-		}
-		async function refusalOf(res, answer) {
-			const err = answer?.["error"];
-			return typeof err === "string" && err !== "" ? err : "HTTP " + String(res.status);
-		}
-		/** Unlink one run-relative artifact file. */
-		async function deleteArtifact(path) {
-			let res;
-			try {
-				res = await fetch("/infer-gallery/artifact-delete", {
-					method: "POST",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({ path })
-				});
-			} catch (e) {
-				throw new Error("delete failed — " + (e instanceof Error ? e.message : String(e)));
-			}
-			if (!res.ok) {
-				const answer = await res.json().catch(() => null);
-				throw new Error("delete failed (" + await refusalOf(res, answer) + ")");
-			}
-		}
-		/** Rename one artifact inside its own directory — resolves the new
-		*  run-relative path + its same-origin URL (the preview re-points). */
-		async function renameArtifact(path, name) {
-			let res;
-			try {
-				res = await fetch("/infer-gallery/artifact-rename", {
-					method: "POST",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({
-						path,
-						name
-					})
-				});
-			} catch (e) {
-				throw new Error("rename failed — " + (e instanceof Error ? e.message : String(e)));
-			}
-			const answer = await res.json().catch(() => null);
-			if (!res.ok) throw new Error("rename failed (" + await refusalOf(res, answer) + ")");
-			const row = answer ?? {};
-			if (typeof row.path !== "string" || typeof row.url !== "string") throw new Error("rename failed (bad_rename_answer)");
-			return {
-				path: row.path,
-				url: row.url
-			};
 		}
 		//#endregion
 		//#region src/client/decode.ts
@@ -40900,9 +40910,11 @@ void main() {
 			const text = calls[0]?.text;
 			return typeof text === "string" ? text.replace(/\s+/g, " ").trim() : "";
 		}
+		/** The artifact's file name — THE ONE LAW (artifact-ops' resolver):
+		*  an artifact-route URL's last path segment is the ROUTE's word, so
+		*  reading the path named every artifact "artifact". */
 		function baseName(u) {
-			const parts = u.split("?")[0].split("/");
-			return parts[parts.length - 1];
+			return artifactNameOf(u);
 		}
 		function timeLabel(sec) {
 			if (typeof sec !== "number" || !Number.isFinite(sec) || sec <= 0) return "";
@@ -41709,4 +41721,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="fec37bbc4becc0017b041e03c7755828a44a0b8c";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="15953e038b07b4943eb73fba17bfe6f335febf25";
