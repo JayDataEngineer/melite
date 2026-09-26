@@ -747,7 +747,7 @@ export function meliteView(ctx: Context): ToolDefinition {
       render: (_args, value) => viewedContent(value as unknown as ViewedImageValue),
     },
     isConcurrencySafe: () => true,
-    async execute(args, exec0): Promise<{ runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>> {
+    async execute(args, exec0): Promise<{ runId: string, url: string, image: Record<string, JsonValue> } | { runId: string, url: string, textObservation: string }> {
       const exec = exec0 as ViewExec
       const a = args as { run_id?: unknown, artifact?: unknown }
       // run_id is schema-typed string: the wrapper gate rejects

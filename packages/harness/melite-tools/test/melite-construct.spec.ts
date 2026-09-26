@@ -477,7 +477,63 @@ describe('melite_construct refusals — the CAS voice', () => {
     const tool = meliteConstruct(request)
     const out = await tool.execute({ verb: 'patch', stage: 's1', expect_rev: 6 }, exec()) as Record<string, unknown>
     assert.equal(out.error, 'bench moved')
-    assert.equal(out.current_rev, undefined)
+
+  })
+
+  // THE ONE-RETRY REBASE (the operator's stuck-agent cure, 2026-10-09:
+  // "I can't even change models in the cards — it breaks"): the tool
+  // face inherits the GUI's withRebase law. A held expect_rev goes
+  // stale the moment anything else writes the bench — the browser
+  // edits, a concurrent agent, or the caller's own prior patch whose
+  // new rev it never folded. On the door's cas-conflict the tool
+  // re-reads the fresh rev and re-applies ONCE; the agent's model
+  // switch lands instead of stranding on a stale hold.
+  test('THE REBASE: a stale expect_rev re-reads the fresh rev and re-applies once — the model switch lands', async () => {
+    let posts = 0
+    const { seen, request } = mockRequest((method, path, body) => {
+      const b = body as Record<string, unknown>
+      if (method === 'GET') return { rev: 23, stages: [] }
+      posts += 1
+      if (posts === 1) {
+        // the door's verdict: the bench moved under the caller's hold
+        throw new RemoteError('bench/cas-conflict',
+          'bench main moved: rev is 23, caller held 21', { current_rev: 23, expect_rev: 21 })
+      }
+      assert.equal(b['expect_rev'], 23, 'the retry carries the FRESH rev')
+      return { rev: 24, stage: b['stage'], patched: true }
+    })
+    const tool = meliteConstruct(request)
+    const out = await tool.execute(
+      { verb: 'patch', stage: 's_0', params: { model: 'qwen-img-edit-2511' }, expect_rev: 21 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.verb, 'patch')
+    assert.equal(out.rev, 24)
+    assert.equal(out.stage, 's_0')
+    // the sequence: the refused POST (stale 21), the fresh GET, the
+    // landing POST (23) — exactly three calls, one retry, no loops
+    assert.deepEqual(seen.map((s) => s.method + ' ' + s.path), [
+      'POST /v1/bench/main/patch',
+      'GET /v1/bench/main',
+      'POST /v1/bench/main/patch',
+    ])
+  })
+
+  test('THE REBASE SPENDS ONE retry: a second cas-conflict surfaces (never loops)', async () => {
+    const { seen, request } = mockRequest((method) => {
+      if (method === 'GET') return { rev: 23, stages: [] }
+      throw new RemoteError('bench/cas-conflict',
+        'bench main moved: rev is 99, caller held 23', { current_rev: 99, expect_rev: 23 })
+    })
+    const tool = meliteConstruct(request)
+    const out = await tool.execute(
+      { verb: 'patch', stage: 's_0', params: {}, expect_rev: 21 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.ok, false)
+    assert.equal(out.error_kind, 'bench/cas-conflict')
+    // TWO posts only: the stale attempt + the single re-applied retry
+    assert.equal(seen.filter((s) => s.method === 'POST').length, 2)
   })
 
   test('a non-numeric rev carries none', async () => {

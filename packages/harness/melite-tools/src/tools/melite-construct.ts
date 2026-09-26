@@ -113,6 +113,50 @@ async function readBench(
   }
 }
 
+/** THE CAS VERDICT MATCHER (the GUI's withRebase law, verbatim —
+ *  add-stage.ts's matcher law: match the REAL words, both door
+ *  spellings: the bench door's 'bench <session> moved: rev is N,
+ *  caller held M' and the drafts store's 'bench moved under the
+ *  patch (expect_rev N, current M)' + the code arm). Dead matchers
+ *  make dead rebases; dead rebases make stuck agents. */
+function isCasConflict(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e)
+  return (
+    msg.includes('moved: rev is') ||
+    msg.includes('moved under the patch') ||
+    msg.includes('cas-conflict')
+  )
+}
+
+/** ONE-RETRY REBASE (the operator's stuck-agent cure, 2026-10-09:
+ *  "I can't even change models in the cards — it breaks"): an
+ *  agent's held expect_rev goes stale the moment ANYTHING else
+ *  writes the bench — the user's own GUI edit, a concurrent agent,
+ *  or the agent's own prior patch whose new rev it never folded.
+ *  The CAS verdict itself is CORRECT (never merge under a moved
+ *  bench); what broke the operator was the tool face lacking the
+ *  browser's cure: on the door's cas-conflict, re-read the fresh
+ *  rev and re-apply ONCE. Non-destructive verbs only — load's
+ *  wholesale replacement still refuses when moved (a rebase there
+ *  could clobber a concurrent write silently). */
+async function postBenchVerb(
+  request: EstateRequest, bench: string, verbPath: string,
+  body: Record<string, unknown>, signal: AbortSignal,
+): Promise<Record<string, unknown>> {
+  const attempt = (rev: unknown): Promise<Record<string, unknown>> =>
+    request('POST', `/v1/bench/${bench}/${verbPath}`,
+      { ...body, expect_rev: rev }, signal, 15000) as Promise<Record<string, unknown>>
+  try {
+    return await attempt(body['expect_rev'])
+  } catch (e) {
+    if (!isCasConflict(e)) throw e
+    const fresh = await readBench(request, bench, signal)
+    const rev = fresh['rev']
+    if (typeof rev !== 'number') throw e
+    return await attempt(rev)
+  }
+}
+
 /** Enrich bench stages with the draft's latest run (the lookup
  *  the agent cannot do itself: runs are born from drafts — the
  *  start door refuses cardless runs — so the bench's draft_id
@@ -511,8 +555,8 @@ export function meliteConstruct(
           return out({ rev: r.rev, stages: r.stages })
         }
         if (verb === 'patch') {
-          const r = await request( 'POST', `/v1/bench/${bench}/patch`,
-            { stage: a.stage, params: a.params, expect_rev: a.expect_rev }, signal, 15000) as Record<string, unknown>
+          const r = await postBenchVerb(request, bench, 'patch',
+            { stage: a.stage, params: a.params, expect_rev: a.expect_rev }, signal)
           return out({ rev: r.rev, stage: r.stage, patched: r.patched })
         }
         if (verb === 'add_stage') {
@@ -530,7 +574,7 @@ export function meliteConstruct(
           // mints its own id).
           if (typeof a.stage === 'string' && a.stage.trim() === '') a.stage = undefined
           if (a.stage !== undefined) return out({ error: 'add_stage assigns its own stage id (s_0, s_1, ...) — the answer carries it; patch/remove_stage/rewire take {stage}. Drop the stage arg.' })
-          const r = await request( 'POST', `/v1/bench/${bench}/add_stage`,
+          const r = await postBenchVerb(request, bench, 'add_stage',
             {
               card: a.card,
               ...(a.engine !== undefined ? { engine: a.engine } : {}),
@@ -548,30 +592,30 @@ export function meliteConstruct(
               ...(isRecordArg(a.expected) ? { expected: a.expected } : {}),
               ...(isRecordArg(a.outputs) ? { outputs: a.outputs } : {}),
               expect_rev: a.expect_rev,
-            }, signal, 15000) as Record<string, unknown>
+            }, signal)
           return out({ rev: r.rev, stage: r.stage })
         }
         if (verb === 'remove_stage') {
-          const r = await request( 'POST', `/v1/bench/${bench}/remove_stage`,
-            { stage: a.stage, expect_rev: a.expect_rev }, signal, 15000) as Record<string, unknown>
+          const r = await postBenchVerb(request, bench, 'remove_stage',
+            { stage: a.stage, expect_rev: a.expect_rev }, signal)
           return out({ rev: r.rev, stage: r.stage })
         }
         if (verb === 'rewire') {
-          const r = await request( 'POST', `/v1/bench/${bench}/rewire`,
+          const r = await postBenchVerb(request, bench, 'rewire',
             {
               stage: a.stage, input: a.input,
               ...(a.from !== undefined ? { from: a.from } : {}),
               expect_rev: a.expect_rev,
-            }, signal, 15000) as Record<string, unknown>
+            }, signal)
           return out({ rev: r.rev, stage: r.stage, input: r.input })
         }
         if (verb === 'undo') {
-          const r = await request( 'POST', `/v1/bench/${bench}/undo`,
+          const r = await postBenchVerb(request, bench, 'undo',
             {
               ...(a.n !== undefined ? { n: a.n } : {}),
               ...(a.author !== undefined ? { author: a.author } : {}),
               expect_rev: a.expect_rev,
-            }, signal, 15000) as Record<string, unknown>
+            }, signal)
           return out({ rev: r.rev, undone: r.undone, stages: r.stages })
         }
         return jsonClean<ConstructResult>({
