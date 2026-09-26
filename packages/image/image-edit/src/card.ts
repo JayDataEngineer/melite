@@ -99,7 +99,7 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // roomiest lane's max_images minus the anchor); each lane refuses
   // past its own DECL cap LOUD at compose (the firing law, never a
   // silent drop).
-  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", max_stack: EDIT_STACK_CAP, tooltip: "Reference images — one square per entry, the add-cell opens the next until the roomiest lane's DECL cap. Each lane splices what its max_images allows (2511: 2 through the stock image2/image3, 2.1: 15 from the encoder's images.image_2) and refuses past that LOUD.", wtype: 'image_list' }),
+  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", zone: 'inputs', max_stack: EDIT_STACK_CAP, tooltip: "Reference images — one square per entry, the add-cell opens the next until the roomiest lane's DECL cap. Each lane splices what its max_images allows (2511: 2 through the stock image2/image3, 2.1: 15 from the encoder's images.image_2) and refuses past that LOUD.", wtype: 'image_list' }),
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
   negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
   width: z.number().description("Width").extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
@@ -139,8 +139,8 @@ export const identity = {
   genre: 'image',
   icon: 'edit',
   principles: [
-    'image1 is required — the edit is anchored on it (slots image1..image3, input_image is the retired alias; image2/image3 are hidden legacy aliases merging to the reference front)',
-    'references are ONE stack — Reference Images rides both lanes up to each lane DECL max_images (the roomiest boarded cap sizes the form face); there is no second input row for the same concept',
+    'image1 is required — the edit is anchored on it (image2/image3 are hidden legacy aliases merging to the reference front; input_image is the retired alias)',
+    'references are ONE concept with the input images — Reference Images is a wireable input port (kind image_list, in the inputs category everywhere) riding both lanes up to each lane DECL max_images (the roomiest boarded cap sizes the form face); there is no second input row for the same concept',
     'Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0',
     'Without a mask modifier, image editing is whole-image by default; a mask modifier opts into masked-region editing',
     'An input_mask alongside image1 in auto switches the 2511 lane to the LanPaint inpaint sampler (the masked region regenerates, the rest is preserved); the 2.1 lane refuses auto+mask field-named — state crop_stitch there',
@@ -199,21 +199,22 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: 'image-edit', order: 2 },
     flowKinds: {
-      // THE INPUT SIGNATURE (the unification: the anchor plus the
-      // legacy named edges). image2/image3 stay declared as flow
-      // edges for old graphs wiring them — they seat NO rail square
-      // (hidden legacy aliases, never a face) and compose merges
-      // them to the reference front. reference_images is NOT a slot:
-      // the old system declared it (workflows pass resolved image lists
-      // through it) but NEVER rendered it — no input_slots entry, no
-      // slot component anywhere in the old tree, and the params flow
-      // excluded every non-params zone field. It renders as the
-      // progressive stack and rides the params — still no flow edge
-      // (the flow graph carries the list inside the stage params,
-      // resolved at run).
+      // THE INPUT SIGNATURE (the operator's rework, 2026-09-26:
+      // "reference images and input images are the same thing" —
+      // they are ONE concept in every category too). The anchor,
+      // then reference_images as a REAL input port (kind
+      // image_list: a wireable list seat — the /v1/forms table,
+      // the picker's edge law, and the flow lattice all derive the
+      // input category from HERE, and it listed only the legacy
+      // aliases while the actual reference input sat outside it).
+      // image2/image3 stay declared as flow edges for old graphs
+      // wiring them — they seat NO rail square (hidden legacy
+      // aliases, never a face) and compose merges them to the
+      // reference front.
       inputs: {
         prompt: 'text',
         image1: 'image',
+        reference_images: 'image_list',
         image2: 'image',
         image3: 'image',
       },

@@ -263,7 +263,7 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
  * UltralyticsDetectorProvider model list, 2026-09-22): hand is the
  * s-variant this engine ships — the n-variant pin was a stale copy
  * that would refuse at execute time. */
-function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: OutputHandle, maskPath: string): OutputHandle {
+function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: TensorRef, maskPath: string): OutputHandle {
   const detector = (region.mask_detector ?? 'off') as string
   const expand = ((region.mask_grow ?? 8) as number) + ((region.mask_context_pad ?? 64) as number)
   if (detector !== 'off') {
@@ -300,7 +300,7 @@ function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: Out
  * active lane built. */
 function detailerSave(
   g: GraphBuilder, p: Record<string, unknown>, region: Record<string, unknown>,
-  io: { image: OutputHandle, segs: OutputHandle, model: OutputHandle, clip: OutputHandle, vae: OutputHandle, positive: OutputHandle, negative: OutputHandle, seed: number },
+  io: { image: TensorRef, segs: OutputHandle, model: OutputHandle, clip: OutputHandle, vae: OutputHandle, positive: OutputHandle, negative: OutputHandle, seed: number },
   runId: string,
 ): void {
   const detailed = g.node('DetailerForEach', {
@@ -315,6 +315,19 @@ function detailerSave(
   g.node('SaveImage', { images: detailed, filename_prefix: `${runId}/edit` })
 }
 
+/** A tensor carrier: a node's output handle, or THE SPELL ARM's raw
+ *  wire value — a '$name' string naming a FromStage-wired input.
+ *  The merge (rewriteSpells) substitutes the upstream producer's
+ *  [node, slot] link wherever the spell rides a node input; ROW-4
+ *  refuses producer links in Load* file slots, so a spelled tensor
+ *  NEVER builds a loader — the spell IS the tensor. */
+type TensorRef = OutputHandle | string
+
+/** True when the value names a wired stage input (the $spell law):
+ *  '$image1' means "the upstream stage's wired output", never a
+ *  file on disk. */
+const isSpell = (s: string): boolean => s.startsWith('$')
+
 /** The image_edit block — the anchored instruction-edit lane (moved
  *  verbatim from the image-edit card). */
 export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
@@ -323,7 +336,20 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   let unet: OutputHandle = g.node('UNETLoader', { unet_name: li.unet, weight_dtype: 'default' }).out()
   unet = stackLoras(g, unet, fireLoras(model, p))
   const { clip, vae } = loadTextPair(g, li)
-  const image = g.node('LoadImage', { image: p.image1, upload: 'image' }).out(0)
+  // THE SPELL ARM (the wired-anchor law, 2026-10-09 — the operator's
+  // live refusal: 'stage edit node LoadImage.0: workflow carries
+  // $image1 — neither a FromStage-wired input name nor a request
+  // initial'): a $name spell names a WIRED STAGE INPUT, never a
+  // file. The old arm ALWAYS built LoadImage(image1) — so a wired
+  // edit stage died at the merge (ROW-4: a producer link cannot
+  // land in a file slot) and an UNWIRED spell died at rewriteSpells
+  // (the operator's exact text). Now the spelled anchor rides the
+  // tensor slots verbatim and the merge lands the producer link
+  // there; files/URLs/estate paths keep the LoadImage handoff (the
+  // per-stage disk path owns those).
+  const image: TensorRef = isSpell(String(p.image1))
+    ? String(p.image1)
+    : g.node('LoadImage', { image: p.image1, upload: 'image' }).out(0)
   // THE REFERENCES (the unification — ONE order for both arms):
   // legacy named slots first, then the stack, blanks dropped.
   // THE SHARED CEILING (the max_images law — ONE check, both arms)
@@ -338,7 +364,10 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   }
   // Each stated ref loads ahead of the encodes (creation order IS
   // node-id order); blank refs contribute no input at all (stable).
-  const loaded = refs.map((s) => g.node('LoadImage', { image: s, upload: 'image' }).out(0))
+  // A spelled ref ($name) rides verbatim — same wired-tensor law as
+  // the anchor (THE SPELL ARM); a file keeps its LoadImage.
+  const loaded: TensorRef[] = refs.map((s) =>
+    isSpell(s) ? s : g.node('LoadImage', { image: s, upload: 'image' }).out(0))
   // THE REGION ROW (one merge, BOTH lanes — the gate's own merge
   // twin): the bag merges UNDER flat params (explicit flat keys
   // win). One region per run; every region arm below reads this row.
@@ -372,7 +401,7 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
     // — the slots ride DOTTED 'images.image_N' node-input keys, the
     // executor's dynamic-path split nests them into the images dict;
     // a bare 'image_1' reaches execute() as a kwarg and dies)
-    const images21: Record<string, OutputHandle> = { 'images.image_1': image }
+    const images21: Record<string, TensorRef> = { 'images.image_1': image }
     // THE ORDER RIDES CONTIGUOUSLY (the unification): refs map onto
     // images.image_2+ in order — no gaps, no second concept (the
     // shared ceiling above already enforced the DECL cap).

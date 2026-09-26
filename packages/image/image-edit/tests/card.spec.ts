@@ -253,6 +253,48 @@ describe("the image-edit compose gate", () => {
     assert.ok(!graph["LanPaint_KSamplerAdvanced.0"], "no lanpaint sampler beside the arm");
   });
 
+  // THE SPELL ARM (the wired-anchor law, 2026-10-09 — the operator's
+  // live refusal: a wired edit stage died at the merge because the
+  // compose ALWAYS built LoadImage for the anchor, and ROW-4 refuses
+  // a producer link in a file slot). A $name names a WIRED stage
+  // input: the spell rides the tensor slots VERBATIM (the merge's
+  // rewriteSpells lands the producer link there) and NO loader is
+  // built for it — the spell IS the tensor.
+  it("THE SPELL ARM: a wired anchor ($spell) rides tensor slots verbatim — no LoadImage, the merge lands the link", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "edit the upstream", image1: "$up", reference_images: ["$ref1"],
+        seed: 42, steps: 20, cfg: 2.5,
+      }),
+      model, g, "r_spell",
+    );
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    // NO loader exists at all: the anchor AND the one ref are both
+    // spelled — a loader would refuse at the merge (ROW-4)
+    const loaders = Object.entries(graph).filter(([, n]) => n.class_type.startsWith("Load"));
+    assert.equal(loaders.length, 0, "a spelled anchor builds no LoadImage (ROW-4: producer links never land in file slots)");
+    // the anchor spell rides the encoder's image1 TENSOR slots (pos+neg)
+    assert.equal(graph["TextEncodeQwenImageEditPlus.0"].inputs.image1, "$up", "pos encode carries the spell");
+    assert.equal(graph["TextEncodeQwenImageEditPlus.1"].inputs.image1, "$up", "neg encode carries the spell");
+    // the ref spell rides the stock node's image2 slot
+    assert.equal(graph["TextEncodeQwenImageEditPlus.0"].inputs.image2, "$ref1", "the spelled ref rides its tensor slot");
+    // the 2511 lane encodes the source at its own resolution — the
+    // spelled anchor rides the VAEEncode pixels tensor too
+    assert.equal(graph["VAEEncode.0"].inputs.pixels, "$up", "the encode pixels carry the spell");
+  });
+
+  it("THE SPELL ARM: an unwired file path keeps the LoadImage handoff (the disk path owns files)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ prompt: "edit the file", image1: "/m/i.png", seed: 42, steps: 20, cfg: 2.5 }),
+      model, g, "r_file",
+    );
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.equal(graph["LoadImage.0"].inputs.image, "/m/i.png", "the file anchor keeps its loader");
+    assert.ok(Array.isArray(graph["VAEEncode.0"].inputs.pixels), "the encode wires the loader's handle");
+  });
+
   it("crop_stitch with zero halo builds no GrowMask, invert splices before the SEGS", () => {
     const g = new GraphBuilder();
     def.compose(
@@ -448,7 +490,7 @@ describe("the image-edit compose gate", () => {
 describe("the lane-bespoke leaves (the model guard — the naming law's visibility half)", () => {
   it("THE LEAVES DECLARE THEIR FAMILY: width/height ride the 2.1 lane, use_stock_nodes/double_reference ride 2511 — never visible on the sibling; references are ONE unguarded stack", () => {
     // the carrier dance (same as formSchemas: schemaCarrier ?? schema)
-    const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string; max_stack?: number; hidden?: boolean } } }> } };
+    const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string; max_stack?: number; hidden?: boolean; zone?: string } } }> } };
     const json = carrier.toJSON();
     const root = Object.values(json.refs).find((n) => n.type === "object" && n.dict !== undefined);
     assert.ok(root, "the schema envelope serves");
@@ -488,6 +530,25 @@ describe("the lane-bespoke leaves (the model guard — the naming law's visibili
       assert.ok(aliasId !== undefined, `${alias} stays declared for legacy callers`);
       assert.equal(json.refs[aliasId]?.meta?.extra?.hidden, true, `${alias} never renders — one input row, not two`);
     }
+    // THE LIST-SEAT LAW (the operator's rework, 2026-09-26:
+    // "reference images and input images are the same thing — but
+    // reference images isn't even in the input category"): the
+    // signature CARRIES the reference stack as a wireable input
+    // port (kind image_list). The /v1/forms table, the picker's
+    // edge law, and the flow lattice all derive the input category
+    // from this declaration — before the rework it listed only the
+    // legacy aliases while the actual reference input sat outside.
+    const ports = def.flowKinds.inputs as Record<string, string>;
+    assert.equal(ports.reference_images, "image_list", "reference_images is a wireable input port (the inputs category)");
+    assert.equal(ports.image1, "image", "the anchor stays the image port");
+    assert.equal(ports.image2, "image", "the legacy edges stay for old graphs");
+    assert.equal(ports.image3, "image", "the legacy edges stay for old graphs");
+    // the zone spell matches the anchor's — one input zone
+    assert.equal(
+      json.refs[root!.dict!["reference_images"]]?.meta?.extra?.zone,
+      "inputs",
+      "the stack declares the inputs zone like the anchor",
+    );
   });
 
   it("a 2-entry stack RIDES the 2511 lane through the card door (the narrow end, no refusal)", () => {

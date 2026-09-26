@@ -249,6 +249,17 @@ export const emitParamsSchema = (
   }
   const required: string[] = []
   for (const [k, v] of Object.entries(dict)) {
+    // THE HIDDEN-ALIAS LAW (the operator's rework, 2026-09-26:
+    // "reference images and input images are the same thing" — a
+    // hidden alias is a VALIDATION key for old drafts, never a
+    // face): extra.hidden knobs stay out of BOTH projections. The
+    // image-edit card's image2/image3 are the case — compose merges
+    // them into the reference order and the form never renders
+    // them, but the tool face served "Image 2"/"Image 3" beside
+    // Reference Images: one concept spelled twice, the alias half
+    // of it outside the input category. Hidden = unserved.
+    const hiddenEx = ((v.meta ?? {}).extra ?? {}) as Record<string, unknown>
+    if (hiddenEx.hidden === true) continue
     properties[k] = emitKnob(v)
     const ex = ((v.meta ?? {}).extra ?? {}) as Record<string, any>
     if (ex.required === true) required.push(k)

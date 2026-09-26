@@ -16,6 +16,19 @@ describe("the image-edit tool face", () => {
     assert.equal(tool.name, "image_edit");
   });
 
+  it("THE HIDDEN-ALIAS LAW (2026-09-26): the tool face serves ONE image-input concept — the anchor + the reference list, never the legacy aliases", () => {
+    // the operator's rework: "reference images and input images are
+    // the same thing" — image2/image3 are validation keys for old
+    // drafts (hidden), and a hidden knob is UNSERVED on every
+    // projection; before this they rode the tool params beside
+    // Reference Images: one concept spelled twice.
+    const props = (tool.parameters as { properties?: Record<string, unknown> }).properties ?? {};
+    assert.ok("image1" in props, "the anchor serves");
+    assert.ok("reference_images" in props, "the reference list serves");
+    assert.ok(!("image2" in props), "the hidden alias never serves the tool face");
+    assert.ok(!("image3" in props), "the hidden alias never serves the tool face");
+  });
+
   it("carries the identity prose (the ring's spelling)", () => {
     assert.ok(typeof tool.description === "string" && tool.description.length > 10);
   });
