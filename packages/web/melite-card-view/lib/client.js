@@ -7542,7 +7542,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
 			const isAudio = file.type.startsWith("audio/");
 			const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name);
-			const isMesh = file.type === "model/gltf-binary" || file.type === "application/octet-stream" && glbName;
+			const isMesh = file.type === "model/gltf-binary" || file.type === "model/gltf+json" || file.type === "application/octet-stream" && glbName;
 			if (!isImage && !isAudio && !isMesh) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image, audio, or .glb/.gltf file");
 			if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp / glb only");
 			const dataUrl = await new Promise((resolve, reject) => {
@@ -11007,7 +11007,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 			throw new Error(`Unknown texture type ${type}.`);
 		}
-		var MOUSE, TOUCH, AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, UnsignedInt101111Type, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, R11_EAC_Format, SIGNED_R11_EAC_Format, RG11_EAC_Format, SIGNED_RG11_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$3, _setConsoleFunction, ReversedDepthFuncs, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers, _object3DId, _v1$6, _q1, _m1$1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _moveEvent, WebXRController, _colorKeywords, _hslA, _hslB, Color, _color, Scene, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1$3, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, SpriteMaterial, _geometry, _intersectPoint, _worldScale, _mvPosition, _alignedPosition, _rotatedPosition, _viewWorldMatrix, _vA$1, _vB$1, _vC$1, _uvA, _uvB, _uvC, Sprite, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray$4, _sphere, _position$3, Points, CubeTexture, CanvasTexture, DepthTexture, CubeDepthTexture, ExternalTexture, BoxGeometry, PlaneGeometry, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, RawShaderMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, MeshDistanceMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, _position$2, _quaternion$2, _scale$2, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, LoaderUtils, _errorMap, ImageBitmapLoader, fov, aspect, CubeCamera, ArrayCamera, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, Clock, Spherical, _vector$2, _boneMatrix, _matrixWorldInv, SkeletonHelper, GridHelper, Controls;
+		var MOUSE, TOUCH, AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, UnsignedInt101111Type, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, R11_EAC_Format, SIGNED_R11_EAC_Format, RG11_EAC_Format, SIGNED_RG11_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$3, _setConsoleFunction, ReversedDepthFuncs, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers, _object3DId, _v1$6, _q1, _m1$1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _moveEvent, WebXRController, _colorKeywords, _hslA, _hslB, Color, _color, Scene, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1$3, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, SpriteMaterial, _geometry, _intersectPoint, _worldScale, _mvPosition, _alignedPosition, _rotatedPosition, _viewWorldMatrix, _vA$1, _vB$1, _vC$1, _uvA, _uvB, _uvC, Sprite, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray$4, _sphere, _position$3, Points, CubeTexture, CanvasTexture, DepthTexture, CubeDepthTexture, ExternalTexture, BoxGeometry, PlaneGeometry, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, RawShaderMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshLambertMaterial, MeshDepthMaterial, MeshDistanceMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, _position$2, _quaternion$2, _scale$2, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, LoaderUtils, _errorMap, ImageBitmapLoader, fov, aspect, CubeCamera, ArrayCamera, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, Clock, Spherical, _vector$2, _boneMatrix, _matrixWorldInv, SkeletonHelper, GridHelper, Controls;
 		var init_three_core = __esmMin((() => {
 			MOUSE = {
 				LEFT: 0,
@@ -27757,6 +27757,327 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					this.specularIntensityMap = source.specularIntensityMap;
 					this.specularColor.copy(source.specularColor);
 					this.specularColorMap = source.specularColorMap;
+					return this;
+				}
+			};
+			MeshLambertMaterial = class extends Material {
+				/**
+				* Constructs a new mesh lambert material.
+				*
+				* @param {Object} [parameters] - An object with one or more properties
+				* defining the material's appearance. Any property of the material
+				* (including any property from inherited materials) can be passed
+				* in here. Color values can be passed any type of value accepted
+				* by {@link Color#set}.
+				*/
+				constructor(parameters) {
+					super();
+					/**
+					* This flag can be used for type testing.
+					*
+					* @type {boolean}
+					* @readonly
+					* @default true
+					*/
+					this.isMeshLambertMaterial = true;
+					this.type = "MeshLambertMaterial";
+					/**
+					* Color of the material.
+					*
+					* @type {Color}
+					* @default (1,1,1)
+					*/
+					this.color = new Color(16777215);
+					/**
+					* The color map. May optionally include an alpha channel, typically combined
+					* with {@link Material#transparent} or {@link Material#alphaTest}. The texture map
+					* color is modulated by the diffuse `color`.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.map = null;
+					/**
+					* The light map. Requires a second set of UVs.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.lightMap = null;
+					/**
+					* Intensity of the baked light.
+					*
+					* @type {number}
+					* @default 1
+					*/
+					this.lightMapIntensity = 1;
+					/**
+					* The red channel of this texture is used as the ambient occlusion map.
+					* Requires a second set of UVs.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.aoMap = null;
+					/**
+					* Intensity of the ambient occlusion effect. Range is `[0,1]`, where `0`
+					* disables ambient occlusion. Where intensity is `1` and the AO map's
+					* red channel is also `1`, ambient light is fully occluded on a surface.
+					*
+					* @type {number}
+					* @default 1
+					*/
+					this.aoMapIntensity = 1;
+					/**
+					* Emissive (light) color of the material, essentially a solid color
+					* unaffected by other lighting.
+					*
+					* @type {Color}
+					* @default (0,0,0)
+					*/
+					this.emissive = new Color(0);
+					/**
+					* Intensity of the emissive light. Modulates the emissive color.
+					*
+					* @type {number}
+					* @default 1
+					*/
+					this.emissiveIntensity = 1;
+					/**
+					* Set emissive (glow) map. The emissive map color is modulated by the
+					* emissive color and the emissive intensity. If you have an emissive map,
+					* be sure to set the emissive color to something other than black.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.emissiveMap = null;
+					/**
+					* The texture to create a bump map. The black and white values map to the
+					* perceived depth in relation to the lights. Bump doesn't actually affect
+					* the geometry of the object, only the lighting. If a normal map is defined
+					* this will be ignored.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.bumpMap = null;
+					/**
+					* How much the bump map affects the material. Typical range is `[0,1]`.
+					*
+					* @type {number}
+					* @default 1
+					*/
+					this.bumpScale = 1;
+					/**
+					* The texture to create a normal map. The RGB values affect the surface
+					* normal for each pixel fragment and change the way the color is lit. Normal
+					* maps do not change the actual shape of the surface, only the lighting. In
+					* case the material has a normal map authored using the left handed
+					* convention, the `y` component of `normalScale` should be negated to compensate
+					* for the different handedness.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.normalMap = null;
+					/**
+					* The type of normal map.
+					*
+					* @type {(TangentSpaceNormalMap|ObjectSpaceNormalMap)}
+					* @default TangentSpaceNormalMap
+					*/
+					this.normalMapType = 0;
+					/**
+					* How much the normal map affects the material. Typical value range is `[0,1]`.
+					*
+					* @type {Vector2}
+					* @default (1,1)
+					*/
+					this.normalScale = new Vector2(1, 1);
+					/**
+					* The displacement map affects the position of the mesh's vertices. Unlike
+					* other maps which only affect the light and shade of the material the
+					* displaced vertices can cast shadows, block other objects, and otherwise
+					* act as real geometry. The displacement texture is an image where the value
+					* of each pixel (white being the highest) is mapped against, and
+					* repositions, the vertices of the mesh.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.displacementMap = null;
+					/**
+					* How much the displacement map affects the mesh (where black is no
+					* displacement, and white is maximum displacement). Without a displacement
+					* map set, this value is not applied.
+					*
+					* @type {number}
+					* @default 0
+					*/
+					this.displacementScale = 1;
+					/**
+					* The offset of the displacement map's values on the mesh's vertices.
+					* The bias is added to the scaled sample of the displacement map.
+					* Without a displacement map set, this value is not applied.
+					*
+					* @type {number}
+					* @default 0
+					*/
+					this.displacementBias = 0;
+					/**
+					* Specular map used by the material.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.specularMap = null;
+					/**
+					* The alpha map is a grayscale texture that controls the opacity across the
+					* surface (black: fully transparent; white: fully opaque).
+					*
+					* Only the color of the texture is used, ignoring the alpha channel if one
+					* exists. For RGB and RGBA textures, the renderer will use the green channel
+					* when sampling this texture due to the extra bit of precision provided for
+					* green in DXT-compressed and uncompressed RGB 565 formats. Luminance-only and
+					* luminance/alpha textures will also still work as expected.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.alphaMap = null;
+					/**
+					* The environment map.
+					*
+					* @type {?Texture}
+					* @default null
+					*/
+					this.envMap = null;
+					/**
+					* The rotation of the environment map in radians.
+					*
+					* @type {Euler}
+					* @default (0,0,0)
+					*/
+					this.envMapRotation = new Euler();
+					/**
+					* How to combine the result of the surface's color with the environment map, if any.
+					*
+					* When set to `MixOperation`, the {@link MeshBasicMaterial#reflectivity} is used to
+					* blend between the two colors.
+					*
+					* @type {(MultiplyOperation|MixOperation|AddOperation)}
+					* @default MultiplyOperation
+					*/
+					this.combine = 0;
+					/**
+					* How much the environment map affects the surface.
+					* The valid range is between `0` (no reflections) and `1` (full reflections).
+					*
+					* @type {number}
+					* @default 1
+					*/
+					this.reflectivity = 1;
+					/**
+					* Scales the effect of the environment map by multiplying its color.
+					*
+					* @type {number}
+					* @default 1
+					*/
+					this.envMapIntensity = 1;
+					/**
+					* The index of refraction (IOR) of air (approximately 1) divided by the
+					* index of refraction of the material. It is used with environment mapping
+					* modes {@link CubeRefractionMapping} and {@link EquirectangularRefractionMapping}.
+					* The refraction ratio should not exceed `1`.
+					*
+					* @type {number}
+					* @default 0.98
+					*/
+					this.refractionRatio = .98;
+					/**
+					* Renders the geometry as a wireframe.
+					*
+					* @type {boolean}
+					* @default false
+					*/
+					this.wireframe = false;
+					/**
+					* Controls the thickness of the wireframe.
+					*
+					* Can only be used with {@link SVGRenderer}.
+					*
+					* @type {number}
+					* @default 1
+					*/
+					this.wireframeLinewidth = 1;
+					/**
+					* Defines appearance of wireframe ends.
+					*
+					* Can only be used with {@link SVGRenderer}.
+					*
+					* @type {('round'|'bevel'|'miter')}
+					* @default 'round'
+					*/
+					this.wireframeLinecap = "round";
+					/**
+					* Defines appearance of wireframe joints.
+					*
+					* Can only be used with {@link SVGRenderer}.
+					*
+					* @type {('round'|'bevel'|'miter')}
+					* @default 'round'
+					*/
+					this.wireframeLinejoin = "round";
+					/**
+					* Whether the material is rendered with flat shading or not.
+					*
+					* @type {boolean}
+					* @default false
+					*/
+					this.flatShading = false;
+					/**
+					* Whether the material is affected by fog or not.
+					*
+					* @type {boolean}
+					* @default true
+					*/
+					this.fog = true;
+					this.setValues(parameters);
+				}
+				copy(source) {
+					super.copy(source);
+					this.color.copy(source.color);
+					this.map = source.map;
+					this.lightMap = source.lightMap;
+					this.lightMapIntensity = source.lightMapIntensity;
+					this.aoMap = source.aoMap;
+					this.aoMapIntensity = source.aoMapIntensity;
+					this.emissive.copy(source.emissive);
+					this.emissiveMap = source.emissiveMap;
+					this.emissiveIntensity = source.emissiveIntensity;
+					this.bumpMap = source.bumpMap;
+					this.bumpScale = source.bumpScale;
+					this.normalMap = source.normalMap;
+					this.normalMapType = source.normalMapType;
+					this.normalScale.copy(source.normalScale);
+					this.displacementMap = source.displacementMap;
+					this.displacementScale = source.displacementScale;
+					this.displacementBias = source.displacementBias;
+					this.specularMap = source.specularMap;
+					this.alphaMap = source.alphaMap;
+					this.envMap = source.envMap;
+					this.envMapRotation.copy(source.envMapRotation);
+					this.combine = source.combine;
+					this.reflectivity = source.reflectivity;
+					this.envMapIntensity = source.envMapIntensity;
+					this.refractionRatio = source.refractionRatio;
+					this.wireframe = source.wireframe;
+					this.wireframeLinewidth = source.wireframeLinewidth;
+					this.wireframeLinecap = source.wireframeLinecap;
+					this.wireframeLinejoin = source.wireframeLinejoin;
+					this.flatShading = source.flatShading;
+					this.fog = source.fog;
 					return this;
 				}
 			};
@@ -47372,12 +47693,19 @@ void main() {
 			l.setDRACOLoader(draco);
 			return l;
 		}
+		/** One stage asset — the old Stage contract's live subset (the four
+		*  fields consumers set: id/url/name + the placement override; the
+		*  drop-raycast position stays caller-computed). */
+		function meshAssetUrl(value) {
+			const match = /^data\/input\/([^?#]+)$/i.exec(value);
+			return match === null ? value : `/v1/assets/inputs/${match[1]}`;
+		}
 		/** Normalize a loaded scene to a known viewing size — the
 		*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
 		*  dimension to targetHeight, feet on y=0. Mutates the root in place.
 		*  (Meshes arrive at wildly different scales; this is the ONE place
 		*  that reconciles them so every viewport frames identically.) */
-		function autoFitToHeight(root, targetHeight = 1.6) {
+		function autoFitToHeight$1(root, targetHeight = 1.6) {
 			const box = new Box3().setFromObject(root);
 			const size = new Vector3();
 			box.getSize(size);
@@ -47625,9 +47953,9 @@ void main() {
 				const settle = () => {
 					if (alive && pending === 0) setReady(true);
 				};
-				for (const a of assets) loader().load(a.url, (g) => {
+				for (const a of assets) loader().load(meshAssetUrl(a.url), (g) => {
 					if (!alive) return;
-					autoFitToHeight(g.scene);
+					autoFitToHeight$1(g.scene);
 					const group = new Group();
 					group.userData.stageId = a.id;
 					group.userData.pick = { click: () => selectRef.current?.(a.id) };
@@ -47828,7 +48156,7 @@ void main() {
 		*  square with the inline GLB thumb (the mini GlbStagePreview), the
 		*  same square grammar as images: never a bespoke mesh picker. */
 		function isMeshUrl(value) {
-			return /^data:model\/gltf-binary[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
+			return /^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
 		}
 		/** Read a File/Blob and resolve its data: URL — the ONE read path for
 		*  every slot-shaped attach (the old law, single definition). */
@@ -47957,13 +48285,17 @@ void main() {
 		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
 		* operator's DRY audit law: one seam, one small file, one wall). */
 		/** The media-kind the picker fetches for a field: image fields name
-		*  image; mesh fields name mesh (the library boards meshes only when
-		*  the media namespace serves them — an honest empty until then);
-		*  file fields take the whole library (their accept narrows
-		*  client-side per row). */
+		*  image; mesh fields name the MEDIA vocabulary's kind for 3D, which
+		*  is `model` — NOT `mesh`. `mesh` is the client PREVIEW kind
+		*  (preview-kinds.ts), a different vocabulary; the media list door
+		*  admits image/audio/video/model/all and refuses anything else with
+		*  `media/kind`, so asking it for `mesh` was a guaranteed refusal that
+		*  the picker swallowed into an empty list (the "From media" row was
+		*  empty for every mesh field, with no error anywhere). file fields
+		*  take the whole library (their accept narrows client-side per row). */
 		function mediaKindForField(f) {
 			if (f.type === "image") return "image";
-			if (f.type === "mesh") return "mesh";
+			if (f.type === "mesh") return "model";
 			return "all";
 		}
 		/** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
@@ -47988,6 +48320,7 @@ void main() {
 			const [modalAt, setModalAt] = (0, react.useState)(null);
 			const fieldRef = (0, react.useRef)(null);
 			const [mediaRows, setMediaRows] = (0, react.useState)(null);
+			const [mediaErr, setMediaErr] = (0, react.useState)(null);
 			const fileRef = (0, react.useRef)(null);
 			const onFile = (0, react.useCallback)(async (f, file) => {
 				if (wire.onFile !== void 0) {
@@ -48116,8 +48449,10 @@ void main() {
 						label: it.name,
 						url: it.url
 					})));
-				}).catch(() => {
+					setMediaErr(null);
+				}).catch((e) => {
 					setMediaRows([]);
+					setMediaErr(e instanceof Error ? e.message : String(e));
 				});
 				return () => {
 					ctrl.abort();
@@ -48144,7 +48479,7 @@ void main() {
 					title: modalAt.mode === "flow" ? "From flow" : "From media",
 					description: modalAt.mode === "flow" ? "The other stages’ latest outputs" + (req.kind !== "all" ? " (" + req.kind + ")" : "") : "The runs library" + (req.kind !== "all" ? " (" + req.kind + ")" : ""),
 					closeLabel: "Close picker"
-				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : "nothing to pick yet") : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
+				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : mediaErr !== null ? "media library unavailable — " + mediaErr : "nothing to pick yet") : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
 					key: c.id,
 					className: card_module_css_default.pickRow
 				}, (0, react.createElement)("button", {
@@ -48190,7 +48525,7 @@ void main() {
 		* operator's DRY audit law: one seam, one small file, one wall). */
 		function SourceRow(props) {
 			const field = {
-				name: "__source_row__",
+				name: props.name ?? "__source_row__",
 				label: props.label,
 				type: props.kind === "image" ? "image" : "file"
 			};
@@ -48198,6 +48533,7 @@ void main() {
 				props.onEdit(v);
 			}, [props.onEdit]), {
 				candidates: props.candidates ?? [],
+				...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {},
 				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
 				...props.onFile !== void 0 ? { onFile: props.onFile } : {},
 				...props.accept !== void 0 ? { accept: props.accept } : {},
@@ -48879,6 +49215,7 @@ void main() {
 					ariaLabel: `${f.label} ${String(i + 1)}`,
 					kind,
 					value: entry,
+					name: f.name,
 					...accept !== void 0 ? { accept } : {},
 					onEdit: (next) => {
 						const arr = [...entries];
@@ -48887,7 +49224,8 @@ void main() {
 						edit(f.name, arr);
 					},
 					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
-					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
+					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
+					...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 				}))), entries.length < cap ? (0, react.createElement)("div", {
 					className: card_module_css_default.specSlotCell,
 					"data-stack-add": f.name,
@@ -48897,13 +49235,15 @@ void main() {
 					ariaLabel: `Add ${f.label}`,
 					kind,
 					value: null,
+					name: f.name,
 					...accept !== void 0 ? { accept } : {},
 					onEdit: (next) => {
 						/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
 						if (next !== "") edit(f.name, [...entries, next]);
 					},
 					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
-					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
+					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
+					...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 				})) : null));
 			};
 			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, (0, react.createElement)(PackPrompt, {
@@ -52131,6 +52471,7 @@ void main() {
 				...inputOutputs.length === 0 ? {} : { inputOutputs },
 				inputIndices,
 				result: harvested,
+				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
 				status: statusOf(owner.runStatus),
 				...error === "" ? {} : { error },
 				runId,
@@ -53685,8 +54026,62 @@ void main() {
 				return children;
 			})();
 		}));
+		//#endregion
+		//#region ../../web-kit/formats/src/glbLoad.ts
+		function dracoLoader() {
+			if (!_draco) {
+				_draco = new DRACOLoader();
+				_draco.setDecoderPath(`${base}draco/gltf/`);
+			}
+			return _draco;
+		}
+		/** A GLTFLoader configured with the estate's shared DRACO decoder —
+		*  for parse-based consumers (glbSkin parses pre-fetched bytes). */
+		function makeGLTFLoader() {
+			const loader = new GLTFLoader();
+			loader.setDRACOLoader(dracoLoader());
+			return loader;
+		}
+		/** Load a GLB/GLTF from a URL with the estate's shared DRACO-configured
+		*  loader. One loader instance + one decoder worker pool for every
+		*  consumer (the decoder worker is reused, never respawned per view). */
+		function loadGLB(url) {
+			if (!_loader) _loader = makeGLTFLoader();
+			return new Promise((resolve, reject) => {
+				_loader.load(url, resolve, void 0, reject);
+			});
+		}
+		/**
+		* Normalize a loaded scene to a known viewing size: center X/Z, scale
+		* the largest dimension to `targetHeight`, feet on y=0. Mutates the
+		* root IN PLACE (scale + position) and returns the computed box.
+		*
+		* The shared normalization every viewer applies — TRELLIS props,
+		* SOMAX/Anny characters, and composite uploads arrive at wildly
+		* different scales (cm, m, 100× unit boxes); this is the one place
+		* that reconciles them, so the poster tile, the dialog viewer, and
+		* the stage floor all frame the mesh identically.
+		*/
+		function autoFitToHeight(root, targetHeight = 1.8) {
+			const box = new Box3().setFromObject(root);
+			const size = box.getSize(new Vector3());
+			const center = box.getCenter(new Vector3());
+			const maxDim = Math.max(size.x, size.y, size.z);
+			const scale = maxDim > 0 ? targetHeight / maxDim : 1;
+			root.scale.setScalar(scale);
+			root.position.x = -center.x * scale;
+			root.position.z = -center.z * scale;
+			root.position.y = -box.min.y * scale;
+			return box;
+		}
+		var _draco, _loader, base;
 		var init_glbLoad = __esmMin((() => {
-			({}).env?.BASE_URL;
+			init_three_module();
+			init_GLTFLoader();
+			init_DRACOLoader();
+			_draco = null;
+			_loader = null;
+			base = {}.env?.BASE_URL ?? "/";
 		}));
 		//#endregion
 		//#region ../../web-kit/formats/src/glbSkin.ts
@@ -55973,6 +56368,138 @@ void main() {
 			"wand": "_2saHFG_wand"
 		};
 		//#endregion
+		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/environments/RoomEnvironment.js
+		init_three_module();
+		/**
+		* This class represents a scene with a basic room setup that can be used as
+		* input for {@link PMREMGenerator#fromScene}. The resulting PMREM represents the room's
+		* lighting and can be used for Image Based Lighting by assigning it to {@link Scene#environment}
+		* or directly as an environment map to PBR materials.
+		*
+		* The implementation is based on the [EnvironmentScene](https://github.com/google/model-viewer/blob/master/packages/model-viewer/src/three-components/EnvironmentScene.ts)
+		* component from the `model-viewer` project.
+		*
+		* ```js
+		* const environment = new RoomEnvironment();
+		* const pmremGenerator = new THREE.PMREMGenerator( renderer );
+		*
+		* const envMap = pmremGenerator.fromScene( environment ).texture;
+		* scene.environment = envMap;
+		* ```
+		*
+		* @augments Scene
+		* @three_import import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+		*/
+		var RoomEnvironment = class extends Scene {
+			constructor() {
+				super();
+				this.name = "RoomEnvironment";
+				this.position.y = -3.5;
+				const geometry = new BoxGeometry();
+				geometry.deleteAttribute("uv");
+				const roomMaterial = new MeshStandardMaterial({ side: 1 });
+				const boxMaterial = new MeshStandardMaterial();
+				const mainLight = new PointLight(16777215, 900, 28, 2);
+				mainLight.position.set(.418, 16.199, .3);
+				this.add(mainLight);
+				const room = new Mesh(geometry, roomMaterial);
+				room.position.set(-.757, 13.219, .717);
+				room.scale.set(31.713, 28.305, 28.591);
+				this.add(room);
+				const boxes = new InstancedMesh(geometry, boxMaterial, 6);
+				const transform = new Object3D();
+				transform.position.set(-10.906, 2.009, 1.846);
+				transform.rotation.set(0, -.195, 0);
+				transform.scale.set(2.328, 7.905, 4.651);
+				transform.updateMatrix();
+				boxes.setMatrixAt(0, transform.matrix);
+				transform.position.set(-5.607, -.754, -.758);
+				transform.rotation.set(0, .994, 0);
+				transform.scale.set(1.97, 1.534, 3.955);
+				transform.updateMatrix();
+				boxes.setMatrixAt(1, transform.matrix);
+				transform.position.set(6.167, .857, 7.803);
+				transform.rotation.set(0, .561, 0);
+				transform.scale.set(3.927, 6.285, 3.687);
+				transform.updateMatrix();
+				boxes.setMatrixAt(2, transform.matrix);
+				transform.position.set(-2.017, .018, 6.124);
+				transform.rotation.set(0, .333, 0);
+				transform.scale.set(2.002, 4.566, 2.064);
+				transform.updateMatrix();
+				boxes.setMatrixAt(3, transform.matrix);
+				transform.position.set(2.291, -.756, -2.621);
+				transform.rotation.set(0, -.286, 0);
+				transform.scale.set(1.546, 1.552, 1.496);
+				transform.updateMatrix();
+				boxes.setMatrixAt(4, transform.matrix);
+				transform.position.set(-2.193, -.369, -5.547);
+				transform.rotation.set(0, .516, 0);
+				transform.scale.set(3.875, 3.487, 2.986);
+				transform.updateMatrix();
+				boxes.setMatrixAt(5, transform.matrix);
+				this.add(boxes);
+				const light1 = new Mesh(geometry, createAreaLightMaterial(50));
+				light1.position.set(-16.116, 14.37, 8.208);
+				light1.scale.set(.1, 2.428, 2.739);
+				this.add(light1);
+				const light2 = new Mesh(geometry, createAreaLightMaterial(50));
+				light2.position.set(-16.109, 18.021, -8.207);
+				light2.scale.set(.1, 2.425, 2.751);
+				this.add(light2);
+				const light3 = new Mesh(geometry, createAreaLightMaterial(17));
+				light3.position.set(14.904, 12.198, -1.832);
+				light3.scale.set(.15, 4.265, 6.331);
+				this.add(light3);
+				const light4 = new Mesh(geometry, createAreaLightMaterial(43));
+				light4.position.set(-.462, 8.89, 14.52);
+				light4.scale.set(4.38, 5.441, .088);
+				this.add(light4);
+				const light5 = new Mesh(geometry, createAreaLightMaterial(20));
+				light5.position.set(3.235, 11.486, -12.541);
+				light5.scale.set(2.5, 2, .1);
+				this.add(light5);
+				const light6 = new Mesh(geometry, createAreaLightMaterial(100));
+				light6.position.set(0, 20, 0);
+				light6.scale.set(1, .1, 1);
+				this.add(light6);
+			}
+			/**
+			* Frees internal resources. This method should be called
+			* when the environment is no longer required.
+			*/
+			dispose() {
+				const resources = /* @__PURE__ */ new Set();
+				this.traverse((object) => {
+					if (object.isMesh) {
+						resources.add(object.geometry);
+						resources.add(object.material);
+					}
+				});
+				for (const resource of resources) resource.dispose();
+			}
+		};
+		function createAreaLightMaterial(intensity) {
+			return new MeshLambertMaterial({
+				color: 0,
+				emissive: 16777215,
+				emissiveIntensity: intensity
+			});
+		}
+		//#endregion
+		//#region ../infer-gallery/src/client/artifact-ops.ts
+		/** The run-relative artifact path behind one same-origin artifact
+		*  URL (`/infer-gallery/artifact?path=run-<id>/<file>`) — null when
+		*  the URL rides no such path (foreign URLs, card previews). */
+		function artifactPathOfUrl(url) {
+			try {
+				const target = new URL(url, "http://artifact-ops.invalid").searchParams.get("path");
+				return target !== null && target !== "" ? target : null;
+			} catch {
+				return null;
+			}
+		}
+		//#endregion
 		//#region ../infer-gallery/src/client/ui.tokens.ts
 		/**
 		* Design tokens — every var(--dsw-alias-…) string in the media family
@@ -55985,6 +56512,208 @@ void main() {
 		const stateBusinessPrimary = "var(--dsw-alias-state-business-primary, rgb(147,197,253))";
 		const stateWarnPrimary1 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.9))";
 		const textTertiary3 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.8))";
+		//#endregion
+		//#region ../infer-gallery/src/client/mesh-view.tsx
+		/**
+		* mesh-view — THE 3D VIEWPORT for the media plane (the operator's
+		* 2026-09-26 order: "the 3d [REDACTED 2026-11-05] needs to be hooked into the media
+		* [REDACTED 2026-11-05], visual door"). A `.glb` artifact opens HERE, in the drilldown,
+		* orbitable — not as a download link with a sidebar hand-off.
+		*
+		* WHY IT LIVES IN THE GALLERY (and not as another viewer): a 3D run's
+		* artifact is a MEDIA artifact, and the media drilldown is the one face
+		* every surface already shares (the gallery tiles AND the cards' stage
+		* zoom both route through `MediaDrilldown`). The 3D case was the only
+		* kind that did not render — it degraded to a link, so a mesh artifact
+		* was reachable but never VIEWABLE in the product.
+		*
+		* SUBSTRATE LAW (verbatim from card-base/glb-stage.tsx): RAW three.js,
+		* an imperative scene in an effect, NO @react-three — r3f's bundled
+		* react-reconciler version-skews against the seeded React internals and
+		* crashes at boot. And ONE substrate: this mounts the estate's shared
+		* stage core (`@melite/card-base/stage3d`, the same module every card
+		* viewport mounts) and loads through the estate's ONE GLB parse policy
+		* (`@melite/formats/glbLoad` — the single DRACO-configured GLTFLoader
+		* and the single autoFit normalization). It is a VIEWER, not a second
+		* loader: no GLTFLoader, no DRACOLoader, no autoFit copy here.
+		*
+		* THE HONEST-FAILURE LAW: a viewer that cannot show the mesh says so
+		* in words. WebGL refusal (no context), a decode failure, and an
+		* unsupported extension each render their own copy — the artifact stays
+		* downloadable either way, because "we could not render it" must never
+		* become "we lost it".
+		*/
+		init_three_module();
+		init_glbLoad();
+		/** Extensions the shared loader can parse. `.gltf` is accepted by the
+		*  loader but a bare `.gltf` usually references sidecar buffers the
+		*  artifact route does not serve next to it — so the copy below names
+		*  the case rather than letting the fetch fail as a decode error. */
+		function unsupportedCopy(url) {
+			const path = artifactPathOfUrl(url) ?? url.split("?")[0] ?? "";
+			if (/\.gltf$/i.test(path)) return "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.";
+			if (!/\.(glb|gltf)$/i.test(path)) return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
+			return null;
+		}
+		/** Frame the camera on the loaded root: target the box centre, pull
+		*  back by its bounding sphere. A fixed camera seat (the card stage's
+		*  [2.2,1.6,2.6]) frames a 1.6m creature and crops a 40m prop; the
+		*  drilldown shows every model's extents, so the framing is derived. */
+		function frameCamera(stage, root) {
+			const box = new Box3().setFromObject(root);
+			if (box.isEmpty()) return;
+			const center = box.getCenter(new Vector3());
+			const radius = Math.max(box.getBoundingSphere(new Sphere()).radius, .001);
+			stage.controls.target.copy(center);
+			stage.camera.position.set(center.x + radius * 1.4, center.y + radius * .9, center.z + radius * 1.7);
+			stage.camera.near = Math.max(radius / 1e3, 1e-4);
+			stage.camera.far = radius * 100;
+			stage.camera.updateProjectionMatrix();
+			stage.controls.update();
+		}
+		/** Dispose a loaded glTF subtree (geometries + materials + textures).
+		*  The modal mounts and unmounts on every artifact walk; without this
+		*  each open leaks a 33MB mesh's GPU buffers. */
+		function disposeRoot(root) {
+			root.traverse((o) => {
+				const mesh = o;
+				if (mesh.geometry !== void 0 && typeof mesh.geometry.dispose === "function") mesh.geometry.dispose();
+				const material = mesh.material;
+				if (material === void 0) return;
+				for (const m of Array.isArray(material) ? material : [material]) {
+					for (const value of Object.values(m)) if (value !== null && typeof value === "object" && typeof value.isTexture === "boolean" && value.isTexture) value.dispose();
+					m.dispose();
+				}
+			});
+		}
+		/** The 3D face. Renders a canvas, a loading line, or an honest
+		*  failure line — never a blank box. */
+		function MeshView({ url, file, height = "52vh" }) {
+			const canvasRef = react.useRef(null);
+			const [failure, setFailure] = react.useState(null);
+			const [loading, setLoading] = react.useState(true);
+			react.useEffect(() => {
+				const unsupported = unsupportedCopy(url);
+				if (unsupported !== null) {
+					setFailure(unsupported);
+					setLoading(false);
+					return;
+				}
+				const canvas = canvasRef.current;
+				if (canvas === null) return;
+				let stage = null;
+				let root = null;
+				let cancelled = false;
+				let disposeEnv = null;
+				stage = mountStage3D(canvas, {
+					fov: 40,
+					toneMapping: 0,
+					onContextFailure: (msg) => {
+						if (!cancelled) setFailure(`3D view unavailable — WebGL refused the canvas (${msg}).`);
+					}
+				});
+				if (stage === null) {
+					setLoading(false);
+					return;
+				}
+				stage.scene.add(new HemisphereLight(16777215, 9079434, 1.4));
+				const key = new DirectionalLight(16777215, 2.2);
+				key.position.set(3, 5, 2);
+				stage.scene.add(key);
+				try {
+					const pmrem = new PMREMGenerator(stage.renderer);
+					const envRT = pmrem.fromScene(new RoomEnvironment(), .04);
+					stage.scene.environment = envRT.texture;
+					stage.scene.environmentIntensity = .85;
+					disposeEnv = () => {
+						if (stage !== null) stage.scene.environment = null;
+						envRT.dispose();
+						pmrem.dispose();
+					};
+				} catch {
+					disposeEnv = null;
+				}
+				loadGLB(url).then((gltf) => {
+					if (cancelled) {
+						disposeRoot(gltf.scene);
+						return;
+					}
+					root = gltf.scene;
+					autoFitToHeight(gltf.scene, 1.6);
+					stage?.scene.add(gltf.scene);
+					if (stage !== null) frameCamera(stage, gltf.scene);
+					setLoading(false);
+				}, (e) => {
+					if (cancelled) return;
+					setLoading(false);
+					setFailure(`3D view unavailable — ${file} failed to load (${e instanceof Error ? e.message : String(e)}).`);
+				});
+				return () => {
+					cancelled = true;
+					if (root !== null) {
+						stage?.scene.remove(root);
+						disposeRoot(root);
+					}
+					disposeEnv?.();
+					stage?.dispose();
+				};
+			}, [url, file]);
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				style: {
+					display: "flex",
+					flexDirection: "column",
+					gap: 6,
+					alignItems: "center",
+					width: "100%"
+				},
+				children: [
+					failure === null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
+						ref: canvasRef,
+						"data-testid": "mesh-view-canvas",
+						"aria-label": `3D view of ${file}`,
+						style: {
+							width: "100%",
+							height,
+							maxHeight: "72vh",
+							display: "block",
+							borderRadius: 8,
+							background: bgBase1,
+							touchAction: "none"
+						}
+					}) : null,
+					failure !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-testid": "mesh-view-failure",
+						style: {
+							width: "100%",
+							minHeight: 120,
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							textAlign: "center",
+							padding: 16,
+							borderRadius: 8,
+							background: bgBase1,
+							color: stateWarnPrimary1,
+							fontSize: 13,
+							lineHeight: 1.5
+						},
+						children: failure
+					}) : null,
+					failure === null && loading ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						"data-testid": "mesh-view-loading",
+						style: {
+							color: textTertiary3,
+							fontSize: 12
+						},
+						children: [
+							"loading ",
+							file,
+							"…"
+						]
+					}) : null
+				]
+			});
+		}
 		//#endregion
 		//#region ../infer-gallery/src/drilldown.tsx
 		/**
@@ -56001,53 +56730,68 @@ void main() {
 		* their stage artifact onto it (mesh kind → 'model' — the media vocab
 		* alignment, one spelling).
 		*/
-		/** 3D artifact view — hands the artifact to the sidebar as a RESOURCE
-		*  (estate-artifact address, claimed by a viewer tab type; the mesh
-		*  renders in the right panel, orbitable beside the run list).
-		*  The download link stays: when the viewer plugin is absent no tab
-		*  type claims the address and openResource is a no-op — the artifact
-		*  must still be reachable. openArtifact is OPTIONAL: a surface with
-		*  no sidebar door (the card zoom) simply hides the link. */
+		/** 3D artifact view — THE MESH RENDERS HERE, IN THE MODAL (the
+		*  operator's 2026-09-26 order: the 3D lane is hooked into the media
+		*  plane with a real visual door). `MeshView` mounts the estate's shared
+		*  stage core + the shared GLB loader, so a `.glb` is orbitable in the
+		*  drilldown exactly as an image is visible in the drilldown — no
+		*  sidebar round-trip required to see the artifact.
+		*
+		*  The two links under the canvas stay, and both are load-bearing:
+		*  the sidebar hand-off (an estate-artifact RESOURCE address claimed by
+		*  a viewer tab type — a bigger, docked orbit beside the run list) and
+		*  the download (when WebGL or the decode refuses, or the viewer plugin
+		*  is absent, the artifact must still be reachable). openArtifact is
+		*  OPTIONAL: a surface with no sidebar door (the card zoom) hides that
+		*  link and keeps the canvas + the download. */
 		function ModelView({ item, openArtifact }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				style: {
 					display: "flex",
 					flexDirection: "column",
 					gap: 10,
-					alignItems: "center"
+					alignItems: "center",
+					width: "100%"
 				},
-				children: [openArtifact !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
-					role: "button",
-					tabIndex: 0,
-					style: {
-						color: stateBusinessPrimary,
-						fontSize: 14,
-						cursor: "pointer"
-					},
-					onClick: (e) => {
-						e.stopPropagation();
-						openArtifact(item);
-					},
-					onKeyDown: (e) => {
-						if (e.key === "Enter" || e.key === " ") {
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MeshView, {
+						url: item.url,
+						file: item.file
+					}),
+					openArtifact !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
+						role: "button",
+						tabIndex: 0,
+						style: {
+							color: stateBusinessPrimary,
+							fontSize: 14,
+							cursor: "pointer"
+						},
+						onClick: (e) => {
 							e.stopPropagation();
 							openArtifact(item);
-						}
-					},
-					children: "open 3D view in sidebar"
-				}) : null, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
-					href: item.url,
-					download: item.file,
-					style: {
-						color: textTertiary3,
-						fontSize: 13,
-						cursor: "pointer"
-					},
-					onClick: (e) => {
-						e.stopPropagation();
-					},
-					children: ["download ", item.file]
-				})]
+						},
+						onKeyDown: (e) => {
+							if (e.key === "Enter" || e.key === " ") {
+								e.stopPropagation();
+								openArtifact(item);
+							}
+						},
+						children: "open 3D view in sidebar"
+					}) : null,
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+						href: item.url,
+						download: item.file,
+						style: {
+							color: textTertiary3,
+							fontSize: 13,
+							cursor: "pointer"
+						},
+						onClick: (e) => {
+							e.stopPropagation();
+						},
+						children: ["download ", item.file]
+					})
+				]
 			});
 		}
 		/** THE MEDIA DRILLDOWN (the gallery Overlay, verbatim — one face).
@@ -57562,7 +58306,7 @@ void main() {
 				const next = figureGeometry(doc);
 				mesh.geometry.dispose();
 				mesh.geometry = next;
-				autoFitToHeight(mesh);
+				autoFitToHeight$1(mesh);
 			}, [doc]);
 			(0, react.useEffect)(() => {
 				const stage = stageRef.current;
@@ -58195,11 +58939,12 @@ void main() {
 				const edge = (spec.inputs ?? []).find((e) => e.name === f.name);
 				if (edge === void 0) return candidates;
 				const kind = edge.kind;
+				const accepts = (out) => out === kind || kind === "image_list" && out === "image";
 				return candidates.filter((c) => {
 					const row = others.find((s) => s.id === c.id);
 					const cardId = String(row?.card ?? "");
 					const outs = edgeMeta[cardId]?.outputs;
-					return outs !== void 0 && Object.values(outs).includes(kind);
+					return outs !== void 0 && Object.values(outs).some(accepts);
 				});
 			}, [
 				spec,
@@ -59696,4 +60441,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="0d207647fbb11ffb26d8c6966b612411347796f3";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="145347de1b7aa71998707f574d9421f0293d01ce";

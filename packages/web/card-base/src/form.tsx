@@ -284,6 +284,13 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
               label: String(i + 1),
               ariaLabel: `${f.label} ${String(i + 1)}`,
               kind, value: entry,
+              // THE LIST-SEAT LAW (2026-09-26, the operator's
+              // rework: "reference images and input images are the
+              // same thing"): the cell's From-flow rows narrow by
+              // the OWNING field's declared edge
+              // (reference_images: image_list accepts image
+              // producers) — an input is an input, single or stack.
+              name: f.name,
               ...(accept !== undefined ? { accept } : {}),
               onEdit: (next: string): void => {
                 const arr = [...entries]
@@ -293,6 +300,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
               },
               ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
               ...(wire?.candidates !== undefined ? { candidates: wire.candidates } : {}),
+              ...(wire?.candidatesFor !== undefined ? { candidatesFor: wire.candidatesFor } : {}),
             }),
           )),
         entries.length < cap
@@ -301,6 +309,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
                 label: '',
                 ariaLabel: `Add ${f.label}`,
                 kind, value: null,
+                name: f.name,
                 ...(accept !== undefined ? { accept } : {}),
                 onEdit: (next: string): void => {
                   // the add drill commits ONLY real picks — an empty
@@ -310,6 +319,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
                 },
                 ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
                 ...(wire?.candidates !== undefined ? { candidates: wire.candidates } : {}),
+                ...(wire?.candidatesFor !== undefined ? { candidatesFor: wire.candidatesFor } : {}),
               }),
             )
           : null,

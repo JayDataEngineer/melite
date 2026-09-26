@@ -278,12 +278,24 @@ export interface SourceRowProps {
   /** 'image' narrows the media modal to image; anything else lists
    *  the whole library (the file face). */
   kind?: 'image' | 'file'
+  /** THE EDGE-BEARING SEAT NAME (the list-seat law, 2026-09-26): a
+   *  stack cell's visible caption is its INDEX, but the From-flow
+   *  picker narrows by the OWNING field's declared edge kind
+   *  (reference_images → image_list accepts image producers).
+   *  Absent keeps the legacy '__source_row__' name (no edge,
+   *  unfiltered). */
+  name?: string
   /** Attached value (thumbnail when it passes isImageUrl). */
   value?: string | null
   /** The ONE write verb — every source funnels here. */
   onEdit: (v: string) => void
   /** The surface's own upstream outputs (the From flow rows). */
   candidates?: Array<{ id: string; label: string; url: string }>
+  /** THE PER-FIELD NARROWING (the edge law): present = the From-flow
+   *  picker lists only rows whose card outputs a kind this field's
+   *  edge accepts. The stack cells pass the OWNING field's name so
+   *  the list seat narrows like any input (the list-seat law). */
+  candidatesFor?: (f: SpecField) => Array<{ id: string; label: string; url: string }>
   /** The surface's media source (the mounted media namespace's
    *  fetchMediaLibrary, or a test fake) — absent = the picker shows
    *  no media rows (honest, never a hidden fetch). */

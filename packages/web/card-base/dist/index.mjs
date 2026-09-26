@@ -1,9 +1,17 @@
-import { Button, IconPlusOutline16, Input, Menu, Modal, Switch, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives";
+import { createRequire } from "node:module";
+import { Button, DisclosureRow, IconArchiveOutline20, IconPlusOutline16, Input, Menu, Modal, Switch, Toast, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives";
 import { clsx } from "clsx";
-import { jsx, jsxs } from "react/jsx-runtime";
-import { Fragment, createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+import { Fragment as Fragment$1, createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { isTerminalRun, listRowMediaUrl, readRunStatus } from "@melite-plugin/melite-run-wire";
+//#region \0rolldown/runtime.js
+var __commonJSMin = (cb, mod) => () => (mod || (cb((mod = { exports: {} }).exports, mod), cb = null), mod.exports);
+var __require = /* #__PURE__ */ (() => createRequire(import.meta.url))();
+//#endregion
 //#region src/spec.ts
 /** Build an envelope from raw dict nodes — the TEST-side and
 *  migration-side constructor; the served envelopes come from
@@ -136,7 +144,7 @@ function unsetFaceTip(face, render) {
 *
 * One pure projection: serialized schemastery schema -> derived
 * SpecFields. Every presentation fact lives in the nodes' meta (the
-* declaration IS the UI contract — the py Field.emit law); this
+* declaration IS the UI contract — the Field.emit law); this
 * walk reads, never invents. THE ORDER: dict insertion order with
 * the declared `order` hint as tie-break (a stable sort — equal
 * keys keep insertion order).
@@ -156,7 +164,7 @@ function unsetFaceTip(face, render) {
 * string -> text; boolean -> boolean; array -> loras.
 *
 * Option labels: a union's const members carry their own
-* meta.description (the py emitter's label law) — the declared
+* meta.description (the emitter's label law) — the declared
 * extra.options override when present. */
 function fieldsOfEnvelope(env, family) {
 	if (env == null) return [];
@@ -205,6 +213,7 @@ function projectDict(env, dict, family) {
 		const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
 		const families = Array.isArray(extra["families"]) ? extra["families"] : null;
 		if (families !== null && family !== void 0 && !families.includes(family)) continue;
+		if (extra["hidden"] === true) continue;
 		let options;
 		if (node.type === "union" && Array.isArray(node.list)) {
 			const opts = [];
@@ -254,7 +263,9 @@ function projectDict(env, dict, family) {
 			tooltip: str("tooltip"),
 			visible_when: str("visible_when"),
 			columns: typeof extra["columns"] === "number" ? extra["columns"] : void 0,
-			width: typeof extra["width"] === "number" ? extra["width"] : void 0
+			width: typeof extra["width"] === "number" ? extra["width"] : void 0,
+			max_stack: typeof extra["max_stack"] === "number" ? extra["max_stack"] : void 0,
+			media: str("media")
 		});
 	}
 	return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
@@ -262,20 +273,48 @@ function projectDict(env, dict, family) {
 /** THE EDIT COERCION (the one specPatch duty that survives, moved
 * to the edit boundary): atoms emit raw strings while typing; a
 * numeric field's edit rides the user layer as a NUMBER. An
-* unparseable/empty numeric string rides VERBATIM (the run's schema
-* parse refuses loud, naming the field — never a silent 0). `v ===
-* undefined` stays undefined (the tri-state's inherit — the caller's
-* unset signal). PURE. */
+* unparseable/empty numeric string rides VERBATIM (display
+* continuity through clear-and-retype — the bench drill's law; a
+* blank that reaches the run's schema parse refuses loud, naming
+* the field — never a silent 0). `v === undefined` stays undefined
+* (the tri-state's inherit — the caller's unset signal). The
+* STUDIOS' blank-inherits law lives one door up, at their own edit
+* verb (useResolvedForm) — each face owns its blank semantics.
+* PURE. */
 function coerceFieldEdit(f, v) {
 	if (v === void 0) return void 0;
 	if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
 	return v;
 }
+/** THE FAMILY-KEY RESOLUTION (the families-DRY law, 2026-09-21):
+* a field's `families` declares BASE family ids — the card's
+* boarded ids — while the served model key may be a COMPOSED
+* catalog row (family-variant-quant, e.g. 'pixal3d-1536-int8').
+* Resolve the active key to its base against the spec's OWN
+* boarded-families rows: the longest id matching the key at a
+* '-' boundary wins (a 'pixal3d' + 'pixal3d-pro' board resolves
+* to the longer). An unresolved key passes through verbatim —
+* single-family cards and keys with no boarded base walk
+* unchanged; the resolution never drops a field, it only widens
+* what a declared base id covers. */
+function resolveFamilyKey(spec) {
+	const key = typeof spec.model === "string" ? spec.model : void 0;
+	if (key === void 0 || key === "") return void 0;
+	const boarded = spec.families;
+	if (boarded === void 0) return key;
+	let best;
+	for (const row of boarded) {
+		const exact = key === row.id;
+		const prefixed = key.startsWith(row.id + "-") && (best === void 0 || row.id.length > best.length);
+		if (exact || prefixed) best = row.id;
+	}
+	return best ?? key;
+}
 /** The card's own derived fields (the schema envelope walked,
 * families-scoped to the served family). Memoize at the caller for
 * hot loops — the walk is pure. */
 function fieldsOf(spec) {
-	return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
+	return fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec));
 }
 /** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
 * client-side (stroke 34 — the card-recipe layer is dead): schema
@@ -291,8 +330,7 @@ function fieldsOf(spec) {
 * (presence still wins) and OVER model_defaults (the server's own
 * family/variant stamps replace the client's guesses — variant
 * resolver_defaults, family defaults, the surface filter). Absent
-* base = the registry-less lane derive (the wall pins parity on
-* the golden families). PURE. */
+* base = the registry-less lane derive. PURE. */
 function resolveValue(spec, user, base) {
 	const out = specDefaults(fieldsOf(spec));
 	for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
@@ -303,7 +341,30 @@ function resolveValue(spec, user, base) {
 		if (v === null || v === void 0 || Array.isArray(v)) continue;
 		out[k] = v;
 	}
-	Object.assign(out, user);
+	for (const [k, v] of Object.entries(user)) {
+		if (v === null || v === void 0) continue;
+		out[k] = v;
+	}
+	for (const kind of spec.features?.modifiers ?? []) {
+		if (kind.marries === void 0) continue;
+		const bag = out[kind.param_key];
+		if (!Array.isArray(bag) || bag.length === 0) continue;
+		const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]));
+		for (const knob of Object.keys(kind.marries)) {
+			const counts = [];
+			for (const row of bag) {
+				const stated = row?.[knob];
+				if (typeof stated === "number" && Number.isFinite(stated)) {
+					counts.push(stated);
+					continue;
+				}
+				const id = typeof row?.["id"] === "string" ? row["id"] : void 0;
+				const fromCatalog = id === void 0 ? void 0 : (catalog.get(id)?.defaults)?.[knob];
+				if (typeof fromCatalog === "number" && Number.isFinite(fromCatalog)) counts.push(fromCatalog);
+			}
+			if (counts.length > 0) out[knob] = Math.max(...counts);
+		}
+	}
 	return out;
 }
 /** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
@@ -597,13 +658,43 @@ function seedUser(spec, held) {
 *
 * Per-seam subpath: `@melite/card-base/chrome`.
 */
+/** Plain classnames joiner (no conflicting utilities to merge —
+*  plain join is exact). */
+function cx(...parts) {
+	return parts.filter(Boolean).join(" ");
+}
 /** The merging joiner (clsx — objects/arrays/conditionals). */
 function cn(...inputs) {
 	return clsx(...inputs);
 }
+/** THE ESTATE'S DRAG CONTRACT (2026-09-18, exterminated): the MIME
+*  under which an upstream asset rides a drop payload — a JSON blob
+*  {url, name, …} carried by the source's dataTransfer. h3's kit and
+*  motion's kit each redeclared it; card-base, the card-view's
+*  CardsTab and input-square already consumed it. One definition
+*  estate-wide (the drag is a shared contract, not a studio rule). */
+const ASSET_DRAG_MIME = "application/tech-noir-asset";
+function parseAssetDrop(raw) {
+	if (raw === "") return {};
+	let parsed;
+	try {
+		parsed = JSON.parse(raw);
+	} catch {
+		return {};
+	}
+	if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+	const payload = parsed;
+	const url = typeof payload["url"] === "string" && payload["url"] !== "" ? payload["url"] : void 0;
+	const type = typeof payload["type"] === "string" && payload["type"] !== "" ? payload["type"] : void 0;
+	return {
+		...url === void 0 ? {} : { url },
+		...type === void 0 ? {} : { type }
+	};
+}
 //#endregion
 //#region src/card.module.css
 var card_module_default = {
+	"axesPair": "VMoOIq_axesPair",
 	"ctlRow": "VMoOIq_ctlRow",
 	"ctlRowSm": "VMoOIq_ctlRowSm",
 	"emptyHint": "VMoOIq_emptyHint",
@@ -623,12 +714,17 @@ var card_module_default = {
 	"modLeafActions": "VMoOIq_modLeafActions",
 	"modLeafError": "VMoOIq_modLeafError",
 	"modLeafFields": "VMoOIq_modLeafFields",
+	"modLeafModal": "VMoOIq_modLeafModal",
+	"modLeafSplit": "VMoOIq_modLeafSplit",
+	"modLeafStage": "VMoOIq_modLeafStage",
 	"modRow": "VMoOIq_modRow",
 	"modSection": "VMoOIq_modSection",
 	"modSelect": "VMoOIq_modSelect",
+	"modStageCaption": "VMoOIq_modStageCaption",
 	"modTile": "VMoOIq_modTile",
 	"modTileLabel": "VMoOIq_modTileLabel",
 	"modTileRecipe": "VMoOIq_modTileRecipe",
+	"modTileSteps": "VMoOIq_modTileSteps",
 	"modTileStrength": "VMoOIq_modTileStrength",
 	"modTitle": "VMoOIq_modTitle",
 	"paneHeaderPreview": "VMoOIq_paneHeaderPreview",
@@ -651,6 +747,9 @@ var card_module_default = {
 	"sectionLabelText": "VMoOIq_sectionLabelText",
 	"skeleton": "VMoOIq_skeleton",
 	"sourceRow": "VMoOIq_sourceRow",
+	"specChip": "VMoOIq_specChip",
+	"specChipOn": "VMoOIq_specChipOn",
+	"specChips": "VMoOIq_specChips",
 	"specDice": "VMoOIq_specDice",
 	"specDiceOn": "VMoOIq_specDiceOn",
 	"specField": "VMoOIq_specField",
@@ -670,14 +769,20 @@ var card_module_default = {
 	"specSliderValue": "VMoOIq_specSliderValue",
 	"specSlotCell": "VMoOIq_specSlotCell",
 	"specSlotRow": "VMoOIq_specSlotRow",
+	"specStack": "VMoOIq_specStack",
 	"specTextarea": "VMoOIq_specTextarea",
+	"squareActions": "VMoOIq_squareActions",
+	"squareBadge": "VMoOIq_squareBadge",
 	"squareBox": "VMoOIq_squareBox",
+	"squareEmptyIcon": "VMoOIq_squareEmptyIcon",
 	"squareFileInput": "VMoOIq_squareFileInput",
 	"squareGlyph": "VMoOIq_squareGlyph",
 	"squareLabel": "VMoOIq_squareLabel",
+	"squareMesh": "VMoOIq_squareMesh",
 	"squareMetric": "VMoOIq_squareMetric",
 	"squareOff": "VMoOIq_squareOff",
 	"squareOver": "VMoOIq_squareOver",
+	"squarePick": "VMoOIq_squarePick",
 	"squareThumb": "VMoOIq_squareThumb",
 	"squareWrap": "VMoOIq_squareWrap",
 	"squareX": "VMoOIq_squareX",
@@ -827,6 +932,18 @@ function Svg({ className, style, children, ...rest }) {
 		children
 	});
 }
+function Upload({ className, style, ...rest }) {
+	return /* @__PURE__ */ jsxs(Svg, {
+		className,
+		style,
+		...rest,
+		children: [
+			/* @__PURE__ */ jsx("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+			/* @__PURE__ */ jsx("path", { d: "m17 8-5-5-5 5" }),
+			/* @__PURE__ */ jsx("path", { d: "M12 3v12" })
+		]
+	});
+}
 function Link2({ className, style, ...rest }) {
 	return /* @__PURE__ */ jsxs(Svg, {
 		className,
@@ -838,6 +955,722 @@ function Link2({ className, style, ...rest }) {
 			/* @__PURE__ */ jsx("path", { d: "M8 12h8" })
 		]
 	});
+}
+function AlertTriangle({ className, style, ...rest }) {
+	return /* @__PURE__ */ jsxs(Svg, {
+		className,
+		style,
+		...rest,
+		children: [
+			/* @__PURE__ */ jsx("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
+			/* @__PURE__ */ jsx("path", { d: "M12 9v4" }),
+			/* @__PURE__ */ jsx("path", { d: "M12 17h.01" })
+		]
+	});
+}
+//#endregion
+//#region src/stage3d.ts
+/**
+* stage3d — the SHARED raw-three stage core (the substrate law).
+*
+* One imperative mount that every 3D viewport in the card plane builds
+* on: renderer + camera + OrbitControls + the rAF loop + resize
+* observation + pointer picking + full disposal. Pure TypeScript over
+* three and three/addons — NO @react-three anywhere (the r3f
+* react-reconciler version-skew boot crash is why this exists).
+*
+* Consumers own their SCENE CONTENT (lights, floor, figures) and their
+* FRAME LOGIC via addTick (ordered registry — ticks run in registration
+* order before each render, the raw analogue of useFrame declared top
+* to bottom in a JSX tree).
+*
+* Pointer semantics (the r3f onClick/onPointerOver/onPointerOut
+* analogue): an object becomes interactive by carrying
+* `userData.pick = { click?, over?, out? }` on itself or an ancestor.
+* The stage raycasts on pointermove and click, walks parentward from
+* the hit to the first pick carrier, and calls the handlers with the
+* world intersection point + the DOM event. A drag-orbit never reads
+* as a click (the 350ms threshold). Gizmo subtrees (TransformControls)
+* are excluded from picking — r3f did this implicitly.
+*/
+/** The r3f pointer-events analogue lives on userData.pick (see header). */
+function findPickCarrier(o) {
+	let cur = o;
+	while (cur !== null) {
+		if (cur.userData !== void 0 && cur.userData.pick !== void 0) return cur;
+		cur = cur.parent;
+	}
+	return null;
+}
+/** Skip hits on a TransformControls gizmo subtree (invisible pick planes
+*  would swallow every click while a gizmo is attached). */
+function isGizmoHit(o) {
+	let cur = o;
+	while (cur !== null) {
+		if (cur.gizmo !== void 0) return true;
+		cur = cur.parent;
+	}
+	return false;
+}
+function mountStage3D(canvas, opts = {}) {
+	let renderer;
+	try {
+		renderer = new THREE.WebGLRenderer({
+			canvas,
+			antialias: true,
+			alpha: opts.alpha !== false,
+			preserveDrawingBuffer: opts.preserveDrawingBuffer === true
+		});
+	} catch (e) {
+		opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
+		return null;
+	}
+	renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+	renderer.shadowMap.enabled = true;
+	renderer.shadowMap.type = THREE.PCFShadowMap;
+	renderer.toneMapping = opts.toneMapping ?? THREE.ACESFilmicToneMapping;
+	const scene = new THREE.Scene();
+	scene.background = null;
+	const camera = new THREE.PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
+	camera.position.set(...opts.camera ?? [
+		2.2,
+		1.6,
+		2.6
+	]);
+	camera.lookAt(0, .8, 0);
+	const controls = new OrbitControls(camera, canvas);
+	controls.target.set(...opts.target ?? [
+		0,
+		.8,
+		0
+	]);
+	controls.enableDamping = true;
+	controls.dampingFactor = .1;
+	if (opts.minDistance !== void 0) controls.minDistance = opts.minDistance;
+	if (opts.maxDistance !== void 0) controls.maxDistance = opts.maxDistance;
+	if (opts.maxPolarAngle !== void 0) controls.maxPolarAngle = opts.maxPolarAngle;
+	controls.update();
+	const ticks = [];
+	const addTick = (fn) => {
+		ticks.push(fn);
+		return () => {
+			const i = ticks.indexOf(fn);
+			if (i >= 0) ticks.splice(i, 1);
+		};
+	};
+	const raycaster = new THREE.Raycaster();
+	const pointer = new THREE.Vector2();
+	let hovered = null;
+	let downAt = 0;
+	const threshold = opts.clickVsDragMs ?? 350;
+	const pickAt = (ev) => {
+		const r = canvas.getBoundingClientRect();
+		if (r.width === 0 || r.height === 0) return null;
+		pointer.x = (ev.clientX - r.left) / r.width * 2 - 1;
+		pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+		raycaster.setFromCamera(pointer, camera);
+		const hits = raycaster.intersectObjects(scene.children, true);
+		for (const hit of hits) {
+			if (isGizmoHit(hit.object)) continue;
+			const carrier = findPickCarrier(hit.object);
+			if (carrier !== null) return {
+				carrier,
+				point: hit.point
+			};
+		}
+		return null;
+	};
+	const onPointerDown = (e) => {
+		downAt = e.timeStamp;
+	};
+	const onPointerMove = (e) => {
+		const found = pickAt(e);
+		const carrier = found?.carrier ?? null;
+		if (carrier !== hovered) {
+			(hovered?.userData.pick)?.out?.(e);
+			document.body.style.cursor = "auto";
+			hovered = carrier;
+			if (carrier !== null && found !== null) carrier.userData.pick.over?.(found.point, e);
+		}
+	};
+	const onPointerLeave = (e) => {
+		if (hovered !== null) {
+			hovered.userData.pick.out?.(e);
+			document.body.style.cursor = "auto";
+			hovered = null;
+		}
+	};
+	const onClick = (e) => {
+		if (e.timeStamp - downAt > threshold) return;
+		const found = pickAt(e);
+		if (found !== null) found.carrier.userData.pick.click?.(found.point, e);
+		else opts.onEmptyClick?.();
+	};
+	canvas.addEventListener("pointerdown", onPointerDown);
+	canvas.addEventListener("pointermove", onPointerMove);
+	canvas.addEventListener("pointerleave", onPointerLeave);
+	canvas.addEventListener("click", onClick);
+	let raf = 0;
+	const clock = new THREE.Clock();
+	const frame = () => {
+		raf = requestAnimationFrame(frame);
+		const delta = clock.getDelta();
+		for (const t of ticks) t(delta);
+		controls.update();
+		renderer.render(scene, camera);
+	};
+	frame();
+	const resize = () => {
+		const w = canvas.clientWidth, h = canvas.clientHeight;
+		if (w === 0 || h === 0) return;
+		renderer.setSize(w, h, false);
+		camera.aspect = w / h;
+		camera.updateProjectionMatrix();
+	};
+	resize();
+	const ro = new ResizeObserver(resize);
+	ro.observe(canvas);
+	return {
+		canvas,
+		renderer,
+		scene,
+		camera,
+		controls,
+		addTick,
+		resize,
+		dispose: () => {
+			cancelAnimationFrame(raf);
+			ro.disconnect();
+			canvas.removeEventListener("pointerdown", onPointerDown);
+			canvas.removeEventListener("pointermove", onPointerMove);
+			canvas.removeEventListener("pointerleave", onPointerLeave);
+			canvas.removeEventListener("click", onClick);
+			controls.dispose();
+			renderer.dispose();
+		}
+	};
+}
+/** A billboard TEXT label — the drei <Billboard><Text/></Text> analogue:
+*  canvas-drawn glyphs on a THREE.Sprite (sprites always face the camera,
+*  which IS the billboard). worldHeight is the label's height in scene
+*  units (drei Text's fontSize is world units too). */
+function makeLabelSprite(text, color, worldHeight) {
+	const px = 96;
+	const c = document.createElement("canvas");
+	const ctx = c.getContext("2d");
+	if (ctx !== null) {
+		ctx.font = `600 ${px}px system-ui, sans-serif`;
+		const w = Math.ceil(ctx.measureText(text).width) + 32;
+		c.width = w;
+		c.height = 128;
+		ctx.font = `600 ${px}px system-ui, sans-serif`;
+		ctx.textAlign = "center";
+		ctx.textBaseline = "middle";
+		ctx.fillStyle = color;
+		ctx.fillText(text, w / 2, 64);
+	}
+	const tex = new THREE.CanvasTexture(c);
+	tex.minFilter = THREE.LinearFilter;
+	const mat = new THREE.SpriteMaterial({
+		map: tex,
+		transparent: true
+	});
+	const sprite = new THREE.Sprite(mat);
+	const aspect = c.width / c.height;
+	sprite.scale.set(worldHeight * aspect, worldHeight, 1);
+	return sprite;
+}
+//#endregion
+//#region src/preview.module.css
+var preview_module_default = {
+	"empty": "yvIe7G_empty",
+	"figureError": "yvIe7G_figureError",
+	"hero": "yvIe7G_hero",
+	"heroAudio": "yvIe7G_heroAudio",
+	"heroImg": "yvIe7G_heroImg",
+	"heroIncoming": "yvIe7G_heroIncoming",
+	"historyBlock": "yvIe7G_historyBlock",
+	"historyTile": "yvIe7G_historyTile",
+	"historyTileActive": "yvIe7G_historyTileActive",
+	"historyTitle": "yvIe7G_historyTitle",
+	"layerChip": "yvIe7G_layerChip",
+	"layerRow": "yvIe7G_layerRow",
+	"reportCard": "yvIe7G_reportCard",
+	"reportChip": "yvIe7G_reportChip",
+	"reportChips": "yvIe7G_reportChips",
+	"reportHead": "yvIe7G_reportHead",
+	"reportKey": "yvIe7G_reportKey",
+	"reportRow": "yvIe7G_reportRow",
+	"reportRows": "yvIe7G_reportRows",
+	"reportStatus": "yvIe7G_reportStatus",
+	"reportTitle": "yvIe7G_reportTitle",
+	"reportVal": "yvIe7G_reportVal",
+	"stageCanvas": "yvIe7G_stageCanvas",
+	"stagePreview": "yvIe7G_stagePreview",
+	"staleBadge": "yvIe7G_staleBadge",
+	"strip": "yvIe7G_strip",
+	"stripLink": "yvIe7G_stripLink",
+	"thumb": "yvIe7G_thumb",
+	"thumbFace": "yvIe7G_thumbFace",
+	"thumbRow": "yvIe7G_thumbRow",
+	"thumbVideo": "yvIe7G_thumbVideo",
+	"thumbVideoActive": "yvIe7G_thumbVideoActive",
+	"thumbVideoBtn": "yvIe7G_thumbVideoBtn",
+	"thumbVideoName": "yvIe7G_thumbVideoName"
+};
+//#endregion
+//#region src/glb-stage.tsx
+/**
+* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
+* claim, hour 14 2026-09-13). Grown from img-to-mesh's GlbViewport
+* (the raw-three substrate, verbatim) + the old @melite-plugin/3d
+* Stage's multi-asset contract (assets/selection/per-asset errors —
+* the four props anny's assembly actually uses; drop-placement
+* gizmos and mixers stay unported until a consumer ports them, the
+* promotion law).
+*
+* SUBSTRATE LAW (verbatim, the 2026-09-12 boot-crash lesson): RAW
+* three.js — imperative scene in a useEffect, NO @react-three. r3f's
+* bundled react-reconciler reads the seeded React 19 internals by
+* minified single-letter fields and a version-skew throws at boot
+* ("reading 'S' of undefined"). three is a pure leaf library: no
+* React entanglement, mounts like any imperative canvas lib.
+*
+* THE PREVIEW-PORT INTERACTION LAW (the operator's catch, hour 14:
+* "Anny and Trellis are close to the same, but the way they interact
+* with the preview port is different"): ONE stage component serves
+* both — selection + per-asset errors are the stage's own uniform
+* interaction surface; studio chrome (anchors, badges, in-card
+* actions like anny's HMR fit-body) docks AROUND it, never inside.
+*/
+let draco = null;
+function loader() {
+	if (draco === null) {
+		draco = new DRACOLoader();
+		draco.setDecoderPath("/draco/gltf/");
+	}
+	const l = new GLTFLoader();
+	l.setDRACOLoader(draco);
+	return l;
+}
+/** One stage asset — the old Stage contract's live subset (the four
+*  fields consumers set: id/url/name + the placement override; the
+*  drop-raycast position stays caller-computed). */
+function meshAssetUrl(value) {
+	const match = /^data\/input\/([^?#]+)$/i.exec(value);
+	return match === null ? value : `/v1/assets/inputs/${match[1]}`;
+}
+/** Normalize a loaded scene to a known viewing size — the
+*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
+*  dimension to targetHeight, feet on y=0. Mutates the root in place.
+*  (Meshes arrive at wildly different scales; this is the ONE place
+*  that reconciles them so every viewport frames identically.) */
+function autoFitToHeight(root, targetHeight = 1.6) {
+	const box = new THREE.Box3().setFromObject(root);
+	const size = new THREE.Vector3();
+	box.getSize(size);
+	const largest = Math.max(size.x, size.y, size.z);
+	if (largest > 0) root.scale.multiplyScalar(targetHeight / largest);
+	root.updateMatrixWorld(true);
+	const box2 = new THREE.Box3().setFromObject(root);
+	const center = new THREE.Vector3();
+	box2.getCenter(center);
+	root.position.x -= center.x;
+	root.position.z -= center.z;
+	root.position.y -= box2.min.y;
+	root.updateMatrixWorld(true);
+	const box3 = new THREE.Box3().setFromObject(root);
+	const size3 = new THREE.Vector3();
+	box3.getSize(size3);
+	return {
+		box: box3,
+		height: size3.y
+	};
+}
+/** The imperative three scene — BUILT ON THE SHARED STAGE CORE
+*  (stage3d.ts): the core owns renderer/camera/controls/rAF/resize/picking;
+*  this adds the glb-stage's own light rig + floor grid and maps the core's
+*  pick semantics onto the stage-asset id (group.userData.pick → clickSink,
+*  empty click → clickSink(null)). A drag-orbit never reads as a click. */
+function mountScene(canvas, onFail) {
+	let clickSink = () => {};
+	const stage = mountStage3D(canvas, {
+		fov: 40,
+		camera: [
+			2.2,
+			1.6,
+			2.6
+		],
+		target: [
+			0,
+			.8,
+			0
+		],
+		toneMapping: THREE.NoToneMapping,
+		onContextFailure: onFail,
+		onEmptyClick: () => clickSink(null)
+	});
+	if (stage === null) return null;
+	const scene = stage.scene;
+	scene.add(new THREE.HemisphereLight(16777215, 9079434, 1.4));
+	const key = new THREE.DirectionalLight(16777215, 2.2);
+	key.position.set(3, 5, 2);
+	scene.add(key);
+	const fill = new THREE.DirectionalLight(16777215, .6);
+	fill.position.set(-3, 2, -2);
+	scene.add(fill);
+	const grid = new THREE.GridHelper(6, 24, 12303291, 14540253);
+	const gridMat = grid.material;
+	gridMat.transparent = true;
+	gridMat.opacity = .35;
+	scene.add(grid);
+	return {
+		scene,
+		setClickSink: (fn) => {
+			clickSink = fn;
+		},
+		addTick: stage.addTick,
+		dispose: () => {
+			grid.geometry.dispose();
+			stage.dispose();
+		}
+	};
+}
+/** The selection tint — emissive lift on the selected group's meshes
+*  (the old Stage's highlight, the DOM-free way; lifted meshes read
+*  at any theme because emissive adds, never replaces). */
+function tint(root, on) {
+	root.traverse((o) => {
+		const m = o.material;
+		if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
+	});
+}
+/** Flip the wireframe flag on every wireframe-capable material under
+*  the root (mesh materials; points/lines have no such flag and are
+*  left alone). Idempotent — loads mint fresh materials, so no
+*  original-flag bookkeeping is owed. */
+function applyWireframe(root, on) {
+	root.traverse((o) => {
+		const m = o.material;
+		if (m !== void 0 && m !== null && "wireframe" in m) m.wireframe = on;
+	});
+}
+/** A bone-visualization overlay for one loaded group — null when
+*  the group carries no bones (unrigged meshes seat no overlay, the
+*  honest absence). The caller adds the helper to the scene and owns
+*  its visibility + disposal. */
+function skeletonHelperFor(group) {
+	const bones = [];
+	group.traverse((o) => {
+		if (o.isBone === true) bones.push(o);
+	});
+	if (bones.length === 0) return null;
+	return new THREE.SkeletonHelper(group);
+}
+/** THE TURNTABLE SPEED (radians/sec) — one revolution every ~12.5s,
+*  the gentle review idle; fast enough to read as motion in a
+*  glance, slow enough to inspect. */
+const TURNTABLE_SPEED = .5;
+/** One turntable frame: rotate every group about its OWN Y axis
+*  (each spins in place — the row layout's positions stand). Pure —
+*  the stage's tick seam calls it with the rAF delta; a 0 delta is
+*  a no-op. Declared per-asset rotation rides along (the spin adds
+*  to the current angle, never resets it). */
+function turntableTick(groups, delta) {
+	if (delta === 0) return;
+	const d = TURNTABLE_SPEED * delta;
+	for (const g of groups) g.rotation.y += d;
+}
+/** ── THE WEIGHTS HEAT OVERLAY (primitive ②, fourth slice) ───────────
+*
+* Per-vertex skin-weight heat: a skinned mesh's dominant-bone weight
+* (the max of its skinWeight components, ∈ [0.25,1] under 4
+* influences) paints a blue→red ramp through vertex colors. Unskinned
+* meshes are untouched (no skinWeight attribute — no lane, no paint).
+* OFF restores each geometry's ORIGINAL color attribute (cached the
+* first time we touch it — absent means we delete ours) and the
+* material's vertexColors flag. Idempotent both ways. */
+/** The heat ramp — 5 stops (blue→cyan→green→yellow→red), t clamped.
+*  Pure: the same ramp every stage paints, the wall pins the stops. */
+function heatColor(t) {
+	const x = Math.min(1, Math.max(0, t));
+	const stops = [
+		[
+			0,
+			0,
+			1
+		],
+		[
+			0,
+			1,
+			1
+		],
+		[
+			0,
+			1,
+			0
+		],
+		[
+			1,
+			1,
+			0
+		],
+		[
+			1,
+			0,
+			0
+		]
+	];
+	const s = x * (stops.length - 1);
+	const i = Math.min(stops.length - 2, Math.floor(s));
+	const f = s - i;
+	const a = stops[i], b = stops[i + 1];
+	return [
+		a[0] + (b[0] - a[0]) * f,
+		a[1] + (b[1] - a[1]) * f,
+		a[2] + (b[2] - a[2]) * f
+	];
+}
+const weightColorCache = /* @__PURE__ */ new WeakMap();
+function applyWeightsHeat(root, on) {
+	root.traverse((o) => {
+		const mesh = o;
+		const geo = mesh.geometry;
+		if (geo === void 0) return;
+		const mat = mesh.material;
+		if (mat === void 0 || mat === null || Array.isArray(mat)) return;
+		const sw = geo.getAttribute("skinWeight");
+		if (sw === void 0) return;
+		const pos = geo.getAttribute("position");
+		if (pos === void 0) return;
+		const sm = mat;
+		if (on) {
+			if (!weightColorCache.has(geo)) weightColorCache.set(geo, geo.getAttribute("color") ?? null);
+			const colors = new Float32Array(pos.count * 3);
+			const comps = Math.min(4, sw.itemSize);
+			for (let i = 0; i < pos.count; i++) {
+				let w = sw.getX(i);
+				for (let c = 1; c < comps; c++) {
+					const v = c === 1 ? sw.getY(i) : c === 2 ? sw.getZ(i) : sw.getW(i);
+					if (v > w) w = v;
+				}
+				const [r, g, b] = heatColor(w);
+				colors[i * 3] = r;
+				colors[i * 3 + 1] = g;
+				colors[i * 3 + 2] = b;
+			}
+			geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+			sm.vertexColors = true;
+			sm.needsUpdate = true;
+		} else {
+			const orig = weightColorCache.get(geo);
+			if (orig === null) geo.deleteAttribute("color");
+			else if (orig !== void 0) geo.setAttribute("color", orig);
+			if (sm.vertexColors === true) {
+				sm.vertexColors = false;
+				sm.needsUpdate = true;
+			}
+		}
+	});
+}
+/** ── NAMED MESH SLOTS (primitive ②, third slice) ────────────────────
+* A comparison seat: assets may declare a SLOT (`slot: 'source'` /
+* `'result'`, body/garment, donor/target, LOD names) — the stage
+* paints the slot's label above the asset (a billboard sprite, the
+* stage3d makeLabelSprite). Unslotted assets seat unlabeled, as
+* ever. Pure derivation, mount-side paint (the WebGL-exempt arm). */
+function slotLabelOf(asset) {
+	return typeof asset.slot === "string" && asset.slot !== "" ? asset.slot : null;
+}
+/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
+*  row, click to select, per-asset load failures reported upward).
+*  No assets → the honest empty state; the canvas mounts when the
+*  first asset lands. */
+function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label, layers, onLayers, turntable }) {
+	const canvasRef = useRef(null);
+	const sceneRef = useRef(null);
+	const skeletonHelpers = useRef([]);
+	const slotLabels = useRef([]);
+	const [loaded, setLoaded] = useState([]);
+	const [failed, setFailed] = useState(null);
+	const [ready, setReady] = useState(false);
+	const selectRef = useRef(onSelect);
+	selectRef.current = onSelect;
+	const key = assets.map((a) => a.id + "@" + a.url).join("|");
+	const errRef = useRef(onAssetError);
+	errRef.current = onAssetError;
+	const groupsRef = useRef([]);
+	groupsRef.current = loaded.map((l) => l.group);
+	const turntableRef = useRef(turntable === true);
+	turntableRef.current = turntable === true;
+	useEffect(() => {
+		setLoaded([]);
+		setFailed(null);
+		setReady(false);
+		if (assets.length === 0) return;
+		let alive = true;
+		let pending = assets.length;
+		const settle = () => {
+			if (alive && pending === 0) setReady(true);
+		};
+		for (const a of assets) loader().load(meshAssetUrl(a.url), (g) => {
+			if (!alive) return;
+			autoFitToHeight(g.scene);
+			const group = new THREE.Group();
+			group.userData.stageId = a.id;
+			group.userData.pick = { click: () => selectRef.current?.(a.id) };
+			group.add(g.scene);
+			if (a.scale !== void 0) group.scale.multiplyScalar(a.scale);
+			if (a.rotation !== void 0) group.rotation.set(a.rotation[0], a.rotation[1], a.rotation[2]);
+			if (a.position !== void 0) group.position.set(a.position[0], a.position[1], a.position[2]);
+			setLoaded((prev) => [...prev, {
+				asset: a,
+				group
+			}]);
+			errRef.current?.(a.id, null);
+			pending -= 1;
+			settle();
+		}, void 0, (e) => {
+			if (!alive) return;
+			errRef.current?.(a.id, e instanceof Error ? e.message : "glb load failed");
+			pending -= 1;
+			settle();
+		});
+		return () => {
+			alive = false;
+		};
+	}, [key]);
+	useEffect(() => {
+		if (!ready || loaded.length === 0) return;
+		const canvas = canvasRef.current;
+		const mounted = mountScene(canvas, (m) => setFailed(m));
+		if (mounted === null) return;
+		sceneRef.current = mounted;
+		mounted.setClickSink((id) => selectRef.current?.(id));
+		let x = 0;
+		for (const { asset, group } of loaded) {
+			mounted.scene.add(group);
+			if (asset.position === void 0) {
+				const box = new THREE.Box3().setFromObject(group);
+				const size = new THREE.Vector3();
+				box.getSize(size);
+				group.position.x += x + size.x / 2;
+				x += size.x + .4;
+			}
+		}
+		const helpers = [];
+		for (const { group } of loaded) {
+			const helper = skeletonHelperFor(group);
+			if (helper !== null) {
+				helper.visible = false;
+				mounted.scene.add(helper);
+				helpers.push(helper);
+			}
+		}
+		skeletonHelpers.current = helpers;
+		const labels = [];
+		for (const { asset, group } of loaded) {
+			const text = slotLabelOf(asset);
+			if (text === null) continue;
+			const sprite = makeLabelSprite(text, "#1c1f26", .05);
+			const box = new THREE.Box3().setFromObject(group);
+			sprite.position.set(group.position.x, box.max.y + .06, 0);
+			mounted.scene.add(sprite);
+			labels.push(sprite);
+		}
+		slotLabels.current = labels;
+		mounted.addTick((dt) => {
+			if (!turntableRef.current) return;
+			turntableTick(groupsRef.current, dt);
+		});
+		return () => {
+			for (const helper of skeletonHelpers.current) {
+				mounted.scene.remove(helper);
+				helper.dispose();
+			}
+			skeletonHelpers.current = [];
+			for (const sprite of slotLabels.current) {
+				mounted.scene.remove(sprite);
+				const mat = sprite.material;
+				mat.map?.dispose();
+				mat.dispose();
+			}
+			slotLabels.current = [];
+			sceneRef.current = null;
+			mounted.dispose();
+		};
+	}, [ready, loaded]);
+	useEffect(() => {
+		for (const { asset, group } of loaded) tint(group, asset.id === selectedId);
+	}, [loaded, selectedId]);
+	const wireframe = layers?.wireframe ?? false;
+	useEffect(() => {
+		for (const { group } of loaded) applyWireframe(group, wireframe);
+	}, [loaded, wireframe]);
+	const skeleton = layers?.skeleton ?? false;
+	useEffect(() => {
+		for (const helper of skeletonHelpers.current) helper.visible = skeleton;
+	}, [loaded, skeleton]);
+	const weights = layers?.weights === true;
+	useEffect(() => {
+		for (const { group } of loaded) applyWeightsHeat(group, weights);
+	}, [loaded, weights]);
+	return createElement("div", {
+		className: preview_module_default.stagePreview,
+		"data-viewport": label ?? "glb-stage"
+	}, assets.length === 0 ? createElement("div", { className: preview_module_default.empty }, emptyHint ?? "Run the card to see the mesh") : failed !== null ? createElement("div", { className: preview_module_default.empty }, "viewport failed: " + failed) : !ready ? createElement("div", { className: preview_module_default.empty }, "loading mesh…") : createElement("canvas", {
+		ref: canvasRef,
+		className: preview_module_default.stageCanvas,
+		"data-testid": "stage-preview-glb"
+	}), onLayers !== void 0 && assets.length > 0 ? createElement("div", {
+		className: preview_module_default.layerRow,
+		role: "group",
+		"aria-label": "mesh layers"
+	}, createElement("button", {
+		type: "button",
+		className: preview_module_default.layerChip,
+		"aria-pressed": !wireframe,
+		onClick: () => {
+			onLayers({
+				wireframe: false,
+				skeleton,
+				weights
+			});
+		}
+	}, "Shaded"), createElement("button", {
+		type: "button",
+		className: preview_module_default.layerChip,
+		"aria-pressed": wireframe,
+		onClick: () => {
+			onLayers({
+				wireframe: true,
+				skeleton,
+				weights
+			});
+		}
+	}, "Wireframe"), createElement("button", {
+		type: "button",
+		className: preview_module_default.layerChip,
+		"aria-pressed": skeleton,
+		onClick: () => {
+			onLayers({
+				wireframe,
+				skeleton: !skeleton,
+				weights
+			});
+		}
+	}, "Skeleton"), createElement("button", {
+		type: "button",
+		className: preview_module_default.layerChip,
+		"aria-pressed": weights,
+		onClick: () => {
+			onLayers({
+				wireframe,
+				skeleton,
+				weights: !weights
+			});
+		}
+	}, "Weights")) : null);
 }
 //#endregion
 //#region src/square.tsx
@@ -871,14 +1704,19 @@ function Link2({ className, style, ...rest }) {
 * automatically. One input component; no card hand-rolls its own
 * file field ever again.
 */
-/** The media-bar drag contract (the tab's drop surface serves the
-* same MIME — ONE spelling, imported from the base's law). */
-const ASSET_DRAG_MIME = "application/tech-noir-asset";
 /** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
 *  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
 *  artifact URLs. Every slot-shaped value renders the same way. */
 function isImageUrl(value) {
 	return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+}
+/** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
+*  the base-gaps primitive ③): a .glb/.gltf value — an estate path
+*  ('data/input/x.glb') or a run artifact URL — renders the ONE
+*  square with the inline GLB thumb (the mini GlbStagePreview), the
+*  same square grammar as images: never a bespoke mesh picker. */
+function isMeshUrl(value) {
+	return /^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
 }
 /** Read a File/Blob and resolve its data: URL — the ONE read path for
 *  every slot-shaped attach (the old law, single definition). */
@@ -894,24 +1732,23 @@ function readAsDataUrl(file) {
 		r.readAsDataURL(file);
 	});
 }
-/** Parse the asset MIME off a drop event. null = absent or malformed. */
-function assetPayload(e) {
-	const raw = e.dataTransfer.getData(ASSET_DRAG_MIME);
-	if (raw === "") return null;
-	try {
-		const p = JSON.parse(raw);
-		return typeof p["url"] === "string" ? p["url"] : null;
-	} catch {
-		return null;
-	}
-}
+const DEFAULT_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp";
+const MESH_SQUARE_ACCEPT = ".glb,.gltf";
 function InputSquare(props) {
 	const { label, value, metric, disabled } = props;
+	const seat = props.ariaLabel ?? label;
 	const fileRef = useRef(null);
 	const boxRef = useRef(null);
 	const [over, setOver] = useState(false);
 	const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
-	const empty = thumb === null;
+	const mesh = thumb === null && typeof value === "string" && value !== "" && isMeshUrl(value) ? value : null;
+	const empty = thumb === null && mesh === null;
+	const acceptsDrop = (event) => {
+		if (event.dataTransfer.getData("application/tech-noir-asset") !== "" || event.dataTransfer.files.length > 0) return true;
+		const types = event.dataTransfer.types;
+		if (types === void 0 || types === null) return false;
+		return types.includes("application/tech-noir-asset") || types.includes("Files");
+	};
 	const pick = () => {
 		if (disabled) return;
 		if (props.onPick !== void 0) props.onPick(boxRef.current);
@@ -922,13 +1759,14 @@ function InputSquare(props) {
 		className: card_module_default.squareBox + (over ? " " + card_module_default.squareOver : ""),
 		role: "button",
 		tabIndex: 0,
-		"aria-label": (label || "source") + (label ? " source" : ""),
+		"data-slot-square": true,
+		"aria-label": (seat || "source") + (seat !== "" ? " source" : ""),
 		onClick: pick,
 		onKeyDown: (e) => {
 			if (e.key === "Enter") pick();
 		},
 		onDragOver: (e) => {
-			if (disabled) return;
+			if (disabled || !acceptsDrop(e)) return;
 			e.preventDefault();
 			setOver(true);
 		},
@@ -936,41 +1774,69 @@ function InputSquare(props) {
 			setOver(false);
 		},
 		onDrop: (e) => {
-			if (disabled) return;
-			e.preventDefault();
 			setOver(false);
-			const asset = assetPayload(e);
-			if (asset !== null && props.onAsset !== void 0) {
-				props.onAsset(asset);
+			if (disabled || !acceptsDrop(e)) return;
+			e.preventDefault();
+			const asset = parseAssetDrop(e.dataTransfer.getData(ASSET_DRAG_MIME));
+			if (asset.url !== void 0 && props.onAsset !== void 0) {
+				props.onAsset(asset.url);
 				return;
 			}
-			const f = e.dataTransfer.files[0];
-			if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
+			const file = e.dataTransfer.files[0];
+			if (file !== void 0 && props.onFile !== void 0) props.onFile(file);
 		}
 	}, thumb !== null ? createElement("img", {
 		className: card_module_default.squareThumb,
 		src: thumb,
 		alt: label
-	}) : createElement(IconPlusOutline16, { className: card_module_default.squareGlyph }), !empty && props.onClear !== void 0 ? createElement("button", {
+	}) : mesh !== null ? createElement("div", { className: card_module_default.squareMesh }, createElement(GlbStagePreview, {
+		assets: [{
+			id: "square-mesh",
+			url: mesh
+		}],
+		label: "square-mesh"
+	})) : props.emptyIcon === void 0 ? createElement(IconPlusOutline16, { className: card_module_default.squareGlyph }) : createElement("span", { className: card_module_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? createElement("span", {
+		className: card_module_default.squareActions,
+		onClick: (event) => {
+			event.stopPropagation();
+		}
+	}, props.actions) : null, !empty && props.onClear !== void 0 ? createElement("button", {
 		className: card_module_default.squareX,
 		type: "button",
 		title: "Detach",
-		"aria-label": "Detach " + (label || "source"),
+		"aria-label": "Detach " + (seat || "source"),
 		onClick: (e) => {
 			e.stopPropagation();
 			props.onClear();
 		}
-	}, "✕") : null), label !== "" ? createElement("span", { className: card_module_default.squareLabel }, label) : null, metric !== void 0 ? createElement("span", { className: card_module_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? createElement("input", {
+	}, "✕") : null, props.showFileAction === true && props.onFile !== void 0 && !disabled ? createElement("button", {
+		className: card_module_default.squarePick,
+		type: "button",
+		title: `Pick a file for ${label}`,
+		"aria-label": `Pick a file for ${label}`,
+		"data-slot-pick": true,
+		onClick: (event) => {
+			event.stopPropagation();
+			fileRef.current?.click();
+		}
+	}, createElement(Upload, { "aria-hidden": true })) : null), label !== "" ? createElement("span", {
+		className: card_module_default.squareLabel,
+		"data-slot-label": true
+	}, label) : null, props.badge === void 0 ? null : createElement("span", {
+		className: card_module_default.squareBadge,
+		"data-slot-badge": true
+	}, props.badge), metric !== void 0 ? createElement("span", { className: card_module_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? createElement("input", {
 		ref: fileRef,
 		type: "file",
-		accept: "image/png,image/jpeg,image/webp",
+		accept: props.accept ?? "image/png,image/jpeg,image/webp",
 		className: card_module_default.squareFileInput,
+		"data-slot-input": true,
 		"aria-hidden": true,
 		tabIndex: -1,
 		onChange: (e) => {
-			const f = e.target.files?.[0];
-			if (f !== void 0 && f !== null) props.onFile?.(f);
-			fileRef.current.value = "";
+			const file = e.target.files?.[0];
+			if (file !== void 0 && file !== null) props.onFile?.(file);
+			if (fileRef.current !== null) fileRef.current.value = "";
 		}
 	}) : null);
 }
@@ -1161,15 +2027,19 @@ async function fetchFormSpec(model, signal) {
 async function fetchFormsTable(signal) {
 	return v1Get("/v1/forms", signal);
 }
-/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
-*  input-dir path the param accepts. The door's own gates (type
-*  whitelist, one clean segment) are the law — the client only
-*  voices its refusals, never invents its own. */
+/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL; the
+*  mesh wire type boards .glb/.gltf — model/gltf-binary, or the
+*  browser's octet-stream with a GLB name) → the input-dir path the
+*  param accepts. The door's own gates (type whitelist, one clean
+*  segment) are the law — the client only voices its refusals, never
+*  invents its own. */
 async function uploadInputFile(file) {
 	const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
 	const isAudio = file.type.startsWith("audio/");
-	if (!isImage && !isAudio) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image or audio file");
-	if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp only");
+	const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name);
+	const isMesh = file.type === "model/gltf-binary" || file.type === "model/gltf+json" || file.type === "application/octet-stream" && glbName;
+	if (!isImage && !isAudio && !isMesh) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image, audio, or .glb/.gltf file");
+	if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp / glb only");
 	const dataUrl = await new Promise((resolve, reject) => {
 		const r = new FileReader();
 		r.onload = () => {
@@ -1202,10 +2072,26 @@ async function uploadInputFile(file) {
 /** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
 * operator's DRY audit law: one seam, one small file, one wall). */
 /** The media-kind the picker fetches for a field: image fields name
-*  image; file fields take the whole library (their accept narrows
-*  client-side per row). */
+*  image; mesh fields name the MEDIA vocabulary's kind for 3D, which
+*  is `model` — NOT `mesh`. `mesh` is the client PREVIEW kind
+*  (preview-kinds.ts), a different vocabulary; the media list door
+*  admits image/audio/video/model/all and refuses anything else with
+*  `media/kind`, so asking it for `mesh` was a guaranteed refusal that
+*  the picker swallowed into an empty list (the "From media" row was
+*  empty for every mesh field, with no error anywhere). file fields
+*  take the whole library (their accept narrows client-side per row). */
 function mediaKindForField(f) {
-	return f.type === "image" ? "image" : "all";
+	if (f.type === "image") return "image";
+	if (f.type === "mesh") return "model";
+	return "all";
+}
+/** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
+*  offer the GLB pair; everything else keeps the image triad (the
+*  historic default). The provider's ONE hidden input re-targets
+*  imperatively at click time — the accept is a property of the
+*  field being picked, never of the provider instance. */
+function acceptOfField(f) {
+	return f !== null && f.type === "mesh" ? MESH_SQUARE_ACCEPT : DEFAULT_SQUARE_ACCEPT;
 }
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):
 *  every slot-shaped field of a stage gets the same verbs — file
@@ -1221,6 +2107,7 @@ function useSquareProvider(onEdit, wire) {
 	const [modalAt, setModalAt] = useState(null);
 	const fieldRef = useRef(null);
 	const [mediaRows, setMediaRows] = useState(null);
+	const [mediaErr, setMediaErr] = useState(null);
 	const fileRef = useRef(null);
 	const onFile = useCallback(async (f, file) => {
 		if (wire.onFile !== void 0) {
@@ -1229,7 +2116,7 @@ function useSquareProvider(onEdit, wire) {
 		}
 		try {
 			const dataUrl = await readAsDataUrl(file);
-			setMirror((m) => ({
+			if (f.type !== "mesh") setMirror((m) => ({
 				...m,
 				[f.name]: dataUrl
 			}));
@@ -1240,7 +2127,7 @@ function useSquareProvider(onEdit, wire) {
 		}
 	}, [onEdit, wire.onFile]);
 	const square = (f) => {
-		if (f.type !== "image" && f.type !== "file") return void 0;
+		if (f.type !== "image" && f.type !== "file" && f.type !== "mesh") return void 0;
 		return {
 			display: mirror[f.name] ?? null,
 			verbs: {
@@ -1317,7 +2204,9 @@ function useSquareProvider(onEdit, wire) {
 			}
 			if (id === "__file__") {
 				fieldRef.current = f;
-				fileRef.current?.click();
+				const input = fileRef.current;
+				input.accept = acceptOfField(f);
+				input.click();
 				return;
 			}
 			setMirror((m) => {
@@ -1347,8 +2236,10 @@ function useSquareProvider(onEdit, wire) {
 				label: it.name,
 				url: it.url
 			})));
-		}).catch(() => {
+			setMediaErr(null);
+		}).catch((e) => {
 			setMediaRows([]);
+			setMediaErr(e instanceof Error ? e.message : String(e));
 		});
 		return () => {
 			ctrl.abort();
@@ -1375,7 +2266,7 @@ function useSquareProvider(onEdit, wire) {
 			title: modalAt.mode === "flow" ? "From flow" : "From media",
 			description: modalAt.mode === "flow" ? "The other stages’ latest outputs" + (req.kind !== "all" ? " (" + req.kind + ")" : "") : "The runs library" + (req.kind !== "all" ? " (" + req.kind + ")" : ""),
 			closeLabel: "Close picker"
-		}, candidates.length === 0 ? createElement("p", { className: card_module_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : "nothing to pick yet") : createElement("ul", { className: card_module_default.pickList }, candidates.map((c) => createElement("li", {
+		}, candidates.length === 0 ? createElement("p", { className: card_module_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : mediaErr !== null ? "media library unavailable — " + mediaErr : "nothing to pick yet") : createElement("ul", { className: card_module_default.pickList }, candidates.map((c) => createElement("li", {
 			key: c.id,
 			className: card_module_default.pickRow
 		}, createElement("button", {
@@ -1396,7 +2287,7 @@ function useSquareProvider(onEdit, wire) {
 	const fileInput = createElement("input", {
 		ref: fileRef,
 		type: "file",
-		accept: wire.accept ?? "image/png,image/jpeg,image/webp",
+		accept: wire.accept ?? acceptOfField(null),
 		"aria-hidden": true,
 		tabIndex: -1,
 		style: { display: "none" },
@@ -1412,7 +2303,7 @@ function useSquareProvider(onEdit, wire) {
 	});
 	return {
 		square,
-		wireMenu: createElement(Fragment, null, sourceMenu, pickerModal, fileInput)
+		wireMenu: createElement(Fragment$1, null, sourceMenu, pickerModal, fileInput)
 	};
 }
 //#endregion
@@ -1421,7 +2312,7 @@ function useSquareProvider(onEdit, wire) {
 * operator's DRY audit law: one seam, one small file, one wall). */
 function SourceRow(props) {
 	const field = {
-		name: "__source_row__",
+		name: props.name ?? "__source_row__",
 		label: props.label,
 		type: props.kind === "image" ? "image" : "file"
 	};
@@ -1429,6 +2320,7 @@ function SourceRow(props) {
 		props.onEdit(v);
 	}, [props.onEdit]), {
 		candidates: props.candidates ?? [],
+		...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {},
 		...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
 		...props.onFile !== void 0 ? { onFile: props.onFile } : {},
 		...props.accept !== void 0 ? { accept: props.accept } : {},
@@ -1441,8 +2333,9 @@ function SourceRow(props) {
 		"data-source-row": props.label
 	}, wireMenu, createElement(InputSquare, {
 		label: props.hideLabel === true ? "" : props.label,
-		value: shown !== null && isImageUrl(shown) ? shown : null,
-		metric: typeof props.value === "string" && props.value !== "" && !isImageUrl(props.value) ? props.value : void 0,
+		...props.ariaLabel !== void 0 ? { ariaLabel: props.ariaLabel } : {},
+		value: shown !== null && (isImageUrl(shown) || isMeshUrl(shown)) ? shown : null,
+		metric: typeof props.value === "string" && props.value !== "" && !isImageUrl(props.value) && !isMeshUrl(props.value) ? props.value : void 0,
 		...host.verbs
 	}));
 }
@@ -1510,14 +2403,42 @@ function SpecSliderAtom({ f, value, onEdit }) {
 /** One spec atom — typed by the declaration, edited as a raw string
 *  while typing (decimal dots survive; coercion happens once at patch). */
 function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }) {
-	if ((f.type === "image" || f.type === "file") && square !== void 0) {
+	if ((f.type === "image" || f.type === "file" || f.type === "mesh") && square !== void 0) {
 		const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
 		return createElement(InputSquare, {
 			label: f.label !== "" ? f.label : f.name,
-			value: shown !== null && isImageUrl(shown) ? shown : null,
-			metric: typeof value === "string" && value !== "" && !isImageUrl(value) ? value : void 0,
+			value: shown !== null && (isImageUrl(shown) || isMeshUrl(shown)) ? shown : null,
+			metric: typeof value === "string" && value !== "" && !isImageUrl(value) && !isMeshUrl(value) ? value : void 0,
 			...square.verbs
 		});
+	}
+	if (f.type === "select" && f.multi === true && Array.isArray(f.options) && f.options.length > 0) {
+		const rows = f.options.map((o) => typeof o === "string" ? {
+			value: o,
+			label: o
+		} : o);
+		const held = new Set(String(value ?? "").split(",").map((w) => w.trim()).filter((w) => w !== ""));
+		return createElement("div", {
+			className: card_module_default.specChips,
+			role: "group",
+			"aria-label": f.label,
+			...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+		}, rows.map((row) => {
+			const on = held.has(row.value);
+			return createElement("button", {
+				type: "button",
+				key: row.value,
+				className: card_module_default.specChip + (on ? " " + card_module_default.specChipOn : ""),
+				"aria-pressed": on,
+				"data-chip": row.value,
+				onClick: () => {
+					const next = new Set(held);
+					if (on) next.delete(row.value);
+					else next.add(row.value);
+					onEdit(f.name, rows.filter((r) => next.has(r.value)).map((r) => r.value).join(","));
+				}
+			}, titleCaseId(row.label));
+		}));
 	}
 	if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return createElement("select", {
 		className: card_module_default.specSelect,
@@ -1561,20 +2482,30 @@ function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost
 		});
 	}
 	if (f.type === "textarea") {
-		const fit = (el) => {
+		const fitStable = useCallback((el) => {
 			if (el === null) return;
 			el.style.height = "auto";
 			el.style.height = Math.max(el.scrollHeight, 44) + "px";
-		};
+		}, []);
+		const fitEl = useRef(null);
+		useEffect(() => {
+			const el = fitEl.current;
+			el.style.height = "auto";
+			el.style.height = Math.max(el.scrollHeight, 44) + "px";
+		}, [String(value ?? "")]);
 		return createElement("textarea", {
 			className: card_module_default.specTextarea,
 			rows: 2,
 			value: String(value ?? ""),
 			placeholder: f.placeholder ?? "",
-			ref: fit,
+			ref: (el) => {
+				const ta = el ?? null;
+				fitEl.current = ta;
+				fitStable(ta);
+			},
 			onChange: (e) => {
 				const el = e.target;
-				fit(el);
+				fitStable(el);
 				onEdit(f.name, el.value);
 			},
 			"aria-label": f.label
@@ -1914,10 +2845,10 @@ function ModelAxes({ spec, value, onSet, onDownloadModel }) {
 		else if (heldId !== void 0) active[g] = heldId;
 		else active[g] = activeRowId(spec, value, g, active) ?? (rows.length > 0 ? rows[0].id : "");
 	}
-	return createElement("section", {
-		className: `${card_module_default.specGroup} ${card_module_default.modelAxes}`,
-		"data-model-axes": "1"
-	}, createElement("h4", { className: card_module_default.specGroupTitle }, "Model"), createElement("label", { className: card_module_default.specField }, createElement("span", { className: card_module_default.specFieldKey }, "Model"), createElement("select", {
+	const modelField = createElement("label", { className: card_module_default.specField }, createElement("span", {
+		className: card_module_default.specFieldKey,
+		"aria-hidden": "true"
+	}), createElement("select", {
 		className: card_module_default.specSelect,
 		"aria-label": "Model",
 		...refusedModel !== void 0 ? { "data-refused": "model" } : {},
@@ -1936,18 +2867,8 @@ function ModelAxes({ spec, value, onSet, onDownloadModel }) {
 	}, (f.label ?? titleCaseId(f.id)) + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => createElement("option", {
 		key: m,
 		value: m
-	}, familyFace.get(m) ?? titleCaseId(m)))), heldFam !== void 0 && onDownloadModel !== void 0 ? createElement("div", {
-		className: card_module_default.specHint,
-		"data-download-prompt": heldFam.id
-	}, titleCaseId(heldFam.id) + " is offered by this card but not downloaded on this machine.", " ", createElement("button", {
-		type: "button",
-		className: card_module_default.specLinkBtn,
-		disabled: dlState !== "idle",
-		onClick: () => {
-			setDlState("busy");
-			onDownloadModel(heldFam.id).then((ok) => setDlState(ok ? "queued" : "failed")).catch(() => setDlState("failed"));
-		}
-	}, dlState === "idle" ? "Download " + (heldFam.label ?? titleCaseId(heldFam.id)) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
+	}, familyFace.get(m) ?? titleCaseId(m)))));
+	const axisField = (g) => {
 		const rows = rowsOf(g, active);
 		const heldRaw = value[axisKey(g)];
 		const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
@@ -1975,7 +2896,28 @@ function ModelAxes({ spec, value, onSet, onDownloadModel }) {
 			key: v.id,
 			value: v.id
 		}, titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
-	}), createElement(RecipePills, {
+	};
+	const variantAxis = groups.includes("Variant") ? "Variant" : void 0;
+	const variantField = variantAxis !== void 0 ? axisField(variantAxis) : null;
+	const restGroups = variantAxis !== void 0 ? groups.filter((g) => g !== variantAxis) : groups;
+	return createElement("section", {
+		className: `${card_module_default.specGroup} ${card_module_default.modelAxes}`,
+		"data-model-axes": "1"
+	}, createElement("h4", { className: card_module_default.specGroupTitle }, "Model"), variantField !== null ? createElement("div", {
+		className: card_module_default.axesPair,
+		"data-axes-pair": "Model+Variant"
+	}, modelField, variantField) : modelField, heldFam !== void 0 && onDownloadModel !== void 0 ? createElement("div", {
+		className: card_module_default.specHint,
+		"data-download-prompt": heldFam.id
+	}, titleCaseId(heldFam.id) + " is offered by this card but not downloaded on this machine.", " ", createElement("button", {
+		type: "button",
+		className: card_module_default.specLinkBtn,
+		disabled: dlState !== "idle",
+		onClick: () => {
+			setDlState("busy");
+			onDownloadModel(heldFam.id).then((ok) => setDlState(ok ? "queued" : "failed")).catch(() => setDlState("failed"));
+		}
+	}, dlState === "idle" ? "Download " + (heldFam.label ?? titleCaseId(heldFam.id)) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null, restGroups.map((g) => axisField(g)), createElement(RecipePills, {
 		spec,
 		onSet,
 		values: value
@@ -2036,7 +2978,7 @@ function RecipePills({ spec, onSet, values }) {
 *
 *  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
 *  img-to-mesh input component — you are not using it around — you
-*  are hardcoding"): an emitted image/file input constructs THE ONE
+*  are hardcoding"): an emitted image/file/mesh input constructs THE ONE
 *  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
 *  square provider — no call site wires it, no call site can forget
 *  it. The caller hands only the WIRE (picker candidates), never the
@@ -2108,6 +3050,7 @@ function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: err
 	}, createElement("div", { className: card_module_default.specGroupTitle }, "form-spec failed — parameters unavailable"), createElement("div", { className: card_module_default.specHint }, error));
 	if (spec === null) return null;
 	const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]));
+	const guardModel = resolveFamilyKey(spec) ?? model;
 	return createElement("div", { className: card_module_default.specForm }, sections.map((sec) => createElement("div", {
 		className: card_module_default.specGroup,
 		key: sec.title,
@@ -2115,7 +3058,10 @@ function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: err
 	}, createElement("div", { className: card_module_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
 		const f = byName.get(row.name);
 		if (f === void 0) return null;
-		if (!fieldVisible(f, values)) return null;
+		if (!fieldVisible(f, {
+			...values,
+			model: guardModel
+		})) return null;
 		return createElement(SpecFieldRow, {
 			key: row.name,
 			f,
@@ -2140,7 +3086,7 @@ function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: err
 * (the schema envelope, declared input/output edges, mod kinds) —
 * and constructs the surface. The resolved value derives per render
 * (resolveValue — the engine's compose cascade mirrored); every
-* image/file field gets THE ONE square (square.tsx) with the
+* image/file/mesh field gets THE ONE square (square.tsx) with the
 * three source verbs; no card ever hand-rolls an input component.
 *
 * THE SEAM (slots.ts): each field renders through the field-atom seam
@@ -2172,7 +3118,7 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 		}
 		onSet(name, coerceFieldEdit(fieldByName.get(name), v));
 	};
-	const family = typeof spec.model === "string" ? spec.model : void 0;
+	const family = resolveFamilyKey(spec);
 	const modKinds = (spec.features?.modifiers ?? []).map((k) => {
 		const env = spec.mod_schemas?.[k.schema_key ?? k.param_key];
 		const hybrid = k.entry === "hybrid";
@@ -2194,12 +3140,22 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 	const railOf = (inp) => {
 		const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name);
 		if (f === void 0) return void 0;
-		if (f.type === "image" || f.type === "file") return f;
+		if (f.type === "image" || f.type === "file" || f.type === "mesh") return f;
 	};
-	const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0);
+	const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0).filter((f) => fieldVisible(f, {
+		...value,
+		model: family ?? ""
+	}));
 	const railNames = new Set(railFields.map((f) => f.name));
+	const stackFields = flatFields.filter((f) => f.type === "image_list" && !modFieldByName.has(f.name)).filter((f) => fieldVisible(f, {
+		...value,
+		model: family ?? ""
+	}));
 	const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
-	const groups = groupFields(flatFields.filter(visible), value);
+	const groups = groupFields(flatFields.filter(visible), {
+		...value,
+		model: family ?? ""
+	});
 	const submenu = groups.length > 1;
 	const [openGroup, setOpenGroup] = useState(void 0);
 	const activeGroup = submenu ? groups.find((g) => g.group === openGroup) ?? groups[0] : void 0;
@@ -2207,6 +3163,61 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 	const atomOf = (f) => atoms?.[f.type];
 	const own = useSquareProvider(edit, wire ?? { candidates: [] });
 	const squareFor = square ?? own.square;
+	const stackRow = (f) => {
+		const v = value[f.name];
+		const entries = Array.isArray(v) ? v.filter((x) => typeof x === "string" && x !== "") : [];
+		const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : 8;
+		const kind = f.media === "video" || f.media === "audio" ? "file" : "image";
+		const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : void 0;
+		return createElement("div", {
+			key: "stack-" + f.name,
+			className: card_module_default.specStack,
+			"data-input-stack": f.name,
+			"data-stack-count": String(entries.length)
+		}, createElement("div", {
+			className: card_module_default.modHead,
+			"data-stack-head": f.name,
+			title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+		}, createElement("span", { className: card_module_default.modTitle }, f.label), createElement("span", { className: card_module_default.modHint }, `${String(entries.length)} / ${String(cap)}${f.media !== void 0 && f.media !== "" ? " · " + f.media : ""}`)), createElement("div", { className: card_module_default.specSlotRow }, entries.map((entry, i) => createElement("div", {
+			key: f.name + ":" + String(i),
+			className: card_module_default.specSlotCell,
+			title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+		}, createElement(SourceRow, {
+			label: String(i + 1),
+			ariaLabel: `${f.label} ${String(i + 1)}`,
+			kind,
+			value: entry,
+			name: f.name,
+			...accept !== void 0 ? { accept } : {},
+			onEdit: (next) => {
+				const arr = [...entries];
+				if (next === "") arr.splice(i, 1);
+				else arr[i] = next;
+				edit(f.name, arr);
+			},
+			...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
+			...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
+			...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
+		}))), entries.length < cap ? createElement("div", {
+			className: card_module_default.specSlotCell,
+			"data-stack-add": f.name,
+			title: f.tooltip
+		}, createElement(SourceRow, {
+			label: "",
+			ariaLabel: `Add ${f.label}`,
+			kind,
+			value: null,
+			name: f.name,
+			...accept !== void 0 ? { accept } : {},
+			onEdit: (next) => {
+				/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
+				if (next !== "") edit(f.name, [...entries, next]);
+			},
+			...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
+			...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
+			...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
+		})) : null));
+	};
 	return createElement("div", { className: card_module_default.specForm }, createElement(PackPrompt, {
 		spec,
 		onInstallPack
@@ -2215,10 +3226,10 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 		value,
 		onSet: edit,
 		onDownloadModel
-	}), railFields.length > 0 ? createElement("section", {
+	}), railFields.length > 0 || stackFields.length > 0 ? createElement("section", {
 		className: card_module_default.specGroup + " " + card_module_default.inputRail,
 		"data-input-rail": "1"
-	}, createElement("div", { className: card_module_default.specSlotRow }, railFields.map((f) => {
+	}, createElement("h4", { className: card_module_default.specGroupTitle }, "Inputs"), railFields.length > 0 ? createElement("div", { className: card_module_default.specSlotRow }, railFields.map((f) => {
 		return createElement("div", {
 			key: f.name,
 			className: card_module_default.specSlotCell,
@@ -2230,7 +3241,7 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 			square: squareFor(f),
 			...wire?.candidates !== void 0 ? { wireCandidates: wire.candidates } : {}
 		}));
-	}))) : null, submenu && activeGroup !== void 0 ? createElement("div", {
+	})) : null, stackFields.map((f) => stackRow(f))) : null, submenu && activeGroup !== void 0 ? createElement("div", {
 		className: card_module_default.groupTabs,
 		role: "tablist",
 		"data-form-submenu": "1"
@@ -2248,7 +3259,8 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 			}
 		}, titleCaseId(g.group ?? "General"));
 	})) : null, shownGroups.map((g) => {
-		const gridCols = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 2)?.columns;
+		const declared = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 1)?.columns;
+		const gridCols = Math.max(1, Math.floor(declared ?? 2));
 		const cellStyle = (f) => {
 			if (f.type === "textarea") return {
 				gridColumn: "1 / -1",
@@ -2266,10 +3278,10 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 			children.push(createElement("div", {
 				key: "slotrow-" + String(children.length),
 				className: card_module_default.specSlotRow,
-				...gridCols !== void 0 ? { style: {
+				style: {
 					gridColumn: "1 / -1",
 					minWidth: "0"
-				} } : {}
+				}
 			}, row));
 			row = [];
 		};
@@ -2288,13 +3300,13 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 					onEdit: edit,
 					square: sq
 				}));
-				children.push(gridCols === void 0 ? cell : createElement("div", {
+				children.push(createElement("div", {
 					key: f.name + "-cell",
 					style: cellStyle(f)
 				}, cell));
 				continue;
 			}
-			if (f.type === "image" || f.type === "file") {
+			if (f.type === "image" || f.type === "file" || f.type === "mesh") {
 				row.push(createElement("div", {
 					key: f.name,
 					className: card_module_default.specSlotCell,
@@ -2317,7 +3329,7 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 				...sq !== void 0 ? { square: sq } : {},
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
 			});
-			children.push(gridCols === void 0 ? cell : createElement("div", {
+			children.push(createElement("div", {
 				key: f.name + "-cell",
 				style: cellStyle(f)
 			}, cell));
@@ -2327,7 +3339,7 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 			key: g.group ?? "",
 			className: card_module_default.specGroup,
 			"data-form-group-panel": g.group ?? "general"
-		}, g.group !== null && !submenu ? createElement("h4", { className: card_module_default.specGroupTitle }, titleCaseId(g.group)) : null, gridCols === void 0 ? children : createElement("div", {
+		}, g.group !== null && !submenu ? createElement("h4", { className: card_module_default.specGroupTitle }, titleCaseId(g.group)) : null, createElement("div", {
 			className: card_module_default.specGrid,
 			style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }
 		}, children));
@@ -2465,11 +3477,12 @@ function ModifiersSection(props) {
 			for (const f of hybridFields(k, seated)) if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
 			setDraftParams(params);
 		} else if (isOptionKind(k)) {
+			setDraftOption(typeof entry["id"] === "string" ? entry["id"] : "");
 			const strength = typeof entry["strength"] === "number" ? entry["strength"] : void 0;
 			setDraftStrength(strength !== void 0 ? String(strength) : "");
 			setDraftSteps(typeof entry["steps"] === "number" ? String(entry["steps"]) : "");
 		} else {
-			const params = {};
+			const params = { ...fieldDefaults(k) };
 			for (const f of k.fields ?? []) {
 				if (seated?.has(f.name) ?? false) continue;
 				if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
@@ -2573,7 +3586,9 @@ function ModifiersSection(props) {
 					setLeaf(null);
 					return;
 				}
-				const strength = Number(draftStrength);
+				const editRow = (k.options ?? []).find((o) => o.value === entry.id);
+				const strengthSeed = typeof editRow?.defaults?.strength === "number" ? editRow.defaults.strength : 1;
+				const strength = draftStrength.trim() === "" ? strengthSeed : Number(draftStrength);
 				if (!Number.isFinite(strength)) {
 					setLeafError("Strength must be a number.");
 					return;
@@ -2584,9 +3599,8 @@ function ModifiersSection(props) {
 					return;
 				}
 				if (steps !== void 0) {
-					const row = (k.options ?? []).find((o) => o.value === entry.id);
-					const min = row?.defaults?.steps_min;
-					const max = row?.defaults?.steps_max;
+					const min = editRow?.defaults?.steps_min;
+					const max = editRow?.defaults?.steps_max;
 					if (typeof min === "number" && steps < min) {
 						setLeafError(`Steps applied must be \u2265 ${min} on this adapter.`);
 						return;
@@ -2645,7 +3659,8 @@ function ModifiersSection(props) {
 	const anyOrdered = kinds.some(isOrdered);
 	return createElement("section", {
 		className: card_module_default.modSection,
-		"data-subcard-grid": "on"
+		"data-subcard-grid": "on",
+		"data-testid": "cb-mods-section"
 	}, createElement("div", { className: card_module_default.modHead }, createElement("span", { className: card_module_default.modTitle }, "Modifiers"), createElement("span", { className: card_module_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? createElement("p", { className: card_module_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => createElement("div", {
 		key: k.param_key + ":kind",
 		className: card_module_default.modLeafFields
@@ -2670,11 +3685,18 @@ function ModifiersSection(props) {
 			const option = optionOf(k, id);
 			const scalar = scalarKeyOf(k);
 			const strength = typeof entry[scalar] === "number" ? entry[scalar] : option !== null && option.defaults !== void 0 && typeof option.defaults[scalar] === "number" ? option.defaults[scalar] : void 0;
+			const steps = typeof entry["steps"] === "number" ? entry["steps"] : option !== null && option.defaults !== void 0 && typeof option.defaults["steps"] === "number" ? option.defaults["steps"] : void 0;
+			const picked = (k.fields ?? []).find((f) => f.type === "select" && typeof entry[f.name] === "string" && entry[f.name] !== "");
+			const pickedLabel = picked === void 0 ? null : (picked.options ?? []).map((o) => typeof o === "string" ? {
+				value: o,
+				label: o
+			} : o).find((o) => o.value === entry[picked.name])?.label ?? null;
 			return createElement(ModTile, {
 				key: k.param_key + "-" + i,
 				tileId: k.param_key + "-" + i,
-				label: option !== null ? option.label : id !== "" ? titleCaseId(id) : isOptionKind(k) ? k.label + " " + String(i + 1) : k.label,
+				label: option !== null ? option.label : pickedLabel !== null ? pickedLabel : id !== "" ? titleCaseId(id) : isOptionKind(k) ? k.label + " " + String(i + 1) : k.label,
 				...strength !== void 0 ? { strength } : {},
+				...steps !== void 0 ? { steps } : {},
 				onOpen: () => {
 					openEdit(k, i);
 				},
@@ -2725,7 +3747,8 @@ function ModifiersSection(props) {
 			setLeaf(null);
 		},
 		title: (leaf.mode === "create" ? "Add " : "Edit ") + leaf.kind.label,
-		closeLabel: "Close"
+		closeLabel: "Close",
+		className: card_module_default.modLeafModal
 	}, createElement(ModLeaf, {
 		leaf,
 		values,
@@ -2757,7 +3780,39 @@ function ModLeaf(props) {
 	const { leaf, onDraft, onSave, onDelete, leafError } = props;
 	const k = leaf.kind;
 	const hidden = props.hideFields;
-	const leafFields = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false));
+	const bboxCanvas = props.bboxFace !== void 0 && k.leaf_face === "bbox-canvas";
+	const paintField = props.paintFace !== void 0 && k.leaf_face === "paint-canvas" ? (k.fields ?? []).find((f) => f.type === "image" || f.wtype === "image") : void 0;
+	const facePresent = bboxCanvas || paintField !== void 0;
+	const draftQuad = () => {
+		const quad = [
+			onDraft.draftParams["bbox_x"],
+			onDraft.draftParams["bbox_y"],
+			onDraft.draftParams["bbox_w"],
+			onDraft.draftParams["bbox_h"]
+		];
+		return quad.every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0) ? {
+			x: quad[0],
+			y: quad[1],
+			width: quad[2],
+			height: quad[3]
+		} : null;
+	};
+	const writeQuad = (b) => {
+		onDraft.setDraftParams(b === null ? {
+			...onDraft.draftParams,
+			bbox_x: -1,
+			bbox_y: -1,
+			bbox_w: -1,
+			bbox_h: -1
+		} : {
+			...onDraft.draftParams,
+			bbox_x: Math.round(b.x),
+			bbox_y: Math.round(b.y),
+			bbox_w: Math.round(b.width),
+			bbox_h: Math.round(b.height)
+		});
+	};
+	const leafFields = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true));
 	const own = useSquareProvider((name, v) => {
 		onDraft.setDraftParams({
 			...onDraft.draftParams,
@@ -2785,20 +3840,28 @@ function ModLeaf(props) {
 		onChange: (e) => {
 			onDraft.setDraftStrength(e.target.value);
 		}
-	})), (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== scalarKeyOf(k) && !(hidden?.has(f.name) ?? false)).map((f) => createElement("label", {
-		key: f.name,
-		className: card_module_default.modField
-	}, createElement("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), createElement(SpecAtom, {
-		f,
-		value: onDraft.draftParams[f.name] ?? f.default,
-		onEdit: (name, v) => {
-			onDraft.setDraftParams({
-				...onDraft.draftParams,
-				[name]: v
-			});
-		},
-		square: own.square(f)
-	}))), own.wireMenu) : isOptionKind(k) ? createElement("div", { className: card_module_default.modLeafFields }, leaf.mode === "create" ? createElement("label", { className: card_module_default.modField }, k.label, createElement("select", {
+	})), (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== scalarKeyOf(k) && !(hidden?.has(f.name) ?? false)).map((f) => {
+		const sq = own.square(f);
+		const atom = createElement(SpecAtom, {
+			f,
+			value: onDraft.draftParams[f.name] ?? f.default,
+			onEdit: (name, v) => {
+				onDraft.setDraftParams({
+					...onDraft.draftParams,
+					[name]: v
+				});
+			},
+			...sq !== void 0 ? { square: sq } : {}
+		});
+		const caption = createElement("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name);
+		return sq !== void 0 ? createElement("div", {
+			key: f.name,
+			className: card_module_default.modField
+		}, caption, atom) : createElement("label", {
+			key: f.name,
+			className: card_module_default.modField
+		}, caption, atom);
+	}), own.wireMenu) : isOptionKind(k) ? createElement("div", { className: card_module_default.modLeafFields }, leaf.mode === "create" ? createElement("label", { className: card_module_default.modField }, k.label, createElement("select", {
 		className: card_module_default.modSelect,
 		value: onDraft.draftOption,
 		onChange: (e) => {
@@ -2834,102 +3897,72 @@ function ModLeaf(props) {
 				onDraft.setDraftSteps(e.target.value);
 			}
 		}));
-	})() : null) : createElement("div", { className: card_module_default.modLeafFields }, leafFields.map((f) => createElement("div", { key: f.name }, createElement("label", { className: card_module_default.modField }, f.label ?? f.name, createElement(SpecAtom, {
-		f,
-		value: onDraft.draftParams[f.name],
-		onEdit: (name, v) => {
-			onDraft.setDraftParams({
-				...onDraft.draftParams,
-				[name]: v
-			});
-		},
-		square: own.square(f)
-	})), props.paintFace !== void 0 && k.leaf_face === "paint-canvas" && (f.type === "image" || f.wtype === "image") ? createElement(PaintVerb, {
-		Face: props.paintFace,
+	})() : null) : bboxCanvas || paintField !== void 0 ? createElement("div", { className: card_module_default.modLeafSplit }, createElement("div", {
+		className: card_module_default.modLeafStage,
+		"data-leaf-stage": bboxCanvas ? "bbox" : "paint"
+	}, bboxCanvas && props.bboxFace !== void 0 ? createElement("div", {
+		className: card_module_default.modStageCaption,
+		"data-stage-caption": "region"
+	}, "Region — optional (scopes the search; clear = whole image)") : null, bboxCanvas && props.bboxFace !== void 0 ? createElement("div", {
+		className: card_module_default.modField,
+		"data-leaf-canvas": "bbox"
+	}, createElement(props.bboxFace, {
 		referenceUrl: props.paintReferenceValue,
-		payloadUrl: typeof onDraft.draftParams[f.name] === "string" ? onDraft.draftParams[f.name] : "",
-		onSaved: (dataUrl) => {
+		value: draftQuad(),
+		onChange: writeQuad
+	})) : null, paintField !== void 0 && props.paintFace !== void 0 ? createElement("div", {
+		className: card_module_default.modField,
+		"data-leaf-canvas": "paint"
+	}, createElement(props.paintFace, {
+		referenceUrl: props.paintReferenceValue,
+		value: typeof onDraft.draftParams[paintField.name] === "string" ? onDraft.draftParams[paintField.name] : "",
+		onChange: (dataUrl) => {
 			onDraft.setDraftParams({
 				...onDraft.draftParams,
-				[f.name]: dataUrl
+				[paintField.name]: dataUrl
 			});
 		}
-	}) : null)), props.bboxFace !== void 0 && k.leaf_face === "bbox-canvas" ? createElement(BboxVerb, {
-		Face: props.bboxFace,
-		referenceUrl: props.paintReferenceValue,
-		draft: onDraft.draftParams,
-		onSaved: (bbox) => {
-			onDraft.setDraftParams({
-				...onDraft.draftParams,
-				bbox_x: Math.round(bbox.x),
-				bbox_y: Math.round(bbox.y),
-				bbox_w: Math.round(bbox.width),
-				bbox_h: Math.round(bbox.height)
-			});
-		}
-	}) : null, own.wireMenu), createElement("div", { className: card_module_default.modLeafActions }, createElement(Button, {
+	})) : null), createElement("div", { className: card_module_default.modLeafFields }, k.section !== void 0 ? createElement("div", {
+		className: card_module_default.modStageCaption,
+		"data-stage-caption": "filter"
+	}, k.section) : null, leafFields.map((f) => createElement("div", { key: f.name }, (() => {
+		const sq = own.square(f);
+		const atom = createElement(SpecAtom, {
+			f,
+			value: onDraft.draftParams[f.name],
+			onEdit: (name, v) => {
+				onDraft.setDraftParams({
+					...onDraft.draftParams,
+					[name]: v
+				});
+			},
+			...sq !== void 0 ? { square: sq } : {}
+		});
+		return sq !== void 0 ? createElement("div", { className: card_module_default.modField }, createElement("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), atom) : createElement("label", { className: card_module_default.modField }, f.label ?? f.name, atom);
+	})())), own.wireMenu)) : createElement("div", { className: card_module_default.modLeafFields }, k.section !== void 0 ? createElement("div", {
+		className: card_module_default.modStageCaption,
+		"data-stage-caption": "filter"
+	}, k.section) : null, leafFields.map((f) => createElement("div", { key: f.name }, (() => {
+		const sq = own.square(f);
+		const atom = createElement(SpecAtom, {
+			f,
+			value: onDraft.draftParams[f.name],
+			onEdit: (name, v) => {
+				onDraft.setDraftParams({
+					...onDraft.draftParams,
+					[name]: v
+				});
+			},
+			...sq !== void 0 ? { square: sq } : {}
+		});
+		return sq !== void 0 ? createElement("div", { className: card_module_default.modField }, createElement("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), atom) : createElement("label", { className: card_module_default.modField }, f.label ?? f.name, atom);
+	})())), own.wireMenu), createElement("div", { className: card_module_default.modLeafActions }, createElement(Button, {
 		variant: "primary",
 		onClick: onSave
 	}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? createElement(Button, {
 		variant: "ghost",
 		onClick: onDelete
 	}, "Remove") : null));
-}
-/** THE PAINT VERB — the brush button + modal mount (the face
-*  component arrives from the host; this is the wiring only). */
-function PaintVerb(props) {
-	const [open, setOpen] = useState(false);
-	return createElement("div", { className: card_module_default.modField }, createElement(Button, {
-		variant: "ghost",
-		onClick: () => {
-			setOpen(true);
-		}
-	}, "Paint"), open ? createElement(props.Face, {
-		referenceUrl: props.referenceUrl,
-		payloadUrl: props.payloadUrl,
-		onSave: (dataUrl) => {
-			props.onSaved(dataUrl);
-			setOpen(false);
-		},
-		onCancel: () => {
-			setOpen(false);
-		}
-	}) : null);
-}
-/** THE BBOX VERB (stroke 78) — the selection button + modal mount:
-*  reads the entry's current rectangle (all four present and finite
-*  = set; anything else = null, a fresh draw), writes the four
-*  bbox_* inputs on save. Same delivery law as the paint verb. */
-function BboxVerb(props) {
-	const [open, setOpen] = useState(false);
-	const quad = [
-		props.draft["bbox_x"],
-		props.draft["bbox_y"],
-		props.draft["bbox_w"],
-		props.draft["bbox_h"]
-	];
-	const set = quad.length === 4 && quad.every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0) ? {
-		x: quad[0],
-		y: quad[1],
-		width: quad[2],
-		height: quad[3]
-	} : null;
-	return createElement("div", { className: card_module_default.modField }, createElement(Button, {
-		variant: "ghost",
-		onClick: () => {
-			setOpen(true);
-		}
-	}, set === null ? "Draw box" : "Redraw box"), open ? createElement(props.Face, {
-		referenceUrl: props.referenceUrl,
-		bbox: set,
-		onSave: (bbox) => {
-			props.onSaved(bbox);
-			setOpen(false);
-		},
-		onCancel: () => {
-			setOpen(false);
-		}
-	}) : null);
 }
 /** One mod tile (the original, verbatim: useSortable + click to
 *  edit + strength to 2 decimals). */
@@ -2969,13 +4002,24 @@ function ModTile(props) {
 			}
 		},
 		onClick: props.onOpen
-	}, createElement("span", { className: card_module_default.modTileLabel }, props.label), props.strength !== void 0 ? createElement("span", { className: card_module_default.modTileStrength }, props.strength.toFixed(2)) : null);
+	}, createElement("span", { className: card_module_default.modTileLabel }, props.label), props.strength !== void 0 ? createElement("span", { className: card_module_default.modTileStrength }, props.strength.toFixed(2)) : null, props.steps !== void 0 ? createElement("span", { className: card_module_default.modTileSteps }, `${String(props.steps)} steps`) : null);
 }
 //#endregion
 //#region src/slots.ts
+function defineStageViewRegistration(key, view, inject) {
+	return (ctx) => {
+		ctx.slots.inject("cards.stage.view", () => {
+			ctx.slots.register({
+				name: "cards.stage.view",
+				key,
+				...inject === void 0 ? {} : { inject }
+			}, view);
+		});
+	};
+}
 /** The seam ids, spelled once. Claims use these constants. */
 const CARD_SLOTS = {
-	/** keyed by wire type: 'image' | 'file' | 'select' | ... — the
+	/** keyed by wire type: 'image' | 'file' | 'mesh' | 'select' | ... — the
 	*  ATOM seam. The constructor renders every emitted field through
 	*  the claim for its declared type; the base's built-in atom is
 	*  the default, a card takes over its own type's atom. */
@@ -3038,7 +4082,12 @@ function useResolvedForm(family, user, onWrite, base) {
 		error,
 		resolved,
 		edit: useCallback((name, v) => {
-			onWrite(name, coerceFieldEdit(fieldOf(name), v));
+			const f = fieldOf(name);
+			if (v === "" && f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider")) {
+				onWrite(name, void 0);
+				return;
+			}
+			onWrite(name, coerceFieldEdit(f, v));
 		}, [fieldOf, onWrite]),
 		fieldOf
 	};
@@ -3051,221 +4100,908 @@ function useResolvedForm(family, user, onWrite, base) {
 function resolveValueLayered(spec, base, user) {
 	if (spec === null) {
 		const out = { ...base ?? {} };
-		return Object.assign(out, user);
+		for (const [k, v] of Object.entries(user)) {
+			if (v === null || v === void 0) continue;
+			out[k] = v;
+		}
+		return out;
 	}
 	return resolveValue(spec, user, base);
 }
 //#endregion
-//#region src/stage3d.ts
+//#region src/estate-remote.ts
+/** The estate's domain refusal ({ok:false} answers): the message
+* rides verbatim; the class separates DOMAIN verdicts from transport
+* failures so policy code (the gone-verdict, the poll, the CAS
+* rebase) can discriminate. */
+var EstateRefusedError = class extends Error {
+	constructor(message) {
+		super(message);
+		this.name = "EstateRefusedError";
+	}
+};
+/** The bound namespaces — LOUD when unbound: a verb call before the
+* mount (or after unload) is a wiring bug, never a silent fallback. */
+function estateRemote() {
+	throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
+}
+/** Await one namespace method's RemoteResult and unwrap it: the
+*  value on ok, the estate's refusal text (verbatim) on the error
+*  branch. Accepts the promise directly so call sites stay one
+*  expression. */
+async function unwrapRemote(result, voice) {
+	const settled = await result;
+	if (settled.ok === true) return settled.value;
+	const { error } = settled;
+	const failure = error;
+	throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
+}
+/** Refusal discrimination for policy code (the CAS rebase, the
+* gone-verdict, the poll's file-era arms). */
+function isEstateRefusal(error) {
+	return error instanceof EstateRefusedError;
+}
+//#endregion
+//#region src/runs-policy.ts
 /**
-* stage3d — the SHARED raw-three stage core (the substrate law).
+* runs-policy.ts — the run verbs over THE ONE LANE (stroke 81; the
+* shared home, stroke 81b — beside estate-remote, for the same
+* singleton reason: sibling studio clients poll runs here).
 *
-* One imperative mount that every 3D viewport in the card plane builds
-* on: renderer + camera + OrbitControls + the rAF loop + resize
-* observation + pointer picking + full disposal. Pure TypeScript over
-* three and three/addons — NO @react-three anywhere (the r3f
-* react-reconciler version-skew boot crash is why this exists).
-*
-* Consumers own their SCENE CONTENT (lights, floor, figures) and their
-* FRAME LOGIC via addTick (ordered registry — ticks run in registration
-* order before each render, the raw analogue of useFrame declared top
-* to bottom in a JSX tree).
-*
-* Pointer semantics (the r3f onClick/onPointerOver/onPointerOut
-* analogue): an object becomes interactive by carrying
-* `userData.pick = { click?, over?, out? }` on itself or an ancestor.
-* The stage raycasts on pointermove and click, walks parentward from
-* the hit to the first pick carrier, and calls the handlers with the
-* world intersection point + the DOM event. A drag-orbit never reads
-* as a click (the 350ms threshold). Gizmo subtrees (TransformControls)
-* are excluded from picking — r3f did this implicitly.
+* The run-wire package's policy laws, moved verbatim onto the
+* mounted runs namespace: status/list/start/stop are typed calls
+* through ctx.remote (the generated client — the Connection owns
+* transport, RPC ids, envelopes, cancellation; the hand-written
+* envelope lane is dead). Refusals resolve as RemoteResult error
+* branches and throw EstateRefusedError carrying the estate's
+* message verbatim (WireRefusedError's discrimination role — the
+* gone-verdict, the poll's file-era arms key on the CLASS, not the
+* words). The PURE laws (readRunStatus's normalize, toRunMediaUrl's
+* one rewrite, the terminal vocabulary, the list-row url law) stay
+* in the run-wire package — their ONE definition; only the
+* transport moved.
 */
-/** The r3f pointer-events analogue lives on userData.pick (see header). */
-function findPickCarrier(o) {
-	let cur = o;
-	while (cur !== null) {
-		if (cur.userData !== void 0 && cur.userData.pick !== void 0) return cur;
-		cur = cur.parent;
+/** One runs/status read (normalized once — readRunStatus's law). */
+async function fetchRunStatus(runId, signal) {
+	const doc = await unwrapRemote(estateRemote().runs.status(runId, signal), "runs/status");
+	return readRunStatus(runId, doc);
+}
+/** The runs/list rows as loose records (the restore port's own
+*  shape — run_id, draft_id, created_at, status, artifacts). */
+async function listRunRows(signal) {
+	const row = await unwrapRemote(estateRemote().runs.list("500", signal), "runs/list");
+	return (Array.isArray(row["runs"]) ? row["runs"] : []).filter((r) => typeof r === "object" && r !== null);
+}
+/** One runs/list row by run_id (the file-era face — runs/status only
+*  knows live runs; the list is the completed runs' SSOT). */
+async function fetchListRow(runId, signal) {
+	for (const r of await listRunRows(signal)) {
+		const rid = r["run_id"] ?? r["id"];
+		if (typeof rid === "string" && rid !== "" && rid === runId) return r;
 	}
 	return null;
 }
-/** Skip hits on a TransformControls gizmo subtree (invisible pick planes
-*  would swallow every click while a gizmo is attached). */
-function isGizmoHit(o) {
-	let cur = o;
-	while (cur !== null) {
-		if (cur.gizmo !== void 0) return true;
-		cur = cur.parent;
-	}
-	return false;
-}
-function mountStage3D(canvas, opts = {}) {
-	let renderer;
-	try {
-		renderer = new THREE.WebGLRenderer({
-			canvas,
-			antialias: true,
-			alpha: opts.alpha !== false,
-			preserveDrawingBuffer: opts.preserveDrawingBuffer === true
-		});
-	} catch (e) {
-		opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
-		return null;
-	}
-	renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-	renderer.shadowMap.enabled = true;
-	renderer.shadowMap.type = THREE.PCFShadowMap;
-	renderer.toneMapping = opts.toneMapping ?? THREE.ACESFilmicToneMapping;
-	const scene = new THREE.Scene();
-	scene.background = null;
-	const camera = new THREE.PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
-	camera.position.set(...opts.camera ?? [
-		2.2,
-		1.6,
-		2.6
-	]);
-	camera.lookAt(0, .8, 0);
-	const controls = new OrbitControls(camera, canvas);
-	controls.target.set(...opts.target ?? [
-		0,
-		.8,
-		0
-	]);
-	controls.enableDamping = true;
-	controls.dampingFactor = .1;
-	if (opts.minDistance !== void 0) controls.minDistance = opts.minDistance;
-	if (opts.maxDistance !== void 0) controls.maxDistance = opts.maxDistance;
-	if (opts.maxPolarAngle !== void 0) controls.maxPolarAngle = opts.maxPolarAngle;
-	controls.update();
-	const ticks = [];
-	const addTick = (fn) => {
-		ticks.push(fn);
-		return () => {
-			const i = ticks.indexOf(fn);
-			if (i >= 0) ticks.splice(i, 1);
+/** THE ARTIFACT POLL (the old pollFlowRun law, moved verbatim onto
+*  the mounted runs namespace — stroke 81 dropped it by accident and
+*  the img-to-mesh studio's import caught the hole): the run is the
+*  SSOT — check the stage's url immediately, then on the cadence
+*  until it lands (onUrl once, resolve), the run settles without
+*  one (resolve silent — the caller's empty state is honest), or
+*  signal aborts.
+*
+*  THE TWO ERROR CLASSES settle differently:
+*  - TRANSPORT failures (the wire is down) are swallowed: the next
+*    poll may recover.
+*  - REFUSALS (EstateRefusedError — the estate answered) on
+*    runs/status prove the run is NOT in the live map: nothing is
+*    executing for it. The file-era arm then consults the runs/list
+*    row ONCE and settles from it — its artifact url when it
+*    carries one, silent otherwise (file-era rows never update, so
+*    waiting would be the lie); no row at all settles silent the
+*    same way. A transport-failed list read keeps the poll alive
+*    (the answer may land next cadence). */
+async function pollRunStageUrl(runId, stageId, opts, signal) {
+	const interval = opts.intervalMs ?? 1500;
+	const sleep = (ms) => new Promise((resolve) => {
+		const t = setTimeout(() => {
+			signal?.removeEventListener("abort", onAbort);
+			resolve("slept");
+		}, ms);
+		const onAbort = () => {
+			clearTimeout(t);
+			resolve("abort");
 		};
-	};
-	const raycaster = new THREE.Raycaster();
-	const pointer = new THREE.Vector2();
-	let hovered = null;
-	let downAt = 0;
-	const threshold = opts.clickVsDragMs ?? 350;
-	const pickAt = (ev) => {
-		const r = canvas.getBoundingClientRect();
-		if (r.width === 0 || r.height === 0) return null;
-		pointer.x = (ev.clientX - r.left) / r.width * 2 - 1;
-		pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
-		raycaster.setFromCamera(pointer, camera);
-		const hits = raycaster.intersectObjects(scene.children, true);
-		for (const hit of hits) {
-			if (isGizmoHit(hit.object)) continue;
-			const carrier = findPickCarrier(hit.object);
-			if (carrier !== null) return {
-				carrier,
-				point: hit.point
+		if (signal?.aborted === true) {
+			onAbort();
+			return;
+		}
+		signal?.addEventListener("abort", onAbort, { once: true });
+	});
+	while (signal?.aborted !== true) {
+		let row;
+		try {
+			row = await fetchRunStatus(runId, signal);
+		} catch (e) {
+			if (isEstateRefusal(e)) try {
+				const listed = await fetchListRow(runId, signal);
+				const url = listed !== null ? listRowMediaUrl(listed) : null;
+				if (url !== null) opts.onUrl(url);
+				return;
+			} catch (listErr) {
+				if (isEstateRefusal(listErr)) return;
+			}
+			row = {
+				runId,
+				status: "unknown",
+				draftId: null,
+				stages: []
 			};
 		}
-		return null;
-	};
-	const onPointerDown = (e) => {
-		downAt = e.timeStamp;
-	};
-	const onPointerMove = (e) => {
-		const found = pickAt(e);
-		const carrier = found?.carrier ?? null;
-		if (carrier !== hovered) {
-			(hovered?.userData.pick)?.out?.(e);
-			document.body.style.cursor = "auto";
-			hovered = carrier;
-			if (carrier !== null && found !== null) carrier.userData.pick.over?.(found.point, e);
+		const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
+		if (stage !== void 0 && typeof stage.url === "string" && stage.url !== "") {
+			opts.onUrl(stage.url);
+			return;
 		}
-	};
-	const onPointerLeave = (e) => {
-		if (hovered !== null) {
-			hovered.userData.pick.out?.(e);
-			document.body.style.cursor = "auto";
-			hovered = null;
-		}
-	};
-	const onClick = (e) => {
-		if (e.timeStamp - downAt > threshold) return;
-		const found = pickAt(e);
-		if (found !== null) found.carrier.userData.pick.click?.(found.point, e);
-		else opts.onEmptyClick?.();
-	};
-	canvas.addEventListener("pointerdown", onPointerDown);
-	canvas.addEventListener("pointermove", onPointerMove);
-	canvas.addEventListener("pointerleave", onPointerLeave);
-	canvas.addEventListener("click", onClick);
-	let raf = 0;
-	const clock = new THREE.Clock();
-	const frame = () => {
-		raf = requestAnimationFrame(frame);
-		const delta = clock.getDelta();
-		for (const t of ticks) t(delta);
-		controls.update();
-		renderer.render(scene, camera);
-	};
-	frame();
-	const resize = () => {
-		const w = canvas.clientWidth, h = canvas.clientHeight;
-		if (w === 0 || h === 0) return;
-		renderer.setSize(w, h, false);
-		camera.aspect = w / h;
-		camera.updateProjectionMatrix();
-	};
-	resize();
-	const ro = new ResizeObserver(resize);
-	ro.observe(canvas);
-	return {
-		canvas,
-		renderer,
-		scene,
-		camera,
-		controls,
-		addTick,
-		resize,
-		dispose: () => {
-			cancelAnimationFrame(raf);
-			ro.disconnect();
-			canvas.removeEventListener("pointerdown", onPointerDown);
-			canvas.removeEventListener("pointermove", onPointerMove);
-			canvas.removeEventListener("pointerleave", onPointerLeave);
-			canvas.removeEventListener("click", onClick);
-			controls.dispose();
-			renderer.dispose();
-		}
-	};
-}
-/** A billboard TEXT label — the drei <Billboard><Text/></Text> analogue:
-*  canvas-drawn glyphs on a THREE.Sprite (sprites always face the camera,
-*  which IS the billboard). worldHeight is the label's height in scene
-*  units (drei Text's fontSize is world units too). */
-function makeLabelSprite(text, color, worldHeight) {
-	const px = 96;
-	const c = document.createElement("canvas");
-	const ctx = c.getContext("2d");
-	if (ctx !== null) {
-		ctx.font = `600 ${px}px system-ui, sans-serif`;
-		const w = Math.ceil(ctx.measureText(text).width) + 32;
-		c.width = w;
-		c.height = 128;
-		ctx.font = `600 ${px}px system-ui, sans-serif`;
-		ctx.textAlign = "center";
-		ctx.textBaseline = "middle";
-		ctx.fillStyle = color;
-		ctx.fillText(text, w / 2, 64);
+		if (isTerminalRun(row.status)) return;
+		if (await sleep(interval) === "abort") return;
 	}
-	const tex = new THREE.CanvasTexture(c);
-	tex.minFilter = THREE.LinearFilter;
-	const mat = new THREE.SpriteMaterial({
-		map: tex,
-		transparent: true
-	});
-	const sprite = new THREE.Sprite(mat);
-	const aspect = c.width / c.height;
-	sprite.scale.set(worldHeight * aspect, worldHeight, 1);
-	return sprite;
 }
 //#endregion
-export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, ControlRow, EmptyState, InputSquare, ModelAxes, ModifiersSection, OverlayKnob, PackPrompt, PaneHeader, PaneShell, RecipePills, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Tip, TriStateAtom, WirePickerModal, activeRecipeId, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composeUnset, composingRows, entryFieldsOfEnvelope, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, inputEdgeOf, isHybridKind, isImageUrl, isOptionKind, kindScalarFieldsOfEnvelope, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, postManageAction, quantRowsFor, readAsDataUrl, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, specDefaults, titleCaseId, unsetFaceLabel, unsetFaceTip, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, variantGroupsContract, variantRows };
+//#region ../../../node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom.production.js
+/**
+* @license React
+* react-dom.production.js
+*
+* Copyright (c) Meta Platforms, Inc. and affiliates.
+*
+* This source code is licensed under the MIT license found in the
+* LICENSE file in the root directory of this source tree.
+*/
+var require_react_dom_production = /* @__PURE__ */ __commonJSMin(((exports) => {
+	var React = __require("react");
+	function formatProdErrorMessage(code) {
+		var url = "https://react.dev/errors/" + code;
+		if (1 < arguments.length) {
+			url += "?args[]=" + encodeURIComponent(arguments[1]);
+			for (var i = 2; i < arguments.length; i++) url += "&args[]=" + encodeURIComponent(arguments[i]);
+		}
+		return "Minified React error #" + code + "; visit " + url + " for the full message or use the non-minified dev environment for full errors and additional helpful warnings.";
+	}
+	function noop() {}
+	var Internals = {
+		d: {
+			f: noop,
+			r: function() {
+				throw Error(formatProdErrorMessage(522));
+			},
+			D: noop,
+			C: noop,
+			L: noop,
+			m: noop,
+			X: noop,
+			S: noop,
+			M: noop
+		},
+		p: 0,
+		findDOMNode: null
+	};
+	var REACT_PORTAL_TYPE = Symbol.for("react.portal");
+	function createPortal$1(children, containerInfo, implementation) {
+		var key = 3 < arguments.length && void 0 !== arguments[3] ? arguments[3] : null;
+		return {
+			$$typeof: REACT_PORTAL_TYPE,
+			key: null == key ? null : "" + key,
+			children,
+			containerInfo,
+			implementation
+		};
+	}
+	var ReactSharedInternals = React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+	function getCrossOriginStringAs(as, input) {
+		if ("font" === as) return "";
+		if ("string" === typeof input) return "use-credentials" === input ? input : "";
+	}
+	exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = Internals;
+	exports.createPortal = function(children, container) {
+		var key = 2 < arguments.length && void 0 !== arguments[2] ? arguments[2] : null;
+		if (!container || 1 !== container.nodeType && 9 !== container.nodeType && 11 !== container.nodeType) throw Error(formatProdErrorMessage(299));
+		return createPortal$1(children, container, null, key);
+	};
+	exports.flushSync = function(fn) {
+		var previousTransition = ReactSharedInternals.T, previousUpdatePriority = Internals.p;
+		try {
+			if (ReactSharedInternals.T = null, Internals.p = 2, fn) return fn();
+		} finally {
+			ReactSharedInternals.T = previousTransition, Internals.p = previousUpdatePriority, Internals.d.f();
+		}
+	};
+	exports.preconnect = function(href, options) {
+		"string" === typeof href && (options ? (options = options.crossOrigin, options = "string" === typeof options ? "use-credentials" === options ? options : "" : void 0) : options = null, Internals.d.C(href, options));
+	};
+	exports.prefetchDNS = function(href) {
+		"string" === typeof href && Internals.d.D(href);
+	};
+	exports.preinit = function(href, options) {
+		if ("string" === typeof href && options && "string" === typeof options.as) {
+			var as = options.as, crossOrigin = getCrossOriginStringAs(as, options.crossOrigin), integrity = "string" === typeof options.integrity ? options.integrity : void 0, fetchPriority = "string" === typeof options.fetchPriority ? options.fetchPriority : void 0;
+			"style" === as ? Internals.d.S(href, "string" === typeof options.precedence ? options.precedence : void 0, {
+				crossOrigin,
+				integrity,
+				fetchPriority
+			}) : "script" === as && Internals.d.X(href, {
+				crossOrigin,
+				integrity,
+				fetchPriority,
+				nonce: "string" === typeof options.nonce ? options.nonce : void 0
+			});
+		}
+	};
+	exports.preinitModule = function(href, options) {
+		if ("string" === typeof href) if ("object" === typeof options && null !== options) {
+			if (null == options.as || "script" === options.as) {
+				var crossOrigin = getCrossOriginStringAs(options.as, options.crossOrigin);
+				Internals.d.M(href, {
+					crossOrigin,
+					integrity: "string" === typeof options.integrity ? options.integrity : void 0,
+					nonce: "string" === typeof options.nonce ? options.nonce : void 0
+				});
+			}
+		} else options ?? Internals.d.M(href);
+	};
+	exports.preload = function(href, options) {
+		if ("string" === typeof href && "object" === typeof options && null !== options && "string" === typeof options.as) {
+			var as = options.as, crossOrigin = getCrossOriginStringAs(as, options.crossOrigin);
+			Internals.d.L(href, as, {
+				crossOrigin,
+				integrity: "string" === typeof options.integrity ? options.integrity : void 0,
+				nonce: "string" === typeof options.nonce ? options.nonce : void 0,
+				type: "string" === typeof options.type ? options.type : void 0,
+				fetchPriority: "string" === typeof options.fetchPriority ? options.fetchPriority : void 0,
+				referrerPolicy: "string" === typeof options.referrerPolicy ? options.referrerPolicy : void 0,
+				imageSrcSet: "string" === typeof options.imageSrcSet ? options.imageSrcSet : void 0,
+				imageSizes: "string" === typeof options.imageSizes ? options.imageSizes : void 0,
+				media: "string" === typeof options.media ? options.media : void 0
+			});
+		}
+	};
+	exports.preloadModule = function(href, options) {
+		if ("string" === typeof href) if (options) {
+			var crossOrigin = getCrossOriginStringAs(options.as, options.crossOrigin);
+			Internals.d.m(href, {
+				as: "string" === typeof options.as && "script" !== options.as ? options.as : void 0,
+				crossOrigin,
+				integrity: "string" === typeof options.integrity ? options.integrity : void 0
+			});
+		} else Internals.d.m(href);
+	};
+	exports.requestFormReset = function(form) {
+		Internals.d.r(form);
+	};
+	exports.unstable_batchedUpdates = function(fn, a) {
+		return fn(a);
+	};
+	exports.useFormState = function(action, initialState, permalink) {
+		return ReactSharedInternals.H.useFormState(action, initialState, permalink);
+	};
+	exports.useFormStatus = function() {
+		return ReactSharedInternals.H.useHostTransitionStatus();
+	};
+	exports.version = "19.2.8";
+}));
+//#endregion
+//#region ../../../node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom.development.js
+/**
+* @license React
+* react-dom.development.js
+*
+* Copyright (c) Meta Platforms, Inc. and affiliates.
+*
+* This source code is licensed under the MIT license found in the
+* LICENSE file in the root directory of this source tree.
+*/
+var require_react_dom_development = /* @__PURE__ */ __commonJSMin(((exports) => {
+	"production" !== process.env.NODE_ENV && (function() {
+		function noop() {}
+		function testStringCoercion(value) {
+			return "" + value;
+		}
+		function createPortal$1(children, containerInfo, implementation) {
+			var key = 3 < arguments.length && void 0 !== arguments[3] ? arguments[3] : null;
+			try {
+				testStringCoercion(key);
+				var JSCompiler_inline_result = !1;
+			} catch (e) {
+				JSCompiler_inline_result = !0;
+			}
+			JSCompiler_inline_result && (console.error("The provided key is an unsupported type %s. This value must be coerced to a string before using it here.", "function" === typeof Symbol && Symbol.toStringTag && key[Symbol.toStringTag] || key.constructor.name || "Object"), testStringCoercion(key));
+			return {
+				$$typeof: REACT_PORTAL_TYPE,
+				key: null == key ? null : "" + key,
+				children,
+				containerInfo,
+				implementation
+			};
+		}
+		function getCrossOriginStringAs(as, input) {
+			if ("font" === as) return "";
+			if ("string" === typeof input) return "use-credentials" === input ? input : "";
+		}
+		function getValueDescriptorExpectingObjectForWarning(thing) {
+			return null === thing ? "`null`" : void 0 === thing ? "`undefined`" : "" === thing ? "an empty string" : "something with type \"" + typeof thing + "\"";
+		}
+		function getValueDescriptorExpectingEnumForWarning(thing) {
+			return null === thing ? "`null`" : void 0 === thing ? "`undefined`" : "" === thing ? "an empty string" : "string" === typeof thing ? JSON.stringify(thing) : "number" === typeof thing ? "`" + thing + "`" : "something with type \"" + typeof thing + "\"";
+		}
+		function resolveDispatcher() {
+			var dispatcher = ReactSharedInternals.H;
+			null === dispatcher && console.error("Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:\n1. You might have mismatching versions of React and the renderer (such as React DOM)\n2. You might be breaking the Rules of Hooks\n3. You might have more than one copy of React in the same app\nSee https://react.dev/link/invalid-hook-call for tips about how to debug and fix this problem.");
+			return dispatcher;
+		}
+		"undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
+		var React = __require("react"), Internals = {
+			d: {
+				f: noop,
+				r: function() {
+					throw Error("Invalid form element. requestFormReset must be passed a form that was rendered by React.");
+				},
+				D: noop,
+				C: noop,
+				L: noop,
+				m: noop,
+				X: noop,
+				S: noop,
+				M: noop
+			},
+			p: 0,
+			findDOMNode: null
+		}, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+		"function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error("React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills");
+		exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = Internals;
+		exports.createPortal = function(children, container) {
+			var key = 2 < arguments.length && void 0 !== arguments[2] ? arguments[2] : null;
+			if (!container || 1 !== container.nodeType && 9 !== container.nodeType && 11 !== container.nodeType) throw Error("Target container is not a DOM element.");
+			return createPortal$1(children, container, null, key);
+		};
+		exports.flushSync = function(fn) {
+			var previousTransition = ReactSharedInternals.T, previousUpdatePriority = Internals.p;
+			try {
+				if (ReactSharedInternals.T = null, Internals.p = 2, fn) return fn();
+			} finally {
+				ReactSharedInternals.T = previousTransition, Internals.p = previousUpdatePriority, Internals.d.f() && console.error("flushSync was called from inside a lifecycle method. React cannot flush when React is already rendering. Consider moving this call to a scheduler task or micro task.");
+			}
+		};
+		exports.preconnect = function(href, options) {
+			"string" === typeof href && href ? null != options && "object" !== typeof options ? console.error("ReactDOM.preconnect(): Expected the `options` argument (second) to be an object but encountered %s instead. The only supported option at this time is `crossOrigin` which accepts a string.", getValueDescriptorExpectingEnumForWarning(options)) : null != options && "string" !== typeof options.crossOrigin && console.error("ReactDOM.preconnect(): Expected the `crossOrigin` option (second argument) to be a string but encountered %s instead. Try removing this option or passing a string value instead.", getValueDescriptorExpectingObjectForWarning(options.crossOrigin)) : console.error("ReactDOM.preconnect(): Expected the `href` argument (first) to be a non-empty string but encountered %s instead.", getValueDescriptorExpectingObjectForWarning(href));
+			"string" === typeof href && (options ? (options = options.crossOrigin, options = "string" === typeof options ? "use-credentials" === options ? options : "" : void 0) : options = null, Internals.d.C(href, options));
+		};
+		exports.prefetchDNS = function(href) {
+			if ("string" !== typeof href || !href) console.error("ReactDOM.prefetchDNS(): Expected the `href` argument (first) to be a non-empty string but encountered %s instead.", getValueDescriptorExpectingObjectForWarning(href));
+			else if (1 < arguments.length) {
+				var options = arguments[1];
+				"object" === typeof options && options.hasOwnProperty("crossOrigin") ? console.error("ReactDOM.prefetchDNS(): Expected only one argument, `href`, but encountered %s as a second argument instead. This argument is reserved for future options and is currently disallowed. It looks like the you are attempting to set a crossOrigin property for this DNS lookup hint. Browsers do not perform DNS queries using CORS and setting this attribute on the resource hint has no effect. Try calling ReactDOM.prefetchDNS() with just a single string argument, `href`.", getValueDescriptorExpectingEnumForWarning(options)) : console.error("ReactDOM.prefetchDNS(): Expected only one argument, `href`, but encountered %s as a second argument instead. This argument is reserved for future options and is currently disallowed. Try calling ReactDOM.prefetchDNS() with just a single string argument, `href`.", getValueDescriptorExpectingEnumForWarning(options));
+			}
+			"string" === typeof href && Internals.d.D(href);
+		};
+		exports.preinit = function(href, options) {
+			"string" === typeof href && href ? null == options || "object" !== typeof options ? console.error("ReactDOM.preinit(): Expected the `options` argument (second) to be an object with an `as` property describing the type of resource to be preinitialized but encountered %s instead.", getValueDescriptorExpectingEnumForWarning(options)) : "style" !== options.as && "script" !== options.as && console.error("ReactDOM.preinit(): Expected the `as` property in the `options` argument (second) to contain a valid value describing the type of resource to be preinitialized but encountered %s instead. Valid values for `as` are \"style\" and \"script\".", getValueDescriptorExpectingEnumForWarning(options.as)) : console.error("ReactDOM.preinit(): Expected the `href` argument (first) to be a non-empty string but encountered %s instead.", getValueDescriptorExpectingObjectForWarning(href));
+			if ("string" === typeof href && options && "string" === typeof options.as) {
+				var as = options.as, crossOrigin = getCrossOriginStringAs(as, options.crossOrigin), integrity = "string" === typeof options.integrity ? options.integrity : void 0, fetchPriority = "string" === typeof options.fetchPriority ? options.fetchPriority : void 0;
+				"style" === as ? Internals.d.S(href, "string" === typeof options.precedence ? options.precedence : void 0, {
+					crossOrigin,
+					integrity,
+					fetchPriority
+				}) : "script" === as && Internals.d.X(href, {
+					crossOrigin,
+					integrity,
+					fetchPriority,
+					nonce: "string" === typeof options.nonce ? options.nonce : void 0
+				});
+			}
+		};
+		exports.preinitModule = function(href, options) {
+			var encountered = "";
+			"string" === typeof href && href || (encountered += " The `href` argument encountered was " + getValueDescriptorExpectingObjectForWarning(href) + ".");
+			void 0 !== options && "object" !== typeof options ? encountered += " The `options` argument encountered was " + getValueDescriptorExpectingObjectForWarning(options) + "." : options && "as" in options && "script" !== options.as && (encountered += " The `as` option encountered was " + getValueDescriptorExpectingEnumForWarning(options.as) + ".");
+			if (encountered) console.error("ReactDOM.preinitModule(): Expected up to two arguments, a non-empty `href` string and, optionally, an `options` object with a valid `as` property.%s", encountered);
+			else switch (encountered = options && "string" === typeof options.as ? options.as : "script", encountered) {
+				case "script": break;
+				default: encountered = getValueDescriptorExpectingEnumForWarning(encountered), console.error("ReactDOM.preinitModule(): Currently the only supported \"as\" type for this function is \"script\" but received \"%s\" instead. This warning was generated for `href` \"%s\". In the future other module types will be supported, aligning with the import-attributes proposal. Learn more here: (https://github.com/tc39/proposal-import-attributes)", encountered, href);
+			}
+			if ("string" === typeof href) if ("object" === typeof options && null !== options) {
+				if (null == options.as || "script" === options.as) encountered = getCrossOriginStringAs(options.as, options.crossOrigin), Internals.d.M(href, {
+					crossOrigin: encountered,
+					integrity: "string" === typeof options.integrity ? options.integrity : void 0,
+					nonce: "string" === typeof options.nonce ? options.nonce : void 0
+				});
+			} else options ?? Internals.d.M(href);
+		};
+		exports.preload = function(href, options) {
+			var encountered = "";
+			"string" === typeof href && href || (encountered += " The `href` argument encountered was " + getValueDescriptorExpectingObjectForWarning(href) + ".");
+			null == options || "object" !== typeof options ? encountered += " The `options` argument encountered was " + getValueDescriptorExpectingObjectForWarning(options) + "." : "string" === typeof options.as && options.as || (encountered += " The `as` option encountered was " + getValueDescriptorExpectingObjectForWarning(options.as) + ".");
+			encountered && console.error("ReactDOM.preload(): Expected two arguments, a non-empty `href` string and an `options` object with an `as` property valid for a `<link rel=\"preload\" as=\"...\" />` tag.%s", encountered);
+			if ("string" === typeof href && "object" === typeof options && null !== options && "string" === typeof options.as) {
+				encountered = options.as;
+				var crossOrigin = getCrossOriginStringAs(encountered, options.crossOrigin);
+				Internals.d.L(href, encountered, {
+					crossOrigin,
+					integrity: "string" === typeof options.integrity ? options.integrity : void 0,
+					nonce: "string" === typeof options.nonce ? options.nonce : void 0,
+					type: "string" === typeof options.type ? options.type : void 0,
+					fetchPriority: "string" === typeof options.fetchPriority ? options.fetchPriority : void 0,
+					referrerPolicy: "string" === typeof options.referrerPolicy ? options.referrerPolicy : void 0,
+					imageSrcSet: "string" === typeof options.imageSrcSet ? options.imageSrcSet : void 0,
+					imageSizes: "string" === typeof options.imageSizes ? options.imageSizes : void 0,
+					media: "string" === typeof options.media ? options.media : void 0
+				});
+			}
+		};
+		exports.preloadModule = function(href, options) {
+			var encountered = "";
+			"string" === typeof href && href || (encountered += " The `href` argument encountered was " + getValueDescriptorExpectingObjectForWarning(href) + ".");
+			void 0 !== options && "object" !== typeof options ? encountered += " The `options` argument encountered was " + getValueDescriptorExpectingObjectForWarning(options) + "." : options && "as" in options && "string" !== typeof options.as && (encountered += " The `as` option encountered was " + getValueDescriptorExpectingObjectForWarning(options.as) + ".");
+			encountered && console.error("ReactDOM.preloadModule(): Expected two arguments, a non-empty `href` string and, optionally, an `options` object with an `as` property valid for a `<link rel=\"modulepreload\" as=\"...\" />` tag.%s", encountered);
+			"string" === typeof href && (options ? (encountered = getCrossOriginStringAs(options.as, options.crossOrigin), Internals.d.m(href, {
+				as: "string" === typeof options.as && "script" !== options.as ? options.as : void 0,
+				crossOrigin: encountered,
+				integrity: "string" === typeof options.integrity ? options.integrity : void 0
+			})) : Internals.d.m(href));
+		};
+		exports.requestFormReset = function(form) {
+			Internals.d.r(form);
+		};
+		exports.unstable_batchedUpdates = function(fn, a) {
+			return fn(a);
+		};
+		exports.useFormState = function(action, initialState, permalink) {
+			return resolveDispatcher().useFormState(action, initialState, permalink);
+		};
+		exports.useFormStatus = function() {
+			return resolveDispatcher().useHostTransitionStatus();
+		};
+		exports.version = "19.2.8";
+		"undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop(Error());
+	})();
+}));
+//#endregion
+//#region src/studioRail.tsx
+/**
+* StudioRail — the shell-provided TOOLS slot in the studio's left rail
+* (spec docs/design/card-studio-pattern.md §5 + §7.10).
+*
+* WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
+* so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
+* live in the RAIL, but their state lives INSIDE the tenant component
+* (showSkeleton, editMode, bgImage…). Splitting the tenant into two
+* registered components would force that state up through the shell —
+* breaking E1 (the tenant receives exactly {stage, running, onSave}).
+* Instead the tenant stays ONE component and PROJECTS its tools into the
+* shell's slot; the shell stays genre-blind (it renders an empty div and
+* knows nothing about motion).
+*
+* THE CONTRACT IS UNCHANGED: portaled tools write through the same
+* onSave channel — nothing about the write path moves. Without the shell
+* (a tenant mounted inline, e.g. the form view) the tools render in place
+* — the exact layout the tenant had before the slot existed.
+*
+* Mount order (no flash): CardStudio renders the slot div and the tenant
+* in the same commit; the div's ref lands before the tenant's effects
+* run, so the portal binds on the first effect pass. The one render
+* before that is inside the skeleton-masked mount anyway.
+*/
+var import_react_dom = (/* @__PURE__ */ __commonJSMin(((exports, module) => {
+	function checkDCE() {
+		if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ === "undefined" || typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.checkDCE !== "function") return;
+		if (process.env.NODE_ENV !== "production") throw new Error("^_^");
+		try {
+			__REACT_DEVTOOLS_GLOBAL_HOOK__.checkDCE(checkDCE);
+		} catch (err) {
+			console.error(err);
+		}
+	}
+	if (process.env.NODE_ENV === "production") {
+		checkDCE();
+		module.exports = require_react_dom_production();
+	} else module.exports = require_react_dom_development();
+})))();
+/** The rail's tools-slot element, published by CardStudio. Null when the
+*  tenant is mounted outside a studio shell (inline fallback). */
+const StudioRailCtx = createContext(null);
+/** TENANT side: renders children into the studio rail when one exists,
+*  inline otherwise. Wrap the tenant's toolbar in this — nothing else. */
+function StudioRail({ children }) {
+	const slot = useContext(StudioRailCtx);
+	const [el, setEl] = useState(null);
+	useEffect(() => {
+		if (slot && slot !== el) setEl(slot);
+	}, [slot]);
+	if (el) return (0, import_react_dom.createPortal)(children, el);
+	if (slot) return null;
+	return /* @__PURE__ */ jsx(Fragment, { children });
+}
+//#endregion
+//#region src/toastStore.ts
+/**
+* THE ONE TOAST STORE (node-safe half of the one toast system,
+* stroke 37): module state + the dual API (hook selector for React,
+* zustand-classic statics for module-level pushers and tests). NO
+* atom imports — node-env suites (the catalog contract specs) import
+* this half without dragging DSH UI primitives' .css through the
+* door. The renderer half lives in ./toast.tsx (ToastViewport); the
+* store is the system, the viewport is its face.
+*
+* History: founded 2026-09-12 (the ideo/motion copies collapsed
+* here). Stroke 36: the shell mounts the viewport — chrome is
+* shell-owned. Stroke 37: the LAST two private stores died —
+* web-kit/catalog's (whose toasts NEVER rendered: pushed from module
+* context with no viewport anywhere, console-only) and
+* mask-studio's (whose drop-errors never rendered either). Their
+* pushers migrated here verbatim via the static surface.
+*
+* ONE API, two faces (the zustand-classic dual shape):
+*   - hook:      useToastStore((s) => s.addToast)   — inside React
+*   - statics:   useToastStore.getState().addToast(type, msg)
+*                useToastStore.getState().toasts
+*                useToastStore.subscribe(l) / .setState(patch)
+*                — module-level pushers (contract stores, import
+*                hooks) and test reset.
+*
+* Rendering: the DSH Toast atom (presentational banner — the atom is
+* the surface, this module is the system). ToastViewport claims
+* rendering: the FIRST live viewport renders, every other mounted
+* viewport renders nothing, and ownership re-broadcasts when owners
+* unmount — so the shell, the cards console, or any future seat may
+* mount one and the document still renders toasts exactly once.
+*
+* Timing law (verbatim from the kit): errors persist 15s (the
+* operator must SEE them), success/info auto-dismiss at 5s. Errors
+* also console.error so nothing is silent even with no viewport.
+*
+* The third addToast argument (action {label, onClick}) is ACCEPTED
+* and ignored: the DSH Toast atom owns the surface and ships no
+* action chrome — the kit store dropped it the same way. When the
+* atom grows an action prop, store and render it here.
+*
+* Per-seam subpath: `@melite/card-base/toast-store`.
+*/
+let nextId = 1;
+let entries = [];
+const listeners = /* @__PURE__ */ new Set();
+function emit() {
+	listeners.forEach((l) => l());
+}
+function subscribe(listener) {
+	listeners.add(listener);
+	return () => {
+		listeners.delete(listener);
+	};
+}
+function getSnapshot() {
+	return entries;
+}
+function addToast(type, message, _action) {
+	const id = nextId++;
+	entries = [...entries, {
+		id,
+		type,
+		message
+	}];
+	if (type === "error") console.error("[toast]", message);
+	else console.info("[toast]", message);
+	emit();
+	setTimeout(() => {
+		removeToast(id);
+	}, type === "error" ? 15e3 : 5e3);
+}
+function removeToast(id) {
+	if (!entries.some((t) => t.id === id)) return;
+	entries = entries.filter((t) => t.id !== id);
+	emit();
+}
+let liveAddToast = addToast;
+function getStore() {
+	return {
+		toasts: entries,
+		addToast: liveAddToast,
+		removeToast
+	};
+}
+function setStoreState(patch) {
+	if (patch.addToast !== void 0) liveAddToast = patch.addToast;
+	if (patch.toasts !== void 0) entries = patch.toasts;
+	emit();
+}
+Object.assign(function useToastStore(selector) {
+	const toasts = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+	return selector({
+		addToast: liveAddToast,
+		removeToast,
+		toasts
+	});
+}, {
+	getState: getStore,
+	setState: setStoreState,
+	subscribe
+});
+//#endregion
+//#region src/toast.tsx
+/**
+* ToastViewport — THE RENDERER FACE of the one toast system
+* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
+* atom); this file re-exports it so UI users keep the single
+* `@melite/card-base/toast` import — and mounts the viewport.
+*
+* THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
+* studio shell, the cards console — and the document still renders
+* toasts exactly ONCE. The first live viewport owns rendering;
+* every other mounted viewport renders nothing; ownership
+* re-broadcasts when owners unmount. No studio wires it, no studio
+* can forget it, no seat can duplicate it.
+*
+* Per-seam subpath: `@melite/card-base/toast`.
+*/
+const liveViewportIds = /* @__PURE__ */ new Set();
+let viewportEpoch = 0;
+const viewportListeners = /* @__PURE__ */ new Set();
+function emitViewportChange() {
+	viewportEpoch++;
+	viewportListeners.forEach((l) => l());
+}
+function subscribeViewport(l) {
+	viewportListeners.add(l);
+	return () => {
+		viewportListeners.delete(l);
+	};
+}
+function getViewportEpoch() {
+	return viewportEpoch;
+}
+let nextViewportId = 1;
+/** Mount anywhere the system needs a renderer — the studio shell,
+*  the cards console, any seat. The claim law guarantees exactly one
+*  live renderer per document: the first-mounted viewport renders,
+*  others render nothing until the owner unmounts. Renders the live
+*  entries through the DSH Toast atom (body-portaled banner, owner
+*  unmounts onDone). */
+function ToastViewport() {
+	const idRef = useRef(nextViewportId++);
+	useEffect(() => {
+		const id = idRef.current;
+		liveViewportIds.add(id);
+		emitViewportChange();
+		return () => {
+			liveViewportIds.delete(id);
+			emitViewportChange();
+		};
+	}, []);
+	useSyncExternalStore(subscribeViewport, getViewportEpoch, getViewportEpoch);
+	const toasts = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+	if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
+	return /* @__PURE__ */ jsx(Fragment, { children: toasts.map((t) => /* @__PURE__ */ jsx(Toast, {
+		text: t.message,
+		holdMs: t.type === "error" ? 15e3 : 5e3,
+		onDone: () => removeToast(t.id)
+	}, t.id)) });
+}
+//#endregion
+//#region src/shell.module.css
+var shell_module_default = {
+	"errorIcon": "DKBqVW_errorIcon",
+	"errorLine": "DKBqVW_errorLine",
+	"errorRow": "DKBqVW_errorRow",
+	"railHead": "DKBqVW_railHead",
+	"railSection": "DKBqVW_railSection",
+	"railTitle": "DKBqVW_railTitle",
+	"shell": "DKBqVW_shell"
+};
+//#endregion
+//#region src/shell.tsx
+/** The loud error line — shell-owned chrome. Same DOM the assembly
+*  body always rendered. */
+function StudioShellErrorLine({ errors }) {
+	if (errors.length === 0) return null;
+	return /* @__PURE__ */ jsx("div", {
+		role: "alert",
+		className: shell_module_default.errorLine,
+		children: errors.map((e) => /* @__PURE__ */ jsxs("p", {
+			className: shell_module_default.errorRow,
+			children: [
+				/* @__PURE__ */ jsx(AlertTriangle, { className: shell_module_default.errorIcon }),
+				e.id,
+				": ",
+				e.message
+			]
+		}, e.id))
+	});
+}
+/** The studio body: params column LEFT (projected into the shell rail
+*  slot when one exists), preview RIGHT, optional bottom bar, then the
+*  error line. The uniform three-slot shape — timeline and form cards
+*  are the same grain, forms simply leave the right/bottom slots empty.
+*
+*  THE TOAST LAW (stroke 36): the shell mounts the ONE toast viewport
+*  — toasts are shell-owned chrome exactly like the error line (the
+*  construction law: no studio wires it, no studio can forget it).
+*  Before: motion hand-mounted a copy in a slot the contract never
+*  had (type drift), anny pushed toasts with NO viewport mounted —
+*  silently dropped — and ideogram4 hand-wired its own outside the
+*  shell. The per-studio mount is DEAD; any toast pushed from any
+*  seam renders here, once. */
+function StudioShell({ params, preview, bottom, errors = [], className }) {
+	return /* @__PURE__ */ jsxs("div", {
+		className: cx(shell_module_default.shell, className),
+		children: [
+			/* @__PURE__ */ jsx(StudioRail, { children: params }),
+			preview,
+			bottom,
+			/* @__PURE__ */ jsx(StudioShellErrorLine, { errors }),
+			/* @__PURE__ */ jsx(ToastViewport, {})
+		]
+	});
+}
+//#endregion
+//#region src/studio.module.css
+var studio_module_default = {
+	"groupNote": "jKGmwq_groupNote",
+	"runError": "jKGmwq_runError",
+	"studioGroup": "jKGmwq_studioGroup",
+	"studioGroupTitle": "jKGmwq_studioGroupTitle",
+	"studioRail": "jKGmwq_studioRail",
+	"zoomDetail": "jKGmwq_zoomDetail"
+};
+//#endregion
+//#region src/studio.tsx
+/** studio.tsx — THE DECLARATIVE STUDIO (primitive ④, 2026-09-21):
+*  the stage view owns ORGANIZATION over the SAME form-spec SSOT —
+*  and organization is now DATA, not a client half. A card declares
+*  its group partition (expose/fold + titles) and its preview kind;
+*  the base renders everything else: spec fetch, value seeding +
+*  resolved layering, the square provider, the patch-first run law,
+*  the bindRun ref dispatch, run polling, the envelope lift,
+*  error/loading faces, StudioShell composition.
+*
+*  A studio client half survives ONLY as a declaration + seam
+*  registration (img-to-mesh is the first: ~30 lines, zero react
+*  machinery, zero three, zero css). A TRUE takeover — content no
+*  renderer can declare (motion's timeline, h3's call-card strip) —
+*  rides beside this renderer as an extra pane, never a fork. */
+/** The construction door: one obvious way to build a declaration,
+*  typed at the call site. Runtime-frozen. */
+function defineStudioDeclaration(declaration) {
+	return Object.freeze({
+		...declaration,
+		expose: Object.freeze([...declaration.expose]),
+		folds: Object.freeze({ ...declaration.folds })
+	});
+}
+function rowsOfGroup(fields, group) {
+	return fields.filter((f) => f.group === group);
+}
+/** THE ONE data-driven studio renderer. Props are the seam's own
+*  currency (StageViewOwnerProps) plus the card's declaration. */
+function DeclarativeStudio(props) {
+	const { declaration, row, runStatus, onPatch, onRun, onStop } = props;
+	const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : {};
+	const [spec, setSpec] = useState(null);
+	const [error, setError] = useState(null);
+	const [user, setUser] = useState(params);
+	const [open, setOpen] = useState({});
+	const rowResult = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : null;
+	const ownRunId = typeof rowResult?.run_id === "string" && rowResult.run_id !== "" ? rowResult.run_id : null;
+	const ownUrl = typeof rowResult?.url === "string" && rowResult.url !== "" ? rowResult.url : null;
+	const [meshUrl, setMeshUrl] = useState(ownUrl);
+	useEffect(() => {
+		setMeshUrl(ownUrl);
+		if (ownUrl !== null || ownRunId === null) return;
+		const ctrl = new AbortController();
+		pollRunStageUrl(ownRunId, props.stageId, { onUrl: setMeshUrl }, ctrl.signal);
+		return () => {
+			ctrl.abort();
+		};
+	}, [
+		ownRunId,
+		ownUrl,
+		props.stageId
+	]);
+	const { spec: liveSpec, error: specError } = useFormSpec(declaration.model);
+	useEffect(() => {
+		if (specError !== null) {
+			setError(specError);
+			return;
+		}
+		if (liveSpec === null) return;
+		setSpec(liveSpec);
+		setUser({ ...params });
+		props.onSurface(liveSpec.size === "huge" ? "huge" : "");
+	}, [liveSpec, specError]);
+	const fieldByName = new Map((spec !== null ? fieldsOf(spec) : []).map((f) => [f.name, f]));
+	const onEdit = (name, v) => {
+		setUser((prev) => ({
+			...prev,
+			[name]: coerceFieldEdit(fieldByName.get(name), v)
+		}));
+	};
+	const servedBase = typeof row["resolved"] === "object" && row["resolved"] !== null && !Array.isArray(row["resolved"]) ? row["resolved"] : void 0;
+	const value = resolveValue(spec ?? { form: "" }, user, servedBase);
+	const specRows = spec !== null ? fieldsOf(spec) : [];
+	const { square: squareFor, wireMenu } = useSquareProvider(onEdit, { candidates: props.upstream.map((u) => ({
+		id: u.id,
+		label: u.title,
+		url: u.url
+	})) });
+	const run = () => {
+		if (spec === null) return;
+		const patch = {};
+		const userKeys = new Set(Object.keys(user));
+		for (const k of userKeys) patch[k] = user[k];
+		for (const k of Object.keys(params)) if (!userKeys.has(k)) patch[k] = null;
+		onPatch(patch);
+		onRun();
+	};
+	const runRef = useRef(run);
+	runRef.current = run;
+	useEffect(() => {
+		props.bindRun?.(() => {
+			runRef.current();
+		});
+	}, [props.bindRun]);
+	return createElement("div", { className: studio_module_default.zoomDetail }, wireMenu, error !== null ? createElement("p", { className: studio_module_default.runError }, error) : null, spec === null ? createElement("p", { className: studio_module_default.groupNote }, "loading the declared knob surface…") : createElement(StudioShell, {
+		params: createElement("div", { className: studio_module_default.studioRail }, declaration.expose.map((g) => createElement("section", {
+			key: g,
+			className: studio_module_default.studioGroup
+		}, createElement("h4", { className: studio_module_default.studioGroupTitle }, g), createElement(StudioFields, {
+			fields: rowsOfGroup(specRows, g),
+			value,
+			onEdit,
+			square: squareFor
+		}))), Object.entries(declaration.folds).map(([g, title]) => {
+			const fs = rowsOfGroup(specRows, g);
+			if (fs.length === 0) return null;
+			const isOpen = open[g] === true;
+			return createElement(DisclosureRow, {
+				key: g,
+				icon: createElement(IconArchiveOutline20),
+				title,
+				open: isOpen,
+				expandable: true,
+				expandOnRowClick: true,
+				onToggle: () => {
+					setOpen((prev) => ({
+						...prev,
+						[g]: !prev[g]
+					}));
+				}
+			}, createElement(StudioFields, {
+				fields: fs,
+				value,
+				onEdit,
+				square: squareFor
+			}));
+		})),
+		preview: createElement(GlbStagePreview, {
+			assets: meshUrl === null ? [] : [{
+				id: "mesh",
+				url: meshUrl,
+				name: "mesh"
+			}],
+			label: declaration.model,
+			emptyHint: "Run the card to see the mesh"
+		})
+	}));
+}
+/** The generic card's OWN atoms (SpecFieldRow renders one group's
+*  rows — the studio owns its group partition; zero atom copies).
+*  `value` is the RESOLVED map (resolveValue at the caller) — the
+*  rows show exactly what a run composes. */
+function StudioFields({ fields, value, onEdit, square }) {
+	if (fields.length === 0) return createElement("p", { className: studio_module_default.groupNote }, "no declared fields");
+	return createElement("div", null, fields.map((f) => createElement(SpecFieldRow, {
+		key: f.name,
+		f,
+		value: value[f.name],
+		onEdit,
+		square: square(f)
+	})));
+}
+//#endregion
+export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, ControlRow, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, EmptyState, InputSquare, MESH_SQUARE_ACCEPT, ModelAxes, ModifiersSection, OverlayKnob, PackPrompt, PaneHeader, PaneShell, RecipePills, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Tip, TriStateAtom, WirePickerModal, activeRecipeId, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composeUnset, composingRows, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, inputEdgeOf, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, postManageAction, quantRowsFor, readAsDataUrl, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, specDefaults, titleCaseId, unsetFaceLabel, unsetFaceTip, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, variantGroupsContract, variantRows };

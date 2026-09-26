@@ -21,6 +21,10 @@ afterEach(() => {
 // the drill-side narrowing the CardsTab builds from the emission:
 // spec.inputs (declared edge kinds) × the forms-table's declared
 // outputs — exactly the candidatesFor the drill passes the provider.
+// THE LIST-SEAT LAW (2026-09-26, the operator's rework: "reference
+// images and input images are the same thing"): an image_list edge
+// (reference_images) is an INPUT seat that ACCUMULATES image
+// producers — the singular kind serves the list seat, nothing else.
 function edgeNarrow(
   spec: { inputs: Array<{ name: string; kind: string }> },
   edgeMeta: Record<string, { outputs?: Record<string, string> }>,
@@ -29,10 +33,12 @@ function edgeNarrow(
   return (f) => {
     const edge = spec.inputs.find((e) => e.name === f.name)
     if (edge === undefined) return rows.map(({ id, label, url }) => ({ id, label, url }))
+    const accepts = (out: string): boolean =>
+      out === edge.kind || (edge.kind === 'image_list' && out === 'image')
     return rows
       .filter((r) => {
         const outs = edgeMeta[r.card]?.outputs
-        return outs !== undefined && Object.values(outs).includes(edge.kind)
+        return outs !== undefined && Object.values(outs).some(accepts)
       })
       .map(({ id, label, url }) => ({ id, label, url }))
   }
@@ -135,4 +141,67 @@ test('THE EDGE LAW: a field with no declared edge falls to the full list (the pi
   fireEvent.click(flow.closest('[role="menuitem"], [role="option"], li') as HTMLElement)
   const row = await screen.findByText('image-gen', {}, { timeout: 2000 })
   expect(row.closest('[data-testid="source-pick-row"]')).toBeTruthy()
+})
+
+test('THE LIST-SEAT LAW: the reference stack IS an input — its cells narrow by the owning edge and APPEND the pick (2026-09-26)', async () => {
+  const user = userEvent.setup()
+  let hostEdit: ReturnType<typeof vi.fn> = vi.fn()
+  // the emission: image1 declares the IMAGE anchor edge;
+  // reference_images declares the IMAGE_LIST edge (the reworked
+  // image-edit signature — references are IN the input category)
+  const spec = {
+    inputs: [
+      { name: 'image1', kind: 'image', required: true },
+      { name: 'reference_images', kind: 'image_list' },
+    ],
+  }
+  const edgeMeta = {
+    'image-gen': { outputs: { default: 'image' } },
+    'h3-timeline': { outputs: { default: 'video' } },
+  }
+  const rows = [
+    { id: 's_img', card: 'image-gen', label: 'image-gen', url: '/melite-media/runs/r8/img/gen_00001_.png' },
+    { id: 's_vid', card: 'h3-timeline', label: 'h3-timeline', url: '/melite-media/runs/r9/h3/h3_t4_film_00001_.mp4' },
+  ]
+  const candidatesFor = edgeNarrow(spec, edgeMeta, rows)
+  function Host(): ReturnType<typeof createElement> {
+    const editRef = useRef<ReturnType<typeof vi.fn> | null>(null)
+    if (editRef.current === null) editRef.current = vi.fn()
+    hostEdit = editRef.current
+    const { square, wireMenu } = useSquareProvider(editRef.current, {
+      candidates: rows.map(({ id, label, url }) => ({ id, label, url })),
+      candidatesFor,
+    })
+    const doc: FormSpecDoc = {
+      form: 'edges-list-fixture',
+      inputs: spec.inputs as FormSpecDoc['inputs'],
+      schema: schemaEnvelope({
+        image1: { type: 'string', meta: { description: 'Image 1', extra: { wtype: 'image' } } },
+        reference_images: { type: 'array', meta: { description: 'Reference Images', extra: { wtype: 'image_list', max_stack: 15 } } },
+      }),
+    }
+    return createElement('div', null,
+      wireMenu,
+      createElement(SpecForm, { spec: doc, user: {}, onSet: editRef.current, square, wire: { candidates: rows.map(({ id, label, url }) => ({ id, label, url })), candidatesFor } }),
+    )
+  }
+  render(createElement(Host))
+  // the stack's ADD cell (the empty stack renders the add-cell)
+  await user.click(screen.getByRole('button', { name: /Add Reference Images/ }))
+  const flow = await screen.findByText('From flow', {}, { timeout: 2000 })
+  fireEvent.click(flow.closest('[role="menuitem"], [role="option"], li') as HTMLElement)
+  // THE LIST-SEAT LAW: the image producer SERVES the image_list
+  // seat; the video producer NEVER does (its declaration, not its
+  // url — the old unfiltered stack cell offered it)
+  await waitFor(() => {
+    const rows = [...document.querySelectorAll('[data-testid="source-pick-row"]')]
+    expect(rows.some((el) => (el.textContent ?? '').includes('image-gen'))).toBe(true)
+    expect(rows.some((el) => (el.textContent ?? '').includes('h3-timeline'))).toBe(false)
+  })
+  // the pick APPENDS to the list — an input is an input, single or
+  // stack; the write lands as the array, never a bare string
+  fireEvent.click(screen.getByText('image-gen'))
+  await waitFor(() => {
+    expect(hostEdit).toHaveBeenCalledWith('reference_images', ['/melite-media/runs/r8/img/gen_00001_.png'])
+  })
 })

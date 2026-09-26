@@ -9,7 +9,11 @@ import { type SourceRowProps, type SquareHost, useSquareProvider } from './squar
 
 export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   const field: SpecField = {
-    name: '__source_row__',
+    // THE EDGE-BEARING NAME (the list-seat law): a caller that owns
+    // a declared input edge (the stack's owning field) threads it so
+    // the From-flow picker narrows by THAT edge's kind; the legacy
+    // synthetic name carries no edge and lists unfiltered.
+    name: props.name ?? '__source_row__',
     label: props.label,
     type: props.kind === 'image' ? 'image' : 'file',
   }
@@ -23,6 +27,7 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   }, [props.onEdit])
   const { square, wireMenu } = useSquareProvider(onEditField, {
     candidates: props.candidates ?? [],
+    ...(props.candidatesFor !== undefined ? { candidatesFor: props.candidatesFor } : {}),
     ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
     ...(props.onFile !== undefined ? { onFile: props.onFile } : {}),
     ...(props.accept !== undefined ? { accept: props.accept } : {}),

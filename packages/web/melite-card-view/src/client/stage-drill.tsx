@@ -230,11 +230,22 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     const edge = (spec.inputs ?? []).find((e) => e.name === f.name)
     if (edge === undefined) return candidates
     const kind = edge.kind
+    // THE LIST-SEAT LAW (the operator's rework, 2026-09-26:
+    // "reference images and input images are the same thing"): an
+    // image_list edge (reference_images on image-edit) is an INPUT
+    // seat that ACCUMULATES image producers — picking appends the
+    // artifact to the list. Without this arm the exact-kind match
+    // below emptied the picker the day the port was declared (no
+    // stage outputs kind image_list); with raw-candidates fallback
+    // it would list VIDEO stages as image references. A list seat
+    // accepts the singular kind, nothing else.
+    const accepts = (out: string | undefined): boolean =>
+      out === kind || (kind === 'image_list' && out === 'image')
     return candidates.filter((c) => {
       const row = others.find((s) => s.id === c.id)
       const cardId = String(row?.card ?? '')
       const outs = edgeMeta[cardId]?.outputs
-      return outs !== undefined && Object.values(outs).includes(kind)
+      return outs !== undefined && Object.values(outs).some(accepts)
     })
   }, [spec, edgeMeta, candidates, others])
   const onSet = useCallback((name: string, v: unknown): void => {
