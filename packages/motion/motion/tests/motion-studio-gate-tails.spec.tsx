@@ -186,6 +186,52 @@ describe('media: slot resolution + neutral skin', () => {
     }, { timeout: 10000 })
     expect(document.body.textContent).toContain('Up One')
   }, 30000)
+
+  test('a declared stage binding resolves its source id', async () => {
+    stubLoads()
+    const up = {
+      id: 'up1', title: 'Up One', kind: 'x', service: 's', params: {},
+      inputs: [], inputIndices: [],
+      result: { artifacts: {}, assetUrls: ['https://host/a.png'] },
+    }
+    mountEditor(
+      {
+        inputSlots: ['preview_glb'],
+        inputBindings: [{ slot: 'preview_glb', source: { stage: 'up1' } }],
+        inputs: ['up1'],
+        params: { preview_glb: null },
+      },
+      { onWireSlot: vi.fn(), upstreams: [up] },
+    )
+    await waitForText('No motion yet')
+    await vi.waitFor(() => {
+      if (!document.body.textContent?.includes('waiting for upstream')) throw new Error('no waiting metric yet')
+    }, { timeout: 10000 })
+  }, 30000)
+
+  test('an initial binding is not a wired upstream', async () => {
+    stubLoads()
+    mountEditor(
+      {
+        inputSlots: ['preview_glb'],
+        inputBindings: [{ slot: 'preview_glb', source: { initial: true } }],
+        params: { preview_glb: null },
+      },
+      { onWireSlot: vi.fn() },
+    )
+    await waitForText('No motion yet')
+    expect(document.body.textContent).not.toContain('waiting for upstream')
+  }, 30000)
+
+  test('an omitted input-slot list still leaves manual body attachment available', async () => {
+    stubLoads()
+    mountEditor(
+      { inputSlots: undefined, params: { preview_glb: 'https://host/manual.glb' } },
+      { onWireSlot: vi.fn() },
+    )
+    await waitForText('No motion yet')
+    expect(document.body.querySelector('[data-motion-body-wire]')).toBeNull()
+  }, 30000)
 })
 
 describe('media: character import + convert', () => {

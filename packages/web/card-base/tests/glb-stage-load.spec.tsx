@@ -12,7 +12,7 @@ import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import * as THREE from 'three'
 
-import { autoFitToHeight, GlbStagePreview } from '../src/glb-stage.tsx'
+import { autoFitToHeight, GlbStagePreview, meshAssetUrl } from '../src/glb-stage.tsx'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
@@ -77,6 +77,12 @@ function installGlbDoor(fail?: (url: string) => Response | Promise<never>): {
   }) as typeof fetch
   return { calls, restore: () => { globalThis.fetch = realFetch } }
 }
+
+test('meshAssetUrl: estate input paths use the input asset door', () => {
+  expect(meshAssetUrl('data/input/donor.glb')).toBe('/v1/assets/inputs/donor.glb')
+  expect(meshAssetUrl('data/input/donor.gltf')).toBe('/v1/assets/inputs/donor.gltf')
+  expect(meshAssetUrl('/melite-media/runs/r1/mesh.glb')).toBe('/melite-media/runs/r1/mesh.glb')
+})
 
 test('autoFitToHeight: an empty root never scales (no largest dimension — no divide, no throw)', () => {
   const root = new THREE.Group()

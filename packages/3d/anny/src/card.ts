@@ -25,7 +25,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { annyLane, finalizeAnny } from '@melite/comfyui-card-kit'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from '@melite/comfyui-card-kit/morphs'
 
@@ -38,7 +37,7 @@ const PHENOTYPE_DIMS = [
 ] as const
 
 const schema = z.object({
-  body_glb: z.string().role('path').description("Body GLB").extra('extra', { order: 0, group: "body", columns: 1, tooltip: "Optional — attach a rigged body GLB to render as-is. Empty bakes the body FROM the identity sliders (parametric end-to-end; the neutral body is the all-defaults bake). Photo→body estimation is the 'Estimate body from photo' verb.", wtype: 'file' }),
+  body_glb: z.string().role('path').description("Body GLB").extra('extra', { order: 0, group: "body", columns: 1, tooltip: "Optional — attach a rigged body GLB to render as-is. Empty bakes the body FROM the identity sliders (parametric end-to-end; the neutral body is the all-defaults bake). Photo→body estimation is the 'Estimate body from photo' verb.", wtype: 'mesh' }),
   ...Object.fromEntries(PHENOTYPE_DIMS.map((dim, i) => [dim,
     z.number().description(dim.charAt(0).toUpperCase() + dim.slice(1)).min(0).max(1)
       .extra('extra', { order: i, group: "identity", width: 1, wtype: 'slider', columns: 2, tooltip: `Identity dim ${i + 1}/11 — ${dim} (0..1, neutral 0.5; served by the poser's identity space).` }),
@@ -88,10 +87,13 @@ export function apply(ctx: Context): void {
     // the base form's switchable parameter submenu. The card owns
     // its schema; the CONSTRUCTOR owns the surface.
     flowKinds: {
-      inputs: {},
-      outputs: { default: 'mesh' },
+      inputs: { body_glb: 'mesh' },
+      outputs: { default: 'image' },
       requiresModel: false,
     },
+    flowOutputBindings: [
+      { channel: 'default', node: 'SaveImage.0', nodeClass: 'SaveImage' },
+    ],
     requires: ['melite-poser-nodes', 'melite-kimodo-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, _runId) {
@@ -124,7 +126,7 @@ export function apply(ctx: Context): void {
             params_json: JSON.stringify({
               dialect: 'authored',
               phenotype: PHENOTYPE_DIMS.map((dim) => Number(doc[dim] ?? 0.5)),
-              ...(Object.keys(localChanges).length > 0 ? { local_changes: localChanges } : {}),
+              local_changes: localChanges,
             }),
           }).out()
       annyLane(doc, g, bodyPath)

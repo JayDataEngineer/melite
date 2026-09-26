@@ -31,7 +31,10 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { rigSomaArm, rigSpeciesArm, transferRigArm } from '@melite/comfyui-card-kit'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { vocabulary } from '@melite/comfyui-card-kit/vocab'
+
+export { parseValidateRigOutput, validateRigReport, ValidateRigOutputError } from './validateRigReport.ts'
+export type { ValidateRigJson, ValidateRigOutput, ValidateRigViolation } from './validateRigReport.ts'
 
 const RIG_MODES = ['auto', 'copy', 'species'] as const
 
@@ -41,20 +44,20 @@ const schema = z.object({
   // compose). wtype 'mesh' boards the base's mesh field atom
   // (primitive ③ — picker + inline GlbStagePreview thumb).
   mesh_glb: z.string().role('path').description("Mesh to rig").extra('extra', { order: 0, tooltip: "The static GLB that receives skeleton + weights (TRELLIS/anny/quad output, or any import).", required: true, wtype: 'mesh' }),
-  mode: z.string().default('auto').description("Rig mode").extra('extra', { order: 1, tooltip: "auto: SOMA-77 humanoid template weights. copy: transfer the donor GLB's rig. species: bind onto an anyCreature skeleton." }),
+  mode: vocabulary(RIG_MODES).default('auto').description("Rig mode").extra('extra', { order: 1, wtype: 'select', tooltip: "auto: SOMA-77 humanoid template weights. copy: transfer the donor GLB's rig. species: bind onto an anyCreature skeleton." }),
   // copy lane's donor — the rigged GLB whose skeleton + weights copy
   // onto the target (the same pair the buried transfer_rig arm took).
-  donor_glb: z.string().role('path').description("Rigged donor GLB").extra('extra', { order: 2, tooltip: "copy mode: the rigged GLB whose skeleton + weights transfer (SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature)." }),
+  donor_glb: z.string().role('path').description("Rigged donor GLB").extra('extra', { order: 2, wtype: 'mesh', visible_when: 'mode=copy', tooltip: "copy mode: the rigged GLB whose skeleton + weights transfer (SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature)." }),
   // species lane's template — an anyCreature GLB (armature + baked
   // idle/move anims); the caller brings it from the anycreature lane.
-  creature_glb: z.string().role('path').description("Creature template GLB").extra('extra', { order: 3, tooltip: "species mode: the anyCreature GLB whose skeleton (with baked idles) the mesh binds onto." }),
+  creature_glb: z.string().role('path').description("Creature template GLB").extra('extra', { order: 3, wtype: 'mesh', visible_when: 'mode=species', tooltip: "species mode: the anyCreature GLB whose skeleton (with baked idles) the mesh binds onto." }),
   // auto-lane knobs (KimodoExportFBX, its 'SOMAX standalone mode').
-  preserve_texture: z.boolean().default(true).description("Preserve texture").extra('extra', { order: 4, tooltip: "auto mode: keep the source mesh's textures. Off strips to flat SOMA-blue for texturing later." }),
-  decimate_ratio: z.number().min(0).max(1).default(0).description("Decimate ratio").extra('extra', { order: 5, tooltip: "0 = off (the rig default). Collapse-mode decimation preserves skin weights; 0.2 ≈ -70% file size.", min: 0.0, max: 1.0 }),
+  preserve_texture: z.boolean().default(true).description("Preserve texture").extra('extra', { order: 4, visible_when: 'mode=auto', tooltip: "auto mode: keep the source mesh's textures. Off strips to flat SOMA-blue for texturing later." }),
+  decimate_ratio: z.number().min(0).max(1).default(0).description("Decimate ratio").extra('extra', { order: 5, visible_when: 'mode=auto', tooltip: "0 = off (the rig default). Collapse-mode decimation preserves skin weights; 0.2 ≈ -70% file size.", min: 0.0, max: 1.0 }),
   // species-lane knobs (RayCreatureRigBridge).
-  height_ratio: z.number().min(0.05).max(10).default(1).description("Height ratio").extra('extra', { order: 6, tooltip: "species mode: mesh height as a fraction of the creature bind-pose height.", min: 0.05, max: 10.0 }),
-  max_influences: z.number().min(1).max(8).default(3).description("Max influences").extra('extra', { order: 7, tooltip: "species mode: max bone influences per vertex (nearest segments win).", min: 1, max: 8 }),
-  strip_body: z.boolean().default(true).description("Strip body").extra('extra', { order: 8, tooltip: "species mode: delete the creature body meshes, export only the bound mesh." }),
+  height_ratio: z.number().min(0.05).max(10).default(1).description("Height ratio").extra('extra', { order: 6, visible_when: 'mode=species', tooltip: "species mode: mesh height as a fraction of the creature bind-pose height.", min: 0.05, max: 10.0 }),
+  max_influences: z.number().min(1).max(8).default(3).description("Max influences").extra('extra', { order: 7, visible_when: 'mode=species', tooltip: "species mode: max bone influences per vertex (nearest segments win).", min: 1, max: 8 }),
+  strip_body: z.boolean().default(true).description("Strip body").extra('extra', { order: 8, visible_when: 'mode=species', tooltip: "species mode: delete the creature body meshes, export only the bound mesh." }),
 })
 
 export const inject = ['comfyui']
@@ -85,6 +88,20 @@ export function apply(ctx: Context): void {
       outputs: { default: 'mesh' },
       requiresModel: false,
     },
+    flowOutputBindings: [
+      {
+        channel: 'default',
+        node: 'KimodoExportFBX.0',
+        nodeClass: 'KimodoExportFBX',
+        when: (params) => String(params.mode ?? 'auto') === 'auto',
+      },
+      {
+        channel: 'default',
+        node: 'SaveRiggedModel.0',
+        nodeClass: 'SaveRiggedModel',
+        when: (params) => String(params.mode ?? 'auto') !== 'auto',
+      },
+    ],
     requires: ['melite-autorig-nodes', 'melite-poser-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, _runId) {
@@ -97,12 +114,7 @@ export function apply(ctx: Context): void {
         throw new Error(
           `required param 'mesh_glb' (Mesh to rig) missing on the rig card — the rig needs the static mesh (GLB path or artifact-ref)`)
       }
-      // (the schema default fills mode — no fallback arc here)
       const mode = String(doc.mode)
-      if (!(RIG_MODES as readonly string[]).includes(mode)) {
-        throw new Error(
-          `mode ${JSON.stringify(doc.mode)} is not one of auto|copy|species — the rig lane table is closed`)
-      }
       if (mode === 'copy') {
         const donor = String(doc.donor_glb || '')
         if (!donor.trim()) {

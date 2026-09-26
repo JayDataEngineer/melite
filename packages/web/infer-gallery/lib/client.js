@@ -40334,6 +40334,109 @@ void main() {
 			});
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/benchSnapshot.ts
+		function isRecord(v) {
+			return typeof v === "object" && v !== null && !Array.isArray(v);
+		}
+		/** THE LOAD-CRITICAL ROW LAW (see the module doc). Returns the
+		* row's problem, or null when the row loads. */
+		function rowProblem(row, at) {
+			if (!isRecord(row)) return `stages[${at}]: not an object`;
+			const id = row["id"];
+			if (typeof id !== "string" || id === "") return `stages[${at}]: id must be a non-empty string`;
+			const params = row["params"];
+			if (params !== void 0 && !isRecord(params)) return `stages[${at}]: params must be an object`;
+			const inputs = row["inputs"];
+			if (inputs !== void 0 && !isRecord(inputs)) return `stages[${at}]: inputs must be an object`;
+			const engine = row["engine"];
+			if (engine !== void 0 && typeof engine !== "string") return `stages[${at}]: engine must be a string`;
+			const card = row["card"];
+			if (card !== void 0 && typeof card !== "string") return `stages[${at}]: card must be a string`;
+			const children = row["children"];
+			if (children !== void 0 && !Array.isArray(children)) return `stages[${at}]: children must be an array`;
+			return null;
+		}
+		/** Judge a stage list exactly as the loader consumes it. */
+		function parseBenchSnapshotStages(value) {
+			if (!Array.isArray(value)) return {
+				ok: false,
+				problems: ["stages: must be an array"]
+			};
+			const stages = [];
+			const problems = [];
+			for (let i = 0; i < value.length; i++) {
+				const problem = rowProblem(value[i], i);
+				if (problem !== null) problems.push(problem);
+				else stages.push(value[i]);
+			}
+			if (problems.length > 0) return {
+				ok: false,
+				problems
+			};
+			return {
+				ok: true,
+				value: stages
+			};
+		}
+		/** Judge a `bench_snapshot` body exactly as the loader consumes
+		* it. A partial row set is NOT a pass — one bad row refuses the
+		* whole snapshot (the loader posts the list whole; a silent
+		* partial restore is the fabrication this contract exists to
+		* kill). */
+		function parseBenchSnapshot(value) {
+			if (!isRecord(value)) return {
+				ok: false,
+				problems: ["bench_snapshot: not an object"]
+			};
+			const stages = parseBenchSnapshotStages(value["stages"]);
+			if (!stages.ok) return {
+				ok: false,
+				problems: stages.problems.map((p) => `bench_snapshot.${p}`)
+			};
+			const intent = value["intent"];
+			if (intent !== void 0 && typeof intent !== "string") return {
+				ok: false,
+				problems: ["bench_snapshot.intent: must be a string"]
+			};
+			const head = value["bench_head"];
+			if (head !== void 0 && !isRecord(head)) return {
+				ok: false,
+				problems: ["bench_snapshot.bench_head: must be an object"]
+			};
+			return {
+				ok: true,
+				value: {
+					stages: stages.value,
+					intent: typeof intent === "string" ? intent : "",
+					...head !== void 0 ? { bench_head: head } : {}
+				}
+			};
+		}
+		/** Judge a `card_snapshot` body exactly as the loader consumes it. */
+		function parseCardSnapshot(value) {
+			if (!isRecord(value)) return {
+				ok: false,
+				problems: ["card_snapshot: not an object"]
+			};
+			const card = value["card"];
+			if (typeof card !== "string" || card === "") return {
+				ok: false,
+				problems: ["card_snapshot.card: must be a non-empty string"]
+			};
+			const params = value["params"];
+			if (params !== void 0 && !isRecord(params)) return {
+				ok: false,
+				problems: ["card_snapshot.params: must be an object"]
+			};
+			return {
+				ok: true,
+				value: {
+					card,
+					params: isRecord(params) ? params : {}
+				}
+			};
+		}
+		//#endregion
 		//#region src/client/bench-load.ts
 		/**
 		* bench-load — the restore gestures of the media plane (MediaPanel's
@@ -40510,8 +40613,13 @@ void main() {
 				const snap = typeof flow === "object" && flow !== null ? flow["card_snapshot"] : void 0;
 				const benchSnap = typeof flow === "object" && flow !== null ? flow["bench_snapshot"] : void 0;
 				if (typeof benchSnap === "object" && benchSnap !== null) {
-					const bs = benchSnap;
-					const bsStages = Array.isArray(bs["stages"]) ? bs["stages"].map((st) => ({ ...st })) : [];
+					const parsedBench = parseBenchSnapshot(benchSnap);
+					if (!parsedBench.ok) {
+						deps.onError("this run keeps an unloadable bench snapshot (" + parsedBench.problems.join("; ") + ")");
+						return;
+					}
+					const bs = parsedBench.value;
+					const bsStages = bs.stages.map((st) => ({ ...st }));
 					if (bsStages.length > 1) {
 						const ranCard = typeof snap === "object" && snap !== null ? snap["card"] : void 0;
 						const result = resultOfRun(flow, String(side["run_id"] ?? ""));
@@ -40526,14 +40634,18 @@ void main() {
 							if (ranCard !== void 0 && st["card"] === ranCard && result !== void 0) st["result"] = result;
 							st["provenance"] = "restored";
 						}
-						await loadStagesOntoBench(bsStages, (typeof bs["intent"] === "string" && bs["intent"] !== "" ? bs["intent"] : "restored run").slice(0, 77), deps);
+						await loadStagesOntoBench(bsStages, (bs.intent !== "" ? bs.intent : "restored run").slice(0, 77), deps);
 						return;
 					}
 				}
-				if (typeof snap === "object" && snap !== null && typeof snap["card"] === "string") {
-					const card = snap["card"];
-					const rawParams = snap["params"];
-					const params = typeof rawParams === "object" && rawParams !== null ? { ...rawParams } : {};
+				if (typeof snap === "object" && snap !== null) {
+					const parsedCard = parseCardSnapshot(snap);
+					if (!parsedCard.ok) {
+						deps.onError("this run keeps an unloadable card snapshot (" + parsedCard.problems.join("; ") + ")");
+						return;
+					}
+					const card = parsedCard.value.card;
+					const params = { ...parsedCard.value.params };
 					delete params["draft_id"];
 					delete params["test"];
 					if (params["model"] === card) delete params["model"];
@@ -41721,4 +41833,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="15953e038b07b4943eb73fba17bfe6f335febf25";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="cdf44c3190075519b249300987e8aca21d9f8cb7";

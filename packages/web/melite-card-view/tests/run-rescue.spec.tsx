@@ -14,7 +14,6 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { RunRescue } from '../src/client/run-rescue.tsx'
-import type { Rescue } from '../src/client/run-rescue.ts'
 
 const wire = vi.hoisted(() => ({ postManageAction: vi.fn() }))
 vi.mock('@melite/card-base/wire', () => wire)
@@ -35,7 +34,7 @@ test('a non-rescueable error renders nothing', () => {
 
 test('a missing-extension refusal offers the install; the confirm rides the wire; the re-run rides the caller', async () => {
   const onRun = vi.fn()
-  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'queued: 1 pack(s)' })
+  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'queued: 1 pack(s)', data: { state: 'active' } })
   render(
     <RunRescue
       error="card 'h3-timeline' requires 'ComfyUI-MiniMaxH3-TimelineDirector' (nodes A) — none live on the engine"
@@ -96,6 +95,73 @@ test('a model miss with a family provisions the family (the DECL owns the URL)',
   await userEvent.click(screen.getByRole('button', { name: 'Install & continue' }))
   await waitFor(() => { expect(screen.getByText(/downloaded: 2/)).toBeTruthy() })
   expect(wire.postManageAction).toHaveBeenCalledWith('provision_model', { model: 'h3-timeline' })
+})
+
+test('the current missing-weight target is the declared model, not the fetch source', async () => {
+  wire.postManageAction.mockResolvedValue({ ok: true, detail: 'installed', data: { state: 'active' } })
+  render(
+    <RunRescue
+      error="card 'mask' needs weight 'sams/sam2.1_hiera_large.pt' — absent on the models tree; fetch declared-source (provision_model model=mask)"
+      stages={[{ params: { prompt: 'x' } }]}
+      onRun={() => {}}
+    />,
+  )
+  expect(screen.getByText(/Missing model file "sams\/sam2\.1_hiera_large\.pt" \(declared target mask\)/)).toBeTruthy()
+  await userEvent.click(screen.getByRole('button', { name: 'Install & continue' }))
+  await waitFor(() => { expect(screen.getByText(/installed/)).toBeTruthy() })
+  expect(wire.postManageAction).toHaveBeenCalledWith('provision_model', { model: 'mask' })
+})
+
+test('a restart-required result never offers Run again before the restart', async () => {
+  wire.postManageAction.mockReset()
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, detail: 'installed', data: { state: 'restart_required', restart_required: true } })
+    .mockResolvedValueOnce({ ok: true, detail: 'reboot issued' })
+  const onRun = vi.fn()
+  render(
+    <RunRescue
+      error="card 'x' requires 'P' (nodes A)"
+      stages={STAGES}
+      onRun={onRun}
+    />,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Install & continue' }))
+  await waitFor(() => { expect(screen.getByRole('button', { name: 'Restart to activate' })).toBeTruthy() })
+  expect(screen.queryByRole('button', { name: 'Run again' })).toBe(null)
+  await userEvent.click(screen.getByRole('button', { name: 'Restart to activate' }))
+  await waitFor(() => { expect(screen.getByText(/Restarting.*waiting for the engine to become active/)).toBeTruthy() })
+  expect(screen.queryByRole('button', { name: 'Run again' })).toBe(null)
+  expect(onRun).not.toHaveBeenCalled()
+  expect(wire.postManageAction).toHaveBeenNthCalledWith(2, 'restart', {})
+})
+
+test('a failed restart remains inline and leaves the rescue waiting for another press', async () => {
+  wire.postManageAction.mockReset()
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, detail: 'installed', data: { state: 'restart_required' } })
+    .mockResolvedValueOnce({ ok: false })
+  render(
+    <RunRescue error="card 'x' requires 'P' (nodes A)" stages={STAGES} onRun={() => {}} />,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Install & continue' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Restart to activate' }))
+  await waitFor(() => { expect(screen.getByText('restart refused')).toBeTruthy() })
+  expect(screen.getByRole('button', { name: 'Restart to activate' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Run again' })).toBe(null)
+})
+
+test('a non-Error restart rejection stays inline', async () => {
+  wire.postManageAction.mockReset()
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, detail: 'installed', data: { state: 'restart_required' } })
+    .mockRejectedValueOnce('restart down')
+  render(
+    <RunRescue error="card 'x' requires 'P' (nodes A)" stages={STAGES} onRun={() => {}} />,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Install & continue' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Restart to activate' }))
+  await waitFor(() => { expect(screen.getByText('restart failed')).toBeTruthy() })
+  expect(screen.queryByRole('button', { name: 'Run again' })).toBe(null)
 })
 
 test('a wire that rejects with a non-Error still surfaces a word', async () => {

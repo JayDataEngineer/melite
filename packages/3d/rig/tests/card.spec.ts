@@ -6,8 +6,9 @@
 // loud laws.
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
-import { loadCardDefs } from "@melite/comfyui-cordis";
+import { loadCardDefs, theService } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { resolveCardFlowOutputs } from "@melite/comfyui-cordis/service";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
 
 const DUMMY_MODEL = { id: "", card: "", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
@@ -29,8 +30,8 @@ describe("the rig compose gate", () => {
 
   it("the mode table is closed (auto|copy|species — nothing else composes)", () => {
     assert.throws(
-      () => def.compose(def.schema({ mesh_glb: "/m/body.glb", mode: "magic" }), DUMMY_MODEL, new GraphBuilder(), "r1"),
-      /mode "magic" is not one of auto\|copy\|species — the rig lane table is closed/,
+      () => def.schema({ mesh_glb: "/m/body.glb", mode: "magic" }),
+      /mode|auto|copy|species/i,
     );
   });
 
@@ -93,6 +94,18 @@ describe("the rig lanes (one mode, one graph shape)", () => {
     assert.equal(bridge.inputs.height_ratio, 0.9);
     assert.equal(bridge.inputs.max_influences, 4);
     assert.equal(bridge.inputs.strip_body, true, "the body strips by default (schema-declared)");
+    const save = graph["SaveRiggedModel.0"];
+    assert.ok(save, "the species lane terminates in the output capture node");
+    assert.deepEqual(save.inputs.rigged_path, ["RayCreatureRigBridge.0", 0]);
+  });
+
+  it("the package root is a node-side host marker", async () => {
+    const { Context } = await import("@deepseek-ai/cordis");
+    const marker = await import("../src/index.ts");
+    const ctx = new Context();
+    marker.apply(ctx);
+    assert.equal(marker.name, "@melite/3d-rig");
+    assert.deepEqual(marker.inject, []);
   });
 
   it("THE SCHEMA GATE: an out-of-envelope decimate_ratio refuses loud (declared 0–1), never composes", () => {
@@ -100,5 +113,50 @@ describe("the rig lanes (one mode, one graph shape)", () => {
       () => def.compose({ mesh_glb: "/m/body.glb", decimate_ratio: 1.5 }, DUMMY_MODEL, new GraphBuilder(), "r_oob"),
       /decimate_ratio|1.5|between|range/i,
     );
+  });
+});
+
+describe("the rig declaration and flow output contract", () => {
+  it("declares mesh atoms and mode-scoped controls", () => {
+    const env = theService().formSchemas("rig", "rig")!.schema as {
+      uid: number;
+      refs: Record<string, { dict?: Record<string, number>; meta?: { extra?: Record<string, unknown> } }>;
+    };
+    const root = env.refs[env.uid]!;
+    const extra = (name: string): Record<string, unknown> => {
+      const id = root.dict?.[name];
+      return id === undefined ? {} : env.refs[id]?.meta?.extra ?? {};
+    };
+    assert.equal(extra("mesh_glb").wtype, "mesh");
+    assert.equal(extra("donor_glb").wtype, "mesh");
+    assert.equal(extra("donor_glb").visible_when, "mode=copy");
+    assert.equal(extra("creature_glb").visible_when, "mode=species");
+    assert.equal(extra("preserve_texture").visible_when, "mode=auto");
+  });
+
+  it("keeps the mode producer predicates exclusive", () => {
+    const [auto, rigged] = def.flowOutputBindings!;
+    assert.equal(auto.when?.({}), true);
+    assert.equal(rigged.when?.({}), false);
+    assert.equal(auto.when?.({ mode: "copy" }), false);
+    assert.equal(rigged.when?.({ mode: "species" }), true);
+  });
+
+  it("binds one real producer for every rig mode", () => {
+    const cases = [
+      { mode: "auto", node: "KimodoExportFBX.0" },
+      { mode: "copy", donor_glb: "/m/donor.glb", node: "SaveRiggedModel.0" },
+      { mode: "species", creature_glb: "/m/fox.glb", node: "SaveRiggedModel.0" },
+    ] as const;
+    for (const entry of cases) {
+      const { node, ...modeParams } = entry;
+      const params = def.schema({ mesh_glb: "/m/body.glb", ...modeParams });
+      const g = new GraphBuilder();
+      def.compose(params, DUMMY_MODEL, g, entry.mode);
+      assert.deepEqual(resolveCardFlowOutputs(def, params, g.toJSON()), {
+        outputs: { default: "mesh" },
+        outputNodes: { default: node },
+      });
+    }
   });
 });

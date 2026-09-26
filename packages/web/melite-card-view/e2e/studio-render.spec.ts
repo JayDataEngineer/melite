@@ -82,21 +82,26 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
   const markers = [
     'h3-studio-tenant', 'tl-filmstrip', 'tl-doc-readout',
     'motion-timeline-bar', 'motion-timeline-ruler', 'motion-timeline-playhead',
-    'tl-run-panel', 'tl-audio-upload', 'tl-recipe-chrome', 'cb-mods-section',
+    'tl-run-panel', 'tl-clips-lane-hint', 'tl-recipe-chrome', 'cb-mods-section',
   ]
   await expect(page.locator('[data-testid="h3-studio-tenant"]')).toBeVisible({ timeout: 30_000 })
-  // tl-audio-upload + tl-recipe-chrome + cb-mods-section live INSIDE
+  const finalVideo = page.locator('[data-testid="tl-final-cut"] video')
+  if (await finalVideo.count() > 0) {
+    const source = await finalVideo.first().getAttribute('src')
+    expect(source ?? '').not.toMatch(/\.(flac|mp3|wav|ogg|m4a|aac)(?:$|[?#])/i)
+  }
+  // tl-clips-lane-hint + tl-recipe-chrome + cb-mods-section live INSIDE
   // the Run fold (RunRefsClips / RunRecipeEngine / CardForm's
   // Modifiers section) — since the hour-8 law the fold is CLOSED at
   // the rail's bottom, so those three markers are asserted AFTER
   // unfolding it. The rest
   // live on the open surface.
-  const inFold = ['tl-audio-upload', 'tl-recipe-chrome', 'cb-mods-section']
+  const inFold = ['tl-clips-lane-hint', 'tl-recipe-chrome', 'cb-mods-section']
   for (const m of markers.filter((x) => !inFold.includes(x))) {
     await expect(page.locator(`[data-testid="${m}"]`), m).toBeVisible()
   }
   await page.locator('[data-testid="tl-run-panel"] summary').click({ timeout: 5_000 })
-  await expect(page.locator('[data-testid="tl-audio-upload"]'), 'audio upload (unfolded Run panel)').toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('[data-testid="tl-clips-lane-hint"]'), 'clip lane hint (unfolded Run panel)').toBeVisible({ timeout: 10_000 })
   await expect(page.locator('[data-testid="tl-recipe-chrome"]'), 'recipe engine chrome (unfolded Run panel)').toBeVisible()
   await expect(page.locator('[data-testid="cb-mods-section"]'), 'mods panel (unfolded Run panel)').toBeVisible()
   // the zoom overlay titles the stage (the CardZoomOverlay shell;
@@ -115,7 +120,7 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
 // full page like before." A column-stacked .shell and a bounded zoom
 // card violated all four at once; these assertions are the wall that
 // makes the regression impossible to re-land quietly.
-test('the studio layout: full-page modal, params left, preview right, timeline under, run fold closed at the rail bottom', async ({ page }) => {
+test('the studio layout: full-page modal, params left, fitted preview right, timeline under, run fold closed at the rail bottom', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message.slice(0, 150)}`))
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text().slice(0, 150)}`) })
@@ -164,15 +169,13 @@ test('the studio layout: full-page modal, params left, preview right, timeline u
   await expect(fold).toBeVisible()
   expect(await fold.getAttribute('open'), 'the run fold is closed by default').toBeNull()
 
-  // 5 — HOUR-8 LAWS: the preview pane scrolls in its own bounds and
-  // the timeline row is BOUNDED (never clipped past the card fold)
-  const previewScrolls = await page.evaluate(() => {
+  const previewOverflow = await page.evaluate(() => {
     const el = document.querySelector('[data-testid="tl-filmstrip"]')
     const pane = el ? (el.closest('[data-slot="pane-shell"]') as HTMLElement | null) : null
-    const scroller = pane ?? (el as HTMLElement | null)
-    return scroller ? getComputedStyle(scroller).overflowY : 'missing'
+    const fitted = pane ?? (el as HTMLElement | null)
+    return fitted ? getComputedStyle(fitted).overflowY : 'missing'
   })
-  expect(previewScrolls, 'the preview pane scrolls').toMatch(/auto|scroll/)
+  expect(previewOverflow, 'the fitted preview pane does not scroll').toBe('hidden')
   const barBox = bar!
   expect(barBox.y + barBox.height, `timeline bottom ${barBox.y + barBox.height} ≤ viewport ${page.viewportSize()!.height}`).toBeLessThanOrEqual(page.viewportSize()!.height)
 

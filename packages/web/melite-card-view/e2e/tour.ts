@@ -143,7 +143,7 @@ export async function seedBenchH3(page: Page, sessionKey: string): Promise<void>
     doc: {
       card: 'h3-timeline',
       engine: 'comfyui',
-      params: { variant: 'h3', quant: 'int8', model: 'h3', calls: [{ text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 168 }] },
+      params: { variant: 'h3', quant: 'int8', model: 'h3', calls: [{ text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 175 }] },
       inputs: {},
       outputs: { default: 'image' },
       expect_rev: rev,

@@ -32,8 +32,8 @@ families board one surface):
   conditioning.
 - `rigged_glb` + `target_glb` (REQUIRED for transfer_rig): the
   SOMA-rigged donor + the clothed target.
-- `resolution`: 512 fast / 1024 standard / 1536 hero (inserts the
-  upsample stage).
+- `resolution`: 1024 standard / 1536 hero (the 1536 route stamps the
+  upsample target; 512 is not an engine-supported target).
 - `steps` + `cfg`: the STRUCTURE stage (the lift). Shape runs a
   calibrated 20/7.5, texture a calibrated 12/1.0 — fixed upstream
   truth, not card knobs.
@@ -45,7 +45,7 @@ families board one surface):
   from the source image (recommended); a literal degree value
   (35 / 49.13 / 60 / 75 / 90) skips MoGe (operator-vouched
   calibrated camera, no MoGe VRAM).
-- `filename_prefix`: the .glb name stem.
+- `filename_prefix` is run-owned; it is not a card parameter.
 
 ## Artifacts
 
@@ -54,12 +54,11 @@ families board one surface):
 
 ## Honest edges
 
-- The 512 variant rides the same graph as 1024 (no upsample) —
-  its "fast" is the steps dial, not a lighter lane. The voxel
-  structure stays at 32 (the only resolution the upstream template
-  exercises; 64 is unwired).
-- The bf16 variant cells are ROUTES with no artifacts — both lanes
-  load the int8 convrot unet (the provisioned weight).
+- The 512 target is not offered: the live Trellis2 upsample node
+  requires at least 1024. Use 1024 for iteration and 1536 for a
+  higher-resolution asset.
+- Only the provisioned INT8 ConvRot cells are offered; the engine
+  has no BF16 checkpoint for these lanes.
 - Pixal3D and TRELLIS.2 share the entire sampler chain (structure →
   shape → upsample → texture → apply → bake → glb). The only delta
   is the conditioning node + a MoGe pass on pixal3d. Switching

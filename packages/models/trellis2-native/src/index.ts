@@ -73,6 +73,7 @@ export const DECL: ModelDecl = {
         {
           "quant": "bf16",
           "label": "BF16",
+          "hide_from_dropdown": true,
           "route": "trellis2-native-bf16",
           "vram_peak_gb": 12,
         },
@@ -91,10 +92,12 @@ export const DECL: ModelDecl = {
       "group": "Variant",
       "route": "trellis2-native-1536",
       "order": 2,
+      "resolver_defaults": { "resolution": "1536" },
       "cells": [
         {
           "quant": "bf16",
           "label": "BF16",
+          "hide_from_dropdown": true,
           "route": "trellis2-native-1536-bf16",
           "vram_peak_gb": 16,
         },
@@ -113,10 +116,12 @@ export const DECL: ModelDecl = {
       "group": "Variant",
       "route": "trellis2-native-512",
       "order": 1,
+      "hide_from_dropdown": true,
       "cells": [
         {
           "quant": "bf16",
           "label": "BF16",
+          "hide_from_dropdown": true,
           "route": "trellis2-native-512-bf16",
           "vram_peak_gb": 8,
         },

@@ -9,7 +9,7 @@ import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadCardDefs } from "@melite/comfyui-cordis";
+import { loadCardDefs, theService } from "@melite/comfyui-cordis";
 import { BOARDED } from "../src/card.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
@@ -89,6 +89,23 @@ describe("the image-edit compose gate", () => {
     assert.equal(BOARDED[1], "qwen-img-edit-2511", "2511 is the BACKUP");
   });
 
+  it("the edit-scope field names whole-image and masked-region choices", () => {
+    const pack = theService().cardModFields("image-edit").find((row) => row.pack === "mask");
+    assert.ok(pack, "the image-edit mask pack is absorbed");
+    const field = pack.fields.dict?.["mask_mode"] as {
+      meta?: { description?: unknown; default?: unknown; extra?: Record<string, unknown> };
+    } | undefined;
+    assert.ok(field, "the mask scope field serves");
+    assert.equal(field.meta?.description, "Edit Scope");
+    assert.equal(field.meta?.default, "crop_stitch");
+    assert.deepEqual(field.meta?.extra?.options, [
+      { value: "auto", label: "Whole image (default)" },
+      { value: "crop_stitch", label: "Masked region (crop + stitch)" },
+    ]);
+    assert.match(String(field.meta?.extra?.tooltip), /whole-image/);
+    assert.match(String(field.meta?.extra?.tooltip), /Masked region/);
+  });
+
   it("THE SCHEMA GATE: the mod-plane surface passes the walk verbatim (anchor + region + firing knobs reach the composer)", () => {
     const doc = def.schema({
       prompt: "x", image1: "/m/i.png", input_mask: "/m/region.png", lanpaint_num_steps: 20,
@@ -118,7 +135,6 @@ describe("the image-edit compose gate", () => {
       [{ mask: [{ input_mask: "/m/a.png" }, { input_mask: "/m/b.png" }] }, /'mask' fires .*\(one region per run/],
       [{ mask_mode: "hard" }, /'mask_mode' fires .*\(unknown region mode/],
       [{ mask_detector: "yolo" }, /'mask_detector' fires .*\(unknown region detector/],
-      [{ mask_mode: "full_frame" }, /'mask_mode' fires .*still unbuilt/],
       [{ mask_mode: "crop_stitch" }, /'mask_mode' fires .*needs a region/],
       [{ mask_mode: "crop_stitch", input_mask: "/m/a.png", mask_detector: "face" }, /'mask_detector' fires .*both stated/],
       [{ mask_mode: "crop_stitch", input_mask: "/m/a.png", lanpaint_enabled: true }, /'lanpaint_enabled' fires .*\(pick one sampler/],
@@ -392,6 +408,40 @@ describe("the image-edit compose gate", () => {
     assert.ok(graph["LoadImage.0"], "the anchor loads");
     assert.ok(graph["KSampler.0"], "the stock sampler rides when no region is stated");
     assert.ok(!graph["LanPaint_KSamplerAdvanced.0"], "no lanpaint arm without a region");
+  });
+
+  it("full_frame and auto produce the same whole-image graph", () => {
+    const params = { prompt: "make it night", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5 };
+    const defaultMode = new GraphBuilder();
+    const auto = new GraphBuilder();
+    const fullFrame = new GraphBuilder();
+    def.compose(def.schema(params), model, defaultMode, "run_alias");
+    def.compose(def.schema({ ...params, mask_mode: "auto" }), model, auto, "run_alias");
+    def.compose(def.schema({ ...params, mask_mode: "full_frame" }), model, fullFrame, "run_alias");
+    assert.deepEqual(defaultMode.toJSON(), auto.toJSON());
+    assert.deepEqual(auto.toJSON(), fullFrame.toJSON());
+    const graph = fullFrame.toJSON() as Record<string, { class_type: string }>;
+    const classes = Object.values(graph).map((node) => node.class_type);
+    assert.ok(classes.includes("VAEEncode"), "the existing whole-image encode remains");
+    assert.ok(classes.includes("KSampler"), "the existing whole-image sampler remains");
+    assert.ok(!classes.includes("LoadImageMask"), "no mask topology is added");
+    assert.ok(!classes.includes("DetailerForEach"), "no region topology is added");
+    assert.ok(!classes.includes("LanPaint_KSamplerAdvanced"), "no legacy inpaint topology is added");
+  });
+
+  it("a mask modifier with crop_stitch still takes the region lane", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "repaint the sign", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        mask: [{ input_mask: "/m/region.png", mask_mode: "crop_stitch" }],
+      }),
+      model, g, "run_mask_modifier",
+    );
+    const graph = g.toJSON() as Record<string, { class_type: string }>;
+    assert.ok(Object.values(graph).some((node) => node.class_type === "MaskToSEGS"), "the modifier feeds the region segmenter");
+    assert.ok(Object.values(graph).some((node) => node.class_type === "DetailerForEach"), "the modifier keeps the region detailer");
+    assert.ok(!Object.values(graph).some((node) => node.class_type === "VAEEncode"), "the region lane does not use the whole-image encode");
   });
 });
 

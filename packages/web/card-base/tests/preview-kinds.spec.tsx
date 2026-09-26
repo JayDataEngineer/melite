@@ -92,6 +92,8 @@ test('THE VIDEO THUMB TOGGLE: click promotes a window into the hero, click again
   // the film returns to the strip; clicking the active thumb toggles back
   fireEvent.click(screen.getByTitle('h3_t4_w1 (viewing — click to return to the film)'))
   expect(screen.getByTestId('stage-preview-video-hero').getAttribute('src')).toBe('/runs/cur/film.mp4')
+  fireEvent.click(screen.getByTitle('h3_t4_film — click to preview'))
+  expect(screen.getByTestId('stage-preview-video-hero').getAttribute('src')).toBe('/runs/cur/film.mp4')
 })
 
 test('THE SEAT BUBBLE: a thumb click opens its tab WITHOUT opening the walk (ledger #45)', () => {
@@ -140,15 +142,19 @@ test('THE AUDIO EMPTY: honest about the live-run flag (rendering vs never-run)',
 })
 
 test('THE AUDIO SET: the active set names its clips beneath the hero', () => {
-  render(h(AudioStagePreview, audio({
-    artifacts: [
-      { name: 'track', url: '/runs/cur/track.mp3' },
-      { name: 'stems', url: '/runs/cur/stems.mp3' },
-    ],
-  })))
+  const opened: string[] = []
+  render(h('div', { onClick: () => { opened.push('walk') } },
+    h(AudioStagePreview, audio({
+      artifacts: [
+        { name: 'track', url: '/runs/cur/track.mp3' },
+        { name: 'stems', url: '/runs/cur/stems.mp3' },
+      ],
+    }))))
   const link = screen.getByText('stems')
   expect(link.tagName).toBe('A')
   expect(link.getAttribute('href')).toBe('/runs/cur/stems.mp3')
+  fireEvent.click(link)
+  expect(opened).toEqual([])
 })
 
 test('THE IMAGE EMPTY: honest about the live-run flag (rendering vs never-run)', () => {

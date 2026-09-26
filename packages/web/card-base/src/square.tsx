@@ -54,7 +54,7 @@ export function isImageUrl(value: string): boolean {
  *  square with the inline GLB thumb (the mini GlbStagePreview), the
  *  same square grammar as images: never a bespoke mesh picker. */
 export function isMeshUrl(value: string): boolean {
-  return /^data:model\/gltf-binary[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value)
+  return /^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value)
 }
 
 /** Read a File/Blob and resolve its data: URL — the ONE read path for

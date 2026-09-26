@@ -42,6 +42,11 @@ function loader(): GLTFLoader {
 /** One stage asset — the old Stage contract's live subset (the four
  *  fields consumers set: id/url/name + the placement override; the
  *  drop-raycast position stays caller-computed). */
+export function meshAssetUrl(value: string): string {
+  const match = /^data\/input\/([^?#]+)$/i.exec(value)
+  return match === null ? value : `/v1/assets/inputs/${match[1]}`
+}
+
 export interface StageAsset {
   /** unique id (caller-supplied — run id + artifact name is fine) */
   id: string
@@ -348,7 +353,7 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
     let pending = assets.length
     const settle = (): void => { if (alive && pending === 0) setReady(true) }
     for (const a of assets) {
-      loader().load(a.url,
+      loader().load(meshAssetUrl(a.url),
         (g) => {
           if (!alive) return
           autoFitToHeight(g.scene)

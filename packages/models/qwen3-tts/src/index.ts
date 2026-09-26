@@ -2,9 +2,9 @@
 // operator's table: SIZES are models — this is the .6B; FLAVORS are
 // variants — CustomVoice + Base ride here as variant lanes).
 // Qwen3-TTS 12Hz 0.6B: CustomVoice synthesis (9 preset personas +
-// instruct-text style control + .qvoice embedding load through the
-// qvoice mod) and the Base 3-second voice clone from reference
-// audio + transcript. The old qwen3-tts-base FAMILY is dead — Base
+// .qvoice embedding load through the qvoice mod) and the Base
+// 3-second voice clone from reference audio + transcript. The old
+// qwen3-tts-base FAMILY is dead — Base
 // is the 'qwen3-tts-base' variant ROUTE (old drafts keep resolving
 // to the clone lane; the lane branch reads the merged lane_inputs,
 // never the family id). Sibling family: models-qwen3-tts-
@@ -21,7 +21,7 @@ export const DECL: ModelDecl = {
   "id": "qwen3-tts",
   "form": "form_tts",
   "label": "Qwen3-TTS 0.6B",
-  "description": "Qwen3-TTS 12Hz 0.6B — the .6 checkpoint: CustomVoice synthesis with personas and style control, and the Base 3-second voice clone",
+  "description": "Qwen3-TTS 12Hz 0.6B — the .6 checkpoint: CustomVoice synthesis with personas, and the Base 3-second voice clone",
   "engine": "comfyui",
   "defaults": {
     "mode": "tts",
@@ -47,7 +47,7 @@ export const DECL: ModelDecl = {
     {
       "id": "customvoice",
       "label": "CustomVoice",
-      "description": "preset personas and instruct-text style control over the target timbre",
+      "description": "preset personas over the target timbre",
       "group": "Variant",
       "route": "qwen3-tts",
       "cells": [
@@ -144,6 +144,7 @@ export const DECL: ModelDecl = {
     "clip_type": null,
     "clip_vision": "",
     "family": "qwen3_tts",
+    "instruction_control": false,
     "latent_node": "EmptySD3LatentImage",
     "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
     "sampling_shift": 0,

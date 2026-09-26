@@ -43,6 +43,7 @@ describe("the qwen3-tts-voicedesign model plugin (1.7B, the full 1:1 flavor matr
     const base = byId["base"]!;
     assert.equal((base.lane_inputs as Record<string, unknown>)["model_path"], "Qwen3-TTS-12Hz-1.7B-Base-merged");
     assert.equal((base.lane_inputs as Record<string, unknown>)["synth_lane"], "clone");
+    assert.equal((base.lane_inputs as Record<string, unknown>)["instruction_control"], false);
     assert.equal(base.route, "qwen3-tts-voicedesign-base", "the clone lane's OWN flat route (the 0.6B family owns 'qwen3-tts-base' — one owner per route id)");
     assert.deepEqual(base.resolver_defaults, { model: "qwen3-tts-voicedesign", variant: "base", voice: null }, "the clone pick nulls the persona stamp");
   });
@@ -54,5 +55,6 @@ describe("the qwen3-tts-voicedesign model plugin (1.7B, the full 1:1 flavor matr
     assert.equal(d.variant, "customvoice");
     assert.equal(d.mode, "tts");
     assert.equal((DECL.lane_inputs as Record<string, unknown>)["model_path"], "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged", "the family-level artifact is the default lane's own");
+    assert.equal((DECL.lane_inputs as Record<string, unknown>)["instruction_control"], true);
   });
 });

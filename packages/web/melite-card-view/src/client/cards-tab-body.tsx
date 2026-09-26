@@ -37,6 +37,7 @@ import { createElement as h, Fragment, useCallback, useEffect, useMemo, useRef, 
 import { Button, IconLoadingOutline16, IconPlayOutline16, IconStopFill16, IconTrashOutline16, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { RunRescue } from './run-rescue.tsx'
+import { terminalStageErrorOf } from './run-rescue.ts'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm } from './spec-form.tsx'
@@ -463,6 +464,8 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     return h(Fragment, null, staleBuildLine,
       h('p', { className: css.loading }, 'loading ' + address + '…'))
   }
+  const stageError = value.kind === 'run' ? null : terminalStageErrorOf(value.stages)
+  const runError = localRunError ?? stageError
   return value.kind === 'bench'
     // Pure-DSH tab (2026-09-11): the bench renders the native BenchView
     // (tiles + drill + picker on the estate doors). The legacy 1:1
@@ -470,12 +473,12 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     ? h(Fragment, null,
         staleBuildLine,
         failedLine,
-        localRunError !== null ? h('p', { className: css.runError }, localRunError) : null,
+        runError !== null ? h('p', { className: css.runError }, runError) : null,
         // THE RUN-GATE RESCUE (roadmap item 4): a rescueable miss —
         // a missing extension pack or model file — offers the
         // install through the manage seat right under the error
         // (names only; the DECL owns every URL server-side).
-        localRunError !== null ? h(RunRescue, { error: localRunError, stages: value.stages, onRun }) : null,
+        runError !== null ? h(RunRescue, { error: runError, stages: value.stages, onRun }) : null,
         // THE APP-SEAT TOAST VIEWPORT (the toast law): the cards
         // console is the always-alive surface — catalog/run-status
         // contract toasts render here when no studio is open. The
@@ -503,8 +506,8 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     ? h(Fragment, null,
         staleBuildLine,
         failedLine,
-        localRunError !== null ? h('p', { className: css.runError }, localRunError) : null,
-        localRunError !== null ? h(RunRescue, { error: localRunError, stages: value.stages, onRun: onRunDraftStage }) : null,
+        runError !== null ? h('p', { className: css.runError }, runError) : null,
+        runError !== null ? h(RunRescue, { error: runError, stages: value.stages, onRun: onRunDraftStage }) : null,
         h(DraftView, {
           value,
           running,

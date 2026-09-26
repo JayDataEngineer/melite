@@ -1,18 +1,3 @@
-/**
- * postManage — the manage wire door's full contract, pinned WITHOUT
- * the panel (unit level, fakes-not-mocks: fetch is replaced whole and
- * answers the client-request frame; every reply shape is asserted by
- * deep-equal on the returned envelope):
- *
- *   frame     — the client-request shape + rpcId correlation + the
- *               optional abort signal ride;
- *   refusals  — HTTP non-2xx, malformed frames/results/envelopes, and
- *               refused RemoteErrors all answer as honest REFUSAL
- *               replies (never a throw past the panel);
- *   aborts    — cancellation rethrows (the caller's);
- *   rpc ids   — crypto.randomUUID when present, the hand-rolled arm
- *               where the browser standard is absent.
- */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { postManage } from '../assets-tab.tsx'
@@ -50,15 +35,12 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('postManage — the frame', () => {
+describe('postManage frame', () => {
   it('posts the client-request frame and narrows the envelope', async () => {
     let seen: Frame = {}
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
       seen = frameOf(init)
-      return answer(
-        { action: 'status', ok: true, detail: 'up', data: { a: 1 } },
-        String(seen.rpcId),
-      )
+      return answer({ action: 'status', ok: true, detail: 'up', data: { a: 1 } }, String(seen.rpcId))
     }))
     const reply = await postManage('status', {})
     expect(reply).toEqual({ action: 'status', ok: true, detail: 'up', data: { a: 1 } })
@@ -68,174 +50,195 @@ describe('postManage — the frame', () => {
     expect(seen.payload?.args?.doc).toEqual({ action: 'status' })
   })
 
-  it('the abort signal rides the fetch (cancellation is the caller\'s)', async () => {
+  it('carries the optional abort signal', async () => {
     let signal: unknown
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
       signal = (init as Record<string, unknown>)['signal']
       return answer({ action: 'x', ok: true, detail: '' }, String(frameOf(init).rpcId))
     }))
-    const ctrl = new AbortController()
-    await postManage('status', {}, ctrl.signal)
-    expect(signal).toBe(ctrl.signal)
+    const controller = new AbortController()
+    await postManage('status', {}, controller.signal)
+    expect(signal).toBe(controller.signal)
   })
 
-  it('an abort rethrows (never absorbed into a refusal)', async () => {
+  it('rethrows cancellation', async () => {
     vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => {
-      const e = new Error('aborted')
-      e.name = 'AbortError'
-      throw e
+      const error = new Error('aborted')
+      error.name = 'AbortError'
+      throw error
     }))
     await expect(postManage('status', {})).rejects.toMatchObject({ name: 'AbortError' })
   })
 })
 
-describe('postManage — channel surprises answer as refusals', () => {
-  it('an HTTP non-2xx is a refusal naming the status', async () => {
+describe('postManage channel refusals', () => {
+  it('maps HTTP status and code', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('down', { status: 503 })))
     expect(await postManage('restart', { force: true })).toEqual({
       action: 'restart',
       ok: false,
+      code: 'manage/http',
+      status: 503,
       detail: 'manage wire: HTTP 503',
     })
   })
 
-  it('a malformed response frame is a refusal (wrong type, wrong rpcId)', async () => {
+  it('rejects malformed response frames', async () => {
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
-      const rpcId = String(frameOf(init).rpcId)
-      return new Response(JSON.stringify({ type: 'server-event', rpcId }), { status: 200 })
+      return new Response(JSON.stringify({ type: 'server-event', rpcId: frameOf(init).rpcId }), { status: 200 })
     }))
-    expect(await postManage('status', {})).toEqual({
-      action: 'status',
-      ok: false,
-      detail: 'manage wire: malformed response frame',
-    })
+    expect(await postManage('status', {})).toEqual({ action: 'status', ok: false, code: 'manage/wire', detail: 'manage wire: malformed response frame' })
     vi.stubGlobal('fetch', vi.fn(async () => new Response(
       JSON.stringify({ type: 'server-response', rpcId: 'foreign', result: { ok: true, value: {} } }),
       { status: 200 },
     )))
-    expect(await postManage('status', {})).toEqual({
-      action: 'status',
-      ok: false,
-      detail: 'manage wire: malformed response frame',
-    })
+    expect(await postManage('status', {})).toEqual({ action: 'status', ok: false, code: 'manage/wire', detail: 'manage wire: malformed response frame' })
   })
 
-  it('a malformed result is a refusal', async () => {
+  it('rejects malformed results and envelopes', async () => {
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
-      const rpcId = String(frameOf(init).rpcId)
-      return new Response(JSON.stringify({ type: 'server-response', rpcId, result: null }), { status: 200 })
+      return new Response(JSON.stringify({ type: 'server-response', rpcId: frameOf(init).rpcId, result: null }), { status: 200 })
     }))
-    expect(await postManage('status', {})).toEqual({
-      action: 'status',
-      ok: false,
-      detail: 'manage wire: malformed result',
-    })
-  })
-
-  it('an ok envelope with a non-object value is a refusal', async () => {
+    expect(await postManage('status', {})).toEqual({ action: 'status', ok: false, code: 'manage/wire', detail: 'manage wire: malformed result' })
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
       return answer('just a string', String(frameOf(init).rpcId))
     }))
-    expect(await postManage('status', {})).toEqual({
-      action: 'status',
-      ok: false,
-      detail: 'manage wire: malformed envelope',
-    })
-  })
-
-  it('a refused envelope without an error frame is a refusal', async () => {
+    expect(await postManage('status', {})).toEqual({ action: 'status', ok: false, code: 'manage/wire', detail: 'manage wire: malformed envelope' })
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
-      const rpcId = String(frameOf(init).rpcId)
-      return new Response(
-        JSON.stringify({ type: 'server-response', rpcId, result: { ok: false } }),
-        { status: 200 },
-      )
+      return new Response(JSON.stringify({ type: 'server-response', rpcId: frameOf(init).rpcId, result: { ok: false } }), { status: 200 })
     }))
-    expect(await postManage('status', {})).toEqual({
-      action: 'status',
-      ok: false,
-      detail: 'manage wire: refused without an error frame',
-    })
+    expect(await postManage('status', {})).toEqual({ action: 'status', ok: false, code: 'manage/wire', detail: 'manage wire: refused without an error frame' })
   })
 
-  it('a transport throw carries its message (non-Errors ride String())', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => {
-      throw new Error('socket reset')
-    }))
-    expect(await postManage('logs', {})).toEqual({ action: 'logs', ok: false, detail: 'socket reset' })
-    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => {
-      throw 'bare string failure'
-    }))
-    expect(await postManage('logs', {})).toEqual({ action: 'logs', ok: false, detail: 'bare string failure' })
+  it('maps Error and bare-string transports', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => { throw new Error('socket reset') }))
+    expect(await postManage('logs', {})).toEqual({ action: 'logs', ok: false, code: 'manage/transport', detail: 'socket reset' })
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => { throw 'bare string failure' }))
+    expect(await postManage('logs', {})).toEqual({ action: 'logs', ok: false, code: 'manage/transport', detail: 'bare string failure' })
   })
 })
 
-describe('postManage — the refusal mapping', () => {
-  it('a manage/refused RemoteError maps onto the envelope (action + detail + data ride)', async () => {
+describe('postManage contract fields', () => {
+  it('maps a RemoteError refusal with code, status, state, operation, and flags', async () => {
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
-      return refused('lifecycle refused while runs are active', String(frameOf(init).rpcId), {
-        action: 'restart',
-        data: { active_runs: ['r1'] },
+      return refused('partial provisioning', String(frameOf(init).rpcId), {
+        action: 'provision_model',
+        status: 500,
+        code: 'manage/refused',
+        data: {
+          state: 'partial',
+          operation_id: 'op-1',
+          partial: true,
+          restart_required: false,
+          next_action: 'provision_model',
+          items: [],
+        },
       })
     }))
-    expect(await postManage('restart', {})).toEqual({
-      action: 'restart',
+    expect(await postManage('provision_model', {})).toEqual({
+      action: 'provision_model',
       ok: false,
-      detail: 'lifecycle refused while runs are active',
-      data: { active_runs: ['r1'] },
+      detail: 'partial provisioning',
+      data: {
+        state: 'partial',
+        operation_id: 'op-1',
+        partial: true,
+        restart_required: false,
+        next_action: 'provision_model',
+        items: [],
+      },
+      code: 'manage/refused',
+      status: 500,
+      state: 'partial',
+      operation_id: 'op-1',
+      partial: true,
+      restart_required: false,
+      next_action: 'provision_model',
     })
   })
 
-  it('missing details fall back to the call action + the honest voice', async () => {
+  it('falls back to the call action and honest refusal values', async () => {
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
       return refused('nope', String(frameOf(init).rpcId))
     }))
-    // no details member at all — the call's own action names the reply
-    expect(await postManage('stop', {})).toEqual({ action: 'stop', ok: false, detail: 'nope', data: undefined })
+    expect(await postManage('stop', {})).toEqual({ action: 'stop', ok: false, code: 'manage/refused', detail: 'nope', data: undefined })
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
-      const rpcId = String(frameOf(init).rpcId)
-      return new Response(
-        JSON.stringify({ type: 'server-response', rpcId, result: { ok: false, error: {} } }),
-        { status: 200 },
-      )
+      return new Response(JSON.stringify({ type: 'server-response', rpcId: frameOf(init).rpcId, result: { ok: false, error: {} } }), { status: 200 })
     }))
-    // a messageless refusal never passes an empty detail up
-    expect(await postManage('stop', {})).toEqual({ action: 'stop', ok: false, detail: 'manage wire: refused', data: undefined })
+    expect(await postManage('stop', {})).toEqual({ action: 'stop', ok: false, code: 'manage/refused', detail: 'manage wire: refused', data: undefined })
   })
 
-  it('a loosely-typed envelope narrows honestly (non-string action/detail fall back)', async () => {
+  it('narrows loosely typed success envelopes without inventing fields', async () => {
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
       return answer({ action: 42, ok: false, detail: 42, data: null }, String(frameOf(init).rpcId))
     }))
     expect(await postManage('free', {})).toEqual({ action: 'free', ok: false, detail: '', data: null })
   })
+
+  it('extracts top-level contract fields and falls back to data', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
+      return answer({
+        action: 'install_extension',
+        ok: true,
+        detail: 'installed',
+        state: 'restart_required',
+        next_action: 'restart',
+        operation_id: 'op-top',
+        partial: false,
+        restart_required: true,
+        data: { state: 'active', operation_id: 'op-data' },
+      }, String(frameOf(init).rpcId))
+    }))
+    expect(await postManage('install_extension', {})).toMatchObject({
+      state: 'restart_required',
+      next_action: 'restart',
+      operation_id: 'op-top',
+      partial: false,
+      restart_required: true,
+    })
+
+    vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
+      return answer({
+        action: 'snapshot_restore',
+        ok: true,
+        detail: 'restored',
+        data: { state: 'restart_required', operation_id: 'op-data', restart_required: true, next_action: 'restart' },
+      }, String(frameOf(init).rpcId))
+    }))
+    expect(await postManage('snapshot_restore', {})).toMatchObject({
+      state: 'restart_required',
+      operation_id: 'op-data',
+      restart_required: true,
+      next_action: 'restart',
+    })
+  })
 })
 
-describe('nextRpcId — the correlation arm', () => {
-  it('rides crypto.randomUUID where the browser standard exists', async () => {
-    let seen: Frame = {}
+describe('nextRpcId', () => {
+  it('uses crypto.randomUUID when available', async () => {
+    const seen: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
-      seen = frameOf(init)
-      return answer({ action: 'status', ok: true, detail: '' }, String(seen.rpcId))
+      seen.push(String(frameOf(init).rpcId))
+      return answer({ action: 'status', ok: true, detail: '' }, seen[seen.length - 1] ?? '')
     }))
     await postManage('status', {})
     await postManage('status', {})
-    expect(typeof seen.rpcId).toBe('string')
-    expect(String(seen.rpcId)).not.toBe('')
+    expect(seen[0]).not.toBe('')
+    expect(seen[1]).not.toBe('')
   })
 
-  it('hand-rolls the id where the standard is absent (non-secure contexts)', async () => {
+  it('falls back where crypto is absent', async () => {
     const real = globalThis.crypto
     vi.stubGlobal('crypto', undefined)
     try {
-      let seen: Frame = {}
+      let seen = ''
       vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit): Promise<Response> => {
-        seen = frameOf(init)
-        return answer({ action: 'status', ok: true, detail: '' }, String(seen.rpcId))
+        seen = String(frameOf(init).rpcId)
+        return answer({ action: 'status', ok: true, detail: '' }, seen)
       }))
       const reply = await postManage('status', {})
       expect(reply.ok).toBe(true)
-      expect(String(seen.rpcId).startsWith('rpc-')).toBe(true)
+      expect(seen.startsWith('rpc-')).toBe(true)
     } finally {
       vi.stubGlobal('crypto', real)
     }

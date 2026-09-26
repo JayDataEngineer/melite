@@ -13,8 +13,9 @@
  * onRun (never an automatic re-fire).
  */
 import { createElement as h, useState } from 'react'
+import { postManageAction } from '@melite/card-base/wire'
 import css from './card.module.css'
-import { cardOfStages, familyOfStages, parseRescue, runRescueCall, type Rescue } from './run-rescue.ts'
+import { cardOfStages, familyOfStages, parseRescue, runRescueCall, type RescueResult } from './run-rescue.ts'
 
 export function RunRescue({ error, stages, onRun }: {
   error: string
@@ -25,7 +26,9 @@ export function RunRescue({ error, stages, onRun }: {
 }): ReturnType<typeof h> | null {
   const rescue = parseRescue(error)
   const [busy, setBusy] = useState(false)
-  const [done, setDone] = useState<string | null>(null)
+  const [done, setDone] = useState<RescueResult | null>(null)
+  const [restarting, setRestarting] = useState(false)
+  const [restarted, setRestarted] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   if (rescue === null) return null
   // THE PROVISION TARGET (the mask SAM2 law): the model family
@@ -33,13 +36,47 @@ export function RunRescue({ error, stages, onRun }: {
   // (model-less tool cards carry their own DECL rows under it).
   const family = familyOfStages(stages) ?? ''
   const card = family !== '' ? '' : (cardOfStages(stages) ?? '')
-  const target = family !== '' ? family : card
+  const target = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
+    ? rescue.target
+    : family !== '' ? family : card
+  const targetKind = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
+    ? 'declared target '
+    : family !== '' ? 'family ' : 'card '
   const what = rescue.kind === 'extension'
     ? 'extension pack "' + rescue.pack + '"'
-    : 'model file "' + rescue.file + '"' + (target !== '' ? ' (' + (family !== '' ? 'family ' : 'card ') + target + ')' : '')
+    : 'model file "' + rescue.file + '"' + (target !== '' ? ' (' + targetKind + target + ')' : '')
   if (done !== null) {
+    if (done.restartRequired) {
+      if (restarted) {
+        return h('div', { className: css.rescue },
+          h('p', { className: css.rescueNote }, 'Restarting… waiting for the engine to become active. Reload the page or engine, then press Run.'),
+        )
+      }
+      return h('div', { className: css.rescue },
+        h('p', { className: css.rescueNote }, done.detail + ' — restart required before activation.'),
+        h('button', {
+          className: css.rescueBtn,
+          type: 'button',
+          disabled: restarting,
+          onClick: () => {
+            setRestarting(true)
+            setNote(null)
+            postManageAction('restart', {}).then((reply) => {
+              if (!reply.ok) throw new Error(reply.detail ?? 'restart refused')
+              setRestarting(false)
+              setRestarted(true)
+            }).catch((e: unknown) => {
+              setRestarting(false)
+              setNote(e instanceof Error ? e.message : 'restart failed')
+            })
+          },
+        }, restarting ? 'Restarting…' : 'Restart to activate'),
+        restarting ? h('p', { className: css.rescueNote }, 'Restarting… waiting for the engine to become active.') : null,
+        note !== null ? h('p', { className: css.rescueErr }, note) : null,
+      )
+    }
     return h('div', { className: css.rescue },
-      h('p', { className: css.rescueNote }, done + ' — run again when ready.'),
+      h('p', { className: css.rescueNote }, done.detail + ' — run again when ready.'),
       h('button', { className: css.rescueRun, type: 'button', onClick: onRun }, 'Run again'),
     )
   }
@@ -54,8 +91,8 @@ export function RunRescue({ error, stages, onRun }: {
       onClick: () => {
         setBusy(true)
         setNote(null)
-        runRescueCall(rescue as Rescue, target)
-          .then((line) => { setBusy(false); setDone(line) })
+        runRescueCall(rescue, target)
+          .then((result) => { setBusy(false); setDone(result) })
           .catch((e: unknown) => { setBusy(false); setNote(e instanceof Error ? e.message : 'install failed') })
       },
     }, busy ? 'installing…' : 'Install & continue'),

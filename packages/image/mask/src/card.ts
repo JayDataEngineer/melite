@@ -105,7 +105,16 @@ const labelsOf = (e: Record<string, unknown>, key: string): string => {
 const armWeights = (merged: Record<string, unknown>): readonly string[] => {
   const out = new Set<string>()
   const sam3 = merged['sam3']
-  if (Array.isArray(sam3) && sam3.length > 0) out.add('sam3.1_multiplex_fp16.safetensors')
+  if (Array.isArray(sam3) && sam3.length > 0) {
+    out.add('sam3.1_multiplex_fp16.safetensors')
+    for (const value of sam3) {
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) continue
+      const entry = value as Record<string, unknown>
+      if (entry['via_rtdetr'] === true || entry['export_boxes'] !== false) {
+        out.add('rt_detr_v4-x-hgnet_fp32.safetensors')
+      }
+    }
+  }
   const sam2 = merged['sam2']
   if (Array.isArray(sam2) && sam2.length > 0) {
     out.add('sam2.1_hiera_large.pt')
@@ -406,6 +415,13 @@ export function apply(ctx: Context): void {
         size_bytes: 1745546848,
       },
       {
+        name: 'rt_detr_v4-x-hgnet_fp32.safetensors',
+        url: 'https://huggingface.co/Comfy-Org/SDPose/resolve/main/diffusion_models/rt_detr_v4-x-hgnet_fp32.safetensors',
+        folder: 'diffusion_models',
+        sha256: '1ba4a7794c2f8b176327c887ba38fbe0f977049cbef149960288aa923d0239f3',
+        size_bytes: 247790660,
+      },
+      {
         name: 'sam2.1_hiera_large.pt',
         url: 'https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt',
         folder: 'sams',
@@ -526,9 +542,7 @@ export function apply(ctx: Context): void {
       // unified card's shared face; threads as the lane's
       // scope_bbox. sam2's region scopes the detector search exactly
       // like sam3's scopes the text selection).
-      const primaryBox = primary.kind === 'sam3' || primary.kind === 'sam2'
-        ? bboxOf(primary.entry, primary.kind)
-        : null
+      const primaryBox = bboxOf(primary.entry, primary.kind)
       if (primaryBox) lane['scope_bbox'] = primaryBox
       if (primary.kind === 'sam3') {
         // the RT-DETR knobs thread from the primary (its own arm)

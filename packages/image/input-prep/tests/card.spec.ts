@@ -85,6 +85,43 @@ describe("the input-prep compose gate", () => {
     );
   });
 
+  it("a complete crop with a non-positive dimension refuses", () => {
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", crop_x: 0, crop_y: 0, crop_width: 0, crop_height: 10 }), DUMMY, new GraphBuilder(), "bad_crop_size"),
+      /crop needs non-negative x\/y and positive width\/height/,
+    );
+  });
+
+  it("legacy crop and scale rows remain usable while non-object overlays fall back", () => {
+    const legacy = new GraphBuilder();
+    def.compose({
+      source: "upload.png",
+      crop: { x: 1, y: 2, width: 30, height: 20 },
+      scale: { width: 10, height: 12, method: "nearest-exact" },
+    }, DUMMY, legacy, "legacy_transform");
+    const legacyGraph = legacy.toJSON();
+    assert.ok(Object.values(legacyGraph).some((node) => node.class_type === "ImageCrop"));
+    const legacyScale = Object.values(legacyGraph).find((node) => node.class_type === "ImageScale");
+    assert.equal(legacyScale?.inputs.width, 10);
+    assert.equal(legacyScale?.inputs.height, 12);
+    assert.equal(legacyScale?.inputs.upscale_method, "nearest-exact");
+
+    for (const scale of [null, []]) {
+      const g = new GraphBuilder();
+      def.compose({ source: "upload.png", scale }, DUMMY, g, `non_object_${Array.isArray(scale) ? "array" : "null"}`);
+      assert.equal(Object.values(g.toJSON()).some((node) => node.class_type === "ImageScale"), false);
+    }
+  });
+
+  it("flow output bindings select exactly the declared media channel", () => {
+    const image = def.flowOutputBindings?.[0];
+    const audio = def.flowOutputBindings?.[1];
+    assert.equal(image?.when?.({ media_type: "image" }), true);
+    assert.equal(image?.when?.({ media_type: "audio" }), false);
+    assert.equal(audio?.when?.({ media_type: "image" }), false);
+    assert.equal(audio?.when?.({ media_type: "audio" }), true);
+  });
+
   it("audio selects the audio output producer instead of an image save", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ source: "speech.wav", media_type: "audio" }), DUMMY, g, "run_audio");

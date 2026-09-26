@@ -5,7 +5,7 @@
 // mounts (the drill rides the zoom), estate verbs on
 // mountEstateFakes, fetch answering ONLY the /v1 discovery doors +
 // the enhance tool.
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
@@ -14,6 +14,7 @@ import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { StageViewOwnerProps } from "../src/client/types.ts";
 
 afterEach(() => {
   cleanup();
@@ -165,6 +166,77 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
       );
     }) as never, estate);
   }
+
+  function claimWireOwner(stages: BenchStageRow[], estate?: EstateOpts): () => StageViewOwnerProps {
+    let latest: StageViewOwnerProps | undefined
+    mountClaimed(stages, (owner) => {
+      latest = owner as StageViewOwnerProps
+      return null
+    }, estate)
+    return () => {
+      if (latest === undefined) throw new Error("stage owner not mounted")
+      return latest
+    }
+  }
+
+  async function openWireOwner(stages: BenchStageRow[], estate?: EstateOpts): Promise<StageViewOwnerProps> {
+    const getOwner = claimWireOwner(stages, estate)
+    await openFirstTile()
+    return getOwner()
+  }
+
+  test("wire writes the selected output and clears the slot with null", async () => {
+    const owner = await openWireOwner([
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
+      { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/source.png" } },
+    ])
+    act(() => { owner.onWireSlot?.("input_image", "s_1") })
+    await waitFor(() => {
+      expect(calls().filter((call) => call.method === "drafts/patch")).toHaveLength(1)
+    })
+    expect(calls().find((call) => call.method === "drafts/patch")?.args).toMatchObject({
+      stageId: "s_0",
+      patch: { params: { input_image: "/source.png" } },
+      expectRev: 1,
+    })
+    act(() => { owner.onWireSlot?.("input_image", null) })
+    await waitFor(() => {
+      expect(calls().filter((call) => call.method === "drafts/patch")).toHaveLength(2)
+    })
+    expect(calls().filter((call) => call.method === "drafts/patch")[1]?.args).toMatchObject({
+      stageId: "s_0",
+      patch: { params: { input_image: null } },
+      expectRev: 1,
+    })
+  })
+
+  test("wire refuses a source that is no longer on the bench", async () => {
+    const owner = await openWireOwner([
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
+      { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/source.png" } },
+    ])
+    act(() => { owner.onWireSlot?.("input_image", "s_missing") })
+    expect(await screen.findByText("wire source is no longer on the bench: s_missing", {}, { timeout: 4000 })).toBeTruthy()
+    expect(calls().some((call) => call.method === "drafts/patch")).toBe(false)
+  })
+
+  test("wire surfaces an Error refusal with its message", async () => {
+    const owner = await openWireOwner([
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
+      { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/source.png" } },
+    ], { throws: [{ method: "drafts/patch", message: "wire down" }] })
+    act(() => { owner.onWireSlot?.("input_image", "s_1") })
+    expect(await screen.findByText("wire down", {}, { timeout: 4000 })).toBeTruthy()
+  })
+
+  test("wire gives a foreign refusal the fallback voice", async () => {
+    const owner = await openWireOwner([
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
+      { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/source.png" } },
+    ], { throws: [{ method: "drafts/patch", value: "foreign" }] })
+    act(() => { owner.onWireSlot?.("input_image", "s_1") })
+    expect(await screen.findByText("wire failed", {}, { timeout: 4000 })).toBeTruthy()
+  })
 
   test("a foreign remove throw voices 'remove failed' (never a throw past the gesture)", async () => {
     mountClaimed(

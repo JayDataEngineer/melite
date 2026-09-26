@@ -31,7 +31,7 @@ import { postManageAction } from '@melite/card-base/wire'
  * separately (the stage params own it; the DECL owns the file). */
 export type Rescue =
   | { kind: 'extension', pack: string }
-  | { kind: 'model', file: string }
+  | { kind: 'model', file: string, target?: string }
 
 /** Parse a failed run's reason for a rescueable miss. The
  * missing-extension refusal names its pack verbatim
@@ -42,11 +42,29 @@ export function parseRescue(error: string): Rescue | null {
   if (typeof error !== 'string' || error === '') return null
   const ext = /requires '([^']+)'/.exec(error)
   if (ext !== null) return { kind: 'extension', pack: ext[1]! }
+  const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1]
+  const weight = /needs weight '([^']+)'/i.exec(error)
+  if (weight !== null && /absent on the models tree/i.test(error)) {
+    return {
+      kind: 'model',
+      file: weight[1]!,
+      ...(target === undefined ? {} : { target }),
+    }
+  }
   const file = /([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))/.exec(error)
-  if (file !== null && /not found|does not exist|no such file|missing|404/i.test(error)) {
-    return { kind: 'model', file: file[1]! }
+  if (file !== null && /not found|does not exist|no such file|missing|absent on the models tree|404/i.test(error)) {
+    return {
+      kind: 'model',
+      file: file[1]!,
+      ...(target === undefined ? {} : { target }),
+    }
   }
   return null
+}
+
+export interface RescueResult {
+  detail: string
+  restartRequired: boolean
 }
 
 /** Offer one rescue through the manage seat. Names only — the
@@ -55,12 +73,32 @@ export function parseRescue(error: string): Rescue | null {
  * their own provision rows under the card id — provision_model
  * resolves both). Resolves
  * with the reply's detail line, refuses with its own name. */
-export async function runRescueCall(rescue: Rescue, target: string): Promise<string> {
+export async function runRescueCall(rescue: Rescue, target: string): Promise<RescueResult> {
+  const provisionTarget = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
+    ? rescue.target
+    : target
   const reply = rescue.kind === 'extension'
     ? await postManageAction('install_extension', { nodes: [rescue.pack] })
-    : await postManageAction('provision_model', { model: target })
+    : await postManageAction('provision_model', { model: provisionTarget })
   if (!reply.ok) throw new Error(reply.detail ?? 'manage refused')
-  return reply.detail ?? (rescue.kind === 'extension' ? rescue.pack + ' installed' : target + ' provisioned')
+  const data = typeof reply.data === 'object' && reply.data !== null && !Array.isArray(reply.data)
+    ? reply.data as Record<string, unknown>
+    : null
+  const state = data !== null && typeof data['state'] === 'string' ? data['state'] : ''
+  return {
+    detail: reply.detail ?? (rescue.kind === 'extension' ? rescue.pack + ' installed' : provisionTarget + ' provisioned'),
+    restartRequired: (data !== null && data['restart_required'] === true) || state === 'restart_required',
+  }
+}
+
+export function terminalStageErrorOf(stages: ReadonlyArray<{ runStatus?: unknown, result?: unknown }>): string | null {
+  for (const stage of stages) {
+    if (stage.runStatus !== 'failed') continue
+    if (typeof stage.result !== 'object' || stage.result === null || Array.isArray(stage.result)) continue
+    const error = Reflect.get(stage.result, 'error')
+    if (typeof error === 'string' && error !== '') return error
+  }
+  return null
 }
 
 /** The first family id on a bench/draft's stage params (the model

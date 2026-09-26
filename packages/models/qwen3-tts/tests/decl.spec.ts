@@ -23,6 +23,7 @@ describe("the qwen3-tts model plugin (0.6B, two variants)", () => {
     assert.equal(DECL.id, "qwen3-tts");
     assert.equal(DECL.label, "Qwen3-TTS 0.6B");
     assert.equal((DECL.lane_inputs as Record<string, unknown>)["model_path"], "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged");
+    assert.equal((DECL.lane_inputs as Record<string, unknown>)["instruction_control"], false);
     assert.ok((DECL.mods as string[]).includes("qvoice"), "the family loads embeddings (the CustomVoice lane)");
     // QVOICE SAVES AND LOADS ACROSS ALL qwen3-tts (operator
     // 2026-09-23, the full law): the save pack boards here too — the

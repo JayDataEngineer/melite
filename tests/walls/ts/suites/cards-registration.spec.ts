@@ -69,6 +69,7 @@ const CARDS: Array<{ pkg: string; genre: string; path: string }> = [
   // (packages/engines/mcp/models/3d/blender/agents/skills/).
   { pkg: "img-to-mesh", genre: "3d", path: "../../../../packages/3d/img-to-mesh/src/card.ts" },
   { pkg: "quad-remesh", genre: "3d", path: "../../../../packages/3d/quad-remesh/src/card.ts" },
+  { pkg: "rig", genre: "3d", path: "../../../../packages/3d/rig/src/card.ts" },
   { pkg: "sfx", genre: "audio", path: "../../../../packages/audio/sfx/src/card.ts" },
   // ideogram4 RETIRED (2026-09-17, operator order — the form-seams
   // stroke): card + family both gone.
@@ -113,14 +114,14 @@ describe("card-only packages register exactly one honest row", () => {
     });
   }
 
-  it("seven cards on one seat: seven unique ids (video-gen retired 2026-09-21; studio stroke 75, fit+skin stroke 87, ideogram4 form-seams)", async () => {
+  it("eight cards on one seat: eight unique ids (video-gen retired 2026-09-21; studio stroke 75, fit+skin stroke 87, ideogram4 form-seams)", async () => {
     const { ctx, seat } = fakeCtx();
     for (const card of CARDS) {
       const mod: CardModule = (await import(card.path)) as CardModule;
       mod.apply(ctx);
     }
-    assert.equal(seat.rows.length, 7);
+    assert.equal(seat.rows.length, 8);
     const ids: string[] = seat.rows.map((r) => r.id);
-    assert.equal(new Set(ids).size, 7, `ids unique (got ${JSON.stringify(ids)})`);
+    assert.equal(new Set(ids).size, 8, `ids unique (got ${JSON.stringify(ids)})`);
   });
 });

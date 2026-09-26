@@ -47,11 +47,9 @@ body is parametric end-to-end — no GLB is ever required.
 - The turnaround renders the **body as-is** — no reposing, no
   lighting studio. The eight views are orthogonal renders with
   the framing/focal knobs.
-- The **254 local-change morphs** (per-part body adjustments —
-  the served vocabulary behind the identity space) do not yet
-  ride the card surface; the bake accepts them in `params_json`
-  (`local_changes`), and the ledger names the served-slider
-  panel as the follow-up.
+- The **254 local-change morphs** ride the card surface. The bake
+  sends only non-zero entries as sparse `local_changes`; untouched
+  morphs stay absent and the engine's neutral values apply.
 - Estimated bodies arrive via `hmr-estimate` — the estimated
   dialect (phenotype[6] + scale[139]) is the estimator's own;
   authoring on the card always uses the 11 authored dims.

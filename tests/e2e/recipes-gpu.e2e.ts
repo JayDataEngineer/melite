@@ -305,7 +305,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
       const s = await runCard(w, {
         model: 'h3-timeline',
         prompt: 'a red cube slides slowly across a white table',
-        width: 768, height: 448, steps: 8,
+        width: 768, height: 448, steps: 8, second_pass_enabled: true,
         loras: [{ id: 'h3_turbo8_v1' }],
         refine_lora: 'h3_taomate_3step',
       }, 'h3 refine rider')

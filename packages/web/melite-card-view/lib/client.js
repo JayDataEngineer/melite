@@ -8802,10 +8802,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				kind: "extension",
 				pack: ext[1]
 			};
-			const file = /([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))/.exec(error);
-			if (file !== null && /not found|does not exist|no such file|missing|404/i.test(error)) return {
+			const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1];
+			const weight = /needs weight '([^']+)'/i.exec(error);
+			if (weight !== null && /absent on the models tree/i.test(error)) return {
 				kind: "model",
-				file: file[1]
+				file: weight[1],
+				...target === void 0 ? {} : { target }
+			};
+			const file = /([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))/.exec(error);
+			if (file !== null && /not found|does not exist|no such file|missing|absent on the models tree|404/i.test(error)) return {
+				kind: "model",
+				file: file[1],
+				...target === void 0 ? {} : { target }
 			};
 			return null;
 		}
@@ -8816,9 +8824,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* resolves both). Resolves
 		* with the reply's detail line, refuses with its own name. */
 		async function runRescueCall(rescue, target) {
-			const reply = rescue.kind === "extension" ? await postManageAction("install_extension", { nodes: [rescue.pack] }) : await postManageAction("provision_model", { model: target });
+			const provisionTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : target;
+			const reply = rescue.kind === "extension" ? await postManageAction("install_extension", { nodes: [rescue.pack] }) : await postManageAction("provision_model", { model: provisionTarget });
 			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
-			return reply.detail ?? (rescue.kind === "extension" ? rescue.pack + " installed" : target + " provisioned");
+			const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : null;
+			const state = data !== null && typeof data["state"] === "string" ? data["state"] : "";
+			return {
+				detail: reply.detail ?? (rescue.kind === "extension" ? rescue.pack + " installed" : provisionTarget + " provisioned"),
+				restartRequired: data !== null && data["restart_required"] === true || state === "restart_required"
+			};
+		}
+		function terminalStageErrorOf(stages) {
+			for (const stage of stages) {
+				if (stage.runStatus !== "failed") continue;
+				if (typeof stage.result !== "object" || stage.result === null || Array.isArray(stage.result)) continue;
+				const error = Reflect.get(stage.result, "error");
+				if (typeof error === "string" && error !== "") return error;
+			}
+			return null;
 		}
 		/** The first family id on a bench/draft's stage params (the model
 		* the run shot — the rescue's provision target). Null when no
@@ -8858,17 +8881,42 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const rescue = parseRescue(error);
 			const [busy, setBusy] = (0, react.useState)(false);
 			const [done, setDone] = (0, react.useState)(null);
+			const [restarting, setRestarting] = (0, react.useState)(false);
+			const [restarted, setRestarted] = (0, react.useState)(false);
 			const [note, setNote] = (0, react.useState)(null);
 			if (rescue === null) return null;
 			const family = familyOfStages(stages) ?? "";
 			const card = family !== "" ? "" : cardOfStages(stages) ?? "";
-			const target = family !== "" ? family : card;
-			const what = rescue.kind === "extension" ? "extension pack \"" + rescue.pack + "\"" : "model file \"" + rescue.file + "\"" + (target !== "" ? " (" + (family !== "" ? "family " : "card ") + target + ")" : "");
-			if (done !== null) return (0, react.createElement)("div", { className: card_module_css_default$1.rescue }, (0, react.createElement)("p", { className: card_module_css_default$1.rescueNote }, done + " — run again when ready."), (0, react.createElement)("button", {
-				className: card_module_css_default$1.rescueRun,
-				type: "button",
-				onClick: onRun
-			}, "Run again"));
+			const target = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : family !== "" ? family : card;
+			const targetKind = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? "declared target " : family !== "" ? "family " : "card ";
+			const what = rescue.kind === "extension" ? "extension pack \"" + rescue.pack + "\"" : "model file \"" + rescue.file + "\"" + (target !== "" ? " (" + targetKind + target + ")" : "");
+			if (done !== null) {
+				if (done.restartRequired) {
+					if (restarted) return (0, react.createElement)("div", { className: card_module_css_default$1.rescue }, (0, react.createElement)("p", { className: card_module_css_default$1.rescueNote }, "Restarting… waiting for the engine to become active. Reload the page or engine, then press Run."));
+					return (0, react.createElement)("div", { className: card_module_css_default$1.rescue }, (0, react.createElement)("p", { className: card_module_css_default$1.rescueNote }, done.detail + " — restart required before activation."), (0, react.createElement)("button", {
+						className: card_module_css_default$1.rescueBtn,
+						type: "button",
+						disabled: restarting,
+						onClick: () => {
+							setRestarting(true);
+							setNote(null);
+							postManageAction("restart", {}).then((reply) => {
+								if (!reply.ok) throw new Error(reply.detail ?? "restart refused");
+								setRestarting(false);
+								setRestarted(true);
+							}).catch((e) => {
+								setRestarting(false);
+								setNote(e instanceof Error ? e.message : "restart failed");
+							});
+						}
+					}, restarting ? "Restarting…" : "Restart to activate"), restarting ? (0, react.createElement)("p", { className: card_module_css_default$1.rescueNote }, "Restarting… waiting for the engine to become active.") : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.rescueErr }, note) : null);
+				}
+				return (0, react.createElement)("div", { className: card_module_css_default$1.rescue }, (0, react.createElement)("p", { className: card_module_css_default$1.rescueNote }, done.detail + " — run again when ready."), (0, react.createElement)("button", {
+					className: card_module_css_default$1.rescueRun,
+					type: "button",
+					onClick: onRun
+				}, "Run again"));
+			}
 			return (0, react.createElement)("div", { className: card_module_css_default$1.rescue }, (0, react.createElement)("p", { className: card_module_css_default$1.rescueNote }, "Missing " + what + " — install through the manage seat?"), (0, react.createElement)("button", {
 				className: card_module_css_default$1.rescueBtn,
 				type: "button",
@@ -8877,9 +8925,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onClick: () => {
 					setBusy(true);
 					setNote(null);
-					runRescueCall(rescue, target).then((line) => {
+					runRescueCall(rescue, target).then((result) => {
 						setBusy(false);
-						setDone(line);
+						setDone(result);
 					}).catch((e) => {
 						setBusy(false);
 						setNote(e instanceof Error ? e.message : "install failed");
@@ -56101,8 +56149,8 @@ void main() {
 			};
 			const actionBtn = (label, verb, opts) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 				type: "button",
-				"aria-label": opts?.aria ?? label,
-				"data-testid": opts?.testid ?? label,
+				"aria-label": opts.aria,
+				"data-testid": opts.testid,
 				disabled: busy,
 				onClick: (e) => {
 					e.stopPropagation();
@@ -59422,8 +59470,10 @@ void main() {
 				if (snapshot.status === "failed") return (0, react.createElement)(react.Fragment, null, staleBuildLine, (0, react.createElement)("p", { className: card_module_css_default$1.failed }, snapshot.failure?.message ?? "cards resource failed"));
 				return (0, react.createElement)(react.Fragment, null, staleBuildLine, (0, react.createElement)("p", { className: card_module_css_default$1.loading }, "loading " + address + "…"));
 			}
-			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, staleBuildLine, failedLine, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, localRunError !== null ? (0, react.createElement)(RunRescue, {
-				error: localRunError,
+			const stageError = value.kind === "run" ? null : terminalStageErrorOf(value.stages);
+			const runError = localRunError ?? stageError;
+			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, staleBuildLine, failedLine, runError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, runError) : null, runError !== null ? (0, react.createElement)(RunRescue, {
+				error: runError,
 				stages: value.stages,
 				onRun
 			}) : null, (0, react.createElement)(ToastViewport), (0, react.createElement)(BenchView, {
@@ -59441,8 +59491,8 @@ void main() {
 				runId: lastRunId,
 				refreshTick: benchTick,
 				startError: localRunError
-			})) : value.kind === "draft" ? (0, react.createElement)(react.Fragment, null, staleBuildLine, failedLine, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, localRunError !== null ? (0, react.createElement)(RunRescue, {
-				error: localRunError,
+			})) : value.kind === "draft" ? (0, react.createElement)(react.Fragment, null, staleBuildLine, failedLine, runError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, runError) : null, runError !== null ? (0, react.createElement)(RunRescue, {
+				error: runError,
 				stages: value.stages,
 				onRun: onRunDraftStage
 			}) : null, (0, react.createElement)(DraftView, {
@@ -59646,4 +59696,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="6a1ad4d6c4213f818654e72c8a2c6981a156a61a";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="0d207647fbb11ffb26d8c6966b612411347796f3";

@@ -152,6 +152,58 @@ test('a healthy row never renders an error face (absent ≡ clean)', async () =>
 // the why where the Run was pressed, not just the tab top.
 const TURBO_REFUSAL = "card_compose phase 1: unknown variant 'turbo' for model 'anima' (known: standard, default)"
 
+test('a normalized bench stage error mounts the tab error and rescue', async () => {
+  stubWire()
+  const error = "card 'mask' needs weight 'sams/sam2.1_hiera_large.pt' — absent on the models tree; fetch declared-source (provision_model model=mask)"
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: () => {} },
+      },
+    }),
+    useResource: () => ({
+      status: 'live',
+      value: {
+        ...BENCH,
+        stages: [{
+          id: 's_0', card: 'mask', title: 'mask', engine: 'comfyui', status: 'failed', runStatus: 'failed',
+          params: { prompt: 'a red cube' }, result: { error },
+        }],
+      } as CardsBenchValue,
+    }),
+  }))
+  expect((await screen.findAllByText(error)).length).toBeGreaterThan(0)
+  expect(screen.getByText(/Missing model file/)).toBeTruthy()
+})
+
+test('a normalized draft stage error mounts the draft error and rescue', async () => {
+  stubWire()
+  const error = "card 'mask' needs weight 'sams/sam2.1_hiera_large.pt' — absent on the models tree; fetch declared-source (provision_model model=mask)"
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/draft/bench-s1/s_0' },
+        actions: { openResource: () => {} },
+      },
+    }),
+    useResource: () => ({
+      status: 'live',
+      value: {
+        kind: 'draft', draftId: 'bench-s1', stageId: 's_0', intent: 'mask', rev: 7,
+        stages: [{
+          id: 's_0', card: 'mask', title: 'mask', engine: 'comfyui', status: 'failed', runStatus: 'failed',
+          params: { prompt: 'a red cube' }, result: { error },
+        }],
+      },
+    }),
+  }))
+  expect((await screen.findAllByText(error)).length).toBeGreaterThan(0)
+  expect(screen.getByText(/Missing model file/)).toBeTruthy()
+})
+
 test('a refused start lands on the row — the open drill reads the why', async () => {
   // THE REFUSAL RIDES THE ERROR BRANCH (stroke 81): runs/start
   // refuses with the compose text; the outcome patch applies into

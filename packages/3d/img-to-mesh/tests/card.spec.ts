@@ -10,7 +10,9 @@ import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadCardDefs } from "@melite/comfyui-cordis";
+import { loadCardDefs, theService } from "@melite/comfyui-cordis";
+import { resolveCardFlowOutputs } from "@melite/comfyui-cordis/service";
+import { fieldsOf, type FormSpecDoc, type SchemaEnvelope } from "@melite/card-base";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -28,24 +30,7 @@ const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
 
 let def: CardDefinition;
 
-/** The schema defaults as literals — the wire-string knobs ride
- *  strings (resolution/atlas/camera_fov…), the door extracts
- *  defaults without re-validation and compose coerces at the
- *  closed tables. */
-const BASE: Record<string, unknown> = {
-  input_image: "/m/photo.png", seed: 42, steps: 12, cfg: 7.5,
-  resolution: "1024", shape_steps: 20, shape_cfg: 7.5,
-  tex1_steps: 12, tex1_cfg: 7.5, tex2_steps: 12, tex2_cfg: 1,
-  remesh_resolution: 768, decimate_faces: 700000, smooth_angle: 180,
-  atlas_size: "4096", ao_size: "1024", normal_size: "2048",
-  struct_sampler: "euler", struct_scheduler: "normal",
-  shape_sampler: "euler", shape_scheduler: "normal",
-  tex1_sampler: "euler", tex1_scheduler: "simple",
-  tex2_sampler: "euler", tex2_scheduler: "normal",
-  sd3_shift: 5, rescale_struct: 0.7, rescale_shape: 0.5,
-  override_struct: 0.667, override_shape: 0.769,
-  bg_removal: "auto", camera_fov: "auto",
-};
+let BASE: Record<string, unknown> = {};
 
 let trellis: ModelFacts;
 let pixal: ModelFacts;
@@ -58,6 +43,7 @@ beforeAll(async () => {
   pixal = facts.models.pixal3d!;
   rig = facts.models.transfer_rig!;
   assert.ok(trellis && pixal && rig, "all three family facts rows serve");
+  BASE = { input_image: "/m/photo.png", ...trellis.defaults };
 });
 
 describe("the default family (boarded order)", () => {
@@ -67,6 +53,13 @@ describe("the default family (boarded order)", () => {
     // this order) — a reorder re-defaults the card, so it is pinned.
     assert.deepEqual((def as unknown as { boarded: string[] }).boarded,
       ['pixal3d', 'trellis2-native', 'transfer_rig']);
+  });
+  it("requires a model before the multi-family renderer can compose", () => {
+    assert.equal(def.requiresModel, true);
+    assert.throws(
+      () => theService().compose("img-to-mesh", null, {}, "missing-model"),
+      /requires a model id/,
+    );
   });
 });
 
@@ -124,6 +117,59 @@ describe("the lift arms (one clear image → textured mesh)", () => {
 });
 
 
+describe("the family-scoped surface and output bindings", () => {
+  it("the transfer arm shows only its two mesh inputs; the lift arm shows the image input", () => {
+    const schema = theService().formSchemas("img-to-mesh", "transfer_rig")!.schema as SchemaEnvelope;
+    const families = def.boarded.map((id) => ({ id, present: true }));
+    const transfer = fieldsOf({ form: "img-to-mesh", model: "transfer_rig", schema, families } as FormSpecDoc);
+    assert.deepEqual(transfer.map((field) => field.name), ["rigged_glb", "target_glb"]);
+    const lift = fieldsOf({ form: "img-to-mesh", model: "pixal3d", schema, families } as FormSpecDoc);
+    assert.equal(lift.find((field) => field.name === "input_image")?.type, "image");
+    assert.equal(lift.find((field) => field.name === "rigged_glb"), undefined);
+  });
+
+  it("offers only engine-supported resolution and quant cells", () => {
+    for (const row of [pixal, trellis]) {
+      const variants = row.variants.filter((variant) => variant.hide_from_dropdown !== true);
+      assert.deepEqual(variants.filter((variant) => variant.group === "Variant").map((variant) => variant.id), ["1024", "1536"]);
+      assert.equal(row.variants.find((variant) => variant.id === "512")?.hide_from_dropdown, true);
+      assert.equal(row.variants.find((variant) => variant.id === "1536")?.resolver_defaults.resolution, "1536");
+      for (const variant of row.variants) {
+        for (const cell of variant.cells) {
+          if (cell.quant === "bf16") assert.equal(cell.hide_from_dropdown, true);
+        }
+      }
+    }
+    assert.throws(() => def.schema({ ...BASE, resolution: "512" }), /resolution|1024|1536/);
+  });
+
+  it("keeps the two producer predicates mutually exclusive", () => {
+    const [lift, transfer] = def.flowOutputBindings!;
+    assert.equal(lift.when?.({}), true);
+    assert.equal(transfer.when?.({ rigged_glb: "/m/r.glb", target_glb: "" }), false);
+    assert.equal(transfer.when?.({ rigged_glb: "/m/r.glb" }), false);
+    assert.equal(transfer.when?.({ rigged_glb: "", target_glb: "/m/t.glb" }), false);
+    assert.equal(transfer.when?.({ target_glb: "/m/t.glb" }), false);
+    assert.equal(transfer.when?.({ rigged_glb: "/m/r.glb", target_glb: "/m/t.glb" }), true);
+  });
+
+  it("binds the lift and transfer outputs to their actual producers", () => {
+    const lift = new GraphBuilder();
+    def.compose(BASE, trellis, lift, "lift");
+    assert.deepEqual(resolveCardFlowOutputs(def, BASE, lift.toJSON()), {
+      outputs: { default: "mesh" },
+      outputNodes: { default: "Save3DAdvanced.0" },
+    });
+    const transfer = new GraphBuilder();
+    const transferParams = { ...BASE, rigged_glb: "/m/r.glb", target_glb: "/m/t.glb" };
+    def.compose(transferParams, rig, transfer, "transfer");
+    assert.deepEqual(resolveCardFlowOutputs(def, transferParams, transfer.toJSON()), {
+      outputs: { default: "mesh" },
+      outputNodes: { default: "SaveRiggedModel.0" },
+    });
+  });
+});
+
 describe("THE SCHEMA GATE (admission validates values, not just keys)", () => {
   it("an out-of-envelope steps refuses loud (declared 4–60), never composes", () => {
     assert.throws(
@@ -139,12 +185,13 @@ describe("THE SCHEMA GATE (admission validates values, not just keys)", () => {
     );
   });
 
-  it("an unstated steps arrives as the declared default 12 (the walk fills it)", () => {
+  it("model defaults, not a second card schema, supply unstated lift steps", () => {
+    const schemaOnly = def.schema({ input_image: "/m/photo.png" });
+    assert.equal(schemaOnly.steps, undefined, "the card schema stays defaultless for model-owned knobs");
     const g = new GraphBuilder();
-    const p = { ...BASE }; delete p.steps;
-    def.compose(p, trellis, g, "r_def");
+    def.compose({ ...trellis.defaults, input_image: "/m/photo.png" }, trellis, g, "r_def");
     assert.equal(g.toJSON()["KSampler.0"].inputs.steps, 12,
-      "the fresh doc composes the schema-declared default 12, not undefined");
+      "the model row supplies the default 12");
   });
 });
 

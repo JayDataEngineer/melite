@@ -106,6 +106,7 @@ test('THE MESH RULE: estate GLB paths and artifact GLB URLs pass; everything els
     'https://host/mesh.GLB?download=1',
     '//host/mesh.gltf#preview',
     'data:model/gltf-binary;base64,AAA',
+    'data:model/gltf+json;base64,AAA',
   ]) expect(isMeshUrl(good)).toBe(true)
   for (const bad of [
     '', 'donor', 'https://host/mesh.glb.evil', 'https://host/a.png',
@@ -201,6 +202,13 @@ test('DRAG-OVER: accepted types light up; unknown and disabled drags stay dark',
     dataTransfer: { types: ['Files'], getData: () => '', files: [] },
   })).toBe(true)
   expect(container.querySelector('input[type="file"]')).toBeNull()
+})
+
+test('DRAG-OVER: missing type metadata refuses the drop hint', () => {
+  render(h(InputSquare, { label: 'x' }))
+  const box = screen.getByRole('button', { name: 'x source' })
+  expect(fireEvent.dragOver(box, { dataTransfer: { getData: () => '', files: [], types: undefined } })).toBe(true)
+  expect(fireEvent.dragOver(box, { dataTransfer: { getData: () => '', files: [], types: null } })).toBe(true)
 })
 
 test('DROP: the asset MIME speaks first (files never shadow a media-bar drop)', () => {
@@ -300,6 +308,18 @@ test('THE HIDDEN PICKER: a host that unmounts mid-pick never throws (the reset g
   // the host unmounted on the voice — the square is gone, no throw, one voice
   expect(container.querySelector('input[type="file"]')).toBeNull()
   expect(voices).toBe(1)
+})
+
+test('THE HIDDEN PICKER: a synchronous host unmount leaves no stale input ref', () => {
+  let unmount = (): void => {}
+  const onFile = vi.fn(() => { unmount() })
+  const view = render(h(InputSquare, { label: 'x', onFile }))
+  unmount = view.unmount
+  const input = view.container.querySelector('input[type="file"]') as HTMLInputElement
+  Object.defineProperty(input, 'files', { value: [new File(['x'], 'a.png')], configurable: true })
+  expect(() => fireEvent.change(input)).not.toThrow()
+  expect(onFile).toHaveBeenCalledTimes(1)
+  expect(view.container.querySelector('input[type="file"]')).toBeNull()
 })
 
 test('the shared square carries mesh compatibility affordances and slot hooks', () => {

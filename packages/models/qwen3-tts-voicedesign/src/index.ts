@@ -117,6 +117,7 @@ export const DECL: ModelDecl = {
       // snapshot law as the customvoice lane above: real weights,
       // real address.
       "lane_inputs": {
+        "instruction_control": false,
         "model_path": "Qwen3-TTS-12Hz-1.7B-Base-merged",
         "synth_lane": "clone",
       },
@@ -155,6 +156,7 @@ export const DECL: ModelDecl = {
     "clip_type": null,
     "clip_vision": "",
     "family": "qwen3_tts",
+    "instruction_control": true,
     "latent_node": "EmptySD3LatentImage",
     "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
     "sampling_shift": 0,

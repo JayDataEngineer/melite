@@ -150,7 +150,7 @@ export async function uploadInputFile(file: File): Promise<{ name: string; file:
   // GLB extension when it does not (the door pairs the two the same
   // way, extension-gated).
   const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name)
-  const isMesh = file.type === 'model/gltf-binary' || (file.type === 'application/octet-stream' && glbName)
+  const isMesh = file.type === 'model/gltf-binary' || file.type === 'model/gltf+json' || (file.type === 'application/octet-stream' && glbName)
   if (!isImage && !isAudio && !isMesh) {
     throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image, audio, or .glb/.gltf file')
   }

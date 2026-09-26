@@ -12,6 +12,7 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { ANNY_MORPH_LABELS } from "@melite/comfyui-card-kit/morphs";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import { resolveCardFlowOutputs } from "@melite/comfyui-cordis/service";
 
 const DUMMY_MODEL = { id: "", card: "", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
 
@@ -143,7 +144,18 @@ describe("the anny compose gate", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({}), DUMMY_MODEL, g, "r1");
     const doc = JSON.parse(g.toJSON()["AnnyParamsToGlb.0"].inputs.params_json as string) as { local_changes?: unknown };
-    assert.equal(doc.local_changes, undefined);
+    assert.deepEqual(doc.local_changes, {}, "the authored dialect always carries the required object");
+  });
+
+  it("declares the mesh input and a representative turnaround image output", () => {
+    assert.deepEqual(def.flowKinds.inputs, { body_glb: "mesh" });
+    assert.deepEqual(def.flowKinds.outputs, { default: "image" });
+    const g = new GraphBuilder();
+    def.compose(def.schema({}), DUMMY_MODEL, g, "flow");
+    assert.deepEqual(resolveCardFlowOutputs(def, {}, g.toJSON()), {
+      outputs: { default: "image" },
+      outputNodes: { default: "SaveImage.0" },
+    });
   });
 
   it("the served preview claim names the identity model (the live arms derive client-side)", () => {

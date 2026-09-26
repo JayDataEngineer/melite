@@ -243,6 +243,19 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     );
   });
 
+  it("a non-string figures value refuses LOUD", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", figures: 1 }] }, DUMMY, new GraphBuilder(), "r_fig_type"),
+      /'figures' must be a comma-joined list/,
+    );
+  });
+
+  it("a separators-only figures value is treated as no picks", () => {
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person", figures: " , " }] }, DUMMY, g, "r_fig_empty");
+    assert.equal(Object.values(g.toJSON()).some((n: Row) => n["class_type"] === "ImpactSEGSPicker"), false);
+  });
+
   it("a non-Impact word refuses LOUD and names the offender (never a silent empty detection)", () => {
     assert.throws(
       () => def.compose({ input_image: "/m/pic.png", sam2: [{ labels: "person,dog" }] }, DUMMY, new GraphBuilder(), "r_bad"),
@@ -255,15 +268,36 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.deepEqual(fieldNames(draw), ["name", "payload"]);
   });
 
+  it("an unused fieldless modifier declaration has an empty entry surface", () => {
+    const draw = (def.mods ?? []).find((k) => k.kind === "draw")! as unknown as Row;
+    const fields = draw["fields"];
+    try {
+      draw["fields"] = undefined;
+      const g = new GraphBuilder();
+      def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person" }] }, DUMMY, g, "r_fieldless_draw");
+      assert.ok(Object.keys(g.toJSON()).length > 0);
+    } finally {
+      draw["fields"] = fields;
+    }
+  });
+
   it("the card declares its weights (declared, then auto provisioned — the operator's 2026-09-19 order; the SAM3 checkpoint joined 2026-10-08, the red-box hunt: the pin had no weight for weeks and the engine truncated the mask arm in silence; the segm/face/hand detectors joined 2026-10-09, the Impact trim: person/face/hand replace yolo11m's 80 COCO)", () => {
     const rows = def.provisions ?? [];
-    assert.equal(rows.length, 5, "the card's five weight files");
-    assert.deepEqual(rows.slice(2), IMPACT_DETECTOR_PROVISIONS, "the Impact rows are the card-kit catalog verbatim");
+    assert.equal(rows.length, 6, "the card's six weight files");
+    assert.deepEqual(rows.slice(3), IMPACT_DETECTOR_PROVISIONS, "the Impact rows are the card-kit catalog verbatim");
     const sam3 = rows.find((r) => r.name === "sam3.1_multiplex_fp16.safetensors")!;
     assert.ok(sam3, "the sam3 checkpoint rides (the red-box hunt's missing weight)");
     assert.equal(sam3.folder, "checkpoints", "CheckpointLoaderSimple reads models/checkpoints/");
     assert.match(sam3.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted by direct download)");
     assert.ok((sam3.size_bytes ?? 0) > 0 && sam3.url.startsWith("https://"), "the URL + size ride");
+    const rtdetr = rows.find((r) => r.name === "rt_detr_v4-x-hgnet_fp32.safetensors")!;
+    assert.deepEqual(rtdetr, {
+      name: "rt_detr_v4-x-hgnet_fp32.safetensors",
+      url: "https://huggingface.co/Comfy-Org/SDPose/resolve/main/diffusion_models/rt_detr_v4-x-hgnet_fp32.safetensors",
+      folder: "diffusion_models",
+      sha256: "1ba4a7794c2f8b176327c887ba38fbe0f977049cbef149960288aa923d0239f3",
+      size_bytes: 247790660,
+    });
     const sam2 = rows.find((r) => r.name === "sam2.1_hiera_large.pt")!;
     assert.ok(sam2, "the sam2 checkpoint rides");
     assert.equal(sam2.folder, "sams", "SAMLoader reads models/sams/");
@@ -291,13 +325,21 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
   it("THE ARM WEIGHTS (the silent-truncation law, 2026-10-09): the run's touched provision rows — an unused arm names nothing", () => {
     const names = (merged: Record<string, unknown>): string[] => [...(def.armWeights!(merged))].sort();
     assert.deepEqual(names({}), [], "an empty run touches no weights");
-    assert.deepEqual(names({ sam3: [{ prompt: "the cloak" }] }), ["sam3.1_multiplex_fp16.safetensors"], "a sam3 bag names the SAM3 checkpoint");
+    assert.deepEqual(names({ sam3: [{ prompt: "the cloak" }] }),
+      ["rt_detr_v4-x-hgnet_fp32.safetensors", "sam3.1_multiplex_fp16.safetensors"], "the default box manifest names RT-DETR with SAM3");
+    assert.deepEqual(names({ sam3: [{ prompt: "the cloak", export_boxes: false }] }),
+      ["sam3.1_multiplex_fp16.safetensors"], "a text-only SAM3 run with the manifest off names only SAM3");
+    assert.deepEqual(names({ sam3: [{ via_rtdetr: true, export_boxes: false }] }),
+      ["rt_detr_v4-x-hgnet_fp32.safetensors", "sam3.1_multiplex_fp16.safetensors"], "via_rtdetr names RT-DETR even when the manifest draw is off");
+    assert.deepEqual(names({ sam3: [null] }), ["sam3.1_multiplex_fp16.safetensors"], "a malformed entry is left for compose to refuse without naming RT-DETR");
     assert.deepEqual(names({ sam2: [{ labels: "person" }] }),
       ["person_yolov8m-seg.pt", "sam2.1_hiera_large.pt"], "a person-only run never names the face/hand detectors");
     assert.deepEqual(names({ sam2: [{ labels: "face" }, { labels: "hand" }] }),
       ["face_yolov8m.pt", "hand_yolov8s.pt", "sam2.1_hiera_large.pt"], "face/hand entries name their own bbox detectors, never the segm one");
     assert.deepEqual(names({ sam2: [{ labels: "person", figures: "1,2" }] }),
       ["person_yolov8m-seg.pt", "sam2.1_hiera_large.pt"], "figures add no weights (they pick from the primary's own SEGS)");
+    assert.deepEqual(names({ sam2: [{ labels: 7 }] }),
+      ["sam2.1_hiera_large.pt"], "a malformed label still names the SAM2 checkpoint and no detector");
   });
 });
 
@@ -339,6 +381,8 @@ describe("the mask compose gate (the bag is the recipe)", () => {
     def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "the red cloak" }, { prompt: "the dog" }] }, DUMMY, g, "run_1");
     const json = JSON.stringify(g.toJSON());
     assert.ok(json.includes("SAM3_Detect"), "the SAM3 lane rides");
+    const loader = Object.values(g.toJSON()).find((n: Row) => n["class_type"] === "UNETLoader") as { inputs?: Record<string, unknown> };
+    assert.equal(loader?.inputs?.["unet_name"], "rt_detr_v4-x-hgnet_fp32.safetensors", "the default box manifest loads the declared FP32 RT-DETR artifact");
     assert.ok(json.includes("the red cloak") && json.includes("the dog"), "both selections ride the CLIP lane");
     assert.ok(json.includes("mask_combined"), "the first standalone source anchors mask_combined");
     assert.ok(json.includes("mask_sam3_2"), "the name-less second entry falls back to the indexed export name");
@@ -394,9 +438,12 @@ describe("the mask compose gate (the bag is the recipe)", () => {
   it("via_rtdetr rides the box lane (RTDETR_detect + the manifest)", () => {
     const g = new GraphBuilder();
     def.compose({ input_image: "/m/pic.png", sam3: [{ via_rtdetr: true }] }, DUMMY, g, "run_5");
-    const json = JSON.stringify(g.toJSON());
+    const row = g.toJSON();
+    const json = JSON.stringify(row);
     assert.ok(json.includes("RTDETR_detect"), "the RT-DETR proposal lane rides");
     assert.ok(json.includes("DrawBBoxes"), "the manifest draws (export_boxes defaults true)");
+    const loader = Object.values(row).find((n: Row) => n["class_type"] === "UNETLoader") as { inputs?: Record<string, unknown> };
+    assert.equal(loader?.inputs?.["unet_name"], "rt_detr_v4-x-hgnet_fp32.safetensors");
   });
 
   it("the entry's committed RT-DETR scalars thread VERBATIM (per-entry detection knobs)", () => {

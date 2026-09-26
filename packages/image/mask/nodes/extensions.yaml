@@ -1,0 +1,28 @@
+extensions:
+  - name: comfyui-impact-pack
+    url: https://github.com/ltdrdata/ComfyUI-Impact-Pack
+    ref: 5bed9d5545ef430406a5d6d7233e5c0a5e75051a
+    required: true
+    desc: Impact Pack detector and segmentation nodes used by the mask card.
+    pip:
+      - segment-anything
+      - scikit-image
+      - piexif
+      - transformers
+      - opencv-python-headless
+      - scipy
+      - numpy
+      - dill
+      - matplotlib
+      - git+https://github.com/facebookresearch/sam2
+  - name: comfyui-impact-subpack
+    url: https://github.com/ltdrdata/ComfyUI-Impact-Subpack
+    ref: 50c7b71a6a224734cc9b21963c6d1926816a97f1
+    required: true
+    desc: Impact Subpack detector provider used by the mask card.
+    pip:
+      - matplotlib
+      - ultralytics>=8.3.162
+      - numpy
+      - opencv-python-headless
+      - dill

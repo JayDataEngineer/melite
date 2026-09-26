@@ -33,6 +33,7 @@ export { }
 export interface RunStageStatus {
   id: string
   status: string
+  engine?: string
   url?: string
   /** The stage's failure text, served verbatim by the status door
    *  (the ComfyUI validation refusal, the asset miss). A failed run
@@ -53,6 +54,7 @@ export interface RunStageStatus {
   /** The live activity line ("sampling 7/20", "node 12") — the tap's
    *  activity fold, same channel as progress. */
   activity?: string
+  result_outputs?: Record<string, unknown>
 }
 
 /** The runs/status row, normalized once. */

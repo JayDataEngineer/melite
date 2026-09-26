@@ -22,7 +22,7 @@
  * (deck :3909 is the dsh-deck.service systemd host — already up,
  * never booted here).
  */
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 /** The token-bearing deck URL (stroke 83): DSH's connection fence has
  * NO empty-open arm (that was the retired estate gateway's E5 law) —
@@ -47,6 +47,14 @@ async function settleHost(page: Page): Promise<void> {
     await notice.click({ timeout: 10_000 })
     await page.waitForTimeout(1_000)
   }
+}
+
+async function expectNoHorizontalOverflow(manager: Locator): Promise<void> {
+  const overflow = await manager.evaluate((element) => ({
+    client: element.clientWidth,
+    scroll: element.scrollWidth,
+  }))
+  expect(overflow.scroll).toBeLessThanOrEqual(overflow.client + 1)
 }
 
 async function openManager(page: Page): Promise<void> {
@@ -105,7 +113,9 @@ test('comfy manager tab tours the live manager without errors', async ({
   await expect(
     manager.getByText('http://127.0.0.1:8188'),
   ).toBeVisible({ timeout: 60_000 })
-  await expect(manager.getByText(/active runs: \d+/)).toBeVisible()
+  await expect(manager.getByText(/^(idle|\d+ active) · \d+ active · \d+\/\d+ complete$/)).toBeVisible()
+  await expect(manager.getByLabel('provision catalog id')).toHaveAttribute('list', /.+/)
+  await expect(manager.getByLabel('provision catalog id')).toHaveAttribute('type', 'search')
 
   // 3. installed packs: real rows off the manager rail — the rail's
   // rows are {name, version: commit-sha} objects rendered
@@ -122,6 +132,8 @@ test('comfy manager tab tours the live manager without errors', async ({
   const result = manager.getByTestId('manage-result')
   await expect(result).toBeVisible()
   await expect(result.getByText('list_extensions')).toBeVisible()
+  await expect(result.locator('pre')).toBeVisible()
+  await expectNoHorizontalOverflow(manager)
 
   // 4. snapshots: real rows.
   await manager.getByRole('button', { name: 'List snapshots' }).click()
@@ -133,9 +145,15 @@ test('comfy manager tab tours the live manager without errors', async ({
   // dispatch (snapshot_list), no status reply overwrites it.
   const before = await result.innerText()
   expect(before).toContain('snapshot_list')
-  await manager.getByRole('button', { name: 'Refresh' }).click()
+  await manager.getByRole('button', { name: 'Refresh', exact: true }).click()
   await page.waitForTimeout(3_000)
   expect(await result.innerText()).toBe(before)
+
+  await page.setViewportSize({ width: 300, height: 900 })
+  await expect(manager).toBeVisible()
+  await expect(result).toBeVisible()
+  await expect(result.locator('pre')).toBeVisible()
+  await expectNoHorizontalOverflow(manager)
 
   // 6. the tour adds no NEW console noise to its host — the shell
   // has its own boot 404s; those are the host's business. Anything
