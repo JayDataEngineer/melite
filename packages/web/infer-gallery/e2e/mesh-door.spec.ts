@@ -64,7 +64,24 @@ const MIME: Record<string, string> = {
 function serve(): Promise<{ server: Server, origin: string }> {
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost')
-    if (url.pathname === '/mesh.glb') {
+    // THE ARTIFACT ROUTE, AS THE PRODUCT SERVES IT (the operator's
+    // 2026-09-26 bug: the wall served `/mesh.glb` directly, so the
+    // viewer's gate saw a real filename and passed — while every mesh
+    // the studio opens arrives at
+    // `/infer-gallery/artifact?path=<run>/<file>`, whose URL path is
+    // the ROUTE's word and whose real name is in the query. The wall
+    // now drives the product's shape, so a regression in the name law
+    // is caught HERE, in a real browser, with real pixels.
+    const artifactRoute = url.pathname === '/infer-gallery/artifact'
+    const directRoute = url.pathname === '/mesh.glb'
+    if (artifactRoute || directRoute) {
+      if (artifactRoute) {
+        const wanted = url.searchParams.get('path') ?? ''
+        if (!/\.(glb|gltf)$/i.test(wanted.split('?')[0] ?? '')) {
+          res.writeHead(400, { 'content-type': 'text/plain' }).end('not a mesh artifact: ' + wanted)
+          return
+        }
+      }
       if (!existsSync(GLB)) {
         res.writeHead(404).end('no artifact')
         return
@@ -172,13 +189,18 @@ test.describe('the 3D media door in real Chromium', () => {
       // the PATHNAME must be the mesh — the page URL itself carries
       // `?url=/mesh.glb`, and matching on the raw url captured the
       // document response (text/html) instead of the artifact
-      const path = new URL(r.url()).pathname
-      if (path.endsWith('.glb') || path.endsWith('.gltf')) {
+      const parsed = new URL(r.url())
+      const path = parsed.pathname
+      if (path.endsWith('.glb') || path.endsWith('.gltf') || (path === '/infer-gallery/artifact' && parsed.searchParams.has('path'))) {
         fetched.push({ url: r.url(), status: r.status(), type: r.headers()['content-type'] ?? '' })
       }
     })
 
-    await page.goto(`${origin}/?url=/mesh.glb&file=trellis2_native_00004.glb`)
+    await page.goto(
+      `${origin}/?url=` + encodeURIComponent(
+        `${origin}/infer-gallery/artifact?path=` + encodeURIComponent('run-door/img-to-mesh/trellis2_native_00004.glb'),
+      ) + '&file=trellis2_native_00004.glb',
+    )
 
     // 1 — the canvas seat exists and a WebGL context was really created
     await expect(page.locator('canvas')).toHaveCount(1)

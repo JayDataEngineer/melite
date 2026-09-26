@@ -20,7 +20,7 @@ import { useMemo, useState } from 'react'
 import { Modal, Pill, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { MediaDrilldown } from '../drilldown.tsx'
 import { loadDraftOntoBench, loadRunOntoBench } from './bench-load.ts'
-import { artifactPathOfUrl, deleteArtifact, renameArtifact } from './artifact-ops.ts'
+import { artifactNameOf, artifactPathOfUrl, deleteArtifact, renameArtifact } from './artifact-ops.ts'
 
 /** THE ESTATE-ARTIFACT ADDRESS (2026-09-10 regression fix): run artifacts
  *  live outside the DSH workspace, so no document owner can read them.
@@ -166,10 +166,11 @@ export function callsTextOf(params: unknown): string {
   return typeof text === 'string' ? text.replace(/\s+/g, ' ').trim() : ''
 }
 
+/** The artifact's file name — THE ONE LAW (artifact-ops' resolver):
+ *  an artifact-route URL's last path segment is the ROUTE's word, so
+ *  reading the path named every artifact "artifact". */
 function baseName(u: string): string {
-  const clean = u.split('?')[0]
-  const parts = clean.split('/')
-  return parts[parts.length - 1]
+  return artifactNameOf(u)
 }
 
 function timeLabel(sec: unknown): string {

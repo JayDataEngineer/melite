@@ -33,14 +33,29 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { mountStage3D, type Stage3D } from '@melite/card-base/stage3d'
 import { autoFitToHeight, loadGLB } from '@melite/formats/glbLoad'
 
+import { artifactNameOf, artifactPathOfUrl } from './artifact-ops.ts'
 import { bgBase1, stateWarnPrimary1, textTertiary3 } from './ui.tokens'
+
+/** THE ARTIFACT-NAME LAW (the operator's 2026-09-26 report:
+ *  "3D view unavailable — \"artifact\" is not a .glb/.gltf artifact" on a
+ *  real .glb): the media plane serves an artifact at
+ *  `/infer-gallery/artifact?path=<run>/<file>` — the URL's last path
+ *  segment is the ROUTE's word, and the artifact's real name lives in
+ *  the `?path=` query. Judging the artifact by the URL path therefore
+ *  saw "artifact" for EVERY mesh the studio can open, and refused the
+ *  whole 3D plane with a name that was never a file. The name comes
+ *  from the SAME resolver the rename/delete doors use
+ *  (`artifactPathOfUrl`), with the plain URL path as the fallback for
+ *  directly-served files. */
+export const artifactNameFor = artifactNameOf
 
 /** Extensions the shared loader can parse. `.gltf` is accepted by the
  *  loader but a bare `.gltf` usually references sidecar buffers the
  *  artifact route does not serve next to it — so the copy below names
  *  the case rather than letting the fetch fail as a decode error. */
-function unsupportedCopy(url: string): string | null {
-  const path = url.split('?')[0] ?? ''
+export function unsupportedCopy(url: string): string | null {
+  const fromQuery = artifactPathOfUrl(url)
+  const path = fromQuery ?? url.split('?')[0] ?? ''
   if (/\.gltf$/i.test(path)) {
     return '3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.'
   }

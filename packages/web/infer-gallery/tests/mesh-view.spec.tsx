@@ -37,7 +37,7 @@ vi.mock('@melite/formats/glbLoad', () => ({
   autoFitToHeight: (...args: unknown[]) => autoFitToHeight(...args),
 }))
 
-import { MeshView } from '../src/client/mesh-view.tsx'
+import { MeshView, artifactNameFor, unsupportedCopy } from '../src/client/mesh-view.tsx'
 
 /** A minimal loaded-gltf stand-in: one mesh child under the scene root,
  *  OFFSET so the framing assertions can tell "moved the camera to the
@@ -135,6 +135,40 @@ describe('MeshView — the honest-failure law (never a blank box)', () => {
     await waitFor(() => { expect(screen.getByTestId('mesh-view-failure')).toBeTruthy() })
     expect(screen.getByTestId('mesh-view-failure').textContent).toContain('WebGL refused the canvas')
     expect(screen.queryByTestId('mesh-view-canvas')).toBeNull()
+  })
+
+  // THE ARTIFACT-NAME LAW (the operator's report: a real .glb refused
+  // as `"artifact" is not a .glb/.gltf artifact`): the media plane
+  // serves artifacts at `/infer-gallery/artifact?path=<run>/<file>`,
+  // so the URL path is the ROUTE's word and the real name is in the
+  // query. Judged by the path, EVERY studio mesh was refused.
+  it('an artifact-route URL with a .glb in its query IS viewable (the operator\'s exact shape)', () => {
+    const url = '/infer-gallery/artifact?path=' + encodeURIComponent('run-x/img-to-mesh/pixal3d_00003.glb')
+    expect(unsupportedCopy(url)).toBeNull()
+    render(<MeshView url={url} file="pixal3d_00003.glb" />)
+    expect(screen.queryByTestId('mesh-view-failure')).toBeNull()
+  })
+
+  it('a directly-served .glb still opens (the plain URL form is unchanged)', () => {
+    expect(unsupportedCopy('/melite-media/runs/run-1/creature.glb')).toBeNull()
+    expect(unsupportedCopy('/v1/assets/runs/run-1/x.glb')).toBeNull()
+  })
+
+  it('the refusal names the REAL artifact, never the route segment', () => {
+    const url = '/infer-gallery/artifact?path=' + encodeURIComponent('run-x/notes.txt')
+    const copy = unsupportedCopy(url)
+    expect(copy).toContain('notes.txt')
+    expect(copy).not.toContain('"artifact"')
+    // and the .gltf arm reads the query too
+    expect(unsupportedCopy('/infer-gallery/artifact?path=' + encodeURIComponent('run-x/scene.gltf')))
+      .toContain('external buffers')
+    // a non-mesh in a direct url keeps the old shape
+    expect(unsupportedCopy('/melite-media/runs/run-1/thing.png')).toContain('thing.png')
+  })
+
+  it('artifactNameFor reads the name from the route query first, then the path', () => {
+    expect(artifactNameFor('/infer-gallery/artifact?path=' + encodeURIComponent('run-x/a/b.glb'))).toBe('b.glb')
+    expect(artifactNameFor('/melite-media/runs/run-1/creature.glb')).toBe('creature.glb')
   })
 
   it('a non-mesh url refuses WITHOUT mounting a canvas (no wasted WebGL context)', () => {

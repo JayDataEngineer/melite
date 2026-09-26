@@ -10,6 +10,18 @@
  * `error` code, never silent.
  */
 
+/** The artifact's FILE NAME behind an artifact URL — THE ONE LAW
+ *  (the operator's 2026-09-26 report: a real .glb was refused as
+ *  `"artifact" is not a .glb/.gltf artifact`, because the media route
+ *  serves `/infer-gallery/artifact?path=<run>/<file>` and the caller
+ *  read the ROUTE's last path segment). `?path=` first, the plain URL
+ *  path second (a directly-served file has no query). */
+export function artifactNameOf(url: string): string {
+  const fromQuery = artifactPathOfUrl(url)
+  const path = fromQuery ?? url.split('?')[0] ?? ''
+  return path.split('/').pop() ?? path
+}
+
 /** The run-relative artifact path behind one same-origin artifact
  *  URL (`/infer-gallery/artifact?path=run-<id>/<file>`) — null when
  *  the URL rides no such path (foreign URLs, card previews). */

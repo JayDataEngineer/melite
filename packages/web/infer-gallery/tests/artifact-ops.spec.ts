@@ -6,7 +6,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { artifactPathOfUrl, deleteArtifact, renameArtifact } from '../src/client/artifact-ops.ts'
+import { artifactNameOf, artifactPathOfUrl, deleteArtifact, renameArtifact } from '../src/client/artifact-ops.ts'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -22,6 +22,7 @@ describe('artifactPathOfUrl', () => {
     expect(artifactPathOfUrl('https://example.com/a.png')).toBeNull()
     expect(artifactPathOfUrl('/infer-gallery/artifact')).toBeNull()
     expect(artifactPathOfUrl('')).toBeNull()
+    expect(artifactPathOfUrl('http://[invalid')).toBeNull()
   })
 })
 
@@ -49,6 +50,23 @@ describe('deleteArtifact', () => {
     await expect(deleteArtifact('run-a/gone.png')).rejects.toThrow('delete failed (no_artifact)')
   })
 
+  it('falls back to the HTTP status when a refusal has no error code', async () => {
+    stubFetchJson(418, { error: '' })
+    await expect(deleteArtifact('run-a/gone.png')).rejects.toThrow('delete failed (HTTP 418)')
+  })
+
+  it('handles malformed refusal JSON and a foreign transport failure', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: false,
+      status: 503,
+      json: async () => { throw new Error('bad json') },
+    } as unknown as Response)))
+    await expect(deleteArtifact('run-a/gone.png')).rejects.toThrow('delete failed (HTTP 503)')
+
+    vi.stubGlobal('fetch', vi.fn(async () => { throw 'offline' }))
+    await expect(deleteArtifact('run-a/b.png')).rejects.toThrow('delete failed — offline')
+  })
+
   it('throws on transport failure', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('socket reset') }))
     await expect(deleteArtifact('run-a/b.png')).rejects.toThrow('delete failed — socket reset')
@@ -71,6 +89,21 @@ describe('renameArtifact', () => {
     await expect(renameArtifact('run-a/a.png', 'taken.png')).rejects.toThrow('rename failed (already_exists)')
   })
 
+  it('handles malformed refusal JSON, a null answer, and a foreign transport failure', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: false,
+      status: 409,
+      json: async () => { throw new Error('bad json') },
+    } as unknown as Response)))
+    await expect(renameArtifact('run-a/a.png', 'taken.png')).rejects.toThrow('rename failed (HTTP 409)')
+
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => null } as unknown as Response)))
+    await expect(renameArtifact('run-a/a.png', 'b.png')).rejects.toThrow('bad_rename_answer')
+
+    vi.stubGlobal('fetch', vi.fn(async () => { throw 'offline' }))
+    await expect(renameArtifact('run-a/a.png', 'b.png')).rejects.toThrow('rename failed — offline')
+  })
+
   it('refuses a shapeless 200 (the door must answer path + url)', async () => {
     stubFetchJson(200, { ok: true })
     await expect(renameArtifact('run-a/a.png', 'b.png')).rejects.toThrow('bad_rename_answer')
@@ -79,5 +112,31 @@ describe('renameArtifact', () => {
   it('throws on transport failure', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('socket reset') }))
     await expect(renameArtifact('run-a/a.png', 'b.png')).rejects.toThrow('rename failed — socket reset')
+  })
+})
+
+describe('artifactNameOf — THE ONE LAW (the operator\'s 3D-door report)', () => {
+  it('reads the name from the artifact route\'s ?path= query, not the route word', () => {
+    expect(
+      artifactNameOf('/infer-gallery/artifact?path=' + encodeURIComponent('run-x/img-to-mesh/pixal3d_00003.glb')),
+    ).toBe('pixal3d_00003.glb')
+  })
+
+  it('reads a directly-served file from its path', () => {
+    expect(artifactNameOf('/melite-media/runs/run-1/creature.glb')).toBe('creature.glb')
+    expect(artifactNameOf('/v1/assets/runs/run-1/a/b/mesh.gltf')).toBe('mesh.gltf')
+  })
+
+  it('never answers with the route word, whatever it is', () => {
+    for (const route of ['/infer-gallery/artifact', '/v1/assets/artifact', '/artifact']) {
+      const name = artifactNameOf(route + '?path=' + encodeURIComponent('run-x/scene.gltf'))
+      expect(name, route).toBe('scene.gltf')
+      expect(name).not.toBe('artifact')
+    }
+  })
+
+  it('a URL with no path and no query answers with itself (never undefined)', () => {
+    expect(artifactNameOf('')).toBe('')
+    expect(artifactNameOf('/a/b/c.glb')).toBe('c.glb')
   })
 })
