@@ -58,7 +58,12 @@ test('RAIL: the declared slot seats first, in signature order (never the inciden
   expect(screen.queryByLabelText('Shots')).toBeNull()
 })
 
-test('RAIL: a mod-owned slot seats from the kind fallback (the anchor is a slot, never a missing seat)', () => {
+test('RAIL: a mod-owned field NEVER seats — it renders inside its mod modal (the mod-modal law)', () => {
+  // The operator's final law (2026-10-10): "Region Mask goes inside
+  // the mask mod — the reference input image goes inside the mask
+  // mod, not on the base card, just like Img Create." The stroke-32
+  // kind fallback seated mod-owned slots on the base rail — the
+  // deviation, erased: the rail seats CARD-OWNED fields only.
   const spec = doc({
     inputs: [{ name: 'brick', kind: 'image' }],
     features: {
@@ -70,7 +75,7 @@ test('RAIL: a mod-owned slot seats from the kind fallback (the anchor is a slot,
   })
   form({ spec })
   const rail = document.querySelector('[data-input-rail]')
-  expect(rail?.textContent).toContain('Brick')
+  expect(rail?.textContent ?? '').not.toContain('Brick')
 })
 
 test('RAIL: text edges never become squares — the rail seats only slot-shaped rows (signature singles + declared stacks)', () => {
@@ -250,7 +255,7 @@ test('GRID: no signature — singles stay grouped, but a declared stack still cl
   expect(document.querySelector('[data-form-group-panel] [aria-label="Image source"]')).not.toBeNull()
 })
 
-test('RAIL: a shared slot name seats the first kind (first-seen wins, never a double face)', () => {
+test('RAIL: a shared slot name seats NOTHING — mod-owned fields render in their mods (the mod-modal law)', () => {
   const spec = doc({
     inputs: [{ name: 'shared', kind: 'image' }],
     features: {
@@ -262,8 +267,8 @@ test('RAIL: a shared slot name seats the first kind (first-seen wins, never a do
   })
   form({ spec, user: {} })
   const rail = document.querySelector('[data-input-rail]')
-  expect(rail?.textContent).toContain('First')
-  expect(rail?.textContent).not.toContain('Second')
+  expect(rail?.textContent ?? '').not.toContain('First')
+  expect(rail?.textContent ?? '').not.toContain('Second')
 })
 
 test('GROUPS: slot-shaped fields share one row; labels live under their squares', () => {

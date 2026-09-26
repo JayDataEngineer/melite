@@ -182,7 +182,16 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f)
   }
   const railOf = (inp: { name: string; kind?: string }): SpecField | undefined => {
-    const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name)
+    // THE MOD-MODAL LAW (operator, 2026-10-10, final: "Region Mask
+    // goes inside the mask mod — the reference input image goes
+    // inside the mask mod, not on the base card, just like Img
+    // Create"): the rail seats CARD-OWNED fields only. A mod-owned
+    // field named by the signature (a flow-seat carrier) NEVER
+    // seats — the mod's leaf renders it inside the mod modal, the
+    // same one-face law the stacks already carry below. The
+    // stroke-32 kind fallback seated mod inputs on the base card —
+    // that was the deviation, erased.
+    const f = flatFields.find((x) => x.name === inp.name)
     if (f === undefined) return undefined
     // THE SLOT-SHAPED SET (primitive ③ boards mesh): the input rail
     // seats image, file, and mesh fields — a declared mesh edge claims

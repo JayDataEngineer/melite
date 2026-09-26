@@ -141,7 +141,7 @@ const modSlotSpec: FormSpecDoc = {
   },
 }
 
-test('STROKE 32: a mod-owned signature slot seats in the rail — the required anchor renders, first', () => {
+test('THE MOD-MODAL LAW: a mod-owned slot NEVER seats in the rail — the card-owned squares only', () => {
   const { container } = render(createElement(SpecForm, {
     user: {},
     onSet: vi.fn(),
@@ -150,12 +150,12 @@ test('STROKE 32: a mod-owned signature slot seats in the rail — the required a
   const rail = container.querySelector('[data-input-rail]') as HTMLElement
   expect(rail).toBeTruthy()
   const squares = Array.from(rail.querySelectorAll('[role="button"][aria-label*="source"]'))
-  expect(squares.length).toBe(3) // image1 joins image2/3 — nothing silently dropped
+  expect(squares.length).toBe(2) // image2/3 (card-owned) — image1 lives in its mod
   const labels = squares.map((s) => (s as HTMLElement).getAttribute('aria-label'))
-  expect(labels.indexOf('Image 1 source')).toBe(0) // the anchor rides FIRST
+  expect(labels).not.toContain('Image 1 source')
 })
 
-test('STROKE 32: the brick keeps its knobs — the leaf never double-faces the rail-seated anchor', async () => {
+test('THE MOD-MODAL LAW: the mod renders its own input seat — the reference image rides inside the mod', async () => {
   const user = userEvent.setup()
   render(createElement(SpecForm, {
     user: {},
@@ -164,11 +164,11 @@ test('STROKE 32: the brick keeps its knobs — the leaf never double-faces the r
   }))
   await user.click(screen.getByRole('button', { name: 'Add modifier' }))
   await user.click(await screen.findByRole('menuitem', { name: 'Lanpaint' }))
-  // the leaf opens on the brick's KNOBS…
+  // the leaf opens on the brick's KNOBS and its OWN input seat…
   expect(await screen.findByText('Force LanPaint')).toBeTruthy()
-  // …never the rail-seated anchor (one seat, no double face — the
-  // rail behind the modal keeps its own square, out of scope here)
   const dialog = screen.getByRole('dialog')
   expect(dialog.textContent).toContain('Force LanPaint')
-  expect(dialog.textContent).not.toContain('Image 1')
+  // …the reference input image rides INSIDE the mod, 1:1 with the
+  // knobs — never on the base rail
+  expect(dialog.textContent).toContain('Image 1')
 })

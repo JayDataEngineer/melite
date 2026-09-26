@@ -49174,7 +49174,7 @@ void main() {
 			const modFieldByName = /* @__PURE__ */ new Map();
 			for (const k of modKinds) for (const f of k.fields) if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f);
 			const railOf = (inp) => {
-				const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name);
+				const f = flatFields.find((x) => x.name === inp.name);
 				if (f === void 0) return void 0;
 				if (f.type === "image" || f.type === "file" || f.type === "mesh") return f;
 			};
@@ -60457,4 +60457,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="ca40cc3f06039d3fd1851ebefa95c8f55ffd9f90";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="39a8003af9452ee572b2c3d0f3e97bf320136eda";
