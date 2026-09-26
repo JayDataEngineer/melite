@@ -664,6 +664,38 @@ export class CardRegistryService extends Service {
     fam: string,
     params: Record<string, unknown>,
   ): Promise<{ message: string; code: string } | null> {
+    // THE VALIDATE-START PARITY LAW (2026-10-10, the operator's
+    // question: "HOW DID THE VALIDATE RETURN SUCCESS WHEN THE INPUT
+    // IMAGE DID NOT GO"): the {model:} door composes ONE stage and
+    // resolves NO wires — a $spell param is a promise only a flow's
+    // FromStage links can keep. composeOnce TOLERATES spells (the
+    // lane bakes them into the graph; legal on the flow path, lethal
+    // on a single-card run — run 880aaa85d928 died at the merge
+    // while validate passed this very body). The door's start arm
+    // refuses spells (runsRegistry li-c); validate refuses the SAME
+    // bodies with the SAME voice — the two doors can never disagree.
+    const spellSweep = (v: unknown, found: Set<string>): void => {
+      if (typeof v === "string") {
+        if (v.startsWith("$") && v.length > 1) found.add(v);
+      } else if (Array.isArray(v)) {
+        for (const x of v) spellSweep(x, found);
+      } else if (typeof v === "object" && v !== null) {
+        for (const x of Object.values(v as Record<string, unknown>)) {
+          spellSweep(x, found);
+        }
+      }
+    };
+    const spells: Set<string> = new Set();
+    spellSweep(params, spells);
+    if (spells.size > 0) {
+      return {
+        message:
+          "params carry " +
+          JSON.stringify([...spells].sort()) +
+          " but a single-card run resolves no wires and no initials — the merge would refuse them at run time. Wire the input (run the bench flow so FromStage links ride) or replace the $spell with a concrete value.",
+        code: "invalid_request",
+      };
+    }
     try {
       await composeOnce(this, card, fam, params, "", "1");
       return null;

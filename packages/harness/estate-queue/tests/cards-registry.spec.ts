@@ -387,6 +387,25 @@ describe("composeValidateCard (the validate refusal voice)", () => {
     composeOnce.mockResolvedValueOnce({ graph: true } as never);
     expect(await svc.composeValidateCard("c", "f", {})).toBeNull();
   });
+  // THE VALIDATE-START PARITY LAW (2026-10-10, the operator's
+  // question: "HOW DID THE VALIDATE RETURN SUCCESS WHEN THE INPUT
+  // IMAGE DID NOT GO"): a $spell param is a promise only a flow's
+  // links can keep — validate refuses it with the START wall's own
+  // voice, BEFORE any compose tolerates it into a graph.
+  it("THE PARITY PIN: a $spell param refuses — the same voice as the start wall, never a tolerated compose", async () => {
+    // earlier tests share the mock — clear, then assert THIS call
+    vi.mocked(composeOnce).mockClear();
+    const ans = await svc.composeValidateCard("c", "f", {
+      input_images: ["$input_images"],
+      prompt: "make the hair crimson",
+    });
+    expect(ans).not.toBeNull();
+    expect(ans?.code).toBe("invalid_request");
+    expect(ans?.message).toContain("$input_images");
+    expect(ans?.message).toContain("resolves no wires");
+    // the compose NEVER RAN — the spell refused before tolerance
+    expect(composeOnce).not.toHaveBeenCalled();
+  });
   it("a CardArmError refusal maps to message+code", async () => {
     composeOnce.mockRejectedValueOnce(
       new (await import("../src/cardsArmError.ts")).CardArmError(400, "the refusal", "card_compose"),
