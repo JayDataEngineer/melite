@@ -82,15 +82,19 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // required anchors stays in compose (the gate below), exactly
   // the split: the mod declares the editor surface, compose
   // owns firing.
-  image1: z.string().role('path').description("Image 1").extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image', tooltip: 'The edit anchor — the image to edit.' }),
-  // THE LEGACY ALIASES (the unification: image inputs and reference
-  // images are ONE concept — the anchor plus the reference stack
-  // below. image2/image3 were the stock node's native slot names
-  // showing as a second input row for the same thing; they no longer
-  // render. They stay DECLARED with hidden:true — validation-only
-  // gate keys, never a face (the walker's hidden arm) — so old
-  // drafts, agents, and flow edges stating them still validate, and
-  // compose merges them to the FRONT of the reference order).
+  image1: z.string().role('path').description("Input Image").extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image', tooltip: 'The image to edit.' }),
+  // THE LEGACY ALIASES (the naming law, 2026-10-09: "reference
+  // image" and "image input" are ONE concept — every Qwen edit
+  // lane takes the same ordered list of input images — so the FACE
+  // speaks ONE vocabulary: Input Image (the one being edited) +
+  // Reference Images (the rest). image2/image3 were the stock
+  // node's NUMBERED slot names — a second vocabulary for the same
+  // thing, the eternal mix the operator caught. They stay DECLARED
+  // with hidden:true (validation-only gate keys; compose merges
+  // them to the FRONT of the reference order) and ride
+  // flowKinds.legacyAliases so OLD graphs still validate — but no
+  // face offers them: never a form row, never a picker seat, never
+  // a tool param.
   image2: z.string().role('path').description("Image 2").extra('extra', { hidden: true }),
   image3: z.string().role('path').description("Image 3").extra('extra', { hidden: true }),
   // reference_images is THE reference stack — ONE row, both lanes
@@ -98,8 +102,10 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // The cap RIDES the boarded DECLs (EDIT_STACK_CAP above — the
   // roomiest lane's max_images minus the anchor); each lane refuses
   // past its own DECL cap LOUD at compose (the firing law, never a
-  // silent drop).
-  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", zone: 'inputs', max_stack: EDIT_STACK_CAP, tooltip: "Reference images — one square per entry, the add-cell opens the next until the roomiest lane's DECL cap. Each lane splices what its max_images allows (2511: 2 through the stock image2/image3, 2.1: 15 from the encoder's images.image_2) and refuses past that LOUD.", wtype: 'image_list' }),
+  // silent drop). The tooltip speaks the CONCEPT (extra input
+  // images, in order) — node-slot mechanics are the engine's
+  // business, not the user's.
+  reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", zone: 'inputs', max_stack: EDIT_STACK_CAP, tooltip: "Extra input images the edit consults — the model sees them alongside the input image, in order. Capacity follows the boarded model; more than it admits refuses loudly.", wtype: 'image_list' }),
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
   negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
   width: z.number().description("Width").extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
@@ -199,22 +205,23 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: 'image-edit', order: 2 },
     flowKinds: {
-      // THE INPUT SIGNATURE (the operator's rework, 2026-09-26:
-      // "reference images and input images are the same thing" —
-      // they are ONE concept in every category too). The anchor,
-      // then reference_images as a REAL input port (kind
-      // image_list: a wireable list seat — the /v1/forms table,
-      // the picker's edge law, and the flow lattice all derive the
-      // input category from HERE, and it listed only the legacy
-      // aliases while the actual reference input sat outside it).
-      // image2/image3 stay declared as flow edges for old graphs
-      // wiring them — they seat NO rail square (hidden legacy
-      // aliases, never a face) and compose merges them to the
+      // THE INPUT SIGNATURE (the naming law, 2026-10-09: BOTH Qwen
+      // edit lanes take the same thing — an ordered list of input
+      // images — so the face declares exactly the two seats a user
+      // can mean: the input image and the reference stack. The
+      // numbered spellings (image2/image3) were the stock node's
+      // slot vocabulary leaking into the picker as extra seats for
+      // the same concept — THE MIX. They leave `inputs` (no seat,
+      // no rail square, no form row) and ride legacyAliases: the
+      // lattice still derives their kind, so old graphs wiring them
+      // keep validating, and compose still merges them to the
       // reference front.
       inputs: {
         prompt: 'text',
         image1: 'image',
         reference_images: 'image_list',
+      },
+      legacyAliases: {
         image2: 'image',
         image3: 'image',
       },

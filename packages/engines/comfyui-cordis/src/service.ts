@@ -371,6 +371,15 @@ export interface CardDefinition {
     inputs: Record<string, string>
     outputs: Record<string, string>
     requiresModel: boolean
+    /** THE NAMING LAW (2026-10-09, the operator's catch): one
+     *  concept, one visible name. A retired spelling that old
+     *  graphs still wire (image-edit's numbered image2/image3)
+     *  rides here — the lattice derives its kind so historical
+     *  graphs keep validating, but NO face offers it: never a
+     *  form row, never a picker seat, never a tool param. The
+     *  alias must still exist in the schema carrier (the same
+     *  loud gate as inputs) so compose can read it. */
+    legacyAliases?: Record<string, string>
   }
   flowOutputBindings?: readonly CardFlowOutputBinding[]
   /** THE DECLARED HERO (the mask hero defect, 2026-10-09): the
@@ -395,6 +404,10 @@ function assertFlowContract(def: CardDefinition): void {
   const missingInputs = Object.keys(def.flowKinds.inputs).filter((name) => !names.has(name))
   if (missingInputs.length > 0) {
     throw new ComposeRefusal('flow-port', `card '${def.id}' flow inputs ${missingInputs.join(', ')} are absent from its schema`)
+  }
+  const missingAliases = Object.keys(def.flowKinds.legacyAliases ?? {}).filter((name) => !names.has(name))
+  if (missingAliases.length > 0) {
+    throw new ComposeRefusal('flow-port', `card '${def.id}' legacy aliases ${missingAliases.join(', ')} are absent from its schema`)
   }
   const unconditional = new Set<string>()
   for (const binding of def.flowOutputBindings ?? []) {

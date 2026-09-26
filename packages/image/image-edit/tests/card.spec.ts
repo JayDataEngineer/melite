@@ -538,11 +538,32 @@ describe("the lane-bespoke leaves (the model guard — the naming law's visibili
     // edge law, and the flow lattice all derive the input category
     // from this declaration — before the rework it listed only the
     // legacy aliases while the actual reference input sat outside.
+    //
+    // THE NAMING LAW (2026-10-09, the operator's catch: "both lanes
+    // use the same thing, but it's always mixed because the naming
+    // is WRONG"): `inputs` declares EXACTLY the two seats a user
+    // can mean — the input image and the reference stack. The
+    // numbered spellings leave the seat list (they were a SECOND
+    // vocabulary for the same concept, offered as extra picker
+    // seats) and ride legacyAliases: the lattice still derives
+    // their kind (old graphs keep validating), no face offers them.
     const ports = def.flowKinds.inputs as Record<string, string>;
+    assert.deepEqual(
+      Object.keys(ports).sort(),
+      ["image1", "prompt", "reference_images"],
+      "the input category names EXACTLY the two image seats — no numbered mix",
+    );
     assert.equal(ports.reference_images, "image_list", "reference_images is a wireable input port (the inputs category)");
     assert.equal(ports.image1, "image", "the anchor stays the image port");
-    assert.equal(ports.image2, "image", "the legacy edges stay for old graphs");
-    assert.equal(ports.image3, "image", "the legacy edges stay for old graphs");
+    const aliases = (def.flowKinds.legacyAliases ?? {}) as Record<string, string>;
+    assert.equal(aliases.image2, "image", "the legacy alias derives its kind at the lattice, never a seat");
+    assert.equal(aliases.image3, "image", "the legacy alias derives its kind at the lattice, never a seat");
+    // THE FACE LABEL: the anchor is named for its CONCEPT, not the
+    // stock node's slot number — "Input Image", never "Image 1".
+    const anchor = json.refs[root!.dict!["image1"]] as {
+      meta?: { description?: unknown };
+    } | undefined;
+    assert.equal(anchor?.meta?.description, "Input Image", "the anchor's label speaks the concept (no numbered slots)");
     // the zone spell matches the anchor's — one input zone
     assert.equal(
       json.refs[root!.dict!["reference_images"]]?.meta?.extra?.zone,

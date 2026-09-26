@@ -164,6 +164,45 @@ describe("kindsOk (the kind-matching passes)", () => {
   };
   const kstage = (id: string, over: Record<string, unknown> = {}): StageRow =>
     row(0, stage({ id, ...over }));
+  it("THE NAMING LAW's lattice half: a legacyAliases edge derives its kind — old graphs keep validating, no face offers the alias", () => {
+    // the operator's catch (2026-10-09): the numbered image2/image3
+    // spellings left the card's SEAT list (one concept, one visible
+    // name) — a graph that still wires the old spelling must derive
+    // its kind from legacyAliases, never refuse as "wired but
+    // untyped".
+    const namedCards = {
+      defsSync: () => new Map([["edit-card", {
+        requiresModel: false,
+        schema: (): void => undefined,
+        flowKinds: {
+          inputs: { image1: "image", reference_images: "image_list" },
+          outputs: { default: "image" },
+          requiresModel: false,
+          legacyAliases: { image2: "image", image3: "image" },
+        },
+      }]]),
+    };
+    const gen = kstage("gen", { outputs: { default: "image" } });
+    const oldGraph = kstage("edit", {
+      card: "edit-card",
+      inputs: {
+        image1: { stage: "gen", output: "default" },
+        image2: { stage: "gen", output: "default" },
+      },
+      // NO expected for image2 — the derivation must supply it
+      expected: { image1: "image" },
+    });
+    expect(() => kindsOk("f1", [gen, oldGraph], { comfyui: "image" }, namedCards as never)).not.toThrow();
+    // a CONTRADICTED alias kind still refuses loud (the alias is a
+    // kind source, not a silence)
+    const liar = kstage("edit", {
+      card: "edit-card",
+      inputs: { image2: { stage: "gen", output: "default" } },
+      expected: { image2: "text" },
+    });
+    expect(() => kindsOk("f1", [gen, liar], { comfyui: "image" }, namedCards as never))
+      .toThrow(/input "image2".*contradicts card/);
+  });
   it("matched kinds pass; mismatched kinds refuse with the must-be voice", () => {
     const a = kstage("a", { outputs: { out: "image" } });
     const b = kstage("b", { inputs: { img: { stage: "a", output: "out" } }, expected: { img: "image" } });

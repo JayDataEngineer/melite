@@ -337,9 +337,15 @@ export function kindsOk(
     const defs = needCardRegistry(cards, "kindsOk").defsSync();
     const def = defs.get(st.card);
     const ports = def?.flowKinds?.inputs;
-    if (ports === undefined || Object.keys(ports).length === 0) continue;
+    // THE NAMING LAW's lattice half: a legacy alias derives its
+    // kind exactly like a declared port (old graphs keep
+    // validating) — but only `inputs` is ever a FACE; the alias
+    // never renders, never picks, never serves a tool param.
+    const aliases = def?.flowKinds?.legacyAliases;
+    const merged = aliases === undefined ? ports : { ...ports, ...aliases };
+    if (merged === undefined || Object.keys(merged).length === 0) continue;
     if (cardPorts === null) cardPorts = new Map();
-    cardPorts.set(st.id, new Map(Object.entries(ports)));
+    cardPorts.set(st.id, new Map(Object.entries(merged)));
   }
   const outputsByStage: Map<string, Map<string, string>> = new Map();
   for (const st of stages) {
