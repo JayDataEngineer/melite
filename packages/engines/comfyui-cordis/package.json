@@ -18,7 +18,8 @@
     "./provisioning-manifest": "./scripts/provision-extensions-manifest.ts",
     "./package.json": "./package.json",
     "./model-contract": "./src/models/families/contract.ts",
-    "./models-service": "./src/models/service.ts"
+    "./models-service": "./src/models/service.ts",
+    "./user-loras": "./src/userLoras.ts"
   },
   "scripts": {
     "compose": "node --experimental-strip-types src/cli.ts",

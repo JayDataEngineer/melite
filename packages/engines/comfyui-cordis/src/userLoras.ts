@@ -1,0 +1,234 @@
+/**
+ * userLoras — THE USER-LORA PLANE (2026-09-26, the operator's
+ * question: "is there a way to add custom loras to models from the
+ * user perspective?" → "Do it all go").
+ *
+ * WHAT ALREADY EXISTED (so nothing is rebuilt): the studio's modifier
+ * UI is fully built (card-base/src/mods.tsx — kind picker, drag
+ * reorder, a leaf editor with an option select + strength + steps),
+ * the bag is `params.loras[]` (the wire IS the storage), compose
+ * stacks picks with `LoraLoaderModelOnly` in array order, and the
+ * server already MERGES hot-loaded runtime flavors with the family's
+ * own rows (`ComfyUIService.modCatalog` — the flavor merge, #39).
+ *
+ * WHAT WAS MISSING: the catalog was family-owned source files, and
+ * the leaf REFUSES a hand-spelled name on purpose ("pick from the
+ * catalog, never hand-spell"). So a user's own LoRA had exactly two
+ * doors, both developer-grade: write a TS drop-in, or edit a family
+ * package. This module is the user-grade door, and it keeps the law
+ * rather than breaking it:
+ *
+ * - A LOCAL rows file (JSON) registers as a runtime flavor, so a
+ *   user's LoRA arrives as a real PICKER ROW — with a label, a
+ *   category, a strength default — not a typed name.
+ * - Every row is VALIDATED: a row naming a family that does not board
+ *   the loras pack is refused with the reason, and a row whose file is
+ *   not in the engine's own LoRA combo is refused too, because
+ *   ComfyUI validates the combo at /prompt and a missing name is a 400
+ *   after the money is spent.
+ * - NOTHING is ever fetched. The operator's law stands ("THERE SHOULD
+ *   NOT BE A LORAS REMOTE / IT'S ALL BUILT IN"): rows may carry a
+ *   `source_url` as documentation, and `installUserLora` COPIES a file
+ *   the operator already has — it never downloads.
+ *
+ * The combo allowlist is read from the engine's own node declaration
+ * (`LoraLoaderModelOnly.input.required.lora_name`), so "the engine
+ * will accept this name" is a FACT, never a guess.
+ */
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
+import { basename, dirname, extname, join } from 'node:path'
+
+/** What a user row must carry to be served as a picker row. */
+export interface UserLoraRow {
+  /** the stable id the bag stores (`loras[].id`) */
+  id: string
+  /** the path under the engine's loras dir — the name the combo knows */
+  filename: string
+  /** the families this row is offered for (must board the loras pack) */
+  families: string[]
+  label?: string
+  category?: string
+  default_strength?: number
+  /** documentary only — nothing here ever fetches it */
+  source_url?: string
+}
+
+export interface UserLoraFile {
+  /** the file the rows came from (the receipt) */
+  path: string
+  rows: UserLoraRow[]
+  /** per-row refusals, in file order — a bad row never takes the good ones down */
+  problems: string[]
+  /** true when the file was absent (absent is not an error: the door is opt-in) */
+  absent: boolean
+}
+
+const LORA_EXTENSIONS = ['.safetensors', '.ckpt', '.pt', '.bin', '.gguf']
+
+/** ONE row's validation — the refusals name the field, never the file. */
+export function validateUserLoraRow(raw: unknown, at: number): { row?: UserLoraRow; problem?: string } {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { problem: `row ${at}: not an object` }
+  }
+  const r = raw as Record<string, unknown>
+  const id = typeof r['id'] === 'string' ? r['id'].trim() : ''
+  if (id === '') return { problem: `row ${at}: id is required (the bag stores it)` }
+  const filename = typeof r['filename'] === 'string' ? r['filename'].trim() : ''
+  if (filename === '') return { problem: `row ${at} (${id}): filename is required (the name the engine's combo knows)` }
+  if (!LORA_EXTENSIONS.includes(extname(filename).toLowerCase())) {
+    return {
+      problem:
+        `row ${at} (${id}): filename must be a LoRA file (${LORA_EXTENSIONS.join(', ')}) — got ` +
+        `"${extname(filename) === '' ? filename : extname(filename)}"`,
+    }
+  }
+  const families = Array.isArray(r['families'])
+    ? r['families'].filter((f: unknown): f is string => typeof f === 'string' && f !== '')
+    : []
+  if (families.length === 0) return { problem: `row ${at} (${id}): families is required (a row rides a model)` }
+  const row: UserLoraRow = { id, filename, families: [...families] }
+  if (typeof r['label'] === 'string' && r['label'] !== '') row.label = r['label']
+  if (typeof r['category'] === 'string' && r['category'] !== '') row.category = r['category']
+  if (typeof r['default_strength'] === 'number' && Number.isFinite(r['default_strength'])) {
+    row.default_strength = r['default_strength']
+  }
+  if (typeof r['source_url'] === 'string' && r['source_url'] !== '') row.source_url = r['source_url']
+  return { row }
+}
+
+/**
+ * Read a user rows file. NEVER throws: a malformed file answers its
+ * per-row problems, an absent file answers `absent` (the door is
+ * opt-in — no file, no user rows, no noise), and a non-JSON file
+ * answers one problem naming the file.
+ */
+export function readUserLoraRows(path: string): UserLoraFile {
+  if (!existsSync(path)) return { path, rows: [], problems: [], absent: true }
+  let text: string
+  try {
+    text = readFileSync(path, 'utf8')
+  } catch (e) {
+    return {
+      path,
+      rows: [],
+      problems: [`the rows file could not be read: ${e instanceof Error ? e.message : String(e)}`],
+      absent: false,
+    }
+  }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text) as unknown
+  } catch (e) {
+    return {
+      path,
+      rows: [],
+      problems: [`the rows file is not JSON: ${e instanceof Error ? e.message : String(e)}`],
+      absent: false,
+    }
+  }
+  // both shapes are served: a bare array of rows, or {rows: [...]}
+  const list = Array.isArray(parsed)
+    ? parsed
+    : Array.isArray((parsed as { rows?: unknown } | null)?.rows)
+      ? ((parsed as { rows: unknown[] }).rows)
+      : undefined
+  if (list === undefined) {
+    return { path, rows: [], problems: ['the rows file must be an array of rows, or {"rows": [...]}'], absent: false }
+  }
+  const rows: UserLoraRow[] = []
+  const problems: string[] = []
+  for (let i = 0; i < list.length; i++) {
+    const { row, problem } = validateUserLoraRow(list[i], i)
+    if (row !== undefined) rows.push(row)
+    if (problem !== undefined) problems.push(problem)
+  }
+  return { path, rows, problems, absent: false }
+}
+
+/**
+ * THE COMBO FACT (never a guess): the names ComfyUI will accept for
+ * `LoraLoaderModelOnly`, read out of the engine's own node
+ * declaration. Bounds-checked at every step — a hostile or truncated
+ * object_info answers an empty list, never a throw.
+ */
+export function loraNamesFromObjectInfo(info: unknown): string[] {
+  if (info === null || typeof info !== 'object' || Array.isArray(info)) return []
+  const node = (info as Record<string, unknown>)['LoraLoaderModelOnly']
+  if (node === null || typeof node !== 'object' || Array.isArray(node)) return []
+  const input = (node as Record<string, unknown>)['input']
+  if (input === null || typeof input !== 'object' || Array.isArray(input)) return []
+  const required = (input as Record<string, unknown>)['required']
+  if (required === null || typeof required !== 'object' || Array.isArray(required)) return []
+  const field = (required as Record<string, unknown>)['lora_name']
+  if (!Array.isArray(field)) return []
+  const names = (field as unknown[])[0]
+  if (!Array.isArray(names)) return []
+  return names.filter((n): n is string => typeof n === 'string' && n !== '')
+}
+
+/**
+ * CROSS-CHECK a served row against the engine: a row whose file is not
+ * in the combo would refuse at /prompt (a 400 AFTER the run is
+ * composed), so the door says so at the moment the user adds it.
+ * A missing combo (engine down) proves nothing and refuses nothing.
+ */
+export function unboardedRows(rows: readonly UserLoraRow[], combo: readonly string[]): string[] {
+  if (combo.length === 0) return []
+  const known = new Set(combo)
+  return rows.filter((r) => !known.has(r.filename)).map((r) => `${r.id}: the engine has no "${r.filename}" in its LoRA list`)
+}
+
+/**
+ * THE FILE DOOR: copy an operator's OWN LoRA into the engine's loras
+ * directory so its name joins the combo. A copy — never a fetch (the
+ * no-remote law), and the refusals are loud: a missing source, a
+ * non-LoRA extension, or a source that is not a file.
+ */
+export function installUserLora(
+  sourcePath: string,
+  engineLorasDir: string,
+): { ok: true; filename: string; bytes: number } | { ok: false; reason: string } {
+  if (!existsSync(sourcePath)) return { ok: false, reason: `no such file: ${sourcePath}` }
+  let st
+  try {
+    st = statSync(sourcePath)
+  } catch (e) {
+    return { ok: false, reason: `cannot read ${sourcePath}: ${e instanceof Error ? e.message : String(e)}` }
+  }
+  if (!st.isFile()) return { ok: false, reason: `${sourcePath} is not a file` }
+  if (!LORA_EXTENSIONS.includes(extname(sourcePath).toLowerCase())) {
+    return {
+      ok: false,
+      reason: `${basename(sourcePath)} is not a LoRA file (${LORA_EXTENSIONS.join(', ')}) — the engine's loader will not take it`,
+    }
+  }
+  try {
+    mkdirSync(engineLorasDir, { recursive: true })
+    const target = join(engineLorasDir, basename(sourcePath))
+    copyFileSync(sourcePath, target)
+    return { ok: true, filename: basename(sourcePath), bytes: st.size }
+  } catch (e) {
+    return {
+      ok: false,
+      reason: `copy into ${dirname(engineLorasDir)} failed: ${e instanceof Error ? e.message : String(e)}`,
+    }
+  }
+}
+
+/** The flavor a user rows file registers (the same shape the family
+ *  files and hot drop-ins use — one spelling of the registration). */
+export function userLoraFlavor(file: UserLoraFile): {
+  pack: 'loras'
+  families: string[]
+  rows: Array<Record<string, unknown>>
+  runtimeCatalog: true
+} | null {
+  if (file.rows.length === 0) return null
+  const families = [...new Set(file.rows.flatMap((r) => r.families))].sort()
+  return {
+    pack: 'loras',
+    families,
+    runtimeCatalog: true,
+    rows: file.rows.map((r) => ({ ...r })),
+  }
+}
