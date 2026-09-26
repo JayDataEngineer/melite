@@ -2431,6 +2431,9 @@ importers:
       unrun:
         specifier: ^0.3.1
         version: 0.3.1
+      vite:
+        specifier: ^8.2.2
+        version: 8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
 
   packages/web/melite-card-deck:
     devDependencies:
