@@ -93,17 +93,17 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
     if (r.transition === "extend" || r.transition === "cut") {
       call.transition = r.transition
     }
-    // Per-call identity refs (Ref2VA): arrays or comma strings → the
-    // UI's comma-joined form (serialize splits them back to arrays).
-    if (r.refs !== null && typeof r.refs === "object" && !Array.isArray(r.refs)) {
-      const rr = r.refs as Record<string, unknown>
-      const refs: NonNullable<DocCall["refs"]> = {}
-      const im = joinRefList(rr.images), vi = joinRefList(rr.videos), au = joinRefList(rr.audios)
-      if (im) refs.images = im
-      if (vi) refs.videos = vi
-      if (au) refs.audios = au
-      if (Object.keys(refs).length) call.refs = refs
-    }
+    const refs: NonNullable<DocCall["refs"]> = {}
+    const rr = r.refs !== null && typeof r.refs === "object" && !Array.isArray(r.refs)
+      ? r.refs as Record<string, unknown>
+      : {}
+    const im = joinRefList(rr.images ?? r.ref_images)
+    const vi = joinRefList(rr.videos ?? r.ref_videos)
+    const au = joinRefList(rr.audios ?? r.ref_audios)
+    if (im) refs.images = im
+    if (vi) refs.videos = vi
+    if (au) refs.audios = au
+    if (Object.keys(refs).length) call.refs = refs
     // Per-call knobs: vocabulary-gated hydration — a foreign key is
     // dropped with a warning, NEVER re-sent (the card's compose
     // reads only its declared knobs; the UI must not author others).

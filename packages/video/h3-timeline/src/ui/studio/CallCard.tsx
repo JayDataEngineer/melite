@@ -97,15 +97,15 @@ function RefsBucket({
   /** THE DECLARED SURFACE (2026-09-23): card-level refs ride ahead of
    * the per-call chips in bus order (declared PRIMARY, per-call
    * appended deduped — the compose's mergeRefs twin). Display-only. */
-  declared?: string[]
+  declared: string[]
 }) {
   const chips = splitRefList(value)
   // per-call chips already riding as card-level hide (the bus dedupes
   // them) — true indices address the wire, never the view.
   const shown = chips
     .map((ch, idx) => ({ ch, idx }))
-    .filter(({ ch }) => !(declared ?? []).includes(ch))
-  const bus = mergeDeclaredRefs(declared ?? [], chips)
+    .filter(({ ch }) => !declared.includes(ch))
+  const bus = mergeDeclaredRefs(declared, chips)
   const over = bus.length > cap
   const candidates = artifacts
     .filter((a) => refGenreOf(a.name, a.url) === kind && !chips.includes(a.name))
@@ -115,8 +115,9 @@ function RefsBucket({
   // riding card-level hide from the lane but NOT from the door —
   // each names itself with a × that strips the copy (the bus is
   // unchanged: the value still rides card-level).
-  const redundant = chips.filter((ch) => (declared ?? []).includes(ch))
+  const redundant = chips.filter((ch) => declared.includes(ch))
   const up = REF_UPLOAD_SPEC[kind]
+  const disabledTitle = disabledHint ?? "pinned window — this input stands down"
   // THE PICK TRANSLATION (the slot grammar): a From-flow pick hands
   // the candidate's URL — the refs wire carries artifact NAMES (the
   // estate re-resolves names each run). A data: URL or bare name
@@ -130,15 +131,15 @@ function RefsBucket({
       className={s.refRow}
       data-testid="tl-call-ref-bucket"
       data-disabled={disabled ? "true" : undefined}
-      title={disabled ? (disabledHint ?? "pinned window — this input stands down") : undefined}
+      title={disabled ? disabledTitle : undefined}
     >
       <SectionLabel
         tail={
           <span
             className={over ? s.refCountOver : disabled ? s.refCountOver : undefined}
             title={disabled
-              ? (disabledHint ?? "pinned window — this input stands down")
-              : over ? `${bus.length} claimed — the bus holds ${cap}` : `${bus.length} of ${cap}${(declared ?? []).length ? ` (${declared!.length} card-level)` : ""}`}
+              ? disabledTitle
+              : over ? `${bus.length} claimed — the bus holds ${cap}` : `${bus.length} of ${cap}${declared.length ? ` (${declared.length} card-level)` : ""}`}
           >
             {bus.length}/{cap}{over ? " over cap" : ""}{disabled ? " · pinned" : ""}
           </span>
@@ -147,7 +148,7 @@ function RefsBucket({
         {label}
       </SectionLabel>
       <div className={s.chips} style={disabled ? { opacity: 0.45, pointerEvents: "none" } : undefined}>
-        {(declared ?? []).map((url) => (
+        {declared.map((url) => (
           <DeclaredChip key={`declared-${url}`} url={url} kind={kind} />
         ))}
         {shown.map(({ ch: chip, idx: ci }) => (

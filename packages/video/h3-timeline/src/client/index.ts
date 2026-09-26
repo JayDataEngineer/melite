@@ -28,31 +28,133 @@ import {
   type StageViewOwnerProps,
 } from '@melite/contracts'
 import { VideoTimelineStudio } from '../ui/studio/component.tsx'
+import { refGenreOf } from '../timelineContract.ts'
+
+type H3HistoryRow = {
+  runId?: string
+  status?: string
+  at?: number
+  durationSec?: number
+  video: string
+}
+
+function recordOf(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function isWindowName(name: string): boolean {
+  return /^h3_t4_w\d+_\d+_\.mp4$/i.test(name) || /^video_w\d+_/.test(name)
+}
+
+function videoUrlOf(
+  artifacts: Record<string, unknown>,
+  assetUrls: readonly string[],
+  direct: unknown,
+  allowWindow = false,
+): string {
+  const rows = Object.entries(artifacts)
+    .filter((entry): entry is [string, string] => {
+      const [name, url] = entry
+      return typeof url === 'string' && url !== '' && refGenreOf(name, url) === 'video'
+    })
+  const film = rows.find(([name, url]) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url))
+  if (film !== undefined) return film[1] as string
+  if (typeof direct === 'string' && direct !== '' && refGenreOf('', direct) === 'video') return direct
+  const named = rows.find(([name]) => allowWindow || !isWindowName(name))
+  if (named !== undefined) return named[1] as string
+  const flat = assetUrls.find((url) => refGenreOf('', url) === 'video')
+  return flat ?? ''
+}
+
+function historyRows(
+  row: Record<string, unknown>,
+  result: Record<string, unknown>,
+  metadata: Record<string, unknown>,
+): H3HistoryRow[] {
+  const rows: H3HistoryRow[] = []
+  const add = (value: unknown): void => {
+    const entry = recordOf(value)
+    const artifacts = recordOf(entry['artifacts'])
+    const assetUrls = Array.isArray(entry['assetUrls'])
+      ? entry['assetUrls'].filter((url): url is string => typeof url === 'string')
+      : []
+    const direct = typeof entry['url'] === 'string' ? entry['url'] : ''
+    const video = videoUrlOf(artifacts, assetUrls, direct, true)
+    if (video === '') return
+    const runId = typeof entry['runId'] === 'string'
+      ? entry['runId']
+      : typeof entry['run_id'] === 'string' ? entry['run_id'] : undefined
+    const error = typeof entry['error'] === 'string' ? entry['error'] : ''
+    const status = typeof entry['status'] === 'string'
+      ? entry['status']
+      : error !== '' ? 'failed' : undefined
+    const duration = typeof entry['durationSec'] === 'number' ? entry['durationSec'] : undefined
+    const at = typeof entry['at'] === 'number' ? entry['at'] : undefined
+    rows.push({
+      ...(runId !== undefined ? { runId } : {}),
+      ...(status !== undefined ? { status } : {}),
+      ...(at !== undefined ? { at } : {}),
+      ...(duration !== undefined ? { durationSec: duration } : {}),
+      video,
+    })
+  }
+  const generic = Array.isArray(row['history']) ? row['history'] : []
+  if (Array.isArray(row['history'])) add(result)
+  for (const entry of generic) add(entry)
+  const legacy = metadata['history']
+  if (Array.isArray(legacy)) {
+    for (const entry of legacy) {
+      const normalized = recordOf(entry)
+      const video = typeof normalized['video'] === 'string' ? normalized['video'] : ''
+      if (video === '') continue
+      rows.push({
+        ...(typeof normalized['runId'] === 'string' ? { runId: normalized['runId'] } : {}),
+        ...(typeof normalized['status'] === 'string' ? { status: normalized['status'] } : {}),
+        ...(typeof normalized['at'] === 'number' ? { at: normalized['at'] } : {}),
+        ...(typeof normalized['durationSec'] === 'number' ? { durationSec: normalized['durationSec'] } : {}),
+        video,
+      })
+    }
+  }
+  const seen = new Set<string>()
+  return rows.filter((entry): boolean => {
+    const key = entry.runId ?? entry.video
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  }).slice(0, 12)
+}
 
 function harvestResult(
   row: Record<string, unknown>,
   base: CardResult | null,
 ): CardResult {
-  const result = typeof row['result'] === 'object' && row['result'] !== null && !Array.isArray(row['result'])
-    ? row['result'] as Record<string, unknown> : {}
+  const result = recordOf(row['result'])
   const artifacts = { ...(base?.artifacts ?? {}) }
   const gallery = Array.isArray(result['gallery']) ? result['gallery'] : []
   for (const entry of gallery) {
-    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue
-    const item = entry as Record<string, unknown>
+    const item = recordOf(entry)
     const name = typeof item['name'] === 'string' ? item['name'] : ''
     const url = typeof item['url'] === 'string' ? item['url'] : ''
     if (name !== '' && url !== '') artifacts[name] = url
   }
-  const primary = base?.assetUrls[0] ?? ''
-  if (artifacts['video'] === undefined && primary !== '') artifacts['video'] = primary
-  const url = typeof result['url'] === 'string' ? result['url'] : ''
-  if (url !== '') artifacts['video'] = url
+  const assetUrls = base?.assetUrls ?? []
+  const video = videoUrlOf(artifacts, assetUrls, result['url'])
+  if (video !== '') artifacts['video'] = video
+  else if (artifacts['video'] !== undefined && refGenreOf('video', artifacts['video']) !== 'video') {
+    delete artifacts['video']
+  }
   const rawMetadata = result['metadata']
-  const metadata = typeof rawMetadata === 'object' && rawMetadata !== null && !Array.isArray(rawMetadata)
-    ? rawMetadata as Record<string, unknown> : base?.metadata ?? {}
+  const metadata = {
+    ...(base?.metadata ?? {}),
+    ...recordOf(rawMetadata),
+  }
+  const history = historyRows(row, result, metadata)
+  if (history.length > 0) metadata['history'] = history
   return {
-    assetUrls: base?.assetUrls ?? [],
+    assetUrls,
     artifacts,
     metadata,
     ...(base?.durationSec === undefined ? {} : { durationSec: base.durationSec }),

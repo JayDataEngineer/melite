@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { loadCardDefs } from "@melite/comfyui-cordis";
+import { loadCardDefs, resolveCardFlowOutputs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
@@ -39,6 +39,27 @@ const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
 });
 
 describe("the h3-timeline compose gate", () => {
+  it("declares its JSON array contract and refuses non-array containers", () => {
+    assert.deepEqual(def.flowOutputBindings, [{ channel: "default", node: "*", nodeClass: "SaveVideo" }]);
+    assert.deepEqual(def.jsonArrayParams, ["calls", "audio_clips"]);
+    assert.throws(() => def.schema({ calls: '{"text":"not an array"}' }), /calls must be an array/);
+    assert.throws(() => def.schema({ calls: [{ text: "ok", start_frame: 0, end_frame: 56 }], audio_clips: '{"src":"line.flac"}' }), /audio_clips must be an array/);
+  });
+
+  it("binds the final film SaveVideo as the declared video output", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({
+      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      length: 124,
+    }), model, g, "run_output_binding");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const flow = resolveCardFlowOutputs(def, {}, graph);
+    assert.deepEqual(flow.outputs, { default: "video" });
+    const node = graph[flow.outputNodes.default!]!;
+    assert.equal(node.class_type, "SaveVideo");
+    assert.equal(node.inputs.filename_prefix, "h3_t4_film");
+  });
+
   it("a fresh press (params {}) composes the card's own one-shot document", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({}), model, g, "run_fresh");

@@ -25,6 +25,19 @@ describe("sla_block_size (the three legal widths)", () => {
   })
 })
 
+describe("call reference aliases", () => {
+  it("keeps direct per-call reference lists", () => {
+    const [call] = hydrateCalls({
+      calls: [{
+        ...CALL,
+        ref_images: ["still-a", "still-b"],
+        ref_audios: "line.flac",
+      }],
+    })
+    assert.deepEqual(call!.refs, { images: "still-a, still-b", audios: "line.flac" })
+  })
+})
+
 describe("serializeCalls refs (the videos-less bundle)", () => {
   it("an images-only bundle rides without the videos/audios spreads", () => {
     const [c] = serializeCalls([{ ...CALL, refs: { images: "still-a" } }])

@@ -3,11 +3,11 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { CardStage } from "@melite/contracts"
 import type { DocCall, DocKeyframe, LayerA } from "./docModel"
 import { hydrateLayerA, serializeLayerA } from "./docHydrate"
-import { hydrateCalls, hydrateKeyframes } from "./docCalls"
+import { hydrateCalls, hydrateKeyframes, serializeCalls } from "./docCalls"
 
 /** Document state (tenant §1). Verbatim lines 1536–1560. */
 export function useDocState(stage: CardStage) {
@@ -46,6 +46,46 @@ export function useDocState(stage: CardStage) {
   // graph; there is no second wiring to detect.
   const lastKeyframesRef = useRef(JSON.stringify(keyframes))
   const lastLayerARef = useRef(JSON.stringify(serializeLayerA(layerA)))
+  const stateRef = useRef({ calls, keyframes, layerA })
+  stateRef.current = { calls, keyframes, layerA }
+  const stageIdRef = useRef(stage.id)
+  const paramsSignature = JSON.stringify(stage.params ?? {})
+
+  useEffect(() => {
+    const incomingCalls = hydrateCalls({ calls: stage.params?.calls, beats: stage.params?.beats })
+    const incomingKeyframes = hydrateKeyframes(stage.params?.keyframes)
+    const incomingLayerA = hydrateLayerA(stage.params)
+    const current = stateRef.current
+    const currentSignature = JSON.stringify({
+      calls: serializeCalls(current.calls),
+      keyframes: current.keyframes,
+      layerA: serializeLayerA(current.layerA),
+    })
+    const incomingSignature = JSON.stringify({
+      calls: serializeCalls(incomingCalls),
+      keyframes: incomingKeyframes,
+      layerA: serializeLayerA(incomingLayerA),
+    })
+    const stageChanged = stageIdRef.current !== stage.id
+    stageIdRef.current = stage.id
+    if (!stageChanged && currentSignature === incomingSignature) {
+      const rawList = Array.isArray(stage.params?.calls) && (stage.params?.calls as unknown[]).length > 0
+        ? stage.params?.calls
+        : Array.isArray(stage.params?.beats) && (stage.params?.beats as unknown[]).length > 0
+          ? stage.params?.beats
+          : null
+      lastCallsRef.current = rawList !== null ? JSON.stringify(incomingCalls) : ""
+      lastKeyframesRef.current = JSON.stringify(incomingKeyframes)
+      lastLayerARef.current = JSON.stringify(serializeLayerA(incomingLayerA))
+      return
+    }
+    lastCallsRef.current = JSON.stringify(current.calls)
+    lastKeyframesRef.current = JSON.stringify(current.keyframes)
+    lastLayerARef.current = JSON.stringify(serializeLayerA(current.layerA))
+    setCalls(incomingCalls)
+    setKeyframes(incomingKeyframes)
+    setLayerA(incomingLayerA)
+  }, [paramsSignature, stage.id])
 
   return {
     calls, setCalls, keyframes, setKeyframes, layerA, setLayerA,

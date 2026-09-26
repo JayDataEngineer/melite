@@ -22,7 +22,7 @@ import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools
 import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
-import { carrier, identity, BOARDED, VARIANT_ADDRESSES } from './card.ts'
+import { carrier, identity, BOARDED, VARIANT_ADDRESSES, JSON_ARRAY_PARAMS } from './card.ts'
 import { SEAM_OVERLAP_FRAMES } from './timelineContract.ts'
 
 export const TOOL_NAME = 'h3_timeline'
@@ -47,7 +47,7 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition =>
       calls: {
         type: 'json',
         required: true,
-        description: `Shots — one per film shot: [{ text, start_frame, end_frame, image?, transition?, refs? }]. Spans are ints (end > start); the seam is automatic (drift-control carry at ${SEAM_OVERLAP_FRAMES} frames); transition "cut" = independent window, nothing carries. There is NO per-call audio — spoken lines ride audio_clips.`,
+        description: `Shots — one per film shot: [{ text, start_frame, end_frame, image?, transition?, refs?, knobs? }] and nothing else (an undeclared per-call key is refused by name). CALLS TILE: every call's start_frame must equal the previous call's end_frame — no gaps, no overlaps. A window renders 22+17k frames, so spans are NOT interchangeable: the FIRST call and any "transition":"cut" call must author a 22+17f span (56, 73, 90, 107, 124 ...), while a carried later call must author a 17f span (17, 34, 51, 68, 119 ...) because its ${SEAM_OVERLAP_FRAMES}-frame seam comes from the generation head rather than the span. An off-grid span is refused with the nearest legal frame, never silently re-framed. Spans are ints (end > start); the seam is automatic (drift-control carry at ${SEAM_OVERLAP_FRAMES} frames); transition "cut" = independent window, nothing carries. There is NO per-call audio — spoken lines ride audio_clips.`,
       },
       audio_clips: {
         type: 'json',
@@ -55,6 +55,6 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition =>
       },
     } as ParameterSchemaSpec,
     defaultModel: BOARDED[0],
-    jsonArrayParams: ['calls', 'audio_clips'],
+    jsonArrayParams: JSON_ARRAY_PARAMS,
     previewValue: (a) => `shots=${Array.isArray(a.calls) ? (a.calls as unknown[]).length : 0}`,
   })

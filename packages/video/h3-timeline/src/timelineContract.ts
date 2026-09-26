@@ -36,17 +36,68 @@ export function spanStanzaFrames(span: TimelineSpan, carry = 0): number {
   return Math.min(GRID_MAX_FRAMES, Math.max(GRID_BASE_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * k))
 }
 
+export interface CarriedSpanGrid {
+  readonly generatedStart: number
+  readonly generatedEnd: number
+  readonly length: number
+  readonly lowerEnd: number
+  readonly upperEnd: number
+}
+
+export function carriedSpanGrid(span: TimelineSpan, carry = SEAM_OVERLAP_FRAMES): CarriedSpanGrid {
+  const generatedStart = span.start - carry
+  const requestedLength = span.end - span.start + carry
+  const length = spanStanzaFrames(span, carry)
+  const rawIndex = (requestedLength - GRID_BASE_FRAMES) / GRID_STEP_FRAMES
+  const maxIndex = (GRID_MAX_FRAMES - GRID_BASE_FRAMES) / GRID_STEP_FRAMES
+  const lowerIndex = Math.max(0, Math.min(maxIndex, Math.floor(rawIndex)))
+  const upperIndex = Math.max(0, Math.min(maxIndex, Math.ceil(rawIndex)))
+  const endAt = (index: number): number => generatedStart + GRID_BASE_FRAMES + GRID_STEP_FRAMES * index
+  return {
+    generatedStart,
+    generatedEnd: generatedStart + length,
+    length,
+    lowerEnd: endAt(lowerIndex),
+    upperEnd: endAt(upperIndex),
+  }
+}
+
+export function assertCarriedSpanGrid(span: TimelineSpan, where: string, carry = SEAM_OVERLAP_FRAMES): number {
+  const grid = carriedSpanGrid(span, carry)
+  const requestedLength = span.end - span.start + carry
+  if (grid.length !== requestedLength) {
+    const legal = grid.lowerEnd === grid.upperEnd
+      ? `${grid.lowerEnd}`
+      : `${grid.lowerEnd} and ${grid.upperEnd}`
+    throw new Error(
+      `${where}: authored range ${span.start}→${span.end} cannot land on the 22+17k carried grid; ` +
+      `generated snapped range ${grid.generatedStart}→${grid.generatedEnd}; ` +
+      `legal neighboring end frames ${legal} ` +
+      `(a carried window's span is 17f — its 22f seam is the generation head; ` +
+      `a first or cut window is 22+17f)`,
+    )
+  }
+  return grid.length
+}
+
 export function gridSnap(length: number): number {
   const k = Math.round((length - GRID_BASE_FRAMES) / GRID_STEP_FRAMES)
   return Math.min(GRID_MAX_FRAMES, Math.max(GRID_BASE_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * k))
 }
 
+/** THE GRID PREDICATE, one owner: a length the engine can render is
+ *  22+17k inside [22,362]. Every refusal door asks this question, so
+ *  knob pins, single windows, cut windows, and carried windows cannot
+ *  drift into different laws. */
+export function isGridLength(length: number): boolean {
+  return Number.isInteger(length) &&
+    length >= GRID_BASE_FRAMES &&
+    length <= GRID_MAX_FRAMES &&
+    (length - GRID_BASE_FRAMES) % GRID_STEP_FRAMES === 0
+}
+
 export function assertGridLength(length: unknown, where: string): number {
-  if (
-    typeof length !== 'number' || !Number.isInteger(length) ||
-    length < GRID_BASE_FRAMES || length > GRID_MAX_FRAMES ||
-    (length - GRID_BASE_FRAMES) % GRID_STEP_FRAMES !== 0
-  ) {
+  if (typeof length !== 'number' || !isGridLength(length)) {
     const nearest = typeof length === 'number' && Number.isFinite(length)
       ? gridSnap(Math.min(GRID_MAX_FRAMES, Math.max(GRID_BASE_FRAMES, Math.round(length))))
       : 124
@@ -54,6 +105,27 @@ export function assertGridLength(length: unknown, where: string): number {
       `${where}: length ${String(length)}f is off-grid — the engine renders ` +
       `22+17k frames in [22,362] (nearest legal: ${nearest}f); ` +
       `the doc-proven geometry is 0→124→243→362`,
+    )
+  }
+  return length
+}
+
+/** THE UNIFORM SPAN GATE: one refusal for every window shape. A
+ *  carried window generates span+carry frames, so its authored span
+ *  must be 17k; a first or cut window generates its span verbatim, so
+ *  it must be 22+17k. Both are the same engine grid — a carried span
+ *  used to be the only shape that refused, while single/cut spans
+ *  were silently snapped (the old two-law gap, closed 2026-09-25).
+ *  `spanStanzaFrames` stays the render/film clock and is a no-op
+ *  identity for admitted spans. */
+export function assertSpanGrid(span: TimelineSpan, where: string, carry = 0): number {
+  if (carry > 0) return assertCarriedSpanGrid(span, where, carry)
+  const length = span.end - span.start
+  if (!isGridLength(length)) {
+    throw new Error(
+      `${where}: authored range ${span.start}→${span.end} has length ${length}f, which cannot land on the 22+17k grid ` +
+      `(nearest legal: ${gridSnap(length)}f); the doc-proven geometry is 0→124→243→362 ` +
+      `(a first or cut window is 22+17f; a carried window's span is 17f — its 22f seam is the generation head)`,
     )
   }
   return length
@@ -148,6 +220,13 @@ export const KNOB_ORDER = [
 
 export type KnobKey = (typeof KNOB_ORDER)[number]
 export const CALL_KNOB_KEYS: ReadonlySet<string> = new Set(KNOB_ORDER)
+
+export const CALL_KEYS: ReadonlySet<string> = new Set([
+  'text', 'start_frame', 'end_frame', 'image', 'clip', 'audio',
+  'transition', 'knobs', 'refs',
+  'ref_image', 'image_name', 'ref_images', 'ref_videos', 'ref_audios',
+  'beats', 'last_frame', 'first_frame_prev_sec', 'seam_carry',
+])
 
 export const LEGACY_KNOB_KEY = {
   sampling_steps: 'steps',

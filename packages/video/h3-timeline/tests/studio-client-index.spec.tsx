@@ -38,6 +38,24 @@ function mount(row: Record<string, unknown>, over?: Record<string, unknown>) {
   return { els }
 }
 
+type ProjectedStage = {
+  result: null | {
+    assetUrls: string[]
+    artifacts: Record<string, string>
+    metadata: Record<string, unknown>
+    durationSec?: number
+    gallery?: Array<{ name: string; url: string }>
+    motionPreviews?: Array<{ label: string; url: string | null; artifact: string }>
+  }
+}
+
+function stage(row: Record<string, unknown>, over?: Record<string, unknown>): ProjectedStage {
+  const element = H3TimelineStudio(owner(row, over) as never) as unknown as {
+    props: { children: { props: { stage: ProjectedStage } } }
+  }
+  return element.props.children.props.stage
+}
+
 describe("params IS the document (coerced, never trusted)", () => {
   it("a params-less row still authors (the starter lands)", () => {
     for (const params of [undefined, null, "nope", 42]) {
@@ -98,23 +116,50 @@ describe("the harvest shape feeds the filmstrip", () => {
   })
 
   it("gallery entries map name→url; the stage url owns the hero", () => {
-    const h = mount({
-      params: CALLS,
-      result: {
-        artifacts: { video: "https://u/map.mp4" },
-        url: "https://u/stage.mp4",
-        gallery: [
-          { name: "video_w3_main", url: "https://u/w3.mp4" },
-          { name: "", url: "https://u/noname.mp4" },
-          { name: "nourl", url: "" },
-          { name: "urlnum", url: 5 },
-          { name: 5, url: "https://u/bad.mp4" },
-        ],
-      },
+    const result = {
+      artifacts: { video: "https://u/map.mp4" },
+      url: "https://u/stage.mp4",
+      gallery: [
+        { name: "video_w3_main", url: "https://u/w3.mp4" },
+        null,
+        [],
+        { name: "", url: "https://u/noname.mp4" },
+        { name: "nourl", url: "" },
+        { name: "urlnum", url: 5 },
+        { name: 5, url: "https://u/bad.mp4" },
+      ],
+    }
+    const projected = stage({ params: CALLS, result })
+    assert.deepEqual(projected.result?.artifacts, {
+      video: "https://u/stage.mp4",
+      video_w3_main: "https://u/w3.mp4",
     })
+    const h = mount({ params: CALLS, result })
     const cut = screen.getByTestId("tl-final-cut")
     assert.equal(cut.querySelector("a")!.getAttribute("href"), "https://u/stage.mp4")
     h.els.unmount()
+  })
+
+  it("normalized duration, gallery, and motion previews survive H3 harvesting", () => {
+    const projected = stage({
+      params: CALLS,
+      result: {
+        artifacts: {},
+        assetUrls: ["https://u/final.mp4"],
+        durationSec: 6.25,
+        gallery: [{ name: "frame", url: "https://u/frame.png" }],
+        motionPreviews: [{ label: "pose", url: null, artifact: "pose.npz" }],
+        metadata: { runId: "run-1" },
+      },
+    })
+    assert.deepEqual(projected.result, {
+      assetUrls: ["https://u/final.mp4"],
+      artifacts: { video: "https://u/final.mp4", frame: "https://u/frame.png" },
+      metadata: { runId: "run-1" },
+      durationSec: 6.25,
+      gallery: [{ name: "frame", url: "https://u/frame.png" }],
+      motionPreviews: [{ label: "pose", url: null, artifact: "pose.npz" }],
+    })
   })
 
   it("a result-less row previews empty (never a throw)", () => {
@@ -136,6 +181,108 @@ describe("the harvest shape feeds the filmstrip", () => {
       },
     })
     assert.ok(screen.getByTestId("tl-run-history").textContent!.includes("Runs (1)"))
+  })
+
+  it("projects generic stage history into H3 history", () => {
+    mount({
+      params: CALLS,
+      history: [{
+        run_id: "run-old",
+        url: "https://u/old.mp4",
+        artifacts: { film: "https://u/old.mp4" },
+        assetUrls: ["https://u/old.mp4"],
+      }],
+      result: {
+        run_id: "run-new",
+        url: "https://u/new.mp4",
+        artifacts: { film: "https://u/new.mp4" },
+        assetUrls: ["https://u/new.mp4"],
+      },
+    })
+    const history = screen.getByTestId("tl-run-history")
+    assert.ok(history.textContent!.includes("Runs (2)"))
+    assert.equal(history.querySelector("a")!.getAttribute("href"), "https://u/new.mp4")
+  })
+
+  it("never promotes an audio result over the rendered film", () => {
+    const h = mount({
+      params: CALLS,
+      result: {
+        url: "https://u/mix.flac",
+        artifacts: {
+          film: "https://u/film.mp4",
+          mix: "https://u/mix.flac",
+        },
+        assetUrls: ["https://u/mix.flac", "https://u/film.mp4"],
+      },
+    })
+    assert.equal(screen.getByTestId("tl-final-cut").querySelector("a")!.getAttribute("href"), "https://u/film.mp4")
+    h.els.unmount()
+  })
+
+  it("normalizes film, direct, named, flat, and legacy history without audio promotion", () => {
+    const projected = stage({
+      params: CALLS,
+      history: [
+        { run_id: "current", artifacts: { "h3_t4_film_00001_.mp4": "https://u/current.mp4" } },
+        {
+          runId: "film",
+          status: "completed",
+          at: 1,
+          durationSec: 2,
+          artifacts: { "h3_t4_film_00002_.mp4": "https://u/film.mp4" },
+          assetUrls: [7, "https://u/film.mp4", ""],
+        },
+        { run_id: "direct", status: "queued", at: 2, durationSec: 3, url: "https://u/direct.mp4" },
+        { artifacts: { named: "https://u/named.mp4" } },
+        { assetUrls: ["https://u/flat.mp4"] },
+        { error: "boom", url: "https://u/error.mp4" },
+        { runId: "film", url: "https://u/duplicate.mp4" },
+        { runId: "named-duplicate", url: "https://u/named.mp4" },
+        {},
+      ],
+      result: {
+        run_id: "current",
+        artifacts: { "h3_t4_film_00001_.mp4": "https://u/current.mp4" },
+        metadata: { history: [
+          { runId: "legacy", status: "done", at: 4, durationSec: 4, video: "https://u/legacy.mp4" },
+          { runId: "invalid", video: 7 },
+          { video: "https://u/legacy2.mp4" },
+        ] },
+      },
+    })
+    const rows = (projected.result?.metadata.history ?? []) as Array<Record<string, unknown>>
+    assert.equal(rows.length, 9)
+    assert.equal(rows[0]?.video, "https://u/current.mp4")
+    assert.deepEqual(rows.find((row) => row.runId === "film"), {
+      runId: "film",
+      status: "completed",
+      at: 1,
+      durationSec: 2,
+      video: "https://u/film.mp4",
+    })
+    assert.equal(rows.find((row) => row.runId === "direct")?.video, "https://u/direct.mp4")
+    assert.equal(rows.find((row) => row.video === "https://u/named.mp4")?.video, "https://u/named.mp4")
+    assert.equal(rows.find((row) => row.video === "https://u/flat.mp4")?.video, "https://u/flat.mp4")
+    assert.equal(rows.find((row) => row.video === "https://u/error.mp4")?.status, "failed")
+    assert.equal(rows.find((row) => row.runId === "legacy")?.durationSec, 4)
+    assert.equal(rows.find((row) => row.video === "https://u/legacy2.mp4")?.video, "https://u/legacy2.mp4")
+  })
+
+  it("caps deduplicated history and removes an audio-only legacy video", () => {
+    const history = Array.from({ length: 13 }, (_, index) => ({
+      runId: `run-${index}`,
+      url: `https://u/history-${index}.mp4`,
+    }))
+    const projected = stage({
+      params: CALLS,
+      history,
+      result: { artifacts: { video: "https://u/mix.flac" }, url: "https://u/mix.flac" },
+    })
+    const rows = (projected.result?.metadata.history ?? []) as Array<Record<string, unknown>>
+    assert.equal(rows.length, 12)
+    assert.equal(rows[0]?.runId, "run-0")
+    assert.equal(projected.result?.artifacts.video, undefined)
   })
 
   it("a metadata-less row owns no history", () => {

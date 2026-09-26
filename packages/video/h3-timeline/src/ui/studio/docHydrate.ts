@@ -14,12 +14,54 @@
 import type { DocAudioClip, LayerA } from "./docModel"
 import { LEGACY_LAYERA_KEY, stemToClip } from "./docModel"
 import { normalizeDeclaredRefs } from "../../timelineContract.ts"
+import { parseFilmMixClips } from "../../filmMix.ts"
 
 /** Card-level ref lists hydrate to arrays; absent/empty stays absent
  * (undefined = the compose sees no declared surface — same as today). */
 function optRefs(raw: Record<string, unknown> | undefined, k: string): string[] | undefined {
   const list = normalizeDeclaredRefs(raw?.[k])
   return list.length > 0 ? list : undefined
+}
+
+function arrayValue(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value
+  if (typeof value !== 'string' || !value.trimStart().startsWith('[')) return []
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return parsed as unknown[]
+  } catch {
+    return []
+  }
+}
+
+function hydrateAudioClips(value: unknown): DocAudioClip[] | undefined {
+  const clips: DocAudioClip[] = []
+  for (const [index, raw] of arrayValue(value).entries()) {
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) continue
+    const row = raw as Record<string, unknown>
+    let parsed: ReturnType<typeof parseFilmMixClips>[number] | undefined
+    try {
+      parsed = parseFilmMixClips([{ ...row }])[0]
+    } catch {
+      continue
+    }
+    if (parsed === undefined) continue
+    const id = typeof row.id === 'string' && row.id.trim() !== '' ? row.id.trim() : `aclip-${index}`
+    const fallbackName = parsed.src.startsWith('data:') ? `clip-${index}` : parsed.src.split('/').pop()!
+    const name = typeof row.name === 'string' && row.name.trim() !== '' ? row.name.trim() : fallbackName
+    const gain = typeof row.gain === 'number' && Number.isFinite(row.gain) ? row.gain : undefined
+    clips.push({
+      id,
+      name,
+      src: parsed.src,
+      start_frame: parsed.start,
+      dur_frames: parsed.dur,
+      ...(gain !== undefined ? { gain } : {}),
+      ...(typeof row.class === 'string' && row.class.trim() !== '' ? { class: parsed.cls } : {}),
+      ...(parsed.text !== '' ? { text: parsed.text } : {}),
+    })
+  }
+  return clips.length > 0 ? clips : undefined
 }
 
 // ── Hydration (params → tenant state) + serialization (state → params) ────
@@ -120,24 +162,12 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     // audio_clips, the stem is converted to a positioned clip at frame 0.
     audio_stem: optStr("audio_stem"),
     audio_clips: (() => {
-      const parsed = Array.isArray(raw?.audio_clips)
-        ? raw.audio_clips.filter((c): c is DocAudioClip =>
-            !!c && typeof c === "object"
-            && typeof (c as DocAudioClip).id === "string"
-            && typeof (c as DocAudioClip).name === "string"
-            && typeof (c as DocAudioClip).src === "string" && (c as DocAudioClip).src.trim() !== ""
-            && Number.isFinite((c as DocAudioClip).start_frame)
-            && Number.isFinite((c as DocAudioClip).dur_frames)
-            && (c as DocAudioClip).dur_frames > 0)
-        : undefined
-      // Legacy stem → clip conversion: doc has audio_stem but no clips.
-      // The stem becomes a clip at frame 0 (4-second fallback duration;
-      // the component's Audio probe corrects it asynchronously).
+      const parsed = hydrateAudioClips(raw?.audio_clips)
       const stem = optStr("audio_stem")
-      if (stem !== undefined && (!parsed || parsed.length === 0)) {
+      if (stem !== undefined && parsed === undefined) {
         return [stemToClip(stem, num("fps", 24))]
       }
-      return parsed?.length ? parsed : undefined
+      return parsed
     })(),
     // THE DECLARED REFERENCE SURFACE (2026-09-23): card-level refs
     // hydrate so the lanes can SHOW what the compose merges — the

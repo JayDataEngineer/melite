@@ -32,6 +32,7 @@ export function artifactThumbNote(name: string): string {
 /** Short display name for a declared URL (last path segment) — the
  * full URL rides the title. */
 export function declaredShortName(url: string): string {
-  const tail = url.split("?")[0].split("/").pop() ?? url
+  const path = url.split("?")[0]
+  const tail = path.slice(path.lastIndexOf("/") + 1)
   return tail === "" ? url : tail
 }

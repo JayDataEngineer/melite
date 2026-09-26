@@ -658,7 +658,7 @@ window.__ModuleLoader__.load({
 		var init_stagePreview = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/stageView.ts
-		function recordOf(value) {
+		function recordOf$2(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
 		function nonEmptyString(value) {
@@ -686,7 +686,7 @@ window.__ModuleLoader__.load({
 		function galleryOf(value) {
 			if (!Array.isArray(value)) return void 0;
 			const gallery = value.flatMap((entry) => {
-				const row = recordOf(entry);
+				const row = recordOf$2(entry);
 				const name = nonEmptyString(row["name"]);
 				const url = nonEmptyString(row["url"]);
 				return name !== "" && url !== "" ? [{
@@ -699,7 +699,7 @@ window.__ModuleLoader__.load({
 		function previewsOf(value) {
 			if (!Array.isArray(value)) return void 0;
 			const previews = value.flatMap((entry) => {
-				const row = recordOf(entry);
+				const row = recordOf$2(entry);
 				const label = nonEmptyString(row["label"]);
 				const artifact = nonEmptyString(row["artifact"]);
 				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
@@ -712,14 +712,14 @@ window.__ModuleLoader__.load({
 			return previews.length > 0 ? previews : void 0;
 		}
 		function cardResultFromRecord(value) {
-			const result = recordOf(value);
+			const result = recordOf$2(value);
 			const artifacts = {};
-			for (const [name, url] of Object.entries(recordOf(result["artifacts"]))) {
+			for (const [name, url] of Object.entries(recordOf$2(result["artifacts"]))) {
 				const clean = nonEmptyString(url);
 				if (clean !== "") artifacts[name] = clean;
 			}
 			const assetUrls = stringsOf(result["assetUrls"]);
-			const metadata = recordOf(result["metadata"]);
+			const metadata = recordOf$2(result["metadata"]);
 			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
 			return {
 				artifacts,
@@ -732,8 +732,8 @@ window.__ModuleLoader__.load({
 		}
 		function inputBindingsOf(value) {
 			const bindings = [];
-			for (const [slot, raw] of Object.entries(recordOf(value))) {
-				const ref = recordOf(raw);
+			for (const [slot, raw] of Object.entries(recordOf$2(value))) {
+				const ref = recordOf$2(raw);
 				const stage = nonEmptyString(ref["stage"]);
 				if (stage !== "") {
 					const output = nonEmptyString(ref["output"]);
@@ -753,8 +753,8 @@ window.__ModuleLoader__.load({
 		}
 		function projectStageView(owner, options = {}) {
 			const row = owner.row;
-			const resolved = recordOf(row["resolved"]);
-			const rowParams = recordOf(row["params"]);
+			const resolved = recordOf$2(row["resolved"]);
+			const rowParams = recordOf$2(row["params"]);
 			const params = owner.effective?.params ?? rowParams;
 			const card = nonEmptyString(row["card"]) || owner.cardName;
 			const kind = options.kind ?? (card || "stage");
@@ -768,8 +768,8 @@ window.__ModuleLoader__.load({
 			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
 			const result = cardResultFromRecord(row["result"]);
 			const harvested = options.result === void 0 ? result : options.result(row, result);
-			const resultRecord = recordOf(row["result"]);
-			const metadata = recordOf(harvested?.metadata);
+			const resultRecord = recordOf$2(row["result"]);
+			const metadata = recordOf$2(harvested?.metadata);
 			const error = nonEmptyString(row["error"]) || nonEmptyString(resultRecord["error"]) || nonEmptyString(metadata["error"]);
 			const runId = owner.runId || nonEmptyString(row["runId"]) || nonEmptyString(resultRecord["runId"]) || nonEmptyString(resultRecord["run_id"]) || nonEmptyString(metadata["runId"]) || null;
 			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
@@ -788,6 +788,7 @@ window.__ModuleLoader__.load({
 				...inputOutputs.length === 0 ? {} : { inputOutputs },
 				inputIndices,
 				result: harvested,
+				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
 				status: statusOf(owner.runStatus),
 				...error === "" ? {} : { error },
 				runId,
@@ -9264,6 +9265,7 @@ window.__ModuleLoader__.load({
 				/**
 				* Creates a perspective projection matrix. This is used internally by
 				* {@link PerspectiveCamera#updateProjectionMatrix}.
+				
 				* @param {number} left - Left boundary of the viewing frustum at the near plane.
 				* @param {number} right - Right boundary of the viewing frustum at the near plane.
 				* @param {number} top - Top boundary of the viewing frustum at the near plane.
@@ -9312,6 +9314,7 @@ window.__ModuleLoader__.load({
 				/**
 				* Creates a orthographic projection matrix. This is used internally by
 				* {@link OrthographicCamera#updateProjectionMatrix}.
+				
 				* @param {number} left - Left boundary of the viewing frustum at the near plane.
 				* @param {number} right - Right boundary of the viewing frustum at the near plane.
 				* @param {number} top - Top boundary of the viewing frustum at the near plane.
@@ -39602,6 +39605,13 @@ void main() {
 			l.setDRACOLoader(draco);
 			return l;
 		}
+		/** One stage asset — the old Stage contract's live subset (the four
+		*  fields consumers set: id/url/name + the placement override; the
+		*  drop-raycast position stays caller-computed). */
+		function meshAssetUrl(value) {
+			const match = /^data\/input\/([^?#]+)$/i.exec(value);
+			return match === null ? value : `/v1/assets/inputs/${match[1]}`;
+		}
 		/** Normalize a loaded scene to a known viewing size — the
 		*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
 		*  dimension to targetHeight, feet on y=0. Mutates the root in place.
@@ -39855,7 +39865,7 @@ void main() {
 				const settle = () => {
 					if (alive && pending === 0) setReady(true);
 				};
-				for (const a of assets) loader().load(a.url, (g) => {
+				for (const a of assets) loader().load(meshAssetUrl(a.url), (g) => {
 					if (!alive) return;
 					autoFitToHeight(g.scene);
 					const group = new Group();
@@ -40058,7 +40068,7 @@ void main() {
 		*  square with the inline GLB thumb (the mini GlbStagePreview), the
 		*  same square grammar as images: never a bespoke mesh picker. */
 		function isMeshUrl(value) {
-			return /^data:model\/gltf-binary[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
+			return /^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
 		}
 		/** Read a File/Blob and resolve its data: URL — the ONE read path for
 		*  every slot-shaped attach (the old law, single definition). */
@@ -40214,7 +40224,7 @@ void main() {
 			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
 			const isAudio = file.type.startsWith("audio/");
 			const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name);
-			const isMesh = file.type === "model/gltf-binary" || file.type === "application/octet-stream" && glbName;
+			const isMesh = file.type === "model/gltf-binary" || file.type === "model/gltf+json" || file.type === "application/octet-stream" && glbName;
 			if (!isImage && !isAudio && !isMesh) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image, audio, or .glb/.gltf file");
 			if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp / glb only");
 			const dataUrl = await new Promise((resolve, reject) => {
@@ -40249,13 +40259,17 @@ void main() {
 		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
 		* operator's DRY audit law: one seam, one small file, one wall). */
 		/** The media-kind the picker fetches for a field: image fields name
-		*  image; mesh fields name mesh (the library boards meshes only when
-		*  the media namespace serves them — an honest empty until then);
-		*  file fields take the whole library (their accept narrows
-		*  client-side per row). */
+		*  image; mesh fields name the MEDIA vocabulary's kind for 3D, which
+		*  is `model` — NOT `mesh`. `mesh` is the client PREVIEW kind
+		*  (preview-kinds.ts), a different vocabulary; the media list door
+		*  admits image/audio/video/model/all and refuses anything else with
+		*  `media/kind`, so asking it for `mesh` was a guaranteed refusal that
+		*  the picker swallowed into an empty list (the "From media" row was
+		*  empty for every mesh field, with no error anywhere). file fields
+		*  take the whole library (their accept narrows client-side per row). */
 		function mediaKindForField(f) {
 			if (f.type === "image") return "image";
-			if (f.type === "mesh") return "mesh";
+			if (f.type === "mesh") return "model";
 			return "all";
 		}
 		/** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
@@ -40280,6 +40294,7 @@ void main() {
 			const [modalAt, setModalAt] = (0, react.useState)(null);
 			const fieldRef = (0, react.useRef)(null);
 			const [mediaRows, setMediaRows] = (0, react.useState)(null);
+			const [mediaErr, setMediaErr] = (0, react.useState)(null);
 			const fileRef = (0, react.useRef)(null);
 			const onFile = (0, react.useCallback)(async (f, file) => {
 				if (wire.onFile !== void 0) {
@@ -40408,8 +40423,10 @@ void main() {
 						label: it.name,
 						url: it.url
 					})));
-				}).catch(() => {
+					setMediaErr(null);
+				}).catch((e) => {
 					setMediaRows([]);
+					setMediaErr(e instanceof Error ? e.message : String(e));
 				});
 				return () => {
 					ctrl.abort();
@@ -40436,7 +40453,7 @@ void main() {
 					title: modalAt.mode === "flow" ? "From flow" : "From media",
 					description: modalAt.mode === "flow" ? "The other stages’ latest outputs" + (req.kind !== "all" ? " (" + req.kind + ")" : "") : "The runs library" + (req.kind !== "all" ? " (" + req.kind + ")" : ""),
 					closeLabel: "Close picker"
-				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : "nothing to pick yet") : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
+				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : mediaErr !== null ? "media library unavailable — " + mediaErr : "nothing to pick yet") : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
 					key: c.id,
 					className: card_module_css_default.pickRow
 				}, (0, react.createElement)("button", {
@@ -42406,6 +42423,156 @@ void main() {
 			"winTile": "lTRlka_winTile",
 			"winVid": "lTRlka_winVid"
 		};
+		const REF_CAPS = {
+			images: 8,
+			videos: 3,
+			audios: 3
+		};
+		function transitionOverlap(transition) {
+			return transition === "cut" ? 0 : 22;
+		}
+		function gridSnap(length) {
+			const k = Math.round((length - 22) / 17);
+			return Math.min(362, Math.max(22, 22 + 17 * k));
+		}
+		/** THE GRID PREDICATE, one owner: a length the engine can render is
+		*  22+17k inside [22,362]. Every refusal door asks this question, so
+		*  knob pins, single windows, cut windows, and carried windows cannot
+		*  drift into different laws. */
+		function isGridLength(length) {
+			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
+		}
+		function deliveredFrames(call, index) {
+			const span = call.end_frame - call.start_frame;
+			if (index === 0 || call.transition === "cut") return span;
+			return Math.max(0, span - 22);
+		}
+		function splitRefList(value) {
+			if (!value) return [];
+			const out = [];
+			let i = 0;
+			while (i < value.length) {
+				while (i < value.length && (value[i] === "," || value[i] === " " || value[i] === "	")) i++;
+				if (i >= value.length) break;
+				const start = i;
+				const isData = value.startsWith("data:", i);
+				let mimeComma = false;
+				while (i < value.length) {
+					if (value[i] === ",") {
+						if (isData && !mimeComma) {
+							mimeComma = true;
+							i++;
+							continue;
+						}
+						break;
+					}
+					i++;
+				}
+				let end = i;
+				while (end > start && (value[end - 1] === " " || value[end - 1] === "	")) end--;
+				out.push(value.slice(start, end));
+			}
+			return out;
+		}
+		function normalizeDeclaredRefs(value) {
+			if (Array.isArray(value)) return value.filter((entry) => typeof entry === "string" && entry.trim() !== "");
+			if (typeof value === "string") return splitRefList(value);
+			return [];
+		}
+		function joinRefList(value) {
+			if (Array.isArray(value)) {
+				const entries = value.map(String).map((entry) => entry.trim()).filter(Boolean);
+				return entries.length > 0 ? entries.join(", ") : void 0;
+			}
+			if (typeof value === "string" && value.trim()) return value.trim();
+		}
+		function mergeDeclaredRefs(declared, perCall) {
+			return [...declared, ...perCall.filter((entry) => !declared.includes(entry))];
+		}
+		function refGenreOf(name, url) {
+			const lowerName = name.toLowerCase();
+			if (/^video_w\d+_/.test(lowerName)) {
+				if (lowerName.endsWith("_last_frame") || lowerName.includes("_prev")) return "image";
+				return "video";
+			}
+			const extension = `${lowerName} ${url ? url.toLowerCase().split("?")[0] : ""}`.split(".").pop().split(/[^a-z0-9]/)[0];
+			if ([
+				"png",
+				"jpg",
+				"jpeg",
+				"webp",
+				"gif",
+				"bmp",
+				"avif"
+			].includes(extension)) return "image";
+			if ([
+				"mp4",
+				"webm",
+				"mov",
+				"mkv",
+				"avi",
+				"m4v"
+			].includes(extension)) return "video";
+			if ([
+				"mp3",
+				"wav",
+				"flac",
+				"ogg",
+				"m4a",
+				"aac",
+				"opus"
+			].includes(extension)) return "audio";
+			return "other";
+		}
+		const KNOB_ORDER = [
+			"steps",
+			"denoise",
+			"sampler_name",
+			"sched_name",
+			"shift_video",
+			"shift_audio",
+			"sla_sparsity",
+			"sla_block_size",
+			"sla_min_seq_len",
+			"sla_dense_last_steps",
+			"sla_protect_audio",
+			"sla_stabilize_motion",
+			"sla_reference_protection",
+			"sla_dense_backend",
+			"sla_dense_steps",
+			"sla_disable_fp16_accum",
+			"sharpen_enabled",
+			"sharpen_method",
+			"sharpen_strength",
+			"sharpen_radius",
+			"sharpen_threshold",
+			"sharpen_iterations",
+			"interpolate_enabled",
+			"interp_model",
+			"interp_multiplier",
+			"length"
+		];
+		const CALL_KNOB_KEYS = new Set(KNOB_ORDER);
+		const LEGACY_KNOB_KEY = {
+			sampling_steps: "steps",
+			sampler: "sampler_name",
+			scheduler: "sched_name",
+			h3_sla_sparsity: "sla_sparsity",
+			h3_sla_block_size: "sla_block_size",
+			h3_sla_min_seq_len: "sla_min_seq_len",
+			h3_sla_dense_last_steps: "sla_dense_last_steps",
+			h3_sla_protect_audio: "sla_protect_audio",
+			h3_sla_stabilize_motion: "sla_stabilize_motion",
+			h3_sla_reference_protection: "sla_reference_protection",
+			h3_sla_dense_backend: "sla_dense_backend",
+			h3_sla_dense_steps: "sla_dense_steps",
+			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
+			interpolate_model: "interp_model",
+			interpolate_multiplier: "interp_multiplier"
+		};
+		function migrateCallKnobKey(key) {
+			return LEGACY_KNOB_KEY[key] ?? key;
+		}
 		//#endregion
 		//#region ../../web-kit/timeline/timeline/viser-timeline/motionTimelineState.ts
 		const MOTION_TIMELINE_TRACKS = [
@@ -44122,6 +44289,46 @@ void main() {
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
 		//#endregion
 		//#region src/ui/studio/StudioPreview.tsx
+		function recordOf$1(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+		}
+		function historyRows$1(stage) {
+			const sources = [];
+			const metadataHistory = stage.result?.metadata?.history;
+			if (Array.isArray(metadataHistory)) sources.push(metadataHistory);
+			if (Array.isArray(stage.history)) sources.push(stage.history);
+			const out = [];
+			for (const raw of sources) for (const value of raw) {
+				const entry = recordOf$1(value);
+				const direct = typeof entry.video === "string" ? entry.video : "";
+				const artifacts = recordOf$1(entry.artifacts);
+				const assets = Array.isArray(entry.assetUrls) ? entry.assetUrls.filter((url) => typeof url === "string") : [];
+				const rows = Object.entries(artifacts).filter((entry) => {
+					const [name, url] = entry;
+					return typeof url === "string" && url !== "" && refGenreOf(name, url) === "video";
+				});
+				const film = rows.find(([name, url]) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url));
+				const named = rows[0]?.[1];
+				const flat = assets.find((url) => refGenreOf("", url) === "video");
+				const video = direct !== "" && refGenreOf("", direct) === "video" ? direct : film?.[1] ?? named ?? flat ?? "";
+				if (video === "") continue;
+				const runId = typeof entry.runId === "string" ? entry.runId : typeof entry.run_id === "string" ? entry.run_id : void 0;
+				out.push({
+					...runId !== void 0 ? { runId } : {},
+					...typeof entry.status === "string" ? { status: entry.status } : {},
+					...typeof entry.at === "number" ? { at: entry.at } : {},
+					...typeof entry.durationSec === "number" ? { durationSec: entry.durationSec } : {},
+					video
+				});
+			}
+			const seen = /* @__PURE__ */ new Set();
+			return out.filter((entry) => {
+				const key = entry.runId ?? entry.video;
+				if (seen.has(key)) return false;
+				seen.add(key);
+				return true;
+			});
+		}
 		/** Preview pane: final cut + window tiles + run history (lines 3928–4061).
 		* Chrome rides the shared kit (2026-09-07): preview PaneHeader +
 		* EmptyState (the aspirational TimelinePreview twin is deleted; this
@@ -44144,7 +44351,7 @@ void main() {
 						meta: running ? "— filling as the run lands…" : filmstrip.windows.length ? "— from the last run (unchanged windows reuse on re-run)" : "— run compiles the calls into windows; each renders once, seams chained"
 					}),
 					(() => {
-						const hist = (stage.result?.metadata)?.history;
+						const hist = historyRows$1(stage);
 						if (!hist?.length) return null;
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							"data-testid": "tl-run-history",
@@ -44265,142 +44472,6 @@ void main() {
 		async function fetchMediaLibrary(kind, signal) {
 			const v = await unwrapRemote(estateRemote().media.list(kind, signal), "media/list");
 			return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === "string" && typeof it?.name === "string") : [];
-		}
-		const REF_CAPS = {
-			images: 8,
-			videos: 3,
-			audios: 3
-		};
-		function deliveredFrames(call, index) {
-			const span = call.end_frame - call.start_frame;
-			if (index === 0 || call.transition === "cut") return span;
-			return Math.max(0, span - 22);
-		}
-		function splitRefList(value) {
-			if (!value) return [];
-			const out = [];
-			let i = 0;
-			while (i < value.length) {
-				while (i < value.length && (value[i] === "," || value[i] === " " || value[i] === "	")) i++;
-				if (i >= value.length) break;
-				const start = i;
-				const isData = value.startsWith("data:", i);
-				let mimeComma = false;
-				while (i < value.length) {
-					if (value[i] === ",") {
-						if (isData && !mimeComma) {
-							mimeComma = true;
-							i++;
-							continue;
-						}
-						break;
-					}
-					i++;
-				}
-				let end = i;
-				while (end > start && (value[end - 1] === " " || value[end - 1] === "	")) end--;
-				out.push(value.slice(start, end));
-			}
-			return out;
-		}
-		function normalizeDeclaredRefs(value) {
-			if (Array.isArray(value)) return value.filter((entry) => typeof entry === "string" && entry.trim() !== "");
-			if (typeof value === "string") return splitRefList(value);
-			return [];
-		}
-		function joinRefList(value) {
-			if (Array.isArray(value)) {
-				const entries = value.map(String).map((entry) => entry.trim()).filter(Boolean);
-				return entries.length > 0 ? entries.join(", ") : void 0;
-			}
-			if (typeof value === "string" && value.trim()) return value.trim();
-		}
-		function mergeDeclaredRefs(declared, perCall) {
-			return [...declared, ...perCall.filter((entry) => !declared.includes(entry))];
-		}
-		function refGenreOf(name, url) {
-			const lowerName = name.toLowerCase();
-			if (/^video_w\d+_/.test(lowerName)) {
-				if (lowerName.endsWith("_last_frame") || lowerName.includes("_prev")) return "image";
-				return "video";
-			}
-			const extension = `${lowerName} ${url ? url.toLowerCase().split("?")[0] : ""}`.split(".").pop().split(/[^a-z0-9]/)[0];
-			if ([
-				"png",
-				"jpg",
-				"jpeg",
-				"webp",
-				"gif",
-				"bmp",
-				"avif"
-			].includes(extension)) return "image";
-			if ([
-				"mp4",
-				"webm",
-				"mov",
-				"mkv",
-				"avi",
-				"m4v"
-			].includes(extension)) return "video";
-			if ([
-				"mp3",
-				"wav",
-				"flac",
-				"ogg",
-				"m4a",
-				"aac",
-				"opus"
-			].includes(extension)) return "audio";
-			return "other";
-		}
-		const KNOB_ORDER = [
-			"steps",
-			"denoise",
-			"sampler_name",
-			"sched_name",
-			"shift_video",
-			"shift_audio",
-			"sla_sparsity",
-			"sla_block_size",
-			"sla_min_seq_len",
-			"sla_dense_last_steps",
-			"sla_protect_audio",
-			"sla_stabilize_motion",
-			"sla_reference_protection",
-			"sla_dense_backend",
-			"sla_dense_steps",
-			"sla_disable_fp16_accum",
-			"sharpen_enabled",
-			"sharpen_method",
-			"sharpen_strength",
-			"sharpen_radius",
-			"sharpen_threshold",
-			"sharpen_iterations",
-			"interpolate_enabled",
-			"interp_model",
-			"interp_multiplier",
-			"length"
-		];
-		const CALL_KNOB_KEYS = new Set(KNOB_ORDER);
-		const LEGACY_KNOB_KEY = {
-			sampling_steps: "steps",
-			sampler: "sampler_name",
-			scheduler: "sched_name",
-			h3_sla_sparsity: "sla_sparsity",
-			h3_sla_block_size: "sla_block_size",
-			h3_sla_min_seq_len: "sla_min_seq_len",
-			h3_sla_dense_last_steps: "sla_dense_last_steps",
-			h3_sla_protect_audio: "sla_protect_audio",
-			h3_sla_stabilize_motion: "sla_stabilize_motion",
-			h3_sla_reference_protection: "sla_reference_protection",
-			h3_sla_dense_backend: "sla_dense_backend",
-			h3_sla_dense_steps: "sla_dense_steps",
-			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
-			interpolate_model: "interp_model",
-			interpolate_multiplier: "interp_multiplier"
-		};
-		function migrateCallKnobKey(key) {
-			return LEGACY_KNOB_KEY[key] ?? key;
 		}
 		//#endregion
 		//#region src/ui/studio/docModel.ts
@@ -44546,7 +44617,7 @@ void main() {
 			const { square, wireMenu } = useSquareProvider((name, v) => {
 				if (typeof v !== "string" || v === "") return;
 				if (refAudiosBlocked) return;
-				addAudioClip(artifactIndex.byUrl.get(v) ?? v, v, 0, LANE_OF[name] ?? "music");
+				addAudioClip(artifactIndex.byUrl.get(v) ?? v, v, 0, LANE_OF[name]);
 			}, {
 				candidates: Array.from(artifactIndex.byUrl.entries()).filter(([url]) => AUDIO_ROW_RE.test(url)).map(([url, name2]) => ({
 					id: url,
@@ -44784,7 +44855,7 @@ void main() {
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: studio_module_css_default.clipsTitle,
 					children: "Lanes — words & events"
-				}), (layerA.audio_clips ?? []).map((c) => {
+				}), layerA.audio_clips.map((c) => {
 					const cls = c.class ?? (c.text ? "dialogue" : "music");
 					return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.laneRow,
@@ -45041,7 +45112,8 @@ void main() {
 		/** Short display name for a declared URL (last path segment) — the
 		* full URL rides the title. */
 		function declaredShortName(url) {
-			const tail = url.split("?")[0].split("/").pop() ?? url;
+			const path = url.split("?")[0];
+			const tail = path.slice(path.lastIndexOf("/") + 1);
 			return tail === "" ? url : tail;
 		}
 		//#endregion
@@ -45114,8 +45186,8 @@ void main() {
 			const shown = chips.map((ch, idx) => ({
 				ch,
 				idx
-			})).filter(({ ch }) => !(declared ?? []).includes(ch));
-			const bus = mergeDeclaredRefs(declared ?? [], chips);
+			})).filter(({ ch }) => !declared.includes(ch));
+			const bus = mergeDeclaredRefs(declared, chips);
 			const over = bus.length > cap;
 			const candidates = artifacts.filter((a) => refGenreOf(a.name, a.url) === kind && !chips.includes(a.name)).map((a) => ({
 				id: a.name,
@@ -45123,8 +45195,9 @@ void main() {
 				url: a.url
 			}));
 			const setChips = (next) => onChange(next.length ? next.join(", ") : "");
-			const redundant = chips.filter((ch) => (declared ?? []).includes(ch));
+			const redundant = chips.filter((ch) => declared.includes(ch));
 			const up = REF_UPLOAD_SPEC[kind];
+			const disabledTitle = disabledHint ?? "pinned window — this input stands down";
 			const chipOf = (v) => {
 				const byUrl = candidates.find((c) => c.url === v);
 				return byUrl !== void 0 ? byUrl.id : v;
@@ -45133,11 +45206,11 @@ void main() {
 				className: studio_module_css_default.refRow,
 				"data-testid": "tl-call-ref-bucket",
 				"data-disabled": disabled ? "true" : void 0,
-				title: disabled ? disabledHint ?? "pinned window — this input stands down" : void 0,
+				title: disabled ? disabledTitle : void 0,
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SectionLabel, {
 					tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 						className: over ? studio_module_css_default.refCountOver : disabled ? studio_module_css_default.refCountOver : void 0,
-						title: disabled ? disabledHint ?? "pinned window — this input stands down" : over ? `${bus.length} claimed — the bus holds ${cap}` : `${bus.length} of ${cap}${(declared ?? []).length ? ` (${declared.length} card-level)` : ""}`,
+						title: disabled ? disabledTitle : over ? `${bus.length} claimed — the bus holds ${cap}` : `${bus.length} of ${cap}${declared.length ? ` (${declared.length} card-level)` : ""}`,
 						children: [
 							bus.length,
 							"/",
@@ -45154,7 +45227,7 @@ void main() {
 						pointerEvents: "none"
 					} : void 0,
 					children: [
-						(declared ?? []).map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
+						declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
 							url,
 							kind
 						}, `declared-${url}`)),
@@ -45699,12 +45772,86 @@ void main() {
 			}) });
 		}
 		//#endregion
+		//#region src/filmMix.ts
+		/** Parse raw audio_clips rows — the card's one law for what a clip
+		*  IS: a src without a numeric start_frame refuses loud (never a
+		*  silent misplacement); a row without src is junk and skips; the
+		*  class auto law (text → dialogue, textless → music) rides here. */
+		function parseFilmMixClips(rows) {
+			const clips = [];
+			const INT_STRING = /^[+-]?\d+$/;
+			const wireInt = (x) => typeof x === "string" && INT_STRING.test(x.trim()) ? Number(x.trim()) : x;
+			for (const c of rows) {
+				if (c === null || typeof c !== "object") continue;
+				const row = c;
+				row["start_frame"] = wireInt(row["start_frame"]);
+				row["dur_frames"] = wireInt(row["dur_frames"]);
+				const src = typeof row.src === "string" ? row.src.trim() : "";
+				if (src === "") {
+					if (row.start_frame !== void 0 || row.dur_frames !== void 0 || typeof row.text === "string" && row.text.trim() !== "" || typeof row.class === "string" && row.class.trim() !== "" || typeof row.id === "string" && row.id.trim() !== "" || typeof row.name === "string" && row.name.trim() !== "") throw new Error("audio_clips: a positioned clip row has no src — the film mix cannot place a source-less row");
+					continue;
+				}
+				if (typeof row.start_frame !== "number" || !Number.isFinite(row.start_frame)) throw new Error(`audio_clips: a clip with src but no numeric start_frame — the audio lanes own placement (re-add the clip)`);
+				const dur = typeof row.dur_frames === "number" && Number.isFinite(row.dur_frames) && row.dur_frames > 0 ? row.dur_frames : 0;
+				const text = typeof row.text === "string" ? row.text.trim() : "";
+				const clsRaw = typeof row.class === "string" ? row.class.trim().toLowerCase() : "";
+				if (clsRaw !== "" && clsRaw !== "dialogue" && clsRaw !== "sfx" && clsRaw !== "music") throw new Error(`audio_clips: unknown class "${clsRaw}" — dialogue | sfx | music (omit for auto: text → dialogue, else music)`);
+				const cls = clsRaw !== "" ? clsRaw : text !== "" ? "dialogue" : "music";
+				clips.push({
+					src,
+					start: row.start_frame,
+					dur,
+					text,
+					cls
+				});
+			}
+			return clips;
+		}
+		//#endregion
 		//#region src/ui/studio/docHydrate.ts
 		/** Card-level ref lists hydrate to arrays; absent/empty stays absent
 		* (undefined = the compose sees no declared surface — same as today). */
 		function optRefs(raw, k) {
 			const list = normalizeDeclaredRefs(raw?.[k]);
 			return list.length > 0 ? list : void 0;
+		}
+		function arrayValue(value) {
+			if (Array.isArray(value)) return value;
+			if (typeof value !== "string" || !value.trimStart().startsWith("[")) return [];
+			try {
+				return JSON.parse(value);
+			} catch {
+				return [];
+			}
+		}
+		function hydrateAudioClips(value) {
+			const clips = [];
+			for (const [index, raw] of arrayValue(value).entries()) {
+				if (raw === null || typeof raw !== "object" || Array.isArray(raw)) continue;
+				const row = raw;
+				let parsed;
+				try {
+					parsed = parseFilmMixClips([{ ...row }])[0];
+				} catch {
+					continue;
+				}
+				if (parsed === void 0) continue;
+				const id = typeof row.id === "string" && row.id.trim() !== "" ? row.id.trim() : `aclip-${index}`;
+				const fallbackName = parsed.src.startsWith("data:") ? `clip-${index}` : parsed.src.split("/").pop();
+				const name = typeof row.name === "string" && row.name.trim() !== "" ? row.name.trim() : fallbackName;
+				const gain = typeof row.gain === "number" && Number.isFinite(row.gain) ? row.gain : void 0;
+				clips.push({
+					id,
+					name,
+					src: parsed.src,
+					start_frame: parsed.start,
+					dur_frames: parsed.dur,
+					...gain !== void 0 ? { gain } : {},
+					...typeof row.class === "string" && row.class.trim() !== "" ? { class: parsed.cls } : {},
+					...parsed.text !== "" ? { text: parsed.text } : {}
+				});
+			}
+			return clips.length > 0 ? clips : void 0;
 		}
 		/** The family's loras flavor catalog (id by filename) — the mod bag
 		* resolves legacy lora knob picks; rows without a catalog match were
@@ -45788,10 +45935,10 @@ void main() {
 				model: optStr("model"),
 				audio_stem: optStr("audio_stem"),
 				audio_clips: (() => {
-					const parsed = Array.isArray(raw?.audio_clips) ? raw.audio_clips.filter((c) => !!c && typeof c === "object" && typeof c.id === "string" && typeof c.name === "string" && typeof c.src === "string" && c.src.trim() !== "" && Number.isFinite(c.start_frame) && Number.isFinite(c.dur_frames) && c.dur_frames > 0) : void 0;
+					const parsed = hydrateAudioClips(raw?.audio_clips);
 					const stem = optStr("audio_stem");
-					if (stem !== void 0 && (!parsed || parsed.length === 0)) return [stemToClip(stem, num("fps", 24))];
-					return parsed?.length ? parsed : void 0;
+					if (stem !== void 0 && parsed === void 0) return [stemToClip(stem, num("fps", 24))];
+					return parsed;
 				})(),
 				ref_images: optRefs(raw, "ref_images"),
 				ref_videos: optRefs(raw, "ref_videos"),
@@ -45902,15 +46049,15 @@ void main() {
 				}
 				if (typeof r.last_frame === "string" && r.last_frame.trim()) console.warn(`VideoTimelineStudio: call ${calls.length} carried last_frame (${r.last_frame}) — dropped; the closing-still control was cut 2026-09-15 (the reference lane owns no last-frame input)`);
 				if (r.transition === "extend" || r.transition === "cut") call.transition = r.transition;
-				if (r.refs !== null && typeof r.refs === "object" && !Array.isArray(r.refs)) {
-					const rr = r.refs;
-					const refs = {};
-					const im = joinRefList(rr.images), vi = joinRefList(rr.videos), au = joinRefList(rr.audios);
-					if (im) refs.images = im;
-					if (vi) refs.videos = vi;
-					if (au) refs.audios = au;
-					if (Object.keys(refs).length) call.refs = refs;
-				}
+				const refs = {};
+				const rr = r.refs !== null && typeof r.refs === "object" && !Array.isArray(r.refs) ? r.refs : {};
+				const im = joinRefList(rr.images ?? r.ref_images);
+				const vi = joinRefList(rr.videos ?? r.ref_videos);
+				const au = joinRefList(rr.audios ?? r.ref_audios);
+				if (im) refs.images = im;
+				if (vi) refs.videos = vi;
+				if (au) refs.audios = au;
+				if (Object.keys(refs).length) call.refs = refs;
 				if (r.knobs !== null && typeof r.knobs === "object") {
 					const knobs = {};
 					for (const [rawK, v] of Object.entries(r.knobs)) {
@@ -46060,6 +46207,54 @@ void main() {
 			const lastCallsRef = (0, react.useRef)(rawList !== null ? JSON.stringify(calls) : "");
 			const [keyframes, setKeyframes] = (0, react.useState)(() => hydrateKeyframes(stage.params?.keyframes));
 			const [layerA, setLayerA] = (0, react.useState)(() => hydrateLayerA(stage.params));
+			const lastKeyframesRef = (0, react.useRef)(JSON.stringify(keyframes));
+			const lastLayerARef = (0, react.useRef)(JSON.stringify(serializeLayerA(layerA)));
+			const stateRef = (0, react.useRef)({
+				calls,
+				keyframes,
+				layerA
+			});
+			stateRef.current = {
+				calls,
+				keyframes,
+				layerA
+			};
+			const stageIdRef = (0, react.useRef)(stage.id);
+			const paramsSignature = JSON.stringify(stage.params ?? {});
+			(0, react.useEffect)(() => {
+				const incomingCalls = hydrateCalls({
+					calls: stage.params?.calls,
+					beats: stage.params?.beats
+				});
+				const incomingKeyframes = hydrateKeyframes(stage.params?.keyframes);
+				const incomingLayerA = hydrateLayerA(stage.params);
+				const current = stateRef.current;
+				const currentSignature = JSON.stringify({
+					calls: serializeCalls(current.calls),
+					keyframes: current.keyframes,
+					layerA: serializeLayerA(current.layerA)
+				});
+				const incomingSignature = JSON.stringify({
+					calls: serializeCalls(incomingCalls),
+					keyframes: incomingKeyframes,
+					layerA: serializeLayerA(incomingLayerA)
+				});
+				const stageChanged = stageIdRef.current !== stage.id;
+				stageIdRef.current = stage.id;
+				if (!stageChanged && currentSignature === incomingSignature) {
+					const rawList = Array.isArray(stage.params?.calls) && (stage.params?.calls).length > 0 ? stage.params?.calls : Array.isArray(stage.params?.beats) && (stage.params?.beats).length > 0 ? stage.params?.beats : null;
+					lastCallsRef.current = rawList !== null ? JSON.stringify(incomingCalls) : "";
+					lastKeyframesRef.current = JSON.stringify(incomingKeyframes);
+					lastLayerARef.current = JSON.stringify(serializeLayerA(incomingLayerA));
+					return;
+				}
+				lastCallsRef.current = JSON.stringify(current.calls);
+				lastKeyframesRef.current = JSON.stringify(current.keyframes);
+				lastLayerARef.current = JSON.stringify(serializeLayerA(current.layerA));
+				setCalls(incomingCalls);
+				setKeyframes(incomingKeyframes);
+				setLayerA(incomingLayerA);
+			}, [paramsSignature, stage.id]);
 			return {
 				calls,
 				setCalls,
@@ -46068,8 +46263,8 @@ void main() {
 				layerA,
 				setLayerA,
 				lastCallsRef,
-				lastKeyframesRef: (0, react.useRef)(JSON.stringify(keyframes)),
-				lastLayerARef: (0, react.useRef)(JSON.stringify(serializeLayerA(layerA)))
+				lastKeyframesRef,
+				lastLayerARef
 			};
 		}
 		//#endregion
@@ -50887,12 +51082,104 @@ void main() {
 			};
 		}
 		//#endregion
+		//#region src/ui/studio/docGrid.ts
+		/**
+		* docGrid.ts — THE AUTHORING GRID (studio side, 2026-09-25).
+		*
+		* WHY THIS FILE EXISTS: the card's admission gate became UNIFORM
+		* (`assertSpanGrid` — every window shape refuses an off-grid authored
+		* span instead of silently re-framing it). A refusal-only card would
+		* break the authoring surface: the bar drag, the span number inputs
+		* and the call splitter all move frames by hand, and every one of them
+		* used to hand the engine whatever the operator's pixel resolved to.
+		* So the authoring boundary snaps, VISIBLY, to the same law the card
+		* refuses against — the number inputs and the bar show the snapped
+		* frames, and the card never has to repair a doc this surface built.
+		*
+		* THE LAW (one owner, imported from the card's own contract — no
+		* duplicated constants):
+		*   - a window generates 22+17k frames in [22,362];
+		*   - a CARRIED window (i>0, non-cut) generates span+22, so its
+		*     authored span must be 17k;
+		*   - a FIRST or CUT window generates its span verbatim, so its
+		*     authored span must be 22+17k;
+		*   - calls TILE: every call starts where the previous one ended.
+		*
+		* The seam toggle re-frames by exactly 22 frames (a carried span
+		* loses 22, a cut span gains 22) because both shapes cannot be legal
+		* for one span — arithmetic, not policy. The operator sees the new end
+		* frame in the input; nothing is repaired behind their back.
+		*/
+		/** Is this window's seam a carried join? Index-aware, exactly the
+		*  card's own `chainLike` law (filmMix's stanzaSecs reads the same). */
+		function isCarriedShape(index, call) {
+			return index > 0 && transitionOverlap(call.transition) > 0;
+		}
+		/** Is this authored LENGTH legal for the window's shape? */
+		function isLegalCallLength(length, carried) {
+			if (carried) return Number.isInteger(length) && length >= 17 && length + 22 <= 362 && length % 17 === 0;
+			return isGridLength(length);
+		}
+		/** Nearest legal authored length for the window's shape. */
+		function snapCallLength(length, carried) {
+			if (carried) {
+				const k = Math.max(1, Math.round(length / 17));
+				return Math.min(340, 17 * k);
+			}
+			return gridSnap(Math.max(22, length));
+		}
+		/** The grid's step, re-exported so the authoring setters never grow a
+		*  second copy of the number. Both length families advance by 17. */
+		const GRID_STEP = 17;
+		/** The grid's base — the shortest first/cut window. */
+		const GRID_BASE = 22;
+		/** The shortest legal authored length for this window's shape. */
+		function shortestCallLength(index, call) {
+			return isCarriedShape(index, call) ? 17 : 22;
+		}
+		/** The exclusive end this call would carry at the requested end: the
+		*  length snaps, the start is the operator's. */
+		function snapCallEnd(call, index, end) {
+			return call.start_frame + snapCallLength(end - call.start_frame, isCarriedShape(index, call));
+		}
+		/** The splice frame for a split where BOTH halves must be legal — the
+		*  gesture's frame when it already qualifies, else the nearest one that
+		*  does. Never returns a frame that leaves an off-grid half. */
+		function snapSplitFrame(start, end, leftCarried, rightCarried, gesture) {
+			let best = gesture;
+			let bestDistance = Number.POSITIVE_INFINITY;
+			for (let frame = start + 1; frame < end; frame++) {
+				if (!isLegalCallLength(frame - start, leftCarried)) continue;
+				if (!isLegalCallLength(end - frame, rightCarried)) continue;
+				const distance = Math.abs(frame - gesture);
+				if (distance < bestDistance) {
+					bestDistance = distance;
+					best = frame;
+				}
+			}
+			return best;
+		}
+		/** The seam toggle's re-frame: the 22-frame carry moves from the
+		*  generation head to (or from) the authored span. A first window has
+		*  no carry either way, so its toggle never moves frames. */
+		function reflowSeamSpan(call, index, next) {
+			const wasCarried = isCarriedShape(index, call);
+			const willCarried = isCarriedShape(index, { transition: next });
+			if (wasCarried === willCarried) return call.end_frame;
+			const length = call.end_frame - call.start_frame;
+			return call.start_frame + (willCarried ? length - 22 : length + 22);
+		}
+		//#endregion
 		//#region src/ui/studio/useCallMutations.ts
 		/** Call-structure setters: extend/add/guide/span/knobs (tenant §8).
-		*  Verbatim lines 2088–2260. */
+		*  Verbatim lines 2088–2260, plus the authoring grid (2026-09-25):
+		*  every gesture that writes a frame lands on the card's own span law
+		*  (docGrid.ts), so a studio-built doc never trips the card's uniform
+		*  off-grid refusal. */
 		function useCallMutations(setCalls, fps) {
 			/** Pull-the-tail: the bar grew the envelope — the last call's end
-			* follows (exclusive count straight from the bar's onExtend). */
+			* follows (exclusive count straight from the bar's onExtend), snapped
+			* to the window's legal length. */
 			const handleExtend = (newTotal) => {
 				setCalls((prev) => {
 					if (!prev.length) return prev;
@@ -50902,7 +51189,7 @@ void main() {
 					const next = [...prev];
 					next[last] = {
 						...cur,
-						end_frame: Math.round(newTotal)
+						end_frame: snapCallEnd(cur, last, Math.round(newTotal))
 					};
 					return next;
 				});
@@ -50910,32 +51197,34 @@ void main() {
 			/** Add call — TIMELINE-NATIVE (2026-08-16: "We don't need the add-call
 			*  button. We can use the timeline to do this"): double-click the ruler
 			*  or the calls row's empty area at a frame → split the call containing
-			*  that frame there (both halves ≥1 frame), or append a fresh 2 s call
-			*  when the frame sits on a boundary / past the end. The new call starts
-			*  EMPTY: a call with no prompt is a TODO the plan names before any GPU
-			*  work — never silent junk prompt. */
+			*  that frame there (both halves on the grid), or append a fresh call
+			*  at the tail on the grid. The new call starts EMPTY: a call with no
+			*  prompt is a TODO the plan names before any GPU work — never silent
+			*  junk prompt. */
 			const addCallAt = (frame) => {
 				setCalls((prev) => {
 					const i = prev.findIndex((c) => frame > c.start_frame && frame < c.end_frame);
 					if (i >= 0) {
 						const cur = prev[i];
 						const next = [...prev];
+						const split = snapSplitFrame(cur.start_frame, cur.end_frame, isCarriedShape(i, cur), isCarriedShape(i + 1, cur), Math.round(frame));
 						next[i] = {
 							...cur,
-							end_frame: frame
+							end_frame: split
 						};
 						next.splice(i + 1, 0, {
 							text: "",
-							start_frame: frame,
+							start_frame: split,
 							end_frame: cur.end_frame
 						});
 						return next;
 					}
 					const T = prev.length ? prev[prev.length - 1].end_frame : 0;
+					const shape = isCarriedShape(prev.length, { transition: "extend" });
 					return [...prev.map((c) => ({ ...c })), {
 						text: "",
 						start_frame: T,
-						end_frame: T + Math.max(1, Math.round(fps * 2))
+						end_frame: T + snapCallLength(Math.max(1, Math.round(fps * 2)), shape)
 					}];
 				});
 			};
@@ -50961,15 +51250,36 @@ void main() {
 			* 'extend' = the drift-control continuation carries the previous
 			* window's latent at the director's proven 22-frame overlap with
 			* the soft AV audio release; 'cut' = independent window, a true
-			* butt. The seconds picker died with the MotionContext seam.) */
+			* butt. The seconds picker died with the MotionContext seam.)
+			*
+			* THE SEAM TOGGLE RE-FRAMES (2026-09-25, the uniform span gate): a
+			* carried span is 17k and a cut span is 22+17k, so one span cannot
+			* be legal in both states. Toggling moves the window's end by the
+			* carry (22f) so the doc stays runnable — the operator's end frame
+			* shows the new value; the neighbor's start follows as it always
+			* did. A first window carries nothing either way and never moves. */
 			const setCallTransition = (i, t) => {
 				setCalls((prev) => {
 					if (i < 0 || i >= prev.length) return prev;
 					const call = { ...prev[i] };
 					if (call.transition === t) return prev;
-					call.transition = t;
+					const end = reflowSeamSpan(call, i, t);
+					if (end === call.end_frame) {
+						call.transition = t;
+						const next = [...prev];
+						next[i] = call;
+						return next;
+					}
 					const next = [...prev];
-					next[i] = call;
+					next[i] = {
+						...call,
+						transition: t,
+						end_frame: end
+					};
+					if (i < next.length - 1) next[i + 1] = {
+						...next[i + 1],
+						start_frame: end
+					};
 					return next;
 				});
 			};
@@ -50993,34 +51303,57 @@ void main() {
 			};
 			/** Edit a call's span from the card's number inputs. The cut ripples
 			* into the neighbor (start → the previous call's end; end → the next
-			* call's start; the LAST call's end grows/shrinks the envelope). */
+			* call's start; the LAST call's end grows/shrinks the envelope), and
+			* the written frame lands on the window's legal length — the number
+			* input shows the snapped frame, the card never re-frames it. */
 			const setCallSpan = (i, which, frame) => {
 				setCalls((prev) => {
 					if (i < 0 || i >= prev.length) return prev;
 					const cur = prev[i];
 					const next = [...prev];
-					if (which === "start") {
-						const min = i === 0 ? 0 : prev[i - 1].start_frame + 1;
-						const f = Math.min(Math.max(frame, min), cur.end_frame - 1);
-						if (f === cur.start_frame) return prev;
+					if (which === "start" && i > 0) {
+						const prevCall = prev[i - 1];
+						const leftCarried = isCarriedShape(i - 1, prevCall);
+						const rightCarried = isCarriedShape(i, cur);
+						const gesture = Math.round(frame);
+						let boundary = snapSplitFrame(prevCall.start_frame, cur.end_frame, leftCarried, rightCarried, gesture);
+						if (boundary === prevCall.end_frame && gesture !== boundary) {
+							const stepped = boundary + GRID_STEP * Math.sign(gesture - boundary);
+							if (stepped > prevCall.start_frame && stepped < cur.end_frame && isLegalCallLength(stepped - prevCall.start_frame, leftCarried) && isLegalCallLength(cur.end_frame - stepped, rightCarried)) boundary = stepped;
+						}
+						if (boundary === prevCall.end_frame) return prev;
+						next[i - 1] = {
+							...prevCall,
+							end_frame: boundary
+						};
 						next[i] = {
 							...cur,
-							start_frame: f
+							start_frame: boundary
 						};
-						if (i > 0) next[i - 1] = {
-							...next[i - 1],
-							end_frame: f
+					} else if (which === "start") {
+						const gesture = Math.min(Math.max(Math.round(frame), 0), cur.end_frame - GRID_BASE);
+						let start = cur.end_frame - snapCallLength(cur.end_frame - gesture, false);
+						if (start === cur.start_frame) start += GRID_STEP * Math.sign(gesture - start);
+						if (start === cur.start_frame) return prev;
+						next[i] = {
+							...cur,
+							start_frame: start
 						};
 					} else {
-						const f = Math.max(frame, cur.start_frame + 1);
-						if (f === cur.end_frame) return prev;
+						const gesture = Math.max(Math.round(frame), cur.start_frame + 1);
+						let end = snapCallEnd(cur, i, gesture);
+						if (end === cur.end_frame) {
+							const stepped = end + GRID_STEP * Math.sign(gesture - end);
+							if (stepped >= cur.start_frame + shortestCallLength(i, cur)) end = stepped;
+						}
+						if (end === cur.end_frame) return prev;
 						next[i] = {
 							...cur,
-							end_frame: f
+							end_frame: end
 						};
 						if (i < prev.length - 1) next[i + 1] = {
 							...next[i + 1],
-							start_frame: f
+							start_frame: end
 						};
 					}
 					return next;
@@ -51168,9 +51501,11 @@ void main() {
 				}
 				const filmName = Object.keys(arts).find((n) => /^h3_t4_film_\d+_\.mp4$/.test(n));
 				const filmUrl = filmName !== void 0 && typeof arts[filmName] === "string" && arts[filmName] !== "" ? arts[filmName] : "";
+				const namedVideo = Object.entries(arts).find(([name, url]) => typeof url === "string" && url !== "" && refGenreOf(name, url) === "video" && !/^h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name))?.[1];
+				const flatVideo = urls.find((url) => refGenreOf("", url) === "video" && !/(?:^|\/)h3_t4_w\d+_\d+_\.mp4$/i.test(url) && !/(?:^|\/)video_w\d+_/.test(url));
 				return {
 					windows,
-					final: filmUrl !== "" ? filmUrl : typeof arts.video === "string" && arts.video !== "" ? arts.video : urls[0] ?? null
+					final: filmUrl !== "" ? filmUrl : typeof namedVideo === "string" ? namedVideo : flatVideo ?? null
 				};
 			}, [stage.result]);
 			const prompts = (0, react.useMemo)(() => callsToPrompts(calls, layerA.fps), [calls, layerA.fps]);
@@ -51521,25 +51856,90 @@ void main() {
 		* the family's declared writes); the run rides the host drill's own
 		* Run row.
 		*/
+		function recordOf(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+		}
+		function isWindowName(name) {
+			return /^h3_t4_w\d+_\d+_\.mp4$/i.test(name) || /^video_w\d+_/.test(name);
+		}
+		function videoUrlOf(artifacts, assetUrls, direct, allowWindow = false) {
+			const rows = Object.entries(artifacts).filter((entry) => {
+				const [name, url] = entry;
+				return typeof url === "string" && url !== "" && refGenreOf(name, url) === "video";
+			});
+			const film = rows.find(([name, url]) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url));
+			if (film !== void 0) return film[1];
+			if (typeof direct === "string" && direct !== "" && refGenreOf("", direct) === "video") return direct;
+			const named = rows.find(([name]) => allowWindow || !isWindowName(name));
+			if (named !== void 0) return named[1];
+			return assetUrls.find((url) => refGenreOf("", url) === "video") ?? "";
+		}
+		function historyRows(row, result, metadata) {
+			const rows = [];
+			const add = (value) => {
+				const entry = recordOf(value);
+				const video = videoUrlOf(recordOf(entry["artifacts"]), Array.isArray(entry["assetUrls"]) ? entry["assetUrls"].filter((url) => typeof url === "string") : [], typeof entry["url"] === "string" ? entry["url"] : "", true);
+				if (video === "") return;
+				const runId = typeof entry["runId"] === "string" ? entry["runId"] : typeof entry["run_id"] === "string" ? entry["run_id"] : void 0;
+				const error = typeof entry["error"] === "string" ? entry["error"] : "";
+				const status = typeof entry["status"] === "string" ? entry["status"] : error !== "" ? "failed" : void 0;
+				const duration = typeof entry["durationSec"] === "number" ? entry["durationSec"] : void 0;
+				const at = typeof entry["at"] === "number" ? entry["at"] : void 0;
+				rows.push({
+					...runId !== void 0 ? { runId } : {},
+					...status !== void 0 ? { status } : {},
+					...at !== void 0 ? { at } : {},
+					...duration !== void 0 ? { durationSec: duration } : {},
+					video
+				});
+			};
+			const generic = Array.isArray(row["history"]) ? row["history"] : [];
+			if (Array.isArray(row["history"])) add(result);
+			for (const entry of generic) add(entry);
+			const legacy = metadata["history"];
+			if (Array.isArray(legacy)) for (const entry of legacy) {
+				const normalized = recordOf(entry);
+				const video = typeof normalized["video"] === "string" ? normalized["video"] : "";
+				if (video === "") continue;
+				rows.push({
+					...typeof normalized["runId"] === "string" ? { runId: normalized["runId"] } : {},
+					...typeof normalized["status"] === "string" ? { status: normalized["status"] } : {},
+					...typeof normalized["at"] === "number" ? { at: normalized["at"] } : {},
+					...typeof normalized["durationSec"] === "number" ? { durationSec: normalized["durationSec"] } : {},
+					video
+				});
+			}
+			const seen = /* @__PURE__ */ new Set();
+			return rows.filter((entry) => {
+				const key = entry.runId ?? entry.video;
+				if (seen.has(key)) return false;
+				seen.add(key);
+				return true;
+			}).slice(0, 12);
+		}
 		function harvestResult(row, base) {
-			const result = typeof row["result"] === "object" && row["result"] !== null && !Array.isArray(row["result"]) ? row["result"] : {};
+			const result = recordOf(row["result"]);
 			const artifacts = { ...base?.artifacts ?? {} };
 			const gallery = Array.isArray(result["gallery"]) ? result["gallery"] : [];
 			for (const entry of gallery) {
-				if (typeof entry !== "object" || entry === null || Array.isArray(entry)) continue;
-				const item = entry;
+				const item = recordOf(entry);
 				const name = typeof item["name"] === "string" ? item["name"] : "";
 				const url = typeof item["url"] === "string" ? item["url"] : "";
 				if (name !== "" && url !== "") artifacts[name] = url;
 			}
-			const primary = base?.assetUrls[0] ?? "";
-			if (artifacts["video"] === void 0 && primary !== "") artifacts["video"] = primary;
-			const url = typeof result["url"] === "string" ? result["url"] : "";
-			if (url !== "") artifacts["video"] = url;
+			const assetUrls = base?.assetUrls ?? [];
+			const video = videoUrlOf(artifacts, assetUrls, result["url"]);
+			if (video !== "") artifacts["video"] = video;
+			else if (artifacts["video"] !== void 0 && refGenreOf("video", artifacts["video"]) !== "video") delete artifacts["video"];
 			const rawMetadata = result["metadata"];
-			const metadata = typeof rawMetadata === "object" && rawMetadata !== null && !Array.isArray(rawMetadata) ? rawMetadata : base?.metadata ?? {};
+			const metadata = {
+				...base?.metadata ?? {},
+				...recordOf(rawMetadata)
+			};
+			const history = historyRows(row, result, metadata);
+			if (history.length > 0) metadata["history"] = history;
 			return {
-				assetUrls: base?.assetUrls ?? [],
+				assetUrls,
 				artifacts,
 				metadata,
 				...base?.durationSec === void 0 ? {} : { durationSec: base.durationSec },
@@ -51585,4 +51985,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="3f9fd7cdd3557aacd99f4c77d81c1d1ac79f0faf";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="c2900c1bd88f21599984567f478ffb9e2e18a12a";

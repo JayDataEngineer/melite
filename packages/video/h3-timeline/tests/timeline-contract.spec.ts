@@ -10,7 +10,9 @@ import {
   LEGACY_KNOB_KEY,
   REF_CAPS,
   SEAM_OVERLAP_FRAMES,
+  assertCarriedSpanGrid,
   assertGridLength,
+  carriedSpanGrid,
   deliveredFrames,
   gridSnap,
   imageReferenceCap,
@@ -52,6 +54,22 @@ describe('timeline geometry', () => {
     assert.throws(() => assertGridLength(21, 'test'), /nearest legal: 22f/)
     assert.throws(() => assertGridLength('124', 'test'), /nearest legal: 124f/)
     assert.throws(() => assertGridLength(Number.NaN, 'test'), /nearest legal: 124f/)
+  })
+
+  it('accepts grid-exact carried spans and names the illegal neighboring ends', () => {
+    const lower = carriedSpanGrid(span(124, 277), 22)
+    assert.equal(lower.generatedStart, 102)
+    assert.equal(lower.generatedEnd, 277)
+    assert.equal(assertCarriedSpanGrid(span(124, 277), 'test', 22), 175)
+    assert.equal(assertCarriedSpanGrid(span(124, 294), 'test', 22), 192)
+    assert.throws(
+      () => assertCarriedSpanGrid(span(124, 282), 'calls[1]', 22),
+      /calls\[1\]: authored range 124→282 cannot land on the 22\+17k carried grid; generated snapped range 102→277; legal neighboring end frames 277 and 294/,
+    )
+    assert.throws(
+      () => assertCarriedSpanGrid(span(100, 500), 'max', 22),
+      /max: authored range 100→500 cannot land.*legal neighboring end frames 440/,
+    )
   })
 
   it('reports delivered frames for first, cut, and carried calls', () => {

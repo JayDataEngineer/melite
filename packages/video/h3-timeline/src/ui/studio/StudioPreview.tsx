@@ -5,11 +5,65 @@
  */
 import type { RefObject } from "react"
 import type { CardStage } from "@melite/contracts"
+import { refGenreOf } from "../../timelineContract.ts"
 import { EmptyState, PaneHeader } from "@melite/card-base"
 import { FilmPlayer } from "@melite-plugin/timeline/ui/timeline"
 import type { FilmPlayerHandle } from "@melite-plugin/timeline/ui/timeline"
 import { Clapperboard } from "@melite/card-base/icons"
 import s from "./studio.module.css"
+
+type HistRow = { runId?: string; status?: string; at?: number; durationSec?: number; video: string }
+
+function recordOf(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function historyRows(stage: CardStage): HistRow[] {
+  const sources: unknown[][] = []
+  const metadataHistory = stage.result?.metadata?.history
+  if (Array.isArray(metadataHistory)) sources.push(metadataHistory as unknown[])
+  if (Array.isArray(stage.history)) sources.push(stage.history)
+  const out: HistRow[] = []
+  for (const raw of sources) for (const value of raw) {
+    const entry = recordOf(value)
+    const direct = typeof entry.video === "string" ? entry.video : ""
+    const artifacts = recordOf(entry.artifacts)
+    const assets = Array.isArray(entry.assetUrls)
+      ? entry.assetUrls.filter((url): url is string => typeof url === "string")
+      : []
+    const rows = Object.entries(artifacts)
+      .filter((entry): entry is [string, string] => {
+        const [name, url] = entry
+        return typeof url === "string" && url !== "" && refGenreOf(name, url) === "video"
+      })
+    const film = rows.find(([name, url]) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url))
+    const named = rows[0]?.[1]
+    const flat = assets.find((url) => refGenreOf("", url) === "video")
+    const video: string = direct !== "" && refGenreOf("", direct) === "video"
+      ? direct
+      : film?.[1] ?? named ?? flat ?? ""
+    if (video === "") continue
+    const runId = typeof entry.runId === "string"
+      ? entry.runId
+      : typeof entry.run_id === "string" ? entry.run_id : undefined
+    out.push({
+      ...(runId !== undefined ? { runId } : {}),
+      ...(typeof entry.status === "string" ? { status: entry.status } : {}),
+      ...(typeof entry.at === "number" ? { at: entry.at } : {}),
+      ...(typeof entry.durationSec === "number" ? { durationSec: entry.durationSec } : {}),
+      video,
+    })
+  }
+  const seen = new Set<string>()
+  return out.filter((entry): boolean => {
+    const key = entry.runId ?? entry.video
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
 
 /** Preview pane: final cut + window tiles + run history (lines 3928–4061).
  * Chrome rides the shared kit (2026-09-07): preview PaneHeader +
@@ -64,9 +118,7 @@ export function StudioPreview({
         Each chip links its run's final cut; the title carries the full
         run id, status, wall time. */}
     {(() => {
-      type HistRow = { runId?: string; status?: string; at?: number; durationSec?: number; video?: string }
-      const meta = stage.result?.metadata as { history?: HistRow[] } | undefined
-      const hist = meta?.history
+       const hist = historyRows(stage)
       if (!hist?.length) return null
       return (
         <div data-testid="tl-run-history" className={s.histRow}>

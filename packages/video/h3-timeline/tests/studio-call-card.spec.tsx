@@ -309,4 +309,42 @@ describe("THE DECLARED SURFACE (2026-09-23): the bundle shows what the compose m
     assert.deepEqual(calls.refs, [[0, "images", "still-a"]], "only the copy strips — the bus still rides card-level")
     h.unmount()
   })
+
+  it("declared media chips render across every bus and each redundant media copy strips independently", () => {
+    const dataImage = "data:image/png;base64,AAA"
+    const dataAudio = "data:audio/wav;base64,BBB"
+    const { d, calls } = deps({
+      layerA: {
+        fps: 24,
+        seed: 42,
+        ref_images: [dataImage],
+        ref_videos: ["https://u/declared.mp4"],
+        ref_audios: [dataAudio],
+      },
+    })
+    const h = render(
+      <CallCard
+        c={{ ...BASE, refs: { images: dataImage, videos: "https://u/declared.mp4", audios: dataAudio } }}
+        i={0}
+        deps={d}
+      />,
+    )
+    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 3)
+    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"] img').length, 1)
+    const rows = h.container.querySelectorAll('[data-testid="tl-redundant-ref"]')
+    assert.equal(rows.length, 3)
+    assert.equal(rows[0]!.textContent?.includes(`upload (${dataImage.length} chars)`), true)
+    assert.equal(rows[1]!.textContent?.includes("declared.mp4"), true)
+    assert.equal(rows[2]!.textContent?.includes(`upload (${dataAudio.length} chars)`), true)
+    for (const bucket of h.container.querySelectorAll('[data-testid="tl-call-ref-bucket"]').values()) {
+      if (bucket.querySelector('[data-testid="tl-declared-ref"]') !== null) {
+        assert.match(bucket.querySelector('[title]')?.getAttribute("title") ?? "", /1 card-level/)
+      }
+    }
+    for (const strip of h.container.querySelectorAll('[data-testid="tl-redundant-strip"]')) {
+      fireEvent.click(strip)
+    }
+    assert.deepEqual(calls.refs, [[0, "images", ""], [0, "videos", ""], [0, "audios", ""]])
+    h.unmount()
+  })
 })

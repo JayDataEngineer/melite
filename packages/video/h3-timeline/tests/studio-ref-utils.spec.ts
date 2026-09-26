@@ -155,5 +155,7 @@ describe("the declared surface (2026-09-23 — the bundle shows what the compose
   it("declaredShortName: last path segment shows, the full URL rides the title", () => {
     assert.equal(declaredShortName("/melite-media/runs/run-x/edit/SaveImage.0_edit_00001_.png"), "SaveImage.0_edit_00001_.png")
     assert.equal(declaredShortName("https://u/a.png?v=2"), "a.png")
+    assert.equal(declaredShortName("https://u/?v=2"), "https://u/?v=2")
+    assert.equal(declaredShortName(""), "")
   })
 })

@@ -82,6 +82,45 @@ describe("run history (prior finals, newest first)", () => {
     assert.ok(chips[3]!.title.includes("run-mystery · ? · ?s"))
   })
 
+  it("reads generic stage history as well as the legacy metadata face", () => {
+    preview({ stage: { history: [{
+      run_id: "run-generic",
+      artifacts: { film: "https://u/generic.mp4" },
+      assetUrls: ["https://u/generic.mp4"],
+    }] } as never })
+    assert.ok(screen.getByTestId("tl-run-history").textContent!.includes("generic"))
+  })
+
+  it("normalizes direct, film, named, flat, and legacy history without duplicates", () => {
+    preview({
+      stage: {
+        result: { metadata: { history: [
+          { run_id: "legacy", video: "https://u/legacy.mp4", status: "done", at: 3, durationSec: 3 },
+          { video: 7 },
+        ] } },
+        history: [
+          { runId: "direct", video: "https://u/direct.mp4", status: "completed", at: 0, durationSec: 1 },
+          { video: "https://u/direct.flac", artifacts: { "h3_t4_film_00001_.mp4": "https://u/film.mp4" } },
+          { artifacts: { named: "https://u/named.mp4" }, assetUrls: ["https://u/audio.flac"] },
+          { artifacts: {}, assetUrls: ["https://u/flat.mp4"] },
+          { runId: "direct", video: "https://u/duplicate-id.mp4" },
+          { video: "https://u/named.mp4" },
+          {},
+        ],
+      } as never,
+    })
+    const row = screen.getByTestId("tl-run-history")
+    const chips = [...row.querySelectorAll("a")]
+    assert.equal(chips.length, 5)
+    assert.deepEqual(chips.map((chip) => chip.getAttribute("href")), [
+      "https://u/legacy.mp4",
+      "https://u/direct.mp4",
+      "https://u/film.mp4",
+      "https://u/named.mp4",
+      "https://u/flat.mp4",
+    ])
+  })
+
   it("only the newest eight chips show", () => {
     const history = Array.from({ length: 9 }, (_, k) => ({
       runId: `run-${k}`, status: "completed", durationSec: k, video: `https://u/f${k}.mp4`,

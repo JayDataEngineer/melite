@@ -55,7 +55,7 @@ export function RunRefsClips({
     {(layerA.audio_clips?.length ?? 0) > 0 && (
       <div className={s.laneInspector} data-testid="tl-lane-inspector">
         <span className={s.clipsTitle}>Lanes — words &amp; events</span>
-        {(layerA.audio_clips ?? []).map((c) => {
+        {(layerA.audio_clips!).map((c) => {
           const cls = c.class ?? (c.text ? "dialogue" : "music")
           return (
             <div key={c.id} className={s.laneRow} data-testid="tl-lane-row" data-clip={c.name} data-lane={cls}>

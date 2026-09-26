@@ -177,12 +177,49 @@ describe("hydrateLayerA (params → Layer A)", () => {
     assert.equal(hydrateLayerA({ audio_stem: 7 }).audio_stem, undefined)
   })
 
-  it("audio_clips: valid clips survive, junk rows filter out", () => {
+  it("audio_clips: valid rows survive, junk rows filter out", () => {
     const good = { id: "c1", name: "n", src: "theme", start_frame: 0, dur_frames: 96 }
-    const a = hydrateLayerA({ audio_clips: [good, null, 42, { ...good, id: 9 }, { ...good, src: "  " }, { ...good, dur_frames: 0 }, { ...good, start_frame: NaN }] })
-    assert.deepEqual(a.audio_clips, [good])
+    // a row with no source AND no placement/identity is skippable junk
+    // (older docs wrote one); a row that carries placement but no src
+    // now refuses inside the mix and is filtered here by the same door
+    const a = hydrateLayerA({ audio_clips: [good, null, 42, { ...good, id: 9 }, { note: "an empty row" }, { ...good, src: "  " }, { ...good, dur_frames: 0 }, { ...good, start_frame: NaN }] })
+    assert.deepEqual(a.audio_clips, [
+      good,
+      { id: "aclip-3", name: "n", src: "theme", start_frame: 0, dur_frames: 96 },
+      { id: "c1", name: "n", src: "theme", start_frame: 0, dur_frames: 0 },
+    ])
     assert.equal(hydrateLayerA({ audio_clips: [] }).audio_clips, undefined)
     assert.equal(hydrateLayerA({ audio_clips: "x" }).audio_clips, undefined)
+  })
+
+  it("audio_clips normalize wire frames and missing display fields", () => {
+    const a = hydrateLayerA({ audio_clips: JSON.stringify([
+      { src: "/audio/line.flac", start_frame: "12", dur_frames: "0", class: "dialogue", text: "hello" },
+    ]) })
+    assert.deepEqual(a.audio_clips, [{
+      id: "aclip-0",
+      name: "line.flac",
+      src: "/audio/line.flac",
+      start_frame: 12,
+      dur_frames: 0,
+      class: "dialogue",
+      text: "hello",
+    }])
+  })
+
+  it("refuses malformed JSON arrays and fills display fallbacks", () => {
+    assert.equal(hydrateLayerA({ audio_clips: JSON.stringify({ not: "an array" }) }).audio_clips, undefined)
+    assert.equal(hydrateLayerA({ audio_clips: "[broken" }).audio_clips, undefined)
+    const a = hydrateLayerA({
+      audio_clips: [
+        { src: "data:audio", start_frame: 0, dur_frames: 12, gain: Number.NaN, class: " ", text: 7 },
+        { src: "https://audio.test/dir/take.wav", start_frame: 1, dur_frames: 12, gain: 0.5, class: "sfx", name: " " },
+      ],
+    })
+    assert.deepEqual(a.audio_clips, [
+      { id: "aclip-0", name: "clip-0", src: "data:audio", start_frame: 0, dur_frames: 12 },
+      { id: "aclip-1", name: "take.wav", src: "https://audio.test/dir/take.wav", start_frame: 1, dur_frames: 12, gain: 0.5, class: "sfx" },
+    ])
   })
 
   it("legacy stem converts to a positioned clip at frame 0 (4s fallback)", () => {

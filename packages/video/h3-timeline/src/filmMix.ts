@@ -54,7 +54,19 @@ export function parseFilmMixClips(rows: readonly unknown[]): FilmMixClip[] {
     row['start_frame'] = wireInt(row['start_frame'])
     row['dur_frames'] = wireInt(row['dur_frames'])
     const src = typeof row.src === 'string' ? row.src.trim() : ''
-    if (src === '') continue
+    if (src === '') {
+      const positioned =
+        row.start_frame !== undefined ||
+        row.dur_frames !== undefined ||
+        (typeof row.text === 'string' && row.text.trim() !== '') ||
+        (typeof row.class === 'string' && row.class.trim() !== '') ||
+        (typeof row.id === 'string' && row.id.trim() !== '') ||
+        (typeof row.name === 'string' && row.name.trim() !== '')
+      if (positioned) {
+        throw new Error('audio_clips: a positioned clip row has no src — the film mix cannot place a source-less row')
+      }
+      continue
+    }
     if (typeof row.start_frame !== 'number' || !Number.isFinite(row.start_frame)) {
       throw new Error(
         `audio_clips: a clip with src but no numeric start_frame — the audio lanes own placement (re-add the clip)`,

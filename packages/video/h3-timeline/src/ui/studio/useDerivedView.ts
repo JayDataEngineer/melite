@@ -9,6 +9,7 @@ import { isImageUrl } from "@melite/card-base"
 import { PROMPT_COLORS } from "@melite-plugin/timeline/ui/timeline"
 import type { DocCall, DocKeyframe, LayerA } from "./docModel"
 import { callsToPrompts, keyframesToLanes } from "./docCalls"
+import { refGenreOf } from "../../timelineContract.ts"
 import type { LinkArtifact } from "./refUtils"
 import type { TimelineSelection } from "./useViewSelection"
 import type { useFilmAudio } from "./useFilmAudio"
@@ -127,9 +128,18 @@ export function useDerivedView(args: {
     const filmName = Object.keys(arts).find((n): boolean => /^h3_t4_film_\d+_\.mp4$/.test(n))
     const filmUrl = filmName !== undefined && typeof arts[filmName] === "string" && arts[filmName] !== ""
       ? arts[filmName] as string : ""
+    const namedVideo = Object.entries(arts).find(([name, url]) =>
+      typeof url === "string" && url !== "" && refGenreOf(name, url) === "video"
+      && !/^h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name),
+    )?.[1]
+    const flatVideo = urls.find((url) =>
+      refGenreOf("", url) === "video"
+      && !/(?:^|\/)h3_t4_w\d+_\d+_\.mp4$/i.test(url)
+      && !/(?:^|\/)video_w\d+_/.test(url),
+    )
     return {
       windows,
-      final: filmUrl !== "" ? filmUrl : typeof arts.video === "string" && arts.video !== "" ? arts.video : urls[0] ?? null,
+      final: filmUrl !== "" ? filmUrl : typeof namedVideo === "string" ? namedVideo : flatVideo ?? null,
     }
   }, [stage.result])
 

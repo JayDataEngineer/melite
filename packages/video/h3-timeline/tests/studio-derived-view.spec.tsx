@@ -168,13 +168,11 @@ describe("filmstrip (the last run's windows)", () => {
         assetUrls: ["https://r/h3_t4_w1_00003_.mp4", "https://r/h3_t4_w2_00002_.mp4"],
       }),
     })
-    // windows tile; the hero falls to the flat list's lead (urls[0]),
-    // still never a FABRICATED film url
     assert.deepEqual(
       result.current.filmstrip.windows.map((w) => w.name),
       ["h3_t4_w1_00003_.mp4", "h3_t4_w2_00002_.mp4"],
     )
-    assert.equal(result.current.filmstrip.final, "https://r/h3_t4_w1_00003_.mp4")
+    assert.equal(result.current.filmstrip.final, null)
   })
 })
 

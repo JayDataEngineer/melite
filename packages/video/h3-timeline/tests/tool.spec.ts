@@ -177,7 +177,7 @@ describe("the shot laws (the card gate — py schema.py port)", () => {
   });
 
   it("multiple text shots → t4_chain", () => {
-    const out = schema({ ...BASE, calls: [SHOT, { ...SHOT, start_frame: 57, end_frame: 120 }] }) as Record<string, unknown>;
+    const out = schema({ ...BASE, calls: [SHOT, { ...SHOT, start_frame: 56, end_frame: 107 }] }) as Record<string, unknown>;
     assert.equal(out.variant, "t4_chain");
   });
 

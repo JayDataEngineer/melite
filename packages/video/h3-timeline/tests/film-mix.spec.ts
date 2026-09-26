@@ -26,7 +26,7 @@ const W2 = [56 / 24, 73 / 24];
 const W3 = [56 / 24, 90 / 24, 124 / 24];
 
 describe("parseFilmMixClips — the one law for what a clip IS", () => {
-  it("the auto law: text → dialogue, textless → music; src-less rows skip", () => {
+  it("the auto law: text → dialogue, textless → music; unpositioned src-less rows skip", () => {
     const clips = parseFilmMixClips([
       { src: "d.flac", start_frame: 10, dur_frames: 40, text: "get down, now." },
       { src: "m.flac", start_frame: 0, dur_frames: 124 },
@@ -36,6 +36,30 @@ describe("parseFilmMixClips — the one law for what a clip IS", () => {
     assert.equal(clips.length, 2);
     assert.equal(clips[0]!.cls, "dialogue");
     assert.equal(clips[1]!.cls, "music");
+  });
+
+  it("positioned source-less rows refuse loud", () => {
+    // placement (start_frame/dur_frames) claims a seat on the track
+    assert.throws(
+      () => parseFilmMixClips([{ id: "junk", start_frame: 10, dur_frames: 20 }]),
+      /positioned clip row has no src/,
+    );
+    // and so does identity: a named row with no source is a lost take,
+    // not junk
+    assert.throws(
+      () => parseFilmMixClips([{ id: "take-2", name: "the bell", src: "", start_frame: 0 }]),
+      /positioned clip row has no src/,
+    );
+    assert.throws(
+      () => parseFilmMixClips([{ text: "the line", src: "  " }]),
+      /positioned clip row has no src/,
+    );
+    // rows that claim nothing stay skippable junk: empty strings, a
+    // non-string field, and the truly empty row
+    assert.deepEqual(
+      parseFilmMixClips([{}, { noSrc: true }, { text: "", class: "", id: "", name: "" }, { text: 4, class: 9 }]),
+      [],
+    );
   });
 
   it("junk refuses loud: unknown class, src without a numeric start", () => {

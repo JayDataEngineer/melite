@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
-import { renderHook } from "@testing-library/react"
+import { act, renderHook } from "@testing-library/react"
 import { useDocState } from "../src/ui/studio/useDocState.ts"
 import type { CardStage } from "@melite/contracts"
 
@@ -50,6 +50,28 @@ describe("hydration", () => {
     const { result } = renderHook(() => useDocState(stage(params)))
     assert.deepEqual(result.current.keyframes, [{ frame: 5, kind: "clip", source: "s" }])
     expect(result.current.keyframes.length).toBe(1)
+  })
+
+  it("rehydrates when the same stage receives a new document", () => {
+    const first = {
+      calls: [{ text: "first", start_frame: 0, end_frame: 48 }],
+      audio_clips: [{ src: "/audio/first.flac", start_frame: "0", dur_frames: "24" }],
+      ref_images: ["/images/first.png"],
+    }
+    const second = {
+      calls: [{ text: "second", start_frame: 0, end_frame: 96 }],
+      audio_clips: [{ src: "/audio/second.flac", start_frame: "24", dur_frames: "0" }],
+      ref_images: ["/images/second.png"],
+    }
+    const { result, rerender } = renderHook(
+      ({ params }: { params: unknown }) => useDocState({ id: "s_1", params } as unknown as CardStage),
+      { initialProps: { params: first } },
+    )
+    expect(result.current.calls[0]!.text).toBe("first")
+    act(() => rerender({ params: second }))
+    expect(result.current.calls[0]!.text).toBe("second")
+    expect(result.current.layerA.audio_clips?.[0]?.src).toBe("/audio/second.flac")
+    expect(result.current.layerA.ref_images).toEqual(["/images/second.png"])
   })
 })
 

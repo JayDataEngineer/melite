@@ -105,7 +105,7 @@ export function StudioStripPane({
       if (typeof v !== "string" || v === "") return
       if (refAudiosBlocked) return
       const label = artifactIndex.byUrl.get(v) ?? v
-      addAudioClip(label, v, 0, LANE_OF[name] ?? "music")
+      addAudioClip(label, v, 0, LANE_OF[name])
     },
     {
       // From flow: the run's own artifacts, audio rows only.

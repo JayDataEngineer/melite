@@ -1,11 +1,16 @@
 /**
  * useCallMutations — call-structure setters (BEHAVIORAL).
  *
- * PINS: extend (empty/shrink/grow), addCallAt (interior split,
- * boundary append, empty-doc seed), guides (set/clear/no-op/range),
- * transition (mode switch re-bases the carry default), prev-sec
- * (set/clear/validation), refs (set/clear/prune), span (start/end
- * clamps + neighbor ripple), knobs (set/clear/prune).
+ * PINS: extend (empty/shrink/grow, snapped to the grid), addCallAt
+ * (interior split on a legal boundary, boundary append, empty-doc
+ * seed), guides (set/clear/no-op/range), transition (mode switch
+ * re-frames the span by the 22f carry), prev-sec (set/clear/
+ * validation), refs (set/clear/prune), span (start/end clamps +
+ * neighbor ripple + grid snap), knobs (set/clear/prune).
+ *
+ * THE FIXTURES ARE ON THE CARD'S GRID (2026-09-25, the uniform span
+ * gate): a first window is 22+17f, a carried window is 17f, and calls
+ * tile. `A`/`B` below are the legal pair the card admits.
  */
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
@@ -22,14 +27,20 @@ function harness(initial: DocCall[], fps = 24) {
   })
 }
 
-const A: DocCall = { text: "a", start_frame: 0, end_frame: 48 }
-const B: DocCall = { text: "b", start_frame: 48, end_frame: 96 }
+/** 0→56 is 22+17k (a first window); 56→124 is 17k (carried). */
+const A: DocCall = { text: "a", start_frame: 0, end_frame: 56 }
+const B: DocCall = { text: "b", start_frame: 56, end_frame: 124 }
 
 describe("handleExtend", () => {
-  it("grows the last call's exclusive end", () => {
+  it("grows the last call's exclusive end, snapped to its legal length", () => {
     const { result } = harness([A])
+    // A is the FIRST window → its length is 22+17k: 120 snaps to 124
     act(() => { result.current.handleExtend(120) })
-    assert.equal(result.current.calls[0]!.end_frame, 120)
+    assert.equal(result.current.calls[0]!.end_frame, 124)
+    const carried = harness([A, B])
+    act(() => { carried.result.current.handleExtend(200) })
+    // B is carried → 17k: 200 - 56 = 144 snaps to 136 (17×8)
+    assert.equal(carried.result.current.calls[1]!.end_frame, 56 + 136)
   })
 
   it("empty docs and shrinks no-op (never a new array)", () => {
@@ -39,7 +50,7 @@ describe("handleExtend", () => {
     assert.ok(result.current.calls === beforeEmpty)
     const { result: r2 } = harness([A])
     const before = r2.current.calls
-    act(() => { r2.current.handleExtend(48) })
+    act(() => { r2.current.handleExtend(56) })
     act(() => { r2.current.handleExtend(10) })
     assert.ok(r2.current.calls === before)
     expect(r2.current.calls.length).toBe(1)
@@ -47,28 +58,33 @@ describe("handleExtend", () => {
 })
 
 describe("addCallAt", () => {
-  it("splits the containing call (both halves keep the tiling)", () => {
+  it("splits the containing call where BOTH halves are legal", () => {
     const { result } = harness([A, B])
+    // gesture 24 → the nearest frame that leaves a legal left half
+    // (22+17k) and a legal carried right half (17k) is 22
     act(() => { result.current.addCallAt(24) })
-    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[0, 24], [24, 48], [48, 96]])
+    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[0, 22], [22, 56], [56, 124]])
     assert.equal(result.current.calls[1]!.text, "")
   })
 
-  it("boundary/past-end frames append a fresh 2s call (empty TODO, never junk)", () => {
+  it("boundary/past-end frames append a fresh call on the grid (empty TODO, never junk)", () => {
     const { result } = harness([A])
-    act(() => { result.current.addCallAt(48) })
-    assert.deepEqual(result.current.calls[1], { text: "", start_frame: 48, end_frame: 96 })
+    act(() => { result.current.addCallAt(56) })
+    // 2s = 48f, carried → 17k snaps to 51
+    assert.deepEqual(result.current.calls[1], { text: "", start_frame: 56, end_frame: 107 })
     act(() => { result.current.addCallAt(500) })
-    assert.equal(result.current.calls[2]!.start_frame, 96)
+    assert.equal(result.current.calls[2]!.start_frame, 107)
   })
 
-  it("an empty doc seeds at 0 (fps-scaled, minimum 1 frame)", () => {
+  it("an empty doc seeds at 0 (fps-scaled, on the first window's grid)", () => {
     const { result } = harness([], 24)
     act(() => { result.current.addCallAt(10) })
-    assert.deepEqual(result.current.calls, [{ text: "", start_frame: 0, end_frame: 48 }])
+    // the first window is plain (no carry): 48 snaps to 56
+    assert.deepEqual(result.current.calls, [{ text: "", start_frame: 0, end_frame: 56 }])
     const tiny = harness([], 0)
     act(() => { tiny.result.current.addCallAt(0) })
-    assert.equal(tiny.result.current.calls[0]!.end_frame, 1)
+    // the shortest legal first window is the 22f base, never 1f
+    assert.equal(tiny.result.current.calls[0]!.end_frame, 22)
   })
 })
 
@@ -103,6 +119,30 @@ describe("setCallTransition", () => {
     assert.equal(result.current.calls[0]!.transition, "extend")
     act(() => { result.current.setCallTransition(0, "cut") })
     assert.equal(result.current.calls[0]!.transition, "cut")
+  })
+
+  it("THE SEAM TOGGLE RE-FRAMES BY THE 22f CARRY (both shapes stay legal)", () => {
+    const { result } = harness([A, B])
+    // B is carried at 17k (68f). Toggling to cut makes its span plain
+    // (22+17k): the same generated length, now 68+22 = 90f authored.
+    act(() => { result.current.setCallTransition(1, "cut") })
+    assert.equal(result.current.calls[1]!.transition, "cut")
+    assert.equal(result.current.calls[1]!.end_frame, 56 + 90)
+    // and back: the authored span gives its 22 frames to the seam
+    act(() => { result.current.setCallTransition(1, "extend") })
+    assert.equal(result.current.calls[1]!.end_frame, 124)
+  })
+
+  it("a first window carries nothing either way (no re-frame)", () => {
+    const { result } = harness([A])
+    act(() => { result.current.setCallTransition(0, "cut") })
+    assert.equal(result.current.calls[0]!.end_frame, 56)
+  })
+
+  it("the toggle ripples the neighbor's start (the tiling holds)", () => {
+    const { result } = harness([A, B, { text: "c", start_frame: 124, end_frame: 190 }])
+    act(() => { result.current.setCallTransition(1, "cut") })
+    assert.equal(result.current.calls[2]!.start_frame, 146)
   })
 
   it("same-mode and out-of-range writes no-op", () => {
@@ -147,35 +187,88 @@ describe("setCallRefs", () => {
 })
 
 describe("setCallSpan", () => {
-  it("start edits ripple into the previous call's end (clamped to the tiling)", () => {
+  it("start edits ripple into the previous call's end, snapped to ITS length", () => {
     const { result } = harness([A, B])
+    // A (first, plain) at 56; a gesture of 60 would snap back onto 56,
+    // so the live-step rule moves one 17f step: 73
     act(() => { result.current.setCallSpan(1, "start", 60) })
-    assert.equal(result.current.calls[0]!.end_frame, 60)
-    assert.equal(result.current.calls[1]!.start_frame, 60)
+    assert.equal(result.current.calls[0]!.end_frame, 73)
+    assert.equal(result.current.calls[1]!.start_frame, 73)
   })
 
-  it("first-call start floors at 0; end edits ripple forward; tail grows the envelope", () => {
+  it("a seam gesture lands where BOTH neighbouring windows stay legal", () => {
+    const { result } = harness([A, B])
+    // A is 22+17k (56) and B is 17k (68): 60 snaps back onto 56, which
+    // would read as a dead input, so the nearest frame where BOTH
+    // lengths are legal wins — 73 (A 73 = 22+17k, B 51 = 17k)
+    act(() => { result.current.setCallSpan(1, "start", 60) })
+    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[0, 73], [73, 124]])
+    // a gesture at the current seam is a no-op (identity preserved)
+    const before = result.current.calls
+    act(() => { result.current.setCallSpan(1, "start", 73) })
+    assert.ok(result.current.calls === before)
+  })
+
+  it("a seam step that would break a neighbour is refused (the frame stays put)", () => {
+    // A 0→56 (plain), B 56→73 (17k carried): the only legal seams are
+    // 22, 39, 56 — stepping past 56 would need 73 frames, and B ends
+    // there, so the gesture keeps the current seam and writes nothing
+    const { result } = harness([A, { text: "b", start_frame: 56, end_frame: 73 }])
+    const before = result.current.calls
+    act(() => { result.current.setCallSpan(1, "start", 60) })
+    assert.ok(result.current.calls === before)
+  })
+
+  it("a first-window start gesture snaps to its own legal length", () => {
+    // 90f window, gesture 40 → 90 - 56 = 34: a legal 22+17k span, no
+    // nudge needed
+    const { result } = harness([{ text: "a", start_frame: 0, end_frame: 90 }])
+    act(() => { result.current.setCallSpan(0, "start", 40) })
+    assert.equal(result.current.calls[0]!.start_frame, 34)
+  })
+
+  it("a first-window start gesture at the 22f base is a no-op", () => {
+    const { result } = harness([{ text: "a", start_frame: 0, end_frame: 22 }])
+    const before = result.current.calls
+    act(() => { result.current.setCallSpan(0, "start", 5) })
+    assert.ok(result.current.calls === before)
+  })
+
+  it("an end step that would break the shortest window is refused", () => {
+    const { result } = harness([{ text: "a", start_frame: 0, end_frame: 22 }])
+    const before = result.current.calls
+    act(() => { result.current.setCallSpan(0, "end", 5) })
+    assert.ok(result.current.calls === before)
+  })
+
+  it("first-call start floors at 0 and snaps its own length; end edits ripple forward", () => {
     const { result } = harness([A, B])
     act(() => { result.current.setCallSpan(0, "start", -50) })
     assert.equal(result.current.calls[0]!.start_frame, 0)
     // first-call start CAN move right (no previous neighbor to ripple)
+    // — only to a frame that leaves a legal 22+17k span
     act(() => { result.current.setCallSpan(0, "start", 6) })
-    assert.equal(result.current.calls[0]!.start_frame, 6)
+    assert.equal(result.current.calls[0]!.start_frame, 17)
+    act(() => { result.current.setCallSpan(0, "start", 20) })
+    assert.equal(result.current.calls[0]!.start_frame, 34)
     act(() => { result.current.setCallSpan(0, "end", 60) })
-    assert.equal(result.current.calls[1]!.start_frame, 60)
+    // 60 snaps to 73; B's start follows so the tiling holds
+    assert.equal(result.current.calls[0]!.end_frame, 73)
+    assert.equal(result.current.calls[1]!.start_frame, 73)
     act(() => { result.current.setCallSpan(1, "end", 200) })
-    assert.equal(result.current.calls[1]!.end_frame, 200)
+    // B is carried: 200 - 73 = 127 snaps to 119 (17×7)
+    assert.equal(result.current.calls[1]!.end_frame, 73 + 119)
   })
 
-  it("end floors at start+1; no-op writes keep identity; ranges guard", () => {
+  it("end floors at the shortest legal span; no-op writes keep identity; ranges guard", () => {
     const { result } = harness([A, B])
     act(() => { result.current.setCallSpan(0, "end", -5) })
-    assert.equal(result.current.calls[0]!.end_frame, 1)
-    assert.equal(result.current.calls[1]!.start_frame, 1)
+    assert.equal(result.current.calls[0]!.end_frame, 22)
+    assert.equal(result.current.calls[1]!.start_frame, 22)
     const before = result.current.calls
     act(() => {
       result.current.setCallSpan(0, "start", 0)
-      result.current.setCallSpan(0, "end", 1)
+      result.current.setCallSpan(0, "end", 22)
       result.current.setCallSpan(-1, "start", 5)
       result.current.setCallSpan(9, "end", 5)
     })
