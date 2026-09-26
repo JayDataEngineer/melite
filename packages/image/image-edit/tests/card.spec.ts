@@ -110,8 +110,8 @@ describe("the image-edit compose gate", () => {
     const doc = def.schema({
       prompt: "x", image1: "/m/i.png", input_mask: "/m/region.png", lanpaint_num_steps: 20,
     }) as Record<string, unknown>;
-    assert.equal(doc.image1, "/m/i.png", "the undeclared anchor survives the gate");
-    assert.equal(doc.input_mask, "/m/region.png", "the undeclared region survives the gate");
+    assert.equal(doc.image1, "/m/i.png", "the declared anchor survives the gate");
+    assert.equal(doc.input_mask, "/m/region.png", "the hidden mask-seat gate key survives the gate (declared, hidden — never a face)");
     assert.equal(doc.lanpaint_num_steps, 20, "the undeclared lanpaint knob survives the gate");
   });
 
@@ -541,20 +541,31 @@ describe("the lane-bespoke leaves (the model guard — the naming law's visibili
     //
     // THE NAMING LAW (2026-10-09, the operator's catch: "both lanes
     // use the same thing, but it's always mixed because the naming
-    // is WRONG"): `inputs` declares EXACTLY the two seats a user
-    // can mean — the input image and the reference stack. The
-    // numbered spellings leave the seat list (they were a SECOND
-    // vocabulary for the same concept, offered as extra picker
-    // seats) and ride legacyAliases: the lattice still derives
-    // their kind (old graphs keep validating), no face offers them.
+    // is WRONG"): `inputs` declares EXACTLY the seats a user can
+    // mean — the prompt, the input image, the reference stack, and
+    // the region mask. The numbered spellings leave the seat list
+    // (they were a SECOND vocabulary for the same concept, offered
+    // as extra picker seats) and ride legacyAliases: the lattice
+    // still derives their kind (old graphs keep validating), no
+    // face offers them. input_mask's seat kind is seg (the mask
+    // card's product feeds it); its VISIBLE face stays mod-owned
+    // (the mask pack's Region Mask row) — the carrier key below is
+    // hidden, validation-only, so no second row can seat.
     const ports = def.flowKinds.inputs as Record<string, string>;
     assert.deepEqual(
       Object.keys(ports).sort(),
-      ["image1", "prompt", "reference_images"],
-      "the input category names EXACTLY the two image seats — no numbered mix",
+      ["image1", "input_mask", "prompt", "reference_images"],
+      "the input category names the text seat, the two image seats, and the mask seat — no numbered mix",
     );
     assert.equal(ports.reference_images, "image_list", "reference_images is a wireable input port (the inputs category)");
     assert.equal(ports.image1, "image", "the anchor stays the image port");
+    assert.equal(ports.input_mask, "seg", "the mask seat takes the mask card's seg producer");
+    // THE MASK-SEAT GATE KEY: the seat names a carrier key (the
+    // strict contract gate reads the card's own carrier only), and
+    // that key is hidden — validation-only, never a face.
+    const maskId: number | undefined = root?.dict?.["input_mask"];
+    assert.ok(maskId !== undefined, "input_mask stays declared for the flow seat + compose");
+    assert.equal(json.refs[maskId]?.meta?.extra?.hidden, true, "input_mask never renders — the mask pack owns the visible row");
     const aliases = (def.flowKinds.legacyAliases ?? {}) as Record<string, string>;
     assert.equal(aliases.image2, "image", "the legacy alias derives its kind at the lattice, never a seat");
     assert.equal(aliases.image3, "image", "the legacy alias derives its kind at the lattice, never a seat");

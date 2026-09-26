@@ -889,6 +889,35 @@ describe("the residual lane arms", () => {
     assert.ok(row["MaskToSEGS.0"] && row["DetailerForEach.0"], "the mask modifier keeps the region detailer");
     assert.ok(!row["KSampler.0"] && !row["VAEEncode.0"], "the region lane does not fall back to the whole-image graph");
   });
+
+  it("THE SPELL ARM (lanpaint): a spelled region mask builds no loader — the spell rides the tensor consumers verbatim", () => {
+    // '$mask' names a FromStage-wired stage input (the mask card's
+    // seg producer); ROW-4 refuses producer links in Load* file
+    // slots, so the spelled mask NEVER builds a LoadImageMask — it
+    // rides GrowMask/FeatherMask/LanPaint_ImageEncode's tensor
+    // inputs verbatim and the merge lands the producer link there.
+    const g = new GraphBuilder();
+    imageEdit({
+      prompt: "x", image1: "/m/i.png", seed: 7,
+      input_mask: "$mask", mask_grow: 0, mask_feather: 0,
+    }, facts.models["qwen-img-edit-2511"]!, g, "run_spell_lp");
+    const row = dump(g);
+    assert.ok(!classes(row).includes("LoadImageMask"), "no loader for a spelled mask (ROW-4 would refuse the link there)");
+    const enc = Object.values(row).find((n) => n.class_type === "LanPaint_ImageEncode")!;
+    assert.equal(enc.inputs.mask, "$mask", "the encode carries the spell verbatim for the merge");
+  });
+
+  it("THE SPELL ARM (crop_stitch): a spelled region mask builds no loader — the spell rides MaskToSEGS verbatim", () => {
+    const g = new GraphBuilder();
+    imageEdit({
+      prompt: "x", image1: "/m/i.png", seed: 7,
+      mask: [{ input_mask: "$mask", mask_mode: "crop_stitch", mask_grow: 0 }],
+    }, facts.models["qwen-img-edit-2511"]!, g, "run_spell_cs");
+    const row = dump(g);
+    assert.ok(!classes(row).includes("LoadImageMask"), "no loader for a spelled mask (ROW-4 would refuse the link there)");
+    assert.deepEqual(row["MaskToSEGS.0"]!.inputs.mask, ["GrowMask.0", 0], "the SEGS still reads the grown mask");
+    assert.equal(row["GrowMask.0"]!.inputs.mask, "$mask", "the grow carries the spell verbatim for the merge");
+  });
 });
 
 // ── the lanpaint merge arms (kit.ts 171/260/266/268/272) ─────────

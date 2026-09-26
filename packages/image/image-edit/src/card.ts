@@ -7,7 +7,7 @@
 // LanPaint_ImageDecode → SaveImage), both under "<runId>/edit"
 // (the lane-local prefix — NOT image-gen's /gen). Creation order IS node-id order.
 //
-// SURFACE (34 keys — core + Lanpaint/Loras/MaskMod absorption;
+// SURFACE (35 keys — core + Lanpaint/Loras/MaskMod absorption;
 // model.defaults ride the service cascade, never the schema).
 // Purge S-decls: the referee is deleted — the schema below IS the
 // declaration (its knob set was verified 19/19 against the retired row).
@@ -74,14 +74,21 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // every edit lane admits it; 2511's lanpaint flavor keeps its
   // inpaint knobs mod-owned, the admission union serves both).
   // Remaining mod-owned knobs (lanpaint_*; outpaint_*; loras;
-  // mask/input_mask/
+  // mask/
   // mask_*) live in mods/{lanpaint,loras,mask}.ts registering
   // through ctx.comfyui.registerMod (the _absorb_models
   // interlock). Schemastery passes unknown keys through, so
   // compose still reads p.image1/p.loras/... — validation of
   // required anchors stays in compose (the gate below), exactly
   // the split: the mod declares the editor surface, compose
-  // owns firing.
+  // owns firing. ONE EXCEPTION (the mask-seat gate key,
+  // 2026-10-09): input_mask is ALSO declared below as a hidden
+  // validation-only key — the flow contract gate reads the card's
+  // own carrier only (packs register after cards, so absorbed
+  // mod fields can never satisfy it), and the mask→edit flow
+  // seat must name a carrier key. Hidden = unserved: no form
+  // row (the mask pack owns the visible Region Mask row), no
+  // tool param — the seat lives on flowKinds.inputs alone.
   image1: z.string().role('path').description("Input Image").extra('extra', { order: -1, group: "input", width: 1, zone: 'inputs', wtype: 'image', tooltip: 'The image to edit.' }),
   // THE LEGACY ALIASES (the naming law, 2026-10-09: "reference
   // image" and "image input" are ONE concept — every Qwen edit
@@ -106,6 +113,15 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // images, in order) — node-slot mechanics are the engine's
   // business, not the user's.
   reference_images: z.array(z.string()).description("Reference Images").default([]).extra('extra', { order: 2, group: "input", zone: 'inputs', max_stack: EDIT_STACK_CAP, tooltip: "Extra input images the edit consults — the model sees them alongside the input image, in order. Capacity follows the boarded model; more than it admits refuses loudly.", wtype: 'image_list' }),
+  // THE MASK-SEAT GATE KEY (2026-10-09 — the gap the operator's
+  // rework caught: the mask card's seg producer had no seat on
+  // this card, so mask→edit could not wire). input_mask's VISIBLE
+  // face stays mod-owned (the mask pack's Region Mask row); this
+  // hidden carrier key exists ONLY so the flow contract gate (the
+  // card's own carrier — packs compose after cards) admits the
+  // input_mask: 'seg' seat below. Hidden = unserved: never a form
+  // row, never a tool param — one concept, one visible name.
+  input_mask: z.string().role('path').description("Region Mask").extra('extra', { hidden: true }),
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
   negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
   width: z.number().description("Width").extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'model=qwen-img-edit-21', tooltip: 'Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value).' }),
@@ -220,6 +236,15 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         prompt: 'text',
         image1: 'image',
         reference_images: 'image_list',
+        // THE MASK SEAT (2026-10-09 — the gap the operator's
+        // rework caught): the mask card's seg producer feeds
+        // input_mask — the mask→edit inpaint chain. The seat's
+        // kind is seg (the mask card's product); the spelled mask
+        // rides the lane's mask consumers as a tensor (the spell
+        // arm), a path keeps LoadImageMask. The gate key rides the
+        // hidden carrier input_mask above — the seat itself lives
+        // here and nowhere else.
+        input_mask: 'seg',
       },
       legacyAliases: {
         image2: 'image',

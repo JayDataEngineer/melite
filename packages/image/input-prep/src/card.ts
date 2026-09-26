@@ -59,7 +59,17 @@ export function apply(ctx: Context): void {
     // rail card); the flow stage stages one source file).
     sidebar: { key: 'image', order: 12, hidden: true },
     flowKinds: {
-      inputs: { source: 'text' },
+      // PRODUCER-ONLY (2026-10-09 — the text-seat trap): inputs is
+      // EMPTY on purpose. source is dual-media file intake
+      // (image-or-audio, role path / wtype file) — the single-kind
+      // grammar cannot honestly seat it (source: 'text' offered a
+      // picker seat no text producer can ever fill: text links
+      // cannot land in LoadImage/LoadAudio file slots under ROW-4,
+      // so the seat was an unwireable lie). Nothing wires INTO a
+      // source card — it produces image/audio for downstream
+      // stages to consume. A file arrives via the form/params
+      // face, never a producer link.
+      inputs: {},
       outputs: { image: 'image', audio: 'audio' },
       requiresModel: false,
     },

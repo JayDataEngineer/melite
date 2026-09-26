@@ -283,7 +283,16 @@ function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: Ten
       ...regionArgs,
     }).out()
   }
-  let m = g.node('LoadImageMask', { image: maskPath, channel: 'alpha' }).out()
+  // THE SPELL ARM (the naming law's merge half, 2026-10-09): a
+  // spelled region mask ('$mask' naming a wired stage input — e.g.
+  // the mask card's seg producer) NEVER builds a loader (ROW-4
+  // refuses producer links in Load* file slots): the producer's
+  // output is already a mask-shaped tensor upstream, so the spell
+  // rides the mask consumers (GrowMask/InvertMask/MaskToSEGS take
+  // tensors); a path keeps the LoadImageMask disk handoff.
+  let m: TensorRef = isSpell(maskPath)
+    ? maskPath
+    : g.node('LoadImageMask', { image: maskPath, channel: 'alpha' }).out()
   if (expand !== 0) m = g.node('GrowMask', { mask: m, expand, tapered_corners: true }).out()
   if ((region.mask_invert ?? false) === true) m = g.node('InvertMask', { mask: m }).out()
   return g.node('MaskToSEGS', {
@@ -522,7 +531,12 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   // through to the region detailer below (the gate refuses every
   // other combination).
   if (maskPath && !cropStitch) {
-    let m = g.node('LoadImageMask', { image: maskPath, channel: 'alpha' }).out()
+    // THE SPELL ARM (same law as the region chain): a spelled mask
+    // rides GrowMask/FeatherMask's tensor inputs verbatim; a path
+    // keeps LoadImageMask.
+    let m: TensorRef = isSpell(maskPath)
+      ? maskPath
+      : g.node('LoadImageMask', { image: maskPath, channel: 'alpha' }).out()
     const grow = (merged.mask_grow ?? 8) as number
     if (grow !== 0) m = g.node('GrowMask', { mask: m, expand: grow, tapered_corners: true }).out()
     const feather = (merged.mask_feather ?? 8) as number

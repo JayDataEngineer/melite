@@ -27,6 +27,7 @@ describe("the image-edit tool face", () => {
     assert.ok("reference_images" in props, "the reference list serves");
     assert.ok(!("image2" in props), "the hidden alias never serves the tool face");
     assert.ok(!("image3" in props), "the hidden alias never serves the tool face");
+    assert.ok(!("input_mask" in props), "the hidden mask-seat gate key never serves the tool face (the region arrives via the mask pack's row / the flow seat, never a second tool param)");
   });
 
   it("carries the identity prose (the ring's spelling)", () => {

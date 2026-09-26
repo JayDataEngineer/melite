@@ -230,6 +230,22 @@ describe("registerCard (one card, one plugin)", () => {
     );
   });
 
+  it("a flow seat on a hidden carrier key registers (the gate-key precedent)", async () => {
+    // THE STRICT-GATE HALF (2026-10-09): the contract gate reads
+    // the card's OWN carrier dict only — never absorbed mod fields
+    // (packs compose after cards). A seat whose visible face is
+    // mod-owned still names a carrier key: hidden, validation-only,
+    // never a face. The gate sees dict keys, hidden or not — the
+    // seat passes, and a truly unknown name still refuses above.
+    const svc = await boot();
+    const drop = svc.registerCard(card({
+      flowKinds: { inputs: { input_mask: "seg" }, outputs: { default: "image" }, requiresModel: false },
+      schemaCarrier: { dict: { input_mask: {} } } as never,
+    }));
+    assert.deepEqual(svc.cardIds(), ["card1"]);
+    drop();
+  });
+
   it("semantic output bindings resolve only selected producers and verify node classes", () => {
     const def = card({
       flowKinds: { inputs: {}, outputs: { image: "image", audio: "audio" }, requiresModel: true },

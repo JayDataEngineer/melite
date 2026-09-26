@@ -122,6 +122,18 @@ describe("the input-prep compose gate", () => {
     assert.equal(audio?.when?.({ media_type: "audio" }), true);
   });
 
+  it("PRODUCER-ONLY: the card seats no flow inputs (the text-seat trap)", () => {
+    // source is dual-media file intake (image-or-audio, role path
+    // / wtype file) — the single-kind grammar cannot honestly seat
+    // it. source: 'text' offered a picker seat no text producer
+    // could ever fill (text links cannot land in LoadImage/
+    // LoadAudio file slots under ROW-4). Nothing wires INTO a
+    // source card — the file arrives via the form/params face —
+    // so inputs is EMPTY while outputs keep both media channels.
+    assert.deepEqual(def.flowKinds.inputs, {});
+    assert.deepEqual(def.flowKinds.outputs, { image: "image", audio: "audio" });
+  });
+
   it("audio selects the audio output producer instead of an image save", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ source: "speech.wav", media_type: "audio" }), DUMMY, g, "run_audio");

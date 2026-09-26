@@ -74,7 +74,9 @@ test("absorption: image-edit/qwen-img-edit-2511 envelope pinned (declaration ord
   const live = envelopeNames("image-edit", "qwen-img-edit-2511");
   assert.deepEqual(live, [
     "image1", // card-owned since the 2.1 rework (was lanpaint-mod-owned — 2511-hardcoded)
-    "image2", "image3", "reference_images", "prompt", "negative_prompt",
+    "image2", "image3", "reference_images",
+    "input_mask", // the mask-seat gate key (hidden, validation-only — the mask pack owns the visible row)
+    "prompt", "negative_prompt",
     "width", "height", // the 2.1 edit lane's target-resolution knobs (2026-09-21)
     "seed", "steps", "cfg", "sampler", "scheduler", "use_stock_nodes",
     "double_reference",

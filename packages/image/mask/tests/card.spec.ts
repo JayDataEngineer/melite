@@ -322,6 +322,20 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.equal(def.primaryFile, "mask_combined", "mask_combined leads the stage gallery; the manifest/crops/figures follow");
   });
 
+  it("THE FLOW CONTRACT (the mask→edit seat's upstream half): seg out, no silent producer", () => {
+    // The mask card feeds image-edit's input_mask seat (kind seg)
+    // from input_image — but declares NO flowOutputBindings: the
+    // lane emits multiple/variable-order SaveImage nodes
+    // (combined + exports + manifests), so no stable single
+    // producer exists to bind. The merge refuses a multi-save
+    // producer LOUD (ambiguous-producers voice) instead of
+    // silently binding the wrong save — tensor wiring waits on a
+    // future explicit producer mechanism, never a quiet guess.
+    assert.deepEqual(def.flowKinds.inputs, { input_image: "image" });
+    assert.deepEqual(def.flowKinds.outputs, { default: "seg" });
+    assert.equal(def.flowOutputBindings, undefined, "no bindings — the producer is ambiguous by construction, never silently bound");
+  });
+
   it("THE ARM WEIGHTS (the silent-truncation law, 2026-10-09): the run's touched provision rows — an unused arm names nothing", () => {
     const names = (merged: Record<string, unknown>): string[] => [...(def.armWeights!(merged))].sort();
     assert.deepEqual(names({}), [], "an empty run touches no weights");
