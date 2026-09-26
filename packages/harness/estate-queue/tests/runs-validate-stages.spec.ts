@@ -63,7 +63,9 @@ describe("buildStageRow (the field gates)", () => {
     } catch (e) {
       expect((e as Error).message).toMatch(/stage\[0\] "s1": body carries unknown field\(s\) \["mystery"\]/);
     }
-    expect(() => row(0, ["x"])).toThrow(TypeError);
+    // the array stage now refuses as a TYPED FlowError (the leaked
+    // TypeError was the old probe vehicle; the refusal voice is the same)
+    expect(() => row(0, ["x"])).toThrow(/stage\[0\]: \["x"\] is not an object/);
   });
   it("a non-object stage refuses; mistyped maps refuse through the wrap voice", () => {
     expect(() => row(0, 7)).toThrow(/stage\[0\]: 7 is not an object/);

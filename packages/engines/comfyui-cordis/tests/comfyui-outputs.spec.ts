@@ -378,6 +378,15 @@ describe("loudnessOf (§39's loudness receipt — the meter's reading rides the 
     expect(loudnessOf({ a: { loudness_lufs: Number.NaN } })).toBe(null);
     expect(loudnessOf(undefined)).toBe(null);
     expect(loudnessOf([])).toBe(null);
+    // THE UI LIST LAW: the nodes write 1-lists (ComfyUI's merge
+    // extends lists, scalars kill the prompt) — both shapes lift
+    expect(loudnessOf({ m: { loudness_lufs: [-20.5], peak_db: [-16.3] } }))
+      .toEqual({ loudness_lufs: -20.5, peak_db: -16.3 });
+    // a mixed pair (list + bare) still lifts; an empty list never does
+    expect(loudnessOf({ m: { loudness_lufs: [-20.5], peak_db: -16.3 } }))
+      .toEqual({ loudness_lufs: -20.5, peak_db: -16.3 });
+    expect(loudnessOf({ m: { loudness_lufs: [], peak_db: [-16.3] } })).toBe(null);
+    expect(loudnessOf({ m: { loudness_lufs: ["bad"], peak_db: [-16.3] } })).toBe(null);
     // a NON-OBJECT node row (a bare string/array rides the dict):
     // the continue arm — never a throw, never a fabricated pair
     expect(loudnessOf({ save: "oops", meter: { loudness_lufs: -20, peak_db: -16 } }))

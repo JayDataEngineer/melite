@@ -226,8 +226,15 @@ describe("inlineArm + serveSubject (the serve arms)", () => {
     expect((miss.payload as Record<string, unknown>)["error"]).toMatch(/unresolved \$channel/);
   });
   it("a non-FlowError from construction rethrows (never mapped to 400)", () => {
-    // buildStageRow's extras-walk TypeError is not a FlowError
-    expect(() => serveSubject({ id: "f1", stages: [["x"]] }, {}, null)).toThrow(TypeError);
+    // the array stage now refuses as a TYPED FlowError (the leaked
+    // TypeError was the old probe vehicle); the rethrow arm needs a
+    // GENUINE non-FlowError — a stage whose key access throws
+    const evil: Record<string, unknown> = {};
+    Object.defineProperty(evil, "id", {
+      get() { throw new RangeError("boom"); },
+      enumerable: true,
+    });
+    expect(() => serveSubject({ id: "f1", stages: [evil] }, {}, null)).toThrow(RangeError);
   });
   it("a pinned ghost class serves the workflow_pin 400 (stage-stamped)", () => {
     const ans = inlineArm({

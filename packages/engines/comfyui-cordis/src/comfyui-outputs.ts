@@ -185,6 +185,18 @@ export function qvoicePathsOf(
  *  the first finite reading so the stage's result_outputs carry the
  *  number — every surface REPORTS it instead of re-deriving it from
  *  the encoded file. Pure: shared by both harvest seats. */
+/** THE UI LIST LAW (run-a248c5614633 receipt, 2026-09-25): the nodes
+ *  write every ui entry as a one-element list (ComfyUI's merge extends
+ *  lists; scalars kill the prompt). The collector unwraps BOTH shapes
+ *  — the bare number (the original form) and its 1-list. */
+const scalarOf = (v: EngineJson | undefined): number | undefined => {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (Array.isArray(v) && v.length > 0 && typeof v[0] === "number" && Number.isFinite(v[0])) {
+    return v[0];
+  }
+  return undefined;
+};
+
 export function loudnessOf(
   outputs: EngineJson | undefined,
 ): { loudness_lufs: number; peak_db: number } | null {
@@ -192,10 +204,9 @@ export function loudnessOf(
   for (const nodeOut of Object.values(outputs as Record<string, EngineJson>)) {
     if (typeof nodeOut !== "object" || nodeOut === null || Array.isArray(nodeOut)) continue;
     const row = nodeOut as Record<string, EngineJson>;
-    const lufs = row["loudness_lufs"];
-    const peak = row["peak_db"];
-    if (typeof lufs === "number" && Number.isFinite(lufs) &&
-        typeof peak === "number" && Number.isFinite(peak)) {
+    const lufs = scalarOf(row["loudness_lufs"]);
+    const peak = scalarOf(row["peak_db"]);
+    if (lufs !== undefined && peak !== undefined) {
       return { loudness_lufs: lufs, peak_db: peak };
     }
   }
