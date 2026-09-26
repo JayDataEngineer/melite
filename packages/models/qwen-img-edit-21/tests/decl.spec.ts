@@ -32,6 +32,19 @@ describe("the qwen-img-edit-21 model plugin (the cached-reference edit lane of t
     assert.equal((DECL.defaults ?? {} as Record<string, unknown>).cfg, 1);
   });
 
+  it("declares the target resolution — THE EMPTY-FORM BURN (2026-10-09): width/height default 1024, the owner is the DECL, never a lane hardcode", () => {
+    // The operator's catch: the image-edit card showed EMPTY Width and
+    // Height while image-gen showed 1024 — because this DECL stated no
+    // resolution and the LANE silently hardcoded `?? 1024`
+    // (lanes-image.ts) where the cascade could never see it. The
+    // RANGE RULE: whoever owns the default owns the floor — the model
+    // owns target resolution. Lose this row and the form starves
+    // again; the stampCardOverlay wall (cards-registry) refuses with it.
+    const d = DECL.defaults ?? {} as Record<string, unknown>;
+    assert.equal(d.width, 1024, "width defaults to 1024 (the lane's own truth, declared where the cascade reads it)");
+    assert.equal(d.height, 1024, "height defaults to 1024");
+  });
+
   it("provisions the shared weights: encoder + vae from the one 2.1 repo", () => {
     const provs = DECL.provisions ?? [];
     assert.equal(provs.length, 2);

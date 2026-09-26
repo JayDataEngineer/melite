@@ -40,7 +40,18 @@ export const DECL: ModelDecl = {
     "steps": 25,
     "sampler": "euler",
     "scheduler": "simple",
-    "cfg": 1
+    "cfg": 1,
+    // THE TARGET RESOLUTION (the 2026-10-09 empty-form fix): the 2.1
+    // edit lane samples an EmptyLatentImage at target size — the
+    // values ARE the model's (the RANGE RULE: whoever owns the
+    // default owns the floor). Until now the DECL stated none and
+    // the LANE hardcoded `?? 1024` silently (lanes-image.ts) — the
+    // form showed empty Width/Height because the cascade had
+    // nothing to overlay. Declared here, the card's resolution
+    // group fills from the cascade; the lane's fallback arm now
+    // covers only direct (non-card) lane callers.
+    "width": 1024,
+    "height": 1024
   },
   "prompt_guide": {
     "title": "Qwen Image 2.1 Edit Prompting Guide",

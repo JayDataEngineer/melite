@@ -5,10 +5,12 @@
 //                    door → null, never a throw).
 //   patch rebase   — held-rev write; revless write reads then writes;
 //                    revless with a dead door throws loud; CAS conflict
-//                    re-reads and re-applies ONCE (both matcher voices);
-//                    a second conflict, a dead re-read, and any non-CAS
-//                    refusal throw the named truth; delivered:false with
-//                    a non-string reason lands as 'undelivered'.
+//                    re-reads and re-applies BOUNDED (3 tries; all
+//                    THREE matcher voices — bench verbs, the drafts
+//                    door's own, cas-conflict); exhaustion, a dead
+//                    re-read, and any non-CAS refusal throw the named
+//                    truth; delivered:false with a non-string reason
+//                    lands as 'undelivered'.
 //   outcome/start  — patchStageOutcome's frame; startDraft's run_id +
 //                    its missing-run_id refusal; runStatus's doc + its
 //                    malformed refusal.
@@ -101,16 +103,51 @@ describe("patchStageParams — the CAS dance arms", () => {
     await expect(patchStageParams("d", "s_0", { steps: 3 }))
       .rejects.toThrow(/no bench rev to write against \(draft d\)/);
   });
-  test("a second conflict throws loud", async () => {
+  test("THE RUN-REFUSAL BURN (2026-10-09): the drafts/patch door's OWN voice rebases — the operator's exact message", async () => {
+    // "THE WRITE DID NOT LAND — run refused: bench moved under the
+    // patch (expect_rev 4, current 5) — re-read and re-apply" — the
+    // operator hit this on EVERY param write while the matcher knew
+    // only the bench verbs' sentence: 'moved under the patch' is the
+    // drafts/patch door's OWN voice, and the cas-conflict CODE never
+    // rides the message (unwrapRemote forwards message only). The
+    // rebase was dead code for the one door the drill uses. This wall
+    // pins the exact sentence forever: lose the arm, lose the build.
+    const fakes = wire({
+      draftBenchRev: 5,
+      refusals: [{ method: "drafts/patch", message: "bench moved under the patch (expect_rev 4, current 5) — re-read and re-apply" }],
+    });
+    await patchStageParams("d", "s_0", { prompt: "x" }, 4);
+    const patches = fakes.calls.filter((c) => c.method === "drafts/patch");
+    expect(patches).toHaveLength(2);
+    expect(patches[1]?.args).toMatchObject({ expectRev: 5 });
+  });
+  test("conflicts on EVERY attempt throw loud (bounded, never a loop)", async () => {
     wire({
       draftBenchRev: 430,
       refusals: [
+        { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" },
         { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" },
         { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" },
       ],
     });
     await expect(patchStageParams("d", "s_0", { steps: 3 }, 429))
       .rejects.toThrow(/rev is 431, caller held 430/);
+  });
+  test("a second author between the re-read and the retry loses to the third attempt (the once-law's death)", async () => {
+    // The once-law died on a live bench with a second author bumping
+    // the rev between the re-read and the retry: conflict → re-read
+    // 430 → conflict again → REFUSED. The bounded loop rides it.
+    const fakes = wire({
+      draftBenchRev: 430,
+      refusals: [
+        { method: "drafts/patch", message: "bench main moved: rev is 430, caller held 429" },
+        { method: "drafts/patch", message: "bench main moved: rev is 430, caller held 429", onCall: 2 },
+      ],
+    });
+    await patchStageParams("d", "s_0", { steps: 3 }, 429);
+    const patches = fakes.calls.filter((c) => c.method === "drafts/patch");
+    expect(patches).toHaveLength(3);
+    expect(patches[2]?.args).toMatchObject({ expectRev: 430 });
   });
   test("a dead re-read leaves the original refusal standing", async () => {
     wire({

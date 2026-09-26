@@ -269,6 +269,23 @@ describe("resolveStageParams (the resolved-serve degrade)", () => {
     const mid = Object.keys(facts)[0] as string;
     expect(svc.resolveStageParams({ model: mid })).not.toBeNull();
   });
+  it("THE EMPTY-FORM BURN (2026-10-09): a qwen-img-edit-21 stage SERVES width/height 1024 — the form's servedBase carries them, never empty fields", () => {
+    // The operator's catch: the image-edit card's Width and Height
+    // rendered EMPTY (image-gen showed 1024) because the 2.1 DECL
+    // declared no resolution and only the LANE knew `?? 1024`. The
+    // serve seam (resolveStageParams → stampCardOverlay → the drafts'
+    // withResolvedStages → the drill's servedBase) is what the FORM
+    // displays — this wall pins the resolution riding it. Lose the
+    // DECL row, lose this wall, lose the build.
+    const resolved = svc.resolveStageParams({ model: "qwen-img-edit-21", prompt: "brighten the anchor" });
+    expect(resolved).not.toBeNull();
+    expect((resolved as Record<string, unknown>).width).toBe(1024);
+    expect((resolved as Record<string, unknown>).height).toBe(1024);
+    // the user's explicit value never yields to the stamp
+    const own = svc.resolveStageParams({ model: "qwen-img-edit-21", prompt: "x", width: 768, height: 1024 }) as Record<string, unknown>;
+    expect(own.width).toBe(768);
+    expect(own.height).toBe(1024);
+  });
 });
 
 describe("needCardRegistry (the miswire voice)", () => {

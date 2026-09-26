@@ -57,15 +57,21 @@ async function benchRev(sessionKey: string, signal?: AbortSignal): Promise<numbe
  *  "bench moved: rev is…"). THE MATCHER LAW (2026-09-15): match the
  *  REAL words — the first cut matched 'bench moved' against 'bench
  *  MAIN moved' and matched nothing; dead matchers make dead
- *  rebases, and dead rebases make stuck tabs. */
+ *  rebases, and dead rebases make stuck tabs. THE THIRD VOICE
+ *  (2026-10-09, the run-refusal burn): the drafts/patch door says
+ *  "moved under the patch" — an arm per DOOR VOICE, all three. */
 function isCasConflict(e: unknown): boolean {
   const msg = e instanceof Error ? e.message : String(e)
-  return msg.includes('moved: rev is') || msg.includes('cas-conflict')
+  return msg.includes('moved: rev is')
+    || msg.includes('moved under the patch')
+    || msg.includes('cas-conflict')
 }
 
 /** One typed bench verb with the rebase dance: try the held rev; on
  *  the door's cas-conflict re-read the rev (the SAME session) and
- *  re-apply ONCE with it. */
+ *  re-apply — bounded (3 tries, a fresh rev between each; the
+ *  once-law died under a live second author, 2026-10-09). */
+const BENCH_ATTEMPTS = 3
 async function withRebase(
   verb: BenchVerb,
   doc: Record<string, unknown>,
@@ -79,15 +85,21 @@ async function withRebase(
       'bench/' + verb,
     ).then((row) => row as unknown as Record<string, unknown>)
   const held = doc['expect_rev']
-  try {
-    if (typeof held !== 'number') throw new Error('bench/' + verb + ': no expect_rev to write against')
-    return await attempt(held)
-  } catch (e: unknown) {
-    if (!isCasConflict(e)) throw e
-    const fresh = await benchRev(sessionKey, signal)
-    if (fresh === undefined) throw e
-    return await attempt(fresh)
+  if (typeof held !== 'number') throw new Error('bench/' + verb + ': no expect_rev to write against')
+  let rev = held
+  let last: unknown
+  for (let i = 0; i < BENCH_ATTEMPTS; i++) {
+    try {
+      return await attempt(rev)
+    } catch (e: unknown) {
+      if (!isCasConflict(e)) throw e
+      last = e
+      const fresh = await benchRev(sessionKey, signal)
+      if (fresh === undefined) throw e
+      rev = fresh
+    }
   }
+  throw last
 }
 
 /** The bench add-stage verb caller (the tab's add-card path). The

@@ -55,10 +55,11 @@ describe('the rebase law (a moved bench costs one silent rebase, never a stuck t
     }
   })
 
-  test('a SECOND conflict throws loud — never a blind write, never a loop', async () => {
+  test('conflicts on EVERY attempt throw loud — bounded, never a blind write, never a loop', async () => {
     const fakes = mountEstateFakes({
       refusals: [
         { method: 'bench/remove-stage', message: 'bench main moved: rev is 430, caller held 429' },
+        { method: 'bench/remove-stage', message: 'bench main moved: rev is 431, caller held 430' },
         { method: 'bench/remove-stage', message: 'bench main moved: rev is 431, caller held 430' },
       ],
       benchDoc: { rev: 430, stages: [{ id: 's_1' }], log: [] },
@@ -66,6 +67,23 @@ describe('the rebase law (a moved bench costs one silent rebase, never a stuck t
     try {
       await expect(removeStageWire({ stage: 's_1', expect_rev: 429 }, 'main'))
         .rejects.toThrow(/rev is 431, caller held 430/)
+    } finally {
+      fakes.unmount()
+    }
+  })
+
+  test("THE THIRD VOICE (2026-10-09): 'moved under the patch' rebases the bench verbs too — the arm lives on every matcher", async () => {
+    const fakes = mountEstateFakes({
+      refusals: [{ method: 'bench/remove-stage', message: 'bench moved under the patch (expect_rev 4, current 5) — re-read and re-apply' }],
+      benchDoc: { rev: 5, stages: [{ id: 's_1' }], log: [] },
+    })
+    try {
+      await removeStageWire({ stage: 's_1', expect_rev: 4 }, 'main')
+      expect(seenCalls(fakes.calls)).toEqual([
+        { method: 'bench/remove-stage', expectRev: 4 },
+        { method: 'bench/get', expectRev: undefined },
+        { method: 'bench/remove-stage', expectRev: 5 },
+      ])
     } finally {
       fakes.unmount()
     }

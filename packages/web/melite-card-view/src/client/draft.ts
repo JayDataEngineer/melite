@@ -100,7 +100,18 @@ function isCasConflict(e: unknown): boolean {
   // "bench <session> moved: rev is N, caller held M" — 'bench moved'
   // matched NOTHING against 'bench main moved' (a dead matcher made
   // this rebase dead code; the operator's tab stuck on it).
-  return msg.includes('moved: rev is') || msg.includes('cas-conflict')
+  // THE THIRD VOICE (2026-10-09, the operator's run refusal): the
+  // drafts/patch door refuses "bench moved under the patch
+  // (expect_rev N, current M)" — NEITHER earlier arm matched it
+  // ('rev is' absent; the cas-conflict CODE never rides the message
+  // — unwrapRemote forwards message only), so this rebase was dead
+  // code for the ONE door the drill uses and every param write
+  // under a moved bench refused the run. A matcher arm per DOOR
+  // VOICE, all three, forever: a new door voice is a bug, not a
+  // feature.
+  return msg.includes('moved: rev is')
+    || msg.includes('moved under the patch')
+    || msg.includes('cas-conflict')
 }
 
 /** One drafts/patch round trip; throws the door's named refusal. The
@@ -222,9 +233,14 @@ export function resetStageWrites(): void {
 
 /** The CAS dance (the run-start face law, 2026-09-14): write with the
  *  held rev; on the door's cas-conflict RE-READ the rev and re-apply
- *  ONCE (the server message's own instruction — "re-read and
- *  re-apply"). A second conflict, a missing rev, or any non-CAS
- *  refusal throws LOUD — never a silent drop, never a blind write. */
+ *  — BOUNDED (2026-10-09: the once-law died under a live bench with
+ *  a second author — the agent session or a late-landing keystroke
+ *  patch — bumping the rev between the re-read and the retry; one
+ *  re-apply refused the run a second time and the operator hit the
+ *  wall). Up to PATCH_ATTEMPTS total tries, a fresh rev between
+ *  each; exhaustion, a missing rev, or any non-CAS refusal throws
+ *  LOUD — never a silent drop, never a blind write. */
+const PATCH_ATTEMPTS = 3
 async function patchWithRebase(
   draftId: string, stageId: string, patch: Record<string, unknown>,
   expectRev: number | undefined,
@@ -234,14 +250,19 @@ async function patchWithRebase(
     rev = await fetchDraftRev(draftId) ?? undefined
     if (rev === undefined) throw new Error('drafts/patch: no bench rev to write against (draft ' + draftId + ')')
   }
-  try {
-    return await patchOnce(draftId, stageId, patch, rev)
-  } catch (e: unknown) {
-    if (!isCasConflict(e)) throw e
-    const fresh = await fetchDraftRev(draftId) ?? undefined
-    if (fresh === undefined) throw e
-    return await patchOnce(draftId, stageId, patch, fresh)
+  let last: unknown
+  for (let i = 0; i < PATCH_ATTEMPTS; i++) {
+    try {
+      return await patchOnce(draftId, stageId, patch, rev)
+    } catch (e: unknown) {
+      if (!isCasConflict(e)) throw e
+      last = e
+      const fresh = await fetchDraftRev(draftId) ?? undefined
+      if (fresh === undefined) throw e
+      rev = fresh
+    }
   }
+  throw last
 }
 
 /** Edit one stage's params — the REAL door, reborn 2026-09-11: the
