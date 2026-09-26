@@ -33,6 +33,7 @@ import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.ts"
 import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger } from "./queue.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
+import { coerceSnapshotBody } from "./runsValidateStages.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export { toRemoteError } from "./runsRefusalVoices.ts";
 import { readFileSync } from "node:fs";
@@ -480,8 +481,43 @@ export class RunsRuntimeService extends Service {
           runId,
           pipeline: pipelineOf(body),
           cardId: p1.card,
-          requestBody: body,
-          benchDoc,
+          // THE SNAPSHOT-COERCION LAW: the sidecar's request body
+          // carries the numbers the card received (the same wire
+          // family the compose seat runs), not dsh's stringly
+          // encoding — the raw body above still feeds phase-1/2,
+          // which own their own coercion.
+          requestBody: coerceSnapshotBody(
+            cards.defsSync().get(p1.card),
+            body,
+          ),
+          // the bench snapshot rides the same law per stage: each
+          // row's params coerce through its OWN card's carrier
+          // (unknown cards verbatim), on a COPY — the remote's doc
+          // object is never mutated.
+          benchDoc: benchDoc === undefined ? undefined : {
+            ...benchDoc,
+            stages: Array.isArray(benchDoc["stages"])
+              ? (benchDoc["stages"] as unknown[]).map(
+                  (row): unknown =>
+                    row !== null && typeof row === "object" && !Array.isArray(row)
+                      ? {
+                          ...(row as Record<string, unknown>),
+                          ...(typeof (row as Record<string, unknown>)["card"] === "string" &&
+                            typeof (row as Record<string, unknown>)["params"] === "object"
+                            ? {
+                                params: coerceSnapshotBody(
+                                  cards.defsSync().get(
+                                    (row as Record<string, unknown>)["card"] as string,
+                                  ),
+                                  (row as Record<string, unknown>)["params"] as Record<string, unknown>,
+                                ),
+                              }
+                            : {}),
+                        }
+                      : row,
+                )
+              : benchDoc["stages"],
+          },
         },
       });
       // THE SOURCE-ECHO REFUSAL: a dead media source refuses at the

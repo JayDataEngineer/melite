@@ -2,7 +2,7 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftsDomainSpec } from "../src/spec.js";
-import { ensureBench, getBench, patchBench, addStageBench, rewireBench } from "../src/bench.ts";
+import { ensureBench, getBench, patchBench, addStageBench, removeStageBench, rewireBench } from "../src/bench.ts";
 import { boot, seed, codeOf, syncCodeOf } from "./bench-helpers.ts";
 
 // ── coverage arms: the rare-error and default branches ──────────
@@ -66,6 +66,48 @@ test("a stillborn birth refuses bench/not-found (the storage dropped the put)", 
   assert.match(refusal, /^bench\/not-found\|could not birth bench: s/);
   assert.equal(docs.puts.length, 1);
   assert.equal(docs.puts[0]?.id, "bench-s");
+});
+
+test("THE INTENT-SYNC LAW (BRIEF14 finding #3 — the stale bench_snapshot.intent): a card-naming intent re-derives when the bench no longer holds that card; stated intents and free prose ride untouched", async () => {
+  const drafts = await boot();
+  // the receipt's exact shape: a tts-born bench, wholesale-loaded
+  // with an h3 stage, no stated intent — the old "tts" must not ride
+  await ensureBench(drafts, { session: "isync", intent: "tts", stages: [{ id: "s_0", card: "tts", params: {} }] });
+  const loaded = await ensureBench(drafts, {
+    session: "isync", stages: [{ id: "s_0", card: "h3-timeline", params: {} }], expect_rev: 0, overwrite: true,
+  });
+  assert.equal(loaded.intent, "h3-timeline");
+  // a pure add_stage never orphans a true label (no churn)
+  await ensureBench(drafts, { session: "isync2", intent: "tts", stages: [{ id: "s_0", card: "tts", params: {} }] });
+  await addStageBench(drafts, "isync2", { card: "h3-timeline", expect_rev: 0 });
+  assert.equal((await getBench(drafts, "isync2")).intent, "tts");
+  // remove_stage CAN orphan: the label's card leaves, a surviving
+  // card takes the label (the re-derivation receipt)
+  await ensureBench(drafts, { session: "isync2b", intent: "tts", stages: [
+    { id: "s_0", card: "tts", params: {} }, { id: "s_1", card: "h3-timeline", params: {} },
+  ] });
+  await removeStageBench(drafts, "isync2b", { stage: "s_0", expect_rev: 0 });
+  assert.equal((await getBench(drafts, "isync2b")).intent, "h3-timeline");
+  // remove_stage to a card-LESS bench keeps the label (inert with
+  // nothing to mislabel — the prose boundary is the same path)
+  await ensureBench(drafts, { session: "isync3", intent: "tts", stages: [{ id: "s_0", card: "tts", params: {} }] });
+  await removeStageBench(drafts, "isync3", { stage: "s_0", expect_rev: 0 });
+  const afterRemove = await getBench(drafts, "isync3");
+  assert.equal(afterRemove.intent, "tts");
+  // an intent still naming a PRESENT card is untouched (no churn)
+  await ensureBench(drafts, { session: "isync4", intent: "tts", stages: [{ id: "s_0", card: "tts", params: {} }] });
+  await patchBench(drafts, "isync4", { stage: "s_0", params: { seed: 7 }, expect_rev: 0 });
+  assert.equal((await getBench(drafts, "isync4")).intent, "tts");
+  // free prose never matches a card id and rides untouched
+  await ensureBench(drafts, { session: "isync5", intent: "my harbour film idea", stages: [{ id: "s_0", card: "h3-timeline", params: {} }] });
+  await addStageBench(drafts, "isync5", { card: "tts", expect_rev: 0 });
+  assert.equal((await getBench(drafts, "isync5")).intent, "my harbour film idea");
+  // a STATED load intent wins over the derivation
+  await ensureBench(drafts, { session: "isync6", intent: "tts", stages: [{ id: "s_0", card: "tts", params: {} }] });
+  const stated = await ensureBench(drafts, {
+    session: "isync6", intent: "operator named it", stages: [{ id: "s_0", card: "h3-timeline", params: {} }], expect_rev: 0, overwrite: true,
+  });
+  assert.equal(stated.intent, "operator named it");
 });
 
 test("casCheck names the moved bench on the write verbs", async () => {
@@ -266,4 +308,47 @@ test("a repair that still refuses rethrows the ORIGINAL refusal", () => {
 
 test("a registry-less lane admits nothing (no admission closure)", () => {
   assert.equal(admissionOf(ctxWithResolver(undefined) as never), undefined);
+});
+
+test("restored model repair fills absent and empty variants but preserves a stated variant", () => {
+  const resolver = {
+    ...RESOLVER,
+    repairStageModel: (): { model: string, variant: string } => ({
+      model: "qwen3-tts-voicedesign",
+      variant: "design",
+    }),
+  };
+  const absent = admissionOf(ctxWithResolver(resolver) as never);
+  const empty = admissionOf(ctxWithResolver(resolver) as never);
+  const stated = admissionOf(ctxWithResolver(resolver) as never);
+  assert.ok(absent !== undefined && empty !== undefined && stated !== undefined);
+  const absentParams: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design" };
+  const emptyParams: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design", variant: "" };
+  const statedParams: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design", variant: "base" };
+  absent("tts", absentParams, "restored");
+  empty("tts", emptyParams, "restored");
+  stated("tts", statedParams, "restored");
+  assert.equal(absentParams["variant"], "design");
+  assert.equal(emptyParams["variant"], "design");
+  assert.equal(statedParams["variant"], "base");
+});
+
+test("a non-null repair that still refuses preserves the original refusal", () => {
+  const resolver = {
+    resolveStageParams: (): null => null,
+    admitStageModel: (): { ok: false as const, error: string, offered: string[] } => ({
+      ok: false,
+      error: "model 'poison' is not offered",
+      offered: [],
+    }),
+    repairStageModel: (): { model: string, variant: string } => ({
+      model: "still-rejected",
+      variant: "design",
+    }),
+  };
+  const admit = admissionOf(ctxWithResolver(resolver) as never);
+  assert.ok(admit !== undefined);
+  const params: Record<string, unknown> = { model: "poison" };
+  assert.throws(() => admit("tts", params, "restored"), /model 'poison' is not offered/);
+  assert.equal(params["model"], "still-rejected");
 });

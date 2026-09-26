@@ -246,6 +246,51 @@ function refuseUnknown(
  *  it (replace stages, snapshot inverse; a non-empty bench demands
  *  overwrite: true — the overwrite law). The only arm that may
  *  create; everything else refuses a missing bench. */
+/** THE INTENT-SYNC LAW (roadmap 2026-09-26 — BRIEF14 finding #3,
+ *  the stale `bench_snapshot.intent`): a bench born in card mode
+ *  carries the card id as its intent, and the studio consult keys
+ *  cardName off it — so an intent that names a card MUST name a
+ *  card the bench still holds. A wholesale load left the old card
+ *  id riding: a bench that ran tts and now holds an h3 stage still
+ *  said "tts", and every run's bench_snapshot inherited the lie.
+ *  The sync keys on ORPHANING, the only signal the domain owns:
+ *  a label that named a card the PREVIOUS composition held and the
+ *  NEXT composition dropped was true and just went stale — it
+ *  re-derives (the last card-carrying stage wins; a card-less
+ *  result keeps the label, inert with nothing to mislabel).
+ *  Everything else rides untouched: a STATED intent wins (the
+ *  caller owns the label), free prose never matched a held card id
+ *  so it never orphans, a pure add_stage grows the card set and
+ *  cannot orphan, and a label that was already wrong before the
+ *  change is not this law's to rewrite. */
+function syncIntent(
+  doc: Record<string, unknown>,
+  before: Record<string, unknown>[],
+  after: Record<string, unknown>[],
+): void {
+  const cur: string = typeof doc["intent"] === "string" ? doc["intent"] : "";
+  if (cur === "" || cur === "bench") return;
+  const prevCards: Set<string> = new Set();
+  for (const row of before) {
+    const c: unknown = row["card"];
+    if (typeof c === "string" && c !== "") prevCards.add(c);
+  }
+  if (!prevCards.has(cur)) return;
+  const nextCards: Set<string> = new Set();
+  for (const row of after) {
+    const c: unknown = row["card"];
+    if (typeof c === "string" && c !== "") nextCards.add(c);
+  }
+  if (nextCards.has(cur)) return;
+  for (let i = after.length - 1; i >= 0; i--) {
+    const c: unknown = after[i]["card"];
+    if (typeof c === "string" && c !== "") {
+      doc["intent"] = c;
+      return;
+    }
+  }
+}
+
 export async function ensureBench(
   drafts: Domain<DraftsDomainSpec>,
   body: Record<string, unknown>,
@@ -379,6 +424,7 @@ export async function ensureBench(
   }
   admitWiringList(staged, session);
   doc["stages"] = staged;
+  syncIntent(doc, before, staged);
   if (typeof body["intent"] === "string") doc["intent"] = body["intent"];
   const entry: BenchEntry = {
     author,
@@ -929,6 +975,8 @@ export async function addStageBench(
   );
   stages.push(row);
   loaded.doc["stages"] = stages;
+  // add_stage never syncs the intent (the orphaning law): a pure
+  // add grows the card set — a label true before stays true after.
   const newRev: number = await appendAndSave(drafts, loaded, {
     author,
     kind: "add_stage",
@@ -1157,8 +1205,10 @@ export async function removeStageBench(
     );
   }
   const row: Record<string, unknown> = stages[idx];
+  const before: Record<string, unknown>[] = [...stages];
   stages.splice(idx, 1);
   loaded.doc["stages"] = stages;
+  syncIntent(loaded.doc, before, stages);
   const newRev: number = await appendAndSave(drafts, loaded, {
     author,
     kind: "remove_stage",

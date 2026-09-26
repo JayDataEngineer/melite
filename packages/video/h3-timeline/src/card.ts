@@ -85,9 +85,16 @@ const LORA_STACK_GOLD =
 // (the card's own principles row: "Length snaps to the 17k+5 frame grid
 // at 24fps" — the principles).
 const MATH_STEPS_GOLD = `max(${GRID_REMAINDER}, round(a * 24)) + (${GRID_REMAINDER} - (max(${GRID_REMAINDER}, round(a * 24)) % ${GRID_STEP_FRAMES})) % ${GRID_STEP_FRAMES}`
-// the never-selected i2v branch's dead-branch prompt (template gold;
-// provenance: the frozen served captures).
-const I2V_GOLD_PROMPT = 'In a high action fun scene The character from the picture is facing the camera and sprinting towards the camera which tracks their movement, in a hitech futuristic city, dodging passing vehicles and other obstacles.\nHigh action, quick movements, cinematic. It is raining and night time, with glowing led lights.\nCars are crashing into eachother, bombs are dropping, but the character remains untouched by the chaos as they sprint.\nthey jump over a car as it slams into another car, and a bomb nearly hits the character.\nany car crashes or bomb impacts cause massive realistic destruction.\n\n[sound]\na futuristic electro cyber song plays in the background, and the background noise of crashes and explosions.\n'
+// THE ORPHANED I2V MARKER NODE (roadmap 2026-09-26 — BRIEF14
+// finding #4): MiniMaxH3ImageToVideo exists in the serialized graph
+// ONLY as the t4r family marker (finalizeH3 keys on it to skip the
+// t4 autofill strip). It is FULLY ORPHANED — no switch consumes it,
+// so no switch can ever select it. The old dead branch carried a
+// 700-char sprinting-city gold prompt through every request sidecar:
+// an off-topic injection-shaped blob and a live hazard the day a
+// switch flipped. Orphan + stub prompt = the marker law kept, the
+// hazard structurally dead.
+const I2V_MARKER_PROMPT = 'i2v marker branch — orphaned, never executed (r2v is the only lane)'
 // ImageSharpenKJ's grouped-widget defaults (the rcas block the python
 // builds when no sharpen leaf is injected; the card exposes only the
 // strength leaf — sharpen_strength).
@@ -1410,16 +1417,20 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       }
     }
     const r2v = g.node('MiniMaxH3ReferenceToVideo', r2vInputs)
-    // the never-selected opener branch (R2VBool true) — the
-    // dead-branch text and the geometry slots ride it verbatim
-    const i2v = g.node('MiniMaxH3ImageToVideo', {
-      prompt: I2V_GOLD_PROMPT, width: geoW, height: geoH,
+    // THE ORPHANED I2V MARKER (2026-09-26): registered so the
+    // serialized graph carries the t4r family key (finalizeH3's
+    // marker), wired to the geometry/anchor slots it always read —
+    // but consumed by NOTHING. The old shape routed r2v through a
+    // hardcoded-true ComfySwitchNode whose on_false arm was this
+    // node: never selected, yet a flipped switch would have run the
+    // gold prompt. Direct wiring + an orphan = one lane, one truth.
+    g.node('MiniMaxH3ImageToVideo', {
+      prompt: I2V_MARKER_PROMPT, width: geoW, height: geoH,
       length: lengthNode, context_steps: 1, audio_context_steps: 0,
       clip, vae: vaeVideo, first_frame: bout.out(0), last_frame: bout.out(1),
     })
-    const r2vBool = g.node('PrimitiveBoolean', { value: true }).out()
-    cond = g.node('ComfySwitchNode', { switch: r2vBool, on_true: r2v.out(0), on_false: i2v.out(0) }).out()
-    latent = g.node('ComfySwitchNode', { switch: r2vBool, on_true: r2v.out(1), on_false: i2v.out(1) }).out()
+    cond = r2v.out(0)
+    latent = r2v.out(1)
     fpsInput = fpsNode
     // THE AUDIO-ONLY KEYFRAMES (2026-09-22, D-M-E): each lane pins
     // its slice into the window's own AV latent at its generation-

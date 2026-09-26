@@ -43,14 +43,17 @@ interface Seat {
   cards: Record<string, (...args: never[]) => unknown>;
 }
 
-const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Seat => {
+const seat = (
+  cardOver: Record<string, (...args: never[]) => unknown> = {},
+  d1Doc: Record<string, unknown> = {},
+): Seat => {
   const state = tmp();
   const ctx = new Context();
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
     get: async (id: string): Promise<unknown> => {
-      if (id === "d1") return {};
+      if (id === "d1") return d1Doc;
       if (id === "boom") throw new Error("transport down");
       throw new RemoteError("draft/not-found", "no doc", {});
     },
@@ -693,6 +696,56 @@ describe("film admission warn (F-6b)", () => {
       };
     });
   };
+
+  it("THE SNAPSHOT-COERCION LAW (BRIEF14 finding #2 — the stringified persisted snapshot): the card door's sidecar carries the numbers the card received, never dsh's stringly encoding; the raw body still rides _request.json verbatim", async () => {
+    stubMem(20 * GIB, 24.5 * GIB);
+    try {
+      const s = seat({
+        phase1Card: (async (): Promise<unknown> => ({ card: "h3-timeline", skeleton: "s" })) as never,
+        phase2Card: (async (): Promise<unknown> => ({ graph: {} })) as never,
+        defsSync: (): unknown => new Map([
+          ["h3-timeline", {
+            schemaCarrier: { dict: { dur_frames: { type: "number" }, seed: { type: "number" } } },
+          }],
+        ]),
+      }, {
+        intent: "h3-timeline",
+        stages: [{ id: "s_0", card: "h3-timeline", params: { dur_frames: "110", prompt: "kept" } }],
+      });
+      const ans = await s.svc.start({
+        ...filmBody(),
+        dur_frames: "110",
+        seed: "42",
+        prompt: "kept a string",
+      }, sig());
+      await settleWait(s, ans.run_id);
+      // the run record's snapshot: declared numerics are numbers
+      const rec = s.core.runs.get(ans.run_id) as Record<string, unknown>;
+      const snap = rec["cardSnapshot"] as { params: Record<string, unknown> };
+      assert.equal(snap.params["dur_frames"], 110);
+      assert.strictEqual(typeof snap.params["dur_frames"], "number");
+      assert.equal(snap.params["seed"], 42);
+      assert.equal(snap.params["prompt"], "kept a string");
+      // the persisted sidecar (_flow.json) carries the typed truth
+      const flow = JSON.parse(readFileSync(join(s.state, "output", ans.run_id, "_flow.json"), "utf8")) as Record<string, unknown>;
+      const flowSnap = flow["card_snapshot"] as { params: Record<string, unknown> };
+      assert.strictEqual(typeof flowSnap.params["dur_frames"], "number");
+      // the BENCH snapshot rides the same law per stage: each row's
+      // params coerce through its own card's carrier
+      const benchSnap = flow["bench_snapshot"] as { stages: Array<{ params: Record<string, unknown> }> };
+      assert.strictEqual(benchSnap.stages[0]?.params["dur_frames"], 110);
+      assert.equal(benchSnap.stages[0]?.params["prompt"], "kept");
+      // _request.json rides the SAME coerced body (the door feeds
+      // both seats): the request sidecar itself now proves type
+      // integrity — the finding's exact complaint — while the
+      // structure/seam evidence (the compose echo's law) is
+      // unchanged by the numeric fill.
+      const req = JSON.parse(readFileSync(join(s.state, "output", ans.run_id, "_request.json"), "utf8")) as Record<string, unknown>;
+      assert.strictEqual(req["dur_frames"], 110);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 
   it("a pressured engine warns on the run (the warn rides run_status)", async () => {
     stubMem(0.8 * GIB, 24.5 * GIB);

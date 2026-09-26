@@ -55,10 +55,16 @@ export function strictBody(body: Record<string, unknown>): void {
 // "stage[i] refuses:".
 export function buildStageRow(i: number, st: unknown): StageRow {
   const where: string = "stage[" + i + "]";
-  // unknown keys = the stage object's own keys minus the legal set
-  const rawExtras: unknown[] = [...new Set(Object.keys(st as Record<string, unknown>))].filter(
-    (k) => typeof k !== "string" || !(STAGE_KEYS_SORTED as readonly string[]).includes(k),
-  );
+  const isRow: boolean = typeof st === "object" && st !== null && !Array.isArray(st);
+  // unknown keys = the stage object's own keys minus the legal set.
+  // (a non-object row has no keys to walk — the object gate below
+  // owns its refusal voice; Object.keys(null) would throw a
+  // TypeError over that voice: 2026-09-25.)
+  const rawExtras: unknown[] = isRow
+    ? [...new Set(Object.keys(st as Record<string, unknown>))].filter(
+      (k) => typeof k !== "string" || !(STAGE_KEYS_SORTED as readonly string[]).includes(k),
+    )
+    : [];
   if (rawExtras.length > 0) {
     if (typeof st !== "object" || st === null || Array.isArray(st)) {
       throw new TypeError(where + " must be an object");
@@ -277,6 +283,33 @@ export function cardGate(
         msg,
     );
   }
+}
+
+/** THE SNAPSHOT-COERCION LAW (roadmap 2026-09-26 — BRIEF14 finding
+ *  #2, the stringified persisted snapshot): the wire-corruption
+ *  family's compose/lattice seats restore the numbers the GRAPH
+ *  sees, but the card snapshot rode `door.requestBody` VERBATIM —
+ *  the raw dsh-encoded body, every declared numeric a string
+ *  (`"dur_frames": "110"`). Type integrity was unprovable from the
+ *  request sidecar alone. The stamp now runs the SAME family
+ *  (shape unwrap → array fill → numeric fill, schema-derived
+ *  through the card's own carrier — never a stringly guess) so the
+ *  persisted snapshot carries the numbers the card actually
+ *  received. Envelope keys the schema doesn't declare ride
+ *  untouched, and an unknown card rides verbatim (nothing to
+ *  derive from). */
+export function coerceSnapshotBody(
+  def: CardDefinition | undefined,
+  body: Record<string, unknown>,
+): Record<string, unknown> {
+  if (def === undefined) return body;
+  const carrier = (def.schemaCarrier ?? def.schema) as unknown as {
+    dict?: Record<string, { type?: string }>
+  };
+  return coerceWireNumbers(
+    carrier,
+    coerceWireArrays(carrier, unwrapItemArrays(body)),
+  ) as Record<string, unknown>;
 }
 
 // kindsOk with engineDefaults ({} at construction = deferred,

@@ -471,10 +471,13 @@ export function registerCompiledRun(args: {
       };
     }
   }
-  // R3 durable queue (submit 1317-1351): the verbatim request
-  // rides _request.json, the compiled document rides _flow.json,
+  // R3 durable queue (submit 1317-1351): the request rides
+  // _request.json, the compiled document rides _flow.json,
   // and run.queued in the ledger is what a restart reconciles
-  // against. The card door passes its body; the inline door passes
+  // against. The card door passes its body — coerced through the
+  // snapshot-coercion law at the door (declared numerics restored,
+  // BRIEF14 finding #2: the sidecar proves type integrity, the
+  // seam/structure evidence rides unchanged); the inline door passes
   // the envelope's flow_inline doc below (same writes, same order).
   const requestBody: unknown = door?.requestBody ?? compiled;
   // THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23: the
