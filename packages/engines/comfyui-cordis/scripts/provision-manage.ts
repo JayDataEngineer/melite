@@ -39,6 +39,9 @@ export function cmdManage(argv: string[]): number {
   const positional: Record<string, string> = {
     install_extension: "nodes", provision_model: "model",
     search_models: "query", switch_version: "version",
+    // THE LORA DOORS (2026-09-26): `lora_install` takes the operator's
+    // OWN file path (a copy, never a fetch — the no-loras-remote law).
+    lora_install: "path",
     install_extension_url: "url",
   };
   const plural = new Set(["install_extension"]);

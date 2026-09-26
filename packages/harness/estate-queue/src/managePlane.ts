@@ -15,6 +15,12 @@ import { promisify } from "node:util";
 import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { endpointConfigPath, loadEndpointConfig } from "@melite/comfyui-cordis";
+import {
+  installUserLora,
+  loraNamesFromObjectInfo,
+  readUserLoraRows,
+  unboardedRows,
+} from "@melite/comfyui-cordis/user-loras";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type {
   ProvisionPlan,
@@ -50,6 +56,8 @@ export const ACTIONS = [
   "free",
   "snapshot_save",
   "snapshot_restore",
+  "lora_list",
+  "lora_install",
 ] as const;
 
 export type ManageAction = (typeof ACTIONS)[number];
@@ -235,6 +243,12 @@ export function parseReq(doc: unknown): Req {
     extra_args: Array.isArray(d["extra_args"]) ? (d["extra_args"] as unknown[]).map(String) : [],
     force: d["force"] === true,
     snapshot: str("snapshot"),
+    // THE LORA DOORS (2026-09-26): `lora_list` reports what the
+    // ENGINE will accept (its own combo) plus the user's own rows;
+    // `lora_install` copies a LoRA the operator already has into the
+    // engine's loras dir — never a fetch (the no-loras-remote law).
+    path: str("path"),
+    families: Array.isArray(d["families"]) ? (d["families"] as unknown[]).map(String).filter((s) => s !== "") : [],
   };
 }
 
@@ -1221,6 +1235,118 @@ async function hSnapshotRestore(req: Req, ctx: ManageCtx): Promise<[number, Mana
   });
 }
 
+
+// ── THE LORA DOORS (the operator's 2026-09-26 order: custom LoRAs
+// belong in the ComfyUI Manager sidebar, not a dev-only drop-in).
+
+/** The engine's base URL (the endpoint config the whole manage plane
+ *  routes through — never a second spelling of the address). */
+function engineBase(ctx: ManageCtx): string {
+  const cfg = ctx.endpoint() as { url?: unknown; host?: unknown; port?: unknown }
+  if (typeof cfg.url === 'string' && cfg.url !== '') return cfg.url
+  if (typeof cfg.host === 'string' && cfg.host !== '') {
+    return 'http://' + cfg.host + ':' + String(cfg.port ?? 8188)
+  }
+  return 'http://127.0.0.1:8188'
+}
+
+/** The engine's own LoRA directory, as ComfyUI's folder_paths would
+ *  resolve it: the endpoint's model root + `loras`. A declared override
+ *  wins (a box whose models live elsewhere), and the copy lands where
+ *  the combo will find it. */
+function engineLorasDir(cfg: Record<string, unknown>): string {
+  const declared = process.env['MELITE_COMFYUI_LORAS_DIR']
+  if (declared !== undefined && declared !== '') return declared
+  const root = typeof cfg['model_base_path'] === 'string' ? (cfg['model_base_path'] as string) : ''
+  if (root !== '') return join(root, 'loras')
+  return '/mnt/data/models/image-gen/comfyui/loras'
+}
+
+/** `lora_list` — THE FACT + THE ROWS. The engine's own
+ *  LoraLoaderModelOnly combo is the only truth about what /prompt will
+ *  accept (a name outside it is a 400 after the money is spent), and
+ *  the user's rows file says which of those names are OFFERED, with a
+ *  label and a strength default. */
+async function hLoraList(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
+  const info = await objectInfoOf(ctx, 'LoraLoaderModelOnly')
+  const combo = loraNamesFromObjectInfo(info)
+  const file = readUserLoraRows(process.env['MELITE_USER_LORAS'] ?? './data/loras/user-loras.json')
+  const unboarded = unboardedRows(file.rows, combo)
+  return ok(
+    req.action,
+    combo.length + ' LoRA name(s) the engine accepts; ' + file.rows.length + ' user row(s) offered',
+    {
+      engine_loras: combo,
+      user_rows: file.rows,
+      user_rows_path: file.path,
+      user_rows_present: !file.absent,
+      user_row_problems: file.problems,
+      // rows the engine does NOT have: named here, not at /prompt
+      unboarded,
+      install_dir: engineLorasDir(cfg),
+      // a file copied in is only seen by the combo after a reboot —
+      // core enumerates folder_paths at import, and a reboot is the
+      // only refresh primitive this repo owns
+      next_action_after_install: 'restart',
+    },
+  )
+}
+
+/** `lora_install` — COPY, never fetch. The operator's law: no loras
+ *  remote; the file is one the operator already has. The answer names
+ *  the restart it needs, because the combo is read at engine import. */
+async function hLoraInstall(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
+  need(req, 'path')
+  const cfg = ctx.endpoint()
+  estateOnly(req, cfg)
+  const dir = engineLorasDir(cfg)
+  const result = installUserLora(req.path, dir)
+  if (!result.ok) {
+    // the plane's own refusal path (Refused → the envelope's detail +
+    // data), so the sidebar reads it like every other refusal
+    throw new Refused(422, result.reason, { path: req.path, install_dir: dir })
+  }
+  const combo = loraNamesFromObjectInfo(await objectInfoOf(ctx, 'LoraLoaderModelOnly'))
+  const visible = combo.includes(result.filename)
+  return ok(
+    req.action,
+    'copied ' + result.filename + ' (' + result.bytes + ' bytes) into ' + dir
+      + (visible ? ' — already in the engine\'s list' : ' — restart the engine to enter its list'),
+    {
+      filename: result.filename,
+      bytes: result.bytes,
+      install_dir: dir,
+      in_combo_now: visible,
+      next_action: 'restart',
+      restart_required: !visible,
+      // the row the operator adds next, ready to paste
+      row_suggestion: {
+        id: result.filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]+/g, '_'),
+        filename: result.filename,
+        families: req.families,
+        default_strength: 1,
+      },
+    },
+  )
+}
+
+/** The engine's node declaration, or an empty record when the engine
+ *  is unreachable (the cross-check then proves nothing and refuses
+ *  nothing — never a throw across the sidebar). */
+async function objectInfoOf(ctx: ManageCtx, node: string): Promise<unknown> {
+  try {
+    const res = await fetch(new URL('/object_info/' + node, engineBase(ctx)), {
+      signal: AbortSignal.timeout(30_000),
+    })
+    if (!res.ok) return null
+    return (await res.json()) as unknown
+  } catch {
+    return null
+  }
+}
+
 // ── handler table (wall-scanned rows) ───────────────────────────────
 const HANDLERS: Record<ManageAction, Handler> = {
   status: hStatus,
@@ -1241,6 +1367,8 @@ const HANDLERS: Record<ManageAction, Handler> = {
   free: hFree,
   snapshot_save: hSnapshotSave,
   snapshot_restore: hSnapshotRestore,
+  lora_list: hLoraList,
+  lora_install: hLoraInstall,
 };
 
 function refusalDataFields(data: unknown): Partial<ManageEnvelope> {
