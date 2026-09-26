@@ -26,7 +26,9 @@
 //    omission law — served bytes carry no "default": [])
 //  - format: meta.role === 'path' → 'path'
 //  - description: meta.description verbatim
-//  - x-visible-when: meta.extra.visibleWhen
+//  - x-visible-when: meta.extra.visible_when (the declaration's
+//    spelling — the one every card writes; visibleWhen rides as an
+//    accepted alias)
 //  - x-families: meta.extra.families
 //  - required: knobs carrying extra.required (EMIT-ONLY — the flag
 //    rides meta.extra so schemastery never validates it; compose's
@@ -143,7 +145,15 @@ export const emitKnob = (s: Schema): Record<string, unknown> => {
   if (out.maximum === undefined && iex.max !== undefined) out.maximum = iex.max
 
   if (im.description) out.description = im.description
-  if (iex.visibleWhen !== undefined) out['x-visible-when'] = iex.visibleWhen
+  // THE ONE-VOCABULARY LAW (2026-10-10, the contract audit): every
+  // card declares `visible_when` (snake — the form walker's own
+  // spelling); this face read `visibleWhen` (camel), a key NO
+  // declaration writes — x-visible-when never fired for a single
+  // card. The declaration's spelling is the contract; the camel
+  // alias stays accepted (a future declaration may not be re-iled),
+  // but the snake key is the one that serves.
+  const vw = iex['visible_when'] !== undefined ? iex['visible_when'] : iex.visibleWhen
+  if (vw !== undefined) out['x-visible-when'] = vw
   if (iex.families !== undefined) out['x-families'] = iex.families
 
   return out

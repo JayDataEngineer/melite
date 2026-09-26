@@ -1,0 +1,1646 @@
+{
+  "contract": null,
+  "model_defaults": {
+    "input_images": [],
+    "seed": -1,
+    "use_stock_nodes": false,
+    "double_reference": false,
+    "steps": 20,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "cfg": 2.5
+  },
+  "engine": "comfyui",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "prompt": "You are a Qwen Image Edit prompting expert. The user wants to edit an existing image.\n\n- This is an INSTRUCTION-BASED EDITING model — describe the CHANGE, not the final scene\n- Start with an action verb: add, remove, replace, change, rotate, recolor, relight\n- Be specific about WHAT should change\n- Explicitly state what should STAY THE SAME\n- For multi-image edits, label each: 'Picture 1: a man. Picture 2: a hat. Put the hat from picture 2 on the man from picture 1.'\n- Qwen Image Edit renders text well — wrap text in double quotes for replacements\n- Keep the edit instruction concise — 20-80 words\n- Do NOT describe the entire resulting image — just the modification\n\nWrite the prompt as continuous descriptive prose — NOT comma-separated tag lists. Natural language produces better results than keyword stacks on these models.\n\n## Structure (order matters — lead with what's most important)\n1. Subject identity and core action/pose\n2. Detailed physical description — body, face, hair, clothing, textures\n3. Hand/object interactions and spatial details\n4. Background/environment with depth layers — near, mid, far\n5. Lighting, atmosphere, and color palette\n6. Camera/lens/framing (only if photorealistic)\n\n## Enhancement Methodology\n1. Lock the user's core intent — subject, action, colors, text are IMMUTABLE\n2. If the request is abstract, construct a complete visualizable scene first\n3. Inject professional aesthetics: composition, lighting, material textures, color scheme, spatial depth\n4. Any text that should appear IN the image must be in double quotes: sign reading \"OPEN\"\n5. Output must be objective and concrete. No metaphors or emotional rhetoric\n\n## What to include\n- Specific demographics when relevant: \"young Chinese woman\" not \"woman\"\n- Facial features, expression, gaze direction\n- Hair: style, color, length, accessories\n- Garments named specifically: \"cream-colored wool turtleneck\" not \"sweater\"\n- Fabric behavior: \"slightly wrinkled linen\", \"glossy patent leather\"\n- Spatial positions: \"on the left\", \"in the foreground\", \"behind her\"\n- Light source, direction, color temperature: \"warm golden-hour sunlight from camera left\"\n- Camera details for photorealism: \"85mm portrait lens, shallow depth of field\"\n\n## What NEVER to include\n- Meta-tags: \"8K\", \"masterpiece\", \"best quality\", \"highly detailed\", \"trending on artstation\"\n- Other-model syntax: \"score_9\", \"plms\", \"euler a\", \"dpm++ 2m\"\n- Negation in positive prompts: \"no hat\" → rephrase as \"bareheaded\"\n- Empty/vague backgrounds — always describe the environment\n\nChinese and English both work natively — you may mix them.\n\n## Output format — STRICT\nReturn ONLY a single JSON object. No markdown fences, no explanation, no\ntext before or after. The whole response must be parseable by JSON.parse.\n\nSchema:\n  {\"positive\": \"<the enhanced positive prompt>\", \"negative\": \"<negative prompt or empty string>\"}\n\nRules:\n- \"positive\" is always filled with the enhanced prompt per the methodology above.\n- \"negative\" is filled with an effective negative prompt IF the model uses\n  negatives (you noted whether it does above). Otherwise set \"negative\" to \"\".\n- Both values are plain strings. Escape inner quotes and newlines per JSON.\n- Never wrap the whole response in extra quotes. The JSON object itself is\n  the response.\n"
+  },
+  "features": {
+    "modifiers": [
+      {
+        "kind": "brick",
+        "label": "Lanpaint",
+        "param_key": "lanpaint",
+        "schema_key": "lanpaint",
+        "cardinality": "list",
+        "max_stack": 1,
+        "options": []
+      },
+      {
+        "kind": "lora",
+        "label": "LoRAs",
+        "param_key": "loras",
+        "schema_key": "loras",
+        "cardinality": "list",
+        "entry": "option",
+        "option_key": "id",
+        "options": [
+          {
+            "value": "krea2_realism_lora",
+            "label": "Realism",
+            "tooltip": "photorealism — krea-2/krea2_realism_lora.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.7
+            },
+            "model": "krea-2/krea2_realism_lora.safetensors"
+          },
+          {
+            "value": "krea2_turbo_lora_rank_64_bf16",
+            "label": "Turbo Rank-64 (BF16)",
+            "tooltip": "quality — krea-2/krea2_turbo_lora_rank_64_bf16.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 1
+            },
+            "model": "krea-2/krea2_turbo_lora_rank_64_bf16.safetensors"
+          },
+          {
+            "value": "krea2_darkbrush",
+            "label": "Dark Brush",
+            "tooltip": "style — krea-2/krea2_darkbrush.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "krea-2/krea2_darkbrush.safetensors"
+          },
+          {
+            "value": "krea2_dotmatrix",
+            "label": "Dot Matrix",
+            "tooltip": "style — krea-2/krea2_dotmatrix.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "krea-2/krea2_dotmatrix.safetensors"
+          },
+          {
+            "value": "krea2_kidsdrawing",
+            "label": "Kids Drawing",
+            "tooltip": "style — krea-2/krea2_kidsdrawing.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "krea-2/krea2_kidsdrawing.safetensors"
+          },
+          {
+            "value": "krea2_neondrip",
+            "label": "Neon Drip",
+            "tooltip": "style — krea-2/krea2_neondrip.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "krea-2/krea2_neondrip.safetensors"
+          },
+          {
+            "value": "krea2_rainywindow",
+            "label": "Rainy Window",
+            "tooltip": "style — krea-2/krea2_rainywindow.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "krea-2/krea2_rainywindow.safetensors"
+          },
+          {
+            "value": "krea2_retroanime",
+            "label": "Retro Anime",
+            "tooltip": "style — krea-2/krea2_retroanime.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "krea-2/krea2_retroanime.safetensors"
+          },
+          {
+            "value": "krea2_softwatercolor",
+            "label": "Soft Watercolor",
+            "tooltip": "style — krea-2/krea2_softwatercolor.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "krea-2/krea2_softwatercolor.safetensors"
+          },
+          {
+            "value": "krea2_sunsetblur",
+            "label": "Sunset Blur",
+            "tooltip": "style — krea-2/krea2_sunsetblur.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "krea-2/krea2_sunsetblur.safetensors"
+          },
+          {
+            "value": "krea2_vintagetarot",
+            "label": "Vintage Tarot",
+            "tooltip": "style — krea-2/krea2_vintagetarot.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "krea-2/krea2_vintagetarot.safetensors"
+          },
+          {
+            "value": "krea2filterbypass3",
+            "label": "Filter Bypass 3",
+            "tooltip": "style — krea-2/krea2filterbypass3.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "krea-2/krea2filterbypass3.safetensors"
+          },
+          {
+            "value": "h3_lightx2v_dareties",
+            "label": "LightX2V dareties v4",
+            "tooltip": "distill — h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8,
+              "steps": 4
+            },
+            "model": "h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors"
+          },
+          {
+            "value": "h3_lightx2v_turbo",
+            "label": "LightX2V Turbo 4-8 step",
+            "tooltip": "distill — h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.6,
+              "steps": 8,
+              "steps_min": 4,
+              "steps_max": 8
+            },
+            "model": "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors"
+          },
+          {
+            "value": "h3_turbo4_v1",
+            "label": "LightX2V Turbo 4-Step v1.0 (768p)",
+            "tooltip": "distill — h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 1,
+              "steps": 4
+            },
+            "model": "h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors"
+          },
+          {
+            "value": "h3_turbo8_v1",
+            "label": "LightX2V Turbo 8-Step v1.0",
+            "tooltip": "distill — h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 1,
+              "steps": 8
+            },
+            "model": "h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors"
+          },
+          {
+            "value": "h3_ref2v_turbo4",
+            "label": "LightX2V Ref Turbo 4-Step v0.1",
+            "tooltip": "distill — h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 1,
+              "steps": 4
+            },
+            "model": "h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors"
+          },
+          {
+            "value": "h3_acc8_fl2va",
+            "label": "Kijai FL2VA Acc 8-Step",
+            "tooltip": "distill — h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 1,
+              "steps": 8
+            },
+            "model": "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors"
+          },
+          {
+            "value": "h3_acc8_ref2va",
+            "label": "Kijai Ref2VA Acc 8-Step",
+            "tooltip": "distill — h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 1,
+              "steps": 8
+            },
+            "model": "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors"
+          },
+          {
+            "value": "h3_larryvrh_v4_ema",
+            "label": "Larryvrh Turbo v4-600 EMA",
+            "tooltip": "distill — h3/minimax_h3_turbo_v4_step600_ema.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 1,
+              "steps": 6,
+              "steps_min": 4,
+              "steps_max": 8
+            },
+            "model": "h3/minimax_h3_turbo_v4_step600_ema.safetensors"
+          },
+          {
+            "value": "h3_pk_parasyte",
+            "label": "PK Parasyte Turbo",
+            "tooltip": "distill — h3/H3-PK-Parasyte-Turbo.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 1.5,
+              "steps": 8,
+              "steps_min": 6,
+              "steps_max": 8
+            },
+            "model": "h3/H3-PK-Parasyte-Turbo.safetensors"
+          },
+          {
+            "value": "h3_taomate_3step",
+            "label": "TaoMate 3-Step (refiner)",
+            "tooltip": "distill — h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.7,
+              "steps": 3
+            },
+            "model": "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors"
+          },
+          {
+            "value": "zimage_3d_mmorpg",
+            "label": "3D MMORPG",
+            "tooltip": "style — z-image/z-image-3d-mmorpg.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "z-image/z-image-3d-mmorpg.safetensors"
+          },
+          {
+            "value": "zimage_classic_painting",
+            "label": "Classic Painting",
+            "tooltip": "style — z-image/z-image-classic-painting.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "z-image/z-image-classic-painting.safetensors"
+          },
+          {
+            "value": "zimage_coloring_book",
+            "label": "Coloring Book",
+            "tooltip": "style — z-image/z-image-coloring-book.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "z-image/z-image-coloring-book.safetensors"
+          },
+          {
+            "value": "zimage_dejpeg",
+            "label": "DeJPEG",
+            "tooltip": "restoration — z-image/z-image-dejpeg.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 1
+            },
+            "model": "z-image/z-image-dejpeg.safetensors"
+          },
+          {
+            "value": "zimage_pixel_art",
+            "label": "Pixel Art",
+            "tooltip": "style — z-image/z-image-pixel-art.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "z-image/z-image-pixel-art.safetensors"
+          },
+          {
+            "value": "zimage_realism",
+            "label": "Realism",
+            "tooltip": "photorealism — z-image/z-image-realism.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.7
+            },
+            "model": "z-image/z-image-realism.safetensors"
+          },
+          {
+            "value": "zimage_sunbleached",
+            "label": "Sunbleached",
+            "tooltip": "style — z-image/z-image-sunbleached.safetensors — runtime catalog",
+            "defaults": {
+              "strength": 0.8
+            },
+            "model": "z-image/z-image-sunbleached.safetensors"
+          }
+        ]
+      },
+      {
+        "kind": "mask",
+        "label": "Region Mask",
+        "param_key": "mask",
+        "schema_key": "mask",
+        "cardinality": "list",
+        "max_stack": 1,
+        "options": []
+      }
+    ],
+    "variant_groups": {
+      "Variant": {
+        "label": "Variant",
+        "tooltip": "Base checkpoint — Lightning (4-step distilled, fast default) or Standard (20-step reference, highest quality)."
+      },
+      "Quant": {
+        "label": "Quant",
+        "tooltip": "Quantization tier — FP8 Lightning (the distilled checkpoint) or INT8 ConvRot (the reference merge)."
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
+      }
+    }
+  },
+  "form": "image-edit",
+  "genre": "image",
+  "guide": null,
+  "inputs": [
+    {
+      "name": "prompt",
+      "kind": "text"
+    },
+    {
+      "name": "input_images",
+      "kind": "image_list"
+    },
+    {
+      "name": "input_mask",
+      "kind": "seg"
+    }
+  ],
+  "label": "Edit Image",
+  "layout": null,
+  "loader_info": null,
+  "mod_schemas": {
+    "lanpaint": {
+      "uid": 3196,
+      "refs": {
+        "3125": {
+          "type": "string",
+          "meta": {
+            "role": "path",
+            "extra": {
+              "wtype": "image",
+              "group": "input",
+              "zone": "inputs",
+              "order": -1,
+              "width": 1,
+              "columns": 3,
+              "required": true
+            },
+            "description": "Image 1"
+          }
+        },
+        "3129": {
+          "type": "boolean",
+          "meta": {
+            "default": false,
+            "description": "Force LanPaint",
+            "extra": {
+              "wtype": "boolean",
+              "group": "lanpaint",
+              "visible_when": "image1 != null",
+              "order": 1
+            }
+          }
+        },
+        "3135": {
+          "type": "number",
+          "meta": {
+            "min": 1,
+            "max": 100,
+            "default": 20,
+            "description": "Num Steps",
+            "extra": {
+              "wtype": "number",
+              "group": "lanpaint",
+              "visible_when": "lanpaint_enabled=true",
+              "order": 2,
+              "width": 1,
+              "step": 1
+            }
+          }
+        },
+        "3141": {
+          "type": "number",
+          "meta": {
+            "min": 0.1,
+            "max": 2,
+            "default": 1,
+            "description": "Step Size",
+            "extra": {
+              "wtype": "slider",
+              "group": "lanpaint",
+              "visible_when": "lanpaint_enabled=true",
+              "order": 3,
+              "width": 1,
+              "step": 0.1
+            }
+          }
+        },
+        "3147": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 2,
+            "default": 0.5,
+            "description": "Lambda",
+            "extra": {
+              "wtype": "slider",
+              "group": "lanpaint",
+              "visible_when": "lanpaint_enabled=true",
+              "order": 4,
+              "width": 1,
+              "step": 0.05
+            }
+          }
+        },
+        "3153": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 2,
+            "default": 0.5,
+            "description": "Beta",
+            "extra": {
+              "wtype": "slider",
+              "group": "lanpaint",
+              "visible_when": "lanpaint_enabled=true",
+              "order": 5,
+              "width": 1,
+              "step": 0.05
+            }
+          }
+        },
+        "3159": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 2,
+            "default": 0.5,
+            "description": "Friction",
+            "extra": {
+              "wtype": "slider",
+              "group": "lanpaint",
+              "visible_when": "lanpaint_enabled=true",
+              "order": 6,
+              "width": 1,
+              "step": 0.05
+            }
+          }
+        },
+        "3160": {
+          "type": "const",
+          "meta": {},
+          "value": "negative"
+        },
+        "3161": {
+          "type": "const",
+          "meta": {},
+          "value": "positive"
+        },
+        "3165": {
+          "type": "union",
+          "meta": {
+            "default": "negative",
+            "description": "Prompt Mode",
+            "extra": {
+              "wtype": "select",
+              "group": "lanpaint",
+              "visible_when": "lanpaint_enabled=true",
+              "order": 7,
+              "width": 1,
+              "options": [
+                "negative",
+                "positive"
+              ]
+            }
+          },
+          "list": [
+            3160,
+            3161
+          ]
+        },
+        "3171": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 512,
+            "default": 0,
+            "description": "Expand Top",
+            "extra": {
+              "wtype": "slider",
+              "group": "lanpaint",
+              "visible_when": "image1 != null",
+              "order": 8,
+              "width": 1,
+              "step": 8
+            }
+          }
+        },
+        "3177": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 512,
+            "default": 0,
+            "description": "Expand Right",
+            "extra": {
+              "wtype": "slider",
+              "group": "lanpaint",
+              "visible_when": "image1 != null",
+              "order": 9,
+              "width": 1,
+              "step": 8
+            }
+          }
+        },
+        "3183": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 512,
+            "default": 0,
+            "description": "Expand Bottom",
+            "extra": {
+              "wtype": "slider",
+              "group": "lanpaint",
+              "visible_when": "image1 != null",
+              "order": 10,
+              "width": 1,
+              "step": 8
+            }
+          }
+        },
+        "3189": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 512,
+            "default": 0,
+            "description": "Expand Left",
+            "extra": {
+              "wtype": "slider",
+              "group": "lanpaint",
+              "visible_when": "image1 != null",
+              "order": 11,
+              "width": 1,
+              "step": 8
+            }
+          }
+        },
+        "3195": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 64,
+            "default": 16,
+            "description": "Overlap",
+            "extra": {
+              "wtype": "slider",
+              "group": "lanpaint",
+              "visible_when": "image1 != null",
+              "order": 8,
+              "width": 1,
+              "step": 1
+            }
+          }
+        },
+        "3196": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "image1": 3125,
+            "lanpaint_enabled": 3129,
+            "lanpaint_num_steps": 3135,
+            "lanpaint_step_size": 3141,
+            "lanpaint_lambda": 3147,
+            "lanpaint_beta": 3153,
+            "lanpaint_friction": 3159,
+            "lanpaint_prompt_mode": 3165,
+            "outpaint_top": 3171,
+            "outpaint_right": 3177,
+            "outpaint_bottom": 3183,
+            "outpaint_left": 3189,
+            "outpaint_overlap": 3195
+          }
+        }
+      }
+    },
+    "loras": {
+      "uid": 3055,
+      "refs": {
+        "3043": {
+          "type": "string",
+          "meta": {}
+        },
+        "3044": {
+          "type": "number",
+          "meta": {}
+        },
+        "3050": {
+          "type": "number",
+          "meta": {
+            "min": 1,
+            "max": 100,
+            "step": 1,
+            "description": "Steps applied",
+            "extra": {
+              "wtype": "number",
+              "group": "loras_controlnet",
+              "zone": "mods",
+              "order": 1,
+              "width": 1,
+              "step": 1
+            }
+          }
+        },
+        "3051": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "name": 3043,
+            "strength": 3044,
+            "steps": 3050
+          }
+        },
+        "3054": {
+          "type": "array",
+          "meta": {
+            "default": [],
+            "description": "LoRAs",
+            "extra": {
+              "wtype": "loras",
+              "group": "loras_controlnet",
+              "zone": "mods",
+              "default": null,
+              "order": 0
+            }
+          },
+          "inner": 3051
+        },
+        "3055": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "loras": 3054
+          }
+        }
+      }
+    },
+    "mask": {
+      "uid": 3265,
+      "refs": {
+        "3199": {
+          "type": "any",
+          "meta": {
+            "description": "Region Mask",
+            "extra": {
+              "wtype": "mask",
+              "group": "mask",
+              "zone": "mods",
+              "order": -1,
+              "tooltip": "Add the mask mod, then drop an RGBA PNG whose alpha channel marks the region."
+            }
+          }
+        },
+        "3203": {
+          "type": "string",
+          "meta": {
+            "role": "path",
+            "extra": {
+              "wtype": "image",
+              "group": "input",
+              "zone": "inputs",
+              "order": -1,
+              "width": 1,
+              "columns": 3,
+              "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with the input images, the builder switches to the lanpaint sampler."
+            },
+            "description": "Region Mask"
+          }
+        },
+        "3204": {
+          "type": "const",
+          "meta": {},
+          "value": "auto"
+        },
+        "3205": {
+          "type": "const",
+          "meta": {},
+          "value": "crop_stitch"
+        },
+        "3206": {
+          "type": "const",
+          "meta": {},
+          "value": "full_frame"
+        },
+        "3210": {
+          "type": "union",
+          "meta": {
+            "default": "crop_stitch",
+            "description": "Edit Scope",
+            "extra": {
+              "wtype": "select",
+              "group": "mask",
+              "zone": "mods",
+              "order": 1,
+              "width": 1,
+              "options": [
+                {
+                  "value": "auto",
+                  "label": "Whole image (default)"
+                },
+                {
+                  "value": "crop_stitch",
+                  "label": "Masked region (crop + stitch)"
+                }
+              ],
+              "tooltip": "No mask modifier = whole-image editing by default. Add a mask modifier to choose Masked region (crop + stitch): crop the region, edit it, and composite it back."
+            }
+          },
+          "list": [
+            3204,
+            3205,
+            3206
+          ]
+        },
+        "3211": {
+          "type": "const",
+          "meta": {},
+          "value": "off"
+        },
+        "3212": {
+          "type": "const",
+          "meta": {},
+          "value": "person"
+        },
+        "3213": {
+          "type": "const",
+          "meta": {},
+          "value": "face"
+        },
+        "3214": {
+          "type": "const",
+          "meta": {},
+          "value": "hand"
+        },
+        "3218": {
+          "type": "union",
+          "meta": {
+            "default": "off",
+            "description": "Region Detector",
+            "extra": {
+              "wtype": "select",
+              "group": "mask",
+              "zone": "mods",
+              "order": 2,
+              "width": 1,
+              "options": [
+                "off",
+                "person",
+                "face",
+                "hand"
+              ],
+              "tooltip": "Automated region source for crop_stitch (the Impact detectors): person = segmentation silhouette, face/hand = boxes. off = use the Region Mask."
+            }
+          },
+          "list": [
+            3211,
+            3212,
+            3213,
+            3214
+          ]
+        },
+        "3225": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 256,
+            "step": 8,
+            "default": 64,
+            "description": "Context Padding",
+            "extra": {
+              "wtype": "slider",
+              "group": "mask",
+              "zone": "mods",
+              "order": 3,
+              "width": 1,
+              "tooltip": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot."
+            }
+          }
+        },
+        "3232": {
+          "type": "number",
+          "meta": {
+            "min": -32,
+            "max": 32,
+            "step": 1,
+            "default": 8,
+            "description": "Grow / Shrink",
+            "extra": {
+              "wtype": "slider",
+              "group": "mask",
+              "zone": "mods",
+              "order": 4,
+              "width": 1,
+              "tooltip": "Expand (+) or shrink (−) the region by an exact pixel disk before the run. Applied host-side."
+            }
+          }
+        },
+        "3239": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 32,
+            "step": 1,
+            "default": 8,
+            "description": "Feather",
+            "extra": {
+              "wtype": "slider",
+              "group": "mask",
+              "zone": "mods",
+              "order": 5,
+              "width": 1,
+              "tooltip": "Gaussian falloff the composite blends through — kills the pasted-on rectangle edge."
+            }
+          }
+        },
+        "3246": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "default": 0,
+            "description": "Re-threshold",
+            "extra": {
+              "wtype": "slider",
+              "group": "mask",
+              "zone": "mods",
+              "order": 6,
+              "width": 1,
+              "tooltip": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff."
+            }
+          }
+        },
+        "3250": {
+          "type": "boolean",
+          "meta": {
+            "default": false,
+            "description": "Invert",
+            "extra": {
+              "wtype": "boolean",
+              "group": "mask",
+              "zone": "mods",
+              "order": 7,
+              "width": 1,
+              "tooltip": "Work OUTSIDE the painted region instead."
+            }
+          }
+        },
+        "3257": {
+          "type": "number",
+          "meta": {
+            "min": 64,
+            "max": 16384,
+            "step": 8,
+            "default": 512,
+            "description": "Region Detail Size",
+            "extra": {
+              "wtype": "number",
+              "group": "mask",
+              "zone": "mods",
+              "order": 8,
+              "width": 1,
+              "tooltip": "Working size the region detailer scales each region toward (DetailerForEach guide_size with bbox sizing, capped by the canonical max 1024)."
+            }
+          }
+        },
+        "3264": {
+          "type": "number",
+          "meta": {
+            "min": 0.05,
+            "max": 1,
+            "step": 0.05,
+            "default": 0.5,
+            "description": "Region Denoise",
+            "extra": {
+              "wtype": "number",
+              "group": "mask",
+              "zone": "mods",
+              "order": 9,
+              "width": 1,
+              "tooltip": "How strongly the region is reworked (DetailerForEach denoise): 0.5 keeps structure, 1 fully rewrites the crop."
+            }
+          }
+        },
+        "3265": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "mask": 3199,
+            "input_mask": 3203,
+            "mask_mode": 3210,
+            "mask_detector": 3218,
+            "mask_context_pad": 3225,
+            "mask_grow": 3232,
+            "mask_feather": 3239,
+            "mask_threshold": 3246,
+            "mask_invert": 3250,
+            "mask_detail_size": 3257,
+            "mask_denoise": 3264
+          }
+        }
+      }
+    }
+  },
+  "model": "qwen-img-edit-2511",
+  "outputs": {
+    "default": "image"
+  },
+  "schema": {
+    "uid": 2616,
+    "refs": {
+      "251": {
+        "type": "const",
+        "meta": {},
+        "value": "cfgpp_ud10_ab"
+      },
+      "252": {
+        "type": "const",
+        "meta": {},
+        "value": "ddim"
+      },
+      "253": {
+        "type": "const",
+        "meta": {},
+        "value": "ddpm"
+      },
+      "254": {
+        "type": "const",
+        "meta": {},
+        "value": "deis"
+      },
+      "255": {
+        "type": "const",
+        "meta": {},
+        "value": "dpm_2"
+      },
+      "256": {
+        "type": "const",
+        "meta": {},
+        "value": "dpm_2_ancestral"
+      },
+      "257": {
+        "type": "const",
+        "meta": {},
+        "value": "dpm_adaptive"
+      },
+      "258": {
+        "type": "const",
+        "meta": {},
+        "value": "dpm_fast"
+      },
+      "259": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m"
+      },
+      "260": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m_cfg_pp"
+      },
+      "261": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m_sde"
+      },
+      "262": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m_sde_gpu"
+      },
+      "263": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m_sde_heun"
+      },
+      "264": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m_sde_heun_gpu"
+      },
+      "265": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2s_ancestral"
+      },
+      "266": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2s_ancestral_cfg_pp"
+      },
+      "267": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_3m_sde"
+      },
+      "268": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_3m_sde_gpu"
+      },
+      "269": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_sde"
+      },
+      "270": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_sde_gpu"
+      },
+      "271": {
+        "type": "const",
+        "meta": {},
+        "value": "er_sde"
+      },
+      "272": {
+        "type": "const",
+        "meta": {},
+        "value": "euler"
+      },
+      "273": {
+        "type": "const",
+        "meta": {},
+        "value": "euler_ancestral"
+      },
+      "274": {
+        "type": "const",
+        "meta": {},
+        "value": "euler_ancestral_cfg_pp"
+      },
+      "275": {
+        "type": "const",
+        "meta": {},
+        "value": "euler_cfg_pp"
+      },
+      "276": {
+        "type": "const",
+        "meta": {},
+        "value": "exp_heun_2_x0"
+      },
+      "277": {
+        "type": "const",
+        "meta": {},
+        "value": "exp_heun_2_x0_sde"
+      },
+      "278": {
+        "type": "const",
+        "meta": {},
+        "value": "gradient_estimation"
+      },
+      "279": {
+        "type": "const",
+        "meta": {},
+        "value": "gradient_estimation_cfg_pp"
+      },
+      "280": {
+        "type": "const",
+        "meta": {},
+        "value": "heun"
+      },
+      "281": {
+        "type": "const",
+        "meta": {},
+        "value": "heunpp2"
+      },
+      "282": {
+        "type": "const",
+        "meta": {},
+        "value": "ipndm"
+      },
+      "283": {
+        "type": "const",
+        "meta": {},
+        "value": "ipndm_v"
+      },
+      "284": {
+        "type": "const",
+        "meta": {},
+        "value": "lcm"
+      },
+      "285": {
+        "type": "const",
+        "meta": {},
+        "value": "lms"
+      },
+      "286": {
+        "type": "const",
+        "meta": {},
+        "value": "res_multistep"
+      },
+      "287": {
+        "type": "const",
+        "meta": {},
+        "value": "res_multistep_ancestral"
+      },
+      "288": {
+        "type": "const",
+        "meta": {},
+        "value": "res_multistep_ancestral_cfg_pp"
+      },
+      "289": {
+        "type": "const",
+        "meta": {},
+        "value": "res_multistep_cfg_pp"
+      },
+      "290": {
+        "type": "const",
+        "meta": {},
+        "value": "sa_solver"
+      },
+      "291": {
+        "type": "const",
+        "meta": {},
+        "value": "sa_solver_pece"
+      },
+      "292": {
+        "type": "const",
+        "meta": {},
+        "value": "seeds_2"
+      },
+      "293": {
+        "type": "const",
+        "meta": {},
+        "value": "seeds_3"
+      },
+      "294": {
+        "type": "const",
+        "meta": {},
+        "value": "uni_pc"
+      },
+      "295": {
+        "type": "const",
+        "meta": {},
+        "value": "uni_pc_bh2"
+      },
+      "297": {
+        "type": "const",
+        "meta": {},
+        "value": "beta"
+      },
+      "298": {
+        "type": "const",
+        "meta": {},
+        "value": "ddim_uniform"
+      },
+      "299": {
+        "type": "const",
+        "meta": {},
+        "value": "exponential"
+      },
+      "300": {
+        "type": "const",
+        "meta": {},
+        "value": "karras"
+      },
+      "301": {
+        "type": "const",
+        "meta": {},
+        "value": "kl_optimal"
+      },
+      "302": {
+        "type": "const",
+        "meta": {},
+        "value": "linear_quadratic"
+      },
+      "303": {
+        "type": "const",
+        "meta": {},
+        "value": "normal"
+      },
+      "304": {
+        "type": "const",
+        "meta": {},
+        "value": "sgm_uniform"
+      },
+      "305": {
+        "type": "const",
+        "meta": {},
+        "value": "simple"
+      },
+      "2550": {
+        "type": "string",
+        "meta": {}
+      },
+      "2554": {
+        "type": "array",
+        "meta": {
+          "default": [],
+          "description": "Input Images",
+          "extra": {
+            "order": -1,
+            "group": "input",
+            "width": 1,
+            "zone": "inputs",
+            "wtype": "image_list",
+            "max_stack": 16,
+            "serveDefault": true,
+            "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
+          }
+        },
+        "inner": 2550
+      },
+      "2558": {
+        "type": "string",
+        "meta": {
+          "role": "path",
+          "extra": {
+            "hidden": true
+          },
+          "description": "Input Image"
+        }
+      },
+      "2562": {
+        "type": "string",
+        "meta": {
+          "role": "path",
+          "extra": {
+            "hidden": true
+          },
+          "description": "Image 2"
+        }
+      },
+      "2566": {
+        "type": "string",
+        "meta": {
+          "role": "path",
+          "extra": {
+            "hidden": true
+          },
+          "description": "Image 3"
+        }
+      },
+      "2567": {
+        "type": "string",
+        "meta": {}
+      },
+      "2570": {
+        "type": "array",
+        "meta": {
+          "default": [],
+          "description": "Reference Images",
+          "extra": {
+            "hidden": true
+          }
+        },
+        "inner": 2567
+      },
+      "2574": {
+        "type": "string",
+        "meta": {
+          "role": "path",
+          "extra": {
+            "hidden": true
+          },
+          "description": "Region Mask"
+        }
+      },
+      "2577": {
+        "type": "string",
+        "meta": {
+          "description": "Prompt",
+          "extra": {
+            "order": 0,
+            "group": "prompt",
+            "columns": 2,
+            "width": 1,
+            "required": true,
+            "zone": "params",
+            "wtype": "textarea"
+          }
+        }
+      },
+      "2580": {
+        "type": "string",
+        "meta": {
+          "description": "Negative Prompt",
+          "extra": {
+            "order": 1,
+            "group": "prompt",
+            "width": 1,
+            "zone": "params",
+            "wtype": "textarea"
+          }
+        }
+      },
+      "2583": {
+        "type": "number",
+        "meta": {
+          "description": "Width",
+          "extra": {
+            "order": 0,
+            "group": "resolution",
+            "columns": 3,
+            "width": 1,
+            "zone": "params",
+            "wtype": "number",
+            "visible_when": "model=qwen-img-edit-21",
+            "tooltip": "Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value)."
+          }
+        }
+      },
+      "2586": {
+        "type": "number",
+        "meta": {
+          "description": "Height",
+          "extra": {
+            "order": 1,
+            "group": "resolution",
+            "columns": 3,
+            "width": 1,
+            "zone": "params",
+            "wtype": "number",
+            "visible_when": "model=qwen-img-edit-21",
+            "tooltip": "Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value)."
+          }
+        }
+      },
+      "2591": {
+        "type": "number",
+        "meta": {
+          "description": "Seed",
+          "step": 1,
+          "default": -1,
+          "extra": {
+            "order": 4,
+            "group": "sampling",
+            "width": 1,
+            "zone": "params"
+          }
+        }
+      },
+      "2597": {
+        "type": "number",
+        "meta": {
+          "description": "Steps",
+          "min": 1,
+          "max": 50,
+          "step": 1,
+          "extra": {
+            "order": 0,
+            "group": "sampling",
+            "columns": 2,
+            "width": 1,
+            "zone": "params",
+            "wtype": "number"
+          }
+        }
+      },
+      "2603": {
+        "type": "number",
+        "meta": {
+          "description": "Guidance Scale",
+          "min": 0.1,
+          "max": 10,
+          "step": 0.1,
+          "extra": {
+            "order": 1,
+            "group": "sampling",
+            "columns": 2,
+            "width": 1,
+            "zone": "params",
+            "tooltip": "Qwen-Image-Edit uses low CFG (flow-matching); leave unset — the model's own recipe is the default."
+          }
+        }
+      },
+      "2605": {
+        "type": "union",
+        "meta": {
+          "description": "Sampler",
+          "extra": {
+            "order": 2,
+            "group": "sampling",
+            "columns": 2,
+            "width": 1,
+            "zone": "params",
+            "wtype": "select"
+          }
+        },
+        "list": [
+          251,
+          252,
+          253,
+          254,
+          255,
+          256,
+          257,
+          258,
+          259,
+          260,
+          261,
+          262,
+          263,
+          264,
+          265,
+          266,
+          267,
+          268,
+          269,
+          270,
+          271,
+          272,
+          273,
+          274,
+          275,
+          276,
+          277,
+          278,
+          279,
+          280,
+          281,
+          282,
+          283,
+          284,
+          285,
+          286,
+          287,
+          288,
+          289,
+          290,
+          291,
+          292,
+          293,
+          294,
+          295
+        ]
+      },
+      "2607": {
+        "type": "union",
+        "meta": {
+          "description": "Scheduler",
+          "extra": {
+            "order": 3,
+            "group": "sampling",
+            "columns": 2,
+            "width": 1,
+            "zone": "params",
+            "wtype": "select"
+          }
+        },
+        "list": [
+          297,
+          298,
+          299,
+          300,
+          301,
+          302,
+          303,
+          304,
+          305
+        ]
+      },
+      "2611": {
+        "type": "boolean",
+        "meta": {
+          "description": "Use Stock Nodes",
+          "default": false,
+          "extra": {
+            "order": 1,
+            "group": "edit_tuning",
+            "width": 1,
+            "visible_when": "model=qwen-img-edit-2511",
+            "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.",
+            "zone": "params"
+          }
+        }
+      },
+      "2615": {
+        "type": "boolean",
+        "meta": {
+          "description": "Double Reference",
+          "default": false,
+          "extra": {
+            "order": 2,
+            "group": "edit_tuning",
+            "width": 1,
+            "visible_when": "model=qwen-img-edit-2511",
+            "tooltip": "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)",
+            "zone": "params"
+          }
+        }
+      },
+      "2616": {
+        "type": "object",
+        "meta": {
+          "default": {}
+        },
+        "dict": {
+          "input_images": 2554,
+          "image1": 2558,
+          "image2": 2562,
+          "image3": 2566,
+          "reference_images": 2570,
+          "input_mask": 2574,
+          "prompt": 2577,
+          "negative_prompt": 2580,
+          "width": 2583,
+          "height": 2586,
+          "seed": 2591,
+          "steps": 2597,
+          "cfg": 2603,
+          "sampler": 2605,
+          "scheduler": 2607,
+          "use_stock_nodes": 2611,
+          "double_reference": 2615
+        }
+      }
+    }
+  },
+  "service": "qwen-img-edit-2511",
+  "size": null,
+  "variants": [
+    {
+      "id": "lightning",
+      "label": "Lightning",
+      "group": "Variant",
+      "defaults": {
+        "steps": 4,
+        "cfg": 1
+      },
+      "route": "qwen-img-edit-2511-lightning4",
+      "hint": "4-step distilled lightx2v checkpoint — fast. Swaps BOTH the recipe (steps 4, cfg 1) AND the unet (the recipe↔weights law — never one without the other). Requires provisioning: the FP8 Lightning file is NOT on this box by default; without it the engine validation refuses LOUD (the honest face) — the standard weights are what ship.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "standard",
+      "label": "Standard",
+      "group": "Variant",
+      "defaults": {
+        "steps": 20,
+        "cfg": 2.5
+      },
+      "route": "qwen-img-edit-2511",
+      "hint": "20 steps, cfg 2.5 — the INT8 ConvRot merge (DEFAULT: the weights this box ships, the recipe the family defaults stamp).",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "strong_identity",
+      "label": "Strong Identity",
+      "group": "Recipe",
+      "defaults": {
+        "double_reference": true
+      },
+      "route": "",
+      "hint": "Double-reference ON — the card schema's own identity knob (encode the input twice for stronger identity preservation); this family's own default is false. Steps/CFG stay on the Variant routes (Lightning 4-step / Standard 20-step cfg 2.5) — never duplicated here. PLANE TRUTH (agent-debt F-4, 2026-09-22): the TS compose plane refuses double_reference=true LOUD — it builds the stock plain-edit graph only. Selecting this variant GUARANTEES a refusal; do not plan runs around it until the double-encode lane exists.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "upstream_solvers",
+      "label": "Upstream Solvers",
+      "group": "Recipe",
+      "defaults": {
+        "sampler": "euler",
+        "scheduler": "simple"
+      },
+      "route": "",
+      "hint": "Sampler euler + scheduler simple — this family's own DECL defaults, both members of the card's sampler/scheduler vocabularies.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "group": "Recipe",
+      "defaults": {},
+      "route": "",
+      "hint": "The family default — no extra stamps; a fresh card lands here.",
+      "engine": "comfyui",
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    }
+  ],
+  "packs": [],
+  "families": [
+    {
+      "id": "qwen-img-edit-21",
+      "label": "Qwen Image Edit 2.1"
+    },
+    {
+      "id": "qwen-img-edit-2511",
+      "label": "Qwen Image Edit 2511"
+    }
+  ]
+}

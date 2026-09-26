@@ -41,8 +41,16 @@ export interface SchemaRef {
   type?: string
   meta?: Record<string, unknown>
   value?: unknown
+  /** Ref-table ids for list/dict members (schemastery's toJSON
+   *  resolves nested schemas to their uid — probed live 2026-10-10:
+   *  {"type":"array","meta":{…},"inner":2}). */
   list?: number[]
   dict?: Record<string, number>
+  /** The array/dict INNER schema's ref id — the same uid
+   *  resolution as list/dict (declared 2026-10-10: the walker
+   *  already cast-read it for entry fields; the interface now
+   *  names what rides the wire). */
+  inner?: number
 }
 
 /** A serialized schemastery schema (toJSON's envelope): the root
