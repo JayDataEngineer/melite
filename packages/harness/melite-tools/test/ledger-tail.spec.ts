@@ -130,13 +130,62 @@ describe('ledger_tail execute — the tail', () => {
     const out = await tool.execute({}, exec) as Record<string, unknown>
     assert.deepEqual(out, { shown: 0, matched: 0, entries: [] })
   })
+
+  test('a searched roots list rides the legacy result', async () => {
+    const { request } = mockRequest(() => ({ entries: [], searched: ['/state-a', '/state-b'] }))
+    const tool = ledgerTail(request)
+    const out = await tool.execute({}, exec) as Record<string, unknown>
+    assert.deepEqual(out.searched, ['/state-a', '/state-b'])
+  })
 })
 
 describe('ledger_tail render — the human line', () => {
+  const tool = ledgerTail((async () => ({})) as EstateRequest)
+  const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+
   test('shown-of-matched rides the line (0s on sparse values)', () => {
-    const tool = ledgerTail((async () => ({})) as EstateRequest)
-    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    // THE BODIES LAW (a live 3088 commission found the counts-only
+    // render): a maker auditing a commission got "8 of 3688" and no
+    // history. The head line is unchanged (walls pin it), and the ROWS
+    // ride under it.
     assert.equal(text({ shown: 2, matched: 9 }), 'ledger_tail: 2 of 9 entries')
     assert.equal(text({}), 'ledger_tail: 0 of 0 entries')
+  })
+
+  test('the render serves the entry BODIES, not only the counts', () => {
+    const out = text({
+      shown: 2,
+      matched: 3688,
+      entries: [
+        { ts: 1_757_000_000, event: 'run.start', data: { run_id: 'run-abc', card: 'tts' } },
+        { ts: 1_757_000_060, event: 'run.finish', data: { run_id: 'run-abc', status: 'completed' } },
+      ],
+    })
+    assert.match(out, /^ledger_tail: 2 of 3688 entries/)
+    assert.match(out, /1757000000 run\.start — run_id=run-abc, card=tts/)
+    assert.match(out, /1757000060 run\.finish — run_id=run-abc, status=completed/)
+  })
+
+  test('the body rows are capped (a 500-row tail is its own context hazard) and say so', () => {
+    const many = Array.from({ length: 40 }, (_v, i) => ({
+      ts: 1_757_000_000 + i,
+      event: 'run.start',
+      data: { run_id: 'run-' + String(i) },
+    }))
+    const out = text({ shown: 40, matched: 40, entries: many })
+    const lines = out.split('\n')
+    assert.match(lines[lines.length - 1] as string, /more row\(s\) in the structured result/)
+    // 1 head + 20 rows + 1 pointer
+    assert.equal(lines.length, 22)
+  })
+
+  test('a long data value is truncated in the row, never dropped whole', () => {
+    const out = text({
+      shown: 1,
+      matched: 1,
+      entries: [{ ts: 1, event: 'x', data: { blob: 'y'.repeat(500) } }],
+    })
+    assert.match(out, /blob=yyy/)
+    assert.equal(out.includes('y'.repeat(500)), false)
   })
 })

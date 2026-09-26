@@ -93,9 +93,24 @@ export function briefFor(path: PathName, opts: { subject?: string; sourceImage?:
     )
   }
   if (opts.sourceImage !== undefined) {
+    // THE SOURCE-HONESTY LAW (a live commission's finding, 2026-09-26):
+    // a brief that says "the subject" about an image the maker cannot
+    // see invites a report that claims a subject it never observed —
+    // which is exactly what happened when a 6 KB flat-colour TEST
+    // FIXTURE was named as the subject. So: the image is the SOURCE
+    // to reproduce (that is a fact), and a fixture/bench path is
+    // labelled the stand-in it is.
+    const standIn = /(^|\/)(tests?|bench|fixtures?|data\/probe)(\/|$)/.test(opts.sourceImage)
     lines.push('')
-    lines.push('Known source material (served reference; use it as the subject):')
+    lines.push(
+      standIn
+        ? 'Known source material — a STAND-IN reference image (it lives in a test/bench tree, so it is a stand-in, not the commissioned subject):'
+        : 'Known source material — the reference image to reproduce as the deliverable:',
+    )
     lines.push(`- ${opts.sourceImage}`)
+    lines.push(
+      'Reproduce THAT image as the deliverable. If your wire surface cannot show you images, say so in your report and describe the deliverable by its structure and measurements — never by a subject you could not see.',
+    )
   }
   lines.push('')
   lines.push('Deliverables:')
@@ -140,6 +155,14 @@ Each melite_flow call mints a new run. Poll it with run_status; do not
 re-press it as a polling mechanism. Read the exact refusal. A quota wall or
 native door error is a stop condition, not a reason to silently retry.
 
+THE MEDIA NAMESPACE: the /melite-media/ and /v1/assets/ paths are
+engine-side references — they resolve for the estate, not for your
+sandbox filesystem, and listing them locally will find nothing. The SAME
+artifacts are on disk under the state root (the run's own output/<run_id>
+directory); use melite_read for a run's text sidecars and run_status for
+the served paths. Do not report a missing mount as a defect — it is the
+shape of this lane.
+
 THE FIDELITY-HONESTY LAW (a live commission's own finding): your report
 describes what you actually made. If your wire surface cannot SHOW you an
 image — no image input, no observe arm — then say so plainly and describe
@@ -178,7 +201,31 @@ export interface CommissionOptions {
   execute?: boolean
 }
 
+/** THE LANE-GAP READER (a live commission's finding, 2026-09-26):
+ *  the estate's boot decisions ride the maker's log, and a not-seated
+ *  seat on line 3 is read by nobody. The harness reads its OWN
+ *  commission's attempt logs and carries the lane's boot gaps into the
+ *  verdict, so "the agent engine was never seated" is a reported fact
+ *  of the commission instead of a line somebody has to go looking for.
+ *  Only the estate's own `[melite-estate]` lines are read — a maker's
+ *  words are never mined for gaps. */
+export function laneBootGaps(logText: string): string[] {
+  const out: string[] = []
+  for (const line of logText.split('\n')) {
+    if (!line.startsWith('[melite-estate]')) continue
+    const body = line.slice('[melite-estate]'.length).trim()
+    if (body === '') continue
+    // the boot DECISIONS (a seated seat, a not-seated seat, a refusal)
+    if (/NOT seated|refus|not mounted|not set|unavailable|disabled|skipping/i.test(body)) {
+      out.push(body)
+    }
+  }
+  return out
+}
+
 export interface CommissionResult {
+  /** the estate's boot decisions from this commission's own logs */
+  lane_gaps: string[]
   path: PathName
   slug: string
   boot_ms: number
@@ -223,8 +270,9 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
       brief_path: briefPath,
       prompt_path: promptPath,
       log_prefix: logPrefix,
+      lane_gaps: [],
       exit_code: null,
-      output_tail: '',
+    output_tail: '',
       state_root: stateRoot,
       transcript_dir: transcriptDir,
     }
@@ -262,6 +310,7 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
     brief_path: briefPath,
     prompt_path: promptPath,
     log_prefix: logPrefix,
+    lane_gaps: laneBootGaps(attemptLogText(logPrefix)),
     exit_code: result.code,
     output_tail: tail(result.output),
     state_root: stateRoot,
@@ -271,6 +320,25 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
 
 /** The attempt logs the supervisor wrote beside its out-prefix (the
  *  analyst reads them; the harness never invents a receipt). */
+/** The concatenated attempt logs of one commission (the analyst's
+ *  own read; the supervisor's death words are in the same files). */
+export function attemptLogText(logPrefix: string): string {
+  const dir = dirname(logPrefix)
+  if (!existsSync(dir)) return ''
+  const base = logPrefix.slice(dir.length + 1)
+  let out = ''
+  for (const name of readdirSync(dir)) {
+    if (!name.startsWith(base) || !name.endsWith('.log')) continue
+    try {
+      out += readFileSync(join(dir, name), 'utf8')
+    } catch {
+      // a log that cannot be read is not a gap; the supervisor's exit
+      // code carries the death
+    }
+  }
+  return out
+}
+
 export function attemptLogs(result: CommissionResult): string[] {
   const dir = dirname(result.log_prefix)
   if (!existsSync(dir)) return []

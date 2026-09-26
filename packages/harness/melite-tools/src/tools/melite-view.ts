@@ -110,7 +110,11 @@ export function imageMediaTypeForPath(filePath: string): ImageMediaType | undefi
 export interface ViewedImageValue {
   runId: string
   url: string
-  image: {
+  /** THE TEXT-ONLY OBSERVE ARM: a route that declares no image input
+   *  gets the measurements as text and NO image block (the contact
+   *  sheet was never built). Present instead of `image`. */
+  textObservation?: string
+  image?: {
     attachmentId: string
     mediaType: ImageMediaType
     bytes: number
@@ -260,11 +264,21 @@ export async function viewFilmArtifact(
     throw new Error('run "' + runId + '" has no film artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot)))
   }
   const row = picked[0]!
-  await assertImageCapableRoute(ctx, exec, runId)
   const absPath = join(found.root, 'output', row.runId, row.name)
   // THE PROBE IS TYPESCRIPT: the container is a box tree, so its facts
   // are read from bytes. No ffprobe, no host binary, no subprocess.
   const probe = await probeFile(absPath, row.name, 'film', read)
+  // THE TEXT-ONLY OBSERVE ARM: the probe facts are text, so a route
+  // that cannot take an image still gets the observation — and the
+  // contact sheet (the ONLY image-shaped part) is simply not built.
+  const capability = await routeImageCapability(ctx, exec, runId)
+  if (!capability.capable) {
+    return {
+      runId,
+      url: row.url,
+      textObservation: filmTextObservation(row.name, probe, capability.model),
+    }
+  }
   const stamps = sheetPlan(probe.duration_s)
   const work = await mkdtemp(join(tmpdir(), 'melite-view-'))
   try {
@@ -357,10 +371,27 @@ export async function viewAudioArtifact(
     throw new Error('run "' + runId + '" has no audio artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot)))
   }
   const row = picked[0]!
-  await assertImageCapableRoute(ctx, exec, runId)
   const absPath = join(found.root, 'output', row.runId, row.name)
   // THE PROBE IS TYPESCRIPT (the film's twin): bytes, not a binary.
   const probe = await probeFile(absPath, row.name, 'audio', read)
+  // THE TEXT-ONLY OBSERVE ARM (the film's twin): the audio facts are
+  // text, so a route without image input gets them — and the door
+  // never spends an ffmpeg call building a waveform nobody can see.
+  const audioCapability = await routeImageCapability(ctx, exec, runId)
+  if (!audioCapability.capable) {
+    const rows = probe.streams.map((s: FilmStreamSummary) =>
+      s.codec + (s.sample_rate !== undefined ? ' ' + String(s.sample_rate) + 'Hz' : '')
+      + (s.channels !== undefined ? ' ' + String(s.channels) + 'ch' : '')).join(' + ')
+    return {
+      runId: row.runId,
+      url: row.url,
+      textObservation: 'melite_view audio: ' + row.name
+        + (probe.duration_s !== undefined ? ', ' + String(probe.duration_s) + 's' : '')
+        + ', ' + String(probe.size_bytes) + ' bytes, streams: ' + rows
+        + '; TEXT-ONLY observation — model "' + audioCapability.model
+        + '" declares no image input, so no waveform sheet was rendered. The measurements above are complete.',
+    }
+  }
   const work = await mkdtemp(join(tmpdir(), 'melite-view-'))
   try {
     const sheet = join(work, 'waveform.png')
@@ -432,6 +463,36 @@ interface QueueSeatSeam {
   stateRoot: string
 }
 
+/** THE TEXT-ONLY OBSERVE ARM (a live commission's finding,
+ *  2026-09-26): the observation this door produces is mostly TEXT —
+ *  a container probe (duration, streams, geometry, fps, frames,
+ *  bytes) and, for a mesh, its structural summary. On a route that
+ *  declares no image input, refusing the WHOLE view threw those facts
+ *  away and left the maker with local ffprobe as its only observe
+ *  arm — the exact gap this door exists to close. So the capability is
+ *  REPORTED, and the caller serves the facts in text and names the one
+ *  thing it cannot do (the image block). `assertImageCapableRoute`
+ *  keeps the strict refusal for the callers that genuinely need pixels
+ *  (read_image's own law). */
+export async function routeImageCapability(
+  ctx: { get(name: string): unknown },
+  exec: ViewExec,
+  requestedRun: string,
+): Promise<{ capable: boolean, model: string }> {
+  const routed = exec.agent?.session?.requestHeader?.()?.config
+  const provider = routed?.provider ?? exec.agent?.options?.provider
+  const model = routed?.model ?? exec.agent?.options?.model
+  const llm = ctx.get('llm') as LlmInfoSeam | undefined
+  if (provider === undefined || model === undefined || llm === undefined) {
+    throw new Error(`cannot view run "${requestedRun}": the current model route could not be resolved`)
+  }
+  const active = await llm.resolveModelInfo(provider, model, exec.signal)
+  return {
+    capable: active.inputModalities !== undefined && active.inputModalities.includes('image'),
+    model,
+  }
+}
+
 /** Enforce the strict image-capability gate for the calling route
  * (read_image's assertImageCapableRoute, copied): the session's
  * latest routed provider/model must declare `image` input — unknown
@@ -455,35 +516,59 @@ export async function assertImageCapableRoute(
   }
 }
 
+/** THE TEXT OBSERVATION: the film's facts as text — the same numbers
+ *  the image route leads with, plus the one honest statement of what
+ *  this route cannot be given. Named, never implied. */
+function filmTextObservation(
+  name: string,
+  probe: { duration_s?: number, size_bytes: number, streams: FilmStreamSummary[] },
+  model: string,
+): string {
+  const streams = probe.streams.map((s) =>
+    s.codec + (s.width !== undefined && s.height !== undefined ? ' ' + String(s.width) + 'x' + String(s.height) : '')
+    + (s.fps !== undefined ? ' @' + s.fps : '') + (s.frames !== undefined ? ' ' + String(s.frames) + 'f' : '')).join(' + ')
+  return 'melite_view film: ' + name
+    + (probe.duration_s !== undefined ? ', ' + String(probe.duration_s) + 's' : '')
+    + ', ' + String(probe.size_bytes) + ' bytes, streams: ' + streams
+    + '; TEXT-ONLY observation — model "' + model + '" declares no image input, so the contact sheet was neither built nor attached. The measurements above are complete; the pictures are what this route cannot have.'
+}
+
 /** The render: one text summary + the image block (read_image's
  * imageReadContent pairing, run-scoped). A film value's text leads
  * with the probe verdict (duration, streams, frame count) — the
  * image block IS the contact sheet. */
 function viewedContent(value: ViewedImageValue): ContentBlock[] {
+  // the text-only arm: no image block is possible, and the value says
+  // which facts it carries
+  if (value.textObservation !== undefined) {
+    return [{ type: 'text', text: value.textObservation }]
+  }
   if (value.film !== undefined) {
     const f = value.film
     const streams = f.streams.map((s) =>
       s.codec + (s.width !== undefined && s.height !== undefined ? ' ' + String(s.width) + 'x' + String(s.height) : '')
       + (s.fps !== undefined ? ' @' + s.fps : '') + (s.frames !== undefined ? ' ' + String(s.frames) + 'f' : '')).join(' + ')
+    const image = value.image!
     return [
       { type: 'text', text: 'melite_view film: ' + value.url + ' (' + f.file
         + (f.duration_s !== undefined ? ', ' + String(f.duration_s) + 's' : '')
         + (f.size_bytes !== undefined ? ', ' + String(f.size_bytes) + ' bytes' : '')
         + ', streams: ' + streams + '; contact sheet of ' + String(f.sheet_of)
-        + ': ' + value.image.mediaType + ' ' + String(value.image.width) + 'x' + String(value.image.height) + ')' },
-      { type: 'image', attachment: imageRefFromValue(value.image) },
+        + ': ' + image.mediaType + ' ' + String(image.width) + 'x' + String(image.height) + ')' },
+      { type: 'image', attachment: imageRefFromValue(image) },
     ]
   }
   if (value.audio !== undefined) {
     const a = value.audio
+    const audio = value.image!
     const streams = a.streams.map((s) =>
       s.codec + (s.sample_rate !== undefined ? ' ' + String(s.sample_rate) + 'Hz' : '') + (s.channels !== undefined ? ' ' + String(s.channels) + 'ch' : '')).join(' + ')
     return [
       { type: 'text', text: 'melite_view audio: ' + value.url + ' (' + a.file
         + (a.duration_s !== undefined ? ', ' + String(a.duration_s) + 's' : '')
         + ', ' + String(a.size_bytes) + ' bytes'
-        + ', streams: ' + streams + '; waveform sheet: ' + value.image.mediaType + ' ' + String(value.image.width) + 'x' + String(value.image.height) + ')' },
-      { type: 'image', attachment: imageRefFromValue(value.image) },
+        + ', streams: ' + streams + '; waveform sheet: ' + audio.mediaType + ' ' + String(audio.width) + 'x' + String(audio.height) + ')' },
+      { type: 'image', attachment: imageRefFromValue(audio) },
     ]
   }
   if (value.mesh !== undefined) {
@@ -491,12 +576,13 @@ function viewedContent(value: ViewedImageValue): ContentBlock[] {
     return [
       { type: 'text', text: 'melite_view mesh: ' + value.url + ' (' + meshVoice(m)
         + (m.poster === undefined ? '; NO raster poster beside the mesh — this is the structural read, not a picture' : '; poster: ' + m.poster) + ')' },
-      { type: 'image', attachment: imageRefFromValue(value.image) },
+      { type: 'image', attachment: imageRefFromValue(value.image!) },
     ]
   }
+  const still = value.image!
   return [
-    { type: 'text', text: 'melite_view: ' + value.url + ' (' + value.image.mediaType + ', ' + String(value.image.width) + 'x' + String(value.image.height) + ', ' + String(value.image.bytes) + ' bytes)' },
-    { type: 'image', attachment: imageRefFromValue(value.image) },
+    { type: 'text', text: 'melite_view: ' + value.url + ' (' + still.mediaType + ', ' + String(still.width) + 'x' + String(still.height) + ', ' + String(still.bytes) + ' bytes)' },
+    { type: 'image', attachment: imageRefFromValue(still) },
   ]
 }
 
@@ -581,9 +667,16 @@ export async function viewModelArtifact(
   if (bytes.byteLength > byteCap) {
     throw new Error('cannot view "' + poster.name + '": the file exceeds the ' + String(byteCap) + '-byte image cap; downscale and retry')
   }
-  const mediaType = sniffImageMediaType(bytes) ?? imageMediaTypeForPath(poster.name)
+  // the sibling's name is minted by this door (`<stem>_poster.png`), so
+  // the extension is never in doubt — but the BYTES are. A mesh lane
+  // that wrote non-image bytes under that name is refused loudly: the
+  // door states no media type it did not read (2026-09-26).
+  const mediaType = sniffImageMediaType(bytes)
   if (mediaType === undefined) {
-    throw new Error('cannot view the mesh poster "' + poster.name + '": the file content is not a supported image format (PNG/JPEG/WebP/GIF)')
+    throw new Error(
+      'cannot view the mesh poster "' + poster.name + '": the bytes are not an image '
+      + '(the mesh lane wrote non-image content under the poster name this door mints)',
+    )
   }
   const ref = await attachments.saveImage({ data: bytes, mediaType, name: basename(poster.name) })
   return {
@@ -766,7 +859,27 @@ export function meliteView(ctx: Context): ToolDefinition {
       if (declared !== undefined && !attachments.imageLimits.mediaTypes.includes(declared)) {
         throw new Error('cannot view "' + row.name + '": ' + declared + ' images are not accepted by this deployment')
       }
-      await assertImageCapableRoute(ctx, exec, runId)
+      // THE TEXT-ONLY OBSERVE ARM (the still's twin): a route that
+      // cannot take an image still gets the file's facts — its sniffed
+      // media type and byte count, which are read from the bytes, not
+      // from a store round-trip. The pixels are what this route cannot
+      // have, and the observation says so rather than refusing.
+      const stillCapability = await routeImageCapability(ctx, exec, runId)
+      if (!stillCapability.capable) {
+        const data = await readFile(absPath, { signal: exec.signal })
+        const sniffed = sniffImageMediaType(data)
+        return {
+          runId,
+          url: row.url,
+          textObservation: 'melite_view: ' + row.name + ' (' + String(data.byteLength) + ' bytes, '
+            + (sniffed ?? declared ?? 'format not sniffed')
+            + (declared !== undefined && sniffed !== undefined && declared !== sniffed
+              ? '; the extension declares ' + declared + ' and the BYTES say ' + sniffed + ' — the bytes win'
+              : '')
+            + '; TEXT-ONLY observation — model "' + stillCapability.model
+            + '" declares no image input, so the file was not attached. The facts above are complete; the picture is what this route cannot have.',
+        }
+      }
       const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes)
       const data = await readFile(absPath, { signal: exec.signal })
       if (data.byteLength > byteCap) {

@@ -20,6 +20,7 @@
  *   human reads before spending a maker).
  */
 import { describe, it, expect } from 'vitest'
+import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
@@ -28,6 +29,7 @@ import {
   attemptLogs,
   briefFor,
   commission,
+  laneBootGaps,
   launchPromptFor,
   SUPERVISOR,
 } from './commission.ts'
@@ -146,6 +148,20 @@ describe('the commissioner — the brief law (a human task, not a checklist)', (
     expect(brief).toMatch(/not a preview image or a turntable sheet/)
   })
 
+  it('THE SOURCE-HONESTY LAW: a test/bench path is labelled a STAND-IN, and a real one is named as the reference to reproduce', () => {
+    const standIn = briefFor('3d', { sourceImage: '/repo/tests/integration/assets/source.png' })
+    assert.match(standIn, /STAND-IN reference image/)
+    assert.match(standIn, /it is a stand-in, not the commissioned subject/)
+    const real = briefFor('3d', { sourceImage: '/repo/data/runs/output/run-8b70c0cf2c0f-c6f41782/gen_00001_.png' })
+    assert.match(real, /the reference image to reproduce as the deliverable/)
+    assert.equal(real.includes('STAND-IN'), false)
+    // BOTH arms demand the honest report when the maker cannot see it
+    for (const brief of [standIn, real]) {
+      assert.match(brief, /cannot show you images/)
+      assert.match(brief, /never by a subject you could not see/)
+    }
+  })
+
   it('names a known source artifact only when the caller has one', () => {
     expect(briefFor('3d')).not.toMatch(/Known source material/)
     const withSource = briefFor('3d', { sourceImage: '/v1/assets/runs/run-x/img.png' })
@@ -178,6 +194,12 @@ describe('the commissioner — the launch prompt (the laws ride here, not the br
   it('names the transcript with the collision-law slug and the finish-time stamp', () => {
     expect(prompt).toMatch(/transcript-lane-harness-<YYYYMMDD-HHMM>\.md/)
     expect(prompt).toMatch(/the time you FINISH/)
+  })
+
+  it('names the media namespace truth (the maker spent a commission reasoning on a mount that is not missing)', () => {
+    expect(prompt).toMatch(/THE MEDIA NAMESPACE/)
+    expect(prompt).toMatch(/resolve for the estate, not for your\s*\n?sandbox filesystem/)
+    expect(prompt).toMatch(/Do not report a missing\s*\n?mount as a defect/)
   })
 
   it('demands the FIDELITY-HONESTY law (a live commission found the alternative)', () => {
@@ -241,6 +263,28 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     const token = join(dirname(launched.logPrefix as string), 'attempt-lane-quota-resume.token.md')
     expect(existsSync(token)).toBe(true)
   }, 120_000)
+
+  it('THE LANE-GAP READER: a not-seated seat is a REPORTED fact of the commission, not a line 3 nobody reads', () => {
+    const log = [
+      '[melite-estate] agent engine: MELITE_AGENT_ROUTE "provider/model" not set — engine \'agent\' NOT seated; agent stages refuse at the door',
+      '[melite-estate] comfyui host ready',
+      '[melite-estate] media root /melite-media is not mounted in this sandbox',
+      'dsh: the maker said something about refusals in its own voice',
+    ].join('\n')
+    const gaps = laneBootGaps(log)
+    // the estate's own boot decisions, in their words
+    assert.equal(gaps.length, 2)
+    assert.match(gaps[0] as string, /NOT seated/)
+    assert.match(gaps[1] as string, /not mounted/)
+    // never a maker's line
+    assert.equal(gaps.join(' ').includes('in its own voice'), false)
+  })
+
+  it('a clean boot log reports no gaps (never a manufactured one)', () => {
+    assert.deepEqual(laneBootGaps('[melite-estate] all seats seated\n[melite-estate] engine ready\n'), [])
+    assert.deepEqual(laneBootGaps(''), [])
+    assert.deepEqual(laneBootGaps('nothing from the estate here'), [])
+  })
 
   it('records the attempt logs the supervisor wrote beside its out-prefix', async () => {
     const stub = stubMaker({ transcript: true, say: 'attempt 1: brief read, transcript written' })

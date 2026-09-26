@@ -91,12 +91,52 @@ export function ledgerTail(request: EstateRequest): ToolDefinition {
           error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
       },
+      // THE BODIES LAW (a live 3088 commission's finding, 2026-09-26):
+      // this render printed only COUNTS — "8 of 3688 entries" — so a
+      // maker auditing a commission's history got a number and no
+      // history, and fell back to run_status/melite_read to
+      // reconstruct what the ledger already held. The rows ride here
+      // now, one compact line each, byte-capped (an unbounded tail is
+      // its own context hazard), with the full rows still in the
+      // structured result for a caller that wants them whole.
       render: (_args, value) => {
-        const v = value as { shown?: number; matched?: number }
-        return [{
-          type: 'text',
-          text: 'ledger_tail: ' + String(v.shown ?? 0) + ' of ' + String(v.matched ?? 0) + ' entries',
-        }]
+        const v = value as { shown?: number; matched?: number; entries?: Record<string, JsonValue>[] }
+        const lines: string[] = [
+          'ledger_tail: ' + String(v.shown ?? 0) + ' of ' + String(v.matched ?? 0) + ' entries',
+        ]
+        const rows = Array.isArray(v.entries) ? v.entries : []
+        const ROWS_SHOWN = 20
+        const CHAR_CAP = 6000
+        let used = lines[0]!.length
+        for (const row of rows.slice(0, ROWS_SHOWN)) {
+          const ts = typeof row['ts'] === 'string' || typeof row['ts'] === 'number' ? String(row['ts']) : '?'
+          const event = typeof row['event'] === 'string' ? row['event'] : '(no event)'
+          const data = row['data']
+          let detail = ''
+          if (data !== null && typeof data === 'object' && !Array.isArray(data)) {
+            const parts: string[] = []
+            for (const [k, val] of Object.entries(data as Record<string, JsonValue>).slice(0, 6)) {
+              if (val === null || val === undefined) continue
+              const text = typeof val === 'object' ? JSON.stringify(val) : String(val)
+              parts.push(k + '=' + (text.length > 60 ? text.slice(0, 57) + '…' : text))
+            }
+            detail = parts.length > 0 ? ' — ' + parts.join(', ') : ''
+          } else if (data !== undefined) {
+            const text = typeof data === 'string' ? data : JSON.stringify(data)
+            detail = ' — ' + (text.length > 80 ? text.slice(0, 77) + '…' : text)
+          }
+          const line = ts + ' ' + event + detail
+          if (used + line.length + 1 > CHAR_CAP) {
+            lines.push('… row cap reached (the full rows ride the structured result)')
+            break
+          }
+          used += line.length + 1
+          lines.push(line)
+        }
+        if (rows.length > ROWS_SHOWN) {
+          lines.push('… ' + String(rows.length - ROWS_SHOWN) + ' more row(s) in the structured result')
+        }
+        return [{ type: 'text', text: lines.join('\n') }]
       },
     },
     async execute(args, exec): Promise<LedgerTailResult> {

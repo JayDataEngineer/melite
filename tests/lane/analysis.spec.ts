@@ -21,6 +21,7 @@
  *   never claimed as this commission's.
  */
 import { describe, it, expect } from 'vitest'
+import { execFileSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, statSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname, resolve } from 'node:path'
@@ -562,4 +563,26 @@ describe('the analyst — the report', () => {
     expect(text).toMatch(/transcript: NONE/)
     expect(text).toMatch(/run-film\/film\.mp4/)
   })
+})
+
+describe('the harness modules load under the DRIVER\'S OWN loader', () => {
+  // A FALSE GREEN, caught the hard way: a prompt paragraph went into
+  // the commissioner's template literal with raw backticks. Vitest's
+  // transform accepted the file (the walls were green) while Node's
+  // `--experimental-strip-types` loader — the loader the pnpm scripts
+  // actually run — refused it, so the DRIVER could not start. Two
+  // parsers, one source: the wall loads every lane module through the
+  // driver's own loader, so they cannot drift apart again.
+  const node = process.execPath
+  for (const mod of ['analysis.ts', 'commission.ts', 'run.ts']) {
+    it(`node strip-types parses ${mod} (the driver's own loader)`, () => {
+      const target = new URL(`./${mod}`, import.meta.url).pathname
+      // --check is SYNTAX ONLY under the real loader: importing a lane
+      // module would EXECUTE it (run.ts is a CLI: importing it boots
+      // an analysis and exits), so the wall checks, never runs.
+      execFileSync(node, ['--experimental-strip-types', '--check', target], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+    }, 60_000)
+  }
 })

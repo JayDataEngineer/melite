@@ -120,6 +120,7 @@ function writeVerdict(report: LaneReport, commissions: CommissionResult[]): void
           prompt: c.prompt_path,
           logs: c.log_prefix,
         })),
+        lane_gaps: commissions.flatMap((c) => c.lane_gaps.map((g) => `${c.path}: ${g}`)),
         report,
       },
       null,
@@ -153,6 +154,11 @@ function analyse(commissions: CommissionResult[], sinceMs: number): number {
     blocked: [],
   }
   console.log(renderReport(report))
+  const gaps = commissions.flatMap((c) => c.lane_gaps)
+  if (gaps.length > 0) {
+    console.log('\nlane boot gaps this commission (the estate\'s own decisions):')
+    for (const gap of gaps) console.log(`  ! ${gap}`)
+  }
   console.log(`\nwindow: runs newer than ${new Date(sinceMs).toISOString()} (${receipts.length} run dir(s) in the tree)`)
   writeVerdict(report, commissions)
   console.log(`\nverdict receipt: ${VERDICT_PATH}`)
