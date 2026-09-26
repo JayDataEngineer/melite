@@ -3,7 +3,7 @@ import { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import "@deepseek-ai/dsh-attachment";
 import "@deepseek-ai/dsh-llm";
 import "@melite/estate-call";
-import "@deepseek-ai/dsh-util-values";
+import { JsonValue } from "@deepseek-ai/dsh-util-values";
 //#region ../../../node_modules/.pnpm/@deepseek-ai+cosmokit@1.8.3/node_modules/@deepseek-ai/cosmokit/lib/types/misc.d.ts
 /** String/symbol keyed dictionary type. */
 type Dict<T = any, K extends string | symbol = string> = { [key in K]: T; };
@@ -1172,6 +1172,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'manage/refused': {
       readonly action?: string;
       readonly status?: number;
+      readonly code?: string;
       readonly data?: unknown;
     };
   }
@@ -1189,6 +1190,27 @@ declare function meliteLoad(request: EstateRequest, opts?: {
  * root owner, `llm` — the route gate; all optional probes, the
  * tool-fs inject law). */
 declare function meliteView(ctx: Context): ToolDefinition;
+//#endregion
+//#region src/tools/melite-read.d.ts
+interface QueueSeatSeam {
+  stateRoot: string;
+}
+type ReadResult = {
+  runId: string;
+  path?: string;
+  bytes?: number;
+  text?: string;
+  truncated?: boolean;
+  files?: string;
+  error?: string;
+} & Record<string, JsonValue>;
+/** Read one text artifact of one run. With no `path`, LIST the run's
+ *  text rows (the door's discovery arm — a maker needs to know what it
+ *  can read before naming one). */
+declare function readRunText(seat: QueueSeatSeam, runId: string, path: string): Promise<ReadResult>;
+declare function meliteRead(ctx: {
+  get(name: string): unknown;
+}): ToolDefinition;
 //#endregion
 //#region src/tools/skill-index.d.ts
 declare function skillIndex(request: EstateRequest): ToolDefinition;
@@ -1241,11 +1263,11 @@ declare const EAGER_TOOL_NAMES: readonly ["melite_discover", "melite_load", "mel
  * twins carry the melite_ prefix (operator 2026-10-08: they are OUR
  * catalog's doors, not DSH core's skill machinery — the old
  * unprefixed names invited exactly that conflation). */
-declare const DEFERRED_TOOL_NAMES: readonly ["melite_view", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
+declare const DEFERRED_TOOL_NAMES: readonly ["melite_view", "melite_read", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
 /** BASE tool names — both interfaces (discovery, compose, view,
  * management, audit). melite_view is the observe arm (viewing an
  * artifact is not a run press — the interface law holds). */
-declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
+declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail"];
 /** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */
 declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
 /** AD HOC names (MELITE_ADHOC) — never in a base toolset.
@@ -1253,8 +1275,8 @@ declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
  *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
 declare const ADHOC_TOOL_NAMES: readonly [];
 /** Every tool name this plugin can own (registration log + smoke filter). */
-declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail", "melite_flow", "run_status"];
+declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_index", "melite_skill_read", "ledger_tail", "melite_flow", "run_status"];
 /** Register the Melite tools against the live estate gateway. */
 declare function apply(ctx: Context, config?: Config): Promise<void>;
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, DEFERRED_TOOL_NAMES, EAGER_TOOL_NAMES, type EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, meliteView, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, DEFERRED_TOOL_NAMES, EAGER_TOOL_NAMES, type EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, meliteRead, meliteView, name, readRunText, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

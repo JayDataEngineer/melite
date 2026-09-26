@@ -34,6 +34,15 @@ declare function mcpToolsOf(c: CtxView, server: string): McpToolRows;
 interface CtxView {
   effect(effect: () => void, label?: string): unknown;
   llm: LlmStreamSeam;
+  registry: {
+    values(): Iterable<{
+      fibers: Iterable<{
+        uid: number | null;
+        store: unknown;
+        inertia?: Promise<void>;
+      }>;
+    }>;
+  };
   tools: {
     schemas(): Array<{
       name: string;
@@ -51,6 +60,17 @@ interface CtxView {
     }): () => void;
   };
 }
+/** THE PENDING GRACE (the 3088 brick, 2026-09-26 — live proof: a
+ * fiber stuck mid-transition held the pending gate closed for 10
+ * hours while every non-seat door served fine). "Still activating"
+ * is a BOOT-RACE answer, but the state is cheap to observe and
+ * GLOBAL: any ONE wedged fiber (a failed plugin-tree reload, a hung
+ * MCP seat handshake) would brick every seat door forever. The
+ * stamp starts when the state is first observed and clears when it
+ * lifts; past ESTATE_PENDING_GRACE_MS the state is a WEDGE, not an
+ * activation — the gate opens and the seat probe's own honest voice
+ * answers (serve, or the missing-seat 502 naming the family). */
+declare const ESTATE_PENDING_GRACE_MS = 120000;
 declare function apply(c: CtxView, config?: Config): void;
 //#endregion
-export { Config, DEFAULT_ENHANCE_PREFERENCE, apply, inject, mcpToolsOf, seatedMcpServers };
+export { Config, DEFAULT_ENHANCE_PREFERENCE, ESTATE_PENDING_GRACE_MS, apply, inject, mcpToolsOf, seatedMcpServers };

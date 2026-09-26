@@ -42,6 +42,7 @@ function boot(seats: Record<string, unknown> = {}): Route[] {
       return () => {}
     },
     llm: {},
+    registry: { values: () => [] },
     tools: { schemas: () => [] },
     webServer: {
       port: 1,
@@ -273,5 +274,14 @@ describe('estate lane error classes', () => {
     const { status, text } = await post(routes, '/v1/flows/validate', { id: 'x', stages: [] })
     assert.equal(status, 502)
     assert.ok(text.includes('no seat on this lane serves'), text)
+  })
+
+  test('named refusals with null or array details still answer the protocol voice', async () => {
+    for (const details of [null, []]) {
+      const routes = boot({ runs: { status: () => Promise.reject(new RemoteError('runs/unknown-run', 'unknown', details as never)) } })
+      const { status, text } = await get(routes, '/v1/flows/status/r')
+      assert.equal(status, 404)
+      assert.match(text, /runs\/unknown-run/)
+    }
   })
 })

@@ -21,6 +21,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
+import { normalizeJsonArrayParams } from '@melite/estate-call/cardTool'
 import type { EstateRequest } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
@@ -426,16 +427,14 @@ async function observeAndAttribute(
             typeof s === 'object' && s !== null) : []
       const st = stages.find((s) => s['id'] === stageId)
         ?? (stages.length === 1 ? stages[0] : undefined)
+      const toMediaUrl = (value: string): string => {
+        if (value === '') return ''
+        if (/^([a-z][a-z0-9+.-]*:|\/)/i.test(value)) return value
+        const relative = value.startsWith(`${runId}/`) ? value.slice(runId.length + 1) : value
+        return `/melite-media/runs/${encodeURIComponent(runId)}/${relative.split('/').map(encodeURIComponent).join('/')}`
+      }
       const rawUrl = st !== undefined && typeof st['url'] === 'string' && st['url'] !== '' ? st['url'] as string : ''
-      const url = rawUrl === '' ? ''
-        : /^([a-z][a-z0-9+.-]*:|\/)/i.test(rawUrl) ? rawUrl : `/melite-media/runs/${runId}/${rawUrl}`
-      // THE INLINE ARTIFACT RECEIPT (§33 gap-5, 2026-09-24): the
-      // terminal doc already carries artifacts[] (run_status's own
-      // door shape) — harvest the paths so the flow's return
-      // self-receipts. A maker that must burn a run_status call
-      // just to learn WHAT was minted (032/033 both did) reads it
-      // off the pass row instead. Paths ride AS SERVED (the wire
-      // spelling); canonicalization stays run_status's text law.
+      const url = toMediaUrl(rawUrl)
       const arts: string[] = []
       const rawArts = doc['artifacts']
       if (Array.isArray(rawArts)) {
@@ -445,9 +444,30 @@ async function observeAndAttribute(
           if (p !== '') arts.push(p)
         }
       }
+      const names: string[] = []
+      const gallery = st !== undefined && Array.isArray(st['gallery'])
+        ? (st['gallery'] as unknown[]).flatMap((entry): string[] => {
+            if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) return []
+            const name = (entry as { name?: unknown }).name
+            return typeof name === 'string' && name !== '' ? [name] : []
+          })
+        : []
+      for (const name of [...gallery, ...arts]) {
+        if (!names.includes(name)) names.push(name)
+      }
       const result: Record<string, unknown> = { run_id: runId }
       if (url !== '') result['url'] = url
-      if (arts.length > 0) result['artifacts'] = arts
+      const artifacts: Record<string, string> = {}
+      const assetUrls: string[] = []
+      for (const name of names) {
+        const mediaUrl = toMediaUrl(name)
+        if (assetUrls.includes(mediaUrl)) continue
+        artifacts[name] = mediaUrl
+        assetUrls.push(mediaUrl)
+      }
+      if (url !== '' && !assetUrls.includes(url)) assetUrls.unshift(url)
+      if (Object.keys(artifacts).length > 0) result['artifacts'] = artifacts
+      if (assetUrls.length > 0) result['assetUrls'] = assetUrls
       const terminal = status === 'completed' ? 'done' : status
       try {
         await request( 'PATCH', `/v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`,
@@ -493,6 +513,10 @@ async function runSingle(
   // is {} anyway, so no fallback exists to cover (2026-09-12).
   const bag: Record<string, unknown> = { ...a.params }
   if (typeof a.prompt === 'string' && a.prompt !== '') bag["prompt"] = a.prompt
+  const defs = await loadCardDefs()
+  const resolved = resolveSpecKey(card, defs, boardedMap(defs))
+  const cardDef = resolved === null ? undefined : defs.get(resolved.card)
+  const normalizedBag = normalizeJsonArrayParams(bag, cardDef?.jsonArrayParams)
   // CARD BIRTH LAW (2026-09-13, the hour-6 form regression): a card
   // tool's draft is born with THE CARD ID AS ITS INTENT and one
   // stage. The bench normalization strips `card` from the stage row
@@ -514,14 +538,18 @@ async function runSingle(
         id: 's_0',
         card,
         engine: 'comfyui',
-        params: bag,
+        params: normalizedBag,
       }],
     }, signal)
   } catch (e) {
     return { mode: 'card', target: card, error: e instanceof Error ? e.message : String(e) }
   }
-  const started = await startRun(request, { ...bag, model, test: wireBool(a.test), draft_id: draftId }, signal)
-  if (typeof started["error"] === 'string') return { mode: 'card', target: card, ...started }
+  const started = await startRun(request, { ...normalizedBag, model, test: wireBool(a.test), draft_id: draftId }, signal)
+  if (typeof started["error"] === "string") return { mode: 'card', target: card, ...started }
+  const runId = started['run_id']
+  if (typeof runId === 'string' && runId !== '') {
+    void observeAndAttribute(request, draftId, 's_0', runId, new AbortController().signal).catch(String)
+  }
   return { mode: 'card', target: card, model, draft_id: draftId, ...started }
 }
 
@@ -839,7 +867,7 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       // naming the seat (card params ride INSIDE params).
       const KNOWN_FLOW_ARGS = ['bench', 'card', 'model', 'flow', 'stages', 'connects', 'prompt', 'params', 'id', 'description', 'test'] as const;
       const known = new Set<string>(KNOWN_FLOW_ARGS);
-      const stray = Object.keys((args ?? {}) as Record<string, unknown>).filter((k) => !known.has(k));
+      const stray = Object.keys(args as Record<string, unknown>).filter((k) => !known.has(k));
       if (stray.length > 0) {
         return jsonClean({ error: 'unknown melite_flow arg(s) ' + JSON.stringify(stray) + ' — card params (text, voice_name, qvoice, variant, …) ride INSIDE params, never top-level; top-level carries only bench | card (+model) | flow | stages (+connects/id/description/test)' }) as FlowResult;
       }

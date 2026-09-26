@@ -66,6 +66,26 @@ beforeAll(() => {
   mkdirSync(join(posterRun, 'img-to-mesh'), { recursive: true })
   writeFileSync(join(posterRun, 'img-to-mesh', 'trellis2_native_00009.glb'), glbBytes())
   writeFileSync(join(posterRun, 'img-to-mesh', 'trellis2_native_00009_poster.png'), PNG_BYTES)
+  // a .gltf sibling (the OTHER mesh extension the arm accepts)
+  const gltfRun = join(root, 'output', 'run-9a1b00000000-aabbccdd')
+  mkdirSync(join(gltfRun, 'img-to-mesh'), { recursive: true })
+  writeFileSync(join(gltfRun, 'img-to-mesh', 'scene_00001.gltf'), glbBytes())
+  writeFileSync(join(gltfRun, 'img-to-mesh', 'scene_00001_poster.png'), PNG_BYTES)
+  // a mesh at the run root (no sub-directory in its name)
+  const flatRun = join(root, 'output', 'run-f1a70000000-aabbccdd')
+  mkdirSync(flatRun, { recursive: true })
+  writeFileSync(join(flatRun, 'flat_00001.glb'), glbBytes())
+  writeFileSync(join(flatRun, 'flat_00001_poster.png'), PNG_BYTES)
+  // a poster that is over the attachment cap
+  const bigRun = join(root, 'output', 'run-b1600000000-aabbccdd')
+  mkdirSync(join(bigRun, 'img-to-mesh'), { recursive: true })
+  writeFileSync(join(bigRun, 'img-to-mesh', 'big_00001.glb'), glbBytes())
+  writeFileSync(join(bigRun, 'img-to-mesh', 'big_00001_poster.png'), new Uint8Array(20_000_000))
+  // a poster whose BYTES are not an image at all (the path lies)
+  const junkRun = join(root, 'output', 'run-ab000000000-aabbccdd')
+  mkdirSync(join(junkRun, 'img-to-mesh'), { recursive: true })
+  writeFileSync(join(junkRun, 'img-to-mesh', 'junk_00001.glb'), glbBytes())
+  writeFileSync(join(junkRun, 'img-to-mesh', 'junk_00001_poster.png'), new TextEncoder().encode('this is not a png'))
 })
 
 afterAll(() => {
@@ -183,6 +203,53 @@ describe('melite_view — the mesh arm (3D in the media plane)', () => {
     await assert.rejects(
       () => tool.execute({ run_id: 'run-9a1b2c3d4e5f-aabbccdd' }, visualExec as never),
       /image input|image capability|visual/i,
+    )
+    assert.equal(saved.length, 0)
+  })
+
+  test('a .gltf sibling and a mesh at the run root both reach the poster arm', async () => {
+    // the arm accepts BOTH mesh extensions and a row whose name has no
+    // directory in it (the poster sibling is then the bare stem)
+    const { ctx, saved } = fakeCtx()
+    const tool = meliteView(ctx)
+    const gltf = await tool.execute({ run_id: 'run-9a1b00000000-aabbccdd' }, visualExec as never) as ViewedImageValue
+    assert.match(gltf.url, /scene_00001\.gltf$/)
+    assert.equal(gltf.mesh!.poster, 'img-to-mesh/scene_00001_poster.png')
+    const flat = await tool.execute({ run_id: 'run-f1a70000000-aabbccdd' }, visualExec as never) as ViewedImageValue
+    assert.match(flat.url, /flat_00001\.glb$/)
+    assert.equal(flat.mesh!.poster, 'flat_00001_poster.png', 'a run-root mesh looks for a run-root poster')
+    assert.equal(saved.length, 2)
+  })
+
+  test('a named mesh that the run does not hold names what the run DOES hold', async () => {
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx)
+    await assert.rejects(
+      () => tool.execute({ run_id: 'run-9a1b2c3d4e5f-aabbccdd', artifact: 'no_such_mesh.glb' }, visualExec as never),
+      /no mesh artifact containing "no_such_mesh\.glb"/,
+    )
+  })
+
+  test('an oversize poster refuses and is never attached', async () => {
+    const { ctx, saved } = fakeCtx()
+    const tool = meliteView(ctx)
+    await assert.rejects(
+      () => tool.execute({ run_id: 'run-b1600000000-aabbccdd' }, visualExec as never),
+      /exceeds the .*-byte image cap/,
+    )
+    assert.equal(saved.length, 0, 'a refused poster is never attached')
+  })
+
+  test('a poster whose BYTES are not an image is refused, not attached under its own name', async () => {
+    // the sibling name is minted by the door (`<stem>_poster.png`), so
+    // the extension is never in doubt — the BYTES are. A mesh lane that
+    // wrote junk under that name is refused: the door states no media
+    // type it did not read (2026-09-26)
+    const { ctx, saved } = fakeCtx()
+    const tool = meliteView(ctx)
+    await assert.rejects(
+      () => tool.execute({ run_id: 'run-ab000000000-aabbccdd' }, visualExec as never),
+      /the bytes are not an image/,
     )
     assert.equal(saved.length, 0)
   })

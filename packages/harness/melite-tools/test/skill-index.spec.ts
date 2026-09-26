@@ -114,4 +114,25 @@ describe('melite_skill_index render — the vocabulary, never rows', () => {
     const out = text({ count: 2, skills: [{ id: 'card:image-gen:image-craft' }], families: [], cards: [], flows: { count: 0, ids: [] } })
     assert.equal(out.includes('image-craft'), false, 'the legacy dump never rides the render')
   })
+
+  test('card rows cover empty ids, genres, skill counts, and entrance forms', () => {
+    const out = text({
+      count: 5,
+      cards: [
+        { id: '', genre: 'image', skills: 0, entrance: 'card:empty' },
+        { id: 'zero', genre: '', skills: 0, entrance: '' },
+        { id: 'one', genre: 'audio', skills: 1, entrance: 'card:one' },
+        { id: 'many', genre: null, skills: 3, entrance: null },
+        { id: 'junk', genre: 4, skills: 'many', entrance: 8 },
+        null,
+      ],
+      flows: { count: 1, ids: [] },
+    })
+    assert.ok(out.includes('6 cards'))
+    assert.ok(out.includes('zero — no entrance doc'))
+    assert.ok(out.includes('one (audio) — entrance card:one, 1 skill'))
+    assert.ok(out.includes('many — no entrance doc'))
+    assert.ok(out.includes('junk — no entrance doc'))
+    assert.equal(out.includes('empty'), false)
+  })
 })

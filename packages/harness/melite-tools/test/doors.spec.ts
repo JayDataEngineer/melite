@@ -11,7 +11,8 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import * as os from 'node:os'
-import { apply, inject } from '../src/doors.ts'
+import { Context } from '@deepseek-ai/cordis'
+import { apply, inject, ESTATE_PENDING_GRACE_MS } from '../src/doors.ts'
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
 import { resolveRepoRoot } from '@melite/comfyui-cordis'
 import type { LlmStreamSeam } from '../src/llm-complete.ts'
@@ -87,6 +88,7 @@ function fakeHost(opts?: {
       return () => {}
     },
     llm: opts?.llm ?? fakeLlm(),
+    registry: { values: () => [] },
     tools: {
       schemas: () => opts?.schemas ?? [
         { name: 'melite_discover', description: 'discover things' },
@@ -256,6 +258,136 @@ describe('doors apply', () => {
     const h = fakeHost({ defaultModel: DEFAULT_MODEL })
     apply(h.host as never)
     assert.equal(h.routes.length, 6)
+  })
+
+  test('a staggered child-fiber composition returns typed pending until its seat is active, then preserves missing-seat 502', async () => {
+    const ctx = new Context()
+    const routes: Route[] = []
+    ctx.provide('webServer', {
+      port: 0,
+      register: (route: Route) => {
+        routes.push(route)
+        return () => {}
+      },
+    } as never)
+    ctx.provide('llm', fakeLlm() as never)
+    ctx.provide('tools', { schemas: () => [] } as never)
+    const estateRuns = ctx.plugin({
+      name: 'estate-runs',
+      inject: ['queue'],
+      apply: (child: Context) => {
+        child.provide('runs', {
+          validate: async () => ({ ok: true }),
+        })
+      },
+    })
+    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply })
+    try {
+      await door
+      await Promise.resolve()
+      const pending = await call(routes, '/v1', {
+        method: 'POST',
+        url: 'http://localhost/v1/flows/validate',
+        body: {},
+      })
+      assert.equal(pending.status, 503)
+      assert.deepEqual(pending.body, {
+        error: 'estate composition is still activating',
+        code: 'estate/pending',
+        pending: true,
+      })
+      ctx.provide('queue', {})
+      await estateRuns
+      const ready = await call(routes, '/v1', {
+        method: 'POST',
+        url: 'http://localhost/v1/flows/validate',
+        body: {},
+      })
+      assert.equal(ready.status, 200)
+      const missing = await call(routes, '/v1', {
+        method: 'POST',
+        url: 'http://localhost/v1/manage',
+        body: {},
+      })
+      assert.equal(missing.status, 502)
+      assert.match(String((missing.body as { error: string }).error), /no seat on this lane serves/)
+    } finally {
+      await estateRuns.dispose()
+      await door.dispose()
+    }
+  })
+
+  test('THE PENDING GRACE (the 3088 brick, 2026-09-26): a fiber WEDGED mid-transition past the grace no longer bricks seat doors — the seat probe\'s own voice answers', async () => {
+    // The staggered wall above pins the BOOT RACE (pending until the
+    // parent provides the dependency). This wall pins the OTHER side
+    // of the same gate: a fiber that NEVER settles — the exact shape
+    // a failed plugin-tree reload or a hung MCP seat handshake
+    // leaves on a live host (live proof: 10 hours of
+    // "still activating" on 3088 while every non-seat door served
+    // fine). "Still activating" is honest for seconds; past the
+    // grace it is a WEDGE, and the honest answer is the seat
+    // probe's own voice, never a permanent 503.
+    const ctx = new Context()
+    const routes: Route[] = []
+    ctx.provide('webServer', {
+      port: 0,
+      register: (route: Route) => {
+        routes.push(route)
+        return () => {}
+      },
+    } as never)
+    ctx.provide('llm', fakeLlm() as never)
+    ctx.provide('tools', { schemas: () => [] } as never)
+    const wedged = ctx.plugin({
+      name: 'estate-runs',
+      inject: ['queue'],
+      apply: (child: Context) => {
+        child.provide('runs', {
+          validate: async () => ({ ok: true }),
+        })
+      },
+    })
+    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply })
+    try {
+      await door
+      await Promise.resolve()
+      // inside the grace: the typed pending answer, verbatim
+      const inside = await call(routes, '/v1', {
+        method: 'POST',
+        url: 'http://localhost/v1/flows/validate',
+        body: {},
+      })
+      assert.equal(inside.status, 503)
+      assert.deepEqual(inside.body, {
+        error: 'estate composition is still activating',
+        code: 'estate/pending',
+        pending: true,
+      })
+      // past the grace (the 'queue' dependency NEVER lands — the
+      // wedge): the gate opens and the seat probe answers instead
+      const realNow = Date.now
+      try {
+        Date.now = (): number => realNow() + ESTATE_PENDING_GRACE_MS + 1_000
+        const after = await call(routes, '/v1', {
+          method: 'POST',
+          url: 'http://localhost/v1/flows/validate',
+          body: {},
+        })
+        assert.equal(after.status, 502)
+        assert.match(String((after.body as { error: string }).error), /no seat on this lane serves/)
+      } finally {
+        Date.now = realNow
+      }
+      // (The stamp's RESET path — cleared when the state lifts, so a
+      // later boot race gets a fresh window — is a two-line
+      // assignment on the idle observation; it cannot be pinned in
+      // this fixture because the wedge never lifts. The two arms
+      // above are the law: pending inside the grace, the seat's own
+      // voice past it.)
+    } finally {
+      await wedged.dispose()
+      await door.dispose()
+    }
   })
 })
 
@@ -750,7 +882,6 @@ describe('uploads rail', () => {
     assert.equal(ok1.status, 200)
     assert.deepEqual((ok1.body as { path: string }).path, 'data/input/' + TAG + 'donor.glb')
     assert.deepEqual(await fs.readFile(file), bytes)
-    // the browser's octet-stream, PAIRED with the .glb name
     const ok2 = await call(h.routes, '/v1/uploads', {
       method: 'POST',
       url: '/',
@@ -758,6 +889,13 @@ describe('uploads rail', () => {
     })
     assert.equal(ok2.status, 200)
     created.push(path.join(dir, TAG + 'donor2.glb'))
+    const ok3 = await call(h.routes, '/v1/uploads', {
+      method: 'POST',
+      url: '/',
+      body: { filename: TAG + 'donor3.gltf', data: 'data:model/gltf+json;base64,' + Buffer.from('{"asset":{}}').toString('base64') },
+    })
+    assert.equal(ok3.status, 200)
+    created.push(path.join(dir, TAG + 'donor3.gltf'))
     // octet-stream WITHOUT the glb name stays refused — the whitelist
     // never opens to every binary
     const bad = await call(h.routes, '/v1/uploads', {
@@ -766,7 +904,7 @@ describe('uploads rail', () => {
       body: { filename: TAG + 'x.png', data: 'data:application/octet-stream;base64,' + bytes.toString('base64') },
     })
     assert.equal(bad.status, 400)
-    assert.ok(String((bad.body as { error: string }).error).includes('only png / jpeg / webp / glb'))
+    assert.ok(String((bad.body as { error: string }).error).includes('only png / jpeg / webp / glb / gltf'))
   })
 
   test('a symlinked escape refuses instead of writing outside', async () => {
@@ -811,7 +949,7 @@ describe('uploads rail', () => {
 })
 
 describe('input preview', () => {
-  test('serves png/jpeg/webp bytes with content types', async () => {
+  test('serves image and mesh bytes with content types', async () => {
     const h = boot({})
     const dir = await inputDir()
     const cases: Array<[string, string]> = [
@@ -819,6 +957,8 @@ describe('input preview', () => {
       [TAG + 'b.jpg', 'image/jpeg'],
       [TAG + 'c.jpeg', 'image/jpeg'],
       [TAG + 'd.bmp', 'image/webp'],
+      [TAG + 'e.glb', 'model/gltf-binary'],
+      [TAG + 'f.gltf', 'model/gltf+json'],
     ]
     for (const [file, type] of cases) {
       const full = path.join(dir, file)

@@ -236,6 +236,28 @@ describe('melite_flow card — the live allowlist', () => {
     assert.equal(startBody.draft_id, 'd9')
   })
 
+  test('normalizes card JSON arrays before the bench and start doors', async () => {
+    const seen = mockFetch([okBenchWith('d-json'), okDraftThenStart('d-json', 'r-json')])
+    const tool = meliteFlow(seen.request)
+    const calls = [{ text: 'wide lighthouse dawn', start_frame: 0, end_frame: 124 }]
+    const clips = [{ src: '/v1/assets/runs/r1/line.flac', start_frame: 124, dur_frames: 48, text: 'the line' }]
+    const out = await tool.execute({
+      card: 'h3-timeline',
+      model: 'h3',
+      params: { calls: JSON.stringify(calls), audio_clips: JSON.stringify(clips), unlisted: '[1]' },
+    }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    assert.equal(out.run_id, 'r-json')
+    const ensure = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
+    const stage = (ensure.stages as Array<{ params: Record<string, unknown> }>)[0]!
+    assert.deepEqual(stage.params.calls, calls)
+    assert.deepEqual(stage.params.audio_clips, clips)
+    assert.equal(stage.params.unlisted, '[1]')
+    const start = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    assert.deepEqual(start.calls, calls)
+    assert.deepEqual(start.audio_clips, clips)
+    assert.equal(start.unlisted, '[1]')
+  })
+
   test('a model the card arm refuses surfaces the DOOR voice (REBUILD-9)', async () => {
     // The manifest/runnability gates moved INTO the runs registry's
     // start {model:} arm (phase1Card) — the tool no longer re-derives
@@ -263,6 +285,59 @@ describe('melite_flow card — the live allowlist', () => {
     assert.ok(typeof out.error === 'string' && out.error !== '', 'expected a refusal')
     assert.ok(String(out.error).includes('no model unit for model: not-a-card'),
       String(out.error) + ' lacks the arm voice')
+  })
+  test('card mode attributes its terminal result to the bench stage', async () => {
+    let patchBody: Record<string, unknown> | undefined
+    let resolvePatch!: () => void
+    const patched = new Promise<void>((resolve) => { resolvePatch = resolve })
+    const seen = mockFetch([
+      okBenchWith('d-headless'),
+      okDraftThenStart('d-headless', 'r-headless'),
+      (u: string, body: unknown) => {
+        if (u.startsWith('/v1/flows/status/')) {
+          return { status: 200, body: {
+            status: 'completed',
+            stages: [{
+              id: 's_0',
+              url: 'h3-film/film.mp4',
+              gallery: [
+                { name: 'h3-film/film.mp4' },
+                { name: 'h3-film/mix.flac' },
+              ],
+            }],
+          } }
+        }
+        if (u.includes('/stages/s_0')) {
+          patchBody = body as Record<string, unknown>
+          resolvePatch()
+          return { status: 200, body: { delivered: true } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'h3-timeline',
+      model: 'h3',
+      params: { calls: [{ text: 'a shot', start_frame: 0, end_frame: 56 }] },
+    }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    assert.equal(out.run_id, 'r-headless')
+    await Promise.race([
+      patched,
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('headless attribution timeout')), 1500)),
+    ])
+    assert.deepEqual(patchBody?.result, {
+      run_id: 'r-headless',
+      url: '/melite-media/runs/r-headless/h3-film/film.mp4',
+      artifacts: {
+        'h3-film/film.mp4': '/melite-media/runs/r-headless/h3-film/film.mp4',
+        'h3-film/mix.flac': '/melite-media/runs/r-headless/h3-film/mix.flac',
+      },
+      assetUrls: [
+        '/melite-media/runs/r-headless/h3-film/film.mp4',
+        '/melite-media/runs/r-headless/h3-film/mix.flac',
+      ],
+    })
   })
 })
 
@@ -802,7 +877,11 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     assert.deepEqual(patches[0]!.result, { run_id: 'rb1' })
     assert.ok(!('stage' in patches[0]!), 'the stage rides the URL path, never the body')
     assert.equal(patches[1]!.runStatus, 'done')
-    assert.deepEqual(patches[1]!.result, { run_id: 'rb1', url: '/melite-media/runs/rb1/img/SaveImage_00001_.png' })
+     assert.deepEqual(patches[1]!.result, {
+       run_id: 'rb1',
+       url: '/melite-media/runs/rb1/img/SaveImage_00001_.png',
+       assetUrls: ['/melite-media/runs/rb1/img/SaveImage_00001_.png'],
+     })
   })
 
   test('a failed terminal STOPS the pass — later rows never run', async () => {
@@ -1068,6 +1147,76 @@ describe('melite_flow card — compose inside', () => {
     assert.equal(out.run_id, '')
     assert.equal(out.status, 'queued')
     assert.equal(out.draft_id, 'd9')
+  })
+
+  test('headless card attribution records every named media row', async () => {
+    let patch: Record<string, unknown> | undefined
+    let resolvePatch: (() => void) | undefined
+    const done = new Promise<void>((resolve) => { resolvePatch = resolve })
+    const seen = mockFetch([
+      ensureOk('d-observe'),
+      benchAlive,
+      startOk('rb-observe'),
+      (u: string) => {
+        if (u.startsWith('/v1/flows/status/')) return {
+          status: 200,
+          body: {
+            status: 'completed',
+            stages: [{
+              id: 's_0',
+              url: 'rb-observe/h3_t4_film_00001_.mp4',
+              gallery: [
+                { name: 'rb-observe/h3_t4_film_00001_.mp4' },
+                null,
+                [],
+                { name: '' },
+                { name: '/absolute/window.mp4' },
+                { name: 'https://cdn.test/cover.mp4' },
+                { name: 'rb-observe/alias.mp4' },
+              ],
+            }],
+            artifacts: [
+              'rb-observe/raw.mp4',
+              { path: 'rb-observe/object.mp4' },
+              { path: '' },
+              { path: 'https://cdn.test/cover.mp4' },
+              'alias.mp4',
+              42,
+            ],
+          },
+        }
+        if (u === '/v1/flows/drafts/d-observe/stages/s_0') {
+          patch = decodeJsonBody(seen.calls[seen.calls.length - 1]!.init)
+          resolvePatch?.()
+          return { status: 200, body: { rev: 2 } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    await tool.execute({ card: 'h3-timeline', model: 'h3' }, { signal: AbortSignal.timeout(2000) })
+    await Promise.race([done, new Promise((_, reject) => setTimeout(() => reject(new Error('observer timeout')), 1000))])
+    assert.equal(patch?.runStatus, 'done')
+    assert.deepEqual(patch?.result, {
+      run_id: 'rb-observe',
+      url: '/melite-media/runs/rb-observe/h3_t4_film_00001_.mp4',
+      artifacts: {
+        'rb-observe/h3_t4_film_00001_.mp4': '/melite-media/runs/rb-observe/h3_t4_film_00001_.mp4',
+        'rb-observe/alias.mp4': '/melite-media/runs/rb-observe/alias.mp4',
+        '/absolute/window.mp4': '/absolute/window.mp4',
+        'https://cdn.test/cover.mp4': 'https://cdn.test/cover.mp4',
+        'rb-observe/raw.mp4': '/melite-media/runs/rb-observe/raw.mp4',
+        'rb-observe/object.mp4': '/melite-media/runs/rb-observe/object.mp4',
+      },
+      assetUrls: [
+        '/melite-media/runs/rb-observe/h3_t4_film_00001_.mp4',
+        '/absolute/window.mp4',
+        'https://cdn.test/cover.mp4',
+        '/melite-media/runs/rb-observe/alias.mp4',
+        '/melite-media/runs/rb-observe/raw.mp4',
+        '/melite-media/runs/rb-observe/object.mp4',
+      ],
+    })
   })
 
   test('an 80+ char card id truncates the bench intent (the receipt stays readable)', async () => {

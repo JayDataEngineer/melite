@@ -3,7 +3,7 @@
 // interface law — browser default, headless via env or config, ad
 // hoc parsing (env wins, string-or-list config, trim/filter), and
 // the exact registration sets.
-import { expandEstateDoors } from '../src/expansion'
+import { clearExpansion, expandEstateDoors, installExpansion } from '../src/expansion'
 import { describe, test, afterEach } from 'vitest'
 import assert from 'node:assert/strict'
 import type { Context } from '@deepseek-ai/cordis'
@@ -57,6 +57,7 @@ function setEnv(k: string, v: string | undefined): void {
 }
 
 afterEach(() => {
+  clearExpansion()
   for (const [k, v] of Object.entries(savedEnv)) {
     if (v === undefined) delete process.env[k]
     else process.env[k] = v
@@ -85,7 +86,7 @@ describe('plugin surface', () => {
       'melite_discover', 'melite_load', 'melite_construct',
     ])
     assert.deepEqual([...DEFERRED_TOOL_NAMES], [
-      'melite_view', 'comfy_manage', 'melite_skill_index', 'melite_skill_read', 'ledger_tail',
+      'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_index', 'melite_skill_read', 'ledger_tail',
     ])
     assert.deepEqual(HEADLESS, ['melite_flow', 'run_status'])
     assert.deepEqual([...ADHOC_TOOL_NAMES], [])
@@ -209,5 +210,40 @@ describe('apply ad hoc parsing', () => {
     const f = fakeCtx()
     await apply(f.ctx as unknown as Context, { adhocTools: ['from-cfg'] })
     assert.equal(f.logs[0][4], 1)
+  })
+})
+
+describe('expansion seat', () => {
+  test('clearExpansion disposes the seat; repeated disposal and later expansion are no-ops', () => {
+    let calls = 0
+    installExpansion(() => { calls += 1 })
+    expandEstateDoors()
+    assert.equal(calls, 1)
+    clearExpansion()
+    clearExpansion()
+    expandEstateDoors()
+    assert.equal(calls, 1)
+  })
+
+  test('apply cleanup disposes deferred registrations and clears expansion', async () => {
+    const cleanups: Array<() => void> = []
+    const registered: string[] = []
+    const ctx = {
+      logger: { info: () => {}, warn: () => {} },
+      effect: (fn: () => unknown) => {
+        const cleanup = fn()
+        if (typeof cleanup === 'function') cleanups.push(cleanup as () => void)
+        return () => {}
+      },
+      tools: { register: (def: { name: string }) => { registered.push(def.name); return () => {} } },
+      get: () => undefined,
+    }
+    await apply(ctx as never, {})
+    expandEstateDoors()
+    // 3 eager + 6 deferred doors seat on the catalog touch
+    assert.equal(registered.length, 9)
+    cleanups[0]?.()
+    assert.equal(registered.length, 9)
+    cleanups[1]?.()
   })
 })

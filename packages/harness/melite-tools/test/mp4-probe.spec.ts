@@ -73,7 +73,7 @@ describe('the RIFF/WAV probe against the committed tone fixture', () => {
     const row = probeWav(tone)
     assert.equal(row.size_bytes, 8078)
     assert.equal(row.duration_s, 0.5)
-    assert.deepEqual(row.streams, [{ codec: 'pcm_s16le16', codec_type: 'audio', sample_rate: 8000, channels: 1 }])
+    assert.deepEqual(row.streams, [{ codec: 'pcm_s16le', codec_type: 'audio', sample_rate: 8000, channels: 1 }])
   })
 })
 
@@ -112,6 +112,21 @@ describe('the dispatch and every refusal', () => {
     }
     const u32 = (n: number): Uint8Array => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0, n); return b }
     const u16 = (n: number): Uint8Array => { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0, n); return b }
+  /** version(1) + flags(3) — the FULLBOX header, which is NOT a u32
+   *  (reading it as one turns version 1 into 16777216) */
+  const fullbox = (version: number): Uint8Array => new Uint8Array([version, 0, 0, 0])
+  /** byte-concat (the multi-field mvhd v1 header reads clearer than
+   *  a double spread of the same 8-byte filler) */
+  const cat = (...parts: Uint8Array[]): Uint8Array => {
+    const total = parts.reduce((n, p) => n + p.length, 0)
+    const out = new Uint8Array(total)
+    let at = 0
+    for (const p of parts) {
+      out.set(p, at)
+      at += p.length
+    }
+    return out
+  }
     // tkhd v0: version/flags, created, modified, track_id, reserved,
     // duration, reserved(8), layer(2), altgroup(2), volume(2),
     // reserved(2), matrix(36), width(4 16.16), height(4 16.16)
@@ -175,6 +190,9 @@ describe('the dispatch and every refusal', () => {
     }
     const u32 = (n: number): Uint8Array => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0, n); return b }
     const u16 = (n: number): Uint8Array => { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0, n); return b }
+  /** version(1) + flags(3) — the FULLBOX header, which is NOT a u32
+   *  (reading it as one turns version 1 into 16777216) */
+  const fullbox = (version: number): Uint8Array => new Uint8Array([version, 0, 0, 0])
     // mp4a v0: reserved(6) data_ref(2) version(2) revision(2) vendor(4)
     // channels(2) sampleSize(2) compressionId(2) packetSize(2) rate(4, 16.16)
     const mp4a = box('mp4a', new Uint8Array([
@@ -293,21 +311,50 @@ describe('the parser guard matrix', () => {
 
   test('every PCM format tag is NAMED, never collapsed to a guess', () => {
     const cases: Array<[number, string]> = [
-      [1, 'pcm_s16le16'], [3, 'pcm_f32le16'], [6, 'pcm_alaw16'], [7, 'pcm_mulaw16'],
-      [0xFFFE, 'wav_ext16'], [42, 'format-4216'],
+      // ffprobe's own names — 16-bit PCM is pcm_s16le, NOT pcm_s16le16
+      [1, 'pcm_s16le'], [6, 'pcm_alaw'], [7, 'pcm_mulaw'],
+      [0xFFFE, 'wav_ext'], [42, 'format-42'],
     ]
     for (const [format, expected] of cases) {
       const row = probeWav(wav(format, new Uint8Array(0), data(16)))
       assert.equal(row.streams[0]!.codec, expected, 'format ' + String(format))
       assert.equal(row.streams[0]!.codec_type, 'audio')
     }
+    // the float family is named by DEPTH, like ffprobe: 32 and 64
+    for (const [bits, expected] of [[32, 'pcm_f32le'], [64, 'pcm_f64le']] as const) {
+      const fmt = concat(le16(3), le16(1), le32(8000), le32(8000 * bits), le16(bits), le16(bits))
+      const row = probeWav(concat(ascii('RIFF'), le32(4), ascii('WAVE'), ascii('fmt '), le32(fmt.length), fmt, data(16)))
+      assert.equal(row.streams[0]!.codec, expected, 'float ' + String(bits))
+    }
+  })
+
+  test('every PCM depth is NAMED by its own number, and an unheard depth says so', () => {
+    // the depth table is the door's published vocabulary: 8/16/24/32/64
+    // integer, 32/64 float, and anything else keeps its own number
+    // rather than borrowing a neighbour's name
+    const named = (format: number, bits: number): string => {
+      const fmt = concat(le16(format), le16(1), le32(8000), le32(8000), le16(1), le16(bits))
+      return probeWav(concat(ascii('RIFF'), le32(4), ascii('WAVE'), ascii('fmt '), le32(fmt.length), fmt, data(16))).streams[0]!.codec
+    }
+    assert.equal(named(1, 8), 'pcm_u8')
+    assert.equal(named(1, 16), 'pcm_s16le')
+    assert.equal(named(1, 24), 'pcm_s24le')
+    assert.equal(named(1, 32), 'pcm_s32le')
+    assert.equal(named(1, 64), 'pcm_s64le')
+    assert.equal(named(1, 12), 'pcm_s12le', 'an unheard depth keeps its own number')
+    assert.equal(named(3, 32), 'pcm_f32le')
+    assert.equal(named(3, 64), 'pcm_f64le')
+    assert.equal(named(3, 16), 'pcm_f16le', 'a half float is still a float, by its own number')
+    // a fmt that never reached the depth: the FAMILY, and no number
+    assert.equal(named(1, 0), 'pcm')
+    assert.equal(named(3, 0), 'pcm_float')
   })
 
   test('an 8-bit and a 24-bit stream keep their own bit depth in the name', () => {
     const eight = concat(le16(1), le16(1), le32(8000), le32(8000), le16(1), le16(8))
-    assert.equal(probeWav(concat(ascii('RIFF'), le32(4), ascii('WAVE'), ascii('fmt '), le32(eight.length), eight, data(8))).streams[0]!.codec, 'pcm_s16le8')
+    assert.equal(probeWav(concat(ascii('RIFF'), le32(4), ascii('WAVE'), ascii('fmt '), le32(eight.length), eight, data(8))).streams[0]!.codec, 'pcm_u8')
     const wide = concat(le16(1), le16(2), le32(48000), le32(288000), le16(6), le16(24))
-    assert.equal(probeWav(concat(ascii('RIFF'), le32(4), ascii('WAVE'), ascii('fmt '), le32(wide.length), wide, data(24))).streams[0]!.codec, 'pcm_s16le24')
+    assert.equal(probeWav(concat(ascii('RIFF'), le32(4), ascii('WAVE'), ascii('fmt '), le32(wide.length), wide, data(24))).streams[0]!.codec, 'pcm_s24le')
   })
 
   test('the chunk walk tolerates what real recorders write', () => {
@@ -350,12 +397,15 @@ describe('the MP4 guard matrix', () => {
     return b
   }
   const u16 = (n: number): Uint8Array => { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0, n); return b }
+  /** version(1) + flags(3) — the FULLBOX header, which is NOT a u32
+   *  (reading it as one turns version 1 into 16777216) */
+  const fullbox = (version: number): Uint8Array => new Uint8Array([version, 0, 0, 0])
   const ftyp = box('ftyp', new Uint8Array([109, 115, 110, 109, 0, 0, 2, 0]))
   const hdlrV = box('hdlr', new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 118, 105, 100, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
 
-  test.skip('a 64-bit (version 1) movie header is not written by the estate muxer', () => {
+  test('a 64-bit (version 1) movie header states its duration too (ffprobe read it)', () => {
     // mvhd v1: version/flags(4) created(8) modified(8) timescale(4) duration(8)
-    const mvhd = box('mvhd', new Uint8Array([1, 0, 0, 0, ...new Uint8Array(8), ...new Uint8Array(8), ...u32(1000), ...u64(5000)]))
+    const mvhd = box('mvhd', new Uint8Array([...fullbox(1), ...new Uint8Array(8), ...new Uint8Array(8), ...u32(1000), ...u64(5000)]))
     const avc1 = box('avc1', new Uint8Array([...new Uint8Array(6), 0, 1, ...new Uint8Array(16), ...u16(16), ...u16(16)]))
     const stsd = box('stsd', new Uint8Array([0, 0, 0, 0, ...u32(1), ...avc1]))
     const mdia = box('mdia', new Uint8Array([...hdlrV, ...box('minf', box('stbl', stsd))]))
@@ -447,6 +497,9 @@ describe('the container shapes the walk must survive', () => {
   }
   const u32 = (n: number): Uint8Array => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0, n); return b }
   const u16 = (n: number): Uint8Array => { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0, n); return b }
+  /** version(1) + flags(3) — the FULLBOX header, which is NOT a u32
+   *  (reading it as one turns version 1 into 16777216) */
+  const fullbox = (version: number): Uint8Array => new Uint8Array([version, 0, 0, 0])
   const le16 = (n: number): Uint8Array => { const b = new Uint8Array(2); b[0] = n & 0xff; b[1] = (n >> 8) & 0xff; return b }
   const le32 = (n: number): Uint8Array => { const b = new Uint8Array(4); for (let i = 0; i < 4; i++) b[i] = (n >> (8 * i)) & 0xff; return b }
   const ascii = (s: string): Uint8Array => new Uint8Array([...s].map((c) => c.charCodeAt(0)))
@@ -530,7 +583,7 @@ describe('the container shapes the walk must survive', () => {
 
   test('a mvhd that claims a version this parser does not read states no duration', () => {
     // version 2 does not exist; the parser refuses to guess at its layout
-    const mvhd = box('mvhd', cat(u32(2), new Uint8Array(8), u32(1000), u32(1000)))
+    const mvhd = box('mvhd', cat(fullbox(2), new Uint8Array(8), u32(1000), u32(1000)))
     const mdia = box('mdia', cat(hdlrV, box('minf', box('stbl', stsd))))
     const row = probeMp4(cat(ftyp, box('moov', cat(mvhd, box('trak', mdia)))))
     assert.equal(row.duration_s, undefined)
@@ -593,6 +646,9 @@ describe('the truncated shapes', () => {
   }
   const u32 = (n: number): Uint8Array => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0, n); return b }
   const u16 = (n: number): Uint8Array => { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0, n); return b }
+  /** version(1) + flags(3) — the FULLBOX header, which is NOT a u32
+   *  (reading it as one turns version 1 into 16777216) */
+  const fullbox = (version: number): Uint8Array => new Uint8Array([version, 0, 0, 0])
   const le16 = (n: number): Uint8Array => { const b = new Uint8Array(2); b[0] = n & 0xff; b[1] = (n >> 8) & 0xff; return b }
   const le32 = (n: number): Uint8Array => { const b = new Uint8Array(4); for (let i = 0; i < 4; i++) b[i] = (n >> (8 * i)) & 0xff; return b }
   const ascii = (s: string): Uint8Array => new Uint8Array([...s].map((c) => c.charCodeAt(0)))
@@ -627,7 +683,7 @@ describe('the truncated shapes', () => {
 
   test('a 64-bit media header reads its timescale', () => {
     // mdhd v1: created(8) modified(8) timescale(4) duration(8)
-    const mdhd = box('mdhd', cat(u32(1), new Uint8Array(8), new Uint8Array(8), u32(1000), new Uint8Array(8)))
+    const mdhd = box('mdhd', cat(fullbox(1), new Uint8Array(8), new Uint8Array(8), u32(1000), new Uint8Array(8)))
     const stts = box('stts', cat(new Uint8Array(4), u32(1), u32(3), u32(1000)))
     const mdia = box('mdia', cat(mdhd, hdlrV, box('minf', box('stbl', cat(stsd, stts)))))
     const row = probeMp4(cat(ftyp, box('moov', box('trak', mdia))))
@@ -685,13 +741,21 @@ describe('the degenerate arms (bounds laws — every guard read at least once)',
     return new Uint8Array([...head, ...chunks.flatMap((c) => [...c])])
   }
 
+  test('a fmt chunk cut before its TAG names no codec at all (the probe refuses)', () => {
+    // one byte of fmt: even the format tag never arrived, so there is
+    // no family to publish and the refusal below is the honest answer
+    const fmt = riffChunk('fmt ', new Uint8Array([1]))
+    assert.throws(() => probeWav(wave([fmt])), /found no streams/)
+  })
+
   test('a fmt chunk cut mid-field publishes the codec only (never a half-fabricated row)', () => {
     // fmt declares 3 bytes but carries 2: format reads, channels hits
     // the le16 bound → undefined; rate/bits never read. The row names
-    // the codec and states nothing it did not see.
+    // the codec FAMILY and states nothing it did not see — a depth it
+    // never read is not a depth it may claim.
     const fmt = riffChunk('fmt ', new Uint8Array([1, 0, 0]))
     const row = probeWav(wave([fmt]))
-    assert.deepEqual(row.streams, [{ codec: 'pcm_s16le', codec_type: 'audio' }])
+    assert.deepEqual(row.streams, [{ codec: 'pcm', codec_type: 'audio' }])
     assert.equal(row.duration_s, undefined, 'no data chunk → no duration, never 0')
   })
 

@@ -211,7 +211,8 @@ describe('specBody primary envelope', () => {
               { quant: 'q4', label: 'Q', route: 'syn-a' },
             ],
           },
-          { id: 'bare', group: 'Variant' },
+           { id: 'bare', group: 'Variant' },
+           { id: 'hidden-variant', group: 'Variant', hide_from_dropdown: true, cells: [{ quant: 'q8', route: 'syn-a' }] },
         ],
       }),
     }

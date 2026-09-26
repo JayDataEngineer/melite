@@ -10,6 +10,16 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { loadCardDefs, declaredDefaults, getModel } from "@melite/comfyui-cordis";
+import type { CardDefinition } from "@melite/comfyui-cordis/service";
+
+function hasRequiredField(def: CardDefinition): boolean {
+  const carrier = ((def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema) as {
+    toJSON?: () => { uid: number; refs: Record<number, { dict?: Record<string, number>; meta?: { extra?: { required?: boolean } } }> };
+  };
+  const env = carrier.toJSON?.();
+  const root = env?.refs[env.uid];
+  return Object.values(root?.dict ?? {}).some((id) => env?.refs[id]?.meta?.extra?.required === true);
+}
 
 const defs = await loadCardDefs();
 assert.ok(defs.size >= 15, `the registry serves every card (got ${defs.size})`); // 15: the voice-lock card died 2026-09-21 (design moved into the tts card's mods)
@@ -32,24 +42,22 @@ describe("THE PARITY WALL (walked defaults ≡ served model_defaults, every card
             .filter((f) => f.default !== undefined && f.default !== null)
             .map((f) => `${String((k as { param_key?: unknown }).param_key)}.${String(f.name)}`)
         ));
-        // EXEMPT-BY-NATURE (named inline, never silently skipped):
-        // input-prep — a pure staging tool whose ONLY declared knob
-        // (source) is required with no default; every other key rides
-        // the explicit-params overlay by declaration. Zero defaults
-        // is its honest truth (verified: no renderer floors).
+        // Model-owned defaults are declarations too; required-only
+        // cards (such as transfer_rig) legitimately have no fills.
+        const decl = (() => { try { return getModel(family) } catch { return null } })();
+        const modelDefaults = decl?.defaults ?? {};
         const exempt = id === 'input-prep';
         if (!exempt) {
-          assert.ok(Object.keys(walked).length > 0 || modKnobs.length > 0,
-            `${id} declares no defaults at all (neither flat nor mod-owned) — a knob-less card is a wall failure`);
+          assert.ok(Object.keys(walked).length > 0 || Object.keys(modelDefaults).length > 0 || modKnobs.length > 0 || hasRequiredField(def),
+            `${id} declares no defaults or required fields (neither flat nor mod-owned) — a knob-less card is a wall failure`);
         }
 
         // the serve layer (discovery's row, verbatim): walked under
         // the family row's own non-null, non-array defaults
-        const decl = (() => { try { return getModel(family) } catch { return null } })();
         const served = {
           ...walked,
           ...Object.fromEntries(
-            Object.entries(decl?.defaults ?? {}).filter(([, v]) => v !== null && !Array.isArray(v)),
+            Object.entries(modelDefaults).filter(([, v]) => v !== null && !Array.isArray(v)),
           ),
         };
 

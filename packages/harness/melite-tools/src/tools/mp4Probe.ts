@@ -67,6 +67,7 @@ class Reader {
   get left(): number { return this.b.length - this.at }
 
   u16(): number | undefined { return this.num(2) }
+  u8(): number | undefined { return this.num(1) }
   u32(): number | undefined { return this.num(4) }
   /** RIFF/WAV header fields are LITTLE-endian (ISO-BMFF boxes are
    *  big-endian, which is why both spellings live here). */
@@ -117,7 +118,10 @@ class Reader {
 function* boxes(b: Uint8Array, start: number, end: number): Generator<{ type: string, body: Uint8Array }> {
   const r = new Reader(b)
   r.seek(start)
-  while (r.left >= 8) {
+  // Attempt the header whenever ANY bytes remain: the readers refuse a
+  // short read, so a truncated tail is handled by the same guards rather
+  // than by a pre-check that silently stops one box early.
+  while (r.left > 0) {
     const boxStart = r.pos
     let size = r.u32()
     const type = r.fourcc()
@@ -203,18 +207,23 @@ function probeStts(stts: Uint8Array, timescale: number | undefined): { frames?: 
   if (n === undefined || n < 1) return {}
   let total = 0
   let ticks = 0
+  const deltas = new Set<number>()
   for (let i = 0; i < n; i++) {
     const count = r.u32()
     const delta = r.u32()
     if (count === undefined || delta === undefined) break
     total += count
     ticks += count * delta
+    deltas.add(delta)
   }
   const out: { frames?: number, fps?: string } = {}
   if (total > 0) out.frames = total
+  // A VARIABLE-rate track has no single rate: publishing an average
+  // would be a fabricated frame rate. The frame COUNT is still exact.
+  const constant = deltas.size === 1
   // no media timescale (or a zero-length track) → NO fps rather than a
   // fabricated one
-  if (timescale !== undefined && timescale > 0 && ticks > 0) {
+  if (constant && timescale !== undefined && timescale > 0 && ticks > 0) {
     // fps = samples / seconds = samples*timescale / ticks, reduced —
     // the same rational ffprobe published, so the row is unchanged
     const num = total * timescale
@@ -229,7 +238,8 @@ function probeStts(stts: Uint8Array, timescale: number | undefined): { frames?: 
 /** mdhd: the track's media timescale (the unit every delta counts in). */
 function probeMdhd(mdhd: Uint8Array): number | undefined {
   const r = new Reader(mdhd)
-  const version = r.u32()
+  const version = r.u8() // ONE byte + 3 flags (a u32 read here made
+  r.skip(3)             // every 64-bit media header read version 0)
   if (version === 1) r.skip(16)
   else r.skip(8)
   return r.u32()
@@ -308,21 +318,26 @@ export function probeMp4(bytes: Uint8Array): ProbeResult {
     throw new Error('the media probe found no streams — the file may be truncated or corrupt')
   }
   const parts = [...boxes(moov.body, 0, moov.body.length)]
+  // The movie header: version 0 (created/modified 4+4). Version 1 uses
+  // 64-bit timestamps and is not written by the estate's muxer, so an
+  // unknown version states NO duration rather than a guess.
+  // mvhd version 1 carries 64-bit times; ffprobe reported those
+  // durations, so this probe does too (the 2026-09-25 estate muxer
+  // only ever wrote v0, but "the estate never writes it" is not a
+  // reason to publish less than the door used to).
   const mvhd = find(parts, 'mvhd')
   if (mvhd !== undefined) {
     const r = new Reader(mvhd.body)
-    const version = r.u32()
-    if (version === 1) {
-      r.skip(16)
+    // version is ONE byte + 3 flag bytes — reading it as a u32 turns
+    // version 1 into 16777216 and every 64-bit movie header into a
+    // silent no-duration (2026-09-25)
+    const version = r.u8()
+    r.skip(3) // flags
+    const wide = version === 1
+    if (version === 0 || wide) {
+      r.skip(wide ? 16 : 8) // created + modified
       const timescale = r.u32()
-      const duration = r.u64()
-      if (timescale !== undefined && timescale > 0 && duration !== undefined) {
-        out.duration_s = Math.round((duration / timescale) * 1e6) / 1e6
-      }
-    } else {
-      r.skip(8)
-      const timescale = r.u32()
-      const duration = r.u32()
+      const duration = wide ? r.u64() : r.u32()
       if (timescale !== undefined && timescale > 0 && duration !== undefined) {
         out.duration_s = Math.round((duration / timescale) * 1e6) / 1e6
       }
@@ -338,6 +353,36 @@ export function probeMp4(bytes: Uint8Array): ProbeResult {
   return out
 }
 
+/** WAV's codec NAME, as ffprobe published it.
+ *
+ *  The PCM names are derived from the BIT DEPTH, not the format tag:
+ *  a 16-bit integer and a 32-bit float both ride `wFormatTag` 1 vs 3,
+ *  and ffprobe reported `pcm_s16le` / `pcm_f32le` — never a name with
+ *  the depth glued on the end (`pcm_s16le16`, which is not a codec
+ *  anything else on earth can decode). 2026-09-25. */
+function wavCodecName(format: number, bits: number | undefined): string {
+  const b = bits ?? 0
+  // a fmt chunk cut before the depth: name the FAMILY, claim no depth
+  if (b === 0 && (format === 1 || format === 3)) return format === 1 ? 'pcm' : 'pcm_float'
+  if (format === 1) {
+    if (b === 8) return 'pcm_u8'
+    if (b === 16) return 'pcm_s16le'
+    if (b === 24) return 'pcm_s24le'
+    if (b === 32) return 'pcm_s32le'
+    if (b === 64) return 'pcm_s64le'
+    return 'pcm_s' + String(b) + 'le'
+  }
+  if (format === 3) {
+    if (b === 32) return 'pcm_f32le'
+    if (b === 64) return 'pcm_f64le'
+    return 'pcm_f' + String(b) + 'le'
+  }
+  if (format === 6) return 'pcm_alaw'
+  if (format === 7) return 'pcm_mulaw'
+  if (format === 0xFFFE) return 'wav_ext'
+  return 'format-' + String(format)
+}
+
 /** THE RIFF/WAV PROBE. */
 export function probeWav(bytes: Uint8Array): ProbeResult {
   const out: ProbeResult = { size_bytes: bytes.byteLength, streams: [] }
@@ -351,22 +396,27 @@ export function probeWav(bytes: Uint8Array): ProbeResult {
   let sample_rate: number | undefined
   let bits: number | undefined
   let dataBytes = 0
-  while (r.left >= 8) {
+  while (r.left > 0) {
     const id = r.fourcc()
     const size = r.le32()
     if (id === undefined || size === undefined) break
     if (id === 'fmt ') {
       const f = new Reader(bytes.subarray(r.pos, Math.min(r.pos + size, bytes.length)))
-      const format = f.le16()
+      const tag = f.le16()
       channels = f.le16()
       sample_rate = f.le32()
       f.le32() // byte rate
       f.le16() // block align
-      bits = f.le16()
-      // WAVE_FORMAT_EXTENSIBLE (0xFFFE) carries the real tag in its GUID
-      codec = format === 1 ? 'pcm_s16le' : format === 3 ? 'pcm_f32le' : format === 6 ? 'pcm_alaw' : format === 7 ? 'pcm_mulaw' : format === 0xFFFE ? 'wav_ext' : 'format-' + String(format)
+      const depth = f.le16()
+      if (depth !== undefined) bits = depth
+      // a fmt chunk cut before its tag names nothing: codec stays
+      // undefined and the probe refuses rather than guessing a family
+      if (tag !== undefined) codec = wavCodecName(tag, bits)
     } else if (id === 'data') {
-      dataBytes = size
+      // A data chunk that CLAIMS more than the file holds is a lie: the
+      // measurement must describe the bytes that exist, never the
+      // number the header wished for.
+      dataBytes = Math.min(size, r.left)
     }
     r.skip(size + (size % 2)) // chunks are word-aligned
   }
@@ -378,7 +428,6 @@ export function probeWav(bytes: Uint8Array): ProbeResult {
   const stream: ProbedStream = { codec, codec_type: 'audio' }
   if (channels !== undefined) stream.channels = channels
   if (sample_rate !== undefined) stream.sample_rate = sample_rate
-  if (bits !== undefined && bits > 0) stream.codec = codec + String(bits)
   out.streams.push(stream)
   // no data chunk → the LENGTH IS UNKNOWN, and stays absent. A zero
   // would be a fabricated duration, which is the stub-detector's whole

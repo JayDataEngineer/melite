@@ -614,6 +614,20 @@ describe('live door arms', () => {
     assert.deepEqual(tao!['defaults'], { strength: 0.7, steps: 3 }, 'TaoMate: the refiner operating point (0.7 over 3 closing steps)')
   })
 
+  test('a route-owned key serves the owning family lora catalog', async () => {
+    const spec = (await formSpecSweep('h3-timeline')) as Record<string, unknown>
+    assert.ok(spec !== null)
+    const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const lora = modifiers.find((m) => m['kind'] === 'lora')
+    assert.ok(lora !== undefined)
+    const options = lora!['options'] as Array<Record<string, unknown>>
+    assert.ok(options.some((option) => option['value'] === 'h3_lightx2v_turbo'))
+    assert.deepEqual(
+      options.find((option) => option['value'] === 'h3_lightx2v_turbo')!['defaults'],
+      { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8 },
+    )
+  })
+
   test("formSpecArm serves the AGENT ENGINE doc from the declared contract (stroke 66 — the census rides LIVE)", async () => {
     const docs = new Map([['agent', () => agentFormDoc({
       mcps: [{ value: 'blender', label: 'blender' }],

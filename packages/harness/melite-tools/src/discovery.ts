@@ -133,6 +133,7 @@ function variantRow(
     id: string
     label: string
     group: string
+    hide_from_dropdown?: boolean
     resolver_defaults?: Record<string, unknown>
     wire_defaults?: Record<string, unknown> | null
     route?: string
@@ -181,6 +182,7 @@ function specVariants(
   const seen = new Set<string>()
   const declEngine = decl.engine ?? ''
   for (const v of decl.variants ?? []) {
+    if (v.hide_from_dropdown === true) continue
     rows.push(variantRow(v, declEngine))
     seen.add(v.id)
     for (const c of v.cells ?? []) {
@@ -560,7 +562,7 @@ export function specBody(
   // rides first when the field's default is '' (a refine pick must
   // be clearable). LORAS ARE ONLY MODS: the ids come from the
   // served rows, never a hand-spelled string.
-  stampOptionsFrom(schemas.schema, svc, key)
+  stampOptionsFrom(schemas.schema, svc, envelopeKey)
   // THE MOD SYSTEM OWNS MODS (the old SubcardGrid law, 2026-08-09:
   // "LoRA is a MOD, never a standalone addition — the free-text
   // grid must not render the mod bags as raw JSON rows; the
@@ -568,7 +570,7 @@ export function specBody(
   // pack) and render ONLY through the mod surface. ControlNet
   // proves the law by absence: the pack waits unboarded and no
   // envelope, no entry, no endpoint ever names it.
-  const modifiers = specModifiers(svc, res.card, key, decl, def, new Set(Object.keys(schemas.mods)))
+  const modifiers = specModifiers(svc, res.card, envelopeKey, decl, def, new Set(Object.keys(schemas.mods)))
   // the machine truth (one spelling: liveScanOrder, the registry's
   // own admission read) — presence marks ride the families block
   let liveMids: Set<string>

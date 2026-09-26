@@ -4,8 +4,7 @@
  * Wraps the estate's management plane — the built-in ComfyUI-Manager
  * (vendored into the managed engine's custom_nodes, riding ComfyUI's
  * own HTTP port — no side processes, 2026-09-10) plus the
- * estate TS legs (model downloads, systemd, journal logs) — behind
- * ONE action-dispatch tool. The SSOT is
+ * Cordis provisioning and deployment legs — behind ONE action-dispatch tool. The SSOT is
  * packages/harness/estate-queue/src/managePlane.ts (ACTIONS +
  * HANDLERS + LIFECYCLE_GUARDED — the gateway doors row died with
  * the app; the manage seat serves the same vocabulary in-process);
@@ -39,6 +38,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'manage/refused': {
       readonly action?: string;
       readonly status?: number;
+      readonly code?: string;
       readonly data?: unknown;
     };
   }
@@ -65,23 +65,185 @@ type ManageResult = {
   detail?: string;
   data?: JsonValue;
   error?: string;
+  status?: number;
+  code?: string;
   operation_id?: string;
   state?: string;
+  next_action?: string;
   restart_required?: boolean;
   partial?: boolean;
   items?: JsonValue[];
+  operations?: JsonValue[];
+  rows?: JsonValue[];
+  requested?: string[];
+  succeeded?: string[];
+  missed?: string[];
+  misses?: string[];
 } & Record<string, JsonValue>;
 
-function provisioningFields(data: unknown): Partial<ManageResult> {
-  if (typeof data !== 'object' || data === null) return {}
-  const value = data as Record<string, unknown>
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null
+}
+
+function contractFields(data: unknown, envelope?: Record<string, unknown>): Partial<ManageResult> {
   const fields: Partial<ManageResult> = {}
-  if (typeof value.operation_id === 'string') fields.operation_id = value.operation_id
-  if (typeof value.state === 'string') fields.state = value.state
-  if (typeof value.restart_required === 'boolean') fields.restart_required = value.restart_required
-  if (Array.isArray(value.items)) fields.items = value.items as JsonValue[]
-  if (value.state === 'partial') fields.partial = true
+  const sources = [recordValue(data), recordValue(envelope)]
+  for (const source of sources) {
+    if (source === null) continue
+    if (typeof source.operation_id === 'string') fields.operation_id = source.operation_id
+    if (typeof source.status === 'number') fields.status = source.status
+    if (typeof source.code === 'string') fields.code = source.code
+    if (typeof source.state === 'string') fields.state = source.state
+    if (typeof source.next_action === 'string') fields.next_action = source.next_action
+    if (typeof source.restart_required === 'boolean') fields.restart_required = source.restart_required
+    if (typeof source.partial === 'boolean') fields.partial = source.partial
+    if (Array.isArray(source.items)) fields.items = source.items as JsonValue[]
+    if (Array.isArray(source.operations)) fields.operations = source.operations as JsonValue[]
+    if (Array.isArray(source.rows)) fields.rows = source.rows as JsonValue[]
+    if (Array.isArray(source.requested)) fields.requested = source.requested.filter((item): item is string => typeof item === 'string')
+    if (Array.isArray(source.succeeded)) fields.succeeded = source.succeeded.filter((item): item is string => typeof item === 'string')
+    if (Array.isArray(source.missed)) fields.missed = source.missed.filter((item): item is string => typeof item === 'string')
+    if (Array.isArray(source.misses)) fields.misses = source.misses.filter((item): item is string => typeof item === 'string')
+  }
+  if (fields.state === 'partial') fields.partial = true
+  if (Array.isArray(data) && fields.rows === undefined) fields.rows = data as JsonValue[]
   return fields
+}
+
+function asText(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (value === null || value === undefined) return '?'
+  try {
+    const encoded = JSON.stringify(value)
+    return encoded === undefined ? '?' : encoded
+  } catch {
+    return '?'
+  }
+}
+
+function rowText(value: unknown): string {
+  if (typeof value === 'string') return value
+  const row = recordValue(value)
+  if (row === null) return asText(value)
+  const name = typeof row.name === 'string' ? row.name : typeof row.id === 'string' ? row.id : undefined
+  const key = typeof row.key === 'string' ? row.key : undefined
+  const state = typeof row.state === 'string' ? row.state : undefined
+  const outcome = typeof row.outcome === 'string' ? row.outcome : undefined
+  const version = typeof row.version === 'string' ? row.version : undefined
+  const filename = typeof row.filename === 'string' ? row.filename : undefined
+  const path = typeof row.path === 'string' ? row.path : undefined
+  const head = name ?? key ?? 'row'
+  const traits = [row.type, row.base].filter((item): item is string => typeof item === 'string' && item !== '')
+  const stateText = [state, outcome].filter((item, index, values): item is string => typeof item === 'string' && item !== '' && values.indexOf(item) === index).join('/')
+  const tail = [version, filename, path, stateText].filter((item): item is string => typeof item === 'string' && item !== '')
+  return head + (traits.length > 0 ? ' (' + traits.join(', ') + ')' : '') + (tail.length > 0 ? ' — ' + tail.join(' · ') : '')
+}
+
+function operationText(value: unknown): string {
+  const row = recordValue(value)
+  if (row === null) return asText(value)
+  const id = typeof row.operation_id === 'string' ? row.operation_id : typeof row.id === 'string' ? row.id : '?'
+  const name = typeof row.name === 'string' ? row.name : undefined
+  const state = typeof row.state === 'string' ? row.state : typeof row.outcome === 'string' ? row.outcome : 'unknown'
+  const outcome = typeof row.outcome === 'string' && row.outcome !== state ? ' · ' + row.outcome : ''
+  const path = typeof row.path === 'string' ? row.path : undefined
+  return 'operation ' + id + (name === undefined ? '' : ' · ' + name) + ' · ' + state + outcome + (path === undefined ? '' : ' · ' + path)
+}
+
+function statusText(data: unknown): string[] {
+  const value = recordValue(data)
+  if (value === null) return []
+  const endpoint = recordValue(value.endpoint)
+  const manager = recordValue(value.manager)
+  const out: string[] = []
+  if (typeof value.state === 'string') out.push('state: ' + value.state)
+  if (endpoint !== null) {
+    out.push('endpoint: ' + String(endpoint.reachable === true ? 'reachable' : 'not reachable') + (typeof endpoint.url === 'string' ? ' · ' + endpoint.url : ''))
+    if (typeof endpoint.comfyui_version === 'string') out.push('comfyui: ' + endpoint.comfyui_version)
+  }
+  if (manager !== null) {
+    const version = manager.version === undefined ? '' : ' · ' + asText(manager.version)
+    const queue = manager.queue === undefined ? '' : ' · queue ' + asText(manager.queue)
+    const security = typeof manager.security === 'string' ? ' · security ' + manager.security : ''
+    const reason = typeof manager.reason === 'string' ? ' · ' + manager.reason : ''
+    out.push('manager: ' + (manager.reachable === true ? 'reachable' : 'unavailable') + version + queue + security + reason)
+  }
+  if (value.routing !== undefined) out.push('routing: ' + asText(value.routing))
+  if (Array.isArray(value.active_runs)) out.push('active_runs: ' + value.active_runs.map(asText).join(', '))
+  if (Array.isArray(value.resources)) {
+    for (const resource of value.resources.slice(0, 20)) {
+      const row = recordValue(resource)
+      if (row === null) continue
+      const ref = recordValue(row.ref)
+      const label = ref === null ? 'resource' : [ref.kind, ref.owner, ref.id].filter((item): item is string => typeof item === 'string').join('/')
+      out.push('resource: ' + label + ' · ' + asText(row.state))
+    }
+  }
+  const operations = Array.isArray(value.operations)
+    ? value.operations
+    : manager !== null && Array.isArray(manager.operations) ? manager.operations : []
+  for (const operation of operations.slice(0, 20)) out.push(operationText(operation))
+  if (typeof value.resources_detail === 'string') out.push('resource_status: ' + value.resources_detail)
+  return out
+}
+
+function actionRows(action: string, data: unknown, rows: unknown): string[] {
+  const nested = recordValue(data)
+  const nestedRows = nested === null ? undefined : [nested.rows, nested.items, nested.lines].find((candidate) => Array.isArray(candidate))
+  const values = Array.isArray(rows) ? rows : Array.isArray(data) ? data : Array.isArray(nestedRows) ? nestedRows : []
+  if (action === 'logs') return values.slice(0, 200).map((row) => typeof row === 'string' ? row : rowText(row))
+  if (values.length === 0) return ['rows: none']
+  return ['rows:', ...values.slice(0, 50).map((row) => '  ' + rowText(row))]
+}
+
+function inferredNext(action: string, data: unknown): string | undefined {
+  const value = recordValue(data)
+  if (value !== null && typeof value.next_action === 'string') return value.next_action
+  if (action === 'status') return 'status'
+  if (action === 'list_extensions') return 'install_extension'
+  if (action === 'snapshot_list') return 'snapshot_save'
+  if (value !== null && value.state === 'restart_required') return 'restart'
+  return undefined
+}
+
+function renderManage(_args: unknown, value: unknown): Array<{ type: 'text'; text: string }> {
+  const result = recordValue(value)
+  const action = typeof result?.action === 'string' ? result.action : '?'
+  const detail = typeof result?.detail === 'string' ? result.detail : ''
+  const data = result?.data
+  const first = 'comfy_manage ' + action + ': ' + detail
+  const lines = [first]
+  if (result === null) return [{ type: 'text', text: first }]
+  if (result.ok !== true) {
+    lines.push('REFUSED: ' + (typeof result.code === 'string' ? result.code : 'manage/refused') + (typeof result.status === 'number' ? ' · status ' + String(result.status) : ''))
+    if (typeof result.error === 'string' && result.error !== detail) lines.push('error: ' + result.error)
+  }
+  if (action === 'status') {
+    lines.push(...statusText(data))
+  } else if (action === 'logs' || action === 'search_models' || action === 'list_extensions' || action === 'snapshot_list') {
+    lines.push(...actionRows(action, data, result.rows))
+  } else if (result.state !== undefined || result.items !== undefined || result.operations !== undefined || result.operation_id !== undefined) {
+    if (typeof result.state === 'string') lines.push('state: ' + result.state)
+    if (typeof result.operation_id === 'string') lines.push('operation: ' + result.operation_id)
+    if (Array.isArray(result.requested)) lines.push('requested: ' + result.requested.join(', '))
+    if (Array.isArray(result.succeeded)) lines.push('succeeded: ' + result.succeeded.join(', '))
+    if (Array.isArray(result.missed)) lines.push('missed: ' + result.missed.join(', '))
+    if (Array.isArray(result.misses)) lines.push('misses: ' + result.misses.join(', '))
+    if (Array.isArray(result.items)) {
+      for (const item of result.items.slice(0, 50)) lines.push('item: ' + rowText(item))
+    }
+    if (Array.isArray(result.operations)) {
+      for (const operation of result.operations.slice(0, 20)) lines.push(operationText(operation))
+    }
+  } else if (data !== undefined && data !== null) {
+    lines.push('data: ' + asText(data))
+  }
+  const next = typeof result.next_action === 'string' ? result.next_action : inferredNext(action, data)
+  if (next !== undefined && next !== '') lines.push('next_action: ' + next)
+  return [{ type: 'text', text: lines.join('\n') }]
 }
 
 export function comfyManage(request: EstateRequest): ToolDefinition {
@@ -114,9 +276,9 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       + 'snapshot_restore (environment snapshots; restore is refused while '
       + 'runs are active); endpoint_set (point at a different ComfyUI server '
       + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '
-      + 'install_extension_url (git url), download_model (url), provision_model '
-      + '(catalog id — a boarded model id from melite_load, or search_models); restart, stop, launch, update '
-      + '(target comfy|cli|all), switch_version, free. INFRA UPKEEP only — it '
+       + 'install_extension_url (git url), download_model (url), provision_model '
+       + '(declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); restart, stop, launch, update '
+       + '(target comfy), switch_version, free. INFRA UPKEEP only — it '
       + 'never runs inference, and lifecycle actions are refused while runs are '
       + 'active (stop them or pass force).',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
@@ -144,7 +306,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       filename: { type: 'string', description: 'download_model: on-disk filename.' },
       model: {
         type: 'string',
-        description: 'provision_model: boarded model id from melite_load (e.g. "z-image") or search_models.',
+        description: 'provision_model: declared model id from melite_load (e.g. "z-image"); Manager search rows are not provision ids.',
       },
       variant: { type: 'string', description: 'provision_model: optional variant id.' },
       quant: { type: 'string', description: 'provision_model: optional quant cell id.' },
@@ -174,21 +336,24 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
           ok: { type: 'boolean', required: true },
           action: { type: 'string', required: true },
           detail: { type: 'string', description: 'One-line human summary.' },
-          error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
+          error: { type: 'string', description: 'The refusal text — present exactly when the tool refused.' },
+          status: { type: 'number', description: 'Structured refusal status returned by the manage seat.' },
+          code: { type: 'string', description: 'Structured refusal code returned by the manage seat.' },
           operation_id: { type: 'string', description: 'Provisioning operation correlation id when the manage seat returned one.' },
-          state: { type: 'string', description: 'Provisioning state: active, restart_required, partial, failed, cancelled, or blocked.' },
+          state: { type: 'string', description: 'Provisioning or status state.' },
+          next_action: { type: 'string', description: 'The next existing manage action to take.' },
           restart_required: { type: 'boolean', description: 'Whether ComfyUI must restart before the result is active.' },
-          partial: { type: 'boolean', description: 'True when some provisioning items landed and others did not.' },
+          partial: { type: 'boolean', description: 'True when some requested resources succeeded and others did not.' },
           items: { type: 'array', description: 'Per-resource provisioning item results.' },
+          operations: { type: 'array', description: 'Operation rows correlated to the returned resource results.' },
+          rows: { type: 'array', description: 'Rows returned by a read action.' },
+           requested: { type: 'array', items: { type: 'string' }, description: 'Requested resource ids.' },
+           succeeded: { type: 'array', items: { type: 'string' }, description: 'Resource ids whose requested work succeeded.' },
+           missed: { type: 'array', items: { type: 'string' }, description: 'Resource ids that did not succeed.' },
+           misses: { type: 'array', items: { type: 'string' }, description: 'Per-resource failure details for missed ids.' },
         },
       },
-      render: (_args, value) => {
-        const v = value as { ok?: boolean; action?: string; detail?: string }
-        return [{
-          type: 'text',
-          text: 'comfy_manage ' + String(v.action ?? '?') + ': ' + String(v.detail ?? ''),
-        }]
-      },
+      render: renderManage,
     },
     async execute(args, exec): Promise<ManageResult> {
       // defineTool input validation runs in the wrapper BEFORE the body
@@ -212,7 +377,14 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       if (exec?.signal === undefined) {
         // action is a required enum string — the wrapper gate guarantees
         // a string at the body, so no nullish fallback rides (2026-09-12).
-        return jsonClean<ManageResult>({ ok: false, action: String(a.action), detail: 'comfy_manage miswire: no execution context signal — the host runtime must pass exec' })
+         return jsonClean<ManageResult>({
+           ok: false,
+           action: String(a.action),
+           detail: 'comfy_manage miswire: no execution context signal — the host runtime must pass exec',
+           error: 'comfy_manage miswire: no execution context signal',
+           code: 'manage/miswire',
+           status: 500,
+         })
       }
       try {
         res = await request( 'POST', '/v1/manage', body,
@@ -225,24 +397,39 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
         // the model reads WHY (active runs, catalog miss…).
         const re = remoteErrorOf(e)
         if (re !== null && re !== undefined && re.code === 'manage/refused') {
-          const d = (re as { details?: { action?: string; data?: unknown } }).details ?? {}
+          const d = (re as { details?: { action?: unknown; data?: unknown; status?: unknown; code?: unknown } }).details ?? {}
           if (typeof d.action === 'string') {
+            const fields = contractFields(d.data)
+            if (typeof d.status === 'number') fields.status = d.status
+            fields.code = typeof d.code === 'string' ? d.code : re.code
             return jsonClean({
-              ok: false, action: d.action, detail: re.message,
+              ok: false,
+              action: d.action,
+              detail: re.message,
+              error: re.message,
               data: d.data ?? null,
-              ...provisioningFields(d.data),
+              ...fields,
             }) as ManageResult
           }
         }
         throw e
       }
-      return jsonClean({
-        ok: res.ok === true,
-        action: res.action,
-        detail: res.detail,
-        data: res.data ?? null,
-        ...provisioningFields(res.data),
-      }) as ManageResult
+      const response = recordValue(res) ?? {}
+      const action = typeof response.action === 'string' ? response.action : String(a.action)
+      const detail = typeof response.detail === 'string' ? response.detail : ''
+      const fields = contractFields(response.data, response)
+      if (typeof response.status === 'number') fields.status = response.status
+      if (typeof response.code === 'string') fields.code = response.code
+       const partialMiss = fields.partial === true || fields.state === 'partial' || (Array.isArray(fields.missed) && fields.missed.length > 0)
+       const ok = response.ok === true && !partialMiss
+       return jsonClean({
+         ok,
+         action,
+         detail,
+         ...(ok ? {} : { error: detail }),
+         data: res.data ?? null,
+         ...fields,
+       }) as ManageResult
     },
   });
   // Re-attach the unconditional presenter over defineTool's

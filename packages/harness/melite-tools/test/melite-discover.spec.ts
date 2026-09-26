@@ -300,4 +300,22 @@ describe('melite_discover — the empty-AND hint (attempt-4 gap, verified)', () 
     const out = await tool.execute({ tags: 'video' }, { signal: AbortSignal.timeout(4000) }) as Record<string, unknown>
     assert.equal(out['hint'], undefined)
   })
+
+  test('a zero result without tags takes the ordinary empty answer', async () => {
+    const seen = mockRequest(() => ({ flows: [], cards: [] }))
+    const tool = meliteDiscover(seen.request)
+    const out = await tool.execute({}, { signal: AbortSignal.timeout(4000) }) as Record<string, unknown>
+    assert.equal(out.hint, undefined)
+  })
+
+  test('detail rendering keeps every line past the presentation clamp', () => {
+    const tool = meliteDiscover(stubRequest())
+    const parts = tool.output.render({ detail: true }, {
+      flows: Array.from({ length: 10 }, (_v, i) => flowLine(i)),
+      cards: [],
+    } as never) as Array<{ text?: string }>
+    const text = parts.map((part) => part.text ?? '').join('\n')
+    assert.ok(text.includes('flow-9'))
+    assert.ok(!text.includes('+2 more'))
+  })
 });

@@ -1,4 +1,4 @@
-import { CARD_KINDS, buildCatalog, declaredDefaults, emitModifierKinds, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, registryModel, resolveRepoRoot, theService } from "@melite/comfyui-cordis";
+import { CARD_KINDS, buildCatalog, declaredDefaults, emitModifierKinds, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, owningAtom, registryModel, resolveRepoRoot, theService } from "@melite/comfyui-cordis";
 import { execFileSync } from "node:child_process";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
@@ -381,6 +381,7 @@ function specVariants(decl, key, service, primary) {
 	const seen = /* @__PURE__ */ new Set();
 	const declEngine = decl.engine ?? "";
 	for (const v of decl.variants ?? []) {
+		if (v.hide_from_dropdown === true) continue;
 		rows.push(variantRow(v, declEngine));
 		seen.add(v.id);
 		for (const c of v.cells ?? []) {
@@ -426,7 +427,10 @@ function groupContract(decl) {
 *  "rides inline" exemption became a dropped seat — the family
 *  boards lanpaint, mod_schemas serves it, compose requires it, but
 *  no modifiers entry ever offered the brick. The rail seats the
-*  anchor (the client half); this row offers the knobs. */
+*  anchor (the client half); this row offers the knobs.
+*  EXPORTED (022's self-critique #3, 2026-09-24): the load bundle's
+*  mods line serves the SAME grammar for DECL-boarded packs (the
+*  qvoice seats) — one table, two consumers, never a copy. */
 const MODIFIER_PACKS = {
 	loras: {
 		kind: "lora",
@@ -570,7 +574,11 @@ function familyFace(fam) {
 	try {
 		return registryModel(fam).label;
 	} catch {
-		return fam;
+		try {
+			return getModel(fam).label;
+		} catch {
+			return fam;
+		}
 	}
 }
 function stampOptionsFrom(schema, svc, family) {
@@ -622,10 +630,11 @@ function specBody(svc, defs, res) {
 	} catch {
 		decl = null;
 	}
-	const schemas = svc.formSchemas(res.card, key);
+	const envelopeKey = owningAtom(key);
+	const schemas = svc.formSchemas(res.card, envelopeKey);
 	if (schemas === null) throw new Error(`form-spec: card '${res.card}' unknown`);
-	stampOptionsFrom(schemas.schema, svc, key);
-	const modifiers = specModifiers(svc, res.card, key, decl, def, new Set(Object.keys(schemas.mods)));
+	stampOptionsFrom(schemas.schema, svc, envelopeKey);
+	const modifiers = specModifiers(svc, res.card, envelopeKey, decl, def, new Set(Object.keys(schemas.mods)));
 	let liveMids;
 	try {
 		liveMids = new Set(liveScanOrder());
@@ -1077,4 +1086,4 @@ function parseEnhanceJson(text) {
 	throw new Error("enhance: the model reply was not the recipe JSON — head: " + text.slice(0, 160));
 }
 //#endregion
-export { boardedMap as a, formsArm as c, resolveSpecKey as d, asEstateCall as f, routeName as i, kindsDoorArm as l, matchHarnessRoute as n, cardToolsArm as o, makeEstateRequest as p, resolveHarnessRoutes as r, formSpecArm as s, harnessEnhance as t, modelCatalogArm as u };
+export { MODIFIER_PACKS as a, formSpecArm as c, modelCatalogArm as d, resolveSpecKey as f, seatFamilyForPath as h, routeName as i, formsArm as l, makeEstateRequest as m, matchHarnessRoute as n, boardedMap as o, asEstateCall as p, resolveHarnessRoutes as r, cardToolsArm as s, harnessEnhance as t, kindsDoorArm as u };

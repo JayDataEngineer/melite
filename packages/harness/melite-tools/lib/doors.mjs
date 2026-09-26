@@ -1,4 +1,4 @@
-import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-Bpx1MpGB.mjs";
+import { c as formSpecArm, d as modelCatalogArm, h as seatFamilyForPath, i as routeName, l as formsArm, m as makeEstateRequest, r as resolveHarnessRoutes, s as cardToolsArm, t as harnessEnhance, u as kindsDoorArm } from "./llm-complete-C2xYnOO0.mjs";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { resolveEngineBaseUrl, sdkClient } from "@melite/comfyui-cordis";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
@@ -87,6 +87,28 @@ function mcpToolsOf(c, server) {
 		tooltip: t.description
 	}));
 }
+/** THE PENDING GRACE (the 3088 brick, 2026-09-26 — live proof: a
+* fiber stuck mid-transition held the pending gate closed for 10
+* hours while every non-seat door served fine). "Still activating"
+* is a BOOT-RACE answer, but the state is cheap to observe and
+* GLOBAL: any ONE wedged fiber (a failed plugin-tree reload, a hung
+* MCP seat handshake) would brick every seat door forever. The
+* stamp starts when the state is first observed and clears when it
+* lifts; past ESTATE_PENDING_GRACE_MS the state is a WEDGE, not an
+* activation — the gate opens and the seat probe's own honest voice
+* answers (serve, or the missing-seat 502 naming the family). */
+const ESTATE_PENDING_GRACE_MS = 12e4;
+let estatePendingSince = null;
+const estateStillActivating = (c) => {
+	let activating = false;
+	for (const runtime of c.registry.values()) for (const fiber of runtime.fibers) if (fiber.uid !== null && (fiber.store === void 0 || fiber.inertia !== void 0)) activating = true;
+	if (!activating) {
+		estatePendingSince = null;
+		return false;
+	}
+	if (estatePendingSince === null) estatePendingSince = Date.now();
+	return Date.now() - estatePendingSince < ESTATE_PENDING_GRACE_MS;
+};
 const POSER_ARMS = [
 	{
 		doorPath: "/v1/poser/mesh",
@@ -278,8 +300,8 @@ function apply(c, config = {}) {
 					if (filename === "" || data === "") return fail(400, "uploads: filename + data are required");
 					if (!SEG.test(filename)) return fail(400, "uploads: bad filename");
 					const meshName = /\.glb$/i.test(filename) || /\.gltf$/i.test(filename);
-					const b64 = /^data:(image\/(?:png|jpeg|webp)|model\/gltf-binary|application\/octet-stream);base64,(.+)$/.exec(data);
-					if (b64 === null || b64[1] === "application/octet-stream" && !meshName) return fail(400, "uploads: only png / jpeg / webp / glb upload");
+					const b64 = /^data:(image\/(?:png|jpeg|webp)|model\/gltf(?:-binary|\+json)|application\/octet-stream);base64,(.+)$/.exec(data);
+					if (b64 === null || b64[1] === "application/octet-stream" && !meshName) return fail(400, "uploads: only png / jpeg / webp / glb / gltf upload");
 					const bytes = Buffer.from(b64[2], "base64");
 					const dir = await inputDir();
 					const fs = await import("node:fs/promises");
@@ -315,7 +337,7 @@ function apply(c, config = {}) {
 					if (real === void 0 || !real.startsWith(realDir + path.sep)) return fail(404, "no such input");
 					const bytes = await fs.readFile(file);
 					const ext = name.split(".").pop().toLowerCase();
-					const type = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : "image/webp";
+					const type = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "glb" ? "model/gltf-binary" : ext === "gltf" ? "model/gltf+json" : "image/webp";
 					res.writeHead(200, {
 						"content-type": type,
 						"content-length": String(bytes.byteLength)
@@ -536,8 +558,13 @@ function apply(c, config = {}) {
 				} catch (error) {
 					return fail(500, { error: `discovery door: ${error instanceof Error ? error.message : /* v8 ignore next -- the try body throws Errors only (URL/arms are sync-Error sites, 2026-09-12) */ String(error)}` });
 				}
-				const request = makeEstateRequest(c);
 				const pathWithQuery = url.pathname + url.search;
+				if (seatFamilyForPath(path).probeNames.length > 0 && estateStillActivating(c)) return fail(503, {
+					error: "estate composition is still activating",
+					code: "estate/pending",
+					pending: true
+				});
+				const request = makeEstateRequest(c);
 				if (method === "POST") {
 					readBody(req).then((buf) => {
 						let body;
@@ -557,4 +584,4 @@ function apply(c, config = {}) {
 	}), "melite-tools: /v1 prefix door");
 }
 //#endregion
-export { DEFAULT_ENHANCE_PREFERENCE, apply, inject, mcpToolsOf, seatedMcpServers };
+export { DEFAULT_ENHANCE_PREFERENCE, ESTATE_PENDING_GRACE_MS, apply, inject, mcpToolsOf, seatedMcpServers };

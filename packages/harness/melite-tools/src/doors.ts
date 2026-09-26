@@ -35,7 +35,7 @@ import {
   modelCatalogArm,
   cardToolsArm,
 } from './discovery.ts'
-import { makeEstateRequest, type EstateMethod } from './estate.ts'
+import { makeEstateRequest, seatFamilyForPath, type EstateMethod } from './estate.ts'
 // The protocol refusal discrimination (the false-death fix,
 // 2026-10-08): a seat's NAMED refusal is a 4xx answer about the
 // CALLER's request — never the seat-absent 502.
@@ -107,6 +107,15 @@ export function mcpToolsOf(c: CtxView, server: string): McpToolRows {
 interface CtxView {
   effect(effect: () => void, label?: string): unknown
   llm: LlmStreamSeam
+  registry: {
+    values(): Iterable<{
+      fibers: Iterable<{
+        uid: number | null
+        store: unknown
+        inertia?: Promise<void>
+      }>
+    }>
+  }
   tools: {
     schemas(): Array<{ name: string; description?: string; parameters?: unknown }>
   }
@@ -119,6 +128,33 @@ interface CtxView {
       handler: (req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => void
     }): () => void
   }
+}
+
+/** THE PENDING GRACE (the 3088 brick, 2026-09-26 — live proof: a
+ * fiber stuck mid-transition held the pending gate closed for 10
+ * hours while every non-seat door served fine). "Still activating"
+ * is a BOOT-RACE answer, but the state is cheap to observe and
+ * GLOBAL: any ONE wedged fiber (a failed plugin-tree reload, a hung
+ * MCP seat handshake) would brick every seat door forever. The
+ * stamp starts when the state is first observed and clears when it
+ * lifts; past ESTATE_PENDING_GRACE_MS the state is a WEDGE, not an
+ * activation — the gate opens and the seat probe's own honest voice
+ * answers (serve, or the missing-seat 502 naming the family). */
+export const ESTATE_PENDING_GRACE_MS = 120_000
+let estatePendingSince: number | null = null
+const estateStillActivating = (c: CtxView): boolean => {
+  let activating = false
+  for (const runtime of c.registry.values()) {
+    for (const fiber of runtime.fibers) {
+      if (fiber.uid !== null && (fiber.store === undefined || fiber.inertia !== undefined)) activating = true
+    }
+  }
+  if (!activating) {
+    estatePendingSince = null
+    return false
+  }
+  if (estatePendingSince === null) estatePendingSince = Date.now()
+  return Date.now() - estatePendingSince < ESTATE_PENDING_GRACE_MS
 }
 
 // ── THE POSER ARMS (2026-09-16 — estate verbs, never a proxy) ─────
@@ -415,9 +451,9 @@ export function apply(c: CtxView, config: Config = {}): void {
           // the MIME; the extension closes the pair, and the whitelist
           // stays closed to every other binary).
           const meshName = /\.glb$/i.test(filename) || /\.gltf$/i.test(filename)
-          const b64 = /^data:(image\/(?:png|jpeg|webp)|model\/gltf-binary|application\/octet-stream);base64,(.+)$/.exec(data)
+           const b64 = /^data:(image\/(?:png|jpeg|webp)|model\/gltf(?:-binary|\+json)|application\/octet-stream);base64,(.+)$/.exec(data)
           if (b64 === null || (b64[1] === 'application/octet-stream' && !meshName)) {
-            return fail(400, 'uploads: only png / jpeg / webp / glb upload')
+            return fail(400, 'uploads: only png / jpeg / webp / glb / gltf upload')
           }
           const bytes = Buffer.from(b64[2]!, 'base64')
           const dir = await inputDir()
@@ -459,7 +495,7 @@ export function apply(c: CtxView, config: Config = {}): void {
           // split always yields ≥1 element, so pop() is always a
           // string — no ?. decay, no ?? (2026-09-12).
           const ext = (name.split('.').pop() as string).toLowerCase()
-          const type = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/webp'
+           const type = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'glb' ? 'model/gltf-binary' : ext === 'gltf' ? 'model/gltf+json' : 'image/webp'
           res.writeHead(200, { 'content-type': type, 'content-length': String(bytes.byteLength) })
           res.end(bytes)
         })().catch((e: unknown) => fail(500, 'inputs: ' + (e instanceof Error ? e.message : /* v8 ignore next -- fs throws Errors only (2026-09-12) */ String(e))))
@@ -729,8 +765,15 @@ export function apply(c: CtxView, config: Config = {}): void {
         // arrived at the registry as '' — the params dropped at this
         // seam, the tools never noticed because they call the seats
         // in-process).
-        const request = makeEstateRequest(c)
         const pathWithQuery = url.pathname + url.search
+        if (seatFamilyForPath(path).probeNames.length > 0 && estateStillActivating(c)) {
+          return fail(503, {
+            error: 'estate composition is still activating',
+            code: 'estate/pending',
+            pending: true,
+          } as const)
+        }
+        const request = makeEstateRequest(c)
         if (method === 'POST') {
           readBody(req).then((buf) => {
             let body: unknown
