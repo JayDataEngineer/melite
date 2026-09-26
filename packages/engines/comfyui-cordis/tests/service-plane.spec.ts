@@ -121,6 +121,15 @@ describe("registerPack (the category contract)", () => {
   });
 });
 
+describe("packFieldNames", () => {
+  it("returns registered declaration order and an empty list for an unknown pack", async () => {
+    const svc = await boot();
+    assert.deepEqual(svc.packFieldNames("ghost"), []);
+    svc.registerPack({ pack: "loras", fields: fields({ strength: {}, filename: {} }) });
+    assert.deepEqual(svc.packFieldNames("loras"), ["strength", "filename"]);
+  });
+});
+
 describe("registerFlavor (the family boarding)", () => {
   it("a flavor for an unknown pack is drift; a familyless flavor refuses", async () => {
     const svc = await boot();
@@ -247,6 +256,54 @@ describe("registerCard (one card, one plugin)", () => {
     );
   });
 
+  it("a class selector binds the last matching producer", () => {
+    const def = card({
+      flowKinds: { inputs: {}, outputs: { video: "video" }, requiresModel: true },
+      flowOutputBindings: [{ channel: "video", node: "*", nodeClass: "SaveVideo" }],
+    });
+    const graph = {
+      "SaveVideo.0": { class_type: "SaveVideo", inputs: {} },
+      "SaveAudio.0": { class_type: "SaveAudio", inputs: {} },
+      "SaveVideo.1": { class_type: "SaveVideo", inputs: {} },
+    };
+    assert.deepEqual(resolveCardFlowOutputs(def, {}, graph), {
+      outputs: { video: "video" },
+      outputNodes: { video: "SaveVideo.1" },
+    });
+  });
+
+  it("flow output resolution refuses duplicate, undeclared, and missing producers", () => {
+    const duplicate = card({
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: true },
+      flowOutputBindings: [
+        { channel: "image", node: "Save.0", nodeClass: "Save" },
+        { channel: "image", node: "Save.1", nodeClass: "Save" },
+      ],
+    });
+    assert.throws(
+      () => resolveCardFlowOutputs(duplicate, {}, { "Save.0": { class_type: "Save" }, "Save.1": { class_type: "Save" } }),
+      (error: unknown) => error instanceof ComposeRefusal && error.code === "flow-output",
+    );
+
+    const undeclared = card({
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: true },
+      flowOutputBindings: [{ channel: "ghost", node: "Save.0", nodeClass: "Save" }],
+    });
+    assert.throws(
+      () => resolveCardFlowOutputs(undeclared, {}, { "Save.0": { class_type: "Save" } }),
+      (error: unknown) => error instanceof ComposeRefusal && error.code === "flow-output",
+    );
+
+    const missing = card({
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: true },
+      flowOutputBindings: [{ channel: "image", node: "Save.0", nodeClass: "Save" }],
+    });
+    assert.throws(
+      () => resolveCardFlowOutputs(missing, {}, {}),
+      /output 'image' expects Save\.0 as Save, got missing/,
+    );
+  });
+
   it("output bindings cannot name channels absent from flowKinds", async () => {
     const svc = await boot();
     assert.throws(
@@ -276,6 +333,31 @@ describe("registerCard (one card, one plugin)", () => {
     // distinct families still compose side by side
     svc.registerCard(card({ id: "image-edit", boarded: ["qwen-img-edit-2511"] }));
     assert.deepEqual(svc.cardIds(), ["image-edit", "image-gen"]);
+  });
+});
+
+describe("flow contract registration guards", () => {
+  it("refuses a missing contract, empty producer identity, and duplicate unconditional producers", async () => {
+    const svc = await boot();
+    assert.throws(
+      () => svc.registerCard(card({ flowKinds: undefined as never })),
+      (error: unknown) => error instanceof ComposeRefusal && error.code === "flow-contract",
+    );
+    assert.throws(
+      () => svc.registerCard(card({
+        flowOutputBindings: [{ channel: "image", node: "", nodeClass: "Save" }],
+      })),
+      (error: unknown) => error instanceof ComposeRefusal && error.code === "flow-output",
+    );
+    assert.throws(
+      () => svc.registerCard(card({
+        flowOutputBindings: [
+          { channel: "image", node: "Save.0", nodeClass: "Save" },
+          { channel: "image", node: "Save.1", nodeClass: "Save" },
+        ],
+      })),
+      (error: unknown) => error instanceof ComposeRefusal && error.code === "flow-output",
+    );
   });
 });
 

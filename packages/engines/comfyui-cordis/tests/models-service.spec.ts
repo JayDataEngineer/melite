@@ -155,6 +155,18 @@ describe("registerFamily (the route index)", () => {
     assert.equal(svc.modelIds().filter((id) => id !== "synth-a").length, 0);
   });
 
+  it("a repeated self-route on the same model keeps the first head", () => {
+    const svc = fresh()
+    svc.registerFamily(clone({
+      id: "same-head",
+      variants: [
+        { ...variant({ id: "v1", route: "same-head" }) },
+        { ...variant({ id: "v2", route: "same-head" }) },
+      ],
+    }))
+    assert.equal(svc.getModel("same-head").id, "same-head")
+  })
+
   it("a self-route supersedes a sibling alias; a foreign model id claim skips", () => {
     const svc = fresh();
     svc.registerFamily(clone({ id: "aaa", variants: [{ ...variant({ route: "shared" }) }] }));
@@ -186,6 +198,18 @@ describe("registryModel + getModel (the two planes)", () => {
     assert.throws(() => svc.registryModel("ghost"), /no registered model 'ghost'/);
     assert.throws(() => svc.getModel("ghost"), /unknown model 'ghost'/);
   });
+
+  it("missing variant and cell labels compose through the empty-token arm", () => {
+    const svc = fresh()
+    const decl = clone({
+      id: "synth-a",
+      variants: [{ ...variant({ id: "v", route: "v-route" }) }],
+    })
+    delete (decl.variants[0] as unknown as Record<string, unknown>)["label"]
+    delete (decl.variants[0].cells[0] as unknown as Record<string, unknown>)["label"]
+    svc.registerFamily(decl)
+    assert.equal(svc.getModel("v-route").label, "Krea 2")
+  })
 
   it("a variant address resolves its first cell when no cell routes there", () => {
     const svc = fresh();
@@ -363,6 +387,16 @@ describe("mergedDefaults + cascade (the inherency primitive)", () => {
     delete (d.variants[0] as unknown as Record<string, unknown>)["resolver_defaults"];
     svc.registerFamily(d);
     assert.deepEqual(svc.mergedDefaults("synth-a", "v", "q8"), {});
+    const noResolver = clone({
+      id: "synth-a",
+      variants: [{ ...variant({ id: "v", cells: [cell({ quant: "q8" })] }) }],
+    })
+    delete (noResolver as unknown as Record<string, unknown>)["defaults"]
+    delete (noResolver.variants[0] as unknown as Record<string, unknown>)["resolver_defaults"]
+    delete (noResolver.variants[0].cells[0] as unknown as Record<string, unknown>)["resolver_defaults"]
+    const noResolverSvc = fresh()
+    noResolverSvc.registerFamily(noResolver)
+    assert.deepEqual(noResolverSvc.mergedDefaults("synth-a", "v", "q8"), {})
   });
 
   it("coordinates merge base ← variant ← cell (root-closer wins)", () => {
@@ -412,6 +446,9 @@ describe("resolve (the R1 contract)", () => {
     delete (d as unknown as Record<string, unknown>)["engine"];
     noeng.registerFamily(d);
     assert.equal(noeng.resolve("r").engine, "comfyui", "a missing engine key serves comfyui");
+    const explicit = fresh()
+    explicit.registerFamily(clone({ id: "synth-a", engine: "family-engine", variants: [{ ...variant({ route: "r" }) }] }))
+    assert.equal(explicit.resolve("r").engine, "family-engine")
   });
 });
 

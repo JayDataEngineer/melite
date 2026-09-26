@@ -328,6 +328,18 @@ describe("editImageCap (the max_images law — the lane rides the DECL, never a 
 describe("the 2.1 edit lane — the lanpaint region never lies", () => {
   const SOLVER21 = { width: 1024, height: 1024, seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" };
   const SOLVER2511 = { seed: 3, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" };
+  it("full_frame and auto share the 2.1 whole-image graph", () => {
+    const auto = new GraphBuilder({});
+    const fullFrame = new GraphBuilder({});
+    const params = { prompt: "fix the badge", image1: "in.png", ...SOLVER21 };
+    refuseImageEditFiring({ ...params, mask_mode: "auto" }, FACTS_21);
+    refuseImageEditFiring({ ...params, mask_mode: "full_frame" }, FACTS_21);
+    imageEdit({ ...params, mask_mode: "auto" }, FACTS_21, auto, "probe-alias-21");
+    imageEdit({ ...params, mask_mode: "full_frame" }, FACTS_21, fullFrame, "probe-alias-21");
+    assert.deepEqual(graphOf(auto), graphOf(fullFrame));
+    assert.ok(Object.values(graphOf(fullFrame)).some((node) => node.class_type === "KSampler"));
+    assert.ok(!Object.values(graphOf(fullFrame)).some((node) => node.class_type === "DetailerForEach"));
+  });
   it("input_mask stated on the 2.1 lane refuses field-named (no lanpaint sampler on this base — never a silent plain edit)", () => {
     const g = new GraphBuilder({});
     const params21 = { prompt: "fix the badge", image1: "in.png", input_mask: "mask.png", ...SOLVER21 };

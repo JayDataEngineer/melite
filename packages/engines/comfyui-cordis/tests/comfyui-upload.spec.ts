@@ -21,6 +21,7 @@ const ROOT = join(DIR, "runs");
 beforeAll(() => {
   mkdirSync(join(ROOT, "run-1"), { recursive: true });
   writeFileSync(join(ROOT, "run-1", "local.png"), "png");
+  writeFileSync(join(ROOT, "run-1", "local.flac"), "flac");
   writeFileSync(join(DIR, "abs.gif"), "gif");
   writeFileSync(join(DIR, "rel.webp"), "webp");
   writeFileSync(join(process.cwd(), "cwd-rel.webp"), "webp");
@@ -80,7 +81,8 @@ describe("uploadFile (the ctype table + the receipt)", () => {
       ["a.png", "image/png"], ["a.jpg", "image/jpeg"], ["a.jpeg", "image/jpeg"],
       ["a.webp", "image/webp"], ["a.gif", "image/gif"], ["a.mp4", "video/mp4"],
       ["a.wav", "audio/wav"], ["a.mp3", "audio/mpeg"], ["a.glb", "model/gltf-binary"],
-      ["a.xyz", "application/octet-stream"],
+      ["a.gltf", "model/gltf+json"],
+      ["a.xyz", "application/octet-stream"], ["no-extension", "application/octet-stream"],
     ];
     for (const [name, mime] of cases) {
       const p = join(DIR, name);
@@ -130,6 +132,17 @@ describe("uploadReferenced (the staging walk)", () => {
     expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     expect(uploaded[url]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
   });
+  it("mesh data URLs stage with the mesh extension and mime", async () => {
+    for (const mime of ["model/gltf-binary", "model/gltf+json"]) {
+      const url = `data:${mime};base64,` + Buffer.from("mesh").toString("base64");
+      const { graph, uploaded } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadGLB", inputs: { glb_path: url } },
+      });
+      expect((graph["n"] as { inputs: { glb_path: string } }).inputs.glb_path).toMatch(new RegExp(`\\.(?:glb|gltf)$`));
+      expect(uploaded[url]).toMatch(new RegExp(`\\.(?:glb|gltf)$`));
+    }
+  });
+
   it("non-image and empty-payload data URLs ride untouched", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {
       a: { class_type: "X", inputs: { v: "data:text/plain;base64,aGk=" } },
@@ -176,6 +189,59 @@ describe("uploadReferenced (the staging walk)", () => {
       }, { runsRoot: ROOT });
       expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     }
+  });
+  it("stages every source in a film clips_json manifest and preserves row fields", async () => {
+    const data = "data:audio/flac;base64," + Buffer.from("manifest-flac").toString("base64");
+    const source = "/melite-media/runs/run-1/local.flac";
+    const { graph, uploaded } = await uploadReferenced(fakeClient(), {
+      n: {
+        class_type: "MeliteFilmAudioMix",
+        inputs: {
+          clips_json: JSON.stringify([
+            { src: source, start_sec: 0, dur_sec: 1, class: "sfx" },
+            { src: data, start_sec: 2, dur_sec: 3, class: "music" },
+          ]),
+          film_seconds: 10,
+        },
+      },
+    }, { runsRoot: ROOT });
+    const input = (graph["n"] as { inputs: { clips_json: string } }).inputs;
+    const rows = JSON.parse(input.clips_json) as Array<Record<string, unknown>>;
+    expect(rows[0]).toMatchObject({ start_sec: 0, dur_sec: 1, class: "sfx" });
+    expect(rows[1]).toMatchObject({ start_sec: 2, dur_sec: 3, class: "music" });
+    expect(rows[0]!.src).toMatch(/local_[0-9a-f]{12}\.flac$/);
+    expect(rows[1]!.src).toMatch(/melite-data-.*_[0-9a-f]{12}\.flac$/);
+    expect(input.clips_json).toBe(JSON.stringify(rows));
+    expect(Object.keys(uploaded)).toHaveLength(2);
+  });
+  it("leaves malformed and non-array film manifests for the node validator", async () => {
+    const values = [
+      "not-json",
+      JSON.stringify({ src: "/melite-media/runs/run-1/local.flac" }),
+      JSON.stringify([null, 3, { start_sec: 0, dur_sec: 1, class: "sfx" }]),
+      7,
+    ];
+    for (const clips_json of values) {
+      const { graph } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "MeliteFilmAudioMix", inputs: { clips_json } },
+      }, { runsRoot: ROOT });
+      expect((graph["n"] as { inputs: { clips_json: unknown } }).inputs.clips_json).toBe(clips_json);
+    }
+  });
+  it("deduplicates a direct asset against the same film manifest source", async () => {
+    const source = "/melite-media/runs/run-1/local.flac";
+    const before = uploads.length;
+    const { graph } = await uploadReferenced(fakeClient(), {
+      direct: { class_type: "LoadAudio", inputs: { audio: source } },
+      mix: {
+        class_type: "MeliteFilmAudioMix",
+        inputs: { clips_json: JSON.stringify([{ src: source, start_sec: 0, dur_sec: 1, class: "sfx" }]) },
+      },
+    }, { runsRoot: ROOT });
+    expect(uploads.length).toBe(before + 1);
+    const direct = (graph["direct"] as { inputs: { audio: string } }).inputs.audio;
+    const row = JSON.parse((graph["mix"] as { inputs: { clips_json: string } }).inputs.clips_json)[0] as { src: string };
+    expect(row.src).toBe(direct);
   });
   it("an estate URL without a runs root refuses", async () => {
     await expect(uploadReferenced(fakeClient(), {

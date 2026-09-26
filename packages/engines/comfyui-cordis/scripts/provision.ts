@@ -26,10 +26,11 @@
 //   all            extensions + models.
 //
 // Config is read TS-natively: inference.config.json at the repo root
-// is the SSOT (model roots, engine url/port/dirs); the endpoint file
-// (packages/engines/comfyui-cordis/data/comfyui_endpoint.json) overrides
-// model_base_path / model_download_path only when SET. Present-but-
-// empty endpoint keys die LOUD (QUEUE LANE LAW).
+// supplies the provisioning/layout defaults. The endpoint file
+// (packages/engines/comfyui-cordis/data/comfyui_endpoint.json) is the
+// live deployment surface and may override named engine fields when set;
+// the runtime engine resolves its URL from COMFYUI_URL or the endpoint file.
+// Present-but-empty endpoint keys die LOUD (QUEUE LANE LAW).
 //
 // Commands (nouns kept stable — the manage door's restart-refusal
 // text names `provision boot-cmd`):

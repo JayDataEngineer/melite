@@ -12,7 +12,7 @@ The timeline card wraps PlagueKind's V7 ComfyUI workflow 1:1. **ALL DEFAULTS, HI
 The chain mechanism (motion context clip-to-clip) is PROVEN: character, scene, motion
 and generated ambience cross seams with no keyframes and no shared music.
 
-GPU budget at 1344×768: 96f opener ≈ 2–3 min, 56f chain window ≈ 1–1.5 min.
+GPU budget at 1344×768: 90f opener ≈ 2–3 min, 68f chain window ≈ 1–1.5 min.
 
 ---
 
@@ -30,19 +30,22 @@ melite_construct add_stage — card "h3-timeline", params:
   "identity": "yellow-eared rabbit mascot, pink dress",
   "calls": [
     { "text": "opener beat — settle, then explode into a sprint",
-      "start_frame": 0, "end_frame": 96,
+      "start_frame": 0, "end_frame": 90,
       "image": "example.png" },
     { "text": "continue the sprint drive, knees high, dust kicking",
-      "start_frame": 96, "end_frame": 152 },
-    { "text": "more beats — 56f each",
-      "start_frame": 152, "end_frame": 208 }
+      "start_frame": 90, "end_frame": 158 },
+    { "text": "more beats — 51f each",
+      "start_frame": 158, "end_frame": 209 }
   ]
 }
 ```
 
 LAWS baked in (all pre-GPU 4xx refusals, nothing silent):
-- **Opener = 96 frames** (`0→96`, 4s). 96f is phase-valid (32 latent steps, 2 mod 5
-  on the 17k+5 grid). Chain beats = **his 56 frames** each (also phase-valid).
+- **Opener = 90 frames** (`0→90`, 3.75s) — the first window renders its
+  span verbatim, so it is 22+17k (90, 107, 124, 141 …). Chain beats are
+  carried, so they are 17k (51, 68, 119, 153 …) and each call starts
+  exactly where the previous one ended. Off-grid spans are refused with
+  the nearest legal frame — never silently re-framed.
 - **`image` ONLY on calls[0].** It is the identity/guide reference for the opener.
 - **`identity` REQUIRED when the film opens from an image** (window 2+ have no image
   input; this text rides every chain prompt as `[Identity, hold exactly] …`).
@@ -84,7 +87,7 @@ LAWS baked in (all pre-GPU 4xx refusals, nothing silent):
   Works minutes or days later; latents persist.
 - **NO `image` on calls[0] of a continuation** (refused): the prior latent is the
   anchor. `identity` required instead.
-- Beats are 56f from frame 0 (this shot's own timeline).
+- Beats are 51f from frame 0 (this shot's own timeline) — a carried window is 17f.
 - Chain more shots by pointing each new card at the PREVIOUS shot's run id.
 
 ### Music (any shot, or the final film)
@@ -140,6 +143,6 @@ Films are made ONE VERIFIED WINDOW AT A TIME. Look BEFORE more GPU burns:
 
 Window k loads window k−1's saved joint AV latent, copies its final valid run into
 the new prefix, protects it (mask=0 — never denoised), and only the future region
-diffuses. Valid runs are 2 mod 5 latent steps (96f→32, 56f→17 — both valid). The
+diffuses. Valid runs are 2 mod 5 latent steps (90f→32, 68f→17 — both valid). The
 39-frame protected prefix is trimmed at stitch → the seam is a true continuation.
 Generated audio rides the same latent — ambience continues too.

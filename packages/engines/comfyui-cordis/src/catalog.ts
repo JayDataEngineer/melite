@@ -321,6 +321,47 @@ export function checkModelPresent(
   return findModelPresent(relativePath, name, repoRoot, cfg);
 }
 
+export function findModelPathPresent(
+  modelPath: string,
+  repoRoot: string,
+  cfg: Record<string, EngineJson> | null,
+): string | null {
+  const clean = modelPath.trim().replace(/^\/+|\/+$/gu, "");
+  if (clean === "" || clean.split("/").some((part) => part === "..")) return null;
+  const runtime = join(runtimeModelsRoot(repoRoot), clean);
+  if (existsSync(runtime)) return runtime;
+  if (cfg === null) return null;
+  const rawBase: unknown = cfg["model_base_path"];
+  const base = typeof rawBase === "string" ? rawBase.trim() : "";
+  const mountBase = base !== "" && base !== "undefined" ? base : rootModelsReadRoot(repoRoot);
+  if (mountBase === "" || mountBase === "undefined") return null;
+  const candidates: string[] = [join(mountBase, clean)];
+  const extras: unknown = cfg["extra_model_folders"];
+  if (isRecord(extras)) {
+    for (const mapped of Object.values(extras)) {
+      if (typeof mapped !== "string" || mapped.trim() === "") continue;
+      candidates.push(join(mountBase, stripSlashes(mapped), clean));
+    }
+  }
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+export function checkModelPathPresent(
+  modelPath: string,
+  repoRoot: string = resolveRepoRoot(),
+): string | null {
+  let cfg: Record<string, EngineJson> | null;
+  try {
+    cfg = loadEndpointConfig();
+  } catch {
+    cfg = null;
+  }
+  return findModelPathPresent(modelPath, repoRoot, cfg);
+}
+
 /** The root inheritance base: the root config's models.read_root
  *  (inference.config.json at the repo root). Empty string = no
  *  root statement (missing file, no models block, non-string

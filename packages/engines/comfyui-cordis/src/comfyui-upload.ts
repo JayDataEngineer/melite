@@ -78,6 +78,8 @@ export const DATA_URL_IMAGE_EXT: Record<string, string> = {
   "image/bmp": ".bmp",
   "image/avif": ".avif",
   "image/tiff": ".tiff",
+  "model/gltf-binary": ".glb",
+  "model/gltf+json": ".gltf",
   "audio/wav": ".wav",
   "audio/x-wav": ".wav",
   "audio/wave": ".wav",
@@ -169,6 +171,7 @@ export async function uploadFile(
   else if (lower.endsWith(".mp3")) ctype = "audio/mpeg";
   else if (lower.endsWith(".flac")) ctype = "audio/flac";
   else if (lower.endsWith(".glb")) ctype = "model/gltf-binary";
+  else if (lower.endsWith(".gltf")) ctype = "model/gltf+json";
   // THE CONTENT-ADDRESS LAW (2026-09-22 — the stale-take bug): the
   // staged name carries a hash of the BYTES, not the bare basename.
   // ComfyUI's upload endpoint skips the write when the name already
@@ -377,6 +380,30 @@ export async function uploadReferenced(
     if (!(cand in seen)) seen[cand] = (await uploadFile(client, cand)).name;
     return seen[cand] as string;
   };
+  const stageFilmClips = async (value: EngineJson): Promise<EngineJson> => {
+    if (typeof value !== "string") return value;
+    let parsed: EngineJson;
+    try {
+      parsed = JSON.parse(value) as EngineJson;
+    } catch {
+      return value;
+    }
+    if (!Array.isArray(parsed)) return value;
+    const rows: EngineJson[] = [];
+    for (const row of parsed) {
+      if (typeof row !== "object" || row === null || Array.isArray(row)) {
+        rows.push(row);
+        continue;
+      }
+      const record = row as Record<string, EngineJson>;
+      if (typeof record["src"] !== "string") {
+        rows.push(row);
+        continue;
+      }
+      rows.push({ ...record, src: await stageOne(record["src"]) });
+    }
+    return JSON.stringify(rows);
+  };
   const out: Record<string, EngineJson> = {};
   for (const [nid, node] of Object.entries(wf)) {
     if (typeof node === "object" && node !== null && !Array.isArray(node)) {
@@ -392,6 +419,20 @@ export async function uploadReferenced(
         const next: Record<string, EngineJson> = {};
         for (const [k, x] of Object.entries(ins)) {
           next[k] = k === "video" ? x : await stageOne(x);
+        }
+        out[nid] = { ...rec, inputs: next };
+        continue;
+      }
+      if (
+        rec["class_type"] === "MeliteFilmAudioMix" &&
+        typeof rec["inputs"] === "object" &&
+        rec["inputs"] !== null &&
+        !Array.isArray(rec["inputs"])
+      ) {
+        const ins = rec["inputs"] as Record<string, EngineJson>;
+        const next: Record<string, EngineJson> = {};
+        for (const [k, x] of Object.entries(ins)) {
+          next[k] = k === "clips_json" ? await stageFilmClips(x) : await stageOne(x);
         }
         out[nid] = { ...rec, inputs: next };
         continue;

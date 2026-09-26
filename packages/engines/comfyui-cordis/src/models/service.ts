@@ -27,6 +27,7 @@ import type { Plugin } from "@deepseek-ai/cordis";
 import {
   type CatalogArtifactRow,
   type CatalogModel,
+  checkModelPathPresent,
   findModelPresent,
   loadCatalogModels,
   resolveArtifactRows,
@@ -492,6 +493,10 @@ export class ModelsService extends Service {
       cfg = null;
     }
     return findModelPresent(relativePath, name, repoRoot, cfg);
+  }
+
+  checkModelPathPresent(modelPath: string, repoRoot: string = resolveRepoRoot()): string | null {
+    return checkModelPathPresent(modelPath, repoRoot);
   }
 }
 

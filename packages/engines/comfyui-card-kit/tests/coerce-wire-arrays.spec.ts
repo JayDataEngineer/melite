@@ -43,6 +43,10 @@ describe("unwrapItemArrays (the deep tool-boundary walk)", () => {
     cyc.self = cyc;
     const out = unwrapItemArrays(cyc) as Record<string, unknown>;
     assert.equal(out.self, out, "the cycle resolves to the same clone");
+    const cyclicArray: unknown[] = [];
+    cyclicArray.push(cyclicArray);
+    const arrayOut = unwrapItemArrays(cyclicArray) as unknown[];
+    assert.equal(arrayOut[0], arrayOut, "an array cycle resolves to the same clone");
   });
 });
 
@@ -117,6 +121,12 @@ describe("wireTypeLedger (the receipt's type evidence, 035 gap #2)", () => {
     assert.equal(wireTypeLedger(schema, { width: 768, prompt: "x" }), "");
     assert.equal(wireTypeLedger(schema, {}), "");
   });
+  it("undefined values skip while null and arrays retain their received shapes", () => {
+    const out = wireTypeLedger(schema, { width: undefined, prompt: null, seed: [] });
+    assert.doesNotMatch(out, /width=/);
+    assert.match(out, /prompt=null/);
+    assert.match(out, /seed=array/);
+  });
 });
 
 describe("coerceWireNumbers — the boxed-number unbox", () => {
@@ -175,5 +185,11 @@ describe("coerceWireNumbers — the deep element fill (035 attempt-8's last dise
     const rows = [{ start_frame: 1, dur_frames: 2, text: "x" }];
     const out = coerceWireNumbers(schema, { audio_clips: rows }) as Record<string, unknown>;
     assert.equal(out.audio_clips, rows);
+  });
+  it("nested numeric fills create the output when no top-level number changed", () => {
+    const out = coerceWireNumbers(schema, {
+      audio_clips: [{ start_frame: "144", dur_frames: "134", text: "x" }],
+    }) as Record<string, unknown>;
+    assert.deepEqual(out.audio_clips, [{ start_frame: 144, dur_frames: 134, text: "x" }]);
   });
 });

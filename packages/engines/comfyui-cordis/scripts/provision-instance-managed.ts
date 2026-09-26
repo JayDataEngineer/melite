@@ -132,21 +132,22 @@ export function vendorManager(): void {
 /** Write/verify the manager config pins. The vendor reads this file
  *  ONCE at ComfyUI startup — drift is warned, never silently
  *  rewritten (a running engine would not see the write). */
-export function pinManagerConfig(): void {
-  const f = join(RUNTIME, "user", "__manager", "config.ini");
-  const pins =
-    "security_level = normal-\nallow_git_url_install = true\n" +
-    "allow_pip_install = true\n";
+export function pinManagerConfig(runtime: string = RUNTIME): void {
+  const f = join(runtime, "user", "__manager", "config.ini");
+  const pins = [
+    "security_level = normal-",
+    "allow_git_url_install = true",
+    "allow_pip_install = true",
+    "channel_url = https://raw.githubusercontent.com/Comfy-Org/ComfyUI-Manager/main",
+  ];
   if (!existsSync(f)) {
     mkdirSync(dirname(f), { recursive: true });
-    writeFileSync(f, "[default]\n" + pins +
-      "channel_url = https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main\n");
+    writeFileSync(f, "[default]\n" + pins.join("\n") + "\n");
     info("manager config pinned (" + f + ")");
     return;
   }
   const text = readFileSync(f, "utf8");
-  for (const key of ["security_level = normal-",
-    "allow_git_url_install = true", "allow_pip_install = true"]) {
+  for (const key of pins) {
     if (!text.includes(key)) {
       warn("manager config drift: '" + key +
         "' missing in " + f + " — fix deliberately (the running engine " +

@@ -159,11 +159,14 @@ const MaskFields = z.object({
       wtype: 'image', group: 'mask', zone: 'mods', order: 0,
       tooltip: 'RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with image1, the builder switches to the lanpaint sampler.',
     }),
-  mask_mode: z.union([z.const('auto'), z.const('crop_stitch'), z.const('full_frame')]).default('auto').description('Region Mode')
+  mask_mode: z.union([z.const('auto'), z.const('crop_stitch'), z.const('full_frame')]).default('crop_stitch').description('Edit Scope')
     .extra('extra', {
       wtype: 'select', group: 'mask', zone: 'mods', order: 1, width: 1,
-      options: ['auto', 'crop_stitch', 'full_frame'],
-      tooltip: 'How the region is honored: auto (stated mask = inline inpaint; unstated = whole image), crop_stitch (crop to the region + context, run the region detailer, composite back — pixels outside the region never change), full_frame (whole-image pass; the one arm still unbuilt, so it refuses).',
+      options: [
+        { value: 'auto', label: 'Whole image (default)' },
+        { value: 'crop_stitch', label: 'Masked region (crop + stitch)' },
+      ],
+      tooltip: 'No mask modifier = whole-image editing by default. Add a mask modifier to choose Masked region (crop + stitch): crop the region, edit it, and composite it back.',
     }),
   mask_detector: z.union([z.const('off'), z.const('person'), z.const('face'), z.const('hand')]).default('off').description('Region Detector')
     .extra('extra', {

@@ -107,15 +107,22 @@ model="h3-timeline"` + your window plan (no curl):
 {
   "prompt": "film logline",
   "params": {"calls": [
-    {"start_frame": 0,  "end_frame": 90,  "text": "w1 shot"},
-    {"start_frame": 90, "end_frame": 214, "text": "w2 shot"}],
+    {"start_frame": 0,   "end_frame": 90,  "text": "w1 shot"},
+    {"start_frame": 90,  "end_frame": 158, "text": "w2 shot"},
+    {"start_frame": 158, "end_frame": 209, "text": "w3 shot"}],
     "fps": 24, "seed": 42, "intent": "film", "continuity": "chain"}
 }
 ```
 
-- Spans are FRAMES (start_frame/end_frame) on the 17k+5 grid — first
-  call 90/107/124/141, later calls multiples of 17 — the strict gate
-  names any violation.
+- Spans are FRAMES (start_frame/end_frame) and calls TILE: every call
+  starts exactly where the previous one ended (no gaps, no overlaps).
+- The engine renders 22+17k frames per window, so authored spans are
+  NOT interchangeable: the FIRST call (and any `"transition": "cut"`
+  call) must be 22+17f — 90, 107, 124, 141 … — while a carried
+  (non-cut) later call is 17f — 51, 68, 119, 153 … — because its 22f
+  seam comes from the generation head, not the span. The strict gate
+  names any violation with the nearest legal frame; nothing is
+  silently re-framed.
 
 - The lane runs N windows (any N, default templated 4). Fewer calls hold
   the last on tail windows (an airlock hold), so three calls is legal.
@@ -130,6 +137,16 @@ model="h3-timeline"` + your window plan (no curl):
 
 ## Verify before shipping
 
+0. `melite_view` first, `ffprobe` second. On the final film the observe
+   door answers with no shell of your own: duration, the stream rows, and
+   a 4-frame contact sheet you can SEE. Reach for `ffprobe` when you need
+   byte-cheap format detail it prints better than the tool row. Note the
+   door does NOT report loudness — that verdict is owed from the engine
+   (`metadata.audio.loudness`), so do not claim a mix level you have not
+   measured. `melite_read` answers "what did this run actually send?" for
+   a run's TEXT sidecars (`_request.json`, `_flow.json`) — run-scoped and
+   text-only, so it is the door for receipts and `melite_view` is the door
+   for pictures.
 1. `ffprobe stitch_video_0.mp4` — duration ≈ the sum of the calls'
    spans (the stitch trims each carried head; a 3×124f piece is
    ~15.5s), aac 32kHz stream present, no gaps.

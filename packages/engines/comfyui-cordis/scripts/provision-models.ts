@@ -7,8 +7,6 @@ import {
   ComfyUiManagerHttpClient,
   ComfyUiManagerProvider,
   VerifiedArtifactWriter,
-  managerModelType,
-  managerSavePath,
 } from "@melite/estate-provisioning";
 import { loadCardDefs, provisionsByFamily } from "../src/cardDefs.ts";
 import { DEFAULT_CONFIG, DRY, die, info, warn } from "./provision-shared.ts";
@@ -79,9 +77,7 @@ export async function fetchVerified(_workspace: string,
     const installed = await manager.installModel({
       id: label,
       name,
-      type: managerModelType(sub),
-      base: "default",
-      savePath: managerSavePath(sub),
+      savePath: sub,
       url,
       filename: name,
     });

@@ -69,6 +69,7 @@ export interface VariantCellFacts {
   quant: string
   label: string
   route: string
+  hide_from_dropdown?: boolean
   artifact: string
   vram_peak_gb: number | null
 }
@@ -78,6 +79,7 @@ export interface ModelVariantFacts {
   id: string
   label: string
   group: string
+  hide_from_dropdown?: boolean
   route: string
   resolver_defaults: Record<string, unknown>
   /** THE VARIANT LANE (2026-09-23, the clone-lane repair): a variant
@@ -199,6 +201,7 @@ function deriveRow(
       id: v.id as string,
       label: v.label as string,
       group: v.group as string,
+      ...(v.hide_from_dropdown === true ? { hide_from_dropdown: true } : {}),
       route: reAddr((v.route ?? '') as string),
       resolver_defaults: (v.resolver_defaults ?? {}) as Record<string, unknown>,
       lane_inputs: ((v.lane_inputs ?? {}) as LaneInputsFacts),
@@ -213,6 +216,7 @@ function deriveRow(
       cells: ((v.cells ?? []) as Array<Record<string, unknown>>).map((c) => ({
         quant: c.quant as string,
         label: c.label as string,
+        ...(c.hide_from_dropdown === true ? { hide_from_dropdown: true } : {}),
         route: reAddr((c.route ?? '') as string),
         artifact: artifactBasename(c as { artifact?: { source_url?: string; filename?: string } }),
         vram_peak_gb: (c.vram_peak_gb ?? null) as number | null,

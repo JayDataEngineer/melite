@@ -136,16 +136,17 @@ export function quadRemeshLane(p: Record<string, unknown>, g: GraphBuilder, runI
 // + per-family requires + arm dispatch (the multi-family story stays
 // where the families board).
 
-/** Closed vocabularies (moved verbatim from
- *  the img-to-mesh card). */
-const MESH_RESOLUTIONS = ['512', '1024', '1536']
-const MESH_BG_MODES = ['auto', 'on', 'off']
-const MESH_PIXAL_FOVS = ['auto', '35', '49.13', '60', '75', '90']
-const MESH_BAKE_SIZES: Array<[string, Array<string>]> = [
+export const MESH_RESOLUTIONS: readonly string[] = ['1024', '1536']
+export const MESH_BG_MODES: readonly string[] = ['auto', 'on', 'off']
+export const MESH_PIXAL_FOVS: readonly string[] = ['auto', '35', '49.13', '60', '75', '90']
+export const MESH_BAKE_SIZES: ReadonlyArray<readonly [string, readonly string[]]> = [
   ['atlas_size', ['2048', '4096']],
   ['ao_size', ['512', '1024']],
   ['normal_size', ['1024', '2048']],
 ]
+export const MESH_ATLAS_SIZES = MESH_BAKE_SIZES[0][1]
+export const MESH_AO_SIZES = MESH_BAKE_SIZES[1][1]
+export const MESH_NORMAL_SIZES = MESH_BAKE_SIZES[2][1]
 
 // The 3D lane rows are NOT unet-shaped — read fields from
 // model.lane_inputs, cast as you read (the facts file carries
@@ -263,7 +264,7 @@ function sharedLiftChain(
   const up = g.node('Trellis2UpsampleStage', {
     positive: shapeStage.out(0), negative: shapeStage.out(1),
     shape_latent: shapeLatent.out(), vae: shapeVae,
-    target_resolution: Math.max(p.resolution as number, 1024),
+    target_resolution: Math.max(Number(p.resolution), 1024),
   })
   const upLatent = g.node('KSampler', {
     seed, steps: p.tex1_steps as number,
@@ -319,21 +320,21 @@ function sharedLiftChain(
     mesh: decimated, crease_angle: p.smooth_angle as number,
   }).out()
   const unwrapped = g.node('UnwrapMesh', {
-    mesh: smooth1, segmenter: 'pec', resolution: p.atlas_size as number,
+    mesh: smooth1, segmenter: 'pec', resolution: Number(p.atlas_size),
     padding: 1, weld_distance: 0.0002,
   }).out()
   const baked = g.node('BakeTextureFromVoxel', {
     mesh: unwrapped, voxel_colors: voxelColors,
-    texture_size: p.atlas_size as number, reference_mesh: mesh,
+    texture_size: Number(p.atlas_size), reference_mesh: mesh,
   })
   const occlusion = g.node('BakeAmbientOcclusion', {
     low_poly: unwrapped, high_poly: remeshed,
-    resolution: p.ao_size as number,
+    resolution: Number(p.ao_size),
     samples: 64, max_distance: 0.71, strength: 1.0, bias: 0.01,
   }).out()
   const normalMap = g.node('BakeNormalMapFromMesh', {
     low_poly: unwrapped, high_poly: remeshed,
-    resolution: p.normal_size as number,
+    resolution: Number(p.normal_size),
     cage_distance: 0.05, ignore_backfaces: true,
   }).out()
   const textured = g.node('ApplyTextureToMesh', {
@@ -480,13 +481,14 @@ export function rigSomaArm(p: Record<string, unknown>, g: GraphBuilder): void {
 export function rigSpeciesArm(p: Record<string, unknown>, g: GraphBuilder): void {
   const creature = g.node('PrimitiveString', { value: p.creature_glb as string }).out()
   const mesh = g.node('PrimitiveString', { value: p.mesh_glb as string }).out()
-  g.node('RayCreatureRigBridge', {
+  const bound = g.node('RayCreatureRigBridge', {
     creature_glb: creature,
     mesh_glb: mesh,
     height_ratio: p.height_ratio as number,
     max_influences: p.max_influences as number,
     strip_body: p.strip_body === true,
-  })
+  }).out()
+  g.node('SaveRiggedModel', { rigged_path: bound })
 }
 
 /** The lift arms' shared admission gates (—
@@ -502,7 +504,7 @@ export function admitMeshLift(p: Record<string, unknown>, model: ModelFacts): vo
   }
   if (!MESH_RESOLUTIONS.includes(String(p.resolution))) {
     throw new Error(
-      `resolution ${JSON.stringify(p.resolution)} is not one of 512|1024|1536 — the variant table is closed`)
+      `resolution ${JSON.stringify(p.resolution)} is not one of ${MESH_RESOLUTIONS.join('|')} — the variant table is closed`)
   }
   const bg = String(p.bg_removal || 'auto')
   if (!MESH_BG_MODES.includes(bg)) {

@@ -10,7 +10,7 @@ import { join } from "node:path";
 import {
   CatalogMiss, isCatalogMiss, loadCatalogModels, resetCatalogCache,
   resolveCatalogArtifact, resolveArtifactRows,
-  runtimeModelsRoot, checkModelPresent, findModelPresent,
+  runtimeModelsRoot, checkModelPresent, checkModelPathPresent, findModelPresent, findModelPathPresent,
 } from "../src/catalog.ts";
 import type { ModelDecl } from "../src/models/families/contract.ts";
 
@@ -156,6 +156,41 @@ describe("findModelPresent (runtime first, then the mount leg)", () => {
     assert.equal(findModelPresent("checkpoints", "w.safetensors", root, null), join(dir, "w.safetensors"));
   });
 
+  it("finds a declared model directory through the endpoint mount", () => {
+    const base = mkdtempSync(join(tmpdir(), "model-path-"));
+    mkdirSync(join(base, "audio", "Qwen3-TTS-12Hz-1.7B-VoiceDesign"), { recursive: true });
+    const cfg = { model_base_path: base, extra_model_folders: { audiocpp: "audio" } };
+    assert.equal(
+      findModelPathPresent("Qwen3-TTS-12Hz-1.7B-VoiceDesign", root, cfg),
+      join(base, "audio", "Qwen3-TTS-12Hz-1.7B-VoiceDesign"),
+    );
+    assert.equal(findModelPathPresent("../escape", root, cfg), null);
+  });
+
+  it("handles absent mounts, invalid roots, and unmapped extras", () => {
+    const base = mkdtempSync(join(tmpdir(), "model-path-empty-"));
+    assert.equal(findModelPathPresent("missing", root, null), null);
+    assert.equal(findModelPathPresent("missing", root, { model_base_path: 42 }), null);
+    assert.equal(findModelPathPresent("missing", root, { model_base_path: "undefined" }), null);
+    assert.equal(findModelPathPresent("missing", root, { model_base_path: base, extra_model_folders: [] }), null);
+    assert.equal(findModelPathPresent("missing", root, { model_base_path: base, extra_model_folders: { empty: "", invalid: 7 } }), null);
+    assert.equal(findModelPathPresent("///", root, { model_base_path: base }), null);
+    mkdirSync(join(base, "direct"), { recursive: true });
+    assert.equal(
+      findModelPathPresent("direct", root, { model_base_path: base }),
+      join(base, "direct"),
+    );
+  });
+
+  it("finds a declared model directory in the runtime tree", () => {
+    const dir = join(runtimeModelsRoot(root), "qwen3_tts", "Qwen3-TTS-12Hz-1.7B-VoiceDesign");
+    mkdirSync(dir, { recursive: true });
+    assert.equal(
+      findModelPathPresent("qwen3_tts/Qwen3-TTS-12Hz-1.7B-VoiceDesign", root, null),
+      dir,
+    );
+  });
+
   it("no base configured = mount leg skipped (the null arms)", () => {
     assert.equal(findModelPresent("models/checkpoints", "missing.safetensors", root, null), null);
     assert.equal(findModelPresent("models/checkpoints", "missing.safetensors", root, {}), null);
@@ -234,6 +269,19 @@ describe("findModelPresent (runtime first, then the mount leg)", () => {
         null,
         "the parse refusal collapses to cfg null — the runtime probe already missed",
       );
+    } finally {
+      if (prev === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];
+      else process.env["COMFYUI_ENDPOINT_CONFIG"] = prev;
+    }
+  });
+
+  it("checkModelPathPresent collapses an unparseable endpoint to the runtime probe", () => {
+    const bad = join(root, "endpoint-path.json");
+    writeFileSync(bad, "{nope");
+    const prev = process.env["COMFYUI_ENDPOINT_CONFIG"];
+    process.env["COMFYUI_ENDPOINT_CONFIG"] = bad;
+    try {
+      assert.equal(checkModelPathPresent("missing/path", root), null);
     } finally {
       if (prev === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];
       else process.env["COMFYUI_ENDPOINT_CONFIG"] = prev;

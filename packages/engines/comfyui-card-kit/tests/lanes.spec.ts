@@ -17,8 +17,8 @@ import {
  inputPrepLane, maskT1, taggerLane,
   annyLane,
   admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
-  quadRemeshLane, musicT1, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion, finalizeH3,
-  ttsT1,
+  quadRemeshLane, musicT1, yue2T1, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion, finalizeH3,
+  ttsT1, qvoiceUse,
 } from "../src/kit.ts";
 import { loadFacts } from "../src/facts.ts";
 import { deriveDefaults } from "../src/graph.ts";
@@ -173,6 +173,21 @@ describe("maskT1 (the selection lane's arms)", () => {
     assert.equal(figSam.inputs.threshold, 0.93, "the primary's sam_threshold rides the figure arm too");
     const saves = Object.values(row).filter((n) => n.class_type === "SaveImage");
     assert.ok(saves.some((s) => String(s.inputs.filename_prefix).endsWith("mask_figure_2")), "figure two saves its own mask_figure_2");
+  });
+
+  it("a scoped figure export applies the primary scope to the refined figure mask", () => {
+    const g = new GraphBuilder();
+    maskT1({
+      ...maskBase,
+      primary_via_sam2: true,
+      primary_sam2_labels: "person",
+      sam2_figures: [1],
+      scope_bbox: [4, 5, 40, 50],
+    }, MASK_PINS, g, "r_fig_scope");
+    const row = dump(g);
+    const mults = Object.values(row).filter((n) => n.class_type === "MaskComposite" && (n.inputs as { operation?: string }).operation === "multiply");
+    assert.equal(mults.length, 2);
+    assert.ok(Object.values(row).some((n) => n.class_type === "SaveImage" && String(n.inputs.filename_prefix).endsWith("mask_figure_1")));
   });
 
   it("a garbage sam2_figures refuses LOUD (1-based numbers, never a silent no-pick)", () => {
@@ -588,7 +603,9 @@ describe("the mesh-lift admissions and the rig copy", () => {
 
   it("the closed-set refusals (resolution, bg, bake sizes, fov)", () => {
     assert.throws(() => admitMeshLift({ ...liftBase, resolution: "999" }, trellis),
-      /resolution "999" is not one of 512\|1024\|1536/);
+      /resolution "999" is not one of 1024\|1536/);
+    assert.throws(() => admitMeshLift({ ...liftBase, resolution: "512" }, trellis),
+      /resolution "512" is not one of 1024\|1536/);
     assert.throws(() => admitMeshLift({ ...liftBase, bg_removal: "maybe" }, trellis),
       /bg_removal "maybe" is not one of auto\|on\|off/);
     assert.throws(() => admitMeshLift({ ...liftBase, ao_size: "77" }, trellis),
@@ -629,6 +646,11 @@ describe("the mesh-lift admissions and the rig copy", () => {
     trellisArm(g1, base, trellis);
     const on = dump(g1);
     assert.ok(classes(on).includes("RemoveBackground"), "bg on cuts");
+    assert.equal(on["Trellis2UpsampleStage.0"]?.inputs.target_resolution, 1024);
+    assert.equal(typeof on["UnwrapMesh.0"]?.inputs.resolution, "number");
+    assert.equal(typeof on["BakeTextureFromVoxel.0"]?.inputs.texture_size, "number");
+    assert.equal(typeof on["BakeAmbientOcclusion.0"]?.inputs.resolution, "number");
+    assert.equal(typeof on["BakeNormalMapFromMesh.0"]?.inputs.resolution, "number");
 
     const g2 = new GraphBuilder();
     trellisArm(g2, { ...base, bg_removal: "off" }, trellis);
@@ -767,6 +789,19 @@ describe("the residual lane arms", () => {
     assert.equal(enc2.inputs.lyrics, "", "unstated lyrics ride the lane's empty pin, never undefined");
   });
 
+  it("yue2T1 composes both the stated and default planning modes", () => {
+    const model = facts.models["yue2"]!;
+    const stated = new GraphBuilder();
+    yue2T1({ prompt: "a warm theme", lyrics: "verse", mode: "full", duration: 30, n_diffusion_steps: 4, seed: 2 }, model, stated, "run_yue_full");
+    const full = Object.values(dump(stated)).find((n) => n.class_type === "YuE2GenerateABC")!;
+    assert.equal(full.inputs.mode, "full");
+
+    const absent = new GraphBuilder();
+    yue2T1({ prompt: "a warm theme", duration: 30, n_diffusion_steps: 4, seed: 2 }, model, absent, "run_yue_default");
+    const fallback = Object.values(dump(absent)).find((n) => n.class_type === "YuE2GenerateABC")!;
+    assert.equal(fallback.inputs.mode, "full");
+  });
+
 
   it("imageEdit wires the image2/image3 reference slots", () => {
     const model = facts.models["qwen-img-edit-2511"]!;
@@ -824,6 +859,35 @@ describe("the residual lane arms", () => {
       /'reference_images' fires .*stock TextEncodeQwenImageEditPlus.*max_images 99/,
       "the arm serves the 3-input stock node — a roomier DECL is a bug, refused LOUD",
     );
+  });
+
+  it("full_frame is a compatibility spelling of the default whole-image graph", () => {
+    const model = facts.models["qwen-img-edit-2511"]!;
+    const params = { prompt: "make it night", image1: "/m/1.png", seed: 5, steps: 20, cfg: 2.5 };
+    const auto = new GraphBuilder();
+    const fullFrame = new GraphBuilder();
+    refuseImageEditFiring({ ...params, mask_mode: "auto" }, model);
+    refuseImageEditFiring({ ...params, mask_mode: "full_frame" }, model);
+    imageEdit({ ...params, mask_mode: "auto" }, model, auto, "run_full_frame");
+    imageEdit({ ...params, mask_mode: "full_frame" }, model, fullFrame, "run_full_frame");
+    assert.deepEqual(dump(auto), dump(fullFrame));
+    const row = dump(fullFrame);
+    assert.ok(row["VAEEncode.0"] && row["KSampler.0"], "the existing whole-image path remains the graph");
+    assert.ok(!row["LoadImageMask.0"] && !row["DetailerForEach.0"] && !row["LanPaint_KSamplerAdvanced.0"], "no mask topology is invented");
+  });
+
+  it("a crop_stitch mask modifier still takes the region lane", () => {
+    const model = facts.models["qwen-img-edit-2511"]!;
+    const params = {
+      prompt: "repaint the sign", image1: "/m/1.png", seed: 5, steps: 20, cfg: 2.5,
+      mask: [{ input_mask: "/m/region.png", mask_mode: "crop_stitch" }],
+    };
+    refuseImageEditFiring(params, model);
+    const g = new GraphBuilder();
+    imageEdit(params, model, g, "run_mask_modifier");
+    const row = dump(g);
+    assert.ok(row["MaskToSEGS.0"] && row["DetailerForEach.0"], "the mask modifier keeps the region detailer");
+    assert.ok(!row["KSampler.0"] && !row["VAEEncode.0"], "the region lane does not fall back to the whole-image graph");
   });
 });
 
@@ -963,6 +1027,22 @@ describe("the tts lane dispatch (synth_lane data, never the family id)", () => {
     studio: {},
   }) as never as import("../src/facts.ts").ModelFacts
 
+  it("normalizes every admitted qvoice media shape", () => {
+    assert.deepEqual(qvoiceUse({ qvoice: "flat.qvoice", voice_strength: "1.25" }), { path: "flat.qvoice", strength: 1.25 });
+    assert.deepEqual(qvoiceUse({ qvoice: [{ qvoice: "bag.qvoice", voice_strength: "0.5" }] }), { path: "bag.qvoice", strength: 0.5 });
+    assert.deepEqual(qvoiceUse({ qvoice: { item: { qvoice: "wrapped.qvoice", voice_strength: 2 } } }), { path: "wrapped.qvoice", strength: 2 });
+    assert.deepEqual(qvoiceUse({ qvoice: { item: [{ qvoice: "wrapped-array.qvoice" }] } }), { path: "wrapped-array.qvoice", strength: undefined });
+    assert.equal(qvoiceUse({ qvoice: [] }), undefined);
+    assert.equal(qvoiceUse({ qvoice: { item: [] } }), undefined);
+    assert.equal(qvoiceUse({ qvoice: "  " }), undefined);
+    assert.equal(qvoiceUse({ qvoice: { qvoice: "  " } }), undefined);
+    assert.throws(() => qvoiceUse({ qvoice: "bad.qvoice", voice_strength: "not-a-number" }), /voice_strength/);
+    assert.throws(() => qvoiceUse({ qvoice: "bad.qvoice", voice_strength: 3 }), /voice_strength/);
+    assert.throws(() => qvoiceUse({ qvoice: [{ qvoice: "a" }, { qvoice: "b" }] }), /one media entry/);
+    assert.throws(() => qvoiceUse({ qvoice: 7 }), /path or one-entry/);
+    assert.throws(() => qvoiceUse({ qvoice: { item: 7 } }), /path or one-entry/);
+  });
+
   it("synth_lane 'design' routes the VoiceStudio lane whatever the id", () => {
     const g = new GraphBuilder();
     // THE LANE'S OWN PROMPT ROW (2026-09-23): design_prompt is the
@@ -986,5 +1066,22 @@ describe("the tts lane dispatch (synth_lane data, never the family id)", () => {
     const row = dump(g);
     assert.ok(classes(row).includes("AudiocoreTTS"), "the speak lane emits the synth node");
     assert.ok(!Object.values(row).some((n) => n.class_type === "AudiocoreVoiceStudio"), "no studio node");
+  });
+
+  it("an unusable qvoice bag entry refuses before graph construction", () => {
+    assert.throws(
+      () => ttsT1({ text: "hi", seed: 1, qvoice: [{ qvoice: 7 }] }, stub("anything", ""), new GraphBuilder(), "rq"),
+      /qvoice bag entry requires a string qvoice path/,
+    );
+  });
+
+  it("a non-string synth lane value falls back to the speak lane", () => {
+    const model = {
+      ...stub("anything", ""),
+      lane_inputs: { model_path: "anything", synth_lane: 7 },
+    } as never as import("../src/facts.ts").ModelFacts;
+    const g = new GraphBuilder();
+    ttsT1({ text: "hi", seed: 1 }, model, g, "rl");
+    assert.ok(classes(dump(g)).includes("AudiocoreTTS"));
   });
 });

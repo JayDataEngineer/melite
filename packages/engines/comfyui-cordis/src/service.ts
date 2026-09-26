@@ -205,15 +205,23 @@ export function resolveCardFlowOutputs(
     if (kind === undefined) {
       throw new ComposeRefusal('flow-output', `card '${def.id}' binds undeclared output '${binding.channel}'`)
     }
-    const node = graph[binding.node]
+    const selected: readonly [string, unknown] | undefined = binding.node === '*'
+      ? Object.entries(graph)
+          .filter(([, value]) => typeof value === 'object' && value !== null && !Array.isArray(value)
+            && (value as Record<string, unknown>)['class_type'] === binding.nodeClass)
+          .at(-1)
+      : Object.prototype.hasOwnProperty.call(graph, binding.node)
+        ? [binding.node, graph[binding.node]] as const
+        : undefined
+    const node = selected?.[1]
     const nodeClass = typeof node === 'object' && node !== null && !Array.isArray(node)
       ? (node as Record<string, unknown>)['class_type']
       : undefined
-    if (nodeClass !== binding.nodeClass) {
+    if (selected === undefined || nodeClass !== binding.nodeClass) {
       throw new ComposeRefusal('flow-output', `card '${def.id}' output '${binding.channel}' expects ${binding.node} as ${binding.nodeClass}, got ${String(nodeClass ?? 'missing')}`)
     }
     outputs[binding.channel] = kind
-    outputNodes[binding.channel] = binding.node
+    outputNodes[binding.channel] = selected[0]
   }
   return { outputs, outputNodes }
 }
@@ -241,6 +249,7 @@ export interface CardDefinition {
    *  renderer vocab, studio writes flattened at port time). Most
    *  cards carry none — the schema IS the surface. */
   admits?: readonly string[]
+  jsonArrayParams?: readonly string[]
   /** $spell-eligible params (the `spell_params` half): file slots
    *  whose "$name" values pool for two-card-flow handoff instead of
    *  composing. Empty/absent = no spell pooling. */

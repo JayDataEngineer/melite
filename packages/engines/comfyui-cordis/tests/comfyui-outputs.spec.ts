@@ -380,6 +380,13 @@ describe("qvoiceFreshnessOf (the freshness receipt — which voice won, and did 
       d: { reused_existing: [true], voice_file: ["won.qvoice"] },
     })).toEqual({ reused_existing: true, voice_file: "won.qvoice" });
     expect(qvoiceFreshnessOf({ a: { reused_existing: [], voice_file: [] } })).toBe(null);
+    // a node row that is not a row at all (scalar / list / null) is
+    // SKIPPED, never read as a freshness pair (2026-09-26)
+    expect(qvoiceFreshnessOf({
+      a: "scalar", b: [true, "x.qvoice"], c: null, d: 7,
+      e: { reused_existing: [false], voice_file: ["harbour_2.qvoice"] },
+    })).toEqual({ reused_existing: false, voice_file: "harbour_2.qvoice" });
+    expect(qvoiceFreshnessOf({ a: "scalar", b: [1], c: null })).toBe(null);
     expect(qvoiceFreshnessOf(undefined)).toBe(null);
     expect(qvoiceFreshnessOf([])).toBe(null);
   });

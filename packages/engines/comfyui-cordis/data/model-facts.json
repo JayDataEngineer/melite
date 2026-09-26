@@ -3,10 +3,10 @@
     "anny": {
       "outputs": [
         {
-          "label": "Rigged body mesh",
-          "many": false,
+          "label": "Turnaround views",
+          "many": true,
           "patterns": [
-            ".glb"
+            ".png"
           ]
         }
       ]
@@ -255,8 +255,13 @@
       "MiniMaxH3MotionContextTrim"
     ],
     "comfyui-impact-pack": [
+      "BboxDetectorSEGS",
       "FaceDetailer",
+      "SAMDetectorCombined",
       "SAMLoader",
+      "SegmDetectorSEGS"
+    ],
+    "comfyui-impact-subpack": [
       "UltralyticsDetectorProvider"
     ],
     "comfyui-lanpaint": [

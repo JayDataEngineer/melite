@@ -11,6 +11,7 @@ import {
   assertModUse,
   assertPackFate,
   fireControlNets,
+  fireKnob,
   fireLoras,
   refuseIPAdapterFiring,
 } from "../src/mods/guard.ts";
@@ -53,6 +54,34 @@ describe("refuseIPAdapterFiring (the kind-less row)", () => {
     );
   });
 });
+
+describe("fireLoras", () => {
+  it("a non-empty bag fires only on a boarding atom", () => {
+    const picks = [{ name: "style.safetensors", strength: 0.8 }]
+    assert.deepEqual(fireLoras({ id: "z-image", mods: ["loras"] }, { loras: picks }), picks)
+    assert.throws(
+      () => fireLoras({ id: "solo" }, { loras: picks }),
+      /does not board the 'loras' pack/,
+    )
+  })
+})
+
+describe("fireKnob", () => {
+  it("blank and absent values ride without a boarding check", () => {
+    assert.equal(fireKnob({ id: "solo" }, "qvoice", "voice", undefined), "")
+    assert.equal(fireKnob({ id: "solo" }, "qvoice", "voice", "  \t"), "")
+  })
+
+  it("a stated scalar asserts boarding and returns its value", () => {
+    const model = { id: "z-image", mods: ["qvoice"] }
+    assert.equal(fireKnob(model, "qvoice", "voice", "voice-a"), "voice-a")
+    assert.equal(fireKnob(model, "qvoice", "voice", 7), 7)
+    assert.throws(
+      () => fireKnob({ id: "solo" }, "qvoice", "voice", "voice-a"),
+      /does not board the 'qvoice' pack/,
+    )
+  })
+})
 
 describe("assertPackFate (boot gate (d))", () => {
   it("a fated pack passes (fired AND refused fates both ride)", () => {

@@ -60,7 +60,7 @@ export {
   H3_T4_STRIP,
   finalizeH3,
 } from './lanes-video.ts'
-export { musicT1, yue2T1, ttsT1, ttsSpeakT1, ttsCloneT1, ttsUseT1, ttsDesignT1, sfxT1 } from './lanes-audio.ts'
+export { musicT1, yue2T1, ttsT1, ttsSpeakT1, ttsCloneT1, ttsUseT1, ttsDesignT1, qvoiceUse, type QVoiceUse, sfxT1 } from './lanes-audio.ts'
 export {
   ANNY_STRIP,
   finalizeAnny,
@@ -75,6 +75,13 @@ export {
   pixalArm,
   transferRigArm,
   admitMeshLift,
+  MESH_RESOLUTIONS,
+  MESH_BG_MODES,
+  MESH_PIXAL_FOVS,
+  MESH_BAKE_SIZES,
+  MESH_ATLAS_SIZES,
+  MESH_AO_SIZES,
+  MESH_NORMAL_SIZES,
 } from './lanes-3d.ts'
 export {
   maskT1,

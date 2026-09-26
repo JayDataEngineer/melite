@@ -150,6 +150,7 @@ export interface VariantRow {
   /** The dropdown group — always written (the UI defaults absent
    *  to Quant, NOT Variant: stripping lies about membership). */
   group: string;
+  hide_from_dropdown?: boolean;
   /** Absent = unaddressable (truthiness-tested, never ==""). */
   route?: string;
   /** Absent = the atom's engine (every reader ?? ""s). */
@@ -178,6 +179,7 @@ export const VariantRow: z<VariantRow> = z.object({
   description: z.string().default(""),
   hint: z.string().default(""),
   group: z.string().default("Variant"),
+  hide_from_dropdown: z.boolean().default(false),
   route: z.string().default(""),
   engine: z.string().default(""),
   order: z.number(),

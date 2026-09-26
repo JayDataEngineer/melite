@@ -190,6 +190,18 @@ describe("the comfyui adapter (engine id 'comfyui' on the seat)", () => {
     expect(outcome.engineRef).toBe("prompt-2");
   });
 
+  it("a stage without output_nodes maps to an empty output map", async () => {
+    const flow = vi.fn(async (): Promise<FlowResult> => ({ stages: {}, promptId: "p" }))
+    const { seat } = await boot(flow)
+    const row = stageRow()
+    delete row.params["output_nodes"]
+    await seat.resolve("comfyui").executor.executeStages(
+      [row], "/tmp/run-x", {}, { shouldStop: () => false, report: vi.fn() },
+    )
+    const rows = (flow.mock.calls[0]?.[0] as Array<{ outputNodes: Record<string, unknown> }>)
+    expect(rows[0]?.outputNodes).toEqual({})
+  })
+
   it("host-rejects → executeStages rejects", async () => {
     const flow = vi.fn(async (): Promise<FlowResult> => {
       throw new Error("host down");

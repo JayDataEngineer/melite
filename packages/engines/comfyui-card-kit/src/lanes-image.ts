@@ -203,11 +203,12 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   // and then silently plain-edit.
   const maskStated = !blank(p.input_mask) || !blank(bagMask)
   const mode = (region.mask_mode ?? 'auto') as string
+  const effectiveMode = mode === 'full_frame' ? 'auto' : mode
   const detector = (region.mask_detector ?? 'off') as string
   const detectorThreshold = (region.mask_detector_threshold ?? 0.5) as number
   const detailSize = (region.mask_detail_size ?? 512) as number
   const denoise = (region.mask_denoise ?? 0.5) as number
-  fire('mask_mode', mode !== 'auto' && mode !== 'crop_stitch' && mode !== 'full_frame', `unknown region mode '${mode}' — only auto/crop_stitch ride (full_frame is declared but still unbuilt)`)
+  fire('mask_mode', effectiveMode !== 'auto' && effectiveMode !== 'crop_stitch', `unknown region mode '${mode}' — choose auto or crop_stitch`)
   fire('mask_detector', detector !== 'off' && detector !== 'person' && detector !== 'face' && detector !== 'hand', `unknown region detector '${detector}' — pick off/person/face/hand`)
   // THE LANE-SCOPED REGION LAW (revoked + re-scoped 2026-09-22, the
   // operator's call: "2511 is the legacy model… 2.1 is the new Qwen
@@ -218,14 +219,13 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   // flavor). auto+mask on 2.1 still refuses field-named — but the
   // voice now teaches the fix: state crop_stitch.
   const lanpaintLane = model?.lane_inputs?.text_encode_node !== 'TextEncodeQwenImage21'
-  fire('input_mask', maskStated && mode === 'auto' && !lanpaintLane,
+  fire('input_mask', maskStated && effectiveMode === 'auto' && !lanpaintLane,
     'the lanpaint arm rides the 2511 lane only — for a region on this lane state mask_mode crop_stitch (the region detailer), or switch the model lane')
   // width/height are the plain 2.1 edit's TARGET-resolution knobs;
   // the detailer path builds no EmptyLatentImage (DetailerForEach
   // sizes each crop itself) — a stated value would wire to nothing.
-  fire('width', mode === 'crop_stitch' && !lanpaintLane && (p.width !== undefined || p.height !== undefined),
+  fire('width', effectiveMode === 'crop_stitch' && !lanpaintLane && (p.width !== undefined || p.height !== undefined),
     "the region detailer reworks the source's own pixels at the crop's own size — width/height ride the plain 2.1 edit's target resolution only; clear them")
-  fire('mask_mode', mode === 'full_frame', 'full_frame is declared but its whole-image arm is still unbuilt — use auto or crop_stitch')
   fire('lanpaint_enabled', p.lanpaint_enabled === true && !maskStated, 'force LanPaint with no region stated — state input_mask (the region to regenerate)')
   fire('lanpaint_beta', ((p.lanpaint_beta ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Beta 1.0, the pack knob wires to no input; back it to 0.5 or order a pack change')
   fire('lanpaint_friction', ((p.lanpaint_friction ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Friction 15, the pack knob wires to no input; back it to 0.5 or order a pack change')
@@ -236,7 +236,7 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   fire('outpaint_overlap', ((p.outpaint_overlap ?? 16) as number) !== 16, 'outpaint knob off its lane promise with no outpaint chain to carry it')
   fire('mask', bagN > 1, 'one region per run — the region arms take a single source')
   fire('mask', !blank(p.mask) && !Array.isArray(p.mask), 'the mask bag is a list — state one entry ([{input_mask, ...}]) or use the flat input_mask')
-  if (mode === 'crop_stitch') {
+  if (effectiveMode === 'crop_stitch') {
     // THE CROP_STITCH LAW: exactly one region source — the painted
     // mask or the automated detector, never both, never neither.
     fire('mask_detector', maskStated && detector !== 'off', 'one region per run — the Region Mask and a detector are both stated; clear one')
@@ -351,7 +351,8 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
     }
   }
   const maskPath = ((merged.input_mask ?? '') as string).trim()
-  const cropStitch = ((merged.mask_mode ?? 'auto') as string) === 'crop_stitch'
+  const mode = (merged.mask_mode ?? 'auto') as string
+  const cropStitch = (mode === 'full_frame' ? 'auto' : mode) === 'crop_stitch'
   // ── THE 2.1 EDIT LANE (2026-09-21, the Comfy-Org release; branch
   // key = lane_inputs.text_encode_node, the latent_node precedent)
   // ── the 2.1 base has NO separate edit weights: the edit rides
