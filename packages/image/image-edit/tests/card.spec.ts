@@ -295,6 +295,29 @@ describe("the image-edit compose gate", () => {
     assert.ok(Array.isArray(graph["VAEEncode.0"].inputs.pixels), "the encode wires the loader's handle");
   });
 
+  it("THE SPELL ARM (2.1 lane): spelled anchor+ref ride the encoder's dotted slots — parity with 2511, never a loader", () => {
+    // THE AUDIT'S LOW (the independent audit's gap 4): parity was
+    // construction-only — no wall pinned a spell through the 2.1
+    // dotted-slot path, one refactor from silent divergence. The
+    // shared preamble loads spelled values (no LoadImage); the
+    // 2.1 arm maps them onto images.image_1 + image_2+ in order.
+    const model21 = facts.models["qwen-img-edit-21"]!;
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "edit the upstream", image1: "$up", reference_images: ["$ref1"],
+        seed: 42, steps: 20, cfg: 2.5,
+      }),
+      model21, g, "r_spell21",
+    );
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const loaders = Object.entries(graph).filter(([, n]) => n.class_type.startsWith("Load"));
+    assert.equal(loaders.length, 0, "a spelled 2.1 run builds no loader");
+    const enc = graph["TextEncodeQwenImage21.0"]!;
+    assert.equal(enc.inputs["images.image_1"], "$up", "the anchor spell rides the first dotted slot");
+    assert.equal(enc.inputs["images.image_2"], "$ref1", "the ref spell rides the second dotted slot");
+  });
+
   it("crop_stitch with zero halo builds no GrowMask, invert splices before the SEGS", () => {
     const g = new GraphBuilder();
     def.compose(

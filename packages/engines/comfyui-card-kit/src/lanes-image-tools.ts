@@ -8,6 +8,14 @@ const personDetector = impactDetector('person')
 const faceDetector = impactDetector('face')
 const handDetector = impactDetector('hand')
 
+/** The wired-tensor law (the lanes-image precedent, ported 1:1):
+ *  a '$name' value names an upstream stage's wired output — the
+ *  spell IS the tensor and rides node inputs verbatim. ROW-4
+ *  refuses producer links in Load* file slots, so a spelled image
+ *  NEVER builds a loader; file paths keep the disk handoff. */
+type TensorRef = OutputHandle | string
+const isSpell = (s: string): boolean => s.startsWith('$')
+
 // ── the mask selection lane ─────────────────────────────────────────
 // RT-DETR proposes, SAM3 refines; loaders are lazy (reachability —
 // see the mask-studio card header, kept there).
@@ -58,10 +66,16 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   const viaRtdetr = p.primary_via_rtdetr as boolean
 
   // the lazy loader trio (see the header note — created on first use)
-  let imgH: OutputHandle | null = null
+  // THE SPELLED ANCHOR (the mask-as-consumer half of the gap
+  // audit: a producer-wired input_image rides every tensor slot
+  // verbatim, never a LoadImage — ROW-4 refuses producer links in
+  // file slots, so the loader builds for paths only).
+  let imgH: TensorRef | null = null
   let ckpt: NodeRef | null = null
   let rtdetrModel: OutputHandle | null = null
-  const img = (): OutputHandle => (imgH ??= g.node('LoadImage', { image: p.input_image as string }).out(0))
+  const img = (): TensorRef => (imgH ??= isSpell(p.input_image as string)
+    ? (p.input_image as string)
+    : g.node('LoadImage', { image: p.input_image as string }).out(0))
   const ckptNode = (): NodeRef => (ckpt ??= g.node('CheckpointLoaderSimple', { ckpt_name: li.checkpoint as string }))
   const rtdetrLoader = (): OutputHandle =>
     (rtdetrModel ??= g.node('UNETLoader', { unet_name: li.unet as string, weight_dtype: 'default' }).out(0))
@@ -475,7 +489,13 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
 export function upscaleLane(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
   const seed = mintSeed(p)
   const li = model.lane_inputs
-  const img = g.node('LoadImage', { image: p.input_image }).out()
+  // THE SPELLED ANCHOR (same law as maskT1's img memo above: a
+  // wired input_image rides the upscaler's tensor slot verbatim —
+  // the spells decl pools initials at phase-1 only, so a producer
+  // LINK still needs this arm or ROW-4 refuses it at merge).
+  const img: TensorRef = isSpell(p.input_image as string)
+    ? (p.input_image as string)
+    : g.node('LoadImage', { image: p.input_image }).out()
   const dit = g.node('SeedVR2LoadDiTModel', {
     model: li.unet as string,
     device: 'cuda:0',
@@ -645,9 +665,11 @@ function taggerSaveText(g: GraphBuilder, text: OutputHandle, prefix: string): vo
 /** wd14_t1 — the WD14 booru interrogator (the canary arm; moved
  *  verbatim from the tagger card). */
 function wd14Arm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string): void {
-  const src = g.node('LoadImage', { image: img })
+  // THE SPELLED ANCHOR (same law — every arm bypasses the loader
+  // for a wired image; the tagger dispatch admits the spell).
+  const src: TensorRef = isSpell(img) ? img : g.node('LoadImage', { image: img }).out()
   const tags = g.node('WD14Tagger|pysssss', {
-    image: src.out(),
+    image: src,
     model: p.checkpoint,
     threshold: p.threshold,
     character_threshold: p.character_threshold,
@@ -661,9 +683,9 @@ function wd14Arm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefi
 /** joytag_t1 — the JoyTag booru tagger (moved verbatim from the
  *  tagger card). */
 function joytagArm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string): void {
-  const src = g.node('LoadImage', { image: img })
+  const src: TensorRef = isSpell(img) ? img : g.node('LoadImage', { image: img }).out()
   const tags = g.node('CXH_JoyTag', {
-    image: src.out(),
+    image: src,
     THRESHOLD: p.threshold,
     addTag: p.add_tag,
     removeTag: p.remove_tag,
@@ -676,13 +698,13 @@ function joytagArm(p: Record<string, unknown>, g: GraphBuilder, img: string, pre
  *  stamped by the variant rail (resolver_defaults) or the family
  *  default, admitted by the card, never a schema knob. */
 function florence2Arm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string): void {
-  const src = g.node('LoadImage', { image: img })
+  const src: TensorRef = isSpell(img) ? img : g.node('LoadImage', { image: img }).out()
   const fl2 = g.node('DownloadAndLoadFlorence2Model', {
     model: p.checkpoint,
     precision: 'fp16',
   })
   const run = g.node('Florence2Run', {
-    image: src.out(),
+    image: src,
     florence2_model: fl2.out(),
     text_input: '',
     task: p.caption_task,
@@ -696,7 +718,7 @@ function florence2Arm(p: Record<string, unknown>, g: GraphBuilder, img: string, 
  *  stamps beta-one; custom repo ids / local paths ride explicit
  *  params (API/bare bodies), upstream takes free text. */
 function joycaptionArm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string): void {
-  const src = g.node('LoadImage', { image: img })
+  const src: TensorRef = isSpell(img) ? img : g.node('LoadImage', { image: img }).out()
   const predictor = g.node('JJC_DownloadAndLoadJoyCaptionModel', {
     model: p.checkpoint,
     memory_mode: 'Default',
@@ -704,7 +726,7 @@ function joycaptionArm(p: Record<string, unknown>, g: GraphBuilder, img: string,
   })
   const caption = g.node('JJC_JoyCaption', {
     model: predictor.out(),
-    image: src.out(),
+    image: src,
     caption_type: p.caption_type,
     caption_length: p.caption_length,
     extra_option1: p.extra_option,

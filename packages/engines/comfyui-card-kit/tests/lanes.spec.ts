@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { GraphBuilder } from "../src/graph.ts";
 import {
   finalizeImageEdit, finalizeTagger, finalizeMask,
- inputPrepLane, maskT1, taggerLane,
+ inputPrepLane, maskT1, taggerLane, upscaleLane,
   annyLane,
   admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
   quadRemeshLane, musicT1, yue2T1, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion, finalizeH3,
@@ -68,6 +68,29 @@ describe("maskT1 (the selection lane's arms)", () => {
     const g = new GraphBuilder();
     maskT1({ ...maskBase, primary_is_paint: true, paint_mask: "/m/paint.png" }, MASK_PINS, g, "r3");
     assert.ok(classes(dump(g)).includes("LoadImageMask"));
+  });
+
+  it("THE SPELL ARM (mask-as-consumer): a spelled anchor builds no loader — the spell rides every tensor slot verbatim", () => {
+    // THE GAP-AUDIT HOLE (the independent audit's gap 1): the mask
+    // card seats input_image, so a producer CAN wire into it — but
+    // the lane built LoadImage unconditionally and ROW-4 refused
+    // the link at merge (validate-green, run-red). Now the spell
+    // rides the detector tensor slots verbatim and no LoadImage
+    // exists to carry it; a path keeps its loader (pinned below).
+    const g = new GraphBuilder();
+    maskT1({ ...maskBase, input_image: "$src", primary_class: "person" }, MASK_PINS, g, "r_spell");
+    const row = dump(g);
+    assert.ok(!classes(row).includes("LoadImage"), "no loader carries the spell");
+    const det = Object.values(row).find((n) => n.class_type === "SAM3_Detect")!;
+    assert.equal(det.inputs.image, "$src", "the detector reads the wired tensor verbatim");
+  });
+
+  it("a file anchor keeps its loader (the disk handoff)", () => {
+    const g = new GraphBuilder();
+    maskT1({ ...maskBase, input_image: "/m/p.png", primary_class: "person" }, MASK_PINS, g, "r_path");
+    const row = dump(g);
+    const load = Object.values(row).find((n) => n.class_type === "LoadImage")!;
+    assert.equal(load.inputs.image, "/m/p.png", "paths keep the LoadImage disk handoff");
   });
 
   it("the RT-DETR proposal lane (boxes + manifest + capped instances)", () => {
@@ -482,6 +505,60 @@ describe("taggerLane (the four-family dispatch)", () => {
     const load = Object.values(dump(g)).find((n) => n.class_type === "LoadImage")!;
     assert.equal(load.inputs.image, "");
   });
+
+  it("THE SPELL ARM (all four arms): a spelled image builds no loader — the spell rides the interrogator verbatim", () => {
+    // Same gap family as maskT1 above: the tagger card seats
+    // input_image, so a producer CAN wire in — every arm bypasses
+    // its LoadImage for the spell now. One wall walks all four
+    // arms (the dispatch is data, so the law is data-wide too).
+    const probes: Array<[string, string]> = [
+      ["wd14", "WD14Tagger|pysssss"],
+      ["joytag", "CXH_JoyTag"],
+      ["florence2", "Florence2Run"],
+      ["joycaption", "JJC_JoyCaption"],
+    ];
+    for (const [family, node] of probes) {
+      const g = new GraphBuilder();
+      taggerLane(
+        { input_image: "$src", checkpoint: "c", threshold: 0.35 },
+        facts.models[family]!, g, `run_spell_${family}`,
+      );
+      const row = dump(g);
+      assert.ok(!classes(row).includes("LoadImage"), `no loader carries the spell on ${family}`);
+      const interrogator = Object.values(row).find((n) => n.class_type === node)!;
+      assert.equal(interrogator.inputs.image, "$src", `${family} reads the wired tensor verbatim`);
+    }
+  });
+
+  it("a file image keeps its loader on every arm", () => {
+    const g = new GraphBuilder();
+    taggerLane({ input_image: "/m/p.png", checkpoint: "c", threshold: 0.35 }, facts.models["wd14"]!, g, "run_path");
+    const load = Object.values(dump(g)).find((n) => n.class_type === "LoadImage")!;
+    assert.equal(load.inputs.image, "/m/p.png", "paths keep the LoadImage disk handoff");
+  });
+});
+
+describe("upscaleLane (the spelled anchor)", () => {
+  const base = { seed: 7, resolution: 1080, max_resolution: 2160, batch_size: 4 };
+  it("THE SPELL ARM: a spelled image builds no loader — the spell rides the upscaler verbatim", () => {
+    // Same gap family: the spells decl pools INITIALS at phase-1
+    // only — a producer LINK needs this arm or ROW-4 refuses it
+    // at merge (the card tests already compose "$image" through
+    // the pool; this wall pins the graph half).
+    const g = new GraphBuilder();
+    upscaleLane({ ...base, input_image: "$src" }, facts.models["seedvr2_ema"]!, g, "run_spell_up");
+    const row = dump(g);
+    assert.ok(!classes(row).includes("LoadImage"), "no loader carries the spell");
+    const up = Object.values(row).find((n) => n.class_type === "SeedVR2VideoUpscaler")!;
+    assert.equal(up.inputs.image, "$src", "the upscaler reads the wired tensor verbatim");
+  });
+
+  it("a file image keeps its loader (the disk handoff)", () => {
+    const g = new GraphBuilder();
+    upscaleLane({ ...base, input_image: "/m/p.png" }, facts.models["seedvr2_ema"]!, g, "run_path_up");
+    const load = Object.values(dump(g)).find((n) => n.class_type === "LoadImage")!;
+    assert.equal(load.inputs.image, "/m/p.png", "paths keep the LoadImage disk handoff");
+  });
 });
 
 // ── the input-prep row gates ──────────────────────────────────────
@@ -683,6 +760,41 @@ describe("the mesh-lift admissions and the rig copy", () => {
     assert.ok(!classes(row).includes("LoadMoGeModel"), "the literal skips MoGe");
     const cond = Object.values(row).find((n) => n.class_type === "Pixal3DConditioning")!;
     assert.equal(cond.inputs.camera_angle_x, 49.13, "the vouched degree rides verbatim");
+  });
+
+  it("THE SPELL ARM (mesh lifts): a spelled image builds no loader — the spell rides conditioning verbatim", () => {
+    // THE SWEEP CATCH (beyond the independent audit's two gaps):
+    // img-to-mesh seats input_image, so a producer CAN wire into a
+    // lift — both arms built LoadImage unconditionally and ROW-4
+    // refused the link at merge. Now the spell rides verbatim.
+    const trellis = facts.models["trellis2-native"]!;
+    const tBase = {
+      input_image: "$src", resolution: "1024", bg_removal: "off",
+      atlas_size: "2048", ao_size: "512", normal_size: "1024",
+      override_shape: 0.769, rescale_shape: 0.5, override_struct: 0.667,
+      rescale_struct: 0.7, sd3_shift: 5, seed: 3, steps: 12, cfg: 7.5,
+      shape_steps: 20, shape_cfg: 7.5, tex1_steps: 12, tex1_cfg: 7.5,
+      tex2_steps: 12, tex2_cfg: 1, remesh_resolution: 768,
+      decimate_faces: 70000, smooth_angle: 180,
+      struct_sampler: "euler", struct_scheduler: "normal",
+      shape_sampler: "euler", shape_scheduler: "normal",
+      tex1_sampler: "euler", tex1_scheduler: "simple",
+      tex2_sampler: "euler", tex2_scheduler: "normal",
+    };
+    const g1 = new GraphBuilder();
+    trellisArm(g1, tBase, trellis);
+    const tRow = dump(g1);
+    assert.ok(!classes(tRow).includes("LoadImage"), "no loader carries the spell on trellis");
+    const tCond = Object.values(tRow).find((n) => n.class_type === "Trellis2Conditioning")!;
+    assert.equal(tCond.inputs.image, "$src", "trellis conditions on the wired tensor verbatim");
+
+    const pixal = facts.models["pixal3d"]!;
+    const g2 = new GraphBuilder();
+    pixalArm(g2, { ...tBase, camera_fov: "49.13" }, pixal);
+    const pRow = dump(g2);
+    assert.ok(!classes(pRow).includes("LoadImage"), "no loader carries the spell on pixal");
+    const crop = Object.values(pRow).find((n) => n.class_type === "ImageCropToMask")!;
+    assert.equal(crop.inputs.images, "$src", "the pixal crop reads the wired tensor verbatim");
   });
 
   it("the rig-copy arm (KimodoTransferWeights + SaveRiggedModel)", () => {

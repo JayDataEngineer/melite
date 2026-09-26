@@ -7,6 +7,14 @@ import {
   positive,
 } from './blocks/poser-kit.ts'
 
+/** The wired-tensor law (the lanes-image precedent, ported 1:1):
+ *  a '$name' value names an upstream stage's wired output — the
+ *  spell IS the tensor and rides node inputs verbatim. ROW-4
+ *  refuses producer links in Load* file slots, so a spelled image
+ *  NEVER builds a loader; file paths keep the disk handoff. */
+type TensorRef = OutputHandle | string
+const isSpell = (s: string): boolean => s.startsWith('$')
+
 // ── archetype III: the poser turnaround family ──────────────────────
 // Body → assemble (CompositeCharacter / FitProp / SkinApply) → the
 // shared 8-view turnaround tail (blocks/poser-kit renderGLBViews).
@@ -215,7 +223,7 @@ function loadLiftHeads(
 function cutBackground(
   g: GraphBuilder,
   li: MeshLane,
-  img: OutputHandle,
+  img: TensorRef,
 ): { src: OutputHandle; mask: OutputHandle } {
   const bgm = g.node('LoadBackgroundRemovalModel', { bg_removal_name: li.background_removal }).out()
   const mask = g.node('RemoveBackground', { bg_removal_model: bgm, image: img }).out()
@@ -361,9 +369,14 @@ export function trellisArm(
   model: ModelFacts,
 ): void {
   const li = meshLaneOf(model)
-  const img = g.node('LoadImage', { image: p.input_image as string }).out()
+  // THE SPELLED ANCHOR (the gap-audit law: img-to-mesh seats
+  // input_image, so a producer CAN wire in — the spell rides the
+  // conditioning tensor verbatim, never a loader).
+  const img: TensorRef = isSpell(p.input_image as string)
+    ? (p.input_image as string)
+    : g.node('LoadImage', { image: p.input_image as string }).out()
   const heads = loadLiftHeads(g, li, p)
-  let condImage: OutputHandle = img
+  let condImage: TensorRef = img
   if (p.bg_removal !== 'off') {
     condImage = cutBackground(g, li, img).src
   }
@@ -384,10 +397,13 @@ export function pixalArm(
   model: ModelFacts,
 ): void {
   const li = meshLaneOf(model)
-  const img = g.node('LoadImage', { image: p.input_image as string }).out()
+  // THE SPELLED ANCHOR (same law as trellisArm above).
+  const img: TensorRef = isSpell(p.input_image as string)
+    ? (p.input_image as string)
+    : g.node('LoadImage', { image: p.input_image as string }).out()
   const heads = loadLiftHeads(g, li, p)
-  let cropSrc: OutputHandle = img
-  let cropMask: OutputHandle = img // ImageCropToMask accepts IMAGE for masks
+  let cropSrc: TensorRef = img
+  let cropMask: TensorRef = img // ImageCropToMask accepts IMAGE for masks
   if (p.bg_removal !== 'off') {
     const cut = cutBackground(g, li, img)
     cropMask = cut.mask
