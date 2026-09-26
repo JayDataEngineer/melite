@@ -248,3 +248,75 @@ def test_the_file_door_COPIES_a_lora_and_never_fetches(tmp_path):
 def test_an_empty_rows_file_registers_no_flavor():
     out = _node_eval("m.userLoraFlavor({rows: [], problems: [], absent: true, path: 'x'})", REPO)
     assert json.loads(out) is None
+
+def test_the_BYTES_door_writes_a_browser_upload_into_the_loras_dir(tmp_path):
+    """THE CIVIT FLOW: civit.ai serves downloads behind Cloudflare +
+    a per-account key, and the standing law forbids the estate
+    fetching a LoRA — so the USER'S BROWSER downloads it and the
+    bytes arrive as the uploads rail's own data-URL spelling."""
+    import base64
+
+    payload = base64.b64encode(b"fake-lora-weights" * 500).decode("ascii")
+    engine_dir = tmp_path / "loras"
+    out = _node_eval(
+        "m.installUserLoraBytes("
+        + json.dumps("my_lora.safetensors")
+        + ", "
+        + json.dumps("data:application/octet-stream;base64," + payload)
+        + ", "
+        + json.dumps(str(engine_dir))
+        + ")",
+        tmp_path,
+    )
+    result = json.loads(out)
+    assert result["ok"] is True
+    assert result["filename"] == "my_lora.safetensors"
+    landed = engine_dir / "my_lora.safetensors"
+    assert landed.exists()
+    assert landed.read_bytes() == b"fake-lora-weights" * 500
+
+
+def test_the_bytes_door_refuses_loudly_never_a_partial_write(tmp_path):
+    engine_dir = tmp_path / "loras"
+    cases = [
+        ("", "data:application/octet-stream;base64,QUJD", "filename is required"),
+        ("x.png", "data:application/octet-stream;base64,QUJD", "not a LoRA file"),
+        ("ok.safetensors", "no-comma-here", "did not arrive as a data URL"),
+        ("ok.safetensors", "data:application/octet-stream,QUJD", "base64 data URLs"),
+        ("ok.safetensors", "data:x;base64,", "no bytes"),
+    ]
+    for name, data, expect in cases:
+        out = _node_eval(
+            f"m.installUserLoraBytes({json.dumps(name)}, {json.dumps(data)}, {json.dumps(str(engine_dir))})",
+            tmp_path,
+        )
+        result = json.loads(out)
+        assert result["ok"] is False, name
+        assert expect in result["reason"], (name, result["reason"])
+    # nothing half-written by any of the refusals
+    assert not engine_dir.exists() or list(engine_dir.iterdir()) == []
+
+
+def test_the_bytes_door_refuses_over_the_cap_before_decoding(tmp_path):
+    """The cap is checked on the base64 LENGTH, before any decode —
+    an oversize upload must not become an OOM in the door."""
+    engine_dir = tmp_path / "loras"
+    cap = json.loads(_node_eval("m.LORA_BYTES_CAP", REPO))
+    assert cap == 512 * 1024 * 1024
+    # one character past the cap's base64 budget: refused on the cap,
+    # with nothing written
+    payload_len = int((cap * 4) / 3) + 16
+    out = _node_eval(
+        "m.installUserLoraBytes("
+        + json.dumps("big.safetensors")
+        + ", "
+        + json.dumps("data:application/octet-stream;base64," + "A" * 16)
+        + ", "
+        + json.dumps(str(engine_dir))
+        + ", " + str(payload_len) + ")",
+        REPO,
+    )
+    result = json.loads(out)
+    assert result["ok"] is False
+    assert "cap" in result["reason"]
+    assert not engine_dir.exists() or list(engine_dir.iterdir()) == []

@@ -109,6 +109,29 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
     }
   }, [families, path, refresh])
 
+  const uploadChosen = React.useCallback(async (file: File): Promise<void> => {
+    setBusy(true)
+    setRefusal(null)
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader()
+        r.onload = () => { resolve(String(r.result)) }
+        r.onerror = () => { reject(new Error('could not read the chosen file')) }
+        r.readAsDataURL(file)
+      })
+      await postManage('lora_install', {
+        filename: file.name,
+        data: dataUrl,
+        families: families.split(',').map((f) => f.trim()).filter((f) => f !== ''),
+      })
+      await refresh()
+    } catch (e) {
+      setRefusal(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }, [families, refresh])
+
   const engine: string[] = data?.engine_loras ?? []
   const rows = data?.user_rows ?? []
   const unboarded: string[] = data?.unboarded ?? []
@@ -146,7 +169,26 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
       ? null
       : React.createElement('div', { className: 'warn' },
         ...problems.map((p) => React.createElement('div', { key: p, className: 'mono' }, 'refused row — ' + p))),
-    // THE FILE DOOR — a copy, never a fetch
+    // THE UPLOAD DOOR — THE CIVIT FLOW (civit.ai serves downloads
+    // behind Cloudflare and a per-account key, and the standing law
+    // forbids the estate fetching a LoRA at all): download it in YOUR
+    // browser, then choose the file here. The bytes ride the manage
+    // door as the uploads rail's own data-URL spelling; nothing is
+    // fetched by the estate.
+    React.createElement('div', { className: 'row' },
+      React.createElement('input', {
+        type: 'file',
+        accept: '.safetensors,.ckpt,.pt,.bin,.gguf',
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+          const file = e.target.files?.[0]
+          if (file === undefined) return
+          void uploadChosen(file)
+        },
+        disabled: busy,
+      }),
+      React.createElement('span', { className: 'hint' },
+        'or drop a LoRA you downloaded from civit.ai here (your browser does the download)')),
+    // THE FILE DOOR — a copy from the machine, never a fetch
     React.createElement('div', { className: 'row' },
       React.createElement('input', {
         placeholder: '/abs/path/to/my_lora.safetensors',

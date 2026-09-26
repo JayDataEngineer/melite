@@ -17,6 +17,7 @@ import { join } from "node:path";
 import { endpointConfigPath, loadEndpointConfig } from "@melite/comfyui-cordis";
 import {
   installUserLora,
+  installUserLoraBytes,
   loraNamesFromObjectInfo,
   readUserLoraRows,
   unboardedRows,
@@ -248,6 +249,12 @@ export function parseReq(doc: unknown): Req {
     // `lora_install` copies a LoRA the operator already has into the
     // engine's loras dir — never a fetch (the no-loras-remote law).
     path: str("path"),
+    // THE BYTES ARM (2026-09-26): civit.ai serves downloads behind
+    // Cloudflare + a per-account key, and the standing law forbids a
+    // loras remote — so the USER'S BROWSER downloads it and hands the
+    // bytes over as the uploads rail's own data-URL spelling.
+    data: str("data"),
+    filename: str("filename") || str("file"),
     families: Array.isArray(d["families"]) ? (d["families"] as unknown[]).map(String).filter((s) => s !== "") : [],
   };
 }
@@ -1298,21 +1305,43 @@ async function hLoraList(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvel
  *  remote; the file is one the operator already has. The answer names
  *  the restart it needs, because the combo is read at engine import. */
 async function hLoraInstall(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  need(req, 'path')
   const cfg = ctx.endpoint()
   estateOnly(req, cfg)
   const dir = engineLorasDir(cfg)
+  // THE BYTES ARM: a browser upload (the civit flow) needs no path
+  if (req.data !== '') {
+    if (req.filename === '') throw new Refused(422, 'lora_install with bytes requires filename')
+    const landed = installUserLoraBytes(req.filename, req.data, dir)
+    if (!landed.ok) throw new Refused(422, landed.reason, { filename: req.filename, install_dir: dir })
+    return loraInstalled(req, ctx, dir, landed, 'uploaded')
+  }
+  need(req, 'path')
   const result = installUserLora(req.path, dir)
   if (!result.ok) {
     // the plane's own refusal path (Refused → the envelope's detail +
     // data), so the sidebar reads it like every other refusal
     throw new Refused(422, result.reason, { path: req.path, install_dir: dir })
   }
+  return loraInstalled(req, ctx, dir, result, 'copied')
+}
+
+/** THE ANSWER both arms share: the name, the bytes, whether the
+ *  engine already lists it, and the restart it needs (core reads its
+ *  folder list at import — a reboot is the only refresh this repo
+ *  owns). The row suggestion rides along so the operator's next step
+ *  is a paste, not a hunt. */
+async function loraInstalled(
+  req: Req,
+  ctx: ManageCtx,
+  dir: string,
+  result: { filename: string, bytes: number },
+  verb: 'copied' | 'uploaded',
+): Promise<[number, ManageEnvelope]> {
   const combo = loraNamesFromObjectInfo(await objectInfoOf(ctx, 'LoraLoaderModelOnly'))
   const visible = combo.includes(result.filename)
   return ok(
     req.action,
-    'copied ' + result.filename + ' (' + result.bytes + ' bytes) into ' + dir
+    verb + ' ' + result.filename + ' (' + result.bytes + ' bytes) into ' + dir
       + (visible ? ' — already in the engine\'s list' : ' — restart the engine to enter its list'),
     {
       filename: result.filename,

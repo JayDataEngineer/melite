@@ -35,7 +35,7 @@
  * (`LoraLoaderModelOnly.input.required.lora_name`), so "the engine
  * will accept this name" is a FACT, never a guess.
  */
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
 
 /** What a user row must carry to be served as a picker row. */
@@ -212,6 +212,80 @@ export function installUserLora(
       ok: false,
       reason: `copy into ${dirname(engineLorasDir)} failed: ${e instanceof Error ? e.message : String(e)}`,
     }
+  }
+}
+
+/** THE BYTES DOOR (the operator's question, 2026-09-26: "civit.ai
+ *  doesn't let you download them headlessly" → right, and it shouldn't:
+ *  civit serves downloads behind Cloudflare and a per-account API key,
+ *  AND the standing law forbids a loras remote. So the USER'S BROWSER
+ *  does the download — they are already signed in and cleared — and the
+ *  file reaches the estate as BYTES through the manage door, which
+ *  writes it into the engine's loras dir. Nothing is ever fetched by
+ *  the estate; the bytes arrive because the operator handed them over.
+ *
+ *  The data-URL spelling is the one the uploads rail already uses
+ *  (`{filename, data: "data:...;base64,..."}`), so the transport is
+ *  the estate's existing shape, not a new protocol. */
+export const LORA_BYTES_CAP = 512 * 1024 * 1024
+
+export function installUserLoraBytes(
+  filename: string,
+  dataUrl: string,
+  engineLorasDir: string,
+  /** the payload's declared base64 length, when the transport knows
+   *  it without copying the string (the cap is then checked BEFORE
+   *  any decode — an oversize upload must never become an OOM here) */
+  declaredPayloadLength?: number,
+): { ok: true; filename: string; bytes: number } | { ok: false; reason: string } {
+  const name = basename(filename.trim())
+  if (name === '' || name === '.' || name === '..') {
+    return { ok: false, reason: 'filename is required (the name the engine\'s LoRA list will know)' }
+  }
+  if (!LORA_EXTENSIONS.includes(extname(name).toLowerCase())) {
+    return {
+      ok: false,
+      reason: `${name} is not a LoRA file (${LORA_EXTENSIONS.join(', ')}) — the engine's loader will not take it`,
+    }
+  }
+  const comma = dataUrl.indexOf(',')
+  if (comma === -1) {
+    return { ok: false, reason: 'the bytes did not arrive as a data URL (the uploads rail\'s own spelling)' }
+  }
+  const meta = dataUrl.slice(0, comma)
+  if (!/;base64$/i.test(meta)) {
+    return { ok: false, reason: 'only base64 data URLs are accepted (the uploads rail\'s own spelling)' }
+  }
+  const payload = dataUrl.slice(comma + 1)
+  if (payload.length === 0) return { ok: false, reason: 'the upload carried no bytes' }
+  const budget = Math.ceil((LORA_BYTES_CAP * 4) / 3)
+  // the cap refuses BEFORE decoding (a base64 string is 4/3 of its
+  // bytes, and an unbounded decode is an OOM in the door)
+  if ((declaredPayloadLength ?? payload.length) > budget) {
+    return {
+      ok: false,
+      reason: `the LoRA is over the ${Math.round(LORA_BYTES_CAP / (1024 * 1024))}MB door cap — copy it in from the machine instead (lora_install with a path)`,
+    }
+  }
+  let bytes: Buffer
+  try {
+    bytes = Buffer.from(payload, 'base64')
+  } catch (e) {
+    return { ok: false, reason: `the bytes are not base64: ${e instanceof Error ? e.message : String(e)}` }
+  }
+  if (bytes.byteLength === 0) return { ok: false, reason: 'the upload decoded to zero bytes' }
+  if (bytes.byteLength > LORA_BYTES_CAP) {
+    return { ok: false, reason: 'the LoRA is over the door cap' }
+  }
+  try {
+    mkdirSync(engineLorasDir, { recursive: true })
+    const target = join(engineLorasDir, name)
+    // WRITE-THROUGH, never a merge: a partial LoRA in the engine's
+    // list is worse than none, so the bytes land in one write
+    writeFileSync(target, bytes)
+    return { ok: true, filename: name, bytes: bytes.byteLength }
+  } catch (e) {
+    return { ok: false, reason: `writing into ${engineLorasDir} failed: ${e instanceof Error ? e.message : String(e)}` }
   }
 }
 
