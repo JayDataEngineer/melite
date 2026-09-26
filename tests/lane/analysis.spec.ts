@@ -35,6 +35,7 @@ import {
   readRunReceipt,
   renderReport,
   scanRunTree,
+  transcriptFloor,
   type ArtifactRow,
   type RunReceipt,
 } from './analysis.ts'
@@ -430,6 +431,16 @@ describe('the analyst — the transcript discovery (the collision law)', () => {
     writeFileSync(path, '# receipt\n')
     utimesSync(path, mtimeMs / 1000, mtimeMs / 1000)
   }
+
+  it('the mtime floor is the COMMISSION boot, not the analysis clock (the flake a live run found)', () => {
+    // with no commission in hand, the analysis stands alone
+    expect(transcriptFloor([], 5_000)).toBe(5_000)
+    // with commissions, the EARLIEST boot opens the window both share:
+    // a maker that finished before the analysis stamped `now` would
+    // otherwise sit behind its own floor and read as missing
+    expect(transcriptFloor([{ boot_ms: 900 }, { boot_ms: 1_200 }], 9_999)).toBe(900)
+    expect(transcriptFloor([{ boot_ms: 1_500 }], 9_999)).toBe(1_500)
+  })
 
   it('claims the freshest post-boot match, never a pre-boot one', () => {
     const dir = tempRoot()

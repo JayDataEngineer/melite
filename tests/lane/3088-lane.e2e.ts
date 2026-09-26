@@ -34,6 +34,7 @@ import {
   discoverTranscript,
   renderReport,
   scanRunTree,
+  transcriptFloor,
   type LaneReport,
   type PathVerdict,
 } from './analysis.ts'
@@ -43,12 +44,16 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const REPO = resolve(HERE, '..', '..')
 const ENGINE_HOST = process.env['MELITE_E2E_COMFYUI_HOST'] ?? '127.0.0.1'
 const ENGINE_PORT = Number(process.env['MELITE_E2E_COMFYUI_PORT'] ?? '8188')
-/** the runs roots the analyst reads: the maker's own state root
- *  (`MELITE_STATE_ROOT`, else the repo's data/runs) plus any extra
- *  cross-root seat the environment names (§23's law). */
+/** THE RUN-SEAT LAW: a supervisor-launched maker mints its runs in
+ *  `<state root>/output/` (the repo root by default) while the studio
+ *  lane's estate serves `data/runs/output/`. The gate reads BOTH real
+ *  seats (own state root first), then any §23 cross-root extras. */
 const ROOTS: string[] = [
-  process.env['MELITE_STATE_ROOT'] ?? join(REPO, 'data/runs'),
-  ...((process.env['MELITE_STATE_ROOTS'] ?? '').split(':').filter((r) => r !== '')),
+  ...new Set([
+    process.env['MELITE_STATE_ROOT'] ?? REPO,
+    join(REPO, 'data/runs'),
+    ...((process.env['MELITE_STATE_ROOTS'] ?? '').split(':').filter((r) => r !== '')),
+  ]),
 ]
 
 async function engineAlive(): Promise<boolean> {
@@ -115,7 +120,8 @@ describe.skipIf(!HAS_ENGINE)('the 3088 lane — the live analyst (video + 3d, no
     boot_ms: boot,
     roots: ROOTS,
     runs_scanned: receipts.length,
-    transcript: discoverTranscript(join(REPO, 'data/agent-video-test'), 'lane', boot),
+    // no commission in-process: the window floor is the honest floor
+    transcript: discoverTranscript(join(REPO, 'data/agent-video-test'), 'lane', transcriptFloor([], SINCE_MS)),
     paths,
     blocked: BLOCKED,
   }

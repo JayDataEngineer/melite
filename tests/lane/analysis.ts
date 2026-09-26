@@ -534,6 +534,25 @@ export function analyzeArtifactBytes(
  *  mtime is at or after THIS harness's boot is the commission's
  *  transcript; anything older is a prior session's receipt and is
  *  never claimed. */
+/** THE TRANSCRIPT-FLOOR LAW (a live commission's own finding,
+ *  2026-09-26): the transcript's mtime floor is the COMMISSION's
+ *  boot, not the analysis's own clock. A harness that stamps `now`
+ *  after the maker exits has, by construction, put every transcript
+ *  the commission just wrote BEHIND its floor — and then reports a
+ *  finished commission as missing. With commissions in hand, the
+ *  floor is the EARLIEST boot among them (the first launch opens the
+ *  window both paths share); with none, the CALLER'S window floor is
+ *  the honest one (a stand-alone `--since` analysis must look for the
+ *  transcripts of the window it just judged, not only for ones that
+ *  appear after its own clock). */
+export function transcriptFloor(
+  commissions: readonly { boot_ms: number }[],
+  fallbackMs: number,
+): number {
+  if (commissions.length === 0) return fallbackMs
+  return Math.min(...commissions.map((c) => c.boot_ms), fallbackMs)
+}
+
 export interface TranscriptDiscovery {
   path: string | null
   candidates: string[]

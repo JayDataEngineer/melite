@@ -30,6 +30,7 @@ import {
   discoverTranscript,
   renderReport,
   scanRunTree,
+  transcriptFloor,
   type LaneReport,
   type PathName,
 } from './analysis.ts'
@@ -83,9 +84,20 @@ function parseArgs(argv: readonly string[]): Args {
 const chosen = (path: PathName | 'both'): PathName[] =>
   path === 'both' ? [...PATH_NAMES] : [path]
 
+/** THE RUN-SEAT LAW (learned from a live commission, 2026-09-26): a
+ *  maker launched by the supervisor runs under SUPERVISOR_STATE_ROOT
+ *  (the repo root by default) and mints ITS runs in
+ *  `<state root>/output/` — while the studio/user lane's estate serves
+ *  `data/runs/output/`. Both are real seats; a harness that reads only
+ *  the user's tree judges a commission it cannot see. So: the state
+ *  root FIRST (the maker's own seat), then the studio tree, then any
+ *  §23 cross-root extras, deduped. */
 const ROOTS: string[] = [
-  process.env['MELITE_STATE_ROOT'] ?? join(REPO_ROOT, 'data/runs'),
-  ...((process.env['MELITE_STATE_ROOTS'] ?? '').split(':').filter((r) => r !== '')),
+  ...new Set([
+    process.env['MELITE_STATE_ROOT'] ?? REPO_ROOT,
+    join(REPO_ROOT, 'data/runs'),
+    ...((process.env['MELITE_STATE_ROOTS'] ?? '').split(':').filter((r) => r !== '')),
+  ]),
 ]
 
 const VERDICT_PATH = join(REPO_ROOT, 'data/lane-harness/verdict.json')
@@ -129,7 +141,13 @@ function analyse(commissions: CommissionResult[], sinceMs: number): number {
     boot_ms: boot,
     roots: ROOTS,
     runs_scanned: receipts.length,
-    transcript: discoverTranscript(join(REPO_ROOT, 'data/agent-video-test'), 'lane', boot),
+    // THE TRANSCRIPT-FLOOR LAW: the commission's boot, never this
+    // analysis's own clock (see analysis.ts).
+    transcript: discoverTranscript(
+      join(REPO_ROOT, 'data/agent-video-test'),
+      'lane',
+      transcriptFloor(commissions, Math.min(sinceMs, boot)),
+    ),
     paths: chosen(args.path).map((name) => assessPath(name, receipts, { sinceMs })),
     blocked: [],
   }
@@ -151,9 +169,13 @@ const args = parseArgs(process.argv.slice(2))
 if (args.phase === 'analyse') {
   process.exit(analyse([], args.sinceMs))
 } else {
-  const slug = args.slug ?? `lane-harness-${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 13)}`
+  const base = args.slug ?? `lane-harness-${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 13)}`
   const results: CommissionResult[] = []
   for (const name of chosen(args.path)) {
+    // THE SLUG LAW: each path's commission owns its slug, or a
+    // `--path both` run would have the second launch overwrite the
+    // first's attempt logs and share one transcript glob.
+    const slug = args.slug !== undefined || chosen(args.path).length === 1 ? base : `${base}-${name}`
     console.log(`[lane] commissioning the ${name} path (slug ${slug}) …`)
     const result = await commission({
       path: name,
