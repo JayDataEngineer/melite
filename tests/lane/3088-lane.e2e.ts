@@ -114,12 +114,13 @@ describe.skipIf(!HAS_ENGINE)('the 3088 lane — the live analyst (video + 3d, no
   const boot = Date.now()
   const receipts = scanRunTree(ROOTS)
   const paths: PathVerdict[] = PATH_NAMES.map((name) =>
-    assessPath(name, receipts, { blocked: BLOCKED, sinceMs: SINCE_MS }),
+    assessPath(name, receipts, { blocked: BLOCKED, sinceMs: SINCE_MS, requireAudio: true }),
   )
   const report: LaneReport = {
     boot_ms: boot,
     roots: ROOTS,
     runs_scanned: receipts.length,
+    runs: receipts,
     // no commission in-process: the window floor is the honest floor
     transcript: discoverTranscript(join(REPO, 'data/agent-video-test'), 'lane', transcriptFloor([], SINCE_MS)),
     paths,

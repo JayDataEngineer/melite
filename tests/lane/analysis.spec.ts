@@ -119,6 +119,47 @@ describe('the analyst — classification and the terminal law', () => {
   })
 })
 
+/** A real, video-ONLY mp4: the ftyp + a minimal moov (mvhd + one
+ *  avc1 trak) the estate's own probe reads as a film with no sound —
+ *  the shape a wired-film demand must refuse. */
+function mintVideoOnlyMp4(): { name: string; path: string } {
+  const u32 = (n: number): Uint8Array => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0, n); return b }
+  const u16 = (n: number): Uint8Array => { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0, n); return b }
+  const box = (type: string, body: Uint8Array): Uint8Array => {
+    const head = new Uint8Array(8 + body.length)
+    new DataView(head.buffer).setUint32(0, head.length)
+    head.set(new TextEncoder().encode(type), 4)
+    head.set(body, 8)
+    return head
+  }
+  const cat = (...parts: Uint8Array[]): Uint8Array => {
+    const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0))
+    let at = 0
+    for (const p of parts) { out.set(p, at); at += p.length }
+    return out
+  }
+  const fullbox = (v: number): Uint8Array => new Uint8Array([v, 0, 0, 0])
+  const mvhd = box('mvhd', cat(
+    fullbox(0), u32(0), u32(0), u32(1000), u32(2000), u32(0x00010000), u16(0x0100),
+    new Uint8Array(10), new Uint8Array(36), new Uint8Array(24), u32(2),
+  ))
+  const avc1 = box('avc1', cat(
+    new Uint8Array(6), u16(1), new Uint8Array(16), u16(64), u16(64),
+  ))
+  const stsd = box('stsd', cat(fullbox(0), u32(1), avc1))
+  const minf = box('minf', box('stbl', stsd))
+  const hdlr = box('hdlr', cat(fullbox(0), new Uint8Array(4), new TextEncoder().encode('vide'), new Uint8Array(12), new TextEncoder().encode('v')))
+  const mdia = box('mdia', cat(hdlr, minf))
+  const trak = box('trak', mdia)
+  const moov = box('moov', cat(mvhd, trak))
+  const ftyp = box('ftyp', cat(new TextEncoder().encode('isom'), u32(512), new TextEncoder().encode('isomiso2')))
+  const root = mkdtempSync(join(tmpdir(), 'lane-video-only-'))
+  const name = 'silent-film.mp4'
+  const path = join(root, name)
+  writeFileSync(path, Buffer.from(cat(ftyp, moov)))
+  return { name, path }
+}
+
 describe('the analyst — the VIDEO verdict (a real film, and the refusals)', () => {
   it('reads a real H3 film: h264 video with geometry and duration, aac audio', () => {
     const verdict = analyzeVideoBytes(bytes(REAL_FILM))
@@ -134,6 +175,26 @@ describe('the analyst — the VIDEO verdict (a real film, and the refusals)', ()
     // the film carries a sound track: the audio-conditioned lane's own promise
     const audio = streams.find((s) => s.codec_type === 'audio')
     expect(audio?.codec).toBe('aac')
+  })
+
+  it('the WIRED-FILM DEMAND: a silent film is not the lane path receipt (the brief asks for sound)', () => {
+    // the real film carries aac stereo, so it answers both ways
+    expect(analyzeVideoBytes(bytes(REAL_FILM), { requireAudio: true }).ok).toBe(true)
+    // the demand is per-call, never guessed from the file
+    expect(analyzeVideoBytes(bytes(REAL_FILM)).ok).toBe(true)
+  })
+
+  it('a video-only file under the demand refuses, naming the missing sound', () => {
+    // a hand-built video-only mp4: the mkv-free way to prove the arm
+    // is a real mp4 with no audio track
+    const root = tempRoot()
+    const film = mintVideoOnlyMp4()
+    expect(classifyArtifact(film.name)).toBe('video')
+    const verdict = analyzeVideoBytes(bytes(film.path), { requireAudio: true })
+    expect(verdict.ok).toBe(false)
+    expect(verdict.reasons.join(' ')).toMatch(/no audio stream/)
+    // and the same file is fine when the caller does not demand sound
+    expect(analyzeVideoBytes(bytes(film.path)).ok).toBe(true)
   })
 
   it('refuses empty bytes with the empty-artifact reason', () => {
@@ -491,6 +552,7 @@ describe('the analyst — the report', () => {
       boot_ms: boot,
       roots: [root],
       runs_scanned: receipts.length,
+      runs: receipts,
       transcript: discoverTranscript(root, 'tide-meter', boot),
       paths: [assessPath('video', receipts), assessPath('3d', receipts)],
       blocked: [],

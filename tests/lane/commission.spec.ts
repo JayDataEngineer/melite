@@ -180,6 +180,12 @@ describe('the commissioner — the launch prompt (the laws ride here, not the br
     expect(prompt).toMatch(/the time you FINISH/)
   })
 
+  it('demands the FIDELITY-HONESTY law (a live commission found the alternative)', () => {
+    expect(prompt).toMatch(/THE FIDELITY-HONESTY LAW/)
+    expect(prompt).toMatch(/never by the subject you were\s*\n?asked for/)
+    expect(prompt).toMatch(/the subject is UNVERIFIED/)
+  })
+
   it('demands the artifact path and run id in the final report', () => {
     expect(prompt).toMatch(/exact\s*\n?artifact path of the deliverable/)
     expect(prompt).toMatch(/run id that produced it/)

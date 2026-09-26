@@ -140,6 +140,16 @@ Each melite_flow call mints a new run. Poll it with run_status; do not
 re-press it as a polling mechanism. Read the exact refusal. A quota wall or
 native door error is a stop condition, not a reason to silently retry.
 
+THE FIDELITY-HONESTY LAW (a live commission's own finding): your report
+describes what you actually made. If your wire surface cannot SHOW you an
+image — no image input, no observe arm — then say so plainly and describe
+every deliverable by its structure and measurement (bytes, vertices,
+triangles, streams, duration, loudness), never by the subject you were
+asked for. A reconstruction of a stand-in reference is not a mesh of the
+subject, and a report that says it is has lied to the operator even if the
+run succeeded. Where a source image is named in the brief and you could not
+view it, the report must say the subject is UNVERIFIED.
+
 Write your transcript to data/agent-video-test/transcript-${transcriptSlug}-<YYYYMMDD-HHMM>.md,
 where the timestamp is the time you FINISH (the collision law: concurrent
 commission sessions share that directory and a bare counter would overwrite a

@@ -124,6 +124,10 @@ export interface RunReceipt {
   artifacts: ArtifactRow[]
   /** which durable sidecars the run dir actually carries */
   sidecars: string[]
+  /** the estate's own loudness measurement, when the run stamped one
+   *  (the loudness chip's receipt: a fact about the encoded audio,
+   *  measured engine-side — the analyst never decodes) */
+  loudness?: { loudness_lufs: number; peak_db: number }
   mtime_ms: number
 }
 
@@ -218,6 +222,15 @@ export function readRunReceipt(dir: string): RunReceipt {
   }
   if (typeof flow?.['error'] === 'string') out.error = flow['error']
   if (typeof flow?.['created_at'] === 'number') out.created_at = flow['created_at']
+  const loud = flow?.['loudness']
+  if (loud !== null && typeof loud === 'object' && !Array.isArray(loud)) {
+    const row = loud as Record<string, unknown>
+    const lufs = row['loudness_lufs']
+    const peak = row['peak_db']
+    if (typeof lufs === 'number' && Number.isFinite(lufs) && typeof peak === 'number' && Number.isFinite(peak)) {
+      out.loudness = { loudness_lufs: lufs, peak_db: peak }
+    }
+  }
   return out
 }
 
@@ -282,7 +295,10 @@ export interface VideoVerdict {
   }
 }
 
-export function analyzeVideoBytes(bytes: Uint8Array): VideoVerdict {
+export function analyzeVideoBytes(
+  bytes: Uint8Array,
+  opts: { requireAudio?: boolean } = {},
+): VideoVerdict {
   const reasons: string[] = []
   if (bytes.length === 0) return { ok: false, reasons: ['artifact is empty (0 bytes)'] }
   // The probe refuses an unrecognized container by THROWING (its
@@ -301,6 +317,16 @@ export function analyzeVideoBytes(bytes: Uint8Array): VideoVerdict {
   const video = probe.streams.filter((s) => s.codec_type === 'video')
   const audio = probe.streams.filter((s) => s.codec_type === 'audio')
   if (video.length === 0) reasons.push('no video stream in the encoded bytes')
+  // THE WIRED-FILM DEMAND (a live commission's finding, 2026-09-26):
+  // the container fact that the lane's film deliverable is missing its
+  // whole point without a sound track — the brief asks for the voice
+  // and the bed wired in, so a silent film is not a film receipt for
+  // THIS path. A card-run film may legitimately be silent, so the
+  // demand is per-call (the path table states the lane's own), never
+  // guessed from the file.
+  if (opts.requireAudio === true && audio.length === 0) {
+    reasons.push('no audio stream — the commissioned film must carry its wired sound (voice + bed)')
+  }
   else {
     if (typeof video[0]?.width !== 'number' || typeof video[0]?.height !== 'number') {
       reasons.push('video stream states no geometry')
@@ -520,6 +546,15 @@ export function analyzeGltfJsonBytes(bytes: Uint8Array): MeshVerdict {
   })
 }
 
+/** THE FIDELITY FACT: this harness proves STRUCTURE — the bytes parse,
+ *  the geometry exists, the film carries a video (and, under the wired
+ *  demand, an audio) stream. It never proves SUBJECT MATCH: whether the
+ *  mesh is of the thing the brief asked for, or the film shows the right
+ *  scene, is the operator's eye (or an image-capable model's). The claim
+ *  is stated on every mesh receipt so a reader can never mistake "it
+ *  opens" for "it is right". */
+export const FIDELITY_NOTE = 'structure proven by the analyst; subject match is UNVERIFIED here (the operator\'s eye, or an image-capable model)'
+
 export function analyzeArtifactBytes(
   kind: ArtifactKind,
   bytes: Uint8Array,
@@ -650,6 +685,9 @@ export function assessPath(
      *  the commission. The harness passes the commission's own boot;
      *  the default (0) judges everything, for the forensic pass. */
     sinceMs?: number
+    /** the path's own demand: a lane film must carry sound (see the
+     *  path table); a card-run film may be silent. */
+    requireAudio?: boolean
   } = {},
 ): PathVerdict {
   const kinds = PATH_KINDS[name]
@@ -706,7 +744,9 @@ export function assessPath(
         })
         continue
       }
-      const verdict = analyzeArtifactBytes(row.kind, bytes, row.ext)
+      const verdict = row.kind === 'video'
+        ? analyzeVideoBytes(bytes, { requireAudio: opts.requireAudio })
+        : analyzeArtifactBytes(row.kind, bytes, row.ext)
       artifacts.push({
         run_id: receipt.run_id,
         rel: row.rel,
@@ -753,6 +793,8 @@ export interface LaneReport {
   boot_ms: number
   roots: string[]
   runs_scanned: number
+  /** the receipts behind the verdicts (the loudness facts ride here) */
+  runs?: RunReceipt[]
   transcript: TranscriptDiscovery
   paths: PathVerdict[]
   blocked: string[]
@@ -762,6 +804,16 @@ export function renderReport(report: LaneReport): string {
   const lines: string[] = []
   lines.push(`3088 lane analyst — boot ${report.boot_ms}, ${report.runs_scanned} run(s) under ${report.roots.join(', ')}`)
   lines.push(`transcript: ${report.transcript.path ?? 'NONE'} — ${report.transcript.reason}`)
+  // THE ESTATE'S OWN LOUDNESS FACTS: run-level, so they are stated
+  // once (a measured audio fact, never re-derived by the analyst and
+  // never repeated per path).
+  for (const receipt of report.runs ?? []) {
+    if (receipt.loudness !== undefined) {
+      lines.push(
+        `  · ${receipt.run_id}: estate loudness receipt ${receipt.loudness.loudness_lufs.toFixed(2)} LUFS / ${receipt.loudness.peak_db.toFixed(2)} dBTP`,
+      )
+    }
+  }
   // A path can carry hundreds of runs; the report names a readable few
   // and says how many it did not print (never a silent truncation).
   const RUNS_SHOWN = 6
@@ -777,6 +829,9 @@ export function renderReport(report: LaneReport): string {
     )
     for (const art of verdict.artifacts.slice(0, ARTS_SHOWN)) {
       lines.push(`      ${art.verdict_ok ? 'ok  ' : 'BAD '} ${art.run_id}/${art.rel} (${art.bytes} bytes)${art.reasons.length === 0 ? '' : ` — ${art.reasons.join('; ')}`}`)
+      if (art.verdict_ok && verdict.path === '3d') {
+        lines.push(`           ↳ ${FIDELITY_NOTE}`)
+      }
     }
     const restArts = verdict.artifacts.length - Math.min(verdict.artifacts.length, ARTS_SHOWN)
     if (restArts > 0) lines.push(`      … ${restArts} more artifact(s) in the verdict receipt`)

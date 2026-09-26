@@ -141,6 +141,7 @@ function analyse(commissions: CommissionResult[], sinceMs: number): number {
     boot_ms: boot,
     roots: ROOTS,
     runs_scanned: receipts.length,
+    runs: receipts,
     // THE TRANSCRIPT-FLOOR LAW: the commission's boot, never this
     // analysis's own clock (see analysis.ts).
     transcript: discoverTranscript(
@@ -148,7 +149,7 @@ function analyse(commissions: CommissionResult[], sinceMs: number): number {
       'lane',
       transcriptFloor(commissions, Math.min(sinceMs, boot)),
     ),
-    paths: chosen(args.path).map((name) => assessPath(name, receipts, { sinceMs })),
+    paths: chosen(args.path).map((name) => assessPath(name, receipts, { sinceMs, requireAudio: true })),
     blocked: [],
   }
   console.log(renderReport(report))
