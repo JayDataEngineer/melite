@@ -218,6 +218,34 @@ export function compileFlowInline(
         }
       }
     }
+    // THE SPELL GATE (2026-10-09, the operator's live refusal): a
+    // $spell in params resolves against EXACTLY this inputNames map
+    // at the merge (rewriteSpells) — a spell naming no wired input
+    // used to pass this door and die mid-run with 'workflow carries
+    // $image1'. THE DOOR COVERS WHAT THE RUN WILL DO: refuse here,
+    // in the door's voice, naming the spell and the fix.
+    const ghosts: string[] = [];
+    const sweep = (v: unknown): void => {
+      if (typeof v === "string") {
+        if (v.startsWith("$") && !(v.slice(1) in inputNames)) ghosts.push(v);
+      } else if (Array.isArray(v)) {
+        for (const x of v) sweep(x);
+      } else if (typeof v === "object" && v !== null) {
+        for (const x of Object.values(v as Record<string, unknown>)) sweep(x);
+      }
+    };
+    sweep(params);
+    if (ghosts.length > 0) {
+      return refusal(
+        400,
+        "flow_inline stage " +
+          JSON.stringify(sid) +
+          ": params carry " +
+          JSON.stringify([...new Set(ghosts)].sort()) +
+          " but the stage wires no input of that name — the merge would refuse it at run time ('$name' must name a FromStage-wired input or a request initial; name it or wire it)",
+        "invalid_request",
+      );
+    }
     stages.push({ id: sid, engine, params, outputs, expected, outputNodes, inputNames });
   }
   return { stages };

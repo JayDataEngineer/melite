@@ -52,6 +52,46 @@ const doc = (stages: unknown, over: Record<string, unknown> = {}): Record<string
 });
 
 describe("compileFlowInline", () => {
+  it("THE SPELL GATE (2026-10-09): an UNWIRED $image1 refuses at the door, never at the merge", () => {
+    // the operator's live case, verbatim: an edit stage carrying
+    // params.image1 "$image1" with no wiring — the run used to die
+    // mid-flow at the merge ('workflow carries $image1'). The door
+    // now refuses in its own voice, naming the spell and the fix.
+    const out = compileFlowInline(doc([
+      stage({ id: "gen", outputs: { default: "image" } }),
+      stage({ id: "edit", params: { prompt: "make it blue", image1: "$image1" } }),
+    ])) as { payload: { error: string; code: string }; status: number };
+    assert.equal(out.status, 400);
+    assert.equal(out.payload.code, "invalid_request");
+    assert.match(out.payload.error, /stage "edit"/);
+    assert.match(out.payload.error, /params carry \["\$image1"\]/);
+    assert.match(out.payload.error, /name it or wire it/);
+  });
+  it("THE SPELL GATE: the WIRED $image1 compiles green (the wired path builds)", () => {
+    const out = compileFlowInline(doc([
+      stage({ id: "gen", outputs: { default: "image" } }),
+      stage({
+        id: "edit",
+        params: { prompt: "make it blue", image1: "$image1" },
+        inputs: { image1: { stage: "gen", output: "default" } },
+      }),
+    ])) as { stages: CompiledStage[] };
+    assert.equal(out.stages[1]?.inputNames["image1"], "gen.default");
+  });
+  it("THE SPELL GATE: a wired stage still refuses a FOREIGN spell ($ghost in the reference list)", () => {
+    const out = compileFlowInline(doc([
+      stage({ id: "gen", outputs: { default: "image" } }),
+      stage({
+        id: "edit",
+        params: { prompt: "x", image1: "$image1", reference_images: ["$ghost"] },
+        inputs: { image1: { stage: "gen", output: "default" } },
+      }),
+    ])) as { payload: { error: string }; status: number };
+    assert.equal(out.status, 400);
+    assert.match(out.payload.error, /\$ghost/);
+    // the WIRED spell rides through untouched
+    assert.doesNotMatch(out.payload.error, /\$image1.*\$image1/);
+  });
   it("refuses structural faults with the door's voice", () => {
     assert.match(
       (compileFlowInline(["x"]) as { payload: { error: string } }).payload.error,
