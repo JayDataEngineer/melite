@@ -559,12 +559,11 @@ export class RunsRuntimeService extends Service {
       // the registry walls and the validate one-admission walk — so
       // it drives (image-upscale: make → polish through ONE merged
       // submit).
-      const inlineId: unknown =
-        typeof (inline as Record<string, unknown> | null) === "object" &&
-        inline !== null &&
-        !Array.isArray(inline)
-          ? (inline as Record<string, unknown>)["id"]
-          : undefined;
+      // THE CURATED PROOF: reaching here means compileFlowInline
+      // SUCCEEDED on this inline — and its first gate is isRecord, so
+      // the value is proven a non-array object. No re-checking dance
+      // (a typeof/Array.isArray arm here would be dead code).
+      const inlineId: unknown = (inline as Record<string, unknown>)["id"];
       const curated: boolean =
         typeof inlineId === "string" && getRegistryFlow(inlineId) !== undefined;
       if (!curated) {

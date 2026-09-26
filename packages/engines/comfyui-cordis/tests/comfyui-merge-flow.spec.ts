@@ -32,8 +32,17 @@ vi.mock("../src/comfyui-outputs.ts", () => ({
   // channels — the loud-refusal arms live in comfyui-outputs.spec,
   // here the assert is pinned pass-through.
   assertPublishedOutputChannels: () => undefined,
-  // THE QVOICE CHANNEL: pass-through (own wall in comfyui-outputs.spec)
-  qvoicePathsOf: () => "",
+  qvoicePathsOf: (outputs: unknown): string => {
+    const row = (outputs as { save?: { qvoice_path?: unknown } } | undefined)?.save;
+    const path = row?.qvoice_path;
+    return Array.isArray(path) && typeof path[0] === "string" ? path[0] : "";
+  },
+  loudnessOf: (outputs: unknown): { loudness_lufs: number; peak_db: number } | null => {
+    // subOutputs arrive with the stage prefix already stripped
+    const row = (outputs as { save?: { loudness_lufs?: unknown } } | undefined)?.save;
+    const lufs = row?.loudness_lufs;
+    return Array.isArray(lufs) && typeof lufs[0] === "number" ? { loudness_lufs: lufs[0]!, peak_db: -16.3 } : null;
+  },
 }));
 vi.mock("../src/comfyui-config.ts", () => ({
   resolveEngineBaseUrl: () => "http://config-resolved:8188",
@@ -53,7 +62,10 @@ vi.mock("../src/comfyui-execute.ts", () => ({
         ? [["x"]]
         : outputsShape === "none"
           ? undefined
-          : { "gen::save": { images: ["a.png"] }, "up::up": { images: ["b.png"] } },
+          : {
+              "gen::save": { images: ["a.png"], ...(qvoiceShape ? { qvoice_path: ["/voices/test.qvoice"] } : {}), ...(loudShape ? { loudness_lufs: [-20.0] } : {}) },
+              "up::up": { images: ["b.png"] },
+            },
     };
   },
   hookProgress: () => () => {},
@@ -62,6 +74,8 @@ vi.mock("../src/comfyui-execute.ts", () => ({
 }));
 
 let closed = false;
+let qvoiceShape = false;
+let loudShape = false;
 let outputsShape: "staged" | "flat" | "none" = "staged";
 
 import { executeFlow } from "../src/comfyui-merge.ts";
@@ -72,6 +86,7 @@ const rows: MergeRow[] = [
     stageId: "gen",
     workflow: { save: { class_type: "SaveImage", inputs: {} } },
     outputs: { image: "png" },
+    outputNodes: { image: "save" },
     params: {},
   } as unknown as MergeRow,
   {
@@ -117,6 +132,28 @@ describe("executeFlow (the merged submit)", () => {
       outputsShape = "staged";
     }
   });
+  it("declared node bindings and the engine-reported qvoice path reach the stage result", async () => {
+    qvoiceShape = true;
+    try {
+      const r = await executeFlow(rows, "/tmp/run-qvoice", { up: { src: "gen.image" } }, {});
+      expect(r.stages["gen"]?.outputs["qvoice_path"]).toBe("/voices/test.qvoice");
+    } finally {
+      qvoiceShape = false;
+    }
+  });
+
+  it("the engine's loudness reading reaches the stage result (the per-stage MeliteLoudness receipt)", async () => {
+    loudShape = true;
+    try {
+      const r = await executeFlow(rows, "/tmp/run-loud", { up: { src: "gen.image" } }, {});
+      expect(r.stages["gen"]?.outputs["loudness"]).toEqual({ loudness_lufs: -20.0, peak_db: -16.3 });
+      // the loudness-free stage carries no fabricated reading
+      expect("loudness" in (r.stages["up"]?.outputs ?? {})).toBe(false);
+    } finally {
+      loudShape = false;
+    }
+  });
+
   it("an empty override resolves through the config", async () => {
     const r = await executeFlow(rows, "/tmp/run-merge2", { up: { src: "gen.image" } }, {});
     expect(r.promptId).toBe("p-9");

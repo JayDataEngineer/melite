@@ -215,6 +215,23 @@ describe("validate", () => {
     assert.match(ghost.message, /not a registered card/);
   });
 
+  it("an ARRAY flow_inline is refused at the compile gate (isRecord — never read as a row)", async () => {
+    // inline as an ARRAY: compileFlowInline's first gate is isRecord,
+    // so the array dies in the not-object voice — it never reaches the
+    // curated-lane lift at all
+    const defs = new Map([
+      ["c", { requiresModel: false, schema: (p: unknown): unknown => p }],
+    ]);
+    const s = seat({ defsSync: (): unknown => defs });
+    const err = await remote(() =>
+      s.svc.validate(
+        inlineBody({ flow_inline: [{ id: "s", card: "c", engine: "comfyui", params: {} }] }),
+        sig(),
+      ),
+    );
+    assert.match(err.message, /flow body must be a JSON object|not-object|single-stage/);
+  });
+
   it("the flow shim keeps the door's voice (unknown names, pin sweep)", async () => {
     const s = seat();
     const unknown = await remote(() =>

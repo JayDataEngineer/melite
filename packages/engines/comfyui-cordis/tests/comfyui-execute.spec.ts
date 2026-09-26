@@ -12,6 +12,8 @@
 import { describe, it, expect, vi } from "vitest";
 
 let interruptCalls = 0;
+let qvoicePath = "";
+let loudReading: { loudness_lufs: number; peak_db: number } | null = null;
 
 vi.mock("../src/comfyui-transport.ts", () => ({
   sdkClient: (server: string) => ({
@@ -48,7 +50,8 @@ vi.mock("../src/comfyui-outputs.ts", () => ({
   // THE QVOICE CHANNEL: the real collector has its own wall — here
   // it stays the identity pass-through (no qvoice rides these
   // fixtures; the "" arm is the exercised one).
-  qvoicePathsOf: () => "",
+  qvoicePathsOf: () => qvoicePath,
+  loudnessOf: () => loudReading,
 }));
 
 vi.mock("../src/comfyui-config.ts", () => ({
@@ -119,6 +122,25 @@ describe("submitPrompt (the receipt law)", () => {
   it("an EMPTY node_errors object rides clean (the refusal fires only on dropped nodes)", async () => {
     const r = await submitPrompt(fakeClient({ queuePrompt: async () => ({ prompt_id: "p-3", node_errors: {} }) }), {});
     expect(r.promptId).toBe("p-3");
+  });
+  it("node error rows without errors or dependent outputs use the defensive voices", async () => {
+    await expect(submitPrompt(fakeClient({
+      queuePrompt: async () => ({
+        prompt_id: "p-4",
+        node_errors: {
+          empty: { errors: [], dependent_outputs: [] },
+          missing: { errors: [{}] },
+        },
+      }),
+    }), {})).rejects.toThrow(/empty: validation error.*missing:/s);
+  });
+  it("a node error with a message and dependent output keeps both details", async () => {
+    await expect(submitPrompt(fakeClient({
+      queuePrompt: async () => ({
+        prompt_id: "p-5",
+        node_errors: { bad: { errors: [{ message: "bad value" }], dependent_outputs: ["Out.0"] } },
+      }),
+    }), {})).rejects.toThrow(/bad: bad value.*Out\.0/s);
   });
 });
 
@@ -208,6 +230,7 @@ describe("hookProgress (the additive tap)", () => {
   it("progress events fold value/max/node + activity", () => {
     progressHooks["progress"] = [];
     progressHooks["executing"] = [];
+    progressHooks["progress_text"] = [];
     const seen: unknown[] = [];
     hookProgress(fakeClient(), "p-1", (u) => seen.push(u));
     progressHooks["progress"][0]({ value: 3, max: 10, node: "12" });
@@ -215,11 +238,15 @@ describe("hookProgress (the additive tap)", () => {
     progressHooks["progress"][0]({ value: 1, max: null, node: null });
     expect(String((seen[1] as { activity: string }).activity)).toBe("sampling 1/?");
     progressHooks["progress"][0]({ value: "x" });
-    expect(seen.length).toBe(2);
+    progressHooks["progress_text"][0]({ nodeId: "12", text: "loading text encoder" });
+    expect(seen[2]).toEqual({ activity: "loading text encoder" });
+    progressHooks["progress_text"][0]({ nodeId: "12", text: "" });
+    expect(seen.length).toBe(3);
   });
   it("executing events: foreign prompt filtered, nodeless dropped, own voiced", () => {
     progressHooks["progress"] = [];
     progressHooks["executing"] = [];
+    progressHooks["progress_text"] = [];
     const seen: unknown[] = [];
     hookProgress(fakeClient(), "p-1", (u) => seen.push(u));
     // a FOREIGN prompt_id is filtered; an ABSENT prompt_id is not
@@ -236,12 +263,18 @@ describe("hookProgress (the additive tap)", () => {
   it("the unhook retires the tap", () => {
     progressHooks["progress"] = [];
     progressHooks["executing"] = [];
+    progressHooks["progress_text"] = [];
     const seen: unknown[] = [];
     const unhook = hookProgress(fakeClient(), "p-1", (u) => seen.push(u));
-    expect(progressHooks["progress"].length + progressHooks["executing"].length).toBe(2);
+    expect(
+      progressHooks["progress"].length
+        + progressHooks["executing"].length
+        + progressHooks["progress_text"].length,
+    ).toBe(3);
     unhook?.();
-    expect(progressHooks["progress"].length).toBe(0, "both listeners detached");
+    expect(progressHooks["progress"].length).toBe(0, "all listeners detached");
     expect(progressHooks["executing"].length).toBe(0);
+    expect(progressHooks["progress_text"].length).toBe(0);
     expect(seen.length).toBe(0);
   });
 });
@@ -329,6 +362,7 @@ describe("connect refused (progress never load-bearing)", () => {
     const seen: unknown[] = [];
     progressHooks["progress"] = [];
     progressHooks["executing"] = [];
+    progressHooks["progress_text"] = [];
     const c = fakeClient({ connect: () => Promise.reject(new Error("no ws")) });
     const unhook = hookProgress(c, "p-1", (u) => seen.push(u));
     expect(unhook).toBeTruthy(); // the hook exists even if connect refuses
@@ -361,5 +395,23 @@ describe("executeSingle (the non-plugin face)", () => {
   it("an empty override falls to the config-resolved server", async () => {
     await executeSingle("/tmp/run-2", {}, {}, {}, "");
     expect(true).toBe(true);
+  });
+  it("carries a non-empty engine qvoice path into the result", async () => {
+    qvoicePath = "/mnt/data/models/audio/voices/demo.qvoice";
+    try {
+      const r = await executeSingle("/tmp/run-qvoice", {}, {}, {}, "http://override:8188");
+      expect((r.outputs as Record<string, unknown>)["qvoice_path"]).toBe(qvoicePath);
+    } finally {
+      qvoicePath = "";
+    }
+  });
+  it("stamps the engine's loudness reading onto the outputs (the MeliteLoudness receipt seat)", async () => {
+    loudReading = { loudness_lufs: -20.0, peak_db: -16.3 };
+    try {
+      const r = await executeSingle("/tmp/run-loud", {}, {}, {}, "http://override:8188");
+      expect((r.outputs as Record<string, unknown>)["loudness"]).toEqual(loudReading);
+    } finally {
+      loudReading = null;
+    }
   });
 });
