@@ -268,6 +268,38 @@ function tail(text: string, lines = 40): string {
  *  the MELITE_HEADLESS export; this function only supplies its two
  *  files, the done-glob, and the boot stamp the analyst's transcript
  *  discovery needs. */
+/** THE RECEIPT ENV (2026-09-26) — the launch env and the REPORTED
+ *  env are two different things.
+ *
+ *  The launch legitimately inherits the operator's whole environment:
+ *  the maker's provider keys are part of how a real commission runs.
+ *  The RECEIPT is not — it is diagnostics that the analyst writes into
+ *  a transcript, and transcripts get committed. So the receipt carries
+ *  the launch-SHAPED keys (the ones the commissioner actually pins and
+ *  a reader needs to reproduce or explain the launch) and nothing else.
+ *
+ *  The interface's own comment already promised this ("a receipt, not
+ *  a secret store: the credential keys never ride here") and the
+ *  implementation spread `process.env` straight into the returned
+ *  object, so the promise was a lie on any box with keys exported.
+ *  Live proof it was load-bearing: this one exports QWEN_VLLM_API_KEY,
+ *  HF_TOKEN and OPENROUTER_API_KEY, and all three were landing in the
+ *  receipt. The wall that says so (`commission.spec.ts`, "a receipt
+ *  never carries a credential") is what caught it.
+ *
+ *  Credential-named keys are DROPPED, not masked: a `<redacted>` entry
+ *  would still print the secret's name into a committed file, and the
+ *  wall asserts on key names. */
+const RECEIPT_ENV_KEY = /^(SUPERVISOR_|MELITE_|DSH_|COMFYUI_|ESTATE_)/;
+
+export function receiptEnv(env: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(env)) {
+    if (RECEIPT_ENV_KEY.test(key)) out[key] = value;
+  }
+  return out;
+}
+
 export async function commission(opts: CommissionOptions): Promise<CommissionResult> {
   const bootMs = Date.now()
   const workDir = opts.workDir ?? mkdtempSync(join(tmpdir(), `lane-${opts.path}-`))
@@ -307,7 +339,7 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
       log_prefix: logPrefix,
       lane_gaps: [],
       agent_route: env['MELITE_AGENT_ROUTE'] as string,
-      env,
+      env: receiptEnv(env),
       exit_code: null,
       output_tail: '',
       state_root: stateRoot,
@@ -337,7 +369,7 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
     log_prefix: logPrefix,
     lane_gaps: laneBootGaps(attemptLogText(logPrefix)),
     agent_route: env['MELITE_AGENT_ROUTE'] as string,
-    env,
+    env: receiptEnv(env),
     exit_code: result.code,
     output_tail: tail(result.output),
     state_root: stateRoot,

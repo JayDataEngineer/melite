@@ -98,6 +98,18 @@ function run(dir: string, prompt: string, prefix: string): number {
         SUPERVISOR_BACKOFF_S: '0',
         SUPERVISOR_MAX_ATTEMPTS: '3',
         SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'),
+        // THE TURN-WAIT MUST NEVER SEE THE OPERATOR'S REAL QUEUE
+        // (2026-09-26). `wait_for_queue_lock` polls
+        // `${STATE_ROOT}/gateway.lock`; with STATE_ROOT left at its
+        // default (this repo), every arm of this suite consulted the
+        // LIVE studio lane's lock, waited out the 1800s default and
+        // died at the 30s exec timeout — 17 walls red for a machine
+        // fact, not a behaviour. Pin the state root to the test's own
+        // tmp dir so the wait is exercised against THIS test's lock
+        // (the lock arms below set their own wait bound explicitly) and
+        // the suite is hermetic again.
+        SUPERVISOR_STATE_ROOT: dir,
+        SUPERVISOR_LOCK_WAIT_S: '0',
       },
       timeout: 30_000,
       stdio: 'pipe',
@@ -118,6 +130,9 @@ function runWithoutDoneMarker(dir: string, prompt: string, prefix: string): numb
         SUPERVISOR_BACKOFF_S: '0',
         SUPERVISOR_MAX_ATTEMPTS: '3',
         SUPERVISOR_DONE_MARKER: '',
+        // hermetic turn-wait, same reason as run() above
+        SUPERVISOR_STATE_ROOT: dir,
+        SUPERVISOR_LOCK_WAIT_S: '0',
       },
       timeout: 30_000,
       stdio: 'pipe',
@@ -223,7 +238,7 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
 describe('commission-supervisor — the done-marker glob (the mismatchint fix, 2026-09-26)', () => {
   function runGlob(dir: string, prompt: string, prefix: string, env: Record<string, string>): { code: number, stderr: string } {
     const r = spawnSync('bash', [SCRIPT, prompt, prefix], {
-      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', ...env },
+      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', SUPERVISOR_STATE_ROOT: dir, SUPERVISOR_LOCK_WAIT_S: '0', ...env },
       timeout: 30_000, encoding: 'utf8',
     })
     return { code: r.status ?? -1, stderr: (r.stderr ?? '') + (r.stdout ?? '') }
@@ -268,7 +283,7 @@ const r = runGlob(dir, prompt, prefix, { SUPERVISOR_DONE_GLOB: join(dir, 'transc
 describe('commission-supervisor — the queue-lock turn-wait (two makers, one queue)', () => {
   function runLock(dir: string, prompt: string, prefix: string, env: Record<string, string>): { code: number, stderr: string } {
     const r = spawnSync('bash', [SCRIPT, prompt, prefix], {
-      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'), ...env },
+      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'), SUPERVISOR_LOCK_WAIT_S: '0', ...env },
       timeout: 30_000, encoding: 'utf8',
     })
     return { code: r.status ?? -1, stderr: (r.stderr ?? '') + (r.stdout ?? '') }
@@ -336,6 +351,13 @@ describe('commission-supervisor — the cross-roots manifest env', () => {
           SUPERVISOR_DSH_BIN: join(dir, 'seq.js'),
           SUPERVISOR_STATE_ROOTS: '/custom/shared:tree',
           SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'),
+          // this arm inlines execFileSync instead of going through
+          // run(), so it needs the same hermetic turn-wait pin — the
+          // wait polls `${STATE_ROOT}/gateway.lock`, and an unpinned
+          // STATE_ROOT meant this wall measured the operator's live
+          // lane instead of the roots override it exists to prove
+          SUPERVISOR_STATE_ROOT: dir,
+          SUPERVISOR_LOCK_WAIT_S: '0',
         },
         timeout: 30_000,
         stdio: 'pipe',

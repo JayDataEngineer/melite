@@ -121,7 +121,22 @@ export interface ManageCtx {
    *  optional: a door without its catalog is a miswire, and the
    *  type error at the construction site is the loudest refusal). */
   models: ModelsService;
-  provisioning: ProvisioningServiceDefinition;
+  /**
+   * The Cordis provisioning seat — OPTIONAL, and the type finally says
+   * so (2026-09-26). It was declared required while the construction
+   * site cast an unchecked `ctx.get("provisioning")`, and nine call
+   * sites dereferenced it ungated. On a lane that does not mount the
+   * provisioning composition (proved live on a maker lane: the status
+   * door answered with `resources_detail: Cannot read properties of
+   * undefined (reading 'reconcile')` — a raw TypeError laundered into
+   * a status field), every one of those was a crash dressed as data.
+   *
+   * ABSENCE IS NOT AN ERROR for the read arms (status reports the
+   * absence in words and answers everything else) and it IS a loud 503
+   * for the mutation arms (there is nothing to mutate through). Both go
+   * through `provisioningOf`.
+   */
+  provisioning?: ProvisioningServiceDefinition;
   /** The timer-service seat (ctx.timeout from the door's Cordis
    *  context — cordis-plugin-timer): REQUIRED so a library caller
    *  can never silently fall back to a bare setTimeout (the
@@ -137,6 +152,35 @@ export interface ManageCtx {
    *  truth. The seam is the reader, not one node: a stand-in that
    *  answered a single node would be a different contract. */
   objectInfo?: () => Promise<unknown>;
+}
+
+/** THE PROVISIONING SEAT GATE (2026-09-26). One accessor, both
+ *  postures, no unguated dereference left in the plane:
+ *
+ *  - `provisioningOf` — for the MUTATION arms. An absent seat is a
+ *    503 in the door's own vocabulary, naming the row that mounts it,
+ *    because "install what?" has no answer without a provisioner and a
+ *    TypeError is not an answer.
+ *  - `provisioningOrAbsent` — for the READ arms. Status still answers;
+ *    the resources section reports the absence in words and every other
+ *    section (endpoint, manager, versions, active runs, routing) is
+ *    unaffected. A status door that dies because one optional seat is
+ *    missing cannot tell the operator anything at all.
+ */
+export function provisioningOf(ctx: ManageCtx): ProvisioningServiceDefinition {
+  const seat = ctx.provisioning;
+  if (seat === undefined || typeof seat.reconcile !== "function") {
+    throw new Refused(
+      503,
+      "the provisioning seat is not mounted on this lane (absent, not broken) — the estate's provisioning composition row is what mounts it; nothing can be installed, updated or reconciled without it",
+    );
+  }
+  return seat;
+}
+
+export function provisioningOrAbsent(ctx: ManageCtx): ProvisioningServiceDefinition | undefined {
+  const seat = ctx.provisioning;
+  return seat === undefined || typeof seat.reconcile !== "function" ? undefined : seat;
 }
 
 export interface Req {
@@ -351,12 +395,23 @@ function safeStatusItems(items: ResourceStatus["items"]): Array<Record<string, u
   }));
 }
 
-function normalizedResources(resources: readonly ResourceStatus[], provisioning: ProvisioningServiceDefinition): ResourceStatus[] {
+function normalizedResources(resources: readonly ResourceStatus[], provisioning?: ProvisioningServiceDefinition): ResourceStatus[] {
   return resources.map((resource) => {
     let operationId = resource.operationId;
     let state = resource.state;
     let items = resource.items;
     let detail = resource.detail;
+    // NO SEAT = no operation merge, not a throw: a resource status the
+    // door can still report beats a status door that cannot answer.
+    if (provisioning === undefined) {
+      return {
+        ...resource,
+        state,
+        items,
+        ...(operationId === undefined ? {} : { operationId }),
+        ...(detail === undefined ? {} : { detail }),
+      };
+    }
     try {
       const operation = provisioning.operationOf(resource.ref);
       if (operation !== undefined) {
@@ -533,18 +588,30 @@ async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   }
   let resources: ResourceStatus[] = [];
   let resourcesDetail: string | undefined;
-  try {
-    resources = await withManageTimeout(
-      req,
-      ctx,
-      (signal) => ctx.provisioning.reconcile(undefined, signal),
-      STATUS_RECONCILE_MS,
-    );
-  } catch (error: unknown) {
-    if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
-    resourcesDetail = error instanceof Error ? error.message : String(error);
+  // THE STATUS POSTURE (2026-09-26): a missing provisioning seat is
+  // reported IN WORDS and the rest of the status still answers. Before,
+  // this line was `ctx.provisioning.reconcile(...)` behind a try/catch,
+  // so an absent seat produced the TypeError text
+  // "Cannot read properties of undefined (reading 'reconcile')" as a
+  // status FIELD — a crash wearing a data costume, on the one door an
+  // operator reads to decide what the estate is doing.
+  const provisionSeat = provisioningOrAbsent(ctx);
+  if (provisionSeat === undefined) {
+    resourcesDetail = "the provisioning seat is not mounted on this lane (absent, not broken): no resource reconciliation — everything else in this status is live";
+  } else {
+    try {
+      resources = await withManageTimeout(
+        req,
+        ctx,
+        (signal) => provisionSeat.reconcile(undefined, signal),
+        STATUS_RECONCILE_MS,
+      );
+    } catch (error: unknown) {
+      if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
+      resourcesDetail = error instanceof Error ? error.message : String(error);
+    }
   }
-  const normalized = normalizedResources(resources, ctx.provisioning);
+  const normalized = normalizedResources(resources, provisionSeat);
   const operations = operationRows(normalized);
   const resourceRows = normalized.map((resource) => ({
     ...resource,
@@ -824,6 +891,12 @@ function mergeProvisionResults(results: readonly ProvisionResult[]): {
 async function hInstallExtension(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   if (req.nodes.length === 0) throw badRequest("install_extension requires: nodes");
   estateOnly(req, ctx.endpoint());
+  // THE GATE RUNS FIRST, NOT PER NODE (2026-09-26): the per-node catch
+  // below turns any plan/ensure throw into a "missed" row, so a
+  // seatless lane answered "extension is not declared" — blaming the
+  // DECLARATION for a missing provisioner. Ask once, up front, so the
+  // refusal is the true one and no node is attempted at all.
+  const provisioner = provisioningOf(ctx);
   return await withManageTimeout(req, ctx, async (signal) => {
     const results: Array<{ readonly node: string; readonly ref: ResourceRef; readonly plan: ProvisionPlan; readonly result: ProvisionResult }> = [];
     const misses: string[] = [];
@@ -834,9 +907,9 @@ async function hInstallExtension(req: Req, ctx: ManageCtx): Promise<[number, Man
       const ref: ResourceRef = { kind: "extension", id: node };
       let plan: ProvisionPlan | undefined;
       try {
-        plan = await awaitWithAbort(ctx.provisioning.plan(ref), signal);
+        plan = await awaitWithAbort(provisioner.plan(ref), signal);
         throwIfAborted(signal);
-        const result = await ctx.provisioning.ensure(ref, undefined, signal);
+        const result = await provisioner.ensure(ref, undefined, signal);
         results.push({ node, ref, plan, result });
         if (result.state !== "active" && result.state !== "restart_required") {
           missed.push(node);
@@ -902,7 +975,7 @@ async function hInstallExtensionUrl(req: Req, ctx: ManageCtx): Promise<[number, 
   need(req, "url");
   estateOnly(req, ctx.endpoint());
   const result = await withManageTimeout(req, ctx, (signal) =>
-    ctx.provisioning.acquireExternal(
+    provisioningOf(ctx).acquireExternal(
       { kind: "extension", url: req.url },
       { operatorConfirmed: true },
       signal,
@@ -915,7 +988,7 @@ async function hDownloadModel(req: Req, ctx: ManageCtx): Promise<[number, Manage
   estateOnly(req, ctx.endpoint());
   const path = externalModelPath(req);
   const result = await withManageTimeout(req, ctx, (signal) =>
-    ctx.provisioning.acquireExternal(
+    provisioningOf(ctx).acquireExternal(
       {
         kind: "model",
         url: req.url,
@@ -939,6 +1012,13 @@ function familyModelDeclared(ctx: ManageCtx, id: string): boolean {
 async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "model");
   estateOnly(req, ctx.endpoint());
+  // THE GATE IS ABOVE THE FAMILY/CARD FALLBACK (2026-09-26): both plan
+  // attempts sit inside catches that end in notFound(...), so a
+  // seatless lane used to answer "404 model not found" for a model that
+  // was perfectly well declared — the missing provisioner wearing the
+  // wrong refusal. Ask once, first; then the family→card fallback keeps
+  // its meaning.
+  const provisioner = provisioningOf(ctx);
   return await withManageTimeout(req, ctx, async (signal) => {
     const family: ResourceRef = {
       kind: "model",
@@ -950,7 +1030,7 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
     let ref = family;
     let plan: ProvisionPlan | undefined;
     try {
-       plan = await awaitWithAbort(ctx.provisioning.plan(family), signal);
+       plan = await awaitWithAbort(provisioner.plan(family), signal);
      } catch (error: unknown) {
        if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
        if (signal.aborted) throw abortReason(signal);
@@ -965,7 +1045,7 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
         ...(req.quant === "" ? {} : { quant: req.quant }),
       };
       try {
-         plan = await awaitWithAbort(ctx.provisioning.plan(ref), signal);
+         plan = await awaitWithAbort(provisioner.plan(ref), signal);
        } catch (error: unknown) {
         if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
         if (signal.aborted) throw abortReason(signal);
@@ -973,7 +1053,7 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
       }
     }
     throwIfAborted(signal);
-    const result = await ctx.provisioning.ensure(ref, undefined, signal);
+    const result = await provisioner.ensure(ref, undefined, signal);
     return provisionEnvelope(req.action, result, {
       model: req.model,
       files: result.items.filter((item) => item.state === "active").map((item) => item.key),

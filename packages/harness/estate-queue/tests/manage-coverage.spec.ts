@@ -789,6 +789,91 @@ describe("manage status projections", () => {
     assert.deepEqual(posted, { ver: "0.3.40" });
   });
 
+  // ── THE ABSENT PROVISIONING SEAT (2026-09-26) ────────────────────
+  // The live defect, in the shape it actually shipped: a maker lane
+  // does not mount the provisioning composition, the status door
+  // dereferenced the seat behind a try/catch, and the raw TypeError
+  // came back as a STATUS FIELD —
+  //   resources_detail: "Cannot read properties of undefined
+  //                      (reading 'reconcile')"
+  // — a crash wearing a data costume, on the one door an operator
+  // reads to decide what the estate is doing.
+  it("status with NO provisioning seat still answers, and names the absence in words", async () => {
+    root = mkdtempSync(join(tmpdir(), "manage-status-seatless-"));
+    statusRoute();
+    const [code, envelope] = await run({ action: "status" }, { provisioning: undefined });
+    assert.equal(code, 200, "the status door answers without the seat");
+    const data = envelope.data as {
+      resources: unknown[];
+      resources_detail?: string;
+      endpoint: Record<string, unknown>;
+      active_runs: unknown;
+      routing: Record<string, unknown>;
+    };
+    // the absence is REPORTED, not thrown, and not a TypeError string
+    assert.deepEqual(data.resources, []);
+    assert.match(String(data.resources_detail), /provisioning seat is not mounted/);
+    assert.doesNotMatch(JSON.stringify(envelope), /Cannot read properties/);
+    // …and the rest of the status is still live: the door degraded one
+    // section, it did not go dark
+    assert.ok(data.endpoint !== undefined);
+    assert.ok(Array.isArray(data.active_runs));
+    assert.ok(data.routing !== undefined);
+  });
+
+  it("a MUTATION with no provisioning seat refuses 503 naming the seat (never a TypeError)", async () => {
+    root = mkdtempSync(join(tmpdir(), "manage-mutate-seatless-"));
+    statusRoute();
+    // every mutation arm goes through the one gate — a missing seat is
+    // "there is nothing to install through", not a crash
+    // the door's contract is an ENVELOPE, not a throw: a Refused
+    // becomes [code, refusalEnvelope] at the dispatch boundary
+    for (const action of [
+      { action: "install_extension", nodes: ["a-pack"] },
+      { action: "install_extension_url", url: "https://example.invalid/pack.tar.gz" },
+    ]) {
+      const [code, envelope] = await run(action, { provisioning: undefined });
+      assert.equal(code, 503, `${action.action} refuses 503`);
+      assert.match(String(envelope.detail), /provisioning seat is not mounted/, action.action);
+      assert.doesNotMatch(JSON.stringify(envelope), /Cannot read properties/, action.action);
+      // and it does not blame the declaration for a missing provisioner
+      assert.doesNotMatch(String(envelope.detail), /is not declared/, action.action);
+    }
+
+    // provision_model's SEAT gate comes before its family→card
+    // fallback, and that order is the point: on a seatless lane EVERY
+    // provision fails for one reason, so a per-model 404 ("unknown
+    // model") would be a lie about the cause. Both a declared and an
+    // undeclared id answer the same true 503.
+    const [undeclaredCode, undeclaredEnvelope] = await run(
+      { action: "provision_model", model: "not-a-family" },
+      { provisioning: undefined },
+    );
+    assert.equal(undeclaredCode, 503, "a seatless lane answers 503 even for an unknown id");
+    assert.match(String(undeclaredEnvelope.detail), /provisioning seat is not mounted/);
+    const declaredModels = {
+      allDecls: () => [{ id: "trellis2-native", variants: [] }],
+    } as unknown as ManageCtx["models"];
+    const [declaredCode, declaredEnvelope] = await run(
+      { action: "provision_model", model: "trellis2-native" },
+      { provisioning: undefined, models: declaredModels },
+    );
+    assert.equal(declaredCode, 503, "a DECLARED model on a seatless lane refuses 503 too");
+    assert.match(String(declaredEnvelope.detail), /provisioning seat is not mounted/);
+    assert.doesNotMatch(JSON.stringify(declaredEnvelope), /Cannot read properties/);
+  });
+
+  it("a HALF-mounted seat (present but not a provisioner) reads as absent, not as a crash", async () => {
+    // the shape an unchecked `as ProvisioningServiceDefinition` cast
+    // invites: the key resolves, the object is not a provisioner
+    root = mkdtempSync(join(tmpdir(), "manage-halfseat-"));
+    statusRoute();
+    const half = {} as unknown as ProvisioningServiceDefinition;
+    const [, envelope] = await run({ action: "status" }, { provisioning: half });
+    assert.match(String((envelope.data as { resources_detail?: string }).resources_detail), /provisioning seat is not mounted/);
+    assert.doesNotMatch(JSON.stringify(envelope), /Cannot read properties/);
+  });
+
   it("normalizes reconcile errors and timeout details", async () => {
     root = mkdtempSync(join(tmpdir(), "manage-status-"));
     statusRoute();

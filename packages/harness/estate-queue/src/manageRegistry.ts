@@ -53,7 +53,13 @@ export class ManageGatewayService extends Service {
       endpoint: (): Record<string, unknown> =>
         loadEndpointConfig() as Record<string, unknown>,
       models: modelsService(),
-      provisioning: this.ctx.get("provisioning") as ProvisioningServiceDefinition,
+      // NO CAST (2026-09-26): the seat is OPTIONAL and the type says
+      // so. The old `as ProvisioningServiceDefinition` asserted a seat
+      // that a lane may simply not mount, and every downstream
+      // dereference became a TypeError at call time instead of a
+      // declared absence. The plane gates it once (provisioningOf /
+      // provisioningOrAbsent).
+      provisioning: this.ctx.get("provisioning", false) as ProvisioningServiceDefinition | undefined,
       // TWO-CORDIS TOPOLOGY: the timer plugin's Context augmentation
       // lands on ITS cordis copy (structural, never instanceof
       // across copies — the documented law); the seat reads the
