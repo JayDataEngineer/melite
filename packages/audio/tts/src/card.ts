@@ -1,3 +1,4 @@
+import { laneBlank } from '@melite/contracts/laneRelations'
 // Tier 3 — the tts card (the tts_t1 renderer port).
 // Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (ttsT1).
 import type { Context } from '@deepseek-ai/cordis'
@@ -201,7 +202,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       const lane = typeof (model.lane_inputs as Record<string, unknown> | undefined)?.synth_lane === 'string'
         ? (model.lane_inputs as Record<string, unknown>).synth_lane as string
         : '';
-      const blank = (v: unknown): boolean => !(typeof v === 'string' ? v.trim() : v);
+      // THE BLANK LAW IS THE CONTRACT'S (the design audit's Q4: this
+      // hand-rolled copy called 0 and false BLANK — and `top_k: 0`
+      // means "off" in this card's own tooltip — while the lane judge
+      // calls them stated, and called {} and [] STATED where the lane
+      // calls them blank. Three seats, three answers, for one concept.)
+      const blank = laneBlank;
       const qvoiceStated = (doc: Record<string, unknown>): boolean => qvoiceUse(doc) !== undefined
       // THE SAVE INTENT (operator 2026-09-23, the full qvoice law:
       // SAVE and LOAD across ALL qwen3-tts): a stated voice_name (the

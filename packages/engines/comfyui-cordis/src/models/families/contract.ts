@@ -393,12 +393,20 @@ export const ModPackMarriage: z<ModPackMarriage> = z.object({
   marries: z.dict(z.const('max')),
 })
 
-// Un-annotated on purpose: the z<T> annotation demands exact
-// inference alignment the interface's optional/readonly fields
-// (studio unions, ReadonlyArray presets) do not admit without a
-// cast — Law 2 forbids the cast, so the RUNTIME schema and the TS
-// interface stay separate truths (validateDecl checks both legs).
-export const ModelDecl = z.object({
+// THE MAIN DECLARATION'S TYPE IS ITS SCHEMA'S (2026-10-10, the
+// design audit's Q1 — the first-ranked change). This row was the one
+// the file left UN-ANNOTATED, with a comment confessing that the
+// runtime schema and the TS interface "stay separate truths" and that
+// two walls exist only to police the pair. The blockers the comment
+// named are gone: the optional fields are `.required(false)` (which
+// schemastery infers as optional), the presets are plain arrays (the
+// declared `readonly` was the interface's own immutability wish, not
+// a runtime fact), and the studio union is a named schema const
+// (StudioRow) that the interface uses by name. ONE row, ONE truth: a
+// new field is added once, and the two representations cannot drift —
+// the drift this session hand-fixed in three row types, and the reason
+// `assertSchemaAcceptsMinimalRows` exists at all.
+export const ModelDecl: z<ModelDecl> = z.object({
   id: z.string().pattern(SAFE_ID_RE),
   genre: z.string(),
   label: z.string(),
@@ -427,7 +435,6 @@ export const ModelDecl = z.object({
   accepts: z.array(z.string()).default([]),
   timeout_floor: z.number().min(0).required(false),
   canvas_default: z.boolean().required(false),
-  character_presets: z.array(z.dict(z.any())).required(false),
   lane_inputs: z.dict(z.any()).default({}),
   /** The family's BASE parameter surface (fix shape 1): the params
    *  EVERY lane of this family accepts. Absent = the family
@@ -494,7 +501,6 @@ export interface ModelDecl {
   accepts?: string[];
   timeout_floor?: number;
   canvas_default?: boolean;
-  character_presets?: ReadonlyArray<Record<string, unknown>>;
   /** Per-family graph-variance rows (z-image's AuraFlow sampling
    *  shift, qwen-3 encoder — the lane's own input truth). */
   lane_inputs?: Record<string, unknown>;

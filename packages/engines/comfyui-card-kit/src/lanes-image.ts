@@ -1,3 +1,4 @@
+import { laneBlank } from '@melite/contracts/laneRelations'
 import { GraphBuilder, OutputHandle, stripAutofill } from './graph.ts'
 import type { PromptGraph, StripTable } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
@@ -212,10 +213,11 @@ export function orderedInputImages(p: Record<string, unknown>): string[] {
  *  the lane re-pins the same ceiling for direct callers. An absent
  *  model refuses (the old law — direct lane callers pin it). */
 export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelFacts): void {
-  const blank = (v: unknown): boolean =>
-    v === undefined || v === null ||
-    (typeof v === 'string' && !v.trim()) ||
-    (v instanceof Array && v.length === 0)
+  // THE BLANK LAW IS THE CONTRACT'S (the design audit's Q4: this copy
+  // had no object rule at all, so `input_mask: {}` read STATED here
+  // and blank at the lane judge — the two arms of one state disagreeing
+  // about whether a mask was sent).
+  const blank = laneBlank;
   const fire = (key: string, cond: boolean, why: string): void => {
     if (cond) {
       throw new Error(`'${key}' fires on the image-edit card (${why}) — the TS plane builds the stock plain-edit graph only; refusing instead of silently plain-editing`)
