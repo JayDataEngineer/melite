@@ -14,7 +14,15 @@ pre-commit:
       # deps before every run and the tree's unapproved
       # @parcel/watcher build script fails that check; the root
       # vitest binary runs the same gate.
-      run: node node_modules/vitest/vitest.mjs run --project node
+      #
+      # THE SIGPIPE FIX (2026-10-10): the full fleet's ~128s of
+      # output through lefthook's capture pipe killed the job AFTER
+      # a fully-green summary (node writes the last line into a
+      # closed pipe, dies 141, lefthook reads ✗ — three commits
+      # bounced on it while the same command exited 0 bare). The
+      # fleet writes to a FILE; the verdict rides the last lines and
+      # vitest's own exit code.
+      run: node node_modules/vitest/vitest.mjs run --project node > /tmp/hook-walls.log 2>&1; code=$?; tail -n 4 /tmp/hook-walls.log; exit $code
 
     - name: final-newline (staged text)
       run: node tools/hook-final-newline.mjs {staged_files}

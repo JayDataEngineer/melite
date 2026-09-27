@@ -12,6 +12,9 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2023"],
     "outDir": "lib",
+    // (the audit's hole: without this a RED build still emitted lib —
+    // the ship's failure exit came after the damage was on disk)
+    "noEmitOnError": true,
     "rootDir": "src",
     "declaration": true,
     "declarationMap": true,

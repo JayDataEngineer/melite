@@ -172,7 +172,7 @@ test('a normalized bench stage error mounts the tab error and rescue', async () 
           id: 's_0', card: 'mask', title: 'mask', engine: 'comfyui', status: 'failed' as const, runStatus: 'failed',
           params: { prompt: 'a red cube' }, result: { error },
         }],
-      } as CardsBenchValue,
+      } as unknown as CardsBenchValue,
     }),
   }))
   expect((await screen.findAllByText(error)).length).toBeGreaterThan(0)

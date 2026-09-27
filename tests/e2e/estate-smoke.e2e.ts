@@ -45,9 +45,12 @@ describe('estate composition smoke (headless boot)', () => {
       const estateQueue = (await import('../../packages/harness/estate-queue/src/index.ts')).default
       const estateDrafts = (await import('../../packages/estate/drafts/src/index.ts')).default
       const estateMedia = (await import('../../packages/estate/media/src/index.ts')).default
-      estateQueue.apply(ctx, { repoRoot: sandbox.root })
-      estateDrafts.apply(ctx)
-      estateMedia.apply(ctx)
+      // THE TYPED MOUNT (this tier's first sweep found the calls
+      // untyped-by-nothing: a Plugin default is an object, and the
+      // cordis mount is ctx.plugin — never a bare .apply)
+      ctx.plugin(estateQueue, { repoRoot: sandbox.root })
+      ctx.plugin(estateDrafts)
+      ctx.plugin(estateMedia)
 
       // THE WORLD, not the self-report:
       // 1. the queue owns its root (lock + ledger face)

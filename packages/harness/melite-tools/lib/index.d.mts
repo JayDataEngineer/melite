@@ -1135,7 +1135,7 @@ declare abstract class Service<out T = never> {
  * are already migrated (RemoteError codes).
  */
 type EstateMethod = 'GET' | 'POST' | 'PATCH';
-type EstateRequest = (method: EstateMethod, path: string, body: unknown, execSignal: AbortSignal, timeoutMs: number) => Promise<unknown>;
+type EstateRequest = (method: EstateMethod, path: string, body: unknown, execSignal: AbortSignal, timeoutMs?: number) => Promise<unknown>;
 /** Build the tools' request: seats only, in-process. A lane with no
  *  seat for the path is a hard error — but the error must be an
  *  AGENT-USABLE refusal (F-8): name the family the path needs, the

@@ -43,9 +43,9 @@ function stubFetch(): void {
     if (path.includes("/v1/form-spec")) {
       return new Response(JSON.stringify({
         form: "x", genre: "image", engine: "comfyui",
-        schema: schemaEnvelope(doors.specFields ?? {
+        schema: schemaEnvelope((doors.specFields ?? {
           prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
-        }),
+        }) as Parameters<typeof schemaEnvelope>[0]),
       }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (path.includes("/v1/forms")) {

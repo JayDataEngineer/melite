@@ -11,6 +11,9 @@
     ],
     "strict": true,
     "noEmit": false,
+    // (the audit's hole: without this a RED build still emitted lib —
+    // the ship's failure exit came after the damage was on disk)
+    "noEmitOnError": true,
     "outDir": "lib",
     "declaration": true,
     "skipLibCheck": true,

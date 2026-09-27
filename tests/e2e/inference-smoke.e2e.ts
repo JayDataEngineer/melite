@@ -72,7 +72,7 @@ describe.skipIf(!HAS_ENGINE)('inference smoke (with live ComfyUI)', () => {
       new EnginesService(ctx)
       const host = new ComfyUIHostService(ctx, { host: ENGINE_HOST, port: ENGINE_PORT })
       const seat = ctx.get('engines') as EnginesService
-      const stopRegister = seat.register('comfyui', { executor: comfyuiExecutor(host) })
+      const stopRegister = seat.register('comfyui', { executor: comfyuiExecutor(ctx, host) })
       const core = new QueueCore()
       ;(ctx as unknown as { queue: unknown }).queue = { core, stateRoot: join(sandbox.root, 'state') }
       // the bench snapshot source (the run's draft doc — the same

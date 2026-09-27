@@ -154,7 +154,7 @@ function mountBench(stages: BenchStageView[], renderSlot?: Parameters<typeof Car
     } as never];
     mountBench(stages);
     await openFirstTile();
-    const hero = (previewSeat().querySelector("img") as HTMLImageElement | null)?.getAttribute("src");
+    const hero = (previewSeat().querySelector("img") as HTMLImageElement | null)?.getAttribute("src") ?? null;
     expect(hero).toBe("/last.png");
   });
 
@@ -559,7 +559,7 @@ describe("the drilldown walk — the card's opened image scrolls the stage galle
     // the drilldown opened with arrows (3 walkable: current + 2 history)
     const next = await screen.findByTestId("drill-next", {}, { timeout: 4000 });
     expect(document.querySelector('[data-testid="drill-prev"]')).not.toBeNull();
-    const hero = () => (document.querySelector('div[class*="lightbox"] img') as HTMLImageElement | null)?.getAttribute("src");
+    const hero = () => (document.querySelector('div[class*="lightbox"] img') as HTMLImageElement | null)?.getAttribute("src") ?? null;
     expect(hero()).toBe("/cur.png");
     const user = userEvent.setup();
     await user.click(next);                       // → history[0]
@@ -590,7 +590,7 @@ describe("the drilldown walk — the card's opened image scrolls the stage galle
     await openFirstTile();
     fireEvent.click(previewSeat());
     await screen.findByTestId("drill-next", {}, { timeout: 4000 });
-    const hero = () => (document.querySelector('div[class*="lightbox"] img') as HTMLImageElement | null)?.getAttribute("src");
+    const hero = () => (document.querySelector('div[class*="lightbox"] img') as HTMLImageElement | null)?.getAttribute("src") ?? null;
     expect(hero()).toBe("/cur.png");
     const user = userEvent.setup();
     await user.click(screen.getByTestId("drill-next")); // the FIRST step must reach the OLDER gen, not an identical twin
@@ -690,7 +690,7 @@ describe("the sticky hero — the preview never jumps mid-run", () => {
     }));
     await openFirstTile();
     const seatImg = (): string | null =>
-      (previewSeat().querySelector("img") as HTMLImageElement | null)?.getAttribute("src");
+      (previewSeat().querySelector("img") as HTMLImageElement | null)?.getAttribute("src") ?? null;
     expect(await waitFor(() => expect(seatImg()).toBe("/old.png")));
     // THE RUN STARTS: the start patch clears the row AND archives
     // the superseded landed result into history in the SAME write
@@ -759,7 +759,7 @@ describe("the history pick round-trip at the drill seam", () => {
     } as never]);
     await openFirstTile();
     const hero = (): string | null =>
-      (previewSeat().querySelector("img") as HTMLImageElement | null)?.getAttribute("src");
+      (previewSeat().querySelector("img") as HTMLImageElement | null)?.getAttribute("src") ?? null;
     await waitFor(() => expect(hero()).toBe("/cur.png"));
     // THE PICK: click the archived generation's tile
     const tiles = document.querySelectorAll('[data-testid="stage-output-history"] button');

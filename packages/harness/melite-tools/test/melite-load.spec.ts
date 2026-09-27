@@ -16,10 +16,10 @@ import type { EstateRequest } from '../src/estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
 function mockRequest(handler: (method: string, path: string, body: unknown) => unknown): {
-  seen: Array<{ method: string; path: string; body: unknown; timeoutMs: number }>;
+  seen: Array<{ method: string; path: string; body: unknown; timeoutMs?: number }>;
   request: EstateRequest;
 } {
-  const seen: Array<{ method: string; path: string; body: unknown; timeoutMs: number }> = []
+  const seen: Array<{ method: string; path: string; body: unknown; timeoutMs?: number }> = []
   // Contextually typed by the EstateRequest seam — params inherit the
   // transport signature, so no implicit-any and no casts ride.
   const request: EstateRequest = async (method, path, body, _signal, timeoutMs) => {

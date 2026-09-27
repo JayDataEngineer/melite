@@ -72,7 +72,7 @@ describe("inference mcp smoke (live blender through the estate door)", { timeout
       const mcpClient = await import(
         "../../packages/web/melite-estate/node_modules/@deepseek-ai/dsh-mcp-client/lib/index.js"
       );
-      estateQueue.apply(ctx, { repoRoot: stateRoot });
+      ctx.plugin(estateQueue, { repoRoot: stateRoot });
       const engines = new engineContract.EnginesService(ctx);
       void engines;
       // The host rows the lane rides (dsh-base cordis.patch.yml):
@@ -104,7 +104,7 @@ describe("inference mcp smoke (live blender through the estate door)", { timeout
       (mcpEngine as unknown as {
         mcpEngines(c: unknown, config: { engines?: string[] }): void;
       }).mcpEngines(ctx, { engines: ["mcp:blender"] });
-      estateDrafts.apply(ctx);
+      ctx.plugin(estateDrafts);
       const { RunsRuntimeService } = await import("../../packages/harness/estate-queue/src/runsRegistry.ts");
       new RunsRuntimeService(ctx);
       // the bench doc the run's draft_id names — BORN through the
@@ -150,7 +150,7 @@ describe("inference mcp smoke (live blender through the estate door)", { timeout
         const st = row?.status ?? "absent";
         if (st === "completed" || st === "failed" || st === "stopped") break;
         if (Date.now() > deadline) throw new Error("mcp e2e: run never settled (last " + st + ")");
-        await new Promise((r): void => setTimeout(r, 500));
+        await new Promise((r): void => { setTimeout(r, 500); });
       }
       assert.equal(row?.status, "completed", "the run completed: " + (row?.error ?? ""));
       const status = await svc.status(ans.run_id, new AbortController().signal) as {

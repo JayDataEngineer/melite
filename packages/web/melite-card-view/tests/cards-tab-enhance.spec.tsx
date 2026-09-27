@@ -51,7 +51,7 @@ function stubFetch(): void {
   vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
-      const fields: Record<string, unknown> = {
+      const fields: Parameters<typeof schemaEnvelope>[0] = {
         prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
       };
       if (doors.specFields === "two") {
@@ -123,7 +123,7 @@ function mountBench(stages: BenchStageView[]): void {
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
+    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as unknown as CardsBenchValue }),
   }));
 }
 

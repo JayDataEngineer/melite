@@ -19,7 +19,14 @@
 #
 # Usage:
 #   scripts/ship-lane.sh                 # build + restart + verify (default lane)
-#   scripts/ship-lane.sh --no-build      # restart only (source-only changes)
+#   scripts/ship-lane.sh --no-build      # skip the builds, KEEP every gate
+#                                       # (the audit's hole: --no-build used to
+#                                       # skip the typecheck net AND the test tier
+#                                       # with it — a "restart only" ship could
+#                                       # leave port with red source. The gates
+#                                       # are noEmit; they cost the same either
+#                                       # way, and 35+ packages run from source
+#                                       # the restart serves.)
 #   scripts/ship-lane.sh --unit dsh-web  # a different systemd unit
 #   scripts/ship-lane.sh --check         # verify only, change nothing
 set -uo pipefail
@@ -69,79 +76,82 @@ say()  { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 ok()   { printf '   \033[32mok\033[0m   %s\n' "$*"; }
 bad()  { printf '   \033[31mFAIL\033[0m %s\n' "$*"; }
 
+# ------------------------------------------------------- the gates
+# (THE AUDIT'S TWO HOLES, closed 2026-10-10: the builds used to run
+# FIRST, so a compiled package emitted its lib before any --noEmit
+# pass judged the tree — and with no noEmitOnError a red build still
+# emitted; and --no-build skipped the gates entirely, so a "restart
+# only" ship could leave port with red source. The gates now run
+# BEFORE the first emit, on EVERY ship, --no-build included.)
+TSC=""
+for cand in \
+  "$REPO/node_modules/.pnpm/typescript@5.7.3/node_modules/typescript/bin/tsc" \
+  "$REPO/node_modules/typescript/bin/tsc" \
+  "$(command -v tsc 2>/dev/null || true)"; do
+  if [ -n "$cand" ] && [ -f "$cand" ]; then TSC="$cand"; break; fi
+done
+if [ -z "$TSC" ]; then
+  bad "no tsc found (looked in the pnpm store, node_modules, PATH)"
+  exit 1
+fi
+
+# THE TYPECHECK NET (2026-10-10, the live ReferenceError): the lane
+# died mid-run on `assertWiringAtSubmit is not defined` — a call
+# whose import never landed, in a package that runs from SOURCE, so
+# no build step ever saw it. Every package with a tsconfig gets a
+# --noEmit pass, DISCOVERED dynamically (a named list is exactly the
+# list that rots — the five-package era is how thirty-five packages
+# went unheard). The COMPILED five are included too now (a full emit
+# subsumes noEmit, but the net runs before the builds and the build
+# order no longer carries the judgment).
+say "TYPECHECK every package (the ReferenceError class)"
+TCFAIL=0
+TCCOUNT=0
+while IFS= read -r tsdir; do
+  case "$tsdir" in */packages/*) ;; *) continue ;; esac
+  TCCOUNT=$((TCCOUNT + 1))
+  if (cd "$tsdir" && node "$TSC" --noEmit -p tsconfig.json >/tmp/ship-tc.log 2>&1); then
+    :
+  else
+    bad "$(printf '%s' "$tsdir" | sed "s|$REPO/||") — typecheck failed:"
+    head -8 /tmp/ship-tc.log | sed 's/^/        /'
+    TCFAIL=1
+  fi
+done < <(find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -printf '%h\n' | sort)
+if [ "$TCFAIL" -ne 0 ]; then
+  bad "the typecheck net is red — a missing import is invisible to every behavioural door"
+  exit 1
+fi
+ok "typecheck net green ($TCCOUNT tsconfigs seen)"
+
+# THE TEST TIER (li-aq.3, the rules audit's HIGH-2): package
+# tsconfigs include src/** only — the SPEC files were typed by
+# nothing, and a spec importing a name a module never exported
+# (TS2724, live in 22 card-view files) was invisible to every wall.
+# One implementation, two callers: this script and the suite's
+# typecheck gate both run scripts/typecheck-tests.mjs (which now
+# carries the REPO TIER arm too — tools/ and the repo-level tests/).
+say "TYPECHECK the test tier + the repo tier (spec files are a plane; TS2724 is invisible to vitest)"
+if (cd "$REPO" && node scripts/typecheck-tests.mjs >/tmp/ship-tctier.log 2>&1); then
+  ok "test tier green ($(grep -c '^✓' /tmp/ship-tctier.log) arms green)"
+else
+  bad "the test tier is red — spec files typecheck against nothing:"
+  head -14 /tmp/ship-tctier.log | sed 's/^/        /'
+  exit 1
+fi
+
 # ---------------------------------------------------------------- build
 if [ "$DO_BUILD" -eq 1 ]; then
   say "BUILD the compiled-lib packages (a restart alone ships the OLD code)"
-  TSC=""
-  for cand in \
-    "$REPO/node_modules/.pnpm/typescript@5.7.3/node_modules/typescript/bin/tsc" \
-    "$REPO/node_modules/typescript/bin/tsc" \
-    "$(command -v tsc 2>/dev/null || true)"; do
-    if [ -n "$cand" ] && [ -f "$cand" ]; then TSC="$cand"; break; fi
-  done
-  if [ -z "$TSC" ]; then
-    bad "no tsc found (looked in the pnpm store, node_modules, PATH)"
-    exit 1
-  fi
   for p in "${COMPILED[@]}"; do
     if (cd "$REPO/$p" && node "$TSC" -p tsconfig.json >/tmp/ship-build.log 2>&1); then
       ok "$p"
     else
-      bad "$p — build failed:"
+      bad "$p — build failed (noEmitOnError: no lib was emitted):"
       head -12 /tmp/ship-build.log | sed 's/^/        /'
       exit 1
     fi
   done
-  # THE TYPECHECK NET (2026-10-10, the live ReferenceError): the
-  # lane died mid-run on `assertWiringAtSubmit is not defined` — a
-  # call whose import never landed, in a package that runs from
-  # SOURCE, so no build step ever saw it. The five COMPILED packages
-  # above are the ./lib doors; every OTHER package with a tsconfig
-  # gets a --noEmit pass here, DISCOVERED dynamically (a named list
-  # is exactly the list that rots — the five-package era is how
-  # thirty-five packages went unheard, and the first sweep found
-  # four more broken ones). Same net as the suite's typecheck gate;
-  # a ship refuses to leave port with a red one.
-  say "TYPECHECK every source-run package (the ReferenceError class)"
-  TCFAIL=0
-  while IFS= read -r tsdir; do
-    case "$tsdir" in */packages/*) ;; *) continue ;; esac
-    # the COMPILED five just built (a full emit subsumes noEmit)
-    skip=0
-    for c in "${COMPILED[@]}"; do
-      [ "$REPO/$c" = "$tsdir" ] && skip=1
-    done
-    [ "$skip" -eq 1 ] && continue
-    if (cd "$tsdir" && node "$TSC" --noEmit -p tsconfig.json >/tmp/ship-tc.log 2>&1); then
-      :
-    else
-      bad "$(printf '%s' "$tsdir" | sed "s|$REPO/||") — typecheck failed:"
-      head -8 /tmp/ship-tc.log | sed 's/^/        /'
-      TCFAIL=1
-    fi
-  done < <(find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -printf '%h\n' | sort)
-  if [ "$TCFAIL" -ne 0 ]; then
-    bad "the typecheck net is red — a missing import is invisible to every behavioural door"
-    exit 1
-  fi
-  ok "typecheck net green ($(find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' | wc -l) tsconfigs seen)"
-  # THE TEST TIER (li-aq.3, the rules audit's HIGH-2): package
-  # tsconfigs include src/** only — the SPEC files (85 packages
-  # carry test dirs) were typed by nothing, and a spec importing a
-  # name a module never exported (TS2724, live in 22 card-view
-  # files) was invisible to every wall. One implementation, two
-  # callers: this script and the suite's typecheck gate both run
-  # scripts/typecheck-tests.mjs — the discovery, the synthesis, and
-  # the judge live there.
-  say "TYPECHECK the test tier (spec files are a plane; TS2724 is invisible to vitest)"
-  if (cd "$REPO" && node scripts/typecheck-tests.mjs >/tmp/ship-tctier.log 2>&1); then
-    ok "test tier green ($(grep -c '^✓' /tmp/ship-tctier.log) packages with test dirs)"
-  else
-    bad "the test tier is red — spec files typecheck against nothing:"
-    head -14 /tmp/ship-tctier.log | sed 's/^/        /'
-    exit 1
-  fi
-
   # The receipt that matters: the lane seat must be IN the built door.
   if grep -q "bench/lane-refusal" "$REPO/packages/estate/drafts/lib/remote.js" 2>/dev/null; then
     ok "the built door carries the lane seat (bench/lane-refusal present)"

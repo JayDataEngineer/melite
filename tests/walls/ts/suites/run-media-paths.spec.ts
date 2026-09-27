@@ -38,7 +38,7 @@ describe("the run-media path law — no stored path ever breaks", () => {
     }
   });
 
-  it("the LIVE bench's own paths resolve (the corpus the operator reloads)", () => {
+  it("the LIVE bench's own paths resolve (the corpus the operator reloads)", (t) => {
     // The operator's benches live in the profile's storage, not the
     // runs tree. This walks the real bench docs and asks the only
     // question code can answer about each: does the path ADDRESS a
@@ -51,7 +51,9 @@ describe("the run-media path law — no stored path ever breaks", () => {
     ].filter((r) => existsSync(r));
     const runRoots = ["data/runs/output", "data/runs/test-output"].filter((r) => existsSync(r));
     if (benchRoots.length === 0 || runRoots.length === 0) {
-      console.log("no bench docs or runs tree on this clone — the live-bench sweep is an honest skip");
+      // A bare return here counted as PASS on a fresh clone (the
+      // audit's GAP 4) — a sweep that cannot run says SKIPPED.
+      t.skip(true, "no bench docs or runs tree on this clone — the live-bench sweep cannot run");
       return;
     }
     const pat = /\/(?:melite-media|v1\/assets)\/runs\/([A-Za-z0-9_-]+)\/([^"\\\s]+)/g;

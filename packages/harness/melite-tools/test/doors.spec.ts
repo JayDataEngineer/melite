@@ -1068,6 +1068,40 @@ describe('input preview', () => {
     assert.equal(missing.status, 404)
   })
 
+  // THE SERVE DOOR DECODES (the audit's GAP 2): it used to slice the
+  // RAW pathname, so an engine-minted `out 1.png` (staged verbatim by
+  // the uploads rail, legal by the shared grammar) was unservable —
+  // a mint→serve round-trip broken on this door alone — and a `%00`
+  // probe 404'd as "no such input" instead of reaching the grammar's
+  // NUL arm. Decode, then judge: every sibling media door already
+  // does; the round-trip must hold.
+  test('percent-encoded names round-trip: a space in the name serves, a NUL refuses 400, malformed refuses 400', async () => {
+    const h = boot({})
+    const dir = await inputDir()
+    const spaced = path.join(dir, TAG + 'out 1.png')
+    await fs.writeFile(spaced, Buffer.from([9, 9]))
+    created.push(spaced)
+    // staged verbatim, served encoded — the mint→serve round-trip
+    const ok = await call(h.routes, '/v1/assets/inputs', {
+      method: 'GET',
+      url: '/v1/assets/inputs/' + encodeURIComponent(TAG + 'out 1.png'),
+    })
+    assert.equal(ok.status, 200)
+    assert.equal(ok.text, Buffer.from([9, 9]).toString('utf8'))
+    // the grammar's NUL arm is REACHABLE through the wire now
+    const nul = await call(h.routes, '/v1/assets/inputs', {
+      method: 'GET',
+      url: '/v1/assets/inputs/%00x.png',
+    })
+    assert.equal(nul.status, 400)
+    // a malformed escape fails closed, never 500
+    const bad = await call(h.routes, '/v1/assets/inputs', {
+      method: 'GET',
+      url: '/v1/assets/inputs/%E0%A4%A.png',
+    })
+    assert.equal(bad.status, 400)
+  })
+
   test('a symlinked escape 404s instead of serving outside', async () => {
     const h = boot({})
     const dir = await inputDir()

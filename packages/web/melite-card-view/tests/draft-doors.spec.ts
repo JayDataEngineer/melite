@@ -282,7 +282,7 @@ describe("foldFrame — keep + null-prev arms", () => {
   test("a stage frame with an EMPTY status keeps the current one", () => {
     const first = foldFrame(null, "r1", { type: "stage", stage: "g", index: 0, status: "running" });
     const kept = foldFrame(first, "r1", { type: "stage", stage: "g", index: 0, status: "" });
-    expect(kept.stages[0]?.status).toBe("running");
+    expect(kept.stages![0]?.status).toBe("running");
   });
   test("a run frame over null prev starts clean", () => {
     expect(foldFrame(null, "r1", { type: "run", status: "failed" }))

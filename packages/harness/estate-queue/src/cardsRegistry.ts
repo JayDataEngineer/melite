@@ -99,7 +99,7 @@ import { pathToFileURL } from "node:url";
 import { DOOR_KEYS } from "./runsGates.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
 import { getRegistryFlow } from "./flowsData.ts";
-import { CardArmError, phaseRefusal } from "./cardsArmError.ts";
+import { CardArmError, EnvelopeRefusal, phaseRefusal } from "./cardsArmError.ts";
 export { CardArmError } from "./cardsArmError.ts";
 import type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
@@ -582,6 +582,101 @@ export class CardRegistryService extends Service {
    *  that is not the DECL's own words (unknown variant/quant, a
    *  dangling ref, a familyless unit, a legacy family that declares
    *  nothing) returns null and keeps the other door's voice. */
+  /** The draft (model-less) row's verdict: the words EVERY boarded
+   *  declaring family states, judged over the raw params — the
+   *  intersection law (see the model-less branch above). Bounds
+   *  intersect per field (the tightest span all families agree
+   *  holds); relation rows bind when every family states the row
+   *  verbatim. A card with no declaring family stays null (the
+   *  familyless tolerance). */
+  private modellessDraftVerdict(
+    card: string,
+    params: Record<string, unknown>,
+  ): string | null {
+    const def: CardDefinition | undefined = this.defsSync().get(card);
+    if (def === undefined) return null;
+    const facts: Record<string, ModelFactsRow> = this.modelFacts();
+    const boarded: readonly string[] = def.boarded ?? [];
+    const declaring: ModelFactsRow[] = [
+      ...new Set(boarded.map((id) => this.resolveCardFamily(id, facts))),
+    ]
+      .map((fam) => facts[fam])
+      .filter((row): row is ModelFactsRow => row !== undefined && row.params !== undefined);
+    if (declaring.length === 0) return null;
+    const lift = liftCardParams(params);
+    // relation rows: serialized-row intersection across families
+    // A row AGREES by its MEMBERS, not its prose: the cure text may
+    // differ between two families stating the same word (and did —
+    // the first cut's verbatim JSON key emptied the intersection
+    // and the word silently stopped judging). The key is the row
+    // minus `cure`, every array sorted.
+    const rowKey = (r: unknown): string => {
+      if (r === null || typeof r !== "object") return JSON.stringify(r);
+      const row = { ...(r as Record<string, unknown>) };
+      delete row["cure"];
+      for (const k of Object.keys(row)) {
+        const v = row[k];
+        if (Array.isArray(v)) row[k] = [...v].map((x) => JSON.stringify(x)).sort();
+      }
+      return JSON.stringify(row);
+    };
+    const WORDS = [
+      "requires", "conflicts", "together", "either_or", "at_most_one", "required",
+    ] as const;
+    const perFamily: Array<Array<{ key: string; word: string; row: unknown }>> =
+      declaring.map((row) => {
+        const fam: LaneRelations | undefined = row.relations;
+        const rows: Array<{ key: string; word: string; row: unknown }> = [];
+        for (const word of WORDS) {
+          const list: readonly unknown[] = (fam?.[word] as readonly unknown[] | undefined) ?? [];
+          for (const r of list) rows.push({ key: word + ":" + rowKey(r), word, row: r });
+        }
+        return rows;
+      });
+    const first = perFamily[0] ?? [];
+    const agreed = first.filter((x) => perFamily.every((rows) => rows.some((y) => y.key === x.key)));
+    const relations: Record<string, unknown[]> = {};
+    for (const entry of agreed) {
+      const list = relations[entry.word] ?? [];
+      list.push(entry.row);
+      relations[entry.word] = list;
+    }
+    // bounds: per-field intersection (the tightest common span)
+    let bounds: Record<string, { min?: number; max?: number }> | null = null;
+    for (const row of declaring) {
+      const famBounds = row.bounds ?? null;
+      if (famBounds === null) { bounds = null; break; }
+      if (bounds === null) { bounds = { ...famBounds }; continue; }
+      for (const field of Object.keys(bounds)) {
+        const other = famBounds[field];
+        if (other === undefined) { delete bounds[field]; continue; }
+        const cur = bounds[field]!;
+        const min = Math.max(cur.min ?? -Infinity, other.min ?? -Infinity);
+        const max = Math.min(cur.max ?? Infinity, other.max ?? Infinity);
+        if (min > max) { delete bounds[field]; continue; }
+        bounds[field] = {
+          ...(Number.isFinite(min) ? { min } : {}),
+          ...(Number.isFinite(max) ? { max } : {}),
+        };
+      }
+    }
+    const surface: readonly string[] | null = declaring.length > 0
+      ? declaring[0]!.params ?? null
+      : null;
+    // the surface judgment stays the undeclared-key gate's voice
+    // (it already ran above); only the WORDS and the SPANS judge here
+    const violations: LaneViolation[] = [
+      ...judgeLaneRelations([relations], lift),
+      ...judgeLaneBounds(bounds, lift),
+    ];
+    void surface;
+    if (violations.length > 0) {
+      return "lane (draft, model-less) refuses the state: " +
+        violations.map((v) => v.message).join("; ");
+    }
+    return null;
+  }
+
   private laneVerdict(
     card: string,
     params: Record<string, unknown>,
@@ -603,12 +698,31 @@ export class CardRegistryService extends Service {
         if (e instanceof CardArmError) return e.message;
         throw e;
       }
-      return null; // the lane's own tolerance for a model-less row
+      // THE MODEL-LESS ROW STILL MEETS THE WORDS EVERY FAMILY AGREES
+      // ON (the audit's GAP 7: the form judged a model-less tts
+      // row's `required: text` while the bench returned null — a
+      // state the authoring surface refused was bench-admitted, the
+      // parity law's false admit). A model-less row is a draft (no
+      // variant selected), so the only honest law is the
+      // INTERSECTION: a word every boarded declaring family states
+      // binds the draft too (whichever family later composes, the
+      // word was already declared); a word only some families state
+      // stays the run door's voice. No union — a union would refuse
+      // states the composing family admits.
+      return this.modellessDraftVerdict(card, params); // null when no family agrees on any word
     }
     let prep: PreparedCard;
     try {
       prep = prepareCardParams(this, params, mid, "admission");
-    } catch {
+    } catch (e) {
+      // THE ENVELOPE IS A DECL-OWN WORD (the audit's GAP 1: this
+      // catch used to swallow it with the selection tolerance, so
+      // the bench admitted krea-2 turbo `steps: 50` — envelope
+      // [4,8] — and the run refused it: a write the door accepted
+      // became a run the bench could not produce, the exact false
+      // admit the parity law forbids). It refuses HERE, at the
+      // write seat, in the same voice the run door speaks.
+      if (e instanceof EnvelopeRefusal) return e.message;
       // selection/dangling failures keep the run door's voice —
       // this seat judges only the DECL's own words
       return null;
@@ -664,9 +778,12 @@ export class CardRegistryService extends Service {
     );
     // THE RANGE RULE (the 2.1 width burn, 2026-10-10): the model's
     // own numeric domains ride the DECL beside the words — family
-    // rows, per-field REPLACED by the variant's (a lane may tighten
-    // its own ceiling). width -50 admitted at every door while the
-    // engine produced garbage; the floor and the ceiling are the
+    // rows, per-field REPLACED by a variant row that states the
+    // field, per-ENDPOINT within it (the family's floor survives a
+    // ceiling-only variant; laneBoundsOf is the one spelling — the
+    // docs, this seat and the served contract all state the same
+    // grain). width -50 admitted at every door while the engine
+    // produced garbage; the floor and the ceiling are the
     // declaration's, judged in the same voice as the words.
     const bounds = laneBoundsOf(
       famRow.bounds ?? null,

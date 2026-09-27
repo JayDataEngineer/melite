@@ -204,6 +204,18 @@ export const DECL: ModelDecl = {
   // mirror: the export pair rides together, and an export
   // conflicts with every performing input).
   "relations": {
+    // `required: text` — the word the sibling family already
+    // declares and this one owed (the audit's GAP 7: without it the
+    // two families DISAGREED, the draft intersection went empty,
+    // and a model-less tts row without text was bench-admitted
+    // while the form refused it — a tts lane that speaks no words
+    // is not a tts lane, whichever family composes it).
+    "required": [
+      {
+        "fields": ["text"],
+        "cure": "every tts lane speaks words — state the text to synthesize",
+      },
+    ],
     "together": [
       {
         "fields": ["voice_name", "design_prompt"],

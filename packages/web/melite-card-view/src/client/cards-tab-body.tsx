@@ -310,7 +310,8 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       // the snapshot's rev fences the row write (stale revs rebase
       // inside the door — the revless-write cure, 2026-09-14).
       /* v8 ignore next 1 -- the enclosing callback already returned on non-bench (probe 2026-09-19) */
-      const rev = snapshot.value.kind === 'bench' ? snapshot.value.rev : undefined
+      const snap = snapshot.value
+      const rev = snap !== undefined && snap.kind === 'bench' ? snap.rev : undefined
       /* v8 ignore next 2 -- the outcome-patch tail rides the covered observe lane (probe 2026-09-19) */
       void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } }, rev)
         .then(() => { touchBench() })

@@ -364,7 +364,7 @@ test('✦ Agent Enhance sweeps the declared fields and writes back through the v
         stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
           params: { prompt: 'a red cube', negative_prompt: '', steps: 8 } }],
         log: [],
-      } as CardsBenchValue,
+      } as unknown as CardsBenchValue,
     }),
   } as Parameters<typeof CardsTab>[0]))
   await user.click(await screen.findByText('hero frame', {}, { timeout: 4000 }))
@@ -448,7 +448,7 @@ test('the ✦ rail model dropdown picks the enhancer route and threads it', asyn
         stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
           params: { prompt: 'a red cube', steps: 8 } }],
         log: [],
-      } as CardsBenchValue,
+      } as unknown as CardsBenchValue,
     }),
   } as Parameters<typeof CardsTab>[0]))
   await user.click(await screen.findByText('hero frame', {}, { timeout: 4000 }))
@@ -523,7 +523,7 @@ test('the no-clobber law: an empty negative never wipes the card\'s own', async 
         stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
           params: { prompt: 'a red cube', negative_prompt: 'user wrote this', steps: 8 } }],
         log: [],
-      } as CardsBenchValue,
+      } as unknown as CardsBenchValue,
     }),
   } as Parameters<typeof CardsTab>[0]))
   await user.click(await screen.findByText('hero frame', {}, { timeout: 4000 }))
@@ -570,7 +570,7 @@ test('the drill renders the SERVED resolved map under the user layer (the 1:1 la
         stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
           params: { prompt: 'a red cube' }, resolved: { steps: 52 } }],
         log: [],
-      } as CardsBenchValue,
+      } as unknown as CardsBenchValue,
     }),
   } as Parameters<typeof CardsTab>[0]))
   await user.click(tileButton())

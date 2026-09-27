@@ -15,7 +15,7 @@
  * • The overlay is the scroll container; the inner flex centers a
  *   card shorter than the area and scrolls one that is taller.
  */
-import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
+import { createElement as h, useCallback, useEffect, useRef, useState, type ReactPortal } from 'react'
 import { createPortal } from 'react-dom'
 import { IconLoadingOutline16, IconPlayOutline16, IconStopFill16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchEnhanceRoutes, getCardLlm, setCardLlm } from '@melite/catalog'
@@ -339,7 +339,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
 
 /** CardZoomOverlay — portal to document.body, FIXED inset-0 (the old
  * tree's own DSH rule), keyed per stage. */
-export function CardZoomOverlay(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => ReturnType<typeof h> }): ReturnType<typeof h> {
+export function CardZoomOverlay(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => ReturnType<typeof h> }): ReactPortal | ReturnType<typeof h> {
   const mounted = typeof document !== 'undefined'
   const tree = h(ZoomMount, { key: props.stage.id, ...props })
   return mounted ? createPortal(tree, document.body, 'zoom-portal') : tree

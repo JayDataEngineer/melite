@@ -363,6 +363,43 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
     }
   });
 
+  it("EVERY card claims nothing its declaring families did not declare (the full-claim bind, all cards)", () => {
+    // THE AUDIT'S GAP 9b: the reverse bind existed for tts alone —
+    // every other card's schemaNames were trusted on faith, so a
+    // card claiming a field no boarded family declares stayed green
+    // through every wall. Same law, every declaring card: skip only
+    // cards whose board carries no surface-declaring family (a
+    // model-less card unit has no declaring family to bind).
+    const facts = svc.modelFacts();
+    const decls = svc.cardDecls();
+    let judged = 0;
+    for (const [card, declRow] of Object.entries(decls)) {
+      const boarded: readonly string[] =
+        (declRow as { boarded?: readonly string[] }).boarded ?? [];
+      const declaring = [
+        ...new Set(boarded.map((id) => svc.resolveCardFamily(id, facts))),
+      ].filter((fam) => facts[fam]?.params !== undefined);
+      if (declaring.length === 0) continue;
+      judged += 1;
+      const union = new Set<string>();
+      for (const fam of declaring) {
+        const row = facts[fam]!;
+        for (const name of [
+          ...(row.params ?? []),
+          ...row.variants.flatMap((v) => [...(v.params ?? [])]),
+        ]) union.add(name);
+        for (const name of modFieldsOf(card, fam)) union.add(name);
+      }
+      for (const name of declRow.schemaNames) {
+        expect(
+          union.has(name),
+          `card ${card} claims '${name}' but no boarded family declares it`,
+        ).toBe(true);
+      }
+    }
+    expect(judged, "at least one card binds against declaring families (else this wall is vacuous)").toBeGreaterThan(0);
+  });
+
   it("relation words name only carriable fields (no dead grammar)", () => {
     const facts = svc.modelFacts();
     const decls = svc.cardDecls();
@@ -374,6 +411,14 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
       for (const r of rel.conflicts ?? []) out.push(r.a, r.b);
       for (const r of rel.together ?? []) out.push(...r.fields);
       for (const r of rel.either_or ?? []) for (const g of r.groups) out.push(...g);
+      // EVERY WORD (the audit's GAP 9: `at_most_one` members and
+      // `required` fields were never collected — a dead
+      // `required: ["nonsense"]` sailed through this wall while the
+      // same typo in `requires` refused. A grammar word the wall
+      // cannot see is a word nothing judges. Both words carry
+      // {fields} rows, like every other word in the grammar.)
+      for (const r of rel.at_most_one ?? []) out.push(...r.fields);
+      for (const r of rel.required ?? []) out.push(...r.fields);
       return out;
     };
     for (const [fam, row] of Object.entries(facts)) {
@@ -691,7 +736,15 @@ describe("THE RE-CHECK'S TWO BYPASSES ARE CLOSED", () => {
     // tolerance returns — that is the whole fix
     const arm = src.slice(src.indexOf('if (typeof mid !== "string" || mid === "") {'), src.indexOf("let prep: PreparedCard;"));
     expect(arm, "the model-less arm judges keys before standing down").toContain("admissionRefusal");
-    expect(arm).toContain("return null; // the lane's own tolerance for a model-less row");
+    // THE TOLERANCE IS GONE (the audit's GAP 7): the model-less arm
+    // used to bare-return null, so a draft tts row without `text`
+    // (required by every family the card boards) was bench-admitted
+    // while the form refused it. The arm now returns the DRAFT
+    // INTERSECTION verdict — the words every boarded declaring
+    // family agrees on — so the pin holds the call, not a blanket
+    // tolerance. (The familyless card still stands down: the
+    // verdict returns null when nothing declares.)
+    expect(arm).toContain("return this.modellessDraftVerdict(card, params);");
   });
 });
 
@@ -754,6 +807,23 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
 
   it("a tts state WITH text is unaffected (the word judges only what it names)", () => {
     expect(svc.admitStageRelations("tts", { model: "qwen3-tts", text: "hello" }).ok).toBe(true);
+  });
+
+  it("the MODEL-LESS draft row meets the same word (the audit's GAP 7: the form refused what the bench admitted)", () => {
+    // no model at all — the draft intersection judges the words
+    // every boarded declaring family states; `required: text` is
+    // one on both tts families, so the draft refuses exactly the
+    // state the form refuses.
+    const no = svc.admitStageRelations("tts", { text: "" });
+    expect(no.ok).toBe(false);
+    if (!no.ok) expect(no.error).toContain("text");
+    const yes = svc.admitStageRelations("tts", { text: "hello" });
+    expect(yes.ok).toBe(true);
+    // a family whose families agree on nothing extra stays tolerant:
+    // an unknown key on a model-less row still hits the key gate's
+    // voice, not a family word
+    const famless = svc.admitStageRelations("mask-studio", {});
+    expect(famless.ok).toBe(true);
   });
 
   it("the boot gate knows the word (a grammar word the gate omits refuses a LEGAL declaration)", () => {

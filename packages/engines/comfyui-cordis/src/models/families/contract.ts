@@ -308,8 +308,11 @@ export interface ParamBoundRow {
 }
 
 /** Per-field bounds for a lane: field name → its row. Variant rows
- * REPLACE the family's per-field (a lane may tighten its own
- * ceiling; two independent numeric rows would contradict). */
+ * REPLACE the family's row for a field they STATE, per-ENDPOINT
+ * within it (an endpoint the variant omits is held from the
+ * family's row — `laneBoundsOf` is the single spelling; a variant
+ * can tighten its own ceiling but never silently drop the family's
+ * floor). */
 export type LaneBoundsMap = Record<string, ParamBoundRow>;
 
 export const ParamBoundRow: z<ParamBoundRow> = z.object({
@@ -590,8 +593,9 @@ export interface ModelDecl {
   /** The family-wide relation words (judged on every lane). */
   relations?: ParamRelationWords;
   /** The family-wide numeric bounds (per-field replaced by a
-   *  variant's own row when it states one — the RANGE RULE:
-   *  whoever owns the default owns the floor). */
+   *  variant's own row when it states one, per-endpoint within the
+   *  stated field — the RANGE RULE: whoever owns the default owns
+   *  the floor, and the floor survives a ceiling-only variant). */
   bounds?: LaneBoundsMap;
   has_agent?: boolean;
   has_inference?: boolean;

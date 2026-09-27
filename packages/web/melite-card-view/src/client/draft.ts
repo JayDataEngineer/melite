@@ -295,7 +295,12 @@ export async function patchStageParams(
   // carried — an unrelated key landing never erases a real refusal.
   const row = writeRow(draftId, stageId)
   const keys = Object.keys(params)
-  const attempt = (async (): Promise<void> => {
+  // STRICT found the self-reference: the finally deletes `attempt`
+  // while its own initializer is still the only assigner TS can see.
+  // The optional local states the truth — the delete runs after the
+  // assignment (the promise cannot settle before it exists).
+  let attempt: Promise<void> | undefined
+  attempt = (async (): Promise<void> => {
     try {
       const settled = await patchWithRebase(draftId, stageId, { params }, expectRev)
       if (settled.rev !== null) row.confirmedRev = settled.rev
@@ -306,10 +311,12 @@ export async function patchStageParams(
       row.lastError = e instanceof Error ? e.message : String(e)
       throw e
     } finally {
-      row.inflight.delete(attempt)
+      // (settled ⇒ the initializer completed ⇒ attempt is assigned;
+      // the guard states it without lying to the type)
+      if (attempt !== undefined) row.inflight.delete(attempt)
     }
   })()
-  row.inflight.add(attempt)
+  row.inflight.add(attempt!)
   return attempt
 }
 

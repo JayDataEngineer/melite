@@ -2,7 +2,7 @@
 // overlay + params lift. Extracted from cardsRegistry: the pure
 // coordinate math of {model:} resolution.
 import type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
-import { CardArmError } from "./cardsArmError.ts";
+import { CardArmError, EnvelopeRefusal } from "./cardsArmError.ts";
 import { CARD_ENVELOPE_KEYS } from "./cardsRegistry.ts";
 
 // ── R1 variant/quant selection + route-lens stamp overlay ──────────
@@ -185,7 +185,7 @@ export function envelopeRefusal(
     const [lo, hi] = bound;
     if (stated >= lo && stated <= hi) continue;
     const married = sel.resolverDefaults[knob] ?? "";
-    throw new CardArmError(
+    throw new EnvelopeRefusal(
       400,
       "card_compose: stated " + knob + " " + String(stated) +
         " is OUTSIDE the route envelope for variant \"" + sel.variantId + "\"" +

@@ -639,7 +639,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   const pct = progress !== null && progress.max > 0 ? Math.floor((100 * progress.value) / progress.max) : null
   const webhookFeed = h('div', { className: css.runRow, 'data-testid': 'drill-webhooks' },
     activity !== '' ? h('span', { className: css.tilePct, 'aria-label': 'engine activity' }, activity) : null,
-    pct !== null ? h('span', { className: css.tilePct, 'data-testid': 'drill-progress', 'aria-label': 'progress percent' }, pct + '% (' + String(progress.value) + '/' + String(progress.max) + ')') : null,
+    progress !== null && pct !== null ? h('span', { className: css.tilePct, 'data-testid': 'drill-progress', 'aria-label': 'progress percent' }, pct + '% (' + String(progress.value) + '/' + String(progress.max) + ')') : null,
   )
   // THE SEAM'S LANDED FILM (shared by both slots): the spec claims
   // preview.timeline AND a video artifact exists — else no seam.
@@ -808,7 +808,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       void patchStageParams(
         bench.draftId,
         stage.id,
-        { [slotKey]: upstreamId === null ? null : candidate.url },
+        { [slotKey]: candidate !== undefined ? candidate.url : null },
         bench.rev,
       ).catch((wireError: unknown) => {
         setError(wireError instanceof Error ? wireError.message : 'wire failed')

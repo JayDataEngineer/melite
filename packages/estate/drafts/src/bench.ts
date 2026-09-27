@@ -731,9 +731,14 @@ export async function patchBench(
     }
     // admission on the MERGED view (the row's card + the params the
     // NEXT run would compose — a patch that lands poison is as bad
-    // as an add that lands it); the row's own provenance rides (a
-    // restored row patches under restore law)
-    admitStage(admit, st["card"], cur, st["provenance"]);
+    // as an add that lands it). NO PROVENANCE RIDES (the audit's
+    // GAP 3): the restored carve is LOAD-TIME grace — "the archive
+    // loads; the run teaches" — and forwarding it here made the
+    // grace sticky: a restored row patched under restore law
+    // FOREVER, so a human actively editing a pre-law row never met
+    // today's law. A patch is a live compose act; it judges with
+    // the DECL the next run will compose from.
+    admitStage(admit, st["card"], cur, undefined);
     // THE WIRING ADMISSION (phantom-wire cure): a params patch can
     // orphan a spell (drop the $image binding while the wire stays)
     // or strand a wire (introduce $image with no channel) — the
@@ -816,9 +821,13 @@ export type StageAdmission = (
 const wireParams = (v: unknown): unknown => (isRecord(v) ? unwrapItemArrays(v) : v)
 
 /** Admit one RESTORED stage state (the undo arms): the same seat,
- *  no restored carve — an undo rewrites live-authored params, so it
- *  is judged like any other write. A stage with no card row (an mcp
- *  or flow id) is not this seat's business. */
+ *  NO restored carve — the audit's GAP 6 caught the lie: the comment
+ *  claimed no exemption while the call forwarded the very
+ *  provenance string the load seat's carve matches, so an undo on a
+ *  restored row judged nothing at all. Undo rewrites live-authored
+ *  state; it is judged like any other write, with no provenance. A
+ *  stage with no card row (an mcp or flow id) is not this seat's
+ *  business. */
 function admitRestored(
   admit: StageAdmission | undefined,
   stage: Record<string, unknown>,
@@ -827,7 +836,7 @@ function admitRestored(
   if (admit === undefined) return;
   const card = stage["card"];
   if (typeof card !== 'string' || card === '') return;
-  admit(card, params, stage["provenance"]);
+  admit(card, params, undefined);
 }
 
 function admitStage(
@@ -1489,8 +1498,12 @@ function applyInverse(
       String(inv["stage"] ?? e.stage ?? ""),
     );
     if (st === null) return;
+    // COMPOSE ON A COPY (the audit's GAP 5): this used to alias the
+    // live record, so a refused undo left the poisoned merge in the
+    // doc's cached record before the throw. Judge the copy, THEN
+    // assign; a refusal leaves the bench exactly as it was.
     const cur: Record<string, unknown> = isRecord(st["params"])
-      ? (st["params"] as Record<string, unknown>)
+      ? { ...(st["params"] as Record<string, unknown>) }
       : {};
     const before: Record<string, unknown> = isRecord(inv["params_before"])
       ? (inv["params_before"] as Record<string, unknown>)
@@ -1524,7 +1537,17 @@ function applyInverse(
     const row: unknown = inv["row"];
     const idx: number =
       typeof inv["index"] === "number" ? inv["index"] : stages.length;
-    if (isRecord(row)) stages.splice(Math.min(idx, stages.length), 0, row);
+    // THE REINSERTED ROW IS JUDGED (the audit's GAP 4): an inverse
+    // row that left the doc before a law tightened re-enters here
+    // with NO seat looking at it — the laundering path the patch
+    // arm closed, reopened one verb over. Admission BEFORE the
+    // splice: a refusal names the row and the doc keeps its stages.
+    if (isRecord(row)) {
+      admitRestored(admit, row, isRecord(row["params"])
+        ? (row["params"] as Record<string, unknown>)
+        : {});
+      stages.splice(Math.min(idx, stages.length), 0, row);
+    }
     doc["stages"] = stages;
     return;
   }
@@ -1604,7 +1627,20 @@ function applyInverse(
   // so no "undo" disjunct here.)
   const snapshot: unknown =
     e.kind === "load" ? inv["stages_before"] : undefined;
-  if (Array.isArray(snapshot)) doc["stages"] = snapshot;
+  if (Array.isArray(snapshot)) {
+    // THE SNAPSHOT IS JUDGED (the audit's GAP 4, the load arm): a
+    // coarse fallback that assigns stages wholesale re-enters every
+    // row with no seat looking — same laundering path as the
+    // remove_stage arm, coarser. Judge every row BEFORE the
+    // assignment; a refusal leaves the live bench untouched.
+    for (const row of snapshot) {
+      if (!isRecord(row)) continue;
+      admitRestored(admit, row, isRecord(row["params"])
+        ? (row["params"] as Record<string, unknown>)
+        : {});
+    }
+    doc["stages"] = snapshot;
+  }
 }
 
 // ── THE CHANGE EVENTS (the push source, 2026-09-12) ────────────────

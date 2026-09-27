@@ -793,7 +793,11 @@ export class DraftsRemoteService extends TypertRemoteService {
       const stageCard = typeof stage["card"] === "string" ? stage["card"] : ""
       const admit = this.benchAdmit()
       if (stageCard !== "" && admit !== undefined) {
-        admit(stageCard, merged, stage["provenance"])
+        // NO PROVENANCE (the audit's GAP 3): the restored carve is
+        // load-time grace; a patch is a live compose act judged by
+        // the DECL the next run composes from. Forwarding the row's
+        // provenance here made the grace sticky forever.
+        admit(stageCard, merged, undefined)
       }
       stage["params"] = merged;
     }

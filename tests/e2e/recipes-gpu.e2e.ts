@@ -94,12 +94,12 @@ async function bootWorld(tag: string): Promise<World> {
   new EnginesService(ctx)
   const host = new ComfyUIHostService(ctx, { host: ENGINE_HOST, port: ENGINE_PORT })
   const seat = ctx.get('engines') as EnginesService
-  const stopRegister = seat.register('comfyui', { executor: comfyuiExecutor(host) })
+  const stopRegister = seat.register('comfyui', { executor: comfyuiExecutor(ctx, host) })
   const stateRoot = join(sandbox.root, 'state')
   const core = new QueueCore()
   ;(ctx as unknown as { queue: unknown }).queue = { core, stateRoot }
   ;(ctx as unknown as { draftsRemote: unknown }).draftsRemote = { get: async () => ({}) }
-  await ctx.plugin(cardRegistryProvider as never)
+  await ctx.plugin(cardRegistryProvider as { name: string; apply: (c: unknown, cfg?: unknown) => void })
   const svc = new RunsRuntimeService(ctx as unknown as Context)
   return {
     ctx, svc, stateRoot,

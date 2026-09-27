@@ -233,7 +233,7 @@ export function meliteLoad(
           // the family base, the variant additions, and the relation
           // words as the field pairs they bind. Absent for legacy
           // families, which declare nothing.
-          const sigLanes = sig.lanes as Record<string, { base?: unknown; relations?: { together?: Array<{ fields?: unknown[] }>; conflicts?: Array<{ a?: unknown; b?: unknown }>; either_or?: Array<{ groups?: unknown[][] }> }; variants?: Record<string, { params?: unknown[] }> }> | undefined
+          const sigLanes = sig.lanes as Record<string, { base?: unknown; relations?: { together?: Array<{ fields?: unknown[] }>; conflicts?: Array<{ a?: unknown; b?: unknown }>; either_or?: Array<{ groups?: unknown[][] }>; required?: string[]; at_most_one?: string[] }; variants?: Record<string, { params?: unknown[] }>; bounds?: Record<string, { min?: number; max?: number }> }> | undefined
           if (sigLanes !== null && sigLanes !== undefined && typeof sigLanes === 'object') {
             for (const [fam, lane] of Object.entries(sigLanes)) {
               const base = Array.isArray(lane?.base) ? lane.base.filter((f): f is string => typeof f === 'string') : []
@@ -251,6 +251,19 @@ export function meliteLoad(
                 if (Array.isArray(e?.groups)) {
                   words.push('either_or(' + e.groups.map((g) => '(' + g.join(' × ') + ')').join(' | ') + ')')
                 }
+              }
+              // EVERY DECLARED WORD SPEAKS (the audit's GAP 2: the
+              // line used to render three of six — `required` (the
+              // tts text law) and the numeric bounds were silently
+              // dropped, so an agent composing from this bundle was
+              // never told text is required or width is bounded).
+              if (Array.isArray(lane?.relations?.required)) words.push('required(' + lane.relations.required.join(', ') + ')')
+              if (Array.isArray(lane?.relations?.at_most_one)) words.push('at_most_one(' + lane.relations.at_most_one.join(' | ') + ')')
+              const lawBounds = lane?.bounds
+              if (lawBounds !== null && lawBounds !== undefined && typeof lawBounds === 'object') {
+                const spans = Object.entries(lawBounds)
+                  .map(([k, bb]) => k + ' ' + String(bb?.min ?? '..') + '…' + String(bb?.max ?? '..'))
+                if (spans.length > 0) words.push('bounds(' + spans.join(', ') + ')')
               }
               out.push('lane ' + fam + ': ' + (base.length > 0 ? 'base ' + base.join(', ') : 'no declared base')
                 + (adds.length > 0 ? '; variants: ' + adds.join('; ') : '')

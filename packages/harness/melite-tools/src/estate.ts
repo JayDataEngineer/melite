@@ -40,7 +40,10 @@ export type EstateRequest = (
   path: string,
   body: unknown,
   execSignal: AbortSignal,
-  timeoutMs: number,
+  // optional since li-aq.5's cure: a caller MAY pass a wall-clock
+  // bound (the seats race it); a boundless call keeps the old
+  // contract — no invented timeout.
+  timeoutMs?: number,
 ) => Promise<unknown>
 
 /** Narrow the seat-bound request to the canonical EstateCall the card
@@ -387,7 +390,33 @@ export function seatFamilyForPath(path: string): { family: string; probeNames: s
  *  2026-09-10 — migrate to a named Typert remote") read as a broken
  *  registry and sent an agent hunting doors for an hour. */
 export function makeEstateRequest(ctx: unknown): EstateRequest {
-  return async (method, path, body, execSignal): Promise<unknown> => {
+  // (the ledger's seam drift, cured 2026-10-10: the TYPE promised a
+  // timeoutMs the implementation silently dropped — callers passed
+  // 120_000 and the seat path could hang forever where the engine
+  // path (its own AbortSignal.timeout) never would. The bound is now
+  // RACED, not dropped: a seat call that outlives it rejects with a
+  // named error, the same law the direct fetch lives under.)
+  return (method, path, body, execSignal, timeoutMs) => {
+    const work = performEstateRequest(ctx, method, path, body, execSignal)
+    if (timeoutMs === undefined || !Number.isFinite(timeoutMs) || timeoutMs <= 0) return work
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const bound = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        reject(new Error(`estate request ${method} ${path} outlived its ${String(timeoutMs)}ms bound`))
+      }, timeoutMs)
+    })
+    return Promise.race([work, bound]).finally(() => { if (timer !== undefined) clearTimeout(timer) })
+  }
+}
+
+async function performEstateRequest(
+  ctx: unknown,
+  method: EstateMethod,
+  path: string,
+  body: unknown,
+  execSignal: AbortSignal,
+): Promise<unknown> {
+  {
     const viaSeats = await trySeats(ctx, method, path, body, execSignal)
     if (viaSeats !== undefined) return viaSeats
     const { family, probeNames } = seatFamilyForPath(path)

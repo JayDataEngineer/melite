@@ -1,7 +1,8 @@
-import { c as formSpecArm, d as modelCatalogArm, h as seatFamilyForPath, i as routeName, l as formsArm, m as makeEstateRequest, r as resolveHarnessRoutes, s as cardToolsArm, t as harnessEnhance, u as kindsDoorArm } from "./llm-complete-C2xYnOO0.mjs";
+import { c as formSpecArm, d as modelCatalogArm, h as seatFamilyForPath, i as routeName, l as formsArm, m as makeEstateRequest, r as resolveHarnessRoutes, s as cardToolsArm, t as harnessEnhance, u as kindsDoorArm } from "./llm-complete-C0itnDPA.mjs";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { resolveEngineBaseUrl, sdkClient } from "@melite/comfyui-cordis";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
+import { segmentConfined } from "@melite/contracts/mediaKinds";
 import { agentCardFormDoc, agentFormDoc } from "@melite/engine-agent";
 import { craftFormDoc } from "@melite/engine-craft";
 import { mcpFormDoc } from "@melite/engine-mcp/formDoc";
@@ -71,16 +72,22 @@ const DEFAULT_ENHANCE_PREFERENCE = "muse-spark-1.3-contributor";
 function seatedMcpServers(c) {
 	const servers = /* @__PURE__ */ new Set();
 	for (const t of c.tools.schemas()) {
-		const parts = t.name.split("__");
-		if (parts.length === 3 && parts[0] === "mcp") servers.add(parts[1]);
+		if (!t.name.startsWith(MCP_WIRE_PREFIX)) continue;
+		const rest = t.name.slice(MCP_WIRE_PREFIX.length);
+		const cut = rest.indexOf("__");
+		if (cut <= 0) continue;
+		servers.add(rest.slice(0, cut));
 	}
 	return [...servers].sort();
 }
+/** The wire prefix of an mcp tool name (the executor composes the
+*  same string — one spelling, here). */
+const MCP_WIRE_PREFIX = "mcp__";
 /** One server's tool rows (the LIVE census for its form's options:
 *  bare tool names — the executor composes mcp__<server>__<tool>
 *  on the wire). */
 function mcpToolsOf(c, server) {
-	const prefix = `mcp__${server}__`;
+	const prefix = `${MCP_WIRE_PREFIX}${server}__`;
 	return c.tools.schemas().filter((t) => t.name.startsWith(prefix)).map((t) => ({
 		value: t.name.slice(prefix.length),
 		label: t.name.slice(prefix.length),
@@ -98,14 +105,25 @@ function mcpToolsOf(c, server) {
 * activation — the gate opens and the seat probe's own honest voice
 * answers (serve, or the missing-seat 502 naming the family). */
 const ESTATE_PENDING_GRACE_MS = 12e4;
+/** THE RE-ARM QUIET (li-l, the flap brick): a fiber cycling
+*  activating→ready→activating (the multi-host blender-seat
+*  collision, live proof 2026-10-10: three mcp_server.py children
+*  from three hosts, 3379 remounts in one log) reset the stamp to
+*  null on every momentary lift and held the gate closed FOREVER.
+*  The stamp now lifts only after a SUSTAINED quiet — flapping
+*  cannot extend the grace window. */
+const ESTATE_PENDING_REARM_MS = 1e4;
 let estatePendingSince = null;
+let estateQuietSince = null;
 const estateStillActivating = (c) => {
 	let activating = false;
 	for (const runtime of c.registry.values()) for (const fiber of runtime.fibers) if (fiber.uid !== null && (fiber.store === void 0 || fiber.inertia !== void 0)) activating = true;
 	if (!activating) {
-		estatePendingSince = null;
+		if (estateQuietSince === null) estateQuietSince = Date.now();
+		if (estatePendingSince !== null && Date.now() - estateQuietSince >= ESTATE_PENDING_REARM_MS) estatePendingSince = null;
 		return false;
 	}
+	estateQuietSince = null;
 	if (estatePendingSince === null) estatePendingSince = Date.now();
 	return Date.now() - estatePendingSince < ESTATE_PENDING_GRACE_MS;
 };
@@ -278,7 +296,7 @@ function apply(c, config = {}) {
 			await (await import("node:fs/promises")).mkdir(dir, { recursive: true });
 			return dir;
 		};
-		const SEG = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
+		const SEG = (name) => !name.includes("/") && !name.includes("\\") && segmentConfined(name);
 		c.effect(() => c.webServer.register({
 			kind: "exact",
 			path: "/v1/uploads",
@@ -298,7 +316,7 @@ function apply(c, config = {}) {
 					const filename = typeof body?.filename === "string" ? body.filename : "";
 					const data = typeof body?.data === "string" ? body.data : "";
 					if (filename === "" || data === "") return fail(400, "uploads: filename + data are required");
-					if (!SEG.test(filename)) return fail(400, "uploads: bad filename");
+					if (!SEG(filename)) return fail(400, "uploads: bad filename");
 					const meshName = /\.glb$/i.test(filename) || /\.gltf$/i.test(filename);
 					const b64 = /^data:(image\/(?:png|jpeg|webp)|model\/gltf(?:-binary|\+json)|application\/octet-stream);base64,(.+)$/.exec(data);
 					if (b64 === null || b64[1] === "application/octet-stream" && !meshName) return fail(400, "uploads: only png / jpeg / webp / glb / gltf upload");
@@ -326,8 +344,14 @@ function apply(c, config = {}) {
 					res.end(body);
 				};
 				(async () => {
-					const name = new URL(req.url ?? "/", "http://melite.invalid").pathname.slice(18);
-					if (!SEG.test(name)) return fail(400, "bad input name");
+					const url = new URL(req.url ?? "/", "http://melite.invalid");
+					let name;
+					try {
+						name = decodeURIComponent(url.pathname.slice(18));
+					} catch {
+						return fail(400, "bad input name");
+					}
+					if (!SEG(name)) return fail(400, "bad input name");
 					const dir = await inputDir();
 					const path = await import("node:path");
 					const fs = await import("node:fs/promises");

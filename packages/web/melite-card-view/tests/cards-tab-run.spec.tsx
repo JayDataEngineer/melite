@@ -91,7 +91,7 @@ function mountBench(stages: BenchStageView[], estateOpts: Parameters<typeof moun
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
+    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as unknown as CardsBenchValue }),
   }));
 }
 

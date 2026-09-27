@@ -90,10 +90,13 @@ describe("THE TYPECHECK GATE — every package, every run", () => {
   it("the net reaches the estate (discovery is dynamic, not a named list)", () => {
     // The five-package era is over: if this count ever reads ~5,
     // discovery broke and the estate is half-unheard again. The bar
-    // ROSE (li-aq.3): 88 tsconfigs stand today — a count below 85
-    // means a package went dark (its tsconfig deleted to dodge the
-    // net is the move the tripwire exists to catch).
-    expect(dirs.length).toBeGreaterThanOrEqual(85);
+    // ROSE (li-aq.3) — and then the audit killed the FLOOR (a
+    // `>= 85` tripwire lets the count drift silently DOWN to 85
+    // while three packages go dark, and never hears a new one at
+    // all): the pin is EXACT. 88 tsconfigs stand today; adding or
+    // removing a package MUST touch this number deliberately — a
+    // tsconfig deleted to dodge the net fails the wall by arithmetic.
+    expect(dirs.length).toBe(88);
     // The incident's package is in the net BY NAME (the engine ran
     // from source, so no build step ever saw it).
     expect(dirs.map((d) => d.replace(/\\/g, "/")).some((d) => d.endsWith("engines/comfyui-cordis"))).toBe(true);

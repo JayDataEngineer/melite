@@ -48,7 +48,7 @@ function stubFetch(): void {
   vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
-      const fields: Record<string, unknown> = specMode === "mesh"
+      const fields: Parameters<typeof schemaEnvelope>[0] = specMode === "mesh"
         ? {
           prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
           rigged_glb: { type: "mesh", meta: { description: "Donor mesh" } },
@@ -128,7 +128,7 @@ function mountBench(
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: rows } as CardsBenchValue }),
+    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: rows } as unknown as CardsBenchValue }),
   }));
 }
 

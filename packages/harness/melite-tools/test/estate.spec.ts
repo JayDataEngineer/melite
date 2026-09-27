@@ -25,6 +25,32 @@ function req(seats: Record<string, unknown>): EstateRequest {
   return makeEstateRequest(ctxWith(seats))
 }
 
+describe('the timeout bound (the seam-drift cure, 2026-10-10)', () => {
+  test('a seat that never settles rejects at its bound, named', async () => {
+    // THE DRIFT: the EstateRequest type promised a timeoutMs the
+    // implementation silently dropped — the seat path could hang
+    // forever where the engine path (AbortSignal.timeout) never
+    // would. The bound is raced now; this is its pin.
+    const never: Promise<unknown> = new Promise(() => {})
+    const r = req({ benchRemote: { ensure: () => never } })
+    const started = Date.now()
+    const msg = await throwsMsg(() => r('POST', '/v1/bench/ensure', {}, SIG, 25))
+    assert.match(msg, /outlived its 25ms bound/)
+    // it rejected at the BOUND, not the 5s caller signal
+    assert.ok(Date.now() - started < 4000, 'the bound fired first')
+  })
+
+  test('a call with no bound keeps the old contract (no invented timeout)', async () => {
+    let settled = false
+    const slowButNotStuck: Promise<unknown> = new Promise((res) => {
+      setTimeout(() => { settled = true; res({ ok: 1 }) }, 30)
+    })
+    const r = req({ benchRemote: { ensure: () => slowButNotStuck } })
+    assert.deepEqual(await r('POST', '/v1/bench/ensure', {}, SIG), { ok: 1 })
+    assert.ok(settled)
+  })
+})
+
 describe('transport law', () => {
   test('an aborted signal refuses before any seat', async () => {
     let touched = false

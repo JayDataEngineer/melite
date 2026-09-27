@@ -24,8 +24,14 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     expect(names.length).toBeGreaterThan(0);
   });
 
-  it("every registry flow's node classes and input names satisfy the law", () => {
-    if (!existsSync(DOC)) { console.log("no production object_info snapshot on this clone — registry-flow wiring wall skipped"); return }
+  it("every registry flow's node classes and input names satisfy the law", (t) => {
+    // A missing snapshot is a REPORTED SKIP, never a silent pass
+    // (the first cut bare-returned and vitest counted the pass —
+    // on a fresh clone this wall was vacuously green).
+    if (!existsSync(DOC)) {
+      t.skip(true, "no production object_info snapshot on this clone — the registry-flow wiring wall cannot judge");
+      return;
+    }
     const doc = JSON.parse(readFileSync(DOC, "utf8")) as Record<string, any>;
     const WIDGET_SERIALIZATION = new Set(["upload", "model_options", "lora_ui"]);
     const declaredOf = (ct: string): Set<string> | null => {
@@ -34,7 +40,6 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
       const inp = d.input ?? {};
       return new Set([...Object.keys(inp.required ?? {}), ...Object.keys(inp.optional ?? {})]);
     };
-    const stale: string[] = [];
     let nodes = 0;
     for (const name of names) {
       const row = getRegistryFlow(name) as { stages?: Array<Record<string, any>> } | undefined;
@@ -48,7 +53,16 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
           if (typeof ct !== "string" || inputs === null || typeof inputs !== "object") continue;
           nodes += 1;
           const declared = declaredOf(ct);
-          if (declared === null) { if (!stale.includes(ct)) stale.push(ct); continue }
+          // AN UNKNOWN CLASS IS THE WALL'S WHOLE POINT — the first
+          // cut collected it into a list whose length then
+          // SATISFIED the vacuity gate below: a stale hand graph
+          // could never fail this wall. It refuses, loudly, naming
+          // the flow and the node.
+          if (declared === null) {
+            throw new Error(
+              `registry flow ${name} node ${nid}: class ${ct} is not declared by /object_info — the hand-authored graph is stale`,
+            );
+          }
           for (const key of Object.keys(inputs)) {
             if (declared.has(key)) continue;
             if (declared.has(key.split(".")[0] ?? key)) continue
@@ -61,7 +75,7 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
         }
       }
     }
-    console.log(`registry-flow wiring wall: ${names.length} flows, ${nodes} nodes, ${stale.length} classes the snapshot does not carry`)
-    expect(nodes > 0 || stale.length > 0, "the wall saw nothing to judge — say so loudly").toBe(true);
+    console.log(`registry-flow wiring wall: ${names.length} flows, ${nodes} nodes judged against the snapshot`)
+    expect(nodes, "the wall saw nothing to judge — say so loudly").toBeGreaterThan(0);
   });
 });

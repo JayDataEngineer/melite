@@ -109,5 +109,26 @@ const workers = Array.from({ length: Math.min(pool, queue.length) }, async () =>
   }
 });
 await Promise.all(workers);
-console.log(`test-tier: ${checked} packages with test dirs, ${failed} red`);
+
+// THE REPO TIER (the audit's gate hole: tools/ and the repo-level
+// tests/ — harness, helpers, e2e — were typed by NOTHING; its first
+// sweep found six live defects, including comfyuiExecutor callers
+// the reseat's ctx parameter made stale). One tracked config
+// (tsconfig.repotier.json, root-relative, the same canonical-paths
+// borrowing the walls plane uses), run after the package loop.
+{
+  const proc = spawnSync(process.execPath, [tsc, "--noEmit", "-p", "tsconfig.repotier.json"], {
+    cwd: root, encoding: "utf8", timeout: 240_000,
+  });
+  if (proc.status !== 0) {
+    failed++;
+    console.log("✗ repo tier (tools/ + tests/*.ts + tests/e2e)");
+    const lines = (proc.stdout + proc.stderr).split("\n").filter((l) => l.includes("error TS"));
+    for (const l of lines.slice(0, 6)) console.log(`  ${l}`);
+    if (lines.length > 6) console.log(`  … ${lines.length} errors`);
+  } else {
+    console.log("✓ repo tier (tools/ + tests/*.ts + tests/e2e)");
+  }
+}
+console.log(`test-tier: ${checked} packages with test dirs + the repo tier, ${failed} red`);
 process.exit(failed > 0 ? 1 : 0);

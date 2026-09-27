@@ -166,7 +166,13 @@ export async function uploadInputFile(file: File): Promise<{ name: string; file:
   const res = await fetch('/v1/uploads', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ filename: file.name.replace(/[^A-Za-z0-9._-]/g, '_'), data: dataUrl }),
+    // THE REAL NAME, NOT A MANGLED ONE (the audit's GAP 4: the client
+    // used to rewrite every name through a charset the contracts'
+    // grammar never declared — `out 1.png` uploaded as `out_1.png`,
+    // so the staged name lied about the local file and masked the
+    // serve door's own decode gap). The rail judges the name with
+    // the shared grammar; the client reports what the user dropped.
+    body: JSON.stringify({ filename: file.name, data: dataUrl }),
   })
   if (!res.ok) throw new Error('upload refused: HTTP ' + String(res.status))
   const out: unknown = await res.json()

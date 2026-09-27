@@ -230,7 +230,22 @@ function seatFamilyForPath(path) {
 *  2026-09-10 — migrate to a named Typert remote") read as a broken
 *  registry and sent an agent hunting doors for an hour. */
 function makeEstateRequest(ctx) {
-	return async (method, path, body, execSignal) => {
+	return (method, path, body, execSignal, timeoutMs) => {
+		const work = performEstateRequest(ctx, method, path, body, execSignal);
+		if (timeoutMs === void 0 || !Number.isFinite(timeoutMs) || timeoutMs <= 0) return work;
+		let timer;
+		const bound = new Promise((_, reject) => {
+			timer = setTimeout(() => {
+				reject(/* @__PURE__ */ new Error(`estate request ${method} ${path} outlived its ${String(timeoutMs)}ms bound`));
+			}, timeoutMs);
+		});
+		return Promise.race([work, bound]).finally(() => {
+			if (timer !== void 0) clearTimeout(timer);
+		});
+	};
+}
+async function performEstateRequest(ctx, method, path, body, execSignal) {
+	{
 		const viaSeats = await trySeats(ctx, method, path, body, execSignal);
 		if (viaSeats !== void 0) return viaSeats;
 		const { family, probeNames } = seatFamilyForPath(path);
@@ -241,7 +256,7 @@ function makeEstateRequest(ctx) {
 		} catch {}
 		const liveVoice = live.length > 0 ? `Live seats here: ${live.join(", ")}.` : `No seat of that family is mounted on this lane (ABSENCE, not a broken registry; nothing crashed).`;
 		throw new Error(`no seat on this lane serves ${method} ${path} — the ${family} is not mounted. ${liveVoice} The queue-plane seats mount when the estate state root is pinned (MELITE_STATE_ROOT / repoRoot config). On a chat lane, compose via melite_construct onto the shared bench instead of the raw flow doors.`);
-	};
+	}
 }
 //#endregion
 //#region src/faceStamp.ts
@@ -376,6 +391,25 @@ function capQuant(quant) {
 *  or the key is the card's default family. Routeless cells are
 *  unaddressable, never offered. Variant rows serve whole (all ten
 *  keys, always) regardless of route.) */
+/** THE LANE CONTRACT SERVE (2026-10-10, the fix shape 2+4): the
+*  family's declared surface + relation words, verbatim, for the
+*  form plane — the client resolves (family base ∪ variant
+*  additions) with laneSurfaceOf and judges with
+*  judgeLaneRelations, the same calls the bench-write door uses.
+*  Served ONLY when the family declares a base surface (the
+*  spread at the call site gates it). */
+function laneContractOf(decl) {
+	return {
+		base: [...decl.params ?? []],
+		...decl.relations !== void 0 ? { relations: decl.relations } : {},
+		...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
+		variants: Object.fromEntries((decl.variants ?? []).filter((v) => v.params !== void 0 || v.relations !== void 0 || v.bounds !== void 0).map((v) => [v.id, {
+			...v.params !== void 0 ? { params: [...v.params] } : {},
+			...v.relations !== void 0 ? { relations: v.relations } : {},
+			...v.bounds !== void 0 ? { bounds: v.bounds } : {}
+		}]))
+	};
+}
 function specVariants(decl, key, service, primary) {
 	const rows = [];
 	const seen = /* @__PURE__ */ new Set();
@@ -681,6 +715,7 @@ function specBody(svc, defs, res) {
 		service: res.service,
 		size: surface.size === "huge" ? "huge" : null,
 		variants: decl ? specVariants(decl, key, res.service, primary) : [],
+		...decl !== null && decl.params !== void 0 && decl.params.length > 0 ? { lanes: laneContractOf(decl) } : {},
 		packs: svc.packPresence(def.requiresByFamily?.[key] ?? def.requires ?? []),
 		families: (def.boarded ?? []).map((fam) => ({
 			id: fam,
@@ -796,6 +831,23 @@ async function cardToolsArm() {
 		const carrier = def.schemaCarrier ?? def.schema;
 		const schema = emitParamsSchema(carrier, fams);
 		const mods = emitModifierKinds(def.mods);
+		const lanes = {};
+		for (const fam of fams) {
+			let atom = fam;
+			try {
+				atom = owningAtom(fam);
+			} catch {
+				atom = fam;
+			}
+			if (atom in lanes) continue;
+			let fdecl = null;
+			try {
+				fdecl = getModel(atom);
+			} catch {
+				fdecl = null;
+			}
+			if (fdecl !== null && (fdecl.params?.length ?? 0) > 0) lanes[atom] = laneContractOf(fdecl);
+		}
 		out.push({
 			name: id,
 			version: 1,
@@ -806,6 +858,7 @@ async function cardToolsArm() {
 			genre: ident.genre,
 			families: fams,
 			params_schema: schema,
+			...Object.keys(lanes).length > 0 ? { lanes } : {},
 			...mods.length > 0 ? { modifiers: mods } : {},
 			face_stamp: faceStamp()
 		});

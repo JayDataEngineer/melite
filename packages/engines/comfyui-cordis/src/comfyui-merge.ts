@@ -350,12 +350,16 @@ export async function executeFlowInner(
 ): Promise<FlowResult> {
   const plan = planMerge(rows, { ...initials }, inputNames);
   const client = sdkClient(server);
-  // THE WIRING WALL AT THE MERGE SEAM (the bypass audit's HIGH-3):
-  // the merge rewrites node ids, namespaces wires and resolves
-  // `$spell`s AFTER any earlier judgment — so its OUTPUT is the graph
-  // that reaches the engine, and it is the graph that must be walked
-  // against the doc. `assertWiresResolve` checks that wires land; this
-  // checks that the NAMES do.
+  // THE MERGE SEAM CARRIES NO WALL — AND SAYS SO (the audit's GAP 2:
+  // this comment used to claim a names-walk that existed nowhere in
+  // this body). The walk that judges the merged graph is the ENGINES
+  // ADAPTER'S post-splice seat (entries/comfyui-engine, before
+  // host.executeFlow): the merge namespaces ids and resolves
+  // `$spell`s into link VALUES, adding no class_type or input key,
+  // so the adapter's walk of the spliced rows IS the walk of what
+  // this seam submits. `assertWiresResolve` checks that wires land.
+  // The day the merge learns to ADD a name, that seat catches it —
+  // and this comment must move with the check.
   const staged = await uploadReferenced(client, plan.workflow, { runsRoot: dirname(String(runDir)) });
   const { promptId, clientId } = await submitPrompt(client, staged.graph);
   active.set(String(runDir), { promptId, clientId, server });

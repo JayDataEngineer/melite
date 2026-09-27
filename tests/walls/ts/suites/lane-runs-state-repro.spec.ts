@@ -173,7 +173,7 @@ describe("the false-death hunt's four laws", () => {
     expect(missing).toEqual(["queue"]);
   });
 
-  it("4. THE LOCK LAW: a live-pid lock refuses the gate; dead is stolen; clean acquires", { timeout: 20_000 }, async () => {
+  it("4. THE LOCK LAW: a live-pid lock refuses the gate; dead is stolen; clean acquires", { timeout: 20_000 }, async (t) => {
     const root = join(sandbox("law4-lock"), "runs");
     copyRealTree(root);
     // a lock held by OUR OWN pid — alive by definition
@@ -215,9 +215,12 @@ describe("the false-death hunt's four laws", () => {
     if (realHolder !== null) {
       expect(realHolder).toMatch(/^\d+$/);
     } else {
-      // mid-restart is a legitimate state for the operator's lane; the
-      // copy rule this documents is covered by the deletion arm above
-      expect(true).toBe(true);
+      // MID-RESTART IS A REPORTED OBSERVATION, never a fake pass
+      // (the audit's GAP 5: `expect(true).toBe(true)` cannot fail,
+      // so the live-tail arm judged nothing). The copy rule the
+      // absence documents stays owned by the deletion arm above;
+      // this arm's honest verdict is a skip that names the state.
+      t.skip(true, "the lane lock was absent for the whole window (mid-restart) — the live-tail arm cannot judge this run");
     }
   });
 });

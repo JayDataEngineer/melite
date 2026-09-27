@@ -30,7 +30,7 @@ function stubFetch(): void {
   vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
-      const fields: Record<string, unknown> = {
+      const fields: Parameters<typeof schemaEnvelope>[0] = {
         prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
       };
       let preview: Record<string, unknown> | undefined;

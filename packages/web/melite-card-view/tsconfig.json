@@ -10,9 +10,11 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "strict": false,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
+    // STRICT SINCE the audit's gate hole (2026-10-10): this was the
+    // only package in the estate with the whole lax triple off —
+    // its sources were typed by nothing that could catch a null
+    // deref or an implicit any. src/old stays excluded (history).
+    "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
     "isolatedModules": true,

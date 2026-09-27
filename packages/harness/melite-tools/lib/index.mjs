@@ -1,4 +1,4 @@
-import { a as MODIFIER_PACKS, f as resolveSpecKey, i as routeName, m as makeEstateRequest, n as matchHarnessRoute, o as boardedMap, p as asEstateCall, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-C2xYnOO0.mjs";
+import { a as MODIFIER_PACKS, f as resolveSpecKey, i as routeName, m as makeEstateRequest, n as matchHarnessRoute, o as boardedMap, p as asEstateCall, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-C0itnDPA.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildImageEditTool } from "@melite/image-image-edit/tool";
@@ -6,6 +6,7 @@ import { buildMotionTool } from "@melite/motion-motion/tool";
 import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
+import { RUN_ID_RE, RUN_MEDIA_PREFIX, WIRE_STAGE_KEYS, canonicalRunMediaUrl, normalizeBenchStages } from "@melite/contracts/benchStage";
 import { normalizeJsonArrayParams } from "@melite/estate-call/cardTool";
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { loadCardDefs, registryModel, theService } from "@melite/comfyui-cordis";
@@ -536,16 +537,19 @@ function firstArtifactPath(artifacts) {
 *  on correctly-wired card stages; engine defaults comfyui). */
 function projectStages(stages) {
 	if (!Array.isArray(stages)) return [];
-	return stages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s)).map((s) => {
-		const row = {
-			id: String(s["id"] ?? ""),
-			engine: typeof s["engine"] === "string" && s["engine"] !== "" ? s["engine"] : "comfyui",
-			params: typeof s["params"] === "object" && s["params"] !== null && !Array.isArray(s["params"]) ? s["params"] : {},
-			inputs: typeof s["inputs"] === "object" && s["inputs"] !== null && !Array.isArray(s["inputs"]) ? s["inputs"] : {},
-			outputs: typeof s["outputs"] === "object" && s["outputs"] !== null && !Array.isArray(s["outputs"]) ? s["outputs"] : typeof s["card"] === "string" && s["card"] !== "" ? {} : { default: "image" }
-		};
-		if (typeof s["card"] === "string" && s["card"] !== "") row["card"] = s["card"];
-		if (typeof s["expected"] === "object" && s["expected"] !== null && !Array.isArray(s["expected"])) row["expected"] = s["expected"];
+	const source = stages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s));
+	return normalizeBenchStages(source).map((row, i) => {
+		const from = source[i];
+		if (from !== void 0) {
+			row["id"] = String(from["id"] ?? "");
+			if (typeof from["id"] === "string" && from["id"] !== "") row["id"] = from["id"];
+			for (const key of Object.keys(row)) {
+				if (key === "expected" || WIRE_STAGE_KEYS.includes(key)) continue;
+				delete row[key];
+			}
+			if (typeof from["expected"] === "object" && from["expected"] !== null && !Array.isArray(from["expected"])) row["expected"] = from["expected"];
+			else delete row["expected"];
+		}
 		return row;
 	});
 }
@@ -1130,9 +1134,10 @@ async function observeAndAttribute(request, draftId, stageId, runId, signal) {
 			const st = stages.find((s) => s["id"] === stageId) ?? (stages.length === 1 ? stages[0] : void 0);
 			const toMediaUrl = (value) => {
 				if (value === "") return "";
-				if (/^([a-z][a-z0-9+.-]*:|\/)/i.test(value)) return value;
-				const relative = value.startsWith(`${runId}/`) ? value.slice(runId.length + 1) : value;
-				return `/melite-media/runs/${encodeURIComponent(runId)}/${relative.split("/").map(encodeURIComponent).join("/")}`;
+				const healed = canonicalRunMediaUrl(value);
+				if (/^([a-z][a-z0-9+.-]*:|\/)/i.test(healed)) return healed;
+				const relative = healed.startsWith(`${runId}/`) ? healed.slice(runId.length + 1) : healed;
+				return `${RUN_MEDIA_PREFIX}/${encodeURIComponent(runId)}/${relative.split("/").map(encodeURIComponent).join("/")}`;
 			};
 			const url = toMediaUrl(st !== void 0 && typeof st["url"] === "string" && st["url"] !== "" ? st["url"] : "");
 			const arts = [];
@@ -1221,6 +1226,36 @@ async function runSingle(request, a, signal) {
 			mode: "card",
 			target: card,
 			error: e instanceof Error ? e.message : String(e)
+		};
+	}
+	let benchStages = [];
+	try {
+		const row = await request("GET", `/v1/bench/${encodeURIComponent(a.bench)}`, void 0, signal, DRAFT_TIMEOUT_MS);
+		if (row !== null && typeof row === "object" && Array.isArray(row["stages"])) benchStages = row["stages"].filter((st) => typeof st === "object" && st !== null);
+	} catch {}
+	if (benchStages.filter((st) => {
+		const ins = st["inputs"];
+		return typeof ins === "object" && ins !== null && !Array.isArray(ins) && Object.keys(ins).length > 0;
+	}).length > 0) {
+		const started = await startRun(request, {
+			test: wireBool(a.test),
+			draft_id: draftId
+		}, signal);
+		if (typeof started["error"] === "string") return {
+			mode: "card",
+			target: card,
+			rode: "flow-arm (bench carries wiring — the wires ride as stage inputs)",
+			...started
+		};
+		const runId = started["run_id"];
+		if (typeof runId === "string" && runId !== "") observeAndAttribute(request, draftId, "s_0", runId, new AbortController().signal).catch(String);
+		return {
+			mode: "card",
+			target: card,
+			model,
+			draft_id: draftId,
+			rode: "flow-arm (bench carries wiring — the wires ride as stage inputs)",
+			...started
 		};
 	}
 	const started = await startRun(request, {
@@ -2258,6 +2293,23 @@ function meliteLoad(request, opts = {}) {
 						const keyed = packSeats.filter((p) => p.param_key !== p.kind);
 						if (keyed.length > 0) out.push("mod param_keys: " + keyed.map((p) => p.kind + " → " + p.param_key + " (entries: {" + p.fields.join(", ") + "})").join("; "));
 					}
+					const sigLanes = sig.lanes;
+					if (sigLanes !== null && sigLanes !== void 0 && typeof sigLanes === "object") for (const [fam, lane] of Object.entries(sigLanes)) {
+						const base = Array.isArray(lane?.base) ? lane.base.filter((f) => typeof f === "string") : [];
+						const adds = Object.entries(lane?.variants ?? {}).map(([v, row]) => v + " +" + (Array.isArray(row?.params) ? row.params.join(", ") : "")).filter((line) => !line.endsWith(" +"));
+						const words = [];
+						for (const t of lane?.relations?.together ?? []) if (Array.isArray(t?.fields)) words.push("together(" + t.fields.join(" × ") + ")");
+						for (const c of lane?.relations?.conflicts ?? []) words.push("conflicts(" + String(c?.a) + " × " + String(c?.b) + ")");
+						for (const e of lane?.relations?.either_or ?? []) if (Array.isArray(e?.groups)) words.push("either_or(" + e.groups.map((g) => "(" + g.join(" × ") + ")").join(" | ") + ")");
+						if (Array.isArray(lane?.relations?.required)) words.push("required(" + lane.relations.required.join(", ") + ")");
+						if (Array.isArray(lane?.relations?.at_most_one)) words.push("at_most_one(" + lane.relations.at_most_one.join(" | ") + ")");
+						const lawBounds = lane?.bounds;
+						if (lawBounds !== null && lawBounds !== void 0 && typeof lawBounds === "object") {
+							const spans = Object.entries(lawBounds).map(([k, bb]) => k + " " + String(bb?.min ?? "..") + "…" + String(bb?.max ?? ".."));
+							if (spans.length > 0) words.push("bounds(" + spans.join(", ") + ")");
+						}
+						out.push("lane " + fam + ": " + (base.length > 0 ? "base " + base.join(", ") : "no declared base") + (adds.length > 0 ? "; variants: " + adds.join("; ") : "") + (words.length > 0 ? "; laws: " + words.join(", ") : "") + " — a field outside this lane REFUSES at the bench door (add_stage/patch), named, with the cure");
+					}
 					const model = str(sig.model);
 					if (model !== "") out.push("signature model: " + model);
 				}
@@ -2921,7 +2973,7 @@ const firstRootWithRun = async (seat, kind, runId) => {
 	return null;
 };
 /** The run-id grammar (estate/media's containment law, verbatim). */
-const RUN_ID$1 = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+const RUN_ID$1 = RUN_ID_RE;
 /** Extension → declared media type (read_image's map, copied). */
 const IMAGE_EXTENSIONS = {
 	".png": "image/png",
@@ -2982,7 +3034,9 @@ function sheetPlan(duration_s) {
 	];
 }
 /** Re-brand the structured outcome into the durable reference an
-* ImageBlock carries (read_image's imageRefFromValue, copied). */
+* ImageBlock carries (read_image's imageRefFromValue, copied). The
+* parameter is the PRESENT image — callers assert presence (the
+* text-only observe arm never reaches here). */
 function imageRefFromValue(image) {
 	return {
 		attachmentId: AttachmentId(image.attachmentId),
@@ -3446,8 +3500,7 @@ function meliteView(ctx) {
 					image: {
 						type: "object",
 						additionalProperties: true,
-						description: "The durable attachment metadata (attachmentId, mediaType, bytes, width, height). On the film path this IS the contact sheet.",
-						required: true
+						description: "The durable attachment metadata (attachmentId, mediaType, bytes, width, height). On the film path this IS the contact sheet. ABSENT on the text-only observe arm (a route with no image input gets textObservation instead — one of the two rides every result)."
 					},
 					film: {
 						type: "object",
@@ -3579,7 +3632,7 @@ function meliteView(ctx) {
 * dumping megabytes of bytes into the model's context.
 */
 /** The run-id grammar (estate/media's containment law, verbatim). */
-const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+const RUN_ID = RUN_ID_RE;
 /** The text vocabulary this door answers. A run's own sidecars are
 *  json/jsonl/md/txt/yaml/log; anything else is media (melite_view),
 *  a checkpoint (never read into a context window), or a refusal. */

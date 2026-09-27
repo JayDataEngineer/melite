@@ -518,7 +518,18 @@ export function apply(c: CtxView, config: Config = {}): void {
         }
         void (async () => {
           const url = new URL(req.url ?? '/', 'http://melite.invalid')
-          const name = url.pathname.slice('/v1/assets/inputs/'.length)
+          // DECODE, THEN JUDGE (the audit's GAP 2: this door sliced the
+          // RAW pathname, so a staged `out 1.png` was unservable (404
+          // for a file that exists) and a `%00` probe never reached the
+          // grammar's NUL arm. Every sibling media door decodes per
+          // segment before judging; this one now does too. A malformed
+          // escape fails closed as a bad name.)
+          let name: string
+          try {
+            name = decodeURIComponent(url.pathname.slice('/v1/assets/inputs/'.length))
+          } catch {
+            return fail(400, 'bad input name')
+          }
           if (!SEG(name)) return fail(400, 'bad input name')
           const dir = await inputDir()
           const path = await import('node:path')

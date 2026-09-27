@@ -91,12 +91,12 @@ describe("paramFields + editPatch — the form model", () => {
 describe("foldFrame — the events-bus idempotent patch", () => {
   test("stage frames patch positionally by index, never by id", () => {
     const first = foldFrame(null, "r1", { type: "stage", stage: "generate", index: 0, status: "running" });
-    expect(first.stages[0]).toEqual({ id: "0", status: "running", url: undefined });
+    expect(first.stages![0]).toEqual({ id: "0", status: "running", url: undefined });
     const second = foldFrame(first, "r1", { type: "stage", stage: "generate", index: 0, status: "completed" });
-    expect(second.stages[0].status).toBe("completed");
+    expect(second.stages![0].status).toBe("completed");
     // a frame WITHOUT status keeps the current one (idempotent patch)
     const third = foldFrame(second, "r1", { type: "stage", stage: "generate", index: 0 });
-    expect(third.stages[0].status).toBe("completed");
+    expect(third.stages![0].status).toBe("completed");
   });
 
   test("frame without index patches nothing; run frames set the run status", () => {
