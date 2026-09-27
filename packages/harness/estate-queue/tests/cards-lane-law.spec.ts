@@ -15,6 +15,7 @@
 // nothing the model did not declare — and the model may declare
 // nothing the card cannot carry. The words live at
 // @melite/contracts/laneRelations; these walls pin the judgment.
+import { parseSidecar } from "../src/queueSidecar.ts";
 import { prepareCardParams } from "../src/cardsCompose.ts";
 import { describe, it, expect, beforeAll } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
@@ -607,5 +608,40 @@ describe("an export is styled on its performances, not while it is designed", ()
       text: "x",
       voice: "vivian",
     }).ok).toBe(true);
+  });
+});
+
+// ── THE SIDECAR HAS A READ CONTRACT TOO (the bypass audit's HIGH-5) ──
+// The sidecar had a WRITER contract and no reader contract: six
+// readers JSON.parsed `_flow.json` and `as`-cast it, so a hand-edited
+// or truncated doc loaded rows nothing could find by id. This is the
+// one parse, and it judges the shape without rebuilding the row (a
+// refusal settle carries the old sidecar's own faces forward).
+describe("THE SIDECAR'S READ CONTRACT", () => {
+  it("a well-formed doc parses and keeps its fields", () => {
+    const parsed = parseSidecar({
+      status: "queued", pipeline: "flow_card", created_at: 7,
+      stages: [{ id: "s", status: "queued" }], skipped_stages: ["x"],
+    });
+    expect(parsed).not.toBeNull();
+    expect(parsed!.pipeline).toBe("flow_card");
+    expect(parsed!.stages).toHaveLength(1);
+    // verbatim: the settle's own faces ride
+    expect((parsed!.request as Record<string, unknown>)["skipped_stages"]).toEqual(["x"]);
+  });
+  it("a stage without an id refuses (it can never be found by key)", () => {
+    expect(parseSidecar({ stages: [{ name: "s" }] })).toBeNull();
+    expect(parseSidecar({ stages: [null] })).toBeNull();
+    expect(parseSidecar({ stages: [{ id: "" }] })).toBeNull();
+    expect(parseSidecar({ stages: "bad" })).toBeNull();
+  });
+  it("a non-doc refuses (null, an array, a scalar)", () => {
+    for (const junk of [null, [], 4, "x", undefined]) {
+      expect(parseSidecar(junk), JSON.stringify(junk)).toBeNull();
+    }
+  });
+  it("a doc with NO stages is legal (a run that has not staged yet)", () => {
+    expect(parseSidecar({ status: "queued" })).not.toBeNull();
+    expect(parseSidecar({ stages: [] })).not.toBeNull();
   });
 });

@@ -216,3 +216,48 @@ export function pipelineOf(request: {
   }
   return "";
 }
+
+/**
+ * THE SIDECAR PARSE — the contract's READ half (2026-10-10, the
+ * bypass audit's HIGH-5: the sidecar had a writer contract and no
+ * reader contract, so six readers JSON.parsed and `as`-cast it, and a
+ * hand-edited `_flow.json` with a stage that has no id, or a
+ * `pipeline` of nonsense, loaded silently — `stages.find(s => s.id ===
+ * …)` simply missed, and the run routed by a value nothing validated).
+ *
+ * This is the ONE parse. It returns null for a doc that does not
+ * answer the shape, and every reader treats null as unreadable (the
+ * quarantine arm the boot sweep already has) rather than casting its
+ * way forward.
+ */
+export function parseSidecar(raw: unknown): { stages: Array<Record<string, unknown>>; pipeline: string; request: Record<string, unknown> } | null {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null
+  const doc = raw as Record<string, unknown>
+  // the STAGES: an array of records, each with a STRING id (the one
+  // field every reader keys on) — a row without one cannot be found
+  // by id and is refused rather than silently invisible
+  const rawStages = doc["stages"]
+  const stages: Array<Record<string, unknown>> = []
+  if (rawStages !== undefined && rawStages !== null) {
+    if (!Array.isArray(rawStages)) return null
+    for (const s of rawStages) {
+      if (s === null || typeof s !== "object" || Array.isArray(s)) return null
+      const row = s as Record<string, unknown>
+      if (typeof row["id"] !== "string" || row["id"] === "") return null
+      stages.push(row)
+    }
+  }
+  // the REQUEST: a record when present
+  const rawRequest = doc["request"]
+  if (rawRequest !== undefined && rawRequest !== null) {
+    if (typeof rawRequest !== "object" || Array.isArray(rawRequest)) return null
+  }
+  return {
+    // the CALLER's own row, fields intact (this judges the shape; it
+    // never rebuilds a sidecar — a settle carries the old row's own
+    // faces forward, and a rebuild would drop them)
+    stages: Array.isArray(rawStages) ? (rawStages as Array<Record<string, unknown>>) : [],
+    pipeline: typeof doc["pipeline"] === "string" ? doc["pipeline"] : "",
+    request: doc as Record<string, unknown>,
+  }
+}

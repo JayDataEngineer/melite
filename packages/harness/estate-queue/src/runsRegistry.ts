@@ -1,3 +1,4 @@
+import { parseSidecar } from "./queueSidecar.ts"
 // runsRegistry.ts — the live-run registry as a HOST Cordis service
 // (REBUILD-6, gateway kill). Owns the rich run map + the serial
 // pump over the queue seat's QueueCore (one machine — the door's
@@ -415,7 +416,16 @@ export class RunsRuntimeService extends Service {
     const dir = join(outRootFor(stateRoot, false), runId);
     let pre: Record<string, unknown> = {};
     try {
-      pre = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+      // THE SIDECAR'S READ CONTRACT (parseSidecar — the bypass
+      // audit's HIGH-5). This reader DERIVES from the row (it keys
+      // stages by id and routes by the pipeline), so a doc that does
+      // not answer the shape is refused here rather than cast forward;
+      // the ECHO readers (status, list) deliberately stay verbatim —
+      // showing the operator what is stored is their own law.
+      const parsed = parseSidecar(JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")));
+      // the row is kept VERBATIM once it answers the shape (a settle
+      // carries the old sidecar's own faces forward)
+      pre = parsed === null ? {} : parsed.request;
     } catch {
       /* v8 ignore next 3 -- TOCTOU-only (the agent-engine law):
        * the record was readable+queued at plan time or it never
