@@ -104,7 +104,10 @@ describe("maskT1 (the selection lane's arms)", () => {
     assert.ok(classes(row).includes("RTDETR_detect"), "the proposal rides");
     assert.ok(classes(row).includes("DrawBBoxes"), "the manifest draws");
     const rt = Object.values(row).find((n) => n.class_type === "RTDETR_detect")!;
-    assert.equal(rt.inputs.max_detections, 100, "a zero max_instances falls back to the 100 cap");
+    // THE CARD'S LAW: max_instances 0 means NO CAP (the schema's own
+    // "0 = no cap"), so the node keeps its own default rather than a
+    // silent 100 — `|| 100` used to drop every detection past 100.
+    assert.equal(rt.inputs.max_detections, 0, "a zero max_instances means NO cap, not a 100 ceiling");
   });
 
   it("the exports loop: paint + text (the shorter zip arm); scope_bbox is the PRIMARY's box and never leaks into exports", () => {

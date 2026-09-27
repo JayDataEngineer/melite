@@ -2,6 +2,7 @@
 // migration, segment/variant CRUD, locks/groups, audio, edits, selection,
 // markers, undo/redo, import/export. Persistence machinery + catalog-seeded
 // loads live in timelineStorePersist.spec.ts (fresh module state per file).
+import { DEFAULT_SEGMENT_PARAMS } from '../../contracts/src/timelineTypes.ts'
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import {
@@ -9,7 +10,6 @@ import {
   useTimelineStore,
 } from "../store/timelineStore.ts";
 import { clearSegmentClipboard } from "../store/segmentClipboard.ts";
-import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts";
 import type {
   AudioCue,
   TimelineSegment,
@@ -548,7 +548,11 @@ describe("variants", () => {
     S().promoteVariant("noparams", "w");
     const got = S().segments.find((s) => s.id === "noparams") as TimelineSegment;
     assert.equal(got.videoUrl, "http://w");
-    assert.equal(got.variants?.[0]?.seed, 0);
+    // THE FAMILY DEFAULT, NOT 0 (the census's M9): a seedless
+    // segment's promoted take inherits the declared segment seed; a
+    // literal 0 recorded a real deterministic seed 0 — a different
+    // render, misreported as provenance in the picker.
+    assert.equal(got.variants?.[0]?.seed, DEFAULT_SEGMENT_PARAMS.seed);
   });
   it("setVariants no-ops on unknown segments", () => {
     S().reset();

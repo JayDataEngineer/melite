@@ -5,6 +5,9 @@
 import type { VideoVariant } from "@melite/contracts"
 import type { GetState, SetState } from "./createStore"
 import { MAX_VARIANTS_PER_SEGMENT, variantUid } from "./timelineIds"
+// the segment defaults are the CONTRACTS' (the same owner
+// timelinePersistence and timelineSegments read — one default table)
+import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts"
 import type { VariantInput } from "./timelineIds"
 import { pushHistory } from "./timelineHistory"
 import { schedulePersist } from "./timelinePersistence"
@@ -91,7 +94,12 @@ export function createVariantSlice(
       const demotedEntry: VideoVariant | null = target.videoUrl
         ? {
             id: variantUid(),
-            seed: target.params?.seed ?? 0,
+            // THE FAMILY DEFAULT, NOT ZERO (the census's M9): a
+            // seedless persisted segment demoted to 0 recorded a REAL
+            // deterministic seed 0 — a different render, which the
+            // picker then misreports as provenance. The film clock's
+            // default lives in DEFAULT_SEGMENT_PARAMS (42).
+            seed: target.params?.seed ?? DEFAULT_SEGMENT_PARAMS.seed,
             videoUrl: target.videoUrl,
             assetId: target.assetId,
             createdAt: Date.now(),

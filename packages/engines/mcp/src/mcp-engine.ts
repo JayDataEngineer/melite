@@ -36,6 +36,13 @@ export interface McpToolCaller {
 
 /** The mcp engine id law: `mcp:<server>` (the same grammar the
  *  seat pins). Returns the server name. */
+/** The wire tool-name grammar — the same shape as the server name
+ *  (the engine contract's), because both halves of
+ *  `mcp__<server>__<tool>` are wire tokens. A tool name is an ADDRESS
+ *  that reaches a Blender/Unity executor, never prose (the census's
+ *  C1: a name carrying spaces or punctuation was minted verbatim). */
+const MCP_TOOL_NAME_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
 export const mcpServerOf = (engineId: string): string => {
   if (!engineIdOk(engineId) || !engineId.startsWith("mcp:")) {
     throw new Error(

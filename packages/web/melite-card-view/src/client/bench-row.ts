@@ -10,6 +10,10 @@ import type { CardsBenchValue, BenchStageRow } from './cards-resource.ts'
  *  ran shows NO dot, never a fake state). */
 const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null> = {
   queued: 'warning', pending: 'warning', running: 'ongoing', done: 'done', failed: 'error', stopped: 'warning', ready: null,
+  // the FILE-ERA words (the audit's H1): a pre-lifecycle sidecar can
+  // carry them, and a stage whose dot is null looks idle forever. The
+  // stamp above translates them, so these are the backstop.
+  success: 'done', succeeded: 'done', error: 'error', unknown: 'warning', stopping: 'warning',
 }
 
 /** THE CATEGORIES: bench stages grouped by card (first-appearance

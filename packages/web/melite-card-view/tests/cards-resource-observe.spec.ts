@@ -18,6 +18,7 @@
 // exhaustive — the null arm could never fire and is gone (the `as`
 // narrows what the compiler cannot see).
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { tileStatusFromVerdict } from "../src/client/cards-resource.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { mountEstateFakes } from "./estate-harness.ts";
 import type { EstateFakesOptions } from "./estate-harness.ts";
@@ -155,11 +156,43 @@ describe("observeRunOutcome — THE PHANTOM CURE (refused status, file-era verdi
     }
   });
 
-  test("a foreign list verdict rides verbatim (the phantom map's word is law)", async () => {
+  test("a foreign list verdict is TRANSLATED into the tile's own vocabulary", async () => {
+    // The old law rode the word verbatim. The file era answers
+    // `success`/`unknown`/anything new, and a status no dot knows
+    // leaves the tile looking idle FOREVER (the wire audit's H1):
+    // the stamp now maps every verdict this client cannot render
+    // onto a terminal one it can — the run finished, and the tile
+    // must say so.
     const fakes = phantom([{ run_id: "r_1", status: "failed" }]);
     try {
-      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("failed");
-      expect(patchesOf(fakes)[1]).toMatchObject({ patch: { runStatus: "failed", result: { run_id: "r_1" } } });
+      // 'failed' is not a tile status either: it becomes 'stopped'
+      // (terminal, and renderable) rather than stamped raw.
+      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("stopped");
+      expect(patchesOf(fakes)[1]).toMatchObject({ patch: { runStatus: "stopped", result: { run_id: "r_1" } } });
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("THE FILE-ERA WORDS ARE TERMINAL, NOT IDLE (the verdict map itself)", () => {
+    // the law, pinned where it lives: a word this client can render
+    // rides; a word it cannot becomes TERMINAL, never "still
+    // running" (which is what left a finished run's tile idle
+    // forever with a dot no one could draw).
+    for (const [verdict, expected] of [
+      ["live", "running"], ["running", "running"], ["queued", "running"],
+      ["completed", "done"], ["success", "done"], ["succeeded", "done"], ["done", "done"],
+      ["gone", "stopped"], ["stopped", "stopped"], ["failed", "stopped"],
+      ["error", "stopped"], ["unknown", "stopped"], ["whatever-2030", "stopped"],
+    ] as const) {
+      expect(tileStatusFromVerdict(verdict), verdict).toBe(expected);
+    }
+  });
+
+  test("an unknown verdict ENDS the observer (never an endless poll)", async () => {
+    const fakes = phantom([{ run_id: "r_1", status: "whatever-2030" }]);
+    try {
+      expect(await observeRunOutcome("d_1", "s_0", "r_1")).toBe("stopped");
     } finally {
       fakes.unmount();
     }
@@ -442,7 +475,7 @@ describe("reconcileBenchRuns — the attribution half", () => {
     }
   });
 
-  test("a listed foreign verdict rides verbatim (never paraphrased)", async () => {
+  test("a listed foreign verdict is TRANSLATED (a word no dot knows is an idle tile forever)", async () => {
     const fakes = stubEstate({
       refusals: [{ method: "runs/status", message: "no such run" }],
       listRows: [{ run_id: "r_1", status: "failed" }],
@@ -451,7 +484,7 @@ describe("reconcileBenchRuns — the attribution half", () => {
       await reconcileBenchRuns(bench([
         { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
       ]));
-      expect(patchesOf(fakes)[0]).toMatchObject({ patch: { runStatus: "failed" } });
+      expect(patchesOf(fakes)[0]).toMatchObject({ patch: { runStatus: "stopped" } });
     } finally {
       fakes.unmount();
     }

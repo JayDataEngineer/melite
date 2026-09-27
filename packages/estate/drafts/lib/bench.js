@@ -13,7 +13,7 @@
 //   is never rewritten (patch/undo arms land in later strokes).
 //   AUTHORSHIP — every entry carries author ("agent"|"user").
 import { unwrapItemArrays } from '@melite/comfyui-card-kit';
-import { BIRTH_STRIP_KEYS, normalizeBenchStage, stripKeys } from '@melite/contracts/benchStage';
+import { BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, normalizeBenchStage, stripKeys } from '@melite/contracts/benchStage';
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 /** Session key gate: same charset family as draft ids, capped so
  * "bench-" + session always clears the 96-char draft ceiling. */
@@ -78,7 +78,16 @@ function normalizeStages(stagesIn, author) {
         // the load arm's rows cross the same remote encoding — the
         // store-seat unwrap applies here too (wireParams law)
         row["params"] = wireParams(row["params"]);
-        row["provenance"] = author;
+        // THE RESTORE COORDINATE SURVIVES (2026-10-10, the document-plane
+        // audit's CRITICAL-1): provenance 'restored' is how the model
+        // REPAIR law knows a row came off an archive. Unconditionally
+        // stamping the author here erased it on every load, so a
+        // design-era row (params.model naming the card, an unboarded
+        // family) refused at its next admission with no repair — the
+        // one job the coordinate exists for. The author's own rows are
+        // stamped as before; a restored row keeps its mark.
+        if (row["provenance"] !== "restored")
+            row["provenance"] = author;
         return row;
     });
 }
@@ -237,7 +246,13 @@ export async function ensureBench(drafts, body, admit) {
     // resultParams ride from the outgoing row onto the incoming row
     // of the same id. A genuinely new stage id starts clean. The
     // bench is composed state; the gallery is the stage's own.
-    const MEMORY_KEYS = ["result", "runStatus", "history", "resultParams"];
+    // THE LOAD ARM'S CARRY LIST (the contract's, benchStage.ts): a
+    // wholesale load onto the SAME stage ids carries the memory the
+    // bench itself earned — the stage's own result/status/history/
+    // resultParams. Named in the contract beside the birth strip (the
+    // two are complements: birth STRIPS, load CARRIES) so the two arms
+    // can never be edited apart.
+    const MEMORY_KEYS = LOAD_CARRY_KEYS;
     for (const row of staged) {
         const prev = before.find((b) => b["id"] === row["id"]);
         if (prev === undefined)

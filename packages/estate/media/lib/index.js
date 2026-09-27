@@ -551,7 +551,13 @@ export async function listMediaAcross(roots, kind) {
                 return;
             const name = rel === "" ? f.name : `${rel}/${f.name}`;
             items.push({
-                url: `${MEDIA_PREFIX}/${runId}/${name}`,
+                // THE SAME ENCODING AS mediaUrl (the boundary audit's C2):
+                // the list minted a RAW path while every other producer
+                // percent-encoded per segment — so an artifact with a space,
+                // a parenthesis or a non-ASCII name listed as a URL the
+                // browser cannot fetch, and dedupe/compare against a
+                // mediaUrl-built twin failed. One encoder, one shape.
+                url: mediaUrl(runId, name),
                 name,
                 kind: kindForExt(f.name.slice(f.name.lastIndexOf(".") + 1).toLowerCase()),
                 runId,

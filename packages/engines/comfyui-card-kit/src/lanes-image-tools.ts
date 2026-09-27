@@ -240,7 +240,12 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   // ── the RT-DETR proposal lane (primary body + box manifest) ──
   let rtdetrBoxes: OutputHandle | null = null
   if (exportBoxes || viaRtdetr) {
-    const cap = (p.max_instances as number) || 100
+    // THE CARD'S OWN LAW (the census's M10): max_instances 0 means
+    // NO CAP ("0 = no cap" on the card's schema) and `|| 100` both
+    // capped it and coerced every falsy value — so a default-omitted
+    // request silently dropped detections past 100.
+    const stated = p.max_instances as number | undefined
+    const cap = stated === undefined || stated === 0 ? 0 : stated
     rtdetrBoxes = g.node('RTDETR_detect', {
       model: rtdetrLoader(),
       image: img(),

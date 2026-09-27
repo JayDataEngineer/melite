@@ -10,6 +10,9 @@ import {
   LEGACY_KNOB_KEY,
   type KnobKey,
 } from "../../timelineContract.ts"
+// THE SEGMENT DEFAULTS are the contracts' (one owner for the film
+// clock's default — the census's M12 fix reads them from here)
+import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 
 export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY } from "../../timelineContract.ts"
 export type { KnobKey } from "../../timelineContract.ts"
@@ -180,7 +183,11 @@ export function stemToClip(
     name,
     src: stemSrc,
     start_frame: 0,
-    dur_frames: Math.round(4 * (fps || 24)),
+    // THE FILM CLOCK, NOT 24 (the census's M12): `|| 24` stretched a
+    // 16fps film's dialogue and sfx slices by 1.5x and drifted
+    // lip-sync. A NON-POSITIVE fps is not a clock either — the
+    // declared segment fps is the default, for every unusable value.
+    dur_frames: Math.round(4 * (typeof fps === "number" && fps > 0 ? fps : DEFAULT_SEGMENT_PARAMS.fps)),
     gain: 1,
   }
 }

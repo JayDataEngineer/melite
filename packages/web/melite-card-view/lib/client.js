@@ -7029,8 +7029,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#region ../melite-run-wire/src/index.ts
 		/** The terminal statuses — the runs seat's own vocabulary (the settle
 		*  path stamps 'completed' or 'failed'; runs/stop stamps 'stopped'). */
+		const TERMINAL_RUN_STATUSES = [
+			"completed",
+			"failed",
+			"stopped",
+			"error"
+		];
 		function isTerminalRun(status) {
-			return status === "completed" || status === "failed" || status === "stopped";
+			return TERMINAL_RUN_STATUSES.includes(status);
 		}
 		/** The ONE media-url rewrite (readRunStatus + the file-era list
 		*  fallback share it): bare run-relative names ride the estate's
@@ -7804,13 +7810,42 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			};
 		}
 		/** Defensive row readers — the door's wire is untyped at this seam. */
+		/** THE CARD BIRTH LAW, ONE PLACE (2026-10-10, the wire audit's
+		*  CRITICAL-1): a chat-born bench's stage arrives with NO `card` —
+		*  its identity survives on the DRAFT INTENT alone. The law was
+		*  written out three times (readBench, the chat consult, and NOT at
+		*  all in freshStageRow), so a tile could RENDER a card and then
+		*  refuse to run: the drill read the re-attached row, the run read
+		*  the raw one. One function, every reader: a single-stage
+		*  card-born bench takes its identity from the intent; a
+		*  user-authored multi-stage bench carries `card` per row and never
+		*  takes this arm. */
+		function deriveCardForRow(stages, intent) {
+			if (intent === "" || stages.length !== 1) return stages;
+			const only = stages[0];
+			if (only["card"] !== void 0 && only["card"] !== "") return stages;
+			return [{
+				...only,
+				card: intent
+			}];
+		}
+		/** THE PROBE VERDICT, TRANSLATED (2026-10-10, the wire audit's
+		*  H1): a file-era sidecar can answer `success` or `unknown` (the
+		*  runs list admits both, and probeRunGone returns them verbatim).
+		*  The tile's vocabulary has neither — so the stage was stamped with
+		*  a status no dot knows, the observer stopped, and the tile looked
+		*  idle FOREVER though its run had finished. The map is here, once:
+		*  a verdict this client cannot render becomes a terminal one it
+		*  can, never an unknown word stamped onto a row. */
+		function tileStatusFromVerdict(verdict) {
+			if (verdict === "live" || verdict === "running" || verdict === "queued") return "running";
+			if (verdict === "completed" || verdict === "success" || verdict === "succeeded" || verdict === "done") return "done";
+			return "stopped";
+		}
 		function readBench(doc, sessionKey) {
 			let stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
 			const intent = typeof doc["intent"] === "string" ? doc["intent"] : "";
-			if (intent !== "" && stages.length === 1 && (stages[0]["card"] === void 0 || stages[0]["card"] === "")) stages = [{
-				...stages[0],
-				card: intent
-			}];
+			stages = deriveCardForRow(stages, intent);
 			const log = Array.isArray(doc["log"]) ? doc["log"].filter((s) => typeof s === "object" && s !== null && typeof s["rev"] === "number") : [];
 			return {
 				kind: "bench",
@@ -8020,8 +8055,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					row = await fetchRunStatus(runId, signal);
 				} catch (e) {
 					if (isEstateRefusal(e)) {
-						const verdict = await probeRunGone(runId, signal);
-						const terminal = verdict === "gone" ? "stopped" : verdict === "completed" ? "done" : verdict === "live" || verdict === "running" ? "running" : verdict;
+						const terminal = tileStatusFromVerdict(await probeRunGone(runId, signal));
 						try {
 							await patchStageOutcome(draftId, stageId, {
 								runStatus: terminal,
@@ -8104,7 +8138,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					observeRunOutcome(bench.draftId, stage.id, runId, hooks.signal, hooks.onTouched);
 					continue;
 				}
-				const terminal = verdict === "gone" ? "stopped" : verdict === "completed" ? "done" : verdict;
+				const terminal = tileStatusFromVerdict(verdict);
 				try {
 					await patchStageOutcome(bench.draftId, stage.id, {
 						runStatus: terminal,
@@ -8189,7 +8223,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		async function freshStageRow(draftId, stageId, signal) {
 			try {
 				const doc = await unwrapRemote(estateRemote().drafts.get(draftId, signal), "drafts/get");
-				return (Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : []).find((s) => s.id === stageId) ?? null;
+				return deriveCardForRow(Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [], typeof doc["intent"] === "string" ? doc["intent"] : "").find((s) => s.id === stageId) ?? null;
 			} catch {
 				return null;
 			}
@@ -53021,7 +53055,7 @@ void main() {
 			if (typeof out["id"] !== "string") out["id"] = "s_" + String(index);
 			out["engine"] = stageEngineOf(out);
 			const ins = out["inputs"];
-			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? { ...ins } : {};
+			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
 			const params = out["params"];
 			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
 			const card = out["card"];
@@ -53048,7 +53082,7 @@ void main() {
 			}
 			return out;
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -53073,6 +53107,12 @@ void main() {
 				"resolved",
 				"history"
 			];
+			LOAD_CARRY_KEYS = [
+				"result",
+				"runStatus",
+				"history",
+				"resultParams"
+			];
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/index.ts
@@ -53085,6 +53125,7 @@ void main() {
 			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
 			FLF_MODES: () => FLF_MODES,
 			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
+			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
 			MEDIA_SET: () => MEDIA_SET,
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
 			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
@@ -56616,7 +56657,12 @@ void main() {
 			done: "done",
 			failed: "error",
 			stopped: "warning",
-			ready: null
+			ready: null,
+			success: "done",
+			succeeded: "done",
+			error: "error",
+			unknown: "warning",
+			stopping: "warning"
 		};
 		/** The chrome's running truth: the row's stamped status (the observer
 		*  patches it terminal the moment the run lands). */
@@ -60921,4 +60967,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="ff6defd959dbcb0d0a6a89edd5522e2aed21cd45";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="0715f96cd5ed09960a2c91f5b161b97e582807f9";

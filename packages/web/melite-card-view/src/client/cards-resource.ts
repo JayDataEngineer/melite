@@ -260,6 +260,43 @@ function failure(address: string, message: string): RemoteResult<never> {
 }
 
 /** Defensive row readers — the door's wire is untyped at this seam. */
+/** THE CARD BIRTH LAW, ONE PLACE (2026-10-10, the wire audit's
+ *  CRITICAL-1): a chat-born bench's stage arrives with NO `card` —
+ *  its identity survives on the DRAFT INTENT alone. The law was
+ *  written out three times (readBench, the chat consult, and NOT at
+ *  all in freshStageRow), so a tile could RENDER a card and then
+ *  refuse to run: the drill read the re-attached row, the run read
+ *  the raw one. One function, every reader: a single-stage
+ *  card-born bench takes its identity from the intent; a
+ *  user-authored multi-stage bench carries `card` per row and never
+ *  takes this arm. */
+export function deriveCardForRow(
+  stages: BenchStageRow[],
+  intent: string,
+): BenchStageRow[] {
+  if (intent === '' || stages.length !== 1) return stages
+  const only = stages[0]!
+  if (only['card'] !== undefined && only['card'] !== '') return stages
+  return [{ ...only, card: intent }]
+}
+
+/** THE PROBE VERDICT, TRANSLATED (2026-10-10, the wire audit's
+ *  H1): a file-era sidecar can answer `success` or `unknown` (the
+ *  runs list admits both, and probeRunGone returns them verbatim).
+ *  The tile's vocabulary has neither — so the stage was stamped with
+ *  a status no dot knows, the observer stopped, and the tile looked
+ *  idle FOREVER though its run had finished. The map is here, once:
+ *  a verdict this client cannot render becomes a terminal one it
+ *  can, never an unknown word stamped onto a row. */
+export function tileStatusFromVerdict(verdict: string): 'running' | 'done' | 'stopped' {
+  if (verdict === 'live' || verdict === 'running' || verdict === 'queued') return 'running'
+  // 'succeeded' rides too — the statusView fold already knew it
+  if (verdict === 'completed' || verdict === 'success' || verdict === 'succeeded' || verdict === 'done') return 'done'
+  // gone, stopped, failed, error, unknown, and anything a future
+  // file era invents: terminal, and never "still running"
+  return 'stopped'
+}
+
 export function readBench(doc: Record<string, unknown>, sessionKey: string): CardsBenchValue {
   let stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
@@ -278,10 +315,7 @@ export function readBench(doc: Record<string, unknown>, sessionKey: string): Car
   // chat-born bench card rendered the GENERIC FORM while the chat
   // path (which re-attaches in DraftView) mounted the studio.
   const intent = typeof doc['intent'] === 'string' ? (doc['intent'] as string) : ''
-  if (intent !== '' && stages.length === 1
-    && (stages[0]!['card'] === undefined || stages[0]!['card'] === '')) {
-    stages = [{ ...stages[0]!, card: intent }]
-  }
+  stages = deriveCardForRow(stages, intent)
   const log = Array.isArray(doc['log'])
     ? (doc['log'] as unknown[]).filter((s): s is BenchLogHead =>
         typeof s === 'object' && s !== null && typeof (s as BenchLogHead)['rev'] === 'number')
@@ -549,9 +583,7 @@ async function observeRunOutcomeRun(
         // hold a terminal answer; else the run is gone and the row's
         // honest terminal is 'stopped'.
         const verdict = await probeRunGone(runId, signal)
-        const terminal = verdict === 'gone' ? 'stopped'
-          : verdict === 'completed' ? 'done'
-          : verdict === 'live' || verdict === 'running' ? 'running' : verdict
+        const terminal = tileStatusFromVerdict(verdict)
         try {
           await patchStageOutcome(draftId, stageId, { runStatus: terminal, result: { run_id: runId } })
           onTouched?.()
@@ -656,7 +688,7 @@ export async function reconcileBenchRuns(
       void observeRunOutcome(bench.draftId, stage.id, runId, hooks.signal, hooks.onTouched)
       continue
     }
-    const terminal = verdict === 'gone' ? 'stopped' : verdict === 'completed' ? 'done' : verdict
+    const terminal = tileStatusFromVerdict(verdict)
     try {
       await patchStageOutcome(bench.draftId, stage.id, { runStatus: terminal, result: { run_id: runId } })
       hooks.onTouched?.()
@@ -777,7 +809,11 @@ export async function freshStageRow(
       ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
           typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
       : []
-    return stages.find((s) => s.id === stageId) ?? null
+    // THE SAME BIRTH LAW (the audit's C1): this row is what the Run
+    // press reads — it must carry the identity the tile rendered,
+    // or the stage refuses to run with "names no card".
+    const intent = typeof doc['intent'] === 'string' ? (doc['intent'] as string) : ''
+    return deriveCardForRow(stages, intent).find((s) => s.id === stageId) ?? null
   } catch {
     return null
   }

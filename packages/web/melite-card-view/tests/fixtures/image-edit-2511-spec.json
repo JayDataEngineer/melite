@@ -362,9 +362,9 @@
   "loader_info": null,
   "mod_schemas": {
     "lanpaint": {
-      "uid": 3249,
+      "uid": 3288,
       "refs": {
-        "3168": {
+        "3207": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -380,7 +380,7 @@
             "description": "Image 1"
           }
         },
-        "3172": {
+        "3211": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -393,7 +393,7 @@
             }
           }
         },
-        "3179": {
+        "3218": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -410,7 +410,7 @@
             }
           }
         },
-        "3186": {
+        "3225": {
           "type": "number",
           "meta": {
             "min": 0.1,
@@ -427,7 +427,7 @@
             }
           }
         },
-        "3193": {
+        "3232": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -444,7 +444,7 @@
             }
           }
         },
-        "3200": {
+        "3239": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -461,7 +461,7 @@
             }
           }
         },
-        "3207": {
+        "3246": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -478,17 +478,17 @@
             }
           }
         },
-        "3208": {
+        "3247": {
           "type": "const",
           "meta": {},
           "value": "negative"
         },
-        "3209": {
+        "3248": {
           "type": "const",
           "meta": {},
           "value": "positive"
         },
-        "3213": {
+        "3252": {
           "type": "union",
           "meta": {
             "default": "negative",
@@ -506,11 +506,11 @@
             }
           },
           "list": [
-            3208,
-            3209
+            3247,
+            3248
           ]
         },
-        "3220": {
+        "3259": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -527,7 +527,7 @@
             }
           }
         },
-        "3227": {
+        "3266": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -544,7 +544,7 @@
             }
           }
         },
-        "3234": {
+        "3273": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -561,7 +561,7 @@
             }
           }
         },
-        "3241": {
+        "3280": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -578,7 +578,7 @@
             }
           }
         },
-        "3248": {
+        "3287": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -595,41 +595,41 @@
             }
           }
         },
-        "3249": {
+        "3288": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "image1": 3168,
-            "lanpaint_enabled": 3172,
-            "lanpaint_num_steps": 3179,
-            "lanpaint_step_size": 3186,
-            "lanpaint_lambda": 3193,
-            "lanpaint_beta": 3200,
-            "lanpaint_friction": 3207,
-            "lanpaint_prompt_mode": 3213,
-            "outpaint_top": 3220,
-            "outpaint_right": 3227,
-            "outpaint_bottom": 3234,
-            "outpaint_left": 3241,
-            "outpaint_overlap": 3248
+            "image1": 3207,
+            "lanpaint_enabled": 3211,
+            "lanpaint_num_steps": 3218,
+            "lanpaint_step_size": 3225,
+            "lanpaint_lambda": 3232,
+            "lanpaint_beta": 3239,
+            "lanpaint_friction": 3246,
+            "lanpaint_prompt_mode": 3252,
+            "outpaint_top": 3259,
+            "outpaint_right": 3266,
+            "outpaint_bottom": 3273,
+            "outpaint_left": 3280,
+            "outpaint_overlap": 3287
           }
         }
       }
     },
     "loras": {
-      "uid": 3098,
+      "uid": 3137,
       "refs": {
-        "3086": {
+        "3125": {
           "type": "string",
           "meta": {}
         },
-        "3087": {
+        "3126": {
           "type": "number",
           "meta": {}
         },
-        "3093": {
+        "3132": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -645,18 +645,18 @@
             }
           }
         },
-        "3094": {
+        "3133": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 3086,
-            "strength": 3087,
-            "steps": 3093
+            "name": 3125,
+            "strength": 3126,
+            "steps": 3132
           }
         },
-        "3097": {
+        "3136": {
           "type": "array",
           "meta": {
             "default": [],
@@ -669,23 +669,23 @@
               "order": 0
             }
           },
-          "inner": 3094
+          "inner": 3133
         },
-        "3098": {
+        "3137": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 3097
+            "loras": 3136
           }
         }
       }
     },
     "mask": {
-      "uid": 3318,
+      "uid": 3357,
       "refs": {
-        "3252": {
+        "3291": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -698,7 +698,7 @@
             }
           }
         },
-        "3256": {
+        "3295": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -714,22 +714,22 @@
             "description": "Region Mask"
           }
         },
-        "3257": {
+        "3296": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3258": {
+        "3297": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3259": {
+        "3298": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3263": {
+        "3302": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -754,32 +754,32 @@
             }
           },
           "list": [
-            3257,
-            3258,
-            3259
+            3296,
+            3297,
+            3298
           ]
         },
-        "3264": {
+        "3303": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3265": {
+        "3304": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3266": {
+        "3305": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3267": {
+        "3306": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3271": {
+        "3310": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -800,13 +800,13 @@
             }
           },
           "list": [
-            3264,
-            3265,
-            3266,
-            3267
+            3303,
+            3304,
+            3305,
+            3306
           ]
         },
-        "3278": {
+        "3317": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -824,7 +824,7 @@
             }
           }
         },
-        "3285": {
+        "3324": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -842,7 +842,7 @@
             }
           }
         },
-        "3292": {
+        "3331": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -860,7 +860,7 @@
             }
           }
         },
-        "3299": {
+        "3338": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -878,7 +878,7 @@
             }
           }
         },
-        "3303": {
+        "3342": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -893,7 +893,7 @@
             }
           }
         },
-        "3310": {
+        "3349": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -911,7 +911,7 @@
             }
           }
         },
-        "3317": {
+        "3356": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -929,23 +929,23 @@
             }
           }
         },
-        "3318": {
+        "3357": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3252,
-            "input_mask": 3256,
-            "mask_mode": 3263,
-            "mask_detector": 3271,
-            "mask_context_pad": 3278,
-            "mask_grow": 3285,
-            "mask_feather": 3292,
-            "mask_threshold": 3299,
-            "mask_invert": 3303,
-            "mask_detail_size": 3310,
-            "mask_denoise": 3317
+            "mask": 3291,
+            "input_mask": 3295,
+            "mask_mode": 3302,
+            "mask_detector": 3310,
+            "mask_context_pad": 3317,
+            "mask_grow": 3324,
+            "mask_feather": 3331,
+            "mask_threshold": 3338,
+            "mask_invert": 3342,
+            "mask_detail_size": 3349,
+            "mask_denoise": 3356
           }
         }
       }
@@ -956,7 +956,7 @@
     "default": "image"
   },
   "schema": {
-    "uid": 2659,
+    "uid": 2698,
     "refs": {
       "294": {
         "type": "const",
@@ -1228,11 +1228,11 @@
         "meta": {},
         "value": "simple"
       },
-      "2593": {
+      "2632": {
         "type": "string",
         "meta": {}
       },
-      "2597": {
+      "2636": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1248,9 +1248,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 2593
+        "inner": 2632
       },
-      "2601": {
+      "2640": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1260,7 +1260,7 @@
           "description": "Input Image"
         }
       },
-      "2605": {
+      "2644": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1270,7 +1270,7 @@
           "description": "Image 2"
         }
       },
-      "2609": {
+      "2648": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1280,11 +1280,11 @@
           "description": "Image 3"
         }
       },
-      "2610": {
+      "2649": {
         "type": "string",
         "meta": {}
       },
-      "2613": {
+      "2652": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1293,9 +1293,9 @@
             "hidden": true
           }
         },
-        "inner": 2610
+        "inner": 2649
       },
-      "2617": {
+      "2656": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1305,7 +1305,7 @@
           "description": "Region Mask"
         }
       },
-      "2620": {
+      "2659": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -1320,7 +1320,7 @@
           }
         }
       },
-      "2623": {
+      "2662": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -1333,7 +1333,7 @@
           }
         }
       },
-      "2626": {
+      "2665": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -1349,7 +1349,7 @@
           }
         }
       },
-      "2629": {
+      "2668": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -1365,7 +1365,7 @@
           }
         }
       },
-      "2634": {
+      "2673": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -1379,7 +1379,7 @@
           }
         }
       },
-      "2640": {
+      "2679": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -1396,7 +1396,7 @@
           }
         }
       },
-      "2646": {
+      "2685": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -1413,7 +1413,7 @@
           }
         }
       },
-      "2648": {
+      "2687": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -1474,7 +1474,7 @@
           338
         ]
       },
-      "2650": {
+      "2689": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -1499,7 +1499,7 @@
           348
         ]
       },
-      "2654": {
+      "2693": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -1514,7 +1514,7 @@
           }
         }
       },
-      "2658": {
+      "2697": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1529,29 +1529,29 @@
           }
         }
       },
-      "2659": {
+      "2698": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 2597,
-          "image1": 2601,
-          "image2": 2605,
-          "image3": 2609,
-          "reference_images": 2613,
-          "input_mask": 2617,
-          "prompt": 2620,
-          "negative_prompt": 2623,
-          "width": 2626,
-          "height": 2629,
-          "seed": 2634,
-          "steps": 2640,
-          "cfg": 2646,
-          "sampler": 2648,
-          "scheduler": 2650,
-          "use_stock_nodes": 2654,
-          "double_reference": 2658
+          "input_images": 2636,
+          "image1": 2640,
+          "image2": 2644,
+          "image3": 2648,
+          "reference_images": 2652,
+          "input_mask": 2656,
+          "prompt": 2659,
+          "negative_prompt": 2662,
+          "width": 2665,
+          "height": 2668,
+          "seed": 2673,
+          "steps": 2679,
+          "cfg": 2685,
+          "sampler": 2687,
+          "scheduler": 2689,
+          "use_stock_nodes": 2693,
+          "double_reference": 2697
         }
       }
     }
