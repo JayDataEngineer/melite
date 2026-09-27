@@ -7120,7 +7120,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 			return out;
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, WIRE_STAGE_KEYS;
+		/** Is this a run id? */
+		function runIdOk(id) {
+			return RUN_ID_RE.test(id);
+		}
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, WIRE_STAGE_KEYS, RUN_ID_RE;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -7165,6 +7169,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"skip_when",
 				"timeout_s"
 			];
+			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 		}));
 		//#endregion
 		//#region ../melite-run-wire/src/index.ts
@@ -53260,6 +53265,7 @@ void main() {
 			Provenance: () => Provenance,
 			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
 			ROLE_SET: () => ROLE_SET,
+			RUN_ID_RE: () => RUN_ID_RE,
 			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
 			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
@@ -53308,6 +53314,7 @@ void main() {
 			revokeAll: () => revokeAll,
 			revokeObjectUrlFor: () => revokeObjectUrlFor,
 			rootsManifest: () => rootsManifest,
+			runIdOk: () => runIdOk,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			searchedVoice: () => searchedVoice,
 			stageEngineOf: () => stageEngineOf,
@@ -61099,4 +61106,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="23564a25d9b0a07c472c859bd1579b4fda1b7a65";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="feeac1e8ac33b2b4e5884fea678897acebc861d3";

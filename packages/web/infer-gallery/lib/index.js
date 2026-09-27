@@ -1,4 +1,4 @@
-import { LEGACY_RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_ID_RE } from "@melite/contracts/benchStage";
 import { crossRootOrder } from "@melite/contracts/rootsManifest";
 import { contentTypeForArtifact, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
@@ -22,7 +22,7 @@ const DRAFTS_LIMIT = 200;
 *  LAW — build/ was the C era's cwd and is gone). */
 const DEFAULT_FLOW_DIR = "/home/user/Documents/programs/active/inference.cpp/data/runs/output";
 /** A run dir name: run-<hex>-<word> (the runs grammar). */
-const RUN_DIR = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+const RUN_DIR = RUN_ID_RE;
 /** One path segment inside a run dir (traversal refuses at the
 *  grammar; realpath containment re-checks at the read). */
 const RUN_SEGMENT = /^[A-Za-z0-9._-]+$/;

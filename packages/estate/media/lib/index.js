@@ -36,7 +36,7 @@ import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typer
 import { contentTypeForArtifact, mediaVocab, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 import { stampOf } from "@melite/contracts/buildStamp";
-import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, runMediaPrefixOf, canonicalRunMediaUrl, } from "@melite/contracts/benchStage";
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, runMediaPrefixOf, canonicalRunMediaUrl, RUN_ID_RE, } from "@melite/contracts/benchStage";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { dirname as dirnamePath, join as joinPath } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -139,7 +139,7 @@ export function repoRootOf(start) {
     return null;
 }
 /** The run-dir basename grammar (run-<hex>-<hex>, the mint law). */
-const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+const RUN_ID = RUN_ID_RE;
 /** One confined relative segment AFTER percent-decoding: the engines
  *  mint raw names (`out 1.png`, unicode, parens) and mediaUrl
  *  percent-encodes them — the grammar must accept what both halves

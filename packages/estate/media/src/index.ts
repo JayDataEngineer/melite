@@ -32,7 +32,8 @@ import {
   RUN_MEDIA_PREFIX,
   runMediaPrefixOf,
   canonicalRunMediaUrl,
-, RUN_ID_RE} from "@melite/contracts/benchStage";
+  RUN_ID_RE,
+} from "@melite/contracts/benchStage";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { dirname as dirnamePath, join as joinPath } from "node:path";
 import { fileURLToPath } from "node:url";
