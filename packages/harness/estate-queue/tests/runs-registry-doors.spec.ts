@@ -386,6 +386,40 @@ describe("validate", () => {
     assert.equal(s.core.runs.size, 0);
   });
 
+  // THE SELF-WIRE DISCRIMINATION (2026-10-10, the operator's live
+  // report: a persisted bench carried input_images <- s_0.default —
+  // the STAGE'S OWN output feeding its own input, a cycle born
+  // before the bench door's bench/self-wire law landed. The generic
+  // "no FromStage links" voice hid the crime and read as nonsense.
+  // The door names the cycle.)
+  it("THE SELF-WIRE ARM: a stage wired to ITSELF refuses as bench/self-wire — the crime named, not the generic voice", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: {} } },
+      {
+        stages: [
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_1", output: "default" } },
+          },
+        ],
+      },
+    );
+    const err = await remote(() =>
+      s.svc.start(
+        { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+        sig(),
+      ),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /SELF-WIRE/);
+    assert.match(err.message, /cycle composes nothing/);
+    // the cure is IN the message
+    assert.match(err.message, /rewire the input/);
+    assert.equal(s.core.runs.size, 0);
+  });
+
   it("CLEAN SINGLE-CARD: no spells, no wires — the walls never false-alarm, the run registers", async () => {
     const s = modelDoorSeat({
       SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } },

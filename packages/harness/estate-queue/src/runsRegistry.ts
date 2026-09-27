@@ -525,6 +525,46 @@ export class RunsRuntimeService extends Service {
         }
       }
       if (wiredRows.length > 0) {
+        // THE SELF-WIRE DISCRIMINATION (2026-10-10, the operator's
+        // report: a bench carried input_images <- s_0.default — a
+        // stage wired to ITSELF, a persisted crime from before the
+        // bench door's bench/self-wire law landed). The generic
+        // "no FromStage links" message hid the specific crime and
+        // read as tool nonsense. Name it: a wire whose stage IS the
+        // run's own stage is a CYCLE (bench/self-wire, the same law
+        // the write doors hold); a wire naming ANOTHER stage is the
+        // run-the-flow arm.
+        const selfWired: string[] = [];
+        const crossWired: string[] = [];
+        if (benchDoc !== undefined && Array.isArray(benchDoc["stages"])) {
+          for (const st of benchDoc["stages"] as unknown[]) {
+            if (typeof st !== "object" || st === null) continue;
+            const stId = (st as Record<string, unknown>)["id"];
+            const ins = (st as Record<string, unknown>)["inputs"];
+            if (typeof ins !== "object" || ins === null || Array.isArray(ins)) continue;
+            for (const ref of Object.values(ins as Record<string, unknown>)) {
+              const rr = ref as Record<string, unknown>;
+              if (typeof rr === "object" && rr !== null && rr["stage"] === stId) {
+                selfWired.push(String(stId));
+              } else if (typeof rr === "object" && rr !== null && typeof rr["stage"] === "string") {
+                crossWired.push(String(rr["stage"]));
+              }
+            }
+          }
+        }
+        if (selfWired.length > 0) {
+          throw toRemoteError(
+            refusal(
+              400,
+              "the bench carries a SELF-WIRE (bench/self-wire): stage " +
+              JSON.stringify([...new Set(selfWired)]) +
+              " wires its own output into its own input — a cycle composes nothing. " +
+              "This wire predates the bench door's self-wire law and persisted; clear it (rewire the input with no source, or wire a real prior stage) and run again.",
+              "invalid_request",
+            ),
+          );
+        }
+        void crossWired;
         throw toRemoteError(
           refusal(
             400,
