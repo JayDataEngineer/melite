@@ -171,3 +171,74 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
     expect(ship).toMatch(/is STALE .*re-run WITHOUT --no-build/);
   });
 });
+
+describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
+  const ship = read("scripts/ship-lane.sh");
+
+  it("the client-bundle list is DISCOVERED from the export map (a film UI edit shipped stale)", () => {
+    // Three packages export ./client → ./lib/client.js (motion,
+    // h3-timeline, img-to-mesh) and the browser fetches them like the
+    // web ones — but a hand list omitted all three, so a film UI edit
+    // "shipped green" while the operator ran yesterday's bytes. The
+    // list is now derived from the export map itself.
+    expect(ship).toContain('(data.get("exports") or {}).get("./client")');
+    for (const pkg of ["packages/motion/motion", "packages/video/h3-timeline", "packages/3d/img-to-mesh"]) {
+      const manifest = JSON.parse(read(`${pkg}/package.json`)) as {
+        exports?: Record<string, { default?: string } | string>;
+      };
+      const client = manifest.exports?.["./client"];
+      const target = typeof client === "string" ? client : client?.default;
+      expect(target, `${pkg} exports a built client bundle`).toBe("./lib/client.js");
+    }
+  });
+
+  it("a missing client package FAILS the ship (never skips)", () => {
+    expect(ship).not.toMatch(/for p in "\$\{CLIENT_BUNDLES\[@\]\}"; do\s*\n\s*if \[ ! -d "\$REPO\/\$p" \]; then continue; fi/);
+  });
+
+  it("every probe is FATAL — a gate that cannot fail is a log line", () => {
+    // the model board and both declaration checks printed FAIL and
+    // the script still printed SHIPPED: a fail-open model board, a
+    // gateless form and a blind agent face all shipped green.
+    const probeBlock = ship.slice(ship.indexOf('say "PROVE the lane runs this tree'));
+    const fails = probeBlock.match(/^\s*bad "/gm) ?? [];
+    const fatal = probeBlock.match(/^\s*bad "[\s\S]*?\n\s*exit 1/gm) ?? [];
+    expect(fails.length).toBeGreaterThan(0);
+    // every `bad` in the prove/declare section is followed by exit 1
+    // (the cleanup warning is the one allowed exception — it says the
+    // operator must act by hand, and the ship already proved itself)
+    const nonFatal = probeBlock
+      .split(/\n\s*bad "/)
+      .slice(1)
+      .filter((chunk) => {
+        const first = chunk.split("\n")[0] ?? "";
+        if (first.includes("could not remove the probe stage")) return false;
+        return !/exit 1/.test(chunk.slice(0, 400));
+      });
+    expect(nonFatal, `non-fatal gates: ${nonFatal.map((c) => c.split("\n")[0]).join(" | ")}`).toEqual([]);
+  });
+
+  it("the load bundle's lane contract is PROVEN on the live lane", () => {
+    expect(ship).toContain("/v1/load?name=tts&inference_type=card");
+  });
+
+  it("--unit and --origin are bound (a ship that restarts one lane and proves another certifies nothing)", () => {
+    expect(ship).toContain("A ship that restarts one lane and proves another certifies nothing");
+    expect(ship).toMatch(/UNIT_OVERRIDE/);
+    expect(ship).toMatch(/ORIGIN_OVERRIDE/);
+  });
+
+  it("the net re-runs AFTER the emit (the pre-build net judged stale .d.ts files)", () => {
+    const postEmit = ship.indexOf("TYPECHECK AGAINST THE EMITTED LIBS");
+    expect(postEmit).toBeGreaterThan(-1);
+    // it must live inside the build block, after the builds
+    const buildLoop = ship.indexOf("BUILD the compiled-lib packages");
+    expect(postEmit).toBeGreaterThan(buildLoop);
+  });
+
+  it("a missing lib/ FAILS the stamp verification (the skip let an absent build walk past)", () => {
+    const verify = ship.slice(ship.indexOf("verify_stamps() {"), ship.indexOf("if [ \"$DO_BUILD\" -eq 1 ]; then"));
+    expect(verify).toContain("no lib/ to verify");
+    expect(verify).not.toMatch(/\[ -d "\$REPO\/\$p\/lib" \] \|\| continue/);
+  });
+});

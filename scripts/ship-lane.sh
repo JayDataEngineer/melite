@@ -41,12 +41,28 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --no-build) DO_BUILD=0; shift ;;
     --check)    CHECK_ONLY=1; DO_BUILD=0; shift ;;
-    --unit)     UNIT="$2"; shift 2 ;;
-    --origin)   ORIGIN="$2"; shift 2 ;;
+    --unit)     UNIT="$2"; UNIT_OVERRIDE=1; shift 2 ;;
+    --origin)   ORIGIN="$2"; ORIGIN_OVERRIDE=1; shift 2 ;;
     -h|--help)  sed -n '2,25p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "unknown flag: $1" >&2; exit 2 ;;
   esac
 done
+
+# THE UNIT AND THE ORIGIN ARE ONE LANE (the ship audit's hole 3,
+# 2026-10-10): --unit restarts whatever it names and --origin probes
+# whatever it names, with nothing binding them — so a green ship
+# could restart unit A, prove origin B, and certify the wrong lane.
+# When EITHER is overridden, the script refuses the combination
+# unless BOTH name the sanctioned lane. (A second lane gets its own
+# playbook entry, not a flag soup.)
+if [ "${UNIT_OVERRIDE:-0}" = "1" ] || [ "${ORIGIN_OVERRIDE:-0}" = "1" ]; then
+  if [ "$UNIT" != "dsh-melite-test.service" ] || [ "$ORIGIN" != "https://cloud.tailb1e597.ts.net:3088" ]; then
+    bad "--unit/--origin must name the sanctioned lane together (unit $UNIT, origin $ORIGIN)"
+    echo "        A ship that restarts one lane and proves another certifies nothing."
+    echo "        Edit the defaults at the top of this script to move the lane."
+    exit 2
+  fi
+fi
 
 # The five packages whose runtime entry is ./lib (docs/deployment/build.md).
 COMPILED=(
@@ -58,19 +74,62 @@ COMPILED=(
 )
 
 # THE CLIENT BUNDLES (operator, 2026-10-10: the STALE TAB
-# regression). The browser runs `lib/client.js` from these three
-# packages, served under a year-immutable URL — so a source edit in a
-# web package reaches the operator ONLY when its bundle is rebuilt.
+# regression). The browser runs `lib/client.js` from these packages,
+# served under a year-immutable URL — so a source edit in a web
+# package reaches the operator ONLY when its bundle is rebuilt.
 # The first cut of this playbook built the five server packages and
 # restarted, and the operator's tab still ran yesterday's deck: a
 # restart is not a deployment, and neither is a server-only build.
 # (No stale-tab banner may announce it any more — the bench is live;
 # these bundles are what make "live" mean current.)
+# THE LIST IS DISCOVERED, NEVER ENUMERATED (the ship audit's hole 1,
+# 2026-10-10): motion, h3-timeline and img-to-mesh each export
+# "./client" → "./lib/client.js" and the browser fetches them exactly
+# like the three web packages — but they were missing here, so a film
+# UI edit shipped "green" while the operator ran yesterday's bytes.
+# A hand list is exactly the list that rots: every package that
+# declares a ./client export is built and stamped, and a package
+# whose bundle DISAPPEARS fails the ship rather than skipping.
 CLIENT_BUNDLES=(
   packages/web/melite-card-view
   packages/web/melite-card-deck
   packages/web/infer-gallery
 )
+while IFS= read -r cand; do
+  case " ${CLIENT_BUNDLES[*]} " in
+    *" $cand "*) ;;
+    *) CLIENT_BUNDLES+=("$cand") ;;
+  esac
+done < <(python3 - "$REPO" <<'PYEOF'
+# THE DISCOVERY IS THE EXPORT MAP, NOT A NAME LIST: a package whose
+# ./client export resolves to ./lib/client.js is a BUILT bundle the
+# browser fetches — it must be built and stamped. A ./client export
+# pointing at src (viewer) is hot-loaded and needs no build. Reading
+# the export map is what keeps the list honest when a package is
+# added, renamed, or retired.
+import json, os, sys
+root = sys.argv[1]
+for genre in sorted(os.listdir(os.path.join(root, "packages"))):
+    gdir = os.path.join(root, "packages", genre)
+    if not os.path.isdir(gdir):
+        continue
+    for pkg in sorted(os.listdir(gdir)):
+        pdir = os.path.join(gdir, pkg)
+        manifest = os.path.join(pdir, "package.json")
+        if not os.path.isfile(manifest):
+            continue
+        try:
+            with open(manifest) as fh:
+                data = json.load(fh)
+        except Exception:
+            continue
+        client = (data.get("exports") or {}).get("./client")
+        target = client.get("default") if isinstance(client, dict) else client
+        if isinstance(target, str) and target.replace("./", "") == "lib/client.js":
+            print(os.path.relpath(pdir, root))
+PYEOF
+)
+say "the client bundles (discovered from the ./client exports): ${CLIENT_BUNDLES[*]}"
 
 say()  { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 ok()   { printf '   \033[32mok\033[0m   %s\n' "$*"; }
@@ -157,7 +216,16 @@ write_stamp() { # $1 = package dir
 verify_stamps() {
   local failed=0 p want have
   for p in "${COMPILED[@]}" "${CLIENT_BUNDLES[@]}"; do
-    [ -d "$REPO/$p/lib" ] || continue
+    # A MISSING lib IS A FAILURE, NOT A SKIP (the ship audit's hole
+    # E: `[ -d lib ] || continue` let a never-built or git-cleaned
+    # package walk past the very gate that proves the lane runs this
+    # tree). A package with no lib has no receipt to verify, and the
+    # lane would resolve an absent build.
+    if [ ! -d "$REPO/$p/lib" ]; then
+      bad "$p — no lib/ to verify; the lane would resolve an absent build — build it (re-run WITHOUT --no-build)"
+      failed=1
+      continue
+    fi
     want="$(stamp_src "$p")"
     have="$(cat "$REPO/$p/lib/.src-stamp" 2>/dev/null || echo none)"
     if [ "$want" != "$have" ]; then
@@ -187,15 +255,27 @@ if [ "$DO_BUILD" -eq 1 ]; then
     bad "the built door has NO lane seat — the source and the build disagree"
     exit 1
   fi
-  # the browser's half
+  # the browser's half — a MISSING package is a FAILURE, not a
+  # skip (the ship audit's hole 1: `[ ! -d ] && continue` let a
+  # renamed web package ship green with the browser 404ing)
   for p in "${CLIENT_BUNDLES[@]}"; do
-    if [ ! -d "$REPO/$p" ]; then continue; fi
+    if [ ! -d "$REPO/$p" ]; then
+      bad "$p — the declared client bundle does not exist; the browser would 404"
+      exit 1
+    fi
     if (cd "$REPO/$p" && node node_modules/tsdown/dist/run.mjs -c tsdown.config.ts >/tmp/ship-client.log 2>&1); then
       write_stamp "$p"
       ok "$p client bundle"
     else
       bad "$p client bundle — build failed:"
       head -12 /tmp/ship-client.log | sed 's/^/        /'
+      exit 1
+    fi
+    # THE BUNDLE MUST EXIST AFTER THE BUILD (the audit's hole B:
+    # a build that emits nothing still "succeeds" — the browser
+    # would then fetch a stale or missing file under a new stamp)
+    if [ ! -f "$REPO/$p/lib/client.js" ]; then
+      bad "$p — the build emitted no lib/client.js; the browser has no bundle to fetch"
       exit 1
     fi
   done
@@ -206,6 +286,28 @@ if [ "$DO_BUILD" -eq 1 ]; then
     exit 1
   fi
   ok "no client bundle carries a removed face"
+  # THE POST-EMIT NET (the ship audit's stale-.d.ts hole, 2026-10-10):
+  # the typecheck above ran BEFORE the build, so every src-run
+  # package judged its imports against the compiled packages' OLD
+  # lib/*.d.ts — a renamed export in drafts went green, the build
+  # emitted the rename, and the lane crashed at boot on a missing
+  # import. The net re-runs AFTER the emit: now the .d.ts files are
+  # this tree's, and a stale-shaped consumer is red.
+  say "TYPECHECK AGAINST THE EMITTED LIBS (the pre-build net judged stale .d.ts files)"
+  POSTFAIL=0
+  while IFS= read -r tsdir; do
+    case "$tsdir" in */packages/*) ;; *) continue ;; esac
+    if ! (cd "$tsdir" && node "$TSC" --noEmit -p tsconfig.json >/tmp/ship-posttc.log 2>&1); then
+      bad "$(printf '%s' "$tsdir" | sed "s|$REPO/||") — red against the JUST-BUILT libs:"
+      head -8 /tmp/ship-posttc.log | sed 's/^/        /'
+      POSTFAIL=1
+    fi
+  done < <(find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -printf '%h\n' | sort)
+  if [ "$POSTFAIL" -ne 0 ]; then
+    bad "the post-emit net is red — the build produced types the tree does not consume"
+    exit 1
+  fi
+  ok "post-emit net green (every package typechecks against this build)"
 fi
 # THE STAMP VERIFICATION RIDES EVERY SHIP (--no-build keeps every
 # gate — this one included): a green ship must prove the lane runs
@@ -256,12 +358,30 @@ post() { # post <path> <json>
 rev=$(python3 -c "import json;print(json.load(open('/tmp/ship-ensure.json')).get('rev',0))" 2>/dev/null || echo 0)
 
 # 1. the model board (the OLD law — proves the doors row answers at all)
+# FATAL (the ship audit's hole 2: this probe printed FAIL and the
+# script still printed SHIPPED — a fail-open model board shipped
+# green. A gate that cannot fail is a log line.)
 code=$(post "/v1/bench/main/add_stage" \
   "{\"card\":\"tts\",\"params\":{\"model\":\"definitely-not-a-model\",\"text\":\"x\"},\"expect_rev\":$rev}")
 if [ "$code" = "400" ] && grep -q "bench/bad-model" /tmp/ship-probe.json; then
   ok "the model board refuses an unknown model"
 else
   bad "the model board did not refuse (HTTP $code) — the doors row is wrong"
+  exit 1
+fi
+
+# 1b. THE DECLARED LANE LAW RIDES THE LANE (the DECL audit's gap 1
+# closing in production: a bench write that the image-edit families
+# now refuse must refuse HERE, through the same door the agent
+# crosses — a card whose new relation rows did not reach the lane
+# would otherwise ship green)
+code=$(post "/v1/bench/main/add_stage" \
+  "{\"card\":\"image-edit\",\"params\":{\"model\":\"qwen-img-edit-21\",\"image1\":\"x.png\"},\"expect_rev\":$rev}")
+if [ "$code" = "400" ] && grep -qE "prompt|input_images|image1" /tmp/ship-probe.json; then
+  ok "the declared edit lane refuses a prompt-less edit (the DECL rows are live)"
+else
+  bad "the edit lane's DECL rows did not fire (HTTP $code) — the lane is running an OLD build or the rows never reached it"
+  exit 1
 fi
 
 # 2. the lane law (the NEW law — this is the one a stale build loses)
@@ -296,22 +416,35 @@ else
 fi
 
 # 4. the served surfaces carry the declaration (the form + the agent)
+# FATAL for the same reason as probe 1: a gateless form or a blind
+# agent face printed FAIL and the script still said SHIPPED. The
+# agent's PRIMARY face (the melite_load bundle) is checked here too —
+# that is the face the DECL audit found carrying no lanes at all.
 say "CHECK the served declaration"
 if curl -sk -m 20 "$ORIGIN/v1/form-spec?model=qwen3-tts" \
    | python3 -c "import json,sys;sys.exit(0 if 'lanes' in json.load(sys.stdin) else 1)" 2>/dev/null; then
   ok "/v1/form-spec serves the lanes block (the form gates from the DECL)"
 else
   bad "the form-spec has no lanes block — the form cannot gate"
+  exit 1
 fi
 if curl -sk -m 20 "$ORIGIN/v1/card-tools" \
    | python3 -c "import json,sys;sys.exit(0 if any('lanes' in r for r in json.load(sys.stdin)) else 1)" 2>/dev/null; then
   ok "/v1/card-tools carries the agent's lane contract"
 else
   bad "the card-tools manifest has no lanes — the agent composes blind"
+  exit 1
+fi
+if curl -sk -m 30 "$ORIGIN/v1/load?name=tts&inference_type=card" \
+   | python3 -c "import json,sys;sys.exit(0 if 'lanes' in json.load(sys.stdin).get('bundle',{}).get('signature',{}) else 1)" 2>/dev/null; then
+  ok "/v1/load carries the lane contract (melite_load's primary face)"
+else
+  bad "the load bundle signature has no lanes — the agent's main contract face says nothing"
+  exit 1
 fi
 
 say "SHIPPED"
 echo "   lane:  $ORIGIN"
 echo "   unit:  $UNIT"
-echo "   proofs: model board refuses, lane law refuses, the cure lands, both"
-echo "           declaration surfaces serve."
+echo "   proofs: model board refuses, the declared edit lane refuses, the lane"
+echo "           law refuses, the cure lands, all three declaration surfaces serve."

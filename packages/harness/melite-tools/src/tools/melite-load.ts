@@ -242,6 +242,7 @@ export function meliteLoad(
           // dropped them, so an agent composing from this bundle was
           // never told a variant tightens the law).
           type LaneRel = {
+            requires?: Array<{ field?: unknown; needs?: unknown[] }>
             together?: Array<{ fields?: unknown[] }>
             conflicts?: Array<{ a?: unknown; b?: unknown }>
             either_or?: Array<{ groups?: unknown[][] }>
@@ -251,6 +252,10 @@ export function meliteLoad(
           type LaneBounds = Record<string, { min?: number; max?: number }>
           const lawWords = (rel: LaneRel | undefined, bounds: LaneBounds | undefined): string[] => {
             const words: string[] = []
+            for (const r of rel?.requires ?? []) {
+              const needs = Array.isArray(r?.needs) ? r.needs : []
+              words.push('requires(' + String(r?.field) + ' → ' + needs.join(', ') + ')')
+            }
             for (const t of rel?.together ?? []) {
               if (Array.isArray(t?.fields)) words.push('together(' + t.fields.join(' × ') + ')')
             }
@@ -280,7 +285,7 @@ export function meliteLoad(
             }
             return words
           }
-          const sigLanes = sig.lanes as Record<string, { base?: unknown; relations?: LaneRel; variants?: Record<string, { params?: unknown[]; relations?: LaneRel; bounds?: LaneBounds }>; bounds?: LaneBounds }> | undefined
+          const sigLanes = sig.lanes as Record<string, { base?: unknown; relations?: LaneRel; variants?: Record<string, { params?: unknown[]; relations?: LaneRel; bounds?: LaneBounds; sampler_envelope?: { steps?: number[]; cfg?: number[] } | null }>; bounds?: LaneBounds }> | undefined
           if (sigLanes !== null && sigLanes !== undefined && typeof sigLanes === 'object') {
             for (const [fam, lane] of Object.entries(sigLanes)) {
               const base = Array.isArray(lane?.base) ? lane.base.filter((f): f is string => typeof f === 'string') : []
@@ -288,6 +293,15 @@ export function meliteLoad(
                 .map(([v, row]) => {
                   const params = Array.isArray(row?.params) ? row.params.join(', ') : ''
                   const vlaws = lawWords(row?.relations, row?.bounds)
+                  // the variant's SAMPLER DOMAIN rides the line too
+                  // (the DECL audit's gap 2: krea-2's turbo lives in
+                  // [4,8] steps / [1,2] cfg and the bench refuses
+                  // anything else — an agent told nothing learns that
+                  // domain by refusal)
+                  const env = (row as { sampler_envelope?: { steps?: number[]; cfg?: number[] } | null }).sampler_envelope
+                  if (env !== undefined && env !== null) {
+                    vlaws.push('sampler(' + String(env.steps?.join('–') ?? '..') + ' steps, ' + String(env.cfg?.join('–') ?? '..') + ' cfg)')
+                  }
                   let line = v + (params !== '' ? ' +' + params : '')
                   if (vlaws.length > 0) line += ' [' + vlaws.join(', ') + ']'
                   return line

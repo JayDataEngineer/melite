@@ -175,6 +175,12 @@ export interface BenchStageRow {
  *  in the injected admission (remote.ts); the domain only carries
  *  the coordinate. */
 export type StageAdmission = (card: string, params: Record<string, unknown>, provenance: unknown) => void;
+/** The judged view of a row's params — the view the doc will HOLD
+ *  (2026-10-10, the write-seat audit's row 7): normalizeBenchStage
+ *  strips a self-naming model at store, so every admission seat
+ *  judges the STRIPPED copy or the door refuses what the run
+ *  composes. One spelling, used by every seat that admits a row. */
+export declare function strippedForAdmission(card: string, params: Record<string, unknown>): Record<string, unknown>;
 /** The wiring admission over ONE row (params = the MERGED view the
  *  next run composes; inputs = the MERGED wiring; liveIds = the
  *  bench's stage ids after the write; selfId = the row's own id —
@@ -207,10 +213,10 @@ export interface BenchReorderRow {
  *  the bench's stage list stays the projection-free truth — the grid
  *  renders the compound as a single tile and ungroup restores the
  *  members at the compound's index. The inverse carries both halves. */
-export declare function groupBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
+export declare function groupBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission | undefined): Promise<BenchStageRow>;
 /** ungroup — the compound's door: spill the children back at the
  *  compound's index, in their stored order. */
-export declare function ungroupBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
+export declare function ungroupBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission | undefined): Promise<BenchStageRow>;
 /** remove_stage — splice one stage out (the inverse carries row +
  *  index for undo). */
 export declare function removeStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;

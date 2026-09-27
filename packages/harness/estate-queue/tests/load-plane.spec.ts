@@ -12,7 +12,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resolveRepoRoot } from "@melite/comfyui-cordis";
+import { bootModels, loadCardDefs, resolveRepoRoot } from "@melite/comfyui-cordis";
 import {
   bundleDigest,
   cardSkillDocs,
@@ -36,6 +36,17 @@ const DEF = (over: Record<string, unknown> = {}): CardDefinition =>
     schema: { dict: {} },
     ...over,
   }) as unknown as CardDefinition;
+
+/** A REAL card definition, loaded through the models plane — the
+ *  lane contract is read from the live DECLs, so a fabricated
+ *  def would pin nothing. */
+const realCardDef = async (id: string): Promise<CardDefinition> => {
+  await bootModels();
+  const defs = await loadCardDefs();
+  const def = defs.get(id);
+  if (def === undefined) throw new Error("no card def for " + id);
+  return def as unknown as CardDefinition;
+};
 
 describe("resolveCardPackageDir", () => {
   it("resolves real ids through the genre tier", () => {
@@ -114,6 +125,36 @@ describe("toolRowFor", () => {
     const req = DEF({ schema: { dict: { p: { type: "string", meta: { extra: { required: true } } } } } });
     const out = toolRowFor("c", req, rows(req));
     assert.deepEqual((out["params_schema"] as { required: string[] }).required, ["p"]);
+  });
+
+  it("THE LANE CONTRACT RIDES THE BUNDLE (the agent's primary face states the laws — the DECL audit's gap 1)", async () => {
+    // 2026-10-10: the load bundle's signature served NO lanes key at
+    // all, so melite_load's lane line — the agent's main contract
+    // face — rendered nothing and the agent learned every lane law
+    // by hitting a bench refusal. The projection is now the shared
+    // contracts-floor construction (one implementation with
+    // /v1/card-tools, so the faces cannot drift).
+    const tts = await realCardDef("tts");
+    // the tool projection's real row for this card
+    const proj = toolBaseRows(new Map([["tts", tts]]));
+    const out = toolRowFor("tts", tts, proj);
+    const lanes = out["lanes"] as Record<string, { base: string[]; relations?: Record<string, unknown> }> | undefined;
+    assert.ok(lanes !== undefined, "the bundle signature carries the lane contracts");
+    const fam = lanes["qwen3-tts"] ?? lanes["qwen3-tts-voicedesign"];
+    assert.ok(fam !== undefined, "a declared tts family rides the contract: " + Object.keys(lanes).join(","));
+    assert.ok(fam.base.includes("text"), "the family's base surface rides: " + fam.base.join(","));
+    const required = (fam.relations?.["required"] as Array<{ fields?: string[] }> | undefined) ?? [];
+    assert.ok(required.some((r) => (r.fields ?? []).includes("text")),
+      "the required text law rides the contract the bench enforces");
+    const together = (fam.relations?.["together"] as Array<{ fields?: string[] }> | undefined) ?? [];
+    assert.ok(together.some((r) => (r.fields ?? []).includes("voice_name")),
+      "the export pair law rides too");
+  });
+
+  it("a card whose families declare nothing carries no lanes key (the legacy stand-down)", () => {
+    const def = DEF({ boarded: [] as string[] });
+    const out = toolRowFor("c", def, rows(def));
+    assert.equal("lanes" in out, false, "nothing declared, nothing invented");
   });
 
   it("missing rows refuse LOUD; carriers win", () => {

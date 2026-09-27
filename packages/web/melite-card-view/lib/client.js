@@ -7412,7 +7412,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		async function patchStageParams(draftId, stageId, params, expectRev) {
 			const row = writeRow(draftId, stageId);
 			const keys = Object.keys(params);
-			const attempt = (async () => {
+			let attempt;
+			attempt = (async () => {
 				try {
 					const settled = await patchWithRebase(draftId, stageId, { params }, expectRev);
 					if (settled.rev !== null) row.confirmedRev = settled.rev;
@@ -7423,7 +7424,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					row.lastError = e instanceof Error ? e.message : String(e);
 					throw e;
 				} finally {
-					row.inflight.delete(attempt);
+					if (attempt !== void 0) row.inflight.delete(attempt);
 				}
 			})();
 			row.inflight.add(attempt);
@@ -7722,7 +7723,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				method: "POST",
 				headers: { "content-type": "application/json" },
 				body: JSON.stringify({
-					filename: file.name.replace(/[^A-Za-z0-9._-]/g, "_"),
+					filename: file.name,
 					data: dataUrl
 				})
 			});
@@ -9524,6 +9525,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				for (const row of rel.required ?? []) {
 					if (row === null || typeof row !== "object") continue;
 					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					if (row.any_of === true) {
+						if (fields.length === 0) continue;
+						if (fields.some(stated)) continue;
+						out.push({
+							field: fields[0],
+							message: "this lane requires one of " + quote(fields) + " — none is stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one of them")
+						});
+						continue;
+					}
 					const missing = fields.filter((f) => !stated(f));
 					if (missing.length === 0) continue;
 					out.push({
@@ -59971,7 +59981,7 @@ void main() {
 			}, activity !== "" ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.tilePct,
 				"aria-label": "engine activity"
-			}, activity) : null, pct !== null ? (0, react.createElement)("span", {
+			}, activity) : null, progress !== null && pct !== null ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.tilePct,
 				"data-testid": "drill-progress",
 				"aria-label": "progress percent"
@@ -60061,7 +60071,7 @@ void main() {
 						setError(`wire source is no longer on the bench: ${upstreamId}`);
 						return;
 					}
-					patchStageParams(bench.draftId, stage.id, { [slotKey]: upstreamId === null ? null : candidate.url }, bench.rev).catch((wireError) => {
+					patchStageParams(bench.draftId, stage.id, { [slotKey]: candidate !== void 0 ? candidate.url : null }, bench.rev).catch((wireError) => {
 						setError(wireError instanceof Error ? wireError.message : "wire failed");
 					});
 				},
@@ -60853,7 +60863,8 @@ void main() {
 					setRunning(false);
 					setLocalRunError(error);
 					/* v8 ignore next 1 -- the enclosing callback already returned on non-bench (probe 2026-09-19) */
-					const rev = snapshot.value.kind === "bench" ? snapshot.value.rev : void 0;
+					const snap = snapshot.value;
+					const rev = snap !== void 0 && snap.kind === "bench" ? snap.rev : void 0;
 					/* v8 ignore next 2 -- the outcome-patch tail rides the covered observe lane (probe 2026-09-19) */
 					patchStageOutcome(draftId, stageId, {
 						runStatus: "failed",
@@ -61189,4 +61200,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="aa6b8e211efa74b3b0f56204eda42d6a5a340706";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="47ea6f2f4138a0f597ddb50f44723f0d641c8316";

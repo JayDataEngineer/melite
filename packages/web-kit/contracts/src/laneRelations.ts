@@ -403,3 +403,97 @@ export function judgeLaneBounds(
   }
   return out
 }
+
+/* ── THE LANE CONTRACT — one construction, every face ─────────────
+ *
+ * The agent-facing faces (/v1/card-tools and the melite_load bundle)
+ * and the form-facing face must serve the SAME projection of a
+ * family DECL, or an agent composes against a contract the form
+ * gates differently. 2026-10-10: the projection lived only in the
+ * melite-tools discovery arm, so /v1/load's signature — the agent's
+ * PRIMARY face, the one melite_load renders — carried no lanes at
+ * all and the lane-line render was dead code. One implementation,
+ * exported from the contracts floor where the judged shapes live.
+ */
+export interface LaneContractVariantRow {
+  params?: readonly string[]
+  relations?: LaneRelations
+  bounds?: Record<string, { min?: number; max?: number }>
+  sampler_envelope?: { steps: number[]; cfg: number[] }
+}
+
+export interface LaneContractRow {
+  base: readonly string[]
+  relations?: LaneRelations
+  bounds?: Record<string, { min?: number; max?: number }>
+  variants: Record<string, LaneContractVariantRow>
+}
+
+export interface LaneContractDecl {
+  params?: readonly string[]
+  relations?: LaneRelations
+  bounds?: Record<string, { min?: number; max?: number }>
+  variants?: ReadonlyArray<{
+    id: string
+    params?: readonly string[]
+    relations?: LaneRelations
+    bounds?: Record<string, { min?: number; max?: number }>
+    sampler_envelope?: { steps: number[]; cfg: number[] }
+  }>
+}
+
+/** One family's declared lane surface + laws, verbatim. Absent
+ *  members stay absent (the absent-equals-empty law: nothing is
+ *  invented, and a family that declares nothing yields an empty
+ *  base with no relations key). */
+export function laneContractOf (decl: LaneContractDecl): LaneContractRow {
+  const variants: Record<string, LaneContractVariantRow> = {}
+  for (const v of decl.variants ?? []) {
+    if (
+      v.params === undefined &&
+      v.relations === undefined &&
+      v.bounds === undefined &&
+      v.sampler_envelope === undefined
+    ) continue
+    variants[v.id] = {
+      ...(v.params !== undefined ? { params: [...v.params] } : {}),
+      ...(v.relations !== undefined ? { relations: v.relations } : {}),
+      ...(v.bounds !== undefined ? { bounds: v.bounds } : {}),
+      // the variant's sampler domain rides the contract too — the
+      // bench judges it, so the face that composes must state it
+      ...(v.sampler_envelope !== undefined ? { sampler_envelope: v.sampler_envelope } : {}),
+    }
+  }
+  return {
+    base: [...(decl.params ?? [])],
+    ...(decl.relations !== undefined ? { relations: decl.relations } : {}),
+    ...(decl.bounds !== undefined ? { bounds: decl.bounds } : {}),
+    variants,
+  }
+}
+
+/** THE CONTRACT MAP for a card's declared families: family id → its
+ *  lane contract. Families that declare no params and no laws are
+ *  omitted (legacy families judge nothing; serving an empty row
+ *  would only cost the agent tokens). */
+export function laneContractsFor (
+  familyIds: Iterable<string>,
+  declOf: (family: string) => LaneContractDecl | undefined,
+): Record<string, LaneContractRow> {
+  const out: Record<string, LaneContractRow> = {}
+  for (const id of familyIds) {
+    const decl = declOf(id)
+    if (decl === undefined) continue
+    const contract = laneContractOf(decl)
+    // a family with no declared base surface, no laws and no
+    // variant additions has nothing to say (the legacy stand-down)
+    const silent =
+      contract.base.length === 0 &&
+      contract.relations === undefined &&
+      contract.bounds === undefined &&
+      Object.keys(contract.variants).length === 0
+    if (silent) continue
+    out[id] = contract
+  }
+  return out
+}

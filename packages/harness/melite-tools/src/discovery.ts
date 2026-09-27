@@ -14,6 +14,7 @@
 // features.modifiers come from svc.modCatalog("loras", family) —
 // the family-owned rows in packages/models/<family>/mods/loras.ts
 // composed server-side. NO second spelling, no remote fetch.
+import { laneContractOf as sharedLaneContractOf } from '@melite/contracts/laneRelations'
 import {
   buildCatalog,
   CARD_KINDS,
@@ -188,43 +189,6 @@ function capQuant(quant: string): string {
  *  judgeLaneRelations, the same calls the bench-write door uses.
  *  Served ONLY when the family declares a base surface (the
  *  spread at the call site gates it). */
-function laneContractOf(decl: ModelDecl): Record<string, unknown> {
-  return {
-    base: [...(decl.params ?? [])],
-    ...(decl.relations !== undefined ? { relations: decl.relations } : {}),
-    ...(decl.bounds !== undefined ? { bounds: decl.bounds } : {}),
-    variants: Object.fromEntries(
-      (decl.variants ?? [])
-        .filter(
-          (v) =>
-            v.params !== undefined ||
-            v.relations !== undefined ||
-            v.bounds !== undefined ||
-            v.sampler_envelope !== undefined,
-        )
-        .map((v) => [
-          v.id,
-          {
-            ...(v.params !== undefined ? { params: [...v.params] } : {}),
-            ...(v.relations !== undefined ? { relations: v.relations } : {}),
-            // VARIANT BOUNDS RIDE THE SERVE TOO (the design audit's
-            // HIGH, 2026-10-10): laneBoundsFor reads exactly this
-            // seat — a variant that tightens its own range while
-            // the serve drops it is a form that builds what the
-            // bench refuses, the exact failure shape 2 kills.
-            ...(v.bounds !== undefined ? { bounds: v.bounds } : {}),
-            // THE VARIANT'S SAMPLER DOMAIN (the DECL audit's row 3,
-            // 2026-10-10): the same law as the bounds — the DECL
-            // declares it, the bench judges it, the serve carries
-            // it or the composing agent learns the domain by
-            // hitting the refusal.
-            ...(v.sampler_envelope !== undefined ? { sampler_envelope: v.sampler_envelope } : {}),
-          },
-        ]),
-    ),
-  }
-}
-
 function specVariants(
   decl: ModelDecl,
   key: string,
@@ -731,7 +695,7 @@ export function specBody(
     // unchanged: an empty surface still judges nothing here because
     // no lanes block means no judgment.
     ...(decl !== null && decl.params !== undefined && decl.params.length > 0 ? {
-      lanes: laneContractOf(decl),
+      lanes: sharedLaneContractOf(decl),
     } : {}),
     // THE FAMILIES BLOCK (the no-silent-drop law, hour 26 stroke 17):
     // every family the card BOARDS, presence-marked against the live
@@ -899,7 +863,7 @@ export async function cardToolsArm(): Promise<unknown[]> {
     // so the one consumer that writes WITHOUT a live form learned
     // the law by hitting its refusal. Every declaring family on this
     // card rides its own lane contract (keyed by family id, verbatim
-    // the same laneContractOf the form-spec serves); a card whose
+    // the same shared laneContractOf the form-spec serves); a card whose
     // families declare nothing carries no `lanes` key at all, which
     // is the legacy truth, not a silent empty.
     const lanes: Record<string, unknown> = {};
@@ -919,7 +883,7 @@ export async function cardToolsArm(): Promise<unknown[]> {
       // legacy truth. Serving a strictly-empty base to the agent
       // while the form falls back to the card's union table is two
       // truths for one declaration.
-      if (fdecl !== null && (fdecl.params?.length ?? 0) > 0) lanes[atom] = laneContractOf(fdecl);
+      if (fdecl !== null && (fdecl.params?.length ?? 0) > 0) lanes[atom] = sharedLaneContractOf(fdecl);
     }
     out.push({
       name: id,

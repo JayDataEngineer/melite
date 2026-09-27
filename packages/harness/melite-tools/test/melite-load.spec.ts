@@ -237,6 +237,47 @@ describe('melite_load render — the loaded line', () => {
     assert.ok(!lane.includes('[object Object]'), 'the string[] cast is dead: ' + lane)
   })
 
+  test('EVERY DECLARED WORD SPEAKS (the requires row and the variant sampler domain — the DECL audit gaps 2 + 7)', () => {
+    // 2026-10-10: the render listed four of the six relation words
+    // (requires and the variant's sampler_envelope were dropped), so
+    // a lane that declared them still told the agent nothing. These
+    // two arms are the whole difference between a contract the agent
+    // can read and one it learns by refusal.
+    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const parts = tool.output.render(
+      { name: 'image-gen', inference_type: 'card' },
+      {
+        name: 'image-gen', inference_type: 'card',
+        bundle: {
+          kind: 'card', name: 'image-gen',
+          signature: {
+            lanes: {
+              'krea-2': {
+                base: ['prompt'],
+                relations: {
+                  requires: [{ field: 'realism', needs: ['strength'] }],
+                },
+                variants: {
+                  turbo: {
+                    params: ['steps'],
+                    sampler_envelope: { steps: [4, 8], cfg: [1, 2] },
+                  },
+                },
+              },
+            },
+          },
+        },
+      } as never,
+    ) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    const lane = text.split('\n').find((l) => l.startsWith('lane krea-2:')) ?? ''
+    assert.ok(lane.includes('requires(realism → strength)'), 'the requires word speaks: ' + lane)
+    assert.ok(
+      lane.includes('sampler(4–8 steps, 1–2 cfg)'),
+      'the variant sampler domain speaks: ' + lane,
+    )
+  })
+
   test('THE EDGE CELLS RIDE (label-less hints, junk required rows, ref-fallback skills, the 9-row clamp, stages, signature model)', () => {
     const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
     const skills = [{ id: 'a' }, { ref: 'r-only' }, { id: 'b' }, { id: 'c' }, { id: 'd' }, { id: 'e' }, { id: 'f' }, { id: 'g' }, { id: 'h' }]

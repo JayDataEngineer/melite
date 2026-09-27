@@ -33,7 +33,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     done = true;
 };
 import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-typert-protocol";
-import { admitWiring, benchBlockOf } from "./bench.js";
+import { admitWiring, benchBlockOf, strippedForAdmission } from "./bench.js";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
 import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, getBench, groupBench, patchBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
@@ -575,6 +575,10 @@ let DraftsRemoteService = (() => {
             }
             if ("runStatus" in patch)
                 stage["runStatus"] = patch["runStatus"];
+            // the params the row will HOLD once this write lands (undefined
+            // when the body carries no params arm) — judged as half of the
+            // (params, inputs) PAIR before either assignment rides.
+            let pendingParams;
             if ("params" in patch && patch["params"] !== null && typeof patch["params"] === "object" && !Array.isArray(patch["params"])) {
                 // PER-KEY merge (never replace) — the old door's law, now with
                 // JSON Merge Patch null semantics: a null value DELETES the
@@ -605,9 +609,22 @@ let DraftsRemoteService = (() => {
                 const stageCard = typeof stage["card"] === "string" ? stage["card"] : "";
                 const admit = this.benchAdmit();
                 if (stageCard !== "" && admit !== undefined) {
-                    admit(stageCard, merged, stage["provenance"]);
+                    // NO PROVENANCE (the audit's GAP 3): the restored carve is
+                    // load-time grace; a patch is a live compose act judged by
+                    // the DECL the next run composes from. Forwarding the row's
+                    // provenance here made the grace sticky forever.
+                    // THE JUDGE SEES THE STORED ROW (2026-10-10, the write-seat
+                    // audit's row 7): the same self-naming strip every bench
+                    // door judges through — a model key naming the row's own
+                    // card never survives to compose, so this door judges the
+                    // stripped view or refuses what the run admits.
+                    admit(stageCard, strippedForAdmission(stageCard, merged), undefined);
                 }
-                stage["params"] = merged;
+                // DEFERRED (the write-seat audit's row 3, second half): the
+                // assignment waits for the wiring pair-gate below — the pair
+                // (params, inputs) is judged as ONE write, and a refused
+                // orphan must leak NEITHER half into the cached record.
+                pendingParams = merged;
             }
             // THE WIRING ARM ADMITS TOO (2026-10-10, the bypass audit's
             // CRITICAL-2: the params arm walked the composed admission and
@@ -634,7 +651,7 @@ let DraftsRemoteService = (() => {
                 if ("inputs" in patch)
                     stage["inputs"] = patch["inputs"];
             }
-            else if ("inputs" in patch) {
+            else {
                 const priorInputs = isObj(stage["inputs"]) ? stage["inputs"] : {};
                 const mergedInputs = { ...priorInputs };
                 if (isObj(patch["inputs"])) {
@@ -645,12 +662,26 @@ let DraftsRemoteService = (() => {
                             mergedInputs[chan] = ref;
                     }
                 }
-                const liveIds = (Array.isArray(doc["stages"]) ? doc["stages"] : [])
-                    .map((r) => (isObj(r) ? String(r["id"] ?? "") : ""))
-                    .filter((id) => id !== String(stage["id"] ?? ""));
-                admitWiring(stage, isObj(stage["params"]) ? stage["params"] : {}, mergedInputs, liveIds, String(stage["id"] ?? ""), draftId.replace(/^bench-/, ""));
+                // THE PAIR, NOT THE HALF (2026-10-10, the write-seat audit's
+                // row 3): the gate used to run only when the body carried
+                // `inputs`, so a params-only keystroke that dropped the
+                // "$image" spell orphaned the wire SILENTLY — the merged pair
+                // nobody judged was exactly the dead wire bench/patch refuses
+                // on the identical body. The gate now runs whenever EITHER
+                // half of the pair changes, over the PENDING params (the row's
+                // next view) and the merged inputs, BEFORE either lands.
+                if (pendingParams !== undefined || "inputs" in patch) {
+                    const liveIds = (Array.isArray(doc["stages"]) ? doc["stages"] : [])
+                        .map((r) => (isObj(r) ? String(r["id"] ?? "") : ""))
+                        .filter((id) => id !== String(stage["id"] ?? ""));
+                    admitWiring(stage, pendingParams !== undefined
+                        ? pendingParams
+                        : (isObj(stage["params"]) ? stage["params"] : {}), mergedInputs, liveIds, String(stage["id"] ?? ""), draftId.replace(/^bench-/, ""));
+                }
                 stage["inputs"] = mergedInputs;
             }
+            if (pendingParams !== undefined)
+                stage["params"] = pendingParams;
             if ("inputOutputs" in patch)
                 stage["inputOutputs"] = patch["inputOutputs"];
             // THE BUMP (author patches only — the telemetry law above): the
@@ -915,7 +946,7 @@ let BenchRemoteService = (() => {
         async remoteExportGroup(sessionKey, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            const row = await groupBench(drafts, sessionKey, doc);
+            const row = await groupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
             notifyBenchChange(sessionKey);
             return row;
         }
@@ -923,7 +954,7 @@ let BenchRemoteService = (() => {
         async remoteExportUngroup(sessionKey, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            const row = await ungroupBench(drafts, sessionKey, doc);
+            const row = await ungroupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
             notifyBenchChange(sessionKey);
             return row;
         }

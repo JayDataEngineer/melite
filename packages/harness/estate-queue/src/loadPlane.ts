@@ -10,8 +10,9 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import {cardPackages, cardWireName, emitModifierKinds, emitParamsSchema, resolveRepoRoot, theService} from "@melite/comfyui-cordis";
+import {cardPackages, cardWireName, emitModifierKinds, emitParamsSchema, getModel, resolveRepoRoot, theService} from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
+import { laneContractsFor, type LaneContractDecl } from "@melite/contracts/laneRelations";
 import type { CardRegistryService } from "./cardsRegistry.ts";
 import { getRegistryFlow } from "./flowsData.ts";
 import { toolBaseRows } from "./toolProjection.ts";
@@ -121,8 +122,26 @@ export function toolRowFor(
   // bundle's signature and the manifest never drift. leaf_face never
   // rides (the agent composes VALUES, never faces).
   const modifiers = emitModifierKinds(def.mods);
+  // THE LANE CONTRACT RIDES THE BUNDLE (the DECL audit's gap 1,
+  // 2026-10-10): this signature is what melite_load renders, and it
+  // served no `lanes` key at all — so the agent's primary face said
+  // nothing about a lane's surface, its relation words, its bounds,
+  // or its sampler domain, and the agent learned every law by
+  // hitting the bench's refusal. /v1/card-tools served the same
+  // projection; this is ONE construction (laneContractsFor, contracts
+  // floor) so the two faces cannot drift.
+  const lanes = laneContractsFor(def.boarded, (fam) => {
+    try {
+      return getModel(fam) as unknown as LaneContractDecl;
+    } catch {
+      // a boarded id that is not a declared family (a retired
+      // address) contributes nothing — the stand-down, never a throw
+      return undefined;
+    }
+  });
   return {
     ...(modifiers.length > 0 ? { modifiers } : {}),
+    ...(Object.keys(lanes).length > 0 ? { lanes } : {}),
     name: base.name,
     version: base.version,
     kind: base.kind,
