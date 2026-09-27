@@ -173,10 +173,28 @@ const rows: readonly Plugin[] = [
     name: "melite-engine-mcp-row",
     inject: ["engines", "tools"],
     apply: (ctx: Context, config: unknown) => {
+      // li-l (2026-10-10, the 5+ brick): MELITE_MCP_ENGINES is the
+      // operator's GATE and it resolves HERE, inside the row (the
+      // host's own config cannot know the operator's environment).
+      // Empty names NO engine: the row announces the OFF state LOUD
+      // and seats nothing. A flapping blender handshake can no longer
+      // brick the estate (three mcp_server.py children, 3379
+      // remounts in one log) — with no engine named there is no
+      // cycle to flap, and the 3D cards refuse by name at their own
+      // door.
+      const env = process.env["MELITE_MCP_ENGINES"];
+      const engines = (env === undefined
+        ? (config as { engines?: string[] } | null)?.engines ?? []
+        : env.split(",").map((s) => s.trim()).filter((s) => s !== "")
+      ).map((s) => s);
+      if (engines.length === 0) {
+        console.log("[melite-estate] mcp row OFF (MELITE_MCP_ENGINES empty) — no engine named, nothing seated");
+        return;
+      }
       // LOUD seat decision (the craft row's law): a silent row
       // hides a dead engine until a run fails at the door.
-      console.log("[melite-estate] mcp row applying with config " + JSON.stringify(config));
-      mcpEngines(ctx, config as { engines?: string[] });
+      console.log("[melite-estate] mcp row applying with config " + JSON.stringify({ engines }));
+      mcpEngines(ctx, { engines });
     },
     config: { engines: ["mcp:blender"] },
   } as unknown as Plugin,

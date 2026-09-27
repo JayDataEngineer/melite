@@ -274,6 +274,11 @@ export const refreshCardDefs = (): Map<string, CardDefinition> => {
 export async function provisionsByFamily(
   defs: Map<string, CardDefinition>,
 ): Promise<Record<string, { engine: string; provisions: ProvisionRow[] }>> {
+  // li-m: the import no longer boots models — callers await
+  // cascadeInit first (the vitest setup + the estate's cardsRegistry
+  // do); NEVER await it here: the models boot re-enters this module
+  // (the documented lazy edge), and awaiting the boot from inside
+  // the card plane's own path self-deadlocks.
   const { modelIds, getModel } = await import('./models/models.ts')
   const out: Record<string, { engine: string; provisions: ProvisionRow[] }> = {}
   for (const id of modelIds()) {

@@ -7,8 +7,21 @@
 // the cascade on ctx.intercept + Service[symbols.resolveConfig])
 // lives on ModelsService (service.ts), reached as ctx.models. The
 // frozen registry stays DATA; every read below routes through the
-// booted service. The top-level await settles the boot once per
-// process — imports after that are sync forever.
+// booted service.
+//
+// li-m (2026-10-10, the operator's boot brick — ROOT CUT): the
+// import-time `await cascadeInit` is GONE. A top-level await on
+// the whole models boot rides the package ROOT — every card,
+// door, and queue that imports this package hung on ONE stalled
+// family composition (live proof: 3088 boots that printed nothing
+// for minutes, zero pending I/O — a promise that never settles;
+// cordis doctrine: composition happens in apply, never at import).
+// The boot is LAZY now: `cascadeInit` (still exported, still
+// once-per-process) is awaited where models are USED — the
+// estate's cardsRegistry applies `await bootModels()` itself
+// (cardsRegistry.ts, the composition seat), and the sync readers
+// below throw modelsService()'s named refusal if called before
+// any boot. Importing this module is CHEAP and can never hang.
 
 import type { ModelRow } from "./families/contract.ts";
 import type { CellRow, ModelDecl, VariantRow } from "./families/contract.ts";
@@ -19,7 +32,6 @@ export * from "./families/contract.ts";
 export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
 
 export const cascadeInit: Promise<void> = bootModels().then((): void => undefined);
-await cascadeInit;
 
 export function getModel(id: string): ModelDecl {
   return modelsService().getModel(id);

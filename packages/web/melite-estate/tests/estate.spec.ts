@@ -290,6 +290,42 @@ describe('melite-engine-mcp-row — the gated seat read', () => {
       vi.restoreAllMocks()
     }
   })
+
+  // li-l (2026-10-10, the 5+ brick): MELITE_MCP_ENGINES is the
+  // operator's gate — empty names NO engine, the row announces the
+  // OFF state LOUD, and mcpEngines is never called (a flapping
+  // blender handshake can no longer brick the estate: no seat, no
+  // cycle). The 3D cards refuse by name at the door instead.
+  it('MELITE_MCP_ENGINES empty turns the row OFF loudly — no mcpEngines call, no flapping seat', () => {
+    const lines = silence()
+    vi.clearAllMocks()
+    process.env['MELITE_MCP_ENGINES'] = ''
+    try {
+      const { fn, cfg } = rowApply('melite-engine-mcp-row')
+      fn(toolsCtx().ctx, cfg)
+      expect(lines.join('\n')).toContain('row OFF (MELITE_MCP_ENGINES empty)')
+      expect(vi.mocked(mcpEngines)).not.toHaveBeenCalled()
+    } finally {
+      delete process.env['MELITE_MCP_ENGINES']
+      vi.restoreAllMocks()
+    }
+  })
+
+  it('MELITE_MCP_ENGINES overrides the default list', () => {
+    const lines = silence()
+    vi.clearAllMocks()
+    process.env['MELITE_MCP_ENGINES'] = 'mcp:unity, mcp:blender'
+    try {
+      const { fn, cfg } = rowApply('melite-engine-mcp-row')
+      const ctx = toolsCtx().ctx
+      fn(ctx, cfg)
+      expect(lines.join('\n')).toContain('{"engines":["mcp:unity","mcp:blender"]}')
+      expect(vi.mocked(mcpEngines)).toHaveBeenCalledWith(ctx, { engines: ['mcp:unity', 'mcp:blender'] })
+    } finally {
+      delete process.env['MELITE_MCP_ENGINES']
+      vi.restoreAllMocks()
+    }
+  })
 })
 
 describe('melite-engine-craft-row — serialized late seating', () => {

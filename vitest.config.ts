@@ -131,6 +131,11 @@ export default defineConfig({
           environment: 'node',
           pool: 'forks',
           execArgv: vitestExecArgv,
+          // li-m (the lazy-boot law): models no longer boot at import
+          // (the top-level await's deadlock class bricked the
+          // estate boot) — the node project's setup awaits the
+          // shared boot ONCE per worker, exactly like the estate's
+          // cardsRegistry does at its compose seat.
           setupFiles: [PROXY_SETUP],
           include: [
             'packages/*/*/tests/**/*.spec.ts',

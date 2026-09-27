@@ -389,6 +389,80 @@ describe('doors apply', () => {
       await door.dispose()
     }
   })
+
+  // li-l (2026-10-10, the operator's 5+ brick): a fiber that FLAPS
+  // — activating, momentary lift, activating again (the live proof:
+  // three blender mcp_server.py children from three hosts fought
+  // over one seat; 3379 remount rows in one boot log) — used to
+  // reset the grace stamp on every lift and hold every seat door
+  // closed FOREVER: the grace window could never elapse. The stamp
+  // is now monotonic: only a SUSTAINED quiet (10s) re-arms it, so
+  // the gate opens past the grace no matter how the fiber flaps.
+  test('THE FLAP BRICK (li-l): a cycling fiber cannot reset the grace — past the window the gate opens even while it keeps flapping', async () => {
+    const ctx = new Context()
+    const routes: Route[] = []
+    ctx.provide('webServer', {
+      port: 0,
+      register: (route: Route) => {
+        routes.push(route)
+        return () => {}
+      },
+    } as never)
+    ctx.provide('llm', fakeLlm() as never)
+    ctx.provide('tools', { schemas: () => [] } as never)
+    let giveDependency = false
+    const flapping = ctx.plugin({
+      name: 'estate-runs',
+      inject: ['queue'],
+      apply: (child: Context) => {
+        if (giveDependency) {
+          child.provide('runs', {
+            validate: async () => ({ ok: true }),
+          })
+        }
+      },
+    })
+    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply })
+    try {
+      await door
+      await Promise.resolve()
+      const realNow = Date.now
+      try {
+        // a momentary lift INSIDE the grace (t+1s): the dependency
+        // lands and is ripped away again — the lift is shorter than
+        // the 10s re-arm quiet, so it must NOT reset the window
+        Date.now = (): number => realNow() + 1_000
+        giveDependency = true
+        const lifted = ctx.plugin({
+          name: 'estate-runs-2',
+          inject: ['queue'],
+          apply: (child: Context) => {
+            child.provide('runs', { validate: async () => ({ ok: true }) })
+          },
+        })
+        await lifted
+        await lifted.dispose()
+        giveDependency = false
+        // past the grace with the estate STILL wedged (the flap
+        // continues): the gate must be OPEN
+        Date.now = (): number => realNow() + ESTATE_PENDING_GRACE_MS + 5_000
+        const after = await call(routes, '/v1', {
+          method: 'POST',
+          url: 'http://localhost/v1/flows/validate',
+          body: {},
+        })
+        // THE LAW: the seat's own voice answers, never a permanent
+        // pending
+        assert.equal(after.status, 502)
+        assert.match(String((after.body as { error: string }).error), /no seat on this lane serves/)
+      } finally {
+        Date.now = realNow
+      }
+    } finally {
+      await flapping.dispose()
+      await door.dispose()
+    }
+  })
 })
 
 // ── catalog ───────────────────────────────────────────────────────

@@ -141,7 +141,16 @@ interface CtxView {
  * activation — the gate opens and the seat probe's own honest voice
  * answers (serve, or the missing-seat 502 naming the family). */
 export const ESTATE_PENDING_GRACE_MS = 120_000
+/** THE RE-ARM QUIET (li-l, the flap brick): a fiber cycling
+ *  activating→ready→activating (the multi-host blender-seat
+ *  collision, live proof 2026-10-10: three mcp_server.py children
+ *  from three hosts, 3379 remounts in one log) reset the stamp to
+ *  null on every momentary lift and held the gate closed FOREVER.
+ *  The stamp now lifts only after a SUSTAINED quiet — flapping
+ *  cannot extend the grace window. */
+const ESTATE_PENDING_REARM_MS = 10_000
 let estatePendingSince: number | null = null
+let estateQuietSince: number | null = null
 const estateStillActivating = (c: CtxView): boolean => {
   let activating = false
   for (const runtime of c.registry.values()) {
@@ -150,9 +159,15 @@ const estateStillActivating = (c: CtxView): boolean => {
     }
   }
   if (!activating) {
-    estatePendingSince = null
+    if (estateQuietSince === null) estateQuietSince = Date.now()
+    // only a SUSTAINED lift re-arms the grace window; a flap's
+    // momentary lift does not
+    if (estatePendingSince !== null && Date.now() - estateQuietSince >= ESTATE_PENDING_REARM_MS) {
+      estatePendingSince = null
+    }
     return false
   }
+  estateQuietSince = null
   if (estatePendingSince === null) estatePendingSince = Date.now()
   return Date.now() - estatePendingSince < ESTATE_PENDING_GRACE_MS
 }
